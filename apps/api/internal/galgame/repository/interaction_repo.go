@@ -15,30 +15,27 @@ func NewGalgameInteractionRepository(db *gorm.DB) *GalgameInteractionRepository 
 	return &GalgameInteractionRepository{db: db}
 }
 
-func (r *GalgameInteractionRepository) UserInteraction(userID, galgameID int) (liked, favorited bool) {
+// Only likes are still stored here. Whether a person has favourited a work is
+// a question about their catalog folders now, and the answer comes from
+// /v2/me/folders?contains_work_id= with their own token.
+func (r *GalgameInteractionRepository) UserLiked(userID, galgameID int) bool {
 	if userID <= 0 {
-		return false, false
+		return false
 	}
-	var lc, fc int64
+	var lc int64
 	r.db.Model(&model.GalgameLike{}).
 		Where("user_id = ? AND galgame_id = ?", userID, galgameID).Count(&lc)
-	r.db.Model(&model.GalgameCollectionItem{}).
-		Where("user_id = ? AND galgame_id = ?", userID, galgameID).Count(&fc)
-	return lc > 0, fc > 0
+	return lc > 0
 }
 
-func (r *GalgameInteractionRepository) UserGalgameInteractions(userID int) (liked, favorited []int) {
-	liked = []int{}
-	favorited = []int{}
+func (r *GalgameInteractionRepository) UserLikedGalgames(userID int) []int {
+	liked := []int{}
 	if userID <= 0 {
-		return
+		return liked
 	}
 	r.db.Model(&model.GalgameLike{}).
 		Where("user_id = ?", userID).Pluck("galgame_id", &liked)
-	r.db.Model(&model.GalgameCollectionItem{}).
-		Distinct("galgame_id").
-		Where("user_id = ?", userID).Pluck("galgame_id", &favorited)
-	return
+	return liked
 }
 
 func (r *GalgameInteractionRepository) ToggleLike(tx *gorm.DB, userID, galgameID int) (bool, error) {

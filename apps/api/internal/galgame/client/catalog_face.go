@@ -376,6 +376,28 @@ type catWorkDetail struct {
 	Characters []catWorkCharacter `json:"characters"`
 	Ratings    []catRating        `json:"ratings"`
 	Playtimes  []catPlaytime      `json:"playtimes"`
+	Popularity []catPopularity    `json:"popularity"`
+}
+
+// The favourite count on a game page comes from here, not from
+// galgame_local.favorite_count: catalog computes nextmoe/favorites as the
+// number of distinct people holding the work in any folder on any site, so a
+// favourite added from the patch site shows up in this number and never in the
+// local counter. include=popularity was already being requested and thrown
+// away.
+type catPopularity struct {
+	Source string `json:"source"`
+	Metric string `json:"metric"`
+	Value  int64  `json:"value"`
+}
+
+func catalogFavoriteCount(rows []catPopularity) int {
+	for _, r := range rows {
+		if r.Source == "nextmoe" && r.Metric == "favorites" {
+			return int(r.Value)
+		}
+	}
+	return 0
 }
 
 type catWorkCharacter struct {

@@ -37,8 +37,13 @@ const buildAuthorizeUrl = async (
     // never `voted`, so the "I voted for this cover" mark was dead site-wide
     // from the day the user lane shipped until 2026-09-07 and nobody
     // reported it. The client's allowed_scopes is the other half.
+    // folder:read / folder:write are the one scoped family on /v2/me: the
+    // collection face reads and writes the user's own folders, and a token
+    // minted without them is 403 SCOPE_REQUIRED on every collection call.
+    // The grant is fixed at authorization and a refresh cannot widen it, so a
+    // session from before this line has to log in again.
     scope:
-      'openid profile catalog:read catalog:edit playtime:read playtime:write',
+      'openid profile catalog:read catalog:edit playtime:read playtime:write folder:read folder:write',
     state,
     code_challenge: codeChallenge,
     code_challenge_method: 'S256'

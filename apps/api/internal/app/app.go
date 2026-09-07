@@ -428,7 +428,7 @@ func New(cfg *config.Config) *App {
 		galgameMergeRepo, userStateRepo, gc, uc, catalogCli, storeLinks,
 	)
 	galgameCollectionRepo := galgameRepo.NewGalgameCollectionRepository(db)
-	galgameCollectionSvc := galgameService.NewCollectionService(galgameCollectionRepo, galgameCoreSvc, gc, uc, trustCheck, trustScan)
+	galgameCollectionSvc := galgameService.NewCollectionService(galgameCollectionRepo, galgameCoreSvc, gc, uc, catalogCli, trustCheck, trustScan)
 	galgameOfficialSvc := galgameService.NewOfficialService(gc, galgameCoreSvc)
 	galgameEngineSvc := galgameService.NewEngineService(gc, galgameCoreSvc)
 	galgameSeriesSvc := galgameService.NewSeriesService(gc, galgameEnricher, galgameCoreSvc)
@@ -459,7 +459,7 @@ func New(cfg *config.Config) *App {
 
 	adminOverviewRepo := adminRepo.NewOverviewRepository(db)
 	adminOverviewSvc := adminService.NewOverviewService(adminOverviewRepo)
-	adminPurgeSvc := adminService.NewPurgeService(adminRepo.NewPurgeRepository(db), uc, communityCli)
+	adminPurgeSvc := adminService.NewPurgeService(adminRepo.NewPurgeRepository(db), uc, communityCli, catalogCli)
 	adminTopicSvc := adminService.NewTopicAdminService(adminRepo.NewTopicAdminRepository(db), uc)
 	adminRolePermRepo := adminRepo.NewRolePermissionRepository(db)
 	adminUserPermRepo := adminRepo.NewUserPermissionRepository(db)

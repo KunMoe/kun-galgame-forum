@@ -6,6 +6,7 @@ import (
 
 	"kun-galgame-api/internal/admin/dto"
 	"kun-galgame-api/internal/admin/repository"
+	"kun-galgame-api/pkg/catalogclient"
 	"kun-galgame-api/pkg/communityclient"
 	"kun-galgame-api/pkg/errors"
 	"kun-galgame-api/pkg/role"
@@ -16,10 +17,12 @@ type PurgeService struct {
 	repo       *repository.PurgeRepository
 	userClient *userclient.Client
 	community  *communityclient.Client
+	catalog    *catalogclient.Client
 }
 
-func NewPurgeService(repo *repository.PurgeRepository, userClient *userclient.Client, community *communityclient.Client) *PurgeService {
-	return &PurgeService{repo: repo, userClient: userClient, community: community}
+func NewPurgeService(repo *repository.PurgeRepository, userClient *userclient.Client,
+	community *communityclient.Client, catalog *catalogclient.Client) *PurgeService {
+	return &PurgeService{repo: repo, userClient: userClient, community: community, catalog: catalog}
 }
 
 func (s *PurgeService) GetUserContentStats(ctx context.Context, userID int) dto.UserContentStats {
@@ -44,7 +47,10 @@ func (s *PurgeService) GetUserContentStats(ctx context.Context, userID int) dto.
 // Order: local transaction first, then the community compliance purge. Both
 // sides are idempotent, so a community failure surfaces as an error and the
 // admin retries.
-func (s *PurgeService) PurgeUserContent(ctx context.Context, operatorID, userID int) (dto.PurgeResult, *errors.AppError) {
+// operatorToken is the acting moderator's own access token: the catalog judges
+// their standing rather than taking this site's word for it, which is why the
+// purge cannot run without one.
+func (s *PurgeService) PurgeUserContent(ctx context.Context, operatorID, userID int, operatorToken string) (dto.PurgeResult, *errors.AppError) {
 	u, found, err := s.userClient.User(ctx, userID)
 	if err != nil {
 		return dto.PurgeResult{}, errors.ErrInternal("无法核验用户身份, 已中止清除")
@@ -56,6 +62,21 @@ func (s *PurgeService) PurgeUserContent(ctx context.Context, operatorID, userID 
 	stats, dbErr := s.repo.PurgeUserContent(userID)
 	if dbErr != nil {
 		return dto.PurgeResult{}, errors.ErrInternal("清除用户内容失败")
+	}
+
+	// Favourites live in the catalog since the folder cutover, so deleting the
+	// galgame_collection alias rows above removes this site's names for them
+	// and nothing else. Without this call a purged account's collections stay
+	// on /v2/folders with no face left that could ever take them down.
+	if s.catalog != nil && operatorToken != "" {
+		receipt, fErr := s.catalog.PurgeUserFolders(ctx, operatorToken, int64(userID))
+		if fErr != nil {
+			slog.Error("purge: catalog folder purge failed — local delete done, folders pending; admin should retry",
+				"operator_id", operatorID, "target_id", userID, "error", fErr)
+			return dto.PurgeResult{}, errors.ErrInternal("已清除本地内容, 但收藏夹清除失败, 请重试")
+		}
+		slog.Info("purge: catalog folders purged", "target_id", userID,
+			"folders", receipt.FoldersDeleted, "items", receipt.ItemsDeleted)
 	}
 
 	purged, cErr := s.community.AuthorPurge(ctx, int64(userID))

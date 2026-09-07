@@ -36,7 +36,7 @@ func (h *PurgeHandler) PurgeUserContent(c fiber.Ctx) error {
 	if appErr != nil {
 		return response.Error(c, appErr)
 	}
-	result, appErr := h.purgeService.PurgeUserContent(c.Context(), operator.ID, userID)
+	result, appErr := h.purgeService.PurgeUserContent(c.Context(), operator.ID, userID, middleware.GetAccessToken(c))
 	if appErr != nil {
 		return response.Error(c, appErr)
 	}

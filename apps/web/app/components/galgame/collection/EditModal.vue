@@ -9,7 +9,6 @@ const props = defineProps<{
     name: string
     description: string
     visibility: CollectionVisibility
-    viewers: CollectionUserBrief[]
   }
 }>()
 
@@ -25,8 +24,7 @@ const isOpen = computed({
 
 const visibilityOptions = [
   { value: 'public', label: '公开 · 所有人可见' },
-  { value: 'private', label: '私密 · 仅自己可见' },
-  { value: 'restricted', label: '指定用户可见' }
+  { value: 'private', label: '私密 · 仅自己可见' }
 ] as const
 
 const form = reactive<{
@@ -38,7 +36,6 @@ const form = reactive<{
   description: '',
   visibility: 'public'
 })
-const viewers = ref<CollectionUserBrief[]>([])
 const submitting = ref(false)
 
 watch(
@@ -51,7 +48,6 @@ watch(
     form.name = props.initial?.name ?? ''
     form.description = props.initial?.description ?? ''
     form.visibility = props.initial?.visibility ?? 'public'
-    viewers.value = props.initial?.viewers ? [...props.initial.viewers] : []
   }
 )
 
@@ -60,8 +56,6 @@ const submit = async () => {
     name: form.name.trim(),
     description: form.description,
     visibility: form.visibility,
-    viewer_ids:
-      form.visibility === 'restricted' ? viewers.value.map((v) => v.id) : []
   }
 
   const result = createCollectionSchema.safeParse(payload)
@@ -116,11 +110,6 @@ const submit = async () => {
         v-model="form.visibility"
         label="隐私设置"
         :options="visibilityOptions"
-      />
-
-      <GalgameCollectionViewerPicker
-        v-if="form.visibility === 'restricted'"
-        v-model="viewers"
       />
 
       <div class="flex justify-end gap-3">

@@ -99,6 +99,7 @@ type NextMoeTagWithSpoiler struct {
 
 type NextMoeGalgameDetailFull struct {
 	ID                         int                        `json:"id"`
+	FavoriteCount              int                        `json:"favorite_count"`
 	VndbID                     string                     `json:"vndb_id"`
 	Name                       string                     `json:"name"`
 	NameOriginal               string                     `json:"name_original"`

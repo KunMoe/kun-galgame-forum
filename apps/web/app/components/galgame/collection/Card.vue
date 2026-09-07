@@ -11,9 +11,7 @@ const displayName = computed(() =>
 const visibilityMeta = (v: CollectionVisibility) =>
   v === 'private'
     ? { icon: 'lucide:lock', label: '私密' }
-    : v === 'restricted'
-      ? { icon: 'lucide:users', label: '指定可见' }
-      : { icon: 'lucide:globe', label: '公开' }
+    : { icon: 'lucide:globe', label: '公开' }
 </script>
 
 <template>
