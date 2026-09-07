@@ -31,7 +31,14 @@ const buildAuthorizeUrl = async (
     client_id: config.public.oauthClientId as string,
     redirect_uri: config.public.oauthRedirectUri as string,
     response_type: 'code',
-    scope: 'openid profile catalog:edit playtime:read playtime:write',
+    // catalog:read is what the user lane on /v2/catalog/* demands. Dropping
+    // it does not fail loudly: the cover-vote read 403s for every signed-in
+    // reader and falls back to the app-key lane, which answers tallies but
+    // never `voted`, so the "I voted for this cover" mark was dead site-wide
+    // from the day the user lane shipped until 2026-09-07 and nobody
+    // reported it. The client's allowed_scopes is the other half.
+    scope:
+      'openid profile catalog:read catalog:edit playtime:read playtime:write',
     state,
     code_challenge: codeChallenge,
     code_challenge_method: 'S256'
