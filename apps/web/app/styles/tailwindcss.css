@@ -127,16 +127,17 @@ html {
 @supports (scrollbar-gutter: stable) {
   html {
     /*
-     * `visible`, NOT `auto` — load-bearing for every overlay on the site.
-     * An overlay's scroll lock (KunUI's, and the platform convention it
-     * follows) sets `body { overflow: hidden }` and relies on the body→
-     * viewport overflow PROPAGATION the CSS box model grants only while the
-     * root element's own overflow is `visible`. Declaring anything else here
-     * — `auto` included — makes html its own scroll container, propagation
-     * stops, and `overflow: hidden` on the body locks a box that was never
-     * the scroller: every modal left the page scrollable underneath.
-     * `scrollbar-gutter` needs no help from `overflow` to do its job; the
-     * root box is a scroll container regardless.
+     * `visible`, NOT `auto`. An overlay's scroll lock conventionally sets
+     * `body { overflow: hidden }` and relies on the body→viewport overflow
+     * PROPAGATION the CSS box model grants only while the root element's own
+     * overflow is `visible`. Declaring anything else here — `auto` included —
+     * makes html its own scroll container, propagation stops, and the lock
+     * holds a box that was never the scroller: every modal left the page
+     * scrollable underneath. KunUI 2.31.0 now locks <html> as well, so this
+     * is no longer the only thing holding the lock up, but the fallback
+     * `html { overflow-y: scroll }` above (pre-Baseline Safari) does still
+     * depend on it. `scrollbar-gutter` needs no help from `overflow` to do
+     * its job; the root box is a scroll container regardless.
      */
     overflow-y: visible;
     scrollbar-gutter: stable;
@@ -153,12 +154,12 @@ html {
  * galgame title card, the 会社 card beside it) twitching 8px sideways at every
  * modal open and close.
  *
- * With propagation restored above the usual implementation already computes 0
- * here (it measures the viewport AFTER writing the overflow, by which point the
- * gutter is gone and the difference is nil). This rule is the guard for the
- * other measurement order, which is the more correct one and would silently
- * bring the shift back: whatever the scrollbar arithmetic concludes, this
- * document never owes it any padding.
+ * KunUI 2.30.0 reads the computed `scrollbar-gutter` and adds nothing when it
+ * is `stable` (measured here on 2.31.1: opening the command palette leaves body
+ * padding untouched, publishes `--kun-scrollbar-width: 0px`, and the centered
+ * column stays at left 118.4px). This rule is the guard for every other
+ * implementation and for a future regression in that one: whatever the
+ * scrollbar arithmetic concludes, this document never owes it any padding.
  */
 body {
   padding-right: 0 !important;

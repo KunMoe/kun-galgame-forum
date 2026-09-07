@@ -130,22 +130,22 @@ importers:
         version: 0.38.2(@codemirror/commands@6.10.3)(@codemirror/language-data@6.5.2)(@codemirror/language@6.12.2)(@codemirror/state@6.6.0)(@codemirror/view@6.40.0)(@lezer/highlight@1.2.3)(@milkdown/kit@7.21.2(@codemirror/language@6.12.2)(@codemirror/state@6.6.0)(@codemirror/view@6.40.0)(typescript@5.9.3))(@milkdown/prose@7.21.2)(codemirror@6.0.2)(katex@0.16.40)
       '@kungal/editor-nuxt':
         specifier: 0.38.2
-        version: 0.38.2(322dcaca300a7f3feb22d14de659fb2b)
+        version: 0.38.2(7db56c70c22b60a88ecdc322fa76791c)
       '@kungal/editor-vue':
         specifier: 0.38.2
         version: 0.38.2(@codemirror/commands@6.10.3)(@codemirror/lang-markdown@6.5.0)(@codemirror/language-data@6.5.2)(@codemirror/language@6.12.2)(@codemirror/state@6.6.0)(@codemirror/view@6.40.0)(@lezer/highlight@1.2.3)(@milkdown/kit@7.21.2(@codemirror/language@6.12.2)(@codemirror/state@6.6.0)(@codemirror/view@6.40.0)(typescript@5.9.3))(@milkdown/prose@7.21.2)(@milkdown/vue@7.21.2(@codemirror/language@6.12.2)(@codemirror/state@6.6.0)(@codemirror/view@6.40.0)(prosemirror-model@1.25.3)(prosemirror-state@1.4.4)(prosemirror-view@1.41.7)(typescript@5.9.3)(vue@3.5.35(typescript@5.9.3)))(codemirror@6.0.2)(katex@0.16.40)(vue@3.5.35(typescript@5.9.3))
       '@kungal/ui-core':
-        specifier: 2.29.0
-        version: 2.29.0
+        specifier: 2.31.1
+        version: 2.31.1
       '@kungal/ui-nuxt':
-        specifier: 2.29.0
-        version: 2.29.0(81015acf35160c0d483fda45966fa8ea)
+        specifier: 2.31.1
+        version: 2.31.1(81015acf35160c0d483fda45966fa8ea)
       '@kungal/ui-tokens':
-        specifier: 2.29.0
-        version: 2.29.0(tailwindcss@4.2.2)
+        specifier: 2.31.1
+        version: 2.31.1(tailwindcss@4.2.2)
       '@kungal/ui-vue':
-        specifier: 2.29.0
-        version: 2.29.0(change-case@5.4.4)(fuse.js@7.4.1)(sortablejs@1.15.7)(vue@3.5.35(typescript@5.9.3))
+        specifier: 2.31.1
+        version: 2.31.1(change-case@5.4.4)(fuse.js@7.4.1)(sortablejs@1.15.7)(vue@3.5.35(typescript@5.9.3))
       '@lezer/highlight':
         specifier: ^1.2.3
         version: 1.2.3
@@ -163,10 +163,10 @@ importers:
         version: 0.1.2
       '@nextmoe/edit-ui-nuxt':
         specifier: 0.1.2
-        version: 0.1.2(@kungal/ui-vue@2.29.0(change-case@5.4.4)(fuse.js@7.4.1)(sortablejs@1.15.7)(vue@3.5.35(typescript@5.9.3)))(change-case@5.4.4)(focus-trap@8.2.1)(fuse.js@7.4.1)(magicast@0.5.2)(nuxt@4.4.7(@babel/plugin-syntax-jsx@7.28.6(@babel/core@7.29.0))(@babel/plugin-syntax-typescript@7.28.6(@babel/core@7.29.0))(@electric-sql/pglite@0.3.15)(@parcel/watcher@2.5.6)(@types/node@25.5.0)(@vue/compiler-sfc@3.5.35)(cac@6.7.14)(db0@0.3.4(@electric-sql/pglite@0.3.15)(mysql2@3.15.3))(eslint@9.39.4(jiti@2.7.0))(ioredis@5.10.1)(lightningcss@1.32.0)(magicast@0.5.2)(mysql2@3.15.3)(optionator@0.9.4)(pinia@3.0.4(typescript@5.9.3)(vue@3.5.35(typescript@5.9.3)))(rollup-plugin-visualizer@7.0.1(rollup@4.61.1))(rollup@4.61.1)(sass@1.99.0)(terser@5.46.1)(tsx@4.21.0)(typescript@5.9.3)(vite@7.3.5(@types/node@25.5.0)(jiti@2.7.0)(lightningcss@1.32.0)(sass@1.99.0)(terser@5.46.1)(tsx@4.21.0)(yaml@2.8.3))(vue-tsc@3.3.1(typescript@5.9.3))(xml2js@0.6.2)(yaml@2.8.3))(vue@3.5.35(typescript@5.9.3))
+        version: 0.1.2(@kungal/ui-vue@2.31.1(change-case@5.4.4)(fuse.js@7.4.1)(sortablejs@1.15.7)(vue@3.5.35(typescript@5.9.3)))(change-case@5.4.4)(focus-trap@8.2.1)(fuse.js@7.4.1)(magicast@0.5.2)(nuxt@4.4.7(@babel/plugin-syntax-jsx@7.28.6(@babel/core@7.29.0))(@babel/plugin-syntax-typescript@7.28.6(@babel/core@7.29.0))(@electric-sql/pglite@0.3.15)(@parcel/watcher@2.5.6)(@types/node@25.5.0)(@vue/compiler-sfc@3.5.35)(cac@6.7.14)(db0@0.3.4(@electric-sql/pglite@0.3.15)(mysql2@3.15.3))(eslint@9.39.4(jiti@2.7.0))(ioredis@5.10.1)(lightningcss@1.32.0)(magicast@0.5.2)(mysql2@3.15.3)(optionator@0.9.4)(pinia@3.0.4(typescript@5.9.3)(vue@3.5.35(typescript@5.9.3)))(rollup-plugin-visualizer@7.0.1(rollup@4.61.1))(rollup@4.61.1)(sass@1.99.0)(terser@5.46.1)(tsx@4.21.0)(typescript@5.9.3)(vite@7.3.5(@types/node@25.5.0)(jiti@2.7.0)(lightningcss@1.32.0)(sass@1.99.0)(terser@5.46.1)(tsx@4.21.0)(yaml@2.8.3))(vue-tsc@3.3.1(typescript@5.9.3))(xml2js@0.6.2)(yaml@2.8.3))(vue@3.5.35(typescript@5.9.3))
       '@nextmoe/edit-ui-vue':
         specifier: 0.1.2
-        version: 0.1.2(@kungal/ui-vue@2.29.0(change-case@5.4.4)(fuse.js@7.4.1)(sortablejs@1.15.7)(vue@3.5.35(typescript@5.9.3)))(change-case@5.4.4)(focus-trap@8.2.1)(fuse.js@7.4.1)(vue@3.5.35(typescript@5.9.3))
+        version: 0.1.2(@kungal/ui-vue@2.31.1(change-case@5.4.4)(fuse.js@7.4.1)(sortablejs@1.15.7)(vue@3.5.35(typescript@5.9.3)))(change-case@5.4.4)(focus-trap@8.2.1)(fuse.js@7.4.1)(vue@3.5.35(typescript@5.9.3))
       '@prosemirror-adapter/vue':
         specifier: ^0.4.6
         version: 0.4.6(vue@3.5.35(typescript@5.9.3))
@@ -1387,22 +1387,22 @@ packages:
       codemirror:
         optional: true
 
-  '@kungal/ui-core@2.29.0':
-    resolution: {integrity: sha512-dH6SXIZtQSLpY1fvcEzVri3ktGi1s55BIvFlWTaOhFFaT1J7vhfLCTlz7ZK6kPMwohd6APTkhPwCt//lwUW4WQ==}
+  '@kungal/ui-core@2.31.1':
+    resolution: {integrity: sha512-xJyx6NVYN1P6ZJS8h5iyDk2kN4WyNngcXvB3B/XcvzgK0niMQgOm/67yJ/EWfnCeiKlJ4IlWXVHO6/15JNpV5w==}
 
-  '@kungal/ui-nuxt@2.29.0':
-    resolution: {integrity: sha512-k8oF4Bu4IejplwTU/tq7Z/CWqCnGzJT6GEZlPs7iM/QleZEdwE/edZ7joTE8TEtrLxRuGNENTpVWaBqYFuUAfg==}
+  '@kungal/ui-nuxt@2.31.1':
+    resolution: {integrity: sha512-X1omDLUwsDsjmqpfuAHXbs7VW/eTVm43DIvaM7F/I7Md8G8+pFMvFLXujtuj0STd25R2rx26K+uK15Jz10bJxw==}
     peerDependencies:
       nuxt: ^4.0.0
       vue: ^3.5.0
 
-  '@kungal/ui-tokens@2.29.0':
-    resolution: {integrity: sha512-quIwXMozY6q5et2nAC2Hg4LLgmmDxXvsnqjW68vJakRqMJWE5SR1YDRZSBFacEKv7PM0cm7H+w2KB0R42EbW4w==}
+  '@kungal/ui-tokens@2.31.1':
+    resolution: {integrity: sha512-W/FtldmHjJr6cMC6cNfZwEJeHQHy2IGw/PaDs9Ffj6EBAlzm4ZleLKM9UhEfB7JG9Fxh8ZHYJsz1iSpGrTB5tw==}
     peerDependencies:
       tailwindcss: ^4.0.0
 
-  '@kungal/ui-vue@2.29.0':
-    resolution: {integrity: sha512-1+na+eDTKsGWyTbOQyAwMB+8MzS8mIhBSajk01vRstBfwWqg3Livtw1qcU1b6SB1vhAeggR95Rf7P+fNrEdADg==}
+  '@kungal/ui-vue@2.31.1':
+    resolution: {integrity: sha512-StuR5SIWf326c2tHPTqoRcxBgJEyE2CKioTRsy4KtmSaNQmendiiRs8UZ6jO3rzLM7FfZHV6ADyclW27xlEf0g==}
     peerDependencies:
       vue: ^3.5.0
 
@@ -7837,11 +7837,11 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@kungal/editor-nuxt@0.38.2(322dcaca300a7f3feb22d14de659fb2b)':
+  '@kungal/editor-nuxt@0.38.2(7db56c70c22b60a88ecdc322fa76791c)':
     dependencies:
       '@kungal/editor-core': 0.38.2(@codemirror/commands@6.10.3)(@codemirror/language-data@6.5.2)(@codemirror/language@6.12.2)(@codemirror/state@6.6.0)(@codemirror/view@6.40.0)(@lezer/highlight@1.2.3)(@milkdown/kit@7.21.2(@codemirror/language@6.12.2)(@codemirror/state@6.6.0)(@codemirror/view@6.40.0)(typescript@5.9.3))(@milkdown/prose@7.21.2)(codemirror@6.0.2)(katex@0.16.40)
       '@kungal/editor-vue': 0.38.2(@codemirror/commands@6.10.3)(@codemirror/lang-markdown@6.5.0)(@codemirror/language-data@6.5.2)(@codemirror/language@6.12.2)(@codemirror/state@6.6.0)(@codemirror/view@6.40.0)(@lezer/highlight@1.2.3)(@milkdown/kit@7.21.2(@codemirror/language@6.12.2)(@codemirror/state@6.6.0)(@codemirror/view@6.40.0)(typescript@5.9.3))(@milkdown/prose@7.21.2)(@milkdown/vue@7.21.2(@codemirror/language@6.12.2)(@codemirror/state@6.6.0)(@codemirror/view@6.40.0)(prosemirror-model@1.25.3)(prosemirror-state@1.4.4)(prosemirror-view@1.41.7)(typescript@5.9.3)(vue@3.5.35(typescript@5.9.3)))(codemirror@6.0.2)(katex@0.16.40)(vue@3.5.35(typescript@5.9.3))
-      '@kungal/ui-vue': 2.29.0(change-case@5.4.4)(fuse.js@7.4.1)(sortablejs@1.15.7)(vue@3.5.35(typescript@5.9.3))
+      '@kungal/ui-vue': 2.31.1(change-case@5.4.4)(fuse.js@7.4.1)(sortablejs@1.15.7)(vue@3.5.35(typescript@5.9.3))
       '@milkdown/kit': 7.21.2(@codemirror/language@6.12.2)(@codemirror/state@6.6.0)(@codemirror/view@6.40.0)(typescript@5.9.3)
       nuxt: 4.4.7(@babel/plugin-syntax-jsx@7.28.6(@babel/core@7.29.0))(@babel/plugin-syntax-typescript@7.28.6(@babel/core@7.29.0))(@electric-sql/pglite@0.3.15)(@parcel/watcher@2.5.6)(@types/node@25.5.0)(@vue/compiler-sfc@3.5.35)(cac@6.7.14)(db0@0.3.4(@electric-sql/pglite@0.3.15)(mysql2@3.15.3))(eslint@9.39.4(jiti@2.7.0))(ioredis@5.10.1)(lightningcss@1.32.0)(magicast@0.5.2)(mysql2@3.15.3)(optionator@0.9.4)(pinia@3.0.4(typescript@5.9.3)(vue@3.5.35(typescript@5.9.3)))(rollup-plugin-visualizer@7.0.1(rollup@4.61.1))(rollup@4.61.1)(sass@1.99.0)(terser@5.46.1)(tsx@4.21.0)(typescript@5.9.3)(vite@7.3.5(@types/node@25.5.0)(jiti@2.7.0)(lightningcss@1.32.0)(sass@1.99.0)(terser@5.46.1)(tsx@4.21.0)(yaml@2.8.3))(vue-tsc@3.3.1(typescript@5.9.3))(xml2js@0.6.2)(yaml@2.8.3)
       vue: 3.5.35(typescript@5.9.3)
@@ -7880,15 +7880,15 @@ snapshots:
       - katex
       - supports-color
 
-  '@kungal/ui-core@2.29.0':
+  '@kungal/ui-core@2.31.1':
     dependencies:
       clsx: 2.1.1
       tailwind-merge: 3.5.0
 
-  '@kungal/ui-nuxt@2.29.0(81015acf35160c0d483fda45966fa8ea)':
+  '@kungal/ui-nuxt@2.31.1(81015acf35160c0d483fda45966fa8ea)':
     dependencies:
-      '@kungal/ui-tokens': 2.29.0(tailwindcss@4.2.2)
-      '@kungal/ui-vue': 2.29.0(change-case@5.4.4)(fuse.js@7.4.1)(sortablejs@1.15.7)(vue@3.5.35(typescript@5.9.3))
+      '@kungal/ui-tokens': 2.31.1(tailwindcss@4.2.2)
+      '@kungal/ui-vue': 2.31.1(change-case@5.4.4)(fuse.js@7.4.1)(sortablejs@1.15.7)(vue@3.5.35(typescript@5.9.3))
       '@nuxt/icon': 2.2.3(magicast@0.5.2)(vite@7.3.5(@types/node@25.5.0)(jiti@2.7.0)(lightningcss@1.32.0)(sass@1.99.0)(terser@5.46.1)(tsx@4.21.0)(yaml@2.8.3))(vue@3.5.35(typescript@5.9.3))
       '@nuxt/image': 2.0.0(db0@0.3.4(@electric-sql/pglite@0.3.15)(mysql2@3.15.3))(ioredis@5.10.1)(magicast@0.5.2)
       '@nuxt/kit': 4.4.8(magicast@0.5.2)
@@ -7929,14 +7929,14 @@ snapshots:
       - uploadthing
       - vite
 
-  '@kungal/ui-tokens@2.29.0(tailwindcss@4.2.2)':
+  '@kungal/ui-tokens@2.31.1(tailwindcss@4.2.2)':
     dependencies:
       tailwindcss: 4.2.2
 
-  '@kungal/ui-vue@2.29.0(change-case@5.4.4)(fuse.js@7.4.1)(sortablejs@1.15.7)(vue@3.5.35(typescript@5.9.3))':
+  '@kungal/ui-vue@2.31.1(change-case@5.4.4)(fuse.js@7.4.1)(sortablejs@1.15.7)(vue@3.5.35(typescript@5.9.3))':
     dependencies:
       '@floating-ui/vue': 1.1.11(vue@3.5.35(typescript@5.9.3))
-      '@kungal/ui-core': 2.29.0
+      '@kungal/ui-core': 2.31.1
       '@vueuse/core': 14.3.0(vue@3.5.35(typescript@5.9.3))
       '@vueuse/integrations': 14.3.0(change-case@5.4.4)(focus-trap@8.2.1)(fuse.js@7.4.1)(sortablejs@1.15.7)(vue@3.5.35(typescript@5.9.3))
       date-fns: 4.1.0
@@ -8390,11 +8390,11 @@ snapshots:
     dependencies:
       diff: 9.0.0
 
-  '@nextmoe/edit-ui-nuxt@0.1.2(@kungal/ui-vue@2.29.0(change-case@5.4.4)(fuse.js@7.4.1)(sortablejs@1.15.7)(vue@3.5.35(typescript@5.9.3)))(change-case@5.4.4)(focus-trap@8.2.1)(fuse.js@7.4.1)(magicast@0.5.2)(nuxt@4.4.7(@babel/plugin-syntax-jsx@7.28.6(@babel/core@7.29.0))(@babel/plugin-syntax-typescript@7.28.6(@babel/core@7.29.0))(@electric-sql/pglite@0.3.15)(@parcel/watcher@2.5.6)(@types/node@25.5.0)(@vue/compiler-sfc@3.5.35)(cac@6.7.14)(db0@0.3.4(@electric-sql/pglite@0.3.15)(mysql2@3.15.3))(eslint@9.39.4(jiti@2.7.0))(ioredis@5.10.1)(lightningcss@1.32.0)(magicast@0.5.2)(mysql2@3.15.3)(optionator@0.9.4)(pinia@3.0.4(typescript@5.9.3)(vue@3.5.35(typescript@5.9.3)))(rollup-plugin-visualizer@7.0.1(rollup@4.61.1))(rollup@4.61.1)(sass@1.99.0)(terser@5.46.1)(tsx@4.21.0)(typescript@5.9.3)(vite@7.3.5(@types/node@25.5.0)(jiti@2.7.0)(lightningcss@1.32.0)(sass@1.99.0)(terser@5.46.1)(tsx@4.21.0)(yaml@2.8.3))(vue-tsc@3.3.1(typescript@5.9.3))(xml2js@0.6.2)(yaml@2.8.3))(vue@3.5.35(typescript@5.9.3))':
+  '@nextmoe/edit-ui-nuxt@0.1.2(@kungal/ui-vue@2.31.1(change-case@5.4.4)(fuse.js@7.4.1)(sortablejs@1.15.7)(vue@3.5.35(typescript@5.9.3)))(change-case@5.4.4)(focus-trap@8.2.1)(fuse.js@7.4.1)(magicast@0.5.2)(nuxt@4.4.7(@babel/plugin-syntax-jsx@7.28.6(@babel/core@7.29.0))(@babel/plugin-syntax-typescript@7.28.6(@babel/core@7.29.0))(@electric-sql/pglite@0.3.15)(@parcel/watcher@2.5.6)(@types/node@25.5.0)(@vue/compiler-sfc@3.5.35)(cac@6.7.14)(db0@0.3.4(@electric-sql/pglite@0.3.15)(mysql2@3.15.3))(eslint@9.39.4(jiti@2.7.0))(ioredis@5.10.1)(lightningcss@1.32.0)(magicast@0.5.2)(mysql2@3.15.3)(optionator@0.9.4)(pinia@3.0.4(typescript@5.9.3)(vue@3.5.35(typescript@5.9.3)))(rollup-plugin-visualizer@7.0.1(rollup@4.61.1))(rollup@4.61.1)(sass@1.99.0)(terser@5.46.1)(tsx@4.21.0)(typescript@5.9.3)(vite@7.3.5(@types/node@25.5.0)(jiti@2.7.0)(lightningcss@1.32.0)(sass@1.99.0)(terser@5.46.1)(tsx@4.21.0)(yaml@2.8.3))(vue-tsc@3.3.1(typescript@5.9.3))(xml2js@0.6.2)(yaml@2.8.3))(vue@3.5.35(typescript@5.9.3))':
     dependencies:
-      '@kungal/ui-vue': 2.29.0(change-case@5.4.4)(fuse.js@7.4.1)(sortablejs@1.15.7)(vue@3.5.35(typescript@5.9.3))
+      '@kungal/ui-vue': 2.31.1(change-case@5.4.4)(fuse.js@7.4.1)(sortablejs@1.15.7)(vue@3.5.35(typescript@5.9.3))
       '@nextmoe/edit-ui-core': 0.1.2
-      '@nextmoe/edit-ui-vue': 0.1.2(@kungal/ui-vue@2.29.0(change-case@5.4.4)(fuse.js@7.4.1)(sortablejs@1.15.7)(vue@3.5.35(typescript@5.9.3)))(change-case@5.4.4)(focus-trap@8.2.1)(fuse.js@7.4.1)(vue@3.5.35(typescript@5.9.3))
+      '@nextmoe/edit-ui-vue': 0.1.2(@kungal/ui-vue@2.31.1(change-case@5.4.4)(fuse.js@7.4.1)(sortablejs@1.15.7)(vue@3.5.35(typescript@5.9.3)))(change-case@5.4.4)(focus-trap@8.2.1)(fuse.js@7.4.1)(vue@3.5.35(typescript@5.9.3))
       '@nuxt/kit': 4.4.8(magicast@0.5.2)
       nuxt: 4.4.7(@babel/plugin-syntax-jsx@7.28.6(@babel/core@7.29.0))(@babel/plugin-syntax-typescript@7.28.6(@babel/core@7.29.0))(@electric-sql/pglite@0.3.15)(@parcel/watcher@2.5.6)(@types/node@25.5.0)(@vue/compiler-sfc@3.5.35)(cac@6.7.14)(db0@0.3.4(@electric-sql/pglite@0.3.15)(mysql2@3.15.3))(eslint@9.39.4(jiti@2.7.0))(ioredis@5.10.1)(lightningcss@1.32.0)(magicast@0.5.2)(mysql2@3.15.3)(optionator@0.9.4)(pinia@3.0.4(typescript@5.9.3)(vue@3.5.35(typescript@5.9.3)))(rollup-plugin-visualizer@7.0.1(rollup@4.61.1))(rollup@4.61.1)(sass@1.99.0)(terser@5.46.1)(tsx@4.21.0)(typescript@5.9.3)(vite@7.3.5(@types/node@25.5.0)(jiti@2.7.0)(lightningcss@1.32.0)(sass@1.99.0)(terser@5.46.1)(tsx@4.21.0)(yaml@2.8.3))(vue-tsc@3.3.1(typescript@5.9.3))(xml2js@0.6.2)(yaml@2.8.3)
       vue: 3.5.35(typescript@5.9.3)
@@ -8412,9 +8412,9 @@ snapshots:
       - qrcode
       - universal-cookie
 
-  '@nextmoe/edit-ui-vue@0.1.2(@kungal/ui-vue@2.29.0(change-case@5.4.4)(fuse.js@7.4.1)(sortablejs@1.15.7)(vue@3.5.35(typescript@5.9.3)))(change-case@5.4.4)(focus-trap@8.2.1)(fuse.js@7.4.1)(vue@3.5.35(typescript@5.9.3))':
+  '@nextmoe/edit-ui-vue@0.1.2(@kungal/ui-vue@2.31.1(change-case@5.4.4)(fuse.js@7.4.1)(sortablejs@1.15.7)(vue@3.5.35(typescript@5.9.3)))(change-case@5.4.4)(focus-trap@8.2.1)(fuse.js@7.4.1)(vue@3.5.35(typescript@5.9.3))':
     dependencies:
-      '@kungal/ui-vue': 2.29.0(change-case@5.4.4)(fuse.js@7.4.1)(sortablejs@1.15.7)(vue@3.5.35(typescript@5.9.3))
+      '@kungal/ui-vue': 2.31.1(change-case@5.4.4)(fuse.js@7.4.1)(sortablejs@1.15.7)(vue@3.5.35(typescript@5.9.3))
       '@nextmoe/edit-ui-core': 0.1.2
       '@vueuse/core': 14.3.0(vue@3.5.35(typescript@5.9.3))
       '@vueuse/integrations': 14.3.0(change-case@5.4.4)(focus-trap@8.2.1)(fuse.js@7.4.1)(sortablejs@1.15.7)(vue@3.5.35(typescript@5.9.3))
