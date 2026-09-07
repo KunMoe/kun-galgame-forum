@@ -11,7 +11,7 @@ type SearchRequest struct {
 	Keywords string `query:"keywords" validate:"required,max=107"`
 	Type     string `query:"type" validate:"required,oneof=topic galgame resource user reply comment"`
 	Page     int    `query:"page" validate:"min=1"`
-	Limit    int    `query:"limit" validate:"min=1,max=12"`
+	Limit    int    `query:"limit" validate:"min=1,max=24"`
 	GalgameFilter
 }
 

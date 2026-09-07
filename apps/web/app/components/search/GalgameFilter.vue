@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useRouteQuery } from '@vueuse/router'
 import { SEARCH_GALGAME_SORTS, TAG_FILTER_MAX } from './items'
 
 withDefaults(defineProps<{ total?: number; pending?: boolean }>(), {
@@ -16,6 +17,15 @@ const {
 } = useSearchGalgameFilters()
 
 const entityNames = useEntityNames()
+
+// useRouteQuery batches every set made in the same tick into one replace, so
+// dropping the page here lands in the same navigation as the filter itself —
+// the list sees one change and fires one request.
+const page = useRouteQuery('page', 1, { mode: 'replace', transform: Number })
+
+watch([companyId, tagIds, releasedFrom, releasedTo, sort], () => {
+  page.value = 1
+})
 
 const yearRangeLabel = computed(() => {
   if (releasedFrom.value && releasedTo.value) {

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useRouteQuery } from '@vueuse/router'
 import { SEARCH_ENTITY_FAMILIES } from './items'
 
 const props = defineProps<{
@@ -8,7 +9,23 @@ const props = defineProps<{
 const ENTITY_LIMIT_ALL = 8
 const ENTITY_LIMIT_ONE = 24
 
-const family = useTabQuery('all', 'family')
+const route = useRoute()
+const router = useRouter()
+
+const family = computed(() => {
+  const value = route.query.family
+  return (Array.isArray(value) ? value[0] : value) || 'all'
+})
+
+// The page goes out in the same navigation the family does. Resetting it in a
+// watcher afterwards is a second replace, and the load between the two asks
+// the new family for the old family's page.
+const setFamily = (value: string) => {
+  const { family: _family, page: _page, ...rest } = route.query
+  router.replace({
+    query: value === 'all' ? rest : { ...rest, family: value }
+  })
+}
 
 const familyItems = computed(() => [
   { value: 'all', textValue: '全部', icon: 'lucide:layout-grid' },
@@ -18,7 +35,7 @@ const familyItems = computed(() => [
 const result = ref<SearchEntityResult | null>(null)
 const pending = ref(!!props.keywords)
 const failed = ref(false)
-const page = ref(1)
+const page = useRouteQuery('page', 1, { mode: 'replace', transform: Number })
 const top = useTemplateRef<HTMLElement>('top')
 
 const isAll = computed(() => family.value === 'all')
@@ -47,20 +64,31 @@ const load = async () => {
   }
   result.value = data
   failed.value = !data
+
+  // See SearchList: a stale ?page= from a shared link has to land somewhere the
+  // reader can act on. 全部 has no paginator at all, so its only valid page is 1.
+  const lastPage = isAll.value
+    ? 1
+    : Math.max(1, Math.ceil((data?.groups?.[0]?.total ?? 0) / ENTITY_LIMIT_ONE))
+  if (page.value > lastPage) {
+    page.value = lastPage
+    return
+  }
+
   pending.value = false
 }
 
-watch(page, async () => {
-  await load()
-  top.value?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+watch([() => props.keywords, family], () => {
+  result.value = null
 })
 
 watch(
-  [() => props.keywords, family],
-  () => {
-    page.value = 1
-    result.value = null
-    load()
+  [() => props.keywords, family, page],
+  async (_now, before) => {
+    await load()
+    if (before && before[2] !== page.value) {
+      top.value?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
   },
   { immediate: true }
 )
@@ -88,7 +116,7 @@ const totalPage = computed(() =>
       variant="pills"
       size="sm"
       :scrollable="true"
-      @update:model-value="(value) => (family = value)"
+      @update:model-value="setFamily"
     />
 
     <SearchSkeleton v-if="pending && !groups.length" shape="entity" />
@@ -103,7 +131,7 @@ const totalPage = computed(() =>
             :keywords="keywords"
             :show-header="isAll"
             :show-cap="isAll"
-            @open="(value) => (family = value)"
+            @open="setFamily"
           />
         </div>
       </KunLoading>

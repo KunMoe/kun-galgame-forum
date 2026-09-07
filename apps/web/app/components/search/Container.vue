@@ -25,6 +25,7 @@ const setKeywords = (value: string) => {
     delete query.keywords
   }
   delete query.family
+  delete query.page
   router.replace({ query })
 }
 
@@ -82,10 +83,12 @@ watch(
 
 // A lane filter belongs to one lane: 资料库's family and Galgame's own filters
 // are meaningless on any other tab, and carrying them across reads as a filter
-// the reader cannot see and cannot clear.
+// the reader cannot see and cannot clear. page goes with them — every lane has
+// its own total, so page 7 of 回复 is past the end of 用户.
 const LANE_FILTER_KEYS = new Set<string>([
   ...SEARCH_GALGAME_FILTER_KEYS,
   'family',
+  'page',
   'type'
 ])
 
