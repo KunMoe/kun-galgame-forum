@@ -7,6 +7,8 @@ export interface ReviewItemView {
   severity?: number
   classifier_score?: number
   report_weight_sum?: number
+  subject_reach?: number
+  context_note?: string
   priority: number
   status: number
   claimed_by?: number

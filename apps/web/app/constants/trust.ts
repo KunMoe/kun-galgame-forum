@@ -16,7 +16,8 @@ export const TRUST_REVIEW_SOURCE: Record<number, string> = {
   2: 'AI 图片',
   3: '社区转入',
   4: '分级纠错',
-  5: '人工新建'
+  5: '人工新建',
+  6: 'AI 抽样校准'
 }
 
 export const TRUST_ACTIONS = [

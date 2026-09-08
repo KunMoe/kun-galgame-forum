@@ -217,9 +217,53 @@ const actionOptions = TRUST_ACTIONS.map((a) => ({
         </div>
 
         <div class="space-y-2">
+          <div
+            class="text-default-400 flex flex-wrap items-center gap-x-3 text-xs"
+          >
+            <span>
+              来源：{{
+                TRUST_REVIEW_SOURCE[detail.item.source] ?? detail.item.source
+              }}
+            </span>
+            <span v-if="detail.item.severity != null">
+              严重度 {{ detail.item.severity }}
+            </span>
+            <span v-if="detail.item.classifier_score != null">
+              分类器 {{ detail.item.classifier_score.toFixed(2) }}
+            </span>
+            <span v-if="detail.item.subject_reach != null">
+              已触达 {{ detail.item.subject_reach }}
+            </span>
+            <span v-if="detail.item.report_weight_sum">
+              举报权重 {{ detail.item.report_weight_sum.toFixed(1) }}
+            </span>
+          </div>
+
+          <!-- 420 of the 430 review items on prod are ai_text / community_forward:
+               they carry no trust_report rows at all and put their evidence in
+               context_note. Rendering only `reports` showed 「举报记录（0）」 and
+               nothing else for 97.7% of the queue. -->
+          <div v-if="detail.item.context_note" class="space-y-1">
+            <span class="text-default-600 text-sm font-medium">判定依据</span>
+            <p
+              class="bg-default-100 text-default-700 rounded-lg p-2 text-sm whitespace-pre-wrap"
+            >
+              {{ detail.item.context_note }}
+            </p>
+          </div>
+        </div>
+
+        <div class="space-y-2">
           <span class="text-default-600 text-sm font-medium">
             举报记录（{{ detail.reports.length }}）
           </span>
+          <p v-if="!detail.reports.length" class="text-default-400 text-sm">
+            该条目不是由用户举报产生的{{
+              detail.item.context_note
+                ? '，依据见上方'
+                : '，且上游没有给出依据摘要'
+            }}
+          </p>
           <div
             v-for="r in detail.reports"
             :key="r.id"
