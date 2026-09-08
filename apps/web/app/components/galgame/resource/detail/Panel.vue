@@ -2,7 +2,8 @@
 import {
   KUN_GALGAME_RESOURCE_LANGUAGE_MAP,
   KUN_GALGAME_RESOURCE_PLATFORM_MAP,
-  KUN_GALGAME_RESOURCE_TYPE_MAP
+  KUN_GALGAME_RESOURCE_TYPE_MAP,
+  KUN_USER_TEXT_CHIP_CLASS
 } from '~/constants/galgame'
 import {
   GALGAME_RESOURCE_TYPE_ICON_MAP,
@@ -59,7 +60,7 @@ const galgameTitle = props.galgame.name
         />
         {{ resourcePlatformLabel }}
       </KunChip>
-      <KunChip color="warning">
+      <KunChip color="warning" :class-name="KUN_USER_TEXT_CHIP_CLASS">
         <KunIcon name="lucide:database" />
         {{ resource.size }}
       </KunChip>

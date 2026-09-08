@@ -6,7 +6,8 @@ import {
 import {
   KUN_GALGAME_RESOURCE_TYPE_MAP,
   KUN_GALGAME_RESOURCE_LANGUAGE_MAP,
-  KUN_GALGAME_RESOURCE_PLATFORM_MAP
+  KUN_GALGAME_RESOURCE_PLATFORM_MAP,
+  KUN_USER_TEXT_CHIP_CLASS
 } from '~/constants/galgame'
 
 const props = defineProps<{
@@ -147,7 +148,7 @@ const handleMarkValid = async () => {
         <KunIcon :name="GALGAME_RESOURCE_TYPE_ICON_MAP[resource.type]" />
         {{ KUN_GALGAME_RESOURCE_TYPE_MAP[resource.type] }}
       </KunChip>
-      <KunChip color="warning" variant="flat">
+      <KunChip color="warning" variant="flat" :class-name="KUN_USER_TEXT_CHIP_CLASS">
         <KunIcon name="lucide:database" />
         {{ resource.size }}
       </KunChip>

@@ -2,7 +2,8 @@
 import {
   KUN_GALGAME_RESOURCE_TYPE_MAP,
   KUN_GALGAME_RESOURCE_LANGUAGE_MAP,
-  KUN_GALGAME_RESOURCE_PLATFORM_MAP
+  KUN_GALGAME_RESOURCE_PLATFORM_MAP,
+  KUN_USER_TEXT_CHIP_CLASS
 } from '~/constants/galgame'
 
 const props = defineProps<{ activity: ActivityItem }>()
@@ -75,7 +76,7 @@ const galgameLink = computed(() =>
               resource.language
             }}
           </KunChip>
-          <KunChip v-if="resource.size" size="sm" variant="flat">
+          <KunChip v-if="resource.size" size="sm" variant="flat" :class-name="KUN_USER_TEXT_CHIP_CLASS">
             {{ resource.size }}
           </KunChip>
         </div>

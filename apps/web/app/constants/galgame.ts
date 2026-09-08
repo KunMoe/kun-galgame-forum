@@ -183,3 +183,14 @@ export const KUN_GALGAME_CONTENT_LIMIT_MAP: Record<string, string> = {
   sfw: '页面内容不含有 R18 内容',
   nsfw: '页面内容可能含有 R18 内容'
 }
+
+// KunChip's base is `whitespace-nowrap` with the flex default `min-width: auto`,
+// so a chip holding text a user typed can neither wrap nor shrink. 「资源体积」 is
+// free text (`max=107`) and uploaders write whole titles into it: on /galgame/60
+// 「命运石之门5部合集【PC+安卓直装 民汉和官中 附通关存档】32.8gb」 measured 398px
+// inside a 260px column at a 390px viewport, and was the *only* reason the whole
+// document scrolled sideways (scrollWidth 456 = that chip's right edge). Chip
+// merges className through tailwind-merge, so `whitespace-normal` replaces the
+// base rather than fighting it.
+export const KUN_USER_TEXT_CHIP_CLASS =
+  'min-w-0 max-w-full whitespace-normal break-words'

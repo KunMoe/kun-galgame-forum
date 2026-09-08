@@ -7,7 +7,8 @@ import {
   KUN_GALGAME_RESOURCE_TYPE_MAP,
   KUN_GALGAME_RESOURCE_LANGUAGE_MAP,
   KUN_GALGAME_RESOURCE_PLATFORM_MAP,
-  KUN_GALGAME_CONTENT_LIMIT_MAP
+  KUN_GALGAME_CONTENT_LIMIT_MAP,
+  KUN_USER_TEXT_CHIP_CLASS
 } from '~/constants/galgame'
 
 const props = defineProps<{
@@ -142,7 +143,9 @@ const hasMoreCovers = computed(() => (props.galgame.covers?.length ?? 0) > 1)
       >
         <div class="flex flex-wrap gap-2">
           <template v-for="(alias, index) in galgameAliasArray" :key="index">
-            <KunChip v-if="alias">{{ alias }}</KunChip>
+            <KunChip v-if="alias" :class-name="KUN_USER_TEXT_CHIP_CLASS">{{
+              alias
+            }}</KunChip>
           </template>
         </div>
       </KunScrollShadow>
