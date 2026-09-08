@@ -40,8 +40,12 @@ const buildAuthorizeUrl = async (
     // folder:read / folder:write are the one scoped family on /v2/me: the
     // collection face reads and writes the user's own folders, and a token
     // minted without them is 403 SCOPE_REQUIRED on every collection call.
-    // The grant is fixed at authorization and a refresh cannot widen it, so a
-    // session from before this line has to log in again.
+    // A scope added here does not reach sessions that already exist: a refresh
+    // mints from the grant recorded at authorization, not from this list. That
+    // record is a row infra can widen in place — on 2026-09-08 one UPDATE over
+    // sessions.scope repaired 95,286 live sessions inside the 15-minute access
+    // token TTL, nobody logged out — so a narrow grant is a message to send
+    // infra, not a forced re-login for everyone.
     scope:
       'openid profile catalog:read catalog:edit playtime:read playtime:write folder:read folder:write',
     state,

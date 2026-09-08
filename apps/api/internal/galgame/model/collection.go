@@ -43,4 +43,3 @@ type GalgameCollectionItem struct {
 }
 
 func (GalgameCollectionItem) TableName() string { return "galgame_collection_item" }
-

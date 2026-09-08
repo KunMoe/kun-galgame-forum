@@ -31,9 +31,12 @@ const previewCoversPerCollection = 4
 //
 // The token is the user's OAuth access token and must carry folder:read /
 // folder:write. A session minted before those scopes were requested is 403
-// SCOPE_REQUIRED upstream and surfaces here as ErrReauthRequired (code 235) —
-// a refresh cannot widen a grant, so the only cure is signing in again, and
-// that is the one message the reader can act on.
+// SCOPE_REQUIRED upstream and surfaces here as ErrReauthRequired (code 235):
+// a refresh mints from the grant recorded at authorization, so signing in again
+// is the one cure the reader holds themselves, and the one message worth
+// showing them. Infra can also widen the grant rows in place for everyone at
+// once, which is faster and invisible — but that is a message to send, not
+// something this site can do.
 type CollectionService struct {
 	collectionRepo *repository.GalgameCollectionRepository
 	galgameService *GalgameService

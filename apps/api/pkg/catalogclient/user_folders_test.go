@@ -250,8 +250,8 @@ func TestFolderPreviewFallsBackToTheAppKeyWithoutAToken(t *testing.T) {
 }
 
 // A grant that never asked for folder:write comes back 403 SCOPE_REQUIRED, and
-// the only cure is signing in again — a refresh cannot widen a fixed grant. It
-// has to reach the caller as its own error, not as a generic 403.
+// the caller's own cure is signing in again — a refresh mints from the grant as
+// recorded. It has to reach the caller as its own error, not a generic 403.
 func TestFolderWriteMapsScopeRefusalToItsOwnError(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusForbidden)
