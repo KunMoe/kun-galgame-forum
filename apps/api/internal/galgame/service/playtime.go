@@ -46,8 +46,13 @@ func (s *GalgameService) hydrateMyPlaytime(ctx context.Context, gid int, accessT
 	if err != nil {
 		// A token minted before playtime joined the authorize scope is the
 		// ordinary case here, not a fault: the detail page just shows no
-		// personal row until the user signs in again.
-		if !errors.Is(err, catalogclient.ErrInsufficientScope) {
+		// personal row until the user signs in again. It used to log nothing at
+		// all, and that is how the 2026-09-08 folder-scope outage stayed
+		// invisible on the sibling call sites for an hour — so it is counted now
+		// rather than swallowed.
+		if errors.Is(err, catalogclient.ErrInsufficientScope) {
+			warnPlaytimeScope.warn("galgame detail: own playtime unavailable, token lacks playtime:read", "gid", gid)
+		} else {
 			slog.Warn("galgame detail: own playtime unavailable", "gid", gid, "error", err)
 		}
 		return nil
