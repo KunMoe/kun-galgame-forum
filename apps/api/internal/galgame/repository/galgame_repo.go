@@ -110,7 +110,14 @@ func (r *GalgameRepository) MirrorPendingIDs(limit int, skip []int) []int {
 	r.db.Table("galgame").
 		Where("content_limit IS NULL OR release_date_synced_at IS NULL").
 		Where("id <> ALL(?::int[])", intArrayLit(skip)).
-		Order("id").Limit(limit).Pluck("id", &ids)
+		// A row missing a value goes before a row that only needs re-confirming.
+		// Both are unconfirmed, but only the first one is visibly wrong: a NULL
+		// release_date is a row in the arbitrary tail of the date sort, and a
+		// NULL content_limit is a row every SFW reader is shown. Ordering by id
+		// alone spreads those over the whole sweep instead of clearing them in
+		// its first passes.
+		Order("(release_date IS NOT NULL AND content_limit IS NOT NULL), id").
+		Limit(limit).Pluck("id", &ids)
 	return ids
 }
 
