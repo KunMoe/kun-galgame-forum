@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { KunTabItem } from '@kungal/ui-vue'
+import { useElementSize, useWindowSize } from '@vueuse/core'
 
 const props = defineProps<{
   galgame: GalgameDetail
@@ -34,6 +35,22 @@ watch(activeTab, (tab) => {
   router.replace({ query })
 })
 const hasPatchResource = ref(false)
+
+// `position: sticky; top: 5rem` on an element taller than the viewport freezes
+// it at the top and never lets its bottom into view. Measured on an 820x1180
+// tablet: the sidebar was 1631px and held at top=80 / bottom=1711 from scrollY
+// 1000 all the way to 3400, so its last 531px only appeared once the 4109px
+// content column had run out — 「往下滑动想看左侧栏目, 但是必须得等到右侧资源栏
+// 划完」. It therefore sticks only while it fits. SSR has no measurement and
+// renders it unstuck, which is the safe direction.
+const sidebarRef = ref<HTMLElement | null>(null)
+const { height: sidebarHeight } = useElementSize(sidebarRef)
+const { height: viewportHeight } = useWindowSize()
+const canStickSidebar = computed(
+  () =>
+    sidebarHeight.value > 0 &&
+    sidebarHeight.value <= viewportHeight.value - 96
+)
 
 const resourceLoading = ref(false)
 const patchLoading = ref(false)
@@ -174,7 +191,13 @@ const hasContributorCard = computed(
       </div>
 
       <div
-        class="order-2 flex min-w-0 flex-col gap-3 md:sticky md:top-20 md:col-span-1 md:col-start-1 md:row-start-1 md:self-start"
+        ref="sidebarRef"
+        :class="
+          cn(
+            'order-2 flex min-w-0 flex-col gap-3 md:col-span-1 md:col-start-1 md:row-start-1 md:self-start',
+            canStickSidebar && 'md:sticky md:top-20'
+          )
+        "
       >
         <div v-if="galgame.tag?.length" class="hidden md:block">
           <GalgameTag :tags="galgame.tag" variant="desktop" />
