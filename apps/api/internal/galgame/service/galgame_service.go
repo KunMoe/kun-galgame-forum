@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	stderrors "errors"
 	"log/slog"
 	"strconv"
 
@@ -97,8 +98,12 @@ func (s *GalgameService) ToggleLike(
 }
 
 // The favourited half is every work in every folder the person owns, read from
-// the catalog with their own token. It is one call per folder — p50 is five —
-// and the browser asks for it once per session. A session with no token, or
+// the catalog with their own token. It is one call per folder, and the browser
+// asks for it once per session. This comment claimed "p50 is five" until the
+// distribution was actually measured on 2026-09-08: p50 is 1, p90 is 1, p99 is
+// 3, max 27. The 1+N here is not worth an upstream batch route — the folder
+// item face took 39 calls in the half hour that the list face took 1,221.
+// A session with no token, or
 // one minted before the folder scopes, gets its likes and an empty favourite
 // list rather than an error: the marks go missing, the page does not.
 func (s *GalgameService) GetMyInteractions(ctx context.Context, userID int, token string) dto.MyGalgameInteractions {
@@ -111,7 +116,11 @@ func (s *GalgameService) GetMyInteractions(ctx context.Context, userID int, toke
 	}
 	folders, err := s.catalog.MyFolders(ctx, token)
 	if err != nil {
-		slog.Warn("galgame: my folders unreadable", "user_id", userID, "err", err)
+		if stderrors.Is(err, catalogclient.ErrInsufficientScope) {
+			warnFoldersScope.warn("galgame: my folders unreadable, token lacks folder:read", "user_id", userID)
+		} else {
+			slog.Warn("galgame: my folders unreadable", "user_id", userID, "err", err)
+		}
 		return out
 	}
 	seen := map[int64]bool{}
@@ -121,7 +130,11 @@ func (s *GalgameService) GetMyInteractions(ctx context.Context, userID int, toke
 		}
 		items, iErr := s.catalog.MyFolderItems(ctx, token, f.ID)
 		if iErr != nil {
-			slog.Warn("galgame: folder items unreadable", "folder_id", f.ID, "err", iErr)
+			if stderrors.Is(iErr, catalogclient.ErrInsufficientScope) {
+				warnFoldersScope.warn("galgame: folder items unreadable, token lacks folder:read", "folder_id", f.ID)
+			} else {
+				slog.Warn("galgame: folder items unreadable", "folder_id", f.ID, "err", iErr)
+			}
 			return out
 		}
 		for _, it := range items {
@@ -144,7 +157,11 @@ func (s *GalgameService) isFavorited(ctx context.Context, token string, galgameI
 	}
 	folders, err := s.catalog.MyFoldersContaining(ctx, token, int64(galgameID))
 	if err != nil {
-		slog.Warn("galgame: favourite state unreadable", "galgame_id", galgameID, "err", err)
+		if stderrors.Is(err, catalogclient.ErrInsufficientScope) {
+			warnFavoriteScope.warn("galgame: favourite state unreadable, token lacks folder:read", "galgame_id", galgameID)
+		} else {
+			slog.Warn("galgame: favourite state unreadable", "galgame_id", galgameID, "err", err)
+		}
 		return false
 	}
 	return len(folders) > 0

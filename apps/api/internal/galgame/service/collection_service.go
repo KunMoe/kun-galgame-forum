@@ -31,8 +31,9 @@ const previewCoversPerCollection = 4
 //
 // The token is the user's OAuth access token and must carry folder:read /
 // folder:write. A session minted before those scopes were requested is 403
-// SCOPE_REQUIRED upstream and surfaces here as ErrAuthExpired — a refresh
-// cannot widen a grant, so the only cure is signing in again.
+// SCOPE_REQUIRED upstream and surfaces here as ErrReauthRequired (code 235) —
+// a refresh cannot widen a grant, so the only cure is signing in again, and
+// that is the one message the reader can act on.
 type CollectionService struct {
 	collectionRepo *repository.GalgameCollectionRepository
 	galgameService *GalgameService
@@ -70,8 +71,17 @@ func collectionErr(err error, fallback string) *errors.AppError {
 		return nil
 	case stderrors.Is(err, catalogclient.ErrNotFound):
 		return errors.ErrNotFound("收藏夹不存在")
-	case stderrors.Is(err, catalogclient.ErrInsufficientScope),
-		stderrors.Is(err, catalogclient.ErrUnauthorized):
+	// A grant too narrow for folder:read and an expired session are different
+	// faults with different cures, and folding them together cost an outage on
+	// 2026-09-08: this returned code 205, whose client-side handler re-checks
+	// /api/user/status — which answers from this site's own cookie, finds it
+	// perfectly healthy, and returns without a word. Every collection read
+	// failed and nobody was told. Code 235 is what the five other scope-starved
+	// paths here already use (playtime, cover votes, edits, submissions, image
+	// upload) and its handler says the one thing that actually fixes it.
+	case stderrors.Is(err, catalogclient.ErrInsufficientScope):
+		return errors.ErrReauthRequired("收藏夹需要新的授权，请退出登录后重新登录以授予该权限")
+	case stderrors.Is(err, catalogclient.ErrUnauthorized):
 		return errors.ErrAuthExpired()
 	}
 	var apiErr *catalogclient.UserAPIError
