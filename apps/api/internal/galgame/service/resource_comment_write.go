@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
 
 	"kun-galgame-api/internal/constants"
@@ -126,7 +125,7 @@ func (s *ResourceCommentService) afterCreate(src CommentSource, resourceID int, 
 					"type", plan.msgType, "receiver_id", plan.receiver, "galgame_id", cc.galgameID, "error", err)
 			}
 		}
-		s.feedUpsert(src.feedType, post.ID, userID, content, fmt.Sprintf("/galgame-rating/%d", resourceID), false, post.CreatedAt)
+		s.feedUpsert(src.feedType, post.ID, userID, content, src.pageLink(resourceID), false, post.CreatedAt)
 
 	case sourceWebsite.key:
 		s.bumpWebsiteCommentCount(resourceID, 1)
@@ -138,14 +137,15 @@ func (s *ResourceCommentService) afterCreate(src CommentSource, resourceID int, 
 
 	case sourceToolset.key:
 		s.bumpToolsetCommentCount(resourceID, 1)
+		link := src.pageLink(resourceID)
 		if notify {
-			s.notifyToolset(userID, plan.receiver, plan.msgType, content, resourceID)
+			s.notifyToolset(userID, plan.receiver, plan.msgType, content, link)
 		}
-		s.feedUpsert(src.feedType, post.ID, userID, content, fmt.Sprintf("/toolset/%d", resourceID), false, post.CreatedAt)
+		s.feedUpsert(src.feedType, post.ID, userID, content, link, false, post.CreatedAt)
 
 	case sourceResource.key:
 		s.bumpCountColumn("galgame_resource", resourceID, 1)
-		link := fmt.Sprintf("/galgame-resource/%d", resourceID)
+		link := src.pageLink(resourceID)
 		if notify {
 			s.notifyDeduped(userID, plan.receiver, plan.msgType, content, link)
 		}
@@ -153,7 +153,7 @@ func (s *ResourceCommentService) afterCreate(src CommentSource, resourceID int, 
 
 	case sourceQuiz.key:
 		s.bumpCountColumn("galgame_quiz", resourceID, 1)
-		link := fmt.Sprintf("/galgame-quiz/%d", resourceID)
+		link := src.pageLink(resourceID)
 		if notify {
 			s.notifyDeduped(userID, plan.receiver, plan.msgType, content, link)
 		}
@@ -344,12 +344,12 @@ func (s *ResourceCommentService) notifyDeduped(senderID, receiverID int, msgType
 	})
 }
 
-func (s *ResourceCommentService) notifyToolset(senderID, receiverID int, msgType, content string, toolsetID int) {
+func (s *ResourceCommentService) notifyToolset(senderID, receiverID int, msgType, content, link string) {
 	s.notifyCreate(&msgModel.Message{
 		SenderID: senderID, ReceiverID: receiverID,
 		Type:    msgType,
 		Content: markdown.ToPlainText(content, 100),
-		Link:    fmt.Sprintf("/toolset/%d", toolsetID),
+		Link:    link,
 		Status:  "unread",
 	})
 }

@@ -33,14 +33,19 @@ type CommentSource struct {
 	key        string
 	anchorPref string
 	feedType   string
+	// /galgame-resource/:id is not a page. The legacy route rule only expands **
+	// on the server, so an in-app navigation landed on the literal
+	// /galgame/resource/**. Website pages are keyed by slug, not id, so this
+	// stays empty and notifyWebsiteReply builds "/website/"+slug itself.
+	linkPrefix string
 }
 
 var (
-	sourceRating   = CommentSource{key: "rating", anchorPref: "rating:", feedType: "GALGAME_RATING_COMMENT_CREATION"}
+	sourceRating   = CommentSource{key: "rating", anchorPref: "rating:", feedType: "GALGAME_RATING_COMMENT_CREATION", linkPrefix: "/galgame-rating/"}
 	sourceWebsite  = CommentSource{key: "website", anchorPref: "website:", feedType: "GALGAME_WEBSITE_COMMENT_CREATION"}
-	sourceToolset  = CommentSource{key: "toolset", anchorPref: "toolset:", feedType: "TOOLSET_COMMENT_CREATION"}
-	sourceResource = CommentSource{key: "resource", anchorPref: "resource:", feedType: "GALGAME_RESOURCE_COMMENT_CREATION"}
-	sourceQuiz     = CommentSource{key: "quiz", anchorPref: "quiz:", feedType: "GALGAME_QUIZ_COMMENT_CREATION"}
+	sourceToolset  = CommentSource{key: "toolset", anchorPref: "toolset:", feedType: "TOOLSET_COMMENT_CREATION", linkPrefix: "/toolset/"}
+	sourceResource = CommentSource{key: "resource", anchorPref: "resource:", feedType: "GALGAME_RESOURCE_COMMENT_CREATION", linkPrefix: "/galgame/resource/"}
+	sourceQuiz     = CommentSource{key: "quiz", anchorPref: "quiz:", feedType: "GALGAME_QUIZ_COMMENT_CREATION", linkPrefix: "/galgame-quiz/"}
 )
 
 func SourceRating() CommentSource   { return sourceRating }
@@ -51,6 +56,10 @@ func SourceQuiz() CommentSource     { return sourceQuiz }
 
 func (src CommentSource) anchorID(resourceID int) string {
 	return src.anchorPref + strconv.Itoa(resourceID)
+}
+
+func (src CommentSource) pageLink(resourceID int) string {
+	return src.linkPrefix + strconv.Itoa(resourceID)
 }
 
 func (s *ResourceCommentService) GetComments(ctx context.Context, src CommentSource, resourceID, viewerID int, cursor string, limit int) (*CommunityCommentPage, *errors.AppError) {
