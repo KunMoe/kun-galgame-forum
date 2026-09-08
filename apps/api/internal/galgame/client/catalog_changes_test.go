@@ -74,7 +74,7 @@ func TestCatalogChangesAsksWithinTheFeedsOwnVocabulary(t *testing.T) {
 	}
 }
 
-func TestContentLimitsByCatalogIDsKeysByTheClaimNeverTheCatalogID(t *testing.T) {
+func TestMirrorByCatalogIDsKeysByTheClaimNeverTheCatalogID(t *testing.T) {
 	// 10,289 of the forum's 11,562 local ids are also the catalog id of some
 	// other work. Keying a hydrated row by its catalog id — which is what gid()
 	// falls back to when there is no claim — therefore writes one game's display
@@ -93,9 +93,9 @@ func TestContentLimitsByCatalogIDsKeysByTheClaimNeverTheCatalogID(t *testing.T) 
 	defer srv.Close()
 
 	got, appErr := New(srv.URL, "nmk_test", "").
-		ContentLimitsByCatalogIDs(t.Context(), []int64{923, 924, 925, 926, 927})
+		MirrorByCatalogIDs(t.Context(), []int64{923, 924, 925, 926, 927})
 	if appErr != nil {
-		t.Fatalf("ContentLimitsByCatalogIDs: %v", appErr.Message)
+		t.Fatalf("MirrorByCatalogIDs: %v", appErr.Message)
 	}
 
 	want := map[int]string{8471: "sfw", 8472: "nsfw"}
@@ -103,8 +103,8 @@ func TestContentLimitsByCatalogIDsKeysByTheClaimNeverTheCatalogID(t *testing.T) 
 		t.Fatalf("got %v, want %v", got, want)
 	}
 	for gid, limit := range want {
-		if got[gid] != limit {
-			t.Errorf("gid %d = %q, want %q", gid, got[gid], limit)
+		if got[gid].ContentLimit != limit {
+			t.Errorf("gid %d = %q, want %q", gid, got[gid].ContentLimit, limit)
 		}
 	}
 	for _, catalogID := range []int{923, 924, 925, 926, 927} {
@@ -115,7 +115,7 @@ func TestContentLimitsByCatalogIDsKeysByTheClaimNeverTheCatalogID(t *testing.T) 
 
 	// The verdict is the editorial axis, so the r18 row is sfw and the all-ages
 	// row is nsfw. Reading content_rating instead inverts both.
-	if got[8471] == "nsfw" || got[8472] == "sfw" {
+	if got[8471].ContentLimit == "nsfw" || got[8472].ContentLimit == "sfw" {
 		t.Error("the age rating won over the editorial display axis")
 	}
 

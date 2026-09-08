@@ -444,7 +444,7 @@ func New(cfg *config.Config) *App {
 	galgameClaimSync := galgameService.NewGalgameClaimEventSync(catalogCli, galgameLocalRepo, rdb)
 	galgameRevisionSync := galgameService.NewGalgameEditRevisionSync(catalogCli, gc, db, rdb)
 	galgameContributorSync := galgameService.NewGalgameContributorSync(catalogCli, galgameContributorRepo, rdb)
-	galgameContentLimitSync := galgameService.NewGalgameContentLimitSync(gc, galgameLocalRepo, rdb)
+	galgameCatalogMirror := galgameService.NewGalgameCatalogMirror(gc, galgameLocalRepo, rdb)
 	galgameMergeSync := galgameService.NewGalgameMergeSync(gc, galgameMergeRepo, rdb)
 
 	websiteRepository := websiteRepo.NewWebsiteRepository(db)
@@ -603,14 +603,14 @@ func New(cfg *config.Config) *App {
 		ToolsetResourceHandler:     toolsetHandler.NewResourceHandler(toolsetResourceSvc),
 		ToolsetUploadHandler:       toolsetHandler.NewUploadHandler(toolsetUploadSvc),
 		CronStop: cronPkg.Start(db, rdb, imgCli, cronPkg.Jobs{
-			GalgameClaimSync:          galgameClaimSync.Run,
-			GalgameRevisionSync:       galgameRevisionSync.Run,
-			GalgameContributorSync:    galgameContributorSync.Run,
-			GalgameContentLimitMirror: galgameContentLimitSync.RunMirror,
-			GalgameContentLimitFill:   galgameContentLimitSync.RunPending,
-			GalgameMergeSync:          galgameMergeSync.Run,
-			DlsiteCampaignRefresh:     storeLinks.RefreshCampaign,
-			TopicMiniAppDeadlines:     lotteryDrawer.Run,
+			GalgameClaimSync:         galgameClaimSync.Run,
+			GalgameRevisionSync:      galgameRevisionSync.Run,
+			GalgameContributorSync:   galgameContributorSync.Run,
+			GalgameCatalogMirror:     galgameCatalogMirror.RunMirror,
+			GalgameCatalogMirrorFill: galgameCatalogMirror.RunPending,
+			GalgameMergeSync:         galgameMergeSync.Run,
+			DlsiteCampaignRefresh:    storeLinks.RefreshCampaign,
+			TopicMiniAppDeadlines:    lotteryDrawer.Run,
 		}),
 		StoreLinkStop: storeLinks.Start(),
 	}

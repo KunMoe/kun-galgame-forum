@@ -441,12 +441,12 @@ func TestLiveMirrorChannel(t *testing.T) {
 			}
 			ids = append(ids, it.ID)
 		}
-		got, appErr := c.ContentLimitsByCatalogIDs(ctx, ids)
+		got, appErr := c.MirrorByCatalogIDs(ctx, ids)
 		if appErr != nil {
-			t.Fatalf("ContentLimitsByCatalogIDs: %v", appErr)
+			t.Fatalf("MirrorByCatalogIDs: %v", appErr)
 		}
-		for gid, limit := range got {
-			limits[gid] = limit
+		for gid, row := range got {
+			limits[gid] = row.ContentLimit
 		}
 		if page.NextCursor == "" {
 			break

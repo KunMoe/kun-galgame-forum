@@ -88,3 +88,25 @@ func ParseMonthSet(s string) ([]int, error) {
 	sort.Ints(out)
 	return out, nil
 }
+
+// Catalog sends release_date at whatever precision it knows: "2026", "2026-08"
+// or "2026-08-27". The local mirror column is a DATE, so a partial date is kept
+// as the first day of the period it names — the same lower bound the year and
+// month filters resolve to, which keeps a year-precision work inside its own
+// year. The second return is false only for a string catalog should never send.
+func NormalizeCatalogReleaseDate(s string) (string, bool) {
+	s = strings.TrimSpace(s)
+	if s == "" {
+		return "", true
+	}
+	switch len(s) {
+	case 4:
+		s += "-01-01"
+	case 7:
+		s += "-01"
+	}
+	if _, err := time.Parse(time.DateOnly, s); err != nil {
+		return "", false
+	}
+	return s, true
+}

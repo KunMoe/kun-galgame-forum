@@ -1,6 +1,8 @@
 package repository
 
 import (
+	"database/sql"
+	"strings"
 	"time"
 
 	"kun-galgame-api/internal/galgame/model"
@@ -92,13 +94,45 @@ func (r *GalgameRepository) PublishLocal(tx *gorm.DB, galgameID int) error {
 	}).Create(&model.GalgameLocal{ID: galgameID, Published: true}).Error
 }
 
-// ids the content-limit sync has to ask catalog about. onlyMissing keeps the
-// frequent pass cheap — it is normally empty, and non-empty only right after a
-// row is created.
-func (r *GalgameRepository) ContentLimitMissingIDs() []int {
+// ids the catalog mirror still has to confirm — normally empty, and non-empty
+// only right after a row is created or a column is added.
+//
+// The two mirrored columns have different "not asked yet" markers. An unmirrored
+// content_limit is NULL; a NULL release_date is ALSO what catalog says about a
+// work with no date, so the release side asks release_date_synced_at (092)
+// instead. Reading NULL as "pending" there re-asks about every TBA work forever.
+//
+// skip is the caller's list of rows catalog has no work for. They stay
+// unconfirmed for good, so against a capped window they would otherwise sit at
+// the front of every pass and starve the rows that can still be resolved.
+func (r *GalgameRepository) MirrorPendingIDs(limit int, skip []int) []int {
 	var ids []int
-	r.db.Table("galgame").Where("content_limit IS NULL").Order("id").Pluck("id", &ids)
+	r.db.Table("galgame").
+		Where("content_limit IS NULL OR release_date_synced_at IS NULL").
+		Where("id <> ALL(?::int[])", intArrayLit(skip)).
+		Order("id").Limit(limit).Pluck("id", &ids)
 	return ids
+}
+
+// SetReleaseDates writes catalog's dates onto the local rows, as date strings so
+// no timezone ever touches a day. An empty string is catalog answering "this
+// work has no date": the row is still marked confirmed, or the fill lane comes
+// back for every TBA work on every tick.
+func (r *GalgameRepository) SetReleaseDates(dates map[int]string) (int64, error) {
+	if len(dates) == 0 {
+		return 0, nil
+	}
+	rows := make([]string, 0, len(dates))
+	args := make([]any, 0, len(dates)*2)
+	for gid, date := range dates {
+		rows = append(rows, "(?::int, ?::date)")
+		args = append(args, gid, sql.NullString{String: date, Valid: date != ""})
+	}
+	res := r.db.Exec(`UPDATE galgame g SET release_date = v.d, release_date_synced_at = now()
+		FROM (VALUES `+strings.Join(rows, ",")+`) AS v(id, d)
+		WHERE g.id = v.id
+		  AND (g.release_date IS DISTINCT FROM v.d OR g.release_date_synced_at IS NULL)`, args...)
+	return res.RowsAffected, res.Error
 }
 
 func (r *GalgameRepository) SetContentLimits(idsByLimit map[string][]int) (int64, error) {

@@ -18,14 +18,14 @@ const scheduleTZ = "Asia/Shanghai"
 // Every field is a bare func(), so positional arguments would put a job on
 // another job's schedule with nothing to notice it.
 type Jobs struct {
-	GalgameClaimSync          func()
-	GalgameRevisionSync       func()
-	GalgameContributorSync    func()
-	GalgameContentLimitMirror func()
-	GalgameContentLimitFill   func()
-	GalgameMergeSync          func()
-	DlsiteCampaignRefresh     func()
-	TopicMiniAppDeadlines     func()
+	GalgameClaimSync         func()
+	GalgameRevisionSync      func()
+	GalgameContributorSync   func()
+	GalgameCatalogMirror     func()
+	GalgameCatalogMirrorFill func()
+	GalgameMergeSync         func()
+	DlsiteCampaignRefresh    func()
+	TopicMiniAppDeadlines    func()
 }
 
 func Start(
@@ -82,12 +82,12 @@ func Start(
 		schedule(c, "*/15 * * * *", "galgame contributor 同步", jobs.GalgameContributorSync)
 	}
 
-	if jobs.GalgameContentLimitMirror != nil {
-		schedule(c, "*/10 * * * *", "galgame content_limit 信道同步", jobs.GalgameContentLimitMirror)
+	if jobs.GalgameCatalogMirror != nil {
+		schedule(c, "*/10 * * * *", "galgame catalog 镜像信道同步", jobs.GalgameCatalogMirror)
 	}
 
-	if jobs.GalgameContentLimitFill != nil {
-		schedule(c, "*/10 * * * *", "galgame content_limit 增量同步", jobs.GalgameContentLimitFill)
+	if jobs.GalgameCatalogMirrorFill != nil {
+		schedule(c, "*/10 * * * *", "galgame catalog 镜像增量同步", jobs.GalgameCatalogMirrorFill)
 	}
 
 	if jobs.GalgameMergeSync != nil {

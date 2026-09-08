@@ -12,6 +12,7 @@ type GalgameLocal struct {
 	ContributorCount      int        `gorm:"column:contributor_count;default:0" json:"contributor_count"`
 	RatingCount           int        `gorm:"column:rating_count;default:0" json:"rating_count"`
 	ReleaseDate           *time.Time `gorm:"column:release_date" json:"release_date"`
+	ReleaseDateSyncedAt   *time.Time `gorm:"column:release_date_synced_at" json:"-"`
 	CreatedAt             time.Time  `gorm:"column:created" json:"created"`
 	UpdatedAt             time.Time  `gorm:"column:updated" json:"updated"`
 	ResourceUpdateTime    time.Time  `gorm:"column:resource_update_time;autoCreateTime" json:"resource_update_time"`

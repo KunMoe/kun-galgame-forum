@@ -303,19 +303,38 @@ func (c *GalgameClient) CatalogRowsByGIDs(ctx context.Context, gids []int, inclu
 	return out, nil
 }
 
-// ContentLimitsByGIDs reads catalog's editorial display verdict for local rows.
-// Both gates are open on purpose: this syncs what the verdict IS, and asking
-// for it through a reader's own content_limit would only ever return rows that
-// already agree with it.
-func (c *GalgameClient) ContentLimitsByGIDs(ctx context.Context, gids []int) (map[int]string, *errors.AppError) {
+// CatalogMirror is the set of catalog fields the local galgame row keeps a copy
+// of, so that SQL can filter and order on them before anything is hydrated.
+// Both belong to catalog; the local columns are caches and never edited here.
+type CatalogMirror struct {
+	ContentLimit string
+	// Catalog's own string, at whatever precision it knows: "2026", "2026-08"
+	// or "2026-08-27". Empty means catalog has no date for this work, which is
+	// an answer — not the same as "not asked yet".
+	ReleaseDate string
+}
+
+func mirrorOf(row *CatalogWorkListItem) CatalogMirror {
+	m := CatalogMirror{ContentLimit: contentLimitOf(row.Claim, row.ContentRating)}
+	if row.ReleaseDate != nil {
+		m.ReleaseDate = *row.ReleaseDate
+	}
+	return m
+}
+
+// MirrorByGIDs reads the mirrored fields for local rows. Both gates are open on
+// purpose: this syncs what catalog's verdict IS, and asking for it through a
+// reader's own content_limit would only ever return rows that already agree
+// with it.
+func (c *GalgameClient) MirrorByGIDs(ctx context.Context, gids []int) (map[int]CatalogMirror, *errors.AppError) {
 	rows, appErr := c.CatalogRowsByGIDs(ctx, gids, "", "all")
 	if appErr != nil {
 		return nil, appErr
 	}
-	out := make(map[int]string, len(rows))
+	out := make(map[int]CatalogMirror, len(rows))
 	for gid := range rows {
 		row := rows[gid]
-		out[gid] = contentLimitOf(row.Claim, row.ContentRating)
+		out[gid] = mirrorOf(&row)
 	}
 	return out, nil
 }

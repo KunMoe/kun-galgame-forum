@@ -64,13 +64,20 @@ func (r *GalgameListRepository) ListIDs(f model.GalgameListFilter) (ids []int, t
 		bayes = r.bayesianExpr()
 	}
 
-	orderClause := sortCol + " " + f.SortOrder
+	order := sortDirection(f.SortOrder)
+	orderClause := sortCol + " " + order
 	switch {
 	case ratingSort:
-		orderClause = "(rt.rcnt IS NULL), " + bayes + " " + f.SortOrder
+		orderClause = "(rt.rcnt IS NULL), " + bayes + " " + order
 	case sortCol == "g.release_date":
 		orderClause += " NULLS LAST"
 	}
+	// Ties are the rule here, not the exception: most of the table shares
+	// view = 0, a busy release day shares a date, and every unmirrored row
+	// shares NULL. An ORDER BY that stops at the tied column leaves the rest to
+	// the planner, which is free to answer two pages differently — the same row
+	// on both, another on neither.
+	orderClause += ", g.id DESC"
 
 	type idRow struct {
 		ID int `gorm:"column:id"`
@@ -183,10 +190,7 @@ func (r *GalgameListRepository) OrderRestrictIDs(ids []int, f model.GalgameListF
 	if len(ids) < 2 {
 		return ids
 	}
-	order := "DESC"
-	if f.SortOrder == "asc" {
-		order = "ASC"
-	}
+	order := sortDirection(f.SortOrder)
 
 	q := r.db.Table("unnest(?::int[]) WITH ORDINALITY AS m(id, ord)", intArrayLit(ids)).
 		Joins("LEFT JOIN galgame g ON g.id = m.id")
@@ -325,6 +329,15 @@ func applyContentLimit(q *gorm.DB, f model.GalgameListFilter) *gorm.DB {
 
 func providerArrayLit(providers []string) string {
 	return "{" + strings.Join(providers, ",") + "}"
+}
+
+// The entity pages build their filter straight from the raw query string, so
+// this is the only thing standing between ?sortOrder= and the ORDER BY.
+func sortDirection(order string) string {
+	if strings.EqualFold(order, "asc") {
+		return "ASC"
+	}
+	return "DESC"
 }
 
 func intArrayLit(ids []int) string {

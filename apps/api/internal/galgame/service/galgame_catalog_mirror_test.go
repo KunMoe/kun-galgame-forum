@@ -26,7 +26,7 @@ type mirrorStub struct {
 	feedCalls   int
 }
 
-func newMirror(t *testing.T, stub *mirrorStub) (*GalgameContentLimitSync, *miniredis.Miniredis) {
+func newMirror(t *testing.T, stub *mirrorStub) (*GalgameCatalogMirror, *miniredis.Miniredis) {
 	t.Helper()
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		stub.mu.Lock()
@@ -56,7 +56,7 @@ func newMirror(t *testing.T, stub *mirrorStub) (*GalgameContentLimitSync, *minir
 	t.Cleanup(srv.Close)
 
 	mr := miniredis.RunT(t)
-	s := NewGalgameContentLimitSync(
+	s := NewGalgameCatalogMirror(
 		client.New(srv.URL, "nmk_test", ""),
 		nil,
 		redis.NewClient(&redis.Options{Addr: mr.Addr()}),
@@ -82,7 +82,7 @@ func changePage(cursor string, ids ...string) string {
 
 func storedCursor(t *testing.T, mr *miniredis.Miniredis) string {
 	t.Helper()
-	got, err := mr.Get(contentLimitCursorKey)
+	got, err := mr.Get(mirrorCursorKey)
 	if err != nil {
 		return ""
 	}
@@ -189,30 +189,45 @@ func TestMirrorHoldsTheCursorWhenRedisIsDown(t *testing.T) {
 	}
 }
 
-// A local row catalog has no work for stays NULL, so without the memo the
-// ten-minute pass re-asks about the same orphans on every tick. The nightly full
-// sweep used to be what cleared it; nothing does now, so it has to expire.
-func TestContentLimitOrphanMemoExpires(t *testing.T) {
-	s := NewGalgameContentLimitSync(nil, nil, nil)
+// A local row catalog has no work for is never confirmed, so without the memo
+// the ten-minute pass re-asks about the same orphans on every tick — and now
+// that the pass is capped, orphans at the front of the window would starve every
+// row behind them. The nightly full sweep used to be what cleared the memo;
+// nothing does now, so it has to expire.
+func TestOrphanMemoExpires(t *testing.T) {
+	s := NewGalgameCatalogMirror(nil, nil, nil)
+	answered := func(gids ...int) map[int]client.CatalogMirror {
+		out := map[int]client.CatalogMirror{}
+		for _, gid := range gids {
+			out[gid] = client.CatalogMirror{ContentLimit: "sfw"}
+		}
+		return out
+	}
+	memoised := func() []int {
+		got := s.memoisedOrphans()
+		slices.Sort(got)
+		return got
+	}
 	asked := []int{1, 2, 3}
 
-	s.rememberUnresolved(asked, map[int]string{1: "sfw", 3: "nsfw"})
-	if got := s.resolvable(asked); !slices.Equal(got, []int{1, 3}) {
-		t.Fatalf("resolvable = %v, want [1 3]", got)
+	s.rememberUnresolved(asked, answered(1, 3))
+	if got := memoised(); !slices.Equal(got, []int{2}) {
+		t.Fatalf("memoised = %v, want [2]", got)
 	}
 
-	s.rememberUnresolved([]int{2}, map[int]string{2: "sfw"})
-	if got := s.resolvable(asked); !slices.Equal(got, asked) {
-		t.Fatalf("an adopted orphan stays skipped: resolvable = %v, want %v", got, asked)
+	s.rememberUnresolved(asked, answered())
+	if got := memoised(); !slices.Equal(got, asked) {
+		t.Fatalf("memoised = %v, want every id", got)
 	}
 
-	s.rememberUnresolved(asked, map[int]string{})
-	if got := s.resolvable(asked); len(got) != 0 {
-		t.Fatalf("resolvable = %v, want every id memoised", got)
+	s.rememberUnresolved([]int{2}, answered(2))
+	if got := memoised(); !slices.Equal(got, []int{1, 3}) {
+		t.Fatalf("an adopted orphan stays skipped: memoised = %v, want [1 3]", got)
 	}
-	s.unresolved[2] = time.Now().Add(-time.Minute)
-	if got := s.resolvable(asked); !slices.Equal(got, []int{2}) {
-		t.Fatalf("resolvable = %v, want the expired entry re-asked", got)
+
+	s.unresolved[1] = time.Now().Add(-time.Minute)
+	if got := memoised(); !slices.Equal(got, []int{3}) {
+		t.Fatalf("memoised = %v, want the expired entry dropped", got)
 	}
 }
 
