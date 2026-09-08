@@ -18,10 +18,27 @@ const adminNavItems = computed(() =>
     icon: item.icon
   }))
 )
+
+const goto = (value: string) =>
+  navigateTo(value.startsWith('/') ? value : `/admin/${value}`)
 </script>
 
 <template>
-  <div class="flex gap-3">
+  <div class="flex flex-col gap-3 sm:flex-row">
+    <!-- The nav used to exist only as the `sm:block` column below, so a phone
+         got no navigation at all: /admin lands on the first permitted page and
+         there was nothing to switch with. A horizontal KunTab contains its own
+         overflow, so all 11 entries scroll inside the strip. -->
+    <div class="sm:hidden">
+      <KunTab
+        :model-value="pageType"
+        :items="adminNavItems"
+        variant="underlined"
+        color="primary"
+        @update:model-value="goto"
+      />
+    </div>
+
     <div class="hidden w-48 shrink-0 sm:block">
       <KunTab
         :model-value="pageType"
@@ -31,10 +48,7 @@ const adminNavItems = computed(() =>
         color="primary"
         size="lg"
         full-width
-        @update:model-value="
-          (value) =>
-            navigateTo(value.startsWith('/') ? value : `/admin/${value}`)
-        "
+        @update:model-value="goto"
       />
     </div>
 
