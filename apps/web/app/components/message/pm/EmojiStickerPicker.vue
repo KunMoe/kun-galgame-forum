@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { emojiArray } from '~/constants/emoji'
-import { stickerArray } from '~/constants/sticker'
 
 const emit = defineEmits<{
   emoji: [emoji: string]
@@ -8,6 +7,14 @@ const emit = defineEmits<{
 }>()
 
 const tab = ref<'emoji' | 'sticker'>('emoji')
+
+// Loaded on first open of the sticker tab, not on mount: most messages are
+// sent without one, and the payload is 82 KB.
+const { packs, load } = useStickerPacks()
+const stickers = computed(() => packs.value.flatMap((pack) => pack.stickers))
+watch(tab, (value) => {
+  if (value === 'sticker') load()
+})
 </script>
 
 <template>
@@ -60,15 +67,15 @@ const tab = ref<'emoji' | 'sticker'>('emoji')
     <KunOverlayScroll v-show="tab === 'sticker'" class="h-56">
       <div class="grid grid-cols-4 gap-1">
         <button
-          v-for="url in stickerArray"
-          :key="url"
+          v-for="sticker in stickers"
+          :key="sticker.src"
           type="button"
-          @click="emit('sticker', url)"
+          @click="emit('sticker', sticker.src)"
           class="hover:bg-default-100 aspect-square rounded-md p-1"
         >
           <img
-            :src="url"
-            alt="sticker"
+            :src="sticker.src"
+            :alt="sticker.name"
             loading="lazy"
             class="size-full object-contain"
           />

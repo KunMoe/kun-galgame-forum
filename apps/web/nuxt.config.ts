@@ -56,6 +56,11 @@ export default defineNuxtConfig({
     imageCdnBase:
       process.env.IMAGE_CDN_BASE || 'https://image.kungal.iloveren.link',
 
+    // Where /api/sticker-packs proxies from. Server-side only: the browser
+    // never reaches across to the sticker site.
+    stickerBaseUrl:
+      process.env.STICKER_BASE_URL || 'https://sticker.kungal.com',
+
     // The og renderer's per-site HMAC key. Set at runtime as NUXT_OG_SITE_KEY — the image
     // is built by CI without build args, so a process.env default here is empty in prod.
     ogSiteKey: '',

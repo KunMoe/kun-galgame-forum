@@ -3,7 +3,6 @@ import type {
   MentionUser,
   StickerPack
 } from '@kungal/editor-core'
-import { stickerArray } from '~/constants/sticker'
 
 export const useKunEditorAdapters = (opts?: {
   image?: boolean
@@ -29,12 +28,12 @@ export const useKunEditorAdapters = (opts?: {
       query: { q: query, limit: 8 }
     })) ?? []
 
-  const stickerSource = (): StickerPack[] => [
-    {
-      name: 'KUNgal',
-      stickers: stickerArray.map((src) => ({ src, name: src }))
-    }
-  ]
+  // The packs come from sticker.kungal.com through our own cached server
+  // route. The URLs it hands back are content-addressed, and they are what
+  // gets written into the post -- the previous scheme wrote a path that named
+  // a position in a mutable collection, which is why years of posts now
+  // render broken images.
+  const stickerSource = (): Promise<StickerPack[]> => useStickerPacks().load()
 
   const notify: KunEditorAdapters['notify'] = (message, level) => {
     useMessage(message, level)
