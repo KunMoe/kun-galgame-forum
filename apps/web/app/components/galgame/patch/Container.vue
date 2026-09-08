@@ -30,6 +30,19 @@ const toggleNote = (id: number) => {
 }
 const isNoteLong = (note: string) => note.length > 80 || note.includes('\n')
 
+// The note arrives from moyu's API as raw markdown with no note_html beside it,
+// so it cannot go through KunContent the way this site's own resource notes do,
+// and it rendered as source: 「**注意**」 with the asterisks showing. Turning
+// third-party markdown into HTML here would mean sanitising someone else's user
+// input; stripping it to text does not. The one thing plain text must not lose
+// is where a link went, which markdownToText drops, so the URL is folded into
+// the visible text first.
+const noteText = (note: string) =>
+  markdownToText(
+    note.replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g, '$1 ($2)'),
+    { preserveNewlines: true }
+  )
+
 const STORAGE_MAP: Record<string, string> = {
   s3: 'S3 对象存储',
   user: '网盘下载'
@@ -73,7 +86,18 @@ onMounted(async () => {
       </template>
     </KunHeader>
 
-    <div class="space-y-2" v-for="resource in resources" :key="resource.id">
+    <!-- One card per resource, matching this site's own resource list. The rows
+         used to be bare blocks separated by a hairline KunDivider, and readers
+         「时常会有点错行进错上行的资源列表」: with no bounded container the
+         download button at the bottom of a row reads as belonging to the name
+         below the rule rather than the one above it. -->
+    <KunCard
+      v-for="resource in resources"
+      :key="resource.id"
+      :is-transparent="false"
+      :is-hoverable="false"
+      content-class="space-y-2"
+    >
       <p v-if="resource.name" class="font-medium break-words">
         {{ resource.name }}
       </p>
@@ -82,17 +106,21 @@ onMounted(async () => {
           <KunChip
             v-for="(t, index) in resource.type"
             :key="index"
+            size="sm"
+            variant="flat"
             color="primary"
           >
             {{ SUPPORTED_TYPE_MAP[t] }}
           </KunChip>
-          <KunChip color="warning">
+          <KunChip size="sm" variant="flat" color="warning">
             <KunIcon name="lucide:database" />
             {{ resource.size }}
           </KunChip>
           <KunChip
             v-for="(p, index) in resource.platform"
             :key="index"
+            size="sm"
+            variant="flat"
             color="success"
           >
             {{ SUPPORTED_PLATFORM_MAP[p] }}
@@ -100,15 +128,17 @@ onMounted(async () => {
           <KunChip
             v-for="(l, index) in resource.language"
             :key="index"
+            size="sm"
+            variant="flat"
             color="secondary"
           >
             {{ SUPPORTED_LANGUAGE_MAP[l] }}
           </KunChip>
-          <KunChip v-if="resource.model_name" color="danger">
+          <KunChip v-if="resource.model_name" size="sm" variant="flat" color="danger">
             <KunIcon name="lucide:bot" />
             {{ resource.model_name }}
           </KunChip>
-          <KunChip color="default">
+          <KunChip size="sm" variant="flat" color="default">
             <KunIcon name="lucide:hard-drive" />
             {{ STORAGE_MAP[resource.storage] ?? resource.storage }}
           </KunChip>
@@ -140,7 +170,7 @@ onMounted(async () => {
             class="text-sm break-words whitespace-pre-wrap"
             :class="{ 'line-clamp-3': !isNoteExpanded(resource.id) }"
           >
-            {{ resource.note }}
+            {{ noteText(resource.note) }}
           </p>
           <button
             v-if="isNoteLong(resource.note)"
@@ -203,7 +233,6 @@ onMounted(async () => {
         </KunButton>
       </div>
 
-      <KunDivider margin="0 0 17px 0" />
-    </div>
+    </KunCard>
   </div>
 </template>

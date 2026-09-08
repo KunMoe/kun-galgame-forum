@@ -24,6 +24,7 @@ const SSR_API_TIMEOUT_MS = 10000
 const CODE_AUTH_EXPIRED = 205
 const CODE_BANNED = 234
 const CODE_REAUTH_REQUIRED = 235
+const STATUS_RATE_LIMITED = 429
 
 const LOGIN_REQUIRED_CODES = new Set([
   10115, 10146, 10216, 10220, 10228, 10232, 10235, 10237, 10240, 10249, 10529,
@@ -45,6 +46,29 @@ const extractForwardedCookies = (cookieHeader?: string): string | undefined => {
 }
 
 let authExpiryTimer: ReturnType<typeof setTimeout> | null = null
+
+// A 429 carries no forum envelope — it is refused before a handler runs — so it
+// fell through to 「网络请求失败，请稍后重试」 on the kunFetch path and to
+// nothing at all on the useKunFetch one, whose onResponseError only speaks when
+// there is an envelope to read. A reader who hit the limit posting a reply saw
+// their reply not appear and no reason why; the 429 was in the console.
+// A non-JSON error body (a proxy's 429, an nginx 502 page) parses into a
+// STRING, not an object — and a string is truthy with `code === undefined`, so
+// `resp && resp.code !== 0` was true and the envelope path ran with
+// `code=undefined, message=undefined`, ending in `useMessage(undefined)`: a
+// toast with no text. That is what 「回复报错但没有提示，控制台查看才有」 was.
+const asEnvelope = (data: unknown): KunApiResponse<unknown> | undefined =>
+  data !== null && typeof data === 'object' && typeof (data as { code?: unknown }).code === 'number'
+    ? (data as KunApiResponse<unknown>)
+    : undefined
+
+const handleRateLimited = (status: number | undefined) => {
+  if (import.meta.server || status !== STATUS_RATE_LIMITED) {
+    return false
+  }
+  useMessage('操作太频繁，请稍等一会儿再试', 'error', 5000)
+  return true
+}
 
 const handleApiError = async (code: number, message: string) => {
   if (import.meta.server) return
@@ -129,10 +153,12 @@ export const useKunFetch = createUseFetch({
     }
   },
   async onResponseError({ response }) {
-    const resp = response._data as KunApiResponse<unknown> | undefined
+    const resp = asEnvelope(response._data)
     if (resp && resp.code !== 0) {
       await handleApiError(resp.code, resp.message)
+      return
     }
+    handleRateLimited(response.status)
   },
   transform(resp: unknown) {
     const envelope = resp as KunApiResponse<unknown> | null | undefined
@@ -183,8 +209,9 @@ export const kunFetch = async <T>(
     })
 
     if (!resp || resp.code !== 0) {
-      if (resp) {
-        await reject(resp)
+      const envelope = asEnvelope(resp)
+      if (envelope) {
+        await reject(envelope)
       }
       return null
     }
@@ -198,11 +225,13 @@ export const kunFetch = async <T>(
         statusCode?: number
         response?: { status?: number; _data?: KunApiResponse<unknown> }
       }
-      const envelope = err.data ?? err.response?._data
+      const envelope = asEnvelope(err.data ?? err.response?._data)
       const status = err.status ?? err.statusCode ?? err.response?.status
 
       if (envelope && envelope.code !== 0) {
         await reject(envelope)
+      } else if (handleRateLimited(status)) {
+        // said already
       } else if (status === 401 || status === 403) {
         await handleApiError(CODE_AUTH_EXPIRED, '登录已失效，请重新登录')
       } else {

@@ -129,7 +129,7 @@ const hasContributorCard = computed(
                   />
                 </div>
 
-                <GalgameLink />
+                <GalgameLink :refs="galgame.refs" />
               </div>
 
               <GalgameStaff :staff="galgame.staff" />
