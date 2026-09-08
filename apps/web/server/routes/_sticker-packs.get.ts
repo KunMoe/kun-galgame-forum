@@ -22,6 +22,12 @@ interface StickerPack {
  * cached because 82 KB is worth fetching once an hour rather than per picker
  * open. `staleMaxAge` is the load-bearing part: if the sticker site is down we
  * keep serving last week's packs instead of an empty picker.
+ *
+ * NOT under `/api/`, which on this site is Traefik's: it routes
+ * kungal.com/api/* to the Go backend, so a Nitro handler placed there is
+ * unreachable from a browser and answers the Go API's 401 envelope instead.
+ * (`server/api/__sitemap__/urls.ts` gets away with it only because the sitemap
+ * module calls it inside Nitro, never over the network.)
  */
 export default defineCachedEventHandler(
   async (): Promise<{ packs: StickerPack[] }> => {

@@ -15,7 +15,7 @@ export const useStickerPacks = () => {
     if (packs.value.length) {
       return packs.value
     }
-    const res = await $fetch<{ packs: StickerPack[] }>('/api/sticker-packs')
+    const res = await $fetch<{ packs: StickerPack[] }>('/_sticker-packs')
     packs.value = res.packs
     return packs.value
   }
