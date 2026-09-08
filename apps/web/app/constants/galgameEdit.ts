@@ -3,6 +3,7 @@ import type {
   EditContextItem,
   EditFieldConfig,
   EditFieldConfigMap,
+  EditObjectColumn,
   EditSelectOption
 } from '@nextmoe/edit-ui-vue'
 import {
@@ -181,6 +182,63 @@ const TITLE_KIND_OPTIONS: EditSelectOption[] = [
   { value: 2, label: '缩写' }
 ]
 
+// catalog grades an image, not a work: `sexual` is set per image by the nightly
+// machine pass and by whoever uploads it, and the wire carries base + the
+// token's index in the vocabulary's published order (safe/suggestive/explicit,
+// tame/violent/brutal), which is why these are ints and not tokens.
+const SEXUAL_OPTIONS: EditSelectOption[] = [
+  { value: 0, label: '无性内容' },
+  { value: 1, label: '性暗示' },
+  { value: 2, label: '露骨' }
+]
+
+const VIOLENCE_OPTIONS: EditSelectOption[] = [
+  { value: 0, label: '无暴力' },
+  { value: 1, label: '暴力' },
+  { value: 2, label: '血腥' }
+]
+
+const GRADE_COLUMNS: EditObjectColumn[] = [
+  {
+    key: 'sexual',
+    label: '性内容分级',
+    control: 'select',
+    type: 'integer',
+    options: SEXUAL_OPTIONS
+  },
+  {
+    key: 'violence',
+    label: '暴力分级',
+    control: 'select',
+    type: 'integer',
+    options: VIOLENCE_OPTIONS
+  }
+]
+
+// image_hash is deliberately absent: it is the row's identity, and the item
+// editor keeps every key the columns do not declare.
+const COVER_ITEM_COLUMNS: EditObjectColumn[] = [
+  {
+    key: 'kind',
+    label: '封面类型',
+    control: 'input',
+    type: 'string',
+    placeholder: 'main / dig / pkgfront / pkgback …'
+  },
+  ...GRADE_COLUMNS
+]
+
+const SCREENSHOT_ITEM_COLUMNS: EditObjectColumn[] = [
+  {
+    key: 'caption',
+    label: '说明',
+    control: 'input',
+    type: 'string',
+    placeholder: '这张图的说明, 可留空'
+  },
+  ...GRADE_COLUMNS
+]
+
 const imageRow = (value: unknown): string => {
   if (value && typeof value === 'object') {
     const row = value as { image_hash?: string }
@@ -224,6 +282,16 @@ const uploadScreenshotItem = async (
   return { image_hash: res.hash }
 }
 
+// edit-ui 0.3.0's guardEditControl downgrades a scalar-list control to read-only
+// when the value holds objects, which is right — but resolveControl does not know
+// a field has a `component`, so an object list rendered by one of ours still
+// resolves to `string-list` first and gets guarded. On 0.4.0 that put a
+// 「结构不支持」 badge on 标题与别名 / 介绍 / 出演名单 / 本站署名 and passed
+// disabled=true into the component: four whole tabs went read-only on upgrade.
+// Naming the control the field actually has is the fix; the component still wins
+// at render time, so nothing else changes.
+const OBJECT_LIST: Pick<EditFieldConfig, 'control'> = { control: 'object-list' }
+
 export const createGalgameEditConfig = (
   names: GalgameEditNames = {}
 ): EditFieldConfigMap => ({
@@ -231,6 +299,7 @@ export const createGalgameEditConfig = (
     label: '标题与别名',
     group: GROUP_TITLES,
     component: TitlesField,
+    ...OBJECT_LIST,
     formatItem: (item) => {
       const row = item as { lang?: string; title?: string; kind?: number }
       const kind =
@@ -250,6 +319,7 @@ export const createGalgameEditConfig = (
     label: '介绍',
     group: GROUP_INTRO,
     component: IntrosField,
+    ...OBJECT_LIST,
     formatItem: (item) => {
       const row = item as { lang?: string; intro?: string }
       return `${row.lang ?? ''}: ${(row.intro ?? '').slice(0, 40)}`
@@ -343,6 +413,7 @@ export const createGalgameEditConfig = (
     tabLabel: '角色',
     group: GROUP_CAST,
     component: RosterField,
+    ...OBJECT_LIST,
     pairsSuppressed: true,
     fieldProps: { names: names.character },
     formatItem: (item) => {
@@ -363,6 +434,7 @@ export const createGalgameEditConfig = (
     tabLabel: '署名',
     group: GROUP_CAST,
     component: CreditsField,
+    ...OBJECT_LIST,
     fieldProps: {
       searchNames: searchStaff,
       searchCharacters,
@@ -415,6 +487,7 @@ export const createGalgameEditConfig = (
     resolveImage: imageRow,
     formatItem: (item) => imageRow(item) || JSON.stringify(item),
     uploadImage: uploadCoverItem,
+    itemColumns: COVER_ITEM_COLUMNS,
     pinItemFlag: { key: 'portrait_pinned', label: '竖版封面' },
     description:
       '“竖版封面”是卡片和列表渲染的那一张，由这里的置顶决定，与顺序无关；详情页头图由系统在横版图中自动挑选（近正方形的碟面、盒背等永不入选）。拖拽只调整画廊里的展示次序。',
@@ -428,7 +501,8 @@ export const createGalgameEditConfig = (
     resolveImage: imageRow,
     formatItem: (item) => imageRow(item) || JSON.stringify(item),
     uploadImage: uploadScreenshotItem,
-    description: '拖拽可调整展示顺序',
+    itemColumns: SCREENSHOT_ITEM_COLUMNS,
+    description: '拖拽可调整展示顺序, 点每张图的铅笔可以改它的说明与分级',
     contextNote: UPSTREAM_NOTE,
     contextItems: () => upstreamImages(names.screenshots)
   }

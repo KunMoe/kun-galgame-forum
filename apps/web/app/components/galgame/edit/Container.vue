@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { parseEditProblem } from '@nextmoe/edit-ui-core'
 import {
   createGalgameEditConfig,
   GALGAME_EDIT_GROUP_ORDER,
@@ -79,6 +80,13 @@ const patch = ref<Record<string, unknown>>({})
 const note = ref('')
 const showNote = ref(true)
 const submitting = ref(false)
+const formValid = ref(true)
+const fieldErrors = ref<Record<string, string[]>>({})
+const formErrors = ref<string[]>([])
+// edit-ui 0.3.0 holds a beforeunload listener while the patch is non-empty. A
+// merged submit leaves that patch in place, so 返回游戏页 asked "leave site?"
+// about changes that were already saved — reset() is what clears it.
+const formRef = ref<{ reset: () => void } | null>(null)
 
 const dirtyCount = computed(() => Object.keys(patch.value).length)
 const dirtyLabels = computed(() =>
@@ -99,13 +107,31 @@ const willAutomerge = computed(
 )
 
 const handleSubmit = async () => {
-  if (!dirtyCount.value || submitting.value) {
+  if (!dirtyCount.value || submitting.value || !formValid.value) {
     return
   }
   submitting.value = true
+  fieldErrors.value = {}
+  formErrors.value = []
   const result = await kunFetch<GalgameEditSubmitResult>(
     `/galgame/${gid.value}/edit/proposals`,
-    { method: 'POST', body: { patch: patch.value, note: note.value } }
+    {
+      method: 'POST',
+      body: { patch: patch.value, note: note.value },
+      onApiError: (envelope: {
+        code: number
+        message: string
+        errors?: unknown[]
+      }) => {
+        const parsed = parseEditProblem({
+          detail: envelope.message,
+          errors: envelope.errors
+        })
+        fieldErrors.value = parsed.fields
+        formErrors.value = parsed.form
+        return Object.keys(parsed.fields).length > 0
+      }
+    }
   )
   submitting.value = false
   if (!result) {
@@ -116,6 +142,8 @@ const handleSubmit = async () => {
   } else {
     useMessage('提案已提交，等待审核', 'success')
   }
+  formRef.value?.reset()
+  patch.value = {}
   note.value = ''
   await Promise.all([refreshMine(), refreshPending()])
 }
@@ -237,14 +265,19 @@ const handleWithdraw = async (id: number) => {
 
       <KunCard :is-hoverable="false" :is-transparent="false">
         <EditkitSchemaForm
+          ref="formRef"
           :fields="bootstrap.fields"
           :values="bootstrap.values"
           :config="editConfig"
+          :vocabularies="bootstrap.vocabularies"
           :group-order="GALGAME_EDIT_GROUP_ORDER"
           :tabbed-groups="GALGAME_EDIT_TABBED_GROUPS"
           :disabled="submitting"
+          :errors="fieldErrors"
+          :form-errors="formErrors"
           layout="tabs"
           @update:patch="patch = $event"
+          @update:valid="formValid = $event"
         />
       </KunCard>
 
@@ -287,6 +320,9 @@ const handleWithdraw = async (id: number) => {
                 </div>
               </template>
               <p v-else>尚未修改</p>
+              <p v-if="!formValid" class="text-danger">
+                有字段填写不完整，修好后才能提交
+              </p>
             </div>
             <div class="flex items-center gap-2">
               <KunButton
@@ -300,7 +336,7 @@ const handleWithdraw = async (id: number) => {
               </KunButton>
               <KunButton
                 color="primary"
-                :disabled="!dirtyCount"
+                :disabled="!dirtyCount || !formValid"
                 :loading="submitting"
                 @click="handleSubmit"
               >

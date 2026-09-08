@@ -17,6 +17,8 @@ type Client struct {
 	appKey     string
 	baseURL    string
 	httpClient *http.Client
+
+	vocabularies vocabularyCache
 }
 
 func New(cfg Config) *Client {

@@ -4,6 +4,19 @@ export type GalgameEditProposalStatus =
   | 'declined'
   | 'withdrawn'
 
+export interface GalgameEditSchemaElementMember {
+  key: string
+  type: string
+  vocabulary?: string
+  base?: number
+  nullable?: boolean
+}
+
+export interface GalgameEditSchemaElement {
+  type: string
+  members?: GalgameEditSchemaElementMember[]
+}
+
 export interface GalgameEditSchemaField {
   key: string
   kind: string
@@ -13,6 +26,25 @@ export interface GalgameEditSchemaField {
   can_propose: boolean
   can_review: boolean
   would_automerge: boolean
+  max_elements?: number
+  max_suppressed?: number
+  vocabulary?: string
+  encoding?: 'int' | 'token'
+  base?: number
+  nullable?: boolean
+  element?: GalgameEditSchemaElement | null
+}
+
+export interface GalgameEditVocabularyValue {
+  value: string
+  display_name?: string
+  description?: string
+}
+
+export interface GalgameEditVocabulary {
+  name: string
+  closed: boolean
+  values: GalgameEditVocabularyValue[]
 }
 
 export interface GalgameEditAmendment {
@@ -85,6 +117,7 @@ export interface GalgameEditBootstrap {
   gid: number
   values: Record<string, unknown>
   fields: GalgameEditSchemaField[]
+  vocabularies: Record<string, GalgameEditVocabulary>
   can_review: boolean
 }
 

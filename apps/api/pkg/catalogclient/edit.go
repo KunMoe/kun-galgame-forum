@@ -125,6 +125,20 @@ type EditRevertResult struct {
 	Revision EditRevision `json:"revision"`
 }
 
+// One member of a list field's element object, as the schema declares it.
+type EditSchemaElementMember struct {
+	Key        string `json:"key"`
+	Type       string `json:"type"`
+	Vocabulary string `json:"vocabulary,omitempty"`
+	Base       int    `json:"base,omitempty"`
+	Nullable   bool   `json:"nullable,omitempty"`
+}
+
+type EditSchemaElement struct {
+	Type    string                    `json:"type"`
+	Members []EditSchemaElementMember `json:"members,omitempty"`
+}
+
 type EditSchemaField struct {
 	Key            string `json:"key"`
 	Kind           string `json:"kind"`
@@ -134,6 +148,18 @@ type EditSchemaField struct {
 	CanPropose     bool   `json:"can_propose"`
 	CanReview      bool   `json:"can_review"`
 	WouldAutomerge bool   `json:"would_automerge"`
+
+	// The value face of the schema. Dropping these is not cosmetic: an enum
+	// field whose vocabulary and encoding do not reach the browser has no
+	// options to render and the form degrades it to read-only, which is what
+	// "编辑页只看得到三个标签卡" was.
+	MaxElements   int                `json:"max_elements,omitempty"`
+	MaxSuppressed int                `json:"max_suppressed,omitempty"`
+	Vocabulary    string             `json:"vocabulary,omitempty"`
+	Encoding      string             `json:"encoding,omitempty"`
+	Base          int                `json:"base,omitempty"`
+	Nullable      bool               `json:"nullable,omitempty"`
+	Element       *EditSchemaElement `json:"element,omitempty"`
 }
 
 type EditSchema struct {

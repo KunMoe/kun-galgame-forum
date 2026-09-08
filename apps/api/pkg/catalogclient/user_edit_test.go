@@ -471,3 +471,63 @@ func TestUserEditAdjudicationUnconfigured(t *testing.T) {
 		t.Fatalf("err = %v, want ErrNotConfigured", err)
 	}
 }
+
+// The schema face carries the value half — how big a list may be, which
+// vocabulary an enum draws from, how that vocabulary is encoded on the wire.
+// Dropping it is invisible from the API and fatal in the browser: an enum with
+// no options renders read-only, which is how the edit page lost whole tabs.
+func TestGetEditSchemaUserKeepsTheValueFace(t *testing.T) {
+	srv, _ := recordingServer(t, 0, `{"object":"object_schema","entity_type":"catalog.work","fields":[`+
+		`{"key":"catalog.work.olang","field_type":"enum","diff_hint":"inline",`+
+		`"vocabulary":"olang","encoding":"token","base":0,"nullable":false},`+
+		`{"key":"catalog.work.titles","field_type":"list","diff_hint":"items",`+
+		`"max_elements":100,"max_suppressed":200,"element":{"type":"object","members":[`+
+		`{"key":"title","type":"text"},{"key":"kind","type":"int","vocabulary":"title_kind"}]}}]}`)
+
+	schema, err := userClient(srv.URL).GetEditSchemaUser(context.Background(), "user-jwt", "catalog.work", 1000)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(schema.Fields) != 2 {
+		t.Fatalf("fields = %d, want 2", len(schema.Fields))
+	}
+	olang := schema.Fields[0]
+	if olang.Vocabulary != "olang" || olang.Encoding != "token" {
+		t.Fatalf("olang lost its vocabulary: %+v", olang)
+	}
+	titles := schema.Fields[1]
+	if titles.MaxElements != 100 || titles.MaxSuppressed != 200 {
+		t.Fatalf("titles lost its caps: %+v", titles)
+	}
+	if titles.Element == nil || len(titles.Element.Members) != 2 ||
+		titles.Element.Members[1].Vocabulary != "title_kind" {
+		t.Fatalf("titles lost its element shape: %+v", titles.Element)
+	}
+}
+
+// The engine names the field it refused in the problem body's errors[]. Keeping
+// only the joined message turns "第 1 行 标题：必填" into a toast the reader has
+// to map back onto a form by hand.
+func TestUserEditKeepsTheProblemsFieldErrors(t *testing.T) {
+	srv, _ := recordingServer(t, http.StatusUnprocessableEntity,
+		`{"code":"UNKNOWN_VALUE","title":"Unprocessable Entity",`+
+			`"detail":"editing: field \"catalog.work.links\": element 0: must be an http:// or https:// URL",`+
+			`"errors":[{"pointer":"/patch/catalog.work.links","reason":"UNKNOWN_VALUE",`+
+			`"detail":"element 0: must be an http:// or https:// URL"}]}`)
+
+	_, err := userClient(srv.URL).CreateEditProposalUser(context.Background(), "user-jwt",
+		UserEditCreateRequest{EntityType: "catalog.work", EntityID: 1000,
+			Patch: map[string]any{"catalog.work.links": []string{"ftp://x"}}})
+
+	var apiErr *UserAPIError
+	if !errors.As(err, &apiErr) {
+		t.Fatalf("err = %v, want a *UserAPIError", err)
+	}
+	if apiErr.ProblemCode != "UNKNOWN_VALUE" {
+		t.Fatalf("problem code = %q", apiErr.ProblemCode)
+	}
+	if len(apiErr.FieldErrors) != 1 ||
+		apiErr.FieldErrors[0].Pointer != "/patch/catalog.work.links" {
+		t.Fatalf("field errors lost: %+v", apiErr.FieldErrors)
+	}
+}

@@ -1,8 +1,23 @@
+export interface KunApiFieldError {
+  pointer?: string
+  parameter?: string
+  header?: string
+  reason?: string
+  detail?: string
+}
+
 interface KunApiResponse<T> {
   code: number
   message: string
   data: T
+  errors?: KunApiFieldError[]
 }
+
+// Returning true claims the rejection: the default toast is skipped because the
+// caller is rendering the message itself. The edit form needs this — the engine
+// names the field it refused, and one toast for "第 1 行 标题：必填" is strictly
+// worse than the message sitting under that control.
+type KunApiErrorHook = (envelope: KunApiResponse<unknown>) => boolean
 
 const SSR_API_TIMEOUT_MS = 10000
 
@@ -137,6 +152,16 @@ export const kunFetch = async <T>(
     ? `${config.apiBaseUrl}/api`
     : `${config.public.apiBaseUrl}/api`
 
+  const { onApiError, ...fetchOptions } = (options ?? {}) as {
+    onApiError?: KunApiErrorHook
+  } & Record<string, unknown>
+  const reject = async (envelope: KunApiResponse<unknown>) => {
+    if (onApiError?.(envelope)) {
+      return
+    }
+    await handleApiError(envelope.code, envelope.message)
+  }
+
   const headers = new Headers(
     (options as { headers?: HeadersInit } | undefined)?.headers
   )
@@ -153,13 +178,13 @@ export const kunFetch = async <T>(
     const resp = await $fetch<KunApiResponse<T>>(`${apiBase}${url}`, {
       timeout: import.meta.server ? SSR_API_TIMEOUT_MS : undefined,
       credentials: 'include',
-      ...options,
+      ...fetchOptions,
       headers
     })
 
     if (!resp || resp.code !== 0) {
       if (resp) {
-        await handleApiError(resp.code, resp.message)
+        await reject(resp)
       }
       return null
     }
@@ -177,7 +202,7 @@ export const kunFetch = async <T>(
       const status = err.status ?? err.statusCode ?? err.response?.status
 
       if (envelope && envelope.code !== 0) {
-        await handleApiError(envelope.code, envelope.message)
+        await reject(envelope)
       } else if (status === 401 || status === 403) {
         await handleApiError(CODE_AUTH_EXPIRED, '登录已失效，请重新登录')
       } else {

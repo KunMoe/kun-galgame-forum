@@ -188,13 +188,20 @@ func (c *Client) GetEditSchemaUser(ctx context.Context, accessToken, entityType 
 		}
 		locked := !canPropose && !canReview && !f.Deprecated
 		out.Fields = append(out.Fields, EditSchemaField{
-			Key:        f.Key,
-			Kind:       kind,
-			DiffHint:   f.DiffHint,
-			Deprecated: f.Deprecated,
-			Locked:     locked,
-			CanPropose: canPropose,
-			CanReview:  canReview,
+			Key:           f.Key,
+			Kind:          kind,
+			DiffHint:      f.DiffHint,
+			Deprecated:    f.Deprecated,
+			Locked:        locked,
+			CanPropose:    canPropose,
+			CanReview:     canReview,
+			MaxElements:   f.MaxElements,
+			MaxSuppressed: f.MaxSuppressed,
+			Vocabulary:    f.Vocabulary,
+			Encoding:      f.Encoding,
+			Base:          f.Base,
+			Nullable:      f.Nullable,
+			Element:       f.Element,
 		})
 	}
 	return out, nil

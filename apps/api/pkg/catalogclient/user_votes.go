@@ -11,10 +11,26 @@ import (
 
 var ErrInsufficientScope = errors.New("catalogclient: access token lacks the scope the call needs")
 
+// One entry of an RFC 7807 body's errors[]. The editing engine names the field
+// that failed in `pointer` (/patch/<key> for a locked or conflicting field, a
+// bare /<key> for a validation failure), which is the only way the edit form can
+// put the message next to the control instead of in a toast.
+type ProblemFieldError struct {
+	Pointer   string `json:"pointer,omitempty"`
+	Parameter string `json:"parameter,omitempty"`
+	Header    string `json:"header,omitempty"`
+	Reason    string `json:"reason,omitempty"`
+	Detail    string `json:"detail,omitempty"`
+}
+
 type UserAPIError struct {
 	Status  int
 	Code    int
 	Message string
+	// The problem body's own fields, kept whole. ProblemCode is the string code
+	// (IMMUTABLE, NOT_PERMITTED, …), which is not the numeric Code above.
+	ProblemCode string
+	FieldErrors []ProblemFieldError
 }
 
 func (e *UserAPIError) Error() string {

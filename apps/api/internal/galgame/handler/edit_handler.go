@@ -199,6 +199,26 @@ func (h *EditHandler) notifyDecision(prop *catalogclient.EditProposal, gid int, 
 	}
 }
 
+// The engine names the field it refused in the problem body. Passing it through
+// is what lets the form put "第 1 行 标题：必填" under the control instead of
+// showing the whole rejection as one toast.
+func problemFields(in []catalogclient.ProblemFieldError) []errors.FieldError {
+	if len(in) == 0 {
+		return nil
+	}
+	out := make([]errors.FieldError, 0, len(in))
+	for _, e := range in {
+		out = append(out, errors.FieldError{
+			Pointer:   e.Pointer,
+			Parameter: e.Parameter,
+			Header:    e.Header,
+			Reason:    e.Reason,
+			Detail:    e.Detail,
+		})
+	}
+	return out
+}
+
 func editStatusError(status int, message string) *errors.AppError {
 	switch status {
 	case http.StatusForbidden:
@@ -260,10 +280,10 @@ func userEditError(c fiber.Ctx, err error) error {
 		return response.Error(c, errEditDown)
 	case stderrors.As(err, &apiErr):
 		if appErr := editStatusError(apiErr.Status, apiErr.Message); appErr != nil {
-			return response.Error(c, appErr)
+			return response.Error(c, appErr.WithFieldErrors(problemFields(apiErr.FieldErrors)))
 		}
 		slog.Error("galgame edit: user-plane upstream error",
-			"status", apiErr.Status, "code", apiErr.Code, "msg", apiErr.Message)
+			"status", apiErr.Status, "code", apiErr.ProblemCode, "msg", apiErr.Message)
 		return response.Error(c, errEditDown)
 	default:
 		slog.Warn("galgame edit: catalog user plane unreachable", "error", err)
@@ -325,11 +345,20 @@ func (h *EditHandler) Bootstrap(c fiber.Ctx) error {
 	if err != nil {
 		return userEditError(c, err)
 	}
+	// An unreachable vocabulary face costs the enum fields their options, not the
+	// page: the form falls back to read-only for them, which is what shipped
+	// before this call existed.
+	vocab, err := h.catalog.Vocabularies(ctx)
+	if err != nil {
+		slog.Warn("galgame edit: vocabularies unreadable", "gid", gid, "error", err)
+		vocab = map[string]catalogclient.Vocabulary{}
+	}
 	return response.OK(c, fiber.Map{
-		"gid":        gid,
-		"values":     values,
-		"fields":     schema.Fields,
-		"can_review": anyReviewable(schema.Fields),
+		"gid":          gid,
+		"values":       values,
+		"fields":       schema.Fields,
+		"vocabularies": vocab,
+		"can_review":   anyReviewable(schema.Fields),
 	})
 }
 

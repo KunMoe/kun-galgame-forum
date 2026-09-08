@@ -13,9 +13,10 @@ import (
 )
 
 type v2Problem struct {
-	Code   string `json:"code"`
-	Title  string `json:"title"`
-	Detail string `json:"detail"`
+	Code   string              `json:"code"`
+	Title  string              `json:"title"`
+	Detail string              `json:"detail"`
+	Errors []ProblemFieldError `json:"errors"`
 }
 
 func (c *Client) origin() string {
@@ -103,7 +104,10 @@ func (c *Client) userV2Do(ctx context.Context, method, accessToken, path string,
 		if resp.StatusCode >= 500 {
 			return nil, etag, ErrUpstream
 		}
-		return nil, etag, &UserAPIError{Status: resp.StatusCode, Message: problemMsg(p, raw)}
+		return nil, etag, &UserAPIError{
+			Status: resp.StatusCode, Message: problemMsg(p, raw),
+			ProblemCode: p.Code, FieldErrors: p.Errors,
+		}
 	}
 }
 
@@ -305,13 +309,20 @@ func (p v2List[T]) cursor() string {
 type v2Schema struct {
 	EntityType string `json:"entity_type"`
 	Fields     []struct {
-		Key        string `json:"key"`
-		FieldType  string `json:"field_type"`
-		Kind       string `json:"kind"`
-		DiffHint   string `json:"diff_hint"`
-		Deprecated bool   `json:"deprecated"`
-		CanPropose *bool  `json:"can_propose"`
-		CanReview  *bool  `json:"can_review"`
+		Key           string             `json:"key"`
+		FieldType     string             `json:"field_type"`
+		Kind          string             `json:"kind"`
+		DiffHint      string             `json:"diff_hint"`
+		Deprecated    bool               `json:"deprecated"`
+		CanPropose    *bool              `json:"can_propose"`
+		CanReview     *bool              `json:"can_review"`
+		MaxElements   int                `json:"max_elements"`
+		MaxSuppressed int                `json:"max_suppressed"`
+		Vocabulary    string             `json:"vocabulary"`
+		Encoding      string             `json:"encoding"`
+		Base          int                `json:"base"`
+		Nullable      bool               `json:"nullable"`
+		Element       *EditSchemaElement `json:"element"`
 	} `json:"fields"`
 }
 

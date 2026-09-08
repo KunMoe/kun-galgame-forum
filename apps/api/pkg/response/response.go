@@ -22,10 +22,14 @@ func OKMessage(c fiber.Ctx, msg string) error {
 }
 
 func Error(c fiber.Ctx, err *errors.AppError) error {
-	return c.Status(err.StatusCode).JSON(fiber.Map{
+	body := fiber.Map{
 		"code":    err.Code,
 		"message": err.Message,
-	})
+	}
+	if len(err.Errors) > 0 {
+		body["errors"] = err.Errors
+	}
+	return c.Status(err.StatusCode).JSON(body)
 }
 
 func Paginated(c fiber.Ctx, items any, total int64) error {

@@ -2,10 +2,33 @@ package errors
 
 import "fmt"
 
+// One field the upstream named when it refused a write, carried through in the
+// RFC 7807 shape the editing engine emits. Only the edit lane fills it; every
+// other response omits the key entirely.
+type FieldError struct {
+	Pointer   string `json:"pointer,omitempty"`
+	Parameter string `json:"parameter,omitempty"`
+	Header    string `json:"header,omitempty"`
+	Reason    string `json:"reason,omitempty"`
+	Detail    string `json:"detail,omitempty"`
+}
+
 type AppError struct {
-	Code       int    `json:"code"`
-	Message    string `json:"message"`
-	StatusCode int    `json:"-"`
+	Code       int          `json:"code"`
+	Message    string       `json:"message"`
+	StatusCode int          `json:"-"`
+	Errors     []FieldError `json:"errors,omitempty"`
+}
+
+// WithFieldErrors returns a copy carrying the upstream's per-field messages, so
+// a shared sentinel error value cannot be mutated by one request's rejection.
+func (e *AppError) WithFieldErrors(errs []FieldError) *AppError {
+	if len(errs) == 0 {
+		return e
+	}
+	out := *e
+	out.Errors = errs
+	return &out
 }
 
 func (e *AppError) Error() string {
