@@ -2,6 +2,7 @@ package utils
 
 import (
 	"fmt"
+	"net/url"
 	"strings"
 
 	"kun-galgame-api/pkg/errors"
@@ -10,7 +11,47 @@ import (
 	"github.com/gofiber/fiber/v3"
 )
 
-var validate = validator.New()
+var validate = newValidator()
+
+func newValidator() *validator.Validate {
+	v := validator.New()
+	if err := v.RegisterValidation("downloadlink", isDownloadLink); err != nil {
+		panic(err)
+	}
+	return v
+}
+
+// A download link is rendered straight into a KunLink `to`, so the scheme is an
+// allowlist rather than "anything net/url accepts": javascript: and data: both
+// parse, both carry a non-empty Opaque, and both passed the url tag this
+// replaced.
+var downloadLinkSchemes = map[string]bool{
+	"http": true, "https": true,
+	"ftp": true, "ftps": true,
+	"magnet": true, "ed2k": true, "thunder": true,
+}
+
+// go-playground's url tag rejects a URI whose Host, Opaque and Fragment are all
+// empty. A magnet URI is exactly that shape — everything lives in the query.
+// Uploaders substituted a full-width ？, which makes the tail Opaque and
+// validates, and produces a link no torrent client can use.
+func isDownloadLink(fl validator.FieldLevel) bool {
+	value := strings.TrimSpace(fl.Field().String())
+	if value == "" {
+		return false
+	}
+	if strings.HasPrefix(value, "#") {
+		return false
+	}
+	u, err := url.Parse(value)
+	if err != nil {
+		return false
+	}
+	if !downloadLinkSchemes[strings.ToLower(u.Scheme)] {
+		return false
+	}
+	return u.Host != "" || u.Opaque != "" || u.RawQuery != "" || u.Fragment != ""
+}
 
 func ParseAndValidate(c fiber.Ctx, dst any) *errors.AppError {
 	if err := c.Bind().Body(dst); err != nil {
@@ -58,6 +99,8 @@ func translateFieldError(fe validator.FieldError) string {
 		return fmt.Sprintf("%s 长度不能大于 %s", field, fe.Param())
 	case "oneof":
 		return fmt.Sprintf("%s 的值必须是 %s 之一", field, fe.Param())
+	case "downloadlink":
+		return fmt.Sprintf("%s 不是有效的下载链接", field)
 	default:
 		return fmt.Sprintf("%s 验证失败", field)
 	}

@@ -19,7 +19,7 @@ type CreateGalgameResourceRequest struct {
 	Code      string   `json:"code" validate:"max=1007"`
 	Password  string   `json:"password" validate:"max=1007"`
 	Note      string   `json:"note" validate:"max=10000"`
-	Link      []string `json:"link" validate:"required,min=1,max=20,dive,url"`
+	Link      []string `json:"link" validate:"required,min=1,max=20,dive,downloadlink"`
 }
 
 type UpdateGalgameResourceRequest struct {
@@ -32,7 +32,7 @@ type UpdateGalgameResourceRequest struct {
 	Code              string   `json:"code" validate:"max=1007"`
 	Password          string   `json:"password" validate:"max=1007"`
 	Note              string   `json:"note" validate:"max=10000"`
-	Link              []string `json:"link" validate:"required,min=1,max=20,dive,url"`
+	Link              []string `json:"link" validate:"required,min=1,max=20,dive,downloadlink"`
 }
 
 type DeleteGalgameResourceRequest struct {
