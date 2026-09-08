@@ -5,6 +5,7 @@ import {
   SUPPORTED_LANGUAGE_MAP
 } from './constant'
 import type { KunPatchResourceResponse, HikariResponse } from './types'
+import { patchNoteText } from './noteText'
 
 const props = defineProps<{
   vndbId: string
@@ -29,19 +30,6 @@ const toggleNote = (id: number) => {
   }
 }
 const isNoteLong = (note: string) => note.length > 80 || note.includes('\n')
-
-// The note arrives from moyu's API as raw markdown with no note_html beside it,
-// so it cannot go through KunContent the way this site's own resource notes do,
-// and it rendered as source: 「**注意**」 with the asterisks showing. Turning
-// third-party markdown into HTML here would mean sanitising someone else's user
-// input; stripping it to text does not. The one thing plain text must not lose
-// is where a link went, which markdownToText drops, so the URL is folded into
-// the visible text first.
-const noteText = (note: string) =>
-  markdownToText(
-    note.replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g, '$1 ($2)'),
-    { preserveNewlines: true }
-  )
 
 const STORAGE_MAP: Record<string, string> = {
   s3: 'S3 对象存储',
@@ -170,7 +158,7 @@ onMounted(async () => {
             class="text-sm break-words whitespace-pre-wrap"
             :class="{ 'line-clamp-3': !isNoteExpanded(resource.id) }"
           >
-            {{ noteText(resource.note) }}
+            {{ patchNoteText(resource.note) }}
           </p>
           <button
             v-if="isNoteLong(resource.note)"
@@ -232,7 +220,6 @@ onMounted(async () => {
           </template>
         </KunButton>
       </div>
-
     </KunCard>
   </div>
 </template>
