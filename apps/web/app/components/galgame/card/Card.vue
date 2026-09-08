@@ -18,6 +18,13 @@ defineSlots<{
   meta?: (props: { galgame: T }) => unknown
 }>()
 
+// The column count below is a CONTAINER query, but the reader's choice is about
+// their phone, so it is gated on the viewport instead: on a phone this grid is
+// the page's whole width, and the calendar's copy of it — the reason the rest
+// of this cascade is container-based — has already stacked to full width by
+// then. Above sm the container rules take over untouched.
+const { showKUNGalgamePhoneColumns } = storeToRefs(usePersistSettingsStore())
+
 const {
   showPlatform,
   showRating,
@@ -75,7 +82,12 @@ const cards = computed(() =>
        drew six ~115px thumbnails in it. -->
   <div class="@container">
     <div
-      class="grid grid-cols-2 gap-2 @lg:grid-cols-3 @lg:gap-3 @2xl:grid-cols-4 @4xl:grid-cols-5 @5xl:grid-cols-6"
+      :class="
+        cn(
+          'grid grid-cols-2 gap-2 @lg:grid-cols-3 @lg:gap-3 @2xl:grid-cols-4 @4xl:grid-cols-5 @5xl:grid-cols-6',
+          showKUNGalgamePhoneColumns === 3 && 'max-sm:grid-cols-3 max-sm:gap-1.5'
+        )
+      "
     >
       <KunCard
         :is-transparent="isTransparent"

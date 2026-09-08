@@ -2,7 +2,8 @@
 const {
   showKUNGalgamePageTransparency,
   showKUNGalgameBackgroundBrightness,
-  showKUNGalgameRounded
+  showKUNGalgameRounded,
+  showKUNGalgamePhoneColumns
 } = storeToRefs(usePersistSettingsStore())
 
 const roundedOptions = [
@@ -10,6 +11,11 @@ const roundedOptions = [
   { value: 'sm', label: '小' },
   { value: 'md', label: '中' },
   { value: 'lg', label: '大' }
+] as const
+
+const phoneColumnOptions = [
+  { value: 2, label: '2 张' },
+  { value: 3, label: '3 张' }
 ] as const
 
 watch(
@@ -82,6 +88,27 @@ watch(
           :variant="showKUNGalgameRounded === opt.value ? 'solid' : 'flat'"
           :color="showKUNGalgameRounded === opt.value ? 'primary' : 'default'"
           @click="usePersistSettingsStore().setKUNGalgameRounded(opt.value)"
+        >
+          {{ opt.label }}
+        </KunButton>
+      </div>
+    </div>
+
+    <div class="space-y-2">
+      <div class="text-default-700 flex items-center gap-2 font-medium">
+        <KunIcon class="text-primary" name="lucide:layout-grid" />
+        <span>手机上每行的游戏卡片</span>
+      </div>
+      <div class="grid grid-cols-2 gap-2">
+        <KunButton
+          v-for="opt in phoneColumnOptions"
+          :key="opt.value"
+          size="sm"
+          :variant="showKUNGalgamePhoneColumns === opt.value ? 'solid' : 'flat'"
+          :color="
+            showKUNGalgamePhoneColumns === opt.value ? 'primary' : 'default'
+          "
+          @click="showKUNGalgamePhoneColumns = opt.value"
         >
           {{ opt.label }}
         </KunButton>

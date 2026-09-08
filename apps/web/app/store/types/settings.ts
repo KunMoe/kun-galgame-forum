@@ -15,6 +15,7 @@ export interface KUNGalgameSettingsStore {
   showKUNGalgameBackLoli: boolean
   showKUNGalgameNoResource: boolean
   showKUNGalgameRounded: 'none' | 'sm' | 'md' | 'lg'
+  showKUNGalgamePhoneColumns: 2 | 3
   showKUNGalgameGallerySexualLevels: number[]
   showKUNGalgameGalleryViolenceLevels: number[]
 }
