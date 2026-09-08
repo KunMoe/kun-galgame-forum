@@ -73,10 +73,11 @@ func (s *SeriesService) buildIndex(ctx context.Context) ([]indexedSeries, *error
 
 func (s *SeriesService) buildCard(ctx context.Context, row seriesIndexRow) indexedSeries {
 	card := dto.SeriesCard{
-		ID:            row.ID,
-		Name:          row.Name,
-		IsNSFW:        seriesNSFW(row.hasNSFW, false),
-		SampleGalgame: []dto.SeriesSample{},
+		ID:                  row.ID,
+		Name:                row.Name,
+		IsNSFW:              seriesNSFW(row.hasNSFW, false),
+		CatalogGalgameCount: row.GalgameCount,
+		SampleGalgame:       []dto.SeriesSample{},
 	}
 
 	members, appErr := s.galgameClient.CatalogWorksSearch(ctx, client.OpenPopulation(url.Values{

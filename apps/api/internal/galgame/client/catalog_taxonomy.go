@@ -98,6 +98,7 @@ type CatalogSeriesDetail struct {
 	HasNSFW     *bool                       `json:"has_nsfw"`
 	Name        string                      `json:"name"`
 	DisplayName string                      `json:"display_name"`
+	WorkCount   int                         `json:"work_count"`
 	Localized   map[string]catLocalizedName `json:"localized"`
 	Intros      []CatalogIntro              `json:"intros"`
 }

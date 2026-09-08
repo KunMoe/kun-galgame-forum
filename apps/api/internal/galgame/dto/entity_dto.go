@@ -142,11 +142,18 @@ type SeriesSample struct {
 }
 
 type SeriesCard struct {
-	ID            int            `json:"id"`
-	Name          string         `json:"name"`
-	IsNSFW        bool           `json:"is_nsfw"`
-	GalgameCount  int            `json:"galgame_count"`
-	SampleGalgame []SeriesSample `json:"sample_galgame"`
+	ID     int    `json:"id"`
+	Name   string `json:"name"`
+	IsNSFW bool   `json:"is_nsfw"`
+	// GalgameCount is what this site lists — a member with no resource, or one a
+	// ban unpublished, is not in it. CatalogGalgameCount is how many the series
+	// has upstream, which is what the detail page one click away renders. They
+	// are routinely different (斬魔大聖デモンベイン: 1 and 3), and the card used to
+	// print only the first under the word 共, so the browse list said "1 部" about
+	// a series whose own page then listed three.
+	GalgameCount        int            `json:"galgame_count"`
+	CatalogGalgameCount int            `json:"catalog_galgame_count"`
+	SampleGalgame       []SeriesSample `json:"sample_galgame"`
 }
 
 type SeriesCardPage struct {

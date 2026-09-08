@@ -131,8 +131,10 @@ func (s *SeriesService) cardsByID(ctx context.Context, ids []int, isSFW bool) *d
 				return
 			}
 			built := s.buildCard(ctx, seriesIndexRow{
-				SeriesListItem: dto.SeriesListItem{ID: int(rec.ID), Name: rec.Label(ctx)},
-				hasNSFW:        rec.HasNSFW,
+				SeriesListItem: dto.SeriesListItem{
+					ID: int(rec.ID), Name: rec.Label(ctx), GalgameCount: rec.WorkCount,
+				},
+				hasNSFW: rec.HasNSFW,
 			})
 			if built.card.GalgameCount == 0 {
 				return

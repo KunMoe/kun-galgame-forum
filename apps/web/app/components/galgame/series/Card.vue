@@ -10,6 +10,19 @@ const includedGamesText = computed(() => {
   const names = props.series.sample_galgame.map((g) => `《${g.name}》`)
   return `${names.join('、')}${props.series.galgame_count > 5 ? ' 等' : ''}`
 })
+
+// galgame_count is what this site lists; catalog_galgame_count is the whole
+// series, and it is what the detail page one click away renders. Printing only
+// the first under 共 made the browse list say 「共 1 部」 about a series whose own
+// page then listed three.
+const countText = computed(() => {
+  const listed = props.series.galgame_count
+  const total = props.series.catalog_galgame_count
+  if (!total || total <= listed) {
+    return `共 ${listed} 部 Galgame`
+  }
+  return `共 ${total} 部 · 本站收录 ${listed} 部`
+})
 </script>
 
 <template>
@@ -37,7 +50,7 @@ const includedGamesText = computed(() => {
       <div class="mt-auto flex items-center justify-between">
         <div class="text-default-500 flex items-center gap-2 text-sm">
           <KunIcon name="lucide:gamepad-2" class="h-4 w-4" />
-          <span>共 {{ series.galgame_count }} 部 Galgame</span>
+          <span>{{ countText }}</span>
         </div>
 
         <div

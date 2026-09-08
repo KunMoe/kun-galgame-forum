@@ -12,6 +12,7 @@ export interface GalgameSeriesCard {
   name: string
   is_nsfw: boolean
   galgame_count: number
+  catalog_galgame_count: number
   sample_galgame: GalgameSeriesSample[]
 }
 
