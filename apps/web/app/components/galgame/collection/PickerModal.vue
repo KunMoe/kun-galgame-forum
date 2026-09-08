@@ -82,11 +82,7 @@ const save = async () => {
 }
 
 const visibilityIcon = (v: CollectionVisibility) =>
-  v === 'private'
-    ? 'lucide:lock'
-    : v === 'restricted'
-      ? 'lucide:users'
-      : 'lucide:globe'
+  v === 'private' ? 'lucide:lock' : 'lucide:globe'
 </script>
 
 <template>

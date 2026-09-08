@@ -36,7 +36,6 @@ var mergeUniqueTables = []struct{ table, peer string }{
 	{"galgame_favorite", "user_id"},
 	{"galgame_rating", "user_id"},
 	{"galgame_contributor", "user_id"},
-	{"galgame_collection_item", "collection_id"},
 	{"galgame_quiz_galgame", "quiz_id"},
 }
 
@@ -263,6 +262,12 @@ func preferEngagedRating(tx *gorm.DB, oldGID, newGID int) error {
 	return tx.Exec("DELETE FROM galgame_rating WHERE id IN ?", loser).Error
 }
 
+// favorite_count is absent for a related reason since the folder cutover:
+// galgame_collection_item is frozen rollback material, so recomputing from it
+// would replace the live counter with a snapshot, and the memberships that
+// actually moved were rehung upstream by the catalog's own merge. The counter
+// is maintained by this site's writes and is not recomputed here.
+//
 // comment_count is absent on purpose: it mirrors the community thread anchored
 // at site_game:<gid>, which lives in infra and does not move when the forum
 // folds two local rows. The survivor keeps its own count and the merge sync logs
@@ -271,7 +276,6 @@ func recountAfterFold(tx *gorm.DB, gid int) error {
 	return tx.Exec(`
 		UPDATE galgame SET
 			like_count        = (SELECT COUNT(*) FROM galgame_like WHERE galgame_id = galgame.id),
-			favorite_count    = (SELECT COUNT(DISTINCT user_id) FROM galgame_collection_item WHERE galgame_id = galgame.id),
 			resource_count    = (SELECT COUNT(*) FROM galgame_resource WHERE galgame_id = galgame.id),
 			rating_count      = (SELECT COUNT(*) FROM galgame_rating WHERE galgame_id = galgame.id),
 			contributor_count = (SELECT COUNT(*) FROM galgame_contributor WHERE galgame_id = galgame.id),

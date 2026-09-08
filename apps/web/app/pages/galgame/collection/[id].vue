@@ -49,16 +49,13 @@ const canDelete = computed(
 const visibilityMeta = (v?: CollectionVisibility) =>
   v === 'private'
     ? { icon: 'lucide:lock', label: '私密' }
-    : v === 'restricted'
-      ? { icon: 'lucide:users', label: '指定可见' }
-      : { icon: 'lucide:globe', label: '公开' }
+    : { icon: 'lucide:globe', label: '公开' }
 
 const editOpen = ref(false)
 const editInitial = computed(() => ({
   name: detail.value?.name ?? '',
   description: detail.value?.description ?? '',
   visibility: detail.value?.visibility ?? ('public' as CollectionVisibility),
-  viewers: detail.value?.viewers ?? []
 }))
 
 const onEdited = () => {

@@ -71,5 +71,5 @@ func (h *GalgameHandler) MyInteractions(c fiber.Ctx) error {
 	if appErr != nil {
 		return response.Error(c, appErr)
 	}
-	return response.OK(c, h.galgameService.GetMyInteractions(user.ID))
+	return response.OK(c, h.galgameService.GetMyInteractions(c.Context(), user.ID, middleware.GetAccessToken(c)))
 }

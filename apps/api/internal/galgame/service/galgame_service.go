@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"log/slog"
 	"strconv"
 
 	"kun-galgame-api/internal/constants"
@@ -95,9 +96,58 @@ func (s *GalgameService) ToggleLike(
 	return nil
 }
 
-func (s *GalgameService) GetMyInteractions(userID int) dto.MyGalgameInteractions {
-	liked, favorited := s.interactionRepo.UserGalgameInteractions(userID)
-	return dto.MyGalgameInteractions{Liked: liked, Favorited: favorited}
+// The favourited half is every work in every folder the person owns, read from
+// the catalog with their own token. It is one call per folder — p50 is five —
+// and the browser asks for it once per session. A session with no token, or
+// one minted before the folder scopes, gets its likes and an empty favourite
+// list rather than an error: the marks go missing, the page does not.
+func (s *GalgameService) GetMyInteractions(ctx context.Context, userID int, token string) dto.MyGalgameInteractions {
+	out := dto.MyGalgameInteractions{
+		Liked:     s.interactionRepo.UserLikedGalgames(userID),
+		Favorited: []int{},
+	}
+	if token == "" || s.catalog == nil {
+		return out
+	}
+	folders, err := s.catalog.MyFolders(ctx, token)
+	if err != nil {
+		slog.Warn("galgame: my folders unreadable", "user_id", userID, "err", err)
+		return out
+	}
+	seen := map[int64]bool{}
+	for _, f := range folders {
+		if f.ItemCount == 0 {
+			continue
+		}
+		items, iErr := s.catalog.MyFolderItems(ctx, token, f.ID)
+		if iErr != nil {
+			slog.Warn("galgame: folder items unreadable", "folder_id", f.ID, "err", iErr)
+			return out
+		}
+		for _, it := range items {
+			if seen[it.WorkID] {
+				continue
+			}
+			seen[it.WorkID] = true
+			out.Favorited = append(out.Favorited, int(it.WorkID))
+		}
+	}
+	return out
+}
+
+// A work is favourited when it sits in any of the reader's folders. Asking
+// upstream costs one request; the alternative is a second copy of the
+// memberships in this database, which is what the cutover removed.
+func (s *GalgameService) isFavorited(ctx context.Context, token string, galgameID int) bool {
+	if token == "" || s.catalog == nil {
+		return false
+	}
+	folders, err := s.catalog.MyFoldersContaining(ctx, token, int64(galgameID))
+	if err != nil {
+		slog.Warn("galgame: favourite state unreadable", "galgame_id", galgameID, "err", err)
+		return false
+	}
+	return len(folders) > 0
 }
 
 func (s *GalgameService) fetchOwnerAndName(ctx context.Context, galgameID int) (int, string) {
@@ -157,7 +207,8 @@ func (s *GalgameService) GetDetail(
 	go s.galgameRepo.IncrementView(galgameID)
 
 	local := s.galgameRepo.FindLocal(galgameID)
-	isLiked, isFavorited := s.interactionRepo.UserInteraction(currentUserID, galgameID)
+	isLiked := s.interactionRepo.UserLiked(currentUserID, galgameID)
+	isFavorited := s.isFavorited(ctx, token, galgameID)
 
 	platforms, languages, types := s.resourceMetaRepo.FindResourceMetaByGalgame(galgameID)
 
@@ -176,7 +227,7 @@ func (s *GalgameService) GetDetail(
 	detail.View = local.View
 	detail.ResourceUpdateTime = utils.RFC3339OrEmpty(local.ResourceUpdateTime)
 	detail.LikeCount = local.LikeCount
-	detail.FavoriteCount = local.FavoriteCount
+	detail.FavoriteCount = g.FavoriteCount
 	detail.ResourcePublishBanned = local.ResourcePublishBanned
 	detail.IsOnForum = local.ID != 0
 	detail.Indexed = local.Published

@@ -1,6 +1,6 @@
 import type { GalgameCard } from './galgame'
 
-export type CollectionVisibility = 'public' | 'private' | 'restricted'
+export type CollectionVisibility = 'public' | 'private'
 
 export interface CollectionUserBrief {
   id: number
@@ -29,7 +29,6 @@ export interface CollectionDetail {
   item_count: number
   is_owner: boolean
   owner: CollectionUserBrief
-  viewers: CollectionUserBrief[]
   galgames: GalgameCard[]
   total: number
   created: string

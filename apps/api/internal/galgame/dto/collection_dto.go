@@ -5,15 +5,13 @@ import "time"
 type CreateCollectionRequest struct {
 	Name        string `json:"name" validate:"required,min=1,max=60"`
 	Description string `json:"description" validate:"max=500"`
-	Visibility  string `json:"visibility" validate:"required,oneof=public private restricted"`
-	ViewerIDs   []int  `json:"viewer_ids" validate:"omitempty,max=100,dive,gt=0"`
+	Visibility  string `json:"visibility" validate:"required,oneof=public private"`
 }
 
 type UpdateCollectionRequest struct {
 	Name        *string `json:"name" validate:"omitempty,min=1,max=60"`
 	Description *string `json:"description" validate:"omitempty,max=500"`
-	Visibility  *string `json:"visibility" validate:"omitempty,oneof=public private restricted"`
-	ViewerIDs   *[]int  `json:"viewer_ids" validate:"omitempty,max=100,dive,gt=0"`
+	Visibility  *string `json:"visibility" validate:"omitempty,oneof=public private"`
 }
 
 type SetCollectionMembershipRequest struct {
@@ -41,7 +39,6 @@ type CollectionDetail struct {
 	ItemCount   int               `json:"item_count"`
 	IsOwner     bool              `json:"is_owner"`
 	Owner       UserBrief         `json:"owner"`
-	Viewers     []UserBrief       `json:"viewers"`
 	Galgames    []GalgameListCard `json:"galgames"`
 	Total       int64             `json:"total"`
 	Created     time.Time         `json:"created"`

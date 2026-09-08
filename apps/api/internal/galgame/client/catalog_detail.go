@@ -54,6 +54,7 @@ func CatalogDetailToFull(ctx context.Context, d *catWorkDetail, gid int) dto.Nex
 
 	f.ExternalRatings = catalogExternalRatings(d.Ratings)
 	f.Playtimes = catalogPlaytimes(d.Playtimes)
+	f.FavoriteCount = catalogFavoriteCount(d.Popularity)
 
 	labelAt := make(map[int64]int, len(d.Labels))
 	for _, l := range d.Labels {
