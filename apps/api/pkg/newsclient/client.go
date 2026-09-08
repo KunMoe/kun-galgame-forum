@@ -8,6 +8,7 @@ package newsclient
 
 import (
 	"bytes"
+	"cmp"
 	"context"
 	"encoding/json"
 	"errors"
@@ -73,6 +74,26 @@ type Source struct {
 	PublisherUID int64  `json:"publisher_uid"`
 }
 
+// /v2 calls the source key `name`; the retired /v1 called it `key`. Reading only
+// `key` left it empty on every item, and the handler maps sources into a map
+// keyed by it — so both partners collapsed onto "" and the feed could name only
+// one of them, while ?source= filtered on an empty string.
+func (s *Source) UnmarshalJSON(b []byte) error {
+	type wire Source
+	var aux struct {
+		wire
+		Name string `json:"name"`
+	}
+	if err := json.Unmarshal(b, &aux); err != nil {
+		return err
+	}
+	*s = Source(aux.wire)
+	if s.Key == "" {
+		s.Key = aux.Name
+	}
+	return nil
+}
+
 // Item carries preview and banner only. The article body is never served and
 // is not stored anywhere upstream — following SourceURL is the only way to the
 // full text.
@@ -96,6 +117,7 @@ func (it *Item) UnmarshalJSON(b []byte) error {
 		SourceURL   string          `json:"source_url"`
 		Title       string          `json:"title"`
 		Preview     string          `json:"preview"`
+		Summary     string          `json:"summary"`
 		BannerURL   string          `json:"banner_url"`
 		PublishedAt time.Time       `json:"published_at"`
 		WorkIDs     json.RawMessage `json:"work_ids"`
@@ -104,7 +126,10 @@ func (it *Item) UnmarshalJSON(b []byte) error {
 		return err
 	}
 	it.Source, it.Lane, it.SourceURL = aux.Source, aux.Lane, aux.SourceURL
-	it.Title, it.Preview, it.BannerURL, it.PublishedAt = aux.Title, aux.Preview, aux.BannerURL, aux.PublishedAt
+	it.Title, it.BannerURL, it.PublishedAt = aux.Title, aux.BannerURL, aux.PublishedAt
+	// Same rename as the source key: /v2 calls the lede `summary`, /v1 called it
+	// `preview`. Every card on the 情报 tab rendered a title and nothing else.
+	it.Preview = cmp.Or(aux.Preview, aux.Summary)
 	raw := bytes.TrimSpace(aux.ID)
 	if len(raw) > 0 && raw[0] == '"' {
 		var s string

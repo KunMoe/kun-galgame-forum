@@ -21,6 +21,7 @@ defineProps<{ sources: KunNewsSource[] }>()
           class-name="shrink-0"
         />
         <KunLink
+          v-if="source.homepage_url"
           :href="source.homepage_url"
           target="_blank"
           rel="noopener"
@@ -30,6 +31,7 @@ defineProps<{ sources: KunNewsSource[] }>()
         >
           {{ source.name }}
         </KunLink>
+        <span v-else class="font-medium">{{ source.name }}</span>
       </div>
 
       <p v-if="source.attribution" class="text-default-400 text-xs leading-5">
@@ -38,6 +40,7 @@ defineProps<{ sources: KunNewsSource[] }>()
 
       <div class="flex flex-wrap items-center gap-x-3 gap-y-1">
         <KunLink
+          v-if="source.homepage_url"
           :href="source.homepage_url"
           target="_blank"
           rel="noopener"

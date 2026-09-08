@@ -1,5 +1,10 @@
 <script setup lang="ts">
-defineProps<{ group: KunNewsGroup }>()
+const props = defineProps<{ group: KunNewsGroup }>()
+
+// /v2/news/sources answers name + display_name and nothing else, so the partner
+// homepage, the attribution line and publisher_uid all arrive empty. Linking
+// anyway rendered <a href=""> — a link back to the current page.
+const homepage = computed(() => props.group.source?.homepage_url || '')
 </script>
 
 <template>
@@ -18,8 +23,8 @@ defineProps<{ group: KunNewsGroup }>()
         class-name="ml-auto"
       />
       <KunLink
-        v-else-if="group.source"
-        :href="group.source.homepage_url"
+        v-else-if="homepage"
+        :href="homepage"
         target="_blank"
         rel="noopener"
         color="default"
@@ -27,8 +32,11 @@ defineProps<{ group: KunNewsGroup }>()
         underline="hover"
         class-name="ml-auto"
       >
-        {{ group.source.name }}
+        {{ group.source?.name }}
       </KunLink>
+      <span v-else-if="group.source" class="text-default-500 ml-auto text-sm">
+        {{ group.source.name }}
+      </span>
     </div>
     <p v-if="group.source?.attribution" class="text-default-400 text-xs">
       {{ group.source.attribution }}

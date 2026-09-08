@@ -59,16 +59,36 @@ watchEffect(() => {
       />
     </div>
 
-    <HomeNewsFeed
-      v-if="isNewsFeedTab(currentTab)"
-      class="min-w-0 sm:col-start-2"
-    />
-    <HomeActivityFeed
-      v-else
-      :tab-id="activeTab"
-      :types="activeTypes"
-      class="sm:col-start-2"
-    />
+    <!-- The wrapper is a real grid item at all times, and the nested Suspense
+         is what puts something in it while the incoming feed's top-level await
+         is outstanding. Switching between two activity tabs keeps the same
+         component mounted, so KunLoadingDim inside it dims the old list — but
+         switching to or from 情报 swaps the component, and until this boundary
+         existed that showed nothing at all: no dim, no skeleton, a blank
+         column. Only the 情报 tab crosses that boundary in normal use, which
+         is why it was the one that looked broken. -->
+    <div class="min-w-0 sm:col-start-2">
+      <Suspense :timeout="0">
+        <HomeNewsFeed v-if="isNewsFeedTab(currentTab)" />
+        <HomeActivityFeed
+          v-else
+          :tab-id="activeTab"
+          :types="activeTypes"
+        />
+
+        <template #fallback>
+          <div class="divide-default-200/60 divide-y">
+            <div
+              v-for="n in 5"
+              :key="`feed-skeleton-${n}`"
+              class="py-5 first:pt-0 last:pb-0"
+            >
+              <ActivityCardSkeleton />
+            </div>
+          </div>
+        </template>
+      </Suspense>
+    </div>
 
     <aside
       class="sticky top-20 hidden h-[calc(100dvh-6rem)] flex-col self-start lg:col-start-3 lg:flex"
