@@ -515,10 +515,16 @@ func (s *ResourceService) ToggleLike(
 	return nil
 }
 
-func (s *ResourceService) MarkValid(userID int, resourceID int) *errors.AppError {
+// Anyone signed in may mark a resource expired, so only the owner being able to
+// undo it left a wrongly-expired resource stuck for good once its publisher went
+// quiet — 「管理核实过资源仍然可以输入提取码, 仍可正常下载, 但无权限更改为正常资源」.
+func (s *ResourceService) MarkValid(userID int, canEditAny bool, resourceID int) *errors.AppError {
 	row, ok := s.resourceRepo.FindByID(resourceID)
-	if !ok || row.UserID != userID {
+	if !ok {
 		return errors.ErrNotFound("未找到这个 Galgame 资源")
+	}
+	if row.UserID != userID && !canEditAny {
+		return errors.ErrForbidden("您没有权限修改这个 Galgame 资源")
 	}
 	if err := s.resourceRepo.UpdateStatus(s.resourceRepo.DB(), resourceID, 0); err != nil {
 		return errors.ErrInternal("更新失败")

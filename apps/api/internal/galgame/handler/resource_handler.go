@@ -179,7 +179,8 @@ func (h *ResourceHandler) MarkValid(c fiber.Ctx) error {
 	if appErr := utils.ParseAndValidate(c, &req); appErr != nil {
 		return response.Error(c, appErr)
 	}
-	if appErr := h.resourceService.MarkValid(user.ID, req.GalgameResourceID); appErr != nil {
+	canEditAny := perm.CanUser(user.ID, user.Roles, perm.ResourceEditAny)
+	if appErr := h.resourceService.MarkValid(user.ID, canEditAny, req.GalgameResourceID); appErr != nil {
 		return response.Error(c, appErr)
 	}
 	return response.OKMessage(c, "资源已标记为有效")

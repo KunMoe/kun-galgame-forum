@@ -22,6 +22,7 @@ const nuxtApp = useNuxtApp()
 
 const isExpired = computed(() => props.resource.status === 1)
 const isOwner = computed(() => id === props.resource.user.id)
+const canEditAnyResource = useCan('resource.edit_any')
 
 const providerName = computed(() => {
   const names = props.resource.provider_names
@@ -91,7 +92,7 @@ const openDetail = async () => {
 const handleMarkValid = async () => {
   const res = await useComponentMessageStore().alert(
     '您确定重新标记资源链接有效吗？',
-    '若您修复了资源链接，您可以重新标记资源链接有效。'
+    '资源链接修复后, 或核实过链接依然可用时, 可以重新标记为有效。'
   )
   if (!res) return
 
@@ -210,7 +211,7 @@ const handleMarkValid = async () => {
         />
 
         <KunButton
-          v-if="isOwner && isExpired"
+          v-if="isExpired && (isOwner || canEditAnyResource)"
           size="sm"
           variant="flat"
           color="success"
