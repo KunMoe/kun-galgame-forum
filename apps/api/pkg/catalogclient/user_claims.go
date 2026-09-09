@@ -25,6 +25,12 @@ func (c *Client) SubmitWorkUser(ctx context.Context, accessToken string, req Use
 	if req.ProductWorkID > 0 {
 		body["site_work_id"] = strconv.FormatInt(req.ProductWorkID, 10)
 	}
+	if len(req.Fields) > 0 {
+		body["field_values"] = req.Fields
+	}
+	if req.Released != nil {
+		body["released"] = req.Released
+	}
 	var out v2Claim
 	if err := c.userV2JSON(ctx, http.MethodPost, accessToken, "/v2/me/claims", body, &out, nil); err != nil {
 		return nil, err
