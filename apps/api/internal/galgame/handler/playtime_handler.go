@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"net/http"
 
+	"kun-galgame-api/internal/galgame/playstate"
 	"kun-galgame-api/internal/galgame/service"
 	"kun-galgame-api/internal/middleware"
 	"kun-galgame-api/pkg/catalogclient"
@@ -26,15 +27,8 @@ func NewPlaytimeHandler(svc *service.PlaytimeService) *PlaytimeHandler {
 var errPlaytimeDown = errors.New(errors.CodeBiz, "游玩时长服务暂不可用", http.StatusServiceUnavailable)
 
 type reportPlaytimeRequest struct {
-	Minutes int    `json:"minutes"`
-	Status  string `json:"status"`
-}
-
-var playtimeStatuses = map[string]bool{
-	catalogclient.WorkStateDoing:   true,
-	catalogclient.WorkStateDone:    true,
-	catalogclient.WorkStateOnHold:  true,
-	catalogclient.WorkStateDropped: true,
+	Minutes *int    `json:"minutes"`
+	Status  *string `json:"status"`
 }
 
 func (h *PlaytimeHandler) Report(c fiber.Ctx) error {
@@ -49,13 +43,13 @@ func (h *PlaytimeHandler) Report(c fiber.Ctx) error {
 	if err := c.Bind().Body(&req); err != nil {
 		return response.Error(c, errors.ErrBadRequest("请求参数错误"))
 	}
-	if req.Minutes < 0 || req.Minutes > catalogclient.PlaytimeMinutesMax {
+	if req.Minutes == nil && req.Status == nil {
+		return response.Error(c, errors.ErrBadRequest("请求参数错误"))
+	}
+	if req.Minutes != nil && (*req.Minutes < 0 || *req.Minutes > catalogclient.PlaytimeMinutesMax) {
 		return response.Error(c, errors.ErrBadRequest("游玩时长超出可记录的范围"))
 	}
-	if req.Status == "" {
-		req.Status = catalogclient.WorkStateDoing
-	}
-	if !playtimeStatuses[req.Status] {
+	if req.Status != nil && *req.Status != "" && !playstate.Valid(*req.Status) {
 		return response.Error(c, errors.ErrBadRequest("未知的游玩状态"))
 	}
 	token := middleware.GetAccessToken(c)

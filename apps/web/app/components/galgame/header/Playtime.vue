@@ -2,12 +2,17 @@
 import {
   KUN_GALGAME_PLAYTIME_SOURCE_CONST,
   KUN_GALGAME_PLAYTIME_SOURCE_MAP,
-  KUN_GALGAME_PLAYTIME_STATUS_MAP,
-  type KunGalgameWorkState
+  KUN_GALGAME_PLAY_STATE_MAP,
+  type KunGalgamePlayState,
+  type KunGalgamePlayStateRead
 } from '~/constants/galgame-playtime'
 
 const props = defineProps<{
   galgame: GalgameDetail
+}>()
+
+const emits = defineEmits<{
+  wantsRating: [KunGalgamePlayState]
 }>()
 
 const { id } = usePersistUserStore()
@@ -46,18 +51,30 @@ const chips = computed(() =>
   })
 )
 
-const myDuration = computed(() => formatDurationMinutes(mine.value?.minutes))
+const myDuration = computed(() =>
+  mine.value && mine.value.minutes > 0
+    ? formatDurationMinutes(mine.value.minutes)
+    : ''
+)
+
+const myStatusLabel = computed(() => {
+  if (!mine.value?.status) return ''
+  return (
+    KUN_GALGAME_PLAY_STATE_MAP[mine.value.status as KunGalgamePlayStateRead] ??
+    mine.value.status
+  )
+})
 
 const myTooltip = computed(() => {
-  if (!mine.value) return '记录你在这部作品上的游玩时长'
-  const status =
-    KUN_GALGAME_PLAYTIME_STATUS_MAP[mine.value.status as KunGalgameWorkState] ??
-    ''
-  const parts = [
-    status
-      ? `你的记录: ${myDuration.value} · ${status}`
-      : `你的记录: ${myDuration.value}`
-  ]
+  if (!mine.value) return '标记你在这部作品上的游玩状态, 也可以记下用时'
+  const parts: string[] = []
+  if (myStatusLabel.value && myDuration.value) {
+    parts.push(`你的记录: ${myDuration.value} · ${myStatusLabel.value}`)
+  } else if (myStatusLabel.value) {
+    parts.push(`你的记录: ${myStatusLabel.value}`)
+  } else if (myDuration.value) {
+    parts.push(`你的记录: ${myDuration.value}`)
+  }
   const site = props.galgame.playtimes?.find((p) => p.source === 'nextmoe')
   if (site) {
     parts.push(`本站中位数 ${formatDurationMinutes(site.minutes)}`)
@@ -71,6 +88,12 @@ const openEditor = () => {
     return
   }
   isOpen.value = true
+}
+
+const onFinished = (state: KunGalgamePlayState) => {
+  if (!id) return
+  if (props.galgame.ratings.some((r) => r.user.id === id)) return
+  emits('wantsRating', state)
 }
 </script>
 
@@ -103,11 +126,12 @@ const openEditor = () => {
         color="primary"
         @click="openEditor"
       >
-        <KunIcon :name="mine ? 'lucide:user-round' : 'lucide:timer'" />
+        <KunIcon :name="mine ? 'lucide:user-round' : 'lucide:gamepad-2'" />
         <template v-if="mine">
-          <span class="tabular-nums">{{ myDuration }}</span>
+          <span v-if="myStatusLabel">{{ myStatusLabel }}</span>
+          <span v-if="myDuration" class="tabular-nums">{{ myDuration }}</span>
         </template>
-        <template v-else>记录我的时长</template>
+        <template v-else>标记游玩状态</template>
       </KunButton>
     </KunTooltip>
 
@@ -117,6 +141,7 @@ const openEditor = () => {
       :galgame="galgame"
       :mine="mine"
       @saved="(value) => (mine = value)"
+      @finished="onFinished"
     />
   </div>
 </template>

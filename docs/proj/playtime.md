@@ -16,13 +16,31 @@
 
 - 授权 scope 在 `apps/web/app/utils/oauth-auth.ts`：`playtime:read playtime:write`。这两个 scope 在 infra 是 self-service，不需要申请。
 - 老 token 里没有它们，upstream 回 403，`catalogclient.ErrInsufficientScope` → `errors.ErrReauthRequired`，提示重新登录。和 `catalog:edit` 当初一样，不做全站 session bump。
-- 写：`PUT /galgame/:gid/playtime`（`minutes` 是**绝对累计值，不是增量**；`minutes = 0` 就是撤回）。时长写 `PUT /v2/me/playtimes/{id}` `{minutes}`，状态写 `PUT /v2/me/work-states/{id}`；写完再读一次折叠分钟回来，因为用户的其它应用可能报了更大的数，直接回显自己写的会和页面上的数字打架。`minutes = 0` 只写 playtime，不动 work-state。
+- 写：`PUT /galgame/:gid/playtime`，`{minutes?, status?}` **两个字段互相独立，各自缺席即不动那一轴**，两个都缺席是 400。`minutes` 是**绝对累计值，不是增量**；`minutes = 0` 就是撤回时长，`status: ""` 是删除状态（`DELETE /v2/me/work-states/{id}`，404 也算成功）。时长写 `PUT /v2/me/playtimes/{id}` `{minutes}`，状态写 `PUT /v2/me/work-states/{id}`；写完再读一次折叠分钟回来，因为用户的其它应用可能报了更大的数，直接回显自己写的会和页面上的数字打架。
 - 读：galgame 详情里的 `my_playtime`（和封面投票一样是逐请求带 token 的水合，不进缓存）；`GET /galgame/playtime/mine` 是个人页的列表。
-- `/mine` 是同步面不是浏览面：v2 按变更升序 + `cursor=`。论坛一次扫最多 10 页 × 100 条，本地折叠（MAX 分钟、按扫到的行数计 `clients`），再按每部作品在行流里最后一次出现的下标倒序（v2 行不再带时间戳，这是「最近改动优先」的代理），再分页；扫不完时 `truncated = true`。
+- `/mine` 是同步面不是浏览面：v2 按变更升序 + `cursor=`。**`/v2/me/playtimes` 和 `/v2/me/work-states` 各扫一遍再取并集**，因为只标了状态没记时长的作品不在 playtime 里；论坛一次每面最多扫 10 页 × 100 条，本地折叠（MAX 分钟、按扫到的行数计 `clients`），先按每部作品在行流里最后一次出现的下标倒序（v2 行不再带时间戳，这是「最近改动优先」的代理）排 playtime 那批，只有状态的排在后面（`minutes: 0, clients: 0`），再分页；任一面扫不完时 `truncated = true`。`FinishedWorks` 只数三个 `done_*`，只读的 `done` 不计。
 
 ## 游玩状态（work-state）
 
-状态不在 playtime 行上。catalog 另有 `/v2/me/work-states/{id}`（列表 `/v2/me/work-states`），词表 `wish|doing|done|on_hold|dropped`，可选 `completion`（`one_route|main|all`）。论坛上报时长时两个资源一起写；写状态前先 GET 一次，若已有非空 `completion` 则原样带回 PUT——缺省该字段会清掉其它应用（如 bangumi 同步）写过的值。`wish` 只展示为「想玩」，记录弹窗没有这一项，遇到 wish 或空则预选 `doing`。公开中位数只计 `state = done` 的上报者。
+状态不在 playtime 行上。catalog 另有 `/v2/me/work-states/{id}`（列表 `/v2/me/work-states`），两根轴：`state ∈ wish|doing|done|on_hold|dropped`，可选 `completion ∈ one_route|main|all`。公开中位数只计 `state = done` 的上报者。
+
+论坛把这两根轴压成**一张扁平的 7 值词表**，因为所有展示点（徽章、计数、`/galgame-rating` 的筛选面）都只读一个字段：
+
+| 论坛 | catalog |
+| --- | --- |
+| `wish` 想玩 | `wish` |
+| `doing` 游玩中 | `doing` |
+| `done_one_route` 单线通关 | `done` + `one_route` |
+| `done_main` 主线通关 | `done` + `main` |
+| `done_all` 全线通关 | `done` + `all` |
+| `on_hold` 搁置中 | `on_hold` |
+| `dropped` 已弃坑 | `dropped` |
+
+映射只在 `internal/galgame/playstate` 一个包里（前端对应 `constants/galgame-playtime.ts`）。另有第 8 个值 `done`「已通关」**只读不可写**：别的应用报了 done 却没报完成度时 catalog 就返回它，读到必须渲染成「已通关」而不是空徽章；`playstate.Valid("done") == false`，客户端送它是 400。
+
+写状态时**不再先 GET 回填 `completion`**。那一步存在的原因是论坛以前只能说 done、说不出通关到哪；现在用户直接在选择器里挑单线/主线/全线，他的选择就是权威。
+
+`galgame_rating.play_status` 用的是同一张词表（迁移 094 把 `not_started/in_progress/finished_*` 全量改写过来）。传播是**单向**的：发布或编辑评分会把状态推到 catalog（`PlaytimeService.SyncWorkState`，best-effort，失败只 `slog.Warn`——评分已经落库了，catalog 挂了不能让用户看到失败）；反过来改 work-state **永不**回头改已发布的评分，评分是快照。
 
 ## 第三方客户端
 

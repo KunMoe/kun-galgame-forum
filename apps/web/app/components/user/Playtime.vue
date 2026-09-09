@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import {
-  KUN_GALGAME_PLAYTIME_STATUS_MAP,
-  type KunGalgameWorkState
+  KUN_GALGAME_PLAY_STATE_DONE,
+  KUN_GALGAME_PLAY_STATE_MAP,
+  type KunGalgamePlayStateRead
 } from '~/constants/galgame-playtime'
 
 const pageData = reactive({ page: 1, limit: 24 })
@@ -17,11 +18,22 @@ const { data, status } = await useKunFetch<PlaytimeMinePage>(
 const summary = computed(() => {
   if (!data.value?.total) return ''
   const total = formatDurationMinutes(data.value.total_minutes)
-  return `${data.value.total} 部作品 · 合计 ${total} · 已通关 ${data.value.finished_works} 部`
+  const parts = [`${data.value.total} 部作品`]
+  if (total) parts.push(`合计 ${total}`)
+  parts.push(`已通关 ${data.value.finished_works} 部`)
+  return parts.join(' · ')
 })
 
-const statusColor = (value: string) =>
-  value === 'done' ? 'success' : value === 'dropped' ? 'danger' : 'default'
+const statusColor = (value: string) => {
+  if (
+    value === 'done' ||
+    (KUN_GALGAME_PLAY_STATE_DONE as readonly string[]).includes(value)
+  ) {
+    return 'success'
+  }
+  if (value === 'dropped') return 'danger'
+  return 'default'
+}
 </script>
 
 <template>
@@ -66,14 +78,17 @@ const statusColor = (value: string) =>
         </div>
 
         <div class="flex shrink-0 flex-col items-end gap-1">
-          <span class="font-medium tabular-nums">
+          <span
+            v-if="item.minutes > 0"
+            class="font-medium tabular-nums"
+          >
             {{ formatDurationMinutes(item.minutes) }}
           </span>
           <div v-if="item.status" class="flex items-center gap-1">
             <KunChip size="sm" variant="flat" :color="statusColor(item.status)">
               {{
-                KUN_GALGAME_PLAYTIME_STATUS_MAP[
-                  item.status as KunGalgameWorkState
+                KUN_GALGAME_PLAY_STATE_MAP[
+                  item.status as KunGalgamePlayStateRead
                 ] ?? item.status
               }}
             </KunChip>
@@ -98,7 +113,7 @@ const statusColor = (value: string) =>
 
     <KunNull
       v-else-if="data"
-      description="还没有游玩时长记录, 在任意 Galgame 页面的「游玩时长」处即可记录"
+      description="还没有游玩记录, 在任意 Galgame 页面点「标记游玩状态」即可记录"
     />
 
     <p class="text-default-500 text-sm">

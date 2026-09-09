@@ -576,7 +576,7 @@ func New(cfg *config.Config) *App {
 		GalgameCommunityCommentHandler: galgameHandler.NewCommunityCommentHandler(galgameCommunityCommentSvc),
 		ResourceCommentHandler:         galgameHandler.NewResourceCommentHandler(resourceCommentSvc),
 		GalgameResourceHandler:         galgameHandler.NewResourceHandler(galgameResourceSvc),
-		GalgameRatingHandler:           galgameHandler.NewRatingHandler(galgameRatingSvc),
+		GalgameRatingHandler:           galgameHandler.NewRatingHandler(galgameRatingSvc, galgamePlaytimeSvc),
 		GalgameQuizHandler:             galgameHandler.NewQuizHandler(galgameQuizSvc),
 		CreatorHandler:                 galgameHandler.NewCreatorHandler(creatorSvc),
 		GalgameEntityHandler: galgameHandler.NewEntityHandler(

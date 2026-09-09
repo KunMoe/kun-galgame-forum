@@ -2,9 +2,10 @@
 import {
   KUN_GALGAME_PLAYTIME_HOURS_MAX,
   KUN_GALGAME_PLAYTIME_MINUTES_FLOOR,
-  KUN_GALGAME_PLAYTIME_STATUS_CONST,
-  KUN_GALGAME_PLAYTIME_STATUS_OPTIONS,
-  type KunGalgamePlaytimeStatus
+  KUN_GALGAME_PLAY_STATE_CONST,
+  KUN_GALGAME_PLAY_STATE_DONE,
+  KUN_GALGAME_PLAY_STATE_OPTIONS,
+  type KunGalgamePlayState
 } from '~/constants/galgame-playtime'
 
 const props = defineProps<{
@@ -14,21 +15,29 @@ const props = defineProps<{
 
 const emits = defineEmits<{
   saved: [GalgameMyPlaytime | null]
+  finished: [KunGalgamePlayState]
 }>()
 
 const open = defineModel<boolean>({ required: true })
 
 const hours = ref(0)
-const status = ref<KunGalgamePlaytimeStatus>('doing')
+const status = ref<KunGalgamePlayState | ''>('')
 
 watch(open, (isOpen) => {
   if (!isOpen) return
-  hours.value = props.mine ? Math.round((props.mine.minutes / 60) * 10) / 10 : 0
+  hours.value =
+    props.mine && props.mine.minutes > 0
+      ? Math.round((props.mine.minutes / 60) * 10) / 10
+      : 0
   const current = props.mine?.status ?? ''
-  const allowed = KUN_GALGAME_PLAYTIME_STATUS_CONST as readonly string[]
-  status.value = allowed.includes(current)
-    ? (current as KunGalgamePlaytimeStatus)
-    : 'doing'
+  const allowed = KUN_GALGAME_PLAY_STATE_CONST as readonly string[]
+  if (current === 'done') {
+    status.value = 'done_one_route'
+  } else if (allowed.includes(current)) {
+    status.value = current as KunGalgamePlayState
+  } else {
+    status.value = ''
+  }
 })
 
 const minutes = computed(() => Math.round((Number(hours.value) || 0) * 60))
@@ -42,32 +51,62 @@ const tooLong = computed(
 
 const pending = ref(false)
 
-const submit = async (payload: number) => {
+const canSave = computed(() => {
+  if (pending.value) return false
+  if (status.value) return true
+  return minutes.value > 0 && !tooShort.value && !tooLong.value
+})
+
+const submit = async (body: { minutes?: number; status?: string }) => {
   pending.value = true
+  let failed = false
   const result = await kunFetch<GalgameMyPlaytime>(
     `/galgame/${props.galgame.id}/playtime`,
-    { method: 'PUT', body: { minutes: payload, status: status.value } }
+    {
+      method: 'PUT',
+      body,
+      onApiError: () => {
+        failed = true
+        return false
+      }
+    }
   )
   pending.value = false
-  if (!result) return
-  emits('saved', payload > 0 ? result : null)
+  const isClear = body.minutes === 0 && body.status === ''
+  if (failed || (result == null && !isClear)) return
+  const mine =
+    result && (result.minutes > 0 || result.status) ? result : null
+  emits('saved', mine)
+  const marked = (mine?.status || body.status || '') as string
+  if (
+    (KUN_GALGAME_PLAY_STATE_DONE as readonly string[]).includes(marked)
+  ) {
+    emits('finished', marked as KunGalgamePlayState)
+  }
   open.value = false
-  useMessage(payload > 0 ? '已记录游玩时长' : '已清除游玩时长', 'success')
+  useMessage(isClear ? '已清除游玩记录' : '已保存', 'success')
 }
 
 const save = () => {
-  if (pending.value || tooShort.value || tooLong.value || !minutes.value) return
-  submit(minutes.value)
+  if (!canSave.value) return
+  const body: { minutes?: number; status?: string } = {}
+  if (status.value) body.status = status.value
+  // 0 means withdraw. Sending it unasked would wipe a duration the user still wants.
+  if (minutes.value > 0 && !tooShort.value && !tooLong.value) {
+    body.minutes = minutes.value
+  }
+  if (body.status == null && body.minutes == null) return
+  submit(body)
 }
 
 const clear = async () => {
   if (pending.value) return
   const ok = await useComponentMessageStore().alert(
-    '清除游玩时长',
-    '本站这一条记录会被清零, 不再计入本站中位数。其它应用上报的记录不受影响。'
+    '清除游玩记录',
+    '本站这一条记录的时长和游玩状态都会被清零, 不再计入本站中位数。其它应用上报的记录不受影响。'
   )
   if (!ok) return
-  submit(0)
+  submit({ minutes: 0, status: '' })
 }
 </script>
 
@@ -75,37 +114,38 @@ const clear = async () => {
   <KunModal
     v-model="open"
     inner-class-name="max-w-md w-full"
-    aria-label="记录游玩时长"
+    aria-label="记录游玩状态"
   >
     <div class="space-y-4">
       <div>
-        <h3 class="text-lg font-bold">记录游玩时长</h3>
+        <h3 class="text-lg font-bold">记录游玩状态</h3>
         <p class="text-default-500 line-clamp-1 text-sm">
           {{ galgame.name }}
         </p>
       </div>
 
+      <div class="space-y-2">
+        <span class="text-default-600 text-sm">游玩状态</span>
+        <KunRadioGroup
+          v-model="status"
+          :options="KUN_GALGAME_PLAY_STATE_OPTIONS"
+          variant="pill"
+          orientation="horizontal"
+          color="primary"
+          size="sm"
+          class-name="flex-wrap"
+        />
+      </div>
+
       <KunNumberInput
         v-model="hours"
-        label="通关用时 (小时)"
+        label="通关用时 (小时, 可选)"
         :min="0"
         :max="KUN_GALGAME_PLAYTIME_HOURS_MAX"
         :step="0.5"
         :precision="1"
         placeholder="例如 12.5"
       />
-
-      <div class="space-y-2">
-        <span class="text-default-600 text-sm">游玩状态</span>
-        <KunRadioGroup
-          v-model="status"
-          :options="KUN_GALGAME_PLAYTIME_STATUS_OPTIONS"
-          variant="pill"
-          orientation="horizontal"
-          color="primary"
-          size="sm"
-        />
-      </div>
 
       <KunInfo
         v-if="tooShort"
@@ -120,7 +160,8 @@ const clear = async () => {
         :description="`单部作品最多可记录 ${KUN_GALGAME_PLAYTIME_HOURS_MAX} 小时。`"
       />
       <p v-else class="text-default-500 text-sm">
-        只有「已通关」的记录会计入本站中位数, 且需要至少 3 位玩家上报。
+        只有「单线 / 主线 / 全线通关」的记录会计入本站中位数, 且需要至少 3
+        位玩家上报。
       </p>
 
       <div class="flex items-center justify-end gap-2">
@@ -139,7 +180,7 @@ const clear = async () => {
         <KunButton
           color="primary"
           :loading="pending"
-          :disabled="!minutes || tooShort || tooLong"
+          :disabled="!canSave"
           @click="save"
         >
           保存

@@ -4,11 +4,14 @@ import {
   KUN_GALGAME_DIM_LABELS,
   KUN_GALGAME_RATING_RECOMMEND_MAP,
   KUN_GALGAME_RATING_RECOMMEND_COLOR_MAP,
-  KUN_GALGAME_RATING_PLAY_STATUS_MAP,
   KUN_GALGAME_RATING_SPOILER_MAP,
   KUN_GALGAME_RATING_SPOILER_COLOR_MAP,
   KUN_GALGAME_RATING_SPOILER_WARNING
 } from '~/constants/galgame-rating'
+import {
+  KUN_GALGAME_PLAY_STATE_MAP,
+  type KunGalgamePlayStateRead
+} from '~/constants/galgame-playtime'
 
 const props = defineProps<{
   ratings: GalgameRatingCardOnGalgamePage[]
@@ -98,7 +101,11 @@ const sorted = computed(() =>
               {{ KUN_GALGAME_RATING_RECOMMEND_MAP[rating.recommend] }}
             </KunChip>
             <KunChip color="primary">
-              {{ KUN_GALGAME_RATING_PLAY_STATUS_MAP[rating.play_status] }}
+              {{
+                KUN_GALGAME_PLAY_STATE_MAP[
+                  rating.play_status as KunGalgamePlayStateRead
+                ]
+              }}
             </KunChip>
             <KunChip
               :color="

@@ -4,8 +4,11 @@ import (
 	"sort"
 	"testing"
 
+	"kun-galgame-api/internal/galgame/playstate"
 	"kun-galgame-api/pkg/catalogclient"
 )
+
+func strPtr(s string) *string { return &s }
 
 func TestFoldRecords_CollapsesClientsTheWayCatalogDoes(t *testing.T) {
 	rows := []catalogclient.PlaytimeRecord{
@@ -73,32 +76,89 @@ func TestFoldRecords_KeepsAWorkAnotherClientStillReports(t *testing.T) {
 	}
 }
 
-func TestAttachWorkStates_JoinsStatusAndLeavesGapsEmpty(t *testing.T) {
-	folded := []foldedPlaytime{
-		{workID: 7, minutes: 720},
-		{workID: 9, minutes: 60},
-		{workID: 11, minutes: 100},
+func TestAssembleMine_StateOnlyWorkHasZeroMinutes(t *testing.T) {
+	out := assembleMine(
+		nil,
+		nil,
+		[]int64{7},
+		map[int64]catalogclient.WorkStateRecord{
+			7: {WorkID: 7, State: catalogclient.WorkStateWish},
+		},
+		map[int64]int{7: 1},
+	)
+	if len(out) != 1 {
+		t.Fatalf("len = %d, want 1", len(out))
 	}
-	attachWorkStates(folded, map[int64]catalogclient.WorkStateRecord{
-		7: {WorkID: 7, State: catalogclient.WorkStateDone},
-		9: {WorkID: 9, State: catalogclient.WorkStateDoing},
-	})
-	if folded[0].status != catalogclient.WorkStateDone {
-		t.Errorf("work 7 status = %q, want done", folded[0].status)
+	if out[0].minutes != 0 || out[0].clients != 0 || out[0].status != playstate.Wish || out[0].gid != 1 {
+		t.Errorf("got %+v, want minutes 0 clients 0 status wish gid 1", out[0])
 	}
-	if folded[1].status != catalogclient.WorkStateDoing {
-		t.Errorf("work 9 status = %q, want doing", folded[1].status)
+}
+
+func TestAssembleMine_FinishedWorksCountsDoneMain(t *testing.T) {
+	out := assembleMine(
+		[]int64{7, 9},
+		map[int64]foldedPlaytime{
+			7: {workID: 7, minutes: 120, lastIndex: 0},
+			9: {workID: 9, minutes: 60, lastIndex: 1},
+		},
+		[]int64{7, 9, 11},
+		map[int64]catalogclient.WorkStateRecord{
+			7:  {WorkID: 7, State: catalogclient.WorkStateDone, Completion: strPtr("main")},
+			9:  {WorkID: 9, State: catalogclient.WorkStateDoing},
+			11: {WorkID: 11, State: catalogclient.WorkStateDone, Completion: strPtr("all")},
+		},
+		map[int64]int{7: 1, 9: 2, 11: 3},
+	)
+	if len(out) != 3 {
+		t.Fatalf("len = %d, want 3", len(out))
 	}
-	if folded[2].status != "" {
-		t.Errorf("work 11 status = %q, want empty when missing", folded[2].status)
+	if out[0].workID != 9 || out[1].workID != 7 || out[2].workID != 11 {
+		t.Errorf("order = %d,%d,%d want 9 (playtime lastIndex), 7, then state-only 11",
+			out[0].workID, out[1].workID, out[2].workID)
+	}
+	if out[1].status != playstate.DoneMain {
+		t.Errorf("work 7 status = %q, want done_main", out[1].status)
+	}
+	if out[2].minutes != 0 || out[2].clients != 0 || out[2].status != playstate.DoneAll {
+		t.Errorf("state-only = %+v, want minutes 0 done_all", out[2])
 	}
 	finished := 0
-	for _, f := range folded {
-		if f.status == catalogclient.WorkStateDone {
+	for _, f := range out {
+		if playStateFinished(f.status) {
 			finished++
 		}
 	}
-	if finished != 1 {
-		t.Errorf("finished = %d, want 1", finished)
+	if finished != 2 {
+		t.Errorf("finished = %d, want 2 (done_main + done_all)", finished)
+	}
+}
+
+func TestAssembleMine_KeepsWithdrawnPlaytimeWhenAStateRemains(t *testing.T) {
+	out := assembleMine(
+		[]int64{7, 9},
+		map[int64]foldedPlaytime{
+			7: {workID: 7, minutes: 0, lastIndex: 0},
+			9: {workID: 9, minutes: 0, lastIndex: 1},
+		},
+		[]int64{7},
+		map[int64]catalogclient.WorkStateRecord{
+			7: {WorkID: 7, State: catalogclient.WorkStateWish},
+		},
+		map[int64]int{7: 1, 9: 2},
+	)
+	if len(out) != 1 {
+		t.Fatalf("len = %d, want 1 — withdrawn with no state must drop", len(out))
+	}
+	if out[0].workID != 7 || out[0].minutes != 0 || out[0].status != playstate.Wish {
+		t.Errorf("got %+v, want work 7 minutes 0 wish", out[0])
+	}
+}
+
+func TestPlayStateFinished_IgnoresDisplayOnlyDone(t *testing.T) {
+	if playStateFinished("done") {
+		t.Error("display-only done must not count as finished")
+	}
+	if !playStateFinished(playstate.DoneMain) {
+		t.Error("done_main must count as finished")
 	}
 }

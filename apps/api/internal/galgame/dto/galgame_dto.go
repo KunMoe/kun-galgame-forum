@@ -300,8 +300,9 @@ type GalgameDetail struct {
 	MyPlaytime                 *GalgameMyPlaytime       `json:"my_playtime,omitempty"`
 }
 
-// Status is the work-state word for this work, or empty when the user has none.
-// The v2 single playtime read carries no client count.
+// Minutes may be 0 while Status is set: a state-only record, which is the
+// normal case when the user marked a state without a duration. Status is the
+// flat play-state value (or empty when the user has none).
 type GalgameMyPlaytime struct {
 	Minutes int    `json:"minutes"`
 	Status  string `json:"status"`

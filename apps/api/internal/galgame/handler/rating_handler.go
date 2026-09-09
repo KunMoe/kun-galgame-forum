@@ -15,11 +15,12 @@ import (
 )
 
 type RatingHandler struct {
-	ratingService *service.RatingService
+	ratingService   *service.RatingService
+	playtimeService *service.PlaytimeService
 }
 
-func NewRatingHandler(ratingService *service.RatingService) *RatingHandler {
-	return &RatingHandler{ratingService: ratingService}
+func NewRatingHandler(ratingService *service.RatingService, playtimeService *service.PlaytimeService) *RatingHandler {
+	return &RatingHandler{ratingService: ratingService, playtimeService: playtimeService}
 }
 
 func (h *RatingHandler) GetAllRatings(c fiber.Ctx) error {
@@ -62,7 +63,9 @@ func (h *RatingHandler) CreateRating(c fiber.Ctx) error {
 	if appErr != nil {
 		return response.Error(c, appErr)
 	}
-	return response.OK(c, created)
+	err := response.OK(c, created)
+	h.playtimeService.SyncWorkState(c.Context(), created.Galgame.ID, middleware.GetAccessToken(c), req.PlayStatus)
+	return err
 }
 
 func (h *RatingHandler) UpdateRating(c fiber.Ctx) error {
@@ -74,10 +77,13 @@ func (h *RatingHandler) UpdateRating(c fiber.Ctx) error {
 	if appErr := utils.ParseAndValidate(c, &req); appErr != nil {
 		return response.Error(c, appErr)
 	}
-	if appErr := h.ratingService.UpdateRating(c.Context(), user.ID, &req); appErr != nil {
+	gid, appErr := h.ratingService.UpdateRating(c.Context(), user.ID, &req)
+	if appErr != nil {
 		return response.Error(c, appErr)
 	}
-	return response.OKMessage(c, "评分更新成功")
+	err := response.OKMessage(c, "评分更新成功")
+	h.playtimeService.SyncWorkState(c.Context(), gid, middleware.GetAccessToken(c), req.PlayStatus)
+	return err
 }
 
 func (h *RatingHandler) DeleteRating(c fiber.Ctx) error {

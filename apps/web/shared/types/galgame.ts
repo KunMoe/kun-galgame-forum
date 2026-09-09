@@ -1,3 +1,4 @@
+import type { KunGalgamePlayStateRead } from '~/constants/galgame-playtime'
 import type { GalgameEngineItem } from './galgame-engine'
 import type { GalgameOfficialItem } from './galgame-official'
 import type { GalgameDetailSeriesRef } from './galgame-series'
@@ -98,8 +99,10 @@ export interface GalgamePlaytime {
 }
 
 export interface GalgameMyPlaytime {
+  // minutes may be 0 while status is set — a state-only record, which is the
+  // normal case now, not a bug.
   minutes: number
-  status: string
+  status: KunGalgamePlayStateRead | ''
 }
 
 export interface GalgameIntro {

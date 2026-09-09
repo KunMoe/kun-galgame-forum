@@ -4,6 +4,10 @@ import {
   GALGAME_RESOURCE_PLATFORM_ICON_MAP
 } from '~/constants/galgameResource'
 import {
+  KUN_GALGAME_PLAY_STATE_MAP,
+  type KunGalgamePlayState
+} from '~/constants/galgame-playtime'
+import {
   KUN_GALGAME_RESOURCE_TYPE_MAP,
   KUN_GALGAME_RESOURCE_LANGUAGE_MAP,
   KUN_GALGAME_RESOURCE_PLATFORM_MAP,
@@ -60,6 +64,24 @@ const galgameAliasArray = computed(() =>
 )
 
 const isRatingOpen = ref(false)
+const ratingInvite = ref<KunGalgamePlayState | null>(null)
+
+const onWantsRating = (state: KunGalgamePlayState) => {
+  ratingInvite.value = state
+}
+
+const dismissRatingInvite = () => {
+  ratingInvite.value = null
+}
+
+const openRatingFromInvite = () => {
+  isRatingOpen.value = true
+}
+
+const onRatingPublished = (newRating: GalgameRatingCardOnGalgamePage) => {
+  ratingInvite.value = null
+  emits('onRatingCreated', newRating)
+}
 
 const isRatingDetailOpen = ref(false)
 const ratingDetailSource = ref('')
@@ -200,7 +222,30 @@ const hasMoreCovers = computed(() => (props.galgame.covers?.length ?? 0) > 1)
           :source="ratingDetailSource"
         />
 
-        <GalgameHeaderPlaytime :galgame="galgame" />
+        <GalgameHeaderPlaytime
+          :galgame="galgame"
+          @wants-rating="onWantsRating"
+        />
+
+        <KunInfo
+          v-if="ratingInvite"
+          color="info"
+          :title="`已标记为${KUN_GALGAME_PLAY_STATE_MAP[ratingInvite]}, 顺手给它打个分？`"
+        >
+          <div class="mt-2 flex items-center gap-2">
+            <KunButton size="sm" color="primary" @click="openRatingFromInvite">
+              去评分
+            </KunButton>
+            <KunButton
+              size="sm"
+              variant="light"
+              color="default"
+              @click="dismissRatingInvite"
+            >
+              不用了
+            </KunButton>
+          </div>
+        </KunInfo>
 
         <div class="flex flex-wrap items-center gap-2">
           <div class="flex items-center gap-1">
@@ -308,7 +353,8 @@ const hasMoreCovers = computed(() => (props.galgame.covers?.length ?? 0) > 1)
             <GalgameRatingPublish
               v-model="isRatingOpen"
               :galgame-id="galgame.id"
-              @on-published="(newRating) => emits('onRatingCreated', newRating)"
+              :preset-play-state="ratingInvite ?? undefined"
+              @on-published="onRatingPublished"
             />
           </div>
         </div>

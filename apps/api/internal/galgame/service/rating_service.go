@@ -247,19 +247,19 @@ func (s *RatingService) UpdateRating(
 	ctx context.Context,
 	userID int,
 	req *dto.UpdateRatingRequest,
-) *errors.AppError {
+) (int, *errors.AppError) {
 	rating, err := s.ratingRepo.FindRatingForWrite(req.GalgameRatingID)
 	if err != nil {
-		return errors.ErrNotFound("评分不存在")
+		return 0, errors.ErrNotFound("评分不存在")
 	}
 	if rating.UserID != userID {
-		return errors.ErrForbidden("您无权限修改他人评分")
+		return 0, errors.ErrForbidden("您无权限修改他人评分")
 	}
 
 	authorID := int64(rating.UserID)
 	decision, matched := s.check.Decision(ctx, req.ShortSummary, &authorID)
 	if decision == gate.DecisionDeny {
-		return gate.ErrContentBlocked()
+		return 0, gate.ErrContentBlocked()
 	}
 
 	pointDiff := ratingReward(len(req.ShortSummary)) - ratingReward(len(rating.ShortSummary))
@@ -285,14 +285,14 @@ func (s *RatingService) UpdateRating(
 		return nil
 	})
 	if txErr != nil {
-		return errors.ErrInternal("更新评分失败")
+		return 0, errors.ErrInternal("更新评分失败")
 	}
 
 	if decision == gate.DecisionHold {
 		slog.Info("trust check hold", "subject_kind", gate.SubjectKindGalgameRating, "subject_id", req.GalgameRatingID, "author_id", rating.UserID, "matched", matched)
 	}
 	s.scan.ScanBg(gate.SubjectKindGalgameRating, strconv.Itoa(req.GalgameRatingID), req.ShortSummary, int64(rating.UserID))
-	return nil
+	return rating.GalgameID, nil
 }
 
 func (s *RatingService) DeleteRating(

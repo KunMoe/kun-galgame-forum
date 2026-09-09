@@ -1,8 +1,8 @@
 import type {
   KUN_GALGAME_RATING_RECOMMEND_CONST,
-  KUN_GALGAME_DIMENSIONS,
-  KUN_GALGAME_RATING_PLAY_STATUS_CONST
+  KUN_GALGAME_DIMENSIONS
 } from '~/constants/galgame-rating'
+import type { KunGalgamePlayState } from '~/constants/galgame-playtime'
 
 interface DimsInput {
   art: number
@@ -16,8 +16,6 @@ interface DimsInput {
 }
 
 type KunGalgameRatingDim = (typeof KUN_GALGAME_DIMENSIONS)[number]
-type KunGalgameRatingPlayStatus =
-  (typeof KUN_GALGAME_RATING_PLAY_STATUS_CONST)[number]
 type KunGalgameRatingRecommend =
   (typeof KUN_GALGAME_RATING_RECOMMEND_CONST)[number]
 
@@ -44,19 +42,20 @@ const RECOMMEND_SCORE_MAP: Record<string, number> = {
   strong_yes: 1
 }
 
-const PLAY_STATUS_ADJUST: Record<KunGalgameRatingPlayStatus, number> = {
-  not_started: -1.5,
-  in_progress: -0.8,
-  finished_one: -0.2,
-  finished_main: 0,
-  finished_all: 0.4,
+const PLAY_STATE_ADJUST: Record<KunGalgamePlayState, number> = {
+  wish: -1.5,
+  doing: -0.8,
+  done_one_route: -0.2,
+  done_main: 0,
+  done_all: 0.4,
+  on_hold: -0.9,
   dropped: -1.0
 }
 
 export const calcGalgameRating = (
   dims: DimsInput,
   overall: number,
-  play_status: KunGalgameRatingPlayStatus,
+  play_status: KunGalgamePlayState,
   recommend: KunGalgameRatingRecommend
 ): number => {
   const clamp = (v: number, lo: number, hi: number) =>
@@ -90,7 +89,7 @@ export const calcGalgameRating = (
   const recVal = RECOMMEND_SCORE_MAP[recommend] ?? 0
   const recAdjust = recVal * RECOMMEND_INFLUENCE_POINTS
 
-  const statusAdjust = PLAY_STATUS_ADJUST[play_status] ?? 0
+  const statusAdjust = PLAY_STATE_ADJUST[play_status] ?? 0
 
   let finalScore = baseScore + recAdjust + statusAdjust
   finalScore = clamp(finalScore, 0, 10)

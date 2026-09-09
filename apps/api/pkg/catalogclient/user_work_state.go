@@ -88,3 +88,38 @@ func (c *Client) MyWorkStates(ctx context.Context, accessToken string, workIDs [
 	}
 	return out, nil
 }
+
+func (c *Client) DeleteWorkState(ctx context.Context, accessToken string, workID int64) error {
+	path := "/v2/me/work-states/" + strconv.FormatInt(workID, 10)
+	_, _, err := c.userV2Do(ctx, http.MethodDelete, accessToken, path, nil, nil)
+	if err != nil && errors.Is(err, ErrNotFound) {
+		return nil
+	}
+	return err
+}
+
+func (c *Client) ListMyWorkStates(ctx context.Context, accessToken, cursor string,
+	limit int) ([]WorkStateRecord, string, error) {
+
+	q := url.Values{}
+	if cursor != "" {
+		q.Set("cursor", cursor)
+	}
+	if limit > 0 {
+		q.Set("limit", strconv.Itoa(limit))
+	}
+	path := "/v2/me/work-states"
+	if len(q) > 0 {
+		path += "?" + q.Encode()
+	}
+	var out v2List[v2WorkState]
+	if err := c.userV2JSON(ctx, http.MethodGet, accessToken, path, nil, &out, nil); err != nil {
+		return nil, "", err
+	}
+	rows := out.rows()
+	items := make([]WorkStateRecord, 0, len(rows))
+	for _, it := range rows {
+		items = append(items, workStateRecord(it))
+	}
+	return items, out.cursor(), nil
+}

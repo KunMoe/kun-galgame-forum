@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import {
-  KUN_GALGAME_RATING_PLAY_STATUS_MAP,
+  KUN_GALGAME_PLAY_STATE_MAP,
+  type KunGalgamePlayStateRead
+} from '~/constants/galgame-playtime'
+import {
   KUN_GALGAME_RATING_RECOMMEND_MAP,
   KUN_GALGAME_RATING_RECOMMEND_COLOR_MAP,
   KUN_GALGAME_RATING_SPOILER_WARNING
@@ -19,7 +22,9 @@ const galgameLink = computed(() =>
 
 const playStatusLabel = computed(() =>
   rating.value
-    ? KUN_GALGAME_RATING_PLAY_STATUS_MAP[rating.value.play_status] ||
+    ? KUN_GALGAME_PLAY_STATE_MAP[
+        rating.value.play_status as KunGalgamePlayStateRead
+      ] ||
       rating.value.play_status
     : ''
 )

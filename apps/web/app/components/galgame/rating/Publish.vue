@@ -1,9 +1,12 @@
 <script setup lang="ts">
 import {
+  KUN_GALGAME_PLAY_STATE_CONST,
+  KUN_GALGAME_PLAY_STATE_MAP,
+  type KunGalgamePlayState
+} from '~/constants/galgame-playtime'
+import {
   KUN_GALGAME_RATING_RECOMMEND_CONST,
   KUN_GALGAME_RATING_RECOMMEND_MAP,
-  KUN_GALGAME_RATING_PLAY_STATUS_CONST,
-  KUN_GALGAME_RATING_PLAY_STATUS_MAP,
   KUN_GALGAME_RATING_SPOILER_CONST,
   KUN_GALGAME_RATING_SPOILER_MAP,
   KUN_GALGAME_RATING_GAME_TYPE_CONST,
@@ -20,7 +23,7 @@ type RatingInitialData = {
   galgameRatingId: number
   recommend: (typeof KUN_GALGAME_RATING_RECOMMEND_CONST)[number]
   overall: number
-  play_status: (typeof KUN_GALGAME_RATING_PLAY_STATUS_CONST)[number]
+  play_status: KunGalgamePlayState
   spoiler_level: (typeof KUN_GALGAME_RATING_SPOILER_CONST)[number]
   short_summary: string
   art: number
@@ -38,6 +41,7 @@ const props = defineProps<{
   galgameId: number
   modelValue: boolean
   initialData?: RatingInitialData
+  presetPlayState?: KunGalgamePlayState
 }>()
 
 const emits = defineEmits<{
@@ -52,8 +56,7 @@ const { shortSummary: shortSummaryStore } = storeToRefs(
 
 const recommend =
   ref<(typeof KUN_GALGAME_RATING_RECOMMEND_CONST)[number]>('neutral')
-const playStatus =
-  ref<(typeof KUN_GALGAME_RATING_PLAY_STATUS_CONST)[number]>('not_started')
+const playStatus = ref<KunGalgamePlayState | ''>('')
 const spoilerLevel =
   ref<(typeof KUN_GALGAME_RATING_SPOILER_CONST)[number]>('none')
 const overall = ref(1)
@@ -117,9 +120,9 @@ const recommendOptions = computed(() =>
   }))
 )
 const playStatusOptions = computed(() =>
-  KUN_GALGAME_RATING_PLAY_STATUS_CONST.map((v) => ({
+  KUN_GALGAME_PLAY_STATE_CONST.map((v) => ({
     value: v,
-    label: KUN_GALGAME_RATING_PLAY_STATUS_MAP[v] || v
+    label: KUN_GALGAME_PLAY_STATE_MAP[v] || v
   }))
 )
 const spoilerOptions = computed(() =>
@@ -135,7 +138,8 @@ const isEditing = computed(() => !!props.initialData?.galgameRatingId)
 watch(
   () => props.modelValue,
   (open) => {
-    if (open && props.initialData) {
+    if (!open) return
+    if (props.initialData) {
       recommend.value = props.initialData.recommend
       playStatus.value = props.initialData.play_status
       spoilerLevel.value = props.initialData.spoiler_level
@@ -155,13 +159,14 @@ watch(
       showAdvanced.value = true
     } else {
       shortSummary.value = shortSummaryStore.value
+      playStatus.value = props.presetPlayState ?? ''
     }
   }
 )
 
 const resetForm = () => {
   recommend.value = 'neutral'
-  playStatus.value = 'not_started'
+  playStatus.value = ''
   spoilerLevel.value = 'none'
   overall.value = 1
   shortSummary.value = ''
@@ -264,6 +269,7 @@ const submit = async () => {
     @update:model-value="(v) => emits('update:modelValue', v)"
     inner-class-name="max-w-[780px] w-[90vw]"
     :is-dismissable="false"
+    :aria-label="isEditing ? '编辑评分' : '发布评分'"
   >
     <div class="space-y-3">
       <KunHeader
@@ -322,6 +328,7 @@ const submit = async () => {
           :options="playStatusOptions"
           v-model="playStatus"
           label="游玩状态"
+          placeholder="请选择游玩状态"
         />
         <KunSelect
           :options="spoilerOptions"

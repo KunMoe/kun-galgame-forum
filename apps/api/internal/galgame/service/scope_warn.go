@@ -24,9 +24,10 @@ type scopeWarn struct {
 // One per call site, so a starved scope on the detail page cannot hide behind
 // the session-level read having already logged this minute.
 var (
-	warnFoldersScope  scopeWarn
-	warnFavoriteScope scopeWarn
-	warnPlaytimeScope scopeWarn
+	warnFoldersScope         scopeWarn
+	warnFavoriteScope        scopeWarn
+	warnPlaytimeScope        scopeWarn
+	warnRatingWorkStateScope scopeWarn
 )
 
 func (w *scopeWarn) warn(msg string, args ...any) {

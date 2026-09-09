@@ -1,9 +1,12 @@
 <script setup lang="ts">
 import { calcGalgameRating } from '~~/algorithms/GalgameRatingAlg'
 import {
+  KUN_GALGAME_PLAY_STATE_MAP,
+  type KunGalgamePlayState
+} from '~/constants/galgame-playtime'
+import {
   KUN_GALGAME_RATING_SPOILER_COLOR_MAP,
-  KUN_GALGAME_RATING_SPOILER_MAP,
-  KUN_GALGAME_RATING_PLAY_STATUS_MAP
+  KUN_GALGAME_RATING_SPOILER_MAP
 } from '~/constants/galgame-rating'
 
 withDefaults(
@@ -18,7 +21,7 @@ const systemRating = (rating: GalgameRatingCard) => {
   const res = calcGalgameRating(
     { ...rating },
     rating.overall,
-    rating.play_status as 'not_started',
+    rating.play_status as KunGalgamePlayState,
     rating.recommend as 'no'
   )
   return res
@@ -92,7 +95,11 @@ const systemRating = (rating: GalgameRatingCard) => {
           </div>
 
           <KunChip variant="solid" color="success">
-            {{ KUN_GALGAME_RATING_PLAY_STATUS_MAP[rating.play_status] }}
+            {{
+              KUN_GALGAME_PLAY_STATE_MAP[
+                rating.play_status as KunGalgamePlayState
+              ]
+            }}
           </KunChip>
         </div>
 

@@ -45,34 +45,51 @@ export const KUN_GALGAME_PLAYTIME_SOURCE_MAP: Record<
   }
 }
 
-export const KUN_GALGAME_PLAYTIME_STATUS_CONST = [
+export const KUN_GALGAME_PLAY_STATE_CONST = [
+  'wish',
   'doing',
-  'done',
+  'done_one_route',
+  'done_main',
+  'done_all',
   'on_hold',
   'dropped'
 ] as const
+export type KunGalgamePlayState = (typeof KUN_GALGAME_PLAY_STATE_CONST)[number]
 
-export type KunGalgamePlaytimeStatus =
-  (typeof KUN_GALGAME_PLAYTIME_STATUS_CONST)[number]
+// catalog answers state=done with no completion when another application
+// reported a completion it does not carry. The forum never writes this value and
+// never offers it in a picker; it exists so that reading such a row renders a
+// badge instead of a blank.
+export type KunGalgamePlayStateRead = KunGalgamePlayState | 'done'
 
-export type KunGalgameWorkState = KunGalgamePlaytimeStatus | 'wish'
-
-export const KUN_GALGAME_PLAYTIME_STATUS_MAP: Record<
-  KunGalgameWorkState,
+export const KUN_GALGAME_PLAY_STATE_MAP: Record<
+  KunGalgamePlayStateRead,
   string
 > = {
+  wish: '想玩',
   doing: '游玩中',
+  done_one_route: '单线通关',
+  done_main: '主线通关',
+  done_all: '全线通关',
   done: '已通关',
   on_hold: '搁置中',
-  dropped: '已弃坑',
-  wish: '想玩'
+  dropped: '已弃坑'
 }
 
-export const KUN_GALGAME_PLAYTIME_STATUS_OPTIONS = [
+export const KUN_GALGAME_PLAY_STATE_OPTIONS = [
+  { value: 'wish', label: '想玩', icon: 'lucide:bookmark' },
   { value: 'doing', label: '游玩中', icon: 'lucide:play' },
-  { value: 'done', label: '已通关', icon: 'lucide:flag' },
+  { value: 'done_one_route', label: '单线通关', icon: 'lucide:flag' },
+  { value: 'done_main', label: '主线通关', icon: 'lucide:flag' },
+  { value: 'done_all', label: '全线通关', icon: 'lucide:trophy' },
   { value: 'on_hold', label: '搁置中', icon: 'lucide:pause' },
   { value: 'dropped', label: '已弃坑', icon: 'lucide:x' }
+] as const
+
+export const KUN_GALGAME_PLAY_STATE_DONE = [
+  'done_one_route',
+  'done_main',
+  'done_all'
 ] as const
 
 // Both floors are catalog's, not ours: it refuses anything above the ceiling,

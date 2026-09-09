@@ -1,8 +1,8 @@
 import { z } from 'zod'
+import { KUN_GALGAME_PLAY_STATE_CONST } from '~/constants/galgame-playtime'
 import {
   KUN_GALGAME_RATING_RECOMMEND_CONST,
   KUN_GALGAME_RATING_SPOILER_CONST,
-  KUN_GALGAME_RATING_PLAY_STATUS_CONST,
   KUN_GALGAME_RATING_GAME_TYPE_CONST,
   KUN_GALGAME_RATING_SORT_FIELD_CONST
 } from '~/constants/galgame-rating'
@@ -15,7 +15,7 @@ export const createGalgameRatingSchema = z
     galgame_type: z
       .array(z.enum(KUN_GALGAME_RATING_GAME_TYPE_CONST))
       .min(1, { message: '请至少选择一个' }),
-    play_status: z.enum(KUN_GALGAME_RATING_PLAY_STATUS_CONST),
+    play_status: z.enum(KUN_GALGAME_PLAY_STATE_CONST),
     short_summary: z
       .string()
       .max(1314, { message: '评价最多 1314 个字符' })
@@ -52,7 +52,7 @@ export const updateGalgameRatingSchema = z
     galgame_type: z
       .array(z.enum(KUN_GALGAME_RATING_GAME_TYPE_CONST))
       .min(1, { message: '请至少选择一个' }),
-    play_status: z.enum(KUN_GALGAME_RATING_PLAY_STATUS_CONST),
+    play_status: z.enum(KUN_GALGAME_PLAY_STATE_CONST),
     short_summary: z.string().max(1314, { message: '评价最多 1314 个字符' }),
     spoiler_level: z.enum(KUN_GALGAME_RATING_SPOILER_CONST),
 

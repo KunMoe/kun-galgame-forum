@@ -6,11 +6,14 @@ import {
   KUN_GALGAME_LOCAL_RATING_SOURCE,
   KUN_GALGAME_RATING_RECOMMEND_MAP,
   KUN_GALGAME_RATING_RECOMMEND_COLOR_MAP,
-  KUN_GALGAME_RATING_PLAY_STATUS_MAP,
   KUN_GALGAME_RATING_TIER_INSUFFICIENT,
   KUN_GALGAME_RATING_TIER_SCOPE_HINT,
   kunGalgameRatingTierBadge
 } from '~/constants/galgame-rating'
+import {
+  KUN_GALGAME_PLAY_STATE_MAP,
+  type KunGalgamePlayStateRead
+} from '~/constants/galgame-playtime'
 import {
   ratingDimensionMeans,
   ratingHistogram,
@@ -172,7 +175,8 @@ const playStatusTally = computed(() =>
             :key="status"
             color="secondary"
           >
-            {{ KUN_GALGAME_RATING_PLAY_STATUS_MAP[status] }} · {{ count }}
+            {{ KUN_GALGAME_PLAY_STATE_MAP[status as KunGalgamePlayStateRead] }}
+            · {{ count }}
           </KunChip>
         </div>
       </div>

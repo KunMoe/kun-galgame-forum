@@ -1,8 +1,11 @@
 <script setup lang="ts">
 import {
+  KUN_GALGAME_PLAY_STATE_MAP,
+  type KunGalgamePlayStateRead
+} from '~/constants/galgame-playtime'
+import {
   KUN_GALGAME_RATING_RECOMMEND_MAP,
   KUN_GALGAME_RATING_RECOMMEND_COLOR_MAP,
-  KUN_GALGAME_RATING_PLAY_STATUS_MAP,
   KUN_GALGAME_RATING_SPOILER_WARNING
 } from '~/constants/galgame-rating'
 
@@ -12,7 +15,9 @@ const props = defineProps<{
 
 const playStatusLabel = computed(
   () =>
-    KUN_GALGAME_RATING_PLAY_STATUS_MAP[props.rating.play_status] ||
+    KUN_GALGAME_PLAY_STATE_MAP[
+      props.rating.play_status as KunGalgamePlayStateRead
+    ] ||
     props.rating.play_status
 )
 
@@ -59,7 +64,7 @@ const overall = computed(() => props.rating.overall.toFixed(1))
       <KunAvatar :user="rating.user" size="sm" :is-navigation="false" />
       <span class="text-default-800 font-medium">{{ rating.user.name }}</span>
       <span class="text-default-500">
-        <template v-if="rating.play_status === 'not_started'">
+        <template v-if="rating.play_status === 'wish'">
           还未开始游玩此游戏
         </template>
         <template v-else>

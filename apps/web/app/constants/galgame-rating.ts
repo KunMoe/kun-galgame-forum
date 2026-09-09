@@ -50,23 +50,6 @@ export const KUN_GALGAME_RATING_SPOILER_COLOR_MAP: Record<string, KunUIColor> =
 export const KUN_GALGAME_RATING_SPOILER_WARNING =
   '该评分可能含有剧透内容，点进查看'
 
-export const KUN_GALGAME_RATING_PLAY_STATUS_CONST = [
-  'not_started',
-  'in_progress',
-  'finished_one',
-  'finished_main',
-  'finished_all',
-  'dropped'
-] as const
-export const KUN_GALGAME_RATING_PLAY_STATUS_MAP: Record<string, string> = {
-  not_started: '未开始',
-  in_progress: '正在通关',
-  finished_one: '单线通关',
-  finished_main: '主线通关',
-  finished_all: '全线通关',
-  dropped: '弃坑'
-}
-
 export const KUN_GALGAME_RATING_GAME_TYPE_CONST = [
   'ba_saku',
   'plot',

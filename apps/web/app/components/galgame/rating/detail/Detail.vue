@@ -1,8 +1,11 @@
 <script setup lang="ts">
 import {
+  KUN_GALGAME_PLAY_STATE_MAP,
+  type KunGalgamePlayState
+} from '~/constants/galgame-playtime'
+import {
   KUN_GALGAME_RATING_RECOMMEND_MAP,
   KUN_GALGAME_RATING_RECOMMEND_COLOR_MAP,
-  KUN_GALGAME_RATING_PLAY_STATUS_MAP,
   KUN_GALGAME_RATING_SPOILER_MAP,
   KUN_GALGAME_RATING_SPOILER_COLOR_MAP,
   KUN_GALGAME_DIMENSIONS,
@@ -33,7 +36,7 @@ const rating = computed(() =>
   calcGalgameRating(
     { ...props.data },
     props.data.overall,
-    props.data.play_status as 'not_started',
+    props.data.play_status as KunGalgamePlayState,
     props.data.recommend as 'no'
   )
 )
@@ -122,7 +125,9 @@ const handleDeleteRating = async () => {
           <div class="flex flex-wrap items-center gap-2">
             <div class="text-default-500 text-sm">通关状态</div>
             <KunChip color="primary">
-              {{ KUN_GALGAME_RATING_PLAY_STATUS_MAP[data.play_status] }}
+              {{
+                KUN_GALGAME_PLAY_STATE_MAP[data.play_status as KunGalgamePlayState]
+              }}
             </KunChip>
 
             <span class="bg-default-300 h-3 w-px" />
@@ -273,7 +278,7 @@ const handleDeleteRating = async () => {
         galgameRatingId: data.id,
         recommend: data.recommend as 'no',
         overall: data.overall,
-        play_status: data.play_status as 'not_started',
+        play_status: data.play_status as KunGalgamePlayState,
         spoiler_level: data.spoiler_level as 'none',
         short_summary: data.short_summary,
         art: data.art,

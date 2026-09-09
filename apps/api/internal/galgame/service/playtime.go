@@ -8,6 +8,7 @@ import (
 
 	"kun-galgame-api/internal/galgame/client"
 	"kun-galgame-api/internal/galgame/dto"
+	"kun-galgame-api/internal/galgame/playstate"
 	"kun-galgame-api/pkg/catalogclient"
 	apperrors "kun-galgame-api/pkg/errors"
 )
@@ -16,7 +17,6 @@ import (
 const (
 	playtimeSweepPage  = 100
 	playtimeSweepPages = 10
-	workStateBatch     = 100
 )
 
 // Catalog has no delete endpoint: a report is withdrawn by dropping it under
@@ -27,6 +27,15 @@ const (
 // no duration left to render between the separators.
 func playtimeWithdrawn(minutes int) bool {
 	return minutes < catalogclient.PlaytimeMinutesFloor
+}
+
+func playStateFinished(status string) bool {
+	switch status {
+	case playstate.DoneOneRoute, playstate.DoneMain, playstate.DoneAll:
+		return true
+	default:
+		return false
+	}
 }
 
 func (s *GalgameService) hydrateMyPlaytime(ctx context.Context, gid int, accessToken string) *dto.GalgameMyPlaytime {
@@ -56,17 +65,21 @@ func (s *GalgameService) hydrateMyPlaytime(ctx context.Context, gid int, accessT
 		}
 		return nil
 	}
-	if got == nil || playtimeWithdrawn(got.Minutes) {
-		return nil
-	}
 	status := ""
 	ws, err := s.catalog.MyWorkState(ctx, accessToken, workID)
 	if err != nil {
 		slog.Warn("galgame detail: own work-state unavailable", "gid", gid, "error", err)
 	} else if ws != nil {
-		status = ws.State
+		status = playstate.FromCatalog(ws.State, ws.Completion)
 	}
-	return &dto.GalgameMyPlaytime{Minutes: got.Minutes, Status: status}
+	minutes := 0
+	if got != nil && !playtimeWithdrawn(got.Minutes) {
+		minutes = got.Minutes
+	}
+	if minutes == 0 && status == "" {
+		return nil
+	}
+	return &dto.GalgameMyPlaytime{Minutes: minutes, Status: status}
 }
 
 type PlaytimeService struct {
@@ -94,8 +107,8 @@ func (s *PlaytimeService) Report(
 	ctx context.Context,
 	gid int,
 	accessToken string,
-	minutes int,
-	status string,
+	minutes *int,
+	status *string,
 ) (*dto.GalgameMyPlaytime, error) {
 	ids, appErr := s.galgameClient.CatalogWorkIDs(ctx, []int{gid})
 	if appErr != nil {
@@ -105,36 +118,86 @@ func (s *PlaytimeService) Report(
 	if !ok {
 		return nil, apperrors.ErrNotFound("条目不存在")
 	}
-	if minutes == 0 {
+
+	writtenMinutes := 0
+	if minutes != nil {
 		if _, err := s.catalog.ReportPlaytime(ctx, accessToken, workID,
-			catalogclient.PlaytimeReport{Minutes: 0}); err != nil {
+			catalogclient.PlaytimeReport{Minutes: *minutes}); err != nil {
 			return nil, err
 		}
-		return s.foldedMyPlaytime(ctx, accessToken, workID, 0, "")
+		writtenMinutes = *minutes
 	}
 
-	current, err := s.catalog.MyWorkState(ctx, accessToken, workID)
-	if err != nil {
-		return nil, err
+	flat := ""
+	if status != nil {
+		if *status == "" {
+			if err := s.catalog.DeleteWorkState(ctx, accessToken, workID); err != nil {
+				return nil, err
+			}
+		} else {
+			catState, completion, ok := playstate.ToCatalog(*status)
+			if !ok {
+				return nil, apperrors.ErrBadRequest("未知的游玩状态")
+			}
+			// The user now picks 单线/主线/全线 directly, so their choice is
+			// authoritative. Echoing a previously stored completion would
+			// ignore the picker and wipe a different application's value
+			// only by accident of GET-then-PUT.
+			stored, err := s.catalog.PutWorkState(ctx, accessToken, workID, catState, completion)
+			if err != nil {
+				return nil, err
+			}
+			if stored != nil {
+				flat = playstate.FromCatalog(stored.State, stored.Completion)
+			} else {
+				flat = *status
+			}
+		}
+	} else {
+		ws, err := s.catalog.MyWorkState(ctx, accessToken, workID)
+		if err != nil {
+			slog.Warn("galgame playtime: own work-state unavailable after report", "error", err)
+		} else if ws != nil {
+			flat = playstate.FromCatalog(ws.State, ws.Completion)
+		}
 	}
-	if _, err := s.catalog.ReportPlaytime(ctx, accessToken, workID,
-		catalogclient.PlaytimeReport{Minutes: minutes}); err != nil {
-		return nil, err
+
+	return s.foldedMyPlaytime(ctx, accessToken, workID, writtenMinutes, flat)
+}
+
+// SyncWorkState mirrors a published rating's play state onto catalog. The
+// rating is already committed when this runs, so every failure is logged and
+// swallowed: a catalog outage must not fail a rating the user already wrote.
+func (s *PlaytimeService) SyncWorkState(ctx context.Context, gid int, accessToken, playStatus string) {
+	if accessToken == "" {
+		return
 	}
-	// An omitted completion on PUT clears the stored value, so echo a non-null one back.
-	var completion *string
-	if current != nil {
-		completion = current.Completion
+	catState, completion, ok := playstate.ToCatalog(playStatus)
+	if !ok {
+		slog.Warn("galgame rating: skip work-state sync, unknown play status", "gid", gid, "play_status", playStatus)
+		return
 	}
-	stored, err := s.catalog.PutWorkState(ctx, accessToken, workID, status, completion)
-	if err != nil {
-		return nil, err
+	if s.catalog == nil || s.galgameClient == nil {
+		slog.Warn("galgame rating: skip work-state sync, catalog unavailable", "gid", gid)
+		return
 	}
-	state := status
-	if stored != nil && stored.State != "" {
-		state = stored.State
+	ids, appErr := s.galgameClient.CatalogWorkIDs(ctx, []int{gid})
+	if appErr != nil {
+		slog.Warn("galgame rating: work-state sync failed", "gid", gid, "error", appErr)
+		return
 	}
-	return s.foldedMyPlaytime(ctx, accessToken, workID, minutes, state)
+	workID, found := ids[gid]
+	if !found {
+		slog.Warn("galgame rating: work-state sync failed, no catalog work", "gid", gid)
+		return
+	}
+	if _, err := s.catalog.PutWorkState(ctx, accessToken, workID, catState, completion); err != nil {
+		if errors.Is(err, catalogclient.ErrInsufficientScope) {
+			warnRatingWorkStateScope.warn("galgame rating: work-state sync unavailable, token lacks scope", "gid", gid)
+			return
+		}
+		slog.Warn("galgame rating: work-state sync failed", "gid", gid, "error", err)
+	}
 }
 
 func (s *PlaytimeService) foldedMyPlaytime(
@@ -145,16 +208,17 @@ func (s *PlaytimeService) foldedMyPlaytime(
 	status string,
 ) (*dto.GalgameMyPlaytime, error) {
 	got, err := s.catalog.MyPlaytime(ctx, accessToken, workID)
-	if err != nil || got == nil {
-		if playtimeWithdrawn(writtenMinutes) {
-			return nil, nil
-		}
-		return &dto.GalgameMyPlaytime{Minutes: writtenMinutes, Status: status}, nil
+	minutes := writtenMinutes
+	if err == nil && got != nil {
+		minutes = got.Minutes
 	}
-	if playtimeWithdrawn(got.Minutes) {
+	if playtimeWithdrawn(minutes) {
+		minutes = 0
+	}
+	if minutes == 0 && status == "" {
 		return nil, nil
 	}
-	return &dto.GalgameMyPlaytime{Minutes: got.Minutes, Status: status}, nil
+	return &dto.GalgameMyPlaytime{Minutes: minutes, Status: status}, nil
 }
 
 type foldedPlaytime struct {
@@ -172,31 +236,45 @@ func (s *PlaytimeService) ListMine(
 	page, limit int,
 	isSFW bool,
 ) (*dto.PlaytimeMinePage, error) {
-	rows, truncated, err := s.sweep(ctx, accessToken)
+	playtimeRows, playtimeTruncated, err := s.sweep(ctx, accessToken)
 	if err != nil {
 		return nil, err
 	}
-	folded := s.fold(ctx, rows)
+	stateRows, stateTruncated, err := s.sweepWorkStates(ctx, accessToken)
+	if err != nil {
+		return nil, err
+	}
 
-	ids := make([]int64, 0, len(folded))
-	for _, f := range folded {
-		ids = append(ids, f.workID)
+	order, byWork := foldRecords(playtimeRows)
+	states, stateOrder := indexWorkStates(stateRows)
+
+	workIDs := make([]int64, 0, len(order)+len(stateOrder))
+	seenWork := make(map[int64]struct{}, len(order)+len(stateOrder))
+	for _, id := range order {
+		workIDs = append(workIDs, id)
+		seenWork[id] = struct{}{}
 	}
-	states, err := s.workStatesByIDs(ctx, accessToken, ids)
-	if err != nil {
-		return nil, err
+	for _, id := range stateOrder {
+		if _, ok := seenWork[id]; ok {
+			continue
+		}
+		workIDs = append(workIDs, id)
 	}
-	attachWorkStates(folded, states)
-	sort.Slice(folded, func(i, j int) bool { return folded[i].lastIndex > folded[j].lastIndex })
+	gidByWork, appErr := s.galgameClient.GIDsByCatalogIDs(ctx, workIDs)
+	if appErr != nil {
+		return nil, appErr
+	}
+
+	folded := assembleMine(order, byWork, stateOrder, states, gidByWork)
 
 	out := &dto.PlaytimeMinePage{
 		Items:     []dto.PlaytimeMineItem{},
 		Total:     len(folded),
-		Truncated: truncated,
+		Truncated: playtimeTruncated || stateTruncated,
 	}
 	for _, f := range folded {
 		out.TotalMinutes += f.minutes
-		if f.status == catalogclient.WorkStateDone {
+		if playStateFinished(f.status) {
 			out.FinishedWorks++
 		}
 	}
@@ -252,6 +330,23 @@ func (s *PlaytimeService) sweep(ctx context.Context, accessToken string) ([]cata
 	return all, true, nil
 }
 
+func (s *PlaytimeService) sweepWorkStates(ctx context.Context, accessToken string) ([]catalogclient.WorkStateRecord, bool, error) {
+	var all []catalogclient.WorkStateRecord
+	cursor := ""
+	for i := 0; i < playtimeSweepPages; i++ {
+		rows, next, err := s.catalog.ListMyWorkStates(ctx, accessToken, cursor, playtimeSweepPage)
+		if err != nil {
+			return nil, false, err
+		}
+		all = append(all, rows...)
+		if len(rows) < playtimeSweepPage || next == "" {
+			return all, false, nil
+		}
+		cursor = next
+	}
+	return all, true, nil
+}
+
 func foldRecords(rows []catalogclient.PlaytimeRecord) ([]int64, map[int64]foldedPlaytime) {
 	byWork := make(map[int64]foldedPlaytime, len(rows))
 	order := make([]int64, 0, len(rows))
@@ -271,47 +366,69 @@ func foldRecords(rows []catalogclient.PlaytimeRecord) ([]int64, map[int64]folded
 	return order, byWork
 }
 
-func attachWorkStates(folded []foldedPlaytime, states map[int64]catalogclient.WorkStateRecord) {
-	for i := range folded {
-		if rec, ok := states[folded[i].workID]; ok {
-			folded[i].status = rec.State
+func indexWorkStates(rows []catalogclient.WorkStateRecord) (map[int64]catalogclient.WorkStateRecord, []int64) {
+	byWork := make(map[int64]catalogclient.WorkStateRecord, len(rows))
+	order := make([]int64, 0, len(rows))
+	for _, r := range rows {
+		if _, ok := byWork[r.WorkID]; !ok {
+			order = append(order, r.WorkID)
 		}
+		byWork[r.WorkID] = r
 	}
+	return byWork, order
 }
 
-func (s *PlaytimeService) workStatesByIDs(ctx context.Context, accessToken string, ids []int64) (map[int64]catalogclient.WorkStateRecord, error) {
-	out := make(map[int64]catalogclient.WorkStateRecord, len(ids))
-	for i := 0; i < len(ids); i += workStateBatch {
-		end := min(i+workStateBatch, len(ids))
-		got, err := s.catalog.MyWorkStates(ctx, accessToken, ids[i:end])
-		if err != nil {
-			return nil, err
-		}
-		for k, v := range got {
-			out[k] = v
-		}
-	}
-	return out, nil
-}
-
-func (s *PlaytimeService) fold(ctx context.Context, rows []catalogclient.PlaytimeRecord) []foldedPlaytime {
-	order, byWork := foldRecords(rows)
-	gidByWork, appErr := s.galgameClient.GIDsByCatalogIDs(ctx, order)
-	if appErr != nil {
-		return nil
-	}
-	out := make([]foldedPlaytime, 0, len(order))
-	for _, workID := range order {
+func assembleMine(
+	playtimeOrder []int64,
+	byWork map[int64]foldedPlaytime,
+	stateOrder []int64,
+	states map[int64]catalogclient.WorkStateRecord,
+	gidByWork map[int64]int,
+) []foldedPlaytime {
+	derived := make([]foldedPlaytime, 0, len(playtimeOrder))
+	seen := make(map[int64]struct{}, len(playtimeOrder)+len(stateOrder))
+	for _, workID := range playtimeOrder {
 		gid, ok := gidByWork[workID]
 		if !ok || gid <= 0 {
 			continue
 		}
 		f := byWork[workID]
+		if rec, ok := states[workID]; ok {
+			f.status = playstate.FromCatalog(rec.State, rec.Completion)
+		}
 		if playtimeWithdrawn(f.minutes) {
-			continue
+			if f.status == "" {
+				continue
+			}
+			f.minutes = 0
 		}
 		f.gid = gid
-		out = append(out, f)
+		derived = append(derived, f)
+		seen[workID] = struct{}{}
+	}
+	sort.Slice(derived, func(i, j int) bool { return derived[i].lastIndex > derived[j].lastIndex })
+
+	out := derived
+	for _, workID := range stateOrder {
+		if _, ok := seen[workID]; ok {
+			continue
+		}
+		gid, ok := gidByWork[workID]
+		if !ok || gid <= 0 {
+			continue
+		}
+		rec := states[workID]
+		status := playstate.FromCatalog(rec.State, rec.Completion)
+		if status == "" {
+			continue
+		}
+		out = append(out, foldedPlaytime{
+			gid:     gid,
+			workID:  workID,
+			minutes: 0,
+			clients: 0,
+			status:  status,
+		})
 	}
 	return out
 }
