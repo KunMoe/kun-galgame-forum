@@ -242,6 +242,16 @@ watch(isOpen, (open) => {
           加载更多
         </KunButton>
       </div>
+
+      <div class="border-default-200 flex items-center justify-center border-t pt-2">
+        <KunLink
+          to="/point"
+          class="text-primary text-sm underline underline-offset-4"
+          @click="isOpen = false"
+        >
+          萌萌点收支细则
+        </KunLink>
+      </div>
     </div>
   </KunModal>
 </template>
