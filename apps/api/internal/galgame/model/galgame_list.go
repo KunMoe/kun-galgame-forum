@@ -12,6 +12,9 @@ type GalgameListFilter struct {
 	ReleasedFrom         string
 	ReleasedTo           string
 	ReleasedMonths       []int
+	CollectedFrom        string
+	CollectedTo          string
+	CollectedMonths      []int
 	MinRatingCount       int
 	MinRating            float64
 	ShowNoResource       bool

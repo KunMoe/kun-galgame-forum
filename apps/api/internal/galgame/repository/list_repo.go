@@ -93,6 +93,7 @@ func (r *GalgameListRepository) ListIDs(f model.GalgameListFilter) (ids []int, t
 				q = q.Joins(ratingAggJoin)
 			}
 			q = applyReleaseFilter(q, f)
+			q = applyCollectedFilter(q, f)
 			q = applyGameTypeFilter(q, f)
 			if ratingFilter {
 				q = applyRatingFilter(q, f, bayes)
@@ -127,6 +128,7 @@ func (r *GalgameListRepository) ListIDs(f model.GalgameListFilter) (ids []int, t
 	}
 
 	inner = applyReleaseFilter(inner, f)
+	inner = applyCollectedFilter(inner, f)
 	inner = applyGameTypeFilter(inner, f)
 	if f.Type != "" && f.Type != "all" {
 		inner = inner.Where("gr.type = ?", f.Type)
@@ -237,6 +239,25 @@ type RatingInfo struct {
 	Count int
 }
 
+// CollectedMonth is one (year, month) pair that actually has collected rows in
+// the same population the /galgame list serves (published + has a resource).
+type CollectedMonth struct {
+	Year  int `gorm:"column:year" json:"year"`
+	Month int `gorm:"column:month" json:"month"`
+}
+
+func (r *GalgameListRepository) ListCollectedCalendar() []CollectedMonth {
+	var rows []CollectedMonth
+	r.db.Table("galgame g").
+		Select("EXTRACT(YEAR FROM g.created)::int AS year, EXTRACT(MONTH FROM g.created)::int AS month").
+		Where("g.published").
+		Where("EXISTS (SELECT 1 FROM galgame_resource gr WHERE gr.galgame_id = g.id)").
+		Group("EXTRACT(YEAR FROM g.created)::int, EXTRACT(MONTH FROM g.created)::int").
+		Order("EXTRACT(YEAR FROM g.created)::int DESC, EXTRACT(MONTH FROM g.created)::int ASC").
+		Scan(&rows)
+	return rows
+}
+
 func (r *GalgameListRepository) BayesianRatings(ids []int) map[int]RatingInfo {
 	out := make(map[int]RatingInfo, len(ids))
 	if len(ids) == 0 {
@@ -289,6 +310,22 @@ func applyReleaseFilter(q *gorm.DB, f model.GalgameListFilter) *gorm.DB {
 	}
 	if len(f.ReleasedMonths) > 0 {
 		q = q.Where("EXTRACT(MONTH FROM g.release_date)::int IN ?", f.ReleasedMonths)
+	}
+	return q
+}
+
+// CollectedAt filters on the forum-local row creation time (g.created), the
+// moment the entry first went live here. The upper bound is exclusive day-after
+// so a timestamp on the chosen day is included.
+func applyCollectedFilter(q *gorm.DB, f model.GalgameListFilter) *gorm.DB {
+	if f.CollectedFrom != "" {
+		q = q.Where("g.created >= ?::date", f.CollectedFrom)
+	}
+	if f.CollectedTo != "" {
+		q = q.Where("g.created < ?::date + interval '1 day'", f.CollectedTo)
+	}
+	if len(f.CollectedMonths) > 0 {
+		q = q.Where("EXTRACT(MONTH FROM g.created)::int IN ?", f.CollectedMonths)
 	}
 	return q
 }

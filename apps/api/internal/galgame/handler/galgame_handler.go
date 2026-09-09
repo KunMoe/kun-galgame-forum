@@ -49,6 +49,10 @@ func (h *GalgameHandler) GetList(c fiber.Ctx) error {
 	return response.OK(c, page)
 }
 
+func (h *GalgameHandler) CollectedCalendar(c fiber.Ctx) error {
+	return response.OK(c, h.galgameService.CollectedCalendar())
+}
+
 func (h *GalgameHandler) ToggleLike(c fiber.Ctx) error {
 	user, appErr := middleware.MustGetUser(c)
 	if appErr != nil {
