@@ -10,13 +10,6 @@ import (
 	"strconv"
 )
 
-const (
-	PlaytimeStatusPlaying  = "playing"
-	PlaytimeStatusFinished = "finished"
-	PlaytimeStatusDropped  = "dropped"
-	PlaytimeStatusOnHold   = "on_hold"
-)
-
 // Catalog refuses anything above this, and its aggregate job ignores anything
 // below PlaytimeMinutesFloor — a report under the floor is stored but never
 // reaches the public median, which is how a user withdraws one.
@@ -26,25 +19,17 @@ const (
 )
 
 type PlaytimeReport struct {
-	Minutes int    `json:"minutes"`
-	Status  string `json:"status,omitempty"`
+	Minutes int `json:"minutes"`
 }
 
 type PlaytimeRecord struct {
-	WorkID       int64   `json:"work_id"`
-	Minutes      int     `json:"minutes"`
-	Status       string  `json:"status"`
-	LastPlayedAt *string `json:"last_played_at"`
-	ClientID     string  `json:"client_id"`
-	UpdatedAt    string  `json:"updated_at"`
+	WorkID  int64 `json:"work_id"`
+	Minutes int   `json:"minutes"`
 }
 
 type PlaytimeSelf struct {
-	WorkID       int64   `json:"work_id"`
-	Minutes      int     `json:"minutes"`
-	Status       string  `json:"status"`
-	LastPlayedAt *string `json:"last_played_at"`
-	Clients      int     `json:"clients"`
+	WorkID  int64 `json:"work_id"`
+	Minutes int   `json:"minutes"`
 }
 
 func (c *Client) ReportPlaytime(ctx context.Context, accessToken string, workID int64,
@@ -55,7 +40,7 @@ func (c *Client) ReportPlaytime(ctx context.Context, accessToken string, workID 
 	if err := c.userV2JSON(ctx, http.MethodPut, accessToken, path, map[string]any{"minutes": report.Minutes}, &out, nil); err != nil {
 		return nil, err
 	}
-	return &PlaytimeRecord{WorkID: parseFlexID(out.WorkID), Minutes: out.Minutes, Status: out.Status, UpdatedAt: out.UpdatedAt}, nil
+	return &PlaytimeRecord{WorkID: parseFlexID(out.WorkID), Minutes: out.Minutes}, nil
 }
 
 // MyPlaytime answers (nil, nil) when the user has never reported on this work.
@@ -92,18 +77,18 @@ func (c *Client) MyPlaytime(ctx context.Context, accessToken string, workID int6
 	if parseFlexID(out.WorkID) == 0 && out.Minutes == 0 {
 		return nil, nil
 	}
-	return &PlaytimeSelf{WorkID: parseFlexID(out.WorkID), Minutes: out.Minutes, Status: out.Status, LastPlayedAt: out.LastPlayedAt, Clients: out.Clients}, nil
+	return &PlaytimeSelf{WorkID: parseFlexID(out.WorkID), Minutes: out.Minutes}, nil
 }
 
 // ListMyPlaytime pages the caller's own rows oldest-change-first, returning the
-// cursor to hand back as updatedSince. One row per (work, client): the same work
-// appears once per application that reported it.
-func (c *Client) ListMyPlaytime(ctx context.Context, accessToken, updatedSince string,
+// next cursor. One row per (work, client): the same work appears once per
+// application that reported it.
+func (c *Client) ListMyPlaytime(ctx context.Context, accessToken, cursor string,
 	limit int) ([]PlaytimeRecord, string, error) {
 
 	q := url.Values{}
-	if updatedSince != "" {
-		q.Set("updated_since", updatedSince)
+	if cursor != "" {
+		q.Set("cursor", cursor)
 	}
 	if limit > 0 {
 		q.Set("limit", strconv.Itoa(limit))
@@ -119,7 +104,7 @@ func (c *Client) ListMyPlaytime(ctx context.Context, accessToken, updatedSince s
 	rows := out.rows()
 	items := make([]PlaytimeRecord, 0, len(rows))
 	for _, it := range rows {
-		items = append(items, PlaytimeRecord{WorkID: parseFlexID(it.WorkID), Minutes: it.Minutes, Status: it.Status, UpdatedAt: it.UpdatedAt})
+		items = append(items, PlaytimeRecord{WorkID: parseFlexID(it.WorkID), Minutes: it.Minutes})
 	}
 	return items, out.cursor(), nil
 }

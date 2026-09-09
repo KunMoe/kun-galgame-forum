@@ -2,6 +2,7 @@
 import {
   KUN_GALGAME_PLAYTIME_HOURS_MAX,
   KUN_GALGAME_PLAYTIME_MINUTES_FLOOR,
+  KUN_GALGAME_PLAYTIME_STATUS_CONST,
   KUN_GALGAME_PLAYTIME_STATUS_OPTIONS,
   type KunGalgamePlaytimeStatus
 } from '~/constants/galgame-playtime'
@@ -18,12 +19,16 @@ const emits = defineEmits<{
 const open = defineModel<boolean>({ required: true })
 
 const hours = ref(0)
-const status = ref<KunGalgamePlaytimeStatus>('playing')
+const status = ref<KunGalgamePlaytimeStatus>('doing')
 
 watch(open, (isOpen) => {
   if (!isOpen) return
   hours.value = props.mine ? Math.round((props.mine.minutes / 60) * 10) / 10 : 0
-  status.value = (props.mine?.status ?? 'playing') as KunGalgamePlaytimeStatus
+  const current = props.mine?.status ?? ''
+  const allowed = KUN_GALGAME_PLAYTIME_STATUS_CONST as readonly string[]
+  status.value = allowed.includes(current)
+    ? (current as KunGalgamePlaytimeStatus)
+    : 'doing'
 })
 
 const minutes = computed(() => Math.round((Number(hours.value) || 0) * 60))
@@ -113,12 +118,6 @@ const clear = async () => {
         color="warning"
         title="超出上限"
         :description="`单部作品最多可记录 ${KUN_GALGAME_PLAYTIME_HOURS_MAX} 小时。`"
-      />
-      <KunInfo
-        v-else-if="mine && mine.clients > 1"
-        color="info"
-        title="不止一个应用在记录"
-        :description="`你有 ${mine.clients} 个应用在记录这部作品, 展示的是其中最长的一条。这里只会覆盖本站这一条。`"
       />
       <p v-else class="text-default-500 text-sm">
         只有「已通关」的记录会计入本站中位数, 且需要至少 3 位玩家上报。

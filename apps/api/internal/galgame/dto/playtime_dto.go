@@ -1,16 +1,10 @@
 package dto
 
 type PlaytimeMineItem struct {
-	Galgame      GalgameListCard `json:"galgame"`
-	Minutes      int             `json:"minutes"`
-	Status       string          `json:"status"`
-	LastPlayedAt string          `json:"last_played_at,omitempty"`
-	UpdatedAt    string          `json:"updated_at"`
-	Clients      int             `json:"clients"`
-	// True when the largest report on this work came from an application other
-	// than the forum — a desktop tracker the user authorised themselves. The
-	// forum must never silently overwrite one of those.
-	External bool `json:"external"`
+	Galgame GalgameListCard `json:"galgame"`
+	Minutes int             `json:"minutes"`
+	Status  string          `json:"status"`
+	Clients int             `json:"clients"`
 }
 
 type PlaytimeMinePage struct {

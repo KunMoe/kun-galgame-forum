@@ -27,7 +27,7 @@ type fakePlaytimeFace struct {
 	// What the self-read reports back after the write. A second application of
 	// the same user can hold a larger number than the one just written.
 	foldMinutes int
-	foldClients int
+	workState   string
 }
 
 func (f *fakePlaytimeFace) server(t *testing.T) *httptest.Server {
@@ -50,14 +50,32 @@ func (f *fakePlaytimeFace) server(t *testing.T) *httptest.Server {
 			_, _ = w.Write([]byte(f.body))
 			return
 		}
-		if r.Method == http.MethodGet {
-			_, _ = w.Write([]byte(`{"code":0,"message":"ok","data":{"work_id":1000,"minutes":` +
-				strconv.Itoa(f.foldMinutes) + `,"status":"finished","last_played_at":null,"clients":` +
-				strconv.Itoa(f.foldClients) + `}}`))
+		w.Header().Set("Content-Type", "application/json")
+		if strings.Contains(r.URL.Path, "/work-states") {
+			if r.Method == http.MethodGet {
+				if f.workState != "" {
+					_, _ = w.Write([]byte(f.workState))
+					return
+				}
+				w.WriteHeader(http.StatusNotFound)
+				return
+			}
+			state, _ := body["state"].(string)
+			comp := "null"
+			if v, ok := body["completion"]; ok {
+				b, _ := json.Marshal(v)
+				comp = string(b)
+			}
+			_, _ = w.Write([]byte(`{"object":"work_state","work_id":"1000","state":"` + state +
+				`","completion":` + comp + `,"created_at":"2026-08-20T00:00:00Z","updated_at":"2026-08-20T00:00:00Z"}`))
 			return
 		}
-		_, _ = w.Write([]byte(`{"code":0,"message":"ok","data":{"work_id":1000,"minutes":720,` +
-			`"status":"finished","client_id":"forum","updated_at":"2026-08-20T00:00:00Z"}}`))
+		if r.Method == http.MethodGet {
+			_, _ = w.Write([]byte(`{"code":0,"message":"ok","data":{"work_id":1000,"minutes":` +
+				strconv.Itoa(f.foldMinutes) + `}}`))
+			return
+		}
+		_, _ = w.Write([]byte(`{"code":0,"message":"ok","data":{"work_id":1000,"minutes":720}}`))
 	}))
 	t.Cleanup(srv.Close)
 	return srv
@@ -84,19 +102,22 @@ func playtimeTestApp(t *testing.T, catalogURL string, user *middleware.UserInfo)
 }
 
 func TestReportPlaytimeTravelsAsTheUserAndAnswersTheFold(t *testing.T) {
-	fake := &fakePlaytimeFace{foldMinutes: 900, foldClients: 2}
+	fake := &fakePlaytimeFace{foldMinutes: 900}
 	app := playtimeTestApp(t, fake.server(t).URL, plainUser)
 
 	status, raw := doJSON(t, app, "PUT", "/api/galgame/1/playtime",
-		`{"minutes":720,"status":"finished"}`)
+		`{"minutes":720,"status":"done"}`)
 	if status != http.StatusOK {
 		t.Fatalf("report: status = %d body %s", status, raw)
 	}
 
-	if len(fake.requests) != 2 {
-		t.Fatalf("want a write then a fold read, got %+v", fake.requests)
+	if len(fake.requests) != 4 {
+		t.Fatalf("want work-state read, playtime write, work-state write, playtime fold, got %+v", fake.requests)
 	}
-	write := fake.requests[0]
+	if fake.requests[0].Method != http.MethodGet || fake.requests[0].Path != "/v2/me/work-states/1000" {
+		t.Errorf("work-state read = %s %s", fake.requests[0].Method, fake.requests[0].Path)
+	}
+	write := fake.requests[1]
 	if write.Method != http.MethodPut || write.Path != "/v2/me/playtimes/1000" {
 		t.Errorf("write went to %s %s, want PUT /v2/me/playtimes/1000", write.Method, write.Path)
 	}
@@ -106,15 +127,28 @@ func TestReportPlaytimeTravelsAsTheUserAndAnswersTheFold(t *testing.T) {
 	if write.Body["minutes"] != float64(720) {
 		t.Errorf("body = %v", write.Body)
 	}
-	read := fake.requests[1]
+	if _, ok := write.Body["status"]; ok {
+		t.Errorf("playtime PUT must not send status, got %v", write.Body)
+	}
+	ws := fake.requests[2]
+	if ws.Method != http.MethodPut || ws.Path != "/v2/me/work-states/1000" {
+		t.Errorf("work-state write = %s %s", ws.Method, ws.Path)
+	}
+	if ws.Body["state"] != "done" {
+		t.Errorf("work-state body = %v", ws.Body)
+	}
+	if _, ok := ws.Body["completion"]; ok {
+		t.Errorf("no prior completion, PUT must omit it, got %v", ws.Body)
+	}
+	read := fake.requests[3]
 	if read.Method != http.MethodGet || read.Path != "/v2/me/playtimes/1000" {
 		t.Errorf("fold read = %s %s", read.Method, read.Path)
 	}
 
 	var env struct {
 		Data struct {
-			Minutes int `json:"minutes"`
-			Clients int `json:"clients"`
+			Minutes int    `json:"minutes"`
+			Status  string `json:"status"`
 		} `json:"data"`
 	}
 	if err := json.Unmarshal(raw, &env); err != nil {
@@ -122,8 +156,31 @@ func TestReportPlaytimeTravelsAsTheUserAndAnswersTheFold(t *testing.T) {
 	}
 	// 900, not the 720 just written: another app of the same user holds more,
 	// and echoing our own figure would contradict the number on the page.
-	if env.Data.Minutes != 900 || env.Data.Clients != 2 {
-		t.Errorf("answered %+v, want the folded 900 over 2 clients", env.Data)
+	if env.Data.Minutes != 900 || env.Data.Status != "done" {
+		t.Errorf("answered %+v, want the folded 900 with stored state done", env.Data)
+	}
+}
+
+func TestReportPlaytimePreservesUpstreamCompletion(t *testing.T) {
+	fake := &fakePlaytimeFace{
+		foldMinutes: 720,
+		workState:   `{"object":"work_state","work_id":"1000","state":"doing","completion":"all","created_at":"2026-08-01T00:00:00Z","updated_at":"2026-08-01T00:00:00Z"}`,
+	}
+	app := playtimeTestApp(t, fake.server(t).URL, plainUser)
+
+	status, raw := doJSON(t, app, "PUT", "/api/galgame/1/playtime",
+		`{"minutes":720,"status":"done"}`)
+	if status != http.StatusOK {
+		t.Fatalf("report: status = %d body %s", status, raw)
+	}
+	var put map[string]any
+	for _, req := range fake.requests {
+		if req.Method == http.MethodPut && strings.Contains(req.Path, "/work-states") {
+			put = req.Body
+		}
+	}
+	if put["state"] != "done" || put["completion"] != "all" {
+		t.Errorf("work-state PUT = %v, want state=done and completion=all preserved", put)
 	}
 }
 
@@ -135,6 +192,8 @@ func TestReportPlaytimeRejectsBadInputWithoutCallingCatalog(t *testing.T) {
 		{"negative", `{"minutes":-1}`},
 		{"over the ceiling", `{"minutes":60001}`},
 		{"unknown status", `{"minutes":600,"status":"finished_all"}`},
+		{"wish", `{"minutes":600,"status":"wish"}`},
+		{"old word", `{"minutes":600,"status":"playing"}`},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -159,7 +218,7 @@ func TestReportPlaytimeAsksForReauthOnAScopeDenial(t *testing.T) {
 	}
 	app := playtimeTestApp(t, fake.server(t).URL, plainUser)
 
-	status, raw := doJSON(t, app, "PUT", "/api/galgame/1/playtime", `{"minutes":720,"status":"finished"}`)
+	status, raw := doJSON(t, app, "PUT", "/api/galgame/1/playtime", `{"minutes":720,"status":"done"}`)
 	if status != http.StatusForbidden {
 		t.Fatalf("status = %d body %s", status, raw)
 	}

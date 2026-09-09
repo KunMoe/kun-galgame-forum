@@ -342,12 +342,16 @@ func (s v2Snapshot) values() map[string]any {
 }
 
 type v2Playtime struct {
-	WorkID       json.RawMessage `json:"work_id"`
-	Minutes      int             `json:"minutes"`
-	Status       string          `json:"status"`
-	Clients      int             `json:"clients"`
-	LastPlayedAt *string         `json:"last_played_at"`
-	UpdatedAt    string          `json:"updated_at"`
+	WorkID  json.RawMessage `json:"work_id"`
+	Minutes int             `json:"minutes"`
+}
+
+type v2WorkState struct {
+	WorkID     json.RawMessage `json:"work_id"`
+	State      string          `json:"state"`
+	Completion *string         `json:"completion"`
+	CreatedAt  string          `json:"created_at"`
+	UpdatedAt  string          `json:"updated_at"`
 }
 
 type v2CoverVote struct {

@@ -31,10 +31,10 @@ type reportPlaytimeRequest struct {
 }
 
 var playtimeStatuses = map[string]bool{
-	catalogclient.PlaytimeStatusPlaying:  true,
-	catalogclient.PlaytimeStatusFinished: true,
-	catalogclient.PlaytimeStatusDropped:  true,
-	catalogclient.PlaytimeStatusOnHold:   true,
+	catalogclient.WorkStateDoing:   true,
+	catalogclient.WorkStateDone:    true,
+	catalogclient.WorkStateOnHold:  true,
+	catalogclient.WorkStateDropped: true,
 }
 
 func (h *PlaytimeHandler) Report(c fiber.Ctx) error {
@@ -53,7 +53,7 @@ func (h *PlaytimeHandler) Report(c fiber.Ctx) error {
 		return response.Error(c, errors.ErrBadRequest("游玩时长超出可记录的范围"))
 	}
 	if req.Status == "" {
-		req.Status = catalogclient.PlaytimeStatusPlaying
+		req.Status = catalogclient.WorkStateDoing
 	}
 	if !playtimeStatuses[req.Status] {
 		return response.Error(c, errors.ErrBadRequest("未知的游玩状态"))
