@@ -503,7 +503,7 @@ func (s *ResourceService) ToggleLike(
 		if err := s.resourceRepo.AdjustLikeCount(tx, req.GalgameResourceID, delta); err != nil {
 			return err
 		}
-		s.helpers.AdjustMoemoepoint(tx, userID, delta,
+		s.helpers.AdjustMoemoepoint(tx, row.UserID, delta,
 			moemoepoint.ReasonLiked, moemoepoint.Ref("galgame_resource", req.GalgameResourceID))
 		return s.helpers.CreateGalgameMessageWithContent(
 			tx, userID, row.UserID, "liked", preview, row.GalgameID,

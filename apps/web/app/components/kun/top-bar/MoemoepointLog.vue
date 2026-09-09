@@ -24,7 +24,8 @@ const REASON_META: Record<string, { label: string; icon: string }> = {
   admin_grant: { label: '管理员发放', icon: 'lucide:gift' },
   admin_deduct: { label: '管理员扣除', icon: 'lucide:gavel' },
   migration: { label: '初始迁移', icon: 'lucide:database' },
-  register_gift: { label: '注册礼物', icon: 'lucide:party-popper' }
+  register_gift: { label: '注册礼物', icon: 'lucide:party-popper' },
+  name_change: { label: '修改用户名', icon: 'lucide:user-round-pen' }
 }
 
 const SOURCE_LABEL: Record<string, string> = {
