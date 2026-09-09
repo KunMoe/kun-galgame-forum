@@ -40,7 +40,7 @@
 | 02 | [user-profile.md](./02-user-profile.md) | 用户自助：`GET/PATCH /auth/me` + `POST /auth/me/avatar`（含头像上传） |
 | 03 | [cross-service.md](./03-cross-service.md) | 服务到服务：`/users/batch`、`/users/search`（OAuth Client Basic Auth） |
 | 04 | [tokens-and-errors.md](./04-tokens-and-errors.md) | JWT Access Token claims + 完整错误码速查（OAuth 15xxx / 认证 10xxx / 通用） |
-| 05 | [registration.md](./05-registration.md) | 用户注册流程：跳转 OAuth 注册 + 邮箱验证码 + 自动 SSO 回跳；`POST /auth/register/send-code` + `POST /auth/register`、`GET /oauth/client-info`；下游 PKCE 跳转示例 |
+| 05 | [registration.md](./05-registration.md) | 用户注册流程：跳转 OAuth 注册 + 邮箱验证码 + 自动 SSO 回跳；`POST /auth/register/send-code` + `POST /auth/register`、`GET /oauth/client-info`；下游 PKCE 跳转示例。含**第三方登录（联邦，Google/GitHub）**：`/auth/federation/*` 五端点，OP 侧实现，下游零改动 |
 | 06 | [moemoepoint.md](./06-moemoepoint.md) | **设计规范（精简版）**：萌萌点全站统一货币（单一真源在 OAuth）。可变余额列 + append-only 审计日志 + 幂等发放/扣除 RPC + 迁移与下游接入；含"刻意没做的"清单（将来需要再升级）|
 | 07 | [logout.md](./07-logout.md) | **登出与单点登出（RP-Initiated Logout）**：修复「登出后再登录直接静默登回原账号」。RP 登出须顶层跳转 OP 登出入口 `GET /auth/logout`；含 `GET /oauth/post-logout-redirect` 白名单校验 + `prompt=login` 强制重登；下游接入步骤 |
 | 08 | [creator-applications.md](./08-creator-applications.md) | **创作者申请（Creator-Role Application）**：申请 → 管理员审核 → 通过/拒绝（可重申）的中央队列。`POST /creator/applications` + `GET /creator/applications/me`（用户）；资格门槛**下游自治**、角色授予归 OAuth；含「从未申请省略 `data`」契约 + 错误码 17001-17005 + 下游耦合点 |

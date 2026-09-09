@@ -305,9 +305,41 @@ const handleOAuthRegister = async () => {
 
 ## 未来扩展（L2+）
 
-**L2（未来）**：在 `/auth/register` 和 `/auth/login` 页面加 "Continue with Google / GitHub / Apple" 按钮，走标准 OIDC federation。**所有下游零代码自动支持**——这是 OAuth 集中架构最大的红利。
+**L2（已实现）**：第三方登录在 OP 落地（Google + GitHub，后续可加更多），见下方「第三方登录（federation）」。**所有下游零代码自动支持**——这是 OAuth 集中架构最大的红利。
 
 **L3+（待定）**：passkey / magic link / identifier-first flow 等，都在 OAuth 单点实现，下游不感知。
+
+### 第三方登录（federation）
+
+OP 作为上游 Google（OIDC）/ GitHub（OAuth2）的客户端。浏览器在 oauth.kungal.com 完成第三方登录后，OP 签发与密码登录相同的 session / refresh cookie；下游站点无需改动，也不应自建 Google/GitHub 登录。
+
+契约细节与决策见 infra [`docs/auth/05-federation-login-design.md`](../../auth/05-federation-login-design.md)。
+
+**端点**（均在 `/api/v1` 下，公开，无 Bearer）：
+
+| 方法 | 路径 | 形态 | 说明 |
+|------|------|------|------|
+| GET | `/auth/federation/providers` | JSON | `{providers: [{name}]}`，按设置项 `auth.federation_providers` 的顺序，且仅包含已配置 env 凭据的提供方。默认空数组 = 未开启 |
+| GET | `/auth/federation/:provider/start?redirect=` | 浏览器 302 | 写 `kg_fed_state` cookie 后跳向上游授权页。未启用 → 见下方 error 回跳 |
+| GET | `/auth/federation/:provider/callback` | 浏览器 302 | 上游回跳。成功登录：写 refresh cookie，跳到校验后的 `redirect`；需补全资料：跳 `/auth/federation/complete?token=&redirect=`；失败：跳登录页并带 `error` |
+| GET | `/auth/federation/pending?token=` | JSON | 补全页读取 `{provider, suggested_name, email, email_locked}`。token 过期 → `10018` |
+| POST | `/auth/federation/complete` | JSON | 设用户名+密码（及必要时邮箱验证码）后建号并登录。成功体与 `POST /auth/register` 相同（`LoginResponse` + refresh cookie） |
+
+**登录页 error 查询参数**（callback / start 以 302 回到 `{FrontendURL}/auth/login?error=<code>`，`redirect` 仅在原始 redirect 非空时附带）：
+
+| `error` | 含义 |
+|---------|------|
+| `federation_disabled` | 该提供方未启用（设置项未列出或缺少 env 凭据） |
+| `federation_denied` | 用户在上游取消授权 |
+| `federation_state` | state 缺失 / 与 cookie 不一致 / 已过期 |
+| `federation_failed` | 与上游换票失败 |
+| `federation_banned` | 对应账号已封禁 |
+| `federation_stepup` | 对应账号持 `admin` / `ren`，v1 不允许走第三方登录，请用密码登录 |
+| `federation_conflict` | 同一提供方已绑定到该用户的另一个上游账号，请用密码登录 |
+
+JSON 错误码：`10017` 未启用、`10018` 流程过期、`10019` 绑定冲突。
+
+**下游接入**：不需要改。用户从下游「登录」跳到 OP 登录页后，点 Google/GitHub 即在 OP 完成 federation；回来时 OP session 已在，后续 `/oauth/authorize` 与密码登录后相同。不要在 kungal / moyu / wiki 自己接 Google/GitHub。
 
 ---
 
