@@ -300,11 +300,9 @@ type GalgameDetail struct {
 	MyPlaytime                 *GalgameMyPlaytime       `json:"my_playtime,omitempty"`
 }
 
-// Clients counts the applications the viewer has reported this work from —
-// catalog folds them with MAX(minutes), because two apps watching one save
-// file are not two playthroughs.
+// Status is the work-state word for this work, or empty when the user has none.
+// The v2 single playtime read carries no client count.
 type GalgameMyPlaytime struct {
 	Minutes int    `json:"minutes"`
 	Status  string `json:"status"`
-	Clients int    `json:"clients"`
 }

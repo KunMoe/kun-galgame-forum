@@ -100,7 +100,6 @@ export interface GalgamePlaytime {
 export interface GalgameMyPlaytime {
   minutes: number
   status: string
-  clients: number
 }
 
 export interface GalgameIntro {
@@ -207,10 +206,7 @@ export interface PlaytimeMineItem {
   galgame: GalgameCard
   minutes: number
   status: string
-  last_played_at?: string
-  updated_at: string
   clients: number
-  external: boolean
 }
 
 export interface PlaytimeMinePage {

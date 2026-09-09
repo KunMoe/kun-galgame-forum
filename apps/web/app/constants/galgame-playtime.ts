@@ -46,8 +46,8 @@ export const KUN_GALGAME_PLAYTIME_SOURCE_MAP: Record<
 }
 
 export const KUN_GALGAME_PLAYTIME_STATUS_CONST = [
-  'playing',
-  'finished',
+  'doing',
+  'done',
   'on_hold',
   'dropped'
 ] as const
@@ -55,19 +55,22 @@ export const KUN_GALGAME_PLAYTIME_STATUS_CONST = [
 export type KunGalgamePlaytimeStatus =
   (typeof KUN_GALGAME_PLAYTIME_STATUS_CONST)[number]
 
+export type KunGalgameWorkState = KunGalgamePlaytimeStatus | 'wish'
+
 export const KUN_GALGAME_PLAYTIME_STATUS_MAP: Record<
-  KunGalgamePlaytimeStatus,
+  KunGalgameWorkState,
   string
 > = {
-  playing: '游玩中',
-  finished: '已通关',
+  doing: '游玩中',
+  done: '已通关',
   on_hold: '搁置中',
-  dropped: '已弃坑'
+  dropped: '已弃坑',
+  wish: '想玩'
 }
 
 export const KUN_GALGAME_PLAYTIME_STATUS_OPTIONS = [
-  { value: 'playing', label: '游玩中', icon: 'lucide:play' },
-  { value: 'finished', label: '已通关', icon: 'lucide:flag' },
+  { value: 'doing', label: '游玩中', icon: 'lucide:play' },
+  { value: 'done', label: '已通关', icon: 'lucide:flag' },
   { value: 'on_hold', label: '搁置中', icon: 'lucide:pause' },
   { value: 'dropped', label: '已弃坑', icon: 'lucide:x' }
 ] as const

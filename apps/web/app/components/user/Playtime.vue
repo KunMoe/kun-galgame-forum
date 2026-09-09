@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import {
   KUN_GALGAME_PLAYTIME_STATUS_MAP,
-  type KunGalgamePlaytimeStatus
+  type KunGalgameWorkState
 } from '~/constants/galgame-playtime'
 
 const pageData = reactive({ page: 1, limit: 24 })
@@ -21,7 +21,7 @@ const summary = computed(() => {
 })
 
 const statusColor = (value: string) =>
-  value === 'finished' ? 'success' : value === 'dropped' ? 'danger' : 'default'
+  value === 'done' ? 'success' : value === 'dropped' ? 'danger' : 'default'
 </script>
 
 <template>
@@ -69,20 +69,11 @@ const statusColor = (value: string) =>
           <span class="font-medium tabular-nums">
             {{ formatDurationMinutes(item.minutes) }}
           </span>
-          <div class="flex items-center gap-1">
-            <KunTooltip
-              v-if="item.external"
-              text="这条记录来自你授权的其它应用, 不是在本站填写的"
-            >
-              <KunIcon
-                name="lucide:monitor-smartphone"
-                class="text-default-400"
-              />
-            </KunTooltip>
+          <div v-if="item.status" class="flex items-center gap-1">
             <KunChip size="sm" variant="flat" :color="statusColor(item.status)">
               {{
                 KUN_GALGAME_PLAYTIME_STATUS_MAP[
-                  item.status as KunGalgamePlaytimeStatus
+                  item.status as KunGalgameWorkState
                 ] ?? item.status
               }}
             </KunChip>

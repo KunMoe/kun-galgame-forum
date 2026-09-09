@@ -3,7 +3,7 @@ import {
   KUN_GALGAME_PLAYTIME_SOURCE_CONST,
   KUN_GALGAME_PLAYTIME_SOURCE_MAP,
   KUN_GALGAME_PLAYTIME_STATUS_MAP,
-  type KunGalgamePlaytimeStatus
+  type KunGalgameWorkState
 } from '~/constants/galgame-playtime'
 
 const props = defineProps<{
@@ -51,16 +51,16 @@ const myDuration = computed(() => formatDurationMinutes(mine.value?.minutes))
 const myTooltip = computed(() => {
   if (!mine.value) return '记录你在这部作品上的游玩时长'
   const status =
-    KUN_GALGAME_PLAYTIME_STATUS_MAP[
-      mine.value.status as KunGalgamePlaytimeStatus
-    ] ?? ''
-  const parts = [`你的记录: ${myDuration.value} · ${status}`]
+    KUN_GALGAME_PLAYTIME_STATUS_MAP[mine.value.status as KunGalgameWorkState] ??
+    ''
+  const parts = [
+    status
+      ? `你的记录: ${myDuration.value} · ${status}`
+      : `你的记录: ${myDuration.value}`
+  ]
   const site = props.galgame.playtimes?.find((p) => p.source === 'nextmoe')
   if (site) {
     parts.push(`本站中位数 ${formatDurationMinutes(site.minutes)}`)
-  }
-  if (mine.value.clients > 1) {
-    parts.push(`${mine.value.clients} 个应用在记录, 取其中最长的一条`)
   }
   return parts.join(', ')
 })
@@ -106,11 +106,6 @@ const openEditor = () => {
         <KunIcon :name="mine ? 'lucide:user-round' : 'lucide:timer'" />
         <template v-if="mine">
           <span class="tabular-nums">{{ myDuration }}</span>
-          <KunIcon
-            v-if="mine.clients > 1"
-            name="lucide:monitor-smartphone"
-            class="text-default-400"
-          />
         </template>
         <template v-else>记录我的时长</template>
       </KunButton>
