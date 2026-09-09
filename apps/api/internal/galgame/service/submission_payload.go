@@ -53,6 +53,10 @@ type SubmissionForm struct {
 
 	ReleaseDate string `json:"release_date"`
 	BannerHash  string `json:"banner_hash"`
+
+	// Set by the client only after the submitter has been shown the same-title
+	// works catalog found and said it is a different game anyway.
+	ConfirmDuplicates bool `json:"confirm_duplicates"`
 }
 
 func (f *SubmissionForm) names() map[string]string {

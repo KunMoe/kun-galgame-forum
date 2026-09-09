@@ -58,11 +58,20 @@ func (s *SubmissionService) Submit(
 	if appErr != nil {
 		return nil, appErr
 	}
+	// POST /v2/me/claims has no released key and mintClaim fills no
+	// SubmitWorkParams.Released, so a minted work gets no catalog_release row at
+	// all — and catalog.release proposals may only edit existing rows, so there
+	// is nothing to file afterwards either. The date is validated and then
+	// dropped; say so rather than losing it in silence.
+	if released != nil {
+		slog.Warn("submit: 发售日期无法送达 catalog, v2 建档面没有 released 字段",
+			"uid", uid, "released", *released)
+	}
 	res, err := s.catalog.SubmitWorkUser(ctx, accessToken, catalogclient.UserWorkSubmitRequest{
-		Fields: form.Fields(), Released: released,
+		Fields: form.Fields(), ConfirmDuplicates: form.ConfirmDuplicates,
 	})
 	if err != nil {
-		return nil, claimActionError(err)
+		return nil, submitError(err)
 	}
 	gid := int(res.ProductWorkID)
 	// Stamp the submitter now rather than waiting for the claim feed to say so
@@ -208,6 +217,20 @@ func (s *SubmissionService) workIDOf(ctx context.Context, gid int) (int64, *erro
 		return 0, errors.ErrNotFound("条目不存在")
 	}
 	return workID, nil
+}
+
+// Catalog's duplicate gate is soft: the same request with confirm_duplicates
+// mints anyway. Left on the generic 409 path it reached the submitter as
+// catalog's own English "re-send with confirm_duplicates=true" — an instruction
+// about a field the wizard has no control for, so a legitimate same-title work
+// could not be submitted at all. It only started firing once the mint actually
+// carried titles.
+func submitError(err error) *errors.AppError {
+	var apiErr *catalogclient.UserAPIError
+	if stderrors.As(err, &apiErr) && apiErr.ProblemCode == "DUPLICATE_SUSPECTS" {
+		return errors.ErrDuplicateSuspects("资料库中已有同名作品")
+	}
+	return claimActionError(err)
 }
 
 func claimActionError(err error) *errors.AppError {

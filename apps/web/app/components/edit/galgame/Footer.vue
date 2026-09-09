@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { submitGalgameSchema } from '~/validations/galgame'
 
+const CODE_DUPLICATE_SUSPECTS = 236
+
 const {
   name,
   content_limit,
@@ -68,18 +70,44 @@ const handleSubmitGalgame = async () => {
       bannerHash = uploaded.hash
     }
   }
-  const created = await kunFetch<{
-    gid: number
-    claim_state: string
-    banner_attached: boolean
-  }>('/galgame/submit', {
-    method: 'POST',
-    body: {
-      ...jsonFields,
-      aliases: aliases.value,
-      banner_hash: bannerHash
+  // Catalog refuses a mint whose title matches a live work, but the refusal is
+  // soft: the same request with confirm_duplicates mints anyway. Sending it
+  // blind would defeat the gate, so ask, then resend once.
+  let duplicates = false
+  const submit = (confirmDuplicates: boolean) =>
+    kunFetch<{
+      gid: number
+      claim_state: string
+      banner_attached: boolean
+    }>('/galgame/submit', {
+      method: 'POST',
+      body: {
+        ...jsonFields,
+        aliases: aliases.value,
+        banner_hash: bannerHash,
+        confirm_duplicates: confirmDuplicates
+      },
+      onApiError: (envelope: { code: number }) => {
+        if (envelope.code !== CODE_DUPLICATE_SUSPECTS) {
+          return false
+        }
+        duplicates = true
+        return true
+      }
+    })
+
+  let created = await submit(false)
+  if (!created && duplicates) {
+    const confirmed = await useComponentMessageStore().alert(
+      '资料库中已有同名作品',
+      '请先回到「发布 Galgame」搜索确认这不是同一部作品 —— 重复条目会被驳回。确实是不同作品 (例如同名重制版或同人作品) 才继续提交。'
+    )
+    if (!confirmed) {
+      isPublishing.value = false
+      return
     }
-  })
+    created = await submit(true)
+  }
   isPublishing.value = false
 
   if (created?.gid) {
@@ -91,8 +119,15 @@ const handleSubmitGalgame = async () => {
       localStorage.removeItem('kun-galgame-publish-step')
     }
 
-    useKunLoliInfo('Galgame 申请已提交, 等待审核', 5)
-    await navigateTo('/edit/galgame/mine')
+    // Catalog mints straight to live for a submitter it trusts, so the claim
+    // state decides where this lands. Announcing "等待审核" for a live entry
+    // sends its author to a review list that will never contain it.
+    const isLive = created.claim_state === 'live'
+    useKunLoliInfo(
+      isLive ? 'Galgame 已发布' : 'Galgame 申请已提交, 等待审核',
+      5
+    )
+    await navigateTo(isLive ? `/galgame/${created.gid}` : '/edit/galgame/mine')
     usePersistEditGalgameStore().resetEditGalgameStore()
   }
 }

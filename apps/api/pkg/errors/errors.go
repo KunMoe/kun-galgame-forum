@@ -49,6 +49,11 @@ const (
 	CodeBiz            = 233
 	CodeBanned         = 234
 	CodeReauthRequired = 235
+	// The submission's title matches a live work. Catalog's gate is soft — the
+	// same request with confirm_duplicates mints anyway — so the client has to
+	// be able to tell this refusal apart from every other 409 and offer that
+	// choice. Without its own code it read as a dead end in English.
+	CodeDuplicateSuspects = 236
 )
 
 func ErrUnauthorized(msg string) *AppError {
@@ -85,4 +90,8 @@ func ErrInternal(msg string) *AppError {
 
 func ErrValidation(msg string) *AppError {
 	return New(CodeBiz, msg, 400)
+}
+
+func ErrDuplicateSuspects(msg string) *AppError {
+	return New(CodeDuplicateSuspects, msg, 409)
 }

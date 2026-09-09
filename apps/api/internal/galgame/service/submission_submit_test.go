@@ -11,6 +11,7 @@ import (
 
 	"kun-galgame-api/internal/galgame/client"
 	"kun-galgame-api/pkg/catalogclient"
+	"kun-galgame-api/pkg/errors"
 )
 
 type submitRecorder struct {
@@ -25,6 +26,8 @@ type submitRecorder struct {
 	mergeAuth      string
 	mergedOnCreate bool
 	mergeStatus    int
+	claimState     string
+	claimStatus    int
 }
 
 func (r *submitRecorder) service(t *testing.T) *SubmissionService {
@@ -53,7 +56,19 @@ func (r *submitRecorder) service(t *testing.T) *SubmissionService {
 		w.Header().Set("Content-Type", "application/json")
 		switch {
 		case req.Method == http.MethodPost && req.URL.Path == "/v2/me/claims":
-			_, _ = w.Write([]byte(`{"object":"claim","id":"90210","state":"pending","display_name":"白恋サクラ"}`))
+			if r.claimStatus != 0 {
+				w.WriteHeader(r.claimStatus)
+				_, _ = w.Write([]byte(`{"code":"DUPLICATE_SUSPECTS","detail":` +
+					`"1 live work(s) share a title with this submission; ` +
+					`re-send with confirm_duplicates=true to mint anyway"}`))
+				return
+			}
+			state := r.claimState
+			if state == "" {
+				state = "pending"
+			}
+			_, _ = w.Write([]byte(`{"object":"claim","id":"90210","state":"` + state +
+				`","display_name":"白恋サクラ"}`))
 		case strings.HasSuffix(req.URL.Path, "/catalog/lookup/batch"):
 			var body struct {
 				Items []struct {
@@ -131,6 +146,119 @@ func TestSubmitAdoptsTheRegistryIssuedID(t *testing.T) {
 	}
 	if res.WorkID != 90210 || res.ClaimState != "pending" {
 		t.Errorf("result = %+v, want the minted work in pending", res)
+	}
+}
+
+// The mint body is the whole submission. Asserting only the path let the v2
+// rewrite ship a request carrying nothing but display_name, which catalog
+// refuses outright — so pin the content the submitter typed, not the envelope.
+func TestSubmitSendsTheEditingEngineFieldMap(t *testing.T) {
+	rec := &submitRecorder{}
+	svc := rec.service(t)
+
+	if _, appErr := svc.Submit(t.Context(), "user-jwt", 0, &SubmissionForm{
+		NameJaJP:         "白恋サクラ",
+		NameZhCN:         "白恋樱",
+		IntroZhCN:        "一个测试简介",
+		Aliases:          []string{"SHIROKOI"},
+		AgeLimit:         "r18",
+		ContentLimit:     "nsfw",
+		OriginalLanguage: "ja-jp",
+	}); appErr != nil {
+		t.Fatalf("Submit: %v", appErr)
+	}
+
+	rec.mu.Lock()
+	defer rec.mu.Unlock()
+	if rec.body["display_name"] != "白恋サクラ" {
+		t.Errorf("display_name = %v, want the first non-empty title", rec.body["display_name"])
+	}
+	fields, ok := rec.body["field_values"].(map[string]any)
+	if !ok {
+		t.Fatalf("no field_values in the mint body: %v", rec.body)
+	}
+	if fields["catalog.work.display_name"] != "白恋サクラ" ||
+		fields["catalog.work.olang"] != "ja" ||
+		fields["catalog.work.display_nsfw"] != true ||
+		fields["catalog.work.content_rating"] != float64(contentRatingR18) {
+		t.Errorf("scalar fields did not survive: %v", fields)
+	}
+	titles, _ := fields["catalog.work.titles"].([]any)
+	if len(titles) != 3 {
+		t.Fatalf("titles = %v, want both names and the alias", titles)
+	}
+	alias, _ := titles[2].(map[string]any)
+	if alias["title"] != "SHIROKOI" || alias["kind"] != float64(titleKindAlias) {
+		t.Errorf("alias did not survive as an alias title: %v", titles[2])
+	}
+	intros, _ := fields["catalog.work.intros"].([]any)
+	if len(intros) != 1 {
+		t.Fatalf("intros = %v, want the one that was filled in", intros)
+	}
+	if first, _ := intros[0].(map[string]any); first["intro"] != "一个测试简介" || first["lang"] != "zh-Hans" {
+		t.Errorf("intro did not survive: %v", intros[0])
+	}
+}
+
+// A submitter catalog trusts mints straight to live, and the wizard routes on
+// this state: announcing "等待审核" for a live entry sends its author to a
+// review list that will never contain it.
+func TestSubmitReportsATrustedMintAsLive(t *testing.T) {
+	rec := &submitRecorder{claimState: "live"}
+	svc := rec.service(t)
+
+	res, appErr := svc.Submit(t.Context(), "user-jwt", 0,
+		&SubmissionForm{NameJaJP: "白恋サクラ", AgeLimit: "all", ContentLimit: "sfw"})
+	if appErr != nil {
+		t.Fatalf("Submit: %v", appErr)
+	}
+	if res.ClaimState != "live" {
+		t.Errorf("claim_state = %q, want live for a trusted mint", res.ClaimState)
+	}
+}
+
+// Catalog's English refusal names confirm_duplicates, a field the wizard has no
+// control for. It has to reach the client as its own code so the client can ask
+// and resend instead of dead-ending the submitter.
+func TestSubmitSurfacesDuplicateSuspectsAsItsOwnCode(t *testing.T) {
+	rec := &submitRecorder{claimStatus: http.StatusConflict}
+	svc := rec.service(t)
+
+	_, appErr := svc.Submit(t.Context(), "user-jwt", 0,
+		&SubmissionForm{NameJaJP: "白恋サクラ", AgeLimit: "all", ContentLimit: "sfw"})
+	if appErr == nil {
+		t.Fatal("a duplicate-suspect mint must not report success")
+	}
+	if appErr.Code != errors.CodeDuplicateSuspects {
+		t.Errorf("code = %d, want %d so the client can offer the resend",
+			appErr.Code, errors.CodeDuplicateSuspects)
+	}
+	if strings.Contains(appErr.Message, "confirm_duplicates") {
+		t.Errorf("message leaks the upstream field name: %q", appErr.Message)
+	}
+
+	rec.mu.Lock()
+	defer rec.mu.Unlock()
+	if _, sent := rec.body["confirm_duplicates"]; sent {
+		t.Errorf("the first attempt must not confirm anything: %v", rec.body)
+	}
+}
+
+func TestSubmitConfirmsDuplicatesOnlyWhenAsked(t *testing.T) {
+	rec := &submitRecorder{}
+	svc := rec.service(t)
+
+	if _, appErr := svc.Submit(t.Context(), "user-jwt", 0, &SubmissionForm{
+		NameJaJP: "白恋サクラ", AgeLimit: "all", ContentLimit: "sfw",
+		ConfirmDuplicates: true,
+	}); appErr != nil {
+		t.Fatalf("Submit: %v", appErr)
+	}
+
+	rec.mu.Lock()
+	defer rec.mu.Unlock()
+	if rec.body["confirm_duplicates"] != true {
+		t.Errorf("confirm_duplicates did not reach catalog: %v", rec.body)
 	}
 }
 

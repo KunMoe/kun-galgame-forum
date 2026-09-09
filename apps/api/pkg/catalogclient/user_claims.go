@@ -9,21 +9,28 @@ import (
 )
 
 type UserWorkSubmitRequest struct {
-	ProductWorkID int64           `json:"product_work_id,omitempty"`
-	Fields        map[string]any  `json:"fields"`
-	Released      *WorkSubmitDate `json:"released,omitempty"`
+	ProductWorkID     int64          `json:"product_work_id,omitempty"`
+	Fields            map[string]any `json:"fields"`
+	ConfirmDuplicates bool           `json:"confirm_duplicates,omitempty"`
 }
 
+// The mint needs field_values. display_name alone is not a mint request at all:
+// catalog answers `work_id, refs, site_work_id, or field_values is required.`
+// and nothing is written. The v1 lane posted the whole request, so the v2
+// rewrite dropped the field map silently and every "publish a galgame" the
+// wizard sent between 2026-08-25 and 2026-09-09 died on that 422 — the tests
+// stub this call and assert the path, never the body.
 func (c *Client) SubmitWorkUser(ctx context.Context, accessToken string, req UserWorkSubmitRequest) (*WorkSubmitResult, error) {
-	display := ""
-	if req.Fields != nil {
-		if v, ok := req.Fields["catalog.work.display_name"].(string); ok {
-			display = v
-		}
-	}
+	display, _ := req.Fields["catalog.work.display_name"].(string)
 	body := map[string]any{"display_name": display}
+	if len(req.Fields) > 0 {
+		body["field_values"] = req.Fields
+	}
 	if req.ProductWorkID > 0 {
 		body["site_work_id"] = strconv.FormatInt(req.ProductWorkID, 10)
+	}
+	if req.ConfirmDuplicates {
+		body["confirm_duplicates"] = true
 	}
 	var out v2Claim
 	if err := c.userV2JSON(ctx, http.MethodPost, accessToken, "/v2/me/claims", body, &out, nil); err != nil {
