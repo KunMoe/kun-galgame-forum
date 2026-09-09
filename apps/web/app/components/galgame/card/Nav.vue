@@ -37,6 +37,9 @@ const {
   releasedFrom,
   releasedTo,
   releasedMonths,
+  collectedFrom,
+  collectedTo,
+  collectedMonths,
   includeProviders,
   excludeOnlyProviders,
   minRatingCount,
@@ -56,6 +59,9 @@ watch(
     releasedFrom.value,
     releasedTo.value,
     releasedMonths.value,
+    collectedFrom.value,
+    collectedTo.value,
+    collectedMonths.value,
     includeProviders.value,
     excludeOnlyProviders.value,
     minRatingCount.value,
@@ -151,6 +157,79 @@ const setYears = (range: { from: string; to: string }) => {
   releasedTo.value = range.to
 }
 
+const collectedCalendar = ref<{ year: number; month: number }[]>([])
+const loadCollectedCalendar = async () => {
+  const res = await kunFetch<{ year: number; month: number }[]>(
+    '/galgame/collected-calendar'
+  )
+  if (res) collectedCalendar.value = res
+}
+onMounted(loadCollectedCalendar)
+
+const selectedCollectedYear = computed(() => collectedFrom.value || collectedTo.value || '')
+const collectedYearOptions = computed(() => {
+  const years = new Set<number>()
+  for (const c of collectedCalendar.value) years.add(c.year)
+  return [...years]
+    .sort((a, b) => b - a)
+    .map((year) => ({ value: String(year), label: String(year) }))
+})
+const collectedMonthOptions = computed(() => {
+  const year = Number(selectedCollectedYear.value)
+  const months = new Set<number>()
+  if (year) {
+    for (const c of collectedCalendar.value) {
+      if (c.year === year) months.add(c.month)
+    }
+  }
+  return [...months]
+    .sort((a, b) => a - b)
+    .map((month) => ({ value: String(month), label: `${month} 月` }))
+})
+// Multi-select under the hood (native click-to-toggle like 发售月份), but we
+// keep at most one item so it behaves as a single choice with deselect.
+const collectedYearsModel = computed(() =>
+  collectedFrom.value ? [collectedFrom.value] : []
+)
+const collectedMonthsModel = computed(() =>
+  collectedMonths.value ? [collectedMonths.value] : []
+)
+
+const setCollectedYear = (value: string) => {
+  collectedFrom.value = value
+  collectedTo.value = value
+  collectedMonths.value = ''
+}
+const setCollectedMonth = (value: string) => {
+  if (value === '' || selectedCollectedYear.value) {
+    collectedMonths.value = value
+  }
+}
+
+const onPickCollectedYear = (values: string[]) => {
+  setCollectedYear(values.length ? values[values.length - 1] : '')
+}
+const onPickCollectedMonth = (values: string[]) => {
+  if (!selectedCollectedYear.value) {
+    return
+  }
+  setCollectedMonth(values.length ? values[values.length - 1] : '')
+}
+
+const collectedLabel = computed(() => {
+  const parts: string[] = []
+  if (selectedCollectedYear.value) {
+    parts.push(`收录年份 ${selectedCollectedYear.value}`)
+  }
+  if (collectedMonths.value) {
+    parts.push(`收录月份 ${Number(collectedMonths.value)}`)
+  }
+  return parts.join(' / ')
+})
+const hasCollectedFilter = computed(
+  () => !!selectedCollectedYear.value || !!collectedMonths.value
+)
+
 const labelOf = (options: FilterOption[], value: string) =>
   options.find((option) => option.value === value)?.label ?? value
 
@@ -188,6 +267,9 @@ const chips = computed<FilterChip[]>(() => {
   }
   for (const month of months.value) {
     list.push({ key: `month:${month}`, label: `${month} 月` })
+  }
+  if (hasCollectedFilter.value) {
+    list.push({ key: 'collected', label: collectedLabel.value })
   }
   for (const key of includes.value) {
     list.push({
@@ -229,6 +311,10 @@ const removeChip = (key: string) => {
     setYears({ from: '', to: '' })
   } else if (dimension === 'month') {
     setMonths(months.value.filter((month) => month !== value))
+  } else if (dimension === 'collected') {
+    collectedFrom.value = ''
+    collectedTo.value = ''
+    collectedMonths.value = ''
   } else if (dimension === 'include') {
     includeProviders.value = setCsv(
       includes.value.filter((item) => item !== value)
@@ -252,6 +338,9 @@ const clearFilters = () => {
   releasedFrom.value = ''
   releasedTo.value = ''
   releasedMonths.value = ''
+  collectedFrom.value = ''
+  collectedTo.value = ''
+  collectedMonths.value = ''
   includeProviders.value = ''
   excludeOnlyProviders.value = ''
   minRatingCount.value = 0
@@ -345,6 +434,25 @@ const clearFilters = () => {
           :options="monthOptions"
           :model-value="months"
           @update:model-value="setMonths($event as string[])"
+        />
+
+        <FilterMenu
+          icon="lucide:archive"
+          label="收录年份"
+          multiple
+          :columns="3"
+          :options="collectedYearOptions"
+          :model-value="collectedYearsModel"
+          @update:model-value="onPickCollectedYear($event as string[])"
+        />
+        <FilterMenu
+          icon="lucide:calendar-check-2"
+          label="收录月份"
+          multiple
+          :columns="3"
+          :options="collectedMonthOptions"
+          :model-value="collectedMonthsModel"
+          @update:model-value="onPickCollectedMonth($event as string[])"
         />
 
         <KunTooltip text="只保留至少有一个所选网盘的作品" position="bottom">

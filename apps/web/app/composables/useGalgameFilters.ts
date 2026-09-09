@@ -27,6 +27,9 @@ export const GALGAME_FILTER_QUERY_KEYS = [
   'releasedFrom',
   'releasedTo',
   'releasedMonths',
+  'collectedFrom',
+  'collectedTo',
+  'collectedMonths',
   'includeProviders',
   'excludeOnlyProviders',
   'minRatingCount',
@@ -63,6 +66,10 @@ export const useGalgameFilters = (defaultSortField: SortField = 'time') => {
   const releasedTo = useRouteQuery<string>('releasedTo', '', opts)
   const releasedMonths = useRouteQuery<string>('releasedMonths', '', opts)
 
+  const collectedFrom = useRouteQuery<string>('collectedFrom', '', opts)
+  const collectedTo = useRouteQuery<string>('collectedTo', '', opts)
+  const collectedMonths = useRouteQuery<string>('collectedMonths', '', opts)
+
   const includeProviders = useRouteQuery<string>('includeProviders', '', opts)
   const excludeOnlyProviders = useRouteQuery<string>(
     'excludeOnlyProviders',
@@ -93,6 +100,9 @@ export const useGalgameFilters = (defaultSortField: SortField = 'time') => {
     releasedFrom,
     releasedTo,
     releasedMonths,
+    collectedFrom,
+    collectedTo,
+    collectedMonths,
     includeProviders,
     excludeOnlyProviders,
     minRatingCount,

@@ -21,6 +21,9 @@ type GalgameListRequest struct {
 	ReleasedFrom         string  `query:"released_from"`
 	ReleasedTo           string  `query:"released_to"`
 	ReleasedMonths       string  `query:"released_months"`
+	CollectedFrom        string  `query:"collected_from"`
+	CollectedTo          string  `query:"collected_to"`
+	CollectedMonths      string  `query:"collected_months"`
 	MinRatingCount       int     `query:"min_rating_count" validate:"omitempty,min=0"`
 	MinRating            float64 `query:"min_rating" validate:"omitempty,min=0,max=10"`
 	ShowNoResource       bool    `query:"show_no_resource"`

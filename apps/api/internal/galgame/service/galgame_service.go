@@ -340,6 +340,19 @@ func (s *GalgameService) GetList(
 	if err != nil {
 		return nil, errors.ErrBadRequest(err.Error())
 	}
+	collectedFrom, err := utils.ParseReleaseLowerBound(req.CollectedFrom)
+	if err != nil {
+		return nil, errors.ErrBadRequest(err.Error())
+	}
+	collectedTo, err := utils.ParseReleaseUpperBound(req.CollectedTo)
+	if err != nil {
+		return nil, errors.ErrBadRequest(err.Error())
+	}
+	collectedMonths, err := utils.ParseMonthSet(req.CollectedMonths)
+	if err != nil {
+		return nil, errors.ErrBadRequest(err.Error())
+	}
+	collectedActive := collectedFrom != "" || collectedTo != "" || len(collectedMonths) > 0
 
 	filter := model.GalgameListFilter{
 		Type:                 req.Type,
@@ -353,6 +366,9 @@ func (s *GalgameService) GetList(
 		ReleasedFrom:         releasedFrom,
 		ReleasedTo:           releasedTo,
 		ReleasedMonths:       releasedMonths,
+		CollectedFrom:        collectedFrom,
+		CollectedTo:          collectedTo,
+		CollectedMonths:      collectedMonths,
 		MinRatingCount:       req.MinRatingCount,
 		MinRating:            req.MinRating,
 		ShowNoResource:       req.ShowNoResource,
@@ -360,12 +376,24 @@ func (s *GalgameService) GetList(
 		Page:                 req.Page,
 		Limit:                req.Limit,
 	}
+	if collectedActive {
+		// A "论坛收录时间" filter anchors on the moment the entry was
+		// collected here. Direction follows the page's asc/desc toggle
+		// (default desc, newest first) instead of being forced.
+		filter.SortField = "created"
+	}
 
 	if req.Library {
 		return s.catalogLibrary(ctx, req, releasedFrom, releasedTo, isSFW)
 	}
 
 	return s.hydrateListCards(ctx, filter, isSFW)
+}
+
+// CollectedCalendar lists the (year, month) pairs that have collected rows, so
+// the filter UI only offers times the site actually has entries for.
+func (s *GalgameService) CollectedCalendar() []repository.CollectedMonth {
+	return s.listRepo.ListCollectedCalendar()
 }
 
 func (s *GalgameService) hydrateListCards(
