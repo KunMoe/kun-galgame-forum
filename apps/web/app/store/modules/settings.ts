@@ -79,11 +79,25 @@ export const usePersistSettingsStore = defineStore(
       )
     }
 
+    // Two custom properties, one slider. `--kun-background-blur` is this app's
+    // own: Sidebar.vue reads it through a `backdrop-blur-[var(...)]` arbitrary
+    // value. `--kun-backdrop-filter` is KunUI's, which REPLACED
+    // `--kun-background-blur` in @kungal/ui-tokens 1.9.3 -- until it was set
+    // here the slider moved nothing on any KunCard, KunModal or floating
+    // panel, because KunUI stopped reading the old name entirely.
+    //
+    // Zero maps to `none`, not `blur(0px)`: a real backdrop-filter promotes
+    // every raised surface to its own compositing layer, which is exactly the
+    // mobile scroll jank 1.9.3 removed by making the blur opt-in.
     const setKUNGalgameBackgroundBlur = (blur: number) => {
       showKUNGalgameBackgroundBlur.value = blur
       document.documentElement.style.setProperty(
         '--kun-background-blur',
         `${blur}px`
+      )
+      document.documentElement.style.setProperty(
+        '--kun-backdrop-filter',
+        blur > 0 ? `blur(${blur}px)` : 'none'
       )
     }
 
