@@ -339,6 +339,64 @@ func (h *UpdateHandler) DiscardTodo(c fiber.Ctx) error {
 	return response.OKMessage(c, "待办已废弃")
 }
 
+func (h *UpdateHandler) ReleaseTodo(c fiber.Ctx) error {
+	user, appErr := middleware.MustGetUser(c)
+	if appErr != nil {
+		return response.Error(c, appErr)
+	}
+
+	var req dto.TodoActionRequest
+	if appErr := utils.ParseAndValidate(c, &req); appErr != nil {
+		return response.Error(c, appErr)
+	}
+
+	todo, err := h.repo.FindTodoByID(req.TodoID)
+	if err != nil {
+		return response.Error(c, errors.ErrNotFound("待办不存在"))
+	}
+	if todo.Status != adminModel.TodoStatusClaimed {
+		return response.Error(c, errors.ErrForbidden("该待办未处于进行中状态"))
+	}
+	if todo.ClaimedUserID == nil || *todo.ClaimedUserID != user.ID {
+		return response.Error(c, errors.ErrForbidden("只有认领者可以放弃该待办"))
+	}
+	moved, err := h.repo.ReleaseTodo(req.TodoID)
+	if err != nil {
+		return response.Error(c, errors.ErrInternal("放弃待办失败"))
+	}
+	if !moved {
+		return response.Error(c, errStaleTodo)
+	}
+	return response.OKMessage(c, "已放弃该待办, 任务回到待处理")
+}
+
+func (h *UpdateHandler) ReopenTodo(c fiber.Ctx) error {
+	if _, appErr := middleware.MustGetUser(c); appErr != nil {
+		return response.Error(c, appErr)
+	}
+
+	var req dto.TodoActionRequest
+	if appErr := utils.ParseAndValidate(c, &req); appErr != nil {
+		return response.Error(c, appErr)
+	}
+
+	todo, err := h.repo.FindTodoByID(req.TodoID)
+	if err != nil {
+		return response.Error(c, errors.ErrNotFound("待办不存在"))
+	}
+	if todo.Status != adminModel.TodoStatusDiscarded {
+		return response.Error(c, errors.ErrForbidden("该待办未处于已废弃状态"))
+	}
+	moved, err := h.repo.ReopenTodo(req.TodoID)
+	if err != nil {
+		return response.Error(c, errors.ErrInternal("重新启用待办失败"))
+	}
+	if !moved {
+		return response.Error(c, errStaleTodo)
+	}
+	return response.OKMessage(c, "待办已重新启用, 回到待处理")
+}
+
 func (h *UpdateHandler) DeleteTodo(c fiber.Ctx) error {
 	if _, appErr := middleware.MustGetUser(c); appErr != nil {
 		return response.Error(c, appErr)

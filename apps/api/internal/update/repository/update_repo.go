@@ -78,7 +78,7 @@ func (r *UpdateRepository) FindTodoByID(id int) (*adminModel.Todo, error) {
 	return &todo, nil
 }
 
-// The three transitions below are guarded UPDATEs, not read-then-writes: two
+// The transitions below are guarded UPDATEs, not read-then-writes: two
 // users hitting 认领 at the same moment both read status 0, both were told
 // they had claimed it, and the second write silently replaced the first
 // claimer. moved=false means the row left the expected state in between.
@@ -87,6 +87,20 @@ func (r *UpdateRepository) ClaimTodo(id, userID int) (moved bool, err error) {
 	res := r.db.Model(&adminModel.Todo{}).
 		Where("id = ? AND status = ?", id, adminModel.TodoStatusPending).
 		Updates(map[string]any{"status": adminModel.TodoStatusClaimed, "claimed_user_id": userID})
+	return res.RowsAffected > 0, res.Error
+}
+
+// ReleaseTodo is ClaimTodo's inverse. Clearing claimed_user_id is the point:
+// leaving it set would keep the row answering "已被 X 认领" while it sits in
+// the pending filter, and the same user could not claim it again.
+func (r *UpdateRepository) ReleaseTodo(id int) (moved bool, err error) {
+	res := r.db.Model(&adminModel.Todo{}).
+		Where("id = ? AND status = ?", id, adminModel.TodoStatusClaimed).
+		Updates(map[string]any{
+			"status":          adminModel.TodoStatusPending,
+			"claimed_user_id": nil,
+			"completed_time":  nil,
+		})
 	return res.RowsAffected > 0, res.Error
 }
 
@@ -107,6 +121,21 @@ func (r *UpdateRepository) DiscardTodo(id, fromStatus int) (moved bool, err erro
 	res := r.db.Model(&adminModel.Todo{}).
 		Where("id = ? AND status = ?", id, fromStatus).
 		Updates(map[string]any{"status": adminModel.TodoStatusDiscarded, "completed_time": nil})
+	return res.RowsAffected > 0, res.Error
+}
+
+// ReopenTodo is DiscardTodo's inverse, restricted by the caller to the
+// admin/ren `update_log.reopen` permission. Clearing claimed_user_id keeps the
+// reopened row honest: a todo discarded from 进行中 still carries its old
+// claimer, and leaving it would show "已被 X 认领" on a pending row.
+func (r *UpdateRepository) ReopenTodo(id int) (moved bool, err error) {
+	res := r.db.Model(&adminModel.Todo{}).
+		Where("id = ? AND status = ?", id, adminModel.TodoStatusDiscarded).
+		Updates(map[string]any{
+			"status":          adminModel.TodoStatusPending,
+			"claimed_user_id": nil,
+			"completed_time":  nil,
+		})
 	return res.RowsAffected > 0, res.Error
 }
 

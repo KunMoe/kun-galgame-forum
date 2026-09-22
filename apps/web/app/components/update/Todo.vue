@@ -10,6 +10,7 @@ import type { CreateTodoPayload, UpdateTodoPayload } from './types'
 const { id: userId } = storeToRefs(usePersistUserStore())
 
 const canEditUpdateLog = useCan('update_log.edit')
+const canReopenTodo = useCan('update_log.reopen')
 
 const iconMap: Record<number, string> = {
   0: 'lucide:circle-divide',
@@ -126,6 +127,30 @@ const discardTodo = async (todo: UpdateTodo) => {
 
   if (result) {
     useMessage('待办已废弃', 'success')
+    refresh()
+  }
+}
+
+const releaseTodo = async (todo: UpdateTodo) => {
+  const result = await kunFetch('/update/todo/release', {
+    method: 'POST',
+    body: { todo_id: todo.id }
+  })
+
+  if (result) {
+    useMessage('已放弃该待办', 'success')
+    refresh()
+  }
+}
+
+const reopenTodo = async (todo: UpdateTodo) => {
+  const result = await kunFetch('/update/todo/reopen', {
+    method: 'POST',
+    body: { todo_id: todo.id }
+  })
+
+  if (result) {
+    useMessage('待办已重新启用', 'success')
     refresh()
   }
 }
@@ -281,6 +306,29 @@ const discardTodo = async (todo: UpdateTodo) => {
             @click="discardTodo(todo)"
           >
             废弃
+          </KunButton>
+
+          <KunButton
+            v-if="
+              isClaimer(todo) && todo.status === KUN_TODO_STATUS.CLAIMED
+            "
+            variant="flat"
+            size="sm"
+            color="warning"
+            @click="releaseTodo(todo)"
+          >
+            放弃
+          </KunButton>
+
+          <KunButton
+            v-if="
+              canReopenTodo && todo.status === KUN_TODO_STATUS.DISCARDED
+            "
+            size="sm"
+            color="primary"
+            @click="reopenTodo(todo)"
+          >
+            重新启用
           </KunButton>
         </div>
       </div>

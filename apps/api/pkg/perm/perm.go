@@ -73,6 +73,7 @@ const (
 	UpdateLogCreate Permission = "update_log.create"
 	UpdateLogEdit   Permission = "update_log.edit"
 	UpdateLogDelete Permission = "update_log.delete"
+	UpdateLogReopen Permission = "update_log.reopen"
 
 	TrustReview Permission = "trust.review"
 
@@ -139,7 +140,7 @@ var moderatorPerms = []Permission{
 	TrustReview,
 }
 
-var adminPerms = append(append([]Permission{}, moderatorPerms...), AdminDashboard, UserPurgeContent, TopicDeleteAny)
+var adminPerms = append(append([]Permission{}, moderatorPerms...), AdminDashboard, UserPurgeContent, TopicDeleteAny, UpdateLogReopen)
 
 var Bundles = map[string][]Permission{
 	"moderator": moderatorPerms,
