@@ -71,10 +71,21 @@ func TestClaimantAttribution(t *testing.T) {
 	gid := ptr(int64(11))
 	s := NewGalgameClaimEventSync(nil, nil, redis.NewClient(&redis.Options{Addr: "127.0.0.1:1", MaxRetries: -1}))
 
-	publish := event(1, ptr(catalogclient.ClaimStateDraft), catalogclient.ClaimStateLive, gid)
-	publish.ActorUID = 61516
-	if got := s.claimantOf(t.Context(), publish, 11); got != 61516 {
-		t.Errorf("owner publish: claimant = %d, want the event's actor 61516", got)
+	// draft -> live is the publish half of adoptAndPublish, which the resource
+	// lane fires silently on a first download link. Adopting an unclaimed draft
+	// is not authorship: 2,073 kungal pages named a creator the retired wiki
+	// does not, and the complaint that found it was five games at once.
+	adopt := event(1, ptr(catalogclient.ClaimStateDraft), catalogclient.ClaimStateLive, gid)
+	adopt.ActorUID = 61516
+	if got := s.claimantOf(t.Context(), adopt, 11); got != 0 {
+		t.Errorf("draft adopt: claimant = %d, want 0 — taking over an unclaimed draft "+
+			"does not make the actor the entry's author", got)
+	}
+
+	withdrawn := event(5, ptr(catalogclient.ClaimStateDeclined), catalogclient.ClaimStateLive, gid)
+	withdrawn.ActorUID = 61516
+	if got := s.claimantOf(t.Context(), withdrawn, 11); got != 0 {
+		t.Errorf("declined -> live: claimant = %d, want 0", got)
 	}
 
 	born := event(2, nil, catalogclient.ClaimStateLive, gid)

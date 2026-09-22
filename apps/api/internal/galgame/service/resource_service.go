@@ -332,10 +332,12 @@ func (s *ResourceService) CreateResource(
 
 	txErr := s.resourceRepo.DB().Transaction(func(tx *gorm.DB) error {
 		if s.galgameRepo != nil {
+			// Posting a download link is not submitting the entry. This used to
+			// call SetCreatorIfUnset, so the first uploader onto a wiki-era page
+			// became its author on every card, list, ranking and RSS item — the
+			// 066 migration's own contract says the column is frozen wiki
+			// history, "backfilled once, never written again on the read path".
 			if err := s.galgameRepo.PublishLocal(tx, req.GalgameID); err != nil {
-				return err
-			}
-			if err := s.galgameRepo.SetCreatorIfUnset(tx, req.GalgameID, userID); err != nil {
 				return err
 			}
 		} else {

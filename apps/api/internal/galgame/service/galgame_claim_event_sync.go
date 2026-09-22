@@ -187,10 +187,16 @@ func (s *GalgameClaimEventSync) claimantOf(ctx context.Context, ev *catalogclien
 	if isApproval(ev) {
 		return s.submitterOf(ctx, ev.WorkID, gid)
 	}
-	// Lifting a ban restores what somebody else established, so the admin who
-	// lifted it is not the author. Everything else that reaches live — a claimed
-	// draft being published — really is the actor's own entry.
-	if ev.FromState != nil && *ev.FromState == catalogclient.ClaimStateHidden {
+	// Adopting an unclaimed draft is not authorship. "Everything else that
+	// reaches live really is the actor's own entry" was the belief here, and it
+	// is false for draft -> live: that transition is the publish half of
+	// adoptAndPublish, which the resource lane fires silently on a user's first
+	// download link. User 52842 reported five games they had never contributed
+	// to carrying their name; the wiki rows behind all five name user 1, the
+	// bulk import. Across kungal 2,073 pages named a creator the retired wiki
+	// does not (2026-09-22). Only an approval and a birth into live name an
+	// author; a claim taken over does not.
+	if ev.FromState != nil {
 		return 0
 	}
 	return int(ev.ActorUID)

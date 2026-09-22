@@ -181,6 +181,10 @@ func (r *GalgameRepository) EnsureLocalStub(tx *gorm.DB, galgameID int) error {
 		Create(&model.GalgameLocal{ID: galgameID}).Error
 }
 
+// Two callers only: SubmitLocal, and the claim feed's approval branch. The
+// column is the 066 migration's frozen wiki-era submitter, and every other
+// caller has been wrong — the resource lane called it on a first download link,
+// so 2,073 pages ended up naming an author the retired wiki does not.
 func (r *GalgameRepository) SetCreatorIfUnset(tx *gorm.DB, galgameID, userID int) error {
 	return tx.Model(&model.GalgameLocal{}).
 		Where("id = ? AND creator_user_id IS NULL", galgameID).
