@@ -13,12 +13,15 @@ import (
 // Most of the handlers that call utils.IsSFW hang off public routes carrying no
 // auth middleware at all, so the stance AttachIdentity records would never
 // reach them and a signed-in reader would keep being filtered by the legacy
-// cookie there. This runs on the whole /api group instead. It is deliberately a
-// read-only Redis GET with no token refresh and no sliding renewal: it must not
-// become a second copy of the session hot path in auth.go.
-func ContentStance(rdb *redis.Client) fiber.Handler {
+// cookie there. This runs on the whole /api group instead. The session branch
+// is deliberately a read-only Redis GET with no token refresh and no sliding
+// renewal: it must not become a second copy of the session hot path in auth.go.
+func ContentStance(rdb *redis.Client, bearer *BearerStance) fiber.Handler {
 	return func(c fiber.Ctx) error {
-		if _, ok := bearerToken(c); ok {
+		if token, ok := bearerToken(c); ok {
+			if bearer != nil {
+				content.Attach(c, bearer.Resolve(c.Context(), token))
+			}
 			return c.Next()
 		}
 		token := c.Cookies(SessionCookieName)

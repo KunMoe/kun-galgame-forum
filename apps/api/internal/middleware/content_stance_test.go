@@ -59,7 +59,7 @@ func TestContentStanceMiddleware(t *testing.T) {
 		{why: "anonymous", cookie: "", wantOK: false},
 		{why: "a cookie with no session behind it", cookie: "ghost", wantOK: false},
 		{
-			why:     "the App's Bearer lane is left alone",
+			why:     "a Bearer request skips the session lane even with a cookie",
 			session: &SessionData{UserInfo: UserInfo{ID: 1, AdultConfirmed: true, NSFWDisplay: "show"}},
 			cookie:  "tok", authHeader: "Bearer whatever", wantOK: false,
 		},
@@ -70,7 +70,7 @@ func TestContentStanceMiddleware(t *testing.T) {
 		}
 
 		app := fiber.New()
-		app.Use(ContentStance(rdb))
+		app.Use(ContentStance(rdb, nil))
 		var got content.Stance
 		var ok bool
 		app.Get("/", func(c fiber.Ctx) error {

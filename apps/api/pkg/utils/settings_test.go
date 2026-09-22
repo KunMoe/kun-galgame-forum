@@ -47,17 +47,19 @@ func TestSettingsCookie(t *testing.T) {
 	}
 }
 
-func TestNSFWHeaderBeatsCookie(t *testing.T) {
+// X-Kungal-Nsfw is gone: no shipped client ever sent it, and an identified
+// reader — session or Bearer — now arrives with a stance attached. A request
+// still carrying the retired header must be decided by the stance or the
+// cookie, never by the header.
+func TestRetiredNSFWHeaderIsNotAnInput(t *testing.T) {
 	for _, tc := range []struct {
 		why     string
 		header  string
 		cookie  string
 		wantSFW bool
 	}{
-		{"header on, no cookie", "1", "", false},
-		{"header off overrides an nsfw cookie", "false", `{"showKUNGalgameContentLimit":"nsfw"}`, true},
-		{"unparseable header falls back to the cookie", "maybe", `{"showKUNGalgameContentLimit":"nsfw"}`, false},
-		{"neither", "", "", true},
+		{"a header that says yes no longer widens anything", "1", "", true},
+		{"a header that says no does not narrow the cookie either", "false", `{"showKUNGalgameContentLimit":"nsfw"}`, false},
 	} {
 		app := fiber.New()
 		var gotSFW bool
@@ -66,9 +68,7 @@ func TestNSFWHeaderBeatsCookie(t *testing.T) {
 			return nil
 		})
 		req := httptest.NewRequest("GET", "/", nil)
-		if tc.header != "" {
-			req.Header.Set(NSFWHeader, tc.header)
-		}
+		req.Header.Set("X-Kungal-Nsfw", tc.header)
 		if tc.cookie != "" {
 			req.Header.Set("Cookie", "KUNGalgameSettings="+url.QueryEscape(tc.cookie))
 		}
@@ -81,25 +81,22 @@ func TestNSFWHeaderBeatsCookie(t *testing.T) {
 	}
 }
 
-// The account stance outranks both other inputs, and it is attached only for a
-// session identity — so the App's header lane and the logged-out cookie lane
-// keep answering exactly what they answered before this wave.
-func TestStanceOutranksHeaderAndCookie(t *testing.T) {
+// The account stance outranks the cookie, and it is attached only for an
+// identified reader — so the logged-out cookie lane keeps answering exactly
+// what it always answered.
+func TestStanceOutranksTheCookie(t *testing.T) {
 	for _, tc := range []struct {
 		why     string
 		stance  *content.Stance
-		header  string
 		cookie  string
 		wantSFW bool
 	}{
-		{"hide beats an nsfw cookie", stance(content.StanceHide), "", `{"showKUNGalgameContentLimit":"nsfw"}`, true},
-		{"hide beats a header that says yes", stance(content.StanceHide), "1", "", true},
-		{"blur lets the row through; masking is the web's job", stance(content.StanceBlur), "", "", false},
-		{"show lets the row through", stance(content.StanceShow), "", "", false},
-		{"show is not overturned by an sfw cookie", stance(content.StanceShow), "", `{"showKUNGalgameContentLimit":"sfw"}`, false},
-		{"no stance: the header still wins (App lane)", nil, "1", `{"showKUNGalgameContentLimit":"sfw"}`, false},
-		{"no stance and no header: the cookie still decides (logged out)", nil, "", `{"showKUNGalgameContentLimit":"nsfw"}`, false},
-		{"no stance, no header, no cookie", nil, "", "", true},
+		{"hide beats an nsfw cookie", stance(content.StanceHide), `{"showKUNGalgameContentLimit":"nsfw"}`, true},
+		{"blur lets the row through; masking is the web's job", stance(content.StanceBlur), "", false},
+		{"show lets the row through", stance(content.StanceShow), "", false},
+		{"show is not overturned by an sfw cookie", stance(content.StanceShow), `{"showKUNGalgameContentLimit":"sfw"}`, false},
+		{"no stance: the cookie still decides (logged out)", nil, `{"showKUNGalgameContentLimit":"nsfw"}`, false},
+		{"no stance, no cookie", nil, "", true},
 	} {
 		app := fiber.New()
 		var gotSFW bool
@@ -111,9 +108,6 @@ func TestStanceOutranksHeaderAndCookie(t *testing.T) {
 			return nil
 		})
 		req := httptest.NewRequest("GET", "/", nil)
-		if tc.header != "" {
-			req.Header.Set(NSFWHeader, tc.header)
-		}
 		if tc.cookie != "" {
 			req.Header.Set("Cookie", "KUNGalgameSettings="+url.QueryEscape(tc.cookie))
 		}

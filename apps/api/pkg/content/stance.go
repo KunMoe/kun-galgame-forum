@@ -10,16 +10,8 @@ const (
 	StanceShow Stance = "show"
 )
 
-// Fold is the only place this repo turns the account's two content-preference
-// claims into a stance. The upstream migration backfilled nsfw_display to
-// 'blur' for every existing account while leaving adult_confirmed_at null, so
-// folding on nsfw_display alone shows adult content to every reader who has
-// never attested their age. Unknown values fold to hide.
-func Fold(adultConfirmed bool, nsfwDisplay string) Stance {
-	if !adultConfirmed {
-		return StanceHide
-	}
-	switch Stance(nsfwDisplay) {
+func ParseStance(s string) Stance {
+	switch Stance(s) {
 	case StanceBlur:
 		return StanceBlur
 	case StanceShow:
@@ -29,13 +21,25 @@ func Fold(adultConfirmed bool, nsfwDisplay string) Stance {
 	}
 }
 
+// Fold is the only place this repo turns the account's two content-preference
+// claims into a stance. Upstream retired the age attestation on 2026-09-23 and
+// adult_confirmed is constant true from then on, but the claim is still sent
+// and the upstream formula still reads it, so this keeps folding on the pair
+// rather than trusting nsfw_display alone. Unknown values fold to hide.
+func Fold(adultConfirmed bool, nsfwDisplay string) Stance {
+	if !adultConfirmed {
+		return StanceHide
+	}
+	return ParseStance(nsfwDisplay)
+}
+
 func (s Stance) AllowsNSFW() bool { return s != StanceHide }
 
 const stanceLocal = "contentStance"
 
 // Attach records the account stance for this request. It is deliberately left
-// off Bearer and anonymous requests: those two lanes still decide from the
-// X-Kungal-Nsfw header and the KUNGalgameSettings cookie respectively.
+// off anonymous requests: that lane still decides from the KUNGalgameSettings
+// cookie.
 func Attach(c fiber.Ctx, s Stance) { c.Locals(stanceLocal, s) }
 
 func FromCtx(c fiber.Ctx) (Stance, bool) {

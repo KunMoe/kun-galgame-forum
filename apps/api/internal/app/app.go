@@ -101,20 +101,21 @@ import (
 )
 
 type App struct {
-	Fiber       *fiber.App
-	DB          *gorm.DB
-	Redis       *redis.Client
-	Config      *config.Config
-	OAuthClient *oauth.Client
-	UserState   *repository.StateRepository
-	TopicAward  topicapiv1.AwardFunc
-	TrustCheck  *gate.CheckService
-	TrustScan   *gate.ScanService
-	Notifier    msgService.Notifier
-	UserClient  *userclient.Client
-	Authn       *middleware.Authenticator
-	ImageMeta   func(hashes []string) map[string]imageclient.ImageMeta
-	GalgameV1   *galgameapiv1.Service
+	Fiber        *fiber.App
+	DB           *gorm.DB
+	Redis        *redis.Client
+	Config       *config.Config
+	OAuthClient  *oauth.Client
+	UserState    *repository.StateRepository
+	TopicAward   topicapiv1.AwardFunc
+	TrustCheck   *gate.CheckService
+	TrustScan    *gate.ScanService
+	Notifier     msgService.Notifier
+	UserClient   *userclient.Client
+	Authn        *middleware.Authenticator
+	BearerStance *middleware.BearerStance
+	ImageMeta    func(hashes []string) map[string]imageclient.ImageMeta
+	GalgameV1    *galgameapiv1.Service
 
 	OAuthHandler                   *handler.OAuthHandler
 	UserHandler                    *handler.UserHandler
@@ -384,10 +385,13 @@ func New(cfg *config.Config) *App {
 	communityBooster := communitytrust.New(communityCli, rdb, db)
 
 	var bearerVerifier middleware.AccessTokenVerifier
+	var bearerStance *middleware.BearerStance
 	if cfg.Bearer.Enabled() {
-		bearerVerifier = oauth.NewAccessTokenVerifier(
+		verifier := oauth.NewAccessTokenVerifier(
 			oauth.NewJWKS(cfg.Bearer.JWKSURL), cfg.Bearer.Issuer, cfg.Bearer.ClientIDs,
 		)
+		bearerVerifier = verifier
+		bearerStance = middleware.NewBearerStance(verifier, oauthClient, rdb)
 		slog.Info("Bearer 直连已开启", "issuer", cfg.Bearer.Issuer, "clients", cfg.Bearer.ClientIDs)
 	}
 	authn := middleware.NewAuthenticator(rdb, oauthClient, middleware.NewBearer(
@@ -594,6 +598,7 @@ func New(cfg *config.Config) *App {
 		Notifier:                       notifier,
 		UserClient:                     uc,
 		Authn:                          authn,
+		BearerStance:                   bearerStance,
 		ImageMeta:                      imageMetaResolve(imageMeta),
 		GalgameV1:                      galgameapiv1.New(gc, moyuCli, uc, rdb, cfg.NextMoeAPI.ImageCDNBase),
 		OAuthHandler:                   handler.NewOAuthHandler(authService, cfg.Server.Mode == "prod", communityBooster),

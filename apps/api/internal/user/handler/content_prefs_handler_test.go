@@ -162,30 +162,14 @@ func TestUpdateNSFWDisplayRejectsAnUnknownValue(t *testing.T) {
 	}
 }
 
+// A client without the `preferences` scope is the only upstream refusal the
+// browser still has to tell apart: it degrades to cookies instead of toasting.
 func TestContentPrefsErrorMapping(t *testing.T) {
-	for _, tc := range []struct {
-		why        string
-		status     int
-		body       string
-		wantStatus int
-		wantCode   int
-	}{
-		{
-			why:    "blur before attestation becomes the account-centre signal",
-			status: 400, body: `{"code":18008,"message":"请先完成年龄确认"}`,
-			wantStatus: 403, wantCode: errors.CodeAdultConfirmationRequired,
-		},
-		{
-			why:    "a client without the preferences scope",
-			status: 403, body: `{"code":18001,"message":"缺少 scope"}`,
-			wantStatus: 403, wantCode: errors.CodeCloudPreferencesUnavailable,
-		},
-	} {
-		h := newPrefsHarness(t, tc.status, tc.body)
-		status, envelope, _ := h.do(t, "PUT", "/user/nsfw", `{"nsfw_display":"blur"}`, nil)
-		if status != tc.wantStatus || int(envelope["code"].(float64)) != tc.wantCode {
-			t.Errorf("%s: %d/%v, want %d/%d", tc.why, status, envelope["code"], tc.wantStatus, tc.wantCode)
-		}
+	h := newPrefsHarness(t, 403, `{"code":18001,"message":"缺少 scope"}`)
+
+	status, envelope, _ := h.do(t, "PUT", "/user/nsfw", `{"nsfw_display":"blur"}`, nil)
+	if status != 403 || int(envelope["code"].(float64)) != errors.CodeCloudPreferencesUnavailable {
+		t.Fatalf("%d/%v, want 403/%d", status, envelope["code"], errors.CodeCloudPreferencesUnavailable)
 	}
 }
 

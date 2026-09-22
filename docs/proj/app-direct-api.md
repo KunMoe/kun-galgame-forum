@@ -3,7 +3,7 @@
 > 本仓自有工程笔记（**非** infra 镜像）。kungal-apps 工单 02「App 直连论坛 API 的四项前置」的论坛侧交付与契约。
 > 取代 [app-aggregation-api.md](./app-aggregation-api.md) 的方向。
 >
-> **⚠️ 2026-09-18 方向变更：裁决 1 与 3 已被 [api-v1](./api-v1/README.md) 取代。** App 只绑定 `/api/v1`（problem+json、生成的 spec、字符串 id、游标分页、结构化正文），不再消费本文列出的 `/api/*` 旧端点，也不再用 `X-Kungal-Nsfw` 请求头（v1 改为显式查询参数 `nsfw=`）。幂等回放头在 v1 叫 `Idempotency-Replayed`。本文的 Bearer 校验（§1）、staff 能力拒绝、版本闸（§4）、assetlinks（§5）仍然有效；这几项迁到 v1 时以 `api-v1/CHANGELOG.md` 为准。
+> **⚠️ 2026-09-18 方向变更：裁决 1 与 3 已被 [api-v1](./api-v1/README.md) 取代。** App 只绑定 `/api/v1`（problem+json、生成的 spec、字符串 id、游标分页、结构化正文），不再消费本文列出的 `/api/*` 旧端点，也不再用 `X-Kungal-Nsfw` 请求头（v1 改为显式查询参数 `nsfw=`；该请求头已于 2026-09-23 从论坛删除，见 §3）。幂等回放头在 v1 叫 `Idempotency-Replayed`。本文的 Bearer 校验（§1）、staff 能力拒绝、版本闸（§4）、assetlinks（§5）仍然有效；这几项迁到 v1 时以 `api-v1/CHANGELOG.md` 为准。
 >
 > **工单 02 回报对照**：① 放行端点与 curl 示例在 §1「放行范围」；② 幂等键在 §2；③ 版本闸在 §4；④ assetlinks 在 §5；⑤ galgame 供数结论在 §1「galgame 供数」。infra 工单 01 裁决要求通知、未读、下载也走论坛，这三面在 §1「放行范围」逐条列出，已全部确认可用 Bearer 访问。
 
@@ -159,11 +159,14 @@ Go api 自己就能供数，**不依赖 Nitro**。`/api/galgame` 和 `/api/galga
 - 落进这个范围（含 4xx）的结果会被记下并在 24 小时内原样重放，所以**一次 `422` 会把这个键堵死一整天**，重试必须换新键；
 - 5xx、409、429 不保存，键当场释放，可以用同一个键安全重试。
 
-## 3. NSFW 偏好：`X-Kungal-Nsfw`
+## 3. NSFW 偏好：~~`X-Kungal-Nsfw`~~ → 账号分级（2026-09-23 起）
 
-- `X-Kungal-Nsfw: true|false|1|0`（`strconv.ParseBool` 能解析的值），**优先于** `KUNGalgameSettings` cookie。
-- 不带或解析失败时回落到 cookie；两者都没有时默认 SFW。
-- 「优先显示原名」偏好目前仍只认 cookie，App 需要时再加一个同类请求头。
+**`X-Kungal-Nsfw` 已删除**，论坛不再读取它。这个头在 2026-09-17 规定过，但**从未有任何客户端发送过**（kungal-apps 仓零引用，`git log -S 'X-Kungal-Nsfw'` 只有论坛侧提交），2026-09-18 方向变更又把 App 迁到 v1 的显式 `nsfw=` 查询参数上，所以删除它不影响任何已发布版本。
+
+现在：**Bearer 请求的分级取账号本身**。`middleware.BearerStance` 用请求自带的 Bearer token 调上游 `GET /oauth/userinfo`，按 `content.Fold` 折成 `hide` / `blur` / `show`，以 token 的 `sub` 为键缓存在 Redis（`kungal:bearer-stance:<sub>`，TTL 5 分钟）。`hide` ⇒ SFW 过滤，`blur` / `show` ⇒ 放行（打码是 Web 展示侧的事）。**上游报错、超时、token 校验不过 ⇒ 一律 SFW**（安全方向），且失败不写缓存。
+
+- `/api/v1` 不受影响：它本来就不读偏好 cookie 和请求头，用显式查询参数。
+- 「优先显示原名」偏好仍只认 `KUNGalgameSettings` cookie。
 
 ## 4. 版本闸：`GET /api/app/version`
 

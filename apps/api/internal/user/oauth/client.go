@@ -24,7 +24,6 @@ const (
 
 	CodePreferencesScopeMissing = 18001
 	CodePreferencesConflict     = 18006
-	CodeAdultConfirmationNeeded = 18008
 )
 
 type Error struct {

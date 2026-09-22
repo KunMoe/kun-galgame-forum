@@ -114,8 +114,6 @@ func mapContentPrefsError(err error) *errors.AppError {
 	var oe *oauth.Error
 	if stderrors.As(err, &oe) {
 		switch oe.Code {
-		case oauth.CodeAdultConfirmationNeeded:
-			return errors.ErrAdultConfirmationRequired()
 		case oauth.CodePreferencesScopeMissing:
 			return errors.ErrCloudPreferencesUnavailable()
 		case oauth.CodePreferencesConflict:

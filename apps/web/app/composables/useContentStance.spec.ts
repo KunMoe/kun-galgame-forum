@@ -52,11 +52,19 @@ describe('useContentStance, signed in', () => {
 
   it('ignores an nsfw cookie left over from before this wave', () => {
     usePersistSettingsStore().showKUNGalgameContentLimit = 'nsfw'
-    signIn(false, 'blur')
+    signIn(true, 'hide')
 
     const { stance, allowsNsfw } = useContentStance()
     expect(stance.value).toBe('hide')
     expect(allowsNsfw.value).toBe(false)
+  })
+
+  // adult_confirmed is constant true upstream since 2026-09-23, but a session
+  // written before the claim existed still folds to hide rather than to the
+  // stored display value.
+  it('a missing adult_confirmed claim still folds to hide', () => {
+    signIn(false, 'show')
+    expect(useContentStance().stance.value).toBe('hide')
   })
 
   it('blur lets content through masked, show lets it through plain', () => {

@@ -11,8 +11,7 @@ const { isSignedIn, allowsNsfw: isEnabled, setAnonymousNsfw } =
 const { open } = useSettingPanel()
 
 // Signed in there is no single opposite to flip to — the account holds three
-// values and 模糊 / 显示 need age attestation first — so the banner hands the
-// reader to the one control that can ask for all of it.
+// values — so the banner hands the reader to the one control that offers them.
 const toggle = () => {
   if (isSignedIn.value) {
     open('content')

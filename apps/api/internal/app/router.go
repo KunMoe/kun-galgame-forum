@@ -43,7 +43,7 @@ func (a *App) setupRoutes() {
 	api := a.Fiber.Group("/api")
 
 	api.Use(middleware.NamePreference)
-	api.Use(middleware.ContentStance(a.Redis))
+	api.Use(middleware.ContentStance(a.Redis, a.BearerStance))
 
 	api.Get("/home", a.HomeHandler.GetHome)
 

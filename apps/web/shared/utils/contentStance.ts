@@ -1,9 +1,10 @@
 export type KunContentStance = 'hide' | 'blur' | 'show'
 
-// The only place this app turns the account's two claims into a stance. The
-// upstream migration backfilled nsfw_display to 'blur' for every existing
-// account while leaving adult_confirmed_at null, so folding on nsfw_display
-// alone uncensors the site for every reader who has never attested their age.
+// The only place this app turns the account's two claims into a stance.
+// Upstream retired the age attestation on 2026-09-23 and adult_confirmed is
+// constant true from then on, but the claim is still sent and the upstream
+// formula still reads it, so this keeps folding on the pair rather than
+// trusting nsfw_display alone.
 export const foldContentStance = (
   adultConfirmed: boolean | undefined,
   nsfwDisplay: string | undefined
@@ -11,5 +12,3 @@ export const foldContentStance = (
   if (!adultConfirmed) return 'hide'
   return nsfwDisplay === 'blur' || nsfwDisplay === 'show' ? nsfwDisplay : 'hide'
 }
-
-export const KUN_ACCOUNT_SETTINGS_URL = 'https://account.nextmoe.com/settings'

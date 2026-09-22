@@ -57,15 +57,21 @@ func TestPutAuthMeNSFW(t *testing.T) {
 	}
 }
 
-// Setting blur or show before the account has attested is the one refusal the
-// site cannot resolve itself, so it has to survive the proxy intact.
-func TestPutAuthMeNSFWBeforeAttestation(t *testing.T) {
-	c, _ := prefsServer(t, 400, `{"code":18008,"message":"请先完成年龄确认"}`)
+// Upstream accepts hide/blur/show unconditionally since 2026-09-23, so there is
+// no age refusal left to translate; blur has to come back as an ordinary write.
+func TestPutAuthMeNSFWBlurNeedsNoAttestation(t *testing.T) {
+	c, got := prefsServer(t, 200,
+		`{"code":0,"data":{"nsfw_display":"blur","adult_confirmed_at":"2026-09-23T00:00:00Z"}}`)
 
-	_, err := c.PutAuthMeNSFW("tok", "blur")
-	var oe *Error
-	if !stderrors.As(err, &oe) || oe.Code != CodeAdultConfirmationNeeded {
-		t.Fatalf("err = %v, want code %d", err, CodeAdultConfirmationNeeded)
+	state, err := c.PutAuthMeNSFW("tok", "blur")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if got.body != `{"nsfw_display":"blur"}` {
+		t.Fatalf("body = %s", got.body)
+	}
+	if state.NSFWDisplay != "blur" {
+		t.Fatalf("state = %+v", state)
 	}
 }
 

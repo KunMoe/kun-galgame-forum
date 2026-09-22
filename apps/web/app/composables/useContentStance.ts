@@ -1,10 +1,5 @@
-export type KunStanceWriteResult =
-  | 'ok'
-  | 'attestation-required'
-  | 'unavailable'
-  | 'failed'
+export type KunStanceWriteResult = 'ok' | 'unavailable' | 'failed'
 
-const CODE_ADULT_CONFIRMATION_REQUIRED = 239
 const CODE_CLOUD_PREFERENCES_UNAVAILABLE = 240
 
 export const useContentStance = () => {
@@ -38,10 +33,6 @@ export const useContentStance = () => {
       method: 'PUT',
       body: { nsfw_display: next },
       onApiError: (envelope: { code: number; message: string }) => {
-        if (envelope.code === CODE_ADULT_CONFIRMATION_REQUIRED) {
-          outcome = 'attestation-required'
-          return true
-        }
         if (envelope.code === CODE_CLOUD_PREFERENCES_UNAVAILABLE) {
           outcome = 'unavailable'
           return true
@@ -62,20 +53,12 @@ export const useContentStance = () => {
     showKUNGalgameContentLimit.value = enabled ? 'nsfw' : 'sfw'
   }
 
-  const openAccountSettings = () => {
-    if (import.meta.client) {
-      window.open(KUN_ACCOUNT_SETTINGS_URL, '_blank', 'noopener')
-    }
-  }
-
   return {
     isSignedIn,
     stance,
     allowsNsfw,
     isBlurred,
-    adultConfirmed: computed(() => !!userStore.adultConfirmed),
     setStance,
-    setAnonymousNsfw,
-    openAccountSettings
+    setAnonymousNsfw
   }
 }

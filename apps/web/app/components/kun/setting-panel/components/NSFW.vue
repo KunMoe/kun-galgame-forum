@@ -1,14 +1,7 @@
 <script setup lang="ts">
 import type { KunRadioOption } from '@kungal/ui-vue'
 
-const {
-  isSignedIn,
-  stance,
-  adultConfirmed,
-  setStance,
-  setAnonymousNsfw,
-  openAccountSettings
-} = useContentStance()
+const { isSignedIn, stance, setStance, setAnonymousNsfw } = useContentStance()
 const { flush } = useCloudPreferences()
 
 // Signed out this is the same binary cookie switch it has always been: one
@@ -48,7 +41,6 @@ watch(stance, (value) => {
 
 const pending = ref(false)
 const hint = ref('')
-const isAttestationOpen = ref(false)
 
 const onSelect = async (next: KunContentStance) => {
   if (pending.value || next === stance.value) return
@@ -69,18 +61,9 @@ const onSelect = async (next: KunContentStance) => {
   }
 
   selected.value = stance.value
-  if (result === 'attestation-required') {
-    isAttestationOpen.value = true
-    return
-  }
   if (result === 'unavailable') {
     hint.value = '本站还没有拿到保存该设置的授权，请退出登录后重新登录再试。'
   }
-}
-
-const goToAccountCentre = () => {
-  isAttestationOpen.value = false
-  openAccountSettings()
 }
 </script>
 
@@ -104,9 +87,6 @@ const goToAccountCentre = () => {
         @update:model-value="onSelect"
       />
 
-      <p v-if="!adultConfirmed" class="text-default-500 text-sm">
-        选择「模糊」或「显示」需要先在账号中心完成年龄确认。
-      </p>
       <p v-if="hint" class="text-warning-600 text-sm">{{ hint }}</p>
     </div>
 
@@ -120,21 +100,5 @@ const goToAccountCentre = () => {
       </div>
       <KunSwitch v-model="anonymousOption" class="shrink-0" />
     </div>
-
-    <KunModal v-model="isAttestationOpen" inner-class-name="max-w-sm">
-      <div class="space-y-3">
-        <p class="text-foreground font-medium">需要先完成年龄确认</p>
-        <p class="text-default-500 text-sm">
-          年龄确认属于账号信息，只能在 NextMoe
-          账号中心完成，本站不会代为记录。确认后回到这里即可选择「模糊」或「显示」。
-        </p>
-        <div class="flex justify-end gap-2">
-          <KunButton variant="light" @click="isAttestationOpen = false">
-            取消
-          </KunButton>
-          <KunButton @click="goToAccountCentre">前往账号中心</KunButton>
-        </div>
-      </div>
-    </KunModal>
   </div>
 </template>
