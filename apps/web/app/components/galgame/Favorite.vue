@@ -6,6 +6,10 @@ const props = defineProps<{
   isFavorited: boolean
 }>()
 
+const emits = defineEmits<{
+  saved: [payload: { favorited: boolean }]
+}>()
+
 const { id } = usePersistUserStore()
 
 const isFavorited = ref(props.isFavorited)
@@ -36,6 +40,7 @@ const onSaved = (payload: { favorited: boolean }) => {
   }
   isFavorited.value = payload.favorited
   useMyGalgameInteractions().setFavorited(props.galgameId, payload.favorited)
+  emits('saved', payload)
 }
 </script>
 

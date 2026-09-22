@@ -94,6 +94,37 @@ const openRatingDetail = (source: string) => {
 
 const coversOpen = ref(false)
 const hasMoreCovers = computed(() => (props.galgame.covers?.length ?? 0) > 1)
+
+const favoriteCount = ref(props.galgame.favorite_count)
+const isFavorited = ref(props.galgame.is_favorited)
+
+watch(
+  () => props.galgame.favorite_count,
+  (value) => (favoriteCount.value = value)
+)
+watch(
+  () => props.galgame.is_favorited,
+  (value) => (isFavorited.value = value)
+)
+
+const favoritePickerOpen = ref(false)
+const { setFavorited } = useMyGalgameInteractions()
+
+const openFavoritePicker = () => {
+  if (!id) {
+    useAuthModal().open()
+    return
+  }
+  favoritePickerOpen.value = true
+}
+
+const onFavoriteSaved = (payload: { favorited: boolean }) => {
+  if (isFavorited.value !== payload.favorited) {
+    favoriteCount.value += payload.favorited ? 1 : -1
+  }
+  isFavorited.value = payload.favorited
+  setFavorited(props.galgame.id, payload.favorited)
+}
 </script>
 
 <template>
@@ -129,6 +160,24 @@ const hasMoreCovers = computed(() => (props.galgame.covers?.length ?? 0) > 1)
           </KunLightboxGalleryItem>
         </KunLightboxGallery>
       </KunNsfwMask>
+
+      <div class="absolute top-2 right-2 z-10" @click.stop>
+        <KunTooltip text="收藏">
+          <span class="flex">
+            <KunReaction
+              :model-value="isFavorited"
+              :toggle="false"
+              size="sm"
+              icon="lucide:heart"
+              color="danger"
+              label="收藏"
+              class="bg-content1/90 py-1.5 shadow-sm backdrop-blur"
+              :class="!isFavorited && 'text-default-700'"
+              @click.stop="openFavoritePicker"
+            />
+          </span>
+        </KunTooltip>
+      </div>
 
       <KunChip
         variant="solid"
@@ -277,8 +326,9 @@ const hasMoreCovers = computed(() => (props.galgame.covers?.length ?? 0) > 1)
             <GalgameFavorite
               :galgame-id="galgame.id"
               :target-user-id="galgame.user.id"
-              :favorite-count="galgame.favorite_count"
-              :is-favorited="galgame.is_favorited"
+              :favorite-count="favoriteCount"
+              :is-favorited="isFavorited"
+              @saved="onFavoriteSaved"
             />
           </div>
 
@@ -369,4 +419,10 @@ const hasMoreCovers = computed(() => (props.galgame.covers?.length ?? 0) > 1)
       </div>
     </div>
   </KunCard>
+
+  <GalgameCollectionPickerModal
+    v-model="favoritePickerOpen"
+    :galgame-id="galgame.id"
+    @saved="onFavoriteSaved"
+  />
 </template>
