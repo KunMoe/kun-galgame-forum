@@ -17,13 +17,7 @@ definePageMeta({ key: (route) => route.path })
 
 const route = useRoute()
 
-const userId = storeToRefs(usePersistUserStore()).id.value
-const { showKUNGalgameContentLimit } = storeToRefs(usePersistSettingsStore())
-const isNsfwMode = computed(
-  () =>
-    showKUNGalgameContentLimit.value === 'nsfw' ||
-    showKUNGalgameContentLimit.value === 'all'
-)
+const { allowsNsfw } = useContentStance()
 
 const isShowTopic = ref(true)
 
@@ -170,9 +164,10 @@ if (data.value) {
   })
 
   if (topic.is_nsfw) {
-    const trustedVisitor = !!userId || isNsfwMode.value
-    useKunDisableSeo(trustedVisitor ? topic.title : '')
-    if (!trustedVisitor) {
+    // Being signed in used to be enough on its own. The account's stance
+    // decides now; 模糊 lets the topic through and masks its covers instead.
+    useKunDisableSeo(allowsNsfw.value ? topic.title : '')
+    if (!allowsNsfw.value) {
       isShowTopic.value = false
     }
   } else {
@@ -196,10 +191,7 @@ if (data.value) {
     <template v-if="topic">
       <TopicDetail v-if="isShowTopic" :topic="topic" />
 
-      <KunCard v-else :is-hoverable="false" :is-transparent="false">
-        <p>这个话题含有 NSFW 内容, 您需要点击确认以显示这个话题</p>
-        <KunButton @click="isShowTopic = true">确认显示</KunButton>
-      </KunCard>
+      <KunNsfwGate v-else noun="话题" @reveal="isShowTopic = true" />
     </template>
 
     <template v-else-if="problem && problem.status !== 404">

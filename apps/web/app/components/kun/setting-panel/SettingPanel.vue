@@ -10,7 +10,7 @@ const settingTabs = [
   { value: 'content', textValue: '内容', icon: 'lucide:shield-alert' },
   { value: 'general', textValue: '通用', icon: 'lucide:settings-2' }
 ]
-const activeTab = ref('appearance')
+const { activeTab } = useSettingPanel()
 </script>
 
 <template>

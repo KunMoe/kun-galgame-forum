@@ -19,6 +19,8 @@ const props = defineProps<{
   galgame: GalgameDetail
 }>()
 
+const { isBlurred } = useContentStance()
+
 const emits = defineEmits<{
   onRatingCreated: [GalgameRatingCardOnGalgamePage]
 }>()
@@ -103,24 +105,30 @@ const hasMoreCovers = computed(() => (props.galgame.covers?.length ?? 0) > 1)
     <div
       class="relative col-start-1 row-start-1 aspect-[5/7] w-full self-start overflow-hidden rounded-lg md:row-end-3"
     >
-      <KunLightboxGallery>
-        <KunLightboxGalleryItem
-          :src="getEffectivePortrait(galgame)"
-          :alt="galgame.name"
-          :wrap="false"
-          v-slot="{ open }"
-        >
-          <KunImage
-            class="size-full cursor-zoom-in object-cover"
+      <KunNsfwMask
+        :active="isBlurred && galgame.content_limit !== 'sfw'"
+        class-name="h-full"
+        label="成人向封面已模糊"
+      >
+        <KunLightboxGallery>
+          <KunLightboxGalleryItem
             :src="getEffectivePortrait(galgame)"
-            loading="eager"
-            fetchpriority="high"
-            :thumbhash="resolvePortraitThumbhash(galgame)"
             :alt="galgame.name"
-            @click="open"
-          />
-        </KunLightboxGalleryItem>
-      </KunLightboxGallery>
+            :wrap="false"
+            v-slot="{ open }"
+          >
+            <KunImage
+              class="size-full cursor-zoom-in object-cover"
+              :src="getEffectivePortrait(galgame)"
+              loading="eager"
+              fetchpriority="high"
+              :thumbhash="resolvePortraitThumbhash(galgame)"
+              :alt="galgame.name"
+              @click="open"
+            />
+          </KunLightboxGalleryItem>
+        </KunLightboxGallery>
+      </KunNsfwMask>
 
       <KunChip
         variant="solid"

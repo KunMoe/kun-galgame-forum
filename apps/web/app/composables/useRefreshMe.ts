@@ -6,6 +6,8 @@ interface MeResponse {
   roles: string[]
   moemoepoint: number
   bio: string
+  adult_confirmed: boolean
+  nsfw_display: string
 }
 
 const STALE_MS = 60_000
@@ -34,7 +36,9 @@ export const useRefreshMe = () => {
         userStore.setProfileInfo({
           name: me.name,
           avatar: me.avatar,
-          roles: me.roles ?? []
+          roles: me.roles ?? [],
+          adultConfirmed: me.adult_confirmed,
+          nsfwDisplay: me.nsfw_display
         })
       }
       lastFetchedAt = Date.now()

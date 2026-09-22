@@ -9,21 +9,22 @@ const props = defineProps<{
 }>()
 
 const {
-  showKUNGalgameContentLimit,
   showKUNGalgameGallerySexualLevels: sexualLevels,
   showKUNGalgameGalleryViolenceLevels: violenceLevels
 } = storeToRefs(usePersistSettingsStore())
 
-const showNsfw = computed(
-  () =>
-    showKUNGalgameContentLimit.value === 'nsfw' ||
-    showKUNGalgameContentLimit.value === 'all'
-)
+const { allowsNsfw: showNsfw, isBlurred } = useContentStance()
 
 const sexualOk = (s: GalgameScreenshot) =>
   showNsfw.value || s.sexual === 0 || sexualLevels.value.includes(s.sexual)
 const violenceOk = (s: GalgameScreenshot) =>
   s.violence === 0 || violenceLevels.value.includes(s.violence)
+
+// The two systems stack rather than replace each other: a level the reader
+// ticked in the filter is an explicit choice and stays sharp, while one that
+// is only here because the account allows NSFW at all is what 模糊 masks.
+const isMasked = (s: GalgameScreenshot) =>
+  isBlurred.value && s.sexual >= 1 && !sexualLevels.value.includes(s.sexual)
 
 const allShots = computed(() =>
   [...(props.screenshots ?? [])].filter((s) => !!s.image_hash)
@@ -197,15 +198,17 @@ const ratingRing = (s: GalgameScreenshot) => {
                 "
                 @click="i === g.foldIndex ? expandSource(g.key) : open()"
               >
-                <KunImage
-                  :src="thumbSrc(s)"
-                  :alt="s.caption || ''"
-                  loading="lazy"
-                  object-fit="cover"
-                  :thumbhash="s.thumbhash"
-                  class="h-full w-full cursor-zoom-in object-cover transition-transform duration-200 group-hover:scale-105"
-                  :style="{ aspectRatio: '16/9' }"
-                />
+                <KunNsfwMask :active="isMasked(s)" label="成人向截图已模糊">
+                  <KunImage
+                    :src="thumbSrc(s)"
+                    :alt="s.caption || ''"
+                    loading="lazy"
+                    object-fit="cover"
+                    :thumbhash="s.thumbhash"
+                    class="h-full w-full cursor-zoom-in object-cover transition-transform duration-200 group-hover:scale-105"
+                    :style="{ aspectRatio: '16/9' }"
+                  />
+                </KunNsfwMask>
                 <div
                   v-if="s.caption"
                   class="absolute right-0 bottom-0 left-0 truncate bg-black/50 px-2 py-1 text-xs text-white opacity-0 transition-opacity group-hover:opacity-100"

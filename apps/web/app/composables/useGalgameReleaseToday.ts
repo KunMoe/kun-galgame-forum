@@ -39,11 +39,14 @@ const write = (cached: CachedFlag) => {
 }
 
 export const useGalgameReleaseToday = () => {
-  const settings = usePersistSettingsStore()
+  const { stance } = useContentStance()
   const hasReleaseToday = useState('galgame-release-today', () => false)
 
   onMounted(async () => {
-    const limit = settings.showKUNGalgameContentLimit
+    // Keyed on the stance, not the cookie: the API filters this flag by the
+    // account now, so a cache keyed on the cookie would answer for the wrong
+    // one the moment the two disagree.
+    const limit = stance.value
     const cached = read(limit)
     if (cached) {
       hasReleaseToday.value = cached.has

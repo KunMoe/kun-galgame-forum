@@ -6,16 +6,19 @@ withDefaults(
   { isCollapsed: false }
 )
 
-const { showKUNGalgameContentLimit } = storeToRefs(usePersistSettingsStore())
+const { isSignedIn, allowsNsfw: isEnabled, setAnonymousNsfw } =
+  useContentStance()
+const { open } = useSettingPanel()
 
-const isEnabled = computed(
-  () =>
-    showKUNGalgameContentLimit.value === 'nsfw' ||
-    showKUNGalgameContentLimit.value === 'all'
-)
-
+// Signed in there is no single opposite to flip to — the account holds three
+// values and 模糊 / 显示 need age attestation first — so the banner hands the
+// reader to the one control that can ask for all of it.
 const toggle = () => {
-  showKUNGalgameContentLimit.value = isEnabled.value ? 'sfw' : 'nsfw'
+  if (isSignedIn.value) {
+    open('content')
+    return
+  }
+  setAnonymousNsfw(!isEnabled.value)
   if (import.meta.client) {
     location.reload()
   }

@@ -1,17 +1,11 @@
 <script setup lang="ts">
 import type { VideoGame, WithContext, Person, BreadcrumbList } from 'schema-dts'
 
-const userId = storeToRefs(usePersistUserStore()).id.value
-const { showKUNGalgameContentLimit } = storeToRefs(usePersistSettingsStore())
 definePageMeta({ key: (route) => route.path })
 
 const route = useRoute()
 
-const isNsfwMode = computed(
-  () =>
-    showKUNGalgameContentLimit.value === 'nsfw' ||
-    showKUNGalgameContentLimit.value === 'all'
-)
+const { allowsNsfw } = useContentStance()
 
 const gid = computed(() => {
   return parseInt((route.params as { gid: string }).gid)
@@ -35,8 +29,10 @@ const isShowGalgame = ref(true)
 
 if (galgame) {
   const nsfw = galgame.content_limit === 'nsfw'
-  const trustedVisitor = !!userId || isNsfwMode.value
-  if (nsfw && !trustedVisitor) {
+  // Being signed in used to be enough on its own, which showed every NSFW
+  // detail page to a reader who had never asked for one. The account's stance
+  // decides now; 模糊 lets the page through and masks the imagery instead.
+  if (nsfw && !allowsNsfw.value) {
     isShowGalgame.value = false
   }
 
@@ -185,10 +181,7 @@ if (galgame) {
     <div v-if="data && !data.moved_to">
       <Galgame v-if="isShowGalgame" :galgame="data" />
 
-      <KunCard v-else :is-hoverable="false" :is-transparent="false">
-        <p>这个 Galgame 含有 NSFW 内容, 您需要点击确认以显示这个 Galgame</p>
-        <KunButton @click="isShowGalgame = true">确认显示</KunButton>
-      </KunCard>
+      <KunNsfwGate v-else noun="Galgame" @reveal="isShowGalgame = true" />
     </div>
 
     <KunNull v-else-if="!data?.moved_to" description="未找到这个 Galgame" />

@@ -36,6 +36,8 @@ const {
   isOpenInNewTab
 } = storeToRefs(usePersistGalgameCardStore())
 
+const { isBlurred } = useContentStance()
+
 const ratingOf = (galgame: T) => {
   if (!galgame.rating || !galgame.rating_count) {
     return null
@@ -135,14 +137,19 @@ const cards = computed(() =>
           class-name="p-0 h-full"
         >
           <div class="relative overflow-hidden">
-            <KunImage
+            <KunNsfwMask
               v-if="card.cover"
-              :src="card.cover"
-              loading="lazy"
-              :alt="card.galgame.name"
-              :thumbhash="card.thumbhash"
-              aspect-ratio="5 / 7"
-            />
+              :active="isBlurred && !card.isSfw"
+              class-name=""
+            >
+              <KunImage
+                :src="card.cover"
+                loading="lazy"
+                :alt="card.galgame.name"
+                :thumbhash="card.thumbhash"
+                aspect-ratio="5 / 7"
+              />
+            </KunNsfwMask>
             <div
               v-else
               class="bg-default-100 text-default-400 flex items-center justify-center"

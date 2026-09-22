@@ -103,6 +103,7 @@ provide(
       <TopicCoverGrid
         v-if="unseenCovers.length"
         :images="unseenCovers"
+        :nsfw="topic.is_nsfw"
         zoomable
       />
 

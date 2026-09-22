@@ -103,6 +103,7 @@ provide(
           v-if="covers.length"
           :images="covers"
           :meta="data?.cover_image_meta"
+          :nsfw="data?.is_nsfw"
         />
       </KunLink>
 

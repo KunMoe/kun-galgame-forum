@@ -43,6 +43,8 @@ onMounted(async () => {
     roles: string[]
     moemoepoint: number
     bio: string
+    adult_confirmed: boolean
+    nsfw_display: string
   }>('/auth/oauth/callback', {
     method: 'POST',
     body: { code, code_verifier: codeVerifier }
@@ -59,7 +61,9 @@ onMounted(async () => {
       moemoepoint: result.moemoepoint,
       roles: result.roles ?? [],
       isCheckIn: false,
-      dailyToolsetUploadBytes: 0
+      dailyToolsetUploadBytes: 0,
+      adultConfirmed: result.adult_confirmed,
+      nsfwDisplay: result.nsfw_display
     })
 
     useKnownAccounts().rememberUser({

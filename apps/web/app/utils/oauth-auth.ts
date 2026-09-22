@@ -40,6 +40,12 @@ const buildAuthorizeUrl = async (
     // folder:read / folder:write are the one scoped family on /v2/me: the
     // collection face reads and writes the user's own folders, and a token
     // minted without them is 403 SCOPE_REQUIRED on every collection call.
+    // preferences is write-only here: the account's adult_confirmed and
+    // nsfw_display claims and the cloud preference document are READ under
+    // profile, which every session already holds, so the content gating works
+    // the moment this ships. Without preferences the two writes — changing the
+    // NSFW display mode and saving display preferences to the account — come
+    // back 18001 and the site falls back to cookies.
     // A scope added here does not reach sessions that already exist: a refresh
     // mints from the grant recorded at authorization, not from this list. That
     // record is a row infra can widen in place — on 2026-09-08 one UPDATE over
@@ -47,7 +53,7 @@ const buildAuthorizeUrl = async (
     // token TTL, nobody logged out — so a narrow grant is a message to send
     // infra, not a forced re-login for everyone.
     scope:
-      'openid profile catalog:read catalog:edit playtime:read playtime:write folder:read folder:write',
+      'openid profile preferences catalog:read catalog:edit playtime:read playtime:write folder:read folder:write',
     state,
     code_challenge: codeChallenge,
     code_challenge_method: 'S256'

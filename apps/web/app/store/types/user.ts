@@ -8,4 +8,6 @@ export interface UserStore {
   roles: string[]
   isCheckIn: boolean
   dailyToolsetUploadBytes: number
+  adultConfirmed: boolean
+  nsfwDisplay: string
 }

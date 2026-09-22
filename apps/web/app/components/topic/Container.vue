@@ -67,10 +67,9 @@ const sortOrder = computed<SortOrder>(() =>
   offeredSort.value.endsWith('_asc') ? 'asc' : 'desc'
 )
 
-const settings = usePersistSettingsStore()
-const includeNsfw = computed(
-  () => settings.showKUNGalgameContentLimit === 'nsfw'
-)
+// v1 takes no implicit inputs — no cookie, no header — so the resolved stance
+// has to travel as an explicit query parameter on every call.
+const { allowsNsfw: includeNsfw } = useContentStance()
 
 const setSortField = (value: SortField | SortField[] | null) => {
   if (!value || Array.isArray(value)) return

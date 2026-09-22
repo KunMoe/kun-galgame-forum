@@ -8,7 +8,11 @@ const props = defineProps<{
   images: Cover[]
   meta?: Record<string, KunImageMeta>
   zoomable?: boolean
+  nsfw?: boolean
 }>()
+
+const { isBlurred } = useContentStance()
+const masked = computed(() => !!props.nsfw && isBlurred.value)
 
 const shown = computed(() => props.images.slice(0, 9))
 const isSingle = computed(() => shown.value.length === 1)
@@ -60,19 +64,24 @@ const {
 <template>
   <div v-if="shown.length">
     <div ref="root">
-      <KunImage
+      <KunNsfwMask
         v-if="isSingle"
-        :src="resolved(shown[0]!).src"
-        :thumbhash="resolved(shown[0]!).thumbhash"
-        :aspect-ratio="aspectOf(shown[0]!)"
-        :width="resolved(shown[0]!).width"
-        :height="resolved(shown[0]!).height"
+        :active="masked"
         :style="singleWidth"
-        alt="话题封面"
-        loading="lazy"
-        object-fit="cover"
-        :class-name="cn('rounded-lg', zoomable && 'cursor-zoom-in')"
-      />
+        label="成人向封面已模糊"
+      >
+        <KunImage
+          :src="resolved(shown[0]!).src"
+          :thumbhash="resolved(shown[0]!).thumbhash"
+          :aspect-ratio="aspectOf(shown[0]!)"
+          :width="resolved(shown[0]!).width"
+          :height="resolved(shown[0]!).height"
+          alt="话题封面"
+          loading="lazy"
+          object-fit="cover"
+          :class-name="cn('w-full rounded-lg', zoomable && 'cursor-zoom-in')"
+        />
+      </KunNsfwMask>
 
       <KunScrollShadow
         v-else
@@ -81,22 +90,28 @@ const {
         scrollbar="thin"
       >
         <div class="flex gap-1.5">
-          <KunImage
+          <KunNsfwMask
             v-for="(item, idx) in shown"
             :key="`${idx}-${resolved(item).src}`"
-            :src="resolved(item).src"
-            :thumbhash="resolved(item).thumbhash"
-            :aspect-ratio="aspectOf(item)"
-            alt="话题封面"
-            loading="lazy"
-            object-fit="contain"
-            :class-name="
-              cn(
-                'h-40 w-auto shrink-0 rounded-lg',
-                zoomable && 'cursor-zoom-in'
-              )
-            "
-          />
+            :active="masked"
+            class-name="shrink-0 rounded-lg"
+            label="成人向封面已模糊"
+          >
+            <KunImage
+              :src="resolved(item).src"
+              :thumbhash="resolved(item).thumbhash"
+              :aspect-ratio="aspectOf(item)"
+              alt="话题封面"
+              loading="lazy"
+              object-fit="contain"
+              :class-name="
+                cn(
+                  'h-40 w-auto shrink-0 rounded-lg',
+                  zoomable && 'cursor-zoom-in'
+                )
+              "
+            />
+          </KunNsfwMask>
         </div>
       </KunScrollShadow>
     </div>

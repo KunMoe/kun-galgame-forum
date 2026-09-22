@@ -116,9 +116,15 @@ const hiddenImageTotal = computed(() =>
   props.lottery.prizes.reduce((sum, prize) => sum + hiddenCount(prize), 0)
 )
 
-const { showKUNGalgameContentLimit } = storeToRefs(usePersistSettingsStore())
+const { isSignedIn, setAnonymousNsfw } = useContentStance()
+const { open: openSettingPanel } = useSettingPanel()
+
 const enableNsfw = () => {
-  showKUNGalgameContentLimit.value = 'nsfw'
+  if (isSignedIn.value) {
+    openSettingPanel('content')
+    return
+  }
+  setAnonymousNsfw(true)
   location.reload()
 }
 

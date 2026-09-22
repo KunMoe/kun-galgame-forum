@@ -12,8 +12,8 @@ const { data, status } = await useKunFetch<{
   query: { page, limit }
 })
 
-const { showKUNGalgameContentLimit } = storeToRefs(usePersistSettingsStore())
-const isSfwMode = computed(() => showKUNGalgameContentLimit.value !== 'nsfw')
+const { allowsNsfw } = useContentStance()
+const isSfwMode = computed(() => !allowsNsfw.value)
 </script>
 
 <template>

@@ -15,12 +15,7 @@ const props = withDefaults(
 
 const isMobile = computed(() => props.variant === 'mobile')
 
-const { showKUNGalgameContentLimit } = storeToRefs(usePersistSettingsStore())
-const isNsfwEnabled = computed(
-  () =>
-    showKUNGalgameContentLimit.value === 'nsfw' ||
-    showKUNGalgameContentLimit.value === 'all'
-)
+const { allowsNsfw: isNsfwEnabled } = useContentStance()
 
 const selectedCategories = ref<string[]>(
   isNsfwEnabled.value
