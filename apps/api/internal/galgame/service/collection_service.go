@@ -9,7 +9,6 @@ import (
 
 	"kun-galgame-api/internal/galgame/client"
 	"kun-galgame-api/internal/galgame/dto"
-	"kun-galgame-api/internal/galgame/model"
 	"kun-galgame-api/internal/galgame/repository"
 	"kun-galgame-api/internal/moemoepoint"
 	"kun-galgame-api/internal/trust/gate"
@@ -301,13 +300,10 @@ func (s *CollectionService) GetMyCollectionsForGalgame(ctx context.Context, user
 	if err != nil {
 		return nil, collectionErr(err, "读取收藏夹失败")
 	}
-	if len(folders) == 0 {
-		created, cErr := s.ensureDefault(ctx, token)
-		if cErr != nil {
-			return nil, cErr
-		}
-		folders = created
-	}
+	// No default folder is created here. Catalog's POST /v2/me/folders refuses a
+	// blank name (deviation 112: only the backfill may make an unnamed default),
+	// and the lazy create this face used to do sent name:"" — every reader with
+	// no folders got 422 → 233 instead of an empty picker.
 	holding, err := s.catalog.MyFoldersContaining(ctx, token, int64(galgameID))
 	if err != nil {
 		return nil, collectionErr(err, "读取收藏状态失败")
@@ -334,21 +330,6 @@ func (s *CollectionService) GetMyCollectionsForGalgame(ctx context.Context, user
 		})
 	}
 	return out, nil
-}
-
-// The default folder is unnamed on purpose: the forum stored its default
-// collections with name = ” and renders the label from the owner's name, and
-// the catalog backfill carried that through (upstream deviation 112).
-func (s *CollectionService) ensureDefault(ctx context.Context, token string) ([]catalogclient.Folder, *errors.AppError) {
-	empty, isDefault := "", true
-	pub := model.CollectionPublic
-	folder, err := s.catalog.CreateFolder(ctx, token, catalogclient.FolderWrite{
-		Name: &empty, Description: &empty, Visibility: &pub, IsDefault: &isDefault,
-	})
-	if err != nil {
-		return nil, collectionErr(err, "创建默认收藏夹失败")
-	}
-	return []catalogclient.Folder{*folder}, nil
 }
 
 func (s *CollectionService) GetDetail(ctx context.Context, viewerID int, token string, cid, page, limit int, isSFW bool) (*dto.CollectionDetail, *errors.AppError) {
