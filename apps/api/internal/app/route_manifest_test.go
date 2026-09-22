@@ -128,7 +128,7 @@ func handlerName(h fiber.Handler) string {
 	// A closure is named after wherever its constructor was inlined: Go 1.26
 	// (CI) called Idempotent's "setupRoutes.Idempotent", Go 1.27 (local)
 	// "middleware.Idempotent", and the golden only ever matched one of them.
-	if strings.HasPrefix(last, "Require") || slices.Contains([]string{"Auth", "OptionalAuth", "Idempotent", "v1Headers"}, last) {
+	if strings.HasPrefix(last, "Require") || slices.Contains([]string{"Auth", "OptionalAuth", "Idempotent", "ContentStance", "v1Headers"}, last) {
 		return last
 	}
 	if len(parts) > 2 {

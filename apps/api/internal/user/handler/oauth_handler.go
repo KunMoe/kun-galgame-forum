@@ -69,6 +69,7 @@ func (h *OAuthHandler) Logout(c fiber.Ctx) error {
 }
 
 func (h *OAuthHandler) Me(c fiber.Ctx) error {
+	noStore(c)
 	user, err := middleware.MustGetUser(c)
 	if err != nil {
 		return response.Error(c, err)
@@ -86,4 +87,6 @@ func (h *OAuthHandler) Me(c fiber.Ctx) error {
 func enrichProfileFromSession(p *dto.UserProfile, u *middleware.UserInfo) {
 	p.Sub = u.Sub
 	p.Roles = u.Roles
+	p.AdultConfirmed = u.AdultConfirmed
+	p.NSFWDisplay = u.NSFWDisplay
 }

@@ -89,11 +89,13 @@ func (s *AuthService) OAuthCallback(
 
 	sessionData := middleware.SessionData{
 		UserInfo: middleware.UserInfo{
-			ID:    oauthUser.ID,
-			Sub:   oauthUser.Sub,
-			Name:  oauthUser.Name,
-			Email: oauthUser.Email,
-			Roles: respUser.Roles,
+			ID:             oauthUser.ID,
+			Sub:            oauthUser.Sub,
+			Name:           oauthUser.Name,
+			Email:          oauthUser.Email,
+			Roles:          respUser.Roles,
+			AdultConfirmed: oauthUser.AdultConfirmed,
+			NSFWDisplay:    oauthUser.NSFWDisplay,
 		},
 		OAuthAccessToken:  tokenResp.AccessToken,
 		OAuthRefreshToken: tokenResp.RefreshToken,
@@ -114,13 +116,15 @@ func (s *AuthService) OAuthCallback(
 
 func newLoginUserProfile(u *oauth.UserInfo, avatar string, moe int) *dto.UserProfile {
 	return &dto.UserProfile{
-		ID:          u.ID,
-		Sub:         u.Sub,
-		Name:        u.Name,
-		Avatar:      avatar,
-		Roles:       role.Union(u.Roles, u.SiteRoles),
-		Moemoepoint: moe,
-		Bio:         "",
+		ID:             u.ID,
+		Sub:            u.Sub,
+		Name:           u.Name,
+		Avatar:         avatar,
+		Roles:          role.Union(u.Roles, u.SiteRoles),
+		Moemoepoint:    moe,
+		Bio:            "",
+		AdultConfirmed: u.AdultConfirmed,
+		NSFWDisplay:    u.NSFWDisplay,
 	}
 }
 

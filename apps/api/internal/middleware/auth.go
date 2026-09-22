@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"kun-galgame-api/internal/user/oauth"
+	"kun-galgame-api/pkg/content"
 	"kun-galgame-api/pkg/errors"
 	"kun-galgame-api/pkg/perm"
 	"kun-galgame-api/pkg/response"
@@ -41,7 +42,14 @@ type UserInfo struct {
 	Email string   `json:"email"`
 	Roles []string `json:"roles"`
 
+	AdultConfirmed bool   `json:"adult_confirmed"`
+	NSFWDisplay    string `json:"nsfw_display"`
+
 	viaBearer bool
+}
+
+func (u *UserInfo) ContentStance() content.Stance {
+	return content.Fold(u.AdultConfirmed, u.NSFWDisplay)
 }
 
 // Staff powers are never reachable through the Bearer channel, whatever the
@@ -167,6 +175,8 @@ func refreshSession(
 
 	if info, uErr := oauthClient.FetchUserInfo(refreshed.AccessToken); uErr == nil {
 		session.Roles = role.Union(info.Roles, info.SiteRoles)
+		session.AdultConfirmed = info.AdultConfirmed
+		session.NSFWDisplay = info.NSFWDisplay
 	} else if oauth.IsBanned(uErr) {
 		slog.Warn("刷新后 userinfo 返回账号封禁, 清除 session", "error", uErr)
 		rdb.Del(ctx, SessionKey(token))

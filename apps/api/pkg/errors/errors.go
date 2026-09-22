@@ -56,6 +56,15 @@ const (
 	CodeDuplicateSuspects   = 236
 	CodeIdempotencyInFlight = 237
 	CodeIdempotencyMismatch = 238
+	// Age attestation only ever happens at the account centre, so the client
+	// has to tell this refusal apart from every other 403 to offer the
+	// deep-link instead of a dead-end toast.
+	CodeAdultConfirmationRequired = 239
+	// The account has not granted this site the `preferences` scope. Every
+	// cloud preference write will fail until it re-authorizes, so the client
+	// degrades to cookies silently rather than toasting on each keystroke.
+	CodeCloudPreferencesUnavailable = 240
+	CodeCloudPreferencesConflict    = 241
 )
 
 func ErrUnauthorized(msg string) *AppError {
@@ -96,4 +105,16 @@ func ErrValidation(msg string) *AppError {
 
 func ErrDuplicateSuspects(msg string) *AppError {
 	return New(CodeDuplicateSuspects, msg, 409)
+}
+
+func ErrAdultConfirmationRequired() *AppError {
+	return New(CodeAdultConfirmationRequired, "请先在账号中心完成年龄确认", 403)
+}
+
+func ErrCloudPreferencesUnavailable() *AppError {
+	return New(CodeCloudPreferencesUnavailable, "本站尚未获得云端偏好的写入授权", 403)
+}
+
+func ErrCloudPreferencesConflict() *AppError {
+	return New(CodeCloudPreferencesConflict, "云端偏好已在别处更新, 请重新读取后再写", 412)
 }

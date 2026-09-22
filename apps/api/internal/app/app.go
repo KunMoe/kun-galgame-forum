@@ -119,6 +119,7 @@ type App struct {
 	OAuthHandler                   *handler.OAuthHandler
 	UserHandler                    *handler.UserHandler
 	UserProfileHandler             *handler.ProfileHandler
+	ContentPrefsHandler            *handler.ContentPrefsHandler
 	HomeHandler                    *homeHandler.HomeHandler
 	TopicHandler                   *topicHandler.TopicHandler
 	TopicDraftHandler              *topicHandler.TopicDraftHandler
@@ -598,6 +599,7 @@ func New(cfg *config.Config) *App {
 		OAuthHandler:                   handler.NewOAuthHandler(authService, cfg.Server.Mode == "prod", communityBooster),
 		UserHandler:                    handler.NewUserHandler(userService, userContentService),
 		UserProfileHandler:             handler.NewProfileHandler(oauthClient, uc),
+		ContentPrefsHandler:            handler.NewContentPrefsHandler(oauthClient, uc, rdb),
 		HomeHandler:                    homeHandler.NewHomeHandler(homeService.NewHomeService(homeRepo.NewHomeRepository(db), gc, uc, rdb)),
 		TopicHandler:                   topicHandler.NewTopicHandler(topicSvc),
 		TopicDraftHandler:              topicHandler.NewTopicDraftHandler(draftSvc),

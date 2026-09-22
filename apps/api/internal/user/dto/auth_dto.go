@@ -1,6 +1,9 @@
 package dto
 
-import "time"
+import (
+	"encoding/json"
+	"time"
+)
 
 type OAuthCallbackRequest struct {
 	Code         string `json:"code" validate:"required,max=2048"`
@@ -12,14 +15,18 @@ type SessionResponse struct {
 	User  *UserProfile `json:"user"`
 }
 
+// AdultConfirmed and NSFWDisplay are the account's raw pair, never the folded
+// stance: the web folds them itself so one function on each side owns the rule.
 type UserProfile struct {
-	ID          int      `json:"id"`
-	Sub         string   `json:"sub"`
-	Name        string   `json:"name"`
-	Avatar      string   `json:"avatar"`
-	Roles       []string `json:"roles"`
-	Moemoepoint int      `json:"moemoepoint"`
-	Bio         string   `json:"bio"`
+	ID             int      `json:"id"`
+	Sub            string   `json:"sub"`
+	Name           string   `json:"name"`
+	Avatar         string   `json:"avatar"`
+	Roles          []string `json:"roles"`
+	Moemoepoint    int      `json:"moemoepoint"`
+	Bio            string   `json:"bio"`
+	AdultConfirmed bool     `json:"adult_confirmed"`
+	NSFWDisplay    string   `json:"nsfw_display"`
 }
 
 type UserProfileDetail struct {
@@ -59,6 +66,28 @@ type UpdateBioRequest struct {
 
 type UpdateUsernameRequest struct {
 	Username string `json:"username" validate:"required,min=1,max=17"`
+}
+
+type UpdateNSFWDisplayRequest struct {
+	NSFWDisplay string `json:"nsfw_display" validate:"required,oneof=hide blur show"`
+}
+
+type NSFWDisplayResponse struct {
+	NSFWDisplay    string `json:"nsfw_display"`
+	AdultConfirmed bool   `json:"adult_confirmed"`
+}
+
+type UpdatePreferencesRequest struct {
+	Doc json.RawMessage `json:"doc" validate:"required"`
+}
+
+// The namespace the document actually lives under is the OAuth client id and
+// stays server-side; a client that could name it would reach the cross-site
+// `global` document through this proxy.
+type PreferencesResponse struct {
+	Doc       json.RawMessage `json:"doc"`
+	Version   int             `json:"version"`
+	UpdatedAt *string         `json:"updated_at"`
 }
 
 type UserStatusResponse struct {

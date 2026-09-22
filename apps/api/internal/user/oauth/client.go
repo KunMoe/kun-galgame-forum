@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"time"
 
 	"kun-galgame-api/pkg/config"
@@ -20,6 +21,10 @@ const (
 	CodeInvalidToken        = 10002
 	CodeInvalidGrant        = 15005
 	CodeInvalidClientSecret = 15008
+
+	CodePreferencesScopeMissing = 18001
+	CodePreferencesConflict     = 18006
+	CodeAdultConfirmationNeeded = 18008
 )
 
 type Error struct {
@@ -160,15 +165,21 @@ type TokenResponse struct {
 	Scope        string `json:"scope"`
 }
 
+// AdultConfirmed and NSFWDisplay ride the profile scope this client has always
+// held, so reading them needed no new grant. Writing them does: PutAuthMeNSFW
+// and the preferences pair are refused 18001 until the client's allowed_scopes
+// gains `preferences` and the user re-authorizes.
 type UserInfo struct {
-	ID        int      `json:"id"`
-	Sub       string   `json:"sub"`
-	Name      string   `json:"name"`
-	Email     string   `json:"email"`
-	Picture   string   `json:"picture"`
-	Roles     []string `json:"roles"`
-	SiteRoles []string `json:"site_roles"`
-	UpdatedAt int64    `json:"updated_at"`
+	ID             int      `json:"id"`
+	Sub            string   `json:"sub"`
+	Name           string   `json:"name"`
+	Email          string   `json:"email"`
+	Picture        string   `json:"picture"`
+	Roles          []string `json:"roles"`
+	SiteRoles      []string `json:"site_roles"`
+	UpdatedAt      int64    `json:"updated_at"`
+	AdultConfirmed bool     `json:"adult_confirmed"`
+	NSFWDisplay    string   `json:"nsfw_display"`
 }
 
 func (c *Client) ExchangeCode(code, codeVerifier string) (*TokenResponse, error) {
@@ -258,19 +269,83 @@ func (c *Client) RefreshOAuthToken(refreshToken string) (*TokenResponse, error) 
 }
 
 func (c *Client) PatchAuthMe(accessToken string, body any) (json.RawMessage, error) {
-	payload, jerr := json.Marshal(body)
-	if jerr != nil {
-		return nil, &Error{Message: "序列化 PATCH /auth/me 请求失败: " + jerr.Error()}
+	return c.doHouse(accessToken, "PATCH", "/auth/me", body, nil)
+}
+
+type NSFWState struct {
+	NSFWDisplay      string  `json:"nsfw_display"`
+	AdultConfirmedAt *string `json:"adult_confirmed_at"`
+}
+
+func (c *Client) PutAuthMeNSFW(accessToken, display string) (*NSFWState, error) {
+	data, err := c.doHouse(
+		accessToken, "PUT", "/auth/me/nsfw",
+		map[string]string{"nsfw_display": display}, nil,
+	)
+	if err != nil {
+		return nil, err
 	}
-	req, rerr := http.NewRequest("PATCH", c.cfg.ServerURL+"/auth/me", bytes.NewReader(payload))
+	var state NSFWState
+	if jerr := json.Unmarshal(data, &state); jerr != nil {
+		return nil, &Error{Message: "解析 PUT /auth/me/nsfw 响应失败: " + jerr.Error()}
+	}
+	return &state, nil
+}
+
+// An OAuth token reaches exactly two namespaces upstream — its own client_id
+// and the shared `global` — so the forum's document is always keyed by the
+// configured client id. Taking the namespace from the request instead would
+// hand the browser a proxy into `global`, which other sites also write.
+func (c *Client) preferencesPath() string {
+	return "/auth/me/preferences/" + url.PathEscape(c.cfg.ClientID)
+}
+
+func (c *Client) GetPreferences(accessToken string) (json.RawMessage, error) {
+	return c.doHouse(accessToken, "GET", c.preferencesPath(), nil, nil)
+}
+
+func (c *Client) PutPreferences(
+	accessToken string,
+	doc json.RawMessage,
+	ifMatch string,
+) (json.RawMessage, error) {
+	var headers map[string]string
+	if ifMatch != "" {
+		headers = map[string]string{"If-Match": ifMatch}
+	}
+	return c.doHouse(
+		accessToken, "PUT", c.preferencesPath(),
+		map[string]any{"doc": doc}, headers,
+	)
+}
+
+func (c *Client) doHouse(
+	accessToken, method, path string,
+	body any,
+	headers map[string]string,
+) (json.RawMessage, error) {
+	var reader io.Reader
+	if body != nil {
+		payload, jerr := json.Marshal(body)
+		if jerr != nil {
+			return nil, &Error{Message: "序列化 " + method + " " + path + " 请求失败: " + jerr.Error()}
+		}
+		reader = bytes.NewReader(payload)
+	}
+	req, rerr := http.NewRequest(method, c.cfg.ServerURL+path, reader)
 	if rerr != nil {
-		return nil, &Error{Message: "创建 PATCH /auth/me 请求失败: " + rerr.Error()}
+		return nil, &Error{Message: "创建 " + method + " " + path + " 请求失败: " + rerr.Error()}
 	}
-	req.Header.Set("Content-Type", "application/json")
+	if body != nil {
+		req.Header.Set("Content-Type", "application/json")
+	}
 	req.Header.Set("Authorization", "Bearer "+accessToken)
+	for k, v := range headers {
+		req.Header.Set(k, v)
+	}
 	resp, derr := c.httpClient.Do(req)
 	if derr != nil {
-		return nil, &Error{Message: "请求 PATCH /auth/me 失败: " + derr.Error()}
+		return nil, &Error{Message: "请求 " + method + " " + path + " 失败: " + derr.Error()}
 	}
 	defer resp.Body.Close()
 	return decodeHouse(resp)

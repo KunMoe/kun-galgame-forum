@@ -43,6 +43,7 @@ func (a *App) setupRoutes() {
 	api := a.Fiber.Group("/api")
 
 	api.Use(middleware.NamePreference)
+	api.Use(middleware.ContentStance(a.Redis))
 
 	api.Get("/home", a.HomeHandler.GetHome)
 
@@ -72,6 +73,10 @@ func (a *App) setupRoutes() {
 	api.Put("/user/bio", userAuth, a.UserProfileHandler.UpdateBio)
 	api.Put("/user/username", userAuth, a.UserProfileHandler.UpdateUsername)
 	api.Post("/user/avatar", userAuth, a.UserProfileHandler.UploadAvatar)
+
+	api.Put("/user/nsfw", userAuth, a.ContentPrefsHandler.UpdateNSFWDisplay)
+	api.Get("/user/preferences", userAuth, a.ContentPrefsHandler.GetPreferences)
+	api.Put("/user/preferences", userAuth, a.ContentPrefsHandler.UpdatePreferences)
 
 	api.Get("/user/:id/floating", a.UserHandler.GetFloatingCard)
 	api.Get("/user/:id", a.UserHandler.GetProfile)
