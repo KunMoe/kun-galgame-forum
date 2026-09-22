@@ -269,6 +269,8 @@ POST   /api/update/todo                               cors.New → middleware.Na
 POST   /api/update/todo/claim                         cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → RequirePermission → UpdateHandler.ClaimTodo
 POST   /api/update/todo/complete                      cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → UpdateHandler.CompleteTodo
 POST   /api/update/todo/discard                       cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → UpdateHandler.DiscardTodo
+POST   /api/update/todo/release                       cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → UpdateHandler.ReleaseTodo
+POST   /api/update/todo/reopen                        cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → RequirePermission → UpdateHandler.ReopenTodo
 POST   /api/user/avatar                               cors.New → middleware.NamePreference → ContentStance → Auth → ProfileHandler.UploadAvatar
 POST   /api/user/check-in                             cors.New → middleware.NamePreference → ContentStance → Auth → UserHandler.CheckIn
 POST   /api/user/creator/apply                        cors.New → middleware.NamePreference → ContentStance → Auth → CreatorHandler.Apply
