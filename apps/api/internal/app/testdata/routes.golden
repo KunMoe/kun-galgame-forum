@@ -22,7 +22,6 @@ DELETE /api/toolset/:id/resource                      cors.New → middleware.Na
 DELETE /api/topic/:tid/comment                        cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → CommentHandler.DeleteComment
 DELETE /api/topic/:tid/lottery                        cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → LotteryHandler.DeleteLottery
 DELETE /api/topic/:tid/poll                           cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → PollHandler.DeletePoll
-DELETE /api/topic/:tid/reply                          cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → ReplyHandler.DeleteReply
 DELETE /api/topic/draft/:id                           cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → TopicDraftHandler.Delete
 DELETE /api/update/history                            cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → RequirePermission → UpdateHandler.DeleteHistory
 DELETE /api/update/todo                               cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → RequirePermission → UpdateHandler.DeleteTodo
@@ -153,17 +152,11 @@ GET    /api/toolset/:id                               cors.New → middleware.Na
 GET    /api/toolset/:id/comments                      cors.New → middleware.NamePreference → ContentStance → OptionalAuth → ResourceCommentHandler.ToolsetList
 GET    /api/toolset/:id/practicality                  cors.New → middleware.NamePreference → ContentStance → OptionalAuth → PracticalityHandler.GetPracticality
 GET    /api/toolset/:id/resource/detail               cors.New → middleware.NamePreference → ContentStance → ResourceHandler.GetResourceDetail
-GET    /api/topic/:tid                                cors.New → middleware.NamePreference → ContentStance → OptionalAuth → TopicHandler.GetDetail
 GET    /api/topic/:tid/lottery/entrants               cors.New → middleware.NamePreference → ContentStance → OptionalAuth → LotteryHandler.GetEntrants
 GET    /api/topic/:tid/lottery/topic                  cors.New → middleware.NamePreference → ContentStance → OptionalAuth → LotteryHandler.GetLotteriesByTopic
 GET    /api/topic/:tid/poll/log                       cors.New → middleware.NamePreference → ContentStance → OptionalAuth → PollHandler.GetVoteLog
 GET    /api/topic/:tid/poll/topic                     cors.New → middleware.NamePreference → ContentStance → OptionalAuth → PollHandler.GetPollsByTopic
-GET    /api/topic/:tid/reaction/history               cors.New → middleware.NamePreference → ContentStance → OptionalAuth → TopicHandler.GetTopicReactionHistory
-GET    /api/topic/:tid/reply                          cors.New → middleware.NamePreference → ContentStance → OptionalAuth → ReplyHandler.GetReplies
-GET    /api/topic/:tid/reply/detail                   cors.New → middleware.NamePreference → ContentStance → OptionalAuth → ReplyHandler.GetReplyDetail
 GET    /api/topic/:tid/reply/locate                   cors.New → middleware.NamePreference → ContentStance → OptionalAuth → ReplyHandler.GetReplyLocate
-GET    /api/topic/:tid/reply/reaction/history         cors.New → middleware.NamePreference → ContentStance → OptionalAuth → ReplyHandler.GetReplyReactionHistory
-GET    /api/topic/:tid/upvotes                        cors.New → middleware.NamePreference → ContentStance → OptionalAuth → TopicHandler.GetUpvotes
 GET    /api/topic/draft                               cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → TopicDraftHandler.List
 GET    /api/topic/draft/:id                           cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → TopicDraftHandler.Get
 GET    /api/topic/interactions/mine                   cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → TopicHandler.MyInteractions
@@ -253,7 +246,6 @@ POST   /api/toolset/:id/upload/abort                  cors.New → middleware.Na
 POST   /api/toolset/:id/upload/complete               cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → UploadHandler.UploadComplete
 POST   /api/toolset/:id/upload/init                   cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → UploadHandler.UploadInit
 POST   /api/toolset/:id/upload/resume                 cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → UploadHandler.UploadResume
-POST   /api/topic                                     cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → Idempotent → TopicHandler.Create
 POST   /api/topic/:tid/comment                        cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → CommentHandler.CreateComment
 POST   /api/topic/:tid/lottery                        cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → LotteryHandler.CreateLottery
 POST   /api/topic/:tid/lottery/cancel                 cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → LotteryHandler.Cancel
@@ -263,7 +255,6 @@ POST   /api/topic/:tid/lottery/enter                  cors.New → middleware.Na
 POST   /api/topic/:tid/lottery/withdraw               cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → LotteryHandler.Withdraw
 POST   /api/topic/:tid/poll                           cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → PollHandler.CreatePoll
 POST   /api/topic/:tid/poll/vote                      cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → PollHandler.Vote
-POST   /api/topic/:tid/reply                          cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → Idempotent → ReplyHandler.CreateReply
 POST   /api/topic/draft                               cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → TopicDraftHandler.Save
 POST   /api/trust/callback                            cors.New → middleware.NamePreference → ContentStance → TrustHandler.Callback
 POST   /api/update/history                            cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → RequirePermission → UpdateHandler.CreateHistory
@@ -313,24 +304,11 @@ PUT    /api/message/system/read                       cors.New → middleware.Na
 PUT    /api/toolset/:id                               cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → ToolsetHandler.Update
 PUT    /api/toolset/:id/practicality                  cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → PracticalityHandler.UpsertPracticality
 PUT    /api/toolset/:id/resource                      cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → ResourceHandler.UpdateResource
-PUT    /api/topic/:tid                                cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → TopicHandler.Update
-PUT    /api/topic/:tid/best-answer                    cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → TopicHandler.SetBestAnswer
 PUT    /api/topic/:tid/comment                        cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → CommentHandler.UpdateComment
 PUT    /api/topic/:tid/comment/like                   cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → CommentHandler.ToggleCommentLike
-PUT    /api/topic/:tid/dislike                        cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → TopicHandler.ToggleDislike
-PUT    /api/topic/:tid/favorite                       cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → TopicHandler.ToggleFavorite
-PUT    /api/topic/:tid/hide                           cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → TopicHandler.ToggleHide
-PUT    /api/topic/:tid/like                           cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → TopicHandler.ToggleLike
 PUT    /api/topic/:tid/lottery                        cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → LotteryHandler.UpdateLottery
 PUT    /api/topic/:tid/lottery/fulfillment            cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → LotteryHandler.SetFulfillment
 PUT    /api/topic/:tid/poll                           cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → PollHandler.UpdatePoll
-PUT    /api/topic/:tid/reaction                       cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → TopicHandler.ToggleReaction
-PUT    /api/topic/:tid/reply                          cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → ReplyHandler.UpdateReply
-PUT    /api/topic/:tid/reply/dislike                  cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → ReplyHandler.ToggleReplyDislike
-PUT    /api/topic/:tid/reply/like                     cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → ReplyHandler.ToggleReplyLike
-PUT    /api/topic/:tid/reply/pin                      cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → ReplyHandler.PinReply
-PUT    /api/topic/:tid/reply/reaction                 cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → ReplyHandler.ToggleReplyReaction
-PUT    /api/topic/:tid/upvote                         cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → TopicHandler.Upvote
 PUT    /api/update/history                            cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → RequirePermission → UpdateHandler.UpdateHistory
 PUT    /api/update/todo                               cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → UpdateHandler.UpdateTodo
 PUT    /api/user/bio                                  cors.New → middleware.NamePreference → ContentStance → Auth → ProfileHandler.UpdateBio
