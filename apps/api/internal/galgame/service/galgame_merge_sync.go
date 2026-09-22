@@ -45,9 +45,15 @@ const (
 // to nothing and its page 404s while still holding resources, ratings and
 // collection entries. /v2/catalog/redirects is the only place the survivor is
 // named after that, and it names it in catalog ids.
+type galgameMerger interface {
+	LocalIDsIn(ids []int) []int
+	Fold(oldGID, newGID int) (repository.MergeCounts, error)
+	RedirectTarget(oldGID int) (int, bool)
+}
+
 type GalgameMergeSync struct {
 	galgameClient *client.GalgameClient
-	mergeRepo     *repository.GalgameMergeRepository
+	mergeRepo     galgameMerger
 	rdb           *redis.Client
 	maxPages      int
 
@@ -59,12 +65,15 @@ func NewGalgameMergeSync(
 	mergeRepo *repository.GalgameMergeRepository,
 	rdb *redis.Client,
 ) *GalgameMergeSync {
-	return &GalgameMergeSync{
+	s := &GalgameMergeSync{
 		galgameClient: galgameClient,
-		mergeRepo:     mergeRepo,
 		rdb:           rdb,
 		maxPages:      mergeSyncPages,
 	}
+	if mergeRepo != nil {
+		s.mergeRepo = mergeRepo
+	}
+	return s
 }
 
 func (s *GalgameMergeSync) Run() {
@@ -167,8 +176,10 @@ func (s *GalgameMergeSync) retryDeferred(ctx context.Context) (folded, deferred 
 }
 
 // fold takes dead-gid candidates paired with the catalog work that replaced
-// them, proves each pairing, and applies it. Anything it cannot prove YET is
-// parked; anything it can prove is wrong is dropped with a reason.
+// them, proves each pairing, and applies it. A second pass then folds forum
+// pages whose curated ref moved onto the survivor — those gids still resolve,
+// so the dead-gid pass drops them. Anything it cannot prove YET is parked;
+// anything it can prove is wrong is dropped with a reason.
 func (s *GalgameMergeSync) fold(ctx context.Context, survivorWork map[int]int64) (folded, deferred int, err error) {
 	if len(survivorWork) == 0 {
 		return 0, 0, nil
@@ -191,30 +202,30 @@ func (s *GalgameMergeSync) fold(ctx context.Context, survivorWork map[int]int64)
 			}
 		}
 	}
-	if len(candidates) == 0 {
-		return 0, 0, nil
+
+	var dead []int
+	if len(candidates) > 0 {
+		// A local gid whose catalog work is merely coincidental with a merged-away
+		// catalog id must not be touched, and 10,289 of the forum's gids are also
+		// the catalog id of a different work. The gid that lost its work is the one
+		// that now resolves to nothing, so this negative IS the proof.
+		s.galgameClient.ForgetGIDs(candidates)
+		alive, appErr := s.galgameClient.GIDsToCatalogIDs(ctx, candidates)
+		if appErr != nil {
+			return 0, 0, errors.New(appErr.Message)
+		}
+		dead = make([]int, 0, len(candidates))
+		for _, gid := range candidates {
+			if _, ok := alive[gid]; ok {
+				s.unpark(ctx, gid)
+				continue
+			}
+			dead = append(dead, gid)
+		}
 	}
 
-	// A local gid whose catalog work is merely coincidental with a merged-away
-	// catalog id must not be touched, and 10,289 of the forum's gids are also
-	// the catalog id of a different work. The gid that lost its work is the one
-	// that now resolves to nothing, so this negative IS the proof.
-	s.galgameClient.ForgetGIDs(candidates)
-	alive, appErr := s.galgameClient.GIDsToCatalogIDs(ctx, candidates)
-	if appErr != nil {
-		return 0, 0, errors.New(appErr.Message)
-	}
-	dead := make([]int, 0, len(candidates))
-	works := make([]int64, 0, len(candidates))
-	for _, gid := range candidates {
-		if _, ok := alive[gid]; ok {
-			s.unpark(ctx, gid)
-			continue
-		}
-		dead = append(dead, gid)
-		works = append(works, survivorWork[gid])
-	}
-	if len(dead) == 0 {
+	works := uniqueCatalogIDs(survivorWork)
+	if len(works) == 0 {
 		return 0, 0, nil
 	}
 
@@ -254,44 +265,165 @@ func (s *GalgameMergeSync) fold(ctx context.Context, survivorWork map[int]int64)
 			deferred++
 			continue
 		}
-		if target, chained := s.mergeRepo.RedirectTarget(newGID); chained {
-			newGID = target
-		}
-		if newGID == oldGID {
-			s.unpark(ctx, oldGID)
-			continue
-		}
+		n, d := s.commitFold(ctx, oldGID, newGID, work)
+		folded += n
+		deferred += d
+	}
 
-		counts, ferr := s.mergeRepo.Fold(oldGID, newGID)
-		if ferr != nil {
-			slog.Warn("galgame 合并失败, 已暂存待重试", "old_gid", oldGID, "new_gid", newGID, "error", ferr)
-			s.park(ctx, oldGID, work)
-			deferred++
+	sf, sd, err := s.foldStale(ctx, works, gidOfWork, back)
+	folded += sf
+	deferred += sd
+	return folded, deferred, err
+}
+
+func uniqueCatalogIDs(survivorWork map[int]int64) []int64 {
+	seen := make(map[int64]bool, len(survivorWork))
+	out := make([]int64, 0, len(survivorWork))
+	for _, work := range survivorWork {
+		if work <= 0 || seen[work] {
 			continue
 		}
-		s.galgameClient.ForgetGIDs([]int{oldGID})
-		s.unpark(ctx, oldGID)
-		folded++
-		fields := []any{"old_gid", oldGID, "new_gid", newGID, "work", work,
-			"moved", counts.Moved, "dropped", counts.Dropped}
-		if counts.Dropped > 0 {
-			fields = append(fields, "dropped_rows_archived_in", "galgame_merge_discarded")
+		seen[work] = true
+		out = append(out, work)
+	}
+	return out
+}
+
+func (s *GalgameMergeSync) foldStale(
+	ctx context.Context, works []int64, gidOfWork map[int64]int, back map[int]int64,
+) (folded, deferred int, err error) {
+	stale, appErr := s.galgameClient.StaleGIDsForCatalogIDs(ctx, works)
+	if appErr != nil {
+		return 0, 0, errors.New(appErr.Message)
+	}
+
+	candidates := make([]int, 0)
+	seen := map[int]bool{}
+	add := func(gid int) {
+		if gid > 0 && !seen[gid] {
+			seen[gid] = true
+			candidates = append(candidates, gid)
 		}
-		slog.Info("galgame 已并入幸存条目", fields...)
-		// The comment thread is anchored site_game:<gid> inside infra's community
-		// service and does not move with the forum's rows. Nothing here can
-		// re-anchor it, so name it instead of losing it quietly.
-		if counts.Comments > 0 {
-			slog.Warn("被合并条目的评论区留在了原锚点, 需要 infra 侧改锚",
-				"comments", counts.Comments,
-				"old_anchor", "site_game:"+strconv.Itoa(oldGID),
-				"new_anchor", "site_game:"+strconv.Itoa(newGID))
+	}
+	for _, work := range works {
+		for _, gid := range stale[work] {
+			add(gid)
+		}
+		c := gidOfWork[work]
+		if wgid := int(work); int64(wgid) == work && wgid != c {
+			add(wgid)
+		}
+	}
+	if len(candidates) == 0 {
+		return 0, 0, nil
+	}
+
+	s.galgameClient.ForgetGIDs(candidates)
+
+	probe := make([]int, len(candidates), len(candidates)+len(gidOfWork))
+	copy(probe, candidates)
+	for _, c := range gidOfWork {
+		probe = append(probe, c)
+	}
+	local := make(map[int]bool, len(probe))
+	for _, gid := range s.mergeRepo.LocalIDsIn(probe) {
+		local[gid] = true
+	}
+
+	var liveStale []int
+	for _, gid := range candidates {
+		if local[gid] {
+			liveStale = append(liveStale, gid)
+		}
+	}
+	if len(liveStale) == 0 {
+		return 0, 0, nil
+	}
+
+	resolved, appErr := s.galgameClient.GIDsToCatalogIDs(ctx, liveStale)
+	if appErr != nil {
+		return 0, 0, errors.New(appErr.Message)
+	}
+
+	for _, work := range works {
+		c, ok := gidOfWork[work]
+		proved := ok && back[c] == work
+		wgid := int(work)
+		staleGIDs := append([]int(nil), stale[work]...)
+		if int64(wgid) == work && wgid != c {
+			staleGIDs = append(staleGIDs, wgid)
+		}
+		for _, staleGID := range staleGIDs {
+			if staleGID == c || !local[staleGID] {
+				continue
+			}
+			if !proved {
+				s.park(ctx, staleGID, work)
+				deferred++
+				continue
+			}
+			if resolved[staleGID] != work {
+				continue
+			}
+			// Fold seeds a missing survivor from the dead row. That is the
+			// common path for a catalog id that never had a forum page; doing
+			// it here would move a populated page onto a gid the claim named
+			// but nobody has opened.
+			if !local[c] {
+				slog.Warn("canonical gid has no local row, skipping fold into nothing",
+					"stale_gid", staleGID, "canonical_gid", c, "work", work)
+				continue
+			}
+			n, d := s.commitFold(ctx, staleGID, c, work)
+			folded += n
+			deferred += d
+			if n > 0 {
+				delete(local, staleGID)
+			}
 		}
 	}
 	return folded, deferred, nil
 }
 
+func (s *GalgameMergeSync) commitFold(ctx context.Context, oldGID, newGID int, work int64) (folded, deferred int) {
+	if target, chained := s.mergeRepo.RedirectTarget(newGID); chained {
+		newGID = target
+	}
+	if newGID == oldGID {
+		s.unpark(ctx, oldGID)
+		return 0, 0
+	}
+
+	counts, ferr := s.mergeRepo.Fold(oldGID, newGID)
+	if ferr != nil {
+		slog.Warn("galgame 合并失败, 已暂存待重试", "old_gid", oldGID, "new_gid", newGID, "error", ferr)
+		s.park(ctx, oldGID, work)
+		return 0, 1
+	}
+	s.galgameClient.ForgetGIDs([]int{oldGID})
+	s.unpark(ctx, oldGID)
+	fields := []any{"old_gid", oldGID, "new_gid", newGID, "work", work,
+		"moved", counts.Moved, "dropped", counts.Dropped}
+	if counts.Dropped > 0 {
+		fields = append(fields, "dropped_rows_archived_in", "galgame_merge_discarded")
+	}
+	slog.Info("galgame 已并入幸存条目", fields...)
+	// The comment thread is anchored site_game:<gid> inside infra's community
+	// service and does not move with the forum's rows. Nothing here can
+	// re-anchor it, so name it instead of losing it quietly.
+	if counts.Comments > 0 {
+		slog.Warn("被合并条目的评论区留在了原锚点, 需要 infra 侧改锚",
+			"comments", counts.Comments,
+			"old_anchor", "site_game:"+strconv.Itoa(oldGID),
+			"new_anchor", "site_game:"+strconv.Itoa(newGID))
+	}
+	return 1, 0
+}
+
 func (s *GalgameMergeSync) park(ctx context.Context, oldGID int, work int64) {
+	if s.rdb == nil {
+		return
+	}
 	if err := s.rdb.HSet(ctx, mergeDeferredKey,
 		strconv.Itoa(oldGID), strconv.FormatInt(work, 10)).Err(); err != nil {
 		slog.Warn("暂存待合并条目失败, 该合并将丢失", "old_gid", oldGID, "work", work, "error", err)
@@ -303,6 +435,9 @@ func (s *GalgameMergeSync) unpark(ctx context.Context, oldGID int) {
 }
 
 func (s *GalgameMergeSync) unparkRaw(ctx context.Context, field string) {
+	if s.rdb == nil {
+		return
+	}
 	if err := s.rdb.HDel(ctx, mergeDeferredKey, field).Err(); err != nil {
 		slog.Warn("清除待合并暂存失败", "old_gid", field, "error", err)
 	}

@@ -18,6 +18,15 @@ const catalogSpoilerCeiling = 2
 
 var anchorSourceKeys = []string{"curated", "galgame_wiki"}
 
+func isAnchorSource(source string) bool {
+	for _, k := range anchorSourceKeys {
+		if source == k {
+			return true
+		}
+	}
+	return false
+}
+
 const (
 	gidLookupHitTTL  = 30 * time.Minute
 	gidLookupMissTTL = 2 * time.Minute
@@ -663,9 +672,10 @@ func (c *GalgameClient) CatalogCalendar(ctx context.Context, bucket string, q ur
 	return page, nil
 }
 
-// GIDsToCatalogIDs is the gid bridge exported for the merge sync, which reads it
-// as a negative: a gid that resolves to nothing is a gid whose catalog work is
-// gone, and only such a gid may be folded into a survivor.
+// GIDsToCatalogIDs is the gid bridge exported for the merge sync. The dead-gid
+// pass reads it as a negative: a gid that resolves to nothing may be folded.
+// The stale-gid pass reads the same map as a positive: a leftover curated gid
+// must resolve back to the survivor, or it is a coincidence and must not fold.
 func (c *GalgameClient) GIDsToCatalogIDs(ctx context.Context, gids []int) (map[int]int64, *errors.AppError) {
 	return c.catalogIDsForGIDs(ctx, gids)
 }
@@ -703,6 +713,41 @@ func (c *GalgameClient) GIDsForCatalogIDs(ctx context.Context, ids []int64) (map
 	for i := range rows {
 		if gid := rows[i].gid(); gid > 0 {
 			out[rows[i].ID] = gid
+		}
+	}
+	return out, nil
+}
+
+// StaleGIDsForCatalogIDs names, per catalog id, the curated gids that are NOT the work's
+// current gid. A merge moves the source work's curated ref onto the survivor, so the survivor
+// answers for a forum page it no longer is: that page is the one to fold.
+func (c *GalgameClient) StaleGIDsForCatalogIDs(ctx context.Context, ids []int64) (map[int64][]int, *errors.AppError) {
+	if len(ids) == 0 {
+		return map[int64][]int{}, nil
+	}
+	rows, appErr := c.worksByCatalogIDs(ctx, ids, "refs", "all")
+	if appErr != nil {
+		return nil, appErr
+	}
+	out := make(map[int64][]int, len(rows))
+	for i := range rows {
+		row := &rows[i]
+		canonical := row.gid()
+		var stale []int
+		seen := map[int]bool{}
+		for _, ref := range row.Refs {
+			if !isAnchorSource(ref.Source) {
+				continue
+			}
+			gid, err := strconv.Atoi(ref.ExternalID)
+			if err != nil || gid <= 0 || gid == canonical || seen[gid] {
+				continue
+			}
+			seen[gid] = true
+			stale = append(stale, gid)
+		}
+		if len(stale) > 0 {
+			out[row.ID] = stale
 		}
 	}
 	return out, nil
