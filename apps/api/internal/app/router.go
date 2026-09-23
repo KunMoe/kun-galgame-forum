@@ -14,6 +14,7 @@ import (
 	newsapiv1 "kun-galgame-api/internal/news/apiv1"
 	overviewapiv1 "kun-galgame-api/internal/overview/apiv1"
 	permissionapiv1 "kun-galgame-api/internal/permission/apiv1"
+	rankingapiv1 "kun-galgame-api/internal/ranking/apiv1"
 	sectionapiv1 "kun-galgame-api/internal/section/apiv1"
 	toolsetapiv1 "kun-galgame-api/internal/toolset/apiv1"
 	topicapiv1 "kun-galgame-api/internal/topic/apiv1"
@@ -64,6 +65,7 @@ func (a *App) setupRoutes() {
 		docapiv1.Register(a.newDocV1()),
 		friendlinkapiv1.Register(a.newFriendLinkV1()),
 		appreleaseapiv1.Register(a.newAppReleaseV1()),
+		rankingapiv1.Register(a.RankingV1),
 		overviewapiv1.Register(a.OverviewV1),
 		sectionapiv1.Register(a.newSectionV1()),
 		authapiv1.Register(a.newAuthV1()),
@@ -81,8 +83,6 @@ func (a *App) setupRoutes() {
 	api.Use(middleware.NamePreference)
 	api.Use(middleware.ContentStance(a.Redis, a.BearerStance))
 
-	api.Get("/home", a.HomeHandler.GetHome)
-
 	api.Post("/trust/callback", a.TrustHandler.Callback)
 
 	auth := api.Group("/auth")
@@ -97,10 +97,6 @@ func (a *App) setupRoutes() {
 	api.Get("/user/:id/comments", a.UserHandler.GetUserComments)
 	api.Get("/user/:id/resources", a.UserHandler.GetUserResources)
 	api.Get("/user/:id/ratings", a.UserHandler.GetUserRatings)
-
-	api.Get("/ranking/galgame", a.RankingHandler.GetGalgameRanking)
-	api.Get("/ranking/topic", a.RankingHandler.GetTopicRanking)
-	api.Get("/ranking/user", a.RankingHandler.GetUserRanking)
 
 	api.Get("/activity", a.ActivityHandler.GetActivity)
 	api.Get("/activity/tab", a.ActivityHandler.GetTab)

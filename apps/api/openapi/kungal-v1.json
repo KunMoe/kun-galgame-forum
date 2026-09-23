@@ -5074,6 +5074,37 @@
         ],
         "type": "object"
       },
+      "ListTopicRankingEntry": {
+        "properties": {
+          "items": {
+            "description": "Members of this page. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/TopicRankingEntry"
+            },
+            "type": "array"
+          },
+          "next_cursor": {
+            "description": "Opaque keyset cursor. Omitted on the last page.",
+            "maxLength": 512,
+            "pattern": "^cur_[A-Za-z0-9_-]+$",
+            "type": "string"
+          },
+          "object": {
+            "description": "Type discriminant. Always list.",
+            "enum": [
+              "list"
+            ],
+            "maxLength": 4,
+            "type": "string",
+            "x-vocabulary-closed": true
+          }
+        },
+        "required": [
+          "object",
+          "items"
+        ],
+        "type": "object"
+      },
       "ListTopicSummary": {
         "properties": {
           "items": {
@@ -5142,6 +5173,37 @@
             "description": "Members of this page. Empty array, never null.",
             "items": {
               "$ref": "#/components/schemas/UpdateLog"
+            },
+            "type": "array"
+          },
+          "next_cursor": {
+            "description": "Opaque keyset cursor. Omitted on the last page.",
+            "maxLength": 512,
+            "pattern": "^cur_[A-Za-z0-9_-]+$",
+            "type": "string"
+          },
+          "object": {
+            "description": "Type discriminant. Always list.",
+            "enum": [
+              "list"
+            ],
+            "maxLength": 4,
+            "type": "string",
+            "x-vocabulary-closed": true
+          }
+        },
+        "required": [
+          "object",
+          "items"
+        ],
+        "type": "object"
+      },
+      "ListUserRankingEntry": {
+        "properties": {
+          "items": {
+            "description": "Members of this page. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/UserRankingEntry"
             },
             "type": "array"
           },
@@ -5266,6 +5328,37 @@
             "description": "Members of this page. Empty array, never null.",
             "items": {
               "$ref": "#/components/schemas/WebsiteTagGroup"
+            },
+            "type": "array"
+          },
+          "next_cursor": {
+            "description": "Opaque keyset cursor. Omitted on the last page.",
+            "maxLength": 512,
+            "pattern": "^cur_[A-Za-z0-9_-]+$",
+            "type": "string"
+          },
+          "object": {
+            "description": "Type discriminant. Always list.",
+            "enum": [
+              "list"
+            ],
+            "maxLength": 4,
+            "type": "string",
+            "x-vocabulary-closed": true
+          }
+        },
+        "required": [
+          "object",
+          "items"
+        ],
+        "type": "object"
+      },
+      "ListWorkRankingEntry": {
+        "properties": {
+          "items": {
+            "description": "Members of this page. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/WorkRankingEntry"
             },
             "type": "array"
           },
@@ -9053,6 +9146,42 @@
         },
         "required": [
           "doc"
+        ],
+        "type": "object"
+      },
+      "RankedTopic": {
+        "properties": {
+          "author": {
+            "$ref": "#/components/schemas/UserRef",
+            "description": "The topic's author."
+          },
+          "id": {
+            "description": "Topic id.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "object": {
+            "description": "Type discriminant. Always topic.",
+            "enum": [
+              "topic"
+            ],
+            "maxLength": 5,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "title": {
+            "description": "Topic title as stored. Free text; never use it as a decision input.",
+            "maxLength": 233,
+            "type": "string"
+          }
+        },
+        "required": [
+          "object",
+          "id",
+          "title",
+          "author"
         ],
         "type": "object"
       },
@@ -13584,6 +13713,43 @@
         },
         "type": "object"
       },
+      "TopicRankingEntry": {
+        "properties": {
+          "metric_value": {
+            "description": "The value the list is sorted by, such as the view count for views_desc.",
+            "format": "double",
+            "minimum": 0,
+            "type": "number"
+          },
+          "object": {
+            "description": "Type discriminant. Always topic_ranking_entry.",
+            "enum": [
+              "topic_ranking_entry"
+            ],
+            "maxLength": 19,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "rank": {
+            "description": "1-based place in this list, numbered after topics whose author cannot be shown were dropped.",
+            "format": "int64",
+            "maximum": 100,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "topic": {
+            "$ref": "#/components/schemas/RankedTopic",
+            "description": "The ranked topic."
+          }
+        },
+        "required": [
+          "object",
+          "rank",
+          "metric_value",
+          "topic"
+        ],
+        "type": "object"
+      },
       "TopicSource": {
         "properties": {
           "access_grants": {
@@ -14638,6 +14804,52 @@
           "created_at",
           "moemoepoint",
           "counts"
+        ],
+        "type": "object"
+      },
+      "UserRankingEntry": {
+        "properties": {
+          "bio": {
+            "description": "The user's profile bio. Empty string when none. Free text; never use it as a decision input.",
+            "maxLength": 107,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "member": {
+            "$ref": "#/components/schemas/UserRef",
+            "description": "The ranked user."
+          },
+          "metric_value": {
+            "description": "The value the list is sorted by, such as the moemoepoint balance for moemoepoint_desc. Only a moemoepoint balance can be negative.",
+            "format": "double",
+            "minimum": -2147483648,
+            "type": "number"
+          },
+          "object": {
+            "description": "Type discriminant. Always user_ranking_entry.",
+            "enum": [
+              "user_ranking_entry"
+            ],
+            "maxLength": 18,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "rank": {
+            "description": "1-based place in this list, numbered after users who cannot be shown were dropped.",
+            "format": "int64",
+            "maximum": 100,
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "object",
+          "rank",
+          "metric_value",
+          "member",
+          "bio"
         ],
         "type": "object"
       },
@@ -15873,6 +16085,55 @@
           "object",
           "wiki_company_id",
           "company_id"
+        ],
+        "type": "object"
+      },
+      "WorkRankingEntry": {
+        "properties": {
+          "creator": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UserRef"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Who created the work's page on this forum. null when none is recorded or the account cannot be shown."
+          },
+          "metric_value": {
+            "description": "The value the list is sorted by, such as the view count for views_desc or the weighted rating, two decimals, for rating_desc.",
+            "format": "double",
+            "minimum": 0,
+            "type": "number"
+          },
+          "object": {
+            "description": "Type discriminant. Always work_ranking_entry.",
+            "enum": [
+              "work_ranking_entry"
+            ],
+            "maxLength": 18,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "rank": {
+            "description": "1-based place in this list, numbered after works the catalog did not return were dropped.",
+            "format": "int64",
+            "maximum": 100,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "work": {
+            "$ref": "#/components/schemas/WorkRef",
+            "description": "The ranked work."
+          }
+        },
+        "required": [
+          "object",
+          "rank",
+          "metric_value",
+          "work",
+          "creator"
         ],
         "type": "object"
       },
@@ -29699,6 +29960,304 @@
         "summary": "List every field-level error reason",
         "tags": [
           "meta"
+        ]
+      }
+    },
+    "/rankings/topics": {
+      "get": {
+        "description": "A top-N list rather than a paged collection: it has no page, cursor or total. Only topics anonymous visitors can list: not hidden and public. Topics whose author is banned or deleted are dropped and the places renumbered.",
+        "operationId": "listTopicRanking",
+        "parameters": [
+          {
+            "description": "What the list ranks by, highest first; ties break on descending id. views: view count. replies, comments, likes, upvotes, favorites: those counts.",
+            "explode": false,
+            "in": "query",
+            "name": "sort",
+            "schema": {
+              "default": "views_desc",
+              "description": "What the list ranks by, highest first; ties break on descending id. views: view count. replies, comments, likes, upvotes, favorites: those counts.",
+              "enum": [
+                "views_desc",
+                "replies_desc",
+                "comments_desc",
+                "likes_desc",
+                "upvotes_desc",
+                "favorites_desc"
+              ],
+              "maxLength": 14,
+              "type": "string",
+              "x-vocabulary-closed": true
+            }
+          },
+          {
+            "description": "How many places. 1–100, default 50. Values above 100 are rejected, not clamped.",
+            "explode": false,
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 50,
+              "description": "How many places. 1–100, default 50. Values above 100 are rejected, not clamped.",
+              "format": "int64",
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "When true, NSFW topics are ranked too. Default false.",
+            "explode": false,
+            "in": "query",
+            "name": "include_nsfw",
+            "schema": {
+              "default": false,
+              "description": "When true, NSFW topics are ranked too. Default false.",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListTopicRankingEntry"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "UNKNOWN_SORT, LIMIT_TOO_LARGE or INVALID_PARAMETER."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the account service is unreachable."
+          }
+        },
+        "summary": "Rank topics",
+        "tags": [
+          "rankings"
+        ]
+      }
+    },
+    "/rankings/users": {
+      "get": {
+        "description": "A top-N list rather than a paged collection: it has no page, cursor or total. Counts include only what anonymous visitors can read. Banned and deleted accounts are dropped and the places renumbered.",
+        "operationId": "listUserRanking",
+        "parameters": [
+          {
+            "description": "What the list ranks by, highest first; ties break on descending user id. moemoepoint: the balance this forum caches. topics, replies, comments: what the user has posted where anonymous visitors can read it. resources: the user's galgame resources that are not taken down.",
+            "explode": false,
+            "in": "query",
+            "name": "sort",
+            "schema": {
+              "default": "moemoepoint_desc",
+              "description": "What the list ranks by, highest first; ties break on descending user id. moemoepoint: the balance this forum caches. topics, replies, comments: what the user has posted where anonymous visitors can read it. resources: the user's galgame resources that are not taken down.",
+              "enum": [
+                "moemoepoint_desc",
+                "topics_desc",
+                "replies_desc",
+                "comments_desc",
+                "resources_desc"
+              ],
+              "maxLength": 16,
+              "type": "string",
+              "x-vocabulary-closed": true
+            }
+          },
+          {
+            "description": "How many places. 1–100, default 50. Values above 100 are rejected, not clamped.",
+            "explode": false,
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 50,
+              "description": "How many places. 1–100, default 50. Values above 100 are rejected, not clamped.",
+              "format": "int64",
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListUserRankingEntry"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "UNKNOWN_SORT or LIMIT_TOO_LARGE."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the account service is unreachable."
+          }
+        },
+        "summary": "Rank users",
+        "tags": [
+          "rankings"
+        ]
+      }
+    },
+    "/rankings/works": {
+      "get": {
+        "description": "A top-N list rather than a paged collection: it has no page, cursor or total. Only published works; without include_resourceless, only works that have a resource. Works the catalog does not return are dropped and the places renumbered.",
+        "operationId": "listWorkRanking",
+        "parameters": [
+          {
+            "description": "What the list ranks by, highest first; ties break on descending work id. views, likes, favorites, resources: those counts on this forum. rating: this forum's ratings, weighted toward the site-wide mean for works with few of them.",
+            "explode": false,
+            "in": "query",
+            "name": "sort",
+            "schema": {
+              "default": "views_desc",
+              "description": "What the list ranks by, highest first; ties break on descending work id. views, likes, favorites, resources: those counts on this forum. rating: this forum's ratings, weighted toward the site-wide mean for works with few of them.",
+              "enum": [
+                "views_desc",
+                "likes_desc",
+                "favorites_desc",
+                "resources_desc",
+                "rating_desc"
+              ],
+              "maxLength": 14,
+              "type": "string",
+              "x-vocabulary-closed": true
+            }
+          },
+          {
+            "description": "How many places. 1–100, default 50. Values above 100 are rejected, not clamped.",
+            "explode": false,
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 50,
+              "description": "How many places. 1–100, default 50. Values above 100 are rejected, not clamped.",
+              "format": "int64",
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "When true, works this forum displays as adult content are ranked too. Default false.",
+            "explode": false,
+            "in": "query",
+            "name": "include_nsfw",
+            "schema": {
+              "default": false,
+              "description": "When true, works this forum displays as adult content are ranked too. Default false.",
+              "type": "boolean"
+            }
+          },
+          {
+            "description": "When true, published works without any resource are ranked too. Default false.",
+            "explode": false,
+            "in": "query",
+            "name": "include_resourceless",
+            "schema": {
+              "default": false,
+              "description": "When true, published works without any resource are ranked too. Default false.",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListWorkRankingEntry"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "UNKNOWN_SORT, LIMIT_TOO_LARGE or INVALID_PARAMETER."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the catalog or the account service is unreachable."
+          }
+        },
+        "summary": "Rank works",
+        "tags": [
+          "rankings"
         ]
       }
     },

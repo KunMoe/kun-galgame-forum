@@ -79,10 +79,6 @@ GET    /api/galgame/mine                              cors.New → middleware.Na
 GET    /api/galgame/playtime/mine                     cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → PlaytimeHandler.ListMine
 GET    /api/galgame/search/picker                     cors.New → middleware.NamePreference → ContentStance → QuizHandler.SearchGalgames
 GET    /api/galgame/search/wizard                     cors.New → middleware.NamePreference → ContentStance → Auth → SubmissionHandler.SearchWithPending
-GET    /api/home                                      cors.New → middleware.NamePreference → ContentStance → HomeHandler.GetHome
-GET    /api/ranking/galgame                           cors.New → middleware.NamePreference → ContentStance → RankingHandler.GetGalgameRanking
-GET    /api/ranking/topic                             cors.New → middleware.NamePreference → ContentStance → RankingHandler.GetTopicRanking
-GET    /api/ranking/user                              cors.New → middleware.NamePreference → ContentStance → RankingHandler.GetUserRanking
 GET    /api/rss/galgame                               cors.New → middleware.NamePreference → ContentStance → RSSHandler.GetGalgameRSS
 GET    /api/search                                    cors.New → middleware.NamePreference → ContentStance → OptionalAuth → SearchHandler.Search
 GET    /api/search/entity                             cors.New → middleware.NamePreference → ContentStance → OptionalAuth → SearchHandler.SearchEntities
@@ -163,6 +159,9 @@ GET    /api/v1/polls/:poll_id                         cors.New → v1Headers →
 GET    /api/v1/polls/:poll_id/votes                   cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/problems                               cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/problems/reasons                       cors.New → v1Headers → fiberAdapter.Handle
+GET    /api/v1/rankings/topics                        cors.New → v1Headers → fiberAdapter.Handle
+GET    /api/v1/rankings/users                         cors.New → v1Headers → fiberAdapter.Handle
+GET    /api/v1/rankings/works                         cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/replies/:reply_id                      cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/replies/:reply_id/reactions            cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/replies/:reply_id/source               cors.New → v1Headers → fiberAdapter.Handle

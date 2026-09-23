@@ -1848,6 +1848,66 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/rankings/topics": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Rank topics
+         * @description A top-N list rather than a paged collection: it has no page, cursor or total. Only topics anonymous visitors can list: not hidden and public. Topics whose author is banned or deleted are dropped and the places renumbered.
+         */
+        get: operations["listTopicRanking"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/rankings/users": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Rank users
+         * @description A top-N list rather than a paged collection: it has no page, cursor or total. Counts include only what anonymous visitors can read. Banned and deleted accounts are dropped and the places renumbered.
+         */
+        get: operations["listUserRanking"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/rankings/works": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Rank works
+         * @description A top-N list rather than a paged collection: it has no page, cursor or total. Only published works; without include_resourceless, only works that have a resource. Works the catalog does not return are dropped and the places renumbered.
+         */
+        get: operations["listWorkRanking"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/replies/{reply_id}": {
         parameters: {
             query?: never;
@@ -5074,6 +5134,17 @@ export interface components {
              */
             object: "list";
         };
+        ListTopicRankingEntry: {
+            /** @description Members of this page. Empty array, never null. */
+            items: components["schemas"]["TopicRankingEntry"][];
+            /** @description Opaque keyset cursor. Omitted on the last page. */
+            next_cursor?: string;
+            /**
+             * @description Type discriminant. Always list.
+             * @enum {string}
+             */
+            object: "list";
+        };
         ListTopicSummary: {
             /** @description Members of this page. Empty array, never null. */
             items: components["schemas"]["TopicSummary"][];
@@ -5099,6 +5170,17 @@ export interface components {
         ListUpdateLog: {
             /** @description Members of this page. Empty array, never null. */
             items: components["schemas"]["UpdateLog"][];
+            /** @description Opaque keyset cursor. Omitted on the last page. */
+            next_cursor?: string;
+            /**
+             * @description Type discriminant. Always list.
+             * @enum {string}
+             */
+            object: "list";
+        };
+        ListUserRankingEntry: {
+            /** @description Members of this page. Empty array, never null. */
+            items: components["schemas"]["UserRankingEntry"][];
             /** @description Opaque keyset cursor. Omitted on the last page. */
             next_cursor?: string;
             /**
@@ -5143,6 +5225,17 @@ export interface components {
         ListWebsiteTagGroup: {
             /** @description Members of this page. Empty array, never null. */
             items: components["schemas"]["WebsiteTagGroup"][];
+            /** @description Opaque keyset cursor. Omitted on the last page. */
+            next_cursor?: string;
+            /**
+             * @description Type discriminant. Always list.
+             * @enum {string}
+             */
+            object: "list";
+        };
+        ListWorkRankingEntry: {
+            /** @description Members of this page. Empty array, never null. */
+            items: components["schemas"]["WorkRankingEntry"][];
             /** @description Opaque keyset cursor. Omitted on the last page. */
             next_cursor?: string;
             /**
@@ -6611,6 +6704,19 @@ export interface components {
             doc: {
                 [key: string]: unknown;
             };
+        };
+        RankedTopic: {
+            /** @description The topic's author. */
+            author: components["schemas"]["UserRef"];
+            /** @description Topic id. */
+            id: string;
+            /**
+             * @description Type discriminant. Always topic.
+             * @enum {string}
+             */
+            object: "topic";
+            /** @description Topic title as stored. Free text; never use it as a decision input. */
+            title: string;
         };
         Reaction: {
             /**
@@ -8203,6 +8309,25 @@ export interface components {
             /** @description New title. Trimmed and checked as in createTopic. Free text; never use it as a decision input. */
             title?: string;
         };
+        TopicRankingEntry: {
+            /**
+             * Format: double
+             * @description The value the list is sorted by, such as the view count for views_desc.
+             */
+            metric_value: number;
+            /**
+             * @description Type discriminant. Always topic_ranking_entry.
+             * @enum {string}
+             */
+            object: "topic_ranking_entry";
+            /**
+             * Format: int64
+             * @description 1-based place in this list, numbered after topics whose author cannot be shown were dropped.
+             */
+            rank: number;
+            /** @description The ranked topic. */
+            topic: components["schemas"]["RankedTopic"];
+        };
         TopicSource: {
             /** @description The stored grants. */
             access_grants: components["schemas"]["AccessGrants"];
@@ -8591,6 +8716,27 @@ export interface components {
             object: "user";
             /** @description Badge roles among creator, moderator, admin and ren, including site roles. Other account roles are not listed. Display only; never a permission check. Empty array if none. */
             roles: ("creator" | "moderator" | "admin" | "ren")[];
+        };
+        UserRankingEntry: {
+            /** @description The user's profile bio. Empty string when none. Free text; never use it as a decision input. */
+            bio: string | null;
+            /** @description The ranked user. */
+            member: components["schemas"]["UserRef"];
+            /**
+             * Format: double
+             * @description The value the list is sorted by, such as the moemoepoint balance for moemoepoint_desc. Only a moemoepoint balance can be negative.
+             */
+            metric_value: number;
+            /**
+             * @description Type discriminant. Always user_ranking_entry.
+             * @enum {string}
+             */
+            object: "user_ranking_entry";
+            /**
+             * Format: int64
+             * @description 1-based place in this list, numbered after users who cannot be shown were dropped.
+             */
+            rank: number;
         };
         UserRef: {
             /** @description Avatar image. null when the account has no image-service hash. */
@@ -9029,6 +9175,27 @@ export interface components {
             object: "wiki_company_redirect";
             /** @description The company id the retired galgame wiki used. */
             wiki_company_id: string;
+        };
+        WorkRankingEntry: {
+            /** @description Who created the work's page on this forum. null when none is recorded or the account cannot be shown. */
+            creator: components["schemas"]["UserRef"] | null;
+            /**
+             * Format: double
+             * @description The value the list is sorted by, such as the view count for views_desc or the weighted rating, two decimals, for rating_desc.
+             */
+            metric_value: number;
+            /**
+             * @description Type discriminant. Always work_ranking_entry.
+             * @enum {string}
+             */
+            object: "work_ranking_entry";
+            /**
+             * Format: int64
+             * @description 1-based place in this list, numbered after works the catalog did not return were dropped.
+             */
+            rank: number;
+            /** @description The ranked work. */
+            work: components["schemas"]["WorkRef"];
         };
         WorkRef: {
             /** @description The portrait cover at its original size, never the 16:9 crop. null when the work has none. */
@@ -18422,6 +18589,168 @@ export interface operations {
             };
             /** @description Internal Server Error */
             500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listTopicRanking: {
+        parameters: {
+            query?: {
+                /** @description What the list ranks by, highest first; ties break on descending id. views: view count. replies, comments, likes, upvotes, favorites: those counts. */
+                sort?: "views_desc" | "replies_desc" | "comments_desc" | "likes_desc" | "upvotes_desc" | "favorites_desc";
+                /** @description How many places. 1–100, default 50. Values above 100 are rejected, not clamped. */
+                limit?: number;
+                /** @description When true, NSFW topics are ranked too. Default false. */
+                include_nsfw?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListTopicRankingEntry"];
+                };
+            };
+            /** @description UNKNOWN_SORT, LIMIT_TOO_LARGE or INVALID_PARAMETER. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the account service is unreachable. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listUserRanking: {
+        parameters: {
+            query?: {
+                /** @description What the list ranks by, highest first; ties break on descending user id. moemoepoint: the balance this forum caches. topics, replies, comments: what the user has posted where anonymous visitors can read it. resources: the user's galgame resources that are not taken down. */
+                sort?: "moemoepoint_desc" | "topics_desc" | "replies_desc" | "comments_desc" | "resources_desc";
+                /** @description How many places. 1–100, default 50. Values above 100 are rejected, not clamped. */
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListUserRankingEntry"];
+                };
+            };
+            /** @description UNKNOWN_SORT or LIMIT_TOO_LARGE. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the account service is unreachable. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listWorkRanking: {
+        parameters: {
+            query?: {
+                /** @description What the list ranks by, highest first; ties break on descending work id. views, likes, favorites, resources: those counts on this forum. rating: this forum's ratings, weighted toward the site-wide mean for works with few of them. */
+                sort?: "views_desc" | "likes_desc" | "favorites_desc" | "resources_desc" | "rating_desc";
+                /** @description How many places. 1–100, default 50. Values above 100 are rejected, not clamped. */
+                limit?: number;
+                /** @description When true, works this forum displays as adult content are ranked too. Default false. */
+                include_nsfw?: boolean;
+                /** @description When true, published works without any resource are ranked too. Default false. */
+                include_resourceless?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListWorkRankingEntry"];
+                };
+            };
+            /** @description UNKNOWN_SORT, LIMIT_TOO_LARGE or INVALID_PARAMETER. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the catalog or the account service is unreachable. */
+            503: {
                 headers: {
                     [name: string]: unknown;
                 };

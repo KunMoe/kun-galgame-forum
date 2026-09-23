@@ -21,9 +21,6 @@ import (
 	galgameHandler "kun-galgame-api/internal/galgame/handler"
 	galgameRepo "kun-galgame-api/internal/galgame/repository"
 	galgameService "kun-galgame-api/internal/galgame/service"
-	homeHandler "kun-galgame-api/internal/home/handler"
-	homeRepo "kun-galgame-api/internal/home/repository"
-	homeService "kun-galgame-api/internal/home/service"
 	imageHandler "kun-galgame-api/internal/image/handler"
 	imageRepo "kun-galgame-api/internal/image/repository"
 	imageService "kun-galgame-api/internal/image/service"
@@ -39,9 +36,8 @@ import (
 	"kun-galgame-api/internal/moemoepoint"
 	newsapiv1 "kun-galgame-api/internal/news/apiv1"
 	overviewapiv1 "kun-galgame-api/internal/overview/apiv1"
-	rankingHandler "kun-galgame-api/internal/ranking/handler"
+	rankingapiv1 "kun-galgame-api/internal/ranking/apiv1"
 	rankingRepo "kun-galgame-api/internal/ranking/repository"
-	rankingService "kun-galgame-api/internal/ranking/service"
 	rssHandler "kun-galgame-api/internal/rss/handler"
 	rssRepo "kun-galgame-api/internal/rss/repository"
 	searchHandler "kun-galgame-api/internal/search/handler"
@@ -106,14 +102,13 @@ type App struct {
 	GalgameEntityV1 *galgameentityv1.Service
 	WallV1          *wallapiv1.Service
 	OverviewV1      *overviewapiv1.Service
+	RankingV1       *rankingapiv1.Service
 	TrustV1         *trustapiv1.Service
 
 	OAuthHandler              *handler.OAuthHandler
 	UserHandler               *handler.UserHandler
-	HomeHandler               *homeHandler.HomeHandler
 	LotteryService            *topicService.LotteryService
 	AdminPurgeHandler         *adminHandler.PurgeHandler
-	RankingHandler            *rankingHandler.RankingHandler
 	TrustHandler              *trustHandler.TrustHandler
 	RSSHandler                *rssHandler.RSSHandler
 	NewsV1                    *newsapiv1.Service
@@ -518,13 +513,12 @@ func New(cfg *config.Config) *App {
 		GalgameEntityV1:           galgameentityv1.New(gc, db, cfg.NextMoeAPI.ImageCDNBase),
 		TrustV1:                   trustapiv1.New(trustCli, uc, cfg.Trust.Site, cfg.NextMoeAPI.ImageCDNBase),
 		WallV1:                    newWallV1(db, communityCli, uc, gc, imageMetaResolve(imageMeta), cfg.NextMoeAPI.ImageCDNBase),
+		RankingV1:                 rankingapiv1.New(rankingRepo.NewRankingRepository(db), uc, gc, cfg.NextMoeAPI.ImageCDNBase),
 		OAuthHandler:              handler.NewOAuthHandler(authService, cfg.Server.Mode == "prod", communityBooster),
 		UserHandler:               handler.NewUserHandler(userService, userContentService),
-		HomeHandler:               homeHandler.NewHomeHandler(homeService.NewHomeService(homeRepo.NewHomeRepository(db), gc, uc, rdb)),
 		LotteryService:            lotterySvc,
 		OverviewV1:                overviewapiv1.New(adminOverviewRepo, nil),
 		AdminPurgeHandler:         adminHandler.NewPurgeHandler(adminPurgeSvc),
-		RankingHandler:            rankingHandler.NewRankingHandler(rankingService.NewRankingService(rankingRepo.NewRankingRepository(db), gc, uc)),
 		TrustHandler:              trustHandler.NewTrustHandler(trustEnforce, cfg.Trust.CallbackSecret),
 		RSSHandler:                rssHandler.NewRSSHandler(rssRepo.NewRSSRepository(db), gc, uc),
 		NewsV1:                    newsapiv1.New(newsCli, uc, cfg.NextMoeAPI.ImageCDNBase),
