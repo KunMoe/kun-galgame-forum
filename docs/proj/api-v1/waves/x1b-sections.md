@@ -93,3 +93,22 @@ SectionLatestTopic  object="topic", id, title, created_at
 ## 9. 迁移
 
 **无。**
+
+## 10. 实现时对本契约的修正（2026-09-23，只增不改）
+
+1. **F1 的 URL slug 具名例外加上单数 `section`**。版块词表带连字符（`g-walkthrough`），F1 原本只对属性名 `sections` 放行；`listTopics` 的 `section` 参数与 `Section.section` 是同一个词表，理由与原例外相同（它是 `/section/{key}` 的 URL 段）。01 §3 的例外表与 02 §3 的 F1 行同步改了。
+2. **`listTopics` 的游标指纹只在带 `section` 时才追加这一项**：上线前发出的游标不会失效。
+3. **`/sections` 在 public 档上手动声明了 503**：它要问账号服务「最新话题」的作者是否可渲染，而 public 档不会自动推导出 503。
+4. `topic_section.name` 超出封闭词表 → 500（`topicapiv1.IsSectionSlug`，与 `SectionSlug` 同一个来源）。
+5. 网页：版块页对不认识的 slug 直接显示「没有这个版块」，不发请求；分类页对不认识的分类名显示「没有这个分类」。
+
+### 变异执行结果
+
+10/10 杀：1–3 `TestV1TopicsSectionFilterWalk`；4–8 `TestV1SectionsCountOnlyPublishedPublicTopicsOfTheirCategory`；9 `TestV1SectionsKeepEmptySections`；10 `TestV1SectionsNeedAccounts`。
+
+### 浏览器实测（开发库，无头 Chromium，匿名 + 开了成人向显示的登录用户，18 项）
+
+- 分类页列出 galgame 的 7 个版块，最新话题标题都显示出来。
+- 从分类页点进版块页（客户端导航）：列出 30 条话题；请求是 `GET /topics?section=g-walkthrough&sort=created_desc&limit=30`，`include_nsfw` 跟着立场走（匿名 `false`、登录用户 `true`）。
+- 「加载更多」会带上游标：匿名 30 → 42 条，登录用户 30 → 47 条。多出来的 5 条是 NSFW 话题，旧面对匿名访问者也会把它们列出来。
+- 未知版块、未知分类都显示空态。没有意外的报错。

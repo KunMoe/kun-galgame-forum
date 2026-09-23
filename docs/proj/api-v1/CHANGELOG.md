@@ -20,6 +20,17 @@ Breaking for the one v1 galgame face.
 - `GET /api/v1/galgames/{galgame_id}/moyu-patches` (`listGalgameMoyuPatches`) is now `GET /api/v1/works/{work_id}/moyu-patches` (`listWorkMoyuPatches`), tag `works`. Same response. The old path answers 404. No App build calls it.
 - Every galgame id the site shows — the `/galgame/:id` page, every legacy `/api/*` field named `gid` or `galgame_id` — is now the catalog work id. 13,493 pages changed number in the renumber; merged-away numbers are not redirected. The legacy field names are unchanged until their faces move to v1.
 
+## 2026-09-23 (X1b sections)
+
+Breaking for `GET /api/section` and `GET /api/category`; both are gone.
+
+Offered:
+
+- `GET /api/v1/topics?section=<slug>`: a new filter on the existing topic collection. Everything else is unchanged: visibility, `include_nsfw`, sorts, and cursors issued before the filter existed.
+- `GET /api/v1/sections?category=`: every topic section in vocabulary order (not paged), with `topic_count`, `view_count` and `latest_topic` (`{object: "topic", id, title, created_at}` or `null`). Empty sections are listed with 0 topics.
+
+The section page is now the topic list filtered by section, with cursor "load more" instead of page numbers. It honors the NSFW stance, which the old face ignored.
+
 ## 2026-09-23 (X1a friend links, app version)
 
 Breaking for `GET /api/friend-link`, the four `/api/admin/friend-link*` writes and `GET /api/app/version`; all six are gone.
