@@ -12,14 +12,11 @@ import (
 	adminRepo "kun-galgame-api/internal/admin/repository"
 	adminService "kun-galgame-api/internal/admin/service"
 	"kun-galgame-api/internal/apiv1"
-	appReleaseHandler "kun-galgame-api/internal/apprelease/handler"
 	"kun-galgame-api/internal/community/anchor"
 	"kun-galgame-api/internal/community/engagement"
 	communityHandler "kun-galgame-api/internal/community/handler"
 	communitynotify "kun-galgame-api/internal/community/notify"
 	communitytrust "kun-galgame-api/internal/community/trust"
-	friendHandler "kun-galgame-api/internal/friendlink/handler"
-	friendRepo "kun-galgame-api/internal/friendlink/repository"
 	galgameapiv1 "kun-galgame-api/internal/galgame/apiv1"
 	"kun-galgame-api/internal/galgame/client"
 	galgameHandler "kun-galgame-api/internal/galgame/handler"
@@ -121,8 +118,6 @@ type App struct {
 	AdminPurgeHandler          *adminHandler.PurgeHandler
 	RankingHandler             *rankingHandler.RankingHandler
 	SectionHandler             *sectionHandler.SectionHandler
-	AppReleaseHandler          *appReleaseHandler.ReleaseHandler
-	FriendLinkHandler          *friendHandler.FriendLinkHandler
 	TrustHandler               *trustHandler.TrustHandler
 	RSSHandler                 *rssHandler.RSSHandler
 	NewsHandler                *newsHandler.NewsHandler
@@ -550,8 +545,6 @@ func New(cfg *config.Config) *App {
 		AdminPurgeHandler:        adminHandler.NewPurgeHandler(adminPurgeSvc),
 		RankingHandler:           rankingHandler.NewRankingHandler(rankingService.NewRankingService(rankingRepo.NewRankingRepository(db), gc, uc)),
 		SectionHandler:           sectionHandler.NewSectionHandler(sectionService.NewSectionService(sectionRepo.NewSectionRepository(db), uc)),
-		AppReleaseHandler:        appReleaseHandler.NewReleaseHandler(cfg.AppRelease),
-		FriendLinkHandler:        friendHandler.NewFriendLinkHandler(friendRepo.NewFriendLinkRepository(db), cfg.NextMoeAPI.ImageCDNBase),
 		TrustHandler:             trustHandler.NewTrustHandler(trustEnforce, cfg.Trust.CallbackSecret),
 		RSSHandler:               rssHandler.NewRSSHandler(rssRepo.NewRSSRepository(db), gc, uc),
 		NewsHandler:              newsHandler.NewNewsHandler(newsCli, uc),

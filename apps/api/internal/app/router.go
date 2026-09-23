@@ -3,7 +3,9 @@ package app
 import (
 	"kun-galgame-api/internal/apiv1"
 	"kun-galgame-api/internal/apiv1/content"
+	appreleaseapiv1 "kun-galgame-api/internal/apprelease/apiv1"
 	docapiv1 "kun-galgame-api/internal/doc/apiv1"
+	friendlinkapiv1 "kun-galgame-api/internal/friendlink/apiv1"
 	galgameapiv1 "kun-galgame-api/internal/galgame/apiv1"
 	messageapiv1 "kun-galgame-api/internal/message/apiv1"
 	"kun-galgame-api/internal/middleware"
@@ -52,6 +54,8 @@ func (a *App) setupRoutes() {
 		trustapiv1.Register(a.TrustV1),
 		permissionapiv1.Register(a.newPermissionV1()),
 		docapiv1.Register(a.newDocV1()),
+		friendlinkapiv1.Register(a.newFriendLinkV1()),
+		appreleaseapiv1.Register(a.newAppReleaseV1()),
 	)
 
 	// Deliberately touches neither DB nor Redis: the container HEALTHCHECK reads
@@ -89,10 +93,6 @@ func (a *App) setupRoutes() {
 
 	api.Get("/section", a.Authn.OptionalAuth(), a.SectionHandler.GetSectionTopics)
 	api.Get("/category", a.SectionHandler.GetCategories)
-
-	api.Get("/friend-link", a.FriendLinkHandler.List)
-
-	api.Get("/app/version", a.AppReleaseHandler.GetVersion)
 
 	api.Get("/activity", a.ActivityHandler.GetActivity)
 	api.Get("/activity/tab", a.ActivityHandler.GetTab)
@@ -299,11 +299,6 @@ func (a *App) setupRoutes() {
 		a.GalgameResourceHandler.SetResourcePublishBan,
 	)
 
-	friendAdmin := authed.Group("")
-	friendAdmin.Post("/admin/friend-link", middleware.RequirePermission(perm.FriendLinkCreate), a.FriendLinkHandler.Create)
-	friendAdmin.Put("/admin/friend-link", middleware.RequirePermission(perm.FriendLinkEdit), a.FriendLinkHandler.Update)
-	friendAdmin.Delete("/admin/friend-link", middleware.RequirePermission(perm.FriendLinkDelete), a.FriendLinkHandler.Delete)
-	friendAdmin.Put("/admin/friend-link/reorder", middleware.RequirePermission(perm.FriendLinkEdit), a.FriendLinkHandler.Reorder)
 }
 
 func (a *App) newTopicV1() *topicapiv1.Service {
