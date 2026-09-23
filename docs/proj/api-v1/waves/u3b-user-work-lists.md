@@ -92,6 +92,7 @@ func (s *Service) RenderAuthored(ctx context.Context, viewer *middleware.UserInf
 ```
 
 - 保持输入顺序；每个不同的 (spec, id) 墙只 resolve 一次，按墙分组 render，再按输入顺序拼回。
+- **galgame 墙批量判存在**（RC 审查的阻断项）：`resolveSubject` 的 galgame 分支是一次不缓存的 catalog 详情调用；一页评论跨 20 部作品就是串行 20 次、全从论坛唯一出口 IP 打 catalog 的每 IP 限流。`wallapiv1.New` 多收一个 `GalgamesResolver`（接 `CatalogRowsByWorkIDs(ids, "", "all")`，≤100 个 id 一次请求；隐藏的 claim 不返回、`all` 保留 NSFW，与详情判存在同义），`RenderAuthored` 先一次查完所有 galgame 墙，其余墙照走 `resolveSubject`；`resolveSubject` / `locate` 不动。
 - **丢弃、不报错**：锚点不认识的行；墙 `resolveSubject` 回 `NOT_FOUND` 或 `QUIZ_ANSWER_REQUIRED` 的行；被扣留（held）且不是查看者本人的帖；作者不可渲染的帖（`render` 本来就跳过）。
 - 只有 `resolveSubject` / `render` 的 `Unavailable` 或 `Internal` 让整次调用失败（503 / 500）。
 - 名字叫 Authored，`liked` 的行（`/posts/resolve` 回的同一形状）也用它。
@@ -152,7 +153,9 @@ tab 的 URL 段不变（`/user/:id/galgame/galgame-like` 等），只在调用�
 | 评论 tab 首页为空即显示「没有评论」 | 有 `next_cursor` 就显示「加载更多」 | 短页是契约允许的（§4.4），首页可能整页被丢（dev：`limit=3` 不带 `subject_type` 回 0 条 + 游标） |
 | 未知枚举测试用旧值（`galgame_publish`） | 用长度在 `maxLength` 以内的值 | 超长值同时触发 TOO_LONG，平台映射成 `INVALID_PARAMETER` 而不是 `UNKNOWN_ENUM_VALUE`；这是 `internal/apiv1` 的既有行为 |
 | 变异 #4「先切页再过滤」 | 「只水合当前页、`total` 按全部 id」 | 实现改了，变异跟着指向同一个 bug |
-| — | 新增变异 #13（G）、RC-once、RC-503（RC） | 见 §4.2 / §4.4 的条件 |
+| — | 新增变异 #13（G）、RC-batch、RC-503、RC-503-batch（RC） | 见 §4.2 / §4.4 的条件 |
+| galgame 墙逐个 `resolveSubject` | 一次批量判存在（§4.4） | RC 审查：逐个是串行的不缓存详情调用，按页数放大打 catalog 的每 IP 限流 |
+| 变异 RC-once（去掉按墙去重） | 删去 | 批量之后它不改变任何可观测行为：重复的 galgame 墙落进同一次批量，其余墙的 resolve 只多一次本地查询，分组本来就按墙去重——等价变异 |
 
 ## 10. 迁移
 

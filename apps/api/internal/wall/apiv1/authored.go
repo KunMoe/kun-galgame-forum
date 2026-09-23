@@ -13,9 +13,10 @@ type wallKey struct {
 	id  int
 }
 
-// A profile list that skipped this gate leaked comments on spoiler quizzes.
+// RenderAuthored renders posts from any mix of walls — the authored and the
+// liked lists alike — and drops each post whose wall the viewer may not read.
 func (s *Service) RenderAuthored(ctx context.Context, viewer *middleware.UserInfo, rows []communityclient.AuthorPostView) ([]WallComment, *problem.Problem) {
-	if !s.ready() {
+	if !s.ready() || s.galgames == nil {
 		return nil, problem.Internal(errUnconfigured)
 	}
 	if len(rows) == 0 {
@@ -47,7 +48,33 @@ func (s *Service) RenderAuthored(ctx context.Context, viewer *middleware.UserInf
 	}
 
 	walls := map[wallKey]*resolved{}
+	var workIDs []int
 	for _, key := range order {
+		if key.typ == "galgame" {
+			workIDs = append(workIDs, key.id)
+		}
+	}
+	// resolveSubject answers a galgame wall with an uncached catalog detail
+	// call; one per wall, in series, is seconds per profile page and spends
+	// the forum's single egress IP against catalog's per-IP limiter.
+	if len(workIDs) > 0 {
+		found, err := s.galgames(ctx, workIDs)
+		if err != nil {
+			return nil, problem.Unavailable(err)
+		}
+		for _, id := range workIDs {
+			key := wallKey{typ: "galgame", id: id}
+			if found[id] {
+				walls[key] = &resolved{sub: &subject{spec: specs[key], id: id}}
+			} else {
+				walls[key] = &resolved{skip: true}
+			}
+		}
+	}
+	for _, key := range order {
+		if key.typ == "galgame" {
+			continue
+		}
 		sub, p := s.resolveSubject(ctx, specs[key], key.id, viewer)
 		if p != nil {
 			if p.Code == problem.CodeNotFound || p.Code == problem.CodeQuizAnswerRequired {

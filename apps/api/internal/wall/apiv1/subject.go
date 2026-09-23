@@ -82,12 +82,9 @@ func (sp subjectSpec) anchorID(id int) string {
 	return sp.anchorPrefix + strconv.Itoa(id)
 }
 
-func SubjectTypeOfAnchor(kind int32, anchorID string) (string, bool) {
+func SubjectTypeOfAnchor(kind int32, anchorID string) (SubjectType, bool) {
 	spec, _, ok := subjectFromAnchor(kind, anchorID)
-	if !ok {
-		return "", false
-	}
-	return string(spec.typ), true
+	return spec.typ, ok
 }
 
 func subjectFromAnchor(kind int32, anchorID string) (subjectSpec, int, bool) {

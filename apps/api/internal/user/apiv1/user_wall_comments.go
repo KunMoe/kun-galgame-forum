@@ -179,7 +179,7 @@ func matchWallSubject(row communityclient.AuthorPostView, want wallapiv1.Subject
 		return true
 	}
 	got, ok := wallapiv1.SubjectTypeOfAnchor(row.Thread.AnchorKind, row.Thread.AnchorID)
-	return ok && got == string(want)
+	return ok && got == want
 }
 
 func (s *Users) readyWallComments() *problem.Problem {

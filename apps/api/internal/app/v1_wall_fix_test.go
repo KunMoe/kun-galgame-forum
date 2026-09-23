@@ -469,6 +469,7 @@ type wallFix struct {
 	failGC atomic.Bool
 
 	resolveCalls atomic.Int32
+	existCalls   atomic.Int32
 }
 
 func (f *wallFix) workRefs(_ context.Context, ids []int) (map[int]repr.WorkRef, error) {
@@ -537,6 +538,19 @@ func newWallFix(t *testing.T) *wallFix {
 		}
 		return workID == rcGalgame, nil
 	}
+	exist := func(_ context.Context, workIDs []int) (map[int]bool, error) {
+		f.existCalls.Add(1)
+		if f.failGC.Load() {
+			return nil, fmt.Errorf("catalog down")
+		}
+		out := map[int]bool{}
+		for _, id := range workIDs {
+			if id == rcGalgame {
+				out[id] = true
+			}
+		}
+		return out, nil
+	}
 	f.app = &App{
 		Fiber:      newFiber(),
 		Config:     testConfig(),
@@ -545,7 +559,7 @@ func newWallFix(t *testing.T) *wallFix {
 		UserClient: uc,
 		Community:  community,
 		Authn:      middleware.NewAuthenticator(rdb, nil, middleware.NewBearer(rcVerifier{}, rdb, nil)),
-		WallV1: wallapiv1.New(wallRepo.NewStore(db), community, uc, convert, resolve, f.recordAward, "https://image.test.example").
+		WallV1: wallapiv1.New(wallRepo.NewStore(db), community, uc, convert, resolve, exist, f.recordAward, "https://image.test.example").
 			WithFollowing(msgRepo.NewMessageRepository(db).MarkCommunityThreadRead, f.workRefs,
 				websiteapiv1.New(websiteRepo.NewStore(db), uc, nil, "https://image.test.example").SummariesByIDs),
 	}

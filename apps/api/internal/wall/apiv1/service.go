@@ -19,12 +19,15 @@ type AwardFunc func(userID, delta int, reason, ref, key string)
 
 type GalgameResolver func(ctx context.Context, workID int) (bool, error)
 
+type GalgamesResolver func(ctx context.Context, workIDs []int) (map[int]bool, error)
+
 type Service struct {
 	store     *repository.Store
 	community *communityclient.Client
 	users     *userclient.Client
 	convert   *content.Converter
 	galgame   GalgameResolver
+	galgames  GalgamesResolver
 	award     AwardFunc
 	cdn       string
 	readSync  ReadSyncFunc
@@ -38,12 +41,13 @@ func New(
 	users *userclient.Client,
 	convert *content.Converter,
 	galgame GalgameResolver,
+	galgames GalgamesResolver,
 	award AwardFunc,
 	cdn string,
 ) *Service {
 	return &Service{
 		store: store, community: community, users: users,
-		convert: convert, galgame: galgame, award: award, cdn: cdn,
+		convert: convert, galgame: galgame, galgames: galgames, award: award, cdn: cdn,
 	}
 }
 

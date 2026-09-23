@@ -119,29 +119,42 @@ func TestV1WallRenderAuthoredUnavailableWallFails(t *testing.T) {
 	}
 }
 
-func TestV1WallRenderAuthoredResolvesEachWallOnce(t *testing.T) {
+func TestV1WallRenderAuthoredChecksGalgameWallsInOneBatch(t *testing.T) {
 	f := newWallFix(t)
 	now := time.Now()
 	ids := []int64{
 		f.cm.seed(anchorGame, strconvI(rcGalgame), rcAlice, "g1", 0, 0, now),
 		f.cm.seed(anchorRes, resAnchor("rating", rcRating), rcAlice, "r", 0, 0, now),
+		f.cm.seed(anchorGame, strconvI(rcGalgame+1), rcAlice, "gone1", 0, 0, now),
 		f.cm.seed(anchorGame, strconvI(rcGalgame), rcAlice, "g2", 0, 0, now),
-		f.cm.seed(anchorGame, strconvI(rcGalgame), rcAlice, "g3", 0, 0, now),
+		f.cm.seed(anchorGame, strconvI(rcGalgame+2), rcAlice, "gone2", 0, 0, now),
 	}
 	f.resolveCalls.Store(0)
+	f.existCalls.Store(0)
 	got, p := f.app.WallV1.RenderAuthored(t.Context(), nil, f.authoredOf(ids...))
 	if p != nil {
 		t.Fatalf("render %v", p)
 	}
-	if n := f.resolveCalls.Load(); n != 1 {
-		t.Fatalf("galgame wall resolved %d times for three rows, want 1", n)
+	if n, d := f.existCalls.Load(), f.resolveCalls.Load(); n != 1 || d != 0 {
+		t.Fatalf("three galgame walls: %d batch calls and %d detail calls, want 1 and 0", n, d)
 	}
-	if len(got) != len(ids) {
-		t.Fatalf("got %d comments, want %d", len(got), len(ids))
+	want := []string{pid(ids[0]), pid(ids[1]), pid(ids[3])}
+	if len(got) != len(want) {
+		t.Fatalf("got %d comments, want %d (missing works dropped)", len(got), len(want))
 	}
 	for i, item := range got {
-		if string(item.ID) != pid(ids[i]) {
-			t.Errorf("item %d id=%s, want %s (input order)", i, item.ID, pid(ids[i]))
+		if string(item.ID) != want[i] {
+			t.Errorf("item %d id=%s, want %s (input order)", i, item.ID, want[i])
 		}
+	}
+}
+
+func TestV1WallRenderAuthoredUnavailableOwnerFails(t *testing.T) {
+	f := newWallFix(t)
+	id := f.cm.seed(anchorRes, resAnchor("rating", rcRating), rcAlice, "r", 0, 0, time.Now())
+	f.failOA.Store(true)
+	got, p := f.app.WallV1.RenderAuthored(t.Context(), nil, f.authoredOf(id))
+	if p == nil || p.Code != problem.CodeServiceUnavailable {
+		t.Fatalf("account service down: got %d items, problem %+v; want SERVICE_UNAVAILABLE", len(got), p)
 	}
 }

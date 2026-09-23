@@ -37,6 +37,17 @@ func newWallV1(
 		}
 		return found, nil
 	}
+	exist := func(ctx context.Context, workIDs []int) (map[int]bool, error) {
+		rows, appErr := galgame.CatalogRowsByWorkIDs(ctx, workIDs, "", "all")
+		if appErr != nil {
+			return nil, appErr
+		}
+		out := make(map[int]bool, len(rows))
+		for id := range rows {
+			out[id] = true
+		}
+		return out, nil
+	}
 	works := func(ctx context.Context, workIDs []int) (map[int]repr.WorkRef, error) {
 		rows, appErr := galgame.CatalogRowsByWorkIDs(ctx, workIDs, "names,covers", "all")
 		if appErr != nil {
@@ -49,7 +60,7 @@ func newWallV1(
 		}
 		return out, nil
 	}
-	return wallapiv1.New(wallRepo.NewStore(db), community, users, convert, resolve, moemoepoint.Award, cdn).
+	return wallapiv1.New(wallRepo.NewStore(db), community, users, convert, resolve, exist, moemoepoint.Award, cdn).
 		WithFollowing(msgRepo.NewMessageRepository(db).MarkCommunityThreadRead, works,
 			websiteapiv1.New(websiteRepo.NewStore(db), users, images, cdn).SummariesByIDs)
 }
