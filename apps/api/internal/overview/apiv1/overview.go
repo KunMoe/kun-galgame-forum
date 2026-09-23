@@ -22,7 +22,7 @@ type OverviewCounts struct {
 	TopicCount           int64 `json:"topic_count" minimum:"0" doc:"Topics, hidden ones included."`
 	ReplyCount           int64 `json:"reply_count" minimum:"0" doc:"Topic replies, hidden ones included."`
 	TopicCommentCount    int64 `json:"topic_comment_count" minimum:"0" doc:"Comments on topic replies."`
-	GalgameCount         int64 `json:"galgame_count" minimum:"0" doc:"Published galgames: the same predicate as the browse list. Unpublished local rows are not counted."`
+	WorkCount            int64 `json:"work_count" minimum:"0" doc:"Published works: the same predicate as the browse list. Unpublished local rows are not counted."`
 	GalgameResourceCount int64 `json:"galgame_resource_count" minimum:"0" doc:"Galgame resources."`
 	GalgameCommentCount  int64 `json:"galgame_comment_count" minimum:"0" doc:"Posts on galgame comment walls, as this forum mirrors them; hidden posts are not counted."`
 	WebsiteCount         int64 `json:"website_count" minimum:"0" doc:"Website directory entries."`
@@ -80,7 +80,7 @@ func countsOf(c repository.OverviewCounts) OverviewCounts {
 		TopicCount:           c.Topic,
 		ReplyCount:           c.Reply,
 		TopicCommentCount:    c.TopicComment,
-		GalgameCount:         c.Galgame,
+		WorkCount:            c.Work,
 		GalgameResourceCount: c.GalgameResource,
 		GalgameCommentCount:  c.GalgameComment,
 		WebsiteCount:         c.Website,

@@ -127,6 +127,7 @@
 1. 北京日取自 `cron.ScheduleLocation()` / `cron.ScheduleTZ`，与签到（K22）用同一个定义，不各写一份时区常量。
 2. 九项指标的来源（表、附加谓词）在仓储里只写一处，总数与日桶共用，两者不会各自漂移。
 3. 服务注入时钟；测试把时钟固定在 2031-03-10（北京 15:00），种子行都放在那个窗口里，总数断言看种子前后之差，不受测试库里其它行影响。
+4. **`galgame_count` 改名 `work_count`**（协调会话裁决：v1 里作品的名词是 work / works，它数的是 `works` 这个集合）。两个响应同步改，定义不变（已发布作品）。`galgame_resource_count` 与 `galgame_comment_count` 不改：它们数的是别的实体，`galgame_resource` 仍是 v1 的 subject_type token。变异第 6 条（不看 `published`）在改名后重跑，仍然变红。
 
 ## 8. 验收记录
 

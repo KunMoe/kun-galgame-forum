@@ -3274,11 +3274,6 @@ export interface components {
             galgame_comment_count: number;
             /**
              * Format: int64
-             * @description Published galgames: the same predicate as the browse list. Unpublished local rows are not counted.
-             */
-            galgame_count: number;
-            /**
-             * Format: int64
              * @description Galgame resources.
              */
             galgame_resource_count: number;
@@ -3312,6 +3307,11 @@ export interface components {
              * @description Website directory entries.
              */
             website_count: number;
+            /**
+             * Format: int64
+             * @description Published works: the same predicate as the browse list. Unpublished local rows are not counted.
+             */
+            work_count: number;
         };
         AdminTopic: {
             /** @description The topic's author. */
@@ -5917,11 +5917,6 @@ export interface components {
             galgame_comment_count: number;
             /**
              * Format: int64
-             * @description Published galgames: the same predicate as the browse list. Unpublished local rows are not counted.
-             */
-            galgame_count: number;
-            /**
-             * Format: int64
              * @description Galgame resources.
              */
             galgame_resource_count: number;
@@ -5955,6 +5950,11 @@ export interface components {
              * @description Website directory entries.
              */
             website_count: number;
+            /**
+             * Format: int64
+             * @description Published works: the same predicate as the browse list. Unpublished local rows are not counted.
+             */
+            work_count: number;
         };
         PageListCharacterRef: {
             /** @description Members of this page. Empty array, never null. */

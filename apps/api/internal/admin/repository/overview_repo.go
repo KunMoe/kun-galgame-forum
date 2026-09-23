@@ -21,7 +21,7 @@ type OverviewCounts struct {
 	Topic           int64
 	Reply           int64
 	TopicComment    int64
-	Galgame         int64
+	Work            int64
 	GalgameResource int64
 	GalgameComment  int64
 	Website         int64
@@ -40,7 +40,7 @@ var overviewMetrics = []overviewMetric{
 	{"topic", "topic", "", func(c *OverviewCounts) *int64 { return &c.Topic }},
 	{"reply", "topic_reply", "", func(c *OverviewCounts) *int64 { return &c.Reply }},
 	{"topic_comment", "topic_comment", "", func(c *OverviewCounts) *int64 { return &c.TopicComment }},
-	{"galgame", "galgame", "published", func(c *OverviewCounts) *int64 { return &c.Galgame }},
+	{"work", "galgame", "published", func(c *OverviewCounts) *int64 { return &c.Work }},
 	{"galgame_resource", "galgame_resource", "", func(c *OverviewCounts) *int64 { return &c.GalgameResource }},
 	{"galgame_comment", "feed_activity", "type = 'GALGAME_COMMENT_CREATION'", func(c *OverviewCounts) *int64 { return &c.GalgameComment }},
 	{"website", "galgame_website", "", func(c *OverviewCounts) *int64 { return &c.Website }},

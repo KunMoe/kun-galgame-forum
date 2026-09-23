@@ -233,12 +233,6 @@
             "minimum": 0,
             "type": "integer"
           },
-          "galgame_count": {
-            "description": "Published galgames: the same predicate as the browse list. Unpublished local rows are not counted.",
-            "format": "int64",
-            "minimum": 0,
-            "type": "integer"
-          },
           "galgame_resource_count": {
             "description": "Galgame resources.",
             "format": "int64",
@@ -283,6 +277,12 @@
             "format": "int64",
             "minimum": 0,
             "type": "integer"
+          },
+          "work_count": {
+            "description": "Published works: the same predicate as the browse list. Unpublished local rows are not counted.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
           }
         },
         "required": [
@@ -290,7 +290,7 @@
           "topic_count",
           "reply_count",
           "topic_comment_count",
-          "galgame_count",
+          "work_count",
           "galgame_resource_count",
           "galgame_comment_count",
           "website_count",
@@ -7303,12 +7303,6 @@
             "minimum": 0,
             "type": "integer"
           },
-          "galgame_count": {
-            "description": "Published galgames: the same predicate as the browse list. Unpublished local rows are not counted.",
-            "format": "int64",
-            "minimum": 0,
-            "type": "integer"
-          },
           "galgame_resource_count": {
             "description": "Galgame resources.",
             "format": "int64",
@@ -7353,6 +7347,12 @@
             "format": "int64",
             "minimum": 0,
             "type": "integer"
+          },
+          "work_count": {
+            "description": "Published works: the same predicate as the browse list. Unpublished local rows are not counted.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
           }
         },
         "required": [
@@ -7361,7 +7361,7 @@
           "topic_count",
           "reply_count",
           "topic_comment_count",
-          "galgame_count",
+          "work_count",
           "galgame_resource_count",
           "galgame_comment_count",
           "website_count",

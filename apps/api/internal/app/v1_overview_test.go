@@ -34,7 +34,7 @@ const (
 )
 
 var ovMetrics = []string{
-	"topic_count", "reply_count", "topic_comment_count", "galgame_count", "galgame_resource_count",
+	"topic_count", "reply_count", "topic_comment_count", "work_count", "galgame_resource_count",
 	"galgame_comment_count", "website_count", "website_comment_count", "direct_message_count",
 }
 
@@ -219,7 +219,7 @@ func TestV1OverviewTotals(t *testing.T) {
 	f.seed(t)
 	after := f.totals(t)
 	want := map[string]int{
-		"topic_count": 3, "reply_count": 1, "topic_comment_count": 1, "galgame_count": 2,
+		"topic_count": 3, "reply_count": 1, "topic_comment_count": 1, "work_count": 2,
 		"galgame_resource_count": 1, "galgame_comment_count": 3, "website_count": 1,
 		"website_comment_count": 2, "direct_message_count": 2,
 	}
@@ -254,7 +254,7 @@ func TestV1OverviewDaily(t *testing.T) {
 	want := map[string]map[string]int{
 		"2031-03-06": {"topic_count": 1},
 		"2031-03-07": {},
-		"2031-03-08": {"reply_count": 1, "topic_comment_count": 1, "galgame_count": 2},
+		"2031-03-08": {"reply_count": 1, "topic_comment_count": 1, "work_count": 2},
 		"2031-03-09": {"galgame_resource_count": 1, "website_count": 1, "galgame_comment_count": 3, "website_comment_count": 2},
 		"2031-03-10": {"topic_count": 1, "direct_message_count": 2},
 	}
