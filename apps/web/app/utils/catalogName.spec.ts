@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { pickWorkName } from './useWorkName'
+import { catalogNameText as pickWorkName } from './catalogName'
 
 const work = {
   display_name: '紅殻のパンドラ',
@@ -10,7 +10,7 @@ const work = {
   }
 }
 
-describe('pickWorkName', () => {
+describe('catalogNameText', () => {
   it('prefers the simplified Chinese name, then the original, then latin', () => {
     expect(pickWorkName(work, false)).toBe('红壳的潘多拉')
     expect(pickWorkName({ ...work, localized: {} }, false)).toBe(
