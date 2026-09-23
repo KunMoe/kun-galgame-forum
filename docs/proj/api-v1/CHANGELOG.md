@@ -1,5 +1,22 @@
 # API v1 changelog
 
+## 2026-09-23 (GE galgame entities)
+
+Breaking for all eighteen `/api/galgame-{tag,official,engine,series,staff,character}*` faces; they are gone. No App build calls them.
+
+Offered (all public `GET`s):
+
+- Tags: `GET /api/v1/tags` (page-number; `q` searches, `include_nsfw` adds adult tags), `GET /api/v1/tags/{tag_id}` (an adult tag is `NOT_FOUND` without `include_nsfw=true`), `GET /api/v1/tags/{tag_id}/works`, and `GET /api/v1/tagged-works?tag_ids=` (works carrying every one of 1–10 tags; more than 10 is `400`, no longer truncated).
+- Companies (the old 会社 / official): `GET /api/v1/companies` (`q`, `company_kind`), `GET /api/v1/companies/{company_id}`, `GET /api/v1/companies/{company_id}/works` (items `company_work` with `via_company`; `via=own|imprint`), `GET /api/v1/companies/{company_id}/graph`, and `GET /api/v1/wiki-company-redirects/{wiki_company_id}` for retired wiki numbers.
+- Engines: `GET /api/v1/engines` (`q`), `GET /api/v1/engines/{engine_id}`, `GET /api/v1/engines/{engine_id}/works`.
+- Series: `GET /api/v1/series` (`q`, `include_nsfw`), `GET /api/v1/series/{series_id}`, `GET /api/v1/series/{series_id}/works`.
+- Staff are `credit_name`s (a name someone is credited under): `GET /api/v1/credit-names?q=` (`q` required), `GET /api/v1/credit-names/{credit_name_id}`, and the cursor list `GET /api/v1/credit-names/{credit_name_id}/credits`.
+- Characters: `GET /api/v1/characters?q=` (`q` required), `GET /api/v1/characters/{character_id}` (adult traits need `include_nsfw=true`), and the cursor list `GET /api/v1/characters/{character_id}/appearances`.
+
+Every works sub-collection is page-number, returns `WorkSummary` (`object: "work"`, shared with the coming `/works`), and takes `resource_type`, `resource_platform` and `resource_language` (resource-axis keys such as `win`, `zh-cn`), `game_type` and `sort` (`<field>_<asc|desc>`, default `resource_updated_desc`).
+
+Shape vs the retired faces: every name is the catalog primitive `display_name` / `latin` / `localized{}` (the server no longer picks one by the name-preference cookie); intros are `intros[]` with `locale` / `value` / `is_machine` / `data_source`; links are `{site, url}` and clients label `site`; roles are `{role_key, display_name}`; NSFW is the explicit `include_nsfw`, never the settings cookie. A merged company, credit name or character answers `404 ENTITY_MERGED` with `object` and `current_id`, replacing `200 {moved_to}`. Counts are `catalog_work_count` (catalog's, NSFW included) beside each collection's `total`.
+
 ## 2026-09-23 (X2 wall follows and read receipts)
 
 Offered:
