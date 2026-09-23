@@ -77,3 +77,14 @@
 | 7 | 删除不拦 `drawing` | 有 `drawing` 抽奖的话题 → 409 `LOTTERY_DRAWN`，话题仍在 |
 | 8 | 删除/预览不查 `topic.delete_any` | 只有 `view_hidden` 的人 → 403 |
 | 9 | Bearer 请求能拿到管理能力（`perm.CanUser` 代替 `user.Can`） | Bearer 的版主 → 403 |
+
+## 8. 实现时对本契约的修正（2026-09-23，只增不改）
+
+1. **预览换了路径和名字。** G17 要求被 DELETE 寻址的路径有同路径的 GET，于是 `GET /admin/topics/{topic_id}/purge-preview` 改成 **`GET /admin/topics/{topic_id}`**，对象 **`admin_topic`**（带 `id`）——「管理员看到的这个话题」，DELETE 同一个资源。`refunded_point_escrow` 改名 **`open_lottery_escrow`**。
+2. **F9 门认识了页码集合。** F9 原本只认游标集合（`total` 必须配 `include_total`），页码集合按 01 §4 恒发 `total`。门改为：响应声明了 `total_relation` 的是页码集合，必须有 `page` 参数、必须声明 `total`、不得接受 `include_total`；新增三个探针（一个通过、两个违规）。
+3. **`limit` 默认 20**（原语的默认值，huma 的 default 标签是静态的），网页固定发 30。
+4. `collect.ClampTotal` 应 G 轨要求加入：计数超过深度上限时封顶并回 `gte`（`/galgame` 的总数来自 catalog，会超）。
+5. 变异 8 能精确测到：版主有 `topic.view_hidden` 而**没有** `topic.delete_any`（后者属 admin），于是「版主能列表、不能预览/删除」就是现成的判据。
+6. 变异 9（`user.Can` 换成 `perm.CanUser`）行为测试杀不掉——测试夹具里 Bearer 的角色本来就不带管理员，换了也照样 403。它由静态守卫 `bearer_guard_test` 杀掉（扫全树的 `perm.CanUser(` 调用），这正是那条守卫存在的理由。
+
+浏览器实测（开发库，admin 会话，独立无头 Chromium）：列表直出、「管理员隐藏」筛选、彻底删除弹窗显示各项计数与「进行中的抽奖托管着 15 萌萌点, 删除时会退回给抽奖发起人」→ `DELETE` 204 → 列表重拉；库里话题与抽奖都没了，作者缓存余额 +15。测试话题、会话已清理，余额已恢复。

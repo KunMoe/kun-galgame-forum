@@ -76,13 +76,13 @@ git ls-remote --heads origin 'api-v1/*'
 
 ### 待认领
 
-旧 `/api/*` 路由 **237 条**。`legacy_route_baseline` = 238，因为它数的是「所有非 `/api/v1` 的路由」，`/healthz` 也在里面——**基线的地板是 1，不是 0**。
+旧 `/api/*` 路由 **234 条**。`legacy_route_baseline` = 235，因为它数的是「所有非 `/api/v1` 的路由」，`/healthz` 也在里面——**基线的地板是 1，不是 0**。
 
 > **切分依据是「共用同一个老 handler」，不是 URL 前缀。** 这个仓库里老 handler 大量跨前缀：`ResourceCommentHandler` 一个人管 15 条 / 5 个前缀；`/api/admin/**` 的 24 条分属 11 个 handler、各归各的域；`/api/user/:id/toolsets` 是 toolset 的面；`GET /api/resource` 是 `TopicHandler.GetResourceList`，即话题列表的资源区分面。**按前缀分轨会让两个 session 撞在同一个 handler 上，而且谁也删不掉它**——共用 handler 要等它服务的**所有**前缀都迁完才能删。下表按连通分量切，每行对外零耦合。
 
 | 轨 | 模块（含跨前缀的归属） | 路由 | 迁移号段 | 备注 |
 |---|---|---|---|---|
-| **T** | **话题**：`/admin/topic*` 3 | **3** | 110–119 | 已认领（本轨）。~~**T1** 清理旧评论/投票 10 条~~ ✅ → ~~**T2** 草稿 4 + `interactions/mine` + `reply/locate` + 删 `/resource` 共 7 条~~ ✅（迁移 110）→ ~~**T3** 抽奖 11 条~~ ✅（迁移 111，萌萌点奖池改由发起人出资）→ **T4** 管理面 3 条（在 `internal/admin/**`，页码集合） |
+| **T** | **话题** | **0** ✅ | 110–119 | 已认领（本轨）。~~**T1** 清理旧评论/投票 10 条~~ ✅ → ~~**T2** 草稿 4 + `interactions/mine` + `reply/locate` + 删 `/resource` 共 7 条~~ ✅（迁移 110）→ ~~**T3** 抽奖 11 条~~ ✅（迁移 111，萌萌点奖池改由发起人出资）→ ~~**T4** 管理面 3 条~~ ✅（第一个页码集合，`collect.PageNumber` + `repr.PageList` 全轨共用）。**话题轨完成。** |
 | U | 用户 `/user/**`：~~**U1**「我」的面 12 条~~ ✅ → **U2** 公开资料、名片、通知偏好 4 条（通知偏好用 M 轨的 `notifytype`）→ **U3**「某用户的 X」9 条（等 G0 的 `work_id` 重编号） | 13 | 120–129 | 已认领（分支 `api-v1/u-user`） |
 | M | 消息 `/message/**` | 11 | 130–134 | 私信 + 系统通知 |
 | G | galgame 主域 + `-edit` + `-quiz` + `-resource` + `toolset` + 各自的 admin/user 面（**不含** `/galgame/:gid/comments*` 与 `/galgame/comments/*`，已归 RC） | 85 | 140–159 | 最大的一坨，**一个 owner**，内部自己切 3–4 个 PR 串行 |
