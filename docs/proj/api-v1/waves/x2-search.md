@@ -179,3 +179,15 @@
 | 10 | 空白 `q` 放行 | `q="   "` → `400 INVALID_PARAMETER`，`parameter: q`，`TOO_SHORT` |
 | 11 | works 车道的 SFW 闸不看 `include_nsfw`（写死） | 默认请求带 SFW 闸，`include_nsfw=true` 不带 |
 | 12 | 墙帖游标不绑定 `q` | 拿 `q=汉化` 的游标去翻 `q=其他` → `400 INVALID_CURSOR` |
+
+## 10. 实现时对本契约的修正
+
+1. **§4.5 / §7 未知 `sort` 的错误码是 `UNKNOWN_SORT`，不是 `UNKNOWN_ENUM_VALUE`。** `sort` 走的是地基的排序参数校验，未知值由它统一回 `400 UNKNOWN_SORT`；这是全站排序参数的既有行为，本轨不另起一套。测试断言已按此写。
+2. **§8 作品名的选法换成共享的 `useWorkName()` / `catalogNameText`**（与 x2-ranking、x2-community 逐字节相同的两个文件）：`zh-Hans → zh → zh-Hant`，再 `display_name`，再 `latin`；读者开了「优先显示原名」时先取 `display_name`。
+3. **§8 网页的车道请求与「全部」分区的并发加载放在 `utils/search/{lanes,overview}.ts`，不放 `components/search/`。** 放在组件目录时 Nuxt 把 `overview.ts` 当成第二个 `SearchOverview` 组件扫描（`Two component files resolving to the same name SearchOverview`）。
+4. **§4.4 的「50+」在网页上显示出来了：** 分区列表头读 `total_relation`，`gte` 时显示 `共 50+ 位用户`。左栏计数仍只画数字（见未决事项）。
+
+### 未决
+
+- 左栏计数（`SearchNavCount`）只收数字，用户车道拿满 50 条时左栏显示 `50` 而不是 `50+`；「全部」的合计把它按 50 算。
+- 资源、工具、资料库三条车道仍走旧面（`/api/search?type=resource`、`/api/toolset`、`/api/search/entity`），等 G / GE 给出各自的形状。
