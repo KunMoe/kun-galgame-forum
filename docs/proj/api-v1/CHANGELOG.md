@@ -1,5 +1,18 @@
 # API v1 changelog
 
+## 2026-09-23 (P permissions)
+
+Offered:
+
+- `GET /api/v1/me/permissions` — the caller's effective permission keys in catalog order. Always empty for a Bearer request
+- `GET` / `PATCH /api/v1/admin/role-permissions` — the role matrix; `PATCH {changes: [{role, overrides}]}` replaces the listed roles' overrides in one transaction, validated on the combined new state
+- `GET` / `PUT /api/v1/admin/user-permissions/{user_id}` — one user's permission layer; `PUT {overrides}` replaces it
+- `GET /api/v1/admin/permission-changes` — page-number collection of permission audit entries
+
+Permission keys are an open vocabulary (`^[a-z][a-z_]*(\.[a-z][a-z_]*)+$`), so tolerate keys you do not know. Delegation refusals are `422 VALIDATION_FAILED` with `NOT_PERMITTED` at the refused position. Admin faces need the admin role; a Bearer request never has it.
+
+Retired: `GET /api/perm/mine`, `GET /api/perm/bundles` (no replacement: it published the live role matrix to anonymous visitors), `GET /api/admin/role-permissions`, `PUT /api/admin/role-permissions/:role`, `GET`/`PUT /api/admin/user-permissions/:uid`, `GET /api/admin/permission-audit`.
+
 ## 2026-09-23 (TS reports and review inbox)
 
 Offered:

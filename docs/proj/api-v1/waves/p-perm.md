@@ -222,3 +222,19 @@
 3. 用户层的 `effective` 由刚读出的覆盖行计算，而不是读进程内的 `perm.CanUser` 表（后者在别的实例上最多滞后 60 秒），语义与 `CanUser` 相同，由 `TestUserLayerMirrorsCanUser` 逐键钉住。
 4. 422 的描述文字不能写 reason 名（G4 把描述里的大写 token 当错误码查注册表），改用自然语言描述各个位置。
 5. `docs/proj/permissions.md` 同步改到 v1 路径。
+6. **网页的「待保存」按已保存的状态计数，且只包含查看者能编辑的角色**（浏览器验收抓到，见 §9）。
+7. **矩阵 `PATCH` 被拒时保留工作区**：原子写被拒就是什么都没写，旧页面「失败就重新拉矩阵」只会丢掉管理员的勾选。
+
+## 9. 验收记录
+
+**闸**（执行者跑、会话复跑）：`make lint` 零输出；`KUN_REQUIRE_TEST_DB=1 go test -count=1 -p 1 ./...` 全绿（专属库 `kungal_test_p_perm`，rebase 到 UP + TS 之后复跑）；`make openapi` / `gen:api` 无漂移，G8 在三轨合并后的整份文档上复跑通过；`pnpm lint`、`pnpm typecheck`、`pnpm -F web test` 全绿。
+
+**变异**：12/12 变红（表见 PR）。第 11 条（审计排序去掉 `id` 决胜键）靠的是并列行按索引顺序（id 升序）出来、与 `id DESC` 不同；`permission_audit_log` 只有 `created_at DESC` 一条索引，换计划也不会让并列行恰好按 id 降序出来，所以没有像 M 轨那样在测试里删索引强制排序计划。
+
+**浏览器实测**（本分支自起 API :2344 + 网页 :2343，dev 库；无头 Chromium；测试前把 `role_permission_override` 导出快照，测完原样导回、删掉测试产生的审计行）：
+
+- 匿名进 `/admin/permission` → 登录页；普通用户 → 被送回首页；普通用户直打 `GET /api/v1/admin/role-permissions` → `403 PERMISSION_REQUIRED`，`/me/permissions` → 空数组。
+- 管理员（rank 3）：矩阵四列里只有创作者、版主两列可编辑（`viewer.can_edit`），管理员与莲两列上锁；管理员自己不持有的 `poll.view_restricted` 那一格按持有规则禁用；`/me/permissions` 返回 58 个键（59 减去管理员角色被撤的一项）。
+- **抓到的回归**：初版一打开页面就显示「待保存 26 项调整 · 创作者 3，版主 22，管理员 1」——「待保存」是拿工作区对比**基线**算的，存量覆盖全被当成未保存，连管理员不能编辑的 `admin` 列也进了保存集合。旧页面逐角色 `PUT`，于是 creator、moderator 先存进去、到 admin 那一步报错；换成原子 `PATCH` 后，同一次保存会因为 `/changes/2/role NOT_PERMITTED` **整体被拒，一项都存不进去**。改成对比已保存状态并只收可编辑的角色（§8 第 6 条）之后：打开页面「尚无待保存的调整」，点一格「待保存 1 项调整 · 版主 1」，保存 → `PATCH` 200 → 提示「已保存」，再点回去保存 → 还原。
+- 「变更日志」页签：`GET /admin/permission-changes` 200，最新一条是「调整 · 角色 · 版主 · 操作人（用户卡片）· 移除覆盖 编辑文档」。
+- 用户管理 → 某个无角色用户的「权限调整」面板：`GET /admin/user-permissions/{id}` 200，「角色：无角色」；勾「隐藏话题」保存 → `PUT` 200 且勾选保持；「重置为默认」→ `PUT` 200 且取消勾选，库里覆盖行归零。
