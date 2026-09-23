@@ -14,6 +14,7 @@ import (
 	"sync/atomic"
 	"testing"
 	"time"
+	"unicode/utf8"
 
 	"kun-galgame-api/internal/community/anchor"
 	"kun-galgame-api/internal/galgame/client"
@@ -63,9 +64,11 @@ type searchFix struct {
 	rdb   *redis.Client
 	spec  *specConformance
 	oauth struct {
-		mu     sync.Mutex
-		search []map[string]any
-		fail   atomic.Bool
+		mu       sync.Mutex
+		search   []map[string]any
+		fail     atomic.Bool
+		refuse   atomic.Bool
+		searched atomic.Int32
 	}
 	catalog struct {
 		mu    sync.Mutex
@@ -114,6 +117,12 @@ func newSearchFix(t *testing.T) *searchFix {
 			}
 			_ = json.NewEncoder(w).Encode(map[string]any{"code": 0, "data": map[string]any{"users": users, "not_found": []int{}}})
 		case "/users/search":
+			f.oauth.searched.Add(1)
+			if f.oauth.refuse.Load() || utf8.RuneCountInString(strings.TrimSpace(r.URL.Query().Get("q"))) > 50 {
+				w.WriteHeader(http.StatusBadRequest)
+				_ = json.NewEncoder(w).Encode(map[string]any{"code": 9, "message": "q: max 50 chars"})
+				return
+			}
 			f.oauth.mu.Lock()
 			users := f.oauth.search
 			f.oauth.mu.Unlock()

@@ -15,7 +15,7 @@ type laneInput struct {
 
 type usersInput struct {
 	collect.PageNumber
-	Q string `query:"q" required:"true" minLength:"1" maxLength:"107" doc:"Name to search for. Free text; never use it as a decision input."`
+	Q string `query:"q" required:"true" minLength:"1" maxLength:"50" doc:"Name to search for, at most 50 characters (the account service's own limit). Free text; never use it as a decision input."`
 }
 
 type worksInput struct {

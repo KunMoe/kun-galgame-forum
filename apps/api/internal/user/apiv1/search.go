@@ -12,7 +12,7 @@ import (
 )
 
 type listUsersInput struct {
-	Q     string           `query:"q" required:"false" maxLength:"64" doc:"Name query. After trimming whitespace it must not be empty. Exactly one of q or ids is required. Free text; never use it as a decision input."`
+	Q     string           `query:"q" required:"false" maxLength:"50" doc:"Name query, at most 50 characters (the account service's own limit). After trimming whitespace it must not be empty. Exactly one of q or ids is required. Free text; never use it as a decision input."`
 	IDs   []repr.DecimalID `query:"ids" required:"false" maxItems:"100" doc:"User ids to resolve, comma-separated. 1 to 100 of them. Exactly one of q or ids is required."`
 	Limit int              `query:"limit" minimum:"1" maximum:"20" default:"8" doc:"Page size for q. 1–20, default 8. Values above 20 are rejected, not clamped. Ignored when ids is set."`
 }
@@ -47,6 +47,10 @@ func (s *Users) listUsers(ctx context.Context, in *listUsersInput) (*listUsersOu
 		limit = 8
 	}
 	found, err := s.accounts.SearchUsers(ctx, q, limit)
+	if userclient.IsInvalidParam(err) {
+		return nil, problem.New(problem.CodeInvalidParameter, "The account service refused the name query.",
+			problem.AtParameter("q", problem.ReasonNotAllowedValue, "the account service refused this name query", nil))
+	}
 	if err != nil {
 		return nil, unavailable(err)
 	}

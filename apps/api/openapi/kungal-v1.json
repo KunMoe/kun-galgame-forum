@@ -38617,14 +38617,14 @@
             }
           },
           {
-            "description": "Name to search for. Free text; never use it as a decision input.",
+            "description": "Name to search for, at most 50 characters (the account service's own limit). Free text; never use it as a decision input.",
             "explode": false,
             "in": "query",
             "name": "q",
             "required": true,
             "schema": {
-              "description": "Name to search for. Free text; never use it as a decision input.",
-              "maxLength": 107,
+              "description": "Name to search for, at most 50 characters (the account service's own limit). Free text; never use it as a decision input.",
+              "maxLength": 50,
               "minLength": 1,
               "type": "string"
             }
@@ -38649,7 +38649,7 @@
                 }
               }
             },
-            "description": "INVALID_PARAMETER when q is blank after trimming, or the page is past the depth limit."
+            "description": "INVALID_PARAMETER when q is blank after trimming, longer than 50 characters, or refused by the account service, or the page is past the depth limit."
           },
           "401": {
             "content": {
@@ -46645,13 +46645,13 @@
         "operationId": "listUsers",
         "parameters": [
           {
-            "description": "Name query. After trimming whitespace it must not be empty. Exactly one of q or ids is required. Free text; never use it as a decision input.",
+            "description": "Name query, at most 50 characters (the account service's own limit). After trimming whitespace it must not be empty. Exactly one of q or ids is required. Free text; never use it as a decision input.",
             "explode": false,
             "in": "query",
             "name": "q",
             "schema": {
-              "description": "Name query. After trimming whitespace it must not be empty. Exactly one of q or ids is required. Free text; never use it as a decision input.",
-              "maxLength": 64,
+              "description": "Name query, at most 50 characters (the account service's own limit). After trimming whitespace it must not be empty. Exactly one of q or ids is required. Free text; never use it as a decision input.",
+              "maxLength": 50,
               "type": "string"
             }
           },
@@ -46706,7 +46706,7 @@
                 }
               }
             },
-            "description": "LIMIT_TOO_LARGE when limit is greater than 20. INVALID_PARAMETER when ids holds more than 100 values."
+            "description": "LIMIT_TOO_LARGE when limit is greater than 20. INVALID_PARAMETER when ids holds more than 100 values, q is longer than 50 characters, or the account service refuses q."
           },
           "401": {
             "content": {

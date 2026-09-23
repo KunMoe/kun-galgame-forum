@@ -10,6 +10,7 @@ import (
 	userapiv1 "kun-galgame-api/internal/user/apiv1"
 	"kun-galgame-api/pkg/problem"
 	"kun-galgame-api/pkg/role"
+	"kun-galgame-api/pkg/userclient"
 )
 
 // The account service's /users/search has no offset and stops at 50.
@@ -33,6 +34,10 @@ func (s *Service) searchUsers(ctx context.Context, in *usersInput) (*usersOutput
 		return nil, prob
 	}
 	found, err := s.users.SearchUsers(ctx, q, userSearchCap)
+	if userclient.IsInvalidParam(err) {
+		return nil, problem.New(problem.CodeInvalidParameter, "The account service refused the name query.",
+			problem.AtParameter("q", problem.ReasonNotAllowedValue, "the account service refused this name query", nil))
+	}
 	if err != nil {
 		return nil, problem.Unavailable(err)
 	}

@@ -23460,7 +23460,7 @@ export interface operations {
                 page?: number;
                 /** @description Page size. 1–100, default 20. Values above 100 are rejected, not clamped. */
                 limit?: number;
-                /** @description Name to search for. Free text; never use it as a decision input. */
+                /** @description Name to search for, at most 50 characters (the account service's own limit). Free text; never use it as a decision input. */
                 q: string;
             };
             header?: never;
@@ -23478,7 +23478,7 @@ export interface operations {
                     "application/json": components["schemas"]["PageListUserSearchHit"];
                 };
             };
-            /** @description INVALID_PARAMETER when q is blank after trimming, or the page is past the depth limit. */
+            /** @description INVALID_PARAMETER when q is blank after trimming, longer than 50 characters, or refused by the account service, or the page is past the depth limit. */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -28577,7 +28577,7 @@ export interface operations {
     listUsers: {
         parameters: {
             query?: {
-                /** @description Name query. After trimming whitespace it must not be empty. Exactly one of q or ids is required. Free text; never use it as a decision input. */
+                /** @description Name query, at most 50 characters (the account service's own limit). After trimming whitespace it must not be empty. Exactly one of q or ids is required. Free text; never use it as a decision input. */
                 q?: string;
                 /** @description User ids to resolve, comma-separated. 1 to 100 of them. Exactly one of q or ids is required. */
                 ids?: string[];
@@ -28599,7 +28599,7 @@ export interface operations {
                     "application/json": components["schemas"]["BatchListUserRef"];
                 };
             };
-            /** @description LIMIT_TOO_LARGE when limit is greater than 20. INVALID_PARAMETER when ids holds more than 100 values. */
+            /** @description LIMIT_TOO_LARGE when limit is greater than 20. INVALID_PARAMETER when ids holds more than 100 values, q is longer than 50 characters, or the account service refuses q. */
             400: {
                 headers: {
                     [name: string]: unknown;

@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/textproto"
+	"net/url"
 	"strconv"
 	"strings"
 	"testing"
@@ -234,4 +235,22 @@ func (f *meFix) putAvatarRaw(t *testing.T, session string, raw []byte, contentTy
 	}
 	f.spec.checkPath(t, http.MethodPut, "/me/avatar", resp, body)
 	return resp, problemMap(t, body)
+}
+
+func TestV1SearchUsersQueryCap(t *testing.T) {
+	f := newMeFix(t)
+	long := "/api/v1/users?q=" + url.QueryEscape(strings.Repeat("名", 51))
+	resp, body := f.call(t, http.MethodGet, long, "/users", "sess-alice", "", nil, nil)
+	mustCode(t, resp, body, http.StatusBadRequest, "INVALID_PARAMETER")
+	if n := f.nSearch.Load(); n != 0 {
+		t.Errorf("a 51-character q reached the account service %d times; it refuses anything over 50", n)
+	}
+	resp, body = f.call(t, http.MethodGet, "/api/v1/users?q="+url.QueryEscape(strings.Repeat("名", 50)), "/users", "sess-alice", "", nil, nil)
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("50 characters is allowed: %d %+v", resp.StatusCode, body)
+	}
+
+	f.searchRefuse.Store(true)
+	resp, body = f.call(t, http.MethodGet, "/api/v1/users?q=alice", "/users", "sess-alice", "", nil, nil)
+	mustCode(t, resp, body, http.StatusBadRequest, "INVALID_PARAMETER")
 }

@@ -195,7 +195,7 @@ func Register(u *Users) func(huma.API) {
 			Tags:        []string{"users"},
 			Middlewares: huma.Middlewares{withUpstream},
 			Responses: problemResponses(map[int]string{
-				400: "LIMIT_TOO_LARGE when limit is greater than 20. INVALID_PARAMETER when ids holds more than 100 values.",
+				400: "LIMIT_TOO_LARGE when limit is greater than 20. INVALID_PARAMETER when ids holds more than 100 values, q is longer than 50 characters, or the account service refuses q.",
 				422: "VALIDATION_FAILED when neither q nor ids is given, both are given, q is only whitespace, or an id is not a positive integer.",
 				503: "SERVICE_UNAVAILABLE when the account service cannot be reached.",
 			}),

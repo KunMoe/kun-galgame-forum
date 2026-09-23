@@ -69,7 +69,7 @@ func Register(s *Service) func(huma.API) {
 				"topic_count counts login-only topics for a signed-in caller.",
 			Tags: tags,
 			Responses: problemResponses(map[int]string{
-				400: blankQ,
+				400: "INVALID_PARAMETER when q is blank after trimming, longer than 50 characters, or refused by the account service, or the page is past the depth limit.",
 				503: "SERVICE_UNAVAILABLE when the account service is unreachable.",
 			}),
 		}), s.searchUsers)

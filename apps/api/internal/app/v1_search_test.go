@@ -320,3 +320,22 @@ func TestV1SearchWallComments(t *testing.T) {
 	resp, body = f.get(t, srWallPath, "/search/wall-comments?q=abc", "")
 	wantProblemCode(t, resp, body, http.StatusServiceUnavailable, "SERVICE_UNAVAILABLE")
 }
+
+func TestV1SearchUserLaneQueryCap(t *testing.T) {
+	f := newSearchFix(t)
+	f.oauth.search = []map[string]any{searchUser(srUserAlice, "alice", 0, []string{"user"}, nil, "")}
+
+	resp, body := f.get(t, srUsersPath, "/search/users?q="+url.QueryEscape(strings.Repeat("名", 51)), "")
+	wantProblemCode(t, resp, body, http.StatusBadRequest, "INVALID_PARAMETER")
+	if n := f.oauth.searched.Load(); n != 0 {
+		t.Errorf("a 51-character q reached the account service %d times; it refuses anything over 50", n)
+	}
+	resp, body = f.get(t, srUsersPath, "/search/users?q="+url.QueryEscape(strings.Repeat("名", 50)), "")
+	if resp.StatusCode != http.StatusOK || len(itemsOf(body)) != 1 {
+		t.Errorf("50 characters is allowed: %d %+v", resp.StatusCode, body)
+	}
+
+	f.oauth.refuse.Store(true)
+	resp, body = f.get(t, srUsersPath, "/search/users?q=alice", "")
+	wantProblemCode(t, resp, body, http.StatusBadRequest, "INVALID_PARAMETER")
+}

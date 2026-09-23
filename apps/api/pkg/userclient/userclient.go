@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -272,6 +273,15 @@ type OAuthError struct {
 
 func (e *OAuthError) Error() string {
 	return fmt.Sprintf("oauth code=%d msg=%q", e.Code, e.Message)
+}
+
+// The account service answers a parameter it refuses, such as a /users/search q
+// over 50 characters, with its generic invalid-parameter code 9.
+const codeInvalidParam = 9
+
+func IsInvalidParam(err error) bool {
+	var oe *OAuthError
+	return errors.As(err, &oe) && oe.Code == codeInvalidParam
 }
 
 type MoemoepointResult struct {

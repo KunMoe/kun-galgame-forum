@@ -9,8 +9,10 @@ import (
 	"mime/multipart"
 	"net/http"
 	"strconv"
+	"strings"
 	"sync/atomic"
 	"testing"
+	"unicode/utf8"
 
 	"kun-galgame-api/internal/moemoepoint"
 	userRepo "kun-galgame-api/internal/user/repository"
@@ -37,6 +39,7 @@ type meFix struct {
 	creatorState atomic.Value
 	logFail      atomic.Bool
 	searchFail   atomic.Bool
+	searchRefuse atomic.Bool
 	avatarFail   atomic.Bool
 	avatarCT     atomic.Value
 	avatarName   atomic.Value
@@ -63,6 +66,10 @@ func (f *meFix) installUpstream() {
 			return
 		}
 		f.nSearch.Add(1)
+		if f.searchRefuse.Load() || utf8.RuneCountInString(strings.TrimSpace(r.URL.Query().Get("q"))) > 50 {
+			writeHouse(w, http.StatusBadRequest, 9, nil)
+			return
+		}
 		writeHouse(w, 200, 0, map[string]any{
 			"users": []map[string]any{
 				{"id": w3UserAlice, "name": "alice", "status": 0, "roles": []string{"user"}},
