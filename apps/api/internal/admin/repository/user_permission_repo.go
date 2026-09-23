@@ -30,16 +30,23 @@ func (r *UserPermissionRepository) ListForUser(ctx context.Context, userID int) 
 	return rows, err
 }
 
-func (r *UserPermissionRepository) ReplaceForUser(ctx context.Context, userID int, rows []model.UserPermissionOverride, operatorUID int) error {
-	now := time.Now()
+func (r *UserPermissionRepository) Replace(ctx context.Context, userID, operatorUID int, plan func([]model.UserPermissionOverride) ([]model.UserPermissionOverride, error)) error {
 	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		if err := tx.Exec("SELECT pg_advisory_xact_lock(hashtext('user_permission_override'), ?)", userID).Error; err != nil {
+			return err
+		}
 		var before []model.UserPermissionOverride
 		if err := tx.Where("user_id = ?", userID).Order("permission ASC").Find(&before).Error; err != nil {
+			return err
+		}
+		rows, err := plan(before)
+		if err != nil {
 			return err
 		}
 		if err := tx.Where("user_id = ?", userID).Delete(&model.UserPermissionOverride{}).Error; err != nil {
 			return err
 		}
+		now := time.Now()
 		for i := range rows {
 			rows[i].UserID = userID
 			rows[i].UpdatedBy = operatorUID

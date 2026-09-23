@@ -35,7 +35,7 @@ func (s *PermissionOverrideSync) Load(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	perm.SetOverrides(rowsToOverrideMap(roleRows))
+	perm.SetOverrides(roleRowsToOverrideMap(roleRows))
 	perm.SetUserOverrides(userRowsToOverrideMap(userRows))
 	return nil
 }
@@ -57,6 +57,17 @@ func (s *PermissionOverrideSync) StartRefresher(interval time.Duration) func() {
 		}
 	}()
 	return func() { close(done) }
+}
+
+func roleRowsToOverrideMap(rows []model.RolePermissionOverride) map[string][]perm.Override {
+	out := make(map[string][]perm.Override)
+	for _, r := range rows {
+		out[r.Role] = append(out[r.Role], perm.Override{
+			Permission: perm.Permission(r.Permission),
+			Effect:     r.Effect,
+		})
+	}
+	return out
 }
 
 func userRowsToOverrideMap(rows []model.UserPermissionOverride) map[int][]perm.Override {

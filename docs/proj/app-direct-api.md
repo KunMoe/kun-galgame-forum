@@ -39,7 +39,7 @@ App 用 AppAuth + PKCE 直接从 OP 换出 access token，然后 `Authorization:
 | 首次见到该用户的初始化失败 | `500 {"code":233}`，下次请求会重试 |
 | 访问任何管理/权限闸 | `403 {"code":233,"message":"管理操作请在网页端进行"}` |
 
-- **没有 staff 能力**：Bearer 用户的 `roles` 会剥掉 `moderator` / `admin` / `ren`（`creator` 等保留）。`UserInfo.Can` / `CanModerate` / `CanAdminister` 对 Bearer 恒为 false，**连个人权限覆盖也不生效**；`/api/perm/mine` 恒返回空列表。`internal/middleware/bearer_guard_test.go` 禁止任何代码绕过这些方法、直接在 `u.Roles` 上做能力检查。
+- **没有 staff 能力**：Bearer 用户的 `roles` 会剥掉 `moderator` / `admin` / `ren`（`creator` 等保留）。`UserInfo.Can` / `CanModerate` / `CanAdminister` 对 Bearer 恒为 false，**连个人权限覆盖也不生效**；`/api/v1/me/permissions` 恒返回空列表。`internal/middleware/bearer_guard_test.go` 禁止任何代码绕过这些方法、直接在 `u.Roles` 上做能力检查。
 - **首次见到用户**（每用户 24h 一次）：补做网页 OAuth 回调里做的两件事：`kungal_user_state` 行（没有这行，发帖会失败）和社区 trust boost。boost 用的是**未剥离**的 roles，因为它每个用户只声明一次、由 SETNX 守着，从 App 先声明一个剥离后的值，会把版主之后从网页登录时的 boost 锁掉。
 - **封禁**：access token 有效期 15 分钟，没有吊销列表，所以封禁最多滞后 15 分钟，和网页会话的刷新周期相同。封禁用户发的内容仍在渲染层隐藏。
 - **下游转发**：论坛把 App 的 token 原样当 Bearer 转给 catalog `/v2` 用户面和 OAuth `/auth/me`。catalog 不校验 `aud` / `client_id` 白名单，但会读取该 client 的 `catalog_site` 和 scope。社区接口和图床（`pkg/imageclient`）都走论坛 client 的 Basic 认证，不经过用户 token，不受影响。

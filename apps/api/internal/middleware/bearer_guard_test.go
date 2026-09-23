@@ -20,7 +20,7 @@ var rawCapabilityCheckAllowed = map[string]string{
 // A capability check written against u.Roles bypasses UserInfo.Can, so a
 // staff member's App token would regain the powers the Bearer channel denies.
 func TestCapabilityChecksGoThroughUserInfo(t *testing.T) {
-	raw := regexp.MustCompile(`perm\.CanUser\(|role\.Can(Moderate|Administer)\(`)
+	raw := regexp.MustCompile(`perm\.(CanUser|EffectiveForUser)\(|role\.Can(Moderate|Administer)\(`)
 	err := filepath.WalkDir("..", func(path string, d fs.DirEntry, err error) error {
 		if err != nil || d.IsDir() || !strings.HasSuffix(path, ".go") || strings.HasSuffix(path, "_test.go") {
 			return err

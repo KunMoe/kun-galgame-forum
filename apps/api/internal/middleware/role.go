@@ -21,19 +21,6 @@ func RequireModerator() fiber.Handler {
 	}
 }
 
-func RequireAdmin() fiber.Handler {
-	return func(c fiber.Ctx) error {
-		user, appErr := staffCandidate(c)
-		if appErr == nil && !user.CanAdminister() {
-			appErr = errNoPermission()
-		}
-		if appErr != nil {
-			return response.Error(c, appErr)
-		}
-		return c.Next()
-	}
-}
-
 func RequirePermission(p perm.Permission) fiber.Handler {
 	return func(c fiber.Ctx) error {
 		user, appErr := staffCandidate(c)

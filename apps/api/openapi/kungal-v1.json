@@ -4040,6 +4040,49 @@
         ],
         "type": "object"
       },
+      "PageListPermissionChange": {
+        "properties": {
+          "items": {
+            "description": "Members of this page. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/PermissionChange"
+            },
+            "type": "array"
+          },
+          "object": {
+            "description": "Type discriminant. Always list.",
+            "enum": [
+              "list"
+            ],
+            "maxLength": 4,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "total": {
+            "description": "Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "total_relation": {
+            "description": "eq when total is exact, gte when it stopped at the depth limit and there are at least that many.",
+            "enum": [
+              "eq",
+              "gte"
+            ],
+            "maxLength": 3,
+            "type": "string",
+            "x-vocabulary-closed": true
+          }
+        },
+        "required": [
+          "object",
+          "items",
+          "total",
+          "total_relation"
+        ],
+        "type": "object"
+      },
       "PageListReviewItemSummary": {
         "properties": {
           "items": {
@@ -4128,6 +4171,149 @@
             ]
           }
         },
+        "type": "object"
+      },
+      "PermissionChange": {
+        "properties": {
+          "actor": {
+            "$ref": "#/components/schemas/UserRef",
+            "description": "Who made the change."
+          },
+          "after": {
+            "description": "The target's overrides after the change. Empty when the change reset the target to its baseline.",
+            "items": {
+              "$ref": "#/components/schemas/PermissionOverride"
+            },
+            "maxItems": 256,
+            "type": "array"
+          },
+          "before": {
+            "description": "The target's overrides before the change.",
+            "items": {
+              "$ref": "#/components/schemas/PermissionOverride"
+            },
+            "maxItems": 256,
+            "type": "array"
+          },
+          "created_at": {
+            "description": "When the change was made.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": "string"
+          },
+          "id": {
+            "description": "Change id. JSON string of a decimal integer.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "object": {
+            "description": "Type discriminant. Always permission_change.",
+            "enum": [
+              "permission_change"
+            ],
+            "maxLength": 17,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "target_role": {
+            "description": "The role whose overrides changed. null when the change was to a user.",
+            "enum": [
+              "creator",
+              "moderator",
+              "admin",
+              null
+            ],
+            "maxLength": 9,
+            "type": [
+              "string",
+              "null"
+            ],
+            "x-vocabulary-closed": true
+          },
+          "target_user": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UserRef"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The user whose overrides changed. null when the change was to a role."
+          }
+        },
+        "required": [
+          "object",
+          "id",
+          "actor",
+          "target_role",
+          "target_user",
+          "before",
+          "after",
+          "created_at"
+        ],
+        "type": "object"
+      },
+      "PermissionOverride": {
+        "properties": {
+          "effect": {
+            "description": "grant adds a permission the baseline lacks; revoke removes one the baseline has.",
+            "enum": [
+              "grant",
+              "revoke"
+            ],
+            "maxLength": 6,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "permission": {
+            "description": "The permission the override is about.",
+            "maxLength": 64,
+            "pattern": "^[a-z][a-z_]*(\\.[a-z][a-z_]*)+$",
+            "type": "string",
+            "x-vocabulary": "permission",
+            "x-vocabulary-closed": false
+          }
+        },
+        "required": [
+          "permission",
+          "effect"
+        ],
+        "type": "object"
+      },
+      "PermissionSet": {
+        "properties": {
+          "object": {
+            "description": "Type discriminant. Always permission_set.",
+            "enum": [
+              "permission_set"
+            ],
+            "maxLength": 14,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "permissions": {
+            "description": "Every permission the caller holds right now, in catalog order. Empty for a Bearer request: staff powers never reach the App channel.",
+            "items": {
+              "description": "Permission key: dot-separated snake_case segments. The catalog grows as the forum adds surfaces; treat a key you do not know as one you cannot act on.",
+              "maxLength": 64,
+              "pattern": "^[a-z][a-z_]*(\\.[a-z][a-z_]*)+$",
+              "type": "string",
+              "x-vocabulary": "permission",
+              "x-vocabulary-closed": false
+            },
+            "maxItems": 256,
+            "type": "array"
+          }
+        },
+        "required": [
+          "object",
+          "permissions"
+        ],
         "type": "object"
       },
       "Poll": {
@@ -6048,6 +6234,181 @@
           "subject_url",
           "weight",
           "created_at"
+        ],
+        "type": "object"
+      },
+      "RoleOverrides": {
+        "properties": {
+          "overrides": {
+            "description": "The role's new override set, replacing the stored one. An empty array resets the role to its baseline.",
+            "items": {
+              "$ref": "#/components/schemas/PermissionOverride"
+            },
+            "maxItems": 256,
+            "type": "array"
+          },
+          "role": {
+            "description": "The role whose overrides are replaced. ren is refused.",
+            "enum": [
+              "creator",
+              "moderator",
+              "admin",
+              "ren"
+            ],
+            "maxLength": 9,
+            "type": "string",
+            "x-vocabulary-closed": true
+          }
+        },
+        "required": [
+          "role",
+          "overrides"
+        ],
+        "type": "object"
+      },
+      "RolePermissionMatrix": {
+        "properties": {
+          "catalog": {
+            "description": "Every permission key the forum knows, in catalog order.",
+            "items": {
+              "description": "Permission key: dot-separated snake_case segments. The catalog grows as the forum adds surfaces; treat a key you do not know as one you cannot act on.",
+              "maxLength": 64,
+              "pattern": "^[a-z][a-z_]*(\\.[a-z][a-z_]*)+$",
+              "type": "string",
+              "x-vocabulary": "permission",
+              "x-vocabulary-closed": false
+            },
+            "maxItems": 256,
+            "type": "array"
+          },
+          "object": {
+            "description": "Type discriminant. Always role_permission_matrix.",
+            "enum": [
+              "role_permission_matrix"
+            ],
+            "maxLength": 22,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "role_permissions": {
+            "description": "One layer per role: creator, moderator, admin, ren, in that order.",
+            "items": {
+              "$ref": "#/components/schemas/RolePermissions"
+            },
+            "maxItems": 4,
+            "type": "array"
+          }
+        },
+        "required": [
+          "object",
+          "catalog",
+          "role_permissions"
+        ],
+        "type": "object"
+      },
+      "RolePermissionMatrixPatch": {
+        "properties": {
+          "changes": {
+            "description": "The roles to replace. Roles not listed keep their overrides. All changes are judged together against the resulting state and written in one transaction, or none is.",
+            "items": {
+              "$ref": "#/components/schemas/RoleOverrides"
+            },
+            "maxItems": 4,
+            "minItems": 1,
+            "type": "array"
+          }
+        },
+        "required": [
+          "changes"
+        ],
+        "type": "object"
+      },
+      "RolePermissions": {
+        "properties": {
+          "baseline": {
+            "description": "Permissions the role holds by code, before overrides, in catalog order.",
+            "items": {
+              "description": "Permission key: dot-separated snake_case segments. The catalog grows as the forum adds surfaces; treat a key you do not know as one you cannot act on.",
+              "maxLength": 64,
+              "pattern": "^[a-z][a-z_]*(\\.[a-z][a-z_]*)+$",
+              "type": "string",
+              "x-vocabulary": "permission",
+              "x-vocabulary-closed": false
+            },
+            "maxItems": 256,
+            "type": "array"
+          },
+          "effective": {
+            "description": "Permissions the role holds after its overrides, in catalog order.",
+            "items": {
+              "description": "Permission key: dot-separated snake_case segments. The catalog grows as the forum adds surfaces; treat a key you do not know as one you cannot act on.",
+              "maxLength": 64,
+              "pattern": "^[a-z][a-z_]*(\\.[a-z][a-z_]*)+$",
+              "type": "string",
+              "x-vocabulary": "permission",
+              "x-vocabulary-closed": false
+            },
+            "maxItems": 256,
+            "type": "array"
+          },
+          "is_locked": {
+            "description": "Whether the role cannot be changed at all. True only for ren, which always holds every permission.",
+            "type": "boolean"
+          },
+          "object": {
+            "description": "Type discriminant. Always role_permissions.",
+            "enum": [
+              "role_permissions"
+            ],
+            "maxLength": 16,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "overrides": {
+            "description": "The role's stored deviations from its baseline, in catalog order. Always empty for ren.",
+            "items": {
+              "$ref": "#/components/schemas/PermissionOverride"
+            },
+            "maxItems": 256,
+            "type": "array"
+          },
+          "role": {
+            "description": "The role this layer belongs to.",
+            "enum": [
+              "creator",
+              "moderator",
+              "admin",
+              "ren"
+            ],
+            "maxLength": 9,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "viewer": {
+            "$ref": "#/components/schemas/RolePermissionsViewer",
+            "description": "The caller's own standing on this role."
+          }
+        },
+        "required": [
+          "object",
+          "role",
+          "baseline",
+          "overrides",
+          "effective",
+          "is_locked",
+          "viewer"
+        ],
+        "type": "object"
+      },
+      "RolePermissionsViewer": {
+        "properties": {
+          "can_edit": {
+            "description": "Whether the caller may replace this role's overrides: the role is not locked and ranks below the caller's highest role. Each key is still subject to the caller holding it.",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "can_edit"
         ],
         "type": "object"
       },
@@ -8203,6 +8564,124 @@
         ],
         "type": "object"
       },
+      "UserPermissions": {
+        "properties": {
+          "baseline": {
+            "description": "Permissions the user's roles grant, in catalog order.",
+            "items": {
+              "description": "Permission key: dot-separated snake_case segments. The catalog grows as the forum adds surfaces; treat a key you do not know as one you cannot act on.",
+              "maxLength": 64,
+              "pattern": "^[a-z][a-z_]*(\\.[a-z][a-z_]*)+$",
+              "type": "string",
+              "x-vocabulary": "permission",
+              "x-vocabulary-closed": false
+            },
+            "maxItems": 256,
+            "type": "array"
+          },
+          "effective": {
+            "description": "Permissions the user holds after personal overrides, in catalog order. Every permission when the user holds ren.",
+            "items": {
+              "description": "Permission key: dot-separated snake_case segments. The catalog grows as the forum adds surfaces; treat a key you do not know as one you cannot act on.",
+              "maxLength": 64,
+              "pattern": "^[a-z][a-z_]*(\\.[a-z][a-z_]*)+$",
+              "type": "string",
+              "x-vocabulary": "permission",
+              "x-vocabulary-closed": false
+            },
+            "maxItems": 256,
+            "type": "array"
+          },
+          "id": {
+            "description": "The user's id. JSON string of a decimal integer.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "is_locked": {
+            "description": "Whether the user's permissions cannot be changed: the user holds ren.",
+            "type": "boolean"
+          },
+          "object": {
+            "description": "Type discriminant. Always user_permissions.",
+            "enum": [
+              "user_permissions"
+            ],
+            "maxLength": 16,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "overrides": {
+            "description": "The user's personal deviations from that baseline, in catalog order.",
+            "items": {
+              "$ref": "#/components/schemas/PermissionOverride"
+            },
+            "maxItems": 256,
+            "type": "array"
+          },
+          "roles": {
+            "description": "The user's roles that carry permissions, from the account service's current record, lowest rank first.",
+            "items": {
+              "description": "A role that carries permissions, lowest rank first. ren always holds every permission.",
+              "enum": [
+                "creator",
+                "moderator",
+                "admin",
+                "ren"
+              ],
+              "maxLength": 9,
+              "type": "string",
+              "x-vocabulary-closed": true
+            },
+            "maxItems": 4,
+            "type": "array"
+          },
+          "viewer": {
+            "$ref": "#/components/schemas/UserPermissionsViewer",
+            "description": "The caller's own standing on this user."
+          }
+        },
+        "required": [
+          "object",
+          "id",
+          "roles",
+          "baseline",
+          "overrides",
+          "effective",
+          "is_locked",
+          "viewer"
+        ],
+        "type": "object"
+      },
+      "UserPermissionsReplace": {
+        "properties": {
+          "overrides": {
+            "description": "The user's new override set, replacing the stored one. An empty array resets the user to their roles.",
+            "items": {
+              "$ref": "#/components/schemas/PermissionOverride"
+            },
+            "maxItems": 256,
+            "type": "array"
+          }
+        },
+        "required": [
+          "overrides"
+        ],
+        "type": "object"
+      },
+      "UserPermissionsViewer": {
+        "properties": {
+          "can_edit": {
+            "description": "Whether the caller may replace this user's overrides: the user is not locked and ranks below the caller. Each key is still subject to the caller holding it.",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "can_edit"
+        ],
+        "type": "object"
+      },
       "UserProfile": {
         "properties": {
           "avatar": {
@@ -8830,6 +9309,115 @@
         ]
       }
     },
+    "/admin/permission-changes": {
+      "get": {
+        "description": "Every recorded replacement of a role's or a user's overrides, newest first with ties broken by descending id. A page-number collection: page × limit may not exceed 10000. Admins only.",
+        "operationId": "listPermissionChanges",
+        "parameters": [
+          {
+            "description": "1-based page number. page × limit may not exceed 10000.",
+            "explode": false,
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "default": 1,
+              "description": "1-based page number. page × limit may not exceed 10000.",
+              "format": "int64",
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Page size. 1–100, default 20. Values above 100 are rejected, not clamped.",
+            "explode": false,
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 20,
+              "description": "Page size. 1–100, default 20. Values above 100 are rejected, not clamped.",
+              "format": "int64",
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageListPermissionChange"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "PERMISSION_REQUIRED when the caller is not an admin."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the account service cannot be reached to name the people involved."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List permission changes",
+        "tags": [
+          "permissions"
+        ]
+      }
+    },
     "/admin/review-items": {
       "get": {
         "description": "This forum's items in the trust-and-safety review inbox, highest priority first with ties broken by descending id. A page-number collection: page × limit may not exceed 10000, and total counts under the same filter as items. It needs the trust.review permission, which a Bearer request never carries.",
@@ -9203,6 +9791,184 @@
         ]
       }
     },
+    "/admin/role-permissions": {
+      "get": {
+        "description": "Each role's baseline, stored overrides and effective permissions, with the permission catalog. Admins only.",
+        "operationId": "getRolePermissionMatrix",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RolePermissionMatrix"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "PERMISSION_REQUIRED when the caller is not an admin."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get the role permission matrix",
+        "tags": [
+          "permissions"
+        ]
+      },
+      "patch": {
+        "description": "Replaces the override set of every listed role in one transaction, and records one permission change per role. The caller may change only roles ranked below their own and only keys they hold themselves, ren cannot be changed, and the result must leave moderator holding nothing admin lacks. Other instances pick the change up within 60 seconds.",
+        "operationId": "updateRolePermissionMatrix",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RolePermissionMatrixPatch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RolePermissionMatrix"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "PERMISSION_REQUIRED when the caller is not an admin."
+          },
+          "415": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unsupported Media Type"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED, with one error per refused position: ren, a repeated role or key, a role at or above the caller, a key outside the catalog, an override that changes nothing against the baseline, a key the caller does not hold, and, at /changes, each key moderator would hold without admin."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Replace the overrides of some roles",
+        "tags": [
+          "permissions"
+        ]
+      }
+    },
     "/admin/topics/{topic_id}": {
       "delete": {
         "description": "Deletes the topic for good, with its replies, comments, polls, lotteries, favorites, view buckets and the notifications that link to it. An open lottery's escrowed moemoepoint goes back to its author first. Hiding is the reversible alternative. It needs the topic.delete_any permission.",
@@ -9409,6 +10175,242 @@
         "summary": "Get a topic's staff view",
         "tags": [
           "topics"
+        ]
+      }
+    },
+    "/admin/user-permissions/{user_id}": {
+      "get": {
+        "description": "What the user's roles grant, the user's personal overrides, and the result. Roles come from the account service's current record. Admins only.",
+        "operationId": "getUserPermissions",
+        "parameters": [
+          {
+            "description": "User id.",
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "description": "User id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserPermissions"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "PERMISSION_REQUIRED when the caller is not an admin."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when the account service has no such user."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the account service cannot be reached."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get a user's permissions",
+        "tags": [
+          "permissions"
+        ]
+      },
+      "put": {
+        "description": "Replaces the user's personal override set and records a permission change. The caller may change only users ranked below them and only keys they hold themselves; a ren holder cannot be changed. The target's roles are read from the account service and nothing is written when it cannot be reached.",
+        "operationId": "replaceUserPermissions",
+        "parameters": [
+          {
+            "description": "User id.",
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "description": "User id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserPermissionsReplace"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserPermissions"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "PERMISSION_REQUIRED when the caller is not an admin."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when the account service has no such user."
+          },
+          "415": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unsupported Media Type"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED, with one error per refused position: parameter user_id for a ren holder or a user at or above the caller, otherwise a repeated key, a key outside the catalog, an override that changes nothing against the user's roles, or a key the caller does not hold."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the account service cannot be reached."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Replace a user's personal overrides",
+        "tags": [
+          "permissions"
         ]
       }
     },
@@ -13573,6 +14575,76 @@
         "summary": "Set the caller's adult-content display",
         "tags": [
           "users"
+        ]
+      }
+    },
+    "/me/permissions": {
+      "get": {
+        "description": "Every permission key the caller holds right now: their roles, the role overrides, and their personal overrides. A Bearer request always gets an empty list. It only decides what to show; every write checks again.",
+        "operationId": "getMyPermissions",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PermissionSet"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List the caller's permissions",
+        "tags": [
+          "permissions"
         ]
       }
     },

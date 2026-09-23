@@ -6,6 +6,7 @@ import (
 	galgameapiv1 "kun-galgame-api/internal/galgame/apiv1"
 	messageapiv1 "kun-galgame-api/internal/message/apiv1"
 	"kun-galgame-api/internal/middleware"
+	permissionapiv1 "kun-galgame-api/internal/permission/apiv1"
 	topicapiv1 "kun-galgame-api/internal/topic/apiv1"
 	topicRepo "kun-galgame-api/internal/topic/repository"
 	trustapiv1 "kun-galgame-api/internal/trust/apiv1"
@@ -46,6 +47,7 @@ func (a *App) setupRoutes() {
 		messageapiv1.Register(a.newMessageV1()),
 		updateapiv1.Register(a.newUpdateV1()),
 		trustapiv1.Register(a.TrustV1),
+		permissionapiv1.Register(a.newPermissionV1()),
 	)
 
 	// Deliberately touches neither DB nor Redis: the container HEALTHCHECK reads
@@ -98,8 +100,6 @@ func (a *App) setupRoutes() {
 	api.Get("/friend-link", a.FriendLinkHandler.List)
 
 	api.Get("/app/version", a.AppReleaseHandler.GetVersion)
-
-	api.Get("/perm/bundles", a.AdminRolePermissionHandler.GetBundles)
 
 	api.Get("/activity", a.ActivityHandler.GetActivity)
 	api.Get("/activity/tab", a.ActivityHandler.GetTab)
@@ -210,8 +210,6 @@ func (a *App) setupRoutes() {
 	authed := api.Group("", a.Authn.Auth())
 	authed.Get("/auth/me", a.OAuthHandler.Me)
 
-	authed.Get("/perm/mine", a.AdminUserPermissionHandler.GetMine)
-
 	authed.Post("/community/wall/read", a.CommunityEngagementHandler.WallRead)
 	authed.Post("/community/wall/follow", a.CommunityEngagementHandler.WallFollow)
 	authed.Get("/community/following", a.CommunityEngagementHandler.Following)
@@ -300,15 +298,6 @@ func (a *App) setupRoutes() {
 
 	admin.Get("/admin/user/:id/content-stats", middleware.RequirePermission(perm.UserPurgeContent), a.AdminPurgeHandler.GetUserContentStats)
 	admin.Delete("/admin/user/:id/content", middleware.RequirePermission(perm.UserPurgeContent), a.AdminPurgeHandler.PurgeUserContent)
-
-	// RequireAdmin, not RequirePermission: overrides must never be able to lock
-	// admins out of the surface that repairs overrides.
-	rolePermAdmin := authed.Group("")
-	rolePermAdmin.Get("/admin/role-permissions", middleware.RequireAdmin(), a.AdminRolePermissionHandler.GetMatrix)
-	rolePermAdmin.Put("/admin/role-permissions/:role", middleware.RequireAdmin(), a.AdminRolePermissionHandler.Replace)
-	rolePermAdmin.Get("/admin/user-permissions/:uid", middleware.RequireAdmin(), a.AdminUserPermissionHandler.GetView)
-	rolePermAdmin.Put("/admin/user-permissions/:uid", middleware.RequireAdmin(), a.AdminUserPermissionHandler.Replace)
-	rolePermAdmin.Get("/admin/permission-audit", middleware.RequireAdmin(), a.AdminPermissionAuditHandler.List)
 
 	galgameAdmin := authed.Group("")
 	galgameAdmin.Get("/admin/galgame/submissions", middleware.RequirePermission(perm.GalgameClaimReview), a.GalgameClaimReviewHandler.PendingQueue)

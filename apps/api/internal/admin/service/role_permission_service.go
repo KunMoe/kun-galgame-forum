@@ -3,19 +3,14 @@ package service
 import (
 	"context"
 	"log/slog"
-	"sort"
-	"strings"
-	"time"
 
-	"kun-galgame-api/internal/admin/dto"
 	"kun-galgame-api/internal/admin/model"
-	"kun-galgame-api/pkg/errors"
 	"kun-galgame-api/pkg/perm"
 )
 
 type overrideStore interface {
 	ListAll(ctx context.Context) ([]model.RolePermissionOverride, error)
-	ReplaceForRole(ctx context.Context, role string, rows []model.RolePermissionOverride, operatorUID int) error
+	Replace(ctx context.Context, operatorUID int, plan func([]model.RolePermissionOverride) ([]model.RoleReplacement, error)) error
 }
 
 type reloader interface {
@@ -31,190 +26,73 @@ func NewRolePermissionService(repo overrideStore, reload reloader) *RolePermissi
 	return &RolePermissionService{repo: repo, reload: reload}
 }
 
-var editableRoles = map[string]bool{"creator": true, "moderator": true, "admin": true}
-
-var matrixRoles = []string{"creator", "moderator", "admin", "ren"}
-
-func (s *RolePermissionService) Matrix(ctx context.Context) (dto.RolePermissionMatrix, error) {
+func (s *RolePermissionService) Matrix(ctx context.Context) (Matrix, error) {
 	rows, err := s.repo.ListAll(ctx)
 	if err != nil {
-		return dto.RolePermissionMatrix{}, err
+		return Matrix{}, err
 	}
 	return buildMatrix(rows), nil
 }
 
-func (s *RolePermissionService) ReplaceOverrides(ctx context.Context, operatorUID int, operatorRoles []string, role string, items []dto.ReplaceOverrideItem) (dto.RolePermissionMatrix, *errors.AppError) {
-	current, err := s.repo.ListAll(ctx)
+// Apply replaces the overrides of every role in changes at once. Moderator ⊆
+// admin spans two roles, so each change is judged against the others' new
+// state, never against what is stored for them.
+func (s *RolePermissionService) Apply(ctx context.Context, op Operator, changes []RoleChange) (Matrix, error) {
+	err := s.repo.Replace(ctx, op.ID, func(current []model.RolePermissionOverride) ([]model.RoleReplacement, error) {
+		if vs := validateRoleChanges(op, current, changes); len(vs) > 0 {
+			return nil, &ValidationError{Violations: vs}
+		}
+		out := make([]model.RoleReplacement, len(changes))
+		for i, ch := range changes {
+			rows := make([]model.RolePermissionOverride, len(ch.Overrides))
+			for j, ov := range ch.Overrides {
+				rows[j] = model.RolePermissionOverride{Role: ch.Role, Permission: string(ov.Permission), Effect: ov.Effect}
+			}
+			out[i] = model.RoleReplacement{Role: ch.Role, Rows: rows}
+		}
+		return out, nil
+	})
 	if err != nil {
-		return dto.RolePermissionMatrix{}, errors.ErrInternal("读取角色权限失败")
-	}
-	if appErr := validateReplace(operatorUID, operatorRoles, role, items, current); appErr != nil {
-		return dto.RolePermissionMatrix{}, appErr
-	}
-
-	if err := s.repo.ReplaceForRole(ctx, role, itemsToRows(role, items), operatorUID); err != nil {
-		return dto.RolePermissionMatrix{}, errors.ErrInternal("保存角色权限失败")
+		return Matrix{}, err
 	}
 	if err := s.reload.Load(ctx); err != nil {
-		slog.Warn("写入后刷新角色权限覆盖失败, 稍后自动收敛", "error", err)
+		slog.Warn("reloading permission overrides after a role write failed; the refresher will converge", "error", err)
 	}
-	matrix, err := s.Matrix(ctx)
-	if err != nil {
-		return dto.RolePermissionMatrix{}, errors.ErrInternal("获取角色权限矩阵失败")
-	}
-	return matrix, nil
+	return s.Matrix(ctx)
 }
 
-func validateReplace(operatorUID int, operatorRoles []string, role string, items []dto.ReplaceOverrideItem, current []model.RolePermissionOverride) *errors.AppError {
-	if role == "ren" {
-		return errors.ErrBadRequest("ren 角色的权限被固定为全部, 不可修改")
-	}
-	if !editableRoles[role] {
-		return errors.ErrBadRequest("不支持管理该角色, 仅可管理 creator / moderator / admin")
-	}
-	if perm.Rank(operatorRoles) <= perm.RoleRank(role) {
-		return errors.ErrBadRequest("不可编辑与自身同级或更高的角色 (" + role + ")")
-	}
-
-	seen := make(map[string]bool, len(items))
-	for _, it := range items {
-		p := perm.Permission(it.Permission)
-		if !perm.IsKnownPermission(p) {
-			return errors.ErrBadRequest("未知的权限: " + it.Permission)
-		}
-		if it.Effect != perm.EffectGrant && it.Effect != perm.EffectRevoke {
-			return errors.ErrBadRequest("非法的调整类型: " + it.Effect + " (仅支持 grant / revoke)")
-		}
-		if seen[it.Permission] {
-			return errors.ErrBadRequest("权限 " + it.Permission + " 重复出现")
-		}
-		seen[it.Permission] = true
-
-		inBaseline := perm.BaselineHas(role, p)
-		if it.Effect == perm.EffectGrant && inBaseline {
-			return errors.ErrBadRequest("权限 " + it.Permission + " 已在 " + role + " 的默认集合中, 无需授予")
-		}
-		if it.Effect == perm.EffectRevoke && !inBaseline {
-			return errors.ErrBadRequest("权限 " + it.Permission + " 不在 " + role + " 的默认集合中, 无需撤销")
-		}
-	}
-
-	if key, ok := possessionOffender(
-		effectMapFromRoleRows(current, role),
-		effectMapFromItems(items),
-		operatorEffectiveSet(operatorUID, operatorRoles),
-	); !ok {
-		return errors.ErrBadRequest("不可增删自己未持有的权限: " + key)
-	}
-
-	prospective := rowsToOverrideMap(current)
-	prospective[role] = itemsToOverrides(items)
-	modEff := perm.EffectiveSet("moderator", prospective["moderator"])
-	adminSet := make(map[perm.Permission]bool)
-	for _, p := range perm.EffectiveSet("admin", prospective["admin"]) {
-		adminSet[p] = true
-	}
-	var offending []string
-	for _, p := range modEff {
-		if !adminSet[p] {
-			offending = append(offending, string(p))
-		}
-	}
-	if len(offending) > 0 {
-		sort.Strings(offending)
-		return errors.ErrBadRequest("权限层级冲突: moderator 拥有但 admin 缺失的权限 — " +
-			strings.Join(offending, ", ") + " (moderator 必须是 admin 的子集)")
-	}
-	return nil
-}
-
-func buildMatrix(rows []model.RolePermissionOverride) dto.RolePermissionMatrix {
-	byRole := make(map[string][]model.RolePermissionOverride)
+func buildMatrix(rows []model.RolePermissionOverride) Matrix {
+	byRole := make(map[string][]perm.Override)
 	for _, r := range rows {
-		byRole[r.Role] = append(byRole[r.Role], r)
+		byRole[r.Role] = append(byRole[r.Role], perm.Override{Permission: perm.Permission(r.Permission), Effect: r.Effect})
 	}
-
-	roles := make(map[string]dto.RolePermissionRole, len(matrixRoles))
+	layers := make([]RoleLayer, 0, len(matrixRoles))
 	for _, role := range matrixRoles {
-		roleRows := byRole[role]
-		if role == "ren" {
-			roleRows = nil
+		overrides := byRole[role]
+		if role == roleRen {
+			overrides = nil
 		}
-		roles[role] = dto.RolePermissionRole{
-			Baseline:  permsToStrings(perm.Baseline(role)),
-			Overrides: overridesToDTO(roleRows),
-			Effective: permsToStrings(perm.EffectiveSet(role, rowsToOverrides(roleRows))),
-			Locked:    role == "ren",
-		}
+		layers = append(layers, RoleLayer{
+			Role:      role,
+			Baseline:  perm.Baseline(role),
+			Overrides: inCatalogOrder(overrides),
+			Effective: perm.EffectiveSet(role, overrides),
+			Locked:    role == roleRen,
+		})
 	}
-	return dto.RolePermissionMatrix{
-		Catalog: permsToStrings(perm.Catalog()),
-		Roles:   roles,
-	}
+	return Matrix{Catalog: perm.Catalog(), Roles: layers}
 }
 
-func overridesToDTO(rows []model.RolePermissionOverride) []dto.RolePermissionOverride {
-	byPerm := make(map[perm.Permission]model.RolePermissionOverride, len(rows))
-	for _, r := range rows {
-		byPerm[perm.Permission(r.Permission)] = r
+func inCatalogOrder(overrides []perm.Override) []perm.Override {
+	byPerm := make(map[perm.Permission]perm.Override, len(overrides))
+	for _, ov := range overrides {
+		byPerm[ov.Permission] = ov
 	}
-	out := make([]dto.RolePermissionOverride, 0, len(rows))
+	out := make([]perm.Override, 0, len(overrides))
 	for _, p := range perm.Catalog() {
-		if r, ok := byPerm[p]; ok {
-			out = append(out, dto.RolePermissionOverride{
-				Permission: r.Permission,
-				Effect:     r.Effect,
-				UpdatedBy:  r.UpdatedBy,
-				UpdatedAt:  r.UpdatedAt.Format(time.RFC3339),
-			})
+		if ov, ok := byPerm[p]; ok {
+			out = append(out, ov)
 		}
-	}
-	return out
-}
-
-func rowsToOverrideMap(rows []model.RolePermissionOverride) map[string][]perm.Override {
-	out := make(map[string][]perm.Override)
-	for _, r := range rows {
-		out[r.Role] = append(out[r.Role], perm.Override{
-			Permission: perm.Permission(r.Permission),
-			Effect:     r.Effect,
-		})
-	}
-	return out
-}
-
-func rowsToOverrides(rows []model.RolePermissionOverride) []perm.Override {
-	out := make([]perm.Override, 0, len(rows))
-	for _, r := range rows {
-		out = append(out, perm.Override{Permission: perm.Permission(r.Permission), Effect: r.Effect})
-	}
-	return out
-}
-
-func itemsToOverrides(items []dto.ReplaceOverrideItem) []perm.Override {
-	out := make([]perm.Override, 0, len(items))
-	for _, it := range items {
-		out = append(out, perm.Override{Permission: perm.Permission(it.Permission), Effect: it.Effect})
-	}
-	return out
-}
-
-func itemsToRows(role string, items []dto.ReplaceOverrideItem) []model.RolePermissionOverride {
-	out := make([]model.RolePermissionOverride, 0, len(items))
-	for _, it := range items {
-		out = append(out, model.RolePermissionOverride{
-			Role:       role,
-			Permission: it.Permission,
-			Effect:     it.Effect,
-		})
-	}
-	return out
-}
-
-func permsToStrings(perms []perm.Permission) []string {
-	out := make([]string, len(perms))
-	for i, p := range perms {
-		out[i] = string(p)
 	}
 	return out
 }

@@ -133,18 +133,18 @@
 
 `/admin/permission`（`pages/admin/permission.vue`，`middleware: 'admin'`）两个 tab：**权限矩阵**（`Matrix.vue`：51 行 × creator/moderator/admin/ren 四列，勾选即相对基线的 grant/revoke，小圆点标偏离；ren 列锁定只读）与 **变更日志**（`AuditLog.vue`）。矩阵下方另有 `ProxyList.vue` 只读列出 7 个 infra 代理操作（可见但不可覆盖）。保存为「每个脏角色一次 PUT，整体替换该角色覆盖集」。
 
-**每用户「权限调整」面板**（`UserPanel.vue`）挂在 `/admin/user` 的 `UserCard` 上：以 `role_effective`（角色派生集）为偏离参照，PUT 发送工作集相对该参照的 delta 作为个人覆盖全集（replace 语义）；ren 持有者整面板只读。
+**每用户「权限调整」面板**（`UserPanel.vue`）挂在 `/admin/user` 的 `UserCard` 上：以 `baseline`（角色派生集，旧名 `role_effective`）为偏离参照，`PUT /api/v1/admin/user-permissions/{user_id}` 发送工作集相对该参照的 delta 作为个人覆盖全集（replace 语义）；ren 持有者（`is_locked`）或级别不低于操作者（`viewer.can_edit = false`）时整面板只读。
 
-**为何管理路由用 `RequireAdmin`（角色门）而非 `RequirePermission`（权限门）**：覆盖系统绝不能把管理员锁在「修复覆盖的那个界面」之外（self-lockout 防护）。所以这套 meta-surface（`rolePermAdmin` 组：`/admin/role-permissions`、`/admin/user-permissions/:uid`、`/admin/permission-audit`）刻意坐落在可覆盖系统 **之外**，与 infra 代理镜像同类——见 `router.go` 该组上方注释。
+**为何管理面用角色门（`user.CanAdminister()`）而非权限键**：覆盖系统绝不能把管理员锁在「修复覆盖的那个界面」之外（self-lockout 防护）。所以这套 meta-surface（`/api/v1/admin/role-permissions`、`/api/v1/admin/user-permissions/{user_id}`、`/api/v1/admin/permission-changes`）刻意坐落在可覆盖系统 **之外**，与 infra 代理镜像同类——见 `internal/permission/apiv1/ops.go` 的 `requireAdmin`。2026-09-23 起（P 轨）角色矩阵的写是**一次原子 `PATCH`**：多个角色在同一事务、同一把 advisory 锁下按合并后的新状态校验并写入（旧的逐角色 `PUT` 在「同时把一个键还给版主与管理员」时两种顺序都存不进去）。
 
 ## 七、审计
 
-`permission_audit_log`（migration 064）append-only，应用层从不 UPDATE/DELETE。每次 role/user 替换都 **在同一事务里** 写 **恰好一行**（先在删除前 `SELECT` 捕获 before 行，再删、插、写审计——`repository/permission_audit_repo.go` 的 `writeAudit`），审计与变更永不漂移。字段：`subject_kind ∈ {role,user}`、`subject`（角色名或十进制 uid）、`action`（新集为空=`reset`，否则=`replace`）、`before_rows`/`after_rows`（紧凑 jsonb `{permission,effect}` 数组）。经 `GET /admin/permission-audit` 分页（新→旧）读出，operator 用 OAuth 批量补显示信息（best-effort，失败退化为「用户 #id」）。
+`permission_audit_log`（migration 064）append-only，应用层从不 UPDATE/DELETE。每次 role/user 替换都 **在同一事务里** 写 **恰好一行**（先在删除前 `SELECT` 捕获 before 行，再删、插、写审计——`repository/permission_audit_repo.go` 的 `writeAudit`），审计与变更永不漂移。字段：`subject_kind ∈ {role,user}`、`subject`（角色名或十进制 uid）、`action`（新集为空=`reset`，否则=`replace`）、`before_rows`/`after_rows`（紧凑 jsonb `{permission,effect}` 数组）。经 `GET /api/v1/admin/permission-changes`（页码集合，`created_at DESC, id DESC`）读出，`actor` / `target_user` 用 OAuth 批量水合为 `UserRef`，OAuth 不可用时整页 `503`。
 
 ## 八、前端镜像契约
 
 - **静态表须与 `pkg/perm` 逐字一致**：`useCan.ts` 的 `MODERATOR_PERMISSIONS`（49）+ `ADMIN_ONLY_PERMISSIONS`（2）是编译期基线的手抄镜像，字符串即 wire 契约，必须与 `pkg/perm` lockstep。`constants/permission.ts` 的标签表按 `ForumPermission` 类型约束，少一个/多一个 key 会在 **构建时** 报错——标签永不会静默漂移。
-- **运行时可见性走 `GET /perm/mine`**：`perm-mine.ts`（universal 插件，非 `.client`）为 **每个登录用户** 各拉一次，写入 `useState('kun-perm-mine')`。因为个人 grant 可能落在无角色账号上，所以不再「roles 为空就跳过」；只有匿名访客跳过。`useCan` 优先读这份已折叠了 role 层 + 个人 delta 的有效表，未就绪/失败时退回静态角色表。`GET /perm/bundles`（**公开**）另供各角色的有效 bundle，只驱动 UI 显隐。
+- **运行时可见性走 `GET /api/v1/me/permissions`**：`perm-mine.ts`（universal 插件，非 `.client`）为 **每个登录用户** 各拉一次，写入 `useState('kun-perm-mine')`。因为个人 grant 可能落在无角色账号上，所以不再「roles 为空就跳过」；只有匿名访客跳过。`useCan` 优先读这份已折叠了 role 层 + 个人 delta 的有效表，未就绪/失败时退回静态角色表。它逐键经 `user.Can` 计算，所以 Bearer 请求结构性地得到空列表。原来的公开 `GET /perm/bundles` 零调用方且把真实覆盖配置暴露给匿名访客，2026-09-23 删除。
 - **前端 gating 仅 UX**：真正边界是后端（`RequirePermission` → `CanUser`，同样应用覆盖）。组件分支于具名 **能力**，从不判角色 tier。
 - **审核工作台消费投影而非镜像 infra bundle**：编辑提案的评审 UI 读接口下发的 `can_review` / `can_decide` 投影（见特殊判定点），不在前端复刻 infra 的 bundle。
 
@@ -171,13 +171,13 @@
 | 校验 / 直通 / 读模型 | `apps/api/internal/admin/service/{role,user}_permission_service.go` |
 | 单一 Load 路径 | `apps/api/internal/admin/service/permission_override_sync.go` |
 | 事务内审计写入 | `apps/api/internal/admin/repository/permission_audit_repo.go` |
-| 路由门 + self-lockout 注释 | `apps/api/internal/app/router.go` |
-| 三个 Require* 中间件 | `apps/api/internal/middleware/role.go` |
+| v1 管理面 + self-lockout 注释 | `apps/api/internal/permission/apiv1/*.go` |
+| Require* 中间件（旧路由） | `apps/api/internal/middleware/role.go` |
 | 编辑提案查看门 + 能力投影 | `apps/api/internal/galgame/handler/edit_handler.go` |
 | 评论 anchor→surface 判权 | `apps/api/internal/galgame/service/community_comment_write.go` |
 | 前端静态镜像 + `useCan` | `apps/web/app/composables/useCan.ts` |
 | 标签 / 分组 / 7 代理项 | `apps/web/app/constants/permission.ts` |
-| `/perm/mine` 拉取插件 | `apps/web/app/plugins/perm-mine.ts` |
+| `/me/permissions` 拉取插件 | `apps/web/app/plugins/perm-mine.ts` |
 | 管理页 + 矩阵/用户/审计/代理 | `apps/web/app/pages/admin/permission.vue`、`components/admin/permission/*.vue` |
 
 ## 差异说明

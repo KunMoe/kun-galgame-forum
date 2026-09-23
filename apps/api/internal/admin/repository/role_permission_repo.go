@@ -23,28 +23,47 @@ func (r *RolePermissionRepository) ListAll(ctx context.Context) ([]model.RolePer
 	return rows, err
 }
 
-func (r *RolePermissionRepository) ReplaceForRole(ctx context.Context, role string, rows []model.RolePermissionOverride, operatorUID int) error {
-	now := time.Now()
+// Validation reads rows of more than one role (moderator ⊆ admin), so the read,
+// the judgement and the write share one lock or two writers can break it.
+func (r *RolePermissionRepository) Replace(ctx context.Context, operatorUID int, plan func([]model.RolePermissionOverride) ([]model.RoleReplacement, error)) error {
 	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		var before []model.RolePermissionOverride
-		if err := tx.Where("role = ?", role).Order("permission ASC").Find(&before).Error; err != nil {
+		if err := tx.Exec("SELECT pg_advisory_xact_lock(hashtext('role_permission_override'))").Error; err != nil {
 			return err
 		}
-		if err := tx.Where("role = ?", role).Delete(&model.RolePermissionOverride{}).Error; err != nil {
+		var current []model.RolePermissionOverride
+		if err := tx.Order("role ASC, permission ASC").Find(&current).Error; err != nil {
 			return err
 		}
-		for i := range rows {
-			rows[i].Role = role
-			rows[i].UpdatedBy = operatorUID
-			rows[i].UpdatedAt = now
+		next, err := plan(current)
+		if err != nil {
+			return err
 		}
-		if len(rows) > 0 {
-			if err := tx.Create(&rows).Error; err != nil {
+		now := time.Now()
+		for _, rep := range next {
+			var before []model.RolePermissionOverride
+			for _, row := range current {
+				if row.Role == rep.Role {
+					before = append(before, row)
+				}
+			}
+			if err := tx.Where("role = ?", rep.Role).Delete(&model.RolePermissionOverride{}).Error; err != nil {
+				return err
+			}
+			for i := range rep.Rows {
+				rep.Rows[i].Role = rep.Role
+				rep.Rows[i].UpdatedBy = operatorUID
+				rep.Rows[i].UpdatedAt = now
+			}
+			if len(rep.Rows) > 0 {
+				if err := tx.Create(&rep.Rows).Error; err != nil {
+					return err
+				}
+			}
+			if err := writeAudit(tx, operatorUID, "role", rep.Role, roleRowsToDeltas(before), roleRowsToDeltas(rep.Rows)); err != nil {
 				return err
 			}
 		}
-		return writeAudit(tx, operatorUID, "role", role,
-			roleRowsToDeltas(before), roleRowsToDeltas(rows))
+		return nil
 	})
 }
 

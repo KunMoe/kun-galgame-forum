@@ -2,43 +2,42 @@ package service
 
 import (
 	"context"
+	"errors"
 	"slices"
-	"strings"
 	"testing"
 
-	"kun-galgame-api/internal/admin/dto"
 	"kun-galgame-api/internal/admin/model"
 	"kun-galgame-api/pkg/perm"
+	"kun-galgame-api/pkg/problem"
 )
 
 type fakeStore struct {
-	rows       []model.RolePermissionOverride
-	listErr    error
-	replaceErr error
+	rows []model.RolePermissionOverride
 }
 
 func (f *fakeStore) ListAll(_ context.Context) ([]model.RolePermissionOverride, error) {
-	if f.listErr != nil {
-		return nil, f.listErr
-	}
 	return append([]model.RolePermissionOverride{}, f.rows...), nil
 }
 
-func (f *fakeStore) ReplaceForRole(_ context.Context, role string, rows []model.RolePermissionOverride, operatorUID int) error {
-	if f.replaceErr != nil {
-		return f.replaceErr
+func (f *fakeStore) Replace(_ context.Context, operatorUID int, plan func([]model.RolePermissionOverride) ([]model.RoleReplacement, error)) error {
+	next, err := plan(append([]model.RolePermissionOverride{}, f.rows...))
+	if err != nil {
+		return err
 	}
-	kept := make([]model.RolePermissionOverride, 0, len(f.rows))
-	for _, r := range f.rows {
-		if r.Role != role {
+	for _, rep := range next {
+		kept := make([]model.RolePermissionOverride, 0, len(f.rows))
+		for _, r := range f.rows {
+			if r.Role != rep.Role {
+				kept = append(kept, r)
+			}
+		}
+		for _, r := range rep.Rows {
+			r.Role = rep.Role
+			r.UpdatedBy = operatorUID
 			kept = append(kept, r)
 		}
+		f.rows = kept
 	}
-	for i := range rows {
-		rows[i].Role = role
-		rows[i].UpdatedBy = operatorUID
-	}
-	f.rows = append(kept, rows...)
 	return nil
 }
 
@@ -60,229 +59,191 @@ func newSvc(store *fakeStore) *RolePermissionService {
 	return NewRolePermissionService(store, NewPermissionOverrideSync(store, emptyUserStore{}))
 }
 
-func grant(p perm.Permission) dto.ReplaceOverrideItem {
-	return dto.ReplaceOverrideItem{Permission: string(p), Effect: perm.EffectGrant}
+func grant(p perm.Permission) perm.Override {
+	return perm.Override{Permission: p, Effect: perm.EffectGrant}
 }
-func revoke(p perm.Permission) dto.ReplaceOverrideItem {
-	return dto.ReplaceOverrideItem{Permission: string(p), Effect: perm.EffectRevoke}
+func revoke(p perm.Permission) perm.Override {
+	return perm.Override{Permission: p, Effect: perm.EffectRevoke}
 }
 
-var renOperatorRoles = []string{"ren"}
+func opFor(uid int, roles ...string) Operator {
+	return Operator{ID: uid, Rank: perm.Rank(roles), Holds: func(p perm.Permission) bool { return perm.CanUser(uid, roles, p) }}
+}
 
-func TestReplaceRejectsRen(t *testing.T) {
-	resetPerm(t)
-	svc := newSvc(&fakeStore{})
-	_, appErr := svc.ReplaceOverrides(context.Background(), 1, renOperatorRoles, "ren", []dto.ReplaceOverrideItem{revoke(TopicHideKey)})
-	if appErr == nil {
-		t.Fatal("editing ren must be rejected")
+var renOp = opFor(1, "ren")
+
+func violations(t *testing.T, err error) []Violation {
+	t.Helper()
+	var ve *ValidationError
+	if !errors.As(err, &ve) {
+		t.Fatalf("want a ValidationError, got %v", err)
 	}
-	if appErr.StatusCode != 400 {
-		t.Fatalf("ren rejection status = %d, want 400", appErr.StatusCode)
-	}
+	return ve.Violations
 }
 
-func TestReplaceRejectsUserAndUnknownRole(t *testing.T) {
-	resetPerm(t)
-	svc := newSvc(&fakeStore{})
-	for _, role := range []string{"user", "banana", ""} {
-		if _, appErr := svc.ReplaceOverrides(context.Background(), 1, renOperatorRoles, role, nil); appErr == nil {
-			t.Errorf("role %q must be rejected as non-manageable", role)
+func wantViolation(t *testing.T, err error, pointer, reason string) {
+	t.Helper()
+	for _, v := range violations(t, err) {
+		if v.Pointer == pointer && v.Reason == reason {
+			return
 		}
 	}
+	t.Fatalf("no %s at %s in %+v", reason, pointer, violations(t, err))
 }
 
-func TestReplaceRejectsUnknownKey(t *testing.T) {
+func apply(svc *RolePermissionService, op Operator, changes ...RoleChange) (Matrix, error) {
+	return svc.Apply(context.Background(), op, changes)
+}
+
+func layer(m Matrix, role string) RoleLayer {
+	for _, l := range m.Roles {
+		if l.Role == role {
+			return l
+		}
+	}
+	return RoleLayer{}
+}
+
+func TestApplyRejectsRen(t *testing.T) {
+	resetPerm(t)
+	_, err := apply(newSvc(&fakeStore{}), renOp, RoleChange{Role: "ren", Overrides: []perm.Override{revoke(perm.TopicHide)}})
+	wantViolation(t, err, "/changes/0/role", problem.ReasonNotAllowedValue)
+}
+
+func TestApplyRejectsDuplicateRole(t *testing.T) {
+	resetPerm(t)
+	_, err := apply(newSvc(&fakeStore{}), renOp, RoleChange{Role: "creator"}, RoleChange{Role: "creator"})
+	wantViolation(t, err, "/changes/1/role", problem.ReasonDuplicateItem)
+}
+
+func TestApplyRejectsUnknownKey(t *testing.T) {
+	resetPerm(t)
+	_, err := apply(newSvc(&fakeStore{}), renOp, RoleChange{Role: "creator", Overrides: []perm.Override{grant("does.not_exist")}})
+	wantViolation(t, err, "/changes/0/overrides/0/permission", problem.ReasonUnknownValue)
+}
+
+func TestApplyRejectsNoop(t *testing.T) {
 	resetPerm(t)
 	svc := newSvc(&fakeStore{})
-	_, appErr := svc.ReplaceOverrides(context.Background(), 1, renOperatorRoles, "creator",
-		[]dto.ReplaceOverrideItem{{Permission: "does.not.exist", Effect: perm.EffectGrant}})
-	if appErr == nil {
-		t.Fatal("unknown permission key must be rejected")
-	}
+	_, err := apply(svc, renOp, RoleChange{Role: "moderator", Overrides: []perm.Override{grant(perm.TopicHide)}})
+	wantViolation(t, err, "/changes/0/overrides/0/effect", problem.ReasonNotAllowedValue)
+	_, err = apply(svc, renOp, RoleChange{Role: "creator", Overrides: []perm.Override{revoke(perm.TopicHide)}})
+	wantViolation(t, err, "/changes/0/overrides/0/effect", problem.ReasonNotAllowedValue)
 }
 
-func TestReplaceRejectsInvalidEffect(t *testing.T) {
+func TestApplyRejectsDuplicateKey(t *testing.T) {
 	resetPerm(t)
-	svc := newSvc(&fakeStore{})
-	_, appErr := svc.ReplaceOverrides(context.Background(), 1, renOperatorRoles, "creator",
-		[]dto.ReplaceOverrideItem{{Permission: string(TopicHideKey), Effect: "toggle"}})
-	if appErr == nil {
-		t.Fatal("invalid effect must be rejected")
-	}
+	_, err := apply(newSvc(&fakeStore{}), renOp, RoleChange{Role: "creator", Overrides: []perm.Override{grant(perm.TopicHide), grant(perm.TopicHide)}})
+	wantViolation(t, err, "/changes/0/overrides/1/permission", problem.ReasonDuplicateItem)
 }
 
-func TestReplaceRejectsNoop(t *testing.T) {
-	resetPerm(t)
-	svc := newSvc(&fakeStore{})
-	if _, appErr := svc.ReplaceOverrides(context.Background(), 1, renOperatorRoles, "moderator",
-		[]dto.ReplaceOverrideItem{grant(TopicHideKey)}); appErr == nil {
-		t.Error("granting a baseline permission must be rejected as a no-op")
-	}
-	if _, appErr := svc.ReplaceOverrides(context.Background(), 1, renOperatorRoles, "creator",
-		[]dto.ReplaceOverrideItem{revoke(TopicHideKey)}); appErr == nil {
-		t.Error("revoking a non-baseline permission must be rejected as a no-op")
-	}
-}
-
-func TestReplaceRejectsDuplicate(t *testing.T) {
-	resetPerm(t)
-	svc := newSvc(&fakeStore{})
-	_, appErr := svc.ReplaceOverrides(context.Background(), 1, renOperatorRoles, "creator",
-		[]dto.ReplaceOverrideItem{grant(TopicHideKey), grant(TopicHideKey)})
-	if appErr == nil {
-		t.Fatal("duplicate permission must be rejected")
-	}
-}
-
-func TestReplaceContainmentViolation(t *testing.T) {
+func TestApplyContainmentViolation(t *testing.T) {
 	resetPerm(t)
 	store := &fakeStore{rows: []model.RolePermissionOverride{
-		{Role: "admin", Permission: string(UserPurgeKey), Effect: perm.EffectRevoke},
+		{Role: "admin", Permission: string(perm.UserPurgeContent), Effect: perm.EffectRevoke},
 	}}
-	svc := newSvc(store)
-	_, appErr := svc.ReplaceOverrides(context.Background(), 1, renOperatorRoles, "moderator",
-		[]dto.ReplaceOverrideItem{grant(UserPurgeKey)})
-	if appErr == nil {
-		t.Fatal("containment violation (moderator ⊄ admin) must be rejected")
+	_, err := apply(newSvc(store), renOp, RoleChange{Role: "moderator", Overrides: []perm.Override{grant(perm.UserPurgeContent)}})
+	wantViolation(t, err, "/changes", problem.ReasonInconsistentWith)
+}
+
+func TestApplyJudgesTheCombinedState(t *testing.T) {
+	resetPerm(t)
+	store := &fakeStore{rows: []model.RolePermissionOverride{
+		{Role: "admin", Permission: string(perm.DocEdit), Effect: perm.EffectRevoke},
+		{Role: "moderator", Permission: string(perm.DocEdit), Effect: perm.EffectRevoke},
+	}}
+	m, err := apply(newSvc(store), renOp, RoleChange{Role: "moderator"}, RoleChange{Role: "admin"})
+	if err != nil {
+		t.Fatalf("restoring a key to both roles at once must pass: %v", err)
 	}
-	if appErr.StatusCode != 400 {
-		t.Fatalf("containment rejection status = %d, want 400", appErr.StatusCode)
+	if !slices.Contains(layer(m, "moderator").Effective, perm.DocEdit) || !slices.Contains(layer(m, "admin").Effective, perm.DocEdit) {
+		t.Fatal("both roles should hold doc.edit again")
+	}
+	if len(store.rows) != 0 {
+		t.Fatalf("both reset, rows %+v", store.rows)
 	}
 }
 
-func TestReplaceHappyPath(t *testing.T) {
+func TestApplyHappyPath(t *testing.T) {
 	resetPerm(t)
 	store := &fakeStore{}
-	svc := newSvc(store)
-
-	matrix, appErr := svc.ReplaceOverrides(context.Background(), 7, renOperatorRoles, "creator",
-		[]dto.ReplaceOverrideItem{grant(TopicHideKey)})
-	if appErr != nil {
-		t.Fatalf("valid replace failed: %v", appErr)
+	m, err := apply(newSvc(store), opFor(7, "ren"), RoleChange{Role: "creator", Overrides: []perm.Override{grant(perm.TopicHide)}})
+	if err != nil {
+		t.Fatalf("valid apply failed: %v", err)
 	}
-
 	if len(store.rows) != 1 || store.rows[0].UpdatedBy != 7 {
 		t.Fatalf("expected 1 row stamped by operator 7, got %+v", store.rows)
 	}
-	if !perm.Can([]string{"creator"}, TopicHideKey) {
-		t.Error("creator should hold topic.hide immediately after a valid replace")
+	if !perm.Can([]string{"creator"}, perm.TopicHide) {
+		t.Error("creator should hold topic.hide immediately after a valid apply")
 	}
-	creator := matrix.Roles["creator"]
-	if len(creator.Overrides) != 1 || creator.Overrides[0].Permission != string(TopicHideKey) {
-		t.Errorf("matrix creator overrides = %+v, want one topic.hide grant", creator.Overrides)
+	creator := layer(m, "creator")
+	if len(creator.Overrides) != 1 || creator.Overrides[0].Permission != perm.TopicHide {
+		t.Errorf("creator overrides = %+v", creator.Overrides)
 	}
-	if !contains(creator.Effective, string(TopicHideKey)) {
-		t.Errorf("matrix creator effective %v missing topic.hide", creator.Effective)
+	if !slices.Contains(creator.Effective, perm.TopicHide) || len(creator.Baseline) != 0 {
+		t.Errorf("creator layer %+v", creator)
 	}
-	if len(creator.Baseline) != 0 {
-		t.Errorf("creator baseline should be empty, got %v", creator.Baseline)
-	}
-	if !matrix.Roles["ren"].Locked {
-		t.Error("ren must be marked locked in the matrix")
-	}
-	if want := len(perm.Catalog()); len(matrix.Catalog) != want {
-		t.Errorf("matrix catalog has %d keys, want %d", len(matrix.Catalog), want)
+	if !layer(m, "ren").Locked || len(m.Catalog) != len(perm.Catalog()) || len(m.Roles) != 4 {
+		t.Errorf("matrix shape %+v", m)
 	}
 }
 
-func TestReplaceResetRestoresBaseline(t *testing.T) {
+func TestApplyResetRestoresBaseline(t *testing.T) {
 	resetPerm(t)
 	store := &fakeStore{rows: []model.RolePermissionOverride{
-		{Role: "creator", Permission: string(TopicHideKey), Effect: perm.EffectGrant},
+		{Role: "creator", Permission: string(perm.TopicHide), Effect: perm.EffectGrant},
 	}}
-	svc := newSvc(store)
-	if _, appErr := svc.ReplaceOverrides(context.Background(), 1, renOperatorRoles, "creator", nil); appErr != nil {
-		t.Fatalf("reset failed: %v", appErr)
+	if _, err := apply(newSvc(store), renOp, RoleChange{Role: "creator"}); err != nil {
+		t.Fatalf("reset failed: %v", err)
 	}
-	if len(store.rows) != 0 {
-		t.Errorf("reset should delete all creator rows, got %+v", store.rows)
-	}
-	if perm.Can([]string{"creator"}, TopicHideKey) {
-		t.Error("creator should hold nothing after a reset")
+	if len(store.rows) != 0 || perm.Can([]string{"creator"}, perm.TopicHide) {
+		t.Errorf("reset left %+v", store.rows)
 	}
 }
 
-var adminOperatorRoles = []string{"admin"}
-
-func TestReplaceRankAdminCannotEditAdminRole(t *testing.T) {
+func TestApplyRankAdminCannotEditAdminRole(t *testing.T) {
 	resetPerm(t)
-	svc := newSvc(&fakeStore{})
-	_, appErr := svc.ReplaceOverrides(context.Background(), 100, adminOperatorRoles, "admin",
-		[]dto.ReplaceOverrideItem{revoke(UserPurgeKey)})
-	if appErr == nil || appErr.StatusCode != 400 {
-		t.Fatalf("admin editing the admin role must be rejected with 400, got %v", appErr)
+	_, err := apply(newSvc(&fakeStore{}), opFor(100, "admin"), RoleChange{Role: "admin", Overrides: []perm.Override{revoke(perm.UserPurgeContent)}})
+	wantViolation(t, err, "/changes/0/role", problem.ReasonNotPermitted)
+}
+
+func TestApplyRankRenCanEditAdminRole(t *testing.T) {
+	resetPerm(t)
+	if _, err := apply(newSvc(&fakeStore{}), renOp, RoleChange{Role: "admin", Overrides: []perm.Override{revoke(perm.AdminDashboard)}}); err != nil {
+		t.Fatalf("ren editing the admin role must succeed, got %v", err)
 	}
 }
 
-func TestReplaceRankRenCanEditAdminRole(t *testing.T) {
+func TestApplyPossessionAddedRow(t *testing.T) {
 	resetPerm(t)
-	svc := newSvc(&fakeStore{})
-	if _, appErr := svc.ReplaceOverrides(context.Background(), 1, renOperatorRoles, "admin",
-		[]dto.ReplaceOverrideItem{revoke(perm.AdminDashboard)}); appErr != nil {
-		t.Fatalf("ren editing the admin role must succeed, got %v", appErr)
-	}
+	perm.SetUserOverrides(map[int][]perm.Override{100: {revoke(perm.TopicHide)}})
+	_, err := apply(newSvc(&fakeStore{}), opFor(100, "admin"), RoleChange{Role: "creator", Overrides: []perm.Override{grant(perm.TopicHide)}})
+	wantViolation(t, err, "/changes/0/overrides/0/permission", problem.ReasonNotPermitted)
 }
 
-func TestReplacePossessionAddedRow(t *testing.T) {
+func TestApplyPossessionCarriedOverPasses(t *testing.T) {
 	resetPerm(t)
-	perm.SetUserOverrides(map[int][]perm.Override{
-		100: {{Permission: perm.TopicHide, Effect: perm.EffectRevoke}},
-	})
-	svc := newSvc(&fakeStore{})
-	_, appErr := svc.ReplaceOverrides(context.Background(), 100, adminOperatorRoles, "creator",
-		[]dto.ReplaceOverrideItem{grant(TopicHideKey)})
-	if appErr == nil || appErr.StatusCode != 400 {
-		t.Fatalf("adding an unheld permission must be rejected with 400, got %v", appErr)
-	}
-	if !strings.Contains(appErr.Message, "不可增删自己未持有的权限") {
-		t.Errorf("expected possession error, got %q", appErr.Message)
-	}
-}
-
-func TestReplacePossessionCarriedOverPasses(t *testing.T) {
-	resetPerm(t)
-	perm.SetUserOverrides(map[int][]perm.Override{
-		100: {{Permission: perm.TopicHide, Effect: perm.EffectRevoke}},
-	})
+	perm.SetUserOverrides(map[int][]perm.Override{100: {revoke(perm.TopicHide)}})
 	store := &fakeStore{rows: []model.RolePermissionOverride{
-		{Role: "creator", Permission: string(TopicHideKey), Effect: perm.EffectGrant},
+		{Role: "creator", Permission: string(perm.TopicHide), Effect: perm.EffectGrant},
 	}}
-	svc := newSvc(store)
-	matrix, appErr := svc.ReplaceOverrides(context.Background(), 100, adminOperatorRoles, "creator",
-		[]dto.ReplaceOverrideItem{grant(TopicHideKey), grant(perm.DocEdit)})
-	if appErr != nil {
-		t.Fatalf("carrying over an unheld row while adding a held one must pass, got %v", appErr)
+	m, err := apply(newSvc(store), opFor(100, "admin"), RoleChange{Role: "creator", Overrides: []perm.Override{grant(perm.TopicHide), grant(perm.DocEdit)}})
+	if err != nil {
+		t.Fatalf("carrying over an unheld row while adding a held one must pass, got %v", err)
 	}
-	creator := matrix.Roles["creator"]
-	if !contains(creator.Effective, string(TopicHideKey)) || !contains(creator.Effective, string(perm.DocEdit)) {
-		t.Errorf("creator effective %v should hold both topic.hide and doc.edit", creator.Effective)
+	creator := layer(m, "creator")
+	if !slices.Contains(creator.Effective, perm.TopicHide) || !slices.Contains(creator.Effective, perm.DocEdit) {
+		t.Errorf("creator effective %v", creator.Effective)
 	}
 }
 
-func TestReplacePossessionRemovalChecked(t *testing.T) {
+func TestApplyPossessionRemovalChecked(t *testing.T) {
 	resetPerm(t)
-	perm.SetUserOverrides(map[int][]perm.Override{
-		100: {{Permission: perm.TopicHide, Effect: perm.EffectRevoke}},
-	})
+	perm.SetUserOverrides(map[int][]perm.Override{100: {revoke(perm.TopicHide)}})
 	store := &fakeStore{rows: []model.RolePermissionOverride{
-		{Role: "creator", Permission: string(TopicHideKey), Effect: perm.EffectGrant},
+		{Role: "creator", Permission: string(perm.TopicHide), Effect: perm.EffectGrant},
 	}}
-	svc := newSvc(store)
-	_, appErr := svc.ReplaceOverrides(context.Background(), 100, adminOperatorRoles, "creator",
-		[]dto.ReplaceOverrideItem{})
-	if appErr == nil || appErr.StatusCode != 400 {
-		t.Fatalf("removing an unheld override row must be rejected with 400, got %v", appErr)
-	}
-	if !strings.Contains(appErr.Message, "不可增删自己未持有的权限") {
-		t.Errorf("expected possession error, got %q", appErr.Message)
-	}
-}
-
-const (
-	TopicHideKey = perm.TopicHide
-	UserPurgeKey = perm.UserPurgeContent
-)
-
-func contains(ss []string, want string) bool {
-	return slices.Contains(ss, want)
+	_, err := apply(newSvc(store), opFor(100, "admin"), RoleChange{Role: "creator", Overrides: []perm.Override{}})
+	wantViolation(t, err, "/changes/0/overrides", problem.ReasonNotPermitted)
 }

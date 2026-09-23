@@ -11,3 +11,8 @@ type RolePermissionOverride struct {
 }
 
 func (RolePermissionOverride) TableName() string { return "role_permission_override" }
+
+type RoleReplacement struct {
+	Role string
+	Rows []RolePermissionOverride
+}

@@ -214,3 +214,11 @@
 | 10 | 目标持有 ren 时照常处理 | `PUT /admin/user-permissions/{ren 用户}` → `422 NOT_ALLOWED_VALUE`（参数 `user_id`） |
 | 11 | 审计排序去掉 `id` 决胜键 | 种子里有同一 `created_at` 的审计行跨页；小 `limit` 翻完所有页与 SQL `ORDER BY created_at DESC, id DESC` 逐条相等 |
 | 12 | 写后不刷新进程内覆盖表 | `PATCH` 撤销版主的 `topic.hide` 之后，版主立刻 `GET /me/permissions` 不再含它 |
+
+## 8. 实现时对本契约的修正（2026-09-23，只增不改）
+
+1. **`perm.EffectiveForUser` 进了 Bearer 守卫。** v1 不再调用它（`/me/permissions` 逐键走 `user.Can`，委派的「持有」判断用 `Operator.Holds = user.Can`），于是把它加进 `bearer_guard_test.go` 的正则，关掉普查 #19 那条「守卫看不见一层间接」的缝。
+2. **`middleware.RequireAdmin` 删除**：它唯一的调用点就是这 5 条旧路由，删完后 `deadcode` 报不可达。
+3. 用户层的 `effective` 由刚读出的覆盖行计算，而不是读进程内的 `perm.CanUser` 表（后者在别的实例上最多滞后 60 秒），语义与 `CanUser` 相同，由 `TestUserLayerMirrorsCanUser` 逐键钉住。
+4. 422 的描述文字不能写 reason 名（G4 把描述里的大写 token 当错误码查注册表），改用自然语言描述各个位置。
+5. `docs/proj/permissions.md` 同步改到 v1 路径。
