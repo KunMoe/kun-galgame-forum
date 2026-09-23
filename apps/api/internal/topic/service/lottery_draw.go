@@ -11,7 +11,6 @@ import (
 	"log/slog"
 	"sort"
 	"strconv"
-	"strings"
 	"sync"
 	"time"
 
@@ -26,12 +25,12 @@ import (
 
 const drawSweepBatch = 50
 
-// newDrawSeed returns the secret and the commitment published with it. Anyone
+// NewDrawSeed returns the secret and the commitment published with it. Anyone
 // can recompute the winners from the seed once it is revealed, so the author
 // cannot pick a favourable ordering after seeing who entered. This defends
 // against the topic author, not against the site operator, which is the honest
 // boundary of a commit-reveal scheme run on the operator's own server.
-func newDrawSeed() (seed, seedHash string) {
+func NewDrawSeed() (seed, seedHash string) {
 	raw := make([]byte, 32)
 	if _, err := rand.Read(raw); err != nil {
 		// crypto/rand failing is not a condition to paper over with time.Now().
@@ -143,51 +142,6 @@ func stampPointPayouts(
 	}
 }
 
-// parseFloorRule turns the author's rule into the ordered floors that win.
-// Two forms only: an explicit list ("8,18,28") and "every:N" (每 N 楼). Both are
-// verifiable by a reader counting floors, which is the entire point of a floor
-// lottery.
-func parseFloorRule(rule string, slots int) ([]int, *errors.AppError) {
-	rule = strings.TrimSpace(rule)
-	if rule == "" {
-		return nil, errors.ErrBadRequest("楼层抽奖需要填写楼层规则")
-	}
-	if after, ok := strings.CutPrefix(rule, "every:"); ok {
-		step, err := strconv.Atoi(strings.TrimSpace(after))
-		if err != nil || step <= 0 {
-			return nil, errors.ErrBadRequest("楼层间隔必须是正整数, 例如 every:10")
-		}
-		floors := make([]int, 0, slots)
-		for i := 1; i <= slots; i++ {
-			floors = append(floors, step*i)
-		}
-		return floors, nil
-	}
-
-	seen := map[int]bool{}
-	floors := make([]int, 0, slots)
-	for _, part := range strings.Split(rule, ",") {
-		n, err := strconv.Atoi(strings.TrimSpace(part))
-		if err != nil || n <= 0 {
-			return nil, errors.ErrBadRequest("楼层号必须是正整数, 用英文逗号分隔, 例如 8,18,28")
-		}
-		if seen[n] {
-			continue
-		}
-		seen[n] = true
-		floors = append(floors, n)
-	}
-	if len(floors) == 0 {
-		return nil, errors.ErrBadRequest("楼层抽奖需要至少一个楼层号")
-	}
-	if len(floors) != slots {
-		return nil, errors.ErrBadRequest(fmt.Sprintf(
-			"楼层数 %d 与总名额 %d 不一致, 请让每个名额对应一个楼层", len(floors), slots))
-	}
-	sort.Ints(floors)
-	return floors, nil
-}
-
 type LotteryDrawer struct {
 	svc     *LotteryService
 	running sync.Mutex
@@ -242,30 +196,21 @@ func (s *LotteryService) sweepDueLotteries(ctx context.Context) int {
 	return drawn
 }
 
-// DrawNow is the author's manual button. It takes the same status flip the
-// sweep takes, so the two cannot both draw the same lottery.
-func (s *LotteryService) DrawNow(ctx context.Context, userID int, canModerate bool, lotteryID int) *errors.AppError {
-	lottery, err := s.lotteryRepo.FindByID(lotteryID)
-	if err != nil {
-		return errors.ErrNotFound("未找到该抽奖")
-	}
-	if lottery.UserID != userID && !canModerate {
-		return errors.ErrForbidden("您没有权限为此抽奖开奖")
-	}
-	if lottery.Status != topicModel.LotteryStatusOpen {
-		return errors.ErrBadRequest("该抽奖已经开过奖了")
-	}
-
+// DrawOpen is the author's manual draw. It takes the same status flip the sweep
+// takes, so the two cannot both draw the same lottery.
+func (s *LotteryService) DrawOpen(ctx context.Context, lotteryID int) error {
 	res := s.lotteryRepo.DB().Exec(
 		`UPDATE topic_lottery SET status = 'drawing' WHERE id = ? AND status = 'open'`, lotteryID)
 	if res.Error != nil {
-		return errors.ErrInternal("开奖失败")
+		return res.Error
 	}
 	if res.RowsAffected == 0 {
-		return errors.ErrBadRequest("该抽奖正在开奖中")
+		return ErrLotteryNotOpen
 	}
-
-	lottery.Status = topicModel.LotteryStatusDrawing
+	lottery, err := s.lotteryRepo.FindByID(lotteryID)
+	if err != nil {
+		return err
+	}
 	if appErr := s.draw(ctx, lottery); appErr != nil {
 		if err := s.lotteryRepo.ReleaseDrawing(lotteryID); err != nil {
 			slog.Error("退回待开奖队列失败", "lottery_id", lotteryID, "error", err)
@@ -305,17 +250,22 @@ func (s *LotteryService) draw(ctx context.Context, lottery *topicModel.TopicLott
 	}
 
 	stampPointPayouts(lottery.Seed, slots, winners)
+	refund := escrowRefund(lottery.PointEscrow, winners)
 
 	now := time.Now()
 	txErr := s.lotteryRepo.DB().Transaction(func(tx *gorm.DB) error {
 		for i := range winners {
 			prize := slots[i]
+			fulfillment := topicModel.LotteryFulfillPending
+			if prize.Delivery == topicModel.LotteryDeliveryPoint {
+				fulfillment = topicModel.LotteryFulfillReceived
+			}
 			fields := map[string]any{
 				"prize_id":      prize.ID,
 				"rank_key":      winners[i].RankKey,
 				"point_awarded": winners[i].PointAwarded,
 				"won_at":        now,
-				"fulfillment":   topicModel.LotteryFulfillPending,
+				"fulfillment":   fulfillment,
 				"updated":       now,
 			}
 			if prize.Delivery == topicModel.LotteryDeliveryCode {
@@ -340,7 +290,7 @@ func (s *LotteryService) draw(ctx context.Context, lottery *topicModel.TopicLott
 					RankKey:      winners[i].RankKey,
 					PointAwarded: winners[i].PointAwarded,
 					WonAt:        &now,
-					Fulfillment:  topicModel.LotteryFulfillPending,
+					Fulfillment:  fulfillment,
 				}
 				if codeID, ok := fields["code_id"].(int); ok {
 					entry.CodeID = codeID
@@ -363,13 +313,14 @@ func (s *LotteryService) draw(ctx context.Context, lottery *topicModel.TopicLott
 		}
 		return s.lotteryRepo.UpdateFields(tx, lottery.ID, map[string]any{
 			"status": topicModel.LotteryStatusDrawn, "drawn_at": now, "updated": now,
+			"point_escrow": 0,
 		})
 	})
 	if txErr != nil {
-		return errors.ErrInternal("开奖失败: " + txErr.Error())
+		return errors.ErrInternal("开奖失败")
 	}
 
-	s.afterDraw(lottery, slots, winners, pool)
+	s.afterDraw(lottery, slots, winners, pool, refund)
 	return nil
 }
 
@@ -415,9 +366,9 @@ func (s *LotteryService) pickFloorWinners(
 	lottery *topicModel.TopicLottery,
 	slots int,
 ) ([]topicModel.TopicLotteryEntry, *errors.AppError) {
-	floors, appErr := parseFloorRule(lottery.FloorRule, slots)
-	if appErr != nil {
-		return nil, appErr
+	floors, err := ParseFloorRule(lottery.FloorRule, slots)
+	if err != nil {
+		return nil, errors.ErrInternal("楼层规则无法解析")
 	}
 	replies, err := s.lotteryRepo.FindRepliesByFloors(lottery.TopicID, floors)
 	if err != nil {
@@ -452,10 +403,25 @@ func (s *LotteryService) pickFloorWinners(
 	return out, nil
 }
 
+// escrowRefund is what the author gets back at the draw: the pool they paid
+// for less what the winners were actually paid. A lottery created before the
+// author paid for it has no escrow and refunds nothing.
+func escrowRefund(escrow int, winners []topicModel.TopicLotteryEntry) int {
+	paid := 0
+	for _, w := range winners {
+		paid += w.PointAwarded
+	}
+	if escrow <= paid {
+		return 0
+	}
+	return escrow - paid
+}
+
 func (s *LotteryService) afterDraw(
 	lottery *topicModel.TopicLottery,
 	slots []topicModel.TopicLotteryPrize,
 	winners, pool []topicModel.TopicLotteryEntry,
+	refund int,
 ) {
 	won := make(map[int]bool, len(winners))
 	specs := make([]msgService.Spec, 0, len(pool))
@@ -482,9 +448,9 @@ func (s *LotteryService) afterDraw(
 			// downstream, so a lottery payout shows up in the user's moemoepoint
 			// log labelled as approved content. Relabelling needs a new reason on
 			// the OAuth side, not a local workaround.
-			moemoepoint.Award(winners[i].UserID, winners[i].PointAwarded,
+			s.award(winners[i].UserID, winners[i].PointAwarded,
 				moemoepoint.ReasonContentApproved,
-				fmt.Sprintf("lottery_%d", lottery.ID),
+				moemoepoint.Ref("topic_lottery", lottery.ID),
 				fmt.Sprintf("kungal:lottery_won:%d_%d", lottery.ID, winners[i].UserID))
 		}
 	}
@@ -502,9 +468,19 @@ func (s *LotteryService) afterDraw(
 			TopicID:    lottery.TopicID,
 		})
 	}
+	if refund > 0 {
+		s.award(lottery.UserID, refund, moemoepoint.ReasonContentApproved,
+			moemoepoint.Ref("topic_lottery_escrow", lottery.ID), EscrowRefundKey(lottery.ID))
+	}
 	if err := s.notifier.EmitMany(nil, specs); err != nil {
 		slog.Warn("开奖通知发送失败", "lottery_id", lottery.ID, "error", err)
 	}
+}
+
+// A lottery is refunded at most once in its life: the draw, a cancel and a
+// delete each zero point_escrow in the transaction that decides the refund.
+func EscrowRefundKey(lotteryID int) string {
+	return moemoepoint.Key("lottery_escrow_refund", "topic_lottery_"+strconv.Itoa(lotteryID))
 }
 
 // sweepClosedPolls finally writes topic_poll.notification_sent. The column has

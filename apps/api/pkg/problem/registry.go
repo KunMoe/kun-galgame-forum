@@ -71,6 +71,11 @@ const (
 	CodeRateLimited                  = "RATE_LIMITED"
 	CodeQuizAnswerRequired           = "QUIZ_ANSWER_REQUIRED"
 	CodeInvalidStateTransition       = "INVALID_STATE_TRANSITION"
+	CodeLotteryClosed                = "LOTTERY_CLOSED"
+	CodeLotteryIneligible            = "LOTTERY_INELIGIBLE"
+	CodeLotteryCreatorIneligible     = "LOTTERY_CREATOR_INELIGIBLE"
+	CodeLotteryDrawn                 = "LOTTERY_DRAWN"
+	CodeRedemptionCodeForfeited      = "REDEMPTION_CODE_FORFEITED"
 )
 
 const (
@@ -131,6 +136,11 @@ var Codes = []Def{
 	{CodeRateLimited, DomainPlatform, http.StatusTooManyRequests, "Rate limited", "A rate limit was exceeded. Retry-After, in seconds, is present only when the limiter says when to retry.", nil},
 	{CodeQuizAnswerRequired, DomainKungal, http.StatusForbidden, "Quiz answer required", "The quiz hides its game or carries spoilers, so its comment wall is open only to its author and to users who have answered it.", nil},
 	{CodeInvalidStateTransition, DomainMe, http.StatusConflict, "Invalid state transition", "The current state does not allow this transition. detail names the current state.", nil},
+	{CodeLotteryClosed, DomainKungal, http.StatusConflict, "Lottery closed", "The operation needs an open lottery, and this one has been drawn, cancelled, is being drawn, or is past closes_at. Nothing about the request is wrong.", nil},
+	{CodeLotteryIneligible, DomainKungal, http.StatusForbidden, "Lottery ineligible", "The caller does not meet this lottery's entry requirements. reason is one of no_signup, own_lottery, reply_required, moemoepoint_below_minimum, account_too_new; the thresholds are on the lottery itself.", []ExtDef{{Name: "reason", Type: "string"}}},
+	{CodeLotteryCreatorIneligible, DomainKungal, http.StatusForbidden, "Lottery creator ineligible", "Starting a lottery needs an account at least min_account_age_days old or at least min_moemoepoint moemoepoint. It is an anti-scam bar, not a permission.", []ExtDef{{Name: "min_account_age_days", Type: "integer"}, {Name: "min_moemoepoint", Type: "integer"}}},
+	{CodeLotteryDrawn, DomainKungal, http.StatusConflict, "Lottery drawn", "The lottery is being drawn, or has been drawn and only staff may delete it: its winners still need it to collect their prizes.", nil},
+	{CodeRedemptionCodeForfeited, DomainKungal, http.StatusConflict, "Redemption code forfeited", "The caller won this code, but it was given up or not revealed before claim_expires_at, and it can no longer be revealed.", nil},
 }
 
 var Reasons = []ReasonDef{

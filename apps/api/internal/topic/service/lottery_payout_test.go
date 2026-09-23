@@ -135,14 +135,14 @@ func TestStampPointPayoutsGroupsByPrize(t *testing.T) {
 }
 
 func TestPrizePointTotal(t *testing.T) {
-	if got := prizePointTotal(topicModel.LotteryPointFixed, 50, 4); got != 200 {
+	if got := PrizePointBudget(topicModel.LotteryPointFixed, 50, 4); got != 200 {
 		t.Fatalf("fixed total = %d, want 200", got)
 	}
-	if got := prizePointTotal(topicModel.LotteryPointSplit, 50, 4); got != 50 {
+	if got := PrizePointBudget(topicModel.LotteryPointSplit, 50, 4); got != 50 {
 		t.Fatalf("pooled total = %d, want the pool itself (50)", got)
 	}
 	// A prize written before point_mode existed reads as fixed.
-	if got := prizePointTotal("", 50, 4); got != 200 {
+	if got := PrizePointBudget("", 50, 4); got != 200 {
 		t.Fatalf("legacy blank mode total = %d, want 200", got)
 	}
 }

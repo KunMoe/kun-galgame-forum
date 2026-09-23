@@ -24,12 +24,6 @@ func (r *LotteryRepository) FindByID(id int) (*model.TopicLottery, error) {
 	return &lottery, err
 }
 
-func (r *LotteryRepository) FindByTopicID(topicID int) ([]model.TopicLottery, error) {
-	var rows []model.TopicLottery
-	err := r.db.Where("topic_id = ?", topicID).Order("created DESC").Find(&rows).Error
-	return rows, err
-}
-
 func (r *LotteryRepository) CountByTopicID(topicID int) (int64, error) {
 	var count int64
 	err := r.db.Model(&model.TopicLottery{}).Where("topic_id = ?", topicID).Count(&count).Error
@@ -45,11 +39,6 @@ func (r *LotteryRepository) UpdateFields(tx *gorm.DB, lotteryID int, fields map[
 		return nil
 	}
 	return tx.Model(&model.TopicLottery{}).Where("id = ?", lotteryID).Updates(fields).Error
-}
-
-// Delete relies on the ON DELETE CASCADE that 083 puts on prize / code / entry.
-func (r *LotteryRepository) Delete(tx *gorm.DB, lotteryID int) error {
-	return tx.Delete(&model.TopicLottery{}, lotteryID).Error
 }
 
 func (r *LotteryRepository) FindPrizes(lotteryID int) ([]model.TopicLotteryPrize, error) {
@@ -167,13 +156,6 @@ func (r *LotteryRepository) FindEntries(lotteryID int) ([]model.TopicLotteryEntr
 	return rows, err
 }
 
-func (r *LotteryRepository) FindWinners(lotteryID int) ([]model.TopicLotteryEntry, error) {
-	var rows []model.TopicLotteryEntry
-	err := r.db.Where("lottery_id = ? AND prize_id > 0", lotteryID).
-		Order("prize_id ASC, id ASC").Find(&rows).Error
-	return rows, err
-}
-
 func (r *LotteryRepository) FindWinnersForLotteries(ids []int) ([]model.TopicLotteryEntry, error) {
 	if len(ids) == 0 {
 		return nil, nil
@@ -186,11 +168,6 @@ func (r *LotteryRepository) FindWinnersForLotteries(ids []int) ([]model.TopicLot
 
 func (r *LotteryRepository) CreateEntry(tx *gorm.DB, entry *model.TopicLotteryEntry) error {
 	return tx.Create(entry).Error
-}
-
-func (r *LotteryRepository) DeleteEntry(tx *gorm.DB, lotteryID, userID int) error {
-	return tx.Where("lottery_id = ? AND user_id = ? AND prize_id = 0", lotteryID, userID).
-		Delete(&model.TopicLotteryEntry{}).Error
 }
 
 func (r *LotteryRepository) SyncEntryCount(tx *gorm.DB, lotteryID int) error {

@@ -84,7 +84,36 @@ func collectContentImageHashes(ctx context.Context, db *gorm.DB) ([]string, erro
 			contents = append(contents, r.Content)
 		}
 	}
+	bare, err := collectBareImageHashes(ctx, db)
+	if err != nil {
+		return nil, err
+	}
+	for _, h := range bare {
+		contents = append(contents, "/image/"+h)
+	}
 	return extractContentImageHashes(contents), nil
+}
+
+// Columns that store bare hashes in jsonb arrays. The text-column scan above
+// matches /image/<hash> tokens only, so these were never pinged: lottery prize
+// images went weeks unprotected from the image service's garbage collection
+// before the 2026-09-22 census noticed.
+var bareImageHashColumns = []struct{ table, column string }{
+	{"topic_lottery_prize", "image_hashes"},
+}
+
+func collectBareImageHashes(ctx context.Context, db *gorm.DB) ([]string, error) {
+	var out []string
+	for _, c := range bareImageHashColumns {
+		var rows []string
+		q := fmt.Sprintf("SELECT DISTINCT jsonb_array_elements_text(%s) FROM %s",
+			quoteIdent(c.column), quoteIdent(c.table))
+		if err := db.WithContext(ctx).Raw(q).Scan(&rows).Error; err != nil {
+			return nil, err
+		}
+		out = append(out, rows...)
+	}
+	return out, nil
 }
 
 func quoteIdent(s string) string {

@@ -178,6 +178,13 @@ x-kungal-api-env: &kungal-api-env
   # mints kungal's S2S client + registers the forum_topic/forum_reply kinds.
   KUN_TRUST_CHECK_ENABLED: ${KUN_TRUST_CHECK_ENABLED:-false}
   KUN_TRUST_SCAN_ENABLED: ${KUN_TRUST_SCAN_ENABLED:-false}
+  # Seals lottery redemption codes at rest (AES-256-GCM, `openssl rand -hex 32`).
+  # Unset → the lottery refuses code prizes rather than storing codes in clear.
+  # ROTATING IT makes every sealed code unreadable forever — winners get a 500
+  # on reveal. Set once in Dokploy and leave it. Like every panel var above, it
+  # only reaches the container because this line names it: it sat set in the
+  # panel for a day on 2026-09-23 while the API kept logging "未设置".
+  KUN_LOTTERY_CODE_KEY: ${KUN_LOTTERY_CODE_KEY:-}
   # ── App version gate: GET /api/app/version ──
   # The App force-updates every install below MIN_VERSION, so this pair is the
   # kill switch for the direct-download channel. Versions are MAJOR.MINOR.PATCH;

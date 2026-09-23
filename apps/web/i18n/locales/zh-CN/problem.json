@@ -29,7 +29,12 @@
     "DRAFT_LIMIT_REACHED": "草稿数量已达上限，请先删除一些草稿再保存",
     "RATE_LIMITED": "操作太频繁，请稍等一会儿再试",
     "QUIZ_ANSWER_REQUIRED": "作答后才能参与这道题目的讨论",
-    "INVALID_STATE_TRANSITION": "内容的状态已经变化，请刷新页面后重试"
+    "INVALID_STATE_TRANSITION": "内容的状态已经变化，请刷新页面后重试",
+    "LOTTERY_CLOSED": "抽奖已经结束或正在开奖，无法进行这个操作",
+    "LOTTERY_INELIGIBLE": "你不满足这个抽奖的参与条件",
+    "LOTTERY_CREATOR_INELIGIBLE": "你的账号暂时不满足发起抽奖的条件（注册时间或萌萌点不足）",
+    "LOTTERY_DRAWN": "抽奖正在开奖或已经开奖，中奖者还需要它来领取奖品，无法删除",
+    "REDEMPTION_CODE_FORFEITED": "兑换码已超过领取期限或已被放弃，无法再领取"
   },
   "reason": {
     "DUPLICATE_ITEM": {

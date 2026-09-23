@@ -14,11 +14,12 @@ DELETE /api/galgame/collection/:cid                   cors.New → middleware.Na
 DELETE /api/message/:id                               cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → MessageHandler.DeleteMessage
 DELETE /api/toolset/:id                               cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → ToolsetHandler.Delete
 DELETE /api/toolset/:id/resource                      cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → ResourceHandler.DeleteResource
-DELETE /api/topic/:tid/lottery                        cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → LotteryHandler.DeleteLottery
 DELETE /api/update/history                            cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → RequirePermission → UpdateHandler.DeleteHistory
 DELETE /api/update/todo                               cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → RequirePermission → UpdateHandler.DeleteTodo
 DELETE /api/v1/comments/:comment_id                   cors.New → v1Headers → fiberAdapter.Handle
 DELETE /api/v1/comments/:comment_id/like              cors.New → v1Headers → fiberAdapter.Handle
+DELETE /api/v1/lotteries/:lottery_id                  cors.New → v1Headers → fiberAdapter.Handle
+DELETE /api/v1/lotteries/:lottery_id/entries/me       cors.New → v1Headers → fiberAdapter.Handle
 DELETE /api/v1/me/topic-drafts/:draft_id              cors.New → v1Headers → fiberAdapter.Handle
 DELETE /api/v1/polls/:poll_id                         cors.New → v1Headers → fiberAdapter.Handle
 DELETE /api/v1/polls/:poll_id/vote                    cors.New → v1Headers → fiberAdapter.Handle
@@ -143,8 +144,6 @@ GET    /api/toolset                                   cors.New → middleware.Na
 GET    /api/toolset/:id                               cors.New → middleware.NamePreference → ContentStance → OptionalAuth → ToolsetHandler.GetDetail
 GET    /api/toolset/:id/practicality                  cors.New → middleware.NamePreference → ContentStance → OptionalAuth → PracticalityHandler.GetPracticality
 GET    /api/toolset/:id/resource/detail               cors.New → middleware.NamePreference → ContentStance → ResourceHandler.GetResourceDetail
-GET    /api/topic/:tid/lottery/entrants               cors.New → middleware.NamePreference → ContentStance → OptionalAuth → LotteryHandler.GetEntrants
-GET    /api/topic/:tid/lottery/topic                  cors.New → middleware.NamePreference → ContentStance → OptionalAuth → LotteryHandler.GetLotteriesByTopic
 GET    /api/update/history                            cors.New → middleware.NamePreference → ContentStance → UpdateHandler.GetHistory
 GET    /api/update/todo                               cors.New → middleware.NamePreference → ContentStance → UpdateHandler.GetTodos
 GET    /api/user/:id                                  cors.New → middleware.NamePreference → ContentStance → UserHandler.GetProfile
@@ -167,6 +166,9 @@ GET    /api/user/status                               cors.New → middleware.Na
 GET    /api/v1/comments/:comment_id                   cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/comments/:comment_id/source            cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/galgames/:galgame_id/moyu-patches      cors.New → v1Headers → fiberAdapter.Handle
+GET    /api/v1/lotteries/:lottery_id                  cors.New → v1Headers → fiberAdapter.Handle
+GET    /api/v1/lotteries/:lottery_id/entries          cors.New → v1Headers → fiberAdapter.Handle
+GET    /api/v1/lotteries/:lottery_id/winners/:winner_id cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/me/topic-drafts                        cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/me/topic-drafts/:draft_id              cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/me/topic-states                        cors.New → v1Headers → fiberAdapter.Handle
@@ -179,6 +181,7 @@ GET    /api/v1/replies/:reply_id/reactions            cors.New → v1Headers →
 GET    /api/v1/replies/:reply_id/source               cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/topics                                 cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/topics/:topic_id                       cors.New → v1Headers → fiberAdapter.Handle
+GET    /api/v1/topics/:topic_id/lotteries             cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/topics/:topic_id/polls                 cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/topics/:topic_id/reactions             cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/topics/:topic_id/replies               cors.New → v1Headers → fiberAdapter.Handle
@@ -197,6 +200,8 @@ GET    /api/website/:domain                           cors.New → middleware.Na
 GET    /healthz                                       cors.New → App.setupRoutes
 PATCH  /api/galgame/collection/:cid                   cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → GalgameCollectionHandler.Update
 PATCH  /api/v1/comments/:comment_id                   cors.New → v1Headers → fiberAdapter.Handle
+PATCH  /api/v1/lotteries/:lottery_id                  cors.New → v1Headers → fiberAdapter.Handle
+PATCH  /api/v1/lotteries/:lottery_id/winners/:winner_id cors.New → v1Headers → fiberAdapter.Handle
 PATCH  /api/v1/polls/:poll_id                         cors.New → v1Headers → fiberAdapter.Handle
 PATCH  /api/v1/replies/:reply_id                      cors.New → v1Headers → fiberAdapter.Handle
 PATCH  /api/v1/topics/:topic_id                       cors.New → v1Headers → fiberAdapter.Handle
@@ -238,12 +243,6 @@ POST   /api/toolset/:id/upload/abort                  cors.New → middleware.Na
 POST   /api/toolset/:id/upload/complete               cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → UploadHandler.UploadComplete
 POST   /api/toolset/:id/upload/init                   cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → UploadHandler.UploadInit
 POST   /api/toolset/:id/upload/resume                 cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → UploadHandler.UploadResume
-POST   /api/topic/:tid/lottery                        cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → LotteryHandler.CreateLottery
-POST   /api/topic/:tid/lottery/cancel                 cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → LotteryHandler.Cancel
-POST   /api/topic/:tid/lottery/claim                  cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → LotteryHandler.Claim
-POST   /api/topic/:tid/lottery/draw                   cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → LotteryHandler.Draw
-POST   /api/topic/:tid/lottery/enter                  cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → LotteryHandler.Enter
-POST   /api/topic/:tid/lottery/withdraw               cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → LotteryHandler.Withdraw
 POST   /api/trust/callback                            cors.New → middleware.NamePreference → ContentStance → TrustHandler.Callback
 POST   /api/update/history                            cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → RequirePermission → UpdateHandler.CreateHistory
 POST   /api/update/todo                               cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → UpdateHandler.CreateTodo
@@ -253,9 +252,11 @@ POST   /api/update/todo/discard                       cors.New → middleware.Na
 POST   /api/user/avatar                               cors.New → middleware.NamePreference → ContentStance → Auth → ProfileHandler.UploadAvatar
 POST   /api/user/check-in                             cors.New → middleware.NamePreference → ContentStance → Auth → UserHandler.CheckIn
 POST   /api/user/creator/apply                        cors.New → middleware.NamePreference → ContentStance → Auth → CreatorHandler.Apply
+POST   /api/v1/lotteries/:lottery_id/code-reveals     cors.New → v1Headers → fiberAdapter.Handle
 POST   /api/v1/me/topic-drafts                        cors.New → v1Headers → fiberAdapter.Handle
 POST   /api/v1/replies/:reply_id/comments             cors.New → v1Headers → fiberAdapter.Handle
 POST   /api/v1/topics                                 cors.New → v1Headers → fiberAdapter.Handle
+POST   /api/v1/topics/:topic_id/lotteries             cors.New → v1Headers → fiberAdapter.Handle
 POST   /api/v1/topics/:topic_id/polls                 cors.New → v1Headers → fiberAdapter.Handle
 POST   /api/v1/topics/:topic_id/replies               cors.New → v1Headers → fiberAdapter.Handle
 POST   /api/v1/topics/:topic_id/upvotes               cors.New → v1Headers → fiberAdapter.Handle
@@ -294,8 +295,6 @@ PUT    /api/message/system/read                       cors.New → middleware.Na
 PUT    /api/toolset/:id                               cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → ToolsetHandler.Update
 PUT    /api/toolset/:id/practicality                  cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → PracticalityHandler.UpsertPracticality
 PUT    /api/toolset/:id/resource                      cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → ResourceHandler.UpdateResource
-PUT    /api/topic/:tid/lottery                        cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → LotteryHandler.UpdateLottery
-PUT    /api/topic/:tid/lottery/fulfillment            cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → LotteryHandler.SetFulfillment
 PUT    /api/update/history                            cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → RequirePermission → UpdateHandler.UpdateHistory
 PUT    /api/update/todo                               cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → UpdateHandler.UpdateTodo
 PUT    /api/user/bio                                  cors.New → middleware.NamePreference → ContentStance → Auth → ProfileHandler.UpdateBio
@@ -304,6 +303,7 @@ PUT    /api/user/nsfw                                 cors.New → middleware.Na
 PUT    /api/user/preferences                          cors.New → middleware.NamePreference → ContentStance → Auth → ContentPrefsHandler.UpdatePreferences
 PUT    /api/user/username                             cors.New → middleware.NamePreference → ContentStance → Auth → ProfileHandler.UpdateUsername
 PUT    /api/v1/comments/:comment_id/like              cors.New → v1Headers → fiberAdapter.Handle
+PUT    /api/v1/lotteries/:lottery_id/entries/me       cors.New → v1Headers → fiberAdapter.Handle
 PUT    /api/v1/polls/:poll_id/vote                    cors.New → v1Headers → fiberAdapter.Handle
 PUT    /api/v1/replies/:reply_id/reactions/:reaction  cors.New → v1Headers → fiberAdapter.Handle
 PUT    /api/v1/topics/:topic_id/best-answer           cors.New → v1Headers → fiberAdapter.Handle

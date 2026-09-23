@@ -61,7 +61,6 @@ import (
 	toolsetRepo "kun-galgame-api/internal/toolset/repository"
 	toolsetService "kun-galgame-api/internal/toolset/service"
 	topicapiv1 "kun-galgame-api/internal/topic/apiv1"
-	topicHandler "kun-galgame-api/internal/topic/handler"
 	topicRepo "kun-galgame-api/internal/topic/repository"
 	topicService "kun-galgame-api/internal/topic/service"
 	"kun-galgame-api/internal/trust/enforce"
@@ -124,7 +123,7 @@ type App struct {
 	UserProfileHandler          *handler.ProfileHandler
 	ContentPrefsHandler         *handler.ContentPrefsHandler
 	HomeHandler                 *homeHandler.HomeHandler
-	LotteryHandler              *topicHandler.LotteryHandler
+	LotteryService              *topicService.LotteryService
 	MessageHandler              *msgHandler.MessageHandler
 	MessageChatHandler          *msgHandler.ChatHandler
 	AdminOverviewHandler        *adminHandler.OverviewHandler
@@ -440,11 +439,7 @@ func New(cfg *config.Config) *App {
 		slog.Warn("KUN_LOTTERY_CODE_KEY 未设置; 抽奖将拒绝「系统托管兑换码」奖项, 而不是明文存码")
 	}
 	lotterySvc := topicService.NewLotteryService(
-		lotteryRepository, topicRepository, userStateRepo, uc, notifier,
-		lotteryBox, cfg.NextMoeAPI.ImageCDNBase, trustCheck, trustScan)
-	if imageMeta != nil {
-		lotterySvc.SetImageMetaResolver(imageMeta.Resolve)
-	}
+		lotteryRepository, userStateRepo, uc, notifier, lotteryBox)
 	lotteryDrawer := topicService.NewLotteryDrawer(lotterySvc)
 
 	galgameCommunityPostRepo := galgameRepo.NewCommunityPostRepository(db)
@@ -593,7 +588,7 @@ func New(cfg *config.Config) *App {
 		UserProfileHandler:          handler.NewProfileHandler(oauthClient, uc),
 		ContentPrefsHandler:         handler.NewContentPrefsHandler(oauthClient, uc, rdb),
 		HomeHandler:                 homeHandler.NewHomeHandler(homeService.NewHomeService(homeRepo.NewHomeRepository(db), gc, uc, rdb)),
-		LotteryHandler:              topicHandler.NewLotteryHandler(lotterySvc),
+		LotteryService:              lotterySvc,
 		MessageHandler:              msgHandler.NewMessageHandler(messageSvc),
 		MessageChatHandler:          msgHandler.NewChatHandler(chatSvc),
 		AdminOverviewHandler:        adminHandler.NewOverviewHandler(adminOverviewSvc),

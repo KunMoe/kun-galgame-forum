@@ -34,6 +34,7 @@ func (a *App) setupRoutes() {
 		topicapiv1.RegisterInteractions(a.newTopicV1Interactions(topicReads)),
 		topicapiv1.RegisterPolls(a.newTopicV1Polls(topicReads)),
 		topicapiv1.RegisterDrafts(a.newTopicV1Drafts()),
+		topicapiv1.RegisterLotteries(a.newTopicV1Lotteries(topicReads)),
 		galgameapiv1.Register(a.GalgameV1),
 		wallapiv1.Register(a.WallV1),
 	)
@@ -206,9 +207,6 @@ func (a *App) setupRoutes() {
 	optAuth.Get("/galgame-quiz/all", a.GalgameQuizHandler.GetAllQuizzes)
 	optAuth.Get("/galgame-quiz/:id", a.GalgameQuizHandler.GetQuizPlay)
 
-	optAuth.Get("/topic/:tid/lottery/topic", a.LotteryHandler.GetLotteriesByTopic)
-	optAuth.Get("/topic/:tid/lottery/entrants", a.LotteryHandler.GetEntrants)
-
 	optAuth.Get("/galgame/:gid/resource/all", a.GalgameResourceHandler.GetGalgameResources)
 	// Both comment READ halves must mount before the auth boundary below, or
 	// anonymous reads start demanding a session. Their writes mount after it.
@@ -233,17 +231,6 @@ func (a *App) setupRoutes() {
 	authed.Get("/auth/me", a.OAuthHandler.Me)
 
 	authed.Get("/perm/mine", a.AdminUserPermissionHandler.GetMine)
-
-	authed.Post("/topic/:tid/lottery", a.LotteryHandler.CreateLottery)
-	authed.Put("/topic/:tid/lottery", a.LotteryHandler.UpdateLottery)
-	authed.Delete("/topic/:tid/lottery", a.LotteryHandler.DeleteLottery)
-	authed.Post("/topic/:tid/lottery/enter", a.LotteryHandler.Enter)
-	authed.Post("/topic/:tid/lottery/withdraw", a.LotteryHandler.Withdraw)
-	authed.Post("/topic/:tid/lottery/draw", a.LotteryHandler.Draw)
-	authed.Post("/topic/:tid/lottery/cancel", a.LotteryHandler.Cancel)
-	// POST, never GET — see LotteryHandler.Claim.
-	authed.Post("/topic/:tid/lottery/claim", a.LotteryHandler.Claim)
-	authed.Put("/topic/:tid/lottery/fulfillment", a.LotteryHandler.SetFulfillment)
 
 	authed.Get("/message", a.MessageHandler.GetMessages)
 	authed.Get("/message/muted", a.MessageHandler.GetMutedMessages)

@@ -48,15 +48,19 @@ type TopicLottery struct {
 	DrawThreshold int        `gorm:"column:draw_threshold;default:0" json:"draw_threshold"`
 	Deadline      *time.Time `gorm:"column:deadline" json:"deadline"`
 
-	MinAccountAgeDays int  `gorm:"column:min_account_age_days;default:0" json:"min_account_age_days"`
-	MinMoemoepoint    int  `gorm:"column:min_moemoepoint;default:0" json:"min_moemoepoint"`
-	ShowEntrants      bool `gorm:"column:show_entrants;default:true" json:"show_entrants"`
+	MinAccountAgeDays int `gorm:"column:min_account_age_days;default:0" json:"min_account_age_days"`
+	MinMoemoepoint    int `gorm:"column:min_moemoepoint;default:0" json:"min_moemoepoint"`
+	// No gorm default: GORM leaves a zero value out of the INSERT when the field
+	// has one, so a lottery created with show_entrants false was stored true.
+	// The legacy create did that from the day it shipped; the v1 test caught it.
+	ShowEntrants bool `gorm:"column:show_entrants" json:"show_entrants"`
 
-	Status     string     `gorm:"default:'open'" json:"status"`
-	SeedHash   string     `gorm:"column:seed_hash;default:''" json:"seed_hash"`
-	Seed       string     `gorm:"column:seed;default:''" json:"-"`
-	EntryCount int        `gorm:"column:entry_count;default:0" json:"entry_count"`
-	DrawnAt    *time.Time `gorm:"column:drawn_at" json:"drawn_at"`
+	Status      string     `gorm:"default:'open'" json:"status"`
+	SeedHash    string     `gorm:"column:seed_hash;default:''" json:"seed_hash"`
+	Seed        string     `gorm:"column:seed;default:''" json:"-"`
+	EntryCount  int        `gorm:"column:entry_count;default:0" json:"entry_count"`
+	PointEscrow int        `gorm:"column:point_escrow;default:0" json:"-"`
+	DrawnAt     *time.Time `gorm:"column:drawn_at" json:"drawn_at"`
 
 	CreatedAt time.Time `gorm:"column:created" json:"created"`
 	UpdatedAt time.Time `gorm:"column:updated" json:"updated"`

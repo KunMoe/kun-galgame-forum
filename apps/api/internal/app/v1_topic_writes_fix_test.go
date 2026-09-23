@@ -15,15 +15,17 @@ import (
 	"testing"
 	"time"
 
+	msgRepo "kun-galgame-api/internal/message/repository"
+	msgService "kun-galgame-api/internal/message/service"
 	"kun-galgame-api/internal/middleware"
 	"kun-galgame-api/internal/testdb"
-	"kun-galgame-api/internal/topic/handler"
 	topicRepo "kun-galgame-api/internal/topic/repository"
 	topicService "kun-galgame-api/internal/topic/service"
 	"kun-galgame-api/internal/trust/gate"
 	"kun-galgame-api/internal/user/oauth"
 	userRepo "kun-galgame-api/internal/user/repository"
 	"kun-galgame-api/pkg/imageclient"
+	"kun-galgame-api/pkg/secretbox"
 	"kun-galgame-api/pkg/trustclient"
 	"kun-galgame-api/pkg/userclient"
 
@@ -67,8 +69,9 @@ const (
 	w3TopicRole    = 930000207
 	w3TopicPaid    = 930000208
 
-	w3CoverHash = "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
-	w3CoverAlt  = "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+	w3CoverHash        = "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+	gradedExplicitHash = "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+	w3CoverAlt         = "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
 )
 
 type w3Verifier struct{}
@@ -164,7 +167,6 @@ func newWriteFix(t *testing.T, checker gate.Checker) *writeFix {
 		trust = gate.NewCheckService(checker)
 	}
 	state := userRepo.NewStateRepository(db)
-	topicR := topicRepo.NewTopicRepository(db)
 	f.App = &App{
 		Fiber:      newFiber(),
 		Config:     cfg,
@@ -177,20 +179,33 @@ func newWriteFix(t *testing.T, checker gate.Checker) *writeFix {
 		Authn:      middleware.NewAuthenticator(rdb, nil, middleware.NewBearer(w3Verifier{}, rdb, nil)),
 		ImageMeta: func(hashes []string) map[string]imageclient.ImageMeta {
 			out := map[string]imageclient.ImageMeta{}
+			explicit := imageclient.SexualExplicit
 			for _, h := range hashes {
 				out[h] = imageclient.ImageMeta{Width: 64, Height: 36, Thumbhash: "AbC+", Sexual: &sexual}
+				if h == gradedExplicitHash {
+					out[h] = imageclient.ImageMeta{Width: 64, Height: 36, Thumbhash: "AbC+", Sexual: &explicit}
+				}
 			}
 			return out
 		},
-		LotteryHandler: handler.NewLotteryHandler(topicService.NewLotteryService(
-			topicRepo.NewLotteryRepository(db), topicR, state, uc, nil, nil, "",
-			gate.NewCheckService(nil), gate.NewScanService(nil),
-		)),
+		LotteryService: topicService.NewLotteryService(
+			topicRepo.NewLotteryRepository(db), state, uc,
+			msgService.NewNotifier(msgRepo.NewMessageRepository(db)), testLotteryBox(t),
+		),
 	}
 	f.setupRoutes()
 	f.spec = newSpecConformance(t)
 	f.seed(t)
 	return f
+}
+
+func testLotteryBox(t *testing.T) *secretbox.Box {
+	t.Helper()
+	box, err := secretbox.New(strings.Repeat("ab", 32))
+	if err != nil {
+		t.Fatal(err)
+	}
+	return box
 }
 
 func (f *writeFix) recordAward(userID, delta int, reason, ref, key string) {
@@ -298,6 +313,8 @@ func (f *writeFix) cleanup(t *testing.T) {
 	_ = f.db.Exec(`DELETE FROM topic_comment WHERE user_id BETWEEN ? AND ? OR topic_id IN (SELECT id FROM topic WHERE user_id BETWEEN ? AND ?)`,
 		ours[0], ours[1], ours[0], ours[1]).Error
 	_ = f.db.Exec(`DELETE FROM topic_draft WHERE user_id BETWEEN ? AND ?`, ours[0], ours[1]).Error
+	_ = f.db.Exec(`DELETE FROM topic_lottery WHERE user_id BETWEEN ? AND ? OR topic_id BETWEEN ? AND ?`,
+		ours[0], ours[1], w3TopicMin, w3TopicMax).Error
 	_ = f.db.Exec(`DELETE FROM topic_poll_vote WHERE poll_id IN (
 		SELECT id FROM topic_poll WHERE topic_id IN (SELECT id FROM topic WHERE user_id BETWEEN ? AND ?))`,
 		ours[0], ours[1]).Error

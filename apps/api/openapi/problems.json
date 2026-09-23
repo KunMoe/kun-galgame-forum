@@ -191,6 +191,42 @@
     },
     {
       "object": "problem_type",
+      "code": "LOTTERY_CLOSED",
+      "domain": "kungal",
+      "status": 409,
+      "type": "https://developer.nextmoe.dev/problems/kungal/lottery-closed",
+      "title": "Lottery closed",
+      "description": "The operation needs an open lottery, and this one has been drawn, cancelled, is being drawn, or is past closes_at. Nothing about the request is wrong."
+    },
+    {
+      "object": "problem_type",
+      "code": "LOTTERY_CREATOR_INELIGIBLE",
+      "domain": "kungal",
+      "status": 403,
+      "type": "https://developer.nextmoe.dev/problems/kungal/lottery-creator-ineligible",
+      "title": "Lottery creator ineligible",
+      "description": "Starting a lottery needs an account at least min_account_age_days old or at least min_moemoepoint moemoepoint. It is an anti-scam bar, not a permission."
+    },
+    {
+      "object": "problem_type",
+      "code": "LOTTERY_DRAWN",
+      "domain": "kungal",
+      "status": 409,
+      "type": "https://developer.nextmoe.dev/problems/kungal/lottery-drawn",
+      "title": "Lottery drawn",
+      "description": "The lottery is being drawn, or has been drawn and only staff may delete it: its winners still need it to collect their prizes."
+    },
+    {
+      "object": "problem_type",
+      "code": "LOTTERY_INELIGIBLE",
+      "domain": "kungal",
+      "status": 403,
+      "type": "https://developer.nextmoe.dev/problems/kungal/lottery-ineligible",
+      "title": "Lottery ineligible",
+      "description": "The caller does not meet this lottery's entry requirements. reason is one of no_signup, own_lottery, reply_required, moemoepoint_below_minimum, account_too_new; the thresholds are on the lottery itself."
+    },
+    {
+      "object": "problem_type",
       "code": "MOEMOEPOINT_INSUFFICIENT",
       "domain": "kungal",
       "status": 403,
@@ -215,6 +251,15 @@
       "type": "https://developer.nextmoe.dev/problems/kungal/quiz-answer-required",
       "title": "Quiz answer required",
       "description": "The quiz hides its game or carries spoilers, so its comment wall is open only to its author and to users who have answered it."
+    },
+    {
+      "object": "problem_type",
+      "code": "REDEMPTION_CODE_FORFEITED",
+      "domain": "kungal",
+      "status": 409,
+      "type": "https://developer.nextmoe.dev/problems/kungal/redemption-code-forfeited",
+      "title": "Redemption code forfeited",
+      "description": "The caller won this code, but it was given up or not revealed before claim_expires_at, and it can no longer be revealed."
     },
     {
       "object": "problem_type",
