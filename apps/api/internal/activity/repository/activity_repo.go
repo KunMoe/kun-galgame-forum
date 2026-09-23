@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"kun-galgame-api/internal/galgame/resourcevocab"
 	"kun-galgame-api/pkg/miniapp"
 
 	"gorm.io/gorm"
@@ -72,13 +73,13 @@ func (r *ActivityRepository) FetchUpdateLogVersions(ids []int) (map[int]string, 
 }
 
 type GalgameResourceRow struct {
-	ID        int    `gorm:"column:id"`
-	Type      string `gorm:"column:type"`
-	Language  string `gorm:"column:language"`
-	Platform  string `gorm:"column:platform"`
-	Size      string `gorm:"column:size"`
-	Note      string `gorm:"column:note"`
-	LikeCount int    `gorm:"column:like_count"`
+	ID        int                `gorm:"column:id"`
+	Type      string             `gorm:"column:type"`
+	Languages resourcevocab.Keys `gorm:"column:languages"`
+	Platforms resourcevocab.Keys `gorm:"column:platforms"`
+	Size      string             `gorm:"column:size"`
+	Note      string             `gorm:"column:note"`
+	LikeCount int                `gorm:"column:like_count"`
 }
 
 func (r *ActivityRepository) FetchGalgameResourceDetails(ids []int) (map[int]GalgameResourceRow, error) {
@@ -88,7 +89,7 @@ func (r *ActivityRepository) FetchGalgameResourceDetails(ids []int) (map[int]Gal
 	}
 	var rows []GalgameResourceRow
 	if err := r.db.Table("galgame_resource").
-		Select("id, type, language, platform, size, note, like_count").
+		Select("id, type, languages, platforms, size, note, like_count").
 		Where("id IN ?", ids).Scan(&rows).Error; err != nil {
 		return out, err
 	}

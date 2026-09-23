@@ -3430,6 +3430,8 @@ export interface components {
             comment: components["schemas"]["ActivityComment"] | null;
             /** @description The text stored with the activity, cut to 1000 characters: the title of a topic, toolset or website, a quiz question, the body of a reply, comment, todo or update log, an upvote note. Empty for the work kinds. Replies are Markdown; comments are plain text. Free text; never use it as a decision input. */
             excerpt_markdown: string;
+            /** @description The rating. Set for galgame_rating_creation. */
+            galgame_rating: components["schemas"]["ActivityRating"] | null;
             /** @description Activity id. */
             id: string;
             /**
@@ -3448,8 +3450,6 @@ export interface components {
             performer: components["schemas"]["UserRef"] | null;
             /** @description The quiz. Set for galgame_quiz_creation. */
             quiz: components["schemas"]["ActivityQuiz"] | null;
-            /** @description The rating. Set for galgame_rating_creation. */
-            rating: components["schemas"]["ActivityRating"] | null;
             /** @description The reply. Set for topic_reply_creation and best_answer_set. */
             reply: components["schemas"]["ActivityReply"] | null;
             /** @description The download resource. Set for galgame_resource_creation. */
@@ -3562,8 +3562,6 @@ export interface components {
             topic_title: string;
         };
         ActivityResource: {
-            /** @description Language of the resource. */
-            language: string;
             /**
              * Format: int64
              * @description Like count.
@@ -3571,15 +3569,17 @@ export interface components {
             like_count: number;
             /** @description The first 300 characters of the publisher's note. null when empty. Free text; never use it as a decision input. */
             note: string | null;
-            /** @description Platform of the resource. */
-            platform: string;
             /** @description Resource id. */
             resource_id: string;
+            /** @description Languages of the resource, each once, in vocabulary order. Empty array, never null. */
+            resource_languages: ("zh-cn" | "zh-tw" | "ja-jp" | "en-us" | "other")[];
+            /** @description Platforms the resource runs on, each once, in vocabulary order. Empty array, never null. */
+            resource_platforms: ("win" | "and" | "ios" | "mac" | "lin" | "web" | "mob" | "swi" | "sw2" | "n3d" | "nds" | "wii" | "wiu" | "gba" | "gbc" | "nes" | "sfc" | "ps1" | "ps2" | "ps3" | "ps4" | "ps5" | "psp" | "psv" | "xb1" | "xb3" | "xbo" | "xxs" | "sat" | "smd" | "scd" | "drc" | "pce" | "pcf" | "tdo" | "p88" | "p98" | "x1s" | "x68" | "fm7" | "fm8" | "fmt" | "msx" | "dos" | "dvd" | "bdp" | "vnd" | "oth")[];
             /**
              * @description What the resource is.
              * @enum {string}
              */
-            resource_type: "game" | "collection" | "image" | "patch" | "voice" | "video" | "ai" | "others";
+            resource_type: "game" | "patch" | "collection" | "crack_fix" | "mod" | "tool" | "walkthrough" | "ost" | "voice" | "cg" | "wallpaper" | "artbook" | "video" | "other";
             /** @description Size as the publisher wrote it, such as 1.7GB. Free text; never use it as a decision input. */
             size: string;
         };

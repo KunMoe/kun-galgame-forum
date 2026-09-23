@@ -57,8 +57,8 @@ export const activitySummaryText = (
     case 'galgame_pr_creation':
       return `对《${name}》提出了更新请求`
     case 'galgame_rating_creation':
-      return a.rating?.short_summary
-        ? `${name} · ${a.rating.short_summary}`
+      return a.galgame_rating?.short_summary
+        ? `${name} · ${a.galgame_rating.short_summary}`
         : name
     default:
       return markdownToText(a.excerpt_markdown)

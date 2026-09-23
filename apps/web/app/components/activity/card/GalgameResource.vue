@@ -1,10 +1,10 @@
 <script setup lang="ts">
+import { KUN_USER_TEXT_CHIP_CLASS } from '~/constants/galgame'
 import {
-  KUN_GALGAME_RESOURCE_TYPE_MAP,
-  KUN_GALGAME_RESOURCE_LANGUAGE_MAP,
-  KUN_GALGAME_RESOURCE_PLATFORM_MAP,
-  KUN_USER_TEXT_CHIP_CLASS
-} from '~/constants/galgame'
+  resourceLanguageLabel,
+  resourcePlatformLabel,
+  resourceTypeLabel
+} from '#shared/utils/galgameResourceVocab'
 import type {
   Activity,
   ActivityResource,
@@ -42,32 +42,25 @@ const nameOf = useWorkName()
 
         <div class="flex flex-wrap items-center gap-1.5">
           <KunChip size="sm" variant="flat" color="primary">
-            {{
-              KUN_GALGAME_RESOURCE_TYPE_MAP[resource.resource_type] ??
-              resource.resource_type
-            }}
+            {{ resourceTypeLabel(resource.resource_type) }}
           </KunChip>
           <KunChip
-            v-if="resource.platform"
+            v-for="platform in resource.resource_platforms"
+            :key="platform"
             size="sm"
             variant="flat"
             color="secondary"
           >
-            {{
-              KUN_GALGAME_RESOURCE_PLATFORM_MAP[resource.platform] ??
-              resource.platform
-            }}
+            {{ resourcePlatformLabel(platform) }}
           </KunChip>
           <KunChip
-            v-if="resource.language"
+            v-for="language in resource.resource_languages"
+            :key="language"
             size="sm"
             variant="flat"
             color="success"
           >
-            {{
-              KUN_GALGAME_RESOURCE_LANGUAGE_MAP[resource.language] ??
-              resource.language
-            }}
+            {{ resourceLanguageLabel(language) }}
           </KunChip>
           <KunChip
             v-if="resource.size"

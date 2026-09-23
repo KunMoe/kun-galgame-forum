@@ -11,7 +11,7 @@ import (
 
 var activityBlocks = []string{
 	"topic", "topic_digest", "reply", "comment", "work", "work_digest", "work_stats", "work_revision",
-	"rating", "resource", "quiz", "toolset", "todo", "update_log",
+	"galgame_rating", "resource", "quiz", "toolset", "todo", "update_log",
 }
 
 var allowedBlocks = map[string][]string{
@@ -23,7 +23,7 @@ var allowedBlocks = map[string][]string{
 	"galgame_creation":          {"work", "work_digest", "work_stats"},
 	"galgame_resource_creation": {"work", "resource"},
 	"galgame_edit":              {"work", "work_digest", "work_revision"},
-	"galgame_rating_creation":   {"work", "rating"},
+	"galgame_rating_creation":   {"work", "galgame_rating"},
 }
 
 func (f *activityFix) expected(t *testing.T, extra string, args ...any) []string {
@@ -309,7 +309,7 @@ func TestV1ActivitiesRatingMatchesTheRatingShape(t *testing.T) {
 	f := newActivityFix(t)
 	ratings := map[string]map[string]any{}
 	for _, it := range f.walk(t, url.Values{"activity_types": {"galgame_rating_creation"}}, 50) {
-		if r, _ := it["rating"].(map[string]any); r != nil {
+		if r, _ := it["galgame_rating"].(map[string]any); r != nil {
 			ratings[fmt.Sprint(r["rating_id"])] = r
 		}
 	}
@@ -318,5 +318,22 @@ func TestV1ActivitiesRatingMatchesTheRatingShape(t *testing.T) {
 	}
 	if spoiler := ratings[strconv.Itoa(acRatingSpoiler)]; spoiler == nil || spoiler["spoiler_level"] != "serious" || spoiler["short_summary"] != "" {
 		t.Errorf("a spoiler rating withholds its review as an empty string: %+v", spoiler)
+	}
+}
+
+func TestV1ActivitiesResourceUsesTheResourceVocabulary(t *testing.T) {
+	f := newActivityFix(t)
+	items := f.walk(t, url.Values{"activity_types": {"galgame_resource_creation"}}, 50)
+	it := activityByID(items, f.rowID(t, "GALGAME_RESOURCE_CREATION", acResShown))
+	res, _ := it["resource"].(map[string]any)
+	if res == nil || res["resource_type"] != "game" ||
+		fmt.Sprint(res["resource_platforms"]) != "[win and]" || fmt.Sprint(res["resource_languages"]) != "[zh-cn ja-jp]" {
+		t.Errorf("the resource block reads the jsonb axes in vocabulary order: %+v", res)
+	}
+
+	f.run(t, `UPDATE galgame_resource SET type = 'image' WHERE id = ?`, acResShown)
+	resp, body := f.call(t, url.Values{"activity_types": {"galgame_resource_creation"}})
+	if resp.StatusCode != http.StatusInternalServerError {
+		t.Errorf("a type outside the vocabulary is a data error, not a remap: %d %+v", resp.StatusCode, body)
 	}
 }

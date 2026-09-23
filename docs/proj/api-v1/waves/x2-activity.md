@@ -227,12 +227,18 @@ K 编号用前缀：
     - `short_summary` 改成非空字符串：没写是 `""`，`spoiler_level` 不是 `none` 时也是 `""`（在这里不透露），两者靠同一对象上的 `spoiler_level` 区分。
     - 测试夹具原先一条评分都没有，这正是 `on_hold` 漏掉的原因；现在种了一条 `on_hold` 和一条严重剧透的评分，`TestV1ActivitiesRatingMatchesTheRatingShape` 钉住。把本轨、另四条 X2 分支、master 与 GR 的已提交 spec 并起来跑 G8，全过。
 
+14. **资源块与评分块按 G 轨裁决改名**（把本轨 spec 与已上线的 G1 工具集并起来跑 G8，撞了三处；G 的负责会话 9b 裁决，协调会话接受）：
+    - `rating` 块改名 `galgame_rating`：`rating` 留给标量的 PUT 体（工具实用度 1–5、题目质量 1–10）。
+    - `resource.resource_type` 保留原名，改成 `resourcevocab.TypeKeys` 的封闭词表（即 `workrepr.ResourceType`，与 GE 的 `/works?resource_type=` 筛选同名同表）；工具集那边的 `{file, link}` 由 G1.1 改名 `toolset_resource_type`，所以 **本轨必须在 G1.1 之后合并**。
+    - 单值的 `platform` / `language` 删掉，换成与 `WorkSummary` 同名同型的 `resource_platforms` / `resource_languages`，取自资源的 jsonb 轴，按词表顺序。
+    - 生产 `galgame_resource.type` 全是词表内的值（旧的 `image`/`ai`/`others` 为 0 行），所以不做映射（K26）：词表外的类型是数据错误，整页 500。注意 **`resourcevocab.IsType` 也接受三个旧值**，而 `ResourceType` 的 enum 不含它们，所以这里用 `TypeKeys` 判，不用 `IsType`。
+
 ## 9. 验收记录（2026-09-23，rebase 到 master `9e7c496f` 之后）
 
 - 门：`go build` / `make lint` 干净；全量库测试（本轨临时库，`-count=1 -p 1`）全绿；`make openapi`、路由 golden（`-update-routes`）、`pnpm gen:api` 均无漂移；网页 `lint` / `typecheck` / `test` 全绿；`deadcode` 在 `internal/activity` 下无条目。
 - 基线（rebase 后重新生成）：`legacy_route_baseline` 153 → **150**；`legacy-fetch-baseline` 183 → **177**（X1a 先降了 6，本轨再降 6）。
 
-### 9.1 变异（§7 的 11 条 + §8 第 8 条补的 1 条 + §8 第 12、13 条各补的 2 条，16 条全杀）
+### 9.1 变异（§7 的 11 条 + §8 第 8 条补的 1 条 + §8 第 12、13、14 条各补的 2 条，18 条全杀）
 
 | # | 改动 | 红的测试 |
 |---|---|---|
@@ -252,6 +258,8 @@ K 编号用前缀：
 | 14 | 去掉 `singleflight`（§8 第 12 条） | `TestCatalogRowsCoalescesConcurrentMisses`（8 个并发未命中花了 8 次调用） |
 | 15 | `play_status` 词表去掉 `on_hold`（§8 第 13 条） | `TestV1ActivitiesRatingMatchesTheRatingShape`（响应不符合 spec） |
 | 16 | 剧透评分不再隐去短评（§8 第 13 条） | `TestV1ActivitiesRatingMatchesTheRatingShape` |
+| 17 | 资源类型按 `IsType` 判（放过旧值）（§8 第 14 条） | `TestV1ActivitiesResourceUsesTheResourceVocabulary` |
+| 18 | 平台/语言按存储顺序原样下发（§8 第 14 条） | `TestV1ActivitiesResourceUsesTheResourceVocabulary` |
 
 ### 9.2 浏览器（API :2372 打本轨临时库 + 种子数据，网页 :2371，真 OAuth / catalog）
 

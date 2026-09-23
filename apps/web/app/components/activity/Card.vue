@@ -55,11 +55,11 @@ defineProps<{ activity: Activity }>()
     v-else-if="
       activity.activity_type === 'galgame_rating_creation' &&
       activity.work &&
-      activity.rating
+      activity.galgame_rating
     "
     :activity="activity"
     :work="activity.work"
-    :rating="activity.rating"
+    :rating="activity.galgame_rating"
   />
   <ActivityCardGalgameComment
     v-else-if="

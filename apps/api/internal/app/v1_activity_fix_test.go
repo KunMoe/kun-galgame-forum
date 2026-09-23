@@ -248,8 +248,8 @@ func (f *activityFix) seed(t *testing.T) {
 			VALUES (?, true, ?, 1, 4, 5, ?, ?)`, w, acUserAlice, acTie.Add(4*time.Hour), acTie.Add(4*time.Hour))
 	}
 	for i, w := range []int{acWorkShown, acWorkGone, acWorkAdult} {
-		f.run(t, `INSERT INTO galgame_resource (id, work_id, user_id, type, language, platform, size, note, created, updated)
-			VALUES (?, ?, ?, 'game', 'zh-cn', 'windows', '1.7GB', 'note', ?, ?)`,
+		f.run(t, `INSERT INTO galgame_resource (id, work_id, user_id, type, language, platform, languages, platforms, size, note, created, updated)
+			VALUES (?, ?, ?, 'game', 'zh-cn', 'windows', '["ja-jp","zh-cn"]', '["and","win"]', '1.7GB', 'note', ?, ?)`,
 			acResShown+i, w, acUserBob, acTie.Add(5*time.Hour), acTie.Add(5*time.Hour))
 	}
 	f.run(t, `INSERT INTO galgame_rating (id, recommend, overall, play_status, short_summary, spoiler_level, user_id, work_id, created, updated)

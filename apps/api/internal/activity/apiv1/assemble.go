@@ -2,7 +2,11 @@ package apiv1
 
 import (
 	"context"
+	"fmt"
+	"kun-galgame-api/internal/galgame/resourcevocab"
+	"kun-galgame-api/internal/galgame/workrepr"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -223,6 +227,11 @@ func (s *Service) load(ctx context.Context, rows []repository.FeedRow, includeNS
 	if b.resources, err = s.repo.FetchGalgameResourceDetails(resourceIDs.list()); err != nil {
 		return nil, fail(err)
 	}
+	for id, rs := range b.resources {
+		if !slices.Contains(resourcevocab.TypeKeys, rs.Type) {
+			return nil, fail(fmt.Errorf("galgame_resource %d has type %q outside the resource vocabulary", id, rs.Type))
+		}
+	}
 	if b.quizzes, err = s.repo.FetchQuizActivityData(quizIDs.list()); err != nil {
 		return nil, fail(err)
 	}
@@ -391,7 +400,7 @@ func (s *Service) build(ctx context.Context, r repository.FeedRow, b *batch) *Ac
 		if !ok {
 			return nil
 		}
-		a.Rating = &ActivityRating{
+		a.GalgameRating = &ActivityRating{
 			RatingID: repr.ID(r.SourceID), Overall: rt.Overall, PlayStatus: rt.PlayStatus, Recommend: rt.Recommend,
 			SpoilerLevel: rt.SpoilerLevel, ShortSummary: excerpt(strings.TrimSpace(rt.ShortSummary), 1314), LikeCount: rt.LikeCount,
 		}
@@ -401,8 +410,10 @@ func (s *Service) build(ctx context.Context, r repository.FeedRow, b *batch) *Ac
 			return nil
 		}
 		a.Resource = &ActivityResource{
-			ResourceID: repr.ID(r.SourceID), ResourceType: rs.Type, Language: OpenToken(rs.Language),
-			Platform: OpenToken(rs.Platform), Size: excerpt(rs.Size, 64), Note: excerptPtr(rs.Note, 300), LikeCount: rs.LikeCount,
+			ResourceID: repr.ID(r.SourceID), ResourceType: workrepr.ResourceType(rs.Type),
+			ResourcePlatforms: vocabKeys[workrepr.ResourcePlatform](resourcevocab.PlatformKeys, rs.Platforms),
+			ResourceLanguages: vocabKeys[workrepr.ResourceLanguage](resourcevocab.LanguageKeys, rs.Languages),
+			Size:              excerpt(rs.Size, 64), Note: excerptPtr(rs.Note, 300), LikeCount: rs.LikeCount,
 		}
 	case "GALGAME_QUIZ_CREATION":
 		q, ok := b.quizzes[r.SourceID]

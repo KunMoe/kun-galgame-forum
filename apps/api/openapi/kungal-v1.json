@@ -159,6 +159,17 @@
             "maxLength": 1000,
             "type": "string"
           },
+          "galgame_rating": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ActivityRating"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The rating. Set for galgame_rating_creation."
+          },
           "id": {
             "description": "Activity id.",
             "maxLength": 20,
@@ -210,17 +221,6 @@
               }
             ],
             "description": "The quiz. Set for galgame_quiz_creation."
-          },
-          "rating": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/ActivityRating"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "The rating. Set for galgame_rating_creation."
           },
           "reply": {
             "anyOf": [
@@ -360,7 +360,7 @@
           "work_digest",
           "work_stats",
           "work_revision",
-          "rating",
+          "galgame_rating",
           "resource",
           "quiz",
           "toolset",
@@ -611,14 +611,6 @@
       },
       "ActivityResource": {
         "properties": {
-          "language": {
-            "description": "Language of the resource.",
-            "maxLength": 32,
-            "pattern": "^[a-z][a-z0-9_-]{0,31}$",
-            "type": "string",
-            "x-vocabulary": "activity_detail_token",
-            "x-vocabulary-closed": false
-          },
           "like_count": {
             "description": "Like count.",
             "format": "int64",
@@ -633,14 +625,6 @@
               "null"
             ]
           },
-          "platform": {
-            "description": "Platform of the resource.",
-            "maxLength": 32,
-            "pattern": "^[a-z][a-z0-9_-]{0,31}$",
-            "type": "string",
-            "x-vocabulary": "activity_detail_token",
-            "x-vocabulary-closed": false
-          },
           "resource_id": {
             "description": "Resource id.",
             "maxLength": 20,
@@ -648,19 +632,102 @@
             "pattern": "^[0-9]+$",
             "type": "string"
           },
+          "resource_languages": {
+            "description": "Languages of the resource, each once, in vocabulary order. Empty array, never null.",
+            "items": {
+              "description": "A resource language key.",
+              "enum": [
+                "zh-cn",
+                "zh-tw",
+                "ja-jp",
+                "en-us",
+                "other"
+              ],
+              "maxLength": 5,
+              "type": "string",
+              "x-vocabulary-closed": true
+            },
+            "type": "array"
+          },
+          "resource_platforms": {
+            "description": "Platforms the resource runs on, each once, in vocabulary order. Empty array, never null.",
+            "items": {
+              "description": "A resource platform key.",
+              "enum": [
+                "win",
+                "and",
+                "ios",
+                "mac",
+                "lin",
+                "web",
+                "mob",
+                "swi",
+                "sw2",
+                "n3d",
+                "nds",
+                "wii",
+                "wiu",
+                "gba",
+                "gbc",
+                "nes",
+                "sfc",
+                "ps1",
+                "ps2",
+                "ps3",
+                "ps4",
+                "ps5",
+                "psp",
+                "psv",
+                "xb1",
+                "xb3",
+                "xbo",
+                "xxs",
+                "sat",
+                "smd",
+                "scd",
+                "drc",
+                "pce",
+                "pcf",
+                "tdo",
+                "p88",
+                "p98",
+                "x1s",
+                "x68",
+                "fm7",
+                "fm8",
+                "fmt",
+                "msx",
+                "dos",
+                "dvd",
+                "bdp",
+                "vnd",
+                "oth"
+              ],
+              "maxLength": 3,
+              "type": "string",
+              "x-vocabulary-closed": true
+            },
+            "type": "array"
+          },
           "resource_type": {
             "description": "What the resource is.",
             "enum": [
               "game",
-              "collection",
-              "image",
               "patch",
+              "collection",
+              "crack_fix",
+              "mod",
+              "tool",
+              "walkthrough",
+              "ost",
               "voice",
+              "cg",
+              "wallpaper",
+              "artbook",
               "video",
-              "ai",
-              "others"
+              "other"
             ],
-            "maxLength": 10,
+            "maxLength": 11,
             "type": "string",
             "x-vocabulary-closed": true
           },
@@ -673,8 +740,8 @@
         "required": [
           "resource_id",
           "resource_type",
-          "language",
-          "platform",
+          "resource_platforms",
+          "resource_languages",
           "size",
           "note",
           "like_count"

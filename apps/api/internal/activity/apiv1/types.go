@@ -1,6 +1,8 @@
 package apiv1
 
 import (
+	"kun-galgame-api/internal/galgame/resourcevocab"
+	"kun-galgame-api/internal/galgame/workrepr"
 	"strings"
 
 	"kun-galgame-api/internal/apiv1/content"
@@ -86,7 +88,7 @@ type Activity struct {
 	WorkDigest      *WorkDigest              `json:"work_digest" doc:"Developers, intro and release of the work. Set for galgame_creation, galgame_edit and galgame_pr_creation."`
 	WorkStats       *WorkStats               `json:"work_stats" doc:"Counters of the work on this forum. Set for galgame_creation."`
 	WorkRevision    *WorkRevision            `json:"work_revision" doc:"The revision the edit made. Set for galgame_edit unless neither its number nor its wiki id is recorded."`
-	Rating          *ActivityRating          `json:"rating" doc:"The rating. Set for galgame_rating_creation."`
+	GalgameRating   *ActivityRating          `json:"galgame_rating" doc:"The rating. Set for galgame_rating_creation."`
 	Resource        *ActivityResource        `json:"resource" doc:"The download resource. Set for galgame_resource_creation."`
 	Quiz            *ActivityQuiz            `json:"quiz" doc:"The quiz. Set for galgame_quiz_creation."`
 	Toolset         *ActivityToolset         `json:"toolset" doc:"The toolset the resource belongs to. Set for toolset_resource_creation."`
@@ -185,13 +187,13 @@ type ActivityRating struct {
 }
 
 type ActivityResource struct {
-	ResourceID   repr.DecimalID `json:"resource_id" doc:"Resource id."`
-	ResourceType string         `json:"resource_type" enum:"game,collection,image,patch,voice,video,ai,others" maxLength:"10" doc:"What the resource is."`
-	Language     OpenToken      `json:"language" doc:"Language of the resource."`
-	Platform     OpenToken      `json:"platform" doc:"Platform of the resource."`
-	Size         string         `json:"size" maxLength:"64" doc:"Size as the publisher wrote it, such as 1.7GB. Free text; never use it as a decision input."`
-	Note         *string        `json:"note" maxLength:"300" doc:"The first 300 characters of the publisher's note. null when empty. Free text; never use it as a decision input."`
-	LikeCount    int            `json:"like_count" minimum:"0" doc:"Like count."`
+	ResourceID        repr.DecimalID              `json:"resource_id" doc:"Resource id."`
+	ResourceType      workrepr.ResourceType       `json:"resource_type" doc:"What the resource is."`
+	ResourcePlatforms []workrepr.ResourcePlatform `json:"resource_platforms" doc:"Platforms the resource runs on, each once, in vocabulary order. Empty array, never null."`
+	ResourceLanguages []workrepr.ResourceLanguage `json:"resource_languages" doc:"Languages of the resource, each once, in vocabulary order. Empty array, never null."`
+	Size              string                      `json:"size" maxLength:"64" doc:"Size as the publisher wrote it, such as 1.7GB. Free text; never use it as a decision input."`
+	Note              *string                     `json:"note" maxLength:"300" doc:"The first 300 characters of the publisher's note. null when empty. Free text; never use it as a decision input."`
+	LikeCount         int                         `json:"like_count" minimum:"0" doc:"Like count."`
 }
 
 type ActivityQuiz struct {
@@ -235,4 +237,18 @@ func excerptPtr(s string, n int) *string {
 	}
 	out := excerpt(s, n)
 	return &out
+}
+
+func vocabKeys[T ~string](vocab []string, keys resourcevocab.Keys) []T {
+	present := make(map[string]bool, len(keys))
+	for _, k := range keys {
+		present[k] = true
+	}
+	out := make([]T, 0, len(keys))
+	for _, k := range vocab {
+		if present[k] {
+			out = append(out, T(k))
+		}
+	}
+	return out
 }
