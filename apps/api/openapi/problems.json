@@ -295,7 +295,7 @@
       "status": 403,
       "type": "https://developer.nextmoe.dev/problems/kungal/quiz-answer-required",
       "title": "Quiz answer required",
-      "description": "The quiz hides its game or carries spoilers, so its comment wall is open only to its author and to users who have answered it."
+      "description": "The caller must already have answered this quiz; the author cannot answer their own quiz."
     },
     {
       "object": "problem_type",
@@ -305,6 +305,15 @@
       "type": "https://developer.nextmoe.dev/problems/kungal/redemption-code-forfeited",
       "title": "Redemption code forfeited",
       "description": "The caller won this code, but it was given up or not revealed before claim_expires_at, and it can no longer be revealed."
+    },
+    {
+      "object": "problem_type",
+      "code": "SELF_ANSWER_FORBIDDEN",
+      "domain": "kungal",
+      "status": 403,
+      "type": "https://developer.nextmoe.dev/problems/kungal/self-answer-forbidden",
+      "title": "Self answer forbidden",
+      "description": "Users cannot answer a quiz they authored."
     },
     {
       "object": "problem_type",
