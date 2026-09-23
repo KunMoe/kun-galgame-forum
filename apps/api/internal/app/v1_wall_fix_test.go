@@ -87,6 +87,7 @@ type fakeCommunity struct {
 	nextPost  int64
 	nextThr   int64
 	comments  atomic.Int32
+	toggles   atomic.Int32
 	down      atomic.Bool
 	limited   atomic.Bool
 	bogus     atomic.Bool
@@ -289,6 +290,7 @@ func (c *fakeCommunity) postOp(w http.ResponseWriter, r *http.Request) {
 	case r.Method == http.MethodPost && action == "reaction":
 		var req communityclient.ReactionToggleRequest
 		_ = json.NewDecoder(r.Body).Decode(&req)
+		c.toggles.Add(1)
 		key := [2]int64{id, req.UserID}
 		added := !c.reactions[key]
 		if added {

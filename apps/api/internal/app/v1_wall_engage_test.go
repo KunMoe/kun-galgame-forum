@@ -19,6 +19,11 @@ func TestV1WallLikeIsASlot(t *testing.T) {
 			t.Fatalf("PUT #%d %d %v", i, resp.StatusCode, out)
 		}
 	}
+	// Upstream only toggles, so a replay that reached it would unlike and then
+	// have to like again; the second PUT must not touch it at all.
+	if n := f.cm.toggles.Load(); n != 1 {
+		t.Fatalf("upstream toggled %d times for two PUTs, want 1", n)
+	}
 	awards := f.awardsSnapshot()
 	if len(awards) != 1 || awards[0].userID != rcBob || awards[0].delta != 1 || awards[0].reason != "liked" {
 		t.Fatalf("awards after two PUTs %+v", awards)
@@ -28,6 +33,9 @@ func TestV1WallLikeIsASlot(t *testing.T) {
 		if resp.StatusCode != http.StatusOK || asInt(out["like_count"]) != 0 || wallViewer(t, out)["has_liked"] != false {
 			t.Fatalf("DELETE #%d %d %v", i, resp.StatusCode, out)
 		}
+	}
+	if n := f.cm.toggles.Load(); n != 2 {
+		t.Fatalf("upstream toggled %d times after two DELETEs, want 2", n)
 	}
 	awards = f.awardsSnapshot()
 	if len(awards) != 2 || awards[1].delta != -1 {
