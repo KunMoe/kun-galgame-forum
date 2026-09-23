@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import type {
-  CreateWebsiteCategoryPayload,
-  UpdateWebsiteCategoryPayload
-} from '~/components/website/modal/types'
+import { settle } from '#shared/utils/api/problem'
+import type { WebsiteCategory } from '#shared/utils/api/schemas'
+import type { WebsiteCategoryForm } from '~/components/website/modal/types'
 
+const api = useApiClient()
 const { data, refresh } = useWebsiteCategories()
 
 const canCreate = useCan('website.create')
@@ -11,47 +11,51 @@ const canDelete = useCan('website.delete')
 
 const isModalOpen = ref(false)
 const isSubmitting = ref(false)
-const editing = ref<
-  (CreateWebsiteCategoryPayload & { category_id?: number }) | undefined
->(undefined)
+const editing = ref<WebsiteCategory | null>(null)
+const initialData = computed<WebsiteCategoryForm | undefined>(() =>
+  editing.value
+    ? {
+        slug: editing.value.slug,
+        label: editing.value.label,
+        description: editing.value.description,
+        sort_order: editing.value.sort_order
+      }
+    : undefined
+)
 
 const openCreate = () => {
-  editing.value = undefined
+  editing.value = null
   isModalOpen.value = true
 }
 
-const openEdit = (category: WebsiteCategoryListItem) => {
-  editing.value = {
-    name: category.name,
-    label: category.label,
-    description: category.description,
-    sort_order: category.sort_order,
-    category_id: category.id
-  }
+const openEdit = (category: WebsiteCategory) => {
+  editing.value = category
   isModalOpen.value = true
 }
 
-const handleSubmit = async (
-  payload: CreateWebsiteCategoryPayload | UpdateWebsiteCategoryPayload
-) => {
+const handleSubmit = async (body: WebsiteCategoryForm) => {
+  const target = editing.value
   isSubmitting.value = true
-  const result = await kunFetch('/website-category', {
-    method: 'category_id' in payload ? 'PUT' : 'POST',
-    body: payload
-  })
+  const result = target
+    ? await settle(
+        api.PATCH('/admin/website-categories/{website_category_id}', {
+          params: { path: { website_category_id: target.id } },
+          body
+        })
+      )
+    : await settle(api.POST('/admin/website-categories', { body }))
   isSubmitting.value = false
 
-  if (result) {
-    useMessage(
-      'category_id' in payload ? '分类已更新' : '分类已创建',
-      'success'
-    )
-    isModalOpen.value = false
-    await refresh()
+  if (!result.ok) {
+    reportProblem(result.problem)
+    return
   }
+  useMessage(target ? '分类已更新' : '分类已创建', 'success')
+  isModalOpen.value = false
+  await refresh()
 }
 
-const handleDelete = async (category: WebsiteCategoryListItem) => {
+const handleDelete = async (category: WebsiteCategory) => {
   const confirmed = await useComponentMessageStore().alert(
     `确定删除分类「${category.label}」吗？`,
     '只有空分类可以删除, 该操作不可撤销'
@@ -60,14 +64,17 @@ const handleDelete = async (category: WebsiteCategoryListItem) => {
     return
   }
 
-  const result = await kunFetch('/website-category', {
-    method: 'DELETE',
-    query: { category_id: category.id }
-  })
-  if (result) {
-    useMessage('分类已删除', 'success')
-    await refresh()
+  const result = await settle(
+    api.DELETE('/admin/website-categories/{website_category_id}', {
+      params: { path: { website_category_id: category.id } }
+    })
+  )
+  if (!result.ok) {
+    reportProblem(result.problem)
+    return
   }
+  useMessage('分类已删除', 'success')
+  await refresh()
 }
 </script>
 
@@ -100,13 +107,13 @@ const handleDelete = async (category: WebsiteCategoryListItem) => {
         <div class="min-w-0 flex-1">
           <div class="flex flex-wrap items-center gap-2">
             <KunLink
-              :to="`/website-category/${category.name}`"
+              :to="`/website-category/${category.slug}`"
               underline="none"
             >
               <span class="font-medium">{{ category.label }}</span>
             </KunLink>
             <span class="text-default-400 font-mono text-xs">
-              {{ category.name }}
+              {{ category.slug }}
             </span>
             <KunChip>{{ category.website_count }} 个网站</KunChip>
           </div>
@@ -140,7 +147,8 @@ const handleDelete = async (category: WebsiteCategoryListItem) => {
 
     <WebsiteModalCategory
       v-model="isModalOpen"
-      :initial-data="editing"
+      :initial-data="initialData"
+      :is-editing="!!editing"
       :loading="isSubmitting"
       @submit="handleSubmit"
     />

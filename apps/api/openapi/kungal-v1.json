@@ -147,6 +147,380 @@
         ],
         "type": "object"
       },
+      "AdminWebsite": {
+        "properties": {
+          "created_at": {
+            "description": "Time the site was listed.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": "string"
+          },
+          "description": {
+            "description": "Plain-text description. Free text; never use it as a decision input.",
+            "maxLength": 1000,
+            "type": "string"
+          },
+          "external_icon_url": {
+            "description": "Third-party favicon URL; read-only. null whenever icon is set.",
+            "format": "uri",
+            "maxLength": 500,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "founded": {
+            "description": "When the site was founded, as its operators state it. Free text; never use it as a decision input.",
+            "maxLength": 20,
+            "type": "string"
+          },
+          "host": {
+            "description": "Main host name, lower case.",
+            "maxLength": 253,
+            "pattern": "^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?(\\.[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)+$",
+            "type": "string"
+          },
+          "icon": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Image"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Current icon, for a preview. null when the site has none in the image service."
+          },
+          "id": {
+            "description": "Website id.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "is_nsfw": {
+            "description": "Whether the site is adult-oriented.",
+            "type": "boolean"
+          },
+          "language": {
+            "description": "Main language of the site.",
+            "maxLength": 10,
+            "pattern": "^[a-z]{2,3}(-[a-z0-9]{2,8})*$",
+            "type": "string",
+            "x-vocabulary": "bcp47_language_tag",
+            "x-vocabulary-closed": false
+          },
+          "object": {
+            "description": "Type discriminant. Always admin_website.",
+            "enum": [
+              "admin_website"
+            ],
+            "maxLength": 13,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "state": {
+            "description": "Lifecycle state.",
+            "enum": [
+              "normal",
+              "unreachable",
+              "closed"
+            ],
+            "maxLength": 11,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "title": {
+            "description": "Name of the site. Free text; never use it as a decision input.",
+            "maxLength": 233,
+            "type": "string"
+          },
+          "updated_at": {
+            "description": "Time of the latest write to the row.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": "string"
+          },
+          "urls": {
+            "description": "Every known address of the site. Empty array, never null.",
+            "items": {
+              "description": "An http or https URL of at most 100 characters.",
+              "format": "uri",
+              "maxLength": 100,
+              "type": "string"
+            },
+            "maxItems": 10,
+            "type": "array"
+          },
+          "website_category_id": {
+            "description": "Category id.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "website_tag_ids": {
+            "description": "Tag ids, ascending. Empty array, never null.",
+            "items": {
+              "maxLength": 20,
+              "minLength": 1,
+              "pattern": "^[0-9]+$",
+              "type": "string"
+            },
+            "maxItems": 20,
+            "type": "array"
+          }
+        },
+        "required": [
+          "object",
+          "id",
+          "host",
+          "title",
+          "description",
+          "icon",
+          "external_icon_url",
+          "website_category_id",
+          "website_tag_ids",
+          "is_nsfw",
+          "state",
+          "language",
+          "urls",
+          "founded",
+          "created_at",
+          "updated_at"
+        ],
+        "type": "object"
+      },
+      "AdminWebsiteCategory": {
+        "properties": {
+          "created_at": {
+            "description": "Creation time.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": "string"
+          },
+          "description": {
+            "description": "Plain-text description. Free text; never use it as a decision input.",
+            "maxLength": 300,
+            "type": "string"
+          },
+          "id": {
+            "description": "Category id.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "label": {
+            "description": "Display name. Free text; never use it as a decision input.",
+            "maxLength": 30,
+            "type": "string"
+          },
+          "object": {
+            "description": "Type discriminant. Always admin_website_category.",
+            "enum": [
+              "admin_website_category"
+            ],
+            "maxLength": 22,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "slug": {
+            "description": "URL key.",
+            "maxLength": 30,
+            "pattern": "^[a-z0-9_-]+$",
+            "type": "string"
+          },
+          "sort_order": {
+            "description": "Position among categories, ascending.",
+            "format": "int64",
+            "maximum": 9999,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "updated_at": {
+            "description": "Time of the latest write.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "object",
+          "id",
+          "slug",
+          "label",
+          "description",
+          "sort_order",
+          "created_at",
+          "updated_at"
+        ],
+        "type": "object"
+      },
+      "AdminWebsiteTag": {
+        "properties": {
+          "created_at": {
+            "description": "Creation time.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": "string"
+          },
+          "description": {
+            "description": "Plain-text description. Free text; never use it as a decision input.",
+            "maxLength": 300,
+            "type": "string"
+          },
+          "id": {
+            "description": "Tag id.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "label": {
+            "description": "Display name. Free text; never use it as a decision input.",
+            "maxLength": 30,
+            "type": "string"
+          },
+          "level": {
+            "description": "Weight of the tag.",
+            "format": "int64",
+            "maximum": 20,
+            "minimum": -100,
+            "type": "integer"
+          },
+          "object": {
+            "description": "Type discriminant. Always admin_website_tag.",
+            "enum": [
+              "admin_website_tag"
+            ],
+            "maxLength": 17,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "slug": {
+            "description": "URL key.",
+            "maxLength": 30,
+            "pattern": "^[a-z0-9_-]+$",
+            "type": "string"
+          },
+          "updated_at": {
+            "description": "Time of the latest write.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": "string"
+          },
+          "website_tag_group_id": {
+            "description": "Group id. null when ungrouped.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "object",
+          "id",
+          "slug",
+          "label",
+          "description",
+          "level",
+          "website_tag_group_id",
+          "created_at",
+          "updated_at"
+        ],
+        "type": "object"
+      },
+      "AdminWebsiteTagGroup": {
+        "properties": {
+          "created_at": {
+            "description": "Creation time.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": "string"
+          },
+          "description": {
+            "description": "Plain-text description. Free text; never use it as a decision input.",
+            "maxLength": 300,
+            "type": "string"
+          },
+          "id": {
+            "description": "Group id.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "is_multi_select": {
+            "description": "Whether a website may carry more than one tag of this group.",
+            "type": "boolean"
+          },
+          "label": {
+            "description": "Display name. Free text; never use it as a decision input.",
+            "maxLength": 30,
+            "type": "string"
+          },
+          "object": {
+            "description": "Type discriminant. Always admin_website_tag_group.",
+            "enum": [
+              "admin_website_tag_group"
+            ],
+            "maxLength": 23,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "slug": {
+            "description": "Stable key.",
+            "maxLength": 30,
+            "pattern": "^[a-z0-9_-]+$",
+            "type": "string"
+          },
+          "sort_order": {
+            "description": "Position among groups, ascending.",
+            "format": "int64",
+            "maximum": 9999,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "updated_at": {
+            "description": "Time of the latest write.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "object",
+          "id",
+          "slug",
+          "label",
+          "description",
+          "sort_order",
+          "is_multi_select",
+          "created_at",
+          "updated_at"
+        ],
+        "type": "object"
+      },
       "BatchListTopicState": {
         "properties": {
           "items": {
@@ -305,6 +679,70 @@
         "required": [
           "object"
         ],
+        "type": "object"
+      },
+      "CategoryCreate": {
+        "properties": {
+          "description": {
+            "description": "Plain-text description. Absent means empty. Free text; never use it as a decision input.",
+            "maxLength": 300,
+            "type": "string"
+          },
+          "label": {
+            "description": "Display name. Free text; never use it as a decision input.",
+            "maxLength": 30,
+            "minLength": 1,
+            "type": "string"
+          },
+          "slug": {
+            "description": "URL key. Taken is ALREADY_EXISTS.",
+            "maxLength": 30,
+            "minLength": 1,
+            "pattern": "^[a-z0-9_-]+$",
+            "type": "string"
+          },
+          "sort_order": {
+            "description": "Position, ascending. Absent means 0.",
+            "format": "int64",
+            "maximum": 9999,
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "slug",
+          "label"
+        ],
+        "type": "object"
+      },
+      "CategoryPatch": {
+        "properties": {
+          "description": {
+            "description": "New description. Free text; never use it as a decision input.",
+            "maxLength": 300,
+            "type": "string"
+          },
+          "label": {
+            "description": "New display name. Free text; never use it as a decision input.",
+            "maxLength": 30,
+            "minLength": 1,
+            "type": "string"
+          },
+          "slug": {
+            "description": "New URL key.",
+            "maxLength": 30,
+            "minLength": 1,
+            "pattern": "^[a-z0-9_-]+$",
+            "type": "string"
+          },
+          "sort_order": {
+            "description": "New position.",
+            "format": "int64",
+            "maximum": 9999,
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
         "type": "object"
       },
       "CheckIn": {
@@ -688,6 +1126,43 @@
             "description": "Members of this page. Empty array, never null.",
             "items": {
               "$ref": "#/components/schemas/Todo"
+            },
+            "type": "array"
+          },
+          "next_cursor": {
+            "description": "Opaque keyset cursor. Omitted on the last page.",
+            "maxLength": 512,
+            "pattern": "^cur_[A-Za-z0-9_-]+$",
+            "type": "string"
+          },
+          "object": {
+            "description": "Type discriminant. Always list.",
+            "enum": [
+              "list"
+            ],
+            "maxLength": 4,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "total": {
+            "description": "Present only when include_total=true. Same visibility gate as items.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "object",
+          "items"
+        ],
+        "type": "object"
+      },
+      "CountedListWebsiteSummary": {
+        "properties": {
+          "items": {
+            "description": "Members of this page. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/WebsiteSummary"
             },
             "type": "array"
           },
@@ -2239,6 +2714,99 @@
             "description": "Members of this page. Empty array, never null.",
             "items": {
               "$ref": "#/components/schemas/WallComment"
+            },
+            "type": "array"
+          },
+          "next_cursor": {
+            "description": "Opaque keyset cursor. Omitted on the last page.",
+            "maxLength": 512,
+            "pattern": "^cur_[A-Za-z0-9_-]+$",
+            "type": "string"
+          },
+          "object": {
+            "description": "Type discriminant. Always list.",
+            "enum": [
+              "list"
+            ],
+            "maxLength": 4,
+            "type": "string",
+            "x-vocabulary-closed": true
+          }
+        },
+        "required": [
+          "object",
+          "items"
+        ],
+        "type": "object"
+      },
+      "ListWebsiteCategory": {
+        "properties": {
+          "items": {
+            "description": "Members of this page. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/WebsiteCategory"
+            },
+            "type": "array"
+          },
+          "next_cursor": {
+            "description": "Opaque keyset cursor. Omitted on the last page.",
+            "maxLength": 512,
+            "pattern": "^cur_[A-Za-z0-9_-]+$",
+            "type": "string"
+          },
+          "object": {
+            "description": "Type discriminant. Always list.",
+            "enum": [
+              "list"
+            ],
+            "maxLength": 4,
+            "type": "string",
+            "x-vocabulary-closed": true
+          }
+        },
+        "required": [
+          "object",
+          "items"
+        ],
+        "type": "object"
+      },
+      "ListWebsiteTag": {
+        "properties": {
+          "items": {
+            "description": "Members of this page. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/WebsiteTag"
+            },
+            "type": "array"
+          },
+          "next_cursor": {
+            "description": "Opaque keyset cursor. Omitted on the last page.",
+            "maxLength": 512,
+            "pattern": "^cur_[A-Za-z0-9_-]+$",
+            "type": "string"
+          },
+          "object": {
+            "description": "Type discriminant. Always list.",
+            "enum": [
+              "list"
+            ],
+            "maxLength": 4,
+            "type": "string",
+            "x-vocabulary-closed": true
+          }
+        },
+        "required": [
+          "object",
+          "items"
+        ],
+        "type": "object"
+      },
+      "ListWebsiteTagGroup": {
+        "properties": {
+          "items": {
+            "description": "Members of this page. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/WebsiteTagGroup"
             },
             "type": "array"
           },
@@ -6578,6 +7146,163 @@
         ],
         "type": "object"
       },
+      "TagCreate": {
+        "properties": {
+          "description": {
+            "description": "Plain-text description. Absent means empty. Free text; never use it as a decision input.",
+            "maxLength": 300,
+            "type": "string"
+          },
+          "label": {
+            "description": "Display name. Free text; never use it as a decision input.",
+            "maxLength": 30,
+            "minLength": 1,
+            "type": "string"
+          },
+          "level": {
+            "description": "Weight of the tag.",
+            "format": "int64",
+            "maximum": 20,
+            "minimum": -100,
+            "type": "integer"
+          },
+          "slug": {
+            "description": "URL key. Taken is ALREADY_EXISTS.",
+            "maxLength": 30,
+            "minLength": 1,
+            "pattern": "^[a-z0-9_-]+$",
+            "type": "string"
+          },
+          "website_tag_group_id": {
+            "description": "Group id. Absent or null means ungrouped; an unknown id is UNKNOWN_REFERENCE.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "slug",
+          "label",
+          "level"
+        ],
+        "type": "object"
+      },
+      "TagGroupCreate": {
+        "properties": {
+          "description": {
+            "description": "Plain-text description. Absent means empty. Free text; never use it as a decision input.",
+            "maxLength": 300,
+            "type": "string"
+          },
+          "is_multi_select": {
+            "description": "Whether a website may carry more than one tag of this group. Absent means false.",
+            "type": "boolean"
+          },
+          "label": {
+            "description": "Display name. Free text; never use it as a decision input.",
+            "maxLength": 30,
+            "minLength": 1,
+            "type": "string"
+          },
+          "slug": {
+            "description": "Stable key. Taken is ALREADY_EXISTS.",
+            "maxLength": 30,
+            "minLength": 1,
+            "pattern": "^[a-z0-9_-]+$",
+            "type": "string"
+          },
+          "sort_order": {
+            "description": "Position, ascending. Absent means 0.",
+            "format": "int64",
+            "maximum": 9999,
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "slug",
+          "label"
+        ],
+        "type": "object"
+      },
+      "TagGroupPatch": {
+        "properties": {
+          "description": {
+            "description": "New description. Free text; never use it as a decision input.",
+            "maxLength": 300,
+            "type": "string"
+          },
+          "is_multi_select": {
+            "description": "New multi-select flag. Turning it off does not touch websites that already carry several tags of the group.",
+            "type": "boolean"
+          },
+          "label": {
+            "description": "New display name. Free text; never use it as a decision input.",
+            "maxLength": 30,
+            "minLength": 1,
+            "type": "string"
+          },
+          "slug": {
+            "description": "New key.",
+            "maxLength": 30,
+            "minLength": 1,
+            "pattern": "^[a-z0-9_-]+$",
+            "type": "string"
+          },
+          "sort_order": {
+            "description": "New position.",
+            "format": "int64",
+            "maximum": 9999,
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "TagPatch": {
+        "properties": {
+          "description": {
+            "description": "New description. Free text; never use it as a decision input.",
+            "maxLength": 300,
+            "type": "string"
+          },
+          "label": {
+            "description": "New display name. Free text; never use it as a decision input.",
+            "maxLength": 30,
+            "minLength": 1,
+            "type": "string"
+          },
+          "level": {
+            "description": "New weight.",
+            "format": "int64",
+            "maximum": 20,
+            "minimum": -100,
+            "type": "integer"
+          },
+          "slug": {
+            "description": "New URL key.",
+            "maxLength": 30,
+            "minLength": 1,
+            "pattern": "^[a-z0-9_-]+$",
+            "type": "string"
+          },
+          "website_tag_group_id": {
+            "description": "New group id. null moves the tag out of every group; absent keeps it.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "type": "object"
+      },
       "TextNode": {
         "properties": {
           "object": {
@@ -9147,6 +9872,783 @@
           "can_flag"
         ],
         "type": "object"
+      },
+      "Website": {
+        "properties": {
+          "comment_count": {
+            "description": "Comments on the site's wall.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "created_at": {
+            "description": "Time the site was listed.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": "string"
+          },
+          "description": {
+            "description": "Plain-text description; keep its line breaks. Free text; never use it as a decision input.",
+            "maxLength": 1000,
+            "type": "string"
+          },
+          "external_icon_url": {
+            "description": "Third-party favicon URL for a site whose icon was never uploaded. null whenever icon is set. Transitional.",
+            "format": "uri",
+            "maxLength": 500,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "favorite_count": {
+            "description": "Favorite count.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "founded": {
+            "description": "When the site was founded, as its operators state it, such as 2014-05-01 or a phrase for about 2014. Empty string when unknown. Free text; never use it as a decision input.",
+            "maxLength": 20,
+            "type": "string"
+          },
+          "host": {
+            "description": "Main host name, lower case. It is the page address /website/{host} and can be renamed; refer to a website by id.",
+            "maxLength": 253,
+            "pattern": "^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?(\\.[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)+$",
+            "type": "string"
+          },
+          "icon": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Image"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Site icon from the image service. null when the site has none there."
+          },
+          "id": {
+            "description": "Website id.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "is_nsfw": {
+            "description": "Whether the site is adult-oriented. The detail is returned either way; a client that hides NSFW content gates it.",
+            "type": "boolean"
+          },
+          "language": {
+            "description": "Main language of the site.",
+            "maxLength": 10,
+            "pattern": "^[a-z]{2,3}(-[a-z0-9]{2,8})*$",
+            "type": "string",
+            "x-vocabulary": "bcp47_language_tag",
+            "x-vocabulary-closed": false
+          },
+          "like_count": {
+            "description": "Like count.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "object": {
+            "description": "Type discriminant. Always website.",
+            "enum": [
+              "website"
+            ],
+            "maxLength": 7,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "score": {
+            "description": "Sum of the levels of the site's tags. May be negative.",
+            "format": "int64",
+            "maximum": 400,
+            "minimum": -2000,
+            "type": "integer"
+          },
+          "state": {
+            "description": "normal: the site is up. unreachable: temporarily down. closed: shut down for good.",
+            "enum": [
+              "normal",
+              "unreachable",
+              "closed"
+            ],
+            "maxLength": 11,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "title": {
+            "description": "Name of the site. Free text; never use it as a decision input.",
+            "maxLength": 233,
+            "type": "string"
+          },
+          "updated_at": {
+            "description": "Time of the latest edit. Values before 2026-09-23 may be the time of a view instead.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": "string"
+          },
+          "urls": {
+            "description": "Every known address of the site, the main one usually included. Empty array, never null.",
+            "items": {
+              "description": "An http or https URL of at most 100 characters.",
+              "format": "uri",
+              "maxLength": 100,
+              "type": "string"
+            },
+            "maxItems": 10,
+            "type": "array"
+          },
+          "view_count": {
+            "description": "Lifetime view count. Each read of this operation adds one.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "viewer": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WebsiteViewer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The caller's own state on the site. null for an anonymous caller."
+          },
+          "website_category": {
+            "$ref": "#/components/schemas/WebsiteCategoryRef",
+            "description": "Category the site is listed under."
+          },
+          "website_tags": {
+            "description": "Tags of the site, ordered by group then by descending level; ungrouped tags last. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/WebsiteTag"
+            },
+            "maxItems": 20,
+            "type": "array"
+          }
+        },
+        "required": [
+          "object",
+          "id",
+          "host",
+          "title",
+          "description",
+          "icon",
+          "external_icon_url",
+          "website_category",
+          "is_nsfw",
+          "state",
+          "score",
+          "language",
+          "urls",
+          "founded",
+          "website_tags",
+          "view_count",
+          "like_count",
+          "favorite_count",
+          "comment_count",
+          "created_at",
+          "updated_at",
+          "viewer"
+        ],
+        "type": "object"
+      },
+      "WebsiteCategory": {
+        "properties": {
+          "description": {
+            "description": "Plain-text description. Empty string when none. Free text; never use it as a decision input.",
+            "maxLength": 300,
+            "type": "string"
+          },
+          "id": {
+            "description": "Category id.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "label": {
+            "description": "Display name. Free text; never use it as a decision input.",
+            "maxLength": 30,
+            "type": "string"
+          },
+          "object": {
+            "description": "Type discriminant. Always website_category.",
+            "enum": [
+              "website_category"
+            ],
+            "maxLength": 16,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "slug": {
+            "description": "URL key of the category page /website-category/{slug}.",
+            "maxLength": 30,
+            "pattern": "^[a-z0-9_-]+$",
+            "type": "string"
+          },
+          "sort_order": {
+            "description": "Position among categories, ascending.",
+            "format": "int64",
+            "maximum": 9999,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "website_count": {
+            "description": "Every website in the category, NSFW ones included. It is the staff guard for deleting a category; a page that lists websites shows that list's total instead.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "object",
+          "id",
+          "slug",
+          "label",
+          "description",
+          "sort_order",
+          "website_count"
+        ],
+        "type": "object"
+      },
+      "WebsiteCategoryRef": {
+        "properties": {
+          "id": {
+            "description": "Category id.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "label": {
+            "description": "Display name. Free text; never use it as a decision input.",
+            "maxLength": 30,
+            "type": "string"
+          },
+          "object": {
+            "description": "Type discriminant. Always website_category.",
+            "enum": [
+              "website_category"
+            ],
+            "maxLength": 16,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "slug": {
+            "description": "URL key of the category page /website-category/{slug}.",
+            "maxLength": 30,
+            "pattern": "^[a-z0-9_-]+$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "object",
+          "id",
+          "slug",
+          "label"
+        ],
+        "type": "object"
+      },
+      "WebsiteCreate": {
+        "properties": {
+          "description": {
+            "description": "Plain-text description, at least 10 characters once trimmed. Free text; never use it as a decision input.",
+            "maxLength": 1000,
+            "minLength": 10,
+            "type": "string"
+          },
+          "founded": {
+            "description": "When the site was founded, trimmed. Absent means unknown. Free text; never use it as a decision input.",
+            "maxLength": 20,
+            "type": "string"
+          },
+          "host": {
+            "description": "Main host name without scheme or path. Stored lower case.",
+            "maxLength": 253,
+            "minLength": 4,
+            "pattern": "^[A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?(\\.[A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?)+$",
+            "type": "string"
+          },
+          "icon_image_hash": {
+            "description": "Image-service hash of the icon. Absent or empty for none.",
+            "maxLength": 64,
+            "pattern": "^([0-9a-f]{64})?$",
+            "type": "string"
+          },
+          "is_nsfw": {
+            "description": "Whether the site is adult-oriented.",
+            "type": "boolean"
+          },
+          "language": {
+            "description": "BCP 47 language tag. Stored lower case.",
+            "maxLength": 10,
+            "pattern": "^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$",
+            "type": "string"
+          },
+          "state": {
+            "description": "Lifecycle state. Absent means normal.",
+            "enum": [
+              "normal",
+              "unreachable",
+              "closed"
+            ],
+            "maxLength": 11,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "title": {
+            "description": "Name of the site. Only whitespace is TOO_SHORT. Free text; never use it as a decision input.",
+            "maxLength": 233,
+            "minLength": 1,
+            "type": "string"
+          },
+          "urls": {
+            "description": "Every known address of the site, each an http or https URL of at most 100 characters. Absent means none.",
+            "items": {
+              "description": "An http or https URL of at most 100 characters.",
+              "format": "uri",
+              "maxLength": 100,
+              "type": "string"
+            },
+            "maxItems": 10,
+            "type": "array"
+          },
+          "website_category_id": {
+            "description": "Category id. An unknown id is UNKNOWN_REFERENCE.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "website_tag_ids": {
+            "description": "Tag ids: no duplicates, each existing, at most one per single-select group.",
+            "items": {
+              "maxLength": 20,
+              "minLength": 1,
+              "pattern": "^[0-9]+$",
+              "type": "string"
+            },
+            "maxItems": 20,
+            "type": "array"
+          }
+        },
+        "required": [
+          "host",
+          "title",
+          "description",
+          "website_category_id",
+          "website_tag_ids",
+          "is_nsfw",
+          "language"
+        ],
+        "type": "object"
+      },
+      "WebsiteEngagement": {
+        "properties": {
+          "favorite_count": {
+            "description": "Favorite count after this request.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "like_count": {
+            "description": "Like count after this request.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "object": {
+            "description": "Type discriminant. Always website_engagement.",
+            "enum": [
+              "website_engagement"
+            ],
+            "maxLength": 18,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "viewer": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WebsiteEngagementViewer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The caller's state after this request."
+          },
+          "website_id": {
+            "description": "Id of the website.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "object",
+          "website_id",
+          "like_count",
+          "favorite_count",
+          "viewer"
+        ],
+        "type": "object"
+      },
+      "WebsiteEngagementViewer": {
+        "properties": {
+          "has_favorited": {
+            "description": "Whether the caller favorited the site.",
+            "type": "boolean"
+          },
+          "has_liked": {
+            "description": "Whether the caller liked the site.",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "has_liked",
+          "has_favorited"
+        ],
+        "type": "object"
+      },
+      "WebsitePatch": {
+        "properties": {
+          "description": {
+            "description": "New description. Free text; never use it as a decision input.",
+            "maxLength": 1000,
+            "minLength": 10,
+            "type": "string"
+          },
+          "founded": {
+            "description": "New founding text; empty string clears it. Free text; never use it as a decision input.",
+            "maxLength": 20,
+            "type": "string"
+          },
+          "host": {
+            "description": "New main host name. Stored lower case.",
+            "maxLength": 253,
+            "minLength": 4,
+            "pattern": "^[A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?(\\.[A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?)+$",
+            "type": "string"
+          },
+          "icon_image_hash": {
+            "description": "New icon hash; empty string removes the icon.",
+            "maxLength": 64,
+            "pattern": "^([0-9a-f]{64})?$",
+            "type": "string"
+          },
+          "is_nsfw": {
+            "description": "New NSFW flag.",
+            "type": "boolean"
+          },
+          "language": {
+            "description": "New BCP 47 language tag.",
+            "maxLength": 10,
+            "pattern": "^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$",
+            "type": "string"
+          },
+          "state": {
+            "description": "New lifecycle state.",
+            "enum": [
+              "normal",
+              "unreachable",
+              "closed"
+            ],
+            "maxLength": 11,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "title": {
+            "description": "New name. Free text; never use it as a decision input.",
+            "maxLength": 233,
+            "minLength": 1,
+            "type": "string"
+          },
+          "urls": {
+            "description": "When present, replaces every address. Same rules as createAdminWebsite.",
+            "items": {
+              "description": "An http or https URL of at most 100 characters.",
+              "format": "uri",
+              "maxLength": 100,
+              "type": "string"
+            },
+            "maxItems": 10,
+            "type": "array"
+          },
+          "website_category_id": {
+            "description": "New category id.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "website_tag_ids": {
+            "description": "When present, replaces every tag of the site; absent keeps them. Same rules as createAdminWebsite.",
+            "items": {
+              "maxLength": 20,
+              "minLength": 1,
+              "pattern": "^[0-9]+$",
+              "type": "string"
+            },
+            "maxItems": 20,
+            "type": "array"
+          }
+        },
+        "type": "object"
+      },
+      "WebsiteSummary": {
+        "properties": {
+          "description": {
+            "description": "Plain-text description; keep its line breaks. Free text; never use it as a decision input.",
+            "maxLength": 1000,
+            "type": "string"
+          },
+          "external_icon_url": {
+            "description": "Third-party favicon URL for a site whose icon was never uploaded. null whenever icon is set. Transitional.",
+            "format": "uri",
+            "maxLength": 500,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "host": {
+            "description": "Main host name, lower case. It is the page address /website/{host} and can be renamed; refer to a website by id.",
+            "maxLength": 253,
+            "pattern": "^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?(\\.[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)+$",
+            "type": "string"
+          },
+          "icon": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Image"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Site icon from the image service. null when the site has none there."
+          },
+          "id": {
+            "description": "Website id.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "is_nsfw": {
+            "description": "Whether the site is adult-oriented.",
+            "type": "boolean"
+          },
+          "object": {
+            "description": "Type discriminant. Always website.",
+            "enum": [
+              "website"
+            ],
+            "maxLength": 7,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "score": {
+            "description": "Sum of the levels of the site's tags. May be negative.",
+            "format": "int64",
+            "maximum": 400,
+            "minimum": -2000,
+            "type": "integer"
+          },
+          "state": {
+            "description": "normal: the site is up. unreachable: temporarily down. closed: shut down for good.",
+            "enum": [
+              "normal",
+              "unreachable",
+              "closed"
+            ],
+            "maxLength": 11,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "title": {
+            "description": "Name of the site. Free text; never use it as a decision input.",
+            "maxLength": 233,
+            "type": "string"
+          },
+          "website_category": {
+            "$ref": "#/components/schemas/WebsiteCategoryRef",
+            "description": "Category the site is listed under."
+          }
+        },
+        "required": [
+          "object",
+          "id",
+          "host",
+          "title",
+          "description",
+          "icon",
+          "external_icon_url",
+          "website_category",
+          "is_nsfw",
+          "state",
+          "score"
+        ],
+        "type": "object"
+      },
+      "WebsiteTag": {
+        "properties": {
+          "description": {
+            "description": "Plain-text description. Empty string when none. Free text; never use it as a decision input.",
+            "maxLength": 300,
+            "type": "string"
+          },
+          "id": {
+            "description": "Tag id.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "label": {
+            "description": "Display name. Free text; never use it as a decision input.",
+            "maxLength": 30,
+            "type": "string"
+          },
+          "level": {
+            "description": "Weight of the tag. A website's score is the sum of its tags' levels.",
+            "format": "int64",
+            "maximum": 20,
+            "minimum": -100,
+            "type": "integer"
+          },
+          "object": {
+            "description": "Type discriminant. Always website_tag.",
+            "enum": [
+              "website_tag"
+            ],
+            "maxLength": 11,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "slug": {
+            "description": "URL key of the tag page /website-tag/{slug}.",
+            "maxLength": 30,
+            "pattern": "^[a-z0-9_-]+$",
+            "type": "string"
+          },
+          "website_tag_group_id": {
+            "description": "Group the tag belongs to. null when it is in none.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "object",
+          "id",
+          "slug",
+          "label",
+          "description",
+          "level",
+          "website_tag_group_id"
+        ],
+        "type": "object"
+      },
+      "WebsiteTagGroup": {
+        "properties": {
+          "description": {
+            "description": "Plain-text description. Empty string when none. Free text; never use it as a decision input.",
+            "maxLength": 300,
+            "type": "string"
+          },
+          "id": {
+            "description": "Group id.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "is_multi_select": {
+            "description": "Whether a website may carry more than one tag of this group.",
+            "type": "boolean"
+          },
+          "label": {
+            "description": "Display name. Free text; never use it as a decision input.",
+            "maxLength": 30,
+            "type": "string"
+          },
+          "object": {
+            "description": "Type discriminant. Always website_tag_group.",
+            "enum": [
+              "website_tag_group"
+            ],
+            "maxLength": 17,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "slug": {
+            "description": "Stable key of the group.",
+            "maxLength": 30,
+            "pattern": "^[a-z0-9_-]+$",
+            "type": "string"
+          },
+          "sort_order": {
+            "description": "Position among groups, ascending.",
+            "format": "int64",
+            "maximum": 9999,
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "object",
+          "id",
+          "slug",
+          "label",
+          "description",
+          "sort_order",
+          "is_multi_select"
+        ],
+        "type": "object"
+      },
+      "WebsiteViewer": {
+        "properties": {
+          "can_delete": {
+            "description": "Whether the caller holds website.delete. Requests authenticated with a Bearer token never carry it.",
+            "type": "boolean"
+          },
+          "can_edit": {
+            "description": "Whether the caller holds website.edit. Requests authenticated with a Bearer token never carry it.",
+            "type": "boolean"
+          },
+          "has_favorited": {
+            "description": "Whether the caller favorited the site.",
+            "type": "boolean"
+          },
+          "has_liked": {
+            "description": "Whether the caller liked the site.",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "has_liked",
+          "has_favorited",
+          "can_edit",
+          "can_delete"
+        ],
+        "type": "object"
       }
     },
     "securitySchemes": {
@@ -10411,6 +11913,1956 @@
         "summary": "Replace a user's personal overrides",
         "tags": [
           "permissions"
+        ]
+      }
+    },
+    "/admin/website-categories": {
+      "post": {
+        "description": "Creates a website category and returns it. Needs website.create. Requests authenticated with a Bearer token never carry website permissions. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED, and a failure of that lookup is SERVICE_UNAVAILABLE with nothing written. slug must be unused (ALREADY_EXISTS); label needs a non-whitespace character.",
+        "operationId": "createAdminWebsiteCategory",
+        "parameters": [
+          {
+            "description": "Caller-generated UUID (canonical 8-4-4-4-12 hex, any version) or 26-character Crockford ULID. Scoped to (user, operation, key) for 24 hours.",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "schema": {
+              "description": "Caller-generated UUID (canonical 8-4-4-4-12 hex, any version) or 26-character Crockford ULID. Scoped to (user, operation, key) for 24 hours.",
+              "maxLength": 36,
+              "minLength": 26,
+              "pattern": "^([0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}|[0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{26})$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CategoryCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminWebsiteCategory"
+                }
+              }
+            },
+            "description": "Created",
+            "headers": {
+              "Location": {
+                "schema": {
+                  "description": "Absolute path of the new category, such as /api/v1/admin/website-categories/5.",
+                  "format": "uri-reference",
+                  "maxLength": 64,
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "PERMISSION_REQUIRED without website.create; ACCOUNT_BANNED."
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "ALREADY_EXISTS when the slug is taken; IDEMPOTENCY_KEY_REUSED or IDEMPOTENCY_REQUEST_IN_PROGRESS."
+          },
+          "415": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unsupported Media Type"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED for a blank label, a field outside its format, or an unknown reference."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create a website category",
+        "tags": [
+          "website-taxonomy"
+        ]
+      }
+    },
+    "/admin/website-categories/{website_category_id}": {
+      "delete": {
+        "description": "Deletes the category. Needs website.delete, checked before the category is looked up. Requests authenticated with a Bearer token never carry website permissions. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED, and a failure of that lookup is SERVICE_UNAVAILABLE with nothing written. A category that still has websites is WEBSITE_CATEGORY_NOT_EMPTY with website_count, and nothing is deleted.",
+        "operationId": "deleteAdminWebsiteCategory",
+        "parameters": [
+          {
+            "description": "Category id.",
+            "in": "path",
+            "name": "website_category_id",
+            "required": true,
+            "schema": {
+              "description": "Category id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "PERMISSION_REQUIRED without website.delete; ACCOUNT_BANNED."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when the category does not exist."
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "WEBSITE_CATEGORY_NOT_EMPTY when websites are still listed under the category."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Delete a website category",
+        "tags": [
+          "website-taxonomy"
+        ]
+      },
+      "get": {
+        "description": "Returns the category with its timestamps. Needs website.edit. Requests authenticated with a Bearer token never carry website permissions. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED, and a failure of that lookup is SERVICE_UNAVAILABLE with nothing written. ",
+        "operationId": "getAdminWebsiteCategory",
+        "parameters": [
+          {
+            "description": "Category id.",
+            "in": "path",
+            "name": "website_category_id",
+            "required": true,
+            "schema": {
+              "description": "Category id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminWebsiteCategory"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "PERMISSION_REQUIRED without website.edit; ACCOUNT_BANNED."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when the category does not exist."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get a website category for editing",
+        "tags": [
+          "website-taxonomy"
+        ]
+      },
+      "patch": {
+        "description": "Changes the fields that are sent and returns the category. Needs website.edit, checked before the category is looked up. Requests authenticated with a Bearer token never carry website permissions. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED, and a failure of that lookup is SERVICE_UNAVAILABLE with nothing written. slug must be unused (ALREADY_EXISTS); label needs a non-whitespace character. An empty object writes nothing.",
+        "operationId": "updateAdminWebsiteCategory",
+        "parameters": [
+          {
+            "description": "Category id.",
+            "in": "path",
+            "name": "website_category_id",
+            "required": true,
+            "schema": {
+              "description": "Category id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CategoryPatch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminWebsiteCategory"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "PERMISSION_REQUIRED without website.edit; ACCOUNT_BANNED."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when the category does not exist."
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "ALREADY_EXISTS when the new slug is taken."
+          },
+          "415": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unsupported Media Type"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED for a blank label, a field outside its format, or an unknown reference."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Edit a website category",
+        "tags": [
+          "website-taxonomy"
+        ]
+      }
+    },
+    "/admin/website-tag-groups": {
+      "post": {
+        "description": "Creates a website tag group and returns it. Needs website.create. Requests authenticated with a Bearer token never carry website permissions. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED, and a failure of that lookup is SERVICE_UNAVAILABLE with nothing written. slug must be unused (ALREADY_EXISTS); label needs a non-whitespace character. Turning is_multi_select off does not touch websites that already carry several of its tags.",
+        "operationId": "createAdminWebsiteTagGroup",
+        "parameters": [
+          {
+            "description": "Caller-generated UUID (canonical 8-4-4-4-12 hex, any version) or 26-character Crockford ULID. Scoped to (user, operation, key) for 24 hours.",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "schema": {
+              "description": "Caller-generated UUID (canonical 8-4-4-4-12 hex, any version) or 26-character Crockford ULID. Scoped to (user, operation, key) for 24 hours.",
+              "maxLength": 36,
+              "minLength": 26,
+              "pattern": "^([0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}|[0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{26})$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TagGroupCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminWebsiteTagGroup"
+                }
+              }
+            },
+            "description": "Created",
+            "headers": {
+              "Location": {
+                "schema": {
+                  "description": "Absolute path of the new group, such as /api/v1/admin/website-tag-groups/19.",
+                  "format": "uri-reference",
+                  "maxLength": 64,
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "PERMISSION_REQUIRED without website.create; ACCOUNT_BANNED."
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "ALREADY_EXISTS when the slug is taken; IDEMPOTENCY_KEY_REUSED or IDEMPOTENCY_REQUEST_IN_PROGRESS."
+          },
+          "415": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unsupported Media Type"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED for a blank label, a field outside its format, or an unknown reference."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create a website tag group",
+        "tags": [
+          "website-taxonomy"
+        ]
+      }
+    },
+    "/admin/website-tag-groups/{website_tag_group_id}": {
+      "delete": {
+        "description": "Deletes the tag group. Needs website.delete, checked before the tag group is looked up. Requests authenticated with a Bearer token never carry website permissions. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED, and a failure of that lookup is SERVICE_UNAVAILABLE with nothing written. The group's tags stay and become ungrouped.",
+        "operationId": "deleteAdminWebsiteTagGroup",
+        "parameters": [
+          {
+            "description": "Group id.",
+            "in": "path",
+            "name": "website_tag_group_id",
+            "required": true,
+            "schema": {
+              "description": "Group id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "PERMISSION_REQUIRED without website.delete; ACCOUNT_BANNED."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when the tag group does not exist."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Delete a website tag group",
+        "tags": [
+          "website-taxonomy"
+        ]
+      },
+      "get": {
+        "description": "Returns the tag group with its timestamps. Needs website.edit. Requests authenticated with a Bearer token never carry website permissions. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED, and a failure of that lookup is SERVICE_UNAVAILABLE with nothing written. ",
+        "operationId": "getAdminWebsiteTagGroup",
+        "parameters": [
+          {
+            "description": "Group id.",
+            "in": "path",
+            "name": "website_tag_group_id",
+            "required": true,
+            "schema": {
+              "description": "Group id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminWebsiteTagGroup"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "PERMISSION_REQUIRED without website.edit; ACCOUNT_BANNED."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when the tag group does not exist."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get a website tag group for editing",
+        "tags": [
+          "website-taxonomy"
+        ]
+      },
+      "patch": {
+        "description": "Changes the fields that are sent and returns the tag group. Needs website.edit, checked before the tag group is looked up. Requests authenticated with a Bearer token never carry website permissions. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED, and a failure of that lookup is SERVICE_UNAVAILABLE with nothing written. slug must be unused (ALREADY_EXISTS); label needs a non-whitespace character. Turning is_multi_select off does not touch websites that already carry several of its tags. An empty object writes nothing.",
+        "operationId": "updateAdminWebsiteTagGroup",
+        "parameters": [
+          {
+            "description": "Group id.",
+            "in": "path",
+            "name": "website_tag_group_id",
+            "required": true,
+            "schema": {
+              "description": "Group id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TagGroupPatch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminWebsiteTagGroup"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "PERMISSION_REQUIRED without website.edit; ACCOUNT_BANNED."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when the tag group does not exist."
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "ALREADY_EXISTS when the new slug is taken."
+          },
+          "415": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unsupported Media Type"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED for a blank label, a field outside its format, or an unknown reference."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Edit a website tag group",
+        "tags": [
+          "website-taxonomy"
+        ]
+      }
+    },
+    "/admin/website-tags": {
+      "post": {
+        "description": "Creates a website tag and returns it. Needs website.create. Requests authenticated with a Bearer token never carry website permissions. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED, and a failure of that lookup is SERVICE_UNAVAILABLE with nothing written. slug must be unused (ALREADY_EXISTS); label needs a non-whitespace character; website_tag_group_id must exist (UNKNOWN_REFERENCE). In an update, website_tag_group_id null moves the tag out of every group.",
+        "operationId": "createAdminWebsiteTag",
+        "parameters": [
+          {
+            "description": "Caller-generated UUID (canonical 8-4-4-4-12 hex, any version) or 26-character Crockford ULID. Scoped to (user, operation, key) for 24 hours.",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "schema": {
+              "description": "Caller-generated UUID (canonical 8-4-4-4-12 hex, any version) or 26-character Crockford ULID. Scoped to (user, operation, key) for 24 hours.",
+              "maxLength": 36,
+              "minLength": 26,
+              "pattern": "^([0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}|[0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{26})$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TagCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminWebsiteTag"
+                }
+              }
+            },
+            "description": "Created",
+            "headers": {
+              "Location": {
+                "schema": {
+                  "description": "Absolute path of the new tag, such as /api/v1/admin/website-tags/72.",
+                  "format": "uri-reference",
+                  "maxLength": 64,
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "PERMISSION_REQUIRED without website.create; ACCOUNT_BANNED."
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "ALREADY_EXISTS when the slug is taken; IDEMPOTENCY_KEY_REUSED or IDEMPOTENCY_REQUEST_IN_PROGRESS."
+          },
+          "415": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unsupported Media Type"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED for a blank label, a field outside its format, or an unknown reference."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create a website tag",
+        "tags": [
+          "website-taxonomy"
+        ]
+      }
+    },
+    "/admin/website-tags/{website_tag_id}": {
+      "delete": {
+        "description": "Deletes the tag. Needs website.delete, checked before the tag is looked up. Requests authenticated with a Bearer token never carry website permissions. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED, and a failure of that lookup is SERVICE_UNAVAILABLE with nothing written. Deleting a tag takes it off every website.",
+        "operationId": "deleteAdminWebsiteTag",
+        "parameters": [
+          {
+            "description": "Tag id.",
+            "in": "path",
+            "name": "website_tag_id",
+            "required": true,
+            "schema": {
+              "description": "Tag id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "PERMISSION_REQUIRED without website.delete; ACCOUNT_BANNED."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when the tag does not exist."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Delete a website tag",
+        "tags": [
+          "website-taxonomy"
+        ]
+      },
+      "get": {
+        "description": "Returns the tag with its timestamps. Needs website.edit. Requests authenticated with a Bearer token never carry website permissions. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED, and a failure of that lookup is SERVICE_UNAVAILABLE with nothing written. ",
+        "operationId": "getAdminWebsiteTag",
+        "parameters": [
+          {
+            "description": "Tag id.",
+            "in": "path",
+            "name": "website_tag_id",
+            "required": true,
+            "schema": {
+              "description": "Tag id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminWebsiteTag"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "PERMISSION_REQUIRED without website.edit; ACCOUNT_BANNED."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when the tag does not exist."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get a website tag for editing",
+        "tags": [
+          "website-taxonomy"
+        ]
+      },
+      "patch": {
+        "description": "Changes the fields that are sent and returns the tag. Needs website.edit, checked before the tag is looked up. Requests authenticated with a Bearer token never carry website permissions. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED, and a failure of that lookup is SERVICE_UNAVAILABLE with nothing written. slug must be unused (ALREADY_EXISTS); label needs a non-whitespace character; website_tag_group_id must exist (UNKNOWN_REFERENCE). In an update, website_tag_group_id null moves the tag out of every group. An empty object writes nothing.",
+        "operationId": "updateAdminWebsiteTag",
+        "parameters": [
+          {
+            "description": "Tag id.",
+            "in": "path",
+            "name": "website_tag_id",
+            "required": true,
+            "schema": {
+              "description": "Tag id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TagPatch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminWebsiteTag"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "PERMISSION_REQUIRED without website.edit; ACCOUNT_BANNED."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when the tag does not exist."
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "ALREADY_EXISTS when the new slug is taken."
+          },
+          "415": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unsupported Media Type"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED for a blank label, a field outside its format, or an unknown reference."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Edit a website tag",
+        "tags": [
+          "website-taxonomy"
+        ]
+      }
+    },
+    "/admin/websites": {
+      "post": {
+        "description": "Creates a website and returns its edit source. Needs website.create. Requests authenticated with a Bearer token never carry website permissions. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED, and a failure of that lookup is SERVICE_UNAVAILABLE with nothing written. host is stored lower case. title needs a non-whitespace character; description needs 10 once trimmed. website_category_id must exist (UNKNOWN_REFERENCE). website_tag_ids: no duplicates (DUPLICATE_ITEM), each must exist (UNKNOWN_REFERENCE), at most one per single-select group (INCONSISTENT_WITH). urls must be http or https URLs of at most 100 characters (INVALID_FORMAT). language is stored lower case. A host or title another website already uses is ALREADY_EXISTS with the field as the pointer. Location is the edit source's path.",
+        "operationId": "createAdminWebsite",
+        "parameters": [
+          {
+            "description": "Caller-generated UUID (canonical 8-4-4-4-12 hex, any version) or 26-character Crockford ULID. Scoped to (user, operation, key) for 24 hours.",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "schema": {
+              "description": "Caller-generated UUID (canonical 8-4-4-4-12 hex, any version) or 26-character Crockford ULID. Scoped to (user, operation, key) for 24 hours.",
+              "maxLength": 36,
+              "minLength": 26,
+              "pattern": "^([0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}|[0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{26})$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WebsiteCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminWebsite"
+                }
+              }
+            },
+            "description": "Created",
+            "headers": {
+              "Location": {
+                "schema": {
+                  "description": "Absolute path of the new site's edit source, such as /api/v1/admin/websites/96.",
+                  "format": "uri-reference",
+                  "maxLength": 64,
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "PERMISSION_REQUIRED without website.create; ACCOUNT_BANNED."
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "ALREADY_EXISTS when the host or title is taken; IDEMPOTENCY_KEY_REUSED or IDEMPOTENCY_REQUEST_IN_PROGRESS."
+          },
+          "415": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unsupported Media Type"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED for a field outside its format, an unknown category or tag, a duplicate tag, or two tags of a single-select group."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List a new website",
+        "tags": [
+          "websites"
+        ]
+      }
+    },
+    "/admin/websites/{website_id}": {
+      "delete": {
+        "description": "Deletes a website with its likes, favorites and tag links, and its home-feed card. Needs website.delete, checked before the website is looked up. Requests authenticated with a Bearer token never carry website permissions. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED, and a failure of that lookup is SERVICE_UNAVAILABLE with nothing written. ",
+        "operationId": "deleteAdminWebsite",
+        "parameters": [
+          {
+            "description": "Website id.",
+            "in": "path",
+            "name": "website_id",
+            "required": true,
+            "schema": {
+              "description": "Website id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "PERMISSION_REQUIRED without website.delete; ACCOUNT_BANNED."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when the website does not exist."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Delete a website",
+        "tags": [
+          "websites"
+        ]
+      },
+      "get": {
+        "description": "Returns the fields updateAdminWebsite takes, as stored. Needs website.edit. Requests authenticated with a Bearer token never carry website permissions. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED, and a failure of that lookup is SERVICE_UNAVAILABLE with nothing written. ",
+        "operationId": "getAdminWebsite",
+        "parameters": [
+          {
+            "description": "Website id.",
+            "in": "path",
+            "name": "website_id",
+            "required": true,
+            "schema": {
+              "description": "Website id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminWebsite"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "PERMISSION_REQUIRED without website.edit; ACCOUNT_BANNED."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when the website does not exist."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get a website's edit source",
+        "tags": [
+          "websites"
+        ]
+      },
+      "patch": {
+        "description": "Changes the fields that are sent and returns the edit source. Needs website.edit, checked before the website is looked up. Requests authenticated with a Bearer token never carry website permissions. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED, and a failure of that lookup is SERVICE_UNAVAILABLE with nothing written. Fields are checked as in createAdminWebsite. website_tag_ids and urls, when present, replace the whole set; absent keeps it. An empty object writes nothing.",
+        "operationId": "updateAdminWebsite",
+        "parameters": [
+          {
+            "description": "Website id.",
+            "in": "path",
+            "name": "website_id",
+            "required": true,
+            "schema": {
+              "description": "Website id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WebsitePatch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminWebsite"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "PERMISSION_REQUIRED without website.edit; ACCOUNT_BANNED."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when the website does not exist."
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "ALREADY_EXISTS when the new host or title is taken."
+          },
+          "415": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unsupported Media Type"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED as in createAdminWebsite."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Edit a website",
+        "tags": [
+          "websites"
         ]
       }
     },
@@ -23135,6 +26587,980 @@
         "summary": "Get a wall comment's editable source",
         "tags": [
           "wall-comments"
+        ]
+      }
+    },
+    "/website-categories": {
+      "get": {
+        "description": "Lists categories as a cursor page by ascending sort_order, ties broken by ascending id. website_count counts NSFW sites too.",
+        "operationId": "listWebsiteCategories",
+        "parameters": [
+          {
+            "description": "Opaque keyset cursor from a previous page of this collection.",
+            "explode": false,
+            "in": "query",
+            "name": "cursor",
+            "schema": {
+              "description": "Opaque keyset cursor from a previous page of this collection.",
+              "maxLength": 512,
+              "pattern": "^cur_[A-Za-z0-9_-]+$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Page size. 1–100, default 20. Values above 100 are rejected, not clamped.",
+            "explode": false,
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 20,
+              "description": "Page size. 1–100, default 20. Values above 100 are rejected, not clamped.",
+              "format": "int64",
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListWebsiteCategory"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "INVALID_CURSOR or LIMIT_TOO_LARGE."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "List website categories",
+        "tags": [
+          "website-taxonomy"
+        ]
+      }
+    },
+    "/website-categories/{website_category_slug}": {
+      "get": {
+        "description": "Returns the category whose slug is website_category_slug. Its websites are listWebsites with website_category_id.",
+        "operationId": "getWebsiteCategory",
+        "parameters": [
+          {
+            "description": "URL key of the category.",
+            "in": "path",
+            "name": "website_category_slug",
+            "required": true,
+            "schema": {
+              "description": "URL key of the category.",
+              "maxLength": 30,
+              "pattern": "^[a-z0-9_-]+$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WebsiteCategory"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when no category has this slug."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Get a website category by its slug",
+        "tags": [
+          "website-taxonomy"
+        ]
+      }
+    },
+    "/website-tag-groups": {
+      "get": {
+        "description": "Lists tag groups as a cursor page by ascending sort_order, ties broken by ascending id.",
+        "operationId": "listWebsiteTagGroups",
+        "parameters": [
+          {
+            "description": "Opaque keyset cursor from a previous page of this collection.",
+            "explode": false,
+            "in": "query",
+            "name": "cursor",
+            "schema": {
+              "description": "Opaque keyset cursor from a previous page of this collection.",
+              "maxLength": 512,
+              "pattern": "^cur_[A-Za-z0-9_-]+$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Page size. 1–100, default 20. Values above 100 are rejected, not clamped.",
+            "explode": false,
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 20,
+              "description": "Page size. 1–100, default 20. Values above 100 are rejected, not clamped.",
+              "format": "int64",
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListWebsiteTagGroup"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "INVALID_CURSOR or LIMIT_TOO_LARGE."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "List website tag groups",
+        "tags": [
+          "website-taxonomy"
+        ]
+      }
+    },
+    "/website-tags": {
+      "get": {
+        "description": "Lists tags as a cursor page by ascending id.",
+        "operationId": "listWebsiteTags",
+        "parameters": [
+          {
+            "description": "Opaque keyset cursor from a previous page of this collection.",
+            "explode": false,
+            "in": "query",
+            "name": "cursor",
+            "schema": {
+              "description": "Opaque keyset cursor from a previous page of this collection.",
+              "maxLength": 512,
+              "pattern": "^cur_[A-Za-z0-9_-]+$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Page size. 1–100, default 20. Values above 100 are rejected, not clamped.",
+            "explode": false,
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 20,
+              "description": "Page size. 1–100, default 20. Values above 100 are rejected, not clamped.",
+              "format": "int64",
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListWebsiteTag"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "INVALID_CURSOR or LIMIT_TOO_LARGE."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "List website tags",
+        "tags": [
+          "website-taxonomy"
+        ]
+      }
+    },
+    "/website-tags/{website_tag_slug}": {
+      "get": {
+        "description": "Returns the tag whose slug is website_tag_slug. Its websites are listWebsites with website_tag_id.",
+        "operationId": "getWebsiteTag",
+        "parameters": [
+          {
+            "description": "URL key of the tag.",
+            "in": "path",
+            "name": "website_tag_slug",
+            "required": true,
+            "schema": {
+              "description": "URL key of the tag.",
+              "maxLength": 30,
+              "pattern": "^[a-z0-9_-]+$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WebsiteTag"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when no tag has this slug."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Get a website tag by its slug",
+        "tags": [
+          "website-taxonomy"
+        ]
+      }
+    },
+    "/websites": {
+      "get": {
+        "description": "Lists websites as a cursor page, newest listing first, ties broken by descending id. There is one sort and no sort parameter. NSFW sites are left out unless include_nsfw=true. website_category_id and website_tag_id narrow the list; an id that matches nothing gives an empty list. The cursor is bound to include_nsfw, website_category_id and website_tag_id. include_total=true adds total under the same predicate as items.",
+        "operationId": "listWebsites",
+        "parameters": [
+          {
+            "description": "Opaque keyset cursor from a previous page of this collection.",
+            "explode": false,
+            "in": "query",
+            "name": "cursor",
+            "schema": {
+              "description": "Opaque keyset cursor from a previous page of this collection.",
+              "maxLength": 512,
+              "pattern": "^cur_[A-Za-z0-9_-]+$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Page size. 1–100, default 20. Values above 100 are rejected, not clamped.",
+            "explode": false,
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 20,
+              "description": "Page size. 1–100, default 20. Values above 100 are rejected, not clamped.",
+              "format": "int64",
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "When true, the response includes total counted under the same predicate as items.",
+            "explode": false,
+            "in": "query",
+            "name": "include_total",
+            "schema": {
+              "description": "When true, the response includes total counted under the same predicate as items.",
+              "type": "boolean"
+            }
+          },
+          {
+            "description": "When true, NSFW sites are included. Default false.",
+            "explode": false,
+            "in": "query",
+            "name": "include_nsfw",
+            "schema": {
+              "default": false,
+              "description": "When true, NSFW sites are included. Default false.",
+              "type": "boolean"
+            }
+          },
+          {
+            "description": "Only sites in this category.",
+            "explode": false,
+            "in": "query",
+            "name": "website_category_id",
+            "schema": {
+              "description": "Only sites in this category.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Only sites carrying this tag.",
+            "explode": false,
+            "in": "query",
+            "name": "website_tag_id",
+            "schema": {
+              "description": "Only sites carrying this tag.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CountedListWebsiteSummary"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "INVALID_CURSOR or LIMIT_TOO_LARGE."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "List the website directory",
+        "tags": [
+          "websites"
+        ]
+      }
+    },
+    "/websites/{website_host}": {
+      "get": {
+        "description": "Returns the website whose main host is website_host and counts one view. The host can be renamed; refer to a website by id. An NSFW site is returned like any other; a client that hides NSFW content gates it. viewer is null for an anonymous caller.",
+        "operationId": "getWebsite",
+        "parameters": [
+          {
+            "description": "Main host name of the site, lower case.",
+            "in": "path",
+            "name": "website_host",
+            "required": true,
+            "schema": {
+              "description": "Main host name of the site, lower case.",
+              "maxLength": 253,
+              "pattern": "^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?(\\.[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)+$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Website"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when no website has this host."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          },
+          {}
+        ],
+        "summary": "Get a website by its host",
+        "tags": [
+          "websites"
+        ]
+      }
+    },
+    "/websites/{website_host}/favorite": {
+      "delete": {
+        "description": "Clears the caller's favorite. Removing a favorite that is not there changes nothing. The counters move only when the caller's row is really added or removed. NSFW sites can be liked and favorited like any other. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED, and a failure of that lookup is SERVICE_UNAVAILABLE with nothing written. Returns both counters and the caller's state after the request.",
+        "operationId": "unfavoriteWebsite",
+        "parameters": [
+          {
+            "description": "Main host name of the site, lower case.",
+            "in": "path",
+            "name": "website_host",
+            "required": true,
+            "schema": {
+              "description": "Main host name of the site, lower case.",
+              "maxLength": 253,
+              "pattern": "^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?(\\.[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)+$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WebsiteEngagement"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "ACCOUNT_BANNED."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when no website has this host."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Remove a favorite",
+        "tags": [
+          "websites"
+        ]
+      },
+      "put": {
+        "description": "Sets the caller's favorite. Favoriting again changes nothing and returns the same state. The counters move only when the caller's row is really added or removed. NSFW sites can be liked and favorited like any other. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED, and a failure of that lookup is SERVICE_UNAVAILABLE with nothing written. Returns both counters and the caller's state after the request.",
+        "operationId": "favoriteWebsite",
+        "parameters": [
+          {
+            "description": "Main host name of the site, lower case.",
+            "in": "path",
+            "name": "website_host",
+            "required": true,
+            "schema": {
+              "description": "Main host name of the site, lower case.",
+              "maxLength": 253,
+              "pattern": "^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?(\\.[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)+$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WebsiteEngagement"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "ACCOUNT_BANNED."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when no website has this host."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Favorite a website",
+        "tags": [
+          "websites"
+        ]
+      }
+    },
+    "/websites/{website_host}/like": {
+      "delete": {
+        "description": "Clears the caller's like. Removing a like that is not there changes nothing. The counters move only when the caller's row is really added or removed. NSFW sites can be liked and favorited like any other. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED, and a failure of that lookup is SERVICE_UNAVAILABLE with nothing written. Returns both counters and the caller's state after the request.",
+        "operationId": "unlikeWebsite",
+        "parameters": [
+          {
+            "description": "Main host name of the site, lower case.",
+            "in": "path",
+            "name": "website_host",
+            "required": true,
+            "schema": {
+              "description": "Main host name of the site, lower case.",
+              "maxLength": 253,
+              "pattern": "^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?(\\.[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)+$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WebsiteEngagement"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "ACCOUNT_BANNED."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when no website has this host."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Remove a like",
+        "tags": [
+          "websites"
+        ]
+      },
+      "put": {
+        "description": "Sets the caller's like. Liking again changes nothing and returns the same state. The counters move only when the caller's row is really added or removed. NSFW sites can be liked and favorited like any other. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED, and a failure of that lookup is SERVICE_UNAVAILABLE with nothing written. Returns both counters and the caller's state after the request.",
+        "operationId": "likeWebsite",
+        "parameters": [
+          {
+            "description": "Main host name of the site, lower case.",
+            "in": "path",
+            "name": "website_host",
+            "required": true,
+            "schema": {
+              "description": "Main host name of the site, lower case.",
+              "maxLength": 253,
+              "pattern": "^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?(\\.[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)+$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WebsiteEngagement"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "ACCOUNT_BANNED."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when no website has this host."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Like a website",
+        "tags": [
+          "websites"
         ]
       }
     }

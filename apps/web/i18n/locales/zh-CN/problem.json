@@ -39,7 +39,8 @@
     "PRECONDITION_FAILED": "内容已被他人修改，请刷新后重试",
     "USERNAME_TAKEN": "这个用户名已被使用",
     "CREATOR_INELIGIBLE": "尚不满足创作者申请条件",
-    "CREATOR_APPLICATION_COOLDOWN": "申请被拒绝后需等待一段时间才能再次申请"
+    "CREATOR_APPLICATION_COOLDOWN": "申请被拒绝后需等待一段时间才能再次申请",
+    "WEBSITE_CATEGORY_NOT_EMPTY": "该分类下还有网站, 请先把它们移到别的分类"
   },
   "reason": {
     "DUPLICATE_ITEM": {

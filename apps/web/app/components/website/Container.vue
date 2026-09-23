@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import type {
-  CreateWebsitePayload,
-  UpdateWebsitePayload
-} from '~/components/website/modal/types'
+import { settle } from '#shared/utils/api/problem'
+import type { WebsiteSummary } from '#shared/utils/api/schemas'
+import type { WebsiteForm } from '~/components/website/modal/types'
 
-const { data, refresh } = await useKunFetch<WebsiteCard[]>('/website')
+const api = useApiClient()
+const createKey = useIdempotencyKey()
+const { data, refresh } = await useWebsiteList()
 const { data: categories } = await useWebsiteCategories()
 
 const canCreateWebsite = useCan('website.create')
@@ -12,79 +13,71 @@ const canManageTaxonomy = useCan('website.edit')
 const searchQuery = ref('')
 const showWebsiteModal = ref(false)
 const isSubmitting = ref(false)
-const editingWebsite = ref<CreateWebsitePayload | undefined>(undefined)
 
 const matchedWebsites = computed(() => {
-  if (!data.value || !Array.isArray(data.value)) {
-    return []
-  }
-
+  const sites = data.value ?? []
   const query = searchQuery.value.toLowerCase()
   if (query === '') {
-    return data.value
+    return sites
   }
-  return data.value.filter(
+  return sites.filter(
     (site) =>
-      site.name.toLowerCase().includes(query) ||
+      site.title.toLowerCase().includes(query) ||
       site.description.toLowerCase().includes(query) ||
-      site.domain.includes(query)
+      site.host.includes(query)
   )
 })
 
 const closedWebsites = computed(() =>
-  matchedWebsites.value
-    .filter((site) => site.status === 'closed')
-    .sort((a, b) => b.price - a.price)
+  matchedWebsites.value.filter((site) => site.state === 'closed').sort(byScore)
 )
 
 const categorizedWebsites = computed(() => {
-  const living = matchedWebsites.value.filter(
-    (site) => site.status !== 'closed'
-  )
-
-  const byCategory = living.reduce(
-    (accumulator, site) => {
-      if (!accumulator[site.category]) {
-        accumulator[site.category] = []
-      }
-      accumulator[site.category]!.push(site)
-      return accumulator
-    },
-    {} as Record<string, WebsiteCard[]>
-  )
+  const byCategory = new Map<string, WebsiteSummary[]>()
+  for (const site of matchedWebsites.value) {
+    if (site.state === 'closed') {
+      continue
+    }
+    const key = site.website_category.id
+    byCategory.set(key, [...(byCategory.get(key) ?? []), site])
+  }
 
   return (categories.value ?? [])
     .map((category) => ({
-      key: category.name,
-      name: category.label || category.name,
-      sites: (byCategory[category.name] ?? []).sort((a, b) => b.price - a.price)
+      key: category.id,
+      name: category.label || category.slug,
+      sites: (byCategory.get(category.id) ?? []).sort(byScore)
     }))
     .filter((group) => group.sites.length > 0)
 })
 
 const openCreateWebsiteModal = () => {
-  editingWebsite.value = undefined
   showWebsiteModal.value = true
 }
 
 // The modal deliberately does not close itself: a rejected submit (a duplicate
 // name, a failed upload) used to wipe the whole form on its way out, so the
 // only way to retry was to fill it in again from scratch.
-const handleCreateWebsite = async (
-  payload: CreateWebsitePayload | UpdateWebsitePayload
-) => {
+const handleCreateWebsite = async (form: WebsiteForm) => {
   isSubmitting.value = true
-  const result = await kunFetch('/website', {
-    method: 'POST',
-    body: payload
-  })
+  const result = await settle(
+    api.POST('/admin/websites', {
+      params: {
+        header: { 'Idempotency-Key': createKey.take('/admin/websites', form) }
+      },
+      body: form
+    })
+  )
   isSubmitting.value = false
 
-  if (result) {
-    useMessage('创建网站成功', 'success')
-    showWebsiteModal.value = false
-    await refresh()
+  if (!result.ok) {
+    reportProblem(result.problem)
+    return
   }
+  createKey.clear()
+  useMessage('创建网站成功', 'success')
+  showWebsiteModal.value = false
+  await refresh()
 }
 </script>
 
@@ -132,7 +125,7 @@ const handleCreateWebsite = async (
 
     <WebsiteModalWebsite
       v-model="showWebsiteModal"
-      :initial-data="editingWebsite"
+      :is-editing="false"
       :loading="isSubmitting"
       @submit="handleCreateWebsite"
     />

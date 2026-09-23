@@ -1,15 +1,14 @@
 <script setup lang="ts">
-interface TagDetail extends WebsiteTag {
-  description: string
-}
+import type { WebsiteTag } from '#shared/utils/api/schemas'
 
 const props = defineProps<{
-  tags: TagDetail[]
+  tags: WebsiteTag[]
 }>()
 
 const isShowDetail = ref(false)
 
 const { data: groups } = useWebsiteTagGroups()
+const { data: allTags } = useWebsiteTags()
 
 const categoryThemeColors = [
   'primary',
@@ -25,26 +24,48 @@ const totalScore = computed(() => {
   return props.tags.reduce((sum, tag) => sum + (tag.level || 0), 0)
 })
 
-const UNGROUPED_ID = -1
+const UNGROUPED = 'ungrouped'
+
+// The best score a site can reach with today's tags: the top level of each
+// single-select group plus every positive level elsewhere. It was hard-coded
+// as 245 while the taxonomy allowed 275.
+const maxScore = computed(() => {
+  const multi = new Map(
+    (groups.value ?? []).map((group) => [group.id, group.is_multi_select])
+  )
+  const best = new Map<string, number>()
+  let loose = 0
+  for (const tag of allTags.value ?? []) {
+    const level = Math.max(tag.level, 0)
+    const groupId = tag.website_tag_group_id
+    if (!groupId || multi.get(groupId) !== false) {
+      loose += level
+      continue
+    }
+    best.set(groupId, Math.max(best.get(groupId) ?? 0, level))
+  }
+  const total = [...best.values()].reduce((sum, level) => sum + level, loose)
+  return Math.max(total, 1)
+})
 
 const categoryStats = computed(() => {
-  const labels = new Map<number, string>(
-    (groups.value ?? []).map((group) => [group.id, group.label || group.name])
+  const labels = new Map<string, string>(
+    (groups.value ?? []).map((group) => [group.id, group.label || group.slug])
   )
 
   const categories: Record<
-    number,
+    string,
     {
-      name: number
+      name: string
       label: string
       score: number
-      tags: TagDetail[]
+      tags: WebsiteTag[]
       color: string
     }
   > = {}
 
   props.tags.forEach((tag) => {
-    const groupId = tag.group_id ?? UNGROUPED_ID
+    const groupId = tag.website_tag_group_id ?? UNGROUPED
     const score = tag.level || 0
 
     if (!categories[groupId]) {
@@ -61,14 +82,7 @@ const categoryStats = computed(() => {
     }
 
     categories[groupId].score += score
-    categories[groupId].tags.push({
-      id: tag.id,
-      name: tag.name,
-      label: tag.label || tag.name,
-      description: tag.description || '',
-      level: score,
-      group_id: tag.group_id
-    })
+    categories[groupId].tags.push({ ...tag, label: tag.label || tag.slug })
   })
 
   const sortedCategories = Object.values(categories).sort(
@@ -117,7 +131,7 @@ const getBackgroundColor = (color: string): string => {
         <h2 class="text-foreground text-2xl font-bold">网站价值精算值</h2>
         <div class="flex items-center space-x-4">
           <div class="text-3xl font-bold" :class="getScoreColor(totalScore)">
-            {{ `${totalScore} / 245` }}
+            {{ `${totalScore} / ${maxScore}` }}
           </div>
         </div>
       </div>
@@ -133,7 +147,7 @@ const getBackgroundColor = (color: string): string => {
         <div
           class="relative h-8"
           :style="{
-            width: ((totalScore > 0 ? totalScore : 0) / 245) * 100 + '%'
+            width: ((totalScore > 0 ? totalScore : 0) / maxScore) * 100 + '%'
           }"
         >
           <div

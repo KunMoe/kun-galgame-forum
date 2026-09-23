@@ -1,27 +1,32 @@
 <script setup lang="ts">
+import type { WebsiteCategory } from '#shared/utils/api/schemas'
+
 definePageMeta({ key: (route) => route.path })
 
 const route = useRoute()
-const categoryName = computed(() => {
-  return (route.params as { name: string }).name
-})
+const slug = computed(() => (route.params as { name: string }).name)
 
 const canManageTaxonomy = useCan('website.edit')
 
-const { data } = await useKunFetch<WebsiteCategoryDetail>(
-  `/website-category/${categoryName.value}`,
-  {
-    watch: false,
-    query: { name: categoryName.value }
-  }
+const { data } = await useApi<WebsiteCategory>(
+  () => `website-category:${slug.value}`,
+  (api) =>
+    api.GET('/website-categories/{website_category_slug}', {
+      params: { path: { website_category_slug: slug.value } }
+    })
+)
+
+const { data: websites } = await useWebsiteList(() =>
+  data.value ? { website_category_id: data.value.id } : {}
+)
+const sorted = computed(() =>
+  data.value ? [...(websites.value ?? [])].sort(byScore) : []
 )
 
 if (data.value) {
   useKunSeoMeta({
     title: data.value.label,
-    description: data.value.description,
-    articlePublishedTime: data.value.created.toString(),
-    articleModifiedTime: data.value.updated.toString()
+    description: data.value.description
   })
 } else {
   useKunDisableSeo('未找到该网站分类')
@@ -35,10 +40,7 @@ if (data.value) {
         <div class="space-y-3">
           <div class="flex items-center space-x-3">
             <KunChip color="primary">
-              {{ `本资料库拥有 ${data.website_count} 个 ${data.label}` }}
-            </KunChip>
-            <KunChip>
-              更新于 <KunTime :time="data.updated" type="date" show-year />
+              {{ `本资料库拥有 ${sorted.length} 个 ${data.label}` }}
             </KunChip>
           </div>
 
@@ -51,10 +53,10 @@ if (data.value) {
       </template>
     </KunHeader>
 
-    <div v-if="data.websites.length">
+    <div v-if="sorted.length">
       <div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
         <WebsiteCard
-          v-for="website in data.websites"
+          v-for="website in sorted"
           :key="website.id"
           :website="website"
         />

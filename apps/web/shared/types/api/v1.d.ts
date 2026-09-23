@@ -160,6 +160,198 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/website-categories": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create a website category
+         * @description Creates a website category and returns it. Needs website.create. Requests authenticated with a Bearer token never carry website permissions. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED, and a failure of that lookup is SERVICE_UNAVAILABLE with nothing written. slug must be unused (ALREADY_EXISTS); label needs a non-whitespace character.
+         */
+        post: operations["createAdminWebsiteCategory"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/website-categories/{website_category_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a website category for editing
+         * @description Returns the category with its timestamps. Needs website.edit. Requests authenticated with a Bearer token never carry website permissions. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED, and a failure of that lookup is SERVICE_UNAVAILABLE with nothing written.
+         */
+        get: operations["getAdminWebsiteCategory"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete a website category
+         * @description Deletes the category. Needs website.delete, checked before the category is looked up. Requests authenticated with a Bearer token never carry website permissions. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED, and a failure of that lookup is SERVICE_UNAVAILABLE with nothing written. A category that still has websites is WEBSITE_CATEGORY_NOT_EMPTY with website_count, and nothing is deleted.
+         */
+        delete: operations["deleteAdminWebsiteCategory"];
+        options?: never;
+        head?: never;
+        /**
+         * Edit a website category
+         * @description Changes the fields that are sent and returns the category. Needs website.edit, checked before the category is looked up. Requests authenticated with a Bearer token never carry website permissions. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED, and a failure of that lookup is SERVICE_UNAVAILABLE with nothing written. slug must be unused (ALREADY_EXISTS); label needs a non-whitespace character. An empty object writes nothing.
+         */
+        patch: operations["updateAdminWebsiteCategory"];
+        trace?: never;
+    };
+    "/admin/website-tag-groups": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create a website tag group
+         * @description Creates a website tag group and returns it. Needs website.create. Requests authenticated with a Bearer token never carry website permissions. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED, and a failure of that lookup is SERVICE_UNAVAILABLE with nothing written. slug must be unused (ALREADY_EXISTS); label needs a non-whitespace character. Turning is_multi_select off does not touch websites that already carry several of its tags.
+         */
+        post: operations["createAdminWebsiteTagGroup"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/website-tag-groups/{website_tag_group_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a website tag group for editing
+         * @description Returns the tag group with its timestamps. Needs website.edit. Requests authenticated with a Bearer token never carry website permissions. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED, and a failure of that lookup is SERVICE_UNAVAILABLE with nothing written.
+         */
+        get: operations["getAdminWebsiteTagGroup"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete a website tag group
+         * @description Deletes the tag group. Needs website.delete, checked before the tag group is looked up. Requests authenticated with a Bearer token never carry website permissions. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED, and a failure of that lookup is SERVICE_UNAVAILABLE with nothing written. The group's tags stay and become ungrouped.
+         */
+        delete: operations["deleteAdminWebsiteTagGroup"];
+        options?: never;
+        head?: never;
+        /**
+         * Edit a website tag group
+         * @description Changes the fields that are sent and returns the tag group. Needs website.edit, checked before the tag group is looked up. Requests authenticated with a Bearer token never carry website permissions. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED, and a failure of that lookup is SERVICE_UNAVAILABLE with nothing written. slug must be unused (ALREADY_EXISTS); label needs a non-whitespace character. Turning is_multi_select off does not touch websites that already carry several of its tags. An empty object writes nothing.
+         */
+        patch: operations["updateAdminWebsiteTagGroup"];
+        trace?: never;
+    };
+    "/admin/website-tags": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create a website tag
+         * @description Creates a website tag and returns it. Needs website.create. Requests authenticated with a Bearer token never carry website permissions. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED, and a failure of that lookup is SERVICE_UNAVAILABLE with nothing written. slug must be unused (ALREADY_EXISTS); label needs a non-whitespace character; website_tag_group_id must exist (UNKNOWN_REFERENCE). In an update, website_tag_group_id null moves the tag out of every group.
+         */
+        post: operations["createAdminWebsiteTag"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/website-tags/{website_tag_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a website tag for editing
+         * @description Returns the tag with its timestamps. Needs website.edit. Requests authenticated with a Bearer token never carry website permissions. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED, and a failure of that lookup is SERVICE_UNAVAILABLE with nothing written.
+         */
+        get: operations["getAdminWebsiteTag"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete a website tag
+         * @description Deletes the tag. Needs website.delete, checked before the tag is looked up. Requests authenticated with a Bearer token never carry website permissions. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED, and a failure of that lookup is SERVICE_UNAVAILABLE with nothing written. Deleting a tag takes it off every website.
+         */
+        delete: operations["deleteAdminWebsiteTag"];
+        options?: never;
+        head?: never;
+        /**
+         * Edit a website tag
+         * @description Changes the fields that are sent and returns the tag. Needs website.edit, checked before the tag is looked up. Requests authenticated with a Bearer token never carry website permissions. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED, and a failure of that lookup is SERVICE_UNAVAILABLE with nothing written. slug must be unused (ALREADY_EXISTS); label needs a non-whitespace character; website_tag_group_id must exist (UNKNOWN_REFERENCE). In an update, website_tag_group_id null moves the tag out of every group. An empty object writes nothing.
+         */
+        patch: operations["updateAdminWebsiteTag"];
+        trace?: never;
+    };
+    "/admin/websites": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * List a new website
+         * @description Creates a website and returns its edit source. Needs website.create. Requests authenticated with a Bearer token never carry website permissions. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED, and a failure of that lookup is SERVICE_UNAVAILABLE with nothing written. host is stored lower case. title needs a non-whitespace character; description needs 10 once trimmed. website_category_id must exist (UNKNOWN_REFERENCE). website_tag_ids: no duplicates (DUPLICATE_ITEM), each must exist (UNKNOWN_REFERENCE), at most one per single-select group (INCONSISTENT_WITH). urls must be http or https URLs of at most 100 characters (INVALID_FORMAT). language is stored lower case. A host or title another website already uses is ALREADY_EXISTS with the field as the pointer. Location is the edit source's path.
+         */
+        post: operations["createAdminWebsite"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/websites/{website_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a website's edit source
+         * @description Returns the fields updateAdminWebsite takes, as stored. Needs website.edit. Requests authenticated with a Bearer token never carry website permissions. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED, and a failure of that lookup is SERVICE_UNAVAILABLE with nothing written.
+         */
+        get: operations["getAdminWebsite"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete a website
+         * @description Deletes a website with its likes, favorites and tag links, and its home-feed card. Needs website.delete, checked before the website is looked up. Requests authenticated with a Bearer token never carry website permissions. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED, and a failure of that lookup is SERVICE_UNAVAILABLE with nothing written.
+         */
+        delete: operations["deleteAdminWebsite"];
+        options?: never;
+        head?: never;
+        /**
+         * Edit a website
+         * @description Changes the fields that are sent and returns the edit source. Needs website.edit, checked before the website is looked up. Requests authenticated with a Bearer token never carry website permissions. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED, and a failure of that lookup is SERVICE_UNAVAILABLE with nothing written. Fields are checked as in createAdminWebsite. website_tag_ids and urls, when present, replace the whole set; absent keeps it. An empty object writes nothing.
+         */
+        patch: operations["updateAdminWebsite"];
+        trace?: never;
+    };
     "/comments/{comment_id}": {
         parameters: {
             query?: never;
@@ -1680,6 +1872,194 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/website-categories": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List website categories
+         * @description Lists categories as a cursor page by ascending sort_order, ties broken by ascending id. website_count counts NSFW sites too.
+         */
+        get: operations["listWebsiteCategories"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/website-categories/{website_category_slug}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a website category by its slug
+         * @description Returns the category whose slug is website_category_slug. Its websites are listWebsites with website_category_id.
+         */
+        get: operations["getWebsiteCategory"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/website-tag-groups": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List website tag groups
+         * @description Lists tag groups as a cursor page by ascending sort_order, ties broken by ascending id.
+         */
+        get: operations["listWebsiteTagGroups"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/website-tags": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List website tags
+         * @description Lists tags as a cursor page by ascending id.
+         */
+        get: operations["listWebsiteTags"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/website-tags/{website_tag_slug}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a website tag by its slug
+         * @description Returns the tag whose slug is website_tag_slug. Its websites are listWebsites with website_tag_id.
+         */
+        get: operations["getWebsiteTag"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/websites": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the website directory
+         * @description Lists websites as a cursor page, newest listing first, ties broken by descending id. There is one sort and no sort parameter. NSFW sites are left out unless include_nsfw=true. website_category_id and website_tag_id narrow the list; an id that matches nothing gives an empty list. The cursor is bound to include_nsfw, website_category_id and website_tag_id. include_total=true adds total under the same predicate as items.
+         */
+        get: operations["listWebsites"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/websites/{website_host}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a website by its host
+         * @description Returns the website whose main host is website_host and counts one view. The host can be renamed; refer to a website by id. An NSFW site is returned like any other; a client that hides NSFW content gates it. viewer is null for an anonymous caller.
+         */
+        get: operations["getWebsite"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/websites/{website_host}/favorite": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Favorite a website
+         * @description Sets the caller's favorite. Favoriting again changes nothing and returns the same state. The counters move only when the caller's row is really added or removed. NSFW sites can be liked and favorited like any other. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED, and a failure of that lookup is SERVICE_UNAVAILABLE with nothing written. Returns both counters and the caller's state after the request.
+         */
+        put: operations["favoriteWebsite"];
+        post?: never;
+        /**
+         * Remove a favorite
+         * @description Clears the caller's favorite. Removing a favorite that is not there changes nothing. The counters move only when the caller's row is really added or removed. NSFW sites can be liked and favorited like any other. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED, and a failure of that lookup is SERVICE_UNAVAILABLE with nothing written. Returns both counters and the caller's state after the request.
+         */
+        delete: operations["unfavoriteWebsite"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/websites/{website_host}/like": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Like a website
+         * @description Sets the caller's like. Liking again changes nothing and returns the same state. The counters move only when the caller's row is really added or removed. NSFW sites can be liked and favorited like any other. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED, and a failure of that lookup is SERVICE_UNAVAILABLE with nothing written. Returns both counters and the caller's state after the request.
+         */
+        put: operations["likeWebsite"];
+        post?: never;
+        /**
+         * Remove a like
+         * @description Clears the caller's like. Removing a like that is not there changes nothing. The counters move only when the caller's row is really added or removed. NSFW sites can be liked and favorited like any other. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED, and a failure of that lookup is SERVICE_UNAVAILABLE with nothing written. Returns both counters and the caller's state after the request.
+         */
+        delete: operations["unlikeWebsite"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1748,6 +2128,149 @@ export interface components {
             /** @description Topic title as stored. Free text; never use it as a decision input. */
             title: string;
         };
+        AdminWebsite: {
+            /**
+             * Format: date-time
+             * @description Time the site was listed.
+             */
+            created_at: string;
+            /** @description Plain-text description. Free text; never use it as a decision input. */
+            description: string;
+            /**
+             * Format: uri
+             * @description Third-party favicon URL; read-only. null whenever icon is set.
+             */
+            external_icon_url: string | null;
+            /** @description When the site was founded, as its operators state it. Free text; never use it as a decision input. */
+            founded: string;
+            /** @description Main host name, lower case. */
+            host: string;
+            /** @description Current icon, for a preview. null when the site has none in the image service. */
+            icon: components["schemas"]["Image"] | null;
+            /** @description Website id. */
+            id: string;
+            /** @description Whether the site is adult-oriented. */
+            is_nsfw: boolean;
+            /** @description Main language of the site. */
+            language: string;
+            /**
+             * @description Type discriminant. Always admin_website.
+             * @enum {string}
+             */
+            object: "admin_website";
+            /**
+             * @description Lifecycle state.
+             * @enum {string}
+             */
+            state: "normal" | "unreachable" | "closed";
+            /** @description Name of the site. Free text; never use it as a decision input. */
+            title: string;
+            /**
+             * Format: date-time
+             * @description Time of the latest write to the row.
+             */
+            updated_at: string;
+            /** @description Every known address of the site. Empty array, never null. */
+            urls: string[];
+            /** @description Category id. */
+            website_category_id: string;
+            /** @description Tag ids, ascending. Empty array, never null. */
+            website_tag_ids: string[];
+        };
+        AdminWebsiteCategory: {
+            /**
+             * Format: date-time
+             * @description Creation time.
+             */
+            created_at: string;
+            /** @description Plain-text description. Free text; never use it as a decision input. */
+            description: string;
+            /** @description Category id. */
+            id: string;
+            /** @description Display name. Free text; never use it as a decision input. */
+            label: string;
+            /**
+             * @description Type discriminant. Always admin_website_category.
+             * @enum {string}
+             */
+            object: "admin_website_category";
+            /** @description URL key. */
+            slug: string;
+            /**
+             * Format: int64
+             * @description Position among categories, ascending.
+             */
+            sort_order: number;
+            /**
+             * Format: date-time
+             * @description Time of the latest write.
+             */
+            updated_at: string;
+        };
+        AdminWebsiteTag: {
+            /**
+             * Format: date-time
+             * @description Creation time.
+             */
+            created_at: string;
+            /** @description Plain-text description. Free text; never use it as a decision input. */
+            description: string;
+            /** @description Tag id. */
+            id: string;
+            /** @description Display name. Free text; never use it as a decision input. */
+            label: string;
+            /**
+             * Format: int64
+             * @description Weight of the tag.
+             */
+            level: number;
+            /**
+             * @description Type discriminant. Always admin_website_tag.
+             * @enum {string}
+             */
+            object: "admin_website_tag";
+            /** @description URL key. */
+            slug: string;
+            /**
+             * Format: date-time
+             * @description Time of the latest write.
+             */
+            updated_at: string;
+            /** @description Group id. null when ungrouped. */
+            website_tag_group_id: string | null;
+        };
+        AdminWebsiteTagGroup: {
+            /**
+             * Format: date-time
+             * @description Creation time.
+             */
+            created_at: string;
+            /** @description Plain-text description. Free text; never use it as a decision input. */
+            description: string;
+            /** @description Group id. */
+            id: string;
+            /** @description Whether a website may carry more than one tag of this group. */
+            is_multi_select: boolean;
+            /** @description Display name. Free text; never use it as a decision input. */
+            label: string;
+            /**
+             * @description Type discriminant. Always admin_website_tag_group.
+             * @enum {string}
+             */
+            object: "admin_website_tag_group";
+            /** @description Stable key. */
+            slug: string;
+            /**
+             * Format: int64
+             * @description Position among groups, ascending.
+             */
+            sort_order: number;
+            /**
+             * Format: date-time
+             * @description Time of the latest write.
+             */
+            updated_at: string;
+        };
         BatchListTopicState: {
             /** @description One member per requested id that the caller may see. Empty array, never null. */
             items: components["schemas"]["TopicState"][];
@@ -1787,6 +2310,32 @@ export interface components {
              * @enum {string}
              */
             object: "break";
+        };
+        CategoryCreate: {
+            /** @description Plain-text description. Absent means empty. Free text; never use it as a decision input. */
+            description?: string;
+            /** @description Display name. Free text; never use it as a decision input. */
+            label: string;
+            /** @description URL key. Taken is ALREADY_EXISTS. */
+            slug: string;
+            /**
+             * Format: int64
+             * @description Position, ascending. Absent means 0.
+             */
+            sort_order?: number;
+        };
+        CategoryPatch: {
+            /** @description New description. Free text; never use it as a decision input. */
+            description?: string;
+            /** @description New display name. Free text; never use it as a decision input. */
+            label?: string;
+            /** @description New URL key. */
+            slug?: string;
+            /**
+             * Format: int64
+             * @description New position.
+             */
+            sort_order?: number;
         };
         CheckIn: {
             /**
@@ -1935,6 +2484,22 @@ export interface components {
         CountedListTodo: {
             /** @description Members of this page. Empty array, never null. */
             items: components["schemas"]["Todo"][];
+            /** @description Opaque keyset cursor. Omitted on the last page. */
+            next_cursor?: string;
+            /**
+             * @description Type discriminant. Always list.
+             * @enum {string}
+             */
+            object: "list";
+            /**
+             * Format: int64
+             * @description Present only when include_total=true. Same visibility gate as items.
+             */
+            total?: number;
+        };
+        CountedListWebsiteSummary: {
+            /** @description Members of this page. Empty array, never null. */
+            items: components["schemas"]["WebsiteSummary"][];
             /** @description Opaque keyset cursor. Omitted on the last page. */
             next_cursor?: string;
             /**
@@ -2529,6 +3094,39 @@ export interface components {
         ListWallComment: {
             /** @description Members of this page. Empty array, never null. */
             items: components["schemas"]["WallComment"][];
+            /** @description Opaque keyset cursor. Omitted on the last page. */
+            next_cursor?: string;
+            /**
+             * @description Type discriminant. Always list.
+             * @enum {string}
+             */
+            object: "list";
+        };
+        ListWebsiteCategory: {
+            /** @description Members of this page. Empty array, never null. */
+            items: components["schemas"]["WebsiteCategory"][];
+            /** @description Opaque keyset cursor. Omitted on the last page. */
+            next_cursor?: string;
+            /**
+             * @description Type discriminant. Always list.
+             * @enum {string}
+             */
+            object: "list";
+        };
+        ListWebsiteTag: {
+            /** @description Members of this page. Empty array, never null. */
+            items: components["schemas"]["WebsiteTag"][];
+            /** @description Opaque keyset cursor. Omitted on the last page. */
+            next_cursor?: string;
+            /**
+             * @description Type discriminant. Always list.
+             * @enum {string}
+             */
+            object: "list";
+        };
+        ListWebsiteTagGroup: {
+            /** @description Members of this page. Empty array, never null. */
+            items: components["schemas"]["WebsiteTagGroup"][];
             /** @description Opaque keyset cursor. Omitted on the last page. */
             next_cursor?: string;
             /**
@@ -4118,6 +4716,66 @@ export interface components {
              */
             object: "table_row";
         };
+        TagCreate: {
+            /** @description Plain-text description. Absent means empty. Free text; never use it as a decision input. */
+            description?: string;
+            /** @description Display name. Free text; never use it as a decision input. */
+            label: string;
+            /**
+             * Format: int64
+             * @description Weight of the tag.
+             */
+            level: number;
+            /** @description URL key. Taken is ALREADY_EXISTS. */
+            slug: string;
+            /** @description Group id. Absent or null means ungrouped; an unknown id is UNKNOWN_REFERENCE. */
+            website_tag_group_id?: string | null;
+        };
+        TagGroupCreate: {
+            /** @description Plain-text description. Absent means empty. Free text; never use it as a decision input. */
+            description?: string;
+            /** @description Whether a website may carry more than one tag of this group. Absent means false. */
+            is_multi_select?: boolean;
+            /** @description Display name. Free text; never use it as a decision input. */
+            label: string;
+            /** @description Stable key. Taken is ALREADY_EXISTS. */
+            slug: string;
+            /**
+             * Format: int64
+             * @description Position, ascending. Absent means 0.
+             */
+            sort_order?: number;
+        };
+        TagGroupPatch: {
+            /** @description New description. Free text; never use it as a decision input. */
+            description?: string;
+            /** @description New multi-select flag. Turning it off does not touch websites that already carry several tags of the group. */
+            is_multi_select?: boolean;
+            /** @description New display name. Free text; never use it as a decision input. */
+            label?: string;
+            /** @description New key. */
+            slug?: string;
+            /**
+             * Format: int64
+             * @description New position.
+             */
+            sort_order?: number;
+        };
+        TagPatch: {
+            /** @description New description. Free text; never use it as a decision input. */
+            description?: string;
+            /** @description New display name. Free text; never use it as a decision input. */
+            label?: string;
+            /**
+             * Format: int64
+             * @description New weight.
+             */
+            level?: number;
+            /** @description New URL key. */
+            slug?: string;
+            /** @description New group id. null moves the tag out of every group; absent keeps it. */
+            website_tag_group_id?: string | null;
+        };
         TextNode: {
             /**
              * @description Type discriminant. Always text. (enum property replaced by openapi-typescript)
@@ -4980,6 +5638,291 @@ export interface components {
             /** @description Whether the caller may like the comment: anyone but its author, unless it is a tombstone. */
             can_like: boolean;
             /** @description Whether the caller liked the comment. */
+            has_liked: boolean;
+        };
+        Website: {
+            /**
+             * Format: int64
+             * @description Comments on the site's wall.
+             */
+            comment_count: number;
+            /**
+             * Format: date-time
+             * @description Time the site was listed.
+             */
+            created_at: string;
+            /** @description Plain-text description; keep its line breaks. Free text; never use it as a decision input. */
+            description: string;
+            /**
+             * Format: uri
+             * @description Third-party favicon URL for a site whose icon was never uploaded. null whenever icon is set. Transitional.
+             */
+            external_icon_url: string | null;
+            /**
+             * Format: int64
+             * @description Favorite count.
+             */
+            favorite_count: number;
+            /** @description When the site was founded, as its operators state it, such as 2014-05-01 or a phrase for about 2014. Empty string when unknown. Free text; never use it as a decision input. */
+            founded: string;
+            /** @description Main host name, lower case. It is the page address /website/{host} and can be renamed; refer to a website by id. */
+            host: string;
+            /** @description Site icon from the image service. null when the site has none there. */
+            icon: components["schemas"]["Image"] | null;
+            /** @description Website id. */
+            id: string;
+            /** @description Whether the site is adult-oriented. The detail is returned either way; a client that hides NSFW content gates it. */
+            is_nsfw: boolean;
+            /** @description Main language of the site. */
+            language: string;
+            /**
+             * Format: int64
+             * @description Like count.
+             */
+            like_count: number;
+            /**
+             * @description Type discriminant. Always website.
+             * @enum {string}
+             */
+            object: "website";
+            /**
+             * Format: int64
+             * @description Sum of the levels of the site's tags. May be negative.
+             */
+            score: number;
+            /**
+             * @description normal: the site is up. unreachable: temporarily down. closed: shut down for good.
+             * @enum {string}
+             */
+            state: "normal" | "unreachable" | "closed";
+            /** @description Name of the site. Free text; never use it as a decision input. */
+            title: string;
+            /**
+             * Format: date-time
+             * @description Time of the latest edit. Values before 2026-09-23 may be the time of a view instead.
+             */
+            updated_at: string;
+            /** @description Every known address of the site, the main one usually included. Empty array, never null. */
+            urls: string[];
+            /**
+             * Format: int64
+             * @description Lifetime view count. Each read of this operation adds one.
+             */
+            view_count: number;
+            /** @description The caller's own state on the site. null for an anonymous caller. */
+            viewer: components["schemas"]["WebsiteViewer"] | null;
+            /** @description Category the site is listed under. */
+            website_category: components["schemas"]["WebsiteCategoryRef"];
+            /** @description Tags of the site, ordered by group then by descending level; ungrouped tags last. Empty array, never null. */
+            website_tags: components["schemas"]["WebsiteTag"][];
+        };
+        WebsiteCategory: {
+            /** @description Plain-text description. Empty string when none. Free text; never use it as a decision input. */
+            description: string;
+            /** @description Category id. */
+            id: string;
+            /** @description Display name. Free text; never use it as a decision input. */
+            label: string;
+            /**
+             * @description Type discriminant. Always website_category.
+             * @enum {string}
+             */
+            object: "website_category";
+            /** @description URL key of the category page /website-category/{slug}. */
+            slug: string;
+            /**
+             * Format: int64
+             * @description Position among categories, ascending.
+             */
+            sort_order: number;
+            /**
+             * Format: int64
+             * @description Every website in the category, NSFW ones included. It is the staff guard for deleting a category; a page that lists websites shows that list's total instead.
+             */
+            website_count: number;
+        };
+        WebsiteCategoryRef: {
+            /** @description Category id. */
+            id: string;
+            /** @description Display name. Free text; never use it as a decision input. */
+            label: string;
+            /**
+             * @description Type discriminant. Always website_category.
+             * @enum {string}
+             */
+            object: "website_category";
+            /** @description URL key of the category page /website-category/{slug}. */
+            slug: string;
+        };
+        WebsiteCreate: {
+            /** @description Plain-text description, at least 10 characters once trimmed. Free text; never use it as a decision input. */
+            description: string;
+            /** @description When the site was founded, trimmed. Absent means unknown. Free text; never use it as a decision input. */
+            founded?: string;
+            /** @description Main host name without scheme or path. Stored lower case. */
+            host: string;
+            /** @description Image-service hash of the icon. Absent or empty for none. */
+            icon_image_hash?: string;
+            /** @description Whether the site is adult-oriented. */
+            is_nsfw: boolean;
+            /** @description BCP 47 language tag. Stored lower case. */
+            language: string;
+            /**
+             * @description Lifecycle state. Absent means normal.
+             * @enum {string}
+             */
+            state?: "normal" | "unreachable" | "closed";
+            /** @description Name of the site. Only whitespace is TOO_SHORT. Free text; never use it as a decision input. */
+            title: string;
+            /** @description Every known address of the site, each an http or https URL of at most 100 characters. Absent means none. */
+            urls?: string[];
+            /** @description Category id. An unknown id is UNKNOWN_REFERENCE. */
+            website_category_id: string;
+            /** @description Tag ids: no duplicates, each existing, at most one per single-select group. */
+            website_tag_ids: string[];
+        };
+        WebsiteEngagement: {
+            /**
+             * Format: int64
+             * @description Favorite count after this request.
+             */
+            favorite_count: number;
+            /**
+             * Format: int64
+             * @description Like count after this request.
+             */
+            like_count: number;
+            /**
+             * @description Type discriminant. Always website_engagement.
+             * @enum {string}
+             */
+            object: "website_engagement";
+            /** @description The caller's state after this request. */
+            viewer: components["schemas"]["WebsiteEngagementViewer"] | null;
+            /** @description Id of the website. */
+            website_id: string;
+        };
+        WebsiteEngagementViewer: {
+            /** @description Whether the caller favorited the site. */
+            has_favorited: boolean;
+            /** @description Whether the caller liked the site. */
+            has_liked: boolean;
+        };
+        WebsitePatch: {
+            /** @description New description. Free text; never use it as a decision input. */
+            description?: string;
+            /** @description New founding text; empty string clears it. Free text; never use it as a decision input. */
+            founded?: string;
+            /** @description New main host name. Stored lower case. */
+            host?: string;
+            /** @description New icon hash; empty string removes the icon. */
+            icon_image_hash?: string;
+            /** @description New NSFW flag. */
+            is_nsfw?: boolean;
+            /** @description New BCP 47 language tag. */
+            language?: string;
+            /**
+             * @description New lifecycle state.
+             * @enum {string}
+             */
+            state?: "normal" | "unreachable" | "closed";
+            /** @description New name. Free text; never use it as a decision input. */
+            title?: string;
+            /** @description When present, replaces every address. Same rules as createAdminWebsite. */
+            urls?: string[];
+            /** @description New category id. */
+            website_category_id?: string;
+            /** @description When present, replaces every tag of the site; absent keeps them. Same rules as createAdminWebsite. */
+            website_tag_ids?: string[];
+        };
+        WebsiteSummary: {
+            /** @description Plain-text description; keep its line breaks. Free text; never use it as a decision input. */
+            description: string;
+            /**
+             * Format: uri
+             * @description Third-party favicon URL for a site whose icon was never uploaded. null whenever icon is set. Transitional.
+             */
+            external_icon_url: string | null;
+            /** @description Main host name, lower case. It is the page address /website/{host} and can be renamed; refer to a website by id. */
+            host: string;
+            /** @description Site icon from the image service. null when the site has none there. */
+            icon: components["schemas"]["Image"] | null;
+            /** @description Website id. */
+            id: string;
+            /** @description Whether the site is adult-oriented. */
+            is_nsfw: boolean;
+            /**
+             * @description Type discriminant. Always website.
+             * @enum {string}
+             */
+            object: "website";
+            /**
+             * Format: int64
+             * @description Sum of the levels of the site's tags. May be negative.
+             */
+            score: number;
+            /**
+             * @description normal: the site is up. unreachable: temporarily down. closed: shut down for good.
+             * @enum {string}
+             */
+            state: "normal" | "unreachable" | "closed";
+            /** @description Name of the site. Free text; never use it as a decision input. */
+            title: string;
+            /** @description Category the site is listed under. */
+            website_category: components["schemas"]["WebsiteCategoryRef"];
+        };
+        WebsiteTag: {
+            /** @description Plain-text description. Empty string when none. Free text; never use it as a decision input. */
+            description: string;
+            /** @description Tag id. */
+            id: string;
+            /** @description Display name. Free text; never use it as a decision input. */
+            label: string;
+            /**
+             * Format: int64
+             * @description Weight of the tag. A website's score is the sum of its tags' levels.
+             */
+            level: number;
+            /**
+             * @description Type discriminant. Always website_tag.
+             * @enum {string}
+             */
+            object: "website_tag";
+            /** @description URL key of the tag page /website-tag/{slug}. */
+            slug: string;
+            /** @description Group the tag belongs to. null when it is in none. */
+            website_tag_group_id: string | null;
+        };
+        WebsiteTagGroup: {
+            /** @description Plain-text description. Empty string when none. Free text; never use it as a decision input. */
+            description: string;
+            /** @description Group id. */
+            id: string;
+            /** @description Whether a website may carry more than one tag of this group. */
+            is_multi_select: boolean;
+            /** @description Display name. Free text; never use it as a decision input. */
+            label: string;
+            /**
+             * @description Type discriminant. Always website_tag_group.
+             * @enum {string}
+             */
+            object: "website_tag_group";
+            /** @description Stable key of the group. */
+            slug: string;
+            /**
+             * Format: int64
+             * @description Position among groups, ascending.
+             */
+            sort_order: number;
+        };
+        WebsiteViewer: {
+            /** @description Whether the caller holds website.delete. Requests authenticated with a Bearer token never carry it. */
+            can_delete: boolean;
+            /** @description Whether the caller holds website.edit. Requests authenticated with a Bearer token never carry it. */
+            can_edit: boolean;
+            /** @description Whether the caller favorited the site. */
+            has_favorited: boolean;
+            /** @description Whether the caller liked the site. */
             has_liked: boolean;
         };
     };
@@ -5862,6 +6805,1455 @@ export interface operations {
                 };
             };
             /** @description SERVICE_UNAVAILABLE when the account service cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    createAdminWebsiteCategory: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Caller-generated UUID (canonical 8-4-4-4-12 hex, any version) or 26-character Crockford ULID. Scoped to (user, operation, key) for 24 hours. */
+                "Idempotency-Key"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CategoryCreate"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    Location?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminWebsiteCategory"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description PERMISSION_REQUIRED without website.create; ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description ALREADY_EXISTS when the slug is taken; IDEMPOTENCY_KEY_REUSED or IDEMPOTENCY_REQUEST_IN_PROGRESS. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description VALIDATION_FAILED for a blank label, a field outside its format, or an unknown reference. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getAdminWebsiteCategory: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Category id. */
+                website_category_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminWebsiteCategory"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description PERMISSION_REQUIRED without website.edit; ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the category does not exist. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    deleteAdminWebsiteCategory: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Category id. */
+                website_category_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description PERMISSION_REQUIRED without website.delete; ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the category does not exist. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description WEBSITE_CATEGORY_NOT_EMPTY when websites are still listed under the category. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    updateAdminWebsiteCategory: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Category id. */
+                website_category_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CategoryPatch"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminWebsiteCategory"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description PERMISSION_REQUIRED without website.edit; ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the category does not exist. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description ALREADY_EXISTS when the new slug is taken. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description VALIDATION_FAILED for a blank label, a field outside its format, or an unknown reference. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    createAdminWebsiteTagGroup: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Caller-generated UUID (canonical 8-4-4-4-12 hex, any version) or 26-character Crockford ULID. Scoped to (user, operation, key) for 24 hours. */
+                "Idempotency-Key"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TagGroupCreate"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    Location?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminWebsiteTagGroup"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description PERMISSION_REQUIRED without website.create; ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description ALREADY_EXISTS when the slug is taken; IDEMPOTENCY_KEY_REUSED or IDEMPOTENCY_REQUEST_IN_PROGRESS. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description VALIDATION_FAILED for a blank label, a field outside its format, or an unknown reference. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getAdminWebsiteTagGroup: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Group id. */
+                website_tag_group_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminWebsiteTagGroup"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description PERMISSION_REQUIRED without website.edit; ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the tag group does not exist. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    deleteAdminWebsiteTagGroup: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Group id. */
+                website_tag_group_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description PERMISSION_REQUIRED without website.delete; ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the tag group does not exist. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    updateAdminWebsiteTagGroup: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Group id. */
+                website_tag_group_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TagGroupPatch"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminWebsiteTagGroup"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description PERMISSION_REQUIRED without website.edit; ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the tag group does not exist. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description ALREADY_EXISTS when the new slug is taken. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description VALIDATION_FAILED for a blank label, a field outside its format, or an unknown reference. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    createAdminWebsiteTag: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Caller-generated UUID (canonical 8-4-4-4-12 hex, any version) or 26-character Crockford ULID. Scoped to (user, operation, key) for 24 hours. */
+                "Idempotency-Key"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TagCreate"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    Location?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminWebsiteTag"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description PERMISSION_REQUIRED without website.create; ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description ALREADY_EXISTS when the slug is taken; IDEMPOTENCY_KEY_REUSED or IDEMPOTENCY_REQUEST_IN_PROGRESS. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description VALIDATION_FAILED for a blank label, a field outside its format, or an unknown reference. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getAdminWebsiteTag: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Tag id. */
+                website_tag_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminWebsiteTag"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description PERMISSION_REQUIRED without website.edit; ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the tag does not exist. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    deleteAdminWebsiteTag: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Tag id. */
+                website_tag_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description PERMISSION_REQUIRED without website.delete; ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the tag does not exist. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    updateAdminWebsiteTag: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Tag id. */
+                website_tag_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TagPatch"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminWebsiteTag"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description PERMISSION_REQUIRED without website.edit; ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the tag does not exist. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description ALREADY_EXISTS when the new slug is taken. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description VALIDATION_FAILED for a blank label, a field outside its format, or an unknown reference. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    createAdminWebsite: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Caller-generated UUID (canonical 8-4-4-4-12 hex, any version) or 26-character Crockford ULID. Scoped to (user, operation, key) for 24 hours. */
+                "Idempotency-Key"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WebsiteCreate"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    Location?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminWebsite"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description PERMISSION_REQUIRED without website.create; ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description ALREADY_EXISTS when the host or title is taken; IDEMPOTENCY_KEY_REUSED or IDEMPOTENCY_REQUEST_IN_PROGRESS. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description VALIDATION_FAILED for a field outside its format, an unknown category or tag, a duplicate tag, or two tags of a single-select group. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getAdminWebsite: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Website id. */
+                website_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminWebsite"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description PERMISSION_REQUIRED without website.edit; ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the website does not exist. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    deleteAdminWebsite: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Website id. */
+                website_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description PERMISSION_REQUIRED without website.delete; ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the website does not exist. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    updateAdminWebsite: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Website id. */
+                website_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WebsitePatch"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminWebsite"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description PERMISSION_REQUIRED without website.edit; ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the website does not exist. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description ALREADY_EXISTS when the new host or title is taken. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description VALIDATION_FAILED as in createAdminWebsite. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
             503: {
                 headers: {
                     [name: string]: unknown;
@@ -14821,6 +17213,671 @@ export interface operations {
                 };
             };
             /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listWebsiteCategories: {
+        parameters: {
+            query?: {
+                /** @description Opaque keyset cursor from a previous page of this collection. */
+                cursor?: string;
+                /** @description Page size. 1–100, default 20. Values above 100 are rejected, not clamped. */
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListWebsiteCategory"];
+                };
+            };
+            /** @description INVALID_CURSOR or LIMIT_TOO_LARGE. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getWebsiteCategory: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description URL key of the category. */
+                website_category_slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WebsiteCategory"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when no category has this slug. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listWebsiteTagGroups: {
+        parameters: {
+            query?: {
+                /** @description Opaque keyset cursor from a previous page of this collection. */
+                cursor?: string;
+                /** @description Page size. 1–100, default 20. Values above 100 are rejected, not clamped. */
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListWebsiteTagGroup"];
+                };
+            };
+            /** @description INVALID_CURSOR or LIMIT_TOO_LARGE. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listWebsiteTags: {
+        parameters: {
+            query?: {
+                /** @description Opaque keyset cursor from a previous page of this collection. */
+                cursor?: string;
+                /** @description Page size. 1–100, default 20. Values above 100 are rejected, not clamped. */
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListWebsiteTag"];
+                };
+            };
+            /** @description INVALID_CURSOR or LIMIT_TOO_LARGE. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getWebsiteTag: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description URL key of the tag. */
+                website_tag_slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WebsiteTag"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when no tag has this slug. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listWebsites: {
+        parameters: {
+            query?: {
+                /** @description Opaque keyset cursor from a previous page of this collection. */
+                cursor?: string;
+                /** @description Page size. 1–100, default 20. Values above 100 are rejected, not clamped. */
+                limit?: number;
+                /** @description When true, the response includes total counted under the same predicate as items. */
+                include_total?: boolean;
+                /** @description When true, NSFW sites are included. Default false. */
+                include_nsfw?: boolean;
+                /** @description Only sites in this category. */
+                website_category_id?: string;
+                /** @description Only sites carrying this tag. */
+                website_tag_id?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CountedListWebsiteSummary"];
+                };
+            };
+            /** @description INVALID_CURSOR or LIMIT_TOO_LARGE. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getWebsite: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Main host name of the site, lower case. */
+                website_host: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Website"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when no website has this host. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    favoriteWebsite: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Main host name of the site, lower case. */
+                website_host: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WebsiteEngagement"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when no website has this host. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    unfavoriteWebsite: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Main host name of the site, lower case. */
+                website_host: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WebsiteEngagement"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when no website has this host. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    likeWebsite: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Main host name of the site, lower case. */
+                website_host: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WebsiteEngagement"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when no website has this host. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    unlikeWebsite: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Main host name of the site, lower case. */
+                website_host: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WebsiteEngagement"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when no website has this host. */
             404: {
                 headers: {
                     [name: string]: unknown;

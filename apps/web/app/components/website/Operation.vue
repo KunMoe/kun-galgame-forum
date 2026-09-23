@@ -1,124 +1,146 @@
 <script setup lang="ts">
-import type { CreateWebsitePayload, UpdateWebsitePayload } from './modal/types'
+import { settle } from '#shared/utils/api/problem'
+import type { AdminWebsite, Website } from '#shared/utils/api/schemas'
+import type { WebsiteForm } from './modal/types'
+import { changedWebsiteFields, websiteFormOf } from '~/utils/websiteForm'
 
 const props = defineProps<{
-  website: WebsiteDetail
+  website: Website
 }>()
 
 const emits = defineEmits<{
   refresh: []
 }>()
 
-type WebsiteData = (CreateWebsitePayload & { website_id?: number }) | undefined
-
+const api = useApiClient()
 const { id } = usePersistUserStore()
-const canEditWebsite = useCan('website.edit')
-const canDeleteWebsite = useCan('website.delete')
-
 const utmLink = useUtmLink()
 
-const isLiked = ref(props.website.is_liked)
+const isLiked = ref(props.website.viewer?.has_liked ?? false)
 const likeCount = ref(props.website.like_count)
-type ActionType = 'update' | 'delete'
-const loadingStates = reactive<Record<ActionType, boolean>>({
-  update: false,
-  delete: false
-})
+watch(
+  () => props.website,
+  (w) => {
+    isLiked.value = w.viewer?.has_liked ?? false
+    likeCount.value = w.like_count
+  }
+)
+
+const slotPath = (slot: 'like' | 'favorite') =>
+  slot === 'like'
+    ? ('/websites/{website_host}/like' as const)
+    : ('/websites/{website_host}/favorite' as const)
+
+const setSlot = async (slot: 'like' | 'favorite', next: boolean) => {
+  const options = { params: { path: { website_host: props.website.host } } }
+  const result = await settle(
+    next
+      ? api.PUT(slotPath(slot), options)
+      : api.DELETE(slotPath(slot), options)
+  )
+  if (!result.ok) {
+    reportProblem(result.problem)
+    return null
+  }
+  return result.data
+}
 
 const likePending = ref(false)
-const revertLike = (next: boolean) => {
-  isLiked.value = !next
-  likeCount.value += next ? -1 : 1
-}
 const onLike = async (next: boolean) => {
   if (!id) {
     useAuthModal().open()
-    revertLike(next)
+    isLiked.value = !next
+    likeCount.value += next ? -1 : 1
     return
   }
   likePending.value = true
-  const result = await kunFetch(`/website/${props.website.id}/like`, {
-    method: 'PUT',
-    body: { website_id: props.website.id }
-  })
+  const engagement = await setSlot('like', next)
   likePending.value = false
-  if (!result) {
-    revertLike(next)
+  if (!engagement) {
+    isLiked.value = !next
+    likeCount.value += next ? -1 : 1
     return
   }
+  isLiked.value = engagement.viewer?.has_liked ?? next
+  likeCount.value = engagement.like_count
   useMessage(next ? '点赞网站成功!' : '取消点赞成功!', 'success')
 }
 
-const showWebsiteModal = ref(false)
-const editingWebsite = ref<WebsiteData>(undefined)
+const onFavorite = async (next: boolean) =>
+  Boolean(await setSlot('favorite', next))
 
-const handleOpenUpdateModal = () => {
-  const { age_limit, category, tags, create_time, language, status, ...rest } =
-    props.website
-  editingWebsite.value = {
-    ...rest,
-    language: language as CreateWebsitePayload['language'],
-    tag_ids: tags.map((t) => t.id),
-    category_id: category.id,
-    age_limit,
-    status,
-    create_time,
-    website_id: props.website.id
+const showWebsiteModal = ref(false)
+const editSource = ref<AdminWebsite | null>(null)
+const editForm = computed(() =>
+  editSource.value ? websiteFormOf(editSource.value) : undefined
+)
+const updating = ref(false)
+const deleting = ref(false)
+
+const handleOpenUpdateModal = async () => {
+  const result = await settle(
+    api.GET('/admin/websites/{website_id}', {
+      params: { path: { website_id: props.website.id } }
+    })
+  )
+  if (!result.ok) {
+    reportProblem(result.problem)
+    return
   }
+  editSource.value = result.data
   showWebsiteModal.value = true
 }
 
-const handleUpdate = (data: CreateWebsitePayload | UpdateWebsitePayload) =>
-  handleAction('update', async () => {
-    const result = await kunFetch(`/website/${props.website.id}`, {
-      method: 'PUT',
-      body: data
-    })
-
-    if (result) {
-      useMessage('重新编辑成功', 'success')
-      showWebsiteModal.value = false
-      emits('refresh')
-    }
-  })
-
-const handleDelete = () =>
-  handleAction('delete', async () => {
-    const res = await useComponentMessageStore().alert(
-      '您确定删除这个网站吗？',
-      '这将会删除这个网站的所有信息, 该操作不可撤销'
-    )
-    if (!res) {
-      return
-    }
-
-    const result = await kunFetch(`/website/${props.website.id}`, {
-      method: 'DELETE',
-      query: { website_id: props.website.id }
-    })
-
-    if (result) {
-      useMessage('删除网站成功', 'success')
-      await navigateTo('/website')
-    }
-  })
-
-const handleAction = async (
-  actionType: ActionType,
-  action: () => Promise<void>
-) => {
-  if (loadingStates[actionType]) {
+const handleUpdate = async (data: WebsiteForm) => {
+  if (!editForm.value || updating.value) {
     return
   }
-
-  if (!id) {
-    useAuthModal().open()
+  const body = changedWebsiteFields(editForm.value, data)
+  updating.value = true
+  const result = await settle(
+    api.PATCH('/admin/websites/{website_id}', {
+      params: { path: { website_id: props.website.id } },
+      body
+    })
+  )
+  updating.value = false
+  if (!result.ok) {
+    reportProblem(result.problem)
     return
   }
+  useMessage('重新编辑成功', 'success')
+  showWebsiteModal.value = false
+  if (result.data.host !== props.website.host) {
+    await navigateTo(`/website/${result.data.host}`)
+    return
+  }
+  emits('refresh')
+}
 
-  loadingStates[actionType] = true
-  await action()
-  loadingStates[actionType] = false
+const handleDelete = async () => {
+  if (deleting.value) {
+    return
+  }
+  const confirmed = await useComponentMessageStore().alert(
+    '您确定删除这个网站吗？',
+    '这将会删除这个网站的所有信息, 该操作不可撤销'
+  )
+  if (!confirmed) {
+    return
+  }
+  deleting.value = true
+  const result = await settle(
+    api.DELETE('/admin/websites/{website_id}', {
+      params: { path: { website_id: props.website.id } }
+    })
+  )
+  deleting.value = false
+  if (!result.ok) {
+    reportProblem(result.problem)
+    return
+  }
+  useMessage('删除网站成功', 'success')
+  await navigateTo('/website')
 }
 </script>
 
@@ -140,15 +162,14 @@ const handleAction = async (
     </KunTooltip>
 
     <FavoriteToggle
-      :favorited="website.is_favorited"
+      :favorited="website.viewer?.has_favorited ?? false"
       :count="website.favorite_count"
-      :endpoint="`/website/${website.id}/favorite`"
-      :body="{ website_id: website.id }"
+      :action="onFavorite"
       :messages="['收藏网站成功!', '取消收藏成功!']"
       size="lg"
     />
 
-    <KunTooltip v-if="canEditWebsite" text="编辑">
+    <KunTooltip v-if="website.viewer?.can_edit" text="编辑">
       <KunButton
         :is-icon-only="true"
         size="lg"
@@ -162,18 +183,24 @@ const handleAction = async (
 
     <WebsiteModalWebsite
       v-model="showWebsiteModal"
-      :initial-data="editingWebsite"
-      :loading="loadingStates.update"
+      :initial-data="editForm"
+      :is-editing="true"
+      :icon-preview-url="
+        editSource?.icon?.url ?? editSource?.external_icon_url ?? ''
+      "
+      :has-external-icon="!!editSource?.external_icon_url"
+      :loading="updating"
       @submit="handleUpdate"
     />
 
-    <KunTooltip v-if="canDeleteWebsite" text="删除">
+    <KunTooltip v-if="website.viewer?.can_delete" text="删除">
       <KunButton
         :is-icon-only="true"
         size="lg"
         color="danger"
         variant="light"
         class-name="gap-1"
+        :loading="deleting"
         @click="handleDelete"
       >
         <KunIcon name="lucide:trash-2" />
@@ -182,7 +209,7 @@ const handleAction = async (
 
     <KunButton
       target="_blank"
-      :href="utmLink(`https://${website.url}`)"
+      :href="utmLink(`https://${website.host}`)"
       class-name="ml-auto"
     >
       访问网站

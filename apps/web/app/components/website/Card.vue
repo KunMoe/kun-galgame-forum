@@ -1,21 +1,26 @@
 <script setup lang="ts">
 import { KUN_WEBSITE_STATUS_CHIP } from '~/constants/galgameWebsite'
+import type { WebsiteSummary } from '#shared/utils/api/schemas'
 
 const props = defineProps<{
-  website: WebsiteCard
+  website: WebsiteSummary
 }>()
 
-const statusChip = computed(() => KUN_WEBSITE_STATUS_CHIP[props.website.status])
+const statusChip = computed(() => KUN_WEBSITE_STATUS_CHIP[props.website.state])
 
-const priceColor = computed(() => {
-  const price = props.website.price
-  if (price > 200) {
+const iconSrc = computed(
+  () => props.website.icon?.url ?? props.website.external_icon_url ?? ''
+)
+
+const scoreColor = computed(() => {
+  const score = props.website.score
+  if (score > 200) {
     return 'text-warning-500'
   }
-  if (price > 100) {
+  if (score > 100) {
     return 'text-success-600'
   }
-  if (price > 0) {
+  if (score > 0) {
     return 'text-default-700'
   }
   return 'text-danger-600'
@@ -25,19 +30,19 @@ const priceColor = computed(() => {
 <template>
   <KunCard
     :is-transparent="false"
-    :href="`/website/${website.domain}`"
+    :href="`/website/${website.host}`"
     class-name="group"
     content-class="space-y-3"
   >
     <div class="flex items-start space-x-4">
       <div class="flex-shrink-0">
         <KunImage
-          :src="website.icon_url"
-          :alt="website.name"
+          :src="iconSrc"
+          :alt="website.title"
           :class="
             cn(
               'h-12 w-12 rounded-2xl object-cover',
-              website.status === 'closed' && 'grayscale'
+              website.state === 'closed' && 'grayscale'
             )
           "
         />
@@ -47,7 +52,7 @@ const priceColor = computed(() => {
           <h3
             class="group-hover:text-primary-500 text-default-900 truncate text-lg font-semibold transition-colors"
           >
-            {{ website.name }}
+            {{ website.title }}
           </h3>
           <KunChip
             v-if="statusChip"
@@ -58,7 +63,7 @@ const priceColor = computed(() => {
           </KunChip>
         </div>
         <p class="text-default-500 truncate font-mono text-sm">
-          {{ website.domain }}
+          {{ website.host }}
         </p>
       </div>
     </div>
@@ -69,8 +74,8 @@ const priceColor = computed(() => {
 
     <div class="text-default-500 flex items-center justify-between text-sm">
       <span>网站价值精算值</span>
-      <span :class="cn('font-bold', priceColor)">
-        {{ website.price }}
+      <span :class="cn('font-bold', scoreColor)">
+        {{ website.score }}
       </span>
     </div>
   </KunCard>

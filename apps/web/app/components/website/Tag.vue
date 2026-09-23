@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import type { WebsiteTag } from '#shared/utils/api/schemas'
+
 const props = defineProps<{
   tags: WebsiteTag[]
   length?: number
@@ -15,8 +17,8 @@ const sortedTags = computed(() => {
       return b.level - a.level
     }
 
-    const aIsLegendary = a.name.endsWith('0')
-    const bIsLegendary = b.name.endsWith('0')
+    const aIsLegendary = a.slug.endsWith('0')
+    const bIsLegendary = b.slug.endsWith('0')
 
     if (aIsLegendary && !bIsLegendary) {
       return -1
@@ -34,7 +36,7 @@ const sortedTags = computed(() => {
 const tagColor = (tag: WebsiteTag) => {
   const level = tag.level
 
-  if (tag.name.endsWith('0')) {
+  if (tag.slug.endsWith('0')) {
     return 'warning'
   }
 
@@ -54,7 +56,7 @@ const tagColor = (tag: WebsiteTag) => {
 const tagVariant = (tag: WebsiteTag) => {
   const level = tag.level
 
-  if (tag.name.endsWith('0')) {
+  if (tag.slug.endsWith('0')) {
     return 'shadow'
   }
   if (level >= 10) {
@@ -70,9 +72,9 @@ const tagVariant = (tag: WebsiteTag) => {
   }
 }
 
-const handleClick = async (tagName: string) => {
+const handleClick = async (slug: string) => {
   if (props.isNav) {
-    await navigateTo(`/website-tag/${tagName}`)
+    await navigateTo(`/website-tag/${slug}`)
   }
 }
 </script>
@@ -81,7 +83,7 @@ const handleClick = async (tagName: string) => {
   <template v-for="tag in sortedTags" :key="tag.id">
     <KunTooltip :text="`价值: ${tag.level}`">
       <KunChip
-        @click="handleClick(tag.name)"
+        @click="handleClick(tag.slug)"
         :variant="tagVariant(tag)"
         :color="tagColor(tag)"
         :class-name="isNav ? 'cursor-pointer' : ''"

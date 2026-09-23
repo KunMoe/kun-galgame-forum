@@ -1,59 +1,45 @@
 <script setup lang="ts">
-import {
-  createWebsiteTagGroupSchema,
-  updateWebsiteTagGroupSchema
-} from '~/validations/website'
-import type {
-  CreateWebsiteTagGroupPayload,
-  UpdateWebsiteTagGroupPayload
-} from './types'
-
-type TagGroupData = CreateWebsiteTagGroupPayload & { group_id?: number }
+import { websiteTagGroupFormSchema } from '~/validations/website'
+import type { WebsiteTagGroupForm } from './types'
 
 const props = defineProps<{
   modelValue: boolean
-  initialData?: TagGroupData
+  initialData?: WebsiteTagGroupForm
+  isEditing: boolean
   loading?: boolean
 }>()
 
 const emits = defineEmits<{
   'update:modelValue': [value: boolean]
-  submit: [data: CreateWebsiteTagGroupPayload | UpdateWebsiteTagGroupPayload]
+  submit: [data: WebsiteTagGroupForm]
 }>()
+
+const emptyForm = (): WebsiteTagGroupForm => ({
+  slug: '',
+  label: '',
+  description: '',
+  sort_order: 0,
+  is_multi_select: false
+})
 
 const isModalOpen = computed({
   get: () => props.modelValue,
   set: (value) => emits('update:modelValue', value)
 })
 
-const isEditing = computed(() => !!props.initialData?.group_id)
-
-const getInitialFormData = (): TagGroupData => ({
-  name: '',
-  label: '',
-  description: '',
-  sort_order: 0,
-  multi_select: false,
-  ...(props.initialData || {})
-})
-
-const formData = reactive<TagGroupData>(getInitialFormData())
+const formData = reactive<WebsiteTagGroupForm>(emptyForm())
 
 watch(
   () => isModalOpen.value,
   (isOpen) => {
     if (isOpen) {
-      Object.assign(formData, getInitialFormData())
+      Object.assign(formData, emptyForm(), props.initialData ?? {})
     }
   }
 )
 
 const handleSubmit = () => {
-  const schema = isEditing.value
-    ? updateWebsiteTagGroupSchema
-    : createWebsiteTagGroupSchema
-  const result = schema.safeParse(formData)
-
+  const result = websiteTagGroupFormSchema.safeParse(formData)
   if (!result.success) {
     const message = JSON.parse(result.error.message)[0]
     useMessage(formatKunZodIssue(message), 'warn')
@@ -77,7 +63,7 @@ const handleSubmit = () => {
 
       <div class="space-y-4">
         <KunInput
-          v-model="formData.name"
+          v-model="formData.slug"
           label="分组标识 (小写英文)"
           placeholder="performance"
           required
@@ -101,7 +87,7 @@ const handleSubmit = () => {
           :maxlength="300"
         />
         <KunSwitch
-          v-model="formData.multi_select"
+          v-model="formData.is_multi_select"
           label="该分组可多选 (关闭则组内标签互斥, 只能选一个)"
         />
       </div>

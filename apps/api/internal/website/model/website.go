@@ -72,35 +72,3 @@ type GalgameWebsiteTag struct {
 }
 
 func (GalgameWebsiteTag) TableName() string { return "galgame_website_tag" }
-
-type GalgameWebsiteTagRelation struct {
-	GalgameWebsiteID    int `gorm:"column:galgame_website_id;primaryKey" json:"galgame_website_id"`
-	GalgameWebsiteTagID int `gorm:"column:galgame_website_tag_id;primaryKey" json:"galgame_website_tag_id"`
-
-	Tag GalgameWebsiteTag `gorm:"foreignKey:GalgameWebsiteTagID;constraint:OnDelete:CASCADE" json:"tag,omitzero"`
-
-	CreatedAt time.Time `gorm:"column:created" json:"created"`
-	UpdatedAt time.Time `gorm:"column:updated" json:"updated"`
-}
-
-func (GalgameWebsiteTagRelation) TableName() string { return "galgame_website_tag_relation" }
-
-type GalgameWebsiteLike struct {
-	UserID    int `gorm:"column:user_id;primaryKey" json:"user_id"`
-	WebsiteID int `gorm:"column:website_id;primaryKey" json:"website_id"`
-
-	CreatedAt time.Time `gorm:"column:created" json:"created"`
-	UpdatedAt time.Time `gorm:"column:updated" json:"updated"`
-}
-
-func (GalgameWebsiteLike) TableName() string { return "galgame_website_like" }
-
-type GalgameWebsiteFavorite struct {
-	UserID    int `gorm:"column:user_id;primaryKey" json:"user_id"`
-	WebsiteID int `gorm:"column:website_id;primaryKey" json:"website_id"`
-
-	CreatedAt time.Time `gorm:"column:created" json:"created"`
-	UpdatedAt time.Time `gorm:"column:updated" json:"updated"`
-}
-
-func (GalgameWebsiteFavorite) TableName() string { return "galgame_website_favorite" }

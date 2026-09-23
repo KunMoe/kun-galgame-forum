@@ -1,26 +1,24 @@
 <script setup lang="ts">
+import { settle } from '#shared/utils/api/problem'
+import type { WebsiteTag, WebsiteTagGroup } from '#shared/utils/api/schemas'
 import type {
-  CreateWebsiteTagPayload,
-  UpdateWebsiteTagPayload,
-  CreateWebsiteTagGroupPayload,
-  UpdateWebsiteTagGroupPayload
+  WebsiteTagForm,
+  WebsiteTagGroupForm
 } from '~/components/website/modal/types'
 
-const { data: tags, refresh: refreshTags } = useKunFetch<WebsiteTag[]>(
-  '/website-tag',
-  { key: 'website-tag' }
-)
+const api = useApiClient()
+const { data: tags, refresh: refreshTags } = useWebsiteTags()
 const { data: groups, refresh: refreshGroups } = useWebsiteTagGroups()
 
 const canCreate = useCan('website.create')
 const canDelete = useCan('website.delete')
 
-const UNGROUPED_ID = -1
+const UNGROUPED = 'ungrouped'
 
 const sections = computed(() => {
-  const byGroup = new Map<number, WebsiteTag[]>()
+  const byGroup = new Map<string, WebsiteTag[]>()
   for (const tag of tags.value ?? []) {
-    const key = tag.group_id ?? UNGROUPED_ID
+    const key = tag.website_tag_group_id ?? UNGROUPED
     if (!byGroup.has(key)) {
       byGroup.set(key, [])
     }
@@ -30,14 +28,16 @@ const sections = computed(() => {
     list.sort((a, b) => b.level - a.level)
   }
 
-  const result = (groups.value ?? []).map((group) => ({
+  const result: { group: WebsiteTagGroup | null; tags: WebsiteTag[] }[] = (
+    groups.value ?? []
+  ).map((group) => ({
     group,
     tags: byGroup.get(group.id) ?? []
   }))
 
-  const ungrouped = byGroup.get(UNGROUPED_ID) ?? []
+  const ungrouped = byGroup.get(UNGROUPED) ?? []
   if (ungrouped.length) {
-    result.push({ group: null as unknown as WebsiteTagGroup, tags: ungrouped })
+    result.push({ group: null, tags: ungrouped })
   }
   return result
 })
@@ -45,51 +45,65 @@ const sections = computed(() => {
 const isTagModalOpen = ref(false)
 const isGroupModalOpen = ref(false)
 const isSubmitting = ref(false)
-const editingTag = ref<
-  (CreateWebsiteTagPayload & { tag_id?: number }) | undefined
->(undefined)
-const editingGroup = ref<
-  (CreateWebsiteTagGroupPayload & { group_id?: number }) | undefined
->(undefined)
+const editingTagId = ref<string | null>(null)
+const tagForm = ref<WebsiteTagForm | undefined>(undefined)
+const editingGroup = ref<WebsiteTagGroup | null>(null)
+const groupForm = computed<WebsiteTagGroupForm | undefined>(() =>
+  editingGroup.value
+    ? {
+        slug: editingGroup.value.slug,
+        label: editingGroup.value.label,
+        description: editingGroup.value.description,
+        sort_order: editingGroup.value.sort_order,
+        is_multi_select: editingGroup.value.is_multi_select
+      }
+    : undefined
+)
 
-const openCreateTag = (groupId: number | null) => {
-  editingTag.value = {
-    name: '',
+const openCreateTag = (groupId: string | null) => {
+  editingTagId.value = null
+  tagForm.value = {
+    slug: '',
     label: '',
     level: 0,
     description: '',
-    group_id: groupId
+    website_tag_group_id: groupId
   }
   isTagModalOpen.value = true
 }
 
 const openEditTag = (tag: WebsiteTag) => {
-  editingTag.value = {
-    name: tag.name,
+  editingTagId.value = tag.id
+  tagForm.value = {
+    slug: tag.slug,
     label: tag.label,
     level: tag.level,
     description: tag.description,
-    group_id: tag.group_id,
-    tag_id: tag.id
+    website_tag_group_id: tag.website_tag_group_id ?? null
   }
   isTagModalOpen.value = true
 }
 
-const handleTagSubmit = async (
-  payload: CreateWebsiteTagPayload | UpdateWebsiteTagPayload
-) => {
+const handleTagSubmit = async (body: WebsiteTagForm) => {
+  const target = editingTagId.value
   isSubmitting.value = true
-  const result = await kunFetch('/website-tag', {
-    method: 'tag_id' in payload ? 'PUT' : 'POST',
-    body: payload
-  })
+  const result = target
+    ? await settle(
+        api.PATCH('/admin/website-tags/{website_tag_id}', {
+          params: { path: { website_tag_id: target } },
+          body
+        })
+      )
+    : await settle(api.POST('/admin/website-tags', { body }))
   isSubmitting.value = false
 
-  if (result) {
-    useMessage('tag_id' in payload ? '标签已更新' : '标签已创建', 'success')
-    isTagModalOpen.value = false
-    await refreshTags()
+  if (!result.ok) {
+    reportProblem(result.problem)
+    return
   }
+  useMessage(target ? '标签已更新' : '标签已创建', 'success')
+  isTagModalOpen.value = false
+  await refreshTags()
 }
 
 const handleTagDelete = async (tag: WebsiteTag) => {
@@ -101,48 +115,49 @@ const handleTagDelete = async (tag: WebsiteTag) => {
     return
   }
 
-  const result = await kunFetch('/website-tag', {
-    method: 'DELETE',
-    query: { tag_id: tag.id }
-  })
-  if (result) {
-    useMessage('标签已删除', 'success')
-    await refreshTags()
+  const result = await settle(
+    api.DELETE('/admin/website-tags/{website_tag_id}', {
+      params: { path: { website_tag_id: tag.id } }
+    })
+  )
+  if (!result.ok) {
+    reportProblem(result.problem)
+    return
   }
+  useMessage('标签已删除', 'success')
+  await refreshTags()
 }
 
 const openCreateGroup = () => {
-  editingGroup.value = undefined
+  editingGroup.value = null
   isGroupModalOpen.value = true
 }
 
 const openEditGroup = (group: WebsiteTagGroup) => {
-  editingGroup.value = {
-    name: group.name,
-    label: group.label,
-    description: group.description,
-    sort_order: group.sort_order,
-    multi_select: group.multi_select,
-    group_id: group.id
-  }
+  editingGroup.value = group
   isGroupModalOpen.value = true
 }
 
-const handleGroupSubmit = async (
-  payload: CreateWebsiteTagGroupPayload | UpdateWebsiteTagGroupPayload
-) => {
+const handleGroupSubmit = async (body: WebsiteTagGroupForm) => {
+  const target = editingGroup.value
   isSubmitting.value = true
-  const result = await kunFetch('/website-tag-group', {
-    method: 'group_id' in payload ? 'PUT' : 'POST',
-    body: payload
-  })
+  const result = target
+    ? await settle(
+        api.PATCH('/admin/website-tag-groups/{website_tag_group_id}', {
+          params: { path: { website_tag_group_id: target.id } },
+          body
+        })
+      )
+    : await settle(api.POST('/admin/website-tag-groups', { body }))
   isSubmitting.value = false
 
-  if (result) {
-    useMessage('group_id' in payload ? '分组已更新' : '分组已创建', 'success')
-    isGroupModalOpen.value = false
-    await refreshGroups()
+  if (!result.ok) {
+    reportProblem(result.problem)
+    return
   }
+  useMessage(target ? '分组已更新' : '分组已创建', 'success')
+  isGroupModalOpen.value = false
+  await refreshGroups()
 }
 
 const handleGroupDelete = async (group: WebsiteTagGroup) => {
@@ -154,14 +169,17 @@ const handleGroupDelete = async (group: WebsiteTagGroup) => {
     return
   }
 
-  const result = await kunFetch('/website-tag-group', {
-    method: 'DELETE',
-    query: { group_id: group.id }
-  })
-  if (result) {
-    useMessage('分组已删除', 'success')
-    await Promise.all([refreshGroups(), refreshTags()])
+  const result = await settle(
+    api.DELETE('/admin/website-tag-groups/{website_tag_group_id}', {
+      params: { path: { website_tag_group_id: group.id } }
+    })
+  )
+  if (!result.ok) {
+    reportProblem(result.problem)
+    return
   }
+  useMessage('分组已删除', 'success')
+  await Promise.all([refreshGroups(), refreshTags()])
 }
 </script>
 
@@ -189,16 +207,16 @@ const handleGroupDelete = async (group: WebsiteTagGroup) => {
       </div>
     </div>
 
-    <div v-for="section in sections" :key="section.group?.id ?? UNGROUPED_ID">
+    <div v-for="section in sections" :key="section.group?.id ?? UNGROUPED">
       <div class="mb-2 flex flex-wrap items-center gap-2">
         <h2 class="text-default-900 text-xl font-bold">
           {{ section.group?.label ?? '未分组' }}
         </h2>
         <span v-if="section.group" class="text-default-400 font-mono text-xs">
-          {{ section.group.name }}
+          {{ section.group.slug }}
         </span>
         <KunChip>{{ section.tags.length }} 个标签</KunChip>
-        <KunChip v-if="section.group?.multi_select" color="primary">
+        <KunChip v-if="section.group?.is_multi_select" color="primary">
           多选
         </KunChip>
         <KunChip v-else-if="section.group" color="secondary">互斥</KunChip>
@@ -259,11 +277,11 @@ const handleGroupDelete = async (group: WebsiteTagGroup) => {
             </span>
             <div class="min-w-0 flex-1">
               <div class="flex flex-wrap items-center gap-2">
-                <KunLink :to="`/website-tag/${tag.name}`" underline="none">
-                  <span class="font-medium">{{ tag.label || tag.name }}</span>
+                <KunLink :to="`/website-tag/${tag.slug}`" underline="none">
+                  <span class="font-medium">{{ tag.label || tag.slug }}</span>
                 </KunLink>
                 <span class="text-default-400 font-mono text-xs">
-                  {{ tag.name }}
+                  {{ tag.slug }}
                 </span>
               </div>
               <p v-if="tag.description" class="text-default-500 text-xs">
@@ -301,14 +319,16 @@ const handleGroupDelete = async (group: WebsiteTagGroup) => {
 
     <WebsiteModalTag
       v-model="isTagModalOpen"
-      :initial-data="editingTag"
+      :initial-data="tagForm"
+      :is-editing="!!editingTagId"
       :loading="isSubmitting"
       @submit="handleTagSubmit"
     />
 
     <WebsiteModalTagGroup
       v-model="isGroupModalOpen"
-      :initial-data="editingGroup"
+      :initial-data="groupForm"
+      :is-editing="!!editingGroup"
       :loading="isSubmitting"
       @submit="handleGroupSubmit"
     />

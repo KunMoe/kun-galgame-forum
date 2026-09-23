@@ -1,6 +1,8 @@
 <script setup lang="ts">
+import type { Website } from '#shared/utils/api/schemas'
+
 defineProps<{
-  data: WebsiteDetail
+  data: Website
 }>()
 </script>
 
@@ -11,7 +13,7 @@ defineProps<{
       <div class="flex items-center justify-between">
         <span class="text-default-600">总访问量</span>
         <span class="text-default-900 font-semibold">
-          {{ formatNumber(data.view) }}
+          {{ formatNumber(data.view_count) }}
         </span>
       </div>
       <div class="flex items-center justify-between">
@@ -29,13 +31,13 @@ defineProps<{
       <div class="flex items-center justify-between">
         <span class="text-default-600">网站建立时间</span>
         <span class="text-default-900 font-semibold">
-          {{ data.create_time }}
+          {{ data.founded }}
         </span>
       </div>
       <div class="flex items-center justify-between">
         <span class="text-default-600">网站索引时间</span>
         <span class="text-default-900 font-semibold">
-          <KunTime :time="data.created" type="datetime" show-year />
+          <KunTime :time="data.created_at" type="datetime" show-year />
         </span>
       </div>
     </div>

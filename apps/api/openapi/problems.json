@@ -335,6 +335,15 @@
     },
     {
       "object": "problem_type",
+      "code": "WEBSITE_CATEGORY_NOT_EMPTY",
+      "domain": "kungal",
+      "status": 409,
+      "type": "https://developer.nextmoe.dev/problems/kungal/website-category-not-empty",
+      "title": "Website category not empty",
+      "description": "Websites are still listed under the category, so it cannot be deleted. website_count is how many."
+    },
+    {
+      "object": "problem_type",
       "code": "ALREADY_EXISTS",
       "domain": "me",
       "status": 409,

@@ -1,58 +1,44 @@
 <script setup lang="ts">
-import {
-  createWebsiteCategorySchema,
-  updateWebsiteCategorySchema
-} from '~/validations/website'
-import type {
-  CreateWebsiteCategoryPayload,
-  UpdateWebsiteCategoryPayload
-} from './types'
-
-type CategoryData = CreateWebsiteCategoryPayload & { category_id?: number }
+import { websiteCategoryFormSchema } from '~/validations/website'
+import type { WebsiteCategoryForm } from './types'
 
 const props = defineProps<{
   modelValue: boolean
-  initialData?: CategoryData
+  initialData?: WebsiteCategoryForm
+  isEditing: boolean
   loading?: boolean
 }>()
 
 const emits = defineEmits<{
   'update:modelValue': [value: boolean]
-  submit: [data: CreateWebsiteCategoryPayload | UpdateWebsiteCategoryPayload]
+  submit: [data: WebsiteCategoryForm]
 }>()
+
+const emptyForm = (): WebsiteCategoryForm => ({
+  slug: '',
+  label: '',
+  description: '',
+  sort_order: 0
+})
 
 const isModalOpen = computed({
   get: () => props.modelValue,
   set: (value) => emits('update:modelValue', value)
 })
 
-const isEditing = computed(() => !!props.initialData?.category_id)
-
-const getInitialFormData = (): CategoryData => ({
-  name: '',
-  label: '',
-  description: '',
-  sort_order: 0,
-  ...(props.initialData || {})
-})
-
-const formData = reactive<CategoryData>(getInitialFormData())
+const formData = reactive<WebsiteCategoryForm>(emptyForm())
 
 watch(
   () => isModalOpen.value,
   (isOpen) => {
     if (isOpen) {
-      Object.assign(formData, getInitialFormData())
+      Object.assign(formData, emptyForm(), props.initialData ?? {})
     }
   }
 )
 
 const handleSubmit = () => {
-  const schema = isEditing.value
-    ? updateWebsiteCategorySchema
-    : createWebsiteCategorySchema
-  const result = schema.safeParse(formData)
-
+  const result = websiteCategoryFormSchema.safeParse(formData)
   if (!result.success) {
     const message = JSON.parse(result.error.message)[0]
     useMessage(formatKunZodIssue(message), 'warn')
@@ -76,7 +62,7 @@ const handleSubmit = () => {
 
       <div class="space-y-4">
         <KunInput
-          v-model="formData.name"
+          v-model="formData.slug"
           label="分类标识 (URL 用, 小写英文)"
           placeholder="resource"
           required

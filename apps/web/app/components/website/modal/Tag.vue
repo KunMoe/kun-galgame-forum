@@ -1,70 +1,58 @@
 <script setup lang="ts">
-import {
-  createWebsiteTagSchema,
-  updateWebsiteTagSchema
-} from '~/validations/website'
-import type { CreateWebsiteTagPayload, UpdateWebsiteTagPayload } from './types'
-
-type TagData = CreateWebsiteTagPayload & { tag_id?: number }
+import { websiteTagFormSchema } from '~/validations/website'
+import type { WebsiteTagForm } from './types'
 
 const props = defineProps<{
   modelValue: boolean
-  initialData?: TagData
+  initialData?: WebsiteTagForm
+  isEditing: boolean
   loading?: boolean
 }>()
 
 const emits = defineEmits<{
   'update:modelValue': [value: boolean]
-  submit: [data: CreateWebsiteTagPayload | UpdateWebsiteTagPayload]
+  submit: [data: WebsiteTagForm]
 }>()
+
+const { data: groups } = useWebsiteTagGroups()
+const groupOptions = computed(() =>
+  (groups.value ?? []).map((group) => ({
+    value: group.id,
+    label: group.label || group.slug
+  }))
+)
+
+const emptyForm = (): WebsiteTagForm => ({
+  slug: '',
+  label: '',
+  level: 0,
+  description: '',
+  website_tag_group_id: null
+})
 
 const isModalOpen = computed({
   get: () => props.modelValue,
   set: (value) => emits('update:modelValue', value)
 })
 
-const isEditing = computed(() => !!props.initialData?.tag_id)
-
-const { data: groups } = useWebsiteTagGroups()
-const groupOptions = computed(() =>
-  (groups.value ?? []).map((group) => ({
-    value: group.id,
-    label: group.label || group.name
-  }))
-)
-
-const getInitialFormData = (): TagData => ({
-  name: '',
-  label: '',
-  level: 0,
-  description: '',
-  group_id: null,
-  ...(props.initialData || {})
-})
-
-const formData = reactive<TagData>(getInitialFormData())
+const formData = reactive<WebsiteTagForm>(emptyForm())
 
 watch(
   () => isModalOpen.value,
   (isOpen) => {
     if (isOpen) {
-      Object.assign(formData, getInitialFormData())
+      Object.assign(formData, emptyForm(), props.initialData ?? {})
     }
   }
 )
 
 const handleSubmit = () => {
-  const schema = isEditing.value
-    ? updateWebsiteTagSchema
-    : createWebsiteTagSchema
-  const result = schema.safeParse(formData)
-
+  const result = websiteTagFormSchema.safeParse(formData)
   if (!result.success) {
     const message = JSON.parse(result.error.message)[0]
     useMessage(formatKunZodIssue(message), 'warn')
     return
   }
-
   emits('submit', result.data)
 }
 </script>
@@ -83,7 +71,7 @@ const handleSubmit = () => {
 
       <div class="space-y-4">
         <KunInput
-          v-model="formData.name"
+          v-model="formData.slug"
           label="标签标识 (URL 用, 小写英文)"
           placeholder="performance0"
           required
@@ -95,7 +83,7 @@ const handleSubmit = () => {
           required
         />
         <KunSelect
-          v-model="formData.group_id"
+          v-model="formData.website_tag_group_id"
           label="所属分组"
           :options="groupOptions"
         />

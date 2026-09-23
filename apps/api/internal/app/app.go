@@ -71,9 +71,6 @@ import (
 	"kun-galgame-api/internal/user/repository"
 	"kun-galgame-api/internal/user/service"
 	wallapiv1 "kun-galgame-api/internal/wall/apiv1"
-	websiteHandler "kun-galgame-api/internal/website/handler"
-	websiteRepo "kun-galgame-api/internal/website/repository"
-	websiteService "kun-galgame-api/internal/website/service"
 	"kun-galgame-api/pkg/artifactclient"
 	"kun-galgame-api/pkg/catalogclient"
 	"kun-galgame-api/pkg/communityclient"
@@ -130,10 +127,6 @@ type App struct {
 	DocArticleHandler          *docHandler.ArticleHandler
 	DocCategoryHandler         *docHandler.CategoryHandler
 	DocTagHandler              *docHandler.TagHandler
-	WebsiteHandler             *websiteHandler.WebsiteHandler
-	WebsiteCategoryHandler     *websiteHandler.CategoryHandler
-	WebsiteTagHandler          *websiteHandler.TagHandler
-	WebsiteTagGroupHandler     *websiteHandler.TagGroupHandler
 	AppReleaseHandler          *appReleaseHandler.ReleaseHandler
 	FriendLinkHandler          *friendHandler.FriendLinkHandler
 	TrustHandler               *trustHandler.TrustHandler
@@ -472,16 +465,6 @@ func New(cfg *config.Config) *App {
 	galgameCatalogMirror := galgameService.NewGalgameCatalogMirror(gc, galgameLocalRepo, rdb)
 	galgameMergeSync := galgameService.NewGalgameMergeSync(gc, galgameMergeRepo, rdb)
 
-	websiteRepository := websiteRepo.NewWebsiteRepository(db)
-	websiteCategoryRepo := websiteRepo.NewCategoryRepository(db)
-	websiteTagRepo := websiteRepo.NewTagRepository(db)
-	websiteCoreSvc := websiteService.NewWebsiteService(
-		websiteRepository, websiteCategoryRepo, websiteTagRepo, uc, communityCli, cfg.NextMoeAPI.ImageCDNBase,
-	)
-	websiteCategorySvc := websiteService.NewCategoryService(websiteCategoryRepo, websiteRepository, websiteTagRepo, cfg.NextMoeAPI.ImageCDNBase)
-	websiteTagSvc := websiteService.NewTagService(websiteTagRepo, websiteRepository, websiteCategoryRepo, cfg.NextMoeAPI.ImageCDNBase)
-	websiteTagGroupSvc := websiteService.NewTagGroupService(websiteRepo.NewTagGroupRepository(db))
-
 	adminOverviewRepo := adminRepo.NewOverviewRepository(db)
 	adminOverviewSvc := adminService.NewOverviewService(adminOverviewRepo)
 	adminPurgeSvc := adminService.NewPurgeService(adminRepo.NewPurgeRepository(db), uc, communityCli, catalogCli)
@@ -583,10 +566,6 @@ func New(cfg *config.Config) *App {
 		DocArticleHandler:        docHandler.NewArticleHandler(docArticleSvc),
 		DocCategoryHandler:       docHandler.NewCategoryHandler(docCategorySvc),
 		DocTagHandler:            docHandler.NewTagHandler(docTagSvc),
-		WebsiteHandler:           websiteHandler.NewWebsiteHandler(websiteCoreSvc),
-		WebsiteCategoryHandler:   websiteHandler.NewCategoryHandler(websiteCategorySvc),
-		WebsiteTagHandler:        websiteHandler.NewTagHandler(websiteTagSvc),
-		WebsiteTagGroupHandler:   websiteHandler.NewTagGroupHandler(websiteTagGroupSvc),
 		AppReleaseHandler:        appReleaseHandler.NewReleaseHandler(cfg.AppRelease),
 		FriendLinkHandler:        friendHandler.NewFriendLinkHandler(friendRepo.NewFriendLinkRepository(db), cfg.NextMoeAPI.ImageCDNBase),
 		TrustHandler:             trustHandler.NewTrustHandler(trustEnforce, cfg.Trust.CallbackSecret),

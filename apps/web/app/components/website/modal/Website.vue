@@ -1,39 +1,35 @@
 <script setup lang="ts">
-import { createWebsiteSchema, updateWebsiteSchema } from '~/validations/website'
+import { websiteFormSchema } from '~/validations/website'
 import {
   KUN_WEBSITE_LANGUAGE_MAP,
-  KUN_WEBSITE_ACG_LIMIT_MAP,
+  KUN_WEBSITE_NSFW_OPTIONS,
   KUN_WEBSITE_STATUS_OPTIONS
 } from '~/constants/galgameWebsite'
-import type { CreateWebsitePayload, UpdateWebsitePayload } from './types'
+import type { WebsiteForm } from './types'
 import type { KunSelectOption } from '@kungal/ui-vue'
-
-type WebsiteData = CreateWebsitePayload & {
-  website_id?: number
-  icon_url?: string
-}
 
 const props = defineProps<{
   modelValue: boolean
-  initialData?: WebsiteData
+  initialData?: WebsiteForm
+  isEditing: boolean
+  iconPreviewUrl?: string
+  hasExternalIcon?: boolean
   loading?: boolean
 }>()
 
 const emits = defineEmits<{
   'update:modelValue': [value: boolean]
-  submit: [data: CreateWebsitePayload | UpdateWebsitePayload]
+  submit: [data: WebsiteForm]
 }>()
 
 const languageOptions = Object.entries(KUN_WEBSITE_LANGUAGE_MAP).map(
   ([value, label]) => ({ value, label })
-) as KunSelectOption<CreateWebsitePayload['language']>[]
+)
 
-const ageLimitOptions = Object.entries(KUN_WEBSITE_ACG_LIMIT_MAP).map(
-  ([value, label]) => ({ value, label })
-) as KunSelectOption<CreateWebsitePayload['age_limit']>[]
+const nsfwOptions = KUN_WEBSITE_NSFW_OPTIONS as KunSelectOption<string>[]
 
 const statusOptions = KUN_WEBSITE_STATUS_OPTIONS as KunSelectOption<
-  CreateWebsitePayload['status']
+  WebsiteForm['state']
 >[]
 
 const isModalOpen = computed({
@@ -41,77 +37,78 @@ const isModalOpen = computed({
   set: (value) => emits('update:modelValue', value)
 })
 
-const isEditing = computed(() => !!props.initialData?.website_id)
-const newDomain = ref('')
+const newUrl = ref('')
 
-// The category id came from the position of a hardcoded frontend map
-// (`{ value: index + 1 }`), which had never matched the table: picking
-// 「Galgame 资源网站」 filed the site under telegram and vice versa.
 const { data: categories } = useWebsiteCategories()
 const categoryOptions = computed(() =>
   (categories.value ?? []).map((category) => ({
     value: category.id,
-    label: category.label || category.name
+    label: category.label || category.slug
   }))
 )
 
-const { data: tags, status: tagStatus } =
-  useKunFetch<WebsiteTag[]>('/website-tag')
+const { data: tags, status: tagStatus } = useWebsiteTags()
 
-const getInitialFormData = (): WebsiteData => ({
-  name: '',
-  url: '',
+const emptyForm = (): WebsiteForm => ({
+  host: '',
+  title: '',
   description: '',
-  icon: '',
   icon_image_hash: '',
-  icon_url: '',
+  website_category_id: categories.value?.[0]?.id ?? '',
+  website_tag_ids: [],
+  is_nsfw: false,
+  state: 'normal',
   language: 'zh-cn',
-  age_limit: 'all',
-  status: 'normal',
-  category_id: categories.value?.[0]?.id ?? 1,
-  tag_ids: [],
-  domain: [],
-  create_time: '',
-  ...(props.initialData || {})
+  urls: [],
+  founded: ''
 })
 
-const formData = reactive<WebsiteData>(getInitialFormData())
+const formData = reactive<WebsiteForm>(emptyForm())
 
-const initialIconUrl = computed(() => props.initialData?.icon_url ?? '')
+const nsfwChoice = computed({
+  get: (): string => (formData.is_nsfw ? 'nsfw' : 'sfw'),
+  set: (value: string) => (formData.is_nsfw = value === 'nsfw')
+})
 
 watch(
   () => isModalOpen.value,
   (isOpen) => {
     if (isOpen) {
-      Object.assign(formData, getInitialFormData())
+      Object.assign(
+        formData,
+        emptyForm(),
+        structuredClone(toRaw(props.initialData ?? {}))
+      )
     }
   }
 )
 
-const addDomain = () => {
-  if (newDomain.value && !formData.domain?.includes(newDomain.value)) {
-    formData.domain?.push(newDomain.value)
-    newDomain.value = ''
+const addUrl = () => {
+  const url = newUrl.value.trim()
+  if (url && !formData.urls.includes(url)) {
+    formData.urls.push(url)
+    newUrl.value = ''
   }
 }
 
-const removeDomain = (index: number) => {
-  formData.domain?.splice(index, 1)
+const removeUrl = (index: number) => {
+  formData.urls.splice(index, 1)
 }
 
 // Closing on submit is the parent's job — it is the only side that knows
 // whether the request came back. Self-closing here threw away a filled-in form
 // every time the API rejected it.
 const handleSubmit = () => {
-  const schema = isEditing.value ? updateWebsiteSchema : createWebsiteSchema
-  const result = schema.safeParse(formData)
-
+  const result = websiteFormSchema.safeParse(formData)
   if (!result.success) {
     const message = JSON.parse(result.error.message)[0]
     useMessage(formatKunZodIssue(message), 'warn')
     return
   }
-
+  if (!result.data.icon_image_hash && !props.hasExternalIcon) {
+    useMessage('请上传网站图标', 'warn')
+    return
+  }
   emits('submit', result.data)
 }
 </script>
@@ -129,22 +126,18 @@ const handleSubmit = () => {
       </h2>
 
       <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <KunInput v-model="formData.name" label="网站名称" required />
-        <KunInput
-          v-model="formData.create_time"
-          label="网站创建时间"
-          required
-        />
+        <KunInput v-model="formData.title" label="网站名称" required />
+        <KunInput v-model="formData.founded" label="网站创建时间" />
 
         <div class="md:col-span-2">
           <KunCoverUpload
             v-model="formData.icon_image_hash"
-            :preview-url="initialIconUrl"
+            :preview-url="iconPreviewUrl ?? ''"
             label="网站图标"
           />
         </div>
         <KunInput
-          v-model="formData.url"
+          v-model="formData.host"
           label="网站主域名"
           :placeholder="kungal.domain.main"
           class-name="md:col-span-2"
@@ -161,13 +154,13 @@ const handleSubmit = () => {
         />
 
         <KunSelect
-          v-model="formData.category_id"
+          v-model="formData.website_category_id"
           label="分类"
           :options="categoryOptions"
         />
 
         <KunSelect
-          v-model="formData.status"
+          v-model="formData.state"
           label="网站状态"
           :options="statusOptions"
         />
@@ -179,43 +172,42 @@ const handleSubmit = () => {
         />
 
         <KunSelect
-          v-model="formData.age_limit"
+          v-model="nsfwChoice"
           label="年龄限制"
-          :options="ageLimitOptions"
+          :options="nsfwOptions"
         />
 
         <div class="md:col-span-2">
-          <label class="mb-1 block text-sm font-medium">可用域名 (可选)</label>
+          <label class="mb-1 block text-sm font-medium">
+            可用地址 (可选, 带 https://)
+          </label>
           <div class="flex gap-2">
             <KunInput
-              v-model="newDomain"
-              placeholder="添加其他可用域名"
+              v-model="newUrl"
+              placeholder="https://www.kungal.com"
               class-name="flex-grow"
-              @keydown.enter.prevent="addDomain"
+              @keydown.enter.prevent="addUrl"
             />
             <KunButton
               :is-icon-only="true"
               color="primary"
-              @click="addDomain"
+              @click="addUrl"
               class-name="shrink-0"
             >
               <KunIcon name="lucide:plus" />
             </KunButton>
           </div>
-          <div
-            v-if="formData.domain && formData.domain.length > 0"
-            class="mt-2 flex flex-wrap gap-2"
-          >
+          <div v-if="formData.urls.length" class="mt-2 flex flex-wrap gap-2">
             <span
-              v-for="(domain, index) in formData.domain"
-              :key="domain"
+              v-for="(url, index) in formData.urls"
+              :key="url"
               class="bg-default-100 flex items-center rounded-full px-3 py-1 text-sm"
             >
-              {{ domain }}
+              {{ url }}
               <button
                 type="button"
                 class="text-default-500 hover:text-default-700 ml-2"
-                @click="removeDomain(index)"
+                @click="removeUrl(index)"
               >
                 <KunIcon name="lucide:x" class="h-4 w-4" />
               </button>
@@ -234,8 +226,8 @@ const handleSubmit = () => {
           <WebsiteModalTagSelector
             v-else-if="tags"
             :tags="tags"
-            :tag-ids="formData.tag_ids"
-            @update-ids="(value) => (formData.tag_ids = value)"
+            :tag-ids="formData.website_tag_ids"
+            @update-ids="(value) => (formData.website_tag_ids = value)"
           />
         </div>
       </div>

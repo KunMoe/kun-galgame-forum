@@ -81,6 +81,7 @@ const (
 	CodeUsernameTaken                = "USERNAME_TAKEN"
 	CodeCreatorIneligible            = "CREATOR_INELIGIBLE"
 	CodeCreatorApplicationCooldown   = "CREATOR_APPLICATION_COOLDOWN"
+	CodeWebsiteCategoryNotEmpty      = "WEBSITE_CATEGORY_NOT_EMPTY"
 )
 
 const (
@@ -151,6 +152,7 @@ var Codes = []Def{
 	{CodeUsernameTaken, DomainKungal, http.StatusConflict, "Username taken", "The requested name is already in use by another account.", nil},
 	{CodeCreatorIneligible, DomainKungal, http.StatusForbidden, "Creator ineligible", "The caller does not meet the conditions to apply for the creator role.", nil},
 	{CodeCreatorApplicationCooldown, DomainKungal, http.StatusConflict, "Creator application cooldown", "A declined creator application is still inside its cooldown window.", nil},
+	{CodeWebsiteCategoryNotEmpty, DomainKungal, http.StatusConflict, "Website category not empty", "Websites are still listed under the category, so it cannot be deleted. website_count is how many.", []ExtDef{{Name: "website_count", Type: "integer"}}},
 }
 
 var Reasons = []ReasonDef{

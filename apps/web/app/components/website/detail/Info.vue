@@ -1,13 +1,14 @@
 <script setup lang="ts">
 import {
   KUN_WEBSITE_LANGUAGE_MAP,
-  KUN_WEBSITE_ACG_LIMIT_MAP,
+  KUN_WEBSITE_NSFW_OPTIONS,
   KUN_WEBSITE_STATUS_OPTIONS,
   KUN_WEBSITE_STATUS_CHIP
 } from '~/constants/galgameWebsite'
+import type { Website } from '#shared/utils/api/schemas'
 
 const props = defineProps<{
-  data: WebsiteDetail
+  data: Website
 }>()
 
 const utmLink = useUtmLink()
@@ -15,10 +16,13 @@ const utmLink = useUtmLink()
 const statusLabel = computed(
   () =>
     KUN_WEBSITE_STATUS_OPTIONS.find(
-      (option) => option.value === props.data.status
+      (option) => option.value === props.data.state
     )?.label ?? '正常'
 )
-const statusChip = computed(() => KUN_WEBSITE_STATUS_CHIP[props.data.status])
+const statusChip = computed(() => KUN_WEBSITE_STATUS_CHIP[props.data.state])
+const nsfwLabel = computed(
+  () => KUN_WEBSITE_NSFW_OPTIONS[props.data.is_nsfw ? 1 : 0]!.label
+)
 </script>
 
 <template>
@@ -28,11 +32,11 @@ const statusChip = computed(() => KUN_WEBSITE_STATUS_CHIP[props.data.status])
       <div class="flex items-center justify-between">
         <span class="text-default-500 text-sm">分类</span>
         <KunLink
-          :to="`/website-category/${data.category.name}`"
+          :to="`/website-category/${data.website_category.slug}`"
           underline="none"
         >
           <KunChip class-name="cursor-pointer" color="primary">
-            {{ data.category.label }}
+            {{ data.website_category.label }}
           </KunChip>
         </KunLink>
       </div>
@@ -47,34 +51,34 @@ const statusChip = computed(() => KUN_WEBSITE_STATUS_CHIP[props.data.status])
       <div class="flex items-center justify-between">
         <span class="text-default-500 text-sm">语言</span>
         <KunChip color="secondary">
-          {{ KUN_WEBSITE_LANGUAGE_MAP[data.language] }}
+          {{ KUN_WEBSITE_LANGUAGE_MAP[data.language] ?? data.language }}
         </KunChip>
       </div>
 
       <div class="flex items-center justify-between">
         <span class="text-default-500 text-sm">年龄限制</span>
         <KunChip
-          :variant="data.age_limit === 'all' ? 'flat' : 'solid'"
-          :color="data.age_limit === 'all' ? 'success' : 'danger'"
+          :variant="data.is_nsfw ? 'solid' : 'flat'"
+          :color="data.is_nsfw ? 'danger' : 'success'"
         >
-          {{ KUN_WEBSITE_ACG_LIMIT_MAP[data.age_limit] }}
+          {{ nsfwLabel }}
         </KunChip>
       </div>
 
       <div>
         <span class="text-default-500 text-sm">域名列表</span>
         <div
-          v-for="(dom, index) in data.domain"
+          v-for="(url, index) in data.urls"
           :key="index"
           class="mt-1 space-x-1"
         >
-          <KunLink :to="utmLink(dom)" class-name="font-mono">
-            {{ dom }}
+          <KunLink :to="utmLink(url)" class-name="font-mono">
+            {{ url }}
           </KunLink>
           <KunButton
             :is-icon-only="true"
             variant="light"
-            @click="useKunCopy(dom)"
+            @click="useKunCopy(url)"
           >
             <KunIcon name="lucide:copy" />
           </KunButton>

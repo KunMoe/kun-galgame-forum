@@ -50,6 +50,7 @@ var requiredCodes = []struct {
 	{CodeUsernameTaken, DomainKungal, 409},
 	{CodeCreatorIneligible, DomainKungal, 403},
 	{CodeCreatorApplicationCooldown, DomainKungal, 409},
+	{CodeWebsiteCategoryNotEmpty, DomainKungal, 409},
 }
 
 func TestRegistryClosedAndExact(t *testing.T) {

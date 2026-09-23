@@ -1,27 +1,32 @@
 <script setup lang="ts">
+import type { WebsiteTag } from '#shared/utils/api/schemas'
+
 definePageMeta({ key: (route) => route.path })
 
 const route = useRoute()
-const tagName = computed(() => {
-  return (route.params as { name: string }).name
-})
+const slug = computed(() => (route.params as { name: string }).name)
 
 const canManageTaxonomy = useCan('website.edit')
 
-const { data } = await useKunFetch<WebsiteTagDetail>(
-  `/website-tag/${tagName.value}`,
-  {
-    watch: false,
-    query: { name: tagName.value }
-  }
+const { data } = await useApi<WebsiteTag>(
+  () => `website-tag:${slug.value}`,
+  (api) =>
+    api.GET('/website-tags/{website_tag_slug}', {
+      params: { path: { website_tag_slug: slug.value } }
+    })
+)
+
+const { data: websites } = await useWebsiteList(() =>
+  data.value ? { website_tag_id: data.value.id } : {}
+)
+const sorted = computed(() =>
+  data.value ? [...(websites.value ?? [])].sort(byScore) : []
 )
 
 if (data.value) {
   useKunSeoMeta({
     title: `${data.value.label}的 Galgame 网站`,
-    description: data.value.description,
-    articlePublishedTime: data.value.created.toString(),
-    articleModifiedTime: data.value.updated.toString()
+    description: data.value.description
   })
 } else {
   useKunDisableSeo('未找到该网站标签')
@@ -38,10 +43,7 @@ if (data.value) {
         <div class="space-y-3">
           <div class="flex items-center space-x-3">
             <KunChip color="primary">标签价值 {{ data.level }}</KunChip>
-
-            <KunChip>
-              更新于 <KunTime :time="data.updated" type="date" show-year />
-            </KunChip>
+            <KunChip>{{ sorted.length }} 个网站</KunChip>
           </div>
 
           <div v-if="canManageTaxonomy" class="flex justify-end">
@@ -53,10 +55,10 @@ if (data.value) {
       </template>
     </KunHeader>
 
-    <div v-if="data.websites.length">
+    <div v-if="sorted.length">
       <div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
         <WebsiteCard
-          v-for="website in data.websites"
+          v-for="website in sorted"
           :key="website.id"
           :website="website"
         />

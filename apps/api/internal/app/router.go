@@ -13,6 +13,7 @@ import (
 	updateapiv1 "kun-galgame-api/internal/update/apiv1"
 	userapiv1 "kun-galgame-api/internal/user/apiv1"
 	wallapiv1 "kun-galgame-api/internal/wall/apiv1"
+	websiteapiv1 "kun-galgame-api/internal/website/apiv1"
 	"kun-galgame-api/pkg/perm"
 
 	"github.com/gofiber/fiber/v3"
@@ -45,6 +46,7 @@ func (a *App) setupRoutes() {
 		wallapiv1.Register(a.WallV1),
 		userapiv1.Register(a.newUserV1()),
 		messageapiv1.Register(a.newMessageV1()),
+		websiteapiv1.Register(a.newWebsiteV1()),
 		updateapiv1.Register(a.newUpdateV1()),
 		trustapiv1.Register(a.TrustV1),
 		permissionapiv1.Register(a.newPermissionV1()),
@@ -90,12 +92,6 @@ func (a *App) setupRoutes() {
 	api.Get("/doc/article/:slug", a.DocArticleHandler.GetArticleBySlug)
 	api.Get("/doc/category", a.DocCategoryHandler.GetCategories)
 	api.Get("/doc/tag", a.DocTagHandler.GetTags)
-
-	api.Get("/website-category", a.WebsiteCategoryHandler.GetWebsiteCategories)
-	api.Get("/website-category/:name", a.WebsiteCategoryHandler.GetWebsiteCategory)
-	api.Get("/website-tag", a.WebsiteTagHandler.GetWebsiteTags)
-	api.Get("/website-tag-group", a.WebsiteTagGroupHandler.GetWebsiteTagGroups)
-	api.Get("/website-tag/:name", a.WebsiteTagHandler.GetWebsiteTagDetail)
 
 	api.Get("/friend-link", a.FriendLinkHandler.List)
 
@@ -197,9 +193,6 @@ func (a *App) setupRoutes() {
 	optAuth.Get("/galgame/collection/:cid", a.GalgameCollectionHandler.GetDetail)
 	optAuth.Get("/user/:id/collections", a.GalgameCollectionHandler.GetUserCollections)
 
-	optAuth.Get("/website", a.WebsiteHandler.GetWebsites)
-	optAuth.Get("/website/:domain", a.WebsiteHandler.GetWebsiteDetail)
-
 	optAuth.Get("/toolset", a.ToolsetHandler.GetList)
 	optAuth.Get("/toolset/:id", a.ToolsetHandler.GetDetail)
 	optAuth.Get("/toolset/:id/practicality", a.ToolsetPracticalityHandler.GetPracticality)
@@ -219,8 +212,6 @@ func (a *App) setupRoutes() {
 	authed.Post("/image/message", a.ImageHandler.UploadMessageImage)
 	authed.Post("/image/galgame", a.ImageHandler.UploadGalgameImage)
 
-	authed.Put("/website/:domain/like", a.WebsiteHandler.ToggleLike)
-	authed.Put("/website/:domain/favorite", a.WebsiteHandler.ToggleFavorite)
 
 	authed.Post("/galgame/submit", a.GalgameSubmissionHandler.Submit)
 	authed.Post("/galgame/:gid/resubmit", a.GalgameSubmissionHandler.Resubmit)
@@ -325,20 +316,6 @@ func (a *App) setupRoutes() {
 	docAdmin.Post("/doc/tag", middleware.RequirePermission(perm.DocCreate), a.DocTagHandler.CreateTag)
 	docAdmin.Put("/doc/tag", middleware.RequirePermission(perm.DocEdit), a.DocTagHandler.UpdateTag)
 	docAdmin.Delete("/doc/tag", middleware.RequirePermission(perm.DocDelete), a.DocTagHandler.DeleteTag)
-
-	wsAdmin := authed.Group("")
-	wsAdmin.Post("/website", middleware.RequirePermission(perm.WebsiteCreate), a.WebsiteHandler.CreateWebsite)
-	wsAdmin.Put("/website/:domain", middleware.RequirePermission(perm.WebsiteEdit), a.WebsiteHandler.UpdateWebsite)
-	wsAdmin.Delete("/website/:domain", middleware.RequirePermission(perm.WebsiteDelete), a.WebsiteHandler.DeleteWebsite)
-	wsAdmin.Post("/website-category", middleware.RequirePermission(perm.WebsiteCreate), a.WebsiteCategoryHandler.CreateWebsiteCategory)
-	wsAdmin.Put("/website-category", middleware.RequirePermission(perm.WebsiteEdit), a.WebsiteCategoryHandler.UpdateWebsiteCategory)
-	wsAdmin.Delete("/website-category", middleware.RequirePermission(perm.WebsiteDelete), a.WebsiteCategoryHandler.DeleteWebsiteCategory)
-	wsAdmin.Post("/website-tag", middleware.RequirePermission(perm.WebsiteCreate), a.WebsiteTagHandler.CreateWebsiteTag)
-	wsAdmin.Put("/website-tag", middleware.RequirePermission(perm.WebsiteEdit), a.WebsiteTagHandler.UpdateWebsiteTag)
-	wsAdmin.Delete("/website-tag", middleware.RequirePermission(perm.WebsiteDelete), a.WebsiteTagHandler.DeleteWebsiteTag)
-	wsAdmin.Post("/website-tag-group", middleware.RequirePermission(perm.WebsiteCreate), a.WebsiteTagGroupHandler.CreateWebsiteTagGroup)
-	wsAdmin.Put("/website-tag-group", middleware.RequirePermission(perm.WebsiteEdit), a.WebsiteTagGroupHandler.UpdateWebsiteTagGroup)
-	wsAdmin.Delete("/website-tag-group", middleware.RequirePermission(perm.WebsiteDelete), a.WebsiteTagGroupHandler.DeleteWebsiteTagGroup)
 
 	friendAdmin := authed.Group("")
 	friendAdmin.Post("/admin/friend-link", middleware.RequirePermission(perm.FriendLinkCreate), a.FriendLinkHandler.Create)

@@ -1,21 +1,23 @@
 <script setup lang="ts">
+import type { WebsiteTag } from '#shared/utils/api/schemas'
+
 const props = defineProps<{
   tags: WebsiteTag[]
-  tagIds: number[]
+  tagIds: string[]
 }>()
 
 const emits = defineEmits<{
-  updateIds: [ids: number[]]
+  updateIds: [ids: string[]]
 }>()
 
 const { data: groups } = useWebsiteTagGroups()
 
-const UNGROUPED_ID = -1
+const UNGROUPED = 'ungrouped'
 
 const groupedTags = computed(() => {
-  const byGroup = new Map<number, WebsiteTag[]>()
+  const byGroup = new Map<string, WebsiteTag[]>()
   for (const tag of props.tags ?? []) {
-    const key = tag.group_id ?? UNGROUPED_ID
+    const key = tag.website_tag_group_id ?? UNGROUPED
     if (!byGroup.has(key)) {
       byGroup.set(key, [])
     }
@@ -25,16 +27,16 @@ const groupedTags = computed(() => {
   const sections = (groups.value ?? [])
     .map((group) => ({
       id: group.id,
-      label: group.label || group.name,
-      multiSelect: group.multi_select,
+      label: group.label || group.slug,
+      multiSelect: group.is_multi_select,
       tags: byGroup.get(group.id) ?? []
     }))
     .filter((section) => section.tags.length > 0)
 
-  const ungrouped = byGroup.get(UNGROUPED_ID) ?? []
+  const ungrouped = byGroup.get(UNGROUPED) ?? []
   if (ungrouped.length) {
     sections.push({
-      id: UNGROUPED_ID,
+      id: UNGROUPED,
       label: '未分组',
       multiSelect: true,
       tags: ungrouped
@@ -46,7 +48,7 @@ const groupedTags = computed(() => {
 
 const MAX_TAGS = 20
 
-const toggleExclusive = (tagId: number, sectionTags: WebsiteTag[]) => {
+const toggleExclusive = (tagId: string, sectionTags: WebsiteTag[]) => {
   if (props.tagIds.includes(tagId)) {
     emits(
       'updateIds',
@@ -61,7 +63,7 @@ const toggleExclusive = (tagId: number, sectionTags: WebsiteTag[]) => {
   ])
 }
 
-const toggleMultiple = (checked: boolean, tagId: number) => {
+const toggleMultiple = (checked: boolean, tagId: string) => {
   if (!checked) {
     emits(
       'updateIds',
@@ -96,10 +98,10 @@ const toggleMultiple = (checked: boolean, tagId: number) => {
       <div class="flex flex-wrap gap-x-4 gap-y-2 pt-2">
         <KunCheckBox
           v-for="tag in section.tags"
-          :id="tag.name"
+          :id="tag.slug"
           :key="tag.id"
           :model-value="tagIds.includes(tag.id)"
-          :label="tag.label || tag.name"
+          :label="tag.label || tag.slug"
           :value="tag.id"
           class-name="w-full p-1 hover:bg-default-100 rounded"
           @update:model-value="
