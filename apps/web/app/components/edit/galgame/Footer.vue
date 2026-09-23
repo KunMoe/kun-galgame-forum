@@ -65,7 +65,7 @@ const handleSubmitGalgame = async () => {
   // upload, no banner_hash, no cover patch, and the wizard has never once
   // attached a cover.
   if (banner) {
-    const uploaded = await uploadGalgameImage(banner, 'galgame_banner')
+    const uploaded = await uploadWorkEditImage(banner, 'cover')
     if (uploaded) {
       bannerHash = uploaded.hash
     }

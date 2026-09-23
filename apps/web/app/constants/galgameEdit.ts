@@ -287,7 +287,7 @@ const uploadCoverItem = async (
   file: File,
   current: unknown[]
 ): Promise<unknown | null> => {
-  const res = await uploadGalgameImage(file, 'galgame_banner', file.name)
+  const res = await uploadWorkEditImage(file, 'cover', file.name)
   if (!res) {
     return null
   }
@@ -302,7 +302,7 @@ const uploadScreenshotItem = async (
   file: File,
   current: unknown[]
 ): Promise<unknown | null> => {
-  const res = await uploadGalgameImage(file, 'galgame_screenshot', file.name)
+  const res = await uploadWorkEditImage(file, 'screenshot', file.name)
   if (!res) {
     return null
   }

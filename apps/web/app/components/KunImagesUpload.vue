@@ -95,23 +95,18 @@ const commit = () => {
 }
 
 const uploadOne = async (file: File) => {
-  const body = new FormData()
-  body.append('file', file)
-  const res = await kunFetch<{ hash: string; url: string; sexual?: number }>(
-    '/image/cover',
-    { method: 'POST', body, watch: false }
-  )
-  if (!res?.hash) {
+  const image = await uploadImage(file, 'content', file.name)
+  if (!image) {
     return null
   }
-  urlByHash.set(res.hash, res.url)
+  urlByHash.set(image.hash, image.url)
   // A brand new image has no grade yet — the grader is nightly — so this only
   // ever fires when the upload deduplicated onto an image already graded.
-  const locked = (res.sexual ?? 0) >= 2
-  if (locked && !machineLocked.value.includes(res.hash)) {
-    machineLocked.value = [...machineLocked.value, res.hash]
+  const locked = image.sexual === 'explicit'
+  if (locked && !machineLocked.value.includes(image.hash)) {
+    machineLocked.value = [...machineLocked.value, image.hash]
   }
-  return { hash: res.hash, url: res.url, nsfw: false, locked }
+  return { hash: image.hash, url: image.url, nsfw: false, locked }
 }
 
 const addFiles = async (files: File[]) => {

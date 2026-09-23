@@ -5,6 +5,7 @@ import type {
 } from '@kungal/editor-core'
 import { settle } from '#shared/utils/api/problem'
 import { toKunUser } from '~/utils/userRef'
+import { imageToken, uploadImage as uploadSiteImage } from '~/utils/uploadImage'
 
 export const useKunEditorAdapters = (opts?: {
   image?: boolean
@@ -13,17 +14,11 @@ export const useKunEditorAdapters = (opts?: {
   const api = useApiClient()
 
   const uploadImage = async (file: File) => {
-    const form = new FormData()
-    form.append('image', file)
-    const url = await kunFetch<string>('/image/topic', {
-      method: 'POST',
-      body: form,
-      watch: false
-    })
-    if (!url) {
+    const image = await uploadSiteImage(file, 'content', file.name)
+    if (!image) {
       throw new Error('图片上传失败')
     }
-    return url
+    return imageToken(image.hash)
   }
 
   const searchMentionUsers = async (query: string): Promise<MentionUser[]> => {

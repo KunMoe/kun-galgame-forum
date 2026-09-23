@@ -4,14 +4,14 @@ import { mockNuxtImport } from '@nuxt/test-utils/runtime'
 import { createGalgameEditConfig } from './galgameEdit'
 import { KUN_GALGAME_OFFICIAL_KIND_DEVELOPER } from './galgameOfficial'
 
-mockNuxtImport('uploadGalgameImage', () =>
+mockNuxtImport('uploadWorkEditImage', () =>
   vi.fn(async () => ({
     hash: 'h-new',
     url: 'https://img.test/h-new.webp',
     width: 1,
     height: 1,
-    size_bytes: 1,
-    deduplicated: false
+    thumbhash: null,
+    sexual: null
   }))
 )
 mockNuxtImport('useMessage', () => vi.fn())

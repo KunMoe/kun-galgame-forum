@@ -175,15 +175,12 @@ const uploadImages = async (files: File[]) => {
   isUploadingImage.value = true
   try {
     for (const image of images) {
-      const formData = new FormData()
-      formData.append('image', image)
-      const url = await kunFetch<string>('/image/message', {
-        method: 'POST',
-        body: formData,
-        watch: false
-      })
-      if (url) {
-        pendingImages.value.push({ name: image.name, url })
+      const uploaded = await uploadImage(image, 'message', image.name)
+      if (uploaded) {
+        pendingImages.value.push({
+          name: image.name,
+          url: imageToken(uploaded.hash)
+        })
       }
     }
   } finally {

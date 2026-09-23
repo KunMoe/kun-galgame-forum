@@ -29,16 +29,10 @@ const uploadFiles = async (files: File[]) => {
   try {
     const tokens = await Promise.all(
       picked.map(async (image) => {
-        const formData = new FormData()
-        formData.append('image', image)
-        const token = await kunFetch<string>('/image/topic', {
-          method: 'POST',
-          body: formData,
-          watch: false
-        })
+        const uploaded = await uploadImage(image, 'content', image.name)
         done++
         progressText.value = `上传中 ${done}/${picked.length}`
-        return token
+        return uploaded ? imageToken(uploaded.hash) : null
       })
     )
 

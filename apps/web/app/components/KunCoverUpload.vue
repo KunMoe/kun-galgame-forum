@@ -33,22 +33,14 @@ const handleFileChange = async (e: Event) => {
   }
 
   isUploading.value = true
-  const fd = new FormData()
-  fd.append('file', file)
-  const res = await kunFetch<{ hash: string; url: string }>('/image/cover', {
-    method: 'POST',
-    body: fd,
-    watch: false
-  })
+  const image = await uploadImage(file, 'content', file.name)
   isUploading.value = false
   input.value = ''
 
-  if (res?.hash) {
-    emits('update:modelValue', res.hash)
-    previewUrl.value = res.url
+  if (image) {
+    emits('update:modelValue', image.hash)
+    previewUrl.value = image.url
     useMessage('封面上传成功', 'success')
-  } else {
-    useMessage('封面上传失败', 'error')
   }
 }
 
