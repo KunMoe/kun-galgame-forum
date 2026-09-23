@@ -3,6 +3,7 @@ import { useTopicReplies } from '~/composables/topic/useTopicReplies'
 import { useTopicScroll } from '~/composables/topic/useTopicScroll'
 import { TOPIC_TOC_SOURCE } from '~/composables/topic/useTopicTOC'
 import { problemMessage } from '#shared/utils/api/message'
+import { settle } from '#shared/utils/api/problem'
 import type { Reply, Topic } from '#shared/utils/api/schemas'
 import { toKunUserWithPoints } from '~/utils/userRef'
 
@@ -48,16 +49,13 @@ let fromFloor: number | undefined
 if (targetFloor > 0) {
   fromFloor = targetFloor
 } else if (targetCommentId > 0) {
-  const located = await kunFetch<{
-    page: number
-    floor: number
-    reply_id: number
-    comment_id: number
-  }>(`/topic/${Number(props.topic.id)}/reply/locate`, {
-    query: { comment: targetCommentId }
-  })
-  if (located?.floor) {
-    fromFloor = located.floor
+  const located = await settle(
+    api.GET('/comments/{comment_id}', {
+      params: { path: { comment_id: String(targetCommentId) } }
+    })
+  )
+  if (located.ok) {
+    fromFloor = located.data.reply_floor
   }
 }
 

@@ -20,7 +20,6 @@ DELETE /api/toolset/:id                               cors.New → middleware.Na
 DELETE /api/toolset/:id/comments/:postId              cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → ResourceCommentHandler.ToolsetDelete
 DELETE /api/toolset/:id/resource                      cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → ResourceHandler.DeleteResource
 DELETE /api/topic/:tid/lottery                        cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → LotteryHandler.DeleteLottery
-DELETE /api/topic/draft/:id                           cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → TopicDraftHandler.Delete
 DELETE /api/update/history                            cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → RequirePermission → UpdateHandler.DeleteHistory
 DELETE /api/update/todo                               cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → RequirePermission → UpdateHandler.DeleteTodo
 DELETE /api/v1/comments/:comment_id                   cors.New → v1Headers → fiberAdapter.Handle
@@ -140,7 +139,6 @@ GET    /api/ranking/galgame                           cors.New → middleware.Na
 GET    /api/ranking/topic                             cors.New → middleware.NamePreference → ContentStance → RankingHandler.GetTopicRanking
 GET    /api/ranking/user                              cors.New → middleware.NamePreference → ContentStance → RankingHandler.GetUserRanking
 GET    /api/report/reasons                            cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → TrustHandler.GetReasons
-GET    /api/resource                                  cors.New → middleware.NamePreference → ContentStance → OptionalAuth → TopicHandler.GetResourceList
 GET    /api/rss/galgame                               cors.New → middleware.NamePreference → ContentStance → RSSHandler.GetGalgameRSS
 GET    /api/rss/topic                                 cors.New → middleware.NamePreference → ContentStance → RSSHandler.GetTopicRSS
 GET    /api/search                                    cors.New → middleware.NamePreference → ContentStance → OptionalAuth → SearchHandler.Search
@@ -157,10 +155,6 @@ GET    /api/toolset/:id/practicality                  cors.New → middleware.Na
 GET    /api/toolset/:id/resource/detail               cors.New → middleware.NamePreference → ContentStance → ResourceHandler.GetResourceDetail
 GET    /api/topic/:tid/lottery/entrants               cors.New → middleware.NamePreference → ContentStance → OptionalAuth → LotteryHandler.GetEntrants
 GET    /api/topic/:tid/lottery/topic                  cors.New → middleware.NamePreference → ContentStance → OptionalAuth → LotteryHandler.GetLotteriesByTopic
-GET    /api/topic/:tid/reply/locate                   cors.New → middleware.NamePreference → ContentStance → OptionalAuth → ReplyHandler.GetReplyLocate
-GET    /api/topic/draft                               cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → TopicDraftHandler.List
-GET    /api/topic/draft/:id                           cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → TopicDraftHandler.Get
-GET    /api/topic/interactions/mine                   cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → TopicHandler.MyInteractions
 GET    /api/update/history                            cors.New → middleware.NamePreference → ContentStance → UpdateHandler.GetHistory
 GET    /api/update/todo                               cors.New → middleware.NamePreference → ContentStance → UpdateHandler.GetTodos
 GET    /api/user/:id                                  cors.New → middleware.NamePreference → ContentStance → UserHandler.GetProfile
@@ -263,7 +257,6 @@ POST   /api/topic/:tid/lottery/claim                  cors.New → middleware.Na
 POST   /api/topic/:tid/lottery/draw                   cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → LotteryHandler.Draw
 POST   /api/topic/:tid/lottery/enter                  cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → LotteryHandler.Enter
 POST   /api/topic/:tid/lottery/withdraw               cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → LotteryHandler.Withdraw
-POST   /api/topic/draft                               cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → TopicDraftHandler.Save
 POST   /api/trust/callback                            cors.New → middleware.NamePreference → ContentStance → TrustHandler.Callback
 POST   /api/update/history                            cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → RequirePermission → UpdateHandler.CreateHistory
 POST   /api/update/todo                               cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → UpdateHandler.CreateTodo

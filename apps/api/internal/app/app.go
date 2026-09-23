@@ -122,9 +122,6 @@ type App struct {
 	UserProfileHandler             *handler.ProfileHandler
 	ContentPrefsHandler            *handler.ContentPrefsHandler
 	HomeHandler                    *homeHandler.HomeHandler
-	TopicHandler                   *topicHandler.TopicHandler
-	TopicDraftHandler              *topicHandler.TopicDraftHandler
-	ReplyHandler                   *topicHandler.ReplyHandler
 	LotteryHandler                 *topicHandler.LotteryHandler
 	MessageHandler                 *msgHandler.MessageHandler
 	MessageChatHandler             *msgHandler.ChatHandler
@@ -430,14 +427,10 @@ func New(cfg *config.Config) *App {
 	notifier := msgService.NewNotifier(messageRepository)
 
 	topicRepository := topicRepo.NewTopicRepository(db)
-	topicListRepo := topicRepo.NewTopicListRepository(db)
-	topicTaxonomyRepo := topicRepo.NewTopicTaxonomyRepository(db)
 	replyRepository := topicRepo.NewReplyRepository(db)
 	topicCommentRepo := topicRepo.NewCommentRepository(db)
 	lotteryRepository := topicRepo.NewLotteryRepository(db)
-	draftRepository := topicRepo.NewTopicDraftRepository(db)
-	topicSvc := topicService.NewTopicService(topicRepository, topicListRepo, topicTaxonomyRepo, rdb, uc, userStateRepo)
-	replySvc := topicService.NewReplyService(replyRepository, topicRepository, userStateRepo, uc, rdb, trustCheck, trustScan)
+	replySvc := topicService.NewReplyService(replyRepository)
 	commentSvc := topicService.NewCommentService(replyRepository, topicCommentRepo)
 	lotteryBox, err := secretbox.New(cfg.Lottery.CodeKey)
 	if err != nil {
@@ -453,7 +446,6 @@ func New(cfg *config.Config) *App {
 		lotterySvc.SetImageMetaResolver(imageMeta.Resolve)
 	}
 	lotteryDrawer := topicService.NewLotteryDrawer(lotterySvc)
-	draftSvc := topicService.NewDraftService(draftRepository)
 
 	galgameCommunityPostRepo := galgameRepo.NewCommunityPostRepository(db)
 	galgameCommunityCommentSvc := galgameService.NewCommunityCommentService(communityCli, galgameCommunityPostRepo, uc, db)
@@ -602,9 +594,6 @@ func New(cfg *config.Config) *App {
 		UserProfileHandler:             handler.NewProfileHandler(oauthClient, uc),
 		ContentPrefsHandler:            handler.NewContentPrefsHandler(oauthClient, uc, rdb),
 		HomeHandler:                    homeHandler.NewHomeHandler(homeService.NewHomeService(homeRepo.NewHomeRepository(db), gc, uc, rdb)),
-		TopicHandler:                   topicHandler.NewTopicHandler(topicSvc),
-		TopicDraftHandler:              topicHandler.NewTopicDraftHandler(draftSvc),
-		ReplyHandler:                   topicHandler.NewReplyHandler(replySvc),
 		LotteryHandler:                 topicHandler.NewLotteryHandler(lotterySvc),
 		MessageHandler:                 msgHandler.NewMessageHandler(messageSvc),
 		MessageChatHandler:             msgHandler.NewChatHandler(chatSvc),

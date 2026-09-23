@@ -1,32 +1,72 @@
+import { settle } from '#shared/utils/api/problem'
+
+interface MyTopicState {
+  favorited: boolean
+  reactions: string[]
+}
+
 export const useMyTopicInteractions = () => {
   const { id } = usePersistUserStore()
-  const favorited = useState<number[]>('my-topic-favorited', () => [])
-  const reactions = useState<Record<number, string[]>>(
-    'my-topic-reactions',
+  const api = useApiClient()
+  const states = useState<Record<number, MyTopicState>>(
+    'my-topic-states',
     () => ({})
   )
-  const loaded = useState<boolean>('my-topic-interactions-loaded', () => false)
+  const requested = useState<number[]>('my-topic-states-requested', () => [])
+  const pending = useState<number[]>('my-topic-states-pending', () => [])
+  const flushScheduled = useState<boolean>(
+    'my-topic-states-flush-scheduled',
+    () => false
+  )
 
-  const favoritedSet = computed(() => new Set(favorited.value))
+  const fetchChunk = async (chunk: number[]) => {
+    const res = await settle(
+      api.GET('/me/topic-states', {
+        params: { query: { topic_ids: chunk.map(String) } }
+      })
+    )
+    if (!res.ok) {
+      const failed = new Set(chunk)
+      requested.value = requested.value.filter((tid) => !failed.has(tid))
+      return
+    }
+    const next = { ...states.value }
+    for (const item of res.data.items) {
+      next[Number(item.topic_id)] = {
+        favorited: item.has_favorited,
+        reactions: [...item.reaction_tokens]
+      }
+    }
+    states.value = next
+  }
 
-  const ensureLoaded = async () => {
-    if (loaded.value || !id) return
-    loaded.value = true
-    const res = await kunFetch<{
-      favorited: number[]
-      reactions: Record<string, string[]>
-    }>('/topic/interactions/mine')
-    if (!res) return
-    favorited.value = res.favorited ?? []
-    const norm: Record<number, string[]> = {}
-    for (const [k, v] of Object.entries(res.reactions ?? {}))
-      norm[Number(k)] = v
-    reactions.value = norm
+  const flush = async () => {
+    flushScheduled.value = false
+    const seen = new Set(requested.value)
+    const ids = [...new Set(pending.value)].filter(
+      (tid) => tid > 0 && !seen.has(tid)
+    )
+    pending.value = []
+    if (!id || !ids.length) return
+    requested.value = [...requested.value, ...ids]
+    for (let i = 0; i < ids.length; i += 100) {
+      await fetchChunk(ids.slice(i, i + 100))
+    }
+  }
+
+  const ensureLoaded = (tids: number[]) => {
+    if (!id || !tids.length) return
+    pending.value = [...pending.value, ...tids]
+    if (flushScheduled.value) return
+    flushScheduled.value = true
+    queueMicrotask(() => {
+      void flush()
+    })
   }
 
   return {
-    isFavorited: (tid: number) => favoritedSet.value.has(tid),
-    reactionKeysOf: (tid: number) => reactions.value[tid] ?? [],
+    isFavorited: (tid: number) => states.value[tid]?.favorited ?? false,
+    reactionKeysOf: (tid: number) => states.value[tid]?.reactions ?? [],
     ensureLoaded
   }
 }

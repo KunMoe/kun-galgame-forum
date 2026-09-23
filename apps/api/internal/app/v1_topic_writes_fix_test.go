@@ -165,7 +165,6 @@ func newWriteFix(t *testing.T, checker gate.Checker) *writeFix {
 	}
 	state := userRepo.NewStateRepository(db)
 	topicR := topicRepo.NewTopicRepository(db)
-	replyR := topicRepo.NewReplyRepository(db)
 	f.App = &App{
 		Fiber:      newFiber(),
 		Config:     cfg,
@@ -183,9 +182,6 @@ func newWriteFix(t *testing.T, checker gate.Checker) *writeFix {
 			}
 			return out
 		},
-		ReplyHandler: handler.NewReplyHandler(topicService.NewReplyService(
-			replyR, topicR, state, uc, rdb, gate.NewCheckService(nil), gate.NewScanService(nil),
-		)),
 		LotteryHandler: handler.NewLotteryHandler(topicService.NewLotteryService(
 			topicRepo.NewLotteryRepository(db), topicR, state, uc, nil, nil, "",
 			gate.NewCheckService(nil), gate.NewScanService(nil),

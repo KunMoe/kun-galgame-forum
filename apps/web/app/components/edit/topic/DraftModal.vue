@@ -1,8 +1,6 @@
 <script setup lang="ts">
-import {
-  useTopicDraft,
-  type TopicDraftListItem
-} from '~/composables/topic/useTopicDraft'
+import { useTopicDraft } from '~/composables/topic/useTopicDraft'
+import type { TopicDraftSummary } from '#shared/utils/api/schemas'
 
 const open = defineModel<boolean>({ required: true })
 
@@ -14,13 +12,13 @@ const {
   hasCurrentContent
 } = useTopicDraft()
 
-const drafts = ref<TopicDraftListItem[]>([])
+const drafts = ref<TopicDraftSummary[]>([])
 const isLoading = ref(false)
 const isSaving = ref(false)
 
 const refresh = async () => {
   isLoading.value = true
-  drafts.value = (await listDrafts()) ?? []
+  drafts.value = await listDrafts()
   isLoading.value = false
 }
 
@@ -39,15 +37,15 @@ const onSave = async () => {
     return
   }
   isSaving.value = true
-  const id = await saveCurrentAsDraft()
+  const saved = await saveCurrentAsDraft()
   isSaving.value = false
-  if (id) {
+  if (saved) {
     useMessage('已保存为草稿', 'success')
     refresh()
   }
 }
 
-const onLoad = async (draft: TopicDraftListItem) => {
+const onLoad = async (draft: TopicDraftSummary) => {
   if (hasCurrentContent.value) {
     const ok = await useComponentMessageStore().alert(
       '载入草稿会覆盖当前正在编写的内容，确定吗？'
@@ -62,17 +60,19 @@ const onLoad = async (draft: TopicDraftListItem) => {
   }
 }
 
-const onDelete = async (draft: TopicDraftListItem) => {
+const onDelete = async (draft: TopicDraftSummary) => {
   const ok = await useComponentMessageStore().alert('确定删除这份草稿吗？')
   if (!ok) {
     return
   }
-  await deleteDraft(draft.id)
+  if (!(await deleteDraft(draft.id))) {
+    return
+  }
   useMessage('草稿已删除', 'success')
   refresh()
 }
 
-const displayTitle = (draft: TopicDraftListItem) =>
+const displayTitle = (draft: TopicDraftSummary) =>
   draft.title.trim() ||
   truncateRunes(markdownToText(draft.summary), 40) ||
   '(无标题草稿)'
@@ -124,7 +124,7 @@ const displayTitle = (draft: TopicDraftListItem) =>
           <div class="min-w-0 flex-1">
             <div class="truncate font-medium">{{ displayTitle(draft) }}</div>
             <div class="text-default-400 text-xs">
-              <KunTime :time="draft.updated" type="datetime" />
+              <KunTime :time="draft.updated_at" type="datetime" />
             </div>
           </div>
           <KunButton size="sm" variant="light" @click="onLoad(draft)">

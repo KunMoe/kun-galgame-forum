@@ -44,6 +44,26 @@ describe('createApiClient', () => {
     expect(url.searchParams.get('include_nsfw')).toBe('true')
   })
 
+  it('sends an array query parameter comma-separated, the way the spec declares it', async () => {
+    let captured: Request | undefined
+    const api = createApiClient({
+      origin,
+      fetch: async (input) => {
+        captured = input
+        return jsonResponse(
+          200,
+          { object: 'list', items: [], missing: [] },
+          { 'content-type': 'application/json' }
+        )
+      }
+    })
+    await api.GET('/me/topic-states', {
+      params: { query: { topic_ids: ['12', '34', '56'] } }
+    })
+    const url = new URL(captured!.url)
+    expect(url.searchParams.getAll('topic_ids')).toEqual(['12,34,56'])
+  })
+
   it('sets the cookie header only when given, and credentials include', async () => {
     let withCookie: Request | undefined
     const apiCookie = createApiClient({

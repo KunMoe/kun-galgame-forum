@@ -31,42 +31,6 @@ type ReplyRow struct {
 	UserMoemoepoint int
 }
 
-func (r *ReplyRepository) LocateReplyPageByFloor(topicID, floor, limit int) (int, error) {
-	if limit <= 0 {
-		limit = 30
-	}
-	var count int64
-	err := r.db.Model(&model.TopicReply{}).
-		Where("topic_id = ? AND floor <= ?", topicID, floor).
-		Count(&count).Error
-	if err != nil {
-		return 1, err
-	}
-	if count <= 0 {
-		return 1, nil
-	}
-	return int((count-1)/int64(limit)) + 1, nil
-}
-
-func (r *ReplyRepository) FindReplyFloorByCommentID(topicID, commentID int) (floor int, replyID int, ok bool, err error) {
-	var row struct {
-		Floor int
-		ID    int
-	}
-	e := r.db.Table("topic_comment c").
-		Select("r.floor AS floor, r.id AS id").
-		Joins("JOIN topic_reply r ON r.id = c.topic_reply_id").
-		Where("c.id = ? AND c.topic_id = ?", commentID, topicID).
-		Scan(&row).Error
-	if e != nil {
-		return 0, 0, false, e
-	}
-	if row.ID == 0 {
-		return 0, 0, false, nil
-	}
-	return row.Floor, row.ID, true, nil
-}
-
 func (r *ReplyRepository) FindRepliesByIDs(ids []int) ([]ReplyRow, error) {
 	if len(ids) == 0 {
 		return nil, nil

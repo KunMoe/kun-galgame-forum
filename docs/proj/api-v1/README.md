@@ -74,13 +74,13 @@ git ls-remote --heads origin 'api-v1/*'
 
 ### 待认领
 
-旧 `/api/*` 路由 **289 条**。`legacy_route_baseline` = 290，因为它数的是「所有非 `/api/v1` 的路由」，`/healthz` 也在里面——**基线的地板是 1，不是 0**。
+旧 `/api/*` 路由 **282 条**。`legacy_route_baseline` = 283，因为它数的是「所有非 `/api/v1` 的路由」，`/healthz` 也在里面——**基线的地板是 1，不是 0**。
 
 > **切分依据是「共用同一个老 handler」，不是 URL 前缀。** 这个仓库里老 handler 大量跨前缀：`ResourceCommentHandler` 一个人管 15 条 / 5 个前缀；`/api/admin/**` 的 24 条分属 11 个 handler、各归各的域；`/api/user/:id/toolsets` 是 toolset 的面；`GET /api/resource` 是 `TopicHandler.GetResourceList`，即话题列表的资源区分面。**按前缀分轨会让两个 session 撞在同一个 handler 上，而且谁也删不掉它**——共用 handler 要等它服务的**所有**前缀都迁完才能删。下表按连通分量切，每行对外零耦合。
 
 | 轨 | 模块（含跨前缀的归属） | 路由 | 迁移号段 | 备注 |
 |---|---|---|---|---|
-| **T** | **话题**：`/topic/**` 17 + `/admin/topic*` 3 + `/resource` 1 | **21** | 110–119 | 已认领（本轨）。~~**T1** 清理旧评论/投票 10 条~~ ✅ → **T2** 草稿 4 + `interactions/mine` + `reply/locate` + 删 `/resource` 共 7 条 → **T3** 抽奖 11 条 → **T4** 管理面 3 条（在 `internal/admin/**`，页码集合） |
+| **T** | **话题**：`/topic/**` 11 + `/admin/topic*` 3 | **14** | 110–119 | 已认领（本轨）。~~**T1** 清理旧评论/投票 10 条~~ ✅ → ~~**T2** 草稿 4 + `interactions/mine` + `reply/locate` + 删 `/resource` 共 7 条~~ ✅（迁移 110）→ **T3** 抽奖 11 条 → **T4** 管理面 3 条（在 `internal/admin/**`，页码集合） |
 | U | 用户 `/user/**`（不含「某用户的 X」列表面，那些归各自的域） | 25 | 120–129 | 资料、签到、偏好、创作者、红点 |
 | M | 消息 `/message/**` | 11 | 130–134 | 私信 + 系统通知 |
 | RC | **资源评论**：`ResourceCommentHandler` 的 15 条，横跨 `galgame-quiz` `galgame-rating` `galgame-resource` `toolset` `website` | 15 | 135–139 | **五个域的绊脚石，优先拿下**；底层是 infra 社区原语，论坛只是 BFF |

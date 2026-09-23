@@ -127,8 +127,6 @@ func (a *App) setupRoutes() {
 	api.Get("/news/archive", a.NewsHandler.GetArchive)
 	api.Get("/news/month", a.NewsHandler.GetMonth)
 
-	api.Get("/resource", a.Authn.OptionalAuth(), a.TopicHandler.GetResourceList)
-
 	api.Get("/search", a.Authn.OptionalAuth(), a.SearchHandler.Search)
 	api.Get("/search/quick", a.Authn.OptionalAuth(), a.SearchHandler.QuickSearch)
 	api.Get("/search/overview", a.Authn.OptionalAuth(), a.SearchHandler.Overview)
@@ -206,13 +204,6 @@ func (a *App) setupRoutes() {
 	optAuth.Get("/galgame-quiz/all", a.GalgameQuizHandler.GetAllQuizzes)
 	optAuth.Get("/galgame-quiz/:id", a.GalgameQuizHandler.GetQuizPlay)
 
-	topicDraftAuth := a.Authn.Auth()
-	api.Get("/topic/draft", topicDraftAuth, a.TopicDraftHandler.List)
-	api.Post("/topic/draft", topicDraftAuth, a.TopicDraftHandler.Save)
-	api.Get("/topic/draft/:id", topicDraftAuth, a.TopicDraftHandler.Get)
-	api.Delete("/topic/draft/:id", topicDraftAuth, a.TopicDraftHandler.Delete)
-
-	optAuth.Get("/topic/:tid/reply/locate", a.ReplyHandler.GetReplyLocate)
 	optAuth.Get("/topic/:tid/lottery/topic", a.LotteryHandler.GetLotteriesByTopic)
 	optAuth.Get("/topic/:tid/lottery/entrants", a.LotteryHandler.GetEntrants)
 
@@ -242,8 +233,6 @@ func (a *App) setupRoutes() {
 	authed.Get("/auth/me", a.OAuthHandler.Me)
 
 	authed.Get("/perm/mine", a.AdminUserPermissionHandler.GetMine)
-
-	authed.Get("/topic/interactions/mine", a.TopicHandler.MyInteractions)
 
 	authed.Post("/topic/:tid/lottery", a.LotteryHandler.CreateLottery)
 	authed.Put("/topic/:tid/lottery", a.LotteryHandler.UpdateLottery)

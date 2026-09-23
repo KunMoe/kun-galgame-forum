@@ -1,8 +1,6 @@
 package repository
 
 import (
-	"time"
-
 	"kun-galgame-api/internal/topic/model"
 
 	"gorm.io/gorm"
@@ -16,13 +14,6 @@ func NewTopicDraftRepository(db *gorm.DB) *TopicDraftRepository {
 	return &TopicDraftRepository{db: db}
 }
 
-type DraftListRow struct {
-	ID      int
-	Title   string
-	Summary string
-	Updated time.Time
-}
-
 func (r *TopicDraftRepository) CountByUser(userID int) (int64, error) {
 	var n int64
 	err := r.db.Model(&model.TopicDraft{}).Where("user_id = ?", userID).Count(&n).Error
@@ -31,16 +22,6 @@ func (r *TopicDraftRepository) CountByUser(userID int) (int64, error) {
 
 func (r *TopicDraftRepository) Create(d *model.TopicDraft) error {
 	return r.db.Create(d).Error
-}
-
-func (r *TopicDraftRepository) ListByUser(userID int) ([]DraftListRow, error) {
-	var rows []DraftListRow
-	err := r.db.Model(&model.TopicDraft{}).
-		Select("id, title, LEFT(content, 120) AS summary, updated").
-		Where("user_id = ?", userID).
-		Order("updated DESC").
-		Scan(&rows).Error
-	return rows, err
 }
 
 func (r *TopicDraftRepository) GetByIDForUser(id, userID int) (*model.TopicDraft, error) {

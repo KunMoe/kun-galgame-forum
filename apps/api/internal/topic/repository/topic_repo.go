@@ -61,10 +61,6 @@ func (r *TopicRepository) CountTodayTopicsByUser(tx *gorm.DB, userID int) (int64
 	return count, err
 }
 
-func (r *TopicRepository) FindTopicMiniApps(topicIDs []int) map[int][]string {
-	return miniapp.ByTopic(r.db, topicIDs)
-}
-
 func (r *TopicRepository) LookupMiniApps(topicIDs []int) (map[int][]string, error) {
 	return miniapp.Lookup(r.db, topicIDs)
 }
@@ -81,28 +77,6 @@ func (r *TopicRepository) TouchStatusUpdateTime(tx *gorm.DB, topicID int, t time
 	return tx.Model(&model.Topic{}).
 		Where("id = ? AND created > ?", topicID, model.BumpCutoff(t)).
 		Updates(map[string]any{"status_update_time": t}).Error
-}
-
-func (r *TopicRepository) UserTopicInteractions(userID int) ([]int, map[int][]string, error) {
-	favorited := []int{}
-	if err := r.db.Model(&model.TopicFavorite{}).
-		Where("user_id = ?", userID).Pluck("topic_id", &favorited).Error; err != nil {
-		return nil, nil, err
-	}
-	var rows []struct {
-		TopicID  int    `gorm:"column:topic_id"`
-		Reaction string `gorm:"column:reaction"`
-	}
-	if err := r.db.Table("topic_reaction").
-		Select("topic_id, reaction").
-		Where("user_id = ?", userID).Scan(&rows).Error; err != nil {
-		return nil, nil, err
-	}
-	reactions := map[int][]string{}
-	for _, row := range rows {
-		reactions[row.TopicID] = append(reactions[row.TopicID], row.Reaction)
-	}
-	return favorited, reactions, nil
 }
 
 type TopicUpvoteRow struct {

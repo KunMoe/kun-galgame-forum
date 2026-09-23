@@ -41,6 +41,10 @@ export const createApiClient = (options: CreateApiClientOptions) => {
     baseUrl: `${options.origin}/api/v1`,
     credentials: 'include',
     fetch: fetchWithTimeout,
+    // huma declares every array query parameter explode:false and reads only
+    // the first of repeated keys, so openapi-fetch's default
+    // topic_ids=1&topic_ids=2 answered for topic 1 alone.
+    querySerializer: { array: { style: 'form', explode: false } },
     ...(options.cookie ? { headers: { cookie: options.cookie } } : {})
   })
 }

@@ -156,3 +156,13 @@ infra `05 §4` 写的是 `400 TOO_MANY_IDS`。本仓有更细的校验词表（`
 
 **110**：`idx_topic_draft_user` → `(user_id, updated DESC, id DESC)`。
 生产命令在任务结束时明说（`docs/proj/api-v1/README.md` 的号段 110–119 属本轨）。
+
+## 11. 验收时抓到的
+
+- **openapi-fetch 把数组 query 发成 `topic_ids=1&topic_ids=2`，huma 只读第一个。** spec 里写着 `explode: false`（逗号），客户端默认不看 spec。实测：两个 id 用重复键发过去，200，`items` 只有第一个，第二个**既不在 `items` 也不在 `missing`**——卡片会静默显示「没收藏」。`me/topic-states` 是 v1 第一个数组 query 参数，所以之前没人撞上。修在 `shared/utils/api/client.ts` 的 `querySerializer`（全局，之后各轨的数组参数都受益），`client.spec.ts` 钉住逗号形，删掉那一行测试即红。
+- **推 T2b 时没跑网页闸**，`Comment` 新增的必填 `reply_floor` 让两个 spec 的夹具类型不全，master 的 `web` 作业红了，而四个新开的 session 恰好从那一刻分支。`97476fdc` 热修。教训写回本波：后端加必填字段 = 网页夹具也要跟，推之前 `pnpm typecheck` 一次。
+- **`reply/locate` 按话题限定评论，`GET /comments/{id}` 不限定。** `?comment=<别的话题的评论>` 现在会拿那条评论的楼层去当前话题定位，找不到目标就提示「目标回复或评论可能已被删除」。通知链接永远是同一话题的一对 id，所以不为手工拼的链接多一次往返。
+- **删除的连锁比预想的深**：7 条路由带走了整个 `TopicHandler` / `ReplyHandler` / `TopicDraftHandler`、整个旧 `TopicService`（`NewTopicService` 再无调用方）、`mapper.go`、三个 DTO 文件，外加 `ReplyService` 构造函数收窄到只剩 `replyRepo`（`ModerationRemove` 是它唯一的活方法）。`deadcode` 对 master 做差分，两轮到不动点。
+- **旧 `kunFetch` 棘轮** 301 → 295，这一段删掉 6 处调用。
+
+浏览器实测（开发库，用户 2：33 收藏 / 556 表态）：首页 30 张卡片**一次**批量请求、逗号形、30/0；收藏态逐卡与服务端一致；`?comment=3126` 深链走 `GET /comments/3126` 拿到楼层 35 并滚到位；草稿存 → 列表刷新 → 载入覆盖编辑器 → 删除 204，测试草稿已删。

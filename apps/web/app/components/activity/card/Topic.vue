@@ -50,7 +50,7 @@ const showLatest = computed(() => {
 })
 
 const { isFavorited, reactionKeysOf, ensureLoaded } = useMyTopicInteractions()
-onMounted(ensureLoaded)
+onMounted(() => ensureLoaded(topicId.value ? [topicId.value] : []))
 
 const reactionList = computed<KunReaction[]>(() =>
   (data.value?.reactions ?? []).map((r) => ({
