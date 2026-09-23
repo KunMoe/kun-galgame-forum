@@ -73,6 +73,7 @@ git ls-remote --heads origin 'api-v1/*'
 | W5b | 投票（8 个 v1 端点取代 6 条旧路由，[契约](waves/w5b-polls.md)，迁移 103） | ✅ 2026-09-22 |
 | RC | 评论墙：六面墙的 22 条旧路由 → `/api/v1/wall-comments` 9 个操作（[契约](waves/rc-wall-comments.md)，迁移 135，PR #180） | ✅ 2026-09-23 |
 | U1 | 用户「我」的面：状态、签到、萌萌点流水、云端偏好、成人向显示、@ 搜索、资料、头像、创作者（12 条旧路由 → 11 个 v1 操作，[契约](waves/u1-me.md)，无迁移，PR #183） | ✅ 2026-09-23 |
+| M | 消息：通知 + 私信 11 条旧路由 → `/api/v1/me/notifications*`、`/api/v1/me/conversations*` 12 个操作；系统公告（0 行、无写入方）直接删除（[契约](waves/m-message.md)，迁移 130，PR #184） | ✅ 2026-09-23 |
 
 ### 待认领
 
@@ -84,7 +85,6 @@ git ls-remote --heads origin 'api-v1/*'
 |---|---|---|---|---|
 | **T** | **话题**：`/admin/topic*` 3 | **3** | 110–119 | 已认领（本轨）。~~**T1** 清理旧评论/投票 10 条~~ ✅ → ~~**T2** 草稿 4 + `interactions/mine` + `reply/locate` + 删 `/resource` 共 7 条~~ ✅（迁移 110）→ ~~**T3** 抽奖 11 条~~ ✅（迁移 111，萌萌点奖池改由发起人出资）→ **T4** 管理面 3 条（在 `internal/admin/**`，页码集合） |
 | U | 用户 `/user/**`：~~**U1**「我」的面 12 条~~ ✅ → **U2** 公开资料、名片、通知偏好 4 条（通知偏好用 M 轨的 `notifytype`）→ **U3**「某用户的 X」9 条（等 G0 的 `work_id` 重编号） | 13 | 120–129 | 已认领（分支 `api-v1/u-user`） |
-| M | 消息 `/message/**` | 11 | 130–134 | 私信 + 系统通知 |
 | G | galgame 主域 + `-edit` + `-quiz` + `-resource` + `toolset` + 各自的 admin/user 面（**不含** `/galgame/:gid/comments*` 与 `/galgame/comments/*`，已归 RC） | 85 | 140–159 | 最大的一坨，**一个 owner**，内部自己切 3–4 个 PR 串行 |
 | GE | galgame 实体六件套 `-character` `-engine` `-official` `-series` `-staff` `-tag` | 18 | 160–164 | 共用 `EntityHandler`，必须同一轨 |
 | D | 文档 `/doc` + `/website-tag` + `/website-category` | 26 | 165–169 | 共用 `TagHandler` / `CategoryHandler` |
