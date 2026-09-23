@@ -126,9 +126,15 @@ func (r *PurgeRepository) PurgeUserContent(userID int) (dto.UserContentStats, er
 			}
 		}
 
+		// A directory entry is shared: deleting it took every other user's likes,
+		// favorites and tag links with it. Nothing shows who listed a site, so the
+		// row goes back to the column's default owner, as the imported rows have.
+		if err := del(tx, "UPDATE galgame_website SET user_id = DEFAULT WHERE user_id = ?", userID); err != nil {
+			return err
+		}
+
 		for _, q := range []string{
 			"DELETE FROM topic WHERE user_id = ?",
-			"DELETE FROM galgame_website WHERE user_id = ?",
 			"DELETE FROM galgame_toolset WHERE user_id = ?",
 			"DELETE FROM topic_poll WHERE user_id = ?",
 			"DELETE FROM topic_lottery WHERE user_id = ?",

@@ -94,20 +94,43 @@ func collectContentImageHashes(ctx context.Context, db *gorm.DB) ([]string, erro
 	return extractContentImageHashes(contents), nil
 }
 
-// Columns that store bare hashes in jsonb arrays. The text-column scan above
-// matches /image/<hash> tokens only, so these were never pinged: lottery prize
-// images went weeks unprotected from the image service's garbage collection
-// before the 2026-09-22 census noticed.
-var bareImageHashColumns = []struct{ table, column string }{
-	{"topic_lottery_prize", "image_hashes"},
+type hashColumn struct {
+	Table    string `gorm:"column:table_name"`
+	Column   string `gorm:"column:column_name"`
+	DataType string `gorm:"column:data_type"`
+}
+
+// The text-column scan above matches /image/<hash> tokens only, so a column
+// holding a bare hash was never pinged: lottery prize images, doc banners,
+// friend-link banners and website icons all aged towards the image service's
+// cold tier and soft delete before the 2026-09-23 audit. Bare-hash columns are
+// found by name so a new one is covered the day it is added: a single hash in
+// a text column named *image_hash, or a jsonb array named *image_hashes.
+func bareImageHashColumns(ctx context.Context, db *gorm.DB) ([]hashColumn, error) {
+	var cols []hashColumn
+	err := db.WithContext(ctx).Raw(`
+		SELECT table_name, column_name, data_type FROM information_schema.columns
+		WHERE table_schema = 'public' AND (
+			(column_name LIKE '%image\_hash' AND data_type IN ('text', 'character varying')) OR
+			(column_name LIKE '%image\_hashes' AND data_type = 'jsonb'))
+		ORDER BY table_name, column_name
+	`).Scan(&cols).Error
+	return cols, err
 }
 
 func collectBareImageHashes(ctx context.Context, db *gorm.DB) ([]string, error) {
+	cols, err := bareImageHashColumns(ctx, db)
+	if err != nil {
+		return nil, err
+	}
 	var out []string
-	for _, c := range bareImageHashColumns {
+	for _, c := range cols {
+		col, table := quoteIdent(c.Column), quoteIdent(c.Table)
+		q := fmt.Sprintf("SELECT DISTINCT %s FROM %s WHERE %s <> ''", col, table, col)
+		if c.DataType == "jsonb" {
+			q = fmt.Sprintf("SELECT DISTINCT jsonb_array_elements_text(%s) FROM %s WHERE jsonb_typeof(%s) = 'array'", col, table, col)
+		}
 		var rows []string
-		q := fmt.Sprintf("SELECT DISTINCT jsonb_array_elements_text(%s) FROM %s",
-			quoteIdent(c.column), quoteIdent(c.table))
 		if err := db.WithContext(ctx).Raw(q).Scan(&rows).Error; err != nil {
 			return nil, err
 		}

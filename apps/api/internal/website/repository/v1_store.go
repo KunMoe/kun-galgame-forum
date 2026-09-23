@@ -228,19 +228,41 @@ func (s *Store) CreateWebsite(row *model.GalgameWebsite, tagIDs []int) error {
 // PatchWebsite writes fields and, when tagIDs is non-nil, replaces the tag set.
 func (s *Store) PatchWebsite(id int, fields map[string]any, tagIDs []int) error {
 	return s.db.Transaction(func(tx *gorm.DB) error {
-		fields["updated"] = time.Now()
-		res := tx.Model(&model.GalgameWebsite{}).Where("id = ?", id).UpdateColumns(fields)
-		if res.Error != nil {
-			return res.Error
+		var oldHost string
+		if err := tx.Raw(`SELECT url FROM galgame_website WHERE id = ? FOR UPDATE`, id).Scan(&oldHost).Error; err != nil {
+			return err
 		}
-		if res.RowsAffected == 0 {
+		if oldHost == "" {
 			return ErrNotFound
+		}
+		fields["updated"] = time.Now()
+		if err := tx.Model(&model.GalgameWebsite{}).Where("id = ?", id).UpdateColumns(fields).Error; err != nil {
+			return err
+		}
+		if newHost, ok := fields["url"].(string); ok && newHost != oldHost {
+			if err := rewriteHostLinks(tx, oldHost, newHost); err != nil {
+				return err
+			}
 		}
 		if tagIDs == nil {
 			return nil
 		}
 		return replaceTags(tx, id, tagIDs)
 	})
+}
+
+// Feed cards and notifications store a website page link by host at write
+// time; three renames left 8 feed cards and 5 notifications pointing at pages
+// that no longer existed (fixed by migration 176).
+func rewriteHostLinks(tx *gorm.DB, oldHost, newHost string) error {
+	oldPath, newPath := "/website/"+oldHost, "/website/"+newHost
+	match := `(link = ? OR link LIKE ? OR link LIKE ?)`
+	args := []any{newPath, len(oldPath) + 1, oldPath, oldPath + "?%", oldPath + "#%"}
+	if err := tx.Exec(`UPDATE feed_activity SET link = ? || substr(link, ?)
+		WHERE type IN ('GALGAME_WEBSITE_CREATION', 'GALGAME_WEBSITE_COMMENT_CREATION') AND `+match, args...).Error; err != nil {
+		return err
+	}
+	return tx.Exec(`UPDATE message SET link = ? || substr(link, ?) WHERE `+match, args...).Error
 }
 
 func (s *Store) DeleteWebsite(id int) error {

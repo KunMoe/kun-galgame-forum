@@ -266,3 +266,15 @@
 - admin：API 建一个站后在详情页点编辑，表单从 `GET /admin/websites/{id}` 预填；改标题并把主域名改成新的 → 保存后跳到新地址，标题已变；删除 → 回 `/website`，旧地址 404。
 - 后台 `/admin/website`：4 个非空分类的删除按钮是禁用的；建、改、删一个空分类；用已存在的标识建分类 → 界面显示「已存在」（`ALREADY_EXISTS` 的译文）；建分组、建标签。
 - 控制台只有与本轨无关的 `me/preferences` 503（假令牌）与顶栏头像水合不一致。
+
+## 9. 后续修复（2026-09-23，用户拍板「全部按推荐做」，只增不改）
+
+§4 里记下没修的三条，上线当天补上：
+
+| 编号 | 修法 |
+|---|---|
+| E14 | reference-ping 改为**按列名发现**裸 hash 列：文本列名以 `image_hash` 结尾、或 jsonb 列名以 `image_hashes` 结尾的都会被 ping。现有的是 `doc_article.banner_image_hash`、`friend_link.banner_image_hash`、`galgame_website.icon_image_hash`、`topic_lottery_prize.image_hashes`；前三列此前**从没被 ping 过**（会先进冷存储、365 天后软删）。`TestEveryHashColumnIsPingedOrExempt` 扫全库列名含 `hash` 的列，既没被发现、又不在带理由的豁免表（`topic_lottery.seed_hash`、`topic_lottery_prize.nsfw_hashes`）里就红——以后加 `*_hash` 列要么按约定命名，要么写明为什么不是图片 |
+| E15 | 删号清理不再 `DELETE` 被清用户收录的网站，改为 `user_id = DEFAULT`（归还给导入数据的占位用户，87 行里本来就有 83 行是它）。别人的赞、收藏、标签关系都保留；被清用户自己的赞/收藏照旧删并重算计数。后台删号预览里这一项改叫「收录网站 (转交保留)」 |
+| E4 | **迁移 176** 把 8 条动态卡片、5 条通知的 `/website/<旧主机名>` 改写成网站的当前主机名。每个旧主机名都用 community 库里评论所在的墙核实过归属（见迁移头注释）。另外，`PATCH /admin/websites/{id}` 改 `host` 时在同一事务里改写 `feed_activity`（两种网站动态）与 `message` 里的 `/website/<旧>`、`/website/<旧>?…`、`/website/<旧>#…`，以后改名不会再留死链 |
+
+E16（删网站留下的评论动态与上游孤儿串）不在这一批。

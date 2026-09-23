@@ -9,7 +9,7 @@ const STAT_LABELS: { key: keyof AdminUserContentStats; label: string }[] = [
   { key: 'topic_comments', label: '话题评论' },
   { key: 'ratings', label: '评分' },
   { key: 'resources', label: '资源' },
-  { key: 'websites', label: '网站' },
+  { key: 'websites', label: '收录网站 (转交保留)' },
   { key: 'toolsets', label: '工具' },
   { key: 'toolset_resources', label: '工具资源' },
   { key: 'community_posts', label: '社区评论' },
