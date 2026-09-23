@@ -118,7 +118,7 @@ func (s *Service) favoritedSet(ctx context.Context, token string, ids []int, use
 		if errors.Is(err, catalogclient.ErrInsufficientScope) {
 			service.WarnFoldersUnreadable(userID)
 		} else {
-			slog.Warn("galgame: my folders unreadable", "user_id", userID, "err", err)
+			slog.Warn("galgame: my folders unreadable", "user_id", userID, "upstream_status", upstreamStatus(err), "err", err)
 		}
 		return out, nil
 	}

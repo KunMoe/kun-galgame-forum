@@ -2,6 +2,7 @@ package apiv1
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -9,6 +10,7 @@ import (
 	v1 "kun-galgame-api/internal/apiv1"
 	"kun-galgame-api/internal/apiv1/repr"
 	"kun-galgame-api/internal/middleware"
+	"kun-galgame-api/pkg/catalogclient"
 	legacyErrors "kun-galgame-api/pkg/errors"
 	"kun-galgame-api/pkg/problem"
 	"kun-galgame-api/pkg/userclient"
@@ -85,4 +87,22 @@ func renderable(users map[int]userclient.User, id int) bool {
 
 func catalogUnavailable(appErr *legacyErrors.AppError) *problem.Problem {
 	return problem.Unavailable(appErr)
+}
+
+func upstreamStatus(err error) string {
+	var api *catalogclient.UserAPIError
+	switch {
+	case errors.As(err, &api):
+		return strconv.Itoa(api.Status)
+	case errors.Is(err, catalogclient.ErrUnauthorized):
+		return "401"
+	case errors.Is(err, catalogclient.ErrInsufficientScope):
+		return "403"
+	case errors.Is(err, catalogclient.ErrNotFound):
+		return "404"
+	case errors.Is(err, catalogclient.ErrUpstream):
+		return "5xx"
+	default:
+		return "transport"
+	}
 }

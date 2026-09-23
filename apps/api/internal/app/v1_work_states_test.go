@@ -75,7 +75,11 @@ func TestV1ListMyWorkStatesHoldingsErrorKeepsLikes(t *testing.T) {
 	if _, body := f.wk(t, http.MethodPut, g4WorkPath(g4WorkLive)+"/like", "/works/{work_id}/like", "sess-bob", nil); body["code"] != nil {
 		t.Fatalf("like %+v", body)
 	}
-	f.user.holdingsErr = catalogclient.ErrUnauthorized
+	f.user.holdingsErr = &catalogclient.UserAPIError{Status: http.StatusTooManyRequests, Message: "quota"}
+	var buf bytes.Buffer
+	prev := slog.Default()
+	slog.SetDefault(slog.New(slog.NewTextHandler(&buf, nil)))
+	t.Cleanup(func() { slog.SetDefault(prev) })
 	resp, body := f.wk(t, http.MethodGet, "/api/v1/me/work-states?work_ids="+idStr(g4WorkLive), "/me/work-states", "sess-bob", nil)
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("a folder-plane failure took the likes down with it: %d %+v", resp.StatusCode, body)
@@ -87,6 +91,10 @@ func TestV1ListMyWorkStatesHoldingsErrorKeepsLikes(t *testing.T) {
 	item, _ := items[0].(map[string]any)
 	if item["has_liked"] != true || item["has_favorited"] != false {
 		t.Errorf("item %+v", item)
+	}
+	line := buf.String()
+	if !strings.Contains(line, "level=WARN") || !strings.Contains(line, "my folders unreadable") || !strings.Contains(line, "upstream_status=429") {
+		t.Errorf("the degrade must log WARN with the upstream status: %q", line)
 	}
 }
 

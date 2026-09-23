@@ -259,7 +259,7 @@ func (s *Service) favorited(ctx context.Context, token string, workID int) bool 
 		if errors.Is(err, catalogclient.ErrInsufficientScope) {
 			service.WarnFavoriteUnreadable(workID)
 		} else {
-			slog.Warn("galgame: favourite state unreadable", "work_id", workID, "err", err)
+			slog.Warn("galgame: favourite state unreadable", "work_id", workID, "upstream_status", upstreamStatus(err), "err", err)
 		}
 		return false
 	}

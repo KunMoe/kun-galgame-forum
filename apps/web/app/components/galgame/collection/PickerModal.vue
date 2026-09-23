@@ -19,6 +19,7 @@ const isOpen = computed({
 const collections = ref<MyCollectionForGalgame[]>([])
 const selected = ref<Set<number>>(new Set())
 const pending = ref(false)
+const loaded = ref(false)
 const saving = ref(false)
 const createOpen = ref(false)
 
@@ -28,6 +29,7 @@ const load = async (preserveSelection = false) => {
     `/galgame/${props.workId}/collections/mine`
   )
   pending.value = false
+  loaded.value = !!res
   collections.value = res?.collections ?? []
   if (!preserveSelection) {
     selected.value = new Set(
@@ -66,6 +68,9 @@ const onCreated = async (newId?: number) => {
 }
 
 const save = async () => {
+  if (!loaded.value) {
+    return
+  }
   saving.value = true
   const ids = [...selected.value]
   const result = await kunFetch<string>(
@@ -156,7 +161,12 @@ const visibilityIcon = (v: CollectionVisibility) =>
         <KunButton variant="light" color="danger" @click="isOpen = false">
           取消
         </KunButton>
-        <KunButton color="primary" :loading="saving" @click="save">
+        <KunButton
+          color="primary"
+          :loading="saving"
+          :disabled="!loaded"
+          @click="save"
+        >
           保存
         </KunButton>
       </div>
