@@ -1,6 +1,6 @@
 # API v1 changelog
 
-## 2026-09-23 (X1d image uploads, 413 everywhere)
+## 2026-09-24 (X1d image uploads, 413 everywhere)
 
 Breaking for `POST /api/image/topic`, `/api/image/cover`, `/api/image/message` and `/api/image/galgame`; all four are gone. No App build calls them.
 

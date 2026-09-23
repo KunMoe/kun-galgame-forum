@@ -20658,6 +20658,16 @@
             },
             "description": "PERMISSION_REQUIRED when the caller lacks doc.edit."
           },
+          "413": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Request Entity Too Large"
+          },
           "415": {
             "content": {
               "application/problem+json": {
@@ -20801,6 +20811,16 @@
               }
             },
             "description": "ALREADY_EXISTS when another doc uses the slug."
+          },
+          "413": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Request Entity Too Large"
           },
           "415": {
             "content": {
@@ -21143,6 +21163,16 @@
             },
             "description": "ALREADY_EXISTS when another doc uses the new slug."
           },
+          "413": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Request Entity Too Large"
+          },
           "415": {
             "content": {
               "application/problem+json": {
@@ -21245,6 +21275,16 @@
               }
             },
             "description": "PERMISSION_REQUIRED when the caller lacks friend_link.edit."
+          },
+          "413": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Request Entity Too Large"
           },
           "415": {
             "content": {
@@ -21389,6 +21429,16 @@
               }
             },
             "description": "Conflict"
+          },
+          "413": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Request Entity Too Large"
           },
           "415": {
             "content": {
@@ -21720,6 +21770,16 @@
               }
             },
             "description": "NOT_FOUND when the link does not exist."
+          },
+          "413": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Request Entity Too Large"
           },
           "415": {
             "content": {
@@ -22506,6 +22566,16 @@
             },
             "description": "INVALID_STATE_TRANSITION when the item is already claimed or decided; detail names its current state."
           },
+          "413": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Request Entity Too Large"
+          },
           "415": {
             "content": {
               "application/problem+json": {
@@ -22683,6 +22753,16 @@
               }
             },
             "description": "PERMISSION_REQUIRED when the caller is not an admin."
+          },
+          "413": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Request Entity Too Large"
           },
           "415": {
             "content": {
@@ -23129,6 +23209,16 @@
             },
             "description": "NOT_FOUND when the account service has no such user."
           },
+          "413": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Request Entity Too Large"
+          },
           "415": {
             "content": {
               "application/problem+json": {
@@ -23272,6 +23362,16 @@
               }
             },
             "description": "ALREADY_EXISTS when the slug is taken; IDEMPOTENCY_KEY_REUSED or IDEMPOTENCY_REQUEST_IN_PROGRESS."
+          },
+          "413": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Request Entity Too Large"
           },
           "415": {
             "content": {
@@ -23624,6 +23724,16 @@
             },
             "description": "ALREADY_EXISTS when the new slug is taken."
           },
+          "413": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Request Entity Too Large"
+          },
           "415": {
             "content": {
               "application/problem+json": {
@@ -23767,6 +23877,16 @@
               }
             },
             "description": "ALREADY_EXISTS when the slug is taken; IDEMPOTENCY_KEY_REUSED or IDEMPOTENCY_REQUEST_IN_PROGRESS."
+          },
+          "413": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Request Entity Too Large"
           },
           "415": {
             "content": {
@@ -24109,6 +24229,16 @@
             },
             "description": "ALREADY_EXISTS when the new slug is taken."
           },
+          "413": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Request Entity Too Large"
+          },
           "415": {
             "content": {
               "application/problem+json": {
@@ -24252,6 +24382,16 @@
               }
             },
             "description": "ALREADY_EXISTS when the slug is taken; IDEMPOTENCY_KEY_REUSED or IDEMPOTENCY_REQUEST_IN_PROGRESS."
+          },
+          "413": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Request Entity Too Large"
           },
           "415": {
             "content": {
@@ -24594,6 +24734,16 @@
             },
             "description": "ALREADY_EXISTS when the new slug is taken."
           },
+          "413": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Request Entity Too Large"
+          },
           "415": {
             "content": {
               "application/problem+json": {
@@ -24737,6 +24887,16 @@
               }
             },
             "description": "ALREADY_EXISTS when the host or title is taken; IDEMPOTENCY_KEY_REUSED or IDEMPOTENCY_REQUEST_IN_PROGRESS."
+          },
+          "413": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Request Entity Too Large"
           },
           "415": {
             "content": {
@@ -25078,6 +25238,16 @@
               }
             },
             "description": "ALREADY_EXISTS when the new host or title is taken."
+          },
+          "413": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Request Entity Too Large"
           },
           "415": {
             "content": {
@@ -25735,6 +25905,16 @@
               }
             },
             "description": "Not Found"
+          },
+          "413": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Request Entity Too Large"
           },
           "415": {
             "content": {
@@ -27654,6 +27834,198 @@
         ]
       }
     },
+    "/images": {
+      "post": {
+        "description": "Stores an image on the image host for use on this site. purpose is content for anything published here (topic bodies and covers, banners, icons, prizes) and message for private messages. Each user may upload 50 images per day, Asia/Shanghai; a failed upload does not count. sexual is null for a new image until the nightly grader has seen it. file's part must be image/* and at most 10 MiB. Location is the image URL. Persist the hash, never the URL. An Idempotency-Key retry must resend the same bytes: the multipart boundary is part of the fingerprint, so a rebuilt form conflicts.",
+        "operationId": "createImage",
+        "parameters": [
+          {
+            "description": "Caller-generated UUID (canonical 8-4-4-4-12 hex, any version) or 26-character Crockford ULID. Scoped to (user, operation, key) for 24 hours.",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "schema": {
+              "description": "Caller-generated UUID (canonical 8-4-4-4-12 hex, any version) or 26-character Crockford ULID. Scoped to (user, operation, key) for 24 hours.",
+              "maxLength": 36,
+              "minLength": 26,
+              "pattern": "^([0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}|[0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{26})$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "encoding": {
+                "file": {
+                  "contentType": "image/*"
+                }
+              },
+              "schema": {
+                "properties": {
+                  "file": {
+                    "contentMediaType": "application/octet-stream",
+                    "description": "The image. Its part must be image/* and at most 10 MiB.",
+                    "format": "binary",
+                    "maxLength": 10485760,
+                    "type": "string"
+                  },
+                  "purpose": {
+                    "description": "What the image is for: content or message.",
+                    "enum": [
+                      "content",
+                      "message"
+                    ],
+                    "maxLength": 10,
+                    "type": "string",
+                    "x-vocabulary-closed": true
+                  }
+                },
+                "required": [
+                  "file",
+                  "purpose"
+                ],
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Image"
+                }
+              }
+            },
+            "description": "Created",
+            "headers": {
+              "Location": {
+                "schema": {
+                  "description": "The image's absolute URL, the same as url in the body.",
+                  "format": "uri",
+                  "maxLength": 512,
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "413": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "PAYLOAD_TOO_LARGE when the whole body is over the server's limit."
+          },
+          "415": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "UNSUPPORTED_MEDIA_TYPE when the body is not multipart/form-data, or file is not an image the image host accepts."
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED when file or purpose is missing or wrong, or file is over 10 MiB. IMAGE_REJECTED when the image host's moderation refuses the image."
+          },
+          "429": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "IMAGE_DAILY_LIMIT_REACHED when the caller has used today's 50 uploads."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the image host is not configured or cannot be reached."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Upload an image",
+        "tags": [
+          "images"
+        ]
+      }
+    },
     "/lotteries/{lottery_id}": {
       "delete": {
         "description": "Deletes the lottery with its prizes, entries and held codes, and refunds the author's escrow if it still holds any. The author may delete it before the draw; staff holding the manage permission may also delete a drawn one. Nobody may delete it while it is being drawn. NOT_FOUND when the lottery does not exist, was created by a banned user, or belongs to a topic getTopic would not return to the caller.",
@@ -27961,6 +28333,16 @@
               }
             },
             "description": "INVALID_STATE_TRANSITION when state is sent and the lottery is not open; LOTTERY_CLOSED when fields are sent and the lottery is not open."
+          },
+          "413": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Request Entity Too Large"
           },
           "415": {
             "content": {
@@ -28704,6 +29086,16 @@
             },
             "description": "INVALID_STATE_TRANSITION when the move is not allowed from the current state or for this kind of prize."
           },
+          "413": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Request Entity Too Large"
+          },
           "415": {
             "content": {
               "application/problem+json": {
@@ -29076,6 +29468,16 @@
               }
             },
             "description": "Forbidden"
+          },
+          "413": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Request Entity Too Large"
           },
           "415": {
             "content": {
@@ -29678,6 +30080,16 @@
             },
             "description": "Conflict"
           },
+          "413": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Request Entity Too Large"
+          },
           "415": {
             "content": {
               "application/problem+json": {
@@ -29938,6 +30350,16 @@
             },
             "description": "NOT_FOUND when the message is not in this conversation, or user_id is the caller."
           },
+          "413": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Request Entity Too Large"
+          },
           "415": {
             "content": {
               "application/problem+json": {
@@ -30071,6 +30493,16 @@
               }
             },
             "description": "NOT_FOUND when the peer does not exist, is not renderable, or is the caller."
+          },
+          "413": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Request Entity Too Large"
           },
           "415": {
             "content": {
@@ -30215,6 +30647,16 @@
               }
             },
             "description": "ALREADY_EXISTS when a pending application already exists. INVALID_STATE_TRANSITION when the caller is already a creator. CREATOR_APPLICATION_COOLDOWN when a declined application is still cooling down."
+          },
+          "413": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Request Entity Too Large"
           },
           "415": {
             "content": {
@@ -30584,6 +31026,16 @@
             },
             "description": "Forbidden"
           },
+          "413": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Request Entity Too Large"
+          },
           "415": {
             "content": {
               "application/problem+json": {
@@ -30844,6 +31296,16 @@
               }
             },
             "description": "Forbidden"
+          },
+          "413": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Request Entity Too Large"
           },
           "415": {
             "content": {
@@ -31224,6 +31686,16 @@
             },
             "description": "SCOPE_REQUIRED when the account has not granted this site the preferences scope."
           },
+          "413": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Request Entity Too Large"
+          },
           "415": {
             "content": {
               "application/problem+json": {
@@ -31513,6 +31985,16 @@
             },
             "description": "PRECONDITION_FAILED when If-Match does not match the current version."
           },
+          "413": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Request Entity Too Large"
+          },
           "415": {
             "content": {
               "application/problem+json": {
@@ -31632,6 +32114,16 @@
               }
             },
             "description": "USERNAME_TAKEN when the name is already in use."
+          },
+          "413": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Request Entity Too Large"
           },
           "415": {
             "content": {
@@ -31993,6 +32485,16 @@
               }
             },
             "description": "DRAFT_LIMIT_REACHED when the caller already holds 30 drafts."
+          },
+          "413": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Request Entity Too Large"
           },
           "415": {
             "content": {
@@ -33795,6 +34297,16 @@
             },
             "description": "Not Found"
           },
+          "413": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Request Entity Too Large"
+          },
           "415": {
             "content": {
               "application/problem+json": {
@@ -34050,6 +34562,16 @@
               }
             },
             "description": "POLL_CLOSED when the poll is past closes_at, or VOTE_ALREADY_CAST when the caller has voted and the poll does not allow changing a vote."
+          },
+          "413": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Request Entity Too Large"
           },
           "415": {
             "content": {
@@ -34634,6 +35156,16 @@
             },
             "description": "IDEMPOTENCY_KEY_REUSED or IDEMPOTENCY_REQUEST_IN_PROGRESS."
           },
+          "413": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Request Entity Too Large"
+          },
           "415": {
             "content": {
               "application/problem+json": {
@@ -34966,6 +35498,16 @@
             },
             "description": "NOT_FOUND when the quiz does not exist or its author is not renderable."
           },
+          "413": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Request Entity Too Large"
+          },
           "415": {
             "content": {
               "application/problem+json": {
@@ -35271,6 +35813,16 @@
               }
             },
             "description": "ALREADY_EXISTS, IDEMPOTENCY_KEY_REUSED or IDEMPOTENCY_REQUEST_IN_PROGRESS."
+          },
+          "413": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Request Entity Too Large"
           },
           "415": {
             "content": {
@@ -35611,6 +36163,16 @@
               }
             },
             "description": "NOT_FOUND when the quiz does not exist or its author is not renderable."
+          },
+          "413": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Request Entity Too Large"
           },
           "415": {
             "content": {
@@ -36379,6 +36941,16 @@
             },
             "description": "ALREADY_EXISTS when the caller has already rated the work; IDEMPOTENCY_KEY_REUSED or IDEMPOTENCY_REQUEST_IN_PROGRESS."
           },
+          "413": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Request Entity Too Large"
+          },
           "415": {
             "content": {
               "application/problem+json": {
@@ -36710,6 +37282,16 @@
               }
             },
             "description": "NOT_FOUND when no such rating exists, its author is banned, or catalog no longer shows its work."
+          },
+          "413": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Request Entity Too Large"
           },
           "415": {
             "content": {
@@ -37249,6 +37831,16 @@
             },
             "description": "Not Found"
           },
+          "413": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Request Entity Too Large"
+          },
           "415": {
             "content": {
               "application/problem+json": {
@@ -37415,6 +38007,16 @@
               }
             },
             "description": "Conflict"
+          },
+          "413": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Request Entity Too Large"
           },
           "415": {
             "content": {
@@ -38119,6 +38721,16 @@
               }
             },
             "description": "IDEMPOTENCY_KEY_REUSED or IDEMPOTENCY_REQUEST_IN_PROGRESS."
+          },
+          "413": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Request Entity Too Large"
           },
           "415": {
             "content": {
@@ -40298,6 +40910,16 @@
             },
             "description": "IDEMPOTENCY_KEY_REUSED or IDEMPOTENCY_REQUEST_IN_PROGRESS."
           },
+          "413": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Request Entity Too Large"
+          },
           "415": {
             "content": {
               "application/problem+json": {
@@ -40639,6 +41261,16 @@
               }
             },
             "description": "INVALID_STATE_TRANSITION when the transition is not in the state machine, the task is done or discarded and cannot be edited, or another caller moved it first."
+          },
+          "413": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Request Entity Too Large"
           },
           "415": {
             "content": {
@@ -41006,6 +41638,16 @@
             },
             "description": "IDEMPOTENCY_KEY_REUSED or IDEMPOTENCY_REQUEST_IN_PROGRESS."
           },
+          "413": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Request Entity Too Large"
+          },
           "415": {
             "content": {
               "application/problem+json": {
@@ -41348,6 +41990,16 @@
             },
             "description": "ALREADY_EXISTS when an alias collides."
           },
+          "413": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Request Entity Too Large"
+          },
           "415": {
             "content": {
               "application/problem+json": {
@@ -41481,6 +42133,16 @@
               }
             },
             "description": "NOT_FOUND when the toolset does not exist or its author is not renderable."
+          },
+          "413": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Request Entity Too Large"
           },
           "415": {
             "content": {
@@ -41648,6 +42310,16 @@
               }
             },
             "description": "ALREADY_EXISTS when the artifact is already bound or the URL is taken; IDEMPOTENCY_KEY_REUSED or IDEMPOTENCY_REQUEST_IN_PROGRESS."
+          },
+          "413": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Request Entity Too Large"
           },
           "415": {
             "content": {
@@ -42026,6 +42698,16 @@
               }
             },
             "description": "ALREADY_EXISTS when the new URL is taken."
+          },
+          "413": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Request Entity Too Large"
           },
           "415": {
             "content": {
@@ -42530,6 +43212,16 @@
             },
             "description": "IDEMPOTENCY_KEY_REUSED or IDEMPOTENCY_REQUEST_IN_PROGRESS."
           },
+          "413": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Request Entity Too Large"
+          },
           "415": {
             "content": {
               "application/problem+json": {
@@ -42927,6 +43619,16 @@
             },
             "description": "INVALID_STATE_TRANSITION when state is not completed."
           },
+          "413": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Request Entity Too Large"
+          },
           "415": {
             "content": {
               "application/problem+json": {
@@ -43281,6 +43983,16 @@
             },
             "description": "Conflict"
           },
+          "413": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Request Entity Too Large"
+          },
           "415": {
             "content": {
               "application/problem+json": {
@@ -43528,6 +44240,16 @@
             },
             "description": "Not Found"
           },
+          "413": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Request Entity Too Large"
+          },
           "415": {
             "content": {
               "application/problem+json": {
@@ -43763,6 +44485,16 @@
               }
             },
             "description": "Not Found"
+          },
+          "413": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Request Entity Too Large"
           },
           "415": {
             "content": {
@@ -44251,6 +44983,16 @@
             },
             "description": "Conflict"
           },
+          "413": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Request Entity Too Large"
+          },
           "415": {
             "content": {
               "application/problem+json": {
@@ -44486,6 +45228,16 @@
               }
             },
             "description": "Not Found"
+          },
+          "413": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Request Entity Too Large"
           },
           "415": {
             "content": {
@@ -44756,6 +45508,16 @@
               }
             },
             "description": "Conflict"
+          },
+          "413": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Request Entity Too Large"
           },
           "415": {
             "content": {
@@ -45513,6 +46275,16 @@
             },
             "description": "Conflict"
           },
+          "413": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Request Entity Too Large"
+          },
           "415": {
             "content": {
               "application/problem+json": {
@@ -45903,6 +46675,16 @@
             },
             "description": "Conflict"
           },
+          "413": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Request Entity Too Large"
+          },
           "415": {
             "content": {
               "application/problem+json": {
@@ -46252,6 +47034,16 @@
             },
             "description": "Conflict"
           },
+          "413": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Request Entity Too Large"
+          },
           "415": {
             "content": {
               "application/problem+json": {
@@ -46583,6 +47375,16 @@
               }
             },
             "description": "NOT_FOUND when the entry does not exist."
+          },
+          "413": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Request Entity Too Large"
           },
           "415": {
             "content": {
@@ -47717,6 +48519,16 @@
             },
             "description": "INVALID_STATE_TRANSITION when the wall is closed; IDEMPOTENCY_KEY_REUSED or IDEMPOTENCY_REQUEST_IN_PROGRESS."
           },
+          "413": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Request Entity Too Large"
+          },
           "415": {
             "content": {
               "application/problem+json": {
@@ -48069,6 +48881,16 @@
             },
             "description": "INVALID_STATE_TRANSITION when the comment is a tombstone."
           },
+          "413": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Request Entity Too Large"
+          },
           "415": {
             "content": {
               "application/problem+json": {
@@ -48227,6 +49049,16 @@
               }
             },
             "description": "INVALID_STATE_TRANSITION when the comment is a tombstone; IDEMPOTENCY_KEY_REUSED or IDEMPOTENCY_REQUEST_IN_PROGRESS."
+          },
+          "413": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Request Entity Too Large"
           },
           "415": {
             "content": {
@@ -49660,6 +50492,198 @@
         "summary": "Resolve a retired wiki company id",
         "tags": [
           "galgame-companies"
+        ]
+      }
+    },
+    "/work-edit-images": {
+      "post": {
+        "description": "Stores an image under the caller's own catalog identity, for a cover or screenshot row of a work edit proposal, which refers to it by hash. preset is cover or screenshot. Not counted against the daily image limit; the catalog applies its own. sexual is always null. file's part must be image/* and at most 10 MiB. Location is the image URL. Persist the hash, never the URL. An Idempotency-Key retry must resend the same bytes: the multipart boundary is part of the fingerprint, so a rebuilt form conflicts.",
+        "operationId": "createWorkEditImage",
+        "parameters": [
+          {
+            "description": "Caller-generated UUID (canonical 8-4-4-4-12 hex, any version) or 26-character Crockford ULID. Scoped to (user, operation, key) for 24 hours.",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "schema": {
+              "description": "Caller-generated UUID (canonical 8-4-4-4-12 hex, any version) or 26-character Crockford ULID. Scoped to (user, operation, key) for 24 hours.",
+              "maxLength": 36,
+              "minLength": 26,
+              "pattern": "^([0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}|[0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{26})$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "encoding": {
+                "file": {
+                  "contentType": "image/*"
+                }
+              },
+              "schema": {
+                "properties": {
+                  "file": {
+                    "contentMediaType": "application/octet-stream",
+                    "description": "The image. Its part must be image/* and at most 10 MiB.",
+                    "format": "binary",
+                    "maxLength": 10485760,
+                    "type": "string"
+                  },
+                  "preset": {
+                    "description": "Which edit slot the image is for: cover or screenshot.",
+                    "enum": [
+                      "cover",
+                      "screenshot"
+                    ],
+                    "maxLength": 10,
+                    "type": "string",
+                    "x-vocabulary-closed": true
+                  }
+                },
+                "required": [
+                  "file",
+                  "preset"
+                ],
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Image"
+                }
+              }
+            },
+            "description": "Created",
+            "headers": {
+              "Location": {
+                "schema": {
+                  "description": "The image's absolute URL, the same as url in the body.",
+                  "format": "uri",
+                  "maxLength": 512,
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SCOPE_REQUIRED when the caller's sign-in lacks the catalog edit scope. PERMISSION_REQUIRED when the catalog refuses the caller."
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "413": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "PAYLOAD_TOO_LARGE when the whole body is over the server's limit."
+          },
+          "415": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "UNSUPPORTED_MEDIA_TYPE when the body is not multipart/form-data, or file is not an image the catalog accepts."
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED when file or preset is missing or wrong, file is over 10 MiB, or the catalog cannot use the image."
+          },
+          "429": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "RATE_LIMITED when the catalog's upload limit is exceeded."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the catalog is not configured or cannot be reached."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Upload an image for a work edit",
+        "tags": [
+          "images"
         ]
       }
     },
