@@ -48,7 +48,7 @@
 
 | # | 问题 | 去向 |
 |---|---|---|
-| 1 | **草稿匿名可读**：`GET /doc/article/:slug` 不查 `status`；公开列表接受 `?status=0` | 状态整个不建模（K25），问题随之消失 |
+| 1 | **草稿匿名可读**：`GET /doc/article/:slug` 不查 `status`；公开列表接受 `?status=0` | 状态整个不建模（K26），问题随之消失 |
 | 2 | 文档首页只取 `limit: 24`，而文档有 29 篇：**5 篇从首页消失** | 网页翻完所有页 |
 | 3 | 列表、分类、标签的 `Count` / `Find` 错误全部丢弃，失败时回空列表 | v1 一律 500 |
 | 4 | `IncrementView` 走 GORM `Update`，**每次浏览都刷新 `updated`**，所以 `updated` 实际上是「最后被看的时间」 | v1 用 `UpdateColumn`；不下发 `created_at` / `updated_at` |
@@ -268,3 +268,32 @@ v1 的 `banner` 只认 hash，而生产 29 张横幅一张 hash 都没有。不�
 | 165 | `DROP TABLE doc_article_tag_relation; DROP TABLE doc_tag;` | **deploy-then-drop**：进默认 exclude，部署后手动 `--only=165` |
 
 其余号段 166–169 未用。
+
+## 13. 实现时对本契约的修正（2026-09-23，只增不改）
+
+1. **加了迁移 166**：幂等地补齐四个 `doc_category` 行（`ON CONFLICT (slug) DO NOTHING`）。生产的 4 行来自 2025-12 的数据导入，空库里一行都没有，于是 K25 的枚举在新库上无处落地、建不了文档。生产上是空操作，随部署自动跑。
+2. **`is_pinned` 是三态查询参数**。huma 不支持指针型 query 参数（注册时 panic），缺席又必须和 `false` 区分开，于是在 `internal/doc/apiv1` 里写了一个 `ParamWrapper` + `ParamReactor`（`optionalBool`），schema 仍是 `boolean`，所以 `strictBooleans` 照样只收 `true` / `false`。没有改共享的 `internal/apiv1`。
+3. **`AdminDoc.content_markdown` 的 `maxLength` 是 100007**（列宽），请求体仍是 100000：响应要能装下库里任何已有的值。
+4. **作者被封禁时 `author` 按不可渲染处理**（`name: null`），文档本身照常读：文档是站方内容，不随作者封禁消失。上游 `/users/batch` 失败仍是 503（与话题读面一致）。
+5. **变异 13b（`PATCH` 不存在的 id 静默成功）是等价变异**：`Update` 之后还要 `loadAdminDoc` 重读，缺席照样 404。于是删掉了仓储层多余的 `found` 返回值，只留重读这一个判据，这道题也就不再适用。
+6. **变异 15 由静态守卫杀掉**，行为测试杀不掉：Bearer 夹具的版主角色在 `SiteRoles` 里，`perm.CanUser(u.ID, u.Roles, …)` 照样判不出管理能力（与 T4 §8 #6 同理）。`internal/middleware/bearer_guard_test.go` 扫到 `perm.CanUser(` 就红。
+
+### 变异执行结果
+
+| # | 结果 |
+|---|---|
+| 1 | 杀：`TestV1DocsWalkEverySort` |
+| 2 | 杀：`TestV1DocsFilters`、`TestV1DocsWalkEverySort` |
+| 3 | 杀：`TestV1DocsFilters` |
+| 4 | 杀：`TestV1DocsFilters` |
+| 5 | 杀（不计数、计数写 `updated` 两种破坏）：`TestV1DocGetCountsViewsWithoutTouchingUpdated` |
+| 6 | 杀：`TestV1AdminDocFacesNeedTheirPermissions` |
+| 7 | 杀：`TestV1AdminDocFacesNeedTheirPermissions` |
+| 8 | 杀：`TestV1AdminDocCreate`、`TestV1AdminDocPatch` |
+| 9 | 杀：`TestV1AdminDocCreate` |
+| 10 | 杀：`TestV1AdminDocPatch` |
+| 11 | 杀：`TestV1DocOrderReplacesTheWholeSequence` |
+| 12 | 杀：`TestV1DocOrderReplacesTheWholeSequence` |
+| 13 | 删除：杀（`TestV1AdminDocGetAndDelete`）；`PATCH`：等价变异，见上文 #5 |
+| 14 | 杀：`TestV1DocUnknownCategoryIsNotFiledElsewhere` |
+| 15 | 杀：`TestCapabilityChecksGoThroughUserInfo`（静态守卫） |
