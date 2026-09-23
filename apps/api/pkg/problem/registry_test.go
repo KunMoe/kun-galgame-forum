@@ -21,6 +21,7 @@ var requiredCodes = []struct {
 	{CodeScopeRequired, DomainPlatform, 403},
 	{CodeAccountBanned, DomainKungal, 403},
 	{CodeNotFound, DomainPlatform, 404},
+	{CodeEntityMerged, DomainPlatform, 404},
 	{CodeMethodNotAllowed, DomainPlatform, 405},
 	{CodeIdempotencyKeyReused, DomainPlatform, 409},
 	{CodeIdempotencyRequestInProgress, DomainKungal, 409},

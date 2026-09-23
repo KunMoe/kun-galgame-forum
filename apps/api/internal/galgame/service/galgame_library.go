@@ -11,6 +11,10 @@ import (
 	"kun-galgame-api/pkg/errors"
 )
 
+// EntityUsesLocalList reports whether an entity page's work list leaves the
+// catalog membership for local SQL, which only knows resource-carrying rows.
+func EntityUsesLocalList(f model.GalgameListFilter) bool { return entityUsesLocalList(f) }
+
 func entityUsesLocalList(f model.GalgameListFilter) bool {
 	if f.HasResourcePredicate() {
 		return true

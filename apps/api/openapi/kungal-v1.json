@@ -706,6 +706,36 @@
         ],
         "type": "object"
       },
+      "Appearance": {
+        "properties": {
+          "object": {
+            "description": "Type discriminant. Always appearance.",
+            "enum": [
+              "appearance"
+            ],
+            "maxLength": 10,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "voices": {
+            "description": "Who voices the character in that work. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/CreditNameRef"
+            },
+            "type": "array"
+          },
+          "work_summary": {
+            "$ref": "#/components/schemas/WorkSummary",
+            "description": "The work the character appears in."
+          }
+        },
+        "required": [
+          "object",
+          "work_summary",
+          "voices"
+        ],
+        "type": "object"
+      },
       "BatchListTopicState": {
         "properties": {
           "items": {
@@ -866,6 +896,92 @@
         ],
         "type": "object"
       },
+      "CatalogIntro": {
+        "properties": {
+          "data_source": {
+            "description": "Where catalog took the text from, such as vndb or erogamescape. null when unrecorded.",
+            "maxLength": 64,
+            "pattern": "^[a-z0-9][a-z0-9_-]*$",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "is_machine": {
+            "description": "Whether the text is a machine translation.",
+            "type": "boolean"
+          },
+          "locale": {
+            "description": "BCP-47 tag of the text, as catalog records it.",
+            "maxLength": 35,
+            "pattern": "^[A-Za-z]{1,8}(-[A-Za-z0-9]{1,8})*$",
+            "type": "string"
+          },
+          "value": {
+            "description": "The text. Free text; never use it as a decision input.",
+            "maxLength": 65535,
+            "type": "string"
+          }
+        },
+        "required": [
+          "locale",
+          "value",
+          "is_machine",
+          "data_source"
+        ],
+        "type": "object"
+      },
+      "CatalogLink": {
+        "properties": {
+          "site": {
+            "description": "What the link points at, such as official_site, twitter, vndb, bangumi or erogamescape. An open vocabulary; clients label the tokens themselves.",
+            "maxLength": 64,
+            "pattern": "^[a-z0-9][a-z0-9_-]*$",
+            "type": "string"
+          },
+          "url": {
+            "description": "The address.",
+            "format": "uri",
+            "maxLength": 2048,
+            "type": "string"
+          }
+        },
+        "required": [
+          "site",
+          "url"
+        ],
+        "type": "object"
+      },
+      "CatalogName": {
+        "properties": {
+          "display_name": {
+            "description": "The entity's own name. Never empty. Free text; never use it as a decision input.",
+            "maxLength": 512,
+            "type": "string"
+          },
+          "latin": {
+            "description": "Romanization of the name. null when none is recorded. Free text; never use it as a decision input.",
+            "maxLength": 512,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "localized": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/LocalizedName"
+            },
+            "description": "Names by BCP-47 tag, sparse. Empty object when there are none, never null.",
+            "type": "object"
+          }
+        },
+        "required": [
+          "display_name",
+          "latin",
+          "localized"
+        ],
+        "type": "object"
+      },
       "CategoryCreate": {
         "properties": {
           "description": {
@@ -928,6 +1044,235 @@
             "type": "integer"
           }
         },
+        "type": "object"
+      },
+      "Character": {
+        "properties": {
+          "display_name": {
+            "description": "The entity's own name. Never empty. Free text; never use it as a decision input.",
+            "maxLength": 512,
+            "type": "string"
+          },
+          "figure": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Image"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "A full-body standing picture. null when catalog has none."
+          },
+          "id": {
+            "description": "Character id: the catalog character id, which is also the id in the web's /galgame/character/{id}.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "image": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Image"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The character's portrait. null when catalog has none."
+          },
+          "intros": {
+            "description": "Profiles in every language catalog has, unordered. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/CatalogIntro"
+            },
+            "type": "array"
+          },
+          "lang": {
+            "description": "The character's own language as a BCP-47 tag. null when unrecorded.",
+            "maxLength": 35,
+            "pattern": "^[A-Za-z]{1,8}(-[A-Za-z0-9]{1,8})*$",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "latin": {
+            "description": "Romanization of the name. null when none is recorded. Free text; never use it as a decision input.",
+            "maxLength": 512,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "links": {
+            "description": "Database pages about the character. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/CatalogLink"
+            },
+            "type": "array"
+          },
+          "localized": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/LocalizedName"
+            },
+            "description": "Names by BCP-47 tag, sparse. Empty object when there are none, never null.",
+            "type": "object"
+          },
+          "object": {
+            "description": "Type discriminant. Always character.",
+            "enum": [
+              "character"
+            ],
+            "maxLength": 9,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "traits": {
+            "description": "Traits in catalog's order. Adult traits are left out unless include_nsfw=true. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/CharacterTrait"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "object",
+          "id",
+          "lang",
+          "image",
+          "figure",
+          "intros",
+          "traits",
+          "links",
+          "display_name",
+          "latin",
+          "localized"
+        ],
+        "type": "object"
+      },
+      "CharacterRef": {
+        "properties": {
+          "display_name": {
+            "description": "The entity's own name. Never empty. Free text; never use it as a decision input.",
+            "maxLength": 512,
+            "type": "string"
+          },
+          "id": {
+            "description": "Character id: the catalog character id, which is also the id in the web's /galgame/character/{id}.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "latin": {
+            "description": "Romanization of the name. null when none is recorded. Free text; never use it as a decision input.",
+            "maxLength": 512,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "localized": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/LocalizedName"
+            },
+            "description": "Names by BCP-47 tag, sparse. Empty object when there are none, never null.",
+            "type": "object"
+          },
+          "object": {
+            "description": "Type discriminant. Always character.",
+            "enum": [
+              "character"
+            ],
+            "maxLength": 9,
+            "type": "string",
+            "x-vocabulary-closed": true
+          }
+        },
+        "required": [
+          "object",
+          "id",
+          "display_name",
+          "latin",
+          "localized"
+        ],
+        "type": "object"
+      },
+      "CharacterTrait": {
+        "properties": {
+          "display_name": {
+            "description": "The entity's own name. Never empty. Free text; never use it as a decision input.",
+            "maxLength": 512,
+            "type": "string"
+          },
+          "id": {
+            "description": "Catalog trait id.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "is_lie": {
+            "description": "Whether the trait is one the story later reveals to be false.",
+            "type": "boolean"
+          },
+          "is_sexual": {
+            "description": "Whether the trait is adult content.",
+            "type": "boolean"
+          },
+          "latin": {
+            "description": "Romanization of the name. null when none is recorded. Free text; never use it as a decision input.",
+            "maxLength": 512,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "localized": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/LocalizedName"
+            },
+            "description": "Names by BCP-47 tag, sparse. Empty object when there are none, never null.",
+            "type": "object"
+          },
+          "object": {
+            "description": "Type discriminant. Always trait.",
+            "enum": [
+              "trait"
+            ],
+            "maxLength": 5,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "spoiler_level": {
+            "description": "How much the trait gives away.",
+            "enum": [
+              "none",
+              "minor",
+              "major"
+            ],
+            "maxLength": 5,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "trait_group": {
+            "$ref": "#/components/schemas/CatalogName",
+            "description": "The group the trait sits in, such as hair or personality."
+          }
+        },
+        "required": [
+          "object",
+          "id",
+          "trait_group",
+          "spoiler_level",
+          "is_lie",
+          "is_sexual",
+          "display_name",
+          "latin",
+          "localized"
+        ],
         "type": "object"
       },
       "CheckIn": {
@@ -1209,6 +1554,448 @@
           "can_edit",
           "can_delete",
           "can_like"
+        ],
+        "type": "object"
+      },
+      "Company": {
+        "properties": {
+          "aliases": {
+            "description": "Other names it goes by, never its display_name. Empty array, never null.",
+            "items": {
+              "description": "One alias. Free text; never use it as a decision input.",
+              "maxLength": 512,
+              "type": "string"
+            },
+            "maxItems": 1000,
+            "type": "array"
+          },
+          "catalog_work_count": {
+            "description": "Works catalog files under it, NSFW ones included. How many a reader can page through is the total of its works collection.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "company_kind": {
+            "description": "What sort of company it is.",
+            "enum": [
+              "game_brand",
+              "bunko",
+              "publisher",
+              "anime_studio",
+              "doujin_circle",
+              "group"
+            ],
+            "maxLength": 13,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "display_name": {
+            "description": "The entity's own name. Never empty. Free text; never use it as a decision input.",
+            "maxLength": 512,
+            "type": "string"
+          },
+          "id": {
+            "description": "Company id: the catalog company id, which is also the id in the web's /galgame/official/{id}.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "intros": {
+            "description": "Descriptions in every language catalog has, unordered. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/CatalogIntro"
+            },
+            "type": "array"
+          },
+          "lang": {
+            "description": "The company's own language as a BCP-47 tag. null when unrecorded.",
+            "maxLength": 35,
+            "pattern": "^[A-Za-z]{1,8}(-[A-Za-z0-9]{1,8})*$",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "latin": {
+            "description": "Romanization of the name. null when none is recorded. Free text; never use it as a decision input.",
+            "maxLength": 512,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "links": {
+            "description": "Official site, social accounts and database pages, in catalog's order. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/CatalogLink"
+            },
+            "type": "array"
+          },
+          "localized": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/LocalizedName"
+            },
+            "description": "Names by BCP-47 tag, sparse. Empty object when there are none, never null.",
+            "type": "object"
+          },
+          "logo": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Image"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The company's logo. null when catalog has none."
+          },
+          "object": {
+            "description": "Type discriminant. Always company.",
+            "enum": [
+              "company"
+            ],
+            "maxLength": 7,
+            "type": "string",
+            "x-vocabulary-closed": true
+          }
+        },
+        "required": [
+          "object",
+          "id",
+          "company_kind",
+          "logo",
+          "aliases",
+          "catalog_work_count",
+          "lang",
+          "links",
+          "intros",
+          "display_name",
+          "latin",
+          "localized"
+        ],
+        "type": "object"
+      },
+      "CompanyGraph": {
+        "properties": {
+          "company_id": {
+            "description": "The company the graph was drawn around.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "edges": {
+            "description": "Relations between the nodes, each stored in both directions. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/CompanyGraphEdge"
+            },
+            "type": "array"
+          },
+          "nodes": {
+            "description": "Every company in the family, this one included. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/CompanyGraphNode"
+            },
+            "type": "array"
+          },
+          "object": {
+            "description": "Type discriminant. Always company_graph.",
+            "enum": [
+              "company_graph"
+            ],
+            "maxLength": 13,
+            "type": "string",
+            "x-vocabulary-closed": true
+          }
+        },
+        "required": [
+          "object",
+          "company_id",
+          "nodes",
+          "edges"
+        ],
+        "type": "object"
+      },
+      "CompanyGraphEdge": {
+        "properties": {
+          "from_company_id": {
+            "description": "The company the relation is stated from.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "relation": {
+            "description": "What to_company is to from_company. Every relation also appears reversed: parent with subsidiary, imprint with imprint_of, succeeded_by with formerly, spawned with origin.",
+            "enum": [
+              "parent",
+              "subsidiary",
+              "imprint",
+              "imprint_of",
+              "succeeded_by",
+              "formerly",
+              "spawned",
+              "origin"
+            ],
+            "maxLength": 12,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "to_company_id": {
+            "description": "The company it points at.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "from_company_id",
+          "to_company_id",
+          "relation"
+        ],
+        "type": "object"
+      },
+      "CompanyGraphNode": {
+        "properties": {
+          "catalog_work_count": {
+            "description": "Works catalog files under it, NSFW ones included. How many a reader can page through is the total of its works collection.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "display_name": {
+            "description": "The entity's own name. Never empty. Free text; never use it as a decision input.",
+            "maxLength": 512,
+            "type": "string"
+          },
+          "id": {
+            "description": "Company id.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "latin": {
+            "description": "Romanization of the name. null when none is recorded. Free text; never use it as a decision input.",
+            "maxLength": 512,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "localized": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/LocalizedName"
+            },
+            "description": "Names by BCP-47 tag, sparse. Empty object when there are none, never null.",
+            "type": "object"
+          },
+          "logo": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Image"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The company's logo. null when catalog has none."
+          },
+          "object": {
+            "description": "Type discriminant. Always company.",
+            "enum": [
+              "company"
+            ],
+            "maxLength": 7,
+            "type": "string",
+            "x-vocabulary-closed": true
+          }
+        },
+        "required": [
+          "object",
+          "id",
+          "logo",
+          "catalog_work_count",
+          "display_name",
+          "latin",
+          "localized"
+        ],
+        "type": "object"
+      },
+      "CompanyRef": {
+        "properties": {
+          "display_name": {
+            "description": "The entity's own name. Never empty. Free text; never use it as a decision input.",
+            "maxLength": 512,
+            "type": "string"
+          },
+          "id": {
+            "description": "Company id: the catalog company id, which is also the id in the web's /galgame/official/{id}.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "latin": {
+            "description": "Romanization of the name. null when none is recorded. Free text; never use it as a decision input.",
+            "maxLength": 512,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "localized": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/LocalizedName"
+            },
+            "description": "Names by BCP-47 tag, sparse. Empty object when there are none, never null.",
+            "type": "object"
+          },
+          "object": {
+            "description": "Type discriminant. Always company.",
+            "enum": [
+              "company"
+            ],
+            "maxLength": 7,
+            "type": "string",
+            "x-vocabulary-closed": true
+          }
+        },
+        "required": [
+          "object",
+          "id",
+          "display_name",
+          "latin",
+          "localized"
+        ],
+        "type": "object"
+      },
+      "CompanySummary": {
+        "properties": {
+          "aliases": {
+            "description": "Other names it goes by, never its display_name. Empty array, never null.",
+            "items": {
+              "description": "One alias. Free text; never use it as a decision input.",
+              "maxLength": 512,
+              "type": "string"
+            },
+            "maxItems": 1000,
+            "type": "array"
+          },
+          "catalog_work_count": {
+            "description": "Works catalog files under it, NSFW ones included. How many a reader can page through is the total of its works collection.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "company_kind": {
+            "description": "What sort of company it is.",
+            "enum": [
+              "game_brand",
+              "bunko",
+              "publisher",
+              "anime_studio",
+              "doujin_circle",
+              "group"
+            ],
+            "maxLength": 13,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "display_name": {
+            "description": "The entity's own name. Never empty. Free text; never use it as a decision input.",
+            "maxLength": 512,
+            "type": "string"
+          },
+          "id": {
+            "description": "Company id: the catalog company id, which is also the id in the web's /galgame/official/{id}.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "latin": {
+            "description": "Romanization of the name. null when none is recorded. Free text; never use it as a decision input.",
+            "maxLength": 512,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "localized": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/LocalizedName"
+            },
+            "description": "Names by BCP-47 tag, sparse. Empty object when there are none, never null.",
+            "type": "object"
+          },
+          "logo": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Image"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The company's logo. null when catalog has none."
+          },
+          "object": {
+            "description": "Type discriminant. Always company.",
+            "enum": [
+              "company"
+            ],
+            "maxLength": 7,
+            "type": "string",
+            "x-vocabulary-closed": true
+          }
+        },
+        "required": [
+          "object",
+          "id",
+          "company_kind",
+          "logo",
+          "aliases",
+          "catalog_work_count",
+          "display_name",
+          "latin",
+          "localized"
+        ],
+        "type": "object"
+      },
+      "CompanyWork": {
+        "properties": {
+          "object": {
+            "description": "Type discriminant. Always company_work.",
+            "enum": [
+              "company_work"
+            ],
+            "maxLength": 12,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "via_company": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CompanyRef"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The imprint of this company the work is credited to, when it counts here only through that imprint. null for the company's own works."
+          },
+          "work_summary": {
+            "$ref": "#/components/schemas/WorkSummary",
+            "description": "The work."
+          }
+        },
+        "required": [
+          "object",
+          "work_summary",
+          "via_company"
         ],
         "type": "object"
       },
@@ -1566,6 +2353,289 @@
           "is_creator",
           "eligibility",
           "application"
+        ],
+        "type": "object"
+      },
+      "Credit": {
+        "properties": {
+          "characters": {
+            "description": "For a voice credit, the characters voiced. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/CreditCharacter"
+            },
+            "type": "array"
+          },
+          "credit_roles": {
+            "description": "What the name did on the work, most prominent first.",
+            "items": {
+              "$ref": "#/components/schemas/CreditRole"
+            },
+            "minItems": 1,
+            "type": "array"
+          },
+          "object": {
+            "description": "Type discriminant. Always credit.",
+            "enum": [
+              "credit"
+            ],
+            "maxLength": 6,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "work_summary": {
+            "$ref": "#/components/schemas/WorkSummary",
+            "description": "The credited work."
+          }
+        },
+        "required": [
+          "object",
+          "work_summary",
+          "credit_roles",
+          "characters"
+        ],
+        "type": "object"
+      },
+      "CreditCharacter": {
+        "properties": {
+          "character_id": {
+            "description": "The character's id when catalog links one. null when the credit names the character only as text.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "display_name": {
+            "description": "The character's name as the credit writes it, in the source language. Free text; never use it as a decision input.",
+            "maxLength": 512,
+            "type": "string"
+          }
+        },
+        "required": [
+          "character_id",
+          "display_name"
+        ],
+        "type": "object"
+      },
+      "CreditName": {
+        "properties": {
+          "birth_day": {
+            "description": "null when unrecorded.",
+            "format": "int64",
+            "maximum": 31,
+            "minimum": 1,
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "birth_month": {
+            "description": "null when unrecorded.",
+            "format": "int64",
+            "maximum": 12,
+            "minimum": 1,
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "birth_year": {
+            "description": "null when unrecorded. Birthdays are often known only in part.",
+            "format": "int64",
+            "maximum": 9999,
+            "minimum": 1,
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "display_name": {
+            "description": "The entity's own name. Never empty. Free text; never use it as a decision input.",
+            "maxLength": 512,
+            "type": "string"
+          },
+          "gender": {
+            "description": "null when unrecorded.",
+            "enum": [
+              "male",
+              "female",
+              null
+            ],
+            "maxLength": 6,
+            "type": [
+              "string",
+              "null"
+            ],
+            "x-vocabulary-closed": true
+          },
+          "id": {
+            "description": "Credit name id: the catalog credit name id, which is also the id in the web's /galgame/staff/{id}.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "intros": {
+            "description": "Profiles in every language catalog has, unordered. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/CatalogIntro"
+            },
+            "type": "array"
+          },
+          "lang": {
+            "description": "The name's own language as a BCP-47 tag. null when unrecorded.",
+            "maxLength": 35,
+            "pattern": "^[A-Za-z]{1,8}(-[A-Za-z0-9]{1,8})*$",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "latin": {
+            "description": "Romanization of the name. null when none is recorded. Free text; never use it as a decision input.",
+            "maxLength": 512,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "links": {
+            "description": "Database pages and sites about the person. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/CatalogLink"
+            },
+            "type": "array"
+          },
+          "localized": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/LocalizedName"
+            },
+            "description": "Names by BCP-47 tag, sparse. Empty object when there are none, never null.",
+            "type": "object"
+          },
+          "object": {
+            "description": "Type discriminant. Always credit_name.",
+            "enum": [
+              "credit_name"
+            ],
+            "maxLength": 11,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "photo": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Image"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "A photo of the person. null when catalog has none."
+          },
+          "siblings": {
+            "description": "Other names the same person is credited under. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/CreditNameRef"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "object",
+          "id",
+          "lang",
+          "photo",
+          "gender",
+          "birth_year",
+          "birth_month",
+          "birth_day",
+          "intros",
+          "links",
+          "siblings",
+          "display_name",
+          "latin",
+          "localized"
+        ],
+        "type": "object"
+      },
+      "CreditNameRef": {
+        "properties": {
+          "display_name": {
+            "description": "The entity's own name. Never empty. Free text; never use it as a decision input.",
+            "maxLength": 512,
+            "type": "string"
+          },
+          "id": {
+            "description": "Credit name id: the catalog credit name id, which is also the id in the web's /galgame/staff/{id}.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "lang": {
+            "description": "The name's own language as a BCP-47 tag. null when unrecorded.",
+            "maxLength": 35,
+            "pattern": "^[A-Za-z]{1,8}(-[A-Za-z0-9]{1,8})*$",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "latin": {
+            "description": "Romanization of the name. null when none is recorded. Free text; never use it as a decision input.",
+            "maxLength": 512,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "localized": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/LocalizedName"
+            },
+            "description": "Names by BCP-47 tag, sparse. Empty object when there are none, never null.",
+            "type": "object"
+          },
+          "object": {
+            "description": "Type discriminant. Always credit_name.",
+            "enum": [
+              "credit_name"
+            ],
+            "maxLength": 11,
+            "type": "string",
+            "x-vocabulary-closed": true
+          }
+        },
+        "required": [
+          "object",
+          "id",
+          "lang",
+          "display_name",
+          "latin",
+          "localized"
+        ],
+        "type": "object"
+      },
+      "CreditRole": {
+        "properties": {
+          "display_name": {
+            "description": "The role's name as catalog records it. Free text; never use it as a decision input.",
+            "maxLength": 128,
+            "type": "string"
+          },
+          "role_key": {
+            "description": "Catalog's role key, such as scenario, illustration, music or voice-actor. An open vocabulary.",
+            "maxLength": 64,
+            "pattern": "^\\S+$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "role_key",
+          "display_name"
         ],
         "type": "object"
       },
@@ -2095,6 +3165,78 @@
         "required": [
           "object",
           "children"
+        ],
+        "type": "object"
+      },
+      "Engine": {
+        "properties": {
+          "aliases": {
+            "description": "Other names it goes by, never its display_name. Empty array, never null.",
+            "items": {
+              "description": "One alias. Free text; never use it as a decision input.",
+              "maxLength": 512,
+              "type": "string"
+            },
+            "maxItems": 1000,
+            "type": "array"
+          },
+          "catalog_work_count": {
+            "description": "Works catalog files under it, NSFW ones included. How many a reader can page through is the total of its works collection.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "description": {
+            "description": "Catalog's note on the engine, in whatever language it was written. Empty string if none. Free text; never use it as a decision input.",
+            "maxLength": 65535,
+            "type": "string"
+          },
+          "display_name": {
+            "description": "The entity's own name. Never empty. Free text; never use it as a decision input.",
+            "maxLength": 512,
+            "type": "string"
+          },
+          "id": {
+            "description": "Engine id: the catalog engine id, which is also the id in the web's /galgame/engine/{id}.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "latin": {
+            "description": "Romanization of the name. null when none is recorded. Free text; never use it as a decision input.",
+            "maxLength": 512,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "localized": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/LocalizedName"
+            },
+            "description": "Names by BCP-47 tag, sparse. Empty object when there are none, never null.",
+            "type": "object"
+          },
+          "object": {
+            "description": "Type discriminant. Always engine.",
+            "enum": [
+              "engine"
+            ],
+            "maxLength": 6,
+            "type": "string",
+            "x-vocabulary-closed": true
+          }
+        },
+        "required": [
+          "object",
+          "id",
+          "aliases",
+          "description",
+          "catalog_work_count",
+          "display_name",
+          "latin",
+          "localized"
         ],
         "type": "object"
       },
@@ -2881,12 +4023,74 @@
         ],
         "type": "object"
       },
+      "ListAppearance": {
+        "properties": {
+          "items": {
+            "description": "Members of this page. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/Appearance"
+            },
+            "type": "array"
+          },
+          "next_cursor": {
+            "description": "Opaque keyset cursor. Omitted on the last page.",
+            "maxLength": 512,
+            "pattern": "^cur_[A-Za-z0-9_-]+$",
+            "type": "string"
+          },
+          "object": {
+            "description": "Type discriminant. Always list.",
+            "enum": [
+              "list"
+            ],
+            "maxLength": 4,
+            "type": "string",
+            "x-vocabulary-closed": true
+          }
+        },
+        "required": [
+          "object",
+          "items"
+        ],
+        "type": "object"
+      },
       "ListConversation": {
         "properties": {
           "items": {
             "description": "Members of this page. Empty array, never null.",
             "items": {
               "$ref": "#/components/schemas/Conversation"
+            },
+            "type": "array"
+          },
+          "next_cursor": {
+            "description": "Opaque keyset cursor. Omitted on the last page.",
+            "maxLength": 512,
+            "pattern": "^cur_[A-Za-z0-9_-]+$",
+            "type": "string"
+          },
+          "object": {
+            "description": "Type discriminant. Always list.",
+            "enum": [
+              "list"
+            ],
+            "maxLength": 4,
+            "type": "string",
+            "x-vocabulary-closed": true
+          }
+        },
+        "required": [
+          "object",
+          "items"
+        ],
+        "type": "object"
+      },
+      "ListCredit": {
+        "properties": {
+          "items": {
+            "description": "Members of this page. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/Credit"
             },
             "type": "array"
           },
@@ -5516,6 +6720,221 @@
         ],
         "type": "object"
       },
+      "PageListCharacterRef": {
+        "properties": {
+          "items": {
+            "description": "Members of this page. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/CharacterRef"
+            },
+            "type": "array"
+          },
+          "object": {
+            "description": "Type discriminant. Always list.",
+            "enum": [
+              "list"
+            ],
+            "maxLength": 4,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "total": {
+            "description": "Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "total_relation": {
+            "description": "eq when total is exact, gte when it stopped at the depth limit and there are at least that many.",
+            "enum": [
+              "eq",
+              "gte"
+            ],
+            "maxLength": 3,
+            "type": "string",
+            "x-vocabulary-closed": true
+          }
+        },
+        "required": [
+          "object",
+          "items",
+          "total",
+          "total_relation"
+        ],
+        "type": "object"
+      },
+      "PageListCompanySummary": {
+        "properties": {
+          "items": {
+            "description": "Members of this page. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/CompanySummary"
+            },
+            "type": "array"
+          },
+          "object": {
+            "description": "Type discriminant. Always list.",
+            "enum": [
+              "list"
+            ],
+            "maxLength": 4,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "total": {
+            "description": "Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "total_relation": {
+            "description": "eq when total is exact, gte when it stopped at the depth limit and there are at least that many.",
+            "enum": [
+              "eq",
+              "gte"
+            ],
+            "maxLength": 3,
+            "type": "string",
+            "x-vocabulary-closed": true
+          }
+        },
+        "required": [
+          "object",
+          "items",
+          "total",
+          "total_relation"
+        ],
+        "type": "object"
+      },
+      "PageListCompanyWork": {
+        "properties": {
+          "items": {
+            "description": "Members of this page. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/CompanyWork"
+            },
+            "type": "array"
+          },
+          "object": {
+            "description": "Type discriminant. Always list.",
+            "enum": [
+              "list"
+            ],
+            "maxLength": 4,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "total": {
+            "description": "Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "total_relation": {
+            "description": "eq when total is exact, gte when it stopped at the depth limit and there are at least that many.",
+            "enum": [
+              "eq",
+              "gte"
+            ],
+            "maxLength": 3,
+            "type": "string",
+            "x-vocabulary-closed": true
+          }
+        },
+        "required": [
+          "object",
+          "items",
+          "total",
+          "total_relation"
+        ],
+        "type": "object"
+      },
+      "PageListCreditNameRef": {
+        "properties": {
+          "items": {
+            "description": "Members of this page. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/CreditNameRef"
+            },
+            "type": "array"
+          },
+          "object": {
+            "description": "Type discriminant. Always list.",
+            "enum": [
+              "list"
+            ],
+            "maxLength": 4,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "total": {
+            "description": "Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "total_relation": {
+            "description": "eq when total is exact, gte when it stopped at the depth limit and there are at least that many.",
+            "enum": [
+              "eq",
+              "gte"
+            ],
+            "maxLength": 3,
+            "type": "string",
+            "x-vocabulary-closed": true
+          }
+        },
+        "required": [
+          "object",
+          "items",
+          "total",
+          "total_relation"
+        ],
+        "type": "object"
+      },
+      "PageListEngine": {
+        "properties": {
+          "items": {
+            "description": "Members of this page. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/Engine"
+            },
+            "type": "array"
+          },
+          "object": {
+            "description": "Type discriminant. Always list.",
+            "enum": [
+              "list"
+            ],
+            "maxLength": 4,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "total": {
+            "description": "Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "total_relation": {
+            "description": "eq when total is exact, gte when it stopped at the depth limit and there are at least that many.",
+            "enum": [
+              "eq",
+              "gte"
+            ],
+            "maxLength": 3,
+            "type": "string",
+            "x-vocabulary-closed": true
+          }
+        },
+        "required": [
+          "object",
+          "items",
+          "total",
+          "total_relation"
+        ],
+        "type": "object"
+      },
       "PageListHiddenTopicSummary": {
         "properties": {
           "items": {
@@ -5608,6 +7027,135 @@
             "description": "Members of this page. Empty array, never null.",
             "items": {
               "$ref": "#/components/schemas/ReviewItemSummary"
+            },
+            "type": "array"
+          },
+          "object": {
+            "description": "Type discriminant. Always list.",
+            "enum": [
+              "list"
+            ],
+            "maxLength": 4,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "total": {
+            "description": "Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "total_relation": {
+            "description": "eq when total is exact, gte when it stopped at the depth limit and there are at least that many.",
+            "enum": [
+              "eq",
+              "gte"
+            ],
+            "maxLength": 3,
+            "type": "string",
+            "x-vocabulary-closed": true
+          }
+        },
+        "required": [
+          "object",
+          "items",
+          "total",
+          "total_relation"
+        ],
+        "type": "object"
+      },
+      "PageListSeriesSummary": {
+        "properties": {
+          "items": {
+            "description": "Members of this page. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/SeriesSummary"
+            },
+            "type": "array"
+          },
+          "object": {
+            "description": "Type discriminant. Always list.",
+            "enum": [
+              "list"
+            ],
+            "maxLength": 4,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "total": {
+            "description": "Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "total_relation": {
+            "description": "eq when total is exact, gte when it stopped at the depth limit and there are at least that many.",
+            "enum": [
+              "eq",
+              "gte"
+            ],
+            "maxLength": 3,
+            "type": "string",
+            "x-vocabulary-closed": true
+          }
+        },
+        "required": [
+          "object",
+          "items",
+          "total",
+          "total_relation"
+        ],
+        "type": "object"
+      },
+      "PageListTagSummary": {
+        "properties": {
+          "items": {
+            "description": "Members of this page. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/TagSummary"
+            },
+            "type": "array"
+          },
+          "object": {
+            "description": "Type discriminant. Always list.",
+            "enum": [
+              "list"
+            ],
+            "maxLength": 4,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "total": {
+            "description": "Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "total_relation": {
+            "description": "eq when total is exact, gte when it stopped at the depth limit and there are at least that many.",
+            "enum": [
+              "eq",
+              "gte"
+            ],
+            "maxLength": 3,
+            "type": "string",
+            "x-vocabulary-closed": true
+          }
+        },
+        "required": [
+          "object",
+          "items",
+          "total",
+          "total_relation"
+        ],
+        "type": "object"
+      },
+      "PageListWorkSummary": {
+        "properties": {
+          "items": {
+            "description": "Members of this page. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/WorkSummary"
             },
             "type": "array"
           },
@@ -8062,6 +9610,249 @@
         ],
         "type": "object"
       },
+      "Series": {
+        "properties": {
+          "catalog_work_count": {
+            "description": "Works catalog files under it, NSFW ones included. How many a reader can page through is the total of its works collection.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "display_name": {
+            "description": "The entity's own name. Never empty. Free text; never use it as a decision input.",
+            "maxLength": 512,
+            "type": "string"
+          },
+          "has_nsfw_works": {
+            "description": "Whether any work of the series is adult content. null when catalog does not know.",
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "id": {
+            "description": "Series id: the catalog series id, which is also the id in the web's /galgame/series/{id}.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "intros": {
+            "description": "Descriptions in every language catalog has, unordered. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/CatalogIntro"
+            },
+            "type": "array"
+          },
+          "latin": {
+            "description": "Romanization of the name. null when none is recorded. Free text; never use it as a decision input.",
+            "maxLength": 512,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "listed_work_count": {
+            "description": "Works of the series the forum lists: ones with a resource and a published page.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "localized": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/LocalizedName"
+            },
+            "description": "Names by BCP-47 tag, sparse. Empty object when there are none, never null.",
+            "type": "object"
+          },
+          "object": {
+            "description": "Type discriminant. Always series.",
+            "enum": [
+              "series"
+            ],
+            "maxLength": 6,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "sample_works": {
+            "description": "Up to five listed works of the series, earliest release first. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/SeriesSampleWork"
+            },
+            "maxItems": 5,
+            "type": "array"
+          }
+        },
+        "required": [
+          "object",
+          "id",
+          "has_nsfw_works",
+          "catalog_work_count",
+          "listed_work_count",
+          "sample_works",
+          "intros",
+          "display_name",
+          "latin",
+          "localized"
+        ],
+        "type": "object"
+      },
+      "SeriesSampleWork": {
+        "properties": {
+          "banner": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Image"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The landscape art at its original size, never the 16:9 crop. null when the work has none; clients fall back to cover."
+          },
+          "cover": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Image"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The portrait cover at its original size, never the 16:9 crop. null when the work has none."
+          },
+          "display_name": {
+            "description": "The entity's own name. Never empty. Free text; never use it as a decision input.",
+            "maxLength": 512,
+            "type": "string"
+          },
+          "id": {
+            "description": "Work id: the catalog work id, which is also the id in the web's /galgame/{id}.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "is_nsfw": {
+            "description": "Whether this forum displays the work as adult content: the editorial display axis (the claim's content limit), not the age rating.",
+            "type": "boolean"
+          },
+          "latin": {
+            "description": "Romanization of the name. null when none is recorded. Free text; never use it as a decision input.",
+            "maxLength": 512,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "localized": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/LocalizedName"
+            },
+            "description": "Names by BCP-47 tag, sparse. Empty object when there are none, never null.",
+            "type": "object"
+          },
+          "object": {
+            "description": "Type discriminant. Always work.",
+            "enum": [
+              "work"
+            ],
+            "maxLength": 4,
+            "type": "string",
+            "x-vocabulary-closed": true
+          }
+        },
+        "required": [
+          "banner",
+          "object",
+          "id",
+          "cover",
+          "is_nsfw",
+          "display_name",
+          "latin",
+          "localized"
+        ],
+        "type": "object"
+      },
+      "SeriesSummary": {
+        "properties": {
+          "catalog_work_count": {
+            "description": "Works catalog files under it, NSFW ones included. How many a reader can page through is the total of its works collection.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "display_name": {
+            "description": "The entity's own name. Never empty. Free text; never use it as a decision input.",
+            "maxLength": 512,
+            "type": "string"
+          },
+          "has_nsfw_works": {
+            "description": "Whether any work of the series is adult content. null when catalog does not know; a browse without include_nsfw leaves out true and null alike.",
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "id": {
+            "description": "Series id: the catalog series id, which is also the id in the web's /galgame/series/{id}.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "latin": {
+            "description": "Romanization of the name. null when none is recorded. Free text; never use it as a decision input.",
+            "maxLength": 512,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "listed_work_count": {
+            "description": "Works of the series the forum lists: ones with a resource and a published page.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "localized": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/LocalizedName"
+            },
+            "description": "Names by BCP-47 tag, sparse. Empty object when there are none, never null.",
+            "type": "object"
+          },
+          "object": {
+            "description": "Type discriminant. Always series.",
+            "enum": [
+              "series"
+            ],
+            "maxLength": 6,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "sample_works": {
+            "description": "Up to five listed works of the series, earliest release first. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/SeriesSampleWork"
+            },
+            "maxItems": 5,
+            "type": "array"
+          }
+        },
+        "required": [
+          "object",
+          "id",
+          "has_nsfw_works",
+          "catalog_work_count",
+          "listed_work_count",
+          "sample_works",
+          "display_name",
+          "latin",
+          "localized"
+        ],
+        "type": "object"
+      },
       "SpoilerNode": {
         "properties": {
           "children": {
@@ -8228,6 +10019,90 @@
         ],
         "type": "object"
       },
+      "Tag": {
+        "properties": {
+          "catalog_work_count": {
+            "description": "Works catalog files under it, NSFW ones included. How many a reader can page through is the total of its works collection.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "display_name": {
+            "description": "The entity's own name. Never empty. Free text; never use it as a decision input.",
+            "maxLength": 512,
+            "type": "string"
+          },
+          "id": {
+            "description": "Tag id: the catalog tag id, which is also the id in the web's /galgame/tag/{id}.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "intros": {
+            "description": "Descriptions in every language catalog has, unordered. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/CatalogIntro"
+            },
+            "type": "array"
+          },
+          "is_hidden": {
+            "description": "Whether catalog keeps the tag out of sight. A hidden tag is never listed or searched, but its own page still answers.",
+            "type": "boolean"
+          },
+          "is_sexual": {
+            "description": "Whether the tag is adult content. Such a tag is NOT_FOUND unless include_nsfw=true.",
+            "type": "boolean"
+          },
+          "latin": {
+            "description": "Romanization of the name. null when none is recorded. Free text; never use it as a decision input.",
+            "maxLength": 512,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "localized": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/LocalizedName"
+            },
+            "description": "Names by BCP-47 tag, sparse. Empty object when there are none, never null.",
+            "type": "object"
+          },
+          "object": {
+            "description": "Type discriminant. Always tag.",
+            "enum": [
+              "tag"
+            ],
+            "maxLength": 3,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "tag_kind": {
+            "description": "What the tag describes: content is the story and characters, meta is the game as a product.",
+            "enum": [
+              "content",
+              "meta"
+            ],
+            "maxLength": 7,
+            "type": "string",
+            "x-vocabulary-closed": true
+          }
+        },
+        "required": [
+          "object",
+          "id",
+          "tag_kind",
+          "is_sexual",
+          "catalog_work_count",
+          "is_hidden",
+          "intros",
+          "display_name",
+          "latin",
+          "localized"
+        ],
+        "type": "object"
+      },
       "TagCreate": {
         "properties": {
           "description": {
@@ -8383,6 +10258,77 @@
             ]
           }
         },
+        "type": "object"
+      },
+      "TagSummary": {
+        "properties": {
+          "catalog_work_count": {
+            "description": "Works catalog files under it, NSFW ones included. How many a reader can page through is the total of its works collection.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "display_name": {
+            "description": "The entity's own name. Never empty. Free text; never use it as a decision input.",
+            "maxLength": 512,
+            "type": "string"
+          },
+          "id": {
+            "description": "Tag id: the catalog tag id, which is also the id in the web's /galgame/tag/{id}.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "is_sexual": {
+            "description": "Whether the tag is adult content. Such tags are left out unless include_nsfw=true.",
+            "type": "boolean"
+          },
+          "latin": {
+            "description": "Romanization of the name. null when none is recorded. Free text; never use it as a decision input.",
+            "maxLength": 512,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "localized": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/LocalizedName"
+            },
+            "description": "Names by BCP-47 tag, sparse. Empty object when there are none, never null.",
+            "type": "object"
+          },
+          "object": {
+            "description": "Type discriminant. Always tag.",
+            "enum": [
+              "tag"
+            ],
+            "maxLength": 3,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "tag_kind": {
+            "description": "What the tag describes: content is the story and characters, meta is the game as a product.",
+            "enum": [
+              "content",
+              "meta"
+            ],
+            "maxLength": 7,
+            "type": "string",
+            "x-vocabulary-closed": true
+          }
+        },
+        "required": [
+          "object",
+          "id",
+          "tag_kind",
+          "is_sexual",
+          "catalog_work_count",
+          "display_name",
+          "latin",
+          "localized"
+        ],
         "type": "object"
       },
       "TextNode": {
@@ -11785,6 +13731,39 @@
         ],
         "type": "object"
       },
+      "WikiCompanyRedirect": {
+        "properties": {
+          "company_id": {
+            "description": "The catalog company it became.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "object": {
+            "description": "Type discriminant. Always wiki_company_redirect.",
+            "enum": [
+              "wiki_company_redirect"
+            ],
+            "maxLength": 21,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "wiki_company_id": {
+            "description": "The company id the retired galgame wiki used.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "object",
+          "wiki_company_id",
+          "company_id"
+        ],
+        "type": "object"
+      },
       "WorkRef": {
         "properties": {
           "cover": {
@@ -11840,6 +13819,249 @@
           }
         },
         "required": [
+          "object",
+          "id",
+          "cover",
+          "is_nsfw",
+          "display_name",
+          "latin",
+          "localized"
+        ],
+        "type": "object"
+      },
+      "WorkSummary": {
+        "properties": {
+          "banner": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Image"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The landscape art at its original size, never the 16:9 crop. null when the work has none; clients fall back to cover."
+          },
+          "cover": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Image"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The portrait cover at its original size, never the 16:9 crop. null when the work has none."
+          },
+          "display_name": {
+            "description": "The entity's own name. Never empty. Free text; never use it as a decision input.",
+            "maxLength": 512,
+            "type": "string"
+          },
+          "id": {
+            "description": "Work id: the catalog work id, which is also the id in the web's /galgame/{id}.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "is_nsfw": {
+            "description": "Whether this forum displays the work as adult content: the editorial display axis (the claim's content limit), not the age rating.",
+            "type": "boolean"
+          },
+          "is_published": {
+            "description": "Whether the forum has a listable page for the work. A catalog work the forum has no row for is false, with every forum count 0.",
+            "type": "boolean"
+          },
+          "latin": {
+            "description": "Romanization of the name. null when none is recorded. Free text; never use it as a decision input.",
+            "maxLength": 512,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "like_count": {
+            "description": "Likes on the forum page.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "localized": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/LocalizedName"
+            },
+            "description": "Names by BCP-47 tag, sparse. Empty object when there are none, never null.",
+            "type": "object"
+          },
+          "maker": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CompanyRef"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The credited company a card names as the maker: developer, then circle, then brand, then publisher. null when no credited company has a name."
+          },
+          "object": {
+            "description": "Type discriminant. Always work.",
+            "enum": [
+              "work"
+            ],
+            "maxLength": 4,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "rating_count": {
+            "description": "Forum ratings of the work.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "rating_score": {
+            "description": "Bayesian average of the forum's ratings, one decimal. null when rating_count is 0.",
+            "format": "double",
+            "maximum": 10,
+            "minimum": 0,
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "release_date": {
+            "description": "Release date. A month- or year-precise date is the first day of that month or year. null when catalog has none.",
+            "format": "date",
+            "maxLength": 10,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "release_date_precision": {
+            "description": "How much of release_date is known. null when release_date is null.",
+            "enum": [
+              "day",
+              "month",
+              "year",
+              null
+            ],
+            "maxLength": 5,
+            "type": [
+              "string",
+              "null"
+            ],
+            "x-vocabulary-closed": true
+          },
+          "resource_languages": {
+            "description": "Languages of the work's forum resources, each once, in vocabulary order. Empty array, never null.",
+            "items": {
+              "description": "A resource language key.",
+              "enum": [
+                "zh-cn",
+                "zh-tw",
+                "ja-jp",
+                "en-us",
+                "other"
+              ],
+              "maxLength": 5,
+              "type": "string",
+              "x-vocabulary-closed": true
+            },
+            "type": "array"
+          },
+          "resource_platforms": {
+            "description": "Platforms the work's forum resources run on, each once, in vocabulary order. Empty array, never null.",
+            "items": {
+              "description": "A resource platform key.",
+              "enum": [
+                "win",
+                "and",
+                "ios",
+                "mac",
+                "lin",
+                "web",
+                "mob",
+                "swi",
+                "sw2",
+                "n3d",
+                "nds",
+                "wii",
+                "wiu",
+                "gba",
+                "gbc",
+                "nes",
+                "sfc",
+                "ps1",
+                "ps2",
+                "ps3",
+                "ps4",
+                "ps5",
+                "psp",
+                "psv",
+                "xb1",
+                "xb3",
+                "xbo",
+                "xxs",
+                "sat",
+                "smd",
+                "scd",
+                "drc",
+                "pce",
+                "pcf",
+                "tdo",
+                "p88",
+                "p98",
+                "x1s",
+                "x68",
+                "fm7",
+                "fm8",
+                "fmt",
+                "msx",
+                "dos",
+                "dvd",
+                "bdp",
+                "vnd",
+                "oth"
+              ],
+              "maxLength": 3,
+              "type": "string",
+              "x-vocabulary-closed": true
+            },
+            "type": "array"
+          },
+          "resource_updated_at": {
+            "description": "When a resource of the work last changed. null when it has none.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "view_count": {
+            "description": "Times the work's forum page was read. 0 for a work the forum has no page for.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "banner",
+          "release_date",
+          "release_date_precision",
+          "maker",
+          "view_count",
+          "like_count",
+          "rating_score",
+          "rating_count",
+          "resource_platforms",
+          "resource_languages",
+          "resource_updated_at",
+          "is_published",
           "object",
           "id",
           "cover",
@@ -16264,6 +18486,299 @@
         ]
       }
     },
+    "/characters": {
+      "get": {
+        "description": "A page-number collection.",
+        "operationId": "listCharacters",
+        "parameters": [
+          {
+            "description": "Name search, required: this family has no browse order. The collection is catalog's 100 best name matches in relevance order. Free text; never use it as a decision input.",
+            "explode": false,
+            "in": "query",
+            "name": "q",
+            "required": true,
+            "schema": {
+              "description": "Name search, required: this family has no browse order. The collection is catalog's 100 best name matches in relevance order. Free text; never use it as a decision input.",
+              "maxLength": 100,
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          {
+            "description": "1-based page number. page × limit may not exceed 100.",
+            "explode": false,
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "default": 1,
+              "description": "1-based page number. page × limit may not exceed 100.",
+              "format": "int64",
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Page size. 1–100, default 20. Values above 100 are rejected, not clamped.",
+            "explode": false,
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 20,
+              "description": "Page size. 1–100, default 20. Values above 100 are rejected, not clamped.",
+              "format": "int64",
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageListCharacterRef"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "INVALID_PARAMETER when q is only whitespace or page × limit exceeds 100."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when catalog cannot be reached."
+          }
+        },
+        "summary": "Search characters",
+        "tags": [
+          "galgame-characters"
+        ]
+      }
+    },
+    "/characters/{character_id}": {
+      "get": {
+        "operationId": "getCharacter",
+        "parameters": [
+          {
+            "description": "Character id.",
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "description": "Character id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "When true, adult traits are included. Default false.",
+            "explode": false,
+            "in": "query",
+            "name": "include_nsfw",
+            "schema": {
+              "default": false,
+              "description": "When true, adult traits are included. Default false.",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Character"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when no such entity is visible. ENTITY_MERGED when the entity was merged into another; current_id names it."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when catalog cannot be reached."
+          }
+        },
+        "summary": "Get a character",
+        "tags": [
+          "galgame-characters"
+        ]
+      }
+    },
+    "/characters/{character_id}/appearances": {
+      "get": {
+        "description": "Works the character appears in, with who voices it there, in catalog's order. A cursor collection.",
+        "operationId": "listCharacterAppearances",
+        "parameters": [
+          {
+            "description": "Character id.",
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "description": "Character id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Opaque cursor from a previous page of this collection.",
+            "explode": false,
+            "in": "query",
+            "name": "cursor",
+            "schema": {
+              "description": "Opaque cursor from a previous page of this collection.",
+              "maxLength": 512,
+              "pattern": "^cur_[A-Za-z0-9_-]+$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Page size. 1–50, default 20. Values above 50 are rejected, not clamped. A page can come back shorter when works on it are hidden from this reader.",
+            "explode": false,
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 20,
+              "description": "Page size. 1–50, default 20. Values above 50 are rejected, not clamped. A page can come back shorter when works on it are hidden from this reader.",
+              "format": "int64",
+              "maximum": 50,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "When true, adult works are included. Default false. A cursor only continues the include_nsfw it was made with.",
+            "explode": false,
+            "in": "query",
+            "name": "include_nsfw",
+            "schema": {
+              "default": false,
+              "description": "When true, adult works are included. Default false. A cursor only continues the include_nsfw it was made with.",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListAppearance"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "INVALID_CURSOR when the cursor is broken or was made with another include_nsfw."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when no such entity is visible. ENTITY_MERGED when the entity was merged into another; current_id names it."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when catalog cannot be reached."
+          }
+        },
+        "summary": "List a character's appearances",
+        "tags": [
+          "galgame-characters"
+        ]
+      }
+    },
     "/comments/{comment_id}": {
       "delete": {
         "description": "Deletes the comment with its likes. It needs can_delete. Its own replies stay and become top-level comments. An author deleting their own comment is charged 3 moemoepoint times one plus its likes; staff deleting it charges the author 3. The charge never blocks the deletion: it is capped at the author's cached balance, so an author with nothing left pays nothing. NOT_FOUND under the same conditions as getComment.",
@@ -16906,6 +19421,840 @@
         ]
       }
     },
+    "/companies": {
+      "get": {
+        "description": "Without q: every company catalog files works under, most works first, ties broken by ascending id. A page-number collection.",
+        "operationId": "listCompanies",
+        "parameters": [
+          {
+            "description": "Name search. Set, the collection is catalog's 100 best name matches in relevance order. Free text; never use it as a decision input.",
+            "explode": false,
+            "in": "query",
+            "name": "q",
+            "schema": {
+              "description": "Name search. Set, the collection is catalog's 100 best name matches in relevance order. Free text; never use it as a decision input.",
+              "maxLength": 100,
+              "type": "string"
+            }
+          },
+          {
+            "description": "Only companies of this kind. Omitted means every kind.",
+            "explode": false,
+            "in": "query",
+            "name": "company_kind",
+            "schema": {
+              "description": "Only companies of this kind. Omitted means every kind.",
+              "enum": [
+                "game_brand",
+                "bunko",
+                "publisher",
+                "anime_studio",
+                "doujin_circle",
+                "group"
+              ],
+              "maxLength": 13,
+              "type": "string",
+              "x-vocabulary-closed": true
+            }
+          },
+          {
+            "description": "1-based page number. page × limit may not exceed 10000, or 100 when q is set.",
+            "explode": false,
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "default": 1,
+              "description": "1-based page number. page × limit may not exceed 10000, or 100 when q is set.",
+              "format": "int64",
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Page size. 1–100, default 50. Values above 100 are rejected, not clamped.",
+            "explode": false,
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 50,
+              "description": "Page size. 1–100, default 50. Values above 100 are rejected, not clamped.",
+              "format": "int64",
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageListCompanySummary"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "INVALID_PARAMETER when page × limit is too deep."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when catalog cannot be reached."
+          }
+        },
+        "summary": "List galgame companies",
+        "tags": [
+          "galgame-companies"
+        ]
+      }
+    },
+    "/companies/{company_id}": {
+      "get": {
+        "operationId": "getCompany",
+        "parameters": [
+          {
+            "description": "Company id.",
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "description": "Company id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Company"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when no such entity is visible. ENTITY_MERGED when the entity was merged into another; current_id names it."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when catalog cannot be reached."
+          }
+        },
+        "summary": "Get a galgame company",
+        "tags": [
+          "galgame-companies"
+        ]
+      }
+    },
+    "/companies/{company_id}/graph": {
+      "get": {
+        "description": "Parent companies, subsidiaries, imprints, renames and spin-offs around the company.",
+        "operationId": "getCompanyGraph",
+        "parameters": [
+          {
+            "description": "Company id.",
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "description": "Company id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CompanyGraph"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when no such entity is visible."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when catalog cannot be reached."
+          }
+        },
+        "summary": "Get a company's family graph",
+        "tags": [
+          "galgame-companies"
+        ]
+      }
+    },
+    "/companies/{company_id}/works": {
+      "get": {
+        "description": "A page-number collection. Without a resource or game_type filter it holds every catalog work filed under the entity, including works the forum has no page for; any of those filters narrows it to works with a forum resource. Ties break on catalog's own order, or on descending id once a filter applies. A company's works include its imprints' works; via narrows to one or the other.",
+        "operationId": "listCompanyWorks",
+        "parameters": [
+          {
+            "description": "Company id.",
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "description": "Company id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "own: only the company's own works. imprint: only works credited to one of its imprints. Omitted means both.",
+            "explode": false,
+            "in": "query",
+            "name": "via",
+            "schema": {
+              "description": "own: only the company's own works. imprint: only works credited to one of its imprints. Omitted means both.",
+              "enum": [
+                "own",
+                "imprint"
+              ],
+              "maxLength": 7,
+              "type": "string",
+              "x-vocabulary-closed": true
+            }
+          },
+          {
+            "description": "1-based page number. page × limit may not exceed 10000.",
+            "explode": false,
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "default": 1,
+              "description": "1-based page number. page × limit may not exceed 10000.",
+              "format": "int64",
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Page size. 1–100, default 24. Values above 100 are rejected, not clamped.",
+            "explode": false,
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 24,
+              "description": "Page size. 1–100, default 24. Values above 100 are rejected, not clamped.",
+              "format": "int64",
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Sort order. resource_updated: when a resource last changed. created: when the forum page was made. view / view_1d / view_7d / view_30d: page reads, all time or over the last day, 7 or 30 days. release_date: the release date. rating: the bayesian forum rating. Works the forum has no page for rank after every work it has.",
+            "explode": false,
+            "in": "query",
+            "name": "sort",
+            "schema": {
+              "default": "resource_updated_desc",
+              "description": "Sort order. resource_updated: when a resource last changed. created: when the forum page was made. view / view_1d / view_7d / view_30d: page reads, all time or over the last day, 7 or 30 days. release_date: the release date. rating: the bayesian forum rating. Works the forum has no page for rank after every work it has.",
+              "enum": [
+                "resource_updated_desc",
+                "resource_updated_asc",
+                "created_desc",
+                "created_asc",
+                "view_desc",
+                "view_asc",
+                "view_1d_desc",
+                "view_1d_asc",
+                "view_7d_desc",
+                "view_7d_asc",
+                "view_30d_desc",
+                "view_30d_asc",
+                "release_date_desc",
+                "release_date_asc",
+                "rating_desc",
+                "rating_asc"
+              ],
+              "maxLength": 21,
+              "type": "string",
+              "x-vocabulary-closed": true
+            }
+          },
+          {
+            "description": "Only works with at least one forum resource of this type. Omitted means no filter.",
+            "explode": false,
+            "in": "query",
+            "name": "resource_type",
+            "schema": {
+              "description": "Only works with at least one forum resource of this type. Omitted means no filter.",
+              "enum": [
+                "game",
+                "patch",
+                "collection",
+                "crack_fix",
+                "mod",
+                "tool",
+                "walkthrough",
+                "ost",
+                "voice",
+                "cg",
+                "wallpaper",
+                "artbook",
+                "video",
+                "other"
+              ],
+              "maxLength": 11,
+              "type": "string",
+              "x-vocabulary-closed": true
+            }
+          },
+          {
+            "description": "Only works with at least one forum resource for this platform. Omitted means no filter.",
+            "explode": false,
+            "in": "query",
+            "name": "resource_platform",
+            "schema": {
+              "description": "Only works with at least one forum resource for this platform. Omitted means no filter.",
+              "enum": [
+                "win",
+                "and",
+                "ios",
+                "mac",
+                "lin",
+                "web",
+                "mob",
+                "swi",
+                "sw2",
+                "n3d",
+                "nds",
+                "wii",
+                "wiu",
+                "gba",
+                "gbc",
+                "nes",
+                "sfc",
+                "ps1",
+                "ps2",
+                "ps3",
+                "ps4",
+                "ps5",
+                "psp",
+                "psv",
+                "xb1",
+                "xb3",
+                "xbo",
+                "xxs",
+                "sat",
+                "smd",
+                "scd",
+                "drc",
+                "pce",
+                "pcf",
+                "tdo",
+                "p88",
+                "p98",
+                "x1s",
+                "x68",
+                "fm7",
+                "fm8",
+                "fmt",
+                "msx",
+                "dos",
+                "dvd",
+                "bdp",
+                "vnd",
+                "oth"
+              ],
+              "maxLength": 3,
+              "type": "string",
+              "x-vocabulary-closed": true
+            }
+          },
+          {
+            "description": "Only works with at least one forum resource in this language. Omitted means no filter.",
+            "explode": false,
+            "in": "query",
+            "name": "resource_language",
+            "schema": {
+              "description": "Only works with at least one forum resource in this language. Omitted means no filter.",
+              "enum": [
+                "zh-cn",
+                "zh-tw",
+                "ja-jp",
+                "en-us",
+                "other"
+              ],
+              "maxLength": 5,
+              "type": "string",
+              "x-vocabulary-closed": true
+            }
+          },
+          {
+            "description": "Only works a forum rating labels with this game type; uncategorized is works no rating labels at all. Omitted means no filter.",
+            "explode": false,
+            "in": "query",
+            "name": "game_type",
+            "schema": {
+              "description": "Only works a forum rating labels with this game type; uncategorized is works no rating labels at all. Omitted means no filter.",
+              "enum": [
+                "ba_saku",
+                "plot",
+                "moe",
+                "daily",
+                "uncategorized"
+              ],
+              "maxLength": 13,
+              "type": "string",
+              "x-vocabulary-closed": true
+            }
+          },
+          {
+            "description": "When true, adult works are included. Default false.",
+            "explode": false,
+            "in": "query",
+            "name": "include_nsfw",
+            "schema": {
+              "default": false,
+              "description": "When true, adult works are included. Default false.",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageListCompanyWork"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "INVALID_PARAMETER when page × limit is too deep."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when no such entity is visible. ENTITY_MERGED when the entity was merged into another; current_id names it."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when catalog cannot be reached."
+          }
+        },
+        "summary": "List a company's works",
+        "tags": [
+          "galgame-companies"
+        ]
+      }
+    },
+    "/credit-names": {
+      "get": {
+        "description": "The names staff and voice actors are credited under. A page-number collection.",
+        "operationId": "listCreditNames",
+        "parameters": [
+          {
+            "description": "Name search, required: this family has no browse order. The collection is catalog's 100 best name matches in relevance order. Free text; never use it as a decision input.",
+            "explode": false,
+            "in": "query",
+            "name": "q",
+            "required": true,
+            "schema": {
+              "description": "Name search, required: this family has no browse order. The collection is catalog's 100 best name matches in relevance order. Free text; never use it as a decision input.",
+              "maxLength": 100,
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          {
+            "description": "1-based page number. page × limit may not exceed 100.",
+            "explode": false,
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "default": 1,
+              "description": "1-based page number. page × limit may not exceed 100.",
+              "format": "int64",
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Page size. 1–100, default 20. Values above 100 are rejected, not clamped.",
+            "explode": false,
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 20,
+              "description": "Page size. 1–100, default 20. Values above 100 are rejected, not clamped.",
+              "format": "int64",
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageListCreditNameRef"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "INVALID_PARAMETER when q is only whitespace or page × limit exceeds 100."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when catalog cannot be reached."
+          }
+        },
+        "summary": "Search credit names",
+        "tags": [
+          "galgame-credit-names"
+        ]
+      }
+    },
+    "/credit-names/{credit_name_id}": {
+      "get": {
+        "operationId": "getCreditName",
+        "parameters": [
+          {
+            "description": "Credit name id.",
+            "in": "path",
+            "name": "credit_name_id",
+            "required": true,
+            "schema": {
+              "description": "Credit name id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreditName"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when no such entity is visible. ENTITY_MERGED when the entity was merged into another; current_id names it."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when catalog cannot be reached."
+          }
+        },
+        "summary": "Get a credit name",
+        "tags": [
+          "galgame-credit-names"
+        ]
+      }
+    },
+    "/credit-names/{credit_name_id}/credits": {
+      "get": {
+        "description": "Works credited to the name, in catalog's order. A cursor collection.",
+        "operationId": "listCreditNameCredits",
+        "parameters": [
+          {
+            "description": "Credit name id.",
+            "in": "path",
+            "name": "credit_name_id",
+            "required": true,
+            "schema": {
+              "description": "Credit name id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Opaque cursor from a previous page of this collection.",
+            "explode": false,
+            "in": "query",
+            "name": "cursor",
+            "schema": {
+              "description": "Opaque cursor from a previous page of this collection.",
+              "maxLength": 512,
+              "pattern": "^cur_[A-Za-z0-9_-]+$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Page size. 1–50, default 20. Values above 50 are rejected, not clamped. A page can come back shorter when works on it are hidden from this reader.",
+            "explode": false,
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 20,
+              "description": "Page size. 1–50, default 20. Values above 50 are rejected, not clamped. A page can come back shorter when works on it are hidden from this reader.",
+              "format": "int64",
+              "maximum": 50,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "When true, adult works are included. Default false. A cursor only continues the include_nsfw it was made with.",
+            "explode": false,
+            "in": "query",
+            "name": "include_nsfw",
+            "schema": {
+              "default": false,
+              "description": "When true, adult works are included. Default false. A cursor only continues the include_nsfw it was made with.",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListCredit"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "INVALID_CURSOR when the cursor is broken or was made with another include_nsfw."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when no such entity is visible. ENTITY_MERGED when the entity was merged into another; current_id names it."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when catalog cannot be reached."
+          }
+        },
+        "summary": "List a credit name's credits",
+        "tags": [
+          "galgame-credit-names"
+        ]
+      }
+    },
     "/docs": {
       "get": {
         "description": "Every help-center doc. There are no drafts: a doc exists publicly or not at all. A cursor collection; the cursor is bound to sort, doc_category and is_pinned.",
@@ -17095,6 +20444,446 @@
         "summary": "Get a doc",
         "tags": [
           "docs"
+        ]
+      }
+    },
+    "/engines": {
+      "get": {
+        "description": "Every engine catalog records, most works first, ties broken by ascending id. A page-number collection.",
+        "operationId": "listEngines",
+        "parameters": [
+          {
+            "description": "Case-insensitive substring of any of the engine's names or aliases. Free text; never use it as a decision input.",
+            "explode": false,
+            "in": "query",
+            "name": "q",
+            "schema": {
+              "description": "Case-insensitive substring of any of the engine's names or aliases. Free text; never use it as a decision input.",
+              "maxLength": 100,
+              "type": "string"
+            }
+          },
+          {
+            "description": "1-based page number. page × limit may not exceed 10000.",
+            "explode": false,
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "default": 1,
+              "description": "1-based page number. page × limit may not exceed 10000.",
+              "format": "int64",
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Page size. 1–100, default 100. Values above 100 are rejected, not clamped.",
+            "explode": false,
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 100,
+              "description": "Page size. 1–100, default 100. Values above 100 are rejected, not clamped.",
+              "format": "int64",
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageListEngine"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "INVALID_PARAMETER when page × limit is too deep."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when catalog cannot be reached."
+          }
+        },
+        "summary": "List galgame engines",
+        "tags": [
+          "galgame-engines"
+        ]
+      }
+    },
+    "/engines/{engine_id}": {
+      "get": {
+        "operationId": "getEngine",
+        "parameters": [
+          {
+            "description": "Engine id.",
+            "in": "path",
+            "name": "engine_id",
+            "required": true,
+            "schema": {
+              "description": "Engine id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Engine"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when no such entity is visible."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when catalog cannot be reached."
+          }
+        },
+        "summary": "Get a galgame engine",
+        "tags": [
+          "galgame-engines"
+        ]
+      }
+    },
+    "/engines/{engine_id}/works": {
+      "get": {
+        "description": "A page-number collection. Without a resource or game_type filter it holds every catalog work filed under the entity, including works the forum has no page for; any of those filters narrows it to works with a forum resource. Ties break on catalog's own order, or on descending id once a filter applies.",
+        "operationId": "listEngineWorks",
+        "parameters": [
+          {
+            "description": "Engine id.",
+            "in": "path",
+            "name": "engine_id",
+            "required": true,
+            "schema": {
+              "description": "Engine id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "1-based page number. page × limit may not exceed 10000.",
+            "explode": false,
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "default": 1,
+              "description": "1-based page number. page × limit may not exceed 10000.",
+              "format": "int64",
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Page size. 1–100, default 24. Values above 100 are rejected, not clamped.",
+            "explode": false,
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 24,
+              "description": "Page size. 1–100, default 24. Values above 100 are rejected, not clamped.",
+              "format": "int64",
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Sort order. resource_updated: when a resource last changed. created: when the forum page was made. view / view_1d / view_7d / view_30d: page reads, all time or over the last day, 7 or 30 days. release_date: the release date. rating: the bayesian forum rating. Works the forum has no page for rank after every work it has.",
+            "explode": false,
+            "in": "query",
+            "name": "sort",
+            "schema": {
+              "default": "resource_updated_desc",
+              "description": "Sort order. resource_updated: when a resource last changed. created: when the forum page was made. view / view_1d / view_7d / view_30d: page reads, all time or over the last day, 7 or 30 days. release_date: the release date. rating: the bayesian forum rating. Works the forum has no page for rank after every work it has.",
+              "enum": [
+                "resource_updated_desc",
+                "resource_updated_asc",
+                "created_desc",
+                "created_asc",
+                "view_desc",
+                "view_asc",
+                "view_1d_desc",
+                "view_1d_asc",
+                "view_7d_desc",
+                "view_7d_asc",
+                "view_30d_desc",
+                "view_30d_asc",
+                "release_date_desc",
+                "release_date_asc",
+                "rating_desc",
+                "rating_asc"
+              ],
+              "maxLength": 21,
+              "type": "string",
+              "x-vocabulary-closed": true
+            }
+          },
+          {
+            "description": "Only works with at least one forum resource of this type. Omitted means no filter.",
+            "explode": false,
+            "in": "query",
+            "name": "resource_type",
+            "schema": {
+              "description": "Only works with at least one forum resource of this type. Omitted means no filter.",
+              "enum": [
+                "game",
+                "patch",
+                "collection",
+                "crack_fix",
+                "mod",
+                "tool",
+                "walkthrough",
+                "ost",
+                "voice",
+                "cg",
+                "wallpaper",
+                "artbook",
+                "video",
+                "other"
+              ],
+              "maxLength": 11,
+              "type": "string",
+              "x-vocabulary-closed": true
+            }
+          },
+          {
+            "description": "Only works with at least one forum resource for this platform. Omitted means no filter.",
+            "explode": false,
+            "in": "query",
+            "name": "resource_platform",
+            "schema": {
+              "description": "Only works with at least one forum resource for this platform. Omitted means no filter.",
+              "enum": [
+                "win",
+                "and",
+                "ios",
+                "mac",
+                "lin",
+                "web",
+                "mob",
+                "swi",
+                "sw2",
+                "n3d",
+                "nds",
+                "wii",
+                "wiu",
+                "gba",
+                "gbc",
+                "nes",
+                "sfc",
+                "ps1",
+                "ps2",
+                "ps3",
+                "ps4",
+                "ps5",
+                "psp",
+                "psv",
+                "xb1",
+                "xb3",
+                "xbo",
+                "xxs",
+                "sat",
+                "smd",
+                "scd",
+                "drc",
+                "pce",
+                "pcf",
+                "tdo",
+                "p88",
+                "p98",
+                "x1s",
+                "x68",
+                "fm7",
+                "fm8",
+                "fmt",
+                "msx",
+                "dos",
+                "dvd",
+                "bdp",
+                "vnd",
+                "oth"
+              ],
+              "maxLength": 3,
+              "type": "string",
+              "x-vocabulary-closed": true
+            }
+          },
+          {
+            "description": "Only works with at least one forum resource in this language. Omitted means no filter.",
+            "explode": false,
+            "in": "query",
+            "name": "resource_language",
+            "schema": {
+              "description": "Only works with at least one forum resource in this language. Omitted means no filter.",
+              "enum": [
+                "zh-cn",
+                "zh-tw",
+                "ja-jp",
+                "en-us",
+                "other"
+              ],
+              "maxLength": 5,
+              "type": "string",
+              "x-vocabulary-closed": true
+            }
+          },
+          {
+            "description": "Only works a forum rating labels with this game type; uncategorized is works no rating labels at all. Omitted means no filter.",
+            "explode": false,
+            "in": "query",
+            "name": "game_type",
+            "schema": {
+              "description": "Only works a forum rating labels with this game type; uncategorized is works no rating labels at all. Omitted means no filter.",
+              "enum": [
+                "ba_saku",
+                "plot",
+                "moe",
+                "daily",
+                "uncategorized"
+              ],
+              "maxLength": 13,
+              "type": "string",
+              "x-vocabulary-closed": true
+            }
+          },
+          {
+            "description": "When true, adult works are included. Default false.",
+            "explode": false,
+            "in": "query",
+            "name": "include_nsfw",
+            "schema": {
+              "default": false,
+              "description": "When true, adult works are included. Default false.",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageListWorkSummary"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "INVALID_PARAMETER when page × limit is too deep."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when no such entity is visible."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when catalog cannot be reached."
+          }
+        },
+        "summary": "List an engine's works",
+        "tags": [
+          "galgame-engines"
         ]
       }
     },
@@ -24269,6 +28058,1031 @@
         ]
       }
     },
+    "/series": {
+      "get": {
+        "description": "Without q: series with at least one work the forum lists, most listed works first, ties broken by ascending id. A page-number collection.",
+        "operationId": "listSeries",
+        "parameters": [
+          {
+            "description": "Case-insensitive substring of any of the series' names. Set, the collection is every catalog series that matches, listed works or not, most works first. Free text; never use it as a decision input.",
+            "explode": false,
+            "in": "query",
+            "name": "q",
+            "schema": {
+              "description": "Case-insensitive substring of any of the series' names. Set, the collection is every catalog series that matches, listed works or not, most works first. Free text; never use it as a decision input.",
+              "maxLength": 100,
+              "type": "string"
+            }
+          },
+          {
+            "description": "1-based page number. page × limit may not exceed 10000.",
+            "explode": false,
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "default": 1,
+              "description": "1-based page number. page × limit may not exceed 10000.",
+              "format": "int64",
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Page size. 1–100, default 12. Values above 100 are rejected, not clamped.",
+            "explode": false,
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 12,
+              "description": "Page size. 1–100, default 12. Values above 100 are rejected, not clamped.",
+              "format": "int64",
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "When true, series with adult works are included. Default false: only series catalog says have none.",
+            "explode": false,
+            "in": "query",
+            "name": "include_nsfw",
+            "schema": {
+              "default": false,
+              "description": "When true, series with adult works are included. Default false: only series catalog says have none.",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageListSeriesSummary"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "INVALID_PARAMETER when page × limit is too deep."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when catalog cannot be reached."
+          }
+        },
+        "summary": "List galgame series",
+        "tags": [
+          "galgame-series"
+        ]
+      }
+    },
+    "/series/{series_id}": {
+      "get": {
+        "operationId": "getSeries",
+        "parameters": [
+          {
+            "description": "Series id.",
+            "in": "path",
+            "name": "series_id",
+            "required": true,
+            "schema": {
+              "description": "Series id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Series"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when no such entity is visible."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when catalog cannot be reached."
+          }
+        },
+        "summary": "Get a galgame series",
+        "tags": [
+          "galgame-series"
+        ]
+      }
+    },
+    "/series/{series_id}/works": {
+      "get": {
+        "description": "A page-number collection. Without a resource or game_type filter it holds every catalog work filed under the entity, including works the forum has no page for; any of those filters narrows it to works with a forum resource. Ties break on catalog's own order, or on descending id once a filter applies.",
+        "operationId": "listSeriesWorks",
+        "parameters": [
+          {
+            "description": "Series id.",
+            "in": "path",
+            "name": "series_id",
+            "required": true,
+            "schema": {
+              "description": "Series id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "1-based page number. page × limit may not exceed 10000.",
+            "explode": false,
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "default": 1,
+              "description": "1-based page number. page × limit may not exceed 10000.",
+              "format": "int64",
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Page size. 1–100, default 24. Values above 100 are rejected, not clamped.",
+            "explode": false,
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 24,
+              "description": "Page size. 1–100, default 24. Values above 100 are rejected, not clamped.",
+              "format": "int64",
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Sort order. resource_updated: when a resource last changed. created: when the forum page was made. view / view_1d / view_7d / view_30d: page reads, all time or over the last day, 7 or 30 days. release_date: the release date. rating: the bayesian forum rating. Works the forum has no page for rank after every work it has.",
+            "explode": false,
+            "in": "query",
+            "name": "sort",
+            "schema": {
+              "default": "resource_updated_desc",
+              "description": "Sort order. resource_updated: when a resource last changed. created: when the forum page was made. view / view_1d / view_7d / view_30d: page reads, all time or over the last day, 7 or 30 days. release_date: the release date. rating: the bayesian forum rating. Works the forum has no page for rank after every work it has.",
+              "enum": [
+                "resource_updated_desc",
+                "resource_updated_asc",
+                "created_desc",
+                "created_asc",
+                "view_desc",
+                "view_asc",
+                "view_1d_desc",
+                "view_1d_asc",
+                "view_7d_desc",
+                "view_7d_asc",
+                "view_30d_desc",
+                "view_30d_asc",
+                "release_date_desc",
+                "release_date_asc",
+                "rating_desc",
+                "rating_asc"
+              ],
+              "maxLength": 21,
+              "type": "string",
+              "x-vocabulary-closed": true
+            }
+          },
+          {
+            "description": "Only works with at least one forum resource of this type. Omitted means no filter.",
+            "explode": false,
+            "in": "query",
+            "name": "resource_type",
+            "schema": {
+              "description": "Only works with at least one forum resource of this type. Omitted means no filter.",
+              "enum": [
+                "game",
+                "patch",
+                "collection",
+                "crack_fix",
+                "mod",
+                "tool",
+                "walkthrough",
+                "ost",
+                "voice",
+                "cg",
+                "wallpaper",
+                "artbook",
+                "video",
+                "other"
+              ],
+              "maxLength": 11,
+              "type": "string",
+              "x-vocabulary-closed": true
+            }
+          },
+          {
+            "description": "Only works with at least one forum resource for this platform. Omitted means no filter.",
+            "explode": false,
+            "in": "query",
+            "name": "resource_platform",
+            "schema": {
+              "description": "Only works with at least one forum resource for this platform. Omitted means no filter.",
+              "enum": [
+                "win",
+                "and",
+                "ios",
+                "mac",
+                "lin",
+                "web",
+                "mob",
+                "swi",
+                "sw2",
+                "n3d",
+                "nds",
+                "wii",
+                "wiu",
+                "gba",
+                "gbc",
+                "nes",
+                "sfc",
+                "ps1",
+                "ps2",
+                "ps3",
+                "ps4",
+                "ps5",
+                "psp",
+                "psv",
+                "xb1",
+                "xb3",
+                "xbo",
+                "xxs",
+                "sat",
+                "smd",
+                "scd",
+                "drc",
+                "pce",
+                "pcf",
+                "tdo",
+                "p88",
+                "p98",
+                "x1s",
+                "x68",
+                "fm7",
+                "fm8",
+                "fmt",
+                "msx",
+                "dos",
+                "dvd",
+                "bdp",
+                "vnd",
+                "oth"
+              ],
+              "maxLength": 3,
+              "type": "string",
+              "x-vocabulary-closed": true
+            }
+          },
+          {
+            "description": "Only works with at least one forum resource in this language. Omitted means no filter.",
+            "explode": false,
+            "in": "query",
+            "name": "resource_language",
+            "schema": {
+              "description": "Only works with at least one forum resource in this language. Omitted means no filter.",
+              "enum": [
+                "zh-cn",
+                "zh-tw",
+                "ja-jp",
+                "en-us",
+                "other"
+              ],
+              "maxLength": 5,
+              "type": "string",
+              "x-vocabulary-closed": true
+            }
+          },
+          {
+            "description": "Only works a forum rating labels with this game type; uncategorized is works no rating labels at all. Omitted means no filter.",
+            "explode": false,
+            "in": "query",
+            "name": "game_type",
+            "schema": {
+              "description": "Only works a forum rating labels with this game type; uncategorized is works no rating labels at all. Omitted means no filter.",
+              "enum": [
+                "ba_saku",
+                "plot",
+                "moe",
+                "daily",
+                "uncategorized"
+              ],
+              "maxLength": 13,
+              "type": "string",
+              "x-vocabulary-closed": true
+            }
+          },
+          {
+            "description": "When true, adult works are included. Default false.",
+            "explode": false,
+            "in": "query",
+            "name": "include_nsfw",
+            "schema": {
+              "default": false,
+              "description": "When true, adult works are included. Default false.",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageListWorkSummary"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "INVALID_PARAMETER when page × limit is too deep."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when no such entity is visible."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when catalog cannot be reached."
+          }
+        },
+        "summary": "List a series' works",
+        "tags": [
+          "galgame-series"
+        ]
+      }
+    },
+    "/tagged-works": {
+      "get": {
+        "description": "Catalog's own search population, newest release first; unlike a tag's works collection it takes no forum filter or sort. A page-number collection.",
+        "operationId": "listTaggedWorks",
+        "parameters": [
+          {
+            "description": "Tag ids, comma-separated. Only works carrying every one of them. 1–10.",
+            "explode": false,
+            "in": "query",
+            "name": "tag_ids",
+            "required": true,
+            "schema": {
+              "description": "Tag ids, comma-separated. Only works carrying every one of them. 1–10.",
+              "items": {
+                "maxLength": 20,
+                "minLength": 1,
+                "pattern": "^[0-9]+$",
+                "type": "string"
+              },
+              "maxItems": 10,
+              "minItems": 1,
+              "type": "array"
+            }
+          },
+          {
+            "description": "1-based page number. page × limit may not exceed 10000.",
+            "explode": false,
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "default": 1,
+              "description": "1-based page number. page × limit may not exceed 10000.",
+              "format": "int64",
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Page size. 1–100, default 24. Values above 100 are rejected, not clamped.",
+            "explode": false,
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 24,
+              "description": "Page size. 1–100, default 24. Values above 100 are rejected, not clamped.",
+              "format": "int64",
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "When true, adult works are included. Default false.",
+            "explode": false,
+            "in": "query",
+            "name": "include_nsfw",
+            "schema": {
+              "default": false,
+              "description": "When true, adult works are included. Default false.",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageListWorkSummary"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "INVALID_PARAMETER when tag_ids is empty, longer than 10, or not ids, or page × limit is too deep."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when catalog cannot be reached."
+          }
+        },
+        "summary": "List works carrying every given tag",
+        "tags": [
+          "galgame-tags"
+        ]
+      }
+    },
+    "/tags": {
+      "get": {
+        "description": "Without q: every visible tag catalog files works under, most works first, ties broken by ascending id. Hidden tags never appear; adult tags only with include_nsfw=true. A page-number collection.",
+        "operationId": "listTags",
+        "parameters": [
+          {
+            "description": "Name search. Set, the collection is catalog's 100 best name matches in relevance order, hidden and gated tags removed. Free text; never use it as a decision input.",
+            "explode": false,
+            "in": "query",
+            "name": "q",
+            "schema": {
+              "description": "Name search. Set, the collection is catalog's 100 best name matches in relevance order, hidden and gated tags removed. Free text; never use it as a decision input.",
+              "maxLength": 100,
+              "type": "string"
+            }
+          },
+          {
+            "description": "1-based page number. page × limit may not exceed 10000, or 100 when q is set.",
+            "explode": false,
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "default": 1,
+              "description": "1-based page number. page × limit may not exceed 10000, or 100 when q is set.",
+              "format": "int64",
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Page size. 1–100, default 100. Values above 100 are rejected, not clamped.",
+            "explode": false,
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 100,
+              "description": "Page size. 1–100, default 100. Values above 100 are rejected, not clamped.",
+              "format": "int64",
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "When true, adult tags are included. Default false.",
+            "explode": false,
+            "in": "query",
+            "name": "include_nsfw",
+            "schema": {
+              "default": false,
+              "description": "When true, adult tags are included. Default false.",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageListTagSummary"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "INVALID_PARAMETER when page × limit is too deep."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when catalog cannot be reached."
+          }
+        },
+        "summary": "List galgame tags",
+        "tags": [
+          "galgame-tags"
+        ]
+      }
+    },
+    "/tags/{tag_id}": {
+      "get": {
+        "description": "An adult tag is NOT_FOUND unless include_nsfw=true, the same answer as a tag that does not exist.",
+        "operationId": "getTag",
+        "parameters": [
+          {
+            "description": "Tag id.",
+            "in": "path",
+            "name": "tag_id",
+            "required": true,
+            "schema": {
+              "description": "Tag id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "When true, an adult tag answers. Default false: it is NOT_FOUND.",
+            "explode": false,
+            "in": "query",
+            "name": "include_nsfw",
+            "schema": {
+              "default": false,
+              "description": "When true, an adult tag answers. Default false: it is NOT_FOUND.",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Tag"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when no such entity is visible."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when catalog cannot be reached."
+          }
+        },
+        "summary": "Get a galgame tag",
+        "tags": [
+          "galgame-tags"
+        ]
+      }
+    },
+    "/tags/{tag_id}/works": {
+      "get": {
+        "description": "A page-number collection. Without a resource or game_type filter it holds every catalog work filed under the entity, including works the forum has no page for; any of those filters narrows it to works with a forum resource. Ties break on catalog's own order, or on descending id once a filter applies.",
+        "operationId": "listTagWorks",
+        "parameters": [
+          {
+            "description": "Tag id.",
+            "in": "path",
+            "name": "tag_id",
+            "required": true,
+            "schema": {
+              "description": "Tag id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "1-based page number. page × limit may not exceed 10000.",
+            "explode": false,
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "default": 1,
+              "description": "1-based page number. page × limit may not exceed 10000.",
+              "format": "int64",
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Page size. 1–100, default 24. Values above 100 are rejected, not clamped.",
+            "explode": false,
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 24,
+              "description": "Page size. 1–100, default 24. Values above 100 are rejected, not clamped.",
+              "format": "int64",
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Sort order. resource_updated: when a resource last changed. created: when the forum page was made. view / view_1d / view_7d / view_30d: page reads, all time or over the last day, 7 or 30 days. release_date: the release date. rating: the bayesian forum rating. Works the forum has no page for rank after every work it has.",
+            "explode": false,
+            "in": "query",
+            "name": "sort",
+            "schema": {
+              "default": "resource_updated_desc",
+              "description": "Sort order. resource_updated: when a resource last changed. created: when the forum page was made. view / view_1d / view_7d / view_30d: page reads, all time or over the last day, 7 or 30 days. release_date: the release date. rating: the bayesian forum rating. Works the forum has no page for rank after every work it has.",
+              "enum": [
+                "resource_updated_desc",
+                "resource_updated_asc",
+                "created_desc",
+                "created_asc",
+                "view_desc",
+                "view_asc",
+                "view_1d_desc",
+                "view_1d_asc",
+                "view_7d_desc",
+                "view_7d_asc",
+                "view_30d_desc",
+                "view_30d_asc",
+                "release_date_desc",
+                "release_date_asc",
+                "rating_desc",
+                "rating_asc"
+              ],
+              "maxLength": 21,
+              "type": "string",
+              "x-vocabulary-closed": true
+            }
+          },
+          {
+            "description": "Only works with at least one forum resource of this type. Omitted means no filter.",
+            "explode": false,
+            "in": "query",
+            "name": "resource_type",
+            "schema": {
+              "description": "Only works with at least one forum resource of this type. Omitted means no filter.",
+              "enum": [
+                "game",
+                "patch",
+                "collection",
+                "crack_fix",
+                "mod",
+                "tool",
+                "walkthrough",
+                "ost",
+                "voice",
+                "cg",
+                "wallpaper",
+                "artbook",
+                "video",
+                "other"
+              ],
+              "maxLength": 11,
+              "type": "string",
+              "x-vocabulary-closed": true
+            }
+          },
+          {
+            "description": "Only works with at least one forum resource for this platform. Omitted means no filter.",
+            "explode": false,
+            "in": "query",
+            "name": "resource_platform",
+            "schema": {
+              "description": "Only works with at least one forum resource for this platform. Omitted means no filter.",
+              "enum": [
+                "win",
+                "and",
+                "ios",
+                "mac",
+                "lin",
+                "web",
+                "mob",
+                "swi",
+                "sw2",
+                "n3d",
+                "nds",
+                "wii",
+                "wiu",
+                "gba",
+                "gbc",
+                "nes",
+                "sfc",
+                "ps1",
+                "ps2",
+                "ps3",
+                "ps4",
+                "ps5",
+                "psp",
+                "psv",
+                "xb1",
+                "xb3",
+                "xbo",
+                "xxs",
+                "sat",
+                "smd",
+                "scd",
+                "drc",
+                "pce",
+                "pcf",
+                "tdo",
+                "p88",
+                "p98",
+                "x1s",
+                "x68",
+                "fm7",
+                "fm8",
+                "fmt",
+                "msx",
+                "dos",
+                "dvd",
+                "bdp",
+                "vnd",
+                "oth"
+              ],
+              "maxLength": 3,
+              "type": "string",
+              "x-vocabulary-closed": true
+            }
+          },
+          {
+            "description": "Only works with at least one forum resource in this language. Omitted means no filter.",
+            "explode": false,
+            "in": "query",
+            "name": "resource_language",
+            "schema": {
+              "description": "Only works with at least one forum resource in this language. Omitted means no filter.",
+              "enum": [
+                "zh-cn",
+                "zh-tw",
+                "ja-jp",
+                "en-us",
+                "other"
+              ],
+              "maxLength": 5,
+              "type": "string",
+              "x-vocabulary-closed": true
+            }
+          },
+          {
+            "description": "Only works a forum rating labels with this game type; uncategorized is works no rating labels at all. Omitted means no filter.",
+            "explode": false,
+            "in": "query",
+            "name": "game_type",
+            "schema": {
+              "description": "Only works a forum rating labels with this game type; uncategorized is works no rating labels at all. Omitted means no filter.",
+              "enum": [
+                "ba_saku",
+                "plot",
+                "moe",
+                "daily",
+                "uncategorized"
+              ],
+              "maxLength": 13,
+              "type": "string",
+              "x-vocabulary-closed": true
+            }
+          },
+          {
+            "description": "When true, adult works are included. Default false.",
+            "explode": false,
+            "in": "query",
+            "name": "include_nsfw",
+            "schema": {
+              "default": false,
+              "description": "When true, adult works are included. Default false.",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageListWorkSummary"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "INVALID_PARAMETER when page × limit is too deep."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when no such entity is visible."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when catalog cannot be reached."
+          }
+        },
+        "summary": "List a tag's works",
+        "tags": [
+          "galgame-tags"
+        ]
+      }
+    },
     "/todos": {
       "get": {
         "description": "Lists tasks as a cursor page, newest first, ties broken by descending id. There is one sort and no sort parameter. state keeps only tasks in that state; absent lists every state. The cursor is bound to state; reusing it with another state is INVALID_CURSOR. include_total=true adds total, counted under the same state filter as items. Tasks by banned authors are listed like any other.",
@@ -30876,6 +35690,82 @@
         "summary": "Like a website",
         "tags": [
           "websites"
+        ]
+      }
+    },
+    "/wiki-company-redirects/{wiki_company_id}": {
+      "get": {
+        "description": "The retired galgame wiki numbered companies on its own; old links carry those numbers.",
+        "operationId": "getWikiCompanyRedirect",
+        "parameters": [
+          {
+            "description": "The company id the retired galgame wiki used.",
+            "in": "path",
+            "name": "wiki_company_id",
+            "required": true,
+            "schema": {
+              "description": "The company id the retired galgame wiki used.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WikiCompanyRedirect"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when the number maps to no company."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when catalog cannot be reached."
+          }
+        },
+        "summary": "Resolve a retired wiki company id",
+        "tags": [
+          "galgame-companies"
         ]
       }
     },

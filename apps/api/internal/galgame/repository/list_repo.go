@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"encoding/json"
 	"log/slog"
 	"math"
 	"strconv"
@@ -138,6 +139,12 @@ func (r *GalgameListRepository) ListIDs(f model.GalgameListFilter) (ids []int, t
 	}
 	if f.Platform != "" && f.Platform != "all" {
 		inner = inner.Where("gr.platform = ?", f.Platform)
+	}
+	if f.PlatformAxis != "" {
+		inner = inner.Where("gr.platforms @> ?::jsonb", jsonKeyArray(f.PlatformAxis))
+	}
+	if f.LanguageAxis != "" {
+		inner = inner.Where("gr.languages @> ?::jsonb", jsonKeyArray(f.LanguageAxis))
 	}
 	if len(f.IncludeProviders) > 0 {
 		inner = inner.Where("gr.provider && ?", providerArrayLit(f.IncludeProviders))
@@ -377,6 +384,11 @@ func sortDirection(order string) string {
 		return "ASC"
 	}
 	return "DESC"
+}
+
+func jsonKeyArray(key string) string {
+	raw, _ := json.Marshal([]string{key})
+	return string(raw)
 }
 
 func intArrayLit(ids []int) string {

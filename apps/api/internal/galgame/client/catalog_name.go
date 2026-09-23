@@ -43,6 +43,23 @@ func (n *catLocalizedName) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
+type LocalizedValue struct {
+	Value   string
+	Machine bool
+}
+
+// LocalizedValues hands a localized{} block to code outside this package, which
+// cannot name its element type. Empty values are dropped.
+func LocalizedValues(m map[string]catLocalizedName) map[string]LocalizedValue {
+	out := make(map[string]LocalizedValue, len(m))
+	for tag, n := range m {
+		if n.Value != "" {
+			out[tag] = LocalizedValue{Value: n.Value, Machine: n.Machine}
+		}
+	}
+	return out
+}
+
 // CatalogAlias is one row of an entity's alias list. Wave 209 turned these from
 // bare strings into rows that carry their own language and provenance.
 type CatalogAlias struct {

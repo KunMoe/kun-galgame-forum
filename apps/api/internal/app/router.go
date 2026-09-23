@@ -7,6 +7,7 @@ import (
 	docapiv1 "kun-galgame-api/internal/doc/apiv1"
 	friendlinkapiv1 "kun-galgame-api/internal/friendlink/apiv1"
 	galgameapiv1 "kun-galgame-api/internal/galgame/apiv1"
+	galgameentityv1 "kun-galgame-api/internal/galgame/entityapiv1"
 	messageapiv1 "kun-galgame-api/internal/message/apiv1"
 	"kun-galgame-api/internal/middleware"
 	permissionapiv1 "kun-galgame-api/internal/permission/apiv1"
@@ -47,6 +48,7 @@ func (a *App) setupRoutes() {
 		topicapiv1.RegisterLotteries(a.newTopicV1Lotteries(topicReads)),
 		topicapiv1.RegisterAdminTopics(a.newTopicV1Admin(topicReads)),
 		galgameapiv1.Register(a.GalgameV1),
+		galgameentityv1.Register(a.GalgameEntityV1),
 		wallapiv1.Register(a.WallV1),
 		userapiv1.Register(a.newUserV1()),
 		messageapiv1.Register(a.newMessageV1()),

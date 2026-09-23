@@ -38,6 +38,10 @@ func buildEntityFilter(q url.Values) model.GalgameListFilter {
 //
 // A non-empty result means the walk has already ordered the page and the local
 // ranking pass must leave it alone, or it reshuffles what the walk established.
+// CatalogMemberSort is the catalog walk order for f, empty when the local
+// ranking pass orders the members instead.
+func CatalogMemberSort(f model.GalgameListFilter) string { return catalogMemberSort(f) }
+
 func catalogMemberSort(f model.GalgameListFilter) string {
 	if f.SortField != "release_date" {
 		return ""

@@ -2,6 +2,15 @@
   "codes": [
     {
       "object": "problem_type",
+      "code": "ENTITY_MERGED",
+      "domain": "platform",
+      "status": 404,
+      "type": "https://developer.nextmoe.dev/problems/platform/entity-merged",
+      "title": "Entity merged",
+      "description": "The catalog entity at this URL was merged into another. object names its family and current_id the entity it became; read that one instead."
+    },
+    {
+      "object": "problem_type",
       "code": "IDEMPOTENCY_KEY_REUSED",
       "domain": "platform",
       "status": 409,

@@ -142,10 +142,23 @@ GET    /api/v1/admin/website-tag-groups/:website_tag_group_id cors.New → v1Hea
 GET    /api/v1/admin/website-tags/:website_tag_id     cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/admin/websites/:website_id             cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/app/version                            cors.New → v1Headers → fiberAdapter.Handle
+GET    /api/v1/characters                             cors.New → v1Headers → fiberAdapter.Handle
+GET    /api/v1/characters/:character_id               cors.New → v1Headers → fiberAdapter.Handle
+GET    /api/v1/characters/:character_id/appearances   cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/comments/:comment_id                   cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/comments/:comment_id/source            cors.New → v1Headers → fiberAdapter.Handle
+GET    /api/v1/companies                              cors.New → v1Headers → fiberAdapter.Handle
+GET    /api/v1/companies/:company_id                  cors.New → v1Headers → fiberAdapter.Handle
+GET    /api/v1/companies/:company_id/graph            cors.New → v1Headers → fiberAdapter.Handle
+GET    /api/v1/companies/:company_id/works            cors.New → v1Headers → fiberAdapter.Handle
+GET    /api/v1/credit-names                           cors.New → v1Headers → fiberAdapter.Handle
+GET    /api/v1/credit-names/:credit_name_id           cors.New → v1Headers → fiberAdapter.Handle
+GET    /api/v1/credit-names/:credit_name_id/credits   cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/docs                                   cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/docs/:doc_slug                         cors.New → v1Headers → fiberAdapter.Handle
+GET    /api/v1/engines                                cors.New → v1Headers → fiberAdapter.Handle
+GET    /api/v1/engines/:engine_id                     cors.New → v1Headers → fiberAdapter.Handle
+GET    /api/v1/engines/:engine_id/works               cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/friend-links                           cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/lotteries/:lottery_id                  cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/lotteries/:lottery_id/entries          cors.New → v1Headers → fiberAdapter.Handle
@@ -177,6 +190,13 @@ GET    /api/v1/replies/:reply_id/reactions            cors.New → v1Headers →
 GET    /api/v1/replies/:reply_id/source               cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/report-reasons                         cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/sections                               cors.New → v1Headers → fiberAdapter.Handle
+GET    /api/v1/series                                 cors.New → v1Headers → fiberAdapter.Handle
+GET    /api/v1/series/:series_id                      cors.New → v1Headers → fiberAdapter.Handle
+GET    /api/v1/series/:series_id/works                cors.New → v1Headers → fiberAdapter.Handle
+GET    /api/v1/tagged-works                           cors.New → v1Headers → fiberAdapter.Handle
+GET    /api/v1/tags                                   cors.New → v1Headers → fiberAdapter.Handle
+GET    /api/v1/tags/:tag_id                           cors.New → v1Headers → fiberAdapter.Handle
+GET    /api/v1/tags/:tag_id/works                     cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/todos                                  cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/todos/:todo_id                         cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/topics                                 cors.New → v1Headers → fiberAdapter.Handle
@@ -201,6 +221,7 @@ GET    /api/v1/website-tags                           cors.New → v1Headers →
 GET    /api/v1/website-tags/:website_tag_slug         cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/websites                               cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/websites/:website_host                 cors.New → v1Headers → fiberAdapter.Handle
+GET    /api/v1/wiki-company-redirects/:wiki_company_id cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/works/:work_id/moyu-patches            cors.New → v1Headers → fiberAdapter.Handle
 GET    /healthz                                       cors.New → App.setupRoutes
 PATCH  /api/galgame/collection/:cid                   cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → GalgameCollectionHandler.Update

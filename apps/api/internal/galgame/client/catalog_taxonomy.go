@@ -16,6 +16,7 @@ type CatalogTaxonomyItem struct {
 	ID          int64                       `json:"id"`
 	Name        string                      `json:"name"`
 	DisplayName string                      `json:"display_name"`
+	Latin       string                      `json:"latin"`
 	Localized   map[string]catLocalizedName `json:"localized"`
 	Kind        string                      `json:"kind"`
 	Tier        string                      `json:"tier"`
@@ -48,6 +49,7 @@ type CatalogTaxonomyPage struct {
 type CatalogLabelDetail struct {
 	ID          int64                       `json:"id"`
 	DisplayName string                      `json:"display_name"`
+	Latin       string                      `json:"latin"`
 	Localized   map[string]catLocalizedName `json:"localized"`
 	Kind        string                      `json:"kind"`
 	Lang        string                      `json:"lang"`

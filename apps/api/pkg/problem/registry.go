@@ -52,6 +52,7 @@ const (
 	CodeScopeRequired                = "SCOPE_REQUIRED"
 	CodeAccountBanned                = "ACCOUNT_BANNED"
 	CodeNotFound                     = "NOT_FOUND"
+	CodeEntityMerged                 = "ENTITY_MERGED"
 	CodeMethodNotAllowed             = "METHOD_NOT_ALLOWED"
 	CodeIdempotencyKeyReused         = "IDEMPOTENCY_KEY_REUSED"
 	CodeIdempotencyRequestInProgress = "IDEMPOTENCY_REQUEST_IN_PROGRESS"
@@ -123,6 +124,7 @@ var Codes = []Def{
 	{CodeScopeRequired, DomainPlatform, http.StatusForbidden, "Scope required", "The credential is valid but lacks the scope this operation needs.", nil},
 	{CodeAccountBanned, DomainKungal, http.StatusForbidden, "Account banned", "The signed-in user's account is banned.", nil},
 	{CodeNotFound, DomainPlatform, http.StatusNotFound, "Not found", "Nothing visible exists at this URL.", nil},
+	{CodeEntityMerged, DomainPlatform, http.StatusNotFound, "Entity merged", "The catalog entity at this URL was merged into another. object names its family and current_id the entity it became; read that one instead.", []ExtDef{{Name: "object", Type: "string"}, {Name: "current_id", Type: "string"}}},
 	{CodeMethodNotAllowed, DomainPlatform, http.StatusMethodNotAllowed, "Method not allowed", "The path exists but this method does not.", nil},
 	{CodeIdempotencyKeyReused, DomainPlatform, http.StatusConflict, "Idempotency key reused", "The same Idempotency-Key was sent with a different request body.", nil},
 	{CodeIdempotencyRequestInProgress, DomainKungal, http.StatusConflict, "Idempotency request in progress", "A request with the same Idempotency-Key is still being processed. Retry after it completes.", nil},

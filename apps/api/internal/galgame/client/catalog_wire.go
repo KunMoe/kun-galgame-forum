@@ -120,20 +120,46 @@ var companyRoleRank = map[string]int{
 }
 
 func makerName(ctx context.Context, labels []catWorkLabel) string {
-	best, bestRank := "", len(companyRoleRank)+1
+	if l := makerLabel(labels); l != nil {
+		return l.Name(ctx)
+	}
+	return ""
+}
+
+// MakerLabel is the credited company a card names as the work's maker, nil when
+// no credited company has a name.
+func (it *CatalogWorkListItem) MakerLabel() *catWorkLabel {
+	return makerLabel(it.Labels)
+}
+
+func makerLabel(labels []catWorkLabel) *catWorkLabel {
+	var best *catWorkLabel
+	bestRank := len(companyRoleRank) + 1
 	for i := range labels {
 		rank, ok := companyRoleRank[labels[i].AttributionRole()]
 		if !ok {
 			rank = len(companyRoleRank)
 		}
-		if best != "" && rank >= bestRank {
+		if best != nil && rank >= bestRank {
 			continue
 		}
-		if name := labels[i].Name(ctx); name != "" {
-			best, bestRank = name, rank
+		if labels[i].hasName() {
+			best, bestRank = &labels[i], rank
 		}
 	}
 	return best
+}
+
+func (l *catWorkLabel) hasName() bool {
+	if l.DisplayName != "" {
+		return true
+	}
+	for _, n := range l.Localized {
+		if n.Value != "" {
+			return true
+		}
+	}
+	return false
 }
 
 type catWorkEngine struct {

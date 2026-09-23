@@ -10,6 +10,7 @@
     "INVALID_CREDENTIAL": "登录已失效，请重新登录",
     "SCOPE_REQUIRED": "当前登录缺少所需的授权，请退出登录后重新登录",
     "NOT_FOUND": "内容不存在或已被删除",
+    "ENTITY_MERGED": "该条目已与另一个条目合并",
     "METHOD_NOT_ALLOWED": "不支持这个操作",
     "IDEMPOTENCY_KEY_REUSED": "这次提交与之前的提交冲突，请刷新页面后重试",
     "UNSUPPORTED_MEDIA_TYPE": "请求内容的格式不受支持",

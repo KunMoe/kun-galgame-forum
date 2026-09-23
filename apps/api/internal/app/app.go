@@ -17,6 +17,7 @@ import (
 	communitytrust "kun-galgame-api/internal/community/trust"
 	galgameapiv1 "kun-galgame-api/internal/galgame/apiv1"
 	"kun-galgame-api/internal/galgame/client"
+	galgameentityv1 "kun-galgame-api/internal/galgame/entityapiv1"
 	galgameHandler "kun-galgame-api/internal/galgame/handler"
 	galgameRepo "kun-galgame-api/internal/galgame/repository"
 	galgameService "kun-galgame-api/internal/galgame/service"
@@ -84,26 +85,27 @@ import (
 )
 
 type App struct {
-	Fiber          *fiber.App
-	DB             *gorm.DB
-	Redis          *redis.Client
-	Config         *config.Config
-	OAuthClient    *oauth.Client
-	UserState      *repository.StateRepository
-	TopicAward     topicapiv1.AwardFunc
-	TrustCheck     *gate.CheckService
-	TrustScan      *gate.ScanService
-	Notifier       msgService.Notifier
-	Messages       *msgService.MessageService
-	UserClient     *userclient.Client
-	UserService    *service.UserService
-	CreatorService *galgameService.CreatorService
-	Authn          *middleware.Authenticator
-	BearerStance   *middleware.BearerStance
-	ImageMeta      func(hashes []string) map[string]imageclient.ImageMeta
-	GalgameV1      *galgameapiv1.Service
-	WallV1         *wallapiv1.Service
-	TrustV1        *trustapiv1.Service
+	Fiber           *fiber.App
+	DB              *gorm.DB
+	Redis           *redis.Client
+	Config          *config.Config
+	OAuthClient     *oauth.Client
+	UserState       *repository.StateRepository
+	TopicAward      topicapiv1.AwardFunc
+	TrustCheck      *gate.CheckService
+	TrustScan       *gate.ScanService
+	Notifier        msgService.Notifier
+	Messages        *msgService.MessageService
+	UserClient      *userclient.Client
+	UserService     *service.UserService
+	CreatorService  *galgameService.CreatorService
+	Authn           *middleware.Authenticator
+	BearerStance    *middleware.BearerStance
+	ImageMeta       func(hashes []string) map[string]imageclient.ImageMeta
+	GalgameV1       *galgameapiv1.Service
+	GalgameEntityV1 *galgameentityv1.Service
+	WallV1          *wallapiv1.Service
+	TrustV1         *trustapiv1.Service
 
 	OAuthHandler               *handler.OAuthHandler
 	UserHandler                *handler.UserHandler
@@ -528,6 +530,7 @@ func New(cfg *config.Config) *App {
 		BearerStance:             bearerStance,
 		ImageMeta:                imageMetaResolve(imageMeta),
 		GalgameV1:                galgameapiv1.New(gc, moyuCli, uc, rdb, cfg.NextMoeAPI.ImageCDNBase),
+		GalgameEntityV1:          galgameentityv1.New(gc, db, cfg.NextMoeAPI.ImageCDNBase),
 		TrustV1:                  trustapiv1.New(trustCli, uc, cfg.Trust.Site, cfg.NextMoeAPI.ImageCDNBase),
 		WallV1:                   newWallV1(db, communityCli, uc, gc, imageMetaResolve(imageMeta), cfg.NextMoeAPI.ImageCDNBase),
 		OAuthHandler:             handler.NewOAuthHandler(authService, cfg.Server.Mode == "prod", communityBooster),
