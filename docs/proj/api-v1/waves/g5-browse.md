@@ -333,6 +333,7 @@ query：`include_nsfw`（默认 false）。人口与 `/works` 默认相同：`pu
 | upcoming 逐月串行（实现初稿） | 并发 8（旧 `upcomingConcurrency`），任一月失败整段 503 不变 | 24 个月 × 每月最多 5 页串行是旧面的数倍延迟 |
 | 数组查询参数里超长的未知词（`resource_platforms=windows`） | `400 UNKNOWN_ENUM_VALUE` | huma 对它同时报 `TOO_LONG`（枚举的 maxLength 取最长键）与 `UNKNOWN_VALUE`，多出的 `TOO_LONG` 让码落成 `INVALID_PARAMETER`。`pkg/problem` 现在丢掉同一参数上被 `UNKNOWN_VALUE` 蕴含的长度错误——全 v1 生效，不止本轨 |
 | 网盘词表两份（`list_repo.go` 与 `workrepr`） | 一份：`resourcevocab.ProviderKeys` | 两处各自维护会漂 |
+| `/characters` 的条目是 `CharacterRef` | `CharacterSummary`（`CharacterRef` + `image` + `catalog_work_count`），一次 `CatalogEntityMediaBatch` 补齐当页；读不到只打 WARN、图为 `null` | 旧实体搜索给角色带头像与作品数，搜索 tab 换到 GE 集合后两者都丢了；与旧面同一数据源、同一降级 |
 
 ## 4. 逐条操作
 
