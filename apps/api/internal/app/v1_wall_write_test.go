@@ -164,6 +164,11 @@ func TestV1WallCreateRefuses(t *testing.T) {
 	expect("rate limited", resp, out, http.StatusTooManyRequests, "RATE_LIMITED", "")
 	f.cm.limited.Store(false)
 
+	f.cm.closed.Store(true)
+	resp, out = f.create(t, "rc-alice", keyUUID(35), createBody("toolset", rcToolsetA, "closed wall"))
+	expect("closed wall", resp, out, http.StatusConflict, "INVALID_STATE_TRANSITION", "")
+	f.cm.closed.Store(false)
+
 	before := f.cm.comments.Load()
 	f.failOA.Store(true)
 	resp, out = f.create(t, "rc-carol", keyUUID(34), createBody("toolset", rcToolsetA, "oauth down"))

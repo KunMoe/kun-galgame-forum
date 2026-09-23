@@ -90,6 +90,7 @@ type fakeCommunity struct {
 	toggles   atomic.Int32
 	down      atomic.Bool
 	limited   atomic.Bool
+	closed    atomic.Bool
 	bogus     atomic.Bool
 	lastReq   communityclient.CommentRequest
 }
@@ -207,6 +208,10 @@ func (c *fakeCommunity) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		_ = json.NewDecoder(r.Body).Decode(&req)
 		if c.limited.Load() {
 			w.WriteHeader(http.StatusTooManyRequests)
+			return
+		}
+		if c.closed.Load() {
+			writeEnvelope(w, http.StatusConflict, 40900, "thread is not open", nil)
 			return
 		}
 		if strings.Contains(req.Body, "BLOCKED") {
