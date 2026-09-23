@@ -83,8 +83,8 @@ git ls-remote --heads origin 'api-v1/*'
 | **T** | **话题**：`/topic/**` 11 + `/admin/topic*` 3 | **14** | 110–119 | 已认领（本轨）。~~**T1** 清理旧评论/投票 10 条~~ ✅ → ~~**T2** 草稿 4 + `interactions/mine` + `reply/locate` + 删 `/resource` 共 7 条~~ ✅（迁移 110）→ **T3** 抽奖 11 条 → **T4** 管理面 3 条（在 `internal/admin/**`，页码集合） |
 | U | 用户 `/user/**`（不含「某用户的 X」列表面，那些归各自的域） | 25 | 120–129 | 资料、签到、偏好、创作者、红点 |
 | M | 消息 `/message/**` | 11 | 130–134 | 私信 + 系统通知 |
-| RC | **资源评论**：`ResourceCommentHandler` 的 15 条，横跨 `galgame-quiz` `galgame-rating` `galgame-resource` `toolset` `website` | 15 | 135–139 | **五个域的绊脚石，优先拿下**；底层是 infra 社区原语，论坛只是 BFF |
-| G | galgame 主域 + `-edit` + `-quiz` + `-resource` + `toolset` + 各自的 admin/user 面 | 92 | 140–159 | 最大的一坨，**一个 owner**，内部自己切 3–4 个 PR 串行 |
+| RC | **评论墙**：`ResourceCommentHandler` 15 条（`galgame-quiz` `galgame-rating` `galgame-resource` `toolset` `website`）+ `CommunityCommentHandler` 7 条（galgame 评论墙与六面共用的编辑/赞/举报） | 22 | 135–139 | 已认领。2026-09-22 用户拍板从 G 并入 `CommunityCommentHandler`：六面墙共用一套网页组件与逐帖操作，是一个连通分量（[契约](waves/rc-wall-comments.md)） |
+| G | galgame 主域 + `-edit` + `-quiz` + `-resource` + `toolset` + 各自的 admin/user 面（**不含** `/galgame/:gid/comments*` 与 `/galgame/comments/*`，已归 RC） | 85 | 140–159 | 最大的一坨，**一个 owner**，内部自己切 3–4 个 PR 串行 |
 | GE | galgame 实体六件套 `-character` `-engine` `-official` `-series` `-staff` `-tag` | 18 | 160–164 | 共用 `EntityHandler`，必须同一轨 |
 | D | 文档 `/doc` + `/website-tag` + `/website-category` | 26 | 165–169 | 共用 `TagHandler` / `CategoryHandler` |
 | UP | 更新日志 `/update/**` | 11 | 170–174 | |
