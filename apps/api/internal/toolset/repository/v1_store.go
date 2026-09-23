@@ -459,3 +459,11 @@ func (s *Store) DailyUploadState(userID int) (bytes int64, moe int, err error) {
 	}
 	return state.DailyToolsetUploadBytes, state.Moemoepoint, nil
 }
+
+func escapeLike(s string) string {
+	return strings.NewReplacer(
+		"\\", "\\\\",
+		"%", "\\%",
+		"_", "\\_",
+	).Replace(s)
+}

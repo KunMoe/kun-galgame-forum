@@ -1,8 +1,6 @@
 package anchor
 
 import (
-	"context"
-	"log/slog"
 	"strconv"
 	"strings"
 
@@ -119,35 +117,4 @@ func (r *Resolver) websiteDomains(ids []int) map[int]string {
 		}
 	}
 	return domains
-}
-
-// ResolveNamed is Resolve plus the game names, for the surfaces that print a
-// wall as a row the reader has to recognise. Names come from catalog in one
-// batch the client caches; a name that does not arrive leaves Label standing.
-func (r *Resolver) ResolveNamed(ctx context.Context, refs []Ref) map[Ref]Target {
-	targets := r.Resolve(refs)
-	if r.galgame == nil {
-		return targets
-	}
-	workIDs := make([]int, 0, len(targets))
-	for _, target := range targets {
-		if target.WorkID > 0 {
-			workIDs = append(workIDs, target.WorkID)
-		}
-	}
-	if len(workIDs) == 0 {
-		return targets
-	}
-	briefs, appErr := r.galgame.GetBatch(ctx, workIDs)
-	if appErr != nil {
-		slog.Warn("anchor: galgame name enrichment failed (best-effort)", "error", appErr)
-		return targets
-	}
-	for ref, target := range targets {
-		if brief, ok := briefs[target.WorkID]; ok && brief.Name != "" {
-			target.Title = brief.Name
-			targets[ref] = target
-		}
-	}
-	return targets
 }

@@ -187,7 +187,7 @@
 3. **§8 网页的车道请求与「全部」分区的并发加载放在 `utils/search/{lanes,overview}.ts`，不放 `components/search/`。** 放在组件目录时 Nuxt 把 `overview.ts` 当成第二个 `SearchOverview` 组件扫描（`Two component files resolving to the same name SearchOverview`）。
 4. **§4.4 的「50+」在网页上显示出来了：** 分区列表头读 `total_relation`，`gte` 时显示 `共 50+ 位用户`。左栏计数仍只画数字（见未决事项）。
 
-5. **rebase 到 G1（#215）之后**：工具车道改走 v1 的 `GET /toolsets?q=`（G1 删了旧的 `GET /api/toolset`），`SearchResultToolset` 就是 `ToolsetSummary`；旧搜索服务是旧工具集服务在 `app.go` 里的最后一个使用者，所以它的装配（`toolsetCoreSvc` 与三个仓储）随之删掉，`internal/toolset/service` 包本身仍被 G1 的测试引用，留给 G 轨。
+5. **rebase 到 G1（#215）之后**：工具车道改走 v1 的 `GET /toolsets?q=`（G1 删了旧的 `GET /api/toolset`），`SearchResultToolset` 就是 `ToolsetSummary`；旧搜索服务是旧工具集服务在 `app.go` 里的最后一个使用者，所以它的装配（`toolsetCoreSvc` 与三个仓储）随之删掉；随后 `deadcode` 比 master 多出 15 个函数，按「与 master 相比无新增」全部删掉：旧工具集服务包 `internal/toolset/service`、`internal/toolset/dto`（最后的导入方是旧搜索的总览）、旧仓储的三个文件（`escapeLike` 挪进 `v1_store.go`），以及只被旧 gal-comment 搜索用过的 `anchor.Resolver.ResolveNamed`。
 
 ### 未决
 
