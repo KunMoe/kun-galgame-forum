@@ -11,7 +11,7 @@ import type {
   UserPermissions
 } from '#shared/utils/api/schemas'
 
-const props = defineProps<{ user: SearchResultUser }>()
+const props = defineProps<{ user: KunUser }>()
 const open = defineModel<boolean>({ required: true })
 
 const api = useApiClient()

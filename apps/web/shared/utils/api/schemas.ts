@@ -237,3 +237,7 @@ export type UserRankingSort = NonNullable<
 export type WorkRankingSort = NonNullable<
   NonNullable<operations['listWorkRanking']['parameters']['query']>['sort']
 >
+export type ReplySearchHit = components['schemas']['ReplySearchHit']
+export type CommentSearchHit = components['schemas']['CommentSearchHit']
+export type UserSearchHit = components['schemas']['UserSearchHit']
+export type WallCommentSearchHit = components['schemas']['WallCommentSearchHit']

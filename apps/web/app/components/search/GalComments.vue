@@ -1,11 +1,15 @@
 <script setup lang="ts">
+import { settle } from '#shared/utils/api/problem'
+import type { WallCommentSearchHit } from '#shared/utils/api/schemas'
+
 const props = defineProps<{
   keywords: string
 }>()
 
 const PAGE_SIZE = 24
 
-const results = ref<SearchResultGalComment[]>([])
+const api = useApiClient()
+const results = ref<WallCommentSearchHit[]>([])
 const nextCursor = ref('')
 const pending = ref(!!props.keywords)
 const loadingMore = ref(false)
@@ -15,11 +19,26 @@ const hasMore = computed(() => nextCursor.value !== '')
 
 let latest = 0
 
-const fetchPage = (cursor: string) =>
-  kunFetch<SearchGalCommentResult>('/search/gal-comment', {
-    method: 'GET',
-    query: { keywords: props.keywords, cursor, limit: PAGE_SIZE }
-  })
+const tooShort = computed(() => props.keywords.trim().length < 2)
+
+const fetchPage = async (cursor: string) => {
+  const result = await settle(
+    api.GET('/search/wall-comments', {
+      params: {
+        query: {
+          q: props.keywords,
+          limit: PAGE_SIZE,
+          ...(cursor ? { cursor } : {})
+        }
+      }
+    })
+  )
+  if (!result.ok) {
+    reportProblem(result.problem)
+    return null
+  }
+  return result.data
+}
 
 // The community service answers a keyset cursor and no total, so this lane
 // cannot use the shared paginator: there is no last page to bound it with, and
@@ -27,7 +46,7 @@ const fetchPage = (cursor: string) =>
 // link to is dropped.
 const load = async () => {
   const current = ++latest
-  if (!props.keywords) {
+  if (!props.keywords || tooShort.value) {
     results.value = []
     nextCursor.value = ''
     pending.value = false
@@ -60,7 +79,7 @@ const loadMore = async () => {
     ...results.value,
     ...data.items.filter((item) => !seen.has(item.id))
   ]
-  nextCursor.value = data.next_cursor
+  nextCursor.value = data.next_cursor ?? ''
 }
 
 watch(() => props.keywords, load, { immediate: true })
@@ -84,6 +103,8 @@ watch(() => props.keywords, load, { immediate: true })
     </div>
 
     <KunNull v-else-if="failed" description="搜索没能完成, 请稍后重试" />
+
+    <KunNull v-else-if="tooShort" description="评论搜索至少需要 2 个字" />
 
     <KunNull v-else-if="keywords" description="杂鱼杂鱼杂鱼~什么也没有搜索到" />
 

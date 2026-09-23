@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useRouteQuery } from '@vueuse/router'
 import { SEARCH_CATEGORY_MAP } from './items'
-import { settle } from '#shared/utils/api/problem'
+import { fetchLanePage, type GalgameFilterQuery } from './lanes'
 
 const props = defineProps<{
   keywords: string
@@ -9,11 +9,6 @@ const props = defineProps<{
 }>()
 
 const PAGE_SIZE = 24
-
-interface SearchPage {
-  items: SearchResult[]
-  total: number
-}
 
 const results = ref<SearchResult[]>([])
 const total = ref(0)
@@ -25,7 +20,6 @@ const failed = ref(false)
 // keyword changes, SearchGalgameFilter when a filter does.
 const page = useRouteQuery('page', 1, { mode: 'replace', transform: Number })
 const top = useTemplateRef<HTMLElement>('top')
-const api = useApiClient()
 
 const meta = computed(() => SEARCH_CATEGORY_MAP[props.type])
 const totalPage = computed(() => Math.ceil(total.value / PAGE_SIZE))
@@ -57,36 +51,19 @@ const isFiltered = computed(() =>
 
 let latest = 0
 
-const fetchPage = async (target: number): Promise<SearchPage | null> => {
-  if (props.type === 'toolset') {
-    const result = await settle(
-      api.GET('/toolsets', {
-        params: {
-          query: {
-            q: props.keywords,
-            page: target,
-            limit: PAGE_SIZE
-          }
-        }
-      })
-    )
-    if (!result.ok) {
-      reportProblem(result.problem)
-      return null
-    }
-    return { items: result.data.items, total: result.data.total }
-  }
-  return kunFetch<SearchPage>('/search', {
-    method: 'GET',
-    query: {
-      keywords: props.keywords,
-      type: props.type,
-      page: target,
-      limit: PAGE_SIZE,
-      ...galgameFilter.value
-    }
-  })
-}
+const api = useApiClient()
+const { allowsNsfw } = useContentStance()
+
+const fetchPage = (target: number) =>
+  fetchLanePage(
+    api,
+    props.type,
+    props.keywords,
+    target,
+    PAGE_SIZE,
+    allowsNsfw.value,
+    galgameFilter.value as GalgameFilterQuery
+  )
 
 const load = async () => {
   const current = ++latest
@@ -101,8 +78,8 @@ const load = async () => {
   if (current !== latest) {
     return
   }
-  // kunFetch already popped a toast; telling the reader "nothing found" when the
-  // request never came back is the one thing this must not do.
+  // The failure is already reported; telling the reader "nothing found" when
+  // the request never came back is the one thing this must not do.
   failed.value = !data
   total.value = data?.total ?? 0
 

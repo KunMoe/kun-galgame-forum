@@ -1,10 +1,13 @@
 <script setup lang="ts">
+import type { ReplySearchHit } from '#shared/utils/api/schemas'
+import { toKunUser } from '~/utils/userRef'
+
 const props = defineProps<{
-  reply: SearchResultReply
+  reply: ReplySearchHit
   keywords?: string
 }>()
 
-const snippet = computed(() => markdownToText(props.reply.content))
+const author = computed(() => toKunUser(props.reply.author))
 </script>
 
 <template>
@@ -27,15 +30,18 @@ const snippet = computed(() => markdownToText(props.reply.content))
       </span>
     </div>
 
-    <p v-if="snippet" class="text-default-700 line-clamp-2 w-full text-sm">
-      <SearchHighlight :text="snippet" :keywords="keywords" />
+    <p
+      v-if="reply.excerpt"
+      class="text-default-700 line-clamp-2 w-full text-sm"
+    >
+      <SearchHighlight :text="reply.excerpt" :keywords="keywords" />
     </p>
 
     <div class="text-default-500 flex w-full items-center gap-1.5 text-xs">
-      <KunAvatar size="xs" :user="reply.user" :is-navigation="false" />
-      <span class="truncate">{{ reply.user.name }}</span>
+      <KunAvatar size="xs" :user="author" :is-navigation="false" />
+      <span class="truncate">{{ author.name }}</span>
       <span class="ml-auto shrink-0">
-        <KunTime :time="reply.created" />
+        <KunTime :time="reply.created_at" />
       </span>
     </div>
   </KunLink>

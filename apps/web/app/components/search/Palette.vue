@@ -2,6 +2,13 @@
 import type { KunCommandGroup, KunCommandItem } from '@kungal/ui-vue'
 import { watchDebounced } from '@vueuse/core'
 import { KUN_TOPIC_SECTION } from '~/constants/topic'
+import { settle } from '#shared/utils/api/problem'
+import type {
+  TopicSummary,
+  UserSearchHit,
+  WorkRef
+} from '#shared/utils/api/schemas'
+import { catalogNameText } from '~/utils/catalogName'
 
 // Mirrors the API's `max=107` on keywords: past it the request is a validation
 // error, and one per keystroke would be an error toast per keystroke.
@@ -10,7 +17,21 @@ const MAX_KEYWORDS_LENGTH = 107
 const open = ref(false)
 const query = ref('')
 const pending = ref(false)
-const result = ref<SearchQuickResult | null>(null)
+interface QuickResult {
+  topics: TopicSummary[]
+  works: WorkRef[]
+  users: UserSearchHit[]
+  totals: { topic?: number; work?: number; user?: number }
+}
+
+const QUICK_LIMIT = 5
+
+const result = ref<QuickResult | null>(null)
+const api = useApiClient()
+const { allowsNsfw } = useContentStance()
+const { showKUNGalgamePreferOriginalName } = storeToRefs(
+  usePersistSettingsStore()
+)
 
 const { searchHistory } = storeToRefs(usePersistKUNGalgameSearchStore())
 
@@ -27,15 +48,34 @@ const search = async (value: string) => {
   }
 
   pending.value = true
-  const data = await kunFetch<SearchQuickResult>('/search/quick', {
-    method: 'GET',
-    query: { keywords: value }
-  })
+  const lane = { q: value, limit: QUICK_LIMIT }
+  const [topics, works, users] = await Promise.all([
+    settle(
+      api.GET('/search/topics', {
+        params: { query: { ...lane, include_nsfw: allowsNsfw.value } }
+      })
+    ),
+    settle(
+      api.GET('/search/works', {
+        params: { query: { ...lane, include_nsfw: allowsNsfw.value } }
+      })
+    ),
+    settle(api.GET('/search/users', { params: { query: lane } }))
+  ])
   if (current !== latest) {
     return
   }
   pending.value = false
-  result.value = data
+  result.value = {
+    topics: topics.ok ? topics.data.items : [],
+    works: works.ok ? works.data.items : [],
+    users: users.ok ? users.data.items : [],
+    totals: {
+      topic: topics.ok ? topics.data.total : undefined,
+      work: works.ok ? works.data.total : undefined,
+      user: users.ok ? users.data.total : undefined
+    }
+  }
 }
 
 watchDebounced(keywords, search, { debounce: 300 })
@@ -50,7 +90,7 @@ watch(open, (isOpen) => {
 
 const hasHit = computed(() => {
   const hit = result.value
-  return !!hit && hit.topics.length + hit.galgames.length + hit.users.length > 0
+  return !!hit && hit.topics.length + hit.works.length + hit.users.length > 0
 })
 
 // The action row is always present, so the palette's own no-result text can
@@ -62,8 +102,8 @@ const actionDescription = computed(() =>
     : '在搜索页面查看话题, Galgame, 用户, 回复与评论的全部结果'
 )
 
-const label = (name: string, total: number) =>
-  total > 0 ? `${name} · ${total}` : name
+const label = (name: string, total?: number) =>
+  total ? `${name} · ${total}` : name
 
 const groups = computed<KunCommandGroup[]>(() => {
   if (!keywords.value) {
@@ -101,29 +141,36 @@ const groups = computed<KunCommandGroup[]>(() => {
     return list
   }
 
-  const { topics, galgames, users, totals } = result.value
+  const { topics, works, users, totals } = result.value
   if (topics.length) {
     list.push({
       label: label('话题', totals.topic),
       items: topics.map((topic) => ({
         value: `/topic/${topic.id}`,
         label: topic.title,
-        description: topic.section
+        description: topic.sections
           .map((name) => KUN_TOPIC_SECTION[name] ?? name)
           .join(' · '),
         icon: 'lucide:message-square-text'
       }))
     })
   }
-  if (galgames.length) {
+  if (works.length) {
     list.push({
-      label: label('Galgame', totals.galgame),
-      items: galgames.map((galgame) => ({
-        value: `/galgame/${galgame.id}`,
-        label: galgame.name,
-        description: galgame.company || galgame.name_original,
-        icon: 'lucide:gamepad-2'
-      }))
+      label: label('Galgame', totals.work),
+      items: works.map((work) => {
+        const name = catalogNameText(
+          work,
+          showKUNGalgamePreferOriginalName.value
+        )
+        return {
+          value: `/galgame/${work.id}`,
+          label: name,
+          description:
+            name === work.display_name ? (work.latin ?? '') : work.display_name,
+          icon: 'lucide:gamepad-2'
+        }
+      })
     })
   }
   if (users.length) {
@@ -131,8 +178,8 @@ const groups = computed<KunCommandGroup[]>(() => {
       label: label('用户', totals.user),
       items: users.map((user) => ({
         value: `/user/${user.id}`,
-        label: user.name,
-        description: user.bio,
+        label: user.name ?? '',
+        description: user.bio ?? '',
         icon: 'lucide:user-round'
       }))
     })

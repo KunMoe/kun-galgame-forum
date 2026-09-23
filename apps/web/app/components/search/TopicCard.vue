@@ -1,8 +1,13 @@
 <script setup lang="ts">
-defineProps<{
-  topic: SearchResultTopic
+import type { TopicSummary } from '#shared/utils/api/schemas'
+import { toKunUser } from '~/utils/userRef'
+
+const props = defineProps<{
+  topic: TopicSummary
   keywords?: string
 }>()
+
+const author = computed(() => toKunUser(props.topic.author))
 </script>
 
 <template>
@@ -17,22 +22,22 @@ defineProps<{
         <SearchHighlight :text="topic.title" :keywords="keywords" />
       </h3>
       <span class="text-default-400 shrink-0 text-xs">
-        <KunTime :time="topic.status_update_time" />
+        <KunTime :time="topic.bumped_at" />
       </span>
     </div>
 
     <div class="flex w-full flex-wrap items-center gap-x-3 gap-y-1 text-xs">
       <TopicBadgeGroup
-        :section="topic.section"
-        :upvote-time="topic.upvote_time"
+        :section="topic.sections"
+        :upvote-time="topic.upvoted_at"
         :has-best-answer="topic.has_best_answer"
         :mini-apps="topic.mini_apps"
-        :is-n-s-f-w-topic="topic.is_nsfw_topic"
+        :is-n-s-f-w-topic="topic.is_nsfw"
       />
 
       <span class="text-default-500 flex items-center gap-1">
-        <KunAvatar size="xs" :user="topic.user" :is-navigation="false" />
-        {{ topic.user.name }}
+        <KunAvatar size="xs" :user="author" :is-navigation="false" />
+        {{ author.name }}
       </span>
 
       <span
@@ -40,7 +45,7 @@ defineProps<{
       >
         <span class="flex items-center gap-1">
           <KunIcon name="lucide:eye" class="size-3.5" />
-          {{ formatNumber(topic.view) }}
+          {{ formatNumber(topic.view_count) }}
         </span>
         <span class="flex items-center gap-1">
           <KunIcon name="lucide:thumbs-up" class="size-3.5" />

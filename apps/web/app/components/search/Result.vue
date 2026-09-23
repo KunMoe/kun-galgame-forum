@@ -1,36 +1,42 @@
 <script setup lang="ts">
+import type {
+  CommentSearchHit,
+  ReplySearchHit,
+  TopicSummary,
+  UserSearchHit,
+  WorkRef
+} from '#shared/utils/api/schemas'
+
 const props = defineProps<{
   type: SearchPagedType
   results: SearchResult[]
   keywords: string
 }>()
 
-const isTopicResults = (results: unknown[]): results is SearchResultTopic[] =>
+const isTopicResults = (results: unknown[]): results is TopicSummary[] =>
   props.type === 'topic'
-const isGalgameResults = (
-  results: unknown[]
-): results is SearchResultGalgame[] => props.type === 'galgame'
+const isWorkResults = (results: unknown[]): results is WorkRef[] =>
+  props.type === 'galgame'
 const isResourceResults = (
   results: unknown[]
 ): results is SearchResultResource[] => props.type === 'resource'
 const isToolsetResults = (
   results: unknown[]
 ): results is SearchResultToolset[] => props.type === 'toolset'
-const isUserResults = (results: unknown[]): results is SearchResultUser[] =>
+const isUserResults = (results: unknown[]): results is UserSearchHit[] =>
   props.type === 'user'
-const isReplyResults = (results: unknown[]): results is SearchResultReply[] =>
+const isReplyResults = (results: unknown[]): results is ReplySearchHit[] =>
   props.type === 'reply'
-const isCommentResults = (
-  results: unknown[]
-): results is SearchResultComment[] => props.type === 'comment'
+const isCommentResults = (results: unknown[]): results is CommentSearchHit[] =>
+  props.type === 'comment'
 </script>
 
 <template>
   <div>
-    <GalgameCard
-      v-if="isGalgameResults(results)"
-      :is-transparent="true"
-      :galgames="results"
+    <SearchWorkGrid
+      v-if="isWorkResults(results)"
+      :works="results"
+      :keywords="keywords"
     />
 
     <div v-if="isTopicResults(results)" class="space-y-2">

@@ -18,7 +18,10 @@ const counts = computed<Partial<Record<SearchType, number>>>(() => {
   if (!totals) {
     return {}
   }
-  const sum = Object.values(totals).reduce((acc, value) => acc + value, 0)
+  const sum = Object.values(totals).reduce(
+    (acc, value) => acc + (value ?? 0),
+    0
+  )
   return { ...totals, all: sum }
 })
 

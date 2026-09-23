@@ -1,17 +1,23 @@
 <script setup lang="ts">
+import type { UserSearchHit } from '#shared/utils/api/schemas'
 import { KUN_USER_ROLE_MAP } from '~/constants/user'
+import { toKunUser } from '~/utils/userRef'
 
 const props = defineProps<{
-  user: SearchResultUser
+  user: UserSearchHit
   keywords?: string
 }>()
+
+const avatarUser = computed(() => toKunUser(props.user))
 
 // One chip, the highest rank the account holds — a name followed by four of
 // them is a badge collection, not an identity.
 const ROLE_RANK = ['ren', 'admin', 'moderator', 'creator']
 
 const role = computed(() =>
-  ROLE_RANK.find((name) => props.user.roles?.includes(name))
+  ROLE_RANK.find((name) =>
+    props.user.roles.includes(name as UserSearchHit['roles'][number])
+  )
 )
 </script>
 
@@ -20,7 +26,7 @@ const role = computed(() =>
     <div class="flex w-full gap-3 p-3">
       <KunAvatar
         :disable-floating="true"
-        :user="user"
+        :user="avatarUser"
         :is-navigation="false"
         size="lg"
         class-name="shrink-0"
@@ -29,7 +35,7 @@ const role = computed(() =>
       <div class="min-w-0 flex-1 space-y-1">
         <div class="flex items-center gap-2">
           <span class="truncate text-sm font-medium">
-            <SearchHighlight :text="user.name" :keywords="keywords" />
+            <SearchHighlight :text="avatarUser.name" :keywords="keywords" />
           </span>
           <KunChip v-if="role" size="xs" color="primary">
             {{ KUN_USER_ROLE_MAP[role] }}
@@ -54,9 +60,9 @@ const role = computed(() =>
             <KunIcon name="carbon:reply" class="size-3.5" />
             {{ user.reply_count }}
           </span>
-          <span v-if="user.created" class="flex items-center gap-1">
+          <span v-if="user.registered_at" class="flex items-center gap-1">
             <KunIcon name="lucide:calendar" class="size-3.5" />
-            <KunTime :time="user.created" type="date" show-year />
+            <KunTime :time="user.registered_at" type="date" show-year />
           </span>
         </div>
       </div>

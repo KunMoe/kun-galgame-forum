@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { loadSearchOverview, type SearchOverviewData } from './overview'
+
 const route = useRoute()
 const router = useRouter()
 
@@ -35,7 +37,10 @@ const rememberHistory = (value: string) => {
   searchHistory.value = kept.slice(-20)
 }
 
-const overview = ref<SearchOverviewResult | null>(null)
+const api = useApiClient()
+const { allowsNsfw } = useContentStance()
+
+const overview = ref<SearchOverviewData | null>(null)
 // Seeded from the URL rather than false: the immediate watcher below flips it
 // synchronously during hydration, so a false here renders a server tree without
 // the skeletons the client's first paint has, and every count mismatches.
@@ -55,17 +60,14 @@ const loadOverview = async (value: string) => {
     return
   }
   overviewPending.value = true
-  const data = await kunFetch<SearchOverviewResult>('/search/overview', {
-    method: 'GET',
-    query: { keywords: value }
-  })
+  const data = await loadSearchOverview(api, value, allowsNsfw.value)
   if (current !== latest) {
     return
   }
   overview.value = data
-  // kunFetch already popped a toast; without this the content column would just
-  // be blank, which reads as "no results" rather than "the request failed".
-  overviewFailed.value = !data
+  // Without this the content column would just be blank, which reads as "no
+  // results" rather than "the search failed".
+  overviewFailed.value = data.failed
   overviewPending.value = false
 }
 
@@ -111,8 +113,9 @@ const setType = (value: SearchType) => {
     >
       <template #endContent>
         <div class="text-default-500 text-sm">
-          搜索结果一并包含 NSFW 的 Galgame; 未开启 NSFW 时, 资料库中的成人标签,
-          以及 R18 游戏的下载资源会被隐藏。按厂商 / 会社 / 多标签精确筛选请前往
+          未开启 NSFW 时, NSFW 的 Galgame 与话题 (及其回复评论),
+          资料库中的成人标签, 以及 R18 游戏的下载资源都会被隐藏。按厂商 / 会社 /
+          多标签精确筛选请前往
           <KunLink to="/galgame/official">Galgame 会社资料库</KunLink>
           或者
           <KunLink to="/galgame/tag">Galgame 标签资料库</KunLink>。

@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import type { PageListToolsetSummary } from '#shared/utils/api/schemas'
+import type { SearchOverviewData } from './overview'
 
 const props = defineProps<{
   keywords: string
-  overview: SearchOverviewResult | null
+  overview: SearchOverviewData | null
   pending: boolean
   failed: boolean
 }>()
@@ -11,23 +11,6 @@ const props = defineProps<{
 const emit = defineEmits<{
   open: [value: SearchType]
 }>()
-
-const { data: toolsetPage } = await useApi<PageListToolsetSummary>(
-  () => `search-overview-toolsets:${props.keywords}`,
-  (api, { signal }) =>
-    api.GET('/toolsets', {
-      params: {
-        query: {
-          q: props.keywords,
-          page: 1,
-          limit: 4
-        }
-      },
-      signal
-    })
-)
-
-const toolsets = computed(() => toolsetPage.value?.items ?? [])
 
 const entityGroups = computed(
   () => props.overview?.entities.filter((group) => group.items.length) ?? []
@@ -41,8 +24,7 @@ const isEmpty = computed(() => {
     !props.pending &&
     !!totals &&
     Object.values(totals).every((value) => value === 0) &&
-    !props.overview?.gal_comments.length &&
-    !toolsets.value.length
+    !props.overview?.wallComments.length
   )
 })
 </script>
@@ -59,13 +41,13 @@ const isEmpty = computed(() => {
 
   <div v-else-if="overview" class="space-y-10">
     <SearchSection
-      v-if="overview.galgames.length"
+      v-if="overview.works.length"
       type="galgame"
       :total="overview.totals.galgame"
-      :shown="overview.galgames.length"
+      :shown="overview.works.length"
       @open="emit('open', $event)"
     >
-      <GalgameCard :is-transparent="true" :galgames="overview.galgames" />
+      <SearchWorkGrid :works="overview.works" :keywords="keywords" />
     </SearchSection>
 
     <SearchSection
@@ -168,14 +150,14 @@ const isEmpty = computed(() => {
     </SearchSection>
 
     <SearchSection
-      v-if="overview.gal_comments.length"
+      v-if="overview.wallComments.length"
       type="galcomment"
-      :shown="overview.gal_comments.length"
+      :shown="overview.wallComments.length"
       @open="emit('open', $event)"
     >
       <div class="space-y-2">
         <KunCard
-          v-for="comment in overview.gal_comments"
+          v-for="comment in overview.wallComments"
           :key="comment.id"
           padding="sm"
         >
@@ -185,13 +167,13 @@ const isEmpty = computed(() => {
     </SearchSection>
 
     <SearchSection
-      v-if="toolsets.length"
+      v-if="overview.toolsets.length"
       type="toolset"
       :total="overview.totals.toolset"
-      :shown="toolsets.length"
+      :shown="overview.toolsets.length"
       @open="emit('open', $event)"
     >
-      <ToolsetCard :items="toolsets" :keywords="keywords" />
+      <ToolsetCard :items="overview.toolsets" :keywords="keywords" />
     </SearchSection>
   </div>
 </template>

@@ -1,7 +1,12 @@
 <script setup lang="ts">
+import type { UserSearchHit } from '#shared/utils/api/schemas'
+import { toKunUser } from '~/utils/userRef'
+
 const props = defineProps<{
-  user: SearchResultUser
+  user: UserSearchHit
 }>()
+
+const kunUser = computed(() => toKunUser(props.user))
 
 const STAT_LABELS: { key: keyof AdminUserContentStats; label: string }[] = [
   { key: 'topics', label: '话题' },
@@ -48,7 +53,7 @@ const handlePurge = async () => {
     .map((item) => `${item.label} ${s[item.key]}`)
     .join(' / ')
   const confirmed = await useComponentMessageStore().alert(
-    `确认清除用户 ${props.user.name} 的全部内容吗`,
+    `确认清除用户 ${kunUser.value.name} 的全部内容吗`,
     `🚨 将永久删除该用户在本站的 ${s.total} 项内容: ${breakdown} (含其下全部嵌套回复、私聊会话与关联数据)。此操作不可撤销, 仅用于清理广告与 spam 账号, 请谨慎使用!`
   )
   if (!confirmed) {
@@ -66,7 +71,7 @@ const handlePurge = async () => {
     stats.value = deleted
     purged.value = true
     useMessage(
-      `已清除用户 ${props.user.name} 的 ${deleted.total} 项内容`,
+      `已清除用户 ${kunUser.value.name} 的 ${deleted.total} 项内容`,
       'success'
     )
   }
@@ -78,7 +83,7 @@ const handlePurge = async () => {
     class="dark:border-default-200 flex flex-col gap-3 rounded-lg border border-transparent p-3"
   >
     <div class="flex items-center justify-between gap-3">
-      <KunUserChip :user="user" />
+      <KunUserChip :user="kunUser" />
 
       <div class="flex shrink-0 items-center gap-2">
         <KunButton size="sm" variant="flat" @click="isPermOpen = true">
@@ -98,7 +103,7 @@ const handlePurge = async () => {
       </div>
     </div>
 
-    <AdminPermissionUserPanel v-model="isPermOpen" :user="user" />
+    <AdminPermissionUserPanel v-model="isPermOpen" :user="kunUser" />
 
     <div v-if="user.bio" class="text-default-500 line-clamp-2 text-sm">
       {{ user.bio }}

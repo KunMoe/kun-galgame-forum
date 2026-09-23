@@ -160,6 +160,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/overview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the site totals
+         * @description How much of each kind of content the site holds right now. It needs the admin.dashboard permission, which a Bearer request never carries.
+         */
+        get: operations["getAdminOverview"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/overview/daily": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List new content per day
+         * @description One bucket per Asia/Shanghai calendar day: today and the days − 1 days before it, oldest first. Every day is present, with zero counts when nothing was created. Today's bucket counts up to the moment of the request. It needs the admin.dashboard permission, which a Bearer request never carries.
+         */
+        get: operations["listAdminOverviewDays"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/permission-changes": {
         parameters: {
             query?: never;
@@ -508,6 +548,63 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/characters": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Search characters
+         * @description A page-number collection.
+         */
+        get: operations["listCharacters"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/characters/{character_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get a character */
+        get: operations["getCharacter"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/characters/{character_id}/appearances": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List a character's appearances
+         * @description Works the character appears in, with who voices it there, in catalog's order. A cursor collection.
+         */
+        get: operations["listCharacterAppearances"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/comments/{comment_id}": {
         parameters: {
             query?: never;
@@ -580,6 +677,140 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/companies": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List galgame companies
+         * @description Without q: every company catalog files works under, most works first, ties broken by ascending id. A page-number collection.
+         */
+        get: operations["listCompanies"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/companies/{company_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get a galgame company */
+        get: operations["getCompany"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/companies/{company_id}/graph": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a company's family graph
+         * @description Parent companies, subsidiaries, imprints, renames and spin-offs around the company.
+         */
+        get: operations["getCompanyGraph"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/companies/{company_id}/works": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List a company's works
+         * @description A page-number collection. Without a resource or game_type filter it holds every catalog work filed under the entity, including works the forum has no page for; any of those filters narrows it to works with a forum resource. Ties break on catalog's own order, or on descending id once a filter applies. A company's works include its imprints' works; via narrows to one or the other.
+         */
+        get: operations["listCompanyWorks"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/credit-names": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Search credit names
+         * @description The names staff and voice actors are credited under. A page-number collection.
+         */
+        get: operations["listCreditNames"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/credit-names/{credit_name_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get a credit name */
+        get: operations["getCreditName"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/credit-names/{credit_name_id}/credits": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List a credit name's credits
+         * @description Works credited to the name, in catalog's order. A cursor collection.
+         */
+        get: operations["listCreditNameCredits"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/docs": {
         parameters: {
             query?: never;
@@ -612,6 +843,63 @@ export interface paths {
          * @description A doc with its body, addressed by the slug of its /doc/{slug} page. Each successful read counts one view.
          */
         get: operations["getDoc"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/engines": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List galgame engines
+         * @description Every engine catalog records, most works first, ties broken by ascending id. A page-number collection.
+         */
+        get: operations["listEngines"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/engines/{engine_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get a galgame engine */
+        get: operations["getEngine"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/engines/{engine_id}/works": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List an engine's works
+         * @description A page-number collection. Without a resource or game_type filter it holds every catalog work filed under the entity, including works the forum has no page for; any of those filters narrows it to works with a forum resource. Ties break on catalog's own order, or on descending id once a filter applies.
+         */
+        get: operations["listEngineWorks"];
         put?: never;
         post?: never;
         delete?: never;
@@ -768,6 +1056,26 @@ export interface paths {
          * @description Returns the caller's cached moemoepoint, today's check-in gate, unread-message flag, creator flag, and today's toolset upload bytes.
          */
         get: operations["getMe"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/account": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the account behind this credential
+         * @description Who the caller is: name and avatar from the account center's current record, roles and the adult-content stance as this credential carries them. A Bearer request and a web session of the same person can therefore differ: Bearer carries no staff role and no stance.
+         */
+        get: operations["getMyAccount"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1328,6 +1636,106 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/news-archive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the news archive index
+         * @description Item counts by year, and by month for the one year asked about, under the same filters as listNewsItems. Years and months are cut on Asia/Shanghai.
+         */
+        get: operations["getNewsArchive"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/news-archive/{year}/{month}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get one month of news
+         * @description How many items one month holds and how they fall across its days, every day listed. The items themselves are listNewsMonthItems.
+         */
+        get: operations["getNewsMonth"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/news-archive/{year}/{month}/items": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List one month of news
+         * @description One month of news items, newest first, as a page-number collection: a month is a reference page, and a reader who wants its third week should not scroll the first two. total counts the month after the day filter.
+         */
+        get: operations["listNewsMonthItems"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/news-items": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List news items
+         * @description The partner news index, newest first. A cursor collection over the news service's own cursor; the cursor is bound to every filter and to limit. limit is 1–50 because that is the news service's page cap.
+         */
+        get: operations["listNewsItems"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/news-sources": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List news partners
+         * @description The whole partner directory, which is where a news item's news_source key resolves to a name and attribution. Not paged.
+         */
+        get: operations["listNewsSources"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/polls/{poll_id}": {
         parameters: {
             query?: never;
@@ -1432,6 +1840,66 @@ export interface paths {
          * @description The closed registry of field-level reasons. Unauthenticated. Values in this list never appear as top-level codes.
          */
         get: operations["listProblemReasons"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/rankings/topics": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Rank topics
+         * @description A top-N list rather than a paged collection: it has no page, cursor or total. Only topics anonymous visitors can list: not hidden and public. Topics whose author is banned or deleted are dropped and the places renumbered.
+         */
+        get: operations["listTopicRanking"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/rankings/users": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Rank users
+         * @description A top-N list rather than a paged collection: it has no page, cursor or total. Counts include only what anonymous visitors can read. Banned and deleted accounts are dropped and the places renumbered.
+         */
+        get: operations["listUserRanking"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/rankings/works": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Rank works
+         * @description A top-N list rather than a paged collection: it has no page, cursor or total. Only published works; without include_resourceless, only works that have a resource. Works the catalog does not return are dropped and the places renumbered.
+         */
+        get: operations["listWorkRanking"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1712,6 +2180,163 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/sections": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List topic sections
+         * @description Every topic section in vocabulary order with its size and newest topic, empty sections included. Not paged: the vocabulary is closed and small. The topics of one section are listTopics with section set.
+         */
+        get: operations["listSections"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/series": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List galgame series
+         * @description Without q: series with at least one work the forum lists, most listed works first, ties broken by ascending id. A page-number collection.
+         */
+        get: operations["listSeries"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/series/{series_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get a galgame series */
+        get: operations["getSeries"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/series/{series_id}/works": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List a series' works
+         * @description A page-number collection. Without a resource or game_type filter it holds every catalog work filed under the entity, including works the forum has no page for; any of those filters narrows it to works with a forum resource. Ties break on catalog's own order, or on descending id once a filter applies.
+         */
+        get: operations["listSeriesWorks"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/tagged-works": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List works carrying every given tag
+         * @description Catalog's own search population, newest release first; unlike a tag's works collection it takes no forum filter or sort. A page-number collection.
+         */
+        get: operations["listTaggedWorks"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/tags": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List galgame tags
+         * @description Without q: every visible tag catalog files works under, most works first, ties broken by ascending id. Hidden tags never appear; adult tags only with include_nsfw=true. A page-number collection.
+         */
+        get: operations["listTags"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/tags/{tag_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a galgame tag
+         * @description An adult tag is NOT_FOUND unless include_nsfw=true, the same answer as a tag that does not exist.
+         */
+        get: operations["getTag"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/tags/{tag_id}/works": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List a tag's works
+         * @description A page-number collection. Without a resource or game_type filter it holds every catalog work filed under the entity, including works the forum has no page for; any of those filters narrows it to works with a forum resource. Ties break on catalog's own order, or on descending id once a filter applies.
+         */
+        get: operations["listTagWorks"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/todos": {
         parameters: {
             query?: never;
@@ -1762,6 +2387,234 @@ export interface paths {
          * @description With state, moves the task; state is never sent with another field (VALIDATION_FAILED INCONSISTENT_WITH at /state). The transitions are: pending to in_progress (claim; update_log.edit; the caller becomes the claimer), pending to discarded (the author), in_progress to done (the claimer or update_log.edit; sets completed_at), in_progress to discarded (the claimer or update_log.edit), in_progress to pending (release; the claimer only; clears the claimer), discarded to pending (reopen; update_log.reopen; clears the claimer). done is final. Any other pair, including the state the task is already in, is INVALID_STATE_TRANSITION, checked before permissions; a listed pair the caller may not make is PERMISSION_REQUIRED. The write is guarded on the state that was read, so losing a race to another caller is INVALID_STATE_TRANSITION too. Without state, changes project and text: the author only, and only while the task is pending or in_progress (otherwise INVALID_STATE_TRANSITION, checked first). text is checked as in createTodo; the trust-and-safety check runs only when the stored text changes. An empty object writes nothing. Every flag in viewer is exactly the gate this operation applies. Update_log permissions are never carried by a Bearer request.
          */
         patch: operations["updateTodo"];
+        trace?: never;
+    };
+    "/toolsets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List toolsets
+         * @description Lists toolsets as a page-number collection. Default sort is resource_updated_desc. type, language, platform and version narrow the list; an unknown token is UNKNOWN_ENUM_VALUE. q searches the name. Toolsets whose author is not renderable are omitted from both items and total.
+         */
+        get: operations["listToolsets"];
+        put?: never;
+        /**
+         * Create a toolset
+         * @description Creates a toolset and returns it. Idempotency-Key is required. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED, and a failure of that lookup is SERVICE_UNAVAILABLE with nothing written. name is length-checked on the raw value; only whitespace is TOO_SHORT. type, language, platform and version are required closed vocabularies. Location is the new toolset's path.
+         */
+        post: operations["createToolset"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/toolsets/{toolset_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a toolset
+         * @description Returns the toolset and counts one view. An unrenderable author is NOT_FOUND. viewer is null for an anonymous caller.
+         */
+        get: operations["getToolset"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete a toolset
+         * @description Deletes a toolset and its resources, aliases, contributors, ratings and uploads. Needs can_delete. Requests authenticated with a Bearer token never carry toolset permissions. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED, and a failure of that lookup is SERVICE_UNAVAILABLE with nothing written. Object-store failure is SERVICE_UNAVAILABLE and nothing is deleted.
+         */
+        delete: operations["deleteToolset"];
+        options?: never;
+        head?: never;
+        /**
+         * Edit a toolset
+         * @description Changes the fields that are sent and returns the toolset. Needs can_edit. Requests authenticated with a Bearer token never carry toolset permissions. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED, and a failure of that lookup is SERVICE_UNAVAILABLE with nothing written. Only name, content_markdown and aliases, when sent, go through the trust-and-safety check. aliases and homepage_urls, when present, replace the whole set.
+         */
+        patch: operations["updateToolset"];
+        trace?: never;
+    };
+    "/toolsets/{toolset_id}/practicality": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Rate a toolset's practicality
+         * @description Sets the caller's 1–5 rating. Rating again with the same value changes nothing. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED, and a failure of that lookup is SERVICE_UNAVAILABLE with nothing written.
+         */
+        put: operations["putToolsetPracticality"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/toolsets/{toolset_id}/resources": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Add a resource to a toolset
+         * @description Adds a resource. Any signed-in user may add a resource to another user's toolset and becomes a contributor. Idempotency-Key is required. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED, and a failure of that lookup is SERVICE_UNAVAILABLE with nothing written. file needs a completed artifact_id of the caller on this toolset; link needs url and size_label.
+         */
+        post: operations["createToolsetResource"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/toolsets/{toolset_id}/resources/{resource_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a toolset resource
+         * @description Returns a resource without download secrets. A resource that does not belong to the toolset, or whose poster or the toolset's author is not renderable, is NOT_FOUND.
+         */
+        get: operations["getToolsetResource"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete a toolset resource
+         * @description Deletes a resource. Needs can_delete. Requests authenticated with a Bearer token never carry toolset permissions. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED, and a failure of that lookup is SERVICE_UNAVAILABLE with nothing written. Object-store failure is SERVICE_UNAVAILABLE and the row stays.
+         */
+        delete: operations["deleteToolsetResource"];
+        options?: never;
+        head?: never;
+        /**
+         * Edit a toolset resource
+         * @description Changes the fields that are sent. Needs can_edit. Requests authenticated with a Bearer token never carry toolset permissions. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED, and a failure of that lookup is SERVICE_UNAVAILABLE with nothing written. A file resource cannot change url, extraction_code or size_label.
+         */
+        patch: operations["updateToolsetResource"];
+        trace?: never;
+    };
+    "/toolsets/{toolset_id}/resources/{resource_id}/downloads": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Issue download secrets for a resource
+         * @description Returns the download URL and codes, and counts one download. Anonymous callers may use it. A file resource's URL is a presigned artifact URL; failure is SERVICE_UNAVAILABLE.
+         */
+        post: operations["createToolsetDownload"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/toolsets/{toolset_id}/resources/{resource_id}/source": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a toolset resource's edit source
+         * @description Returns the editable fields of a resource, secrets included, without counting a download. Needs the resource's viewer.can_edit. Requests authenticated with a Bearer token never carry toolset permissions. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED, and a failure of that lookup is SERVICE_UNAVAILABLE with nothing written.
+         */
+        get: operations["getToolsetResourceSource"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/toolsets/{toolset_id}/source": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a toolset's edit source
+         * @description Returns the stored Markdown of the description. Needs viewer.can_edit. Requests authenticated with a Bearer token never carry toolset permissions. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED, and a failure of that lookup is SERVICE_UNAVAILABLE with nothing written.
+         */
+        get: operations["getToolsetSource"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/toolsets/{toolset_id}/uploads": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start a toolset file upload
+         * @description Creates an upload session for a .7z, .zip or .rar file. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED, and a failure of that lookup is SERVICE_UNAVAILABLE with nothing written. Over the daily quota is QUOTA_EXCEEDED with Retry-After until the next daily reset.
+         */
+        post: operations["createToolsetUpload"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/toolsets/{toolset_id}/uploads/{upload_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Resume a toolset file upload
+         * @description Returns the upload session with fresh part URLs. Only the owner can read it. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED, and a failure of that lookup is SERVICE_UNAVAILABLE with nothing written.
+         */
+        get: operations["getToolsetUpload"];
+        put?: never;
+        post?: never;
+        /**
+         * Abort a toolset file upload
+         * @description Aborts a pending upload. A completed upload is INVALID_STATE_TRANSITION. Object-store failure is SERVICE_UNAVAILABLE and the row stays. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED, and a failure of that lookup is SERVICE_UNAVAILABLE with nothing written.
+         */
+        delete: operations["deleteToolsetUpload"];
+        options?: never;
+        head?: never;
+        /**
+         * Complete a toolset file upload
+         * @description Marks the upload completed. state must be completed. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED, and a failure of that lookup is SERVICE_UNAVAILABLE with nothing written. completed_at is written once, in the same transaction as the daily quota.
+         */
+        patch: operations["updateToolsetUpload"];
         trace?: never;
     };
     "/topics": {
@@ -2156,6 +3009,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/users/{user_id}/toolsets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List a user's toolsets
+         * @description Lists toolsets the user authored, newest first. An unrenderable user is NOT_FOUND. An empty list is 200 with total 0.
+         */
+        get: operations["listUserToolsets"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/wall-comments": {
         parameters: {
             query?: never;
@@ -2460,6 +3333,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/wiki-company-redirects/{wiki_company_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Resolve a retired wiki company id
+         * @description The retired galgame wiki numbered companies on its own; old links carry those numbers.
+         */
+        get: operations["getWikiCompanyRedirect"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/works/{work_id}/moyu-patches": {
         parameters: {
             query?: never;
@@ -2489,6 +3382,23 @@ export interface components {
             roles: ("creator" | "moderator" | "admin" | "ren")[];
             /** @description Granted users when access_scope is users, in grant order. The author is never listed. Banned and deleted users keep their entry with name null. Empty array otherwise. */
             users: components["schemas"]["UserRef"][];
+        };
+        Account: {
+            /** @description Avatar from the account center's current record. null when the account has no image-service hash. */
+            avatar: components["schemas"]["Image"] | null;
+            /** @description The adult-content stance this web session carries. null for a Bearer request, which carries none: read it from the account center. */
+            content_stance: components["schemas"]["ContentStance"] | null;
+            /** @description The caller's user id. JSON string of a decimal integer. */
+            id: string;
+            /** @description Display name from the account center's current record. null when the account no longer exists; show a localized label. Free text; never use it as a decision input. */
+            name: string | null;
+            /**
+             * @description Type discriminant. Always account.
+             * @enum {string}
+             */
+            object: "account";
+            /** @description Ranked roles this credential carries, lowest rank first. A Bearer request never carries moderator, admin or ren. Other account roles are not listed. */
+            roles: ("creator" | "moderator" | "admin" | "ren")[];
         };
         AdminDoc: {
             /** @description Banner image. null when the doc has none. */
@@ -2530,6 +3440,58 @@ export interface components {
              * @description Times the doc page was read.
              */
             view_count: number;
+        };
+        AdminOverview: {
+            /**
+             * Format: int64
+             * @description Direct messages.
+             */
+            direct_message_count: number;
+            /**
+             * Format: int64
+             * @description Posts on galgame comment walls, as this forum mirrors them; hidden posts are not counted.
+             */
+            galgame_comment_count: number;
+            /**
+             * Format: int64
+             * @description Galgame resources.
+             */
+            galgame_resource_count: number;
+            /**
+             * @description Type discriminant. Always admin_overview.
+             * @enum {string}
+             */
+            object: "admin_overview";
+            /**
+             * Format: int64
+             * @description Topic replies, hidden ones included.
+             */
+            reply_count: number;
+            /**
+             * Format: int64
+             * @description Comments on topic replies.
+             */
+            topic_comment_count: number;
+            /**
+             * Format: int64
+             * @description Topics, hidden ones included.
+             */
+            topic_count: number;
+            /**
+             * Format: int64
+             * @description Posts on website comment walls, as this forum mirrors them; hidden posts are not counted.
+             */
+            website_comment_count: number;
+            /**
+             * Format: int64
+             * @description Website directory entries.
+             */
+            website_count: number;
+            /**
+             * Format: int64
+             * @description Published works: the same predicate as the browse list. Unpublished local rows are not counted.
+             */
+            work_count: number;
         };
         AdminTopic: {
             /** @description The topic's author. */
@@ -2769,6 +3731,17 @@ export interface components {
              */
             object: "app_version";
         };
+        Appearance: {
+            /**
+             * @description Type discriminant. Always appearance.
+             * @enum {string}
+             */
+            object: "appearance";
+            /** @description Who voices the character in that work. Empty array, never null. */
+            voices: components["schemas"]["CreditNameRef"][];
+            /** @description The work the character appears in. */
+            work_summary: components["schemas"]["WorkSummary"];
+        };
         BatchListTopicState: {
             /** @description One member per requested id that the caller may see. Empty array, never null. */
             items: components["schemas"]["TopicState"][];
@@ -2809,6 +3782,35 @@ export interface components {
              */
             object: "break";
         };
+        CatalogIntro: {
+            /** @description Where catalog took the text from, such as vndb or erogamescape. null when unrecorded. */
+            data_source: string | null;
+            /** @description Whether the text is a machine translation. */
+            is_machine: boolean;
+            /** @description BCP-47 tag of the text, as catalog records it. */
+            locale: string;
+            /** @description The text. Free text; never use it as a decision input. */
+            value: string;
+        };
+        CatalogLink: {
+            /** @description What the link points at, such as official_site, twitter, vndb, bangumi or erogamescape. An open vocabulary; clients label the tokens themselves. */
+            site: string;
+            /**
+             * Format: uri
+             * @description The address.
+             */
+            url: string;
+        };
+        CatalogName: {
+            /** @description The entity's own name. Never empty. Free text; never use it as a decision input. */
+            display_name: string;
+            /** @description Romanization of the name. null when none is recorded. Free text; never use it as a decision input. */
+            latin: string | null;
+            /** @description Names by BCP-47 tag, sparse. Empty object when there are none, never null. */
+            localized: {
+                [key: string]: components["schemas"]["LocalizedName"];
+            };
+        };
         CategoryCreate: {
             /** @description Plain-text description. Absent means empty. Free text; never use it as a decision input. */
             description?: string;
@@ -2834,6 +3836,80 @@ export interface components {
              * @description New position.
              */
             sort_order?: number;
+        };
+        Character: {
+            /** @description The entity's own name. Never empty. Free text; never use it as a decision input. */
+            display_name: string;
+            /** @description A full-body standing picture. null when catalog has none. */
+            figure: components["schemas"]["Image"] | null;
+            /** @description Character id: the catalog character id, which is also the id in the web's /galgame/character/{id}. */
+            id: string;
+            /** @description The character's portrait. null when catalog has none. */
+            image: components["schemas"]["Image"] | null;
+            /** @description Profiles in every language catalog has, unordered. Empty array, never null. */
+            intros: components["schemas"]["CatalogIntro"][];
+            /** @description The character's own language as a BCP-47 tag. null when unrecorded. */
+            lang: string | null;
+            /** @description Romanization of the name. null when none is recorded. Free text; never use it as a decision input. */
+            latin: string | null;
+            /** @description Database pages about the character. Empty array, never null. */
+            links: components["schemas"]["CatalogLink"][];
+            /** @description Names by BCP-47 tag, sparse. Empty object when there are none, never null. */
+            localized: {
+                [key: string]: components["schemas"]["LocalizedName"];
+            };
+            /**
+             * @description Type discriminant. Always character.
+             * @enum {string}
+             */
+            object: "character";
+            /** @description Traits in catalog's order. Adult traits are left out unless include_nsfw=true. Empty array, never null. */
+            traits: components["schemas"]["CharacterTrait"][];
+        };
+        CharacterRef: {
+            /** @description The entity's own name. Never empty. Free text; never use it as a decision input. */
+            display_name: string;
+            /** @description Character id: the catalog character id, which is also the id in the web's /galgame/character/{id}. */
+            id: string;
+            /** @description Romanization of the name. null when none is recorded. Free text; never use it as a decision input. */
+            latin: string | null;
+            /** @description Names by BCP-47 tag, sparse. Empty object when there are none, never null. */
+            localized: {
+                [key: string]: components["schemas"]["LocalizedName"];
+            };
+            /**
+             * @description Type discriminant. Always character.
+             * @enum {string}
+             */
+            object: "character";
+        };
+        CharacterTrait: {
+            /** @description The entity's own name. Never empty. Free text; never use it as a decision input. */
+            display_name: string;
+            /** @description Catalog trait id. */
+            id: string;
+            /** @description Whether the trait is one the story later reveals to be false. */
+            is_lie: boolean;
+            /** @description Whether the trait is adult content. */
+            is_sexual: boolean;
+            /** @description Romanization of the name. null when none is recorded. Free text; never use it as a decision input. */
+            latin: string | null;
+            /** @description Names by BCP-47 tag, sparse. Empty object when there are none, never null. */
+            localized: {
+                [key: string]: components["schemas"]["LocalizedName"];
+            };
+            /**
+             * @description Type discriminant. Always trait.
+             * @enum {string}
+             */
+            object: "trait";
+            /**
+             * @description How much the trait gives away.
+             * @enum {string}
+             */
+            spoiler: "none" | "minor" | "major";
+            /** @description The group the trait sits in, such as hair or personality. */
+            trait_group: components["schemas"]["CatalogName"];
         };
         CheckIn: {
             /**
@@ -2964,6 +4040,159 @@ export interface components {
             /** @description Whether the caller liked the comment. */
             has_liked: boolean;
         };
+        Company: {
+            /** @description Other names it goes by, never its display_name. Empty array, never null. */
+            aliases: string[];
+            /**
+             * Format: int64
+             * @description Works catalog files under it, NSFW ones included. How many a reader can page through is the total of its works collection.
+             */
+            catalog_work_count: number;
+            /**
+             * @description What sort of company it is.
+             * @enum {string}
+             */
+            company_kind: "game_brand" | "bunko" | "publisher" | "anime_studio" | "doujin_circle" | "group";
+            /** @description The entity's own name. Never empty. Free text; never use it as a decision input. */
+            display_name: string;
+            /** @description Company id: the catalog company id, which is also the id in the web's /galgame/official/{id}. */
+            id: string;
+            /** @description Descriptions in every language catalog has, unordered. Empty array, never null. */
+            intros: components["schemas"]["CatalogIntro"][];
+            /** @description The company's own language as a BCP-47 tag. null when unrecorded. */
+            lang: string | null;
+            /** @description Romanization of the name. null when none is recorded. Free text; never use it as a decision input. */
+            latin: string | null;
+            /** @description Official site, social accounts and database pages, in catalog's order. Empty array, never null. */
+            links: components["schemas"]["CatalogLink"][];
+            /** @description Names by BCP-47 tag, sparse. Empty object when there are none, never null. */
+            localized: {
+                [key: string]: components["schemas"]["LocalizedName"];
+            };
+            /** @description The company's logo. null when catalog has none. */
+            logo: components["schemas"]["Image"] | null;
+            /**
+             * @description Type discriminant. Always company.
+             * @enum {string}
+             */
+            object: "company";
+        };
+        CompanyGraph: {
+            /** @description The company the graph was drawn around. */
+            company_id: string;
+            /** @description Relations between the nodes, each stored in both directions. Empty array, never null. */
+            edges: components["schemas"]["CompanyGraphEdge"][];
+            /** @description Every company in the family, this one included. Empty array, never null. */
+            nodes: components["schemas"]["CompanyGraphNode"][];
+            /**
+             * @description Type discriminant. Always company_graph.
+             * @enum {string}
+             */
+            object: "company_graph";
+        };
+        CompanyGraphEdge: {
+            /** @description The company the relation is stated from. */
+            from_company_id: string;
+            /**
+             * @description What to_company is to from_company. Every relation also appears reversed: parent with subsidiary, imprint with imprint_of, succeeded_by with formerly, spawned with origin.
+             * @enum {string}
+             */
+            relation: "parent" | "subsidiary" | "imprint" | "imprint_of" | "succeeded_by" | "formerly" | "spawned" | "origin";
+            /** @description The company it points at. */
+            to_company_id: string;
+        };
+        CompanyGraphNode: {
+            /**
+             * Format: int64
+             * @description Works catalog files under it, NSFW ones included. How many a reader can page through is the total of its works collection.
+             */
+            catalog_work_count: number;
+            /** @description The entity's own name. Never empty. Free text; never use it as a decision input. */
+            display_name: string;
+            /** @description Company id. */
+            id: string;
+            /** @description Romanization of the name. null when none is recorded. Free text; never use it as a decision input. */
+            latin: string | null;
+            /** @description Names by BCP-47 tag, sparse. Empty object when there are none, never null. */
+            localized: {
+                [key: string]: components["schemas"]["LocalizedName"];
+            };
+            /** @description The company's logo. null when catalog has none. */
+            logo: components["schemas"]["Image"] | null;
+            /**
+             * @description Type discriminant. Always company.
+             * @enum {string}
+             */
+            object: "company";
+        };
+        CompanyRef: {
+            /** @description The entity's own name. Never empty. Free text; never use it as a decision input. */
+            display_name: string;
+            /** @description Company id: the catalog company id, which is also the id in the web's /galgame/official/{id}. */
+            id: string;
+            /** @description Romanization of the name. null when none is recorded. Free text; never use it as a decision input. */
+            latin: string | null;
+            /** @description Names by BCP-47 tag, sparse. Empty object when there are none, never null. */
+            localized: {
+                [key: string]: components["schemas"]["LocalizedName"];
+            };
+            /**
+             * @description Type discriminant. Always company.
+             * @enum {string}
+             */
+            object: "company";
+        };
+        CompanySummary: {
+            /** @description Other names it goes by, never its display_name. Empty array, never null. */
+            aliases: string[];
+            /**
+             * Format: int64
+             * @description Works catalog files under it, NSFW ones included. How many a reader can page through is the total of its works collection.
+             */
+            catalog_work_count: number;
+            /**
+             * @description What sort of company it is.
+             * @enum {string}
+             */
+            company_kind: "game_brand" | "bunko" | "publisher" | "anime_studio" | "doujin_circle" | "group";
+            /** @description The entity's own name. Never empty. Free text; never use it as a decision input. */
+            display_name: string;
+            /** @description Company id: the catalog company id, which is also the id in the web's /galgame/official/{id}. */
+            id: string;
+            /** @description Romanization of the name. null when none is recorded. Free text; never use it as a decision input. */
+            latin: string | null;
+            /** @description Names by BCP-47 tag, sparse. Empty object when there are none, never null. */
+            localized: {
+                [key: string]: components["schemas"]["LocalizedName"];
+            };
+            /** @description The company's logo. null when catalog has none. */
+            logo: components["schemas"]["Image"] | null;
+            /**
+             * @description Type discriminant. Always company.
+             * @enum {string}
+             */
+            object: "company";
+        };
+        CompanyWork: {
+            /**
+             * @description Type discriminant. Always company_work.
+             * @enum {string}
+             */
+            object: "company_work";
+            /** @description The imprint of this company the work is credited to, when it counts here only through that imprint. null for the company's own works. */
+            via_company: components["schemas"]["CompanyRef"] | null;
+            /** @description The work. */
+            work_summary: components["schemas"]["WorkSummary"];
+        };
+        CompletePartBody: {
+            /** @description ETag returned by the object store. Free text; never use it as a decision input. */
+            etag: string;
+            /**
+             * Format: int64
+             * @description 1-based part number.
+             */
+            part_number: number;
+        };
         ContentDocument: {
             /** @description Top-level block nodes in document order. Empty array for an empty body. */
             children: components["schemas"]["BlockNode"][];
@@ -2972,6 +4201,15 @@ export interface components {
              * @enum {string}
              */
             object: "document";
+        };
+        ContentStance: {
+            /** @description Whether the account has confirmed it is an adult. */
+            is_adult_confirmed: boolean;
+            /**
+             * @description How adult content is displayed for this account.
+             * @enum {string}
+             */
+            nsfw_display: "hide" | "blur" | "show";
         };
         Conversation: {
             /** @description Equals peer.id and the user_id path segment. The conversation has no other identity. */
@@ -3000,6 +4238,22 @@ export interface components {
              * @description Messages the peer sent that the caller has not marked read.
              */
             unread_count: number;
+        };
+        CountedListNewsItem: {
+            /** @description Members of this page. Empty array, never null. */
+            items: components["schemas"]["NewsItem"][];
+            /** @description Opaque keyset cursor. Omitted on the last page. */
+            next_cursor?: string;
+            /**
+             * @description Type discriminant. Always list.
+             * @enum {string}
+             */
+            object: "list";
+            /**
+             * Format: int64
+             * @description Present only when include_total=true. Same visibility gate as items.
+             */
+            total?: number;
         };
         CountedListTodo: {
             /** @description Members of this page. Empty array, never null. */
@@ -3121,6 +4375,109 @@ export interface components {
              * @enum {string}
              */
             object: "creator_status";
+        };
+        Credit: {
+            /** @description For a voice credit, the characters voiced. Empty array, never null. */
+            characters: components["schemas"]["CreditCharacter"][];
+            /** @description What the name did on the work, most prominent first. */
+            credit_roles: components["schemas"]["CreditRole"][];
+            /**
+             * @description Type discriminant. Always credit.
+             * @enum {string}
+             */
+            object: "credit";
+            /** @description The credited work. */
+            work_summary: components["schemas"]["WorkSummary"];
+        };
+        CreditCharacter: {
+            /** @description The character's id when catalog links one. null when the credit names the character only as text. */
+            character_id: string | null;
+            /** @description The character's name as the credit writes it, in the source language. Free text; never use it as a decision input. */
+            display_name: string;
+        };
+        CreditName: {
+            /**
+             * Format: int64
+             * @description null when unrecorded.
+             */
+            birth_day: number | null;
+            /**
+             * Format: int64
+             * @description null when unrecorded.
+             */
+            birth_month: number | null;
+            /**
+             * Format: int64
+             * @description null when unrecorded. Birthdays are often known only in part.
+             */
+            birth_year: number | null;
+            /** @description The entity's own name. Never empty. Free text; never use it as a decision input. */
+            display_name: string;
+            /**
+             * @description null when unrecorded.
+             * @enum {string|null}
+             */
+            gender: "male" | "female" | null;
+            /** @description Credit name id: the catalog credit name id, which is also the id in the web's /galgame/staff/{id}. */
+            id: string;
+            /** @description Profiles in every language catalog has, unordered. Empty array, never null. */
+            intros: components["schemas"]["CatalogIntro"][];
+            /** @description The name's own language as a BCP-47 tag. null when unrecorded. */
+            lang: string | null;
+            /** @description Romanization of the name. null when none is recorded. Free text; never use it as a decision input. */
+            latin: string | null;
+            /** @description Database pages and sites about the person. Empty array, never null. */
+            links: components["schemas"]["CatalogLink"][];
+            /** @description Names by BCP-47 tag, sparse. Empty object when there are none, never null. */
+            localized: {
+                [key: string]: components["schemas"]["LocalizedName"];
+            };
+            /**
+             * @description Type discriminant. Always credit_name.
+             * @enum {string}
+             */
+            object: "credit_name";
+            /** @description A photo of the person. null when catalog has none. */
+            photo: components["schemas"]["Image"] | null;
+            /** @description Other names the same person is credited under. Empty array, never null. */
+            siblings: components["schemas"]["CreditNameRef"][];
+        };
+        CreditNameRef: {
+            /** @description The entity's own name. Never empty. Free text; never use it as a decision input. */
+            display_name: string;
+            /** @description Credit name id: the catalog credit name id, which is also the id in the web's /galgame/staff/{id}. */
+            id: string;
+            /** @description The name's own language as a BCP-47 tag. null when unrecorded. */
+            lang: string | null;
+            /** @description Romanization of the name. null when none is recorded. Free text; never use it as a decision input. */
+            latin: string | null;
+            /** @description Names by BCP-47 tag, sparse. Empty object when there are none, never null. */
+            localized: {
+                [key: string]: components["schemas"]["LocalizedName"];
+            };
+            /**
+             * @description Type discriminant. Always credit_name.
+             * @enum {string}
+             */
+            object: "credit_name";
+        };
+        CreditRole: {
+            /** @description The role's name as catalog records it. Free text; never use it as a decision input. */
+            display_name: string;
+            /** @description Catalog's role key, such as scenario, illustration, music or voice-actor. An open vocabulary. */
+            role_key: string;
+        };
+        DayCount: {
+            /**
+             * Format: int64
+             * @description Items published that day.
+             */
+            count: number;
+            /**
+             * Format: int64
+             * @description Day of the month, Asia/Shanghai.
+             */
+            day: number;
         };
         DirectMessage: {
             /** @description Message body as a node tree. An empty document (children is an empty array) when state is recalled; clients read state, not emptiness. */
@@ -3320,6 +4677,32 @@ export interface components {
              * @enum {string}
              */
             object: "emphasis";
+        };
+        Engine: {
+            /** @description Other names it goes by, never its display_name. Empty array, never null. */
+            aliases: string[];
+            /**
+             * Format: int64
+             * @description Works catalog files under it, NSFW ones included. How many a reader can page through is the total of its works collection.
+             */
+            catalog_work_count: number;
+            /** @description Catalog's note on the engine, in whatever language it was written. Empty string if none. Free text; never use it as a decision input. */
+            description: string;
+            /** @description The entity's own name. Never empty. Free text; never use it as a decision input. */
+            display_name: string;
+            /** @description Engine id: the catalog engine id, which is also the id in the web's /galgame/engine/{id}. */
+            id: string;
+            /** @description Romanization of the name. null when none is recorded. Free text; never use it as a decision input. */
+            latin: string | null;
+            /** @description Names by BCP-47 tag, sparse. Empty object when there are none, never null. */
+            localized: {
+                [key: string]: components["schemas"]["LocalizedName"];
+            };
+            /**
+             * @description Type discriminant. Always engine.
+             * @enum {string}
+             */
+            object: "engine";
         };
         FieldError: {
             /** @description English diagnostic for this location. Free text; never use it as a decision input. */
@@ -3611,9 +4994,31 @@ export interface components {
              */
             url: string;
         };
+        ListAppearance: {
+            /** @description Members of this page. Empty array, never null. */
+            items: components["schemas"]["Appearance"][];
+            /** @description Opaque keyset cursor. Omitted on the last page. */
+            next_cursor?: string;
+            /**
+             * @description Type discriminant. Always list.
+             * @enum {string}
+             */
+            object: "list";
+        };
         ListConversation: {
             /** @description Members of this page. Empty array, never null. */
             items: components["schemas"]["Conversation"][];
+            /** @description Opaque keyset cursor. Omitted on the last page. */
+            next_cursor?: string;
+            /**
+             * @description Type discriminant. Always list.
+             * @enum {string}
+             */
+            object: "list";
+        };
+        ListCredit: {
+            /** @description Members of this page. Empty array, never null. */
+            items: components["schemas"]["Credit"][];
             /** @description Opaque keyset cursor. Omitted on the last page. */
             next_cursor?: string;
             /**
@@ -3721,6 +5126,17 @@ export interface components {
              */
             object: "list";
         };
+        ListNewsSource: {
+            /** @description Members of this page. Empty array, never null. */
+            items: components["schemas"]["NewsSource"][];
+            /** @description Opaque keyset cursor. Omitted on the last page. */
+            next_cursor?: string;
+            /**
+             * @description Type discriminant. Always list.
+             * @enum {string}
+             */
+            object: "list";
+        };
         ListNode: {
             /** @description Items of the list. */
             children: components["schemas"]["ListItemNode"][];
@@ -3742,6 +5158,17 @@ export interface components {
         ListNotification: {
             /** @description Members of this page. Empty array, never null. */
             items: components["schemas"]["Notification"][];
+            /** @description Opaque keyset cursor. Omitted on the last page. */
+            next_cursor?: string;
+            /**
+             * @description Type discriminant. Always list.
+             * @enum {string}
+             */
+            object: "list";
+        };
+        ListOverviewDay: {
+            /** @description Members of this page. Empty array, never null. */
+            items: components["schemas"]["OverviewDay"][];
             /** @description Opaque keyset cursor. Omitted on the last page. */
             next_cursor?: string;
             /**
@@ -3827,9 +5254,31 @@ export interface components {
              */
             object: "list";
         };
+        ListSection: {
+            /** @description Members of this page. Empty array, never null. */
+            items: components["schemas"]["Section"][];
+            /** @description Opaque keyset cursor. Omitted on the last page. */
+            next_cursor?: string;
+            /**
+             * @description Type discriminant. Always list.
+             * @enum {string}
+             */
+            object: "list";
+        };
         ListTopicDraftSummary: {
             /** @description Members of this page. Empty array, never null. */
             items: components["schemas"]["TopicDraftSummary"][];
+            /** @description Opaque keyset cursor. Omitted on the last page. */
+            next_cursor?: string;
+            /**
+             * @description Type discriminant. Always list.
+             * @enum {string}
+             */
+            object: "list";
+        };
+        ListTopicRankingEntry: {
+            /** @description Members of this page. Empty array, never null. */
+            items: components["schemas"]["TopicRankingEntry"][];
             /** @description Opaque keyset cursor. Omitted on the last page. */
             next_cursor?: string;
             /**
@@ -3863,6 +5312,17 @@ export interface components {
         ListUpdateLog: {
             /** @description Members of this page. Empty array, never null. */
             items: components["schemas"]["UpdateLog"][];
+            /** @description Opaque keyset cursor. Omitted on the last page. */
+            next_cursor?: string;
+            /**
+             * @description Type discriminant. Always list.
+             * @enum {string}
+             */
+            object: "list";
+        };
+        ListUserRankingEntry: {
+            /** @description Members of this page. Empty array, never null. */
+            items: components["schemas"]["UserRankingEntry"][];
             /** @description Opaque keyset cursor. Omitted on the last page. */
             next_cursor?: string;
             /**
@@ -3918,6 +5378,17 @@ export interface components {
         ListWebsiteTagGroup: {
             /** @description Members of this page. Empty array, never null. */
             items: components["schemas"]["WebsiteTagGroup"][];
+            /** @description Opaque keyset cursor. Omitted on the last page. */
+            next_cursor?: string;
+            /**
+             * @description Type discriminant. Always list.
+             * @enum {string}
+             */
+            object: "list";
+        };
+        ListWorkRankingEntry: {
+            /** @description Members of this page. Empty array, never null. */
+            items: components["schemas"]["WorkRankingEntry"][];
             /** @description Opaque keyset cursor. Omitted on the last page. */
             next_cursor?: string;
             /**
@@ -4400,6 +5871,18 @@ export interface components {
              */
             source: "this_site" | "account_center" | "other_site";
         };
+        MonthCount: {
+            /**
+             * Format: int64
+             * @description Items published that month.
+             */
+            count: number;
+            /**
+             * Format: int64
+             * @description Calendar month, Asia/Shanghai.
+             */
+            month: number;
+        };
         MoyuPatch: {
             /** @description The page's id on www.moyu.moe. Neither a galgame id nor a catalog work id. */
             id: string;
@@ -4472,6 +5955,90 @@ export interface components {
              * @enum {string}
              */
             object: "user";
+        };
+        NewsArchive: {
+            /** @description Months of the requested year that have items. Empty unless year was sent and is one of years. */
+            months: components["schemas"]["MonthCount"][];
+            /**
+             * @description Type discriminant. Always news_archive.
+             * @enum {string}
+             */
+            object: "news_archive";
+            /** @description Years that have items, newest first. */
+            years: components["schemas"]["YearCount"][];
+        };
+        NewsItem: {
+            /** @description News item id. JSON string of a decimal integer. */
+            id: string;
+            /**
+             * @description news for bulletins, column for longer pieces.
+             * @enum {string}
+             */
+            lane: "news" | "column";
+            /** @description Key of the partner that published the item. Name, homepage and attribution come from listNewsSources; an item shown on its own must still carry its partner's attribution. */
+            news_source: string;
+            /**
+             * @description Type discriminant. Always news_item.
+             * @enum {string}
+             */
+            object: "news_item";
+            /** @description The partner's own excerpt. There is no body: source_url is the only way to the full text. Free text; never use it as a decision input. */
+            preview: string;
+            /**
+             * Format: date-time
+             * @description When the partner published it.
+             */
+            published_at: string;
+            /**
+             * Format: uri
+             * @description The item on the partner's site.
+             */
+            source_url: string;
+            /** @description Headline. Free text; never use it as a decision input. */
+            title: string;
+        };
+        NewsMonth: {
+            /** @description Every day of the month, empty days included. */
+            days: components["schemas"]["DayCount"][];
+            /**
+             * Format: int64
+             * @description Items in the whole month under the filters.
+             */
+            item_count: number;
+            /**
+             * Format: int64
+             * @description Calendar month, Asia/Shanghai.
+             */
+            month: number;
+            /**
+             * @description Type discriminant. Always news_month.
+             * @enum {string}
+             */
+            object: "news_month";
+            /**
+             * Format: int64
+             * @description Calendar year, Asia/Shanghai.
+             */
+            year: number;
+        };
+        NewsSource: {
+            /** @description The attribution the partner requires next to its items. Free text; never use it as a decision input. */
+            attribution: string;
+            /** @description The partner's column index. Empty string if none. */
+            column_url: string;
+            /** @description Partner name. Free text; never use it as a decision input. */
+            display_name: string;
+            /** @description The forum account the partner publishes under. null when there is none, it is not shown, or the account service could not be reached: it is decoration, and the directory does not fail over it. */
+            forum_account: components["schemas"]["UserRef"] | null;
+            /** @description The partner's homepage. Empty string if none. */
+            homepage_url: string;
+            /** @description The partner key that news items carry in news_source. */
+            key: string;
+            /**
+             * @description Type discriminant. Always news_source.
+             * @enum {string}
+             */
+            object: "news_source";
         };
         Notification: {
             /** @description The user who triggered this notification. name is null when the account no longer exists. */
@@ -4578,6 +6145,82 @@ export interface components {
              */
             object: "nsfw_display";
         };
+        OverviewDay: {
+            /**
+             * Format: date
+             * @description The Asia/Shanghai calendar day this bucket counts.
+             */
+            bucket_date: string;
+            /**
+             * Format: int64
+             * @description Direct messages.
+             */
+            direct_message_count: number;
+            /**
+             * Format: int64
+             * @description Posts on galgame comment walls, as this forum mirrors them; hidden posts are not counted.
+             */
+            galgame_comment_count: number;
+            /**
+             * Format: int64
+             * @description Galgame resources.
+             */
+            galgame_resource_count: number;
+            /**
+             * @description Type discriminant. Always overview_day.
+             * @enum {string}
+             */
+            object: "overview_day";
+            /**
+             * Format: int64
+             * @description Topic replies, hidden ones included.
+             */
+            reply_count: number;
+            /**
+             * Format: int64
+             * @description Comments on topic replies.
+             */
+            topic_comment_count: number;
+            /**
+             * Format: int64
+             * @description Topics, hidden ones included.
+             */
+            topic_count: number;
+            /**
+             * Format: int64
+             * @description Posts on website comment walls, as this forum mirrors them; hidden posts are not counted.
+             */
+            website_comment_count: number;
+            /**
+             * Format: int64
+             * @description Website directory entries.
+             */
+            website_count: number;
+            /**
+             * Format: int64
+             * @description Published works: the same predicate as the browse list. Unpublished local rows are not counted.
+             */
+            work_count: number;
+        };
+        PageListCharacterRef: {
+            /** @description Members of this page. Empty array, never null. */
+            items: components["schemas"]["CharacterRef"][];
+            /**
+             * @description Type discriminant. Always list.
+             * @enum {string}
+             */
+            object: "list";
+            /**
+             * Format: int64
+             * @description Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.
+             */
+            total: number;
+            /**
+             * @description eq when total is exact, gte when it stopped at the depth limit and there are at least that many.
+             * @enum {string}
+             */
+            total_relation: "eq" | "gte";
+        };
         PageListCommentSearchHit: {
             /** @description Members of this page. Empty array, never null. */
             items: components["schemas"]["CommentSearchHit"][];
@@ -4597,9 +6240,104 @@ export interface components {
              */
             total_relation: "eq" | "gte";
         };
+        PageListCompanySummary: {
+            /** @description Members of this page. Empty array, never null. */
+            items: components["schemas"]["CompanySummary"][];
+            /**
+             * @description Type discriminant. Always list.
+             * @enum {string}
+             */
+            object: "list";
+            /**
+             * Format: int64
+             * @description Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.
+             */
+            total: number;
+            /**
+             * @description eq when total is exact, gte when it stopped at the depth limit and there are at least that many.
+             * @enum {string}
+             */
+            total_relation: "eq" | "gte";
+        };
+        PageListCompanyWork: {
+            /** @description Members of this page. Empty array, never null. */
+            items: components["schemas"]["CompanyWork"][];
+            /**
+             * @description Type discriminant. Always list.
+             * @enum {string}
+             */
+            object: "list";
+            /**
+             * Format: int64
+             * @description Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.
+             */
+            total: number;
+            /**
+             * @description eq when total is exact, gte when it stopped at the depth limit and there are at least that many.
+             * @enum {string}
+             */
+            total_relation: "eq" | "gte";
+        };
+        PageListCreditNameRef: {
+            /** @description Members of this page. Empty array, never null. */
+            items: components["schemas"]["CreditNameRef"][];
+            /**
+             * @description Type discriminant. Always list.
+             * @enum {string}
+             */
+            object: "list";
+            /**
+             * Format: int64
+             * @description Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.
+             */
+            total: number;
+            /**
+             * @description eq when total is exact, gte when it stopped at the depth limit and there are at least that many.
+             * @enum {string}
+             */
+            total_relation: "eq" | "gte";
+        };
+        PageListEngine: {
+            /** @description Members of this page. Empty array, never null. */
+            items: components["schemas"]["Engine"][];
+            /**
+             * @description Type discriminant. Always list.
+             * @enum {string}
+             */
+            object: "list";
+            /**
+             * Format: int64
+             * @description Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.
+             */
+            total: number;
+            /**
+             * @description eq when total is exact, gte when it stopped at the depth limit and there are at least that many.
+             * @enum {string}
+             */
+            total_relation: "eq" | "gte";
+        };
         PageListHiddenTopicSummary: {
             /** @description Members of this page. Empty array, never null. */
             items: components["schemas"]["HiddenTopicSummary"][];
+            /**
+             * @description Type discriminant. Always list.
+             * @enum {string}
+             */
+            object: "list";
+            /**
+             * Format: int64
+             * @description Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.
+             */
+            total: number;
+            /**
+             * @description eq when total is exact, gte when it stopped at the depth limit and there are at least that many.
+             * @enum {string}
+             */
+            total_relation: "eq" | "gte";
+        };
+        PageListNewsItem: {
+            /** @description Members of this page. Empty array, never null. */
+            items: components["schemas"]["NewsItem"][];
             /**
              * @description Type discriminant. Always list.
              * @enum {string}
@@ -4673,6 +6411,63 @@ export interface components {
              */
             total_relation: "eq" | "gte";
         };
+        PageListSeriesSummary: {
+            /** @description Members of this page. Empty array, never null. */
+            items: components["schemas"]["SeriesSummary"][];
+            /**
+             * @description Type discriminant. Always list.
+             * @enum {string}
+             */
+            object: "list";
+            /**
+             * Format: int64
+             * @description Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.
+             */
+            total: number;
+            /**
+             * @description eq when total is exact, gte when it stopped at the depth limit and there are at least that many.
+             * @enum {string}
+             */
+            total_relation: "eq" | "gte";
+        };
+        PageListTagSummary: {
+            /** @description Members of this page. Empty array, never null. */
+            items: components["schemas"]["TagSummary"][];
+            /**
+             * @description Type discriminant. Always list.
+             * @enum {string}
+             */
+            object: "list";
+            /**
+             * Format: int64
+             * @description Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.
+             */
+            total: number;
+            /**
+             * @description eq when total is exact, gte when it stopped at the depth limit and there are at least that many.
+             * @enum {string}
+             */
+            total_relation: "eq" | "gte";
+        };
+        PageListToolsetSummary: {
+            /** @description Members of this page. Empty array, never null. */
+            items: components["schemas"]["ToolsetSummary"][];
+            /**
+             * @description Type discriminant. Always list.
+             * @enum {string}
+             */
+            object: "list";
+            /**
+             * Format: int64
+             * @description Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.
+             */
+            total: number;
+            /**
+             * @description eq when total is exact, gte when it stopped at the depth limit and there are at least that many.
+             * @enum {string}
+             */
+            total_relation: "eq" | "gte";
+        };
         PageListTopicSummary: {
             /** @description Members of this page. Empty array, never null. */
             items: components["schemas"]["TopicSummary"][];
@@ -4714,6 +6509,25 @@ export interface components {
         PageListWorkRef: {
             /** @description Members of this page. Empty array, never null. */
             items: components["schemas"]["WorkRef"][];
+            /**
+             * @description Type discriminant. Always list.
+             * @enum {string}
+             */
+            object: "list";
+            /**
+             * Format: int64
+             * @description Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.
+             */
+            total: number;
+            /**
+             * @description eq when total is exact, gte when it stopped at the depth limit and there are at least that many.
+             * @enum {string}
+             */
+            total_relation: "eq" | "gte";
+        };
+        PageListWorkSummary: {
+            /** @description Members of this page. Empty array, never null. */
+            items: components["schemas"]["WorkSummary"][];
             /**
              * @description Type discriminant. Always list.
              * @enum {string}
@@ -5019,6 +6833,20 @@ export interface components {
         PollVoteSet: {
             /** @description The options the caller picks, replacing whatever they picked before. Every id must belong to this poll, and the same id twice is refused as DUPLICATE_ITEM. */
             option_ids: string[];
+        };
+        PracticalityPut: {
+            /**
+             * Format: int64
+             * @description Star rating, 1–5.
+             */
+            rating: number;
+        };
+        PracticalityViewer: {
+            /**
+             * Format: int64
+             * @description The rating just written. Never null in this response.
+             */
+            practicality_rating: number | null;
         };
         Preferences: {
             /** @description Cloud preference document. A JSON object. */
@@ -5344,6 +7172,12 @@ export interface components {
              */
             object: "report_reason";
         };
+        ResourceViewer: {
+            /** @description Whether the caller may delete this resource. Requests authenticated with a Bearer token never carry staff powers. */
+            can_delete: boolean;
+            /** @description Whether the caller may edit this resource. Requests authenticated with a Bearer token never carry staff powers. */
+            can_edit: boolean;
+        };
         ReviewItem: {
             /** @description The moderator who claimed the item. null before anyone has. */
             claimant: components["schemas"]["UserRef"] | null;
@@ -5576,6 +7410,138 @@ export interface components {
             /** @description Whether the caller may replace this role's overrides: the role is not locked and ranks below the caller's highest role. Each key is still subject to the caller holding it. */
             can_edit: boolean;
         };
+        Section: {
+            /**
+             * @description The topic category the section belongs to.
+             * @enum {string}
+             */
+            category: "galgame" | "technique" | "others";
+            /** @description The newest of those topics whose author is still shown. null when there is none. */
+            latest_topic: components["schemas"]["SectionLatestTopic"] | null;
+            /**
+             * @description Type discriminant. Always section.
+             * @enum {string}
+             */
+            object: "section";
+            /**
+             * @description The section, as filed on a topic's sections and as the /section/{section} page segment.
+             * @enum {string}
+             */
+            section: "g-walkthrough" | "g-chatting" | "g-article" | "g-seeking" | "g-news" | "g-releases" | "g-other" | "t-crack" | "t-web" | "t-languages" | "t-help" | "t-linux" | "t-practical" | "t-ai" | "t-android" | "t-adobe" | "t-algorithm" | "t-other" | "o-anime" | "o-comics" | "o-music" | "o-novel" | "o-daily" | "o-essay" | "o-forum" | "o-patch" | "o-other";
+            /**
+             * Format: int64
+             * @description Published topics filed under the section that anyone may open, NSFW ones included. A size statistic, not the total of any list.
+             */
+            topic_count: number;
+            /**
+             * Format: int64
+             * @description Views summed over the same topics as topic_count.
+             */
+            view_count: number;
+        };
+        SectionLatestTopic: {
+            /**
+             * Format: date-time
+             * @description Creation time.
+             */
+            created_at: string;
+            /** @description Topic id. JSON string of a decimal integer. */
+            id: string;
+            /**
+             * @description Type discriminant. Always topic.
+             * @enum {string}
+             */
+            object: "topic";
+            /** @description Topic title. Free text; never use it as a decision input. */
+            title: string;
+        };
+        Series: {
+            /**
+             * Format: int64
+             * @description Works catalog files under it, NSFW ones included. How many a reader can page through is the total of its works collection.
+             */
+            catalog_work_count: number;
+            /** @description The entity's own name. Never empty. Free text; never use it as a decision input. */
+            display_name: string;
+            /** @description Whether any work of the series is adult content. null when catalog does not know. */
+            has_nsfw_works: boolean | null;
+            /** @description Series id: the catalog series id, which is also the id in the web's /galgame/series/{id}. */
+            id: string;
+            /** @description Descriptions in every language catalog has, unordered. Empty array, never null. */
+            intros: components["schemas"]["CatalogIntro"][];
+            /** @description Romanization of the name. null when none is recorded. Free text; never use it as a decision input. */
+            latin: string | null;
+            /**
+             * Format: int64
+             * @description Works of the series the forum lists: ones with a resource and a published page.
+             */
+            listed_work_count: number;
+            /** @description Names by BCP-47 tag, sparse. Empty object when there are none, never null. */
+            localized: {
+                [key: string]: components["schemas"]["LocalizedName"];
+            };
+            /**
+             * @description Type discriminant. Always series.
+             * @enum {string}
+             */
+            object: "series";
+            /** @description Up to five listed works of the series, earliest release first. Empty array, never null. */
+            sample_works: components["schemas"]["SeriesSampleWork"][];
+        };
+        SeriesSampleWork: {
+            /** @description The landscape art at its original size, never the 16:9 crop. null when the work has none; clients fall back to cover. */
+            banner: components["schemas"]["Image"] | null;
+            /** @description The portrait cover at its original size, never the 16:9 crop. null when the work has none. */
+            cover: components["schemas"]["Image"] | null;
+            /** @description The entity's own name. Never empty. Free text; never use it as a decision input. */
+            display_name: string;
+            /** @description Work id: the catalog work id, which is also the id in the web's /galgame/{id}. */
+            id: string;
+            /** @description Whether this forum displays the work as adult content: the editorial display axis (the claim's content limit), not the age rating. */
+            is_nsfw: boolean;
+            /** @description Romanization of the name. null when none is recorded. Free text; never use it as a decision input. */
+            latin: string | null;
+            /** @description Names by BCP-47 tag, sparse. Empty object when there are none, never null. */
+            localized: {
+                [key: string]: components["schemas"]["LocalizedName"];
+            };
+            /**
+             * @description Type discriminant. Always work.
+             * @enum {string}
+             */
+            object: "work";
+        };
+        SeriesSummary: {
+            /**
+             * Format: int64
+             * @description Works catalog files under it, NSFW ones included. How many a reader can page through is the total of its works collection.
+             */
+            catalog_work_count: number;
+            /** @description The entity's own name. Never empty. Free text; never use it as a decision input. */
+            display_name: string;
+            /** @description Whether any work of the series is adult content. null when catalog does not know; a browse without include_nsfw leaves out true and null alike. */
+            has_nsfw_works: boolean | null;
+            /** @description Series id: the catalog series id, which is also the id in the web's /galgame/series/{id}. */
+            id: string;
+            /** @description Romanization of the name. null when none is recorded. Free text; never use it as a decision input. */
+            latin: string | null;
+            /**
+             * Format: int64
+             * @description Works of the series the forum lists: ones with a resource and a published page.
+             */
+            listed_work_count: number;
+            /** @description Names by BCP-47 tag, sparse. Empty object when there are none, never null. */
+            localized: {
+                [key: string]: components["schemas"]["LocalizedName"];
+            };
+            /**
+             * @description Type discriminant. Always series.
+             * @enum {string}
+             */
+            object: "series";
+            /** @description Up to five listed works of the series, earliest release first. Empty array, never null. */
+            sample_works: components["schemas"]["SeriesSampleWork"][];
+        };
         SpoilerNode: {
             /** @description Block nodes hidden until the reader reveals them. */
             children: components["schemas"]["BlockNode"][];
@@ -5634,6 +7600,39 @@ export interface components {
              * @enum {string}
              */
             object: "table_row";
+        };
+        Tag: {
+            /**
+             * Format: int64
+             * @description Works catalog files under it, NSFW ones included. How many a reader can page through is the total of its works collection.
+             */
+            catalog_work_count: number;
+            /** @description The entity's own name. Never empty. Free text; never use it as a decision input. */
+            display_name: string;
+            /** @description Tag id: the catalog tag id, which is also the id in the web's /galgame/tag/{id}. */
+            id: string;
+            /** @description Descriptions in every language catalog has, unordered. Empty array, never null. */
+            intros: components["schemas"]["CatalogIntro"][];
+            /** @description Whether catalog keeps the tag out of sight. A hidden tag is never listed or searched, but its own page still answers. */
+            is_hidden: boolean;
+            /** @description Whether the tag is adult content. Such a tag is NOT_FOUND unless include_nsfw=true. */
+            is_sexual: boolean;
+            /** @description Romanization of the name. null when none is recorded. Free text; never use it as a decision input. */
+            latin: string | null;
+            /** @description Names by BCP-47 tag, sparse. Empty object when there are none, never null. */
+            localized: {
+                [key: string]: components["schemas"]["LocalizedName"];
+            };
+            /**
+             * @description Type discriminant. Always tag.
+             * @enum {string}
+             */
+            object: "tag";
+            /**
+             * @description What the tag describes: content is the story and characters, meta is the game as a product.
+             * @enum {string}
+             */
+            tag_kind: "content" | "meta";
         };
         TagCreate: {
             /** @description Plain-text description. Absent means empty. Free text; never use it as a decision input. */
@@ -5694,6 +7693,35 @@ export interface components {
             slug?: string;
             /** @description New group id. null moves the tag out of every group; absent keeps it. */
             website_tag_group_id?: string | null;
+        };
+        TagSummary: {
+            /**
+             * Format: int64
+             * @description Works catalog files under it, NSFW ones included. How many a reader can page through is the total of its works collection.
+             */
+            catalog_work_count: number;
+            /** @description The entity's own name. Never empty. Free text; never use it as a decision input. */
+            display_name: string;
+            /** @description Tag id: the catalog tag id, which is also the id in the web's /galgame/tag/{id}. */
+            id: string;
+            /** @description Whether the tag is adult content. Such tags are left out unless include_nsfw=true. */
+            is_sexual: boolean;
+            /** @description Romanization of the name. null when none is recorded. Free text; never use it as a decision input. */
+            latin: string | null;
+            /** @description Names by BCP-47 tag, sparse. Empty object when there are none, never null. */
+            localized: {
+                [key: string]: components["schemas"]["LocalizedName"];
+            };
+            /**
+             * @description Type discriminant. Always tag.
+             * @enum {string}
+             */
+            object: "tag";
+            /**
+             * @description What the tag describes: content is the story and characters, meta is the game as a product.
+             * @enum {string}
+             */
+            tag_kind: "content" | "meta";
         };
         TextNode: {
             /**
@@ -5791,6 +7819,477 @@ export interface components {
             can_release: boolean;
             /** @description Whether the caller may move a discarded task back to pending: the caller holds update_log.reopen. */
             can_reopen: boolean;
+        };
+        Toolset: {
+            /** @description Alternate names. Empty array, never null. */
+            aliases: string[];
+            /** @description Author of the toolset. */
+            author: components["schemas"]["UserRef"];
+            /**
+             * Format: int64
+             * @description Comments on the toolset's wall.
+             */
+            comment_count: number;
+            /** @description Description as a node tree. An empty document when there is no description. */
+            content: components["schemas"]["ContentDocument"];
+            /** @description Users who have contributed a resource. Unrenderable accounts are omitted. Empty array, never null. */
+            contributors: components["schemas"]["UserRef"][];
+            /**
+             * Format: date-time
+             * @description Creation time.
+             */
+            created_at: string;
+            /**
+             * Format: int64
+             * @description Sum of download counts of every resource. 0 when there are none.
+             */
+            download_count: number;
+            /**
+             * Format: date-time
+             * @description Time of the latest edit. null when never edited.
+             */
+            edited_at: string | null;
+            /** @description http or https homepage URLs. Empty array, never null. */
+            homepage_urls: string[];
+            /** @description Toolset id. */
+            id: string;
+            /**
+             * @description The tool's interface language. Lower-case BCP 47, plus others.
+             * @enum {string}
+             */
+            interface_language: "zh-cn" | "zh-tw" | "ja-jp" | "en-us" | "others";
+            /**
+             * @description Type discriminant. Always toolset.
+             * @enum {string}
+             */
+            object: "toolset";
+            /**
+             * @description Platform the tool runs on.
+             * @enum {string}
+             */
+            platform: "windows" | "mac" | "linux" | "emulator" | "others";
+            /**
+             * Format: double
+             * @description Mean rating, two decimal places. null when nobody has rated.
+             */
+            practicality_average: number | null;
+            /**
+             * Format: int64
+             * @description Number of ratings.
+             */
+            practicality_count: number;
+            /** @description Counts per star. Index 0 is 1 star. Length 5, never null. */
+            practicality_distribution: number[];
+            /**
+             * @description Release channel of the tool.
+             * @enum {string}
+             */
+            release_channel: "stable" | "beta" | "alpha" | "rc";
+            /**
+             * Format: date-time
+             * @description Time a resource of this toolset was last added; its creation time before the first. Never null on a toolset; nullable only to match the work summary field of the same name.
+             */
+            resource_updated_at: string | null;
+            /** @description Name of the tool. Free text; never use it as a decision input. */
+            title: string;
+            /** @description Resources of the toolset, newest first. Empty array, never null. */
+            toolset_resources: components["schemas"]["ToolsetResourceSummary"][];
+            /**
+             * @description Kind of tool.
+             * @enum {string}
+             */
+            toolset_type: "emulator" | "translator" | "extractor" | "converter" | "debug" | "launcher" | "script" | "docs" | "others";
+            /**
+             * Format: date-time
+             * @description Time of the latest write to the row.
+             */
+            updated_at: string;
+            /**
+             * Format: int64
+             * @description Lifetime view count. Each read of this operation adds one.
+             */
+            view_count: number;
+            /** @description The caller's own state. null for an anonymous caller. */
+            viewer: components["schemas"]["ToolsetViewer"] | null;
+        };
+        ToolsetCreate: {
+            /** @description Alternate names, at most 17, each 1–500 after trimming, unique in the request. */
+            aliases?: string[];
+            /** @description Markdown description. May be empty. Free text; never use it as a decision input. */
+            content_markdown?: string;
+            /** @description http or https URLs, at most 10, each at most 500 characters. */
+            homepage_urls?: string[];
+            /**
+             * @description The tool's interface language.
+             * @enum {string}
+             */
+            interface_language: "zh-cn" | "zh-tw" | "ja-jp" | "en-us" | "others";
+            /**
+             * @description Platform the tool runs on.
+             * @enum {string}
+             */
+            platform: "windows" | "mac" | "linux" | "emulator" | "others";
+            /**
+             * @description Release channel of the tool.
+             * @enum {string}
+             */
+            release_channel: "stable" | "beta" | "alpha" | "rc";
+            /** @description Display name. Length is checked on the raw value; only whitespace is TOO_SHORT. Free text; never use it as a decision input. */
+            title: string;
+            /**
+             * @description Kind of tool.
+             * @enum {string}
+             */
+            toolset_type: "emulator" | "translator" | "extractor" | "converter" | "debug" | "launcher" | "script" | "docs" | "others";
+        };
+        ToolsetDownload: {
+            /** @description Archive password. Empty string when none. Free text; never use it as a decision input. */
+            archive_password: string;
+            /** @description Download URL. A link resource returns the stored link; a file resource returns a presigned URL. null when the resource has no link or file on record; the download is then not counted, and the extraction code or note may still carry a link. */
+            download_url: string | null;
+            /**
+             * Format: date-time
+             * @description When the presigned URL expires. null for a link.
+             */
+            expires_at: string | null;
+            /** @description Extraction code. Empty string when none. Free text; never use it as a decision input. */
+            extraction_code: string;
+            /**
+             * @description Type discriminant. Always toolset_download.
+             * @enum {string}
+             */
+            object: "toolset_download";
+        };
+        ToolsetPatch: {
+            /** @description When present, replaces every alias. */
+            aliases?: string[];
+            /** @description New Markdown description. Free text; never use it as a decision input. */
+            content_markdown?: string;
+            /** @description When present, replaces every homepage URL. */
+            homepage_urls?: string[];
+            /**
+             * @description New interface language.
+             * @enum {string}
+             */
+            interface_language?: "zh-cn" | "zh-tw" | "ja-jp" | "en-us" | "others";
+            /**
+             * @description New platform.
+             * @enum {string}
+             */
+            platform?: "windows" | "mac" | "linux" | "emulator" | "others";
+            /**
+             * @description New release channel.
+             * @enum {string}
+             */
+            release_channel?: "stable" | "beta" | "alpha" | "rc";
+            /** @description New name. Free text; never use it as a decision input. */
+            title?: string;
+            /**
+             * @description New kind of tool.
+             * @enum {string}
+             */
+            toolset_type?: "emulator" | "translator" | "extractor" | "converter" | "debug" | "launcher" | "script" | "docs" | "others";
+        };
+        ToolsetPracticality: {
+            /**
+             * @description Type discriminant. Always toolset_practicality.
+             * @enum {string}
+             */
+            object: "toolset_practicality";
+            /**
+             * Format: double
+             * @description Mean rating, two decimal places. null when nobody has rated.
+             */
+            practicality_average: number | null;
+            /**
+             * Format: int64
+             * @description Number of ratings.
+             */
+            practicality_count: number;
+            /** @description Counts per star. Index 0 is 1 star. Length 5, never null. */
+            practicality_distribution: number[];
+            /** @description Id of the toolset. */
+            toolset_id: string;
+            /** @description The caller's rating after this request. */
+            viewer: components["schemas"]["PracticalityViewer"] | null;
+        };
+        ToolsetResourceCreate: {
+            /** @description Archive password. Free text; never use it as a decision input. */
+            archive_password?: string;
+            /**
+             * Format: uuid
+             * @description Completed upload of the caller on this toolset. Required for file; inconsistent on link.
+             */
+            artifact_id?: string;
+            /** @description Extraction code. Free text; never use it as a decision input. */
+            extraction_code?: string;
+            /** @description External download link: http, https, ftp, ftps, magnet, ed2k or thunder. Required for link; inconsistent on file. */
+            link_url?: string;
+            /** @description Note. Absent, null or empty means none. Free text; never use it as a decision input. */
+            note?: string | null;
+            /** @description The poster's size text. Required for link; inconsistent on file. Free text; never use it as a decision input. */
+            size_label?: string;
+            /**
+             * @description file needs artifact_id; link needs url and size_label.
+             * @enum {string}
+             */
+            toolset_resource_type: "file" | "link";
+        };
+        ToolsetResourceFile: {
+            /**
+             * Format: int64
+             * @description Size of the archive in bytes. 0 for a legacy file whose size was never recorded.
+             */
+            file_size: number;
+        };
+        ToolsetResourceLink: {
+            /** @description The poster's own size text, such as 12 MB. Free text; never use it as a decision input. */
+            size_label: string;
+        };
+        ToolsetResourcePatch: {
+            /** @description New archive password. Free text; never use it as a decision input. */
+            archive_password?: string;
+            /** @description New extraction code. Immutable on a file resource. Free text; never use it as a decision input. */
+            extraction_code?: string;
+            /** @description New download link. Immutable on a file resource. */
+            link_url?: string;
+            /** @description New note. Absent or null leaves it; an empty string clears it. Free text; never use it as a decision input. */
+            note?: string | null;
+            /** @description New size text. Immutable on a file resource. Free text; never use it as a decision input. */
+            size_label?: string;
+        };
+        ToolsetResourceSource: {
+            /** @description Archive password. Empty string when none. Free text; never use it as a decision input. */
+            archive_password: string;
+            /** @description Extraction code. Empty string when none. Free text; never use it as a decision input. */
+            extraction_code: string;
+            /** @description The stored download link. Present only on a link resource that has one on record. */
+            link_url?: string;
+            /** @description Note shown with the resource. null when none. Free text; never use it as a decision input. */
+            note: string | null;
+            /**
+             * @description Type discriminant. Always toolset_resource_source.
+             * @enum {string}
+             */
+            object: "toolset_resource_source";
+            /** @description Id of the resource. */
+            resource_id: string;
+            /** @description The poster's size text. Present only on a link resource. Free text; never use it as a decision input. */
+            size_label?: string;
+        };
+        ToolsetResourceSummary: {
+            /** @description The hosted archive of a file resource. null for a link. */
+            archive: components["schemas"]["ToolsetResourceFile"] | null;
+            /**
+             * Format: date-time
+             * @description Creation time.
+             */
+            created_at: string;
+            /**
+             * Format: int64
+             * @description Times this resource's download secrets were issued.
+             */
+            download_count: number;
+            /** @description Resource id. */
+            id: string;
+            /** @description The size text of a link resource. null for a file. */
+            link: components["schemas"]["ToolsetResourceLink"] | null;
+            /** @description Note shown with the resource. null when none. Free text; never use it as a decision input. */
+            note: string | null;
+            /**
+             * @description Type discriminant. Always toolset_resource.
+             * @enum {string}
+             */
+            object: "toolset_resource";
+            /** @description User who added the resource. */
+            poster: components["schemas"]["UserRef"];
+            /**
+             * @description file is a hosted archive; link is an external URL.
+             * @enum {string}
+             */
+            toolset_resource_type: "file" | "link";
+            /** @description The caller's own state. null for an anonymous caller. */
+            viewer: components["schemas"]["ResourceViewer"] | null;
+        };
+        ToolsetSource: {
+            /** @description Stored Markdown of the description. Free text; never use it as a decision input. */
+            content_markdown: string;
+            /**
+             * @description Type discriminant. Always toolset_source.
+             * @enum {string}
+             */
+            object: "toolset_source";
+            /** @description Id of the toolset. */
+            toolset_id: string;
+        };
+        ToolsetSummary: {
+            /** @description Alternate names. Empty array, never null. */
+            aliases: string[];
+            /** @description Author of the toolset. */
+            author: components["schemas"]["UserRef"];
+            /**
+             * Format: int64
+             * @description Comments on the toolset's wall.
+             */
+            comment_count: number;
+            /**
+             * Format: date-time
+             * @description Creation time.
+             */
+            created_at: string;
+            /**
+             * Format: int64
+             * @description Sum of download counts of every resource. 0 when there are none.
+             */
+            download_count: number;
+            /**
+             * Format: date-time
+             * @description Time of the latest edit. null when never edited.
+             */
+            edited_at: string | null;
+            /** @description http or https homepage URLs. Empty array, never null. */
+            homepage_urls: string[];
+            /** @description Toolset id. */
+            id: string;
+            /**
+             * @description The tool's interface language. Lower-case BCP 47, plus others.
+             * @enum {string}
+             */
+            interface_language: "zh-cn" | "zh-tw" | "ja-jp" | "en-us" | "others";
+            /**
+             * @description Type discriminant. Always toolset.
+             * @enum {string}
+             */
+            object: "toolset";
+            /**
+             * @description Platform the tool runs on.
+             * @enum {string}
+             */
+            platform: "windows" | "mac" | "linux" | "emulator" | "others";
+            /**
+             * Format: double
+             * @description Mean rating, two decimal places. null when nobody has rated.
+             */
+            practicality_average: number | null;
+            /**
+             * Format: int64
+             * @description Number of ratings.
+             */
+            practicality_count: number;
+            /** @description Counts per star. Index 0 is 1 star. Length 5, never null. */
+            practicality_distribution: number[];
+            /**
+             * @description Release channel of the tool.
+             * @enum {string}
+             */
+            release_channel: "stable" | "beta" | "alpha" | "rc";
+            /**
+             * Format: date-time
+             * @description Time a resource of this toolset was last added; its creation time before the first. Never null on a toolset; nullable only to match the work summary field of the same name.
+             */
+            resource_updated_at: string | null;
+            /** @description Name of the tool. Free text; never use it as a decision input. */
+            title: string;
+            /**
+             * @description Kind of tool.
+             * @enum {string}
+             */
+            toolset_type: "emulator" | "translator" | "extractor" | "converter" | "debug" | "launcher" | "script" | "docs" | "others";
+            /**
+             * Format: date-time
+             * @description Time of the latest write to the row.
+             */
+            updated_at: string;
+            /**
+             * Format: int64
+             * @description Lifetime view count.
+             */
+            view_count: number;
+        };
+        ToolsetUpload: {
+            /**
+             * Format: date-time
+             * @description Time the upload completed. null while pending.
+             */
+            completed_at: string | null;
+            /**
+             * Format: date-time
+             * @description Creation time.
+             */
+            created_at: string;
+            /**
+             * Format: date-time
+             * @description When the upload URLs expire. null when completed.
+             */
+            expires_at: string | null;
+            /**
+             * Format: int64
+             * @description Declared size in bytes.
+             */
+            file_size: number;
+            /** @description Original filename. Free text; never use it as a decision input. */
+            filename: string;
+            /** @description Upload id, equal to the artifact UUID. */
+            id: string;
+            /** @description Whether the upload is split into parts. */
+            is_multipart: boolean;
+            /**
+             * @description Type discriminant. Always toolset_upload.
+             * @enum {string}
+             */
+            object: "toolset_upload";
+            /**
+             * Format: int64
+             * @description Part size in bytes when multipart. null otherwise.
+             */
+            part_size: number | null;
+            /** @description Presigned part URLs. Empty array, never null. */
+            part_urls: components["schemas"]["UploadPart"][];
+            /**
+             * @description pending until complete; completed afterwards.
+             * @enum {string}
+             */
+            state: "pending" | "completed";
+            /** @description Toolset this upload belongs to. */
+            toolset_id: string;
+            /**
+             * Format: uri
+             * @description Single-shot upload URL. null when multipart or completed.
+             */
+            upload_url: string | null;
+            /** @description Parts already uploaded, on a pending multipart resume. Empty array otherwise. */
+            uploaded_parts: components["schemas"]["UploadedPart"][];
+        };
+        ToolsetUploadCreate: {
+            /** @description MIME type of the file. Free text; never use it as a decision input. */
+            content_type?: string;
+            /**
+             * Format: int64
+             * @description Size in bytes, 1–2147483648.
+             */
+            file_size: number;
+            /** @description Original filename. Must end in .7z, .zip, or .rar. Free text; never use it as a decision input. */
+            filename: string;
+        };
+        ToolsetUploadPatch: {
+            /** @description Completed multipart parts. */
+            parts?: components["schemas"]["CompletePartBody"][];
+            /**
+             * @description Must be completed. Any other value is INVALID_STATE_TRANSITION.
+             * @enum {string}
+             */
+            state: "pending" | "completed";
+        };
+        ToolsetViewer: {
+            /** @description Whether the caller may delete this toolset. Requests authenticated with a Bearer token never carry staff powers. */
+            can_delete: boolean;
+            /** @description Whether the caller may edit this toolset. Requests authenticated with a Bearer token never carry staff powers. */
+            can_edit: boolean;
+            /**
+             * Format: int64
+             * @description The caller's rating, 1–5. null when they have not rated.
+             */
+            practicality_rating: number | null;
         };
         Topic: {
             /**
@@ -6072,6 +8571,25 @@ export interface components {
             /** @description New title. Trimmed and checked as in createTopic. Free text; never use it as a decision input. */
             title?: string;
         };
+        TopicRankingEntry: {
+            /**
+             * Format: double
+             * @description The value the list is sorted by, such as the view count for views_desc.
+             */
+            metric_value: number;
+            /**
+             * @description Type discriminant. Always topic_ranking_entry.
+             * @enum {string}
+             */
+            object: "topic_ranking_entry";
+            /**
+             * Format: int64
+             * @description 1-based place in this list, numbered after topics whose author cannot be shown were dropped.
+             */
+            rank: number;
+            /** @description The ranked topic, as the topic list renders it. Never null in this list. */
+            topic: components["schemas"]["TopicSummary"] | null;
+        };
         TopicSource: {
             /** @description The stored grants. */
             access_grants: components["schemas"]["AccessGrants"];
@@ -6286,6 +8804,32 @@ export interface components {
             /** @description Whether the caller holds update_log.edit. Requests authenticated with a Bearer token never carry it. */
             can_edit: boolean;
         };
+        UploadPart: {
+            /**
+             * Format: int64
+             * @description 1-based part number.
+             */
+            part_number: number;
+            /**
+             * Format: uri
+             * @description Presigned URL for this part.
+             */
+            url: string;
+        };
+        UploadedPart: {
+            /**
+             * Format: int64
+             * @description Bytes uploaded in this part.
+             */
+            byte_count: number;
+            /** @description ETag returned by the object store. Free text; never use it as a decision input. */
+            etag: string;
+            /**
+             * Format: int64
+             * @description 1-based part number.
+             */
+            part_number: number;
+        };
         UpvoteCreate: {
             /** @description A note shown with the upvote. Absent or null for none. Leading and trailing whitespace is removed, and a note of only whitespace counts as none. Free text; never use it as a decision input. */
             note?: string | null;
@@ -6434,6 +8978,27 @@ export interface components {
             object: "user";
             /** @description Badge roles among creator, moderator, admin and ren, including site roles. Other account roles are not listed. Display only; never a permission check. Empty array if none. */
             roles: ("creator" | "moderator" | "admin" | "ren")[];
+        };
+        UserRankingEntry: {
+            /** @description The user's profile bio. Empty string when none. Free text; never use it as a decision input. */
+            bio: string | null;
+            /** @description The ranked user. */
+            member: components["schemas"]["UserRef"];
+            /**
+             * Format: double
+             * @description The value the list is sorted by, such as the moemoepoint balance for moemoepoint_desc. Only a moemoepoint balance can be negative.
+             */
+            metric_value: number;
+            /**
+             * @description Type discriminant. Always user_ranking_entry.
+             * @enum {string}
+             */
+            object: "user_ranking_entry";
+            /**
+             * Format: int64
+             * @description 1-based place in this list, numbered after users who cannot be shown were dropped.
+             */
+            rank: number;
         };
         UserRef: {
             /** @description Avatar image. null when the account has no image-service hash. */
@@ -6923,6 +9488,38 @@ export interface components {
             /** @description Whether the caller liked the site. */
             has_liked: boolean;
         };
+        WikiCompanyRedirect: {
+            /** @description The catalog company it became. */
+            company_id: string;
+            /**
+             * @description Type discriminant. Always wiki_company_redirect.
+             * @enum {string}
+             */
+            object: "wiki_company_redirect";
+            /** @description The company id the retired galgame wiki used. */
+            wiki_company_id: string;
+        };
+        WorkRankingEntry: {
+            /** @description Who created the work's page on this forum. null when none is recorded or the account cannot be shown. */
+            creator: components["schemas"]["UserRef"] | null;
+            /**
+             * Format: double
+             * @description The value the list is sorted by, such as the view count for views_desc or the weighted rating, two decimals, for rating_desc.
+             */
+            metric_value: number;
+            /**
+             * @description Type discriminant. Always work_ranking_entry.
+             * @enum {string}
+             */
+            object: "work_ranking_entry";
+            /**
+             * Format: int64
+             * @description 1-based place in this list, numbered after works the catalog did not return were dropped.
+             */
+            rank: number;
+            /** @description The ranked work. Never null in this list. */
+            work: components["schemas"]["WorkRef"] | null;
+        };
         WorkRef: {
             /** @description The portrait cover at its original size, never the 16:9 crop. null when the work has none. */
             cover: components["schemas"]["Image"] | null;
@@ -6943,6 +9540,84 @@ export interface components {
              * @enum {string}
              */
             object: "work";
+        };
+        WorkSummary: {
+            /** @description The landscape art at its original size, never the 16:9 crop. null when the work has none; clients fall back to cover. */
+            banner: components["schemas"]["Image"] | null;
+            /** @description The portrait cover at its original size, never the 16:9 crop. null when the work has none. */
+            cover: components["schemas"]["Image"] | null;
+            /** @description The entity's own name. Never empty. Free text; never use it as a decision input. */
+            display_name: string;
+            /** @description Work id: the catalog work id, which is also the id in the web's /galgame/{id}. */
+            id: string;
+            /** @description Whether this forum displays the work as adult content: the editorial display axis (the claim's content limit), not the age rating. */
+            is_nsfw: boolean;
+            /** @description Whether the forum has a listable page for the work. A catalog work the forum has no row for is false, with every forum count 0. */
+            is_published: boolean;
+            /** @description Romanization of the name. null when none is recorded. Free text; never use it as a decision input. */
+            latin: string | null;
+            /**
+             * Format: int64
+             * @description Likes on the forum page.
+             */
+            like_count: number;
+            /** @description Names by BCP-47 tag, sparse. Empty object when there are none, never null. */
+            localized: {
+                [key: string]: components["schemas"]["LocalizedName"];
+            };
+            /** @description The credited company a card names as the maker: developer, then circle, then brand, then publisher. null when no credited company has a name. */
+            maker: components["schemas"]["CompanyRef"] | null;
+            /**
+             * @description Type discriminant. Always work.
+             * @enum {string}
+             */
+            object: "work";
+            /**
+             * Format: int64
+             * @description Forum ratings of the work.
+             */
+            rating_count: number;
+            /**
+             * Format: double
+             * @description Bayesian average of the forum's ratings, one decimal. null when rating_count is 0.
+             */
+            rating_score: number | null;
+            /**
+             * Format: date
+             * @description Release date. A month- or year-precise date is the first day of that month or year. null when catalog has none.
+             */
+            release_date: string | null;
+            /**
+             * @description How much of release_date is known. null when release_date is null.
+             * @enum {string|null}
+             */
+            release_date_precision: "day" | "month" | "year" | null;
+            /** @description Languages of the work's forum resources, each once, in vocabulary order. Empty array, never null. */
+            resource_languages: ("zh-cn" | "zh-tw" | "ja-jp" | "en-us" | "other")[];
+            /** @description Platforms the work's forum resources run on, each once, in vocabulary order. Empty array, never null. */
+            resource_platforms: ("win" | "and" | "ios" | "mac" | "lin" | "web" | "mob" | "swi" | "sw2" | "n3d" | "nds" | "wii" | "wiu" | "gba" | "gbc" | "nes" | "sfc" | "ps1" | "ps2" | "ps3" | "ps4" | "ps5" | "psp" | "psv" | "xb1" | "xb3" | "xbo" | "xxs" | "sat" | "smd" | "scd" | "drc" | "pce" | "pcf" | "tdo" | "p88" | "p98" | "x1s" | "x68" | "fm7" | "fm8" | "fmt" | "msx" | "dos" | "dvd" | "bdp" | "vnd" | "oth")[];
+            /**
+             * Format: date-time
+             * @description When a resource of the work last changed. null when it has none.
+             */
+            resource_updated_at: string | null;
+            /**
+             * Format: int64
+             * @description Times the work's forum page was read. 0 for a work the forum has no page for.
+             */
+            view_count: number;
+        };
+        YearCount: {
+            /**
+             * Format: int64
+             * @description Items published that year.
+             */
+            count: number;
+            /**
+             * Format: int64
+             * @description Calendar year, Asia/Shanghai.
+             */
+            year: number;
         };
     };
     responses: never;
@@ -7880,6 +10555,130 @@ export interface operations {
                 };
             };
             /** @description PERMISSION_REQUIRED when the caller lacks topic.view_hidden. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getAdminOverview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminOverview"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description PERMISSION_REQUIRED when the caller lacks admin.dashboard. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listAdminOverviewDays: {
+        parameters: {
+            query?: {
+                /** @description How many Asia/Shanghai calendar days to return, today included. 1–365, default 30. */
+                days?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListOverviewDay"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description PERMISSION_REQUIRED when the caller lacks admin.dashboard. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -10193,6 +12992,188 @@ export interface operations {
             };
         };
     };
+    listCharacters: {
+        parameters: {
+            query: {
+                /** @description Name search, required: this family has no browse order. The collection is catalog's 100 best name matches in relevance order. Free text; never use it as a decision input. */
+                q: string;
+                /** @description 1-based page number. page × limit may not exceed 100. */
+                page?: number;
+                /** @description Page size. 1–100, default 20. Values above 100 are rejected, not clamped. */
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PageListCharacterRef"];
+                };
+            };
+            /** @description INVALID_PARAMETER when q is only whitespace or page × limit exceeds 100. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when catalog cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getCharacter: {
+        parameters: {
+            query?: {
+                /** @description When true, adult traits are included. Default false. */
+                include_nsfw?: boolean;
+            };
+            header?: never;
+            path: {
+                /** @description Character id. */
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Character"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when no such entity is visible. ENTITY_MERGED when the entity was merged into another; current_id names it. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when catalog cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listCharacterAppearances: {
+        parameters: {
+            query?: {
+                /** @description Opaque cursor from a previous page of this collection. */
+                cursor?: string;
+                /** @description Page size. 1–50, default 20. Values above 50 are rejected, not clamped. A page can come back shorter when works on it are hidden from this reader. */
+                limit?: number;
+                /** @description When true, adult works are included. Default false. A cursor only continues the include_nsfw it was made with. */
+                include_nsfw?: boolean;
+            };
+            header?: never;
+            path: {
+                /** @description Character id. */
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListAppearance"];
+                };
+            };
+            /** @description INVALID_CURSOR when the cursor is broken or was made with another include_nsfw. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when no such entity is visible. ENTITY_MERGED when the entity was merged into another; current_id names it. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when catalog cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     getComment: {
         parameters: {
             query?: never;
@@ -10675,6 +13656,437 @@ export interface operations {
             };
         };
     };
+    listCompanies: {
+        parameters: {
+            query?: {
+                /** @description Name search. Set, the collection is catalog's 100 best name matches in relevance order. Free text; never use it as a decision input. */
+                q?: string;
+                /** @description Only companies of this kind. Omitted means every kind. */
+                company_kind?: "game_brand" | "bunko" | "publisher" | "anime_studio" | "doujin_circle" | "group";
+                /** @description 1-based page number. page × limit may not exceed 10000, or 100 when q is set. */
+                page?: number;
+                /** @description Page size. 1–100, default 50. Values above 100 are rejected, not clamped. */
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PageListCompanySummary"];
+                };
+            };
+            /** @description INVALID_PARAMETER when page × limit is too deep. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when catalog cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getCompany: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Company id. */
+                company_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Company"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when no such entity is visible. ENTITY_MERGED when the entity was merged into another; current_id names it. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when catalog cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getCompanyGraph: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Company id. */
+                company_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CompanyGraph"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when no such entity is visible. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when catalog cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listCompanyWorks: {
+        parameters: {
+            query?: {
+                /** @description own: only the company's own works. imprint: only works credited to one of its imprints. Omitted means both. */
+                via?: "own" | "imprint";
+                /** @description 1-based page number. page × limit may not exceed 10000. */
+                page?: number;
+                /** @description Page size. 1–100, default 24. Values above 100 are rejected, not clamped. */
+                limit?: number;
+                /** @description Sort order. resource_updated: when a resource last changed. created: when the forum page was made. view / view_1d / view_7d / view_30d: page reads, all time or over the last day, 7 or 30 days. release_date: the release date. rating: the bayesian forum rating. Works the forum has no page for rank after every work it has. */
+                sort?: "resource_updated_desc" | "resource_updated_asc" | "created_desc" | "created_asc" | "view_desc" | "view_asc" | "view_1d_desc" | "view_1d_asc" | "view_7d_desc" | "view_7d_asc" | "view_30d_desc" | "view_30d_asc" | "release_date_desc" | "release_date_asc" | "rating_desc" | "rating_asc";
+                /** @description Only works with at least one forum resource of this type. Omitted means no filter. */
+                resource_type?: "game" | "patch" | "collection" | "crack_fix" | "mod" | "tool" | "walkthrough" | "ost" | "voice" | "cg" | "wallpaper" | "artbook" | "video" | "other";
+                /** @description Only works with at least one forum resource for this platform. Omitted means no filter. */
+                resource_platform?: "win" | "and" | "ios" | "mac" | "lin" | "web" | "mob" | "swi" | "sw2" | "n3d" | "nds" | "wii" | "wiu" | "gba" | "gbc" | "nes" | "sfc" | "ps1" | "ps2" | "ps3" | "ps4" | "ps5" | "psp" | "psv" | "xb1" | "xb3" | "xbo" | "xxs" | "sat" | "smd" | "scd" | "drc" | "pce" | "pcf" | "tdo" | "p88" | "p98" | "x1s" | "x68" | "fm7" | "fm8" | "fmt" | "msx" | "dos" | "dvd" | "bdp" | "vnd" | "oth";
+                /** @description Only works with at least one forum resource in this language. Omitted means no filter. */
+                resource_language?: "zh-cn" | "zh-tw" | "ja-jp" | "en-us" | "other";
+                /** @description Only works a forum rating labels with this game type; uncategorized is works no rating labels at all. Omitted means no filter. */
+                game_type?: "ba_saku" | "plot" | "moe" | "daily" | "uncategorized";
+                /** @description When true, adult works are included. Default false. */
+                include_nsfw?: boolean;
+            };
+            header?: never;
+            path: {
+                /** @description Company id. */
+                company_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PageListCompanyWork"];
+                };
+            };
+            /** @description INVALID_PARAMETER when page × limit is too deep. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when no such entity is visible. ENTITY_MERGED when the entity was merged into another; current_id names it. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when catalog cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listCreditNames: {
+        parameters: {
+            query: {
+                /** @description Name search, required: this family has no browse order. The collection is catalog's 100 best name matches in relevance order. Free text; never use it as a decision input. */
+                q: string;
+                /** @description 1-based page number. page × limit may not exceed 100. */
+                page?: number;
+                /** @description Page size. 1–100, default 20. Values above 100 are rejected, not clamped. */
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PageListCreditNameRef"];
+                };
+            };
+            /** @description INVALID_PARAMETER when q is only whitespace or page × limit exceeds 100. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when catalog cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getCreditName: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Credit name id. */
+                credit_name_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreditName"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when no such entity is visible. ENTITY_MERGED when the entity was merged into another; current_id names it. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when catalog cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listCreditNameCredits: {
+        parameters: {
+            query?: {
+                /** @description Opaque cursor from a previous page of this collection. */
+                cursor?: string;
+                /** @description Page size. 1–50, default 20. Values above 50 are rejected, not clamped. A page can come back shorter when works on it are hidden from this reader. */
+                limit?: number;
+                /** @description When true, adult works are included. Default false. A cursor only continues the include_nsfw it was made with. */
+                include_nsfw?: boolean;
+            };
+            header?: never;
+            path: {
+                /** @description Credit name id. */
+                credit_name_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListCredit"];
+                };
+            };
+            /** @description INVALID_CURSOR when the cursor is broken or was made with another include_nsfw. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when no such entity is visible. ENTITY_MERGED when the entity was merged into another; current_id names it. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when catalog cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     listDocs: {
         parameters: {
             query?: {
@@ -10773,6 +14185,195 @@ export interface operations {
                 };
             };
             /** @description SERVICE_UNAVAILABLE when the account service cannot resolve the author or a mention. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listEngines: {
+        parameters: {
+            query?: {
+                /** @description Case-insensitive substring of any of the engine's names or aliases. Free text; never use it as a decision input. */
+                q?: string;
+                /** @description 1-based page number. page × limit may not exceed 10000. */
+                page?: number;
+                /** @description Page size. 1–100, default 100. Values above 100 are rejected, not clamped. */
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PageListEngine"];
+                };
+            };
+            /** @description INVALID_PARAMETER when page × limit is too deep. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when catalog cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getEngine: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Engine id. */
+                engine_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Engine"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when no such entity is visible. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when catalog cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listEngineWorks: {
+        parameters: {
+            query?: {
+                /** @description 1-based page number. page × limit may not exceed 10000. */
+                page?: number;
+                /** @description Page size. 1–100, default 24. Values above 100 are rejected, not clamped. */
+                limit?: number;
+                /** @description Sort order. resource_updated: when a resource last changed. created: when the forum page was made. view / view_1d / view_7d / view_30d: page reads, all time or over the last day, 7 or 30 days. release_date: the release date. rating: the bayesian forum rating. Works the forum has no page for rank after every work it has. */
+                sort?: "resource_updated_desc" | "resource_updated_asc" | "created_desc" | "created_asc" | "view_desc" | "view_asc" | "view_1d_desc" | "view_1d_asc" | "view_7d_desc" | "view_7d_asc" | "view_30d_desc" | "view_30d_asc" | "release_date_desc" | "release_date_asc" | "rating_desc" | "rating_asc";
+                /** @description Only works with at least one forum resource of this type. Omitted means no filter. */
+                resource_type?: "game" | "patch" | "collection" | "crack_fix" | "mod" | "tool" | "walkthrough" | "ost" | "voice" | "cg" | "wallpaper" | "artbook" | "video" | "other";
+                /** @description Only works with at least one forum resource for this platform. Omitted means no filter. */
+                resource_platform?: "win" | "and" | "ios" | "mac" | "lin" | "web" | "mob" | "swi" | "sw2" | "n3d" | "nds" | "wii" | "wiu" | "gba" | "gbc" | "nes" | "sfc" | "ps1" | "ps2" | "ps3" | "ps4" | "ps5" | "psp" | "psv" | "xb1" | "xb3" | "xbo" | "xxs" | "sat" | "smd" | "scd" | "drc" | "pce" | "pcf" | "tdo" | "p88" | "p98" | "x1s" | "x68" | "fm7" | "fm8" | "fmt" | "msx" | "dos" | "dvd" | "bdp" | "vnd" | "oth";
+                /** @description Only works with at least one forum resource in this language. Omitted means no filter. */
+                resource_language?: "zh-cn" | "zh-tw" | "ja-jp" | "en-us" | "other";
+                /** @description Only works a forum rating labels with this game type; uncategorized is works no rating labels at all. Omitted means no filter. */
+                game_type?: "ba_saku" | "plot" | "moe" | "daily" | "uncategorized";
+                /** @description When true, adult works are included. Default false. */
+                include_nsfw?: boolean;
+            };
+            header?: never;
+            path: {
+                /** @description Engine id. */
+                engine_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PageListWorkSummary"];
+                };
+            };
+            /** @description INVALID_PARAMETER when page × limit is too deep. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when no such entity is visible. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when catalog cannot be reached. */
             503: {
                 headers: {
                     [name: string]: unknown;
@@ -11675,6 +15276,62 @@ export interface operations {
                 };
             };
             /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getMyAccount: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Account"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the account center cannot be reached. */
             503: {
                 headers: {
                     [name: string]: unknown;
@@ -14387,6 +18044,298 @@ export interface operations {
             };
         };
     };
+    getNewsArchive: {
+        parameters: {
+            query?: {
+                /** @description Only this lane. Omitted means both. */
+                lane?: "news" | "column";
+                /** @description Only this partner. Omitted means every partner. */
+                news_source?: string;
+                /** @description Also break this year down by month. */
+                year?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NewsArchive"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the news service is not configured or cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getNewsMonth: {
+        parameters: {
+            query?: {
+                /** @description Only this lane. Omitted means both. */
+                lane?: "news" | "column";
+                /** @description Only this partner. Omitted means every partner. */
+                news_source?: string;
+            };
+            header?: never;
+            path: {
+                /** @description Calendar year, Asia/Shanghai. */
+                year: number;
+                /** @description Calendar month, Asia/Shanghai. */
+                month: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NewsMonth"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the news service is not configured or cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listNewsMonthItems: {
+        parameters: {
+            query?: {
+                /** @description 1-based page number. page × limit may not exceed 10000. */
+                page?: number;
+                /** @description Page size. 1–100, default 20. Values above 100 are rejected, not clamped. */
+                limit?: number;
+                /** @description Only this lane. Omitted means both. */
+                lane?: "news" | "column";
+                /** @description Only this partner. Omitted means every partner. */
+                news_source?: string;
+                /** @description Only this day of the month. 0 or omitted means the whole month. */
+                day?: number;
+            };
+            header?: never;
+            path: {
+                /** @description Calendar year, Asia/Shanghai. */
+                year: number;
+                /** @description Calendar month, Asia/Shanghai. */
+                month: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PageListNewsItem"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the news service is not configured or cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listNewsItems: {
+        parameters: {
+            query?: {
+                /** @description Opaque cursor from a previous page's next_cursor. It is bound to every filter and to limit. */
+                cursor?: string;
+                /** @description Page size. 1–50, default 20. The news service pages at most 50; values above 50 are rejected, not clamped. */
+                limit?: number;
+                /** @description When true, total counts every item under the same filters. */
+                include_total?: boolean;
+                /** @description Only this lane. Omitted means both. */
+                lane?: "news" | "column";
+                /** @description Only this partner. Omitted means every partner. */
+                news_source?: string;
+                /** @description Only items published in this year, Asia/Shanghai. 0 or omitted means any year. */
+                year?: number;
+                /** @description Only items published in this month of year. Needs year. */
+                month?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CountedListNewsItem"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the news service is not configured or cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listNewsSources: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListNewsSource"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the news service is not configured or cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     getPoll: {
         parameters: {
             query?: never;
@@ -14963,6 +18912,168 @@ export interface operations {
             };
             /** @description Internal Server Error */
             500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listTopicRanking: {
+        parameters: {
+            query?: {
+                /** @description What the list ranks by, highest first; ties break on descending id. views: view count. replies, comments, likes, upvotes, favorites: those counts. */
+                sort?: "views_desc" | "replies_desc" | "comments_desc" | "likes_desc" | "upvotes_desc" | "favorites_desc";
+                /** @description How many places. 1–100, default 50. Values above 100 are rejected, not clamped. */
+                limit?: number;
+                /** @description When true, NSFW topics are ranked too. Default false. */
+                include_nsfw?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListTopicRankingEntry"];
+                };
+            };
+            /** @description UNKNOWN_SORT, LIMIT_TOO_LARGE or INVALID_PARAMETER. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the account service is unreachable. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listUserRanking: {
+        parameters: {
+            query?: {
+                /** @description What the list ranks by, highest first; ties break on descending user id. moemoepoint: the balance this forum caches. topics, replies, comments: what the user has posted where anonymous visitors can read it. resources: the user's galgame resources that are not taken down. */
+                sort?: "moemoepoint_desc" | "topics_desc" | "replies_desc" | "comments_desc" | "resources_desc";
+                /** @description How many places. 1–100, default 50. Values above 100 are rejected, not clamped. */
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListUserRankingEntry"];
+                };
+            };
+            /** @description UNKNOWN_SORT or LIMIT_TOO_LARGE. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the account service is unreachable. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listWorkRanking: {
+        parameters: {
+            query?: {
+                /** @description What the list ranks by, highest first; ties break on descending work id. views, likes, favorites, resources: those counts on this forum. rating: this forum's ratings, weighted toward the site-wide mean for works with few of them. */
+                sort?: "views_desc" | "likes_desc" | "favorites_desc" | "resources_desc" | "rating_desc";
+                /** @description How many places. 1–100, default 50. Values above 100 are rejected, not clamped. */
+                limit?: number;
+                /** @description When true, works this forum displays as adult content are ranked too. Default false. */
+                include_nsfw?: boolean;
+                /** @description When true, published works without any resource are ranked too. Default false. */
+                include_resourceless?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListWorkRankingEntry"];
+                };
+            };
+            /** @description UNKNOWN_SORT, LIMIT_TOO_LARGE or INVALID_PARAMETER. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the catalog or the account service is unreachable. */
+            503: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -16210,6 +20321,497 @@ export interface operations {
             };
         };
     };
+    listSections: {
+        parameters: {
+            query?: {
+                /** @description When set, only this category's sections. Omitted means all of them. */
+                category?: "galgame" | "technique" | "others";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListSection"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the account service cannot tell which newest topics have a shown author. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listSeries: {
+        parameters: {
+            query?: {
+                /** @description Case-insensitive substring of any of the series' names. Set, the collection is every catalog series that matches, listed works or not, most works first. Free text; never use it as a decision input. */
+                q?: string;
+                /** @description 1-based page number. page × limit may not exceed 10000. */
+                page?: number;
+                /** @description Page size. 1–100, default 12. Values above 100 are rejected, not clamped. */
+                limit?: number;
+                /** @description When true, series with adult works are included. Default false: only series catalog says have none. */
+                include_nsfw?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PageListSeriesSummary"];
+                };
+            };
+            /** @description INVALID_PARAMETER when page × limit is too deep. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when catalog cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getSeries: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Series id. */
+                series_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Series"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when no such entity is visible. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when catalog cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listSeriesWorks: {
+        parameters: {
+            query?: {
+                /** @description 1-based page number. page × limit may not exceed 10000. */
+                page?: number;
+                /** @description Page size. 1–100, default 24. Values above 100 are rejected, not clamped. */
+                limit?: number;
+                /** @description Sort order. resource_updated: when a resource last changed. created: when the forum page was made. view / view_1d / view_7d / view_30d: page reads, all time or over the last day, 7 or 30 days. release_date: the release date. rating: the bayesian forum rating. Works the forum has no page for rank after every work it has. */
+                sort?: "resource_updated_desc" | "resource_updated_asc" | "created_desc" | "created_asc" | "view_desc" | "view_asc" | "view_1d_desc" | "view_1d_asc" | "view_7d_desc" | "view_7d_asc" | "view_30d_desc" | "view_30d_asc" | "release_date_desc" | "release_date_asc" | "rating_desc" | "rating_asc";
+                /** @description Only works with at least one forum resource of this type. Omitted means no filter. */
+                resource_type?: "game" | "patch" | "collection" | "crack_fix" | "mod" | "tool" | "walkthrough" | "ost" | "voice" | "cg" | "wallpaper" | "artbook" | "video" | "other";
+                /** @description Only works with at least one forum resource for this platform. Omitted means no filter. */
+                resource_platform?: "win" | "and" | "ios" | "mac" | "lin" | "web" | "mob" | "swi" | "sw2" | "n3d" | "nds" | "wii" | "wiu" | "gba" | "gbc" | "nes" | "sfc" | "ps1" | "ps2" | "ps3" | "ps4" | "ps5" | "psp" | "psv" | "xb1" | "xb3" | "xbo" | "xxs" | "sat" | "smd" | "scd" | "drc" | "pce" | "pcf" | "tdo" | "p88" | "p98" | "x1s" | "x68" | "fm7" | "fm8" | "fmt" | "msx" | "dos" | "dvd" | "bdp" | "vnd" | "oth";
+                /** @description Only works with at least one forum resource in this language. Omitted means no filter. */
+                resource_language?: "zh-cn" | "zh-tw" | "ja-jp" | "en-us" | "other";
+                /** @description Only works a forum rating labels with this game type; uncategorized is works no rating labels at all. Omitted means no filter. */
+                game_type?: "ba_saku" | "plot" | "moe" | "daily" | "uncategorized";
+                /** @description When true, adult works are included. Default false. */
+                include_nsfw?: boolean;
+            };
+            header?: never;
+            path: {
+                /** @description Series id. */
+                series_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PageListWorkSummary"];
+                };
+            };
+            /** @description INVALID_PARAMETER when page × limit is too deep. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when no such entity is visible. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when catalog cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listTaggedWorks: {
+        parameters: {
+            query: {
+                /** @description Tag ids, comma-separated. Only works carrying every one of them. 1–10. */
+                tag_ids: string[];
+                /** @description 1-based page number. page × limit may not exceed 10000. */
+                page?: number;
+                /** @description Page size. 1–100, default 24. Values above 100 are rejected, not clamped. */
+                limit?: number;
+                /** @description When true, adult works are included. Default false. */
+                include_nsfw?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PageListWorkSummary"];
+                };
+            };
+            /** @description INVALID_PARAMETER when tag_ids is empty, longer than 10, or not ids, or page × limit is too deep. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when catalog cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listTags: {
+        parameters: {
+            query?: {
+                /** @description Name search. Set, the collection is catalog's 100 best name matches in relevance order, hidden and gated tags removed. Free text; never use it as a decision input. */
+                q?: string;
+                /** @description 1-based page number. page × limit may not exceed 10000, or 100 when q is set. */
+                page?: number;
+                /** @description Page size. 1–100, default 100. Values above 100 are rejected, not clamped. */
+                limit?: number;
+                /** @description When true, adult tags are included. Default false. */
+                include_nsfw?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PageListTagSummary"];
+                };
+            };
+            /** @description INVALID_PARAMETER when page × limit is too deep. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when catalog cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getTag: {
+        parameters: {
+            query?: {
+                /** @description When true, an adult tag answers. Default false: it is NOT_FOUND. */
+                include_nsfw?: boolean;
+            };
+            header?: never;
+            path: {
+                /** @description Tag id. */
+                tag_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Tag"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when no such entity is visible. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when catalog cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listTagWorks: {
+        parameters: {
+            query?: {
+                /** @description 1-based page number. page × limit may not exceed 10000. */
+                page?: number;
+                /** @description Page size. 1–100, default 24. Values above 100 are rejected, not clamped. */
+                limit?: number;
+                /** @description Sort order. resource_updated: when a resource last changed. created: when the forum page was made. view / view_1d / view_7d / view_30d: page reads, all time or over the last day, 7 or 30 days. release_date: the release date. rating: the bayesian forum rating. Works the forum has no page for rank after every work it has. */
+                sort?: "resource_updated_desc" | "resource_updated_asc" | "created_desc" | "created_asc" | "view_desc" | "view_asc" | "view_1d_desc" | "view_1d_asc" | "view_7d_desc" | "view_7d_asc" | "view_30d_desc" | "view_30d_asc" | "release_date_desc" | "release_date_asc" | "rating_desc" | "rating_asc";
+                /** @description Only works with at least one forum resource of this type. Omitted means no filter. */
+                resource_type?: "game" | "patch" | "collection" | "crack_fix" | "mod" | "tool" | "walkthrough" | "ost" | "voice" | "cg" | "wallpaper" | "artbook" | "video" | "other";
+                /** @description Only works with at least one forum resource for this platform. Omitted means no filter. */
+                resource_platform?: "win" | "and" | "ios" | "mac" | "lin" | "web" | "mob" | "swi" | "sw2" | "n3d" | "nds" | "wii" | "wiu" | "gba" | "gbc" | "nes" | "sfc" | "ps1" | "ps2" | "ps3" | "ps4" | "ps5" | "psp" | "psv" | "xb1" | "xb3" | "xbo" | "xxs" | "sat" | "smd" | "scd" | "drc" | "pce" | "pcf" | "tdo" | "p88" | "p98" | "x1s" | "x68" | "fm7" | "fm8" | "fmt" | "msx" | "dos" | "dvd" | "bdp" | "vnd" | "oth";
+                /** @description Only works with at least one forum resource in this language. Omitted means no filter. */
+                resource_language?: "zh-cn" | "zh-tw" | "ja-jp" | "en-us" | "other";
+                /** @description Only works a forum rating labels with this game type; uncategorized is works no rating labels at all. Omitted means no filter. */
+                game_type?: "ba_saku" | "plot" | "moe" | "daily" | "uncategorized";
+                /** @description When true, adult works are included. Default false. */
+                include_nsfw?: boolean;
+            };
+            header?: never;
+            path: {
+                /** @description Tag id. */
+                tag_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PageListWorkSummary"];
+                };
+            };
+            /** @description INVALID_PARAMETER when page × limit is too deep. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when no such entity is visible. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when catalog cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     listTodos: {
         parameters: {
             query?: {
@@ -16644,6 +21246,1556 @@ export interface operations {
             };
         };
     };
+    listToolsets: {
+        parameters: {
+            query?: {
+                /** @description 1-based page number. page × limit may not exceed 10000. */
+                page?: number;
+                /** @description Page size. 1–100, default 24. Values above 100 are rejected, not clamped. */
+                limit?: number;
+                /** @description When set, only this type. Omitted means every type. */
+                toolset_type?: "emulator" | "translator" | "extractor" | "converter" | "debug" | "launcher" | "script" | "docs" | "others";
+                /** @description When set, only tools with this interface language. Omitted means every language. */
+                interface_language?: "zh-cn" | "zh-tw" | "ja-jp" | "en-us" | "others";
+                /** @description When set, only this platform. Omitted means every platform. */
+                platform?: "windows" | "mac" | "linux" | "emulator" | "others";
+                /** @description When set, only this channel. Omitted means every channel. */
+                release_channel?: "stable" | "beta" | "alpha" | "rc";
+                /** @description Sort token. Default resource_updated_desc. */
+                sort?: "resource_updated_desc" | "resource_updated_asc" | "created_desc" | "created_asc" | "view_desc" | "view_asc" | "title_asc" | "title_desc";
+                /** @description Case-insensitive search over the toolset title. Omitted or blank means no search. Free text; never use it as a decision input. */
+                q?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PageListToolsetSummary"];
+                };
+            };
+            /** @description UNKNOWN_ENUM_VALUE, UNKNOWN_SORT, LIMIT_TOO_LARGE, or INVALID_PARAMETER. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    createToolset: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Caller-generated UUID (canonical 8-4-4-4-12 hex, any version) or 26-character Crockford ULID. Scoped to (user, operation, key) for 24 hours. */
+                "Idempotency-Key": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ToolsetCreate"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    Location?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Toolset"];
+                };
+            };
+            /** @description INVALID_PARAMETER when Idempotency-Key is missing or malformed. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description IDEMPOTENCY_KEY_REUSED or IDEMPOTENCY_REQUEST_IN_PROGRESS. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description VALIDATION_FAILED or CONTENT_REJECTED. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getToolset: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Toolset id. */
+                toolset_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Toolset"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the toolset does not exist or its author is not renderable. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    deleteToolset: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Toolset id. */
+                toolset_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description PERMISSION_REQUIRED without can_delete; ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the toolset does not exist or its author is not renderable. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    updateToolset: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Toolset id. */
+                toolset_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ToolsetPatch"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Toolset"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description PERMISSION_REQUIRED without can_edit; ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the toolset does not exist or its author is not renderable. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description ALREADY_EXISTS when an alias collides. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description VALIDATION_FAILED or CONTENT_REJECTED. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    putToolsetPracticality: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Toolset id. */
+                toolset_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PracticalityPut"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ToolsetPracticality"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the toolset does not exist or its author is not renderable. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description VALIDATION_FAILED. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    createToolsetResource: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Caller-generated UUID (canonical 8-4-4-4-12 hex, any version) or 26-character Crockford ULID. Scoped to (user, operation, key) for 24 hours. */
+                "Idempotency-Key": string;
+            };
+            path: {
+                /** @description Toolset id. */
+                toolset_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ToolsetResourceCreate"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    Location?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ToolsetResourceSummary"];
+                };
+            };
+            /** @description INVALID_PARAMETER when Idempotency-Key is missing or malformed. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the toolset does not exist or its author is not renderable. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description ALREADY_EXISTS when the artifact is already bound or the URL is taken; IDEMPOTENCY_KEY_REUSED or IDEMPOTENCY_REQUEST_IN_PROGRESS. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description VALIDATION_FAILED or CONTENT_REJECTED. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getToolsetResource: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Toolset id. */
+                toolset_id: string;
+                /** @description Resource id. */
+                resource_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ToolsetResourceSummary"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the resource is not visible at this path. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    deleteToolsetResource: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Toolset id. */
+                toolset_id: string;
+                /** @description Resource id. */
+                resource_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description PERMISSION_REQUIRED without can_delete; ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the resource is not visible at this path. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    updateToolsetResource: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Toolset id. */
+                toolset_id: string;
+                /** @description Resource id. */
+                resource_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ToolsetResourcePatch"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ToolsetResourceSummary"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description PERMISSION_REQUIRED without can_edit; ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the resource is not visible at this path. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description ALREADY_EXISTS when the new URL is taken. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description VALIDATION_FAILED or CONTENT_REJECTED. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    createToolsetDownload: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Toolset id. */
+                toolset_id: string;
+                /** @description Resource id. */
+                resource_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ToolsetDownload"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the resource is not visible at this path. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getToolsetResourceSource: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Toolset id. */
+                toolset_id: string;
+                /** @description Resource id. */
+                resource_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ToolsetResourceSource"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description PERMISSION_REQUIRED without can_edit; ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the toolset or resource does not exist, the resource belongs to another toolset, or the toolset author or resource poster is not renderable. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getToolsetSource: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Toolset id. */
+                toolset_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ToolsetSource"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description PERMISSION_REQUIRED without can_edit; ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the toolset does not exist or its author is not renderable. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    createToolsetUpload: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Caller-generated UUID (canonical 8-4-4-4-12 hex, any version) or 26-character Crockford ULID. Scoped to (user, operation, key) for 24 hours. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                /** @description Toolset id. */
+                toolset_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ToolsetUploadCreate"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    Location?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ToolsetUpload"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the toolset does not exist or its author is not renderable. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description IDEMPOTENCY_KEY_REUSED or IDEMPOTENCY_REQUEST_IN_PROGRESS. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description VALIDATION_FAILED. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description QUOTA_EXCEEDED when the daily upload quota is exhausted. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getToolsetUpload: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Toolset id. */
+                toolset_id: string;
+                /** @description Upload id, equal to the artifact UUID. */
+                upload_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ToolsetUpload"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the upload is not the caller's session on this toolset. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    deleteToolsetUpload: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Toolset id. */
+                toolset_id: string;
+                /** @description Upload id, equal to the artifact UUID. */
+                upload_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the upload is not the caller's session on this toolset. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description INVALID_STATE_TRANSITION when the upload is already completed. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    updateToolsetUpload: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Toolset id. */
+                toolset_id: string;
+                /** @description Upload id, equal to the artifact UUID. */
+                upload_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ToolsetUploadPatch"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ToolsetUpload"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the upload is not the caller's session on this toolset. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description INVALID_STATE_TRANSITION when state is not completed. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     listTopics: {
         parameters: {
             query?: {
@@ -16657,6 +22809,8 @@ export interface operations {
                 category?: "galgame" | "technique" | "others";
                 /** @description When true, NSFW topics are included. Default false. */
                 include_nsfw?: boolean;
+                /** @description When set, only topics filed under this section. Omitted means every section. */
+                section?: "g-walkthrough" | "g-chatting" | "g-article" | "g-seeking" | "g-news" | "g-releases" | "g-other" | "t-crack" | "t-web" | "t-languages" | "t-help" | "t-linux" | "t-practical" | "t-ai" | "t-android" | "t-adobe" | "t-algorithm" | "t-other" | "o-anime" | "o-comics" | "o-music" | "o-novel" | "o-daily" | "o-essay" | "o-forum" | "o-patch" | "o-other";
             };
             header?: never;
             path?: never;
@@ -19236,6 +25390,88 @@ export interface operations {
             };
         };
     };
+    listUserToolsets: {
+        parameters: {
+            query?: {
+                /** @description 1-based page number. page × limit may not exceed 10000. */
+                page?: number;
+                /** @description Page size. 1–100, default 24. Values above 100 are rejected, not clamped. */
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                /** @description User id. */
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PageListToolsetSummary"];
+                };
+            };
+            /** @description LIMIT_TOO_LARGE or INVALID_PARAMETER. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the user does not exist or is not renderable. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     listWallComments: {
         parameters: {
             query: {
@@ -20719,6 +26955,65 @@ export interface operations {
                 };
             };
             /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getWikiCompanyRedirect: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The company id the retired galgame wiki used. */
+                wiki_company_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WikiCompanyRedirect"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the number maps to no company. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when catalog cannot be reached. */
             503: {
                 headers: {
                     [name: string]: unknown;

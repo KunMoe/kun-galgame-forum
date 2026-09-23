@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { watchDebounced } from '@vueuse/core'
+import { settle } from '#shared/utils/api/problem'
+import type { UserSearchHit } from '#shared/utils/api/schemas'
 
 definePageMeta({
   middleware: 'permission',
@@ -12,8 +14,10 @@ const oauthUsersAdminURL = computed(
   () => `${useRuntimeConfig().public.oauthAdminUrl}/users`
 )
 
+const api = useApiClient()
+
 const searchQuery = ref('')
-const users = ref<SearchResultUser[]>([])
+const users = ref<UserSearchHit[]>([])
 const isSearching = ref(false)
 
 const handleSearch = async () => {
@@ -23,12 +27,17 @@ const handleSearch = async () => {
     return
   }
   isSearching.value = true
-  const res = await kunFetch<{ items: SearchResultUser[]; total: number }>(
-    '/search',
-    { method: 'GET', query: { keywords, type: 'user', page: 1, limit: 12 } }
+  const result = await settle(
+    api.GET('/search/users', {
+      params: { query: { q: keywords, page: 1, limit: 12 } }
+    })
   )
   isSearching.value = false
-  users.value = res?.items ?? []
+  if (!result.ok) {
+    reportProblem(result.problem)
+    return
+  }
+  users.value = result.data.items
 }
 
 watchDebounced(() => searchQuery.value, handleSearch, {
