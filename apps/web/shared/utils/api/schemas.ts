@@ -204,7 +204,6 @@ export type SeriesSampleWork = components['schemas']['SeriesSampleWork']
 export type CreditNameRef = components['schemas']['CreditNameRef']
 export type CreditName = components['schemas']['CreditName']
 export type Credit = components['schemas']['Credit']
-export type CharacterRef = components['schemas']['CharacterRef']
 export type Character = components['schemas']['Character']
 export type CharacterTrait = components['schemas']['CharacterTrait']
 export type Appearance = components['schemas']['Appearance']
@@ -217,13 +216,36 @@ export type WorksQuery = Omit<
 > &
   Required<Pick<WorksParams, 'page' | 'limit' | 'sort' | 'include_nsfw'>>
 export type WorkPage = components['schemas']['PageListWorkSummary']
+type ListWorksParams = NonNullable<
+  operations['listWorks']['parameters']['query']
+>
+export type ListWorksQuery = ListWorksParams
+export type ListLibraryWorksQuery = NonNullable<
+  operations['listLibraryWorks']['parameters']['query']
+>
+export type ReleaseCalendarMonth =
+  components['schemas']['ReleaseCalendarMonth']
+export type ReleaseCalendarToday =
+  components['schemas']['ReleaseCalendarToday']
+export type ReleaseCalendarPending =
+  components['schemas']['ReleaseCalendarPending']
+export type ReleaseCalendarTBA = components['schemas']['ReleaseCalendarTBA']
+export type ReleaseCalendarUpcoming =
+  components['schemas']['ReleaseCalendarUpcoming']
+export type ReleaseCalendarUpcomingEntry =
+  components['schemas']['ReleaseCalendarUpcomingEntry']
+export type WorkCollectedMonths =
+  components['schemas']['WorkCollectedMonths']
+export type WorkCollectedMonth =
+  components['schemas']['WorkCollectedMonth']
 export type TagPage = components['schemas']['PageListTagSummary']
 export type CompanyPage = components['schemas']['PageListCompanySummary']
 export type CompanyWorkPage = components['schemas']['PageListCompanyWork']
 export type EnginePage = components['schemas']['PageListEngine']
 export type SeriesPage = components['schemas']['PageListSeriesSummary']
 export type CreditNamePage = components['schemas']['PageListCreditNameRef']
-export type CharacterPage = components['schemas']['PageListCharacterRef']
+export type CharacterSummary = components['schemas']['CharacterSummary']
+export type CharacterPage = components['schemas']['PageListCharacterSummary']
 export type CreditList = components['schemas']['ListCredit']
 export type AppearanceList = components['schemas']['ListAppearance']
 export type Toolset = components['schemas']['Toolset']

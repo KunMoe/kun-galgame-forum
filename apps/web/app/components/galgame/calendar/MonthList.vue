@@ -1,9 +1,12 @@
 <script setup lang="ts">
+import type { ReleaseCalendarMonth } from '#shared/utils/api/schemas'
+
 const props = defineProps<{
-  data: GalgameCalendarMonth
+  data: ReleaseCalendarMonth
 }>()
 
 const WEEKDAYS = ['周日', '周一', '周二', '周三', '周四', '周五', '周六']
+const cards = useWorkCards(() => props.data.items)
 
 type DayStatus = 'past' | 'today' | 'future'
 
@@ -17,13 +20,16 @@ interface DayRow {
 }
 
 const rows = computed<DayRow[]>(() => {
-  const [y, mo] = props.data.month.split('-').map(Number)
-  const monthCmp = props.data.month.localeCompare(props.data.today.slice(0, 7))
-  const todayDay = monthCmp === 0 ? Number(props.data.today.slice(8, 10)) : -1
+  const [y, mo] = props.data.calendar_month.split('-').map(Number)
+  const monthCmp = props.data.calendar_month.localeCompare(
+    props.data.today_date.slice(0, 7)
+  )
+  const todayDay =
+    monthCmp === 0 ? Number(props.data.today_date.slice(8, 10)) : -1
 
   const dayMap = new Map<number, GalgameCard[]>()
   const bucket: GalgameCard[] = []
-  for (const game of props.data.items) {
+  for (const game of cards.value) {
     if (game.release_precision === 'month' || !game.release_date) {
       bucket.push(game)
       continue
@@ -46,7 +52,7 @@ const rows = computed<DayRow[]>(() => {
             ? 'past'
             : 'future'
   const mkRow = (d: number): DayRow => ({
-    id: `${props.data.month}-${String(d).padStart(2, '0')}`,
+    id: `${props.data.calendar_month}-${String(d).padStart(2, '0')}`,
     day: d,
     weekday: WEEKDAYS[new Date(y ?? 0, (mo ?? 1) - 1, d).getDay()] ?? '',
     status: statusOf(d),
@@ -66,7 +72,7 @@ const rows = computed<DayRow[]>(() => {
   }
   if (bucket.length) {
     out.push({
-      id: `${props.data.month}-bucket`,
+      id: `${props.data.calendar_month}-bucket`,
       day: 0,
       weekday: '',
       status: 'future',

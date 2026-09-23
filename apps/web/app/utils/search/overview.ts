@@ -8,6 +8,11 @@ import type {
   WallCommentSearchHit,
   WorkRef
 } from '#shared/utils/api/schemas'
+import {
+  ENTITY_LIMIT_ALL,
+  SEARCH_ENTITY_FAMILY_VALUES,
+  fetchEntityFamilies
+} from './entities'
 import { fetchLanePage, type LanePage } from './lanes'
 
 export interface SearchOverviewData {
@@ -27,7 +32,7 @@ export interface SearchOverviewData {
 const LIMIT = {
   topic: 8,
   galgame: 12,
-  entity: 6,
+  entity: ENTITY_LIMIT_ALL,
   resource: 6,
   user: 8,
   reply: 4,
@@ -39,7 +44,8 @@ const LIMIT = {
 export const loadSearchOverview = async (
   api: ApiClient,
   q: string,
-  includeNsfw: boolean
+  includeNsfw: boolean,
+  preferOriginal: boolean
 ): Promise<SearchOverviewData> => {
   const lane = (type: SearchPagedType) =>
     fetchLanePage(api, type, q, 1, LIMIT[type], includeNsfw, {}, false)
@@ -61,10 +67,16 @@ export const loadSearchOverview = async (
     lane('reply'),
     lane('comment'),
     lane('toolset'),
-    kunFetch<SearchEntityResult>('/search/entity', {
-      method: 'GET',
-      query: { keywords: q, limit: LIMIT.entity }
-    }),
+    fetchEntityFamilies(
+      api,
+      q,
+      1,
+      LIMIT.entity,
+      includeNsfw,
+      preferOriginal,
+      SEARCH_ENTITY_FAMILY_VALUES,
+      false
+    ),
     q.trim().length < 2
       ? Promise.resolve(null)
       : settle(
@@ -88,7 +100,10 @@ export const loadSearchOverview = async (
   count('reply', replies)
   count('comment', comments)
   count('toolset', toolsets)
-  count('entity', entities)
+  const okEntities = entities.filter((group) => !group.failed)
+  if (okEntities.length) {
+    totals.entity = okEntities.reduce((sum, group) => sum + group.total, 0)
+  }
 
   return {
     topics: items<TopicSummary>(topics),
@@ -98,7 +113,7 @@ export const loadSearchOverview = async (
     replies: items<ReplySearchHit>(replies),
     comments: items<CommentSearchHit>(comments),
     toolsets: items<SearchResultToolset>(toolsets),
-    entities: entities?.groups ?? [],
+    entities,
     wallComments: walls?.ok ? walls.data.items : [],
     totals,
     failed:
@@ -109,8 +124,9 @@ export const loadSearchOverview = async (
         users,
         replies,
         comments,
-        toolsets,
-        entities
-      ].every((page) => !page) && !walls?.ok
+        toolsets
+      ].every((page) => !page) &&
+      !okEntities.length &&
+      !walls?.ok
   }
 }

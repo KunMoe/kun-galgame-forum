@@ -13,7 +13,10 @@ const emit = defineEmits<{
 }>()
 
 const entityGroups = computed(
-  () => props.overview?.entities.filter((group) => group.items.length) ?? []
+  () =>
+    props.overview?.entities.filter(
+      (group) => group.failed || group.items.length
+    ) ?? []
 )
 
 // The community lane contributes no total, so it has to be counted separately:

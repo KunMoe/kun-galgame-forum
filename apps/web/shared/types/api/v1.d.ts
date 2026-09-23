@@ -4974,11 +4974,18 @@ export interface components {
             /** @description Traits in catalog's order. Adult traits are left out unless include_nsfw=true. Empty array, never null. */
             traits: components["schemas"]["CharacterTrait"][];
         };
-        CharacterRef: {
+        CharacterSummary: {
+            /**
+             * Format: int64
+             * @description Works catalog attributes the character to. 0 when unknown.
+             */
+            catalog_work_count: number;
             /** @description The entity's own name. Never empty. Free text; never use it as a decision input. */
             display_name: string;
             /** @description Character id: the catalog character id, which is also the id in the web's /galgame/character/{id}. */
             id: string;
+            /** @description The character's portrait. null when catalog has none or its picture could not be read. */
+            image: components["schemas"]["Image"] | null;
             /** @description Romanization of the name. null when none is recorded. Free text; never use it as a decision input. */
             latin: string | null;
             /** @description Names by BCP-47 tag, sparse. Empty object when there are none, never null. */
@@ -7622,9 +7629,9 @@ export interface components {
              */
             work_count: number;
         };
-        PageListCharacterRef: {
+        PageListCharacterSummary: {
             /** @description Members of this page. Empty array, never null. */
-            items: components["schemas"]["CharacterRef"][];
+            items: components["schemas"]["CharacterSummary"][];
             /**
              * @description Type discriminant. Always list.
              * @enum {string}
@@ -16183,7 +16190,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PageListCharacterRef"];
+                    "application/json": components["schemas"]["PageListCharacterSummary"];
                 };
             };
             /** @description INVALID_PARAMETER when q is only whitespace or page × limit exceeds 100. */

@@ -123,6 +123,7 @@ type fakeCatalog struct {
 	rows       map[int]client.CatalogWorkListItem
 	details    map[int]*client.CatalogWorkDetail
 	movedWorks map[int]int64
+	media      map[int64]client.CatalogEntityMedia
 	works      []geWork
 	taxonomy   map[string][]client.CatalogTaxonomyItem
 	hits       map[string][]client.CatalogEntityHit
@@ -282,6 +283,19 @@ func (f *fakeCatalog) CatalogWorkDetail(_ context.Context, workID int) (*client.
 		return nil, false, 0, legacyErrors.New(233, err.Error(), http.StatusInternalServerError)
 	}
 	return &d, true, 0, nil
+}
+
+func (f *fakeCatalog) CatalogEntityMediaBatch(_ context.Context, entity string, ids []int64) (map[int64]client.CatalogEntityMedia, *legacyErrors.AppError) {
+	if e := f.err(); e != nil {
+		return nil, e
+	}
+	out := map[int64]client.CatalogEntityMedia{}
+	for _, id := range ids {
+		if m, ok := f.media[id]; ok {
+			out[id] = m
+		}
+	}
+	return out, nil
 }
 
 func (f *fakeCatalog) CatalogEngine(_ context.Context, id string) (*client.CatalogEngineDetail, bool, *legacyErrors.AppError) {
@@ -716,6 +730,9 @@ func (f *geFix) seedCatalog(t *testing.T) {
 
 	c.hits["names"] = decodeHits(t, `[{"id":9101,"display_name":"瀬戸","latin":"Seto"}]`)
 	c.hits["characters"] = decodeHits(t, `[{"id":9201,"display_name":"夏帆","latin":"Kaho"}]`)
+	c.media = map[int64]client.CatalogEntityMedia{
+		9201: {Image: "https://image.other.example/aa/bb/" + geHash(9201) + ".webp", WorkCount: 3},
+	}
 	var name client.CatalogName
 	decodeInto(t, fmt.Sprintf(`{"id":9101,"display_name":"瀬戸","latin":"Seto","lang":"ja","gender":2,"birth_m":4,"birth_d":1,
 		"refs":[{"source":"vndb","external_id":"2099"},{"source":"dlsite","external_id":"x"}],

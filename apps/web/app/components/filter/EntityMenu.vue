@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import type { KunSelectValue } from '@kungal/ui-vue'
+import { storeToRefs } from 'pinia'
+import { fetchEntityFamily } from '~/utils/search/entities'
 
 const props = withDefaults(
   defineProps<{
@@ -21,6 +23,12 @@ const emit = defineEmits<{ toggle: [item: SearchEntityItem] }>()
 const query = ref('')
 const found = ref<SearchEntityItem[]>([])
 const loading = ref(false)
+const failed = ref(false)
+const api = useApiClient()
+const { allowsNsfw } = useContentStance()
+const { showKUNGalgamePreferOriginalName } = storeToRefs(
+  usePersistSettingsStore()
+)
 
 let latest = 0
 
@@ -30,18 +38,25 @@ const search = async (keywords: string) => {
   const q = keywords.trim()
   if (!q) {
     found.value = []
+    failed.value = false
     loading.value = false
     return
   }
   loading.value = true
-  const data = await kunFetch<SearchEntityResult>('/search/entity', {
-    method: 'GET',
-    query: { keywords: q, family: props.family, page: 1, limit: 20 }
-  })
+  const group = await fetchEntityFamily(
+    api,
+    props.family,
+    q,
+    1,
+    20,
+    allowsNsfw.value,
+    showKUNGalgamePreferOriginalName.value
+  )
   if (current !== latest) {
     return
   }
-  found.value = data?.groups[0]?.items ?? []
+  failed.value = group.failed ?? false
+  found.value = group.failed ? [] : group.items
   loading.value = false
 }
 
@@ -89,7 +104,9 @@ const keepControlled = () => {}
 
 const emptyText = computed(() =>
   query.value.trim()
-    ? `没有找到匹配的${props.label}`
+    ? failed.value
+      ? `${props.label}搜索没能完成, 请稍后重试`
+      : `没有找到匹配的${props.label}`
     : `输入关键词以搜索${props.label}`
 )
 </script>

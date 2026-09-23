@@ -113,7 +113,7 @@ if (isIndexable.value) {
       </template>
     </KunHeader>
 
-    <GalgameCardNav :is-show-advanced="false" axes />
+    <GalgameCardNav :is-show-advanced="false" />
 
     <KunInfo
       v-if="isSfwMode"

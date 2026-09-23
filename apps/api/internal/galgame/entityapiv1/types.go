@@ -182,6 +182,12 @@ type CharacterRef struct {
 	repr.CatalogName
 }
 
+type CharacterSummary struct {
+	CharacterRef
+	Image            *repr.Image `json:"image" doc:"The character's portrait. null when catalog has none or its picture could not be read."`
+	CatalogWorkCount int         `json:"catalog_work_count" minimum:"0" doc:"Works catalog attributes the character to. 0 when unknown."`
+}
+
 type Character struct {
 	Object string         `json:"object" enum:"character" maxLength:"9" doc:"Type discriminant. Always character."`
 	ID     repr.DecimalID `json:"id" doc:"Character id: the catalog character id, which is also the id in the web's /galgame/character/{id}."`

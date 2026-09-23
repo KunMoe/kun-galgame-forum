@@ -1,6 +1,8 @@
 <script setup lang="ts">
+import type { ReleaseCalendarMonth } from '#shared/utils/api/schemas'
+
 const props = defineProps<{
-  data: GalgameCalendarMonth
+  data: ReleaseCalendarMonth
 }>()
 
 const emit = defineEmits<{
@@ -10,26 +12,28 @@ const emit = defineEmits<{
 }>()
 
 const WEEKDAYS = ['日', '一', '二', '三', '四', '五', '六']
+const cards = useWorkCards(() => props.data.items)
 
-const year = computed(() => Number(props.data.month.slice(0, 4)))
-const monthNum = computed(() => Number(props.data.month.slice(5, 7)))
+const year = computed(() => Number(props.data.calendar_month.slice(0, 4)))
+const monthNum = computed(() => Number(props.data.calendar_month.slice(5, 7)))
 
 const monthLabel = computed(() => `${year.value} 年 ${monthNum.value} 月`)
 const isCurrentMonth = computed(
-  () => props.data.month === props.data.today.slice(0, 7)
+  () => props.data.calendar_month === props.data.today_date.slice(0, 7)
 )
-const canGoPrev = computed(() => props.data.month > props.data.meta.min_month)
+const canGoPrev = computed(() => props.data.has_prev)
+const canGoNext = computed(() => props.data.has_next)
 
 const todayDay = computed(() =>
-  props.data.today.slice(0, 7) === props.data.month
-    ? Number(props.data.today.slice(8, 10))
+  props.data.today_date.slice(0, 7) === props.data.calendar_month
+    ? Number(props.data.today_date.slice(8, 10))
     : -1
 )
 
 const dayGames = computed(() => {
   const map = new Map<number, GalgameCard[]>()
   const bucket: GalgameCard[] = []
-  for (const game of props.data.items) {
+  for (const game of cards.value) {
     if (game.release_precision === 'month' || !game.release_date) {
       bucket.push(game)
       continue
@@ -69,7 +73,7 @@ const defaultSelected = computed<number | 'bucket' | null>(() =>
     : null
 )
 watch(
-  () => props.data.month,
+  () => props.data.calendar_month,
   () => (selected.value = defaultSelected.value),
   {
     immediate: true
@@ -88,14 +92,14 @@ const pickDay = (day: number | null) => {
     return
   }
   selected.value = day
-  scrollToRow(`${props.data.month}-${String(day).padStart(2, '0')}`)
+  scrollToRow(`${props.data.calendar_month}-${String(day).padStart(2, '0')}`)
 }
 const pickBucket = () => {
   if (!dayGames.value.bucket.length) {
     return
   }
   selected.value = 'bucket'
-  scrollToRow(`${props.data.month}-bucket`)
+  scrollToRow(`${props.data.calendar_month}-bucket`)
 }
 </script>
 
@@ -118,13 +122,25 @@ const pickBucket = () => {
         <div class="flex flex-col items-center">
           <span class="font-bold">{{ monthLabel }}</span>
           <span class="text-default-400 text-xs">
-            共 {{ data.meta.count }} 部
+            共 {{ data.item_count }} 部
           </span>
         </div>
-        <KunButton variant="light" :is-icon-only="true" @click="emit('next')">
+        <KunButton
+          variant="light"
+          :is-icon-only="true"
+          :disabled="!canGoNext"
+          @click="emit('next')"
+        >
           <KunIcon name="lucide:chevron-right" class="size-5" />
         </KunButton>
       </div>
+
+      <p
+        v-if="data.is_truncated"
+        class="text-default-400 text-center text-sm"
+      >
+        本月作品过多，未全部列出
+      </p>
 
       <div v-if="!isCurrentMonth" class="flex justify-center">
         <KunButton variant="light" size="sm" @click="emit('today')">

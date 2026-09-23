@@ -1,10 +1,5 @@
 <script setup lang="ts">
-import {
-  KUN_GALGAME_RESOURCE_TYPE_MAP,
-  KUN_GALGAME_RESOURCE_LANGUAGE_MAP,
-  KUN_GALGAME_RESOURCE_PLATFORM_MAP,
-  KUN_GALGAME_RESOURCE_SORT_FIELD_MAP
-} from '~/constants/galgame'
+import { KUN_GALGAME_RESOURCE_SORT_FIELD_MAP } from '~/constants/galgame'
 import {
   KUN_GALGAME_PROVIDER_LABEL_MAP,
   PROVIDER_KEY_OPTIONS,
@@ -16,21 +11,15 @@ import {
   PLATFORM_OPTIONS,
   RESOURCE_TYPE_OPTIONS
 } from '#shared/utils/galgameResourceVocab'
-import type {
-  KunGalgameResourceTypeOptions,
-  KunGalgameResourceLanguageOptions,
-  KunGalgameResourcePlatformOptions
-} from '~/constants/galgame'
+import { settle } from '#shared/utils/api/problem'
 
 const props = withDefaults(
   defineProps<{
     isShowAdvanced?: boolean
     total?: number | null
     pending?: boolean
-    // The entity pages read /api/v1, which filters on the resource axes.
-    axes?: boolean
   }>(),
-  { isShowAdvanced: false, total: null, pending: false, axes: false }
+  { isShowAdvanced: false, total: null, pending: false }
 )
 
 const {
@@ -81,26 +70,24 @@ watch(
 
 const csvToArray = (csv: string) => csv.split(',').filter(Boolean)
 
-const typeOptions = props.axes
-  ? [{ value: 'all', label: '全部类型' }, ...RESOURCE_TYPE_OPTIONS]
-  : Object.entries(KUN_GALGAME_RESOURCE_TYPE_MAP)
-      .filter(([k]) => k !== 'name')
-      .map(([value, label]) => ({ value, label }))
+const firstOf = (value: string | string[]) =>
+  Array.isArray(value) ? (value[0] ?? '') : value
 
-const langOptions = props.axes
-  ? [{ value: 'all', label: '全部语言' }, ...LANGUAGE_OPTIONS]
-  : Object.entries(KUN_GALGAME_RESOURCE_LANGUAGE_MAP).map(
-      ([value, label]) => ({ value, label })
-    )
-
-const platformOptions = props.axes
-  ? [{ value: 'all', label: '全部平台' }, ...PLATFORM_OPTIONS]
-  : Object.entries(KUN_GALGAME_RESOURCE_PLATFORM_MAP)
-      .filter(([k]) => k !== 'name')
-      .map(([value, label]) => ({ value, label }))
+const typeOptions = [
+  { value: '', label: '全部类型' },
+  ...RESOURCE_TYPE_OPTIONS
+]
+const langOptions = [
+  { value: '', label: '全部语言' },
+  ...LANGUAGE_OPTIONS
+]
+const platformOptions = [
+  { value: '', label: '全部平台' },
+  ...PLATFORM_OPTIONS
+]
 
 const gameTypeOptions = [
-  { value: 'all', label: '全部作品' },
+  { value: '', label: '全部作品' },
   ...Object.entries(KUN_GALGAME_RATING_GAME_TYPE_MAP).map(([value, label]) => ({
     value,
     label
@@ -171,17 +158,28 @@ const setYears = (range: { from: string; to: string }) => {
 }
 
 const collectedCalendar = ref<{ year: number; month: number }[]>([])
+const api = useApiClient()
+const { allowsNsfw } = useContentStance()
 const loadCollectedCalendar = async () => {
-  const res = await kunFetch<{ year: number; month: number }[]>(
-    '/galgame/collected-calendar'
+  const res = await settle(
+    api.GET('/works/collected-months', {
+      params: { query: { include_nsfw: allowsNsfw.value } }
+    })
   )
-  if (res) collectedCalendar.value = res
+  if (!res.ok) {
+    reportProblem(res.problem)
+    return
+  }
+  collectedCalendar.value = res.data.items
 }
 // Only /galgame renders the advanced pills; the four entity pages mount this
 // same Nav with isShowAdvanced false, and an unconditional load spent a
 // two-sequential-scan aggregate (21ms over 8.5k published rows on prod) per
 // visit to fill a dropdown none of them draw.
 onMounted(() => {
+  if (props.isShowAdvanced) loadCollectedCalendar()
+})
+watch(allowsNsfw, () => {
   if (props.isShowAdvanced) loadCollectedCalendar()
 })
 
@@ -266,28 +264,28 @@ const labelOf = (options: FilterOption[], value: string) =>
 
 const chips = computed<FilterChip[]>(() => {
   const list: FilterChip[] = []
-  if (type.value !== 'all') {
+  if (type.value) {
     list.push({
       key: 'type',
       prefix: '类型',
       label: labelOf(typeOptions, type.value)
     })
   }
-  if (language.value !== 'all') {
+  if (language.value) {
     list.push({
       key: 'language',
       prefix: '语言',
       label: labelOf(langOptions, language.value)
     })
   }
-  if (platform.value !== 'all') {
+  if (platform.value) {
     list.push({
       key: 'platform',
       prefix: '平台',
       label: labelOf(platformOptions, platform.value)
     })
   }
-  if (gameType.value !== 'all') {
+  if (gameType.value) {
     list.push({
       key: 'gameType',
       label: labelOf(gameTypeOptions, gameType.value)
@@ -331,13 +329,13 @@ const chips = computed<FilterChip[]>(() => {
 const removeChip = (key: string) => {
   const [dimension, value] = key.split(':')
   if (dimension === 'type') {
-    type.value = 'all'
+    type.value = ''
   } else if (dimension === 'language') {
-    language.value = 'all'
+    language.value = ''
   } else if (dimension === 'platform') {
-    platform.value = 'all'
+    platform.value = ''
   } else if (dimension === 'gameType') {
-    gameType.value = 'all'
+    gameType.value = ''
   } else if (dimension === 'years') {
     setYears({ from: '', to: '' })
   } else if (dimension === 'month') {
@@ -362,10 +360,10 @@ const removeChip = (key: string) => {
 }
 
 const clearFilters = () => {
-  type.value = 'all'
-  language.value = 'all'
-  platform.value = 'all'
-  gameType.value = 'all'
+  type.value = ''
+  language.value = ''
+  platform.value = ''
+  gameType.value = ''
   releasedFrom.value = ''
   releasedTo.value = ''
   releasedMonths.value = ''
@@ -423,36 +421,32 @@ const clearFilters = () => {
         label="资源类型"
         :options="typeOptions"
         :model-value="type"
-        empty-value="all"
-        @update:model-value="type = $event as KunGalgameResourceTypeOptions"
+        empty-value=""
+        @update:model-value="type = firstOf($event)"
       />
       <FilterMenu
         icon="lucide:languages"
         label="语言"
         :options="langOptions"
         :model-value="language"
-        empty-value="all"
-        @update:model-value="
-          language = $event as KunGalgameResourceLanguageOptions
-        "
+        empty-value=""
+        @update:model-value="language = firstOf($event)"
       />
       <FilterMenu
         icon="lucide:monitor-smartphone"
         label="平台"
         :options="platformOptions"
         :model-value="platform"
-        empty-value="all"
-        @update:model-value="
-          platform = $event as KunGalgameResourcePlatformOptions
-        "
+        empty-value=""
+        @update:model-value="platform = firstOf($event)"
       />
       <FilterMenu
         icon="lucide:gamepad-2"
         label="游戏类型"
         :options="gameTypeOptions"
         :model-value="gameType"
-        empty-value="all"
-        @update:model-value="gameType = $event as string"
+        empty-value=""
+        @update:model-value="gameType = firstOf($event)"
       />
 
       <template v-if="isShowAdvanced">

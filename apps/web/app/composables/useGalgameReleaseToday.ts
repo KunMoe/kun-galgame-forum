@@ -1,27 +1,25 @@
-interface ReleaseTodayFlag {
-  today: string
-  has_release: boolean
-  expires_in: number
-}
+import { settle } from '#shared/utils/api/problem'
 
 interface CachedFlag {
   has: boolean
   until: number
-  limit: string
+  include_nsfw: boolean
 }
 
 const STORAGE_KEY = 'kun-galgame-release-today'
 
-let requested = false
+const requested = new Set<string>()
 
-const read = (limit: string): CachedFlag | null => {
+const read = (includeNsfw: boolean): CachedFlag | null => {
   if (!import.meta.client) {
     return null
   }
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
     const cached = raw ? (JSON.parse(raw) as CachedFlag) : null
-    return cached && cached.limit === limit && cached.until > Date.now()
+    return cached &&
+      cached.include_nsfw === includeNsfw &&
+      cached.until > Date.now()
       ? cached
       : null
   } catch {
@@ -39,33 +37,40 @@ const write = (cached: CachedFlag) => {
 }
 
 export const useGalgameReleaseToday = () => {
-  const { stance } = useContentStance()
+  const { allowsNsfw } = useContentStance()
   const hasReleaseToday = useState('galgame-release-today', () => false)
+  const api = useApiClient()
 
   onMounted(async () => {
-    // Keyed on the stance, not the cookie: the API filters this flag by the
+    // Keyed on include_nsfw, not the cookie: the API filters this flag by the
     // account now, so a cache keyed on the cookie would answer for the wrong
     // one the moment the two disagree.
-    const limit = stance.value
-    const cached = read(limit)
+    const includeNsfw = allowsNsfw.value
+    const cached = read(includeNsfw)
     if (cached) {
       hasReleaseToday.value = cached.has
       return
     }
-    if (requested) {
+    const key = includeNsfw ? '1' : '0'
+    if (requested.has(key)) {
       return
     }
-    requested = true
+    requested.add(key)
 
-    const flag = await kunFetch<ReleaseTodayFlag>('/galgame/calendar/today')
-    if (!flag) {
+    const result = await settle(
+      api.GET('/release-calendar/today', {
+        params: { query: { include_nsfw: includeNsfw } }
+      })
+    )
+    if (!result.ok) {
+      reportProblem(result.problem)
       return
     }
-    hasReleaseToday.value = flag.has_release
+    hasReleaseToday.value = result.data.has_release
     write({
-      has: flag.has_release,
-      until: Date.now() + flag.expires_in * 1000,
-      limit
+      has: result.data.has_release,
+      until: Date.now() + result.data.expires_in * 1000,
+      include_nsfw: includeNsfw
     })
   })
 

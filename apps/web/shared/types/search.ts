@@ -32,11 +32,7 @@ export interface SearchEntityGroup {
   family: SearchEntityFamily
   total: number
   items: SearchEntityItem[]
-}
-
-export interface SearchEntityResult {
-  groups: SearchEntityGroup[]
-  total: number
+  failed?: boolean
 }
 
 export type SearchType =

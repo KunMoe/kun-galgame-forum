@@ -134,6 +134,8 @@ const SFW_COOKIE = `KUNGalgameSettings=${encodeURIComponent(
 
 const PAGE_SIZE = 50
 const MAX_PAGES = 130
+const WORK_PAGE_LIMIT = 50
+const WORK_MAX_PAGES = 200
 const GLOBAL_CONCURRENCY = 12
 
 const createLimiter = (max: number) => {
@@ -157,6 +159,60 @@ const createLimiter = (max: number) => {
 
 const range = (from: number, to: number): number[] =>
   Array.from({ length: Math.max(0, to - from + 1) }, (_, i) => from + i)
+
+export const collectWorkUrls = async (
+  api: ApiClient
+): Promise<SitemapUrl[]> => {
+  const limit = createLimiter(GLOBAL_CONCURRENCY)
+  const query = (page: number) => ({
+    page,
+    limit: WORK_PAGE_LIMIT,
+    sort: 'resource_updated_desc' as const,
+    include_resourceless: true
+  })
+  const fetchPage = (page: number) =>
+    limit(async () => {
+      const result = await settle(
+        api.GET('/works', { params: { query: query(page) } })
+      )
+      return result.ok ? result.data : null
+    })
+
+  const urls: SitemapUrl[] = []
+  const push = (
+    items: { id: string; resource_updated_at: string | null }[]
+  ) => {
+    for (const item of items) {
+      urls.push({
+        loc: `/galgame/${item.id}`,
+        ...(item.resource_updated_at
+          ? { lastmod: item.resource_updated_at }
+          : {}),
+        changefreq: 'daily',
+        priority: 0.8
+      })
+    }
+  }
+
+  const first = await fetchPage(1)
+  if (!first) {
+    return urls
+  }
+  push(first.items)
+  const pages = Math.min(
+    Math.ceil(first.total / WORK_PAGE_LIMIT),
+    WORK_MAX_PAGES
+  )
+  const rest = await Promise.all(
+    range(2, pages).map((page) => fetchPage(page))
+  )
+  for (const body of rest) {
+    if (body) {
+      push(body.items)
+    }
+  }
+  return urls
+}
 
 const unwrap = (json: unknown): unknown =>
   (json as { data?: unknown })?.data ?? json
@@ -257,18 +313,6 @@ export const buildSitemapUrls = async (
 
   const paged: PagedSource[] = [
     {
-      path: '/galgame?indexed=true',
-      pick: (d) =>
-        ((d as { galgames?: [] })?.galgames ?? []) as Record<string, unknown>[],
-      total: (d) => (d as { total?: number })?.total,
-      loc: (r) => `/galgame/${num(r, 'id')}`,
-      lastmod: (r) =>
-        toIso(
-          (r as Pick<GalgameCard, 'resource_update_time'>).resource_update_time
-        ),
-      priority: 0.8
-    },
-    {
       path: '/galgame-resource',
       pick: (d) =>
         ((d as { resources?: [] })?.resources ?? []) as Record<
@@ -282,11 +326,13 @@ export const buildSitemapUrls = async (
     }
   ]
 
+  const typed = createApiClient({ origin: apiBase, timeoutMs: 15000 })
   const groups = await Promise.all([
-    collectTopicUrls(createApiClient({ origin: apiBase, timeoutMs: 15000 })),
+    collectTopicUrls(typed),
+    collectWorkUrls(typed),
     ...paged.map((src) => collect(src)),
-    collectEntityUrls(createApiClient({ origin: apiBase, timeoutMs: 15000 })),
-    collectRatingUrls(createApiClient({ origin: apiBase, timeoutMs: 15000 }))
+    collectEntityUrls(typed),
+    collectRatingUrls(typed)
   ])
 
   const seen = new Set<string>()

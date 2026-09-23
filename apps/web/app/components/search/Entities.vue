@@ -1,16 +1,26 @@
 <script setup lang="ts">
 import { useRouteQuery } from '@vueuse/router'
+import { storeToRefs } from 'pinia'
 import { SEARCH_ENTITY_FAMILIES } from './items'
+import {
+  ENTITY_LIMIT_ALL,
+  ENTITY_LIMIT_ONE,
+  SEARCH_ENTITY_FAMILY_VALUES,
+  fetchEntityFamilies,
+  fetchEntityFamily
+} from '~/utils/search/entities'
 
 const props = defineProps<{
   keywords: string
 }>()
 
-const ENTITY_LIMIT_ALL = 8
-const ENTITY_LIMIT_ONE = 24
-
 const route = useRoute()
 const router = useRouter()
+const api = useApiClient()
+const { allowsNsfw } = useContentStance()
+const { showKUNGalgamePreferOriginalName } = storeToRefs(
+  usePersistSettingsStore()
+)
 
 const family = computed(() => {
   const value = route.query.family
@@ -32,9 +42,8 @@ const familyItems = computed(() => [
   ...SEARCH_ENTITY_FAMILIES
 ])
 
-const result = ref<SearchEntityResult | null>(null)
+const groups = ref<SearchEntityGroup[]>([])
 const pending = ref(!!props.keywords)
-const failed = ref(false)
 const page = useRouteQuery('page', 1, { mode: 'replace', transform: Number })
 const top = useTemplateRef<HTMLElement>('top')
 
@@ -45,31 +54,44 @@ let latest = 0
 const load = async () => {
   const current = ++latest
   if (!props.keywords) {
-    result.value = null
+    groups.value = []
     pending.value = false
     return
   }
   pending.value = true
-  const data = await kunFetch<SearchEntityResult>('/search/entity', {
-    method: 'GET',
-    query: {
-      keywords: props.keywords,
-      family: isAll.value ? undefined : family.value,
-      page: page.value,
-      limit: isAll.value ? ENTITY_LIMIT_ALL : ENTITY_LIMIT_ONE
-    }
-  })
+  const preferOriginal = showKUNGalgamePreferOriginalName.value
+  const loaded = isAll.value
+    ? await fetchEntityFamilies(
+        api,
+        props.keywords,
+        1,
+        ENTITY_LIMIT_ALL,
+        allowsNsfw.value,
+        preferOriginal,
+        SEARCH_ENTITY_FAMILY_VALUES,
+        false
+      )
+    : [
+        await fetchEntityFamily(
+          api,
+          family.value as SearchEntityFamily,
+          props.keywords,
+          page.value,
+          ENTITY_LIMIT_ONE,
+          allowsNsfw.value,
+          preferOriginal
+        )
+      ]
   if (current !== latest) {
     return
   }
-  result.value = data
-  failed.value = !data
+  groups.value = loaded
 
   // See SearchList: a stale ?page= from a shared link has to land somewhere the
   // reader can act on. 全部 has no paginator at all, so its only valid page is 1.
   const lastPage = isAll.value
     ? 1
-    : Math.max(1, Math.ceil((data?.groups?.[0]?.total ?? 0) / ENTITY_LIMIT_ONE))
+    : Math.max(1, Math.ceil((loaded[0]?.total ?? 0) / ENTITY_LIMIT_ONE))
   if (page.value > lastPage) {
     page.value = lastPage
     return
@@ -79,11 +101,11 @@ const load = async () => {
 }
 
 watch([() => props.keywords, family], () => {
-  result.value = null
+  groups.value = []
 })
 
 watch(
-  [() => props.keywords, family, page],
+  [() => props.keywords, family, page, allowsNsfw],
   async (_now, before) => {
     await load()
     if (before && before[2] !== page.value) {
@@ -93,12 +115,10 @@ watch(
   { immediate: true }
 )
 
-const groups = computed(() => result.value?.groups ?? [])
 const isEmpty = computed(
   () =>
     !pending.value &&
-    !failed.value &&
-    groups.value.every((group) => !group.items.length)
+    groups.value.every((group) => !group.failed && !group.items.length)
 )
 
 // One family per request, so the single-family tab is the only one with a page
@@ -136,8 +156,7 @@ const totalPage = computed(() =>
         </div>
       </KunLoading>
 
-      <KunNull v-if="failed" description="资料库搜索没能完成, 请稍后重试" />
-      <KunNull v-else-if="isEmpty" description="资料库里没有找到匹配的条目" />
+      <KunNull v-if="isEmpty" description="资料库里没有找到匹配的条目" />
 
       <KunPagination
         v-if="totalPage > 1"

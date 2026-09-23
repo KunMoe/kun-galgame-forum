@@ -7,7 +7,7 @@ withDefaults(defineProps<{ total?: number | null; pending?: boolean }>(), {
 })
 
 const { page, sortField, sortOrder, releasedFrom, releasedTo } =
-  useGalgameFilters('popularity')
+  useLibraryFilters()
 
 const showDisplay = ref(false)
 

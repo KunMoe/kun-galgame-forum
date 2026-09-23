@@ -3,6 +3,7 @@ package entityapiv1
 import (
 	"cmp"
 	"context"
+	"log/slog"
 
 	"kun-galgame-api/internal/apiv1/repr"
 	"kun-galgame-api/internal/galgame/client"
@@ -13,7 +14,7 @@ import (
 var spoilerLevels = []string{"none", "minor", "major"}
 
 type listCharactersOutput struct {
-	Body repr.PageList[CharacterRef]
+	Body repr.PageList[CharacterSummary]
 }
 
 func (s *Service) listCharacters(ctx context.Context, in *searchInput) (*listCharactersOutput, error) {
@@ -28,16 +29,49 @@ func (s *Service) listCharacters(ctx context.Context, in *searchInput) (*listCha
 	if appErr != nil {
 		return nil, unavailable(appErr)
 	}
-	rows := make([]CharacterRef, 0, len(hits))
+	rows := make([]CharacterSummary, 0, len(hits))
 	for i := range hits {
 		h := &hits[i]
-		rows = append(rows, CharacterRef{
+		rows = append(rows, CharacterSummary{CharacterRef: CharacterRef{
 			Object:      "character",
 			ID:          repr.ID(int(h.ID)),
 			CatalogName: workrepr.Name(h.DisplayName, h.Latin, client.LocalizedValues(h.Localized)),
-		})
+		}})
 	}
-	return &listCharactersOutput{Body: pageList(rows, in.Page, in.Limit)}, nil
+	page := pageList(rows, in.Page, in.Limit)
+	s.fillCharacterMedia(ctx, page.Items)
+	return &listCharactersOutput{Body: page}, nil
+}
+
+// The search face carries names only; the legacy entity search added the
+// portrait and work count with one batch read, and the search tab draws both.
+func (s *Service) fillCharacterMedia(ctx context.Context, items []CharacterSummary) {
+	if len(items) == 0 {
+		return
+	}
+	ids := make([]int64, 0, len(items))
+	for _, it := range items {
+		if id, ok := repr.ParseID(it.ID); ok {
+			ids = append(ids, int64(id))
+		}
+	}
+	media, appErr := s.catalog.CatalogEntityMediaBatch(ctx, "characters", ids)
+	if appErr != nil {
+		slog.Warn("list characters: portraits unavailable, sent without", "error", appErr.Message)
+		return
+	}
+	for i := range items {
+		id, ok := repr.ParseID(items[i].ID)
+		if !ok {
+			continue
+		}
+		m, ok := media[int64(id)]
+		if !ok {
+			continue
+		}
+		items[i].Image = workrepr.ImageFromURL(s.cdn, m.Image, 0, 0, "", nil)
+		items[i].CatalogWorkCount = max(m.WorkCount, 0)
+	}
 }
 
 type characterPathInput struct {

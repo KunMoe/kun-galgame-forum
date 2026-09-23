@@ -46,7 +46,7 @@ if (official) {
       :galgame-count="total"
     />
 
-    <GalgameCardNav :is-show-advanced="false" axes />
+    <GalgameCardNav :is-show-advanced="false" />
 
     <KunInfo
       v-if="isSfwMode"

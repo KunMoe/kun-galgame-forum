@@ -31,6 +31,7 @@ type Catalog interface {
 	CatalogLabelRollupMembers(ctx context.Context, labelID, sort string, isSFW bool, pageCap int) ([]client.CatalogRollupMember, *errors.AppError)
 	CatalogRowsByCatalogIDs(ctx context.Context, ids []int64, isSFW bool) (map[int64]client.CatalogWorkListItem, *errors.AppError)
 	CatalogWorksSearch(ctx context.Context, q url.Values) (*client.CatalogWorksPage, *errors.AppError)
+	CatalogEntityMediaBatch(ctx context.Context, entity string, ids []int64) (map[int64]client.CatalogEntityMedia, *errors.AppError)
 }
 
 type Service struct {

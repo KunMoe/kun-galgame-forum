@@ -28,6 +28,34 @@ export const LEGACY_TYPE_LABELS: Record<string, string> = {
   others: '其它'
 }
 
+// Links shared before the entity pages moved to v1 still carry the legacy
+// resource scalars; they keep working as the axis key they meant.
+export const LEGACY_RESOURCE_PLATFORM: Record<string, string> = {
+  windows: 'win',
+  app: 'and',
+  linux: 'lin',
+  others: 'oth'
+}
+export const LEGACY_RESOURCE_LANGUAGE: Record<string, string> = {
+  others: 'other'
+}
+export const LEGACY_RESOURCE_TYPE: Record<string, string> = {
+  others: 'other',
+  image: 'cg'
+}
+
+export const axisKey = <T extends string>(
+  value: string,
+  legacy: Record<string, string>,
+  options: { value: string }[]
+): T | undefined => {
+  if (!value || value === 'all') {
+    return undefined
+  }
+  const key = legacy[value] ?? value
+  return options.some((o) => o.value === key) ? (key as T) : undefined
+}
+
 export const LANGUAGE_OPTIONS: VocabOption<
   GalgameResource['resource_languages'][number]
 >[] = [

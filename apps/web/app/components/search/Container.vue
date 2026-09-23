@@ -42,6 +42,9 @@ const rememberHistory = (value: string) => {
 
 const api = useApiClient()
 const { allowsNsfw } = useContentStance()
+const { showKUNGalgamePreferOriginalName } = storeToRefs(
+  usePersistSettingsStore()
+)
 
 const overview = ref<SearchOverviewData | null>(null)
 // Seeded from the URL rather than false: the immediate watcher below flips it
@@ -63,7 +66,12 @@ const loadOverview = async (value: string) => {
     return
   }
   overviewPending.value = true
-  const data = await loadSearchOverview(api, value, allowsNsfw.value)
+  const data = await loadSearchOverview(
+    api,
+    value,
+    allowsNsfw.value,
+    showKUNGalgamePreferOriginalName.value
+  )
   if (current !== latest) {
     return
   }

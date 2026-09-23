@@ -1,44 +1,15 @@
 import type { WorksQuery, WorkSummary } from '#shared/utils/api/schemas'
 import {
   LANGUAGE_OPTIONS,
+  LEGACY_RESOURCE_LANGUAGE,
+  LEGACY_RESOURCE_PLATFORM,
+  LEGACY_RESOURCE_TYPE,
   PLATFORM_OPTIONS,
-  RESOURCE_TYPE_OPTIONS
+  RESOURCE_TYPE_OPTIONS,
+  axisKey
 } from '#shared/utils/galgameResourceVocab'
 import { workSummaryToCard } from '~/utils/galgame/workCard'
-
-// Links shared before the entity pages moved to v1 still carry the legacy
-// resource scalars; they keep working as the axis key they meant.
-const legacyPlatform: Record<string, string> = {
-  windows: 'win',
-  app: 'and',
-  linux: 'lin',
-  others: 'oth'
-}
-const legacyLanguage: Record<string, string> = { others: 'other' }
-const legacyType: Record<string, string> = { others: 'other', image: 'cg' }
-
-const axisKey = <T extends string>(
-  value: string,
-  legacy: Record<string, string>,
-  options: { value: string }[]
-): T | undefined => {
-  if (!value || value === 'all') {
-    return undefined
-  }
-  const key = legacy[value] ?? value
-  return options.some((o) => o.value === key) ? (key as T) : undefined
-}
-
-const sortTokens = new Set([
-  'resource_updated',
-  'created',
-  'view',
-  'view_1d',
-  'view_7d',
-  'view_30d',
-  'release_date',
-  'rating'
-])
+import { browseSortToken } from './useGalgameFilters'
 
 export const useEntityWorksQuery = () => {
   const {
@@ -54,18 +25,33 @@ export const useEntityWorksQuery = () => {
   const { allowsNsfw } = useContentStance()
 
   const query = computed<WorksQuery>(() => {
-    const field = sortField.value === 'time' ? 'resource_updated' : sortField.value
-    const order = sortOrder.value === 'asc' ? 'asc' : 'desc'
-    const sort = (
-      sortTokens.has(field) ? `${field}_${order}` : 'resource_updated_desc'
+    const sort = browseSortToken(
+      sortField.value,
+      sortOrder.value
     ) as WorksQuery['sort']
     return {
       page: page.value,
       limit,
       sort,
-      resource_type: axisKey(type.value, legacyType, RESOURCE_TYPE_OPTIONS),
-      resource_platform: axisKey(platform.value, legacyPlatform, PLATFORM_OPTIONS),
-      resource_language: axisKey(language.value, legacyLanguage, LANGUAGE_OPTIONS),
+      resource_type: axisKey<NonNullable<WorksQuery['resource_type']>>(
+        type.value,
+        LEGACY_RESOURCE_TYPE,
+        RESOURCE_TYPE_OPTIONS
+      ),
+      resource_platform: axisKey<
+        NonNullable<WorksQuery['resource_platform']>
+      >(
+        platform.value,
+        LEGACY_RESOURCE_PLATFORM,
+        PLATFORM_OPTIONS
+      ),
+      resource_language: axisKey<
+        NonNullable<WorksQuery['resource_language']>
+      >(
+        language.value,
+        LEGACY_RESOURCE_LANGUAGE,
+        LANGUAGE_OPTIONS
+      ),
       game_type:
         gameType.value && gameType.value !== 'all'
           ? (gameType.value as WorksQuery['game_type'])

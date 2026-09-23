@@ -403,6 +403,11 @@ func TestV1EntityCharacters(t *testing.T) {
 	f := newGEFix(t)
 	_, body := f.get(t, "/api/v1/characters?q=kaho", "/characters")
 	geWant(t, "search", geItemIDs(body), "9201")
+	hit := body["items"].([]any)[0].(map[string]any)
+	img, _ := hit["image"].(map[string]any)
+	if img == nil || img["hash"] != geHash(9201) || asInt(hit["catalog_work_count"]) != 3 {
+		t.Fatalf("the search tab draws the portrait and the work count: %+v", hit)
+	}
 
 	resp, body := f.get(t, "/api/v1/characters/9201", "/characters/{character_id}")
 	geStatus(t, resp, body, http.StatusOK, "")

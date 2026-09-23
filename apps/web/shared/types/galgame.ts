@@ -102,41 +102,4 @@ export interface UserClaimList {
   total: number
 }
 
-export interface GalgameCalendarMeta {
-  prev_month: string
-  next_month: string
-  has_prev: boolean
-  has_next: boolean
-  min_month: string
-  max_month: string
-  count: number
-}
 
-export interface GalgameCalendarMonth {
-  month: string
-  today: string
-  items: GalgameCard[]
-  meta: GalgameCalendarMeta
-}
-
-export interface GalgameCalendarPending {
-  year: string
-  items: GalgameCard[]
-  count: number
-}
-
-export interface GalgameCalendarTBA {
-  items: GalgameCard[]
-  count: number
-}
-
-export interface GalgameCalendarUpcomingMonth {
-  month: string
-  items: GalgameCard[]
-}
-
-export interface GalgameCalendarUpcoming {
-  today: string
-  months: GalgameCalendarUpcomingMonth[]
-  count: number
-}

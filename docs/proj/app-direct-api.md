@@ -81,7 +81,8 @@ App 用 AppAuth + PKCE 直接从 OP 换出 access token，然后 `Authorization:
 |---|---|---|
 | `GET /api/v1/topics` | 匿名+ | 话题列表。旧 `GET /api/topic` 已于 2026-09-19 删除。参数与响应以 `apps/api/openapi/kungal-v1.json` 为准（`listTopics`）：`cursor` + `limit`（1–100），`sort` 取声明的 token（如 `bumped_desc`），`include_nsfw=true` 才含 NSFW；错误是 problem+json，见 `docs/proj/api-v1/` |
 | `GET /api/v1/topics/{topic_id}`、`GET /api/v1/topics/{topic_id}/replies` | 匿名+ | 话题详情与楼层。旧 `GET /api/topic/:tid`、`GET /api/topic/:tid/reply` 已于 2026-09-22 删除。响应以 `apps/api/openapi/kungal-v1.json` 为准；回复走游标分页（`cursor` + `limit`），不是页码 |
-| `GET /api/galgame` | 公开 | 列表 |
+| `GET /api/v1/works` | 公开 | 列表（前瞻；App 尚未调用）。旧 `GET /api/galgame` 已删除。参数与响应以 `apps/api/openapi/kungal-v1.json` 为准（`listWorks`） |
+| `GET /api/v1/library-works` | 公开 | 资料库列表（前瞻；App 尚未调用）。旧 `GET /api/galgame?library=true` 已删除。参数与响应以 `listLibraryWorks` 为准 |
 | `GET /api/v1/works/{work_id}` | 匿名+ | 作品详情。旧 `GET /api/galgame/:gid` 已删除。`include_nsfw` 只控制成人标签是否出现；错误是 problem+json |
 | `PUT` / `DELETE /api/v1/works/{work_id}/like` | Bearer | 点赞槽。都 200 `WorkEngagement`。自赞 `403 SELF_LIKE_FORBIDDEN` |
 | `GET /api/v1/users/{user_id}` | 公开 | 公开资料。未知或封禁/注销用户 404 |

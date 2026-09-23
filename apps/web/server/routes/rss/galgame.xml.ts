@@ -1,33 +1,42 @@
-import { fetchKunApi, useKunFeed } from '../../utils/kunFeed'
+import { createApiClient } from '#shared/utils/api/client'
+import { settle } from '#shared/utils/api/problem'
+import { catalogEntityName } from '#shared/utils/catalogName'
+import { useKunFeed } from '../../utils/kunFeed'
 
-interface GalgameRSSItem {
-  id: number
-  name: string
-  banner: string
-  user: { id: number; name: string; avatar: string }
-  description: string
-  created: string
-}
+const RSS_WORK_COUNT = 20
 
 export default defineCachedEventHandler(
   async (event): Promise<string> => {
-    const baseUrl = useRuntimeConfig().public.KUN_GALGAME_URL || ''
+    const config = useRuntimeConfig()
+    const baseUrl = config.public.KUN_GALGAME_URL || ''
     const feed = useKunFeed(baseUrl, 'galgame')
+    const api = createApiClient({ origin: config.apiBaseUrl, timeoutMs: 10000 })
 
-    const items = await fetchKunApi<GalgameRSSItem[]>('/rss/galgame')
-    for (const g of items) {
+    const list = await settle(
+      api.GET('/works', {
+        params: {
+          query: { sort: 'resource_updated_desc', limit: RSS_WORK_COUNT }
+        }
+      })
+    )
+    if (!list.ok) {
+      throw createError({
+        statusCode: 502,
+        statusMessage: 'work list unavailable'
+      })
+    }
+
+    for (const work of list.data.items) {
+      if (!work.resource_updated_at) {
+        continue
+      }
+      const { name } = catalogEntityName(work)
       feed.addItem({
-        link: `${baseUrl}/galgame/${g.id}`,
-        title: g.name,
-        date: new Date(g.created),
-        description: g.description,
-        image: g.banner,
-        author: [
-          {
-            name: g.user.name,
-            link: `${baseUrl}/user/${g.user.id}/info`
-          }
-        ]
+        link: `${baseUrl}/galgame/${work.id}`,
+        title: name,
+        date: new Date(work.resource_updated_at),
+        description: '',
+        image: work.banner?.url ?? work.cover?.url
       })
     }
 

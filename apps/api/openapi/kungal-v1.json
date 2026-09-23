@@ -2182,8 +2182,14 @@
         ],
         "type": "object"
       },
-      "CharacterRef": {
+      "CharacterSummary": {
         "properties": {
+          "catalog_work_count": {
+            "description": "Works catalog attributes the character to. 0 when unknown.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
           "display_name": {
             "description": "The entity's own name. Never empty. Free text; never use it as a decision input.",
             "maxLength": 512,
@@ -2195,6 +2201,17 @@
             "minLength": 1,
             "pattern": "^[0-9]+$",
             "type": "string"
+          },
+          "image": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Image"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The character's portrait. null when catalog has none or its picture could not be read."
           },
           "latin": {
             "description": "Romanization of the name. null when none is recorded. Free text; never use it as a decision input.",
@@ -2222,6 +2239,8 @@
           }
         },
         "required": [
+          "image",
+          "catalog_work_count",
           "object",
           "id",
           "display_name",
@@ -9686,12 +9705,12 @@
         ],
         "type": "object"
       },
-      "PageListCharacterRef": {
+      "PageListCharacterSummary": {
         "properties": {
           "items": {
             "description": "Members of this page. Empty array, never null.",
             "items": {
-              "$ref": "#/components/schemas/CharacterRef"
+              "$ref": "#/components/schemas/CharacterSummary"
             },
             "type": "array"
           },
@@ -28330,7 +28349,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/PageListCharacterRef"
+                  "$ref": "#/components/schemas/PageListCharacterSummary"
                 }
               }
             },

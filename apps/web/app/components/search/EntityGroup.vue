@@ -20,7 +20,17 @@ const isCapped = computed(
 </script>
 
 <template>
-  <section v-if="group.items.length" class="space-y-3">
+  <section v-if="group.failed" class="space-y-3">
+    <header v-if="showHeader" class="flex items-center gap-2">
+      <KunIcon :name="meta.icon" class="text-default-500 size-4" />
+      <h3 class="text-sm font-medium">{{ meta.textValue }}</h3>
+    </header>
+    <p class="text-default-400 text-sm">
+      {{ meta.textValue }}搜索没能完成, 请稍后重试
+    </p>
+  </section>
+
+  <section v-else-if="group.items.length" class="space-y-3">
     <header v-if="showHeader" class="flex items-center gap-2">
       <KunIcon :name="meta.icon" class="text-default-500 size-4" />
       <h3 class="text-sm font-medium">{{ meta.textValue }}</h3>
