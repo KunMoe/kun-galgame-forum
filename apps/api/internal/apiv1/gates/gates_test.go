@@ -331,6 +331,16 @@ func TestF1(t *testing.T) {
 				Sort string `json:"sort" enum:"newest,Hot" doc:"Sort."`
 			}]("/x"))
 		}, `enum value "Hot" is not snake_case`},
+		{"a language tag in a property that is not a language", func(t *testing.T) *huma.OpenAPI {
+			return spec(t, get[struct {
+				Region string `json:"region" enum:"zh-cn,ja-jp" maxLength:"5" doc:"Region."`
+			}]("/x"))
+		}, `enum value "zh-cn" is not snake_case`},
+		{"a language property whose value is not a lowercase tag", func(t *testing.T) *huma.OpenAPI {
+			return spec(t, get[struct {
+				Languages []string `json:"resource_languages" enum:"zh-cn,zh_TW" maxItems:"2" doc:"Languages."`
+			}]("/x"))
+		}, `enum value "zh_TW" is not a lowercase BCP 47 tag`},
 		{"an include_ property", func(t *testing.T) *huma.OpenAPI {
 			return spec(t, get[struct {
 				IncludeTotal bool `json:"include_total" doc:"Included."`
@@ -354,6 +364,16 @@ func TestF1(t *testing.T) {
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) { expect(t, gates.CheckF1(c.doc(t)), c.want) })
+	}
+}
+
+func TestF1AcceptsLanguageTags(t *testing.T) {
+	doc := spec(t, get[struct {
+		Language  string   `json:"language" enum:"zh-cn,zh-tw,ja-jp,en-us,others" maxLength:"6" doc:"Language."`
+		Languages []string `json:"languages" enum:"zh-cn,other" maxItems:"2" doc:"Languages."`
+	}]("/x"))
+	if errs := gates.CheckF1(doc); len(errs) > 0 {
+		t.Fatal(errs)
 	}
 }
 

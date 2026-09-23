@@ -36,6 +36,19 @@ var g6Banned = []string{"code", "message", "data", "success", "status", "timesta
 
 var closedEnumValue = regexp.MustCompile(`^[a-z][a-z0-9]*(_[a-z0-9]+)*$`)
 
+// languageTagProperties hold lowercase BCP 47 tags, which contain hyphens: the
+// named exception in 01 §3. Their values are checked for that shape instead.
+var (
+	languageTagProperties = map[string]bool{
+		"language": true, "languages": true, "resource_language": true, "resource_languages": true,
+	}
+	languageTagValue = regexp.MustCompile(`^[a-z]{2,3}(-[a-z0-9]{2,8})*$`)
+)
+
+func languageTagEnumValue(v string) bool {
+	return v == "other" || v == "others" || languageTagValue.MatchString(v)
+}
+
 func CheckG6(doc *huma.OpenAPI) []string {
 	var errs []string
 	for path, item := range doc.Paths {
@@ -305,6 +318,14 @@ func CheckF1(doc *huma.OpenAPI) []string {
 			errs = append(errs, "F1: "+at+" must be an integer with minimum 0")
 		}
 		if name == "sections" {
+			return
+		}
+		if languageTagProperties[name] {
+			for _, v := range enumValues(doc, r) {
+				if !languageTagEnumValue(v) {
+					errs = append(errs, fmt.Sprintf("F1: %s enum value %q is not a lowercase BCP 47 tag", at, v))
+				}
+			}
 			return
 		}
 		for _, v := range enumValues(doc, r) {
