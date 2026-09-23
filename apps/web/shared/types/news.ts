@@ -1,35 +1,9 @@
-export interface KunNewsPublisher {
-  id: number
-  name: string
-  avatar: string
-}
+import type { components } from './api/v1'
 
-export interface KunNewsSource {
-  key: string
-  name: string
-  homepage_url: string
-  column_url: string
-  attribution: string
-  publisher: KunNewsPublisher | null
-}
-
-export interface KunNewsItem {
-  id: number
-  source_key: string
-  lane: 'news' | 'column'
-  title: string
-  preview: string
-  source_url: string
-  banner_url: string
-  published_at: string
-}
-
-export interface KunNewsFeed {
-  items: KunNewsItem[]
-  sources: Record<string, KunNewsSource>
-  count: number
-  next_cursor: string
-}
+export type KunNewsItem = components['schemas']['NewsItem']
+export type KunNewsSource = components['schemas']['NewsSource']
+export type KunNewsArchive = components['schemas']['NewsArchive']
+export type KunNewsArchiveMonth = KunNewsArchive['months'][number]
 
 // A feed page is grouped on (date, source), never on date alone: one partner
 // republishes a whole week of bulletins under a single timestamp, and a header
@@ -40,34 +14,4 @@ export interface KunNewsGroup {
   date: string
   source: KunNewsSource | undefined
   items: KunNewsItem[]
-}
-
-export interface KunNewsArchiveYear {
-  year: number
-  count: number
-}
-
-export interface KunNewsArchiveMonth {
-  month: number
-  count: number
-}
-
-export interface KunNewsArchive {
-  years: KunNewsArchiveYear[]
-  months: KunNewsArchiveMonth[]
-}
-
-export interface KunNewsDay {
-  day: number
-  count: number
-}
-
-export interface KunNewsMonth {
-  items: KunNewsItem[]
-  sources: Record<string, KunNewsSource>
-  days: KunNewsDay[]
-  total: number
-  count: number
-  page: number
-  limit: number
 }

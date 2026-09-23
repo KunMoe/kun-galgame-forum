@@ -27,7 +27,7 @@ const sourceItems = computed<KunTabItem[]>(() => [
   { value: 'all', textValue: '全部来源', icon: 'lucide:globe' },
   ...props.sources.map((partner) => ({
     value: partner.key,
-    textValue: partner.name,
+    textValue: partner.display_name,
     icon: 'lucide:rss'
   }))
 ])

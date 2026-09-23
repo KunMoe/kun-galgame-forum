@@ -16,8 +16,8 @@ const homepage = computed(() => props.group.source?.homepage_url || '')
         {{ formatTimeDifference(group.items[0]!.published_at) }}
       </span>
       <KunUserChip
-        v-if="group.source?.publisher"
-        :user="group.source.publisher"
+        v-if="group.source?.forum_account"
+        :user="toKunUser(group.source.forum_account)"
         size="sm"
         is-navigation
         class-name="ml-auto"
@@ -32,10 +32,10 @@ const homepage = computed(() => props.group.source?.homepage_url || '')
         underline="hover"
         class-name="ml-auto"
       >
-        {{ group.source?.name }}
+        {{ group.source?.display_name }}
       </KunLink>
       <span v-else-if="group.source" class="text-default-500 ml-auto text-sm">
-        {{ group.source.name }}
+        {{ group.source.display_name }}
       </span>
     </div>
     <p v-if="group.source?.attribution" class="text-default-400 text-xs">

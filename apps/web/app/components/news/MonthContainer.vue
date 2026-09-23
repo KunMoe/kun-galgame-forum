@@ -16,27 +16,72 @@ const source = computed(() => String(route.query.source ?? ''))
 
 const label = `${props.year} 年 ${props.month} 月`
 
-const { data, status, error } = await useKunFetch<KunNewsMonth>('/news/month', {
-  method: 'GET',
-  query: { year: props.year, month: props.month, lane, source, day, page }
-})
+const PAGE_SIZE = 50
 
-const { data: archive } = await useKunFetch<KunNewsArchive>('/news/archive', {
-  method: 'GET',
-  query: { year: props.year, lane, source }
-})
+const filterQuery = computed(() => ({
+  ...(lane.value ? { lane: lane.value as KunNewsItem['lane'] } : {}),
+  ...(source.value ? { news_source: source.value } : {})
+}))
+
+const sourcesReady = useNewsSources()
+const { byKey: sources } = sourcesReady
+
+const monthPath = { year: props.year, month: props.month }
+
+const summaryReady = useApi(
+  () => `news-month:${props.year}-${props.month}:${lane.value}:${source.value}`,
+  (api, { signal }) =>
+    api.GET('/news-archive/{year}/{month}', {
+      params: { path: monthPath, query: filterQuery.value },
+      signal
+    })
+)
+const itemsReady = useApi(
+  () =>
+    `news-month-items:${props.year}-${props.month}:${lane.value}:${source.value}:${day.value}:${page.value}`,
+  (api, { signal }) =>
+    api.GET('/news-archive/{year}/{month}/items', {
+      params: {
+        path: monthPath,
+        query: {
+          ...filterQuery.value,
+          page: page.value,
+          limit: PAGE_SIZE,
+          ...(day.value ? { day: day.value } : {})
+        }
+      },
+      signal
+    })
+)
+const archiveReady = useApi(
+  () => `news-archive:${lane.value}:${source.value}:${props.year}`,
+  (api, { signal }) =>
+    api.GET('/news-archive', {
+      params: { query: { ...filterQuery.value, year: props.year } },
+      signal
+    })
+)
+const [{ data: summary }, { data, status, problem: error }, { data: archive }] =
+  await Promise.all([summaryReady, itemsReady, archiveReady, sourcesReady])
 
 const groups = computed(() =>
-  groupNewsItems(data.value?.items ?? [], data.value?.sources ?? {})
+  groupNewsItems(data.value?.items ?? [], sources.value)
 )
-const partners = computed(() => Object.values(data.value?.sources ?? {}))
+const partners = computed(() => {
+  const keys = new Set(
+    (data.value?.items ?? []).map((item) => item.news_source)
+  )
+  return [...keys].flatMap((key) =>
+    sources.value[key] ? [sources.value[key]] : []
+  )
+})
 
 // Only the days that published anything. Both partners post weekly digests, so
 // a full 31-cell strip would be mostly dead cells.
-const days = computed(() => (data.value?.days ?? []).filter((d) => d.count))
+const days = computed(() => (summary.value?.days ?? []).filter((d) => d.count))
 const months = computed(() => archive.value?.months ?? [])
 const totalPage = computed(() =>
-  Math.ceil((data.value?.count ?? 0) / (data.value?.limit || 50))
+  Math.ceil((data.value?.total ?? 0) / PAGE_SIZE)
 )
 
 const carried = () => {
@@ -129,7 +174,7 @@ watch(page, () => window.scrollTo({ top: 0, behavior: 'smooth' }))
             :variant="day ? 'light' : 'flat'"
             @click="selectDay(0)"
           >
-            {{ `整月 ${data?.total ?? 0}` }}
+            {{ `整月 ${summary?.item_count ?? 0}` }}
           </KunButton>
           <KunButton
             v-for="entry in days"
@@ -148,7 +193,7 @@ watch(page, () => window.scrollTo({ top: 0, behavior: 'smooth' }))
 
       <div class="flex flex-wrap items-center gap-2">
         <span class="text-default-500 text-sm">
-          {{ `共 ${data?.count ?? 0} 条情报` }}
+          {{ `共 ${data?.total ?? 0} 条情报` }}
         </span>
         <KunChip v-if="day" size="sm" color="primary" variant="flat">
           {{ `${month} 月 ${day} 日` }}

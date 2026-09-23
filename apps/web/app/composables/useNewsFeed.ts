@@ -1,4 +1,5 @@
 import { useIntersectionObserver, useThrottleFn } from '@vueuse/core'
+import { settle } from '#shared/utils/api/problem'
 
 interface KunNewsFeedOptions {
   limit?: number
@@ -26,7 +27,6 @@ export const useNewsFeed = async (options: KunNewsFeedOptions = {}) => {
   )
 
   const items = ref<KunNewsItem[]>([])
-  const sources = ref<Record<string, KunNewsSource>>({})
   const total = ref(0)
   const cursor = ref('')
   const hasMore = ref(true)
@@ -36,9 +36,18 @@ export const useNewsFeed = async (options: KunNewsFeedOptions = {}) => {
 
   // A page in flight belongs to the filter that asked for it. Bumping the
   // generation on every first page drops a late reply instead of appending
-  // 月幕's items under a 批评-only filter — aborting the request would do the
-  // same, but kunFetch reads an aborted fetch as a failure and toasts.
+  // 月幕's items under a 批评-only filter.
   let generation = 0
+
+  const api = useApiClient()
+  const query = computed(() => ({
+    limit,
+    include_total: true,
+    ...(lane.value ? { lane: lane.value as KunNewsItem['lane'] } : {}),
+    ...(source.value ? { news_source: source.value } : {}),
+    ...(year.value ? { year: year.value } : {}),
+    ...(month.value ? { month: month.value } : {})
+  }))
 
   // Everything that registers on the component instance or its effect scope —
   // onBeforeUnmount, useIntersectionObserver, watch — has to run before this
@@ -46,18 +55,22 @@ export const useNewsFeed = async (options: KunNewsFeedOptions = {}) => {
   // await in <script setup>, never inside a composable, so a hook moved down
   // here logs "onBeforeUnmount is called when there is no active component
   // instance" and silently never fires.
-  const asyncData = useKunFetch<KunNewsFeed>('/news', {
-    method: 'GET',
-    query: { limit, lane, source, year, month }
-  })
-  const { data, status, error } = asyncData
+  const sourcesReady = useNewsSources()
+  const { byKey: sources } = sourcesReady
+  const asyncData = useApi(
+    () => `news-items:${JSON.stringify(query.value)}`,
+    (client, { signal }) =>
+      client.GET('/news-items', { params: { query: query.value }, signal })
+  )
+  const { data, status, problem: error } = asyncData
 
-  const applyPage = (page: KunNewsFeed) => {
+  type NewsPage = NonNullable<typeof data.value>
+
+  const applyPage = (page: NewsPage) => {
     generation++
     items.value = page.items
-    sources.value = { ...page.sources }
-    total.value = page.count
-    cursor.value = page.next_cursor
+    total.value = page.total ?? 0
+    cursor.value = page.next_cursor ?? ''
     hasMore.value = !!page.next_cursor
     isLoadingMore.value = false
     autoLoadCount.value = 0
@@ -78,25 +91,21 @@ export const useNewsFeed = async (options: KunNewsFeedOptions = {}) => {
     const gen = generation
     isLoadingMore.value = true
     controller = new AbortController()
-    const next = await kunFetch<KunNewsFeed>('/news', {
-      method: 'GET',
-      query: {
-        limit,
-        lane: lane.value,
-        source: source.value,
-        year: year.value,
-        month: month.value,
-        cursor: cursor.value
-      },
-      signal: controller.signal
-    })
+    const result = await settle(
+      api.GET('/news-items', {
+        params: { query: { ...query.value, cursor: cursor.value } },
+        signal: controller.signal
+      })
+    )
     if (gen !== generation) return
     isLoadingMore.value = false
-    if (!next) return
-    items.value.push(...next.items)
-    sources.value = { ...sources.value, ...next.sources }
-    cursor.value = next.next_cursor
-    hasMore.value = !!next.next_cursor
+    if (!result.ok) {
+      reportProblem(result.problem)
+      return
+    }
+    items.value.push(...result.data.items)
+    cursor.value = result.data.next_cursor ?? ''
+    hasMore.value = !!result.data.next_cursor
   }
 
   const autoLoad = useThrottleFn(() => loadMore(true), 600)
@@ -116,7 +125,7 @@ export const useNewsFeed = async (options: KunNewsFeedOptions = {}) => {
   // The watcher above never fires on the server — Vue skips non-immediate
   // watchers during SSR — so the first page has to be applied by hand, or the
   // rendered HTML ships empty and the list only appears after hydration.
-  await asyncData
+  await Promise.all([asyncData, sourcesReady])
   if (data.value) applyPage(data.value)
 
   return {

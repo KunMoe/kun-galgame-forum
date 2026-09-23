@@ -8,13 +8,13 @@ export const groupNewsItems = (
   const out: KunNewsGroup[] = []
   for (const item of items) {
     const date = formatDate(item.published_at, { isShowYear: true })
-    const key = `${date}-${item.source_key}`
+    const key = `${date}-${item.news_source}`
     const last = out.at(-1)
     if (last?.key === key) {
       last.items.push(item)
       continue
     }
-    out.push({ key, date, source: sources[item.source_key], items: [item] })
+    out.push({ key, date, source: sources[item.news_source], items: [item] })
   }
   return out
 }

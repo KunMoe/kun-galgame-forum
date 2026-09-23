@@ -14,8 +14,8 @@ defineProps<{ sources: KunNewsSource[] }>()
 
       <div class="flex items-center gap-2">
         <KunAvatar
-          v-if="source.publisher"
-          :user="source.publisher"
+          v-if="source?.forum_account"
+          :user="toKunUser(source.forum_account)"
           size="sm"
           is-navigation
           class-name="shrink-0"
@@ -29,9 +29,9 @@ defineProps<{ sources: KunNewsSource[] }>()
           underline="hover"
           class-name="font-medium"
         >
-          {{ source.name }}
+          {{ source.display_name }}
         </KunLink>
-        <span v-else class="font-medium">{{ source.name }}</span>
+        <span v-else class="font-medium">{{ source.display_name }}</span>
       </div>
 
       <p v-if="source.attribution" class="text-default-400 text-xs leading-5">

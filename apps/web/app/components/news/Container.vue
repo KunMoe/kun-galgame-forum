@@ -11,7 +11,6 @@ const {
   filters,
   items,
   groups,
-  sources,
   total,
   status,
   error,
@@ -21,24 +20,27 @@ const {
   sentinel
 } = await useNewsFeed({ limit: 20, maxAutoLoads: 8, lane, source, year, month })
 
-const { data: directory } = await useKunFetch<KunNewsSource[]>(
-  '/news/sources',
-  {
-    method: 'GET'
-  }
-)
+const { directory: partners } = await useNewsSources()
 
-// The directory read is the authority on which partners exist. The feed's own
-// sources map only names the partners on the page you happen to have loaded, so
-// building the filter from it drops whichever partner has not published lately.
-const partners = computed(() =>
-  directory.value?.length ? directory.value : Object.values(sources.value)
+const { data: archive } = await useApi(
+  () =>
+    `news-archive:${filters.lane.value ?? ''}:${filters.source.value ?? ''}:${filters.year.value ?? 0}`,
+  (api, { signal }) =>
+    api.GET('/news-archive', {
+      params: {
+        query: {
+          ...(filters.lane.value
+            ? { lane: filters.lane.value as KunNewsItem['lane'] }
+            : {}),
+          ...(filters.source.value
+            ? { news_source: filters.source.value }
+            : {}),
+          ...(filters.year.value ? { year: filters.year.value } : {})
+        }
+      },
+      signal
+    })
 )
-
-const { data: archive } = await useKunFetch<KunNewsArchive>('/news/archive', {
-  method: 'GET',
-  query: { lane: filters.lane, source: filters.source, year: filters.year }
-})
 
 const isEmpty = computed(
   () => status.value !== 'pending' && !items.value.length
