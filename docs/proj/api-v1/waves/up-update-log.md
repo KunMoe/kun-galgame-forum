@@ -230,3 +230,37 @@
 | 12 | 更新日志写面不查权限 | 普通用户 `POST` / `PATCH` / `DELETE` → 403 |
 | 13 | 写面不按 OAuth 当前记录判封禁 | 会话里未封禁、OAuth 里已封禁的用户建待办 → 403 `ACCOUNT_BANNED` |
 | 14 | `viewer.can_release` 算成「认领者 或 `update_log.edit`」 | 等价性测试：每个 (调用者, 状态) 组合下 `viewer.can_*` 为真 ⇔ 对应 `PATCH` 成功 |
+
+## 8. 实现与验收（2026-09-23，只增不改）
+
+契约没有改动。实现时补的几件事：
+
+1. **`useCursorList` 多了只读的 `total`**：取最近一页带回来的 `total`，后续页不带就保留上一次的值；两条 vitest 钉住。`GET /todos` 是全站第一个真的用 `include_total` 的集合（`collect.Total` 早就在，一直没有消费者）。
+2. **更新日志的 `PATCH` 空对象**同待办：权限照判，行不存在仍是 404，存在则 200 不写。
+3. 旧的 `canEndClaimedTodo` 单测随 handler 一起删了；它测的规则现在由 `TestV1TodoTransitions` 与 `TestV1TodoViewerMatchesTheGates` 覆盖。
+
+### 8.1 变异（14 条 + 9 拆成两个集合，15 次全杀）
+
+| # | 红的测试 |
+|---|---|
+| 1 | `TestV1TodoTransitions`：普通用户认领 → 200 |
+| 2 | `TestV1TodoTransitions`：认领后 `claimer` 为 `null` |
+| 3 | `TestV1TodoTransitionIsGuarded`：`moved=true` |
+| 4 | `TestV1TodoTransitions`：非认领者的 admin 放弃 → 200 |
+| 5 | `TestV1TodoTransitions`：放弃后 `claimer` 仍是认领者 |
+| 6 | `TestV1TodoTransitions`：版主重新启用 → 200 |
+| 7 | `TestV1TodoTransitions`：`done → pending` → 200 |
+| 8 | `TestV1TodoEdit`：版主改别人的待办 → 200 |
+| 9a / 9b | `TestV1UpdateLogsWalk` / `TestV1TodosWalk`：去掉 `id` 后翻页重复 `…510` / `…620`、漏掉 5 行 |
+| 10 | `TestV1TodosTotalAndFilter`：`total 13, want 3` |
+| 11 | `TestV1TodoTrustCheck`：拒绝型 checker 下建成 201 |
+| 12 | `TestV1UpdateLogWritesNeedTheirPermissions`：普通用户与 Bearer 版主建成 201 |
+| 13 | `TestV1TodoCreate`：OAuth 里已封禁的会话用户建成 201 |
+| 14 | `TestV1TodoViewerMatchesTheGates`：admin / 版主在非本人认领的待办上 `can_release=true` 而 `PATCH` 回 403 |
+
+### 8.2 浏览器（开发栈，本 worktree 的 API 打本轨临时库，真 OAuth 水合）
+
+- 匿名 / 普通用户（发起者）/ 版主（认领者）/ admin 四种身份下，看板每张卡的按钮与 §3.2 的表逐条一致：发起者只有「编辑 / 废弃」，认领者多「放弃」，admin 在已废弃上有「重新启用」而在别人认领的待办上没有「放弃」。
+- 实点：普通用户新建（多行）→ 编辑 → 废弃；版主认领（显示「已被 ユキン 认领」）→ 放弃 → 完成另一条 → 筛「已完成」显示「共 2 项」；admin 重新启用 → 删除（确认框）。更新日志：25+3 条时首屏 20 条，「加载更多」到 28 条后按钮消失；新建 → 编辑 → 删除。
+- 首页「站务」动态的待办卡仍按整数状态显示「待处理 / 进行中 / 已完成 / 已废弃」。
+- 控制台只有两条与本轨无关的：`/api/v1/me/preferences` 503（测试会话的 OAuth 令牌是假的）与顶栏头像的水合不一致（`/topic` 同样复现）。

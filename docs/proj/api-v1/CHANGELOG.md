@@ -1,5 +1,19 @@
 # API v1 changelog
 
+## 2026-09-23 (UP update logs and todo board)
+
+Offered:
+
+- `GET /api/v1/update-logs` — cursor-paged changelog, newest first; `GET /api/v1/update-logs/{update_log_id}`
+- `POST` / `PATCH` / `DELETE /api/v1/update-logs…` — staff only (`update_log.create` / `.edit` / `.delete`); never available to a Bearer request
+- `GET /api/v1/todos` — cursor-paged todo board, newest first; `state` filter and `include_total`; `GET /api/v1/todos/{todo_id}`
+- `POST /api/v1/todos` — any signed-in user; `Idempotency-Key` required; trust-and-safety checked (`CONTENT_REJECTED`)
+- `PATCH /api/v1/todos/{todo_id}` — either edit `project` / `text` (author only) or move `state`: claim, complete, discard, release, reopen. Every allowed move is mirrored by a `viewer.can_*` flag
+- `DELETE /api/v1/todos/{todo_id}` — `update_log.delete`
+
+Field names vs the retired faces: `change_type` (was `type`; tokens `perf` and `style`, were `pref` and `styles`), `release_version` (was `version`), `text` (was `content`, plain text, not Markdown), `project` (was the todo's `type`), `state` `pending` / `in_progress` / `done` / `discarded` (was integer `status` 0–3), `author` / `claimer` (were `user` / `claimed_user`), `completed_at` (was `completed_time`, now only set when `done`).
+
+Retired: every `/api/update/**` route (`history` GET/POST/PUT/DELETE, `todo` GET/POST/PUT/DELETE, `todo/claim`, `todo/complete`, `todo/discard`).
 ## 2026-09-23 (U2 users)
 
 Breaking for `GET /api/user/:id`, `GET /api/user/:id/floating`, and `GET`/`PUT /api/user/notification-preferences`.

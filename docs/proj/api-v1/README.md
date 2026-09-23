@@ -76,6 +76,7 @@ git ls-remote --heads origin 'api-v1/*'
 | U2 | 公开资料、批量用户引用、通知偏好（4 条旧路由 → `/users/{user_id}`、`/users?ids=`、`/me/notification-preferences`，[契约](waves/u2-users.md)，无迁移，PR #189） | ✅ 2026-09-23 |
 | M | 消息：通知 + 私信 11 条旧路由 → `/api/v1/me/notifications*`、`/api/v1/me/conversations*` 12 个操作；系统公告（0 行、无写入方）直接删除（[契约](waves/m-message.md)，迁移 130，PR #184） | ✅ 2026-09-23 |
 | T | 话题轨收尾：T1 旧评论/投票 10 条 → T2 草稿 + 互动 + 定位 7 条（迁移 110，PR #179）→ T3 抽奖 11 条，萌萌点奖池改由发起人出资（[契约](waves/t3-lottery.md)，迁移 111，PR #182）→ T4 管理面 3 条，第一个页码集合 `collect.PageNumber` + `repr.PageList`（[契约](waves/t4-admin-topics.md)，无迁移，PR #185） | ✅ 2026-09-23 |
+| UP | 更新日志与待办看板：11 条 `/api/update/**` → `/api/v1/update-logs*`、`/api/v1/todos*` 10 个操作；待办的认领/完成/废弃/放弃/重新启用收成一个 `PATCH {state}`（[契约](waves/up-update-log.md)，迁移 170） | ✅ 2026-09-23 |
 
 ### 待认领
 
@@ -89,7 +90,6 @@ git ls-remote --heads origin 'api-v1/*'
 | G | galgame 主域 + `-edit` + `-quiz` + `-resource` + `toolset` + 各自的 admin/user 面（**不含** `/galgame/:gid/comments*` 与 `/galgame/comments/*`，已归 RC） | 85 | 140–159 | 最大的一坨，**一个 owner**，内部自己切 3–4 个 PR 串行 |
 | GE | galgame 实体六件套 `-character` `-engine` `-official` `-series` `-staff` `-tag` | 18 | 160–164 | 共用 `EntityHandler`，必须同一轨 |
 | D | 文档 `/doc` + `/website-tag` + `/website-category` | 26 | 165–169 | 共用 `TagHandler` / `CategoryHandler` |
-| UP | 更新日志 `/update/**` | 11 | 170–174 | |
 | WS | 站点 `/website` + `/website-tag-group` | 11 | 175–179 | |
 | TS | 举报与信任 `/report` `/trust` + `/admin/trust*` | 7 | 180–184 | |
 | P | 权限 `/perm` + `/admin` 的权限面 | 7 | 185–189 | |
