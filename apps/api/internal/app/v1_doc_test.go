@@ -365,3 +365,15 @@ func TestV1DocEditedAtIsUTCSeconds(t *testing.T) {
 		t.Errorf("edited_at %q: %v", at, err)
 	}
 }
+
+func TestV1DocGetIsUnavailableWhenAccountsAre(t *testing.T) {
+	f := newDocFix(t)
+	f.failOA.Store(true)
+	resp, body := f.docCall(t, http.MethodGet, "/api/v1/docs/"+docSlug(docSeedMin), "/docs/{doc_slug}", "", "", nil, nil)
+	if resp.StatusCode != http.StatusServiceUnavailable || body["code"] != "SERVICE_UNAVAILABLE" {
+		t.Errorf("accounts down: %d %+v", resp.StatusCode, body)
+	}
+	if resp, body := f.listDocs(t, url.Values{}); resp.StatusCode != http.StatusOK {
+		t.Errorf("the list needs no accounts: %d %+v", resp.StatusCode, body)
+	}
+}
