@@ -63,16 +63,6 @@ func ParseAndValidate(c fiber.Ctx, dst any) *errors.AppError {
 	return nil
 }
 
-func ParseQueryAndValidate(c fiber.Ctx, dst any) *errors.AppError {
-	if err := c.Bind().Query(dst); err != nil {
-		return errors.ErrBadRequest("查询参数格式错误")
-	}
-	if err := validate.Struct(dst); err != nil {
-		return errors.ErrValidation(translateValidationErrors(err))
-	}
-	return nil
-}
-
 func translateValidationErrors(err error) string {
 	validationErrors, ok := err.(validator.ValidationErrors)
 	if !ok {

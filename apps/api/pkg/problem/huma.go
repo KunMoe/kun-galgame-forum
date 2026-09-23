@@ -34,6 +34,7 @@ func FromHuma(ctx huma.Context, status int, msg string, errs ...error) *Problem 
 		fields = append(fields, fieldFromHuma(err))
 	}
 
+	fields = dropImpliedLengthErrors(fields)
 	code := pickCode(ctx, status, msg, fields)
 	detail := msg
 	var cause error
@@ -52,6 +53,29 @@ func FromHuma(ctx huma.Context, status int, msg string, errs ...error) *Problem 
 	p.Instance = instance
 	p.cause = cause
 	return p
+}
+
+// An enum's maxLength is its longest key, so an unknown token longer than that
+// ("windows" against the three-letter platform keys) also failed maxLength, and
+// the extra TOO_LONG turned UNKNOWN_ENUM_VALUE into INVALID_PARAMETER.
+func dropImpliedLengthErrors(fields []FieldError) []FieldError {
+	unknown := map[string]bool{}
+	for _, f := range fields {
+		if f.Parameter != nil && f.Reason == ReasonUnknownValue {
+			unknown[*f.Parameter] = true
+		}
+	}
+	if len(unknown) == 0 {
+		return fields
+	}
+	out := fields[:0:0]
+	for _, f := range fields {
+		if f.Parameter != nil && unknown[*f.Parameter] && (f.Reason == ReasonTooLong || f.Reason == ReasonTooShort) {
+			continue
+		}
+		out = append(out, f)
+	}
+	return out
 }
 
 func pickCode(ctx huma.Context, status int, msg string, fields []FieldError) string {

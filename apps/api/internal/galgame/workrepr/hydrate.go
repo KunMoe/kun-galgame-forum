@@ -2,6 +2,7 @@ package workrepr
 
 import (
 	"context"
+	"log/slog"
 
 	"kun-galgame-api/internal/apiv1/repr"
 	"kun-galgame-api/internal/galgame/client"
@@ -57,9 +58,16 @@ func (h *Hydrator) ByIDs(ctx context.Context, ids []int, includeNSFW bool) ([]Wo
 	}
 	rows := make([]client.CatalogWorkListItem, 0, len(ids))
 	for _, id := range ids {
-		if row, ok := byID[id]; ok {
-			rows = append(rows, row)
+		row, ok := byID[id]
+		if !ok {
+			slog.Warn("workrepr: catalog did not render work, dropped", "work_id", id, "include_nsfw", includeNSFW)
+			continue
 		}
+		if !client.CatalogItemRenderable(&row) {
+			slog.Warn("workrepr: catalog row not renderable, dropped", "work_id", id, "include_nsfw", includeNSFW)
+			continue
+		}
+		rows = append(rows, row)
 	}
 	return h.FromRows(ctx, rows)
 }

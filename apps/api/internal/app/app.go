@@ -14,6 +14,7 @@ import (
 	communitynotify "kun-galgame-api/internal/community/notify"
 	communitytrust "kun-galgame-api/internal/community/trust"
 	galgameapiv1 "kun-galgame-api/internal/galgame/apiv1"
+	calendarapiv1 "kun-galgame-api/internal/galgame/calendarapiv1"
 	"kun-galgame-api/internal/galgame/client"
 	galgameentityv1 "kun-galgame-api/internal/galgame/entityapiv1"
 	galgameHandler "kun-galgame-api/internal/galgame/handler"
@@ -37,12 +38,8 @@ import (
 	quizapiv1 "kun-galgame-api/internal/quiz/apiv1"
 	rankingapiv1 "kun-galgame-api/internal/ranking/apiv1"
 	rankingRepo "kun-galgame-api/internal/ranking/repository"
-	rssHandler "kun-galgame-api/internal/rss/handler"
-	rssRepo "kun-galgame-api/internal/rss/repository"
 	searchapiv1 "kun-galgame-api/internal/search/apiv1"
-	searchHandler "kun-galgame-api/internal/search/handler"
 	searchRepo "kun-galgame-api/internal/search/repository"
-	searchService "kun-galgame-api/internal/search/service"
 	topicapiv1 "kun-galgame-api/internal/topic/apiv1"
 	topicRepo "kun-galgame-api/internal/topic/repository"
 	topicService "kun-galgame-api/internal/topic/service"
@@ -98,6 +95,7 @@ type App struct {
 	ImageMeta          func(hashes []string) map[string]imageclient.ImageMeta
 	GalgameV1          *galgameapiv1.Service
 	GalgameEntityV1    *galgameentityv1.Service
+	GalgameCalendarV1  *calendarapiv1.Service
 	GalgameRatingV1    *ratingapiv1.Service
 	QuizCatalog        quizapiv1.Catalog
 	ResourceCatalog    resourceapiv1.Catalog
@@ -117,18 +115,14 @@ type App struct {
 	LotteryService            *topicService.LotteryService
 	AdminPurgeHandler         *adminHandler.PurgeHandler
 	TrustHandler              *trustHandler.TrustHandler
-	RSSHandler                *rssHandler.RSSHandler
 	NewsV1                    *newsapiv1.Service
-	GalgameHandler            *galgameHandler.GalgameHandler
 	GalgameCollectionHandler  *galgameHandler.GalgameCollectionHandler
-	GalgameCalendarHandler    *galgameHandler.CalendarHandler
 	GalgameSubmissionHandler  *galgameHandler.SubmissionHandler
 	GalgameClaimReviewHandler *galgameHandler.ClaimReviewHandler
 	GalgameEditHandler        *galgameHandler.EditHandler
 	GalgameCoverVoteHandler   *galgameHandler.CoverVoteHandler
 	GalgamePlaytimeHandler    *galgameHandler.PlaytimeHandler
 	ImagesV1                  *imageapiv1.Service
-	SearchHandler             *searchHandler.SearchHandler
 	Artifact                  *artifactclient.Client
 	FileStorage               *storage.S3Client
 	CronStop                  func()
@@ -404,9 +398,6 @@ func New(cfg *config.Config) *App {
 	galgameListRepo := galgameRepo.NewGalgameListRepository(db)
 	galgameResourceMetaRepo := galgameRepo.NewGalgameResourceMetaRepository(db)
 	galgameContributorRepo := galgameRepo.NewGalgameContributorRepository(db)
-	galgameEnricher := galgameService.NewGalgameEnricher(
-		galgameLocalRepo, galgameResourceMetaRepo, galgameListRepo, uc,
-	)
 	galgameCoreSvc := galgameService.NewGalgameService(
 		galgameLocalRepo, galgameListRepo,
 		galgameResourceMetaRepo, galgameContributorRepo,
@@ -414,8 +405,6 @@ func New(cfg *config.Config) *App {
 	)
 	galgameCollectionRepo := galgameRepo.NewGalgameCollectionRepository(db)
 	galgameCollectionSvc := galgameService.NewCollectionService(galgameCollectionRepo, galgameCoreSvc, gc, uc, catalogCli, trustCheck, trustScan, rdb)
-	galgameTagSvc := galgameService.NewTagService(gc, galgameEnricher, galgameCoreSvc)
-	galgameCalendarSvc := galgameService.NewCalendarService(gc, galgameEnricher)
 	galgameSubmissionSvc := galgameService.NewSubmissionService(gc, catalogCli, galgameLocalRepo)
 	galgameClaimReviewSvc := galgameService.NewClaimReviewService(gc, catalogCli)
 	galgamePlaytimeSvc := galgameService.NewPlaytimeService(galgameCoreSvc, gc, catalogCli, cfg.OAuth.ClientID)
@@ -480,22 +469,23 @@ func New(cfg *config.Config) *App {
 
 	app := &App{
 		DB: db, Redis: rdb, Config: cfg, OAuthClient: oauthClient,
-		UserState:       userStateRepo,
-		TrustCheck:      trustCheck,
-		TrustScan:       trustScan,
-		Notifier:        notifier,
-		Messages:        messageSvc,
-		UserClient:      uc,
-		UserService:     userService,
-		CreatorService:  creatorSvc,
-		Authn:           authn,
-		BearerStance:    bearerStance,
-		ImageMeta:       imageMetaResolve(imageMeta),
-		GalgameV1:       galgameapiv1.New(gc, moyuCli, uc, rdb, cfg.NextMoeAPI.ImageCDNBase).WithWork(db, catalogCli, storeLinks, moemoepoint.Award),
-		GalgameEntityV1: galgameentityv1.New(gc, db, cfg.NextMoeAPI.ImageCDNBase),
-		GalgameRatingV1: newRatingV1(db, gc, uc, trustCheck, trustScan, galgamePlaytimeSvc, cfg.NextMoeAPI.ImageCDNBase),
-		QuizCatalog:     gc,
-		ResourceCatalog: gc,
+		UserState:         userStateRepo,
+		TrustCheck:        trustCheck,
+		TrustScan:         trustScan,
+		Notifier:          notifier,
+		Messages:          messageSvc,
+		UserClient:        uc,
+		UserService:       userService,
+		CreatorService:    creatorSvc,
+		Authn:             authn,
+		BearerStance:      bearerStance,
+		ImageMeta:         imageMetaResolve(imageMeta),
+		GalgameV1:         galgameapiv1.New(gc, moyuCli, uc, rdb, cfg.NextMoeAPI.ImageCDNBase).WithWork(db, catalogCli, storeLinks, moemoepoint.Award),
+		GalgameEntityV1:   galgameentityv1.New(gc, db, cfg.NextMoeAPI.ImageCDNBase),
+		GalgameCalendarV1: calendarapiv1.New(gc, db, cfg.NextMoeAPI.ImageCDNBase),
+		GalgameRatingV1:   newRatingV1(db, gc, uc, trustCheck, trustScan, galgamePlaytimeSvc, cfg.NextMoeAPI.ImageCDNBase),
+		QuizCatalog:       gc,
+		ResourceCatalog:   gc,
 		ResourceClaim: func(ctx context.Context, token string, workID int64) *errors.AppError {
 			if catalogCli == nil || !catalogCli.Configured() {
 				return nil
@@ -515,22 +505,16 @@ func New(cfg *config.Config) *App {
 		OverviewV1:                overviewapiv1.New(adminOverviewRepo, nil),
 		AdminPurgeHandler:         adminHandler.NewPurgeHandler(adminPurgeSvc),
 		TrustHandler:              trustHandler.NewTrustHandler(trustEnforce, cfg.Trust.CallbackSecret),
-		RSSHandler:                rssHandler.NewRSSHandler(rssRepo.NewRSSRepository(db), gc, uc),
 		NewsV1:                    newsapiv1.New(newsCli, uc, cfg.NextMoeAPI.ImageCDNBase),
-		GalgameHandler:            galgameHandler.NewGalgameHandler(galgameCoreSvc),
 		GalgameCollectionHandler:  galgameHandler.NewGalgameCollectionHandler(galgameCollectionSvc),
-		GalgameCalendarHandler:    galgameHandler.NewCalendarHandler(galgameCalendarSvc),
 		GalgameSubmissionHandler:  galgameHandler.NewSubmissionHandler(galgameSubmissionSvc),
 		GalgameClaimReviewHandler: galgameHandler.NewClaimReviewHandler(galgameClaimReviewSvc),
 		GalgameEditHandler:        galgameHandler.NewEditHandler(catalogCli, gc, uc, notifier, galgameLocalRepo),
 		GalgameCoverVoteHandler:   galgameHandler.NewCoverVoteHandler(catalogCli, gc),
 		GalgamePlaytimeHandler:    galgameHandler.NewPlaytimeHandler(galgamePlaytimeSvc),
 		ImagesV1:                  imageapiv1.New(imgCli, catalogCli, db, cfg.NextMoeAPI.ImageCDNBase),
-		SearchHandler: searchHandler.NewSearchHandler(searchService.NewSearchService(
-			galgameService.NewEntitySearchService(gc, galgameTagSvc),
-		)),
-		Artifact:    artCli,
-		FileStorage: fileStorageClient,
+		Artifact:                  artCli,
+		FileStorage:               fileStorageClient,
 		CronStop: cronPkg.Start(db, rdb, imgCli, cronPkg.Jobs{
 			GalgameClaimSync:         galgameClaimSync.Run,
 			GalgameRevisionSync:      galgameRevisionSync.Run,

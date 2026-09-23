@@ -73,6 +73,33 @@ func trimQuery(q string) string {
 	return strings.TrimSpace(q)
 }
 
+func parseEntityIDs(parts []repr.DecimalID) ([]int, *problem.Problem) {
+	out := make([]int, 0, len(parts))
+	for i, part := range parts {
+		id, ok := repr.ParseID(repr.DecimalID(strings.TrimSpace(string(part))))
+		if !ok {
+			return nil, problem.New(problem.CodeInvalidParameter, "ids holds something that is not a positive decimal integer.",
+				problem.AtParameter("ids", problem.ReasonInvalidFormat,
+					"every id must be a positive decimal integer; item "+strconv.Itoa(i)+" is not", nil))
+		}
+		out = append(out, id)
+	}
+	return out, nil
+}
+
+func uniqueIDs(ids []int) []int {
+	seen := map[int]bool{}
+	out := make([]int, 0, len(ids))
+	for _, id := range ids {
+		if seen[id] {
+			continue
+		}
+		seen[id] = true
+		out = append(out, id)
+	}
+	return out
+}
+
 // nameMatches is the substring search the in-memory indexes answer: every name
 // the reader might type, case-folded.
 func nameMatches(q string, name repr.CatalogName, extra ...string) bool {

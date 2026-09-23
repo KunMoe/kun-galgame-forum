@@ -70,17 +70,18 @@ type pendingAward struct {
 }
 
 type Service struct {
-	works      workCatalog
-	moyu       *moyuclient.Client
-	users      userLookup
-	rdb        *redis.Client
-	cdn        string
-	store      *repository.WorkV1Store
-	hydrator   *workrepr.Hydrator
-	lists      *repository.GalgameListRepository
-	catalog    CatalogUser
-	storeLinks *storelink.Resolver
-	award      AwardFunc
+	works           workCatalog
+	moyu            *moyuclient.Client
+	users           userLookup
+	rdb             *redis.Client
+	cdn             string
+	store           *repository.WorkV1Store
+	hydrator        *workrepr.Hydrator
+	lists           *repository.GalgameListRepository
+	collectedMonths func(bool) ([]repository.CollectedMonth, error)
+	catalog         CatalogUser
+	storeLinks      *storelink.Resolver
+	award           AwardFunc
 }
 
 func New(works workCatalog, moyu *moyuclient.Client, users userLookup, rdb *redis.Client, cdn string) *Service {
@@ -92,6 +93,7 @@ func (s *Service) WithWork(db *gorm.DB, catalog CatalogUser, storeLinks *storeli
 		s.store = repository.NewWorkV1Store(db)
 		s.hydrator = workrepr.NewHydrator(s.works, db, s.cdn)
 		s.lists = repository.NewGalgameListRepository(db)
+		s.collectedMonths = s.lists.ListCollectedCalendar
 	}
 	s.catalog = catalog
 	s.storeLinks = storeLinks

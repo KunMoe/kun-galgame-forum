@@ -9,6 +9,7 @@ import (
 	docapiv1 "kun-galgame-api/internal/doc/apiv1"
 	friendlinkapiv1 "kun-galgame-api/internal/friendlink/apiv1"
 	galgameapiv1 "kun-galgame-api/internal/galgame/apiv1"
+	calendarapiv1 "kun-galgame-api/internal/galgame/calendarapiv1"
 	galgameentityv1 "kun-galgame-api/internal/galgame/entityapiv1"
 	ratingapiv1 "kun-galgame-api/internal/galgame/ratingapiv1"
 	resourceapiv1 "kun-galgame-api/internal/galgame/resourceapiv1"
@@ -61,6 +62,7 @@ func (a *App) setupRoutes() {
 		galgameapiv1.Register(a.GalgameV1),
 		resourceapiv1.Register(a.newGalgameResourceV1()),
 		galgameentityv1.Register(a.GalgameEntityV1),
+		calendarapiv1.Register(a.GalgameCalendarV1),
 		ratingapiv1.Register(a.GalgameRatingV1),
 		wallapiv1.Register(a.WallV1),
 		userapiv1.Register(a.newUserV1()),
@@ -103,12 +105,6 @@ func (a *App) setupRoutes() {
 
 	userAuth := a.Authn.Auth()
 
-	api.Get("/search/entity", a.Authn.OptionalAuth(), a.SearchHandler.SearchEntities)
-	api.Get("/search/entity/resolve", a.Authn.OptionalAuth(), a.SearchHandler.ResolveEntities)
-
-	api.Get("/rss/galgame", a.RSSHandler.GetGalgameRSS)
-
-	api.Get("/galgame", a.GalgameHandler.GetList)
 	// Every literal /galgame/<segment> route must precede /galgame/:id: the
 	// catch-all binds "mine" / "calendar" / "drafts" as a work id and then fails
 	// inside GetDetail with Atoi("mine").
@@ -124,12 +120,6 @@ func (a *App) setupRoutes() {
 		userAuth,
 		a.GalgameSubmissionHandler.SearchWithPending,
 	)
-	api.Get("/galgame/calendar", a.GalgameCalendarHandler.GetMonth)
-	api.Get("/galgame/collected-calendar", a.GalgameHandler.CollectedCalendar)
-	api.Get("/galgame/calendar/today", a.GalgameCalendarHandler.GetToday)
-	api.Get("/galgame/calendar/pending", a.GalgameCalendarHandler.GetPending)
-	api.Get("/galgame/calendar/tba", a.GalgameCalendarHandler.GetTBA)
-	api.Get("/galgame/calendar/upcoming", a.GalgameCalendarHandler.GetUpcoming)
 	api.Get("/galgame/:id/edit/diff", a.GalgameEditHandler.Diff)
 	api.Get("/galgame/:id/edit/proposals", a.GalgameEditHandler.GameProposals)
 

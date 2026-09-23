@@ -642,3 +642,22 @@ func TestFromHumaUnauthorizedSplitsOnAuthorizationHeader(t *testing.T) {
 		t.Fatalf("with Authorization: %s, want %s", got, CodeInvalidCredential)
 	}
 }
+
+func TestUnknownEnumTokenLongerThanItsKeysIsStillUnknown(t *testing.T) {
+	param := "resource_platforms[0]"
+	fields := dropImpliedLengthErrors([]FieldError{
+		{Parameter: &param, Reason: ReasonTooLong},
+		{Parameter: &param, Reason: ReasonUnknownValue},
+	})
+	if len(fields) != 1 || fields[0].Reason != ReasonUnknownValue {
+		t.Fatalf("fields %+v", fields)
+	}
+	if code := pickCode(nil, http.StatusBadRequest, "", fields); code != CodeUnknownEnumValue {
+		t.Fatalf("code %s, want %s", code, CodeUnknownEnumValue)
+	}
+	other := "q"
+	kept := dropImpliedLengthErrors([]FieldError{{Parameter: &other, Reason: ReasonTooLong}, {Parameter: &param, Reason: ReasonUnknownValue}})
+	if len(kept) != 2 {
+		t.Fatalf("a length error on another parameter must stay: %+v", kept)
+	}
+}

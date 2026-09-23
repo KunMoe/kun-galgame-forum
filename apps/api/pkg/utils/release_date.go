@@ -3,7 +3,6 @@ package utils
 import (
 	"fmt"
 	"regexp"
-	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -71,34 +70,6 @@ func validMonth(mm string) error {
 		return fmt.Errorf("非法的月份 %q（应为 01-12）", mm)
 	}
 	return nil
-}
-
-func ParseMonthSet(s string) ([]int, error) {
-	s = strings.TrimSpace(s)
-	if s == "" {
-		return nil, nil
-	}
-	seen := map[int]bool{}
-	for _, tok := range strings.Split(s, ",") {
-		tok = strings.TrimSpace(tok)
-		if tok == "" {
-			continue
-		}
-		m, err := strconv.Atoi(tok)
-		if err != nil || m < 1 || m > 12 {
-			return nil, fmt.Errorf("非法的月份 %q（应为 1-12 的逗号分隔列表）", tok)
-		}
-		seen[m] = true
-	}
-	if len(seen) == 0 {
-		return nil, nil
-	}
-	out := make([]int, 0, len(seen))
-	for m := range seen {
-		out = append(out, m)
-	}
-	sort.Ints(out)
-	return out, nil
 }
 
 // Catalog sends release_date at whatever precision it knows: "2026", "2026-08"

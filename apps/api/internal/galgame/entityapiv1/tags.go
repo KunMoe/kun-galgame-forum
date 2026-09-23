@@ -78,10 +78,11 @@ func idLess(a, b repr.DecimalID) bool {
 }
 
 type listTagsInput struct {
-	Q           string `query:"q" maxLength:"100" doc:"Name search. Set, the collection is catalog's 100 best name matches in relevance order, hidden and gated tags removed. Free text; never use it as a decision input."`
-	Page        int    `query:"page" minimum:"1" default:"1" doc:"1-based page number. page × limit may not exceed 10000, or 100 when q is set."`
-	Limit       int    `query:"limit" minimum:"1" maximum:"100" default:"100" doc:"Page size. 1–100, default 100. Values above 100 are rejected, not clamped."`
-	IncludeNSFW bool   `query:"include_nsfw" default:"false" doc:"When true, adult tags are included. Default false."`
+	Q           string           `query:"q" maxLength:"100" doc:"Name search. Set, the collection is catalog's 100 best name matches in relevance order, hidden and gated tags removed. Free text; never use it as a decision input. Mutually exclusive with ids."`
+	IDs         []repr.DecimalID `query:"ids" maxItems:"100" doc:"Tag ids to resolve, comma-separated. 1 to 100 of them. Mutually exclusive with q. Absent ids are omitted."`
+	Page        int              `query:"page" minimum:"1" default:"1" doc:"1-based page number. page × limit may not exceed 10000, or 100 when q is set."`
+	Limit       int              `query:"limit" minimum:"1" maximum:"100" default:"100" doc:"Page size. 1–100, default 100. Values above 100 are rejected, not clamped."`
+	IncludeNSFW bool             `query:"include_nsfw" default:"false" doc:"When true, adult tags are included. Default false."`
 }
 
 type listTagsOutput struct {
@@ -93,6 +94,10 @@ func (s *Service) listTags(ctx context.Context, in *listTagsInput) (*listTagsOut
 		return nil, problem.Internal(errUnconfigured)
 	}
 	q := trimQuery(in.Q)
+	if q != "" && len(in.IDs) > 0 {
+		return nil, problem.New(problem.CodeInvalidParameter, "q and ids cannot both be set.",
+			problem.AtParameter("ids", problem.ReasonInconsistentWith, "q", nil))
+	}
 	if prob := checkDepth(in.Page, in.Limit, q != ""); prob != nil {
 		return nil, prob
 	}
@@ -101,14 +106,21 @@ func (s *Service) listTags(ctx context.Context, in *listTagsInput) (*listTagsOut
 		return nil, problem.Unavailable(err)
 	}
 	var rows []TagSummary
-	if q == "" {
+	switch {
+	case len(in.IDs) > 0:
+		found, prob := s.tagsByIDs(ctx, in.IDs, index, in.IncludeNSFW)
+		if prob != nil {
+			return nil, prob
+		}
+		rows = found
+	case q == "":
 		rows = make([]TagSummary, 0, len(index))
 		for _, r := range index {
 			if in.IncludeNSFW || !r.IsSexual {
 				rows = append(rows, r)
 			}
 		}
-	} else {
+	default:
 		found, prob := s.searchTags(ctx, q, index, in.IncludeNSFW)
 		if prob != nil {
 			return nil, prob
@@ -116,6 +128,48 @@ func (s *Service) listTags(ctx context.Context, in *listTagsInput) (*listTagsOut
 		rows = found
 	}
 	return &listTagsOutput{Body: pageList(rows, in.Page, in.Limit)}, nil
+}
+
+func (s *Service) tagsByIDs(ctx context.Context, parts []repr.DecimalID, index []TagSummary, includeNSFW bool) ([]TagSummary, *problem.Problem) {
+	ids, prob := parseEntityIDs(parts)
+	if prob != nil {
+		return nil, prob
+	}
+	ids = uniqueIDs(ids)
+	byID := make(map[repr.DecimalID]TagSummary, len(index))
+	for _, r := range index {
+		byID[r.ID] = r
+	}
+	out := make([]TagSummary, 0, len(ids))
+	for _, id := range ids {
+		if row, ok := byID[repr.ID(id)]; ok {
+			if row.IsSexual && !includeNSFW {
+				continue
+			}
+			out = append(out, row)
+			continue
+		}
+		t, found, appErr := s.catalog.CatalogTag(ctx, strconv.Itoa(id))
+		if appErr != nil {
+			return nil, unavailable(appErr)
+		}
+		if !found || t.Tier == client.TagTierHidden || (t.Sexual && !includeNSFW) {
+			continue
+		}
+		if !tagKinds[t.Kind] {
+			slog.Warn("list tags ids: unknown tag_kind, row dropped", "tag_id", t.ID, "tag_kind", t.Kind)
+			continue
+		}
+		out = append(out, TagSummary{
+			Object:           "tag",
+			ID:               repr.ID(int(t.ID)),
+			CatalogName:      workrepr.Name(cmp.Or(t.DisplayName, t.Name), "", client.LocalizedValues(t.Localized)),
+			TagKind:          t.Kind,
+			IsSexual:         t.Sexual,
+			CatalogWorkCount: max(t.WorkCount, 0),
+		})
+	}
+	return out, nil
 }
 
 func (s *Service) searchTags(ctx context.Context, q string, index []TagSummary, includeNSFW bool) ([]TagSummary, *problem.Problem) {

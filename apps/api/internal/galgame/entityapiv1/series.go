@@ -151,7 +151,7 @@ func (s *Service) card(ctx context.Context, r seriesRow) SeriesSummary {
 	if len(ids) == 0 {
 		return card
 	}
-	listed, _ := s.lists.ListIDs(model.GalgameListFilter{RestrictIDs: ids, Page: 1, Limit: len(ids), SortOrder: "desc"})
+	listed, _, _ := s.lists.ListIDs(model.GalgameListFilter{RestrictIDs: ids, Page: 1, Limit: len(ids), SortOrder: "desc"})
 	isListed := make(map[int]bool, len(listed))
 	for _, id := range listed {
 		isListed[id] = true

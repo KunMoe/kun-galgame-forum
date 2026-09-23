@@ -48,6 +48,18 @@ var workSorts = func() []workSort {
 
 const defaultWorkSort = "resource_updated_desc"
 
+func WorkSortParts(token string) (field, order string, ok bool) {
+	if token == "" {
+		token = defaultWorkSort
+	}
+	for _, s := range workSorts {
+		if s.Token == token {
+			return s.Field, s.Order, true
+		}
+	}
+	return "", "", false
+}
+
 type WorkSortToken string
 
 func (WorkSortToken) Schema(huma.Registry) *huma.Schema {
@@ -175,7 +187,10 @@ func (s *Service) memberPage(
 	f.RestrictIDs = ids
 	if service.EntityUsesLocalList(f) {
 		f.SFWOnly = !p.IncludeNSFW
-		pageIDs, total := s.lists.ListIDs(f)
+		pageIDs, total, err := s.lists.ListIDs(f)
+		if err != nil {
+			return nil, nil, 0, problem.Internal(err)
+		}
 		return pageIDs, via, int(total), nil
 	}
 	if catalogSort == "" {

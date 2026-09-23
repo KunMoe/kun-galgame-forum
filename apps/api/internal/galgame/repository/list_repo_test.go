@@ -47,14 +47,17 @@ func TestListIDsSFWFilter(t *testing.T) {
 			all,
 		},
 		"the resource-filter lane gates too": {
-			model.GalgameListFilter{SFWOnly: true, Platform: "windows"},
+			model.GalgameListFilter{SFWOnly: true, Type: "game"},
 			[]int{unsynced, safe},
 		},
 	} {
 		t.Run(name, func(t *testing.T) {
 			f := tc.filter
 			f.RestrictIDs, f.Page, f.Limit, f.SortOrder = all, 1, 10, "desc"
-			ids, total := repo.ListIDs(f)
+			ids, total, err := repo.ListIDs(f)
+			if err != nil {
+				t.Fatalf("ListIDs: %v", err)
+			}
 			if total != int64(len(tc.want)) {
 				t.Errorf("total = %d, want %d — the pager counts what the reader can reach", total, len(tc.want))
 			}
@@ -219,7 +222,7 @@ func TestListIDsCollectedFilter(t *testing.T) {
 		},
 		"the resource-filter lane filters too": {
 			model.GalgameListFilter{
-				CollectedFrom: "2025-01-01", CollectedTo: "2025-12-31", Platform: "windows",
+				CollectedFrom: "2025-01-01", CollectedTo: "2025-12-31", Type: "game",
 			},
 			[]int{newYear, midYear, lastDay},
 		},
@@ -227,7 +230,10 @@ func TestListIDsCollectedFilter(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			f := tc.filter
 			f.RestrictIDs, f.Page, f.Limit, f.SortOrder = all, 1, 10, "desc"
-			ids, total := repo.ListIDs(f)
+			ids, total, err := repo.ListIDs(f)
+			if err != nil {
+				t.Fatalf("ListIDs: %v", err)
+			}
 			if total != int64(len(tc.want)) {
 				t.Errorf("total = %d, want %d", total, len(tc.want))
 			}
@@ -270,10 +276,18 @@ func TestCollectedCalendarHonoursTheReadersGate(t *testing.T) {
 		}
 		return false
 	}
-	if !holds(repo.ListCollectedCalendar(false)) {
+	adultRows, err := repo.ListCollectedCalendar(false)
+	if err != nil {
+		t.Fatalf("ListCollectedCalendar(false): %v", err)
+	}
+	if !holds(adultRows) {
 		t.Error("an adult reader was not offered the only month with an adult entry")
 	}
-	if holds(repo.ListCollectedCalendar(true)) {
+	sfwRows, err := repo.ListCollectedCalendar(true)
+	if err != nil {
+		t.Fatalf("ListCollectedCalendar(true): %v", err)
+	}
+	if holds(sfwRows) {
 		t.Error("a SFW reader was offered a month whose only entry the list will hide")
 	}
 }

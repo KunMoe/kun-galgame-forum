@@ -30,9 +30,10 @@ func Register(s *Service) func(huma.API) {
 	return func(api huma.API) {
 		tags := []string{"galgame-tags"}
 		huma.Register(api, op("listTags", "/tags", "List galgame tags",
-			"Without q: every visible tag catalog files works under, most works first, ties broken by ascending id. "+
-				"Hidden tags never appear; adult tags only with include_nsfw=true. A page-number collection.",
-			tags, map[int]string{400: "INVALID_PARAMETER when page × limit is too deep.", 503: unavailableMsg}), s.listTags)
+			"Without q or ids: every visible tag catalog files works under, most works first, ties broken by ascending id. "+
+				"ids resolves the named tags in request order; absent or invisible ids are omitted. "+
+				"q and ids cannot both be set. Hidden tags never appear; adult tags only with include_nsfw=true. A page-number collection.",
+			tags, map[int]string{400: "INVALID_PARAMETER when page × limit is too deep, q and ids are both set, or ids is malformed or longer than 100.", 503: unavailableMsg}), s.listTags)
 		huma.Register(api, op("getTag", "/tags/{tag_id}", "Get a galgame tag",
 			"An adult tag is NOT_FOUND unless include_nsfw=true, the same answer as a tag that does not exist.",
 			tags, map[int]string{404: notFoundDesc, 503: unavailableMsg}), s.getTag)
@@ -45,8 +46,9 @@ func Register(s *Service) func(huma.API) {
 
 		companies := []string{"galgame-companies"}
 		huma.Register(api, op("listCompanies", "/companies", "List galgame companies",
-			"Without q: every company catalog files works under, most works first, ties broken by ascending id. A page-number collection.",
-			companies, map[int]string{400: "INVALID_PARAMETER when page × limit is too deep.", 503: unavailableMsg}), s.listCompanies)
+			"Without q or ids: every company catalog files works under, most works first, ties broken by ascending id. "+
+				"ids resolves the named companies in request order; absent ids are omitted. q and ids cannot both be set. A page-number collection.",
+			companies, map[int]string{400: "INVALID_PARAMETER when page × limit is too deep, q and ids are both set, or ids is malformed or longer than 100.", 503: unavailableMsg}), s.listCompanies)
 		huma.Register(api, op("getCompany", "/companies/{company_id}", "Get a galgame company", "",
 			companies, map[int]string{404: notFoundDesc + " " + mergedDesc, 503: unavailableMsg}), s.getCompany)
 		huma.Register(api, op("listCompanyWorks", "/companies/{company_id}/works", "List a company's works",

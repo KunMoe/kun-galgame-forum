@@ -325,6 +325,15 @@ query：`include_nsfw`（默认 false）。人口与 `/works` 默认相同：`pu
 
 仍然有意丢掉、且打 WARN 的：catalog 不可渲染 / hidden 的作品行（列表与月历）、月历触帽截断、水合时 id 缺席。未映射的资源轴键按词表顺序忽略（WorkSummary 已有的 `inVocabOrder`）。
 
+### 3.14 实现时的修正（2026-09-24，以此为准）
+
+| 前文 | 实际 | 为什么 |
+|---|---|---|
+| 月历三个信封的 `today` | `today_date` | F1：`format: date` 的字段名必须以 `_date` 结尾 |
+| upcoming 逐月串行（实现初稿） | 并发 8（旧 `upcomingConcurrency`），任一月失败整段 503 不变 | 24 个月 × 每月最多 5 页串行是旧面的数倍延迟 |
+| 数组查询参数里超长的未知词（`resource_platforms=windows`） | `400 UNKNOWN_ENUM_VALUE` | huma 对它同时报 `TOO_LONG`（枚举的 maxLength 取最长键）与 `UNKNOWN_VALUE`，多出的 `TOO_LONG` 让码落成 `INVALID_PARAMETER`。`pkg/problem` 现在丢掉同一参数上被 `UNKNOWN_VALUE` 蕴含的长度错误——全 v1 生效，不止本轨 |
+| 网盘词表两份（`list_repo.go` 与 `workrepr`） | 一份：`resourcevocab.ProviderKeys` | 两处各自维护会漂 |
+
 ## 4. 逐条操作
 
 通用：本轨全部 public，不看凭证。会话存储出错仍是 `503`（K3 不把 Redis 故障当匿名，但本轨不读身份）。500 `INTERNAL_ERROR`、503 `SERVICE_UNAVAILABLE`（catalog）。v1 全部 `Cache-Control: no-store`。每个 401（若坏 Bearer 落到本路由——public 不验）仍带 `WWW-Authenticate`。

@@ -706,7 +706,7 @@ export interface paths {
         };
         /**
          * List galgame companies
-         * @description Without q: every company catalog files works under, most works first, ties broken by ascending id. A page-number collection.
+         * @description Without q or ids: every company catalog files works under, most works first, ties broken by ascending id. ids resolves the named companies in request order; absent ids are omitted. q and ids cannot both be set. A page-number collection.
          */
         get: operations["listCompanies"];
         put?: never;
@@ -1094,6 +1094,26 @@ export interface paths {
          * @description Stores an image on the image host for use on this site. purpose is content for anything published here (topic bodies and covers, banners, icons, prizes) and message for private messages. Each user may upload 50 images per day, Asia/Shanghai; a failed upload does not count. sexual is null for a new image until the nightly grader has seen it. file's part must be image/* and at most 10 MiB. Location is the image URL. Persist the hash, never the URL. An Idempotency-Key retry must resend the same bytes: the multipart boundary is part of the fingerprint, so a rebuilt form conflicts.
          */
         post: operations["createImage"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/library-works": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List works from the catalog library
+         * @description A page-number collection from catalog's work search population. Default sort is popularity_desc, default limit 24. q is optional. Forum resource-axis, host, collection-date and rating filters are not parameters of this collection. An id catalog does not render is dropped with a warning, so a page may be shorter than limit; total still counts catalog's population.
+         */
+        get: operations["listLibraryWorks"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -2356,6 +2376,106 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/release-calendar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List releases in a month
+         * @description Walks catalog's cursor for the month, at most 2,000 works. is_truncated is true when the cap is hit. An id catalog does not render is dropped with a warning.
+         */
+        get: operations["listReleaseCalendarMonth"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/release-calendar/pending": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List pending releases in a year
+         * @description Works whose release date is known only to year precision. The walk follows catalog's cursor, at most 2,000 works.
+         */
+        get: operations["listReleaseCalendarPending"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/release-calendar/tba": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List works with an unknown release date
+         * @description Works catalog files as status unknown. The walk follows catalog's cursor, at most 2,000 works.
+         */
+        get: operations["listReleaseCalendarTBA"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/release-calendar/today": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Whether a work releases today
+         * @description Computes has_release on the walked current month in Asia/Tokyo. A day-precise release_date equal to today counts; a month- or year-precise date does not.
+         */
+        get: operations["getReleaseCalendarToday"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/release-calendar/upcoming": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List upcoming releases by month
+         * @description Walks from the current Asia/Tokyo month to catalog's max_month, at most 24 months. A failed month is SERVICE_UNAVAILABLE for the whole response. Empty months are omitted.
+         */
+        get: operations["listReleaseCalendarUpcoming"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/replies/{reply_id}": {
         parameters: {
             query?: never;
@@ -2734,7 +2854,7 @@ export interface paths {
         };
         /**
          * List galgame tags
-         * @description Without q: every visible tag catalog files works under, most works first, ties broken by ascending id. Hidden tags never appear; adult tags only with include_nsfw=true. A page-number collection.
+         * @description Without q or ids: every visible tag catalog files works under, most works first, ties broken by ascending id. ids resolves the named tags in request order; absent or invisible ids are omitted. q and ids cannot both be set. Hidden tags never appear; adult tags only with include_nsfw=true. A page-number collection.
          */
         get: operations["listTags"];
         put?: never;
@@ -3953,6 +4073,46 @@ export interface paths {
          * @description Searches catalog works by free text and returns at most 12 WorkRef values. Not paginated. include_nsfw=false applies the SFW content_limit gate. Hidden claims are omitted.
          */
         get: operations["listWorkSuggestions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/works": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List works on the forum
+         * @description A page-number collection of published forum works. Default sort is resource_updated_desc, default limit 24. NSFW works are excluded before paging unless include_nsfw=true; a work whose content_limit has not been synced yet is included either way. Default pages require at least one forum resource; include_resourceless=true lists every published work. An id catalog does not render is dropped with a warning, so a page may be shorter than limit; total still counts the SQL population.
+         */
+        get: operations["listWorks"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/works/collected-months": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List months that have collected works
+         * @description Months in which the forum first listed a published work that has a resource, under the same population as GET /works with its default filters. Years descend, months inside a year ascend. A query or scan failure is INTERNAL_ERROR, never an empty list.
+         */
+        get: operations["listWorkCollectedMonths"];
         put?: never;
         post?: never;
         delete?: never;
@@ -9031,6 +9191,124 @@ export interface components {
             /** @description Whether the caller reacted with this token. */
             has_reacted: boolean;
         };
+        ReleaseCalendarMonth: {
+            /** @description The month window as YYYY-MM. */
+            calendar_month: string;
+            /** @description Whether catalog reports a later month of releases. */
+            has_next: boolean;
+            /** @description Whether catalog reports a previous month of releases. */
+            has_prev: boolean;
+            /** @description Whether the walk stopped at the 2,000-work cap. */
+            is_truncated: boolean;
+            /**
+             * Format: int64
+             * @description Works returned after walking the window. When is_truncated is true this may be less than catalog's total.
+             */
+            item_count: number;
+            /** @description Works released in this window, in catalog's order. Empty array, never null. A page may be shorter than catalog's total when a row cannot be rendered. */
+            items: components["schemas"]["WorkSummary"][];
+            /** @description The latest month that has a release. null when catalog does not say. */
+            max_month: string | null;
+            /** @description The earliest month that has a release. null when catalog does not say. */
+            min_month: string | null;
+            /** @description The next calendar month. null when none. */
+            next_month: string | null;
+            /**
+             * @description Type discriminant. Always release_calendar_month.
+             * @enum {string}
+             */
+            object: "release_calendar_month";
+            /** @description The previous calendar month. null when none. */
+            prev_month: string | null;
+            /**
+             * Format: date
+             * @description Today in Asia/Tokyo, YYYY-MM-DD.
+             */
+            today_date: string;
+        };
+        ReleaseCalendarPending: {
+            /** @description Whether the walk stopped at the 2,000-work cap. */
+            is_truncated: boolean;
+            /**
+             * Format: int64
+             * @description Works returned after walking the window. When is_truncated is true this may be less than catalog's total.
+             */
+            item_count: number;
+            /** @description Works pending a day-precise date in this year. Empty array, never null. */
+            items: components["schemas"]["WorkSummary"][];
+            /**
+             * @description Type discriminant. Always release_calendar_pending.
+             * @enum {string}
+             */
+            object: "release_calendar_pending";
+            /**
+             * Format: int64
+             * @description The year window.
+             */
+            year: number;
+        };
+        ReleaseCalendarTBA: {
+            /** @description Whether the walk stopped at the 2,000-work cap. */
+            is_truncated: boolean;
+            /**
+             * Format: int64
+             * @description Works returned after walking the window. When is_truncated is true this may be less than catalog's total.
+             */
+            item_count: number;
+            /** @description Works with an unknown release date. Empty array, never null. */
+            items: components["schemas"]["WorkSummary"][];
+            /**
+             * @description Type discriminant. Always release_calendar_tba.
+             * @enum {string}
+             */
+            object: "release_calendar_tba";
+        };
+        ReleaseCalendarToday: {
+            /**
+             * Format: int64
+             * @description Whole seconds until the next Asia/Tokyo midnight.
+             */
+            expires_in: number;
+            /** @description Whether a work in the walked current month has a day-precise release_date equal to today. */
+            has_release: boolean;
+            /**
+             * @description Type discriminant. Always release_calendar_today.
+             * @enum {string}
+             */
+            object: "release_calendar_today";
+            /**
+             * Format: date
+             * @description Today in Asia/Tokyo, YYYY-MM-DD.
+             */
+            today_date: string;
+        };
+        ReleaseCalendarUpcoming: {
+            /** @description Months from the current month that have upcoming works. Empty months are omitted. Empty array, never null. */
+            entries: components["schemas"]["ReleaseCalendarUpcomingEntry"][];
+            /**
+             * Format: int64
+             * @description Works across every entry.
+             */
+            item_count: number;
+            /**
+             * @description Type discriminant. Always release_calendar_upcoming.
+             * @enum {string}
+             */
+            object: "release_calendar_upcoming";
+            /**
+             * Format: date
+             * @description Today in Asia/Tokyo, YYYY-MM-DD.
+             */
+            today_date: string;
+        };
+        ReleaseCalendarUpcomingEntry: {
+            /** @description The month window as YYYY-MM. */
+            calendar_month: string;
+            /** @description Whether this month stopped at the 500-work cap. */
+            is_truncated: boolean;
+            /** @description Works in this month that are still upcoming. Empty array, never null. */
+            items: components["schemas"]["WorkSummary"][];
+        };
         Reply: {
             /** @description Reply author. */
             author: components["schemas"]["UserRef"];
@@ -11819,6 +12097,27 @@ export interface components {
             spoiler: "none" | "minor" | "major";
             /** @description Who voices the character. Empty array, never null. */
             voices: components["schemas"]["CreditNameRef"][];
+        };
+        WorkCollectedMonth: {
+            /**
+             * Format: int64
+             * @description Calendar month 1–12.
+             */
+            month: number;
+            /**
+             * Format: int64
+             * @description Calendar year the works were first listed on the forum.
+             */
+            year: number;
+        };
+        WorkCollectedMonths: {
+            /** @description Months that have at least one published work with a forum resource, newest year first then month ascending. Empty array, never null. */
+            items: components["schemas"]["WorkCollectedMonth"][];
+            /**
+             * @description Type discriminant. Always work_collected_months.
+             * @enum {string}
+             */
+            object: "work_collected_months";
         };
         WorkCompany: {
             /** @description Other names it goes by, never its display_name. Empty array, never null. */
@@ -16538,8 +16837,10 @@ export interface operations {
     listCompanies: {
         parameters: {
             query?: {
-                /** @description Name search. Set, the collection is catalog's 100 best name matches in relevance order. Free text; never use it as a decision input. */
+                /** @description Name search. Set, the collection is catalog's 100 best name matches in relevance order. Free text; never use it as a decision input. Mutually exclusive with ids. */
                 q?: string;
+                /** @description Company ids to resolve, comma-separated. 1 to 100 of them. Mutually exclusive with q. Absent ids are omitted. */
+                ids?: string[];
                 /** @description Only companies of this kind. Omitted means every kind. */
                 company_kind?: "game_brand" | "bunko" | "publisher" | "anime_studio" | "doujin_circle" | "group";
                 /** @description 1-based page number. page × limit may not exceed 10000, or 100 when q is set. */
@@ -16562,7 +16863,7 @@ export interface operations {
                     "application/json": components["schemas"]["PageListCompanySummary"];
                 };
             };
-            /** @description INVALID_PARAMETER when page × limit is too deep. */
+            /** @description INVALID_PARAMETER when page × limit is too deep, q and ids are both set, or ids is malformed or longer than 100. */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -18162,6 +18463,68 @@ export interface operations {
                 };
             };
             /** @description SERVICE_UNAVAILABLE when the image host is not configured or cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listLibraryWorks: {
+        parameters: {
+            query?: {
+                /** @description 1-based page number. page × limit may not exceed 10000. */
+                page?: number;
+                /** @description Page size. 1–100, default 24. Values above 100 are rejected, not clamped. */
+                limit?: number;
+                /** @description Search keywords. Omitted means the catalog browse population. Free text; never use it as a decision input. */
+                q?: string;
+                /** @description Order. popularity: catalog popularity. released: release date. updated: last catalog edit. relevance: the search index's ranking. */
+                sort?: "popularity_desc" | "released_desc" | "released_asc" | "updated_desc" | "relevance_desc";
+                /** @description Released in or after this year (YYYY) or month (YYYY-MM). */
+                released_from?: string;
+                /** @description Released in or before this year (YYYY) or month (YYYY-MM). */
+                released_to?: string;
+                /** @description When true, works this forum displays as adult are included. Default false. */
+                include_nsfw?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PageListWorkSummary"];
+                };
+            };
+            /** @description UNKNOWN_SORT, LIMIT_TOO_LARGE, or INVALID_PARAMETER when q is blank after trimming, a date is malformed, or page × limit is too deep. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the catalog cannot be reached. */
             503: {
                 headers: {
                     [name: string]: unknown;
@@ -24782,6 +25145,260 @@ export interface operations {
             };
         };
     };
+    listReleaseCalendarMonth: {
+        parameters: {
+            query?: {
+                /** @description Calendar month as YYYY-MM. Omitted means the current month in Asia/Tokyo. */
+                month?: string;
+                /** @description When true, adult works are included. Default false. */
+                include_nsfw?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReleaseCalendarMonth"];
+                };
+            };
+            /** @description INVALID_PARAMETER when month is malformed. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the catalog cannot be reached, including a failure mid-walk. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listReleaseCalendarPending: {
+        parameters: {
+            query?: {
+                /** @description Calendar year. 0 or omitted means the current year in Asia/Tokyo. */
+                year?: number;
+                /** @description When true, adult works are included. Default false. */
+                include_nsfw?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReleaseCalendarPending"];
+                };
+            };
+            /** @description INVALID_PARAMETER when year is malformed. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the catalog cannot be reached, including a failure mid-walk. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listReleaseCalendarTBA: {
+        parameters: {
+            query?: {
+                /** @description When true, adult works are included. Default false. */
+                include_nsfw?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReleaseCalendarTBA"];
+                };
+            };
+            /** @description INVALID_PARAMETER when include_nsfw is not a boolean. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the catalog cannot be reached, including a failure mid-walk. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getReleaseCalendarToday: {
+        parameters: {
+            query?: {
+                /** @description When true, adult works are included. Default false. */
+                include_nsfw?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReleaseCalendarToday"];
+                };
+            };
+            /** @description INVALID_PARAMETER when include_nsfw is not a boolean. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the catalog cannot be reached, including a failure mid-walk. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listReleaseCalendarUpcoming: {
+        parameters: {
+            query?: {
+                /** @description When true, adult works are included. Default false. */
+                include_nsfw?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReleaseCalendarUpcoming"];
+                };
+            };
+            /** @description INVALID_PARAMETER when include_nsfw is not a boolean. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when any month's catalog walk fails. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     getReply: {
         parameters: {
             query?: never;
@@ -26347,8 +26964,10 @@ export interface operations {
     listTags: {
         parameters: {
             query?: {
-                /** @description Name search. Set, the collection is catalog's 100 best name matches in relevance order, hidden and gated tags removed. Free text; never use it as a decision input. */
+                /** @description Name search. Set, the collection is catalog's 100 best name matches in relevance order, hidden and gated tags removed. Free text; never use it as a decision input. Mutually exclusive with ids. */
                 q?: string;
+                /** @description Tag ids to resolve, comma-separated. 1 to 100 of them. Mutually exclusive with q. Absent ids are omitted. */
+                ids?: string[];
                 /** @description 1-based page number. page × limit may not exceed 10000, or 100 when q is set. */
                 page?: number;
                 /** @description Page size. 1–100, default 100. Values above 100 are rejected, not clamped. */
@@ -26371,7 +26990,7 @@ export interface operations {
                     "application/json": components["schemas"]["PageListTagSummary"];
                 };
             };
-            /** @description INVALID_PARAMETER when page × limit is too deep. */
+            /** @description INVALID_PARAMETER when page × limit is too deep, q and ids are both set, or ids is malformed or longer than 100. */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -33647,6 +34266,133 @@ export interface operations {
             };
             /** @description SERVICE_UNAVAILABLE when catalog cannot be reached. */
             503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listWorks: {
+        parameters: {
+            query?: {
+                /** @description 1-based page number. page × limit may not exceed 10000. */
+                page?: number;
+                /** @description Page size. 1–100, default 24. Values above 100 are rejected, not clamped. */
+                limit?: number;
+                /** @description Sort order. resource_updated: when a resource last changed. created: when the forum page was made. view / view_1d / view_7d / view_30d: page reads, all time or over the last day, 7 or 30 days. release_date: the release date. rating: the bayesian forum rating. Works the forum has no page for rank after every work it has. */
+                sort?: "resource_updated_desc" | "resource_updated_asc" | "created_desc" | "created_asc" | "view_desc" | "view_asc" | "view_1d_desc" | "view_1d_asc" | "view_7d_desc" | "view_7d_asc" | "view_30d_desc" | "view_30d_asc" | "release_date_desc" | "release_date_asc" | "rating_desc" | "rating_asc";
+                /** @description Only works with at least one forum resource of this type. Omitted means no filter. */
+                resource_type?: "game" | "patch" | "collection" | "crack_fix" | "mod" | "tool" | "walkthrough" | "ost" | "voice" | "cg" | "wallpaper" | "artbook" | "video" | "other";
+                /** @description Only works with at least one forum resource for any of these platforms. Comma-separated. Omitted means no filter. */
+                resource_platforms?: ("win" | "and" | "ios" | "mac" | "lin" | "web" | "mob" | "swi" | "sw2" | "n3d" | "nds" | "wii" | "wiu" | "gba" | "gbc" | "nes" | "sfc" | "ps1" | "ps2" | "ps3" | "ps4" | "ps5" | "psp" | "psv" | "xb1" | "xb3" | "xbo" | "xxs" | "sat" | "smd" | "scd" | "drc" | "pce" | "pcf" | "tdo" | "p88" | "p98" | "x1s" | "x68" | "fm7" | "fm8" | "fmt" | "msx" | "dos" | "dvd" | "bdp" | "vnd" | "oth")[];
+                /** @description Only works with at least one forum resource in any of these languages. Comma-separated. Omitted means no filter. */
+                resource_languages?: ("zh-cn" | "zh-tw" | "ja-jp" | "en-us" | "other")[];
+                /** @description Only works a forum rating labels with this game type; uncategorized is works no rating labels at all. Omitted means no filter. */
+                game_type?: "ba_saku" | "plot" | "moe" | "daily" | "uncategorized";
+                /** @description Only works with a resource hosted on any of these download hosts. Comma-separated. Omitted means no filter. */
+                resource_providers?: ("baidu" | "aliyun" | "quark" | "pan123" | "tianyiyun" | "caiyun" | "xunlei" | "uc" | "lanzou" | "other")[];
+                /** @description Only works whose resources are not hosted solely on these download hosts. Comma-separated. Omitted means no filter. */
+                excluded_sole_providers?: ("baidu" | "aliyun" | "quark" | "pan123" | "tianyiyun" | "caiyun" | "xunlei" | "uc" | "lanzou" | "other")[];
+                /** @description Released in or after this year (YYYY) or month (YYYY-MM). */
+                released_from?: string;
+                /** @description Released in or before this year (YYYY) or month (YYYY-MM). */
+                released_to?: string;
+                /** @description Only works whose release date falls in any of these months (1–12), any year. Comma-separated. */
+                released_months?: number[];
+                /** @description First listed on the forum in or after this year (YYYY) or month (YYYY-MM). */
+                collected_from?: string;
+                /** @description First listed on the forum in or before this year (YYYY) or month (YYYY-MM). */
+                collected_to?: string;
+                /** @description Only works first listed on the forum in any of these months (1–12), any year. Comma-separated. */
+                collected_months?: number[];
+                /** @description Minimum Bayesian forum rating. 0 or omitted means no filter. */
+                min_rating?: number;
+                /** @description Minimum number of forum ratings. 0 or omitted means no filter. */
+                min_rating_count?: number;
+                /** @description When true, adult works are included. Default false. A work whose content_limit has not been synced yet is included either way. */
+                include_nsfw?: boolean;
+                /** @description When true, published works with no forum resource are included. Default false. A resource-axis or host filter still requires a resource. */
+                include_resourceless?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PageListWorkSummary"];
+                };
+            };
+            /** @description UNKNOWN_ENUM_VALUE, UNKNOWN_SORT, LIMIT_TOO_LARGE, or INVALID_PARAMETER when page × limit is too deep, a date or month is malformed, or a boolean or array is the wrong shape. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the catalog cannot hydrate the page. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listWorkCollectedMonths: {
+        parameters: {
+            query?: {
+                /** @description When true, months that only hold adult works are included. Default false. */
+                include_nsfw?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkCollectedMonths"];
+                };
+            };
+            /** @description INVALID_PARAMETER when include_nsfw is not a boolean. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
                 headers: {
                     [name: string]: unknown;
                 };

@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"kun-galgame-api/internal/galgame/model"
+	"kun-galgame-api/internal/galgame/resourcevocab"
 
 	"gorm.io/gorm"
 )
@@ -24,11 +25,6 @@ type GalgameListRepository struct {
 
 func NewGalgameListRepository(db *gorm.DB) *GalgameListRepository {
 	return &GalgameListRepository{db: db}
-}
-
-var allProviders = []string{
-	"baidu", "aliyun", "quark", "pan123", "tianyiyun",
-	"caiyun", "xunlei", "uc", "lanzou", "other",
 }
 
 const viewOneDayExpr = "COALESCE((SELECT SUM(d.count) FROM galgame_view_daily d " +
@@ -53,7 +49,7 @@ func listSortColumn(field string) string {
 	}
 }
 
-func (r *GalgameListRepository) ListIDs(f model.GalgameListFilter) (ids []int, total int64) {
+func (r *GalgameListRepository) ListIDs(f model.GalgameListFilter) (ids []int, total int64, err error) {
 	sortCol := listSortColumn(f.SortField)
 	isSubquerySort := f.SortField == "view_1d"
 
@@ -78,7 +74,7 @@ func (r *GalgameListRepository) ListIDs(f model.GalgameListFilter) (ids []int, t
 	// shares NULL. An ORDER BY that stops at the tied column leaves the rest to
 	// the planner, which is free to answer two pages differently — the same row
 	// on both, another on neither.
-	orderClause += ", g.id DESC"
+	orderClause += ", g.id " + order
 
 	type idRow struct {
 		ID int `gorm:"column:id"`
@@ -104,13 +100,17 @@ func (r *GalgameListRepository) ListIDs(f model.GalgameListFilter) (ids []int, t
 			}
 			return q
 		}
-		build().Select("COUNT(*)").Scan(&total)
+		if err = build().Select("COUNT(*)").Scan(&total).Error; err != nil {
+			return nil, 0, err
+		}
 		var rows []idRow
-		build().
+		if err = build().
 			Select("g.id").
 			Order(orderClause).
 			Offset((f.Page - 1) * f.Limit).Limit(f.Limit).
-			Scan(&rows)
+			Scan(&rows).Error; err != nil {
+			return nil, 0, err
+		}
 		ids = make([]int, len(rows))
 		for i, row := range rows {
 			ids[i] = row.ID
@@ -134,24 +134,16 @@ func (r *GalgameListRepository) ListIDs(f model.GalgameListFilter) (ids []int, t
 	if f.Type != "" && f.Type != "all" {
 		inner = inner.Where("gr.type = ?", f.Type)
 	}
-	if f.Language != "" && f.Language != "all" {
-		inner = inner.Where("gr.language = ?", f.Language)
-	}
-	if f.Platform != "" && f.Platform != "all" {
-		inner = inner.Where("gr.platform = ?", f.Platform)
-	}
-	if f.PlatformAxis != "" {
-		inner = inner.Where("gr.platforms @> ?::jsonb", jsonKeyArray(f.PlatformAxis))
-	}
-	if f.LanguageAxis != "" {
-		inner = inner.Where("gr.languages @> ?::jsonb", jsonKeyArray(f.LanguageAxis))
-	}
+	inner = applyJSONOverlap(inner, "gr.platforms", axisKeys(f.PlatformAxis, f.PlatformAxes))
+	inner = applyJSONOverlap(inner, "gr.languages", axisKeys(f.LanguageAxis, f.LanguageAxes))
 	if len(f.IncludeProviders) > 0 {
 		inner = inner.Where("gr.provider && ?", providerArrayLit(f.IncludeProviders))
 	}
 	if len(f.ExcludeOnlyProviders) > 0 {
 		allowed := providersExcluding(f.ExcludeOnlyProviders)
-		if len(allowed) > 0 {
+		if len(allowed) == 0 {
+			inner = inner.Where("1 = 0")
+		} else {
 			inner = inner.Where("gr.provider && ?", providerArrayLit(allowed))
 		}
 	}
@@ -159,7 +151,9 @@ func (r *GalgameListRepository) ListIDs(f model.GalgameListFilter) (ids []int, t
 		inner = applyRatingFilter(inner, f, bayes)
 	}
 
-	r.db.Table("(?) AS sub", inner).Select("COUNT(*)").Scan(&total)
+	if err = r.db.Table("(?) AS sub", inner).Select("COUNT(*)").Scan(&total).Error; err != nil {
+		return nil, 0, err
+	}
 
 	main := applyPublished(r.db.Table("galgame g").
 		Select("g.id").
@@ -174,12 +168,14 @@ func (r *GalgameListRepository) ListIDs(f model.GalgameListFilter) (ids []int, t
 	}
 
 	var rows []idRow
-	main.
+	if err = main.
 		Where("gr.work_id IN (?)", inner).
 		Group(groupBy).
 		Order(orderClause).
 		Offset((f.Page - 1) * f.Limit).Limit(f.Limit).
-		Scan(&rows)
+		Scan(&rows).Error; err != nil {
+		return nil, 0, err
+	}
 
 	ids = make([]int, len(rows))
 	for i, row := range rows {
@@ -254,17 +250,20 @@ type CollectedMonth struct {
 	Month int `gorm:"column:month" json:"month"`
 }
 
-func (r *GalgameListRepository) ListCollectedCalendar(isSFW bool) []CollectedMonth {
+func (r *GalgameListRepository) ListCollectedCalendar(isSFW bool) ([]CollectedMonth, error) {
 	var rows []CollectedMonth
 	q := r.db.Table("galgame g").
 		Select("EXTRACT(YEAR FROM g.created)::int AS year, EXTRACT(MONTH FROM g.created)::int AS month").
 		Where("g.published").
 		Where("EXISTS (SELECT 1 FROM galgame_resource gr WHERE gr.work_id = g.id)")
-	applyContentLimit(q, model.GalgameListFilter{SFWOnly: isSFW}).
+	err := applyContentLimit(q, model.GalgameListFilter{SFWOnly: isSFW}).
 		Group("EXTRACT(YEAR FROM g.created)::int, EXTRACT(MONTH FROM g.created)::int").
 		Order("EXTRACT(YEAR FROM g.created)::int DESC, EXTRACT(MONTH FROM g.created)::int ASC").
-		Scan(&rows)
-	return rows
+		Scan(&rows).Error
+	if rows == nil {
+		rows = []CollectedMonth{}
+	}
+	return rows, err
 }
 
 func (r *GalgameListRepository) BayesianRatings(ids []int) map[int]RatingInfo {
@@ -399,13 +398,46 @@ func intArrayLit(ids []int) string {
 	return "{" + strings.Join(parts, ",") + "}"
 }
 
+func axisKeys(single string, many []string) []string {
+	seen := map[string]bool{}
+	out := make([]string, 0, len(many)+1)
+	add := func(k string) {
+		if k == "" || seen[k] {
+			return
+		}
+		seen[k] = true
+		out = append(out, k)
+	}
+	add(single)
+	for _, k := range many {
+		add(k)
+	}
+	return out
+}
+
+func applyJSONOverlap(q *gorm.DB, column string, keys []string) *gorm.DB {
+	if len(keys) == 0 {
+		return q
+	}
+	if len(keys) == 1 {
+		return q.Where(column+" @> ?::jsonb", jsonKeyArray(keys[0]))
+	}
+	conds := make([]string, len(keys))
+	args := make([]any, len(keys))
+	for i, k := range keys {
+		conds[i] = column + " @> ?::jsonb"
+		args[i] = jsonKeyArray(k)
+	}
+	return q.Where("("+strings.Join(conds, " OR ")+")", args...)
+}
+
 func providersExcluding(excluded []string) []string {
 	exSet := map[string]bool{}
 	for _, e := range excluded {
 		exSet[e] = true
 	}
-	out := make([]string, 0, len(allProviders))
-	for _, p := range allProviders {
+	out := make([]string, 0, len(resourcevocab.ProviderKeys))
+	for _, p := range resourcevocab.ProviderKeys {
 		if !exSet[p] {
 			out = append(out, p)
 		}

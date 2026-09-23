@@ -59,6 +59,12 @@ func (ResourceType) Schema(huma.Registry) *huma.Schema {
 	return vocabSchema(resourcevocab.TypeKeys, "A resource type key.")
 }
 
+type ResourceProvider string
+
+func (ResourceProvider) Schema(huma.Registry) *huma.Schema {
+	return vocabSchema(resourcevocab.ProviderKeys, "A download-host key.")
+}
+
 var GameTypes = []string{"ba_saku", "plot", "moe", "daily"}
 
 func vocabSchema(keys []string, desc string) *huma.Schema {

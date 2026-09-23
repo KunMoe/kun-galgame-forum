@@ -6,6 +6,8 @@ type GalgameListFilter struct {
 	Platform             string
 	PlatformAxis         string
 	LanguageAxis         string
+	PlatformAxes         []string
+	LanguageAxes         []string
 	GameType             string
 	SortField            string
 	SortOrder            string
@@ -29,9 +31,8 @@ type GalgameListFilter struct {
 
 func (f GalgameListFilter) HasResourcePredicate() bool {
 	return (f.Type != "" && f.Type != "all") ||
-		(f.Language != "" && f.Language != "all") ||
-		(f.Platform != "" && f.Platform != "all") ||
 		f.PlatformAxis != "" || f.LanguageAxis != "" ||
+		len(f.PlatformAxes) > 0 || len(f.LanguageAxes) > 0 ||
 		len(f.IncludeProviders) > 0 ||
 		len(f.ExcludeOnlyProviders) > 0
 }

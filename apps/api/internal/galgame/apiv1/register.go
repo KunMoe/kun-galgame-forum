@@ -11,6 +11,50 @@ import (
 
 func Register(svc *Service) func(huma.API) {
 	return func(api huma.API) {
+		huma.Register(api, v1.Public(huma.Operation{
+			OperationID: "listWorkCollectedMonths",
+			Method:      http.MethodGet,
+			Path:        "/works/collected-months",
+			Summary:     "List months that have collected works",
+			Description: "Months in which the forum first listed a published work that has a resource, under the same population as GET /works with its default filters. " +
+				"Years descend, months inside a year ascend. A query or scan failure is INTERNAL_ERROR, never an empty list.",
+			Tags: []string{"works"},
+			Responses: problemResponses(map[int]string{
+				400: "INVALID_PARAMETER when include_nsfw is not a boolean.",
+			}),
+		}), svc.listWorkCollectedMonths)
+
+		huma.Register(api, v1.Public(huma.Operation{
+			OperationID: "listWorks",
+			Method:      http.MethodGet,
+			Path:        "/works",
+			Summary:     "List works on the forum",
+			Description: "A page-number collection of published forum works. Default sort is resource_updated_desc, default limit 24. " +
+				"NSFW works are excluded before paging unless include_nsfw=true; a work whose content_limit has not been synced yet is included either way. " +
+				"Default pages require at least one forum resource; include_resourceless=true lists every published work. " +
+				"An id catalog does not render is dropped with a warning, so a page may be shorter than limit; total still counts the SQL population.",
+			Tags: []string{"works"},
+			Responses: problemResponses(map[int]string{
+				400: "UNKNOWN_ENUM_VALUE, UNKNOWN_SORT, LIMIT_TOO_LARGE, or INVALID_PARAMETER when page × limit is too deep, a date or month is malformed, or a boolean or array is the wrong shape.",
+				503: "SERVICE_UNAVAILABLE when the catalog cannot hydrate the page.",
+			}),
+		}), svc.listWorks)
+
+		huma.Register(api, v1.Public(huma.Operation{
+			OperationID: "listLibraryWorks",
+			Method:      http.MethodGet,
+			Path:        "/library-works",
+			Summary:     "List works from the catalog library",
+			Description: "A page-number collection from catalog's work search population. Default sort is popularity_desc, default limit 24. " +
+				"q is optional. Forum resource-axis, host, collection-date and rating filters are not parameters of this collection. " +
+				"An id catalog does not render is dropped with a warning, so a page may be shorter than limit; total still counts catalog's population.",
+			Tags: []string{"works"},
+			Responses: problemResponses(map[int]string{
+				400: "UNKNOWN_SORT, LIMIT_TOO_LARGE, or INVALID_PARAMETER when q is blank after trimming, a date is malformed, or page × limit is too deep.",
+				503: "SERVICE_UNAVAILABLE when the catalog cannot be reached.",
+			}),
+		}), svc.listLibraryWorks)
+
 		huma.Register(api, v1.Optional(huma.Operation{
 			OperationID: "getWork",
 			Method:      http.MethodGet,

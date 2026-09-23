@@ -13737,6 +13737,291 @@
         ],
         "type": "object"
       },
+      "ReleaseCalendarMonth": {
+        "properties": {
+          "calendar_month": {
+            "description": "The month window as YYYY-MM.",
+            "maxLength": 7,
+            "pattern": "^[0-9]{4}-(0[1-9]|1[0-2])$",
+            "type": "string"
+          },
+          "has_next": {
+            "description": "Whether catalog reports a later month of releases.",
+            "type": "boolean"
+          },
+          "has_prev": {
+            "description": "Whether catalog reports a previous month of releases.",
+            "type": "boolean"
+          },
+          "is_truncated": {
+            "description": "Whether the walk stopped at the 2,000-work cap.",
+            "type": "boolean"
+          },
+          "item_count": {
+            "description": "Works returned after walking the window. When is_truncated is true this may be less than catalog's total.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "items": {
+            "description": "Works released in this window, in catalog's order. Empty array, never null. A page may be shorter than catalog's total when a row cannot be rendered.",
+            "items": {
+              "$ref": "#/components/schemas/WorkSummary"
+            },
+            "type": "array"
+          },
+          "max_month": {
+            "description": "The latest month that has a release. null when catalog does not say.",
+            "maxLength": 7,
+            "pattern": "^[0-9]{4}-(0[1-9]|1[0-2])$",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "min_month": {
+            "description": "The earliest month that has a release. null when catalog does not say.",
+            "maxLength": 7,
+            "pattern": "^[0-9]{4}-(0[1-9]|1[0-2])$",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "next_month": {
+            "description": "The next calendar month. null when none.",
+            "maxLength": 7,
+            "pattern": "^[0-9]{4}-(0[1-9]|1[0-2])$",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "object": {
+            "description": "Type discriminant. Always release_calendar_month.",
+            "enum": [
+              "release_calendar_month"
+            ],
+            "maxLength": 22,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "prev_month": {
+            "description": "The previous calendar month. null when none.",
+            "maxLength": 7,
+            "pattern": "^[0-9]{4}-(0[1-9]|1[0-2])$",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "today_date": {
+            "description": "Today in Asia/Tokyo, YYYY-MM-DD.",
+            "format": "date",
+            "maxLength": 10,
+            "type": "string"
+          }
+        },
+        "required": [
+          "object",
+          "calendar_month",
+          "today_date",
+          "items",
+          "prev_month",
+          "next_month",
+          "has_prev",
+          "has_next",
+          "min_month",
+          "max_month",
+          "item_count",
+          "is_truncated"
+        ],
+        "type": "object"
+      },
+      "ReleaseCalendarPending": {
+        "properties": {
+          "is_truncated": {
+            "description": "Whether the walk stopped at the 2,000-work cap.",
+            "type": "boolean"
+          },
+          "item_count": {
+            "description": "Works returned after walking the window. When is_truncated is true this may be less than catalog's total.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "items": {
+            "description": "Works pending a day-precise date in this year. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/WorkSummary"
+            },
+            "type": "array"
+          },
+          "object": {
+            "description": "Type discriminant. Always release_calendar_pending.",
+            "enum": [
+              "release_calendar_pending"
+            ],
+            "maxLength": 24,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "year": {
+            "description": "The year window.",
+            "format": "int64",
+            "maximum": 9999,
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "object",
+          "year",
+          "items",
+          "item_count",
+          "is_truncated"
+        ],
+        "type": "object"
+      },
+      "ReleaseCalendarTBA": {
+        "properties": {
+          "is_truncated": {
+            "description": "Whether the walk stopped at the 2,000-work cap.",
+            "type": "boolean"
+          },
+          "item_count": {
+            "description": "Works returned after walking the window. When is_truncated is true this may be less than catalog's total.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "items": {
+            "description": "Works with an unknown release date. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/WorkSummary"
+            },
+            "type": "array"
+          },
+          "object": {
+            "description": "Type discriminant. Always release_calendar_tba.",
+            "enum": [
+              "release_calendar_tba"
+            ],
+            "maxLength": 20,
+            "type": "string",
+            "x-vocabulary-closed": true
+          }
+        },
+        "required": [
+          "object",
+          "items",
+          "item_count",
+          "is_truncated"
+        ],
+        "type": "object"
+      },
+      "ReleaseCalendarToday": {
+        "properties": {
+          "expires_in": {
+            "description": "Whole seconds until the next Asia/Tokyo midnight.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "has_release": {
+            "description": "Whether a work in the walked current month has a day-precise release_date equal to today.",
+            "type": "boolean"
+          },
+          "object": {
+            "description": "Type discriminant. Always release_calendar_today.",
+            "enum": [
+              "release_calendar_today"
+            ],
+            "maxLength": 22,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "today_date": {
+            "description": "Today in Asia/Tokyo, YYYY-MM-DD.",
+            "format": "date",
+            "maxLength": 10,
+            "type": "string"
+          }
+        },
+        "required": [
+          "object",
+          "today_date",
+          "has_release",
+          "expires_in"
+        ],
+        "type": "object"
+      },
+      "ReleaseCalendarUpcoming": {
+        "properties": {
+          "entries": {
+            "description": "Months from the current month that have upcoming works. Empty months are omitted. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/ReleaseCalendarUpcomingEntry"
+            },
+            "type": "array"
+          },
+          "item_count": {
+            "description": "Works across every entry.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "object": {
+            "description": "Type discriminant. Always release_calendar_upcoming.",
+            "enum": [
+              "release_calendar_upcoming"
+            ],
+            "maxLength": 25,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "today_date": {
+            "description": "Today in Asia/Tokyo, YYYY-MM-DD.",
+            "format": "date",
+            "maxLength": 10,
+            "type": "string"
+          }
+        },
+        "required": [
+          "object",
+          "today_date",
+          "entries",
+          "item_count"
+        ],
+        "type": "object"
+      },
+      "ReleaseCalendarUpcomingEntry": {
+        "properties": {
+          "calendar_month": {
+            "description": "The month window as YYYY-MM.",
+            "maxLength": 7,
+            "pattern": "^[0-9]{4}-(0[1-9]|1[0-2])$",
+            "type": "string"
+          },
+          "is_truncated": {
+            "description": "Whether this month stopped at the 500-work cap.",
+            "type": "boolean"
+          },
+          "items": {
+            "description": "Works in this month that are still upcoming. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/WorkSummary"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "calendar_month",
+          "items",
+          "is_truncated"
+        ],
+        "type": "object"
+      },
       "Reply": {
         "properties": {
           "author": {
@@ -21708,6 +21993,54 @@
         ],
         "type": "object"
       },
+      "WorkCollectedMonth": {
+        "properties": {
+          "month": {
+            "description": "Calendar month 1–12.",
+            "format": "int64",
+            "maximum": 12,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "year": {
+            "description": "Calendar year the works were first listed on the forum.",
+            "format": "int64",
+            "maximum": 9999,
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "year",
+          "month"
+        ],
+        "type": "object"
+      },
+      "WorkCollectedMonths": {
+        "properties": {
+          "items": {
+            "description": "Months that have at least one published work with a forum resource, newest year first then month ascending. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/WorkCollectedMonth"
+            },
+            "type": "array"
+          },
+          "object": {
+            "description": "Type discriminant. Always work_collected_months.",
+            "enum": [
+              "work_collected_months"
+            ],
+            "maxLength": 21,
+            "type": "string",
+            "x-vocabulary-closed": true
+          }
+        },
+        "required": [
+          "object",
+          "items"
+        ],
+        "type": "object"
+      },
       "WorkCompany": {
         "properties": {
           "aliases": {
@@ -28893,18 +29226,35 @@
     },
     "/companies": {
       "get": {
-        "description": "Without q: every company catalog files works under, most works first, ties broken by ascending id. A page-number collection.",
+        "description": "Without q or ids: every company catalog files works under, most works first, ties broken by ascending id. ids resolves the named companies in request order; absent ids are omitted. q and ids cannot both be set. A page-number collection.",
         "operationId": "listCompanies",
         "parameters": [
           {
-            "description": "Name search. Set, the collection is catalog's 100 best name matches in relevance order. Free text; never use it as a decision input.",
+            "description": "Name search. Set, the collection is catalog's 100 best name matches in relevance order. Free text; never use it as a decision input. Mutually exclusive with ids.",
             "explode": false,
             "in": "query",
             "name": "q",
             "schema": {
-              "description": "Name search. Set, the collection is catalog's 100 best name matches in relevance order. Free text; never use it as a decision input.",
+              "description": "Name search. Set, the collection is catalog's 100 best name matches in relevance order. Free text; never use it as a decision input. Mutually exclusive with ids.",
               "maxLength": 100,
               "type": "string"
+            }
+          },
+          {
+            "description": "Company ids to resolve, comma-separated. 1 to 100 of them. Mutually exclusive with q. Absent ids are omitted.",
+            "explode": false,
+            "in": "query",
+            "name": "ids",
+            "schema": {
+              "description": "Company ids to resolve, comma-separated. 1 to 100 of them. Mutually exclusive with q. Absent ids are omitted.",
+              "items": {
+                "maxLength": 20,
+                "minLength": 1,
+                "pattern": "^[0-9]+$",
+                "type": "string"
+              },
+              "maxItems": 100,
+              "type": "array"
             }
           },
           {
@@ -28974,7 +29324,7 @@
                 }
               }
             },
-            "description": "INVALID_PARAMETER when page × limit is too deep."
+            "description": "INVALID_PARAMETER when page × limit is too deep, q and ids are both set, or ids is malformed or longer than 100."
           },
           "500": {
             "content": {
@@ -31681,6 +32031,153 @@
         "summary": "Upload an image",
         "tags": [
           "images"
+        ]
+      }
+    },
+    "/library-works": {
+      "get": {
+        "description": "A page-number collection from catalog's work search population. Default sort is popularity_desc, default limit 24. q is optional. Forum resource-axis, host, collection-date and rating filters are not parameters of this collection. An id catalog does not render is dropped with a warning, so a page may be shorter than limit; total still counts catalog's population.",
+        "operationId": "listLibraryWorks",
+        "parameters": [
+          {
+            "description": "1-based page number. page × limit may not exceed 10000.",
+            "explode": false,
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "default": 1,
+              "description": "1-based page number. page × limit may not exceed 10000.",
+              "format": "int64",
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Page size. 1–100, default 24. Values above 100 are rejected, not clamped.",
+            "explode": false,
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 24,
+              "description": "Page size. 1–100, default 24. Values above 100 are rejected, not clamped.",
+              "format": "int64",
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Search keywords. Omitted means the catalog browse population. Free text; never use it as a decision input.",
+            "explode": false,
+            "in": "query",
+            "name": "q",
+            "schema": {
+              "description": "Search keywords. Omitted means the catalog browse population. Free text; never use it as a decision input.",
+              "maxLength": 107,
+              "type": "string"
+            }
+          },
+          {
+            "description": "Order. popularity: catalog popularity. released: release date. updated: last catalog edit. relevance: the search index's ranking.",
+            "explode": false,
+            "in": "query",
+            "name": "sort",
+            "schema": {
+              "default": "popularity_desc",
+              "description": "Order. popularity: catalog popularity. released: release date. updated: last catalog edit. relevance: the search index's ranking.",
+              "enum": [
+                "popularity_desc",
+                "released_desc",
+                "released_asc",
+                "updated_desc",
+                "relevance_desc"
+              ],
+              "maxLength": 15,
+              "type": "string",
+              "x-vocabulary-closed": true
+            }
+          },
+          {
+            "description": "Released in or after this year (YYYY) or month (YYYY-MM).",
+            "explode": false,
+            "in": "query",
+            "name": "released_from",
+            "schema": {
+              "description": "Released in or after this year (YYYY) or month (YYYY-MM).",
+              "maxLength": 7,
+              "pattern": "^[0-9]{4}(-(0[1-9]|1[0-2]))?$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Released in or before this year (YYYY) or month (YYYY-MM).",
+            "explode": false,
+            "in": "query",
+            "name": "released_to",
+            "schema": {
+              "description": "Released in or before this year (YYYY) or month (YYYY-MM).",
+              "maxLength": 7,
+              "pattern": "^[0-9]{4}(-(0[1-9]|1[0-2]))?$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "When true, works this forum displays as adult are included. Default false.",
+            "explode": false,
+            "in": "query",
+            "name": "include_nsfw",
+            "schema": {
+              "default": false,
+              "description": "When true, works this forum displays as adult are included. Default false.",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageListWorkSummary"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "UNKNOWN_SORT, LIMIT_TOO_LARGE, or INVALID_PARAMETER when q is blank after trimming, a date is malformed, or page × limit is too deep."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the catalog cannot be reached."
+          }
+        },
+        "summary": "List works from the catalog library",
+        "tags": [
+          "works"
         ]
       }
     },
@@ -41312,6 +41809,356 @@
         ]
       }
     },
+    "/release-calendar": {
+      "get": {
+        "description": "Walks catalog's cursor for the month, at most 2,000 works. is_truncated is true when the cap is hit. An id catalog does not render is dropped with a warning.",
+        "operationId": "listReleaseCalendarMonth",
+        "parameters": [
+          {
+            "description": "Calendar month as YYYY-MM. Omitted means the current month in Asia/Tokyo.",
+            "explode": false,
+            "in": "query",
+            "name": "month",
+            "schema": {
+              "description": "Calendar month as YYYY-MM. Omitted means the current month in Asia/Tokyo.",
+              "maxLength": 7,
+              "pattern": "^[0-9]{4}-(0[1-9]|1[0-2])$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "When true, adult works are included. Default false.",
+            "explode": false,
+            "in": "query",
+            "name": "include_nsfw",
+            "schema": {
+              "default": false,
+              "description": "When true, adult works are included. Default false.",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReleaseCalendarMonth"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "INVALID_PARAMETER when month is malformed."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the catalog cannot be reached, including a failure mid-walk."
+          }
+        },
+        "summary": "List releases in a month",
+        "tags": [
+          "release-calendar"
+        ]
+      }
+    },
+    "/release-calendar/pending": {
+      "get": {
+        "description": "Works whose release date is known only to year precision. The walk follows catalog's cursor, at most 2,000 works.",
+        "operationId": "listReleaseCalendarPending",
+        "parameters": [
+          {
+            "description": "Calendar year. 0 or omitted means the current year in Asia/Tokyo.",
+            "explode": false,
+            "in": "query",
+            "name": "year",
+            "schema": {
+              "description": "Calendar year. 0 or omitted means the current year in Asia/Tokyo.",
+              "format": "int64",
+              "maximum": 9999,
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "When true, adult works are included. Default false.",
+            "explode": false,
+            "in": "query",
+            "name": "include_nsfw",
+            "schema": {
+              "default": false,
+              "description": "When true, adult works are included. Default false.",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReleaseCalendarPending"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "INVALID_PARAMETER when year is malformed."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the catalog cannot be reached, including a failure mid-walk."
+          }
+        },
+        "summary": "List pending releases in a year",
+        "tags": [
+          "release-calendar"
+        ]
+      }
+    },
+    "/release-calendar/tba": {
+      "get": {
+        "description": "Works catalog files as status unknown. The walk follows catalog's cursor, at most 2,000 works.",
+        "operationId": "listReleaseCalendarTBA",
+        "parameters": [
+          {
+            "description": "When true, adult works are included. Default false.",
+            "explode": false,
+            "in": "query",
+            "name": "include_nsfw",
+            "schema": {
+              "default": false,
+              "description": "When true, adult works are included. Default false.",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReleaseCalendarTBA"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "INVALID_PARAMETER when include_nsfw is not a boolean."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the catalog cannot be reached, including a failure mid-walk."
+          }
+        },
+        "summary": "List works with an unknown release date",
+        "tags": [
+          "release-calendar"
+        ]
+      }
+    },
+    "/release-calendar/today": {
+      "get": {
+        "description": "Computes has_release on the walked current month in Asia/Tokyo. A day-precise release_date equal to today counts; a month- or year-precise date does not.",
+        "operationId": "getReleaseCalendarToday",
+        "parameters": [
+          {
+            "description": "When true, adult works are included. Default false.",
+            "explode": false,
+            "in": "query",
+            "name": "include_nsfw",
+            "schema": {
+              "default": false,
+              "description": "When true, adult works are included. Default false.",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReleaseCalendarToday"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "INVALID_PARAMETER when include_nsfw is not a boolean."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the catalog cannot be reached, including a failure mid-walk."
+          }
+        },
+        "summary": "Whether a work releases today",
+        "tags": [
+          "release-calendar"
+        ]
+      }
+    },
+    "/release-calendar/upcoming": {
+      "get": {
+        "description": "Walks from the current Asia/Tokyo month to catalog's max_month, at most 24 months. A failed month is SERVICE_UNAVAILABLE for the whole response. Empty months are omitted.",
+        "operationId": "listReleaseCalendarUpcoming",
+        "parameters": [
+          {
+            "description": "When true, adult works are included. Default false.",
+            "explode": false,
+            "in": "query",
+            "name": "include_nsfw",
+            "schema": {
+              "default": false,
+              "description": "When true, adult works are included. Default false.",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReleaseCalendarUpcoming"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "INVALID_PARAMETER when include_nsfw is not a boolean."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when any month's catalog walk fails."
+          }
+        },
+        "summary": "List upcoming releases by month",
+        "tags": [
+          "release-calendar"
+        ]
+      }
+    },
     "/replies/{reply_id}": {
       "delete": {
         "description": "Deletes the reply with its comments and reactions. It needs can_delete. Its floor is not reused. An author deleting their own reply pays 3 moemoepoint times one plus its likes plus its comments, and needs that balance; staff deleting it charges the reply's author 3. NOT_FOUND under the same conditions as getReply.",
@@ -43982,18 +44829,35 @@
     },
     "/tags": {
       "get": {
-        "description": "Without q: every visible tag catalog files works under, most works first, ties broken by ascending id. Hidden tags never appear; adult tags only with include_nsfw=true. A page-number collection.",
+        "description": "Without q or ids: every visible tag catalog files works under, most works first, ties broken by ascending id. ids resolves the named tags in request order; absent or invisible ids are omitted. q and ids cannot both be set. Hidden tags never appear; adult tags only with include_nsfw=true. A page-number collection.",
         "operationId": "listTags",
         "parameters": [
           {
-            "description": "Name search. Set, the collection is catalog's 100 best name matches in relevance order, hidden and gated tags removed. Free text; never use it as a decision input.",
+            "description": "Name search. Set, the collection is catalog's 100 best name matches in relevance order, hidden and gated tags removed. Free text; never use it as a decision input. Mutually exclusive with ids.",
             "explode": false,
             "in": "query",
             "name": "q",
             "schema": {
-              "description": "Name search. Set, the collection is catalog's 100 best name matches in relevance order, hidden and gated tags removed. Free text; never use it as a decision input.",
+              "description": "Name search. Set, the collection is catalog's 100 best name matches in relevance order, hidden and gated tags removed. Free text; never use it as a decision input. Mutually exclusive with ids.",
               "maxLength": 100,
               "type": "string"
+            }
+          },
+          {
+            "description": "Tag ids to resolve, comma-separated. 1 to 100 of them. Mutually exclusive with q. Absent ids are omitted.",
+            "explode": false,
+            "in": "query",
+            "name": "ids",
+            "schema": {
+              "description": "Tag ids to resolve, comma-separated. 1 to 100 of them. Mutually exclusive with q. Absent ids are omitted.",
+              "items": {
+                "maxLength": 20,
+                "minLength": 1,
+                "pattern": "^[0-9]+$",
+                "type": "string"
+              },
+              "maxItems": 100,
+              "type": "array"
             }
           },
           {
@@ -44054,7 +44918,7 @@
                 }
               }
             },
-            "description": "INVALID_PARAMETER when page × limit is too deep."
+            "description": "INVALID_PARAMETER when page × limit is too deep, q and ids are both set, or ids is malformed or longer than 100."
           },
           "500": {
             "content": {
@@ -55032,6 +55896,494 @@
           }
         },
         "summary": "Suggest works for linking to a quiz",
+        "tags": [
+          "works"
+        ]
+      }
+    },
+    "/works": {
+      "get": {
+        "description": "A page-number collection of published forum works. Default sort is resource_updated_desc, default limit 24. NSFW works are excluded before paging unless include_nsfw=true; a work whose content_limit has not been synced yet is included either way. Default pages require at least one forum resource; include_resourceless=true lists every published work. An id catalog does not render is dropped with a warning, so a page may be shorter than limit; total still counts the SQL population.",
+        "operationId": "listWorks",
+        "parameters": [
+          {
+            "description": "1-based page number. page × limit may not exceed 10000.",
+            "explode": false,
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "default": 1,
+              "description": "1-based page number. page × limit may not exceed 10000.",
+              "format": "int64",
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Page size. 1–100, default 24. Values above 100 are rejected, not clamped.",
+            "explode": false,
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 24,
+              "description": "Page size. 1–100, default 24. Values above 100 are rejected, not clamped.",
+              "format": "int64",
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Sort order. resource_updated: when a resource last changed. created: when the forum page was made. view / view_1d / view_7d / view_30d: page reads, all time or over the last day, 7 or 30 days. release_date: the release date. rating: the bayesian forum rating. Works the forum has no page for rank after every work it has.",
+            "explode": false,
+            "in": "query",
+            "name": "sort",
+            "schema": {
+              "default": "resource_updated_desc",
+              "description": "Sort order. resource_updated: when a resource last changed. created: when the forum page was made. view / view_1d / view_7d / view_30d: page reads, all time or over the last day, 7 or 30 days. release_date: the release date. rating: the bayesian forum rating. Works the forum has no page for rank after every work it has.",
+              "enum": [
+                "resource_updated_desc",
+                "resource_updated_asc",
+                "created_desc",
+                "created_asc",
+                "view_desc",
+                "view_asc",
+                "view_1d_desc",
+                "view_1d_asc",
+                "view_7d_desc",
+                "view_7d_asc",
+                "view_30d_desc",
+                "view_30d_asc",
+                "release_date_desc",
+                "release_date_asc",
+                "rating_desc",
+                "rating_asc"
+              ],
+              "maxLength": 21,
+              "type": "string",
+              "x-vocabulary-closed": true
+            }
+          },
+          {
+            "description": "Only works with at least one forum resource of this type. Omitted means no filter.",
+            "explode": false,
+            "in": "query",
+            "name": "resource_type",
+            "schema": {
+              "description": "Only works with at least one forum resource of this type. Omitted means no filter.",
+              "enum": [
+                "game",
+                "patch",
+                "collection",
+                "crack_fix",
+                "mod",
+                "tool",
+                "walkthrough",
+                "ost",
+                "voice",
+                "cg",
+                "wallpaper",
+                "artbook",
+                "video",
+                "other"
+              ],
+              "maxLength": 11,
+              "type": "string",
+              "x-vocabulary-closed": true
+            }
+          },
+          {
+            "description": "Only works with at least one forum resource for any of these platforms. Comma-separated. Omitted means no filter.",
+            "explode": false,
+            "in": "query",
+            "name": "resource_platforms",
+            "schema": {
+              "description": "Only works with at least one forum resource for any of these platforms. Comma-separated. Omitted means no filter.",
+              "items": {
+                "description": "A resource platform key.",
+                "enum": [
+                  "win",
+                  "and",
+                  "ios",
+                  "mac",
+                  "lin",
+                  "web",
+                  "mob",
+                  "swi",
+                  "sw2",
+                  "n3d",
+                  "nds",
+                  "wii",
+                  "wiu",
+                  "gba",
+                  "gbc",
+                  "nes",
+                  "sfc",
+                  "ps1",
+                  "ps2",
+                  "ps3",
+                  "ps4",
+                  "ps5",
+                  "psp",
+                  "psv",
+                  "xb1",
+                  "xb3",
+                  "xbo",
+                  "xxs",
+                  "sat",
+                  "smd",
+                  "scd",
+                  "drc",
+                  "pce",
+                  "pcf",
+                  "tdo",
+                  "p88",
+                  "p98",
+                  "x1s",
+                  "x68",
+                  "fm7",
+                  "fm8",
+                  "fmt",
+                  "msx",
+                  "dos",
+                  "dvd",
+                  "bdp",
+                  "vnd",
+                  "oth"
+                ],
+                "maxLength": 3,
+                "type": "string",
+                "x-vocabulary-closed": true
+              },
+              "type": "array"
+            }
+          },
+          {
+            "description": "Only works with at least one forum resource in any of these languages. Comma-separated. Omitted means no filter.",
+            "explode": false,
+            "in": "query",
+            "name": "resource_languages",
+            "schema": {
+              "description": "Only works with at least one forum resource in any of these languages. Comma-separated. Omitted means no filter.",
+              "items": {
+                "description": "A resource language key.",
+                "enum": [
+                  "zh-cn",
+                  "zh-tw",
+                  "ja-jp",
+                  "en-us",
+                  "other"
+                ],
+                "maxLength": 5,
+                "type": "string",
+                "x-vocabulary-closed": true
+              },
+              "type": "array"
+            }
+          },
+          {
+            "description": "Only works a forum rating labels with this game type; uncategorized is works no rating labels at all. Omitted means no filter.",
+            "explode": false,
+            "in": "query",
+            "name": "game_type",
+            "schema": {
+              "description": "Only works a forum rating labels with this game type; uncategorized is works no rating labels at all. Omitted means no filter.",
+              "enum": [
+                "ba_saku",
+                "plot",
+                "moe",
+                "daily",
+                "uncategorized"
+              ],
+              "maxLength": 13,
+              "type": "string",
+              "x-vocabulary-closed": true
+            }
+          },
+          {
+            "description": "Only works with a resource hosted on any of these download hosts. Comma-separated. Omitted means no filter.",
+            "explode": false,
+            "in": "query",
+            "name": "resource_providers",
+            "schema": {
+              "description": "Only works with a resource hosted on any of these download hosts. Comma-separated. Omitted means no filter.",
+              "items": {
+                "description": "A download-host key.",
+                "enum": [
+                  "baidu",
+                  "aliyun",
+                  "quark",
+                  "pan123",
+                  "tianyiyun",
+                  "caiyun",
+                  "xunlei",
+                  "uc",
+                  "lanzou",
+                  "other"
+                ],
+                "maxLength": 9,
+                "type": "string",
+                "x-vocabulary-closed": true
+              },
+              "type": "array"
+            }
+          },
+          {
+            "description": "Only works whose resources are not hosted solely on these download hosts. Comma-separated. Omitted means no filter.",
+            "explode": false,
+            "in": "query",
+            "name": "excluded_sole_providers",
+            "schema": {
+              "description": "Only works whose resources are not hosted solely on these download hosts. Comma-separated. Omitted means no filter.",
+              "items": {
+                "description": "A download-host key.",
+                "enum": [
+                  "baidu",
+                  "aliyun",
+                  "quark",
+                  "pan123",
+                  "tianyiyun",
+                  "caiyun",
+                  "xunlei",
+                  "uc",
+                  "lanzou",
+                  "other"
+                ],
+                "maxLength": 9,
+                "type": "string",
+                "x-vocabulary-closed": true
+              },
+              "type": "array"
+            }
+          },
+          {
+            "description": "Released in or after this year (YYYY) or month (YYYY-MM).",
+            "explode": false,
+            "in": "query",
+            "name": "released_from",
+            "schema": {
+              "description": "Released in or after this year (YYYY) or month (YYYY-MM).",
+              "maxLength": 7,
+              "pattern": "^[0-9]{4}(-(0[1-9]|1[0-2]))?$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Released in or before this year (YYYY) or month (YYYY-MM).",
+            "explode": false,
+            "in": "query",
+            "name": "released_to",
+            "schema": {
+              "description": "Released in or before this year (YYYY) or month (YYYY-MM).",
+              "maxLength": 7,
+              "pattern": "^[0-9]{4}(-(0[1-9]|1[0-2]))?$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Only works whose release date falls in any of these months (1–12), any year. Comma-separated.",
+            "explode": false,
+            "in": "query",
+            "name": "released_months",
+            "schema": {
+              "description": "Only works whose release date falls in any of these months (1–12), any year. Comma-separated.",
+              "items": {
+                "description": "A calendar month 1–12.",
+                "format": "int64",
+                "maximum": 12,
+                "minimum": 1,
+                "type": "integer"
+              },
+              "type": "array"
+            }
+          },
+          {
+            "description": "First listed on the forum in or after this year (YYYY) or month (YYYY-MM).",
+            "explode": false,
+            "in": "query",
+            "name": "collected_from",
+            "schema": {
+              "description": "First listed on the forum in or after this year (YYYY) or month (YYYY-MM).",
+              "maxLength": 7,
+              "pattern": "^[0-9]{4}(-(0[1-9]|1[0-2]))?$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "First listed on the forum in or before this year (YYYY) or month (YYYY-MM).",
+            "explode": false,
+            "in": "query",
+            "name": "collected_to",
+            "schema": {
+              "description": "First listed on the forum in or before this year (YYYY) or month (YYYY-MM).",
+              "maxLength": 7,
+              "pattern": "^[0-9]{4}(-(0[1-9]|1[0-2]))?$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Only works first listed on the forum in any of these months (1–12), any year. Comma-separated.",
+            "explode": false,
+            "in": "query",
+            "name": "collected_months",
+            "schema": {
+              "description": "Only works first listed on the forum in any of these months (1–12), any year. Comma-separated.",
+              "items": {
+                "description": "A calendar month 1–12.",
+                "format": "int64",
+                "maximum": 12,
+                "minimum": 1,
+                "type": "integer"
+              },
+              "type": "array"
+            }
+          },
+          {
+            "description": "Minimum Bayesian forum rating. 0 or omitted means no filter.",
+            "explode": false,
+            "in": "query",
+            "name": "min_rating",
+            "schema": {
+              "description": "Minimum Bayesian forum rating. 0 or omitted means no filter.",
+              "format": "double",
+              "maximum": 10,
+              "minimum": 0,
+              "type": "number"
+            }
+          },
+          {
+            "description": "Minimum number of forum ratings. 0 or omitted means no filter.",
+            "explode": false,
+            "in": "query",
+            "name": "min_rating_count",
+            "schema": {
+              "description": "Minimum number of forum ratings. 0 or omitted means no filter.",
+              "format": "int64",
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "When true, adult works are included. Default false. A work whose content_limit has not been synced yet is included either way.",
+            "explode": false,
+            "in": "query",
+            "name": "include_nsfw",
+            "schema": {
+              "default": false,
+              "description": "When true, adult works are included. Default false. A work whose content_limit has not been synced yet is included either way.",
+              "type": "boolean"
+            }
+          },
+          {
+            "description": "When true, published works with no forum resource are included. Default false. A resource-axis or host filter still requires a resource.",
+            "explode": false,
+            "in": "query",
+            "name": "include_resourceless",
+            "schema": {
+              "default": false,
+              "description": "When true, published works with no forum resource are included. Default false. A resource-axis or host filter still requires a resource.",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageListWorkSummary"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "UNKNOWN_ENUM_VALUE, UNKNOWN_SORT, LIMIT_TOO_LARGE, or INVALID_PARAMETER when page × limit is too deep, a date or month is malformed, or a boolean or array is the wrong shape."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the catalog cannot hydrate the page."
+          }
+        },
+        "summary": "List works on the forum",
+        "tags": [
+          "works"
+        ]
+      }
+    },
+    "/works/collected-months": {
+      "get": {
+        "description": "Months in which the forum first listed a published work that has a resource, under the same population as GET /works with its default filters. Years descend, months inside a year ascend. A query or scan failure is INTERNAL_ERROR, never an empty list.",
+        "operationId": "listWorkCollectedMonths",
+        "parameters": [
+          {
+            "description": "When true, months that only hold adult works are included. Default false.",
+            "explode": false,
+            "in": "query",
+            "name": "include_nsfw",
+            "schema": {
+              "default": false,
+              "description": "When true, months that only hold adult works are included. Default false.",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkCollectedMonths"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "INVALID_PARAMETER when include_nsfw is not a boolean."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "List months that have collected works",
         "tags": [
           "works"
         ]

@@ -7,6 +7,11 @@ var TypeKeys = []string{
 
 var LegacyTypeKeys = []string{"image", "ai", "others"}
 
+var ProviderKeys = []string{
+	"baidu", "aliyun", "quark", "pan123", "tianyiyun",
+	"caiyun", "xunlei", "uc", "lanzou", "other",
+}
+
 var LanguageKeys = []string{"zh-cn", "zh-tw", "ja-jp", "en-us", "other"}
 
 var PlatformKeys = []string{

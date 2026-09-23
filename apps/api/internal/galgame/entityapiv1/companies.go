@@ -79,10 +79,11 @@ func (s *Service) buildCompanyIndex(ctx context.Context) ([]CompanySummary, erro
 }
 
 type listCompaniesInput struct {
-	Q           string `query:"q" maxLength:"100" doc:"Name search. Set, the collection is catalog's 100 best name matches in relevance order. Free text; never use it as a decision input."`
-	CompanyKind string `query:"company_kind" enum:"game_brand,bunko,publisher,anime_studio,doujin_circle,group" maxLength:"13" doc:"Only companies of this kind. Omitted means every kind."`
-	Page        int    `query:"page" minimum:"1" default:"1" doc:"1-based page number. page × limit may not exceed 10000, or 100 when q is set."`
-	Limit       int    `query:"limit" minimum:"1" maximum:"100" default:"50" doc:"Page size. 1–100, default 50. Values above 100 are rejected, not clamped."`
+	Q           string           `query:"q" maxLength:"100" doc:"Name search. Set, the collection is catalog's 100 best name matches in relevance order. Free text; never use it as a decision input. Mutually exclusive with ids."`
+	IDs         []repr.DecimalID `query:"ids" maxItems:"100" doc:"Company ids to resolve, comma-separated. 1 to 100 of them. Mutually exclusive with q. Absent ids are omitted."`
+	CompanyKind string           `query:"company_kind" enum:"game_brand,bunko,publisher,anime_studio,doujin_circle,group" maxLength:"13" doc:"Only companies of this kind. Omitted means every kind."`
+	Page        int              `query:"page" minimum:"1" default:"1" doc:"1-based page number. page × limit may not exceed 10000, or 100 when q is set."`
+	Limit       int              `query:"limit" minimum:"1" maximum:"100" default:"50" doc:"Page size. 1–100, default 50. Values above 100 are rejected, not clamped."`
 }
 
 type listCompaniesOutput struct {
@@ -94,6 +95,10 @@ func (s *Service) listCompanies(ctx context.Context, in *listCompaniesInput) (*l
 		return nil, problem.Internal(errUnconfigured)
 	}
 	q := trimQuery(in.Q)
+	if q != "" && len(in.IDs) > 0 {
+		return nil, problem.New(problem.CodeInvalidParameter, "q and ids cannot both be set.",
+			problem.AtParameter("ids", problem.ReasonInconsistentWith, "q", nil))
+	}
 	if prob := checkDepth(in.Page, in.Limit, q != ""); prob != nil {
 		return nil, prob
 	}
@@ -102,7 +107,13 @@ func (s *Service) listCompanies(ctx context.Context, in *listCompaniesInput) (*l
 		return nil, problem.Unavailable(err)
 	}
 	var rows []CompanySummary
-	if q == "" {
+	if len(in.IDs) > 0 {
+		found, prob := s.companiesByIDs(ctx, in.IDs, index)
+		if prob != nil {
+			return nil, prob
+		}
+		rows = found
+	} else if q == "" {
 		rows = index
 	} else {
 		hits, _, appErr := s.catalog.CatalogEntitySearch(ctx, "labels", q, 1, searchDepth)
@@ -142,6 +153,47 @@ func (s *Service) listCompanies(ctx context.Context, in *listCompaniesInput) (*l
 		rows = kept
 	}
 	return &listCompaniesOutput{Body: pageList(rows, in.Page, in.Limit)}, nil
+}
+
+func (s *Service) companiesByIDs(ctx context.Context, parts []repr.DecimalID, index []CompanySummary) ([]CompanySummary, *problem.Problem) {
+	ids, prob := parseEntityIDs(parts)
+	if prob != nil {
+		return nil, prob
+	}
+	ids = uniqueIDs(ids)
+	byID := make(map[repr.DecimalID]CompanySummary, len(index))
+	for _, r := range index {
+		byID[r.ID] = r
+	}
+	out := make([]CompanySummary, 0, len(ids))
+	for _, id := range ids {
+		if row, ok := byID[repr.ID(id)]; ok {
+			out = append(out, row)
+			continue
+		}
+		o, found, movedTo, appErr := s.catalog.CatalogLabel(ctx, strconv.Itoa(id))
+		if appErr != nil {
+			return nil, unavailable(appErr)
+		}
+		if movedTo != 0 || !found {
+			continue
+		}
+		if !companyKinds[o.Kind] {
+			slog.Warn("list companies ids: unknown company_kind, row dropped", "company_id", o.ID, "company_kind", o.Kind)
+			continue
+		}
+		name := workrepr.Name(o.DisplayName, o.Latin, client.LocalizedValues(o.Localized))
+		out = append(out, CompanySummary{
+			Object:           "company",
+			ID:               repr.ID(int(o.ID)),
+			CatalogName:      name,
+			CompanyKind:      o.Kind,
+			Logo:             workrepr.ImageFromHash(s.cdn, o.LogoHash),
+			Aliases:          aliases(o.Aliases.Values(name.DisplayName)),
+			CatalogWorkCount: max(o.WorkCount, 0),
+		})
+	}
+	return out, nil
 }
 
 type companyPathInput struct {

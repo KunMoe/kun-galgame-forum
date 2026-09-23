@@ -7,30 +7,6 @@ type MyGalgameInteractions struct {
 	Favorited []int `json:"favorited"`
 }
 
-type GalgameListRequest struct {
-	Page                 int     `query:"page" validate:"min=1"`
-	Limit                int     `query:"limit" validate:"min=1,max=50"`
-	Type                 string  `query:"type"`
-	Language             string  `query:"language"`
-	Platform             string  `query:"platform"`
-	GameType             string  `query:"game_type" validate:"omitempty,oneof=all ba_saku plot moe daily uncategorized"`
-	SortField            string  `query:"sort_field"`
-	SortOrder            string  `query:"sort_order" validate:"omitempty,oneof=asc desc"`
-	IncludeProviders     string  `query:"include_providers"`
-	ExcludeOnlyProviders string  `query:"exclude_only_providers"`
-	ReleasedFrom         string  `query:"released_from"`
-	ReleasedTo           string  `query:"released_to"`
-	ReleasedMonths       string  `query:"released_months"`
-	CollectedFrom        string  `query:"collected_from"`
-	CollectedTo          string  `query:"collected_to"`
-	CollectedMonths      string  `query:"collected_months"`
-	MinRatingCount       int     `query:"min_rating_count" validate:"omitempty,min=0"`
-	MinRating            float64 `query:"min_rating" validate:"omitempty,min=0,max=10"`
-	ShowNoResource       bool    `query:"show_no_resource"`
-	Indexed              bool    `query:"indexed"`
-	Library              bool    `query:"library"`
-}
-
 type GalgameCover struct {
 	ImageHash string `json:"image_hash"`
 	SortOrder int    `json:"sort_order"`
