@@ -45,18 +45,9 @@ GET    /api/admin/overview/stats                      cors.New → middleware.Na
 GET    /api/admin/user/:id/content-stats              cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → RequirePermission → PurgeHandler.GetUserContentStats
 GET    /api/auth/me                                   cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → OAuthHandler.Me
 GET    /api/galgame                                   cors.New → middleware.NamePreference → ContentStance → GalgameHandler.GetList
-GET    /api/galgame-character/:id                     cors.New → middleware.NamePreference → ContentStance → EntityHandler.GetCharacterDetail
-GET    /api/galgame-character/search                  cors.New → middleware.NamePreference → ContentStance → EntityHandler.SearchCharacters
 GET    /api/galgame-edit/mine                         cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → EditHandler.Mine
 GET    /api/galgame-edit/proposals/:id                cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → EditHandler.ProposalDetail
 GET    /api/galgame-edit/queue                        cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → RequireModerator → EditHandler.Queue
-GET    /api/galgame-engine                            cors.New → middleware.NamePreference → ContentStance → EntityHandler.GetEngineList
-GET    /api/galgame-engine/:id                        cors.New → middleware.NamePreference → ContentStance → EntityHandler.GetEngineDetail
-GET    /api/galgame-official                          cors.New → middleware.NamePreference → ContentStance → EntityHandler.GetOfficialList
-GET    /api/galgame-official/:id                      cors.New → middleware.NamePreference → ContentStance → EntityHandler.GetOfficialDetail
-GET    /api/galgame-official/:id/relation-graph       cors.New → middleware.NamePreference → ContentStance → EntityHandler.GetOfficialRelationGraph
-GET    /api/galgame-official/legacy/:id               cors.New → middleware.NamePreference → ContentStance → EntityHandler.ResolveLegacyOfficial
-GET    /api/galgame-official/search                   cors.New → middleware.NamePreference → ContentStance → EntityHandler.SearchOfficials
 GET    /api/galgame-quiz/:id                          cors.New → middleware.NamePreference → ContentStance → OptionalAuth → QuizHandler.GetQuizPlay
 GET    /api/galgame-quiz/:id/answers                  cors.New → middleware.NamePreference → ContentStance → OptionalAuth → QuizHandler.GetQuizAnswers
 GET    /api/galgame-quiz/:id/edit                     cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → QuizHandler.GetQuizForEdit
@@ -68,15 +59,6 @@ GET    /api/galgame-rating/all                        cors.New → middleware.Na
 GET    /api/galgame-resource                          cors.New → middleware.NamePreference → ContentStance → OptionalAuth → ResourceHandler.GetResourceList
 GET    /api/galgame-resource/:id                      cors.New → middleware.NamePreference → ContentStance → OptionalAuth → ResourceHandler.GetResourceDetail
 GET    /api/galgame-resource/:id/detail               cors.New → middleware.NamePreference → ContentStance → OptionalAuth → ResourceHandler.GetResourceDownloadDetail
-GET    /api/galgame-series                            cors.New → middleware.NamePreference → ContentStance → EntityHandler.GetSeriesList
-GET    /api/galgame-series/:id                        cors.New → middleware.NamePreference → ContentStance → EntityHandler.GetSeriesDetail
-GET    /api/galgame-series/cards                      cors.New → middleware.NamePreference → ContentStance → EntityHandler.GetSeriesCards
-GET    /api/galgame-staff/:id                         cors.New → middleware.NamePreference → ContentStance → EntityHandler.GetStaffDetail
-GET    /api/galgame-staff/search                      cors.New → middleware.NamePreference → ContentStance → EntityHandler.SearchStaff
-GET    /api/galgame-tag                               cors.New → middleware.NamePreference → ContentStance → EntityHandler.GetTagList
-GET    /api/galgame-tag/:id                           cors.New → middleware.NamePreference → ContentStance → EntityHandler.GetTagDetail
-GET    /api/galgame-tag/multi                         cors.New → middleware.NamePreference → ContentStance → EntityHandler.GetMultiTagGalgames
-GET    /api/galgame-tag/search                        cors.New → middleware.NamePreference → ContentStance → EntityHandler.SearchTags
 GET    /api/galgame/:id                               cors.New → middleware.NamePreference → ContentStance → OptionalAuth → GalgameHandler.GetDetail
 GET    /api/galgame/:id/collections/mine              cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → GalgameCollectionHandler.MyCollectionsForGalgame
 GET    /api/galgame/:id/edit/bootstrap                cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → EditHandler.Bootstrap

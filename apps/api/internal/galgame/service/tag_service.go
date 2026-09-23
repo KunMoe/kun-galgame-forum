@@ -2,9 +2,6 @@ package service
 
 import (
 	"context"
-	"net/url"
-	"strconv"
-	"strings"
 
 	"kun-galgame-api/internal/galgame/client"
 	"kun-galgame-api/internal/galgame/dto"
@@ -22,15 +19,6 @@ func NewTagService(galgameClient *client.GalgameClient, enricher *GalgameEnriche
 	return &TagService{galgameClient: galgameClient, enricher: enricher, galgameSvc: galgameSvc}
 }
 
-type TagMultiPage struct {
-	Galgames []dto.GalgameCard `json:"galgames"`
-	Total    int64             `json:"total"`
-}
-
-const taxonomyMemberPageCap = 200
-
-const maxTagFilterIDs = 10
-
 const CatalogCardInclude = "names,covers,labels"
 
 func tagCategory(kind string, sexual bool) string {
@@ -38,23 +26,6 @@ func tagCategory(kind string, sexual bool) string {
 		return "sexual"
 	}
 	return kind
-}
-
-func (s *TagService) Search(
-	ctx context.Context,
-	rawQuery url.Values,
-	isSFW bool,
-) ([]dto.TaxonomySearchItem, *errors.AppError) {
-	hits, _, appErr := s.searchHits(ctx, rawQuery.Get("q"), 1,
-		atoiOr(rawQuery.Get("limit"), 20), isSFW)
-	if appErr != nil {
-		return nil, appErr
-	}
-	items := make([]dto.TaxonomySearchItem, 0, len(hits))
-	for _, h := range hits {
-		items = append(items, dto.TaxonomySearchItem{ID: int(h.ID), Name: h.VocabularyName()})
-	}
-	return items, nil
 }
 
 // searchHits carries the hidden-tier and SFW filtering that every tag surface
@@ -101,109 +72,6 @@ func (s *TagService) searchHits(
 	// count change every time the reader moved. It over-counts for an SFW
 	// reader instead, and the pages it hid rows from are simply short.
 	return out, max(total, int64(len(out))), nil
-}
-
-func (s *TagService) GetByMultiTag(
-	ctx context.Context,
-	rawQuery url.Values,
-	isSFW bool,
-) (*TagMultiPage, *errors.AppError) {
-	ids := rawQuery.Get("tag_ids")
-
-	q := url.Values{
-		"page":    {strconv.Itoa(atoiOr(rawQuery.Get("page"), 1))},
-		"limit":   {strconv.Itoa(atoiOr(rawQuery.Get("limit"), 24))},
-		"include": {CatalogCardInclude},
-		"sort":    {"released_desc"},
-	}
-	if selected := splitCSV(ids); len(selected) > 0 {
-		if len(selected) > maxTagFilterIDs {
-			selected = selected[:maxTagFilterIDs]
-		}
-		q.Set("tag_id", strings.Join(selected, ","))
-	}
-	client.ApplyWorksGate(q, isSFW)
-
-	res, appErr := s.galgameClient.CatalogWorksSearch(ctx, q)
-	if appErr != nil {
-		return nil, appErr
-	}
-	return &TagMultiPage{
-		Galgames: s.enricher.ToCards(ctx, catalogItemsToNextMoe(ctx, res.Items)),
-		Total:    res.Total,
-	}, nil
-}
-
-func (s *TagService) GetList(
-	ctx context.Context,
-	rawQuery url.Values,
-	isSFW bool,
-) (*dto.TagListPage, *errors.AppError) {
-	index, appErr := s.indexRows(ctx)
-	if appErr != nil {
-		return nil, appErr
-	}
-
-	tags := make([]dto.TagListItem, 0, len(index))
-	for _, t := range index {
-		if isSFW && t.sexual {
-			continue
-		}
-		tags = append(tags, t.item)
-	}
-	total := int64(len(tags))
-
-	page, limit := atoiOr(rawQuery.Get("page"), 1), atoiOr(rawQuery.Get("limit"), 100)
-	if page < 1 {
-		page = 1
-	}
-	if limit < 1 {
-		limit = 100
-	}
-	if start := (page - 1) * limit; start >= len(tags) {
-		tags = nil
-	} else {
-		tags = tags[start:min(start+limit, len(tags))]
-	}
-	return &dto.TagListPage{Tags: tags, Total: total}, nil
-}
-
-func (s *TagService) GetDetail(
-	ctx context.Context,
-	id string,
-	rawQuery url.Values,
-	isSFW bool,
-) (*dto.TagDetail, *errors.AppError) {
-	t, found, appErr := s.galgameClient.CatalogTag(ctx, id)
-	if appErr != nil {
-		return nil, appErr
-	}
-	if !found {
-		return nil, errors.ErrNotFound("未找到该标签")
-	}
-
-	filter := buildEntityFilter(rawQuery)
-	memberIDs, appErr := s.galgameClient.CatalogMemberWorkIDs(ctx,
-		entityMemberQuery("tag_id", id, filter), isSFW, taxonomyMemberPageCap)
-	if appErr != nil {
-		return nil, appErr
-	}
-	filter.RestrictIDs = memberIDs
-	page, appErr := s.galgameSvc.hydrateListCards(ctx, filter, isSFW)
-	if appErr != nil {
-		return nil, appErr
-	}
-
-	return &dto.TagDetail{
-		ID:           int(t.ID),
-		Name:         t.Label(),
-		Category:     tagCategory(t.Kind, t.Sexual),
-		Hidden:       t.Tier == client.TagTierHidden,
-		Description:  preferredIntro(t.Intros).Intro,
-		Alias:        []string{},
-		Galgame:      listCardsToEntityCards(page.Galgames),
-		GalgameCount: page.Total,
-	}, nil
 }
 
 func catalogItemsToNextMoe(ctx context.Context, items []client.CatalogWorkListItem) []dto.NextMoeGalgameItem {

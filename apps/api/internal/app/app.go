@@ -122,7 +122,6 @@ type App struct {
 	GalgameResourceHandler     *galgameHandler.ResourceHandler
 	GalgameRatingHandler       *galgameHandler.RatingHandler
 	GalgameQuizHandler         *galgameHandler.QuizHandler
-	GalgameEntityHandler       *galgameHandler.EntityHandler
 	GalgameCalendarHandler     *galgameHandler.CalendarHandler
 	GalgameDraftsHandler       *galgameHandler.DraftsHandler
 	GalgameProxyHandler        *galgameHandler.GalgameProxyHandler
@@ -431,12 +430,7 @@ func New(cfg *config.Config) *App {
 	)
 	galgameCollectionRepo := galgameRepo.NewGalgameCollectionRepository(db)
 	galgameCollectionSvc := galgameService.NewCollectionService(galgameCollectionRepo, galgameCoreSvc, gc, uc, catalogCli, trustCheck, trustScan, rdb)
-	galgameOfficialSvc := galgameService.NewOfficialService(gc, galgameCoreSvc)
-	galgameEngineSvc := galgameService.NewEngineService(gc, galgameCoreSvc)
-	galgameSeriesSvc := galgameService.NewSeriesService(gc, galgameEnricher, galgameCoreSvc)
 	galgameTagSvc := galgameService.NewTagService(gc, galgameEnricher, galgameCoreSvc)
-	galgameStaffSvc := galgameService.NewStaffService(gc, galgameEnricher)
-	galgameCharacterSvc := galgameService.NewCharacterService(gc, galgameEnricher)
 	galgameCalendarSvc := galgameService.NewCalendarService(gc, galgameEnricher)
 	galgameDraftsSvc := galgameService.NewDraftsService(gc, galgameEnricher)
 	galgameProxySvc := galgameService.NewGalgameProxyService(gc, galgameLocalRepo, uc)
@@ -518,40 +512,36 @@ func New(cfg *config.Config) *App {
 
 	app := &App{
 		DB: db, Redis: rdb, Config: cfg, OAuthClient: oauthClient,
-		UserState:                userStateRepo,
-		TrustCheck:               trustCheck,
-		TrustScan:                trustScan,
-		Notifier:                 notifier,
-		Messages:                 messageSvc,
-		UserClient:               uc,
-		UserService:              userService,
-		CreatorService:           creatorSvc,
-		Authn:                    authn,
-		BearerStance:             bearerStance,
-		ImageMeta:                imageMetaResolve(imageMeta),
-		GalgameV1:                galgameapiv1.New(gc, moyuCli, uc, rdb, cfg.NextMoeAPI.ImageCDNBase),
-		GalgameEntityV1:          galgameentityv1.New(gc, db, cfg.NextMoeAPI.ImageCDNBase),
-		TrustV1:                  trustapiv1.New(trustCli, uc, cfg.Trust.Site, cfg.NextMoeAPI.ImageCDNBase),
-		WallV1:                   newWallV1(db, communityCli, uc, gc, imageMetaResolve(imageMeta), cfg.NextMoeAPI.ImageCDNBase),
-		OAuthHandler:             handler.NewOAuthHandler(authService, cfg.Server.Mode == "prod", communityBooster),
-		UserHandler:              handler.NewUserHandler(userService, userContentService),
-		HomeHandler:              homeHandler.NewHomeHandler(homeService.NewHomeService(homeRepo.NewHomeRepository(db), gc, uc, rdb)),
-		LotteryService:           lotterySvc,
-		AdminOverviewHandler:     adminHandler.NewOverviewHandler(adminOverviewSvc),
-		AdminPurgeHandler:        adminHandler.NewPurgeHandler(adminPurgeSvc),
-		RankingHandler:           rankingHandler.NewRankingHandler(rankingService.NewRankingService(rankingRepo.NewRankingRepository(db), gc, uc)),
-		TrustHandler:             trustHandler.NewTrustHandler(trustEnforce, cfg.Trust.CallbackSecret),
-		RSSHandler:               rssHandler.NewRSSHandler(rssRepo.NewRSSRepository(db), gc, uc),
-		NewsHandler:              newsHandler.NewNewsHandler(newsCli, uc),
-		GalgameHandler:           galgameHandler.NewGalgameHandler(galgameCoreSvc),
-		GalgameCollectionHandler: galgameHandler.NewGalgameCollectionHandler(galgameCollectionSvc),
-		GalgameResourceHandler:   galgameHandler.NewResourceHandler(galgameResourceSvc),
-		GalgameRatingHandler:     galgameHandler.NewRatingHandler(galgameRatingSvc, galgamePlaytimeSvc),
-		GalgameQuizHandler:       galgameHandler.NewQuizHandler(galgameQuizSvc),
-		GalgameEntityHandler: galgameHandler.NewEntityHandler(
-			galgameOfficialSvc, galgameEngineSvc, galgameSeriesSvc, galgameTagSvc,
-			galgameStaffSvc, galgameCharacterSvc,
-		),
+		UserState:                 userStateRepo,
+		TrustCheck:                trustCheck,
+		TrustScan:                 trustScan,
+		Notifier:                  notifier,
+		Messages:                  messageSvc,
+		UserClient:                uc,
+		UserService:               userService,
+		CreatorService:            creatorSvc,
+		Authn:                     authn,
+		BearerStance:              bearerStance,
+		ImageMeta:                 imageMetaResolve(imageMeta),
+		GalgameV1:                 galgameapiv1.New(gc, moyuCli, uc, rdb, cfg.NextMoeAPI.ImageCDNBase),
+		GalgameEntityV1:           galgameentityv1.New(gc, db, cfg.NextMoeAPI.ImageCDNBase),
+		TrustV1:                   trustapiv1.New(trustCli, uc, cfg.Trust.Site, cfg.NextMoeAPI.ImageCDNBase),
+		WallV1:                    newWallV1(db, communityCli, uc, gc, imageMetaResolve(imageMeta), cfg.NextMoeAPI.ImageCDNBase),
+		OAuthHandler:              handler.NewOAuthHandler(authService, cfg.Server.Mode == "prod", communityBooster),
+		UserHandler:               handler.NewUserHandler(userService, userContentService),
+		HomeHandler:               homeHandler.NewHomeHandler(homeService.NewHomeService(homeRepo.NewHomeRepository(db), gc, uc, rdb)),
+		LotteryService:            lotterySvc,
+		AdminOverviewHandler:      adminHandler.NewOverviewHandler(adminOverviewSvc),
+		AdminPurgeHandler:         adminHandler.NewPurgeHandler(adminPurgeSvc),
+		RankingHandler:            rankingHandler.NewRankingHandler(rankingService.NewRankingService(rankingRepo.NewRankingRepository(db), gc, uc)),
+		TrustHandler:              trustHandler.NewTrustHandler(trustEnforce, cfg.Trust.CallbackSecret),
+		RSSHandler:                rssHandler.NewRSSHandler(rssRepo.NewRSSRepository(db), gc, uc),
+		NewsHandler:               newsHandler.NewNewsHandler(newsCli, uc),
+		GalgameHandler:            galgameHandler.NewGalgameHandler(galgameCoreSvc),
+		GalgameCollectionHandler:  galgameHandler.NewGalgameCollectionHandler(galgameCollectionSvc),
+		GalgameResourceHandler:    galgameHandler.NewResourceHandler(galgameResourceSvc),
+		GalgameRatingHandler:      galgameHandler.NewRatingHandler(galgameRatingSvc, galgamePlaytimeSvc),
+		GalgameQuizHandler:        galgameHandler.NewQuizHandler(galgameQuizSvc),
 		GalgameCalendarHandler:    galgameHandler.NewCalendarHandler(galgameCalendarSvc),
 		GalgameDraftsHandler:      galgameHandler.NewDraftsHandler(galgameDraftsSvc),
 		GalgameProxyHandler:       galgameHandler.NewGalgameProxyHandler(galgameProxySvc),

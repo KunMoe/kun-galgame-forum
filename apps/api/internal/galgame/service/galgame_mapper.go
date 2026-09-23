@@ -309,3 +309,10 @@ func detailRatingFromRow(
 		},
 	}
 }
+
+func emptyStrSliceIfNil(s []string) []string {
+	if s == nil {
+		return []string{}
+	}
+	return s
+}
