@@ -1,5 +1,12 @@
 # API v1 changelog
 
+## 2026-09-23 (M · recall erases the text)
+
+No shape change.
+
+- `PATCH /api/v1/me/conversations/{user_id}/messages/{message_id}` (`updateDirectMessage`): a recall now erases the stored text in the same write, and it cannot be restored. The response is unchanged: a recalled message was already an empty document with `state: recalled`.
+- Migration 131 erases the text of the 447 messages recalled before this release.
+
 ## 2026-09-23 (G0 galgame id is the catalog work id)
 
 Breaking for the one v1 galgame face.

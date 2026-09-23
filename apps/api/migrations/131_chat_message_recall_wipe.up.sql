@@ -1,0 +1,26 @@
+-- 131: erase the text of every recalled private message.
+--
+-- A recall used to set is_recall and recall_time and leave content in place, so
+-- the words a sender took back stayed in the database. /api/v1 already served a
+-- recalled message as an empty document; from this release the v1 recall
+-- (PATCH /api/v1/me/conversations/{user_id}/messages/{message_id}) blanks content
+-- in the same UPDATE, and this migration does the same to the rows recalled
+-- before it.
+--
+-- The text had been kept as report evidence (m-message.md §4 C5). Nothing used
+-- it that way: trust has no private-message report kind and moderators never see
+-- private messages. The user decided on 2026-09-23 that a recall removes the
+-- text (m-message.md §13). It cannot be restored.
+--
+-- Production on 2026-09-23: 447 recalled rows, all with text, 26 of them with
+-- image tokens. Those images drop out of the reference ping and expire under the
+-- image service TTL, as intended. The row, is_recall and recall_time stay: the
+-- message is still a tombstone in both histories. chat_room.last_message_content
+-- holds no recalled text (27 rooms carry the old recall sentence; 1 matches a
+-- recalled text only because the same words were sent again and kept), so it is
+-- not touched.
+--
+-- Only recalled rows that still have text are touched, so running it again
+-- changes nothing.
+
+UPDATE chat_message SET content = '' WHERE is_recall AND content <> '';

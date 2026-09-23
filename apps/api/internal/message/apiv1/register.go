@@ -154,6 +154,7 @@ func Register(svc *Service) func(huma.API) {
 			Summary:     "Recall a direct message",
 			Description: "Recalls the caller's message. state must be recalled; recall is irreversible, so sent is not a target. " +
 				"There is no time limit. " +
+				"The stored text is erased in the same write and cannot be restored. " +
 				"A message that is not in this conversation is NOT_FOUND. A message the peer sent is PERMISSION_REQUIRED; the caller can see it, so it is not NOT_FOUND. " +
 				"Already recalled is 200 with no further write. " +
 				"A recalled message is still in both histories as a tombstone: state recalled, content an empty document, recalled_at set. " +

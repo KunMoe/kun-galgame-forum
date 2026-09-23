@@ -225,6 +225,7 @@ func (s *Service) updateDirectMessage(ctx context.Context, in *updateDirectMessa
 		}
 		row.IsRecall = true
 		row.RecallTime = &now
+		row.Content = ""
 	}
 	users := s.hydrateUsers(ctx, []int{row.SenderID})
 	sender, _ := s.userRef(users, row.SenderID)

@@ -236,7 +236,7 @@ last_message_sender_id = ?, last_message_sender_name = ?, updated = ? WHERE id =
 func (r *ChatRepository) RecallDirectMessage(id, roomID int, now time.Time) error {
 	return r.db.Transaction(func(tx *gorm.DB) error {
 		if err := tx.Exec(
-			`UPDATE chat_message SET is_recall = TRUE, recall_time = ?, updated = ? WHERE id = ? AND chat_room_id = ?`,
+			`UPDATE chat_message SET is_recall = TRUE, recall_time = ?, updated = ?, content = '' WHERE id = ? AND chat_room_id = ?`,
 			now, now, id, roomID,
 		).Error; err != nil {
 			return err

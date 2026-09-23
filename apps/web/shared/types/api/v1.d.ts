@@ -791,7 +791,7 @@ export interface paths {
         head?: never;
         /**
          * Recall a direct message
-         * @description Recalls the caller's message. state must be recalled; recall is irreversible, so sent is not a target. There is no time limit. A message that is not in this conversation is NOT_FOUND. A message the peer sent is PERMISSION_REQUIRED; the caller can see it, so it is not NOT_FOUND. Already recalled is 200 with no further write. A recalled message is still in both histories as a tombstone: state recalled, content an empty document, recalled_at set. If it was the latest message in the room, chat_room.last_message_content is set to the empty string; the server never writes a sentence there.
+         * @description Recalls the caller's message. state must be recalled; recall is irreversible, so sent is not a target. There is no time limit. The stored text is erased in the same write and cannot be restored. A message that is not in this conversation is NOT_FOUND. A message the peer sent is PERMISSION_REQUIRED; the caller can see it, so it is not NOT_FOUND. Already recalled is 200 with no further write. A recalled message is still in both histories as a tombstone: state recalled, content an empty document, recalled_at set. If it was the latest message in the room, chat_room.last_message_content is set to the empty string; the server never writes a sentence there.
          */
         patch: operations["updateDirectMessage"];
         trace?: never;
