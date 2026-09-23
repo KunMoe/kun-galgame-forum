@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/url"
 	"testing"
+	"time"
 )
 
 func TestV1TopicRankingVisibility(t *testing.T) {
@@ -129,6 +130,20 @@ func TestV1WorkRankingRatingTie(t *testing.T) {
 	got := rkEntries(body, "work")
 	if fmt.Sprint(rkIDs(got)) != rkWant(rkWorkNoCreator, rkWorkTop) || got[0].value != got[1].value {
 		t.Errorf("rating tie %v: equal weighted ratings break on id DESC", got)
+	}
+
+	// Five more works on the same weighted rating, rated out of id order, so the
+	// join's natural output order is not id DESC by accident.
+	now := time.Now().Add(-time.Hour)
+	extra := []int{rkWorkBannedMaker + 3, rkWorkBannedMaker + 1, rkWorkBannedMaker + 4, rkWorkBannedMaker + 2, rkWorkBannedMaker + 5}
+	for _, id := range extra {
+		f.sql(t, `INSERT INTO galgame (id, view, updated, published, content_limit, resource_count) VALUES (?, 0, ?, true, 'sfw', 0)`, id, now)
+		f.sql(t, `INSERT INTO galgame_rating (recommend, overall, user_id, work_id, updated) VALUES ('yes', 10, ?, ?, ?)`, rkUserA, id, now)
+	}
+	_, body = f.get(t, "/rankings/works", url.Values{"sort": {"rating_desc"}, "include_resourceless": {"true"}})
+	want := rkWant(rkWorkBannedMaker+5, rkWorkBannedMaker+4, rkWorkBannedMaker+3, rkWorkBannedMaker+2, rkWorkBannedMaker+1, rkWorkNoCreator, rkWorkTop)
+	if ids := rkIDs(rkEntries(body, "work")); fmt.Sprint(ids) != want {
+		t.Errorf("seven tied works %v, want %s", ids, want)
 	}
 }
 
