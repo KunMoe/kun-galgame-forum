@@ -21,6 +21,12 @@ const { data } = await useApi(
     })
 )
 
+const entries = computed(() =>
+  (data.value?.items ?? []).flatMap((entry) =>
+    entry.topic ? [{ ...entry, topic: entry.topic }] : []
+  )
+)
+
 const icon = computed(
   () =>
     topicSortItem.find((i) => i.sort === topicRankingPageData.sort)?.icon ?? ''
@@ -29,7 +35,7 @@ const icon = computed(
 
 <template>
   <ul v-if="data" class="space-y-3">
-    <li v-for="(entry, index) in data.items" :key="entry.topic.id">
+    <li v-for="(entry, index) in entries" :key="entry.topic.id">
       <KunLink
         color="default"
         underline="none"

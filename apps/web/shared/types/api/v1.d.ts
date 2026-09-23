@@ -6705,19 +6705,6 @@ export interface components {
                 [key: string]: unknown;
             };
         };
-        RankedTopic: {
-            /** @description The topic's author. */
-            author: components["schemas"]["UserRef"];
-            /** @description Topic id. */
-            id: string;
-            /**
-             * @description Type discriminant. Always topic.
-             * @enum {string}
-             */
-            object: "topic";
-            /** @description Topic title as stored. Free text; never use it as a decision input. */
-            title: string;
-        };
         Reaction: {
             /**
              * Format: date-time
@@ -8325,8 +8312,8 @@ export interface components {
              * @description 1-based place in this list, numbered after topics whose author cannot be shown were dropped.
              */
             rank: number;
-            /** @description The ranked topic. */
-            topic: components["schemas"]["RankedTopic"];
+            /** @description The ranked topic, as the topic list renders it. Never null in this list. */
+            topic: components["schemas"]["TopicSummary"] | null;
         };
         TopicSource: {
             /** @description The stored grants. */

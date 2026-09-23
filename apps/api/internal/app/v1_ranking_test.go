@@ -18,22 +18,26 @@ func TestV1TopicRankingVisibility(t *testing.T) {
 		t.Error("a top-N list has no next_cursor")
 	}
 	got := rkEntries(body, "topic")
-	if fmt.Sprint(rkIDs(got)) != rkWant(rkTopicTieHigh, rkTopicTieMid, rkTopicTieLow) {
-		t.Fatalf("topics %v: hidden, login-only, NSFW, banned-author and missing-author topics must be dropped, ties broken by id DESC", rkIDs(got))
+	if fmt.Sprint(rkIDs(got)) != rkWant(rkTopicMissing, rkTopicTieHigh, rkTopicTieMid, rkTopicTieLow) {
+		t.Fatalf("topics %v: hidden, login-only, NSFW and banned-author topics must be dropped, a missing author kept as the topic list keeps it, ties broken by id DESC", rkIDs(got))
 	}
 	for i, e := range got {
-		if e.rank != i+1 || e.value != 1900000100 || e.raw["object"] != "topic_ranking_entry" {
+		if e.rank != i+1 || e.raw["object"] != "topic_ranking_entry" || (i > 0 && e.value != 1900000100) {
 			t.Errorf("entry %d: %+v", i, e.raw)
 		}
 	}
-	topic, _ := got[0].raw["topic"].(map[string]any)
+	ghost, _ := got[0].raw["topic"].(map[string]any)
+	if author, _ := ghost["author"].(map[string]any); author["id"] != fmt.Sprint(rkUserMissing) || author["name"] != nil {
+		t.Errorf("an author OAuth does not know is a deleted-user ref, as on /topics: %+v", ghost["author"])
+	}
+	topic, _ := got[1].raw["topic"].(map[string]any)
 	author, _ := topic["author"].(map[string]any)
 	if topic["object"] != "topic" || topic["title"] != fmt.Sprintf("topic %d", rkTopicTieHigh) || author["id"] != fmt.Sprint(rkUserC) {
 		t.Errorf("topic %+v", topic)
 	}
 
 	resp, body = f.get(t, "/rankings/topics", url.Values{"limit": {"10"}, "include_nsfw": {"true"}})
-	if ids := rkIDs(rkEntries(body, "topic")); resp.StatusCode != http.StatusOK || fmt.Sprint(ids) != rkWant(rkTopicNSFW, rkTopicTieHigh, rkTopicTieMid, rkTopicTieLow) {
+	if ids := rkIDs(rkEntries(body, "topic")); resp.StatusCode != http.StatusOK || fmt.Sprint(ids) != rkWant(rkTopicNSFW, rkTopicMissing, rkTopicTieHigh, rkTopicTieMid, rkTopicTieLow) {
 		t.Errorf("include_nsfw %d %v", resp.StatusCode, ids)
 	}
 }
@@ -42,7 +46,7 @@ func TestV1TopicRankingTieWalk(t *testing.T) {
 	f := newRankingFix(t)
 	var want []string
 	rows, err := f.db.Raw(`SELECT id::text FROM topic WHERE status != 1 AND access_scope = 'public' AND is_nsfw = false
-		AND user_id NOT IN (?, ?) ORDER BY view DESC, id DESC`, rkUserBanned, rkUserMissing).Rows()
+		AND user_id <> ? ORDER BY view DESC, id DESC`, rkUserBanned).Rows()
 	if err != nil {
 		t.Fatal(err)
 	}

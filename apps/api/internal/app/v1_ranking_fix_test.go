@@ -136,8 +136,8 @@ func newRankingFix(t *testing.T) *rkFix {
 		DB:         db,
 		Redis:      rdb,
 		UserClient: uc,
-		RankingV1:  rankingapiv1.New(rankingRepo.NewRankingRepository(db), uc, f.works, "https://image.test.example"),
 	}
+	f.app.RankingV1 = rankingapiv1.New(rankingRepo.NewRankingRepository(db), uc, f.works, f.app.newTopicV1(), "https://image.test.example")
 	f.app.setupRoutes()
 	f.spec = newSpecConformance(t)
 	f.seed(t)

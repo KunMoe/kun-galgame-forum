@@ -8,7 +8,6 @@ import (
 
 type RankedRow struct {
 	ID    int     `gorm:"column:id"`
-	Title string  `gorm:"column:title"`
 	Value float64 `gorm:"column:value"`
 	Owner int     `gorm:"column:owner_id"`
 }
@@ -24,15 +23,19 @@ var topicRankingColumns = map[string]string{
 	"favorites": "favorite_count",
 }
 
-func (r *RankingRepository) TopTopics(key string, includeNSFW bool, limit int) ([]RankedRow, error) {
+const topicRowColumns = `t.id, t.title, t.view, t.status, t.is_nsfw, t.like_count, t.reply_count,
+	t.comment_count, t.best_answer_id, t.status_update_time, t.created, t.upvote_time,
+	t.cover_images, t.user_id, t.category, t.favorite_count, t.upvote_count`
+
+func (r *RankingRepository) TopTopics(key string, includeNSFW bool, limit int) ([]topicRepo.TopicKeysetRow, error) {
 	col := topicRankingColumns[key]
 	q := r.db.Table("topic t").
-		Select("t.id, t.title, t.user_id AS owner_id, t." + col + " AS value").
+		Select(topicRowColumns + ", t." + col + " AS sort_int").
 		Where(listedTopic)
 	if !includeNSFW {
 		q = q.Where("t.is_nsfw = false")
 	}
-	var rows []RankedRow
+	var rows []topicRepo.TopicKeysetRow
 	err := q.Order("t." + col + " DESC, t.id DESC").Limit(limit).Find(&rows).Error
 	return rows, err
 }

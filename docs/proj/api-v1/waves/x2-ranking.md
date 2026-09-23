@@ -144,6 +144,9 @@
 3. 作品排行请求 catalog 时带上 `content_limit`（`include_nsfw` 为假时 `sfw`），与本地 SQL 闸同向；catalog 不返回的行按「查无」跳过、名次重编。
 4. `WorkRankingEntry.work` 是可空的 `*repr.WorkRef`（spec 里是 `anyOf[WorkRef, null]`）：G8 比较可空性，全轨嵌入的 `work` 统一可空（x2-community 的 `FollowedWall.work` 就是可空的）；本列表里它永不为 null，description 写明。
 
+5. **`TopicRankingEntry.topic` 改成话题列表的 `TopicSummary`（可空指针），删掉 `RankedTopic`。** 五条 X2 分支合在一起跑契约门时，G8 拦下 `topic` 这个属性名：X2-activity 的 `Activity.topic` 是可空的 `TopicSummary`，本轨是非空的 `RankedTopic`。与 `work` 同一条规则：嵌入的 `topic` 全站一个形状——可空的 `TopicSummary`，本列表里永不为 null。渲染走 X2-search 新增的 `topicapiv1.Summaries`（文件逐字节相同，谁先合并谁留着），排名 SQL 取话题行的全部列、把排序指标放进 `sort_int`。
+6. 随之，**作者在 OAuth 查不到的话题不再跳过**，与 `/topics` 列表一样以已注销用户的 `UserRef`（`name` 为 null）出现；被封禁的作者照旧跳过。§3.3「作者被封禁或在 OAuth 查不到的话题跳过」以此为准。变异 1–6 在新代码上重跑，全部变红（第 5 条现在改的是共享渲染器 `topicapiv1.summaries`）。
+
 ## 8. 验收记录
 
 **闸**：`make lint` 零输出；`KUN_REQUIRE_TEST_DB=1 go test -count=1 -p 1 ./...` 全绿（专属库 `kungal_test_x2_ranking`）；`make openapi` / `gen:api` 无漂移；`pnpm lint`、`pnpm typecheck`、`pnpm -F web test`（62 文件 427 条）全绿；`deadcode` 只剩 master 上原有的 6 条，与本轨无关。

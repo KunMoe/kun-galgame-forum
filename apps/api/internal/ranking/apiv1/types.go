@@ -1,19 +1,15 @@
 package apiv1
 
-import "kun-galgame-api/internal/apiv1/repr"
-
-type RankedTopic struct {
-	Object string         `json:"object" enum:"topic" maxLength:"5" doc:"Type discriminant. Always topic."`
-	ID     repr.DecimalID `json:"id" doc:"Topic id."`
-	Title  string         `json:"title" maxLength:"233" doc:"Topic title as stored. Free text; never use it as a decision input."`
-	Author repr.UserRef   `json:"author" doc:"The topic's author."`
-}
+import (
+	"kun-galgame-api/internal/apiv1/repr"
+	topicapiv1 "kun-galgame-api/internal/topic/apiv1"
+)
 
 type TopicRankingEntry struct {
-	Object      string      `json:"object" enum:"topic_ranking_entry" maxLength:"19" doc:"Type discriminant. Always topic_ranking_entry."`
-	Rank        int         `json:"rank" minimum:"1" maximum:"100" doc:"1-based place in this list, numbered after topics whose author cannot be shown were dropped."`
-	MetricValue float64     `json:"metric_value" minimum:"0" doc:"The value the list is sorted by, such as the view count for views_desc."`
-	Topic       RankedTopic `json:"topic" doc:"The ranked topic."`
+	Object      string                   `json:"object" enum:"topic_ranking_entry" maxLength:"19" doc:"Type discriminant. Always topic_ranking_entry."`
+	Rank        int                      `json:"rank" minimum:"1" maximum:"100" doc:"1-based place in this list, numbered after topics whose author cannot be shown were dropped."`
+	MetricValue float64                  `json:"metric_value" minimum:"0" doc:"The value the list is sorted by, such as the view count for views_desc."`
+	Topic       *topicapiv1.TopicSummary `json:"topic" doc:"The ranked topic, as the topic list renders it. Never null in this list."`
 }
 
 type UserRankingEntry struct {

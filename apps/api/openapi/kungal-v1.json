@@ -9149,42 +9149,6 @@
         ],
         "type": "object"
       },
-      "RankedTopic": {
-        "properties": {
-          "author": {
-            "$ref": "#/components/schemas/UserRef",
-            "description": "The topic's author."
-          },
-          "id": {
-            "description": "Topic id.",
-            "maxLength": 20,
-            "minLength": 1,
-            "pattern": "^[0-9]+$",
-            "type": "string"
-          },
-          "object": {
-            "description": "Type discriminant. Always topic.",
-            "enum": [
-              "topic"
-            ],
-            "maxLength": 5,
-            "type": "string",
-            "x-vocabulary-closed": true
-          },
-          "title": {
-            "description": "Topic title as stored. Free text; never use it as a decision input.",
-            "maxLength": 233,
-            "type": "string"
-          }
-        },
-        "required": [
-          "object",
-          "id",
-          "title",
-          "author"
-        ],
-        "type": "object"
-      },
       "Reaction": {
         "properties": {
           "created_at": {
@@ -13738,8 +13702,15 @@
             "type": "integer"
           },
           "topic": {
-            "$ref": "#/components/schemas/RankedTopic",
-            "description": "The ranked topic."
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TopicSummary"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The ranked topic, as the topic list renders it. Never null in this list."
           }
         },
         "required": [

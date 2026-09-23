@@ -9,6 +9,8 @@ import (
 	galgameapiv1 "kun-galgame-api/internal/galgame/apiv1"
 	"kun-galgame-api/internal/galgame/client"
 	"kun-galgame-api/internal/ranking/repository"
+	topicapiv1 "kun-galgame-api/internal/topic/apiv1"
+	topicRepo "kun-galgame-api/internal/topic/repository"
 	legacyErrors "kun-galgame-api/pkg/errors"
 	"kun-galgame-api/pkg/problem"
 	"kun-galgame-api/pkg/userclient"
@@ -24,19 +26,24 @@ type Works interface {
 	CatalogRowsByWorkIDs(ctx context.Context, ids []int, include, contentLimit string) (map[int]client.CatalogWorkListItem, *legacyErrors.AppError)
 }
 
-type Service struct {
-	repo  *repository.RankingRepository
-	users Users
-	works Works
-	cdn   string
+type Topics interface {
+	Summaries(ctx context.Context, rows []topicRepo.TopicKeysetRow) ([]topicapiv1.TopicSummary, *problem.Problem)
 }
 
-func New(repo *repository.RankingRepository, users Users, works Works, cdn string) *Service {
-	return &Service{repo: repo, users: users, works: works, cdn: cdn}
+type Service struct {
+	repo   *repository.RankingRepository
+	users  Users
+	works  Works
+	topics Topics
+	cdn    string
+}
+
+func New(repo *repository.RankingRepository, users Users, works Works, topics Topics, cdn string) *Service {
+	return &Service{repo: repo, users: users, works: works, topics: topics, cdn: cdn}
 }
 
 func (s *Service) ready() *problem.Problem {
-	if s == nil || s.repo == nil || s.users == nil || s.works == nil {
+	if s == nil || s.repo == nil || s.users == nil || s.works == nil || s.topics == nil {
 		return problem.Internal(errUnconfigured)
 	}
 	return nil
@@ -89,26 +96,21 @@ func (s *Service) listTopicRanking(ctx context.Context, in *topicRankingInput) (
 	if err != nil {
 		return nil, problem.Internal(err)
 	}
-	users, prob := s.lookupUsers(ctx, rows, func(r repository.RankedRow) int { return r.Owner })
+	metric := make(map[repr.DecimalID]int64, len(rows))
+	for _, r := range rows {
+		metric[repr.ID(r.ID)] = r.SortInt
+	}
+	topics, prob := s.topics.Summaries(ctx, rows)
 	if prob != nil {
 		return nil, prob
 	}
-	items := make([]TopicRankingEntry, 0, len(rows))
-	for _, r := range rows {
-		u, ok := users[r.Owner]
-		if !ok || !userclient.IsRenderable(u) {
-			continue
-		}
+	items := make([]TopicRankingEntry, 0, len(topics))
+	for i := range topics {
 		items = append(items, TopicRankingEntry{
 			Object:      "topic_ranking_entry",
 			Rank:        len(items) + 1,
-			MetricValue: r.Value,
-			Topic: RankedTopic{
-				Object: "topic",
-				ID:     repr.ID(r.ID),
-				Title:  r.Title,
-				Author: repr.NewUserRef(s.cdn, u),
-			},
+			MetricValue: float64(metric[topics[i].ID]),
+			Topic:       &topics[i],
 		})
 	}
 	return &topicRankingOutput{Body: repr.NewList(items, nil)}, nil

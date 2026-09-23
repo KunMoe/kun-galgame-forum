@@ -513,7 +513,6 @@ func New(cfg *config.Config) *App {
 		GalgameEntityV1:           galgameentityv1.New(gc, db, cfg.NextMoeAPI.ImageCDNBase),
 		TrustV1:                   trustapiv1.New(trustCli, uc, cfg.Trust.Site, cfg.NextMoeAPI.ImageCDNBase),
 		WallV1:                    newWallV1(db, communityCli, uc, gc, imageMetaResolve(imageMeta), cfg.NextMoeAPI.ImageCDNBase),
-		RankingV1:                 rankingapiv1.New(rankingRepo.NewRankingRepository(db), uc, gc, cfg.NextMoeAPI.ImageCDNBase),
 		OAuthHandler:              handler.NewOAuthHandler(authService, cfg.Server.Mode == "prod", communityBooster),
 		UserHandler:               handler.NewUserHandler(userService, userContentService),
 		LotteryService:            lotterySvc,
@@ -565,6 +564,7 @@ func New(cfg *config.Config) *App {
 
 	app.Fiber = newFiber()
 
+	app.RankingV1 = rankingapiv1.New(rankingRepo.NewRankingRepository(db), uc, gc, app.newTopicV1(), cfg.NextMoeAPI.ImageCDNBase)
 	app.setupRoutes()
 	return app
 }
