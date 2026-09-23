@@ -46,11 +46,16 @@ func (a *App) newUserV1() *userapiv1.Users {
 	if state == nil {
 		state = a.UserState
 	}
+	var content *repository.UserContentRepository
+	if a.DB != nil {
+		content = repository.NewUserContentRepository(a.DB)
+	}
 	return userapiv1.New(userapiv1.Deps{
 		Users:    users,
 		Creators: creators,
 		OAuth:    oauthClient,
 		Accounts: a.UserClient,
+		Content:  content,
 		Redis:    a.Redis,
 		State:    state,
 		CDN:      cdn,

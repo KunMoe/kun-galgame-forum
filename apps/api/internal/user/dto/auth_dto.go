@@ -1,9 +1,5 @@
 package dto
 
-import (
-	"time"
-)
-
 type OAuthCallbackRequest struct {
 	Code         string `json:"code" validate:"required,max=2048"`
 	CodeVerifier string `json:"code_verifier" validate:"required,max=256"`
@@ -35,24 +31,6 @@ type UserGalgamesRequest struct {
 	ShowNoResource bool   `query:"show_no_resource"`
 }
 
-type UserTopicsRequest struct {
-	Type  string `query:"type" validate:"required"`
-	Page  int    `query:"page" validate:"min=1"`
-	Limit int    `query:"limit" validate:"min=1,max=50"`
-}
-
-type UserRepliesRequest struct {
-	Type  string `query:"type" validate:"required"`
-	Page  int    `query:"page" validate:"min=1"`
-	Limit int    `query:"limit" validate:"min=1,max=50"`
-}
-
-type UserCommentsRequest struct {
-	Type  string `query:"type" validate:"required"`
-	Page  int    `query:"page" validate:"min=1"`
-	Limit int    `query:"limit" validate:"min=1,max=50"`
-}
-
 type UserResourcesRequest struct {
 	Type  string `query:"type" validate:"required"`
 	Page  int    `query:"page" validate:"min=1"`
@@ -62,12 +40,6 @@ type UserResourcesRequest struct {
 type UserRatingsRequest struct {
 	Page  int `query:"page" validate:"min=1"`
 	Limit int `query:"limit" validate:"min=1,max=50"`
-}
-
-type UserTopic struct {
-	ID        int       `json:"id"`
-	Title     string    `json:"title"`
-	CreatedAt time.Time `gorm:"column:created" json:"created"`
 }
 
 type BanUserRequest struct {

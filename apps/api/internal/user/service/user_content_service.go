@@ -181,39 +181,6 @@ func (s *UserContentService) buildGalgameCards(
 	return cards
 }
 
-func (s *UserContentService) GetUserTopics(ctx context.Context, userID int, req *dto.UserTopicsRequest, isSFW, authenticated, canViewRestricted bool) ([]dto.UserTopic, int64, *errors.AppError) {
-	if s.hideTarget(ctx, userID) {
-		return []dto.UserTopic{}, 0, nil
-	}
-	items, total, err := s.userContentRepo.FindUserTopics(userID, req.Type, req.Page, req.Limit, isSFW, authenticated, canViewRestricted)
-	if err != nil {
-		return nil, 0, errors.ErrInternal("获取用户话题列表失败")
-	}
-	return items, total, nil
-}
-
-func (s *UserContentService) GetUserReplies(ctx context.Context, userID int, req *dto.UserRepliesRequest, isSFW bool) ([]repository.UserReply, int64, *errors.AppError) {
-	if s.hideTarget(ctx, userID) {
-		return []repository.UserReply{}, 0, nil
-	}
-	items, total, err := s.userContentRepo.FindUserReplies(userID, req.Type, req.Page, req.Limit, isSFW)
-	if err != nil {
-		return nil, 0, errors.ErrInternal("获取用户回复列表失败")
-	}
-	return items, total, nil
-}
-
-func (s *UserContentService) GetUserComments(ctx context.Context, userID int, req *dto.UserCommentsRequest, isSFW bool) ([]repository.UserComment, int64, *errors.AppError) {
-	if s.hideTarget(ctx, userID) {
-		return []repository.UserComment{}, 0, nil
-	}
-	items, total, err := s.userContentRepo.FindUserComments(userID, req.Type, req.Page, req.Limit, isSFW)
-	if err != nil {
-		return nil, 0, errors.ErrInternal("获取用户评论列表失败")
-	}
-	return items, total, nil
-}
-
 func (s *UserContentService) GetUserGalgameComments(
 	ctx context.Context,
 	userID int,

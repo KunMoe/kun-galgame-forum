@@ -40,3 +40,7 @@ func invalidCursor() *problem.Problem {
 func notFound() *problem.Problem {
 	return problem.New(problem.CodeNotFound, "Nothing visible exists at this URL.")
 }
+
+func permissionRequired() *problem.Problem {
+	return problem.New(problem.CodePermissionRequired, "The token lacks the permission this decision needs.")
+}

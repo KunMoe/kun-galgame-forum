@@ -1,10 +1,7 @@
 package repository
 
 import (
-	topicRepo "kun-galgame-api/internal/topic/repository"
 	"time"
-
-	"kun-galgame-api/internal/user/dto"
 
 	"gorm.io/gorm"
 )
@@ -74,134 +71,6 @@ func (r *UserContentRepository) FindUserLikedPostIDs(userID int) ([]LikedPostRow
 		Order("id DESC").
 		Scan(&rows).Error
 	return rows, err
-}
-
-func (r *UserContentRepository) FindUserTopics(userID int, queryType string, page, limit int, isSFW, authenticated, canViewRestricted bool) ([]dto.UserTopic, int64, error) {
-	offset := (page - 1) * limit
-	var results []dto.UserTopic
-	var total int64
-
-	baseQuery := r.db.Table("topic").
-		Select("topic.id, topic.title, topic.created")
-	if queryType != "topic_hide" && !canViewRestricted {
-		baseQuery = baseQuery.Where(topicRepo.SharedListPredicate("topic", authenticated))
-	}
-
-	switch queryType {
-	case "topic":
-		baseQuery = baseQuery.Where("topic.user_id = ?", userID)
-	case "topic_like":
-		baseQuery = baseQuery.
-			Joins("JOIN topic_reaction ON topic_reaction.topic_id = topic.id AND topic_reaction.reaction = 'like'").
-			Where("topic_reaction.user_id = ?", userID)
-	case "topic_upvote":
-		baseQuery = baseQuery.
-			Joins("JOIN topic_upvote ON topic_upvote.topic_id = topic.id").
-			Where("topic_upvote.user_id = ?", userID)
-	case "topic_favorite":
-		baseQuery = baseQuery.
-			Joins("JOIN topic_favorite ON topic_favorite.topic_id = topic.id").
-			Where("topic_favorite.user_id = ?", userID)
-	case "topic_hide":
-		baseQuery = baseQuery.Where("topic.user_id = ? AND topic.status = 1", userID)
-	default:
-		baseQuery = baseQuery.Where("topic.user_id = ?", userID)
-	}
-
-	if isSFW {
-		baseQuery = baseQuery.Where("topic.is_nsfw = false")
-	}
-
-	if err := baseQuery.Count(&total).Error; err != nil {
-		return nil, 0, err
-	}
-	err := baseQuery.Order("topic.created DESC").Offset(offset).Limit(limit).Find(&results).Error
-	return results, total, err
-}
-
-type UserReply struct {
-	TopicID int    `gorm:"column:topic_id" json:"topic_id"`
-	Floor   int    `gorm:"column:floor" json:"floor"`
-	Content string `gorm:"column:content" json:"content"`
-	Created string `gorm:"column:created" json:"created"`
-}
-
-func (r *UserContentRepository) FindUserReplies(userID int, queryType string, page, limit int, isSFW bool) ([]UserReply, int64, error) {
-	offset := (page - 1) * limit
-	var results []UserReply
-	var total int64
-
-	baseQuery := r.db.Table("topic_reply").
-		Select(`topic_reply.topic_id,
-			topic_reply.floor,
-			COALESCE(topic_reply.content, '') AS content,
-			topic_reply.created`).
-		Where("topic_reply.status = 0")
-
-	switch queryType {
-	case "reply_target":
-		baseQuery = baseQuery.
-			Where("topic_reply.topic_id IN (SELECT id FROM topic WHERE user_id = ?) AND topic_reply.user_id != ?", userID, userID)
-	case "reply_like":
-		baseQuery = baseQuery.
-			Joins("JOIN topic_reply_reaction ON topic_reply_reaction.topic_reply_id = topic_reply.id AND topic_reply_reaction.reaction = 'like'").
-			Where("topic_reply_reaction.user_id = ?", userID)
-	default:
-		baseQuery = baseQuery.Where("topic_reply.user_id = ?", userID)
-	}
-
-	if isSFW {
-		baseQuery = baseQuery.
-			Joins("JOIN topic ON topic.id = topic_reply.topic_id").
-			Where("topic.is_nsfw = false")
-	}
-
-	if err := baseQuery.Count(&total).Error; err != nil {
-		return nil, 0, err
-	}
-	err := baseQuery.Order("topic_reply.created DESC").Offset(offset).Limit(limit).Find(&results).Error
-	return results, total, err
-}
-
-type UserComment struct {
-	ID      int    `gorm:"column:id" json:"id"`
-	TopicID int    `gorm:"column:topic_id" json:"topic_id"`
-	Content string `gorm:"column:content" json:"content"`
-	Created string `gorm:"column:created" json:"created"`
-}
-
-func (r *UserContentRepository) FindUserComments(userID int, queryType string, page, limit int, isSFW bool) ([]UserComment, int64, error) {
-	offset := (page - 1) * limit
-	var results []UserComment
-	var total int64
-
-	baseQuery := r.db.Table("topic_comment").
-		Select("topic_comment.id, topic_comment.topic_id, topic_comment.content, topic_comment.created").
-		Where("topic_comment.status = 0")
-
-	switch queryType {
-	case "comment_target":
-		baseQuery = baseQuery.
-			Where("topic_comment.target_user_id = ? AND topic_comment.user_id != ?", userID, userID)
-	case "comment_like":
-		baseQuery = baseQuery.
-			Joins("JOIN topic_comment_like ON topic_comment_like.topic_comment_id = topic_comment.id").
-			Where("topic_comment_like.user_id = ?", userID)
-	default:
-		baseQuery = baseQuery.Where("topic_comment.user_id = ?", userID)
-	}
-
-	if isSFW {
-		baseQuery = baseQuery.
-			Joins("JOIN topic ON topic.id = topic_comment.topic_id").
-			Where("topic.is_nsfw = false")
-	}
-
-	if err := baseQuery.Count(&total).Error; err != nil {
-		return nil, 0, err
-	}
-	err := baseQuery.Order("topic_comment.created DESC").Offset(offset).Limit(limit).Find(&results).Error
-	return results, total, err
 }
 
 type UserResource struct {

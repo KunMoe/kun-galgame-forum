@@ -20,6 +20,7 @@ type Users struct {
 	creators *galgameService.CreatorService
 	oauth    *oauth.Client
 	accounts *userclient.Client
+	content  *repository.UserContentRepository
 	redis    *redis.Client
 	state    *repository.StateRepository
 	cdn      string
@@ -30,6 +31,7 @@ type Deps struct {
 	Creators *galgameService.CreatorService
 	OAuth    *oauth.Client
 	Accounts *userclient.Client
+	Content  *repository.UserContentRepository
 	Redis    *redis.Client
 	State    *repository.StateRepository
 	CDN      string
@@ -41,6 +43,7 @@ func New(d Deps) *Users {
 		creators: d.Creators,
 		oauth:    d.OAuth,
 		accounts: d.Accounts,
+		content:  d.Content,
 		redis:    d.Redis,
 		state:    d.State,
 		cdn:      d.CDN,
@@ -273,5 +276,7 @@ func Register(u *Users) func(huma.API) {
 				503: "SERVICE_UNAVAILABLE when the account service cannot be reached.",
 			}),
 		})), u.createCreatorApplication)
+
+		u.registerLists(api)
 	}
 }

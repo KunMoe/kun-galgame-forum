@@ -96,9 +96,6 @@ func (a *App) setupRoutes() {
 	userAuth := a.Authn.Auth()
 	api.Get("/user/:id/galgames", a.UserHandler.GetUserGalgames)
 	api.Get("/user/:id/galgame-comments", a.UserHandler.GetUserGalgameComments)
-	api.Get("/user/:id/topics", a.Authn.OptionalAuth(), a.UserHandler.GetUserTopics)
-	api.Get("/user/:id/replies", a.UserHandler.GetUserReplies)
-	api.Get("/user/:id/comments", a.UserHandler.GetUserComments)
 	api.Get("/user/:id/resources", a.UserHandler.GetUserResources)
 	api.Get("/user/:id/ratings", a.UserHandler.GetUserRatings)
 
