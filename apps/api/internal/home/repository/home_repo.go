@@ -26,9 +26,9 @@ type GalgameLocalRow struct {
 }
 
 type ResourcePLRow struct {
-	GalgameID int    `gorm:"column:galgame_id"`
-	Platform  string `gorm:"column:platform"`
-	Language  string `gorm:"column:language"`
+	WorkID   int    `gorm:"column:work_id"`
+	Platform string `gorm:"column:platform"`
+	Language string `gorm:"column:language"`
 }
 
 type TopicRow struct {
@@ -62,14 +62,14 @@ func (r *HomeRepository) FindRecentGalgames(limit int) ([]GalgameLocalRow, error
 	return rows, err
 }
 
-func (r *HomeRepository) FindResourcePlatformLanguage(galgameIDs []int) []ResourcePLRow {
-	if len(galgameIDs) == 0 {
+func (r *HomeRepository) FindResourcePlatformLanguage(workIDs []int) []ResourcePLRow {
+	if len(workIDs) == 0 {
 		return nil
 	}
 	var resources []ResourcePLRow
 	r.db.Table("galgame_resource").
-		Select("galgame_id, platform, language").
-		Where("galgame_id IN ?", galgameIDs).
+		Select("work_id, platform, language").
+		Where("work_id IN ?", workIDs).
 		Find(&resources)
 	return resources
 }

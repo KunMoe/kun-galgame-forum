@@ -1,7 +1,6 @@
 <script setup lang="ts">
 interface SearchHit {
   id: number
-  work_id?: number
   vndb_id?: string
   name?: string
   effective_banner_hash?: string
@@ -41,7 +40,7 @@ const handleSearch = async () => {
   searchResults.value = res
 }
 
-const gameHref = (hit: SearchHit): string => `/galgame/${hit.id || hit.work_id}`
+const gameHref = (hit: SearchHit): string => `/galgame/${hit.id}`
 
 const handleCreateNew = async () => {
   const store = usePersistEditGalgameStore()
@@ -141,8 +140,8 @@ onMounted(() => {
             </p>
           </div>
           <KunLink
-            v-if="galgameClaimGid(item)"
-            :to="`/galgame/${galgameClaimGid(item)}/edit`"
+            v-if="item.work_id"
+            :to="`/galgame/${item.work_id}/edit`"
           >
             <KunButton size="sm" variant="flat">继续编辑</KunButton>
           </KunLink>
@@ -153,7 +152,7 @@ onMounted(() => {
         <h3 class="text-default-700 text-sm font-bold">匹配的 Galgame</h3>
         <div
           v-for="hit in searchResults.items"
-          :key="`item-${hit.work_id ?? hit.id}`"
+          :key="`item-${hit.id}`"
           class="dark:border-default-200 flex flex-col gap-3 rounded-lg border border-transparent p-3 backdrop-blur-none transition-all duration-200 sm:flex-row sm:items-center"
         >
           <KunImage

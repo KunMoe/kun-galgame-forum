@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { galgameImageSourceLabel } from '~/constants/galgameImageSource'
 
-const props = defineProps<{ gid: number; covers: GalgameCover[] }>()
+const props = defineProps<{ workId: number; covers: GalgameCover[] }>()
 const open = defineModel<boolean>({ required: true })
 
 const KIND_LABEL: Record<string, string> = {
@@ -60,7 +60,7 @@ const toggleVote = async (cover: GalgameCover) => {
     cover_id: number
     vote_count: number
     voted: boolean
-  }>(`/galgame/${props.gid}/cover/${cover.id}/vote`, {
+  }>(`/galgame/${props.workId}/cover/${cover.id}/vote`, {
     method: willUnvote ? 'DELETE' : 'PUT'
   })
   voting.value = 0

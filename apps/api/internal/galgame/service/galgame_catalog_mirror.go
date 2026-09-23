@@ -27,10 +27,9 @@ const (
 	// two hours, and enough to walk the whole inventory in about the same time.
 	mirrorChannelPages = 100
 
-	// The fill lane asks catalog about local rows by gid, which costs a ref
-	// lookup plus a works read per chunk. Two chunks a tick walks the forum's
-	// ~11.5k rows in about two hours and stays far under the 100/min the /v2
-	// limiter allows the site's single egress address.
+	// Two chunks a tick walks the forum's ~11.5k rows in about two hours and
+	// stays far under the 100/min the /v2 limiter allows the site's single
+	// egress address.
 	mirrorFillRows = 2 * mirrorSyncChunk
 
 	// A local row catalog has no work for cannot be resolved by asking again a
@@ -196,7 +195,11 @@ func (s *GalgameCatalogMirror) RunPending() {
 	var seen, limits, dates int64
 	for start := 0; start < len(ids); start += mirrorSyncChunk {
 		chunk := ids[start:min(start+mirrorSyncChunk, len(ids))]
-		rows, appErr := s.galgameClient.MirrorByGIDs(ctx, chunk)
+		ids := make([]int64, len(chunk))
+		for i, id := range chunk {
+			ids[i] = int64(id)
+		}
+		rows, appErr := s.galgameClient.MirrorByCatalogIDs(ctx, ids)
 		if appErr != nil {
 			slog.Warn("catalog 镜像拉取失败, 本轮中止", "offset", start, "error", appErr.Message)
 			break
@@ -224,17 +227,17 @@ func (s *GalgameCatalogMirror) apply(rows map[int]client.CatalogMirror) (int64, 
 	}
 	limits := make(map[int]string, len(rows))
 	dates := make(map[int]string, len(rows))
-	for gid, row := range rows {
-		limits[gid] = row.ContentLimit
+	for workID, row := range rows {
+		limits[workID] = row.ContentLimit
 		// Recorded as "no date" rather than left unconfirmed: the row cannot be
 		// ordered by a string nothing can read, and leaving it pending would
 		// re-ask and re-warn about it on every tick for as long as it exists.
 		date, ok := utils.NormalizeCatalogReleaseDate(row.ReleaseDate)
 		if !ok {
 			slog.Warn("catalog 发售日期无法解析, 按无日期记录",
-				"galgame_id", gid, "release_date", row.ReleaseDate)
+				"work_id", workID, "release_date", row.ReleaseDate)
 		}
-		dates[gid] = date
+		dates[workID] = date
 	}
 	limitCount, err := s.galgameRepo.SetContentLimits(groupByContentLimit(limits))
 	if err != nil {
@@ -272,10 +275,10 @@ func (s *GalgameCatalogMirror) rememberUnresolved(asked []int, got map[int]clien
 
 func groupByContentLimit(limits map[int]string) map[string][]int {
 	out := make(map[string][]int, 2)
-	for gid, limit := range limits {
+	for workID, limit := range limits {
 		switch limit {
 		case "sfw", "nsfw":
-			out[limit] = append(out[limit], gid)
+			out[limit] = append(out[limit], workID)
 		}
 	}
 	return out

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 const props = defineProps<{
-  gid: number
+  workId: number
   claimState?: string
   declineReason?: string
 }>()
@@ -9,22 +9,22 @@ const isOpen = defineModel<boolean>({ required: true })
 
 const detail = ref<GalgameDetail | null>(null)
 const isLoading = ref(false)
-const loadedGid = ref(0)
+const loadedWorkId = ref(0)
 
 const load = async () => {
-  if (isLoading.value || loadedGid.value === props.gid) {
+  if (isLoading.value || loadedWorkId.value === props.workId) {
     return
   }
   isLoading.value = true
-  detail.value = await kunFetch<GalgameDetail>(`/galgame/${props.gid}`)
+  detail.value = await kunFetch<GalgameDetail>(`/galgame/${props.workId}`)
   isLoading.value = false
   if (detail.value) {
-    loadedGid.value = props.gid
+    loadedWorkId.value = props.workId
   }
 }
 
 watch(
-  [isOpen, () => props.gid],
+  [isOpen, () => props.workId],
   ([open]) => {
     if (open) {
       load()
@@ -64,7 +64,7 @@ const metaRows = computed(() => {
         <KunChip size="xs" variant="flat" :color="badge.color">
           {{ badge.label }}
         </KunChip>
-        <span class="text-default-500 text-sm">galgame_id: {{ gid }}</span>
+        <span class="text-default-500 text-sm">galgame_id: {{ workId }}</span>
       </div>
 
       <KunLoading v-if="isLoading" description="加载中…" />

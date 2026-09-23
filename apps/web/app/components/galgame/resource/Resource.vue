@@ -6,8 +6,8 @@ import {
 } from '~/constants/galgameResource'
 
 const route = useRoute()
-const gid = computed(() => {
-  return parseInt((route.params as { gid: string }).gid)
+const workId = computed(() => {
+  return parseInt((route.params as { id: string }).id)
 })
 
 const galgame = inject<GalgameDetail>('galgame')
@@ -24,10 +24,10 @@ const emit = defineEmits<{
 }>()
 
 const { data, status, refresh } = await useKunFetch<GalgameResource[]>(
-  `/galgame/${gid.value}/resource/all`,
+  `/galgame/${workId.value}/resource/all`,
   {
     method: 'GET',
-    query: { galgame_id: gid.value }
+    query: { galgame_id: workId.value }
   }
 )
 watchEffect(() => emit('update:loading', status.value === 'pending'))
@@ -155,7 +155,7 @@ const activeBucket = computed(() =>
 
     <GalgameResourceLinkEditModal
       v-model="isShowPublish"
-      :galgame-id="gid"
+      :work-id="workId"
       :refresh="refresh"
     />
 

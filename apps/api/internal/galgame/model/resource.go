@@ -24,7 +24,7 @@ type GalgameResource struct {
 	View         int                `gorm:"default:0" json:"view"`
 	Status       int                `gorm:"default:0" json:"status"`
 	Download     int                `gorm:"default:0" json:"download"`
-	GalgameID    int                `gorm:"column:galgame_id;not null" json:"galgame_id"`
+	WorkID       int                `gorm:"column:work_id;not null" json:"galgame_id"`
 	UserID       int                `gorm:"column:user_id;not null" json:"user_id"`
 	LikeCount    int                `gorm:"column:like_count;default:0" json:"like_count"`
 	CommentCount int                `gorm:"column:comment_count;default:0" json:"comment_count"`
@@ -61,7 +61,7 @@ func (GalgameResourceLike) TableName() string { return "galgame_resource_like" }
 type GalgameResourceRow struct {
 	ID           int                `gorm:"column:id"`
 	View         int                `gorm:"column:view"`
-	GalgameID    int                `gorm:"column:galgame_id"`
+	WorkID       int                `gorm:"column:work_id"`
 	UserID       int                `gorm:"column:user_id"`
 	Type         string             `gorm:"column:type"`
 	Language     string             `gorm:"column:language"`

@@ -56,8 +56,8 @@ type GalgameQuizAnswer struct {
 func (GalgameQuizAnswer) TableName() string { return "galgame_quiz_answer" }
 
 type GalgameQuizGalgame struct {
-	QuizID    int `gorm:"column:quiz_id;primaryKey"`
-	GalgameID int `gorm:"column:galgame_id;primaryKey"`
+	QuizID int `gorm:"column:quiz_id;primaryKey"`
+	WorkID int `gorm:"column:work_id;primaryKey"`
 }
 
 func (GalgameQuizGalgame) TableName() string { return "galgame_quiz_galgame" }
@@ -102,7 +102,7 @@ type QuizFilter struct {
 	SortField  string
 	SortOrder  string
 	Difficulty int
-	GalgameID  int
+	WorkID     int
 	UserID     int
 	Page       int
 	Limit      int

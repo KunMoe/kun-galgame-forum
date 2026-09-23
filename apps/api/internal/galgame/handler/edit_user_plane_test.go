@@ -17,7 +17,7 @@ func userPlaneApp(t *testing.T, catalogURL string, user *middleware.UserInfo, to
 	t.Helper()
 	cc := catalogclient.New(catalogclient.Config{BaseURL: catalogURL, AppKey: "nmk_test"})
 	h := NewEditHandler(cc, client.New(fakeGalgame(t).URL, "nm_test", ""), nil, nil, nil).
-		WithOwners(fakeOwners{1: 7})
+		WithOwners(fakeOwners{1000: 7})
 
 	app := fiber.New()
 	api := app.Group("/api")
@@ -29,13 +29,13 @@ func userPlaneApp(t *testing.T, catalogURL string, user *middleware.UserInfo, to
 		c.Locals(string(middleware.OAuthAccessTokenKey), token)
 		return c.Next()
 	})
-	authed.Get("/galgame/:gid/edit/bootstrap", h.Bootstrap)
-	authed.Post("/galgame/:gid/edit/proposals", h.Submit)
+	authed.Get("/galgame/:id/edit/bootstrap", h.Bootstrap)
+	authed.Post("/galgame/:id/edit/proposals", h.Submit)
 	authed.Post("/galgame-edit/proposals/:id/withdraw", h.Withdraw)
 	authed.Post("/galgame-edit/proposals/:id/amend", h.Amend)
 	authed.Post("/galgame-edit/proposals/:id/merge", h.Merge)
 	authed.Post("/galgame-edit/proposals/:id/decline", h.Decline)
-	authed.Post("/galgame/:gid/edit/revert", h.Revert)
+	authed.Post("/galgame/:id/edit/revert", h.Revert)
 	return app
 }
 
@@ -67,7 +67,7 @@ func TestEditSubmitRidesTheUserToken(t *testing.T) {
 	for _, user := range []*middleware.UserInfo{bystander, plainUser, adminUser} {
 		fake := &fakeEditFace{}
 		app := userPlaneApp(t, fake.server(t).URL, user, "user-jwt")
-		status, raw := doJSON(t, app, "POST", "/api/galgame/1/edit/proposals",
+		status, raw := doJSON(t, app, "POST", "/api/galgame/1000/edit/proposals",
 			`{"patch":{"catalog.work.name_zh_cn":"新标题"}}`)
 		if status != http.StatusOK {
 			t.Fatalf("submit as %s: status = %d body %s", user.Name, status, raw)
@@ -88,7 +88,7 @@ func TestEditSubmitPayloadOnTheUserPlane(t *testing.T) {
 	fake := &fakeEditFace{}
 	app := userPlaneApp(t, fake.server(t).URL, bystander, "user-jwt")
 
-	status, raw := doJSON(t, app, "POST", "/api/galgame/1/edit/proposals",
+	status, raw := doJSON(t, app, "POST", "/api/galgame/1000/edit/proposals",
 		`{"patch":{"catalog.work.name_zh_cn":"新标题"},"note":"typo"}`)
 	if status != http.StatusOK {
 		t.Fatalf("submit: status = %d body %s", status, raw)
@@ -152,7 +152,7 @@ func TestEditBootstrapProjectionFollowsThePlane(t *testing.T) {
 	for _, user := range []*middleware.UserInfo{bystander, plainUser} {
 		fake := &fakeEditFace{}
 		app := userPlaneApp(t, fake.server(t).URL, user, "user-jwt")
-		if status, raw := doJSON(t, app, "GET", "/api/galgame/1/edit/bootstrap", ""); status != http.StatusOK {
+		if status, raw := doJSON(t, app, "GET", "/api/galgame/1000/edit/bootstrap", ""); status != http.StatusOK {
 			t.Fatalf("bootstrap as %s: status = %d body %s", user.Name, status, raw)
 		}
 		req := fake.callTo("/v2/catalog/schemas/work")
@@ -176,13 +176,13 @@ func TestEditBootstrapProjectionFollowsThePlane(t *testing.T) {
 
 func TestEditUserPlaneStaleGrantAsksForReauth(t *testing.T) {
 	for _, tc := range []struct{ name, method, path, body string }{
-		{"submit", "POST", "/api/galgame/1/edit/proposals", `{"patch":{"catalog.work.name_zh_cn":"x"}}`},
+		{"submit", "POST", "/api/galgame/1000/edit/proposals", `{"patch":{"catalog.work.name_zh_cn":"x"}}`},
 		{"withdraw", "POST", "/api/galgame-edit/proposals/7/withdraw", ""},
-		{"bootstrap", "GET", "/api/galgame/1/edit/bootstrap", ""},
+		{"bootstrap", "GET", "/api/galgame/1000/edit/bootstrap", ""},
 		{"amend", "POST", "/api/galgame-edit/proposals/7/amend", `{"set":{"catalog.work.name_zh_cn":"x"}}`},
 		{"merge", "POST", "/api/galgame-edit/proposals/7/merge", `{"note":""}`},
 		{"decline", "POST", "/api/galgame-edit/proposals/7/decline", `{"note":"理由"}`},
-		{"revert", "POST", "/api/galgame/1/edit/revert", `{"to_seq":3}`},
+		{"revert", "POST", "/api/galgame/1000/edit/revert", `{"to_seq":3}`},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			fake := &fakeEditFace{userStatus: http.StatusForbidden,
@@ -218,7 +218,7 @@ func TestEditUserPlaneErrorPassThrough(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			fake := &fakeEditFace{userStatus: tc.status, userBody: tc.body}
 			app := userPlaneApp(t, fake.server(t).URL, bystander, "user-jwt")
-			status, raw := doJSON(t, app, "POST", "/api/galgame/1/edit/proposals",
+			status, raw := doJSON(t, app, "POST", "/api/galgame/1000/edit/proposals",
 				`{"patch":{"catalog.work.name_zh_cn":"x"}}`)
 			if status != tc.wantStatus {
 				t.Fatalf("status = %d body %s, want %d", status, raw, tc.wantStatus)
@@ -231,7 +231,7 @@ func TestEditUserPlaneErrorPassThrough(t *testing.T) {
 	fake := &fakeEditFace{userStatus: http.StatusUnprocessableEntity,
 		userBody: `{"code":233,"message":"名称不能为空"}`}
 	app := userPlaneApp(t, fake.server(t).URL, bystander, "user-jwt")
-	_, raw := doJSON(t, app, "POST", "/api/galgame/1/edit/proposals",
+	_, raw := doJSON(t, app, "POST", "/api/galgame/1000/edit/proposals",
 		`{"patch":{"catalog.work.name_zh_cn":"x"}}`)
 	if !strings.Contains(string(raw), "名称不能为空") {
 		t.Fatalf("upstream validation wording lost: %s", raw)
@@ -240,13 +240,13 @@ func TestEditUserPlaneErrorPassThrough(t *testing.T) {
 
 func TestEditUserPlaneWithoutTokenNeverCalls(t *testing.T) {
 	for _, tc := range []struct{ name, method, path, body string }{
-		{"submit", "POST", "/api/galgame/1/edit/proposals", `{"patch":{"catalog.work.name_zh_cn":"x"}}`},
+		{"submit", "POST", "/api/galgame/1000/edit/proposals", `{"patch":{"catalog.work.name_zh_cn":"x"}}`},
 		{"withdraw", "POST", "/api/galgame-edit/proposals/7/withdraw", ""},
-		{"bootstrap", "GET", "/api/galgame/1/edit/bootstrap", ""},
+		{"bootstrap", "GET", "/api/galgame/1000/edit/bootstrap", ""},
 		{"amend", "POST", "/api/galgame-edit/proposals/7/amend", `{"set":{"catalog.work.name_zh_cn":"x"}}`},
 		{"merge", "POST", "/api/galgame-edit/proposals/7/merge", `{"note":""}`},
 		{"decline", "POST", "/api/galgame-edit/proposals/7/decline", `{"note":"理由"}`},
-		{"revert", "POST", "/api/galgame/1/edit/revert", `{"to_seq":3}`},
+		{"revert", "POST", "/api/galgame/1000/edit/revert", `{"to_seq":3}`},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			fake := &fakeEditFace{}

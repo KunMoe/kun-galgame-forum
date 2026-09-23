@@ -272,7 +272,7 @@ const handleDeleteRating = async () => {
     <GalgameRatingPublish
       v-if="data && canEdit"
       v-model="isEditOpen"
-      :galgame-id="data.galgame.id"
+      :work-id="data.galgame.id"
       :initial-data="{
         galgameRatingId: data.id,
         recommend: data.recommend as 'no',

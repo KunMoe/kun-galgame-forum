@@ -62,13 +62,13 @@ func (s *GalgameContributorSync) Run() {
 		if len(page.Items) == 0 {
 			break
 		}
-		touches, gids := contributorTouches(page.Items)
+		touches, workIDs := contributorTouches(page.Items)
 		if err := s.repo.UpsertRevisionTouches(touches); err != nil {
 			slog.Warn("贡献者入库失败, 持有游标重试", "after", maxSeen, "error", err)
 			break
 		}
-		if err := s.repo.RefreshContributorCounts(gids); err != nil {
-			slog.Warn("贡献者计数刷新失败", "galgames", len(gids), "error", err)
+		if err := s.repo.RefreshContributorCounts(workIDs); err != nil {
+			slog.Warn("贡献者计数刷新失败", "galgames", len(workIDs), "error", err)
 		}
 		maxSeen = maxRevisionID(page.Items, maxSeen)
 		if len(page.Items) < s.batch {
@@ -83,24 +83,24 @@ func (s *GalgameContributorSync) Run() {
 }
 
 func contributorTouches(items []catalogclient.WorkRevisionFeedItem) ([]repository.ContributorTouch, []int64) {
-	type key struct{ gid, uid int64 }
+	type key struct{ workID, uid int64 }
 	index := map[key]int{}
 	touches := make([]repository.ContributorTouch, 0, len(items))
-	gids := make([]int64, 0, len(items))
-	seenGID := map[int64]bool{}
+	workIDs := make([]int64, 0, len(items))
+	seenWorkID := map[int64]bool{}
 
 	for i := range items {
 		it := &items[i]
-		if it.ProductWorkID == nil || *it.ProductWorkID <= 0 {
+		if it.WorkID <= 0 {
 			continue
 		}
-		gid := *it.ProductWorkID
-		if !seenGID[gid] {
-			seenGID[gid] = true
-			gids = append(gids, gid)
+		workID := it.WorkID
+		if !seenWorkID[workID] {
+			seenWorkID[workID] = true
+			workIDs = append(workIDs, workID)
 		}
 		for _, uid := range contributorUIDs(it) {
-			k := key{gid, uid}
+			k := key{workID, uid}
 			if at, ok := index[k]; ok {
 				t := &touches[at]
 				t.Count++
@@ -114,12 +114,12 @@ func contributorTouches(items []catalogclient.WorkRevisionFeedItem) ([]repositor
 			}
 			index[k] = len(touches)
 			touches = append(touches, repository.ContributorTouch{
-				GalgameID: gid, UserID: uid, Count: 1,
+				WorkID: workID, UserID: uid, Count: 1,
 				FirstAt: it.CreatedAt, LastAt: it.CreatedAt,
 			})
 		}
 	}
-	return touches, gids
+	return touches, workIDs
 }
 
 func contributorUIDs(it *catalogclient.WorkRevisionFeedItem) []int64 {

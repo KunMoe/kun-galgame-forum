@@ -29,11 +29,11 @@ func TestResolveKnownAnchors(t *testing.T) {
 			t.Errorf("%v → %q, want %q", ref, got[ref].Link, link)
 		}
 	}
-	if gid := got[refs[0]].GalgameID; gid != 1207 {
-		t.Errorf("galgame id = %d, want 1207", gid)
+	if workID := got[refs[0]].WorkID; workID != 1207 {
+		t.Errorf("galgame id = %d, want 1207", workID)
 	}
-	if gid := got[refs[1]].GalgameID; gid != 0 {
-		t.Errorf("resource wall carried galgame id %d", gid)
+	if workID := got[refs[1]].WorkID; workID != 0 {
+		t.Errorf("resource wall carried galgame id %d", workID)
 	}
 }
 

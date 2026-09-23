@@ -35,7 +35,7 @@ func (h *PlaytimeHandler) Report(c fiber.Ctx) error {
 	if _, appErr := middleware.MustGetUser(c); appErr != nil {
 		return response.Error(c, appErr)
 	}
-	gid, appErr := parseGid(c)
+	workID, appErr := parseWorkID(c)
 	if appErr != nil {
 		return response.Error(c, appErr)
 	}
@@ -57,7 +57,7 @@ func (h *PlaytimeHandler) Report(c fiber.Ctx) error {
 		return response.Error(c, errors.ErrAuthExpired())
 	}
 
-	got, err := h.svc.Report(c.Context(), int(gid), token, req.Minutes, req.Status)
+	got, err := h.svc.Report(c.Context(), int(workID), token, req.Minutes, req.Status)
 	if err != nil {
 		return playtimeError(c, err)
 	}

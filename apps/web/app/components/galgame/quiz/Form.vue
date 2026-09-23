@@ -15,7 +15,7 @@ import {
 import { createGalgameQuizSchema } from '~/validations/galgame-quiz'
 
 const props = defineProps<{
-  galgameId?: number
+  workId?: number
   editData?: QuizEditData | null
 }>()
 
@@ -32,7 +32,7 @@ const spoilerLevel = ref<QuizSpoilerLevel>('none')
 const question = ref('')
 const description = ref('')
 const explanation = ref('')
-const pickedGalgameIds = ref<number[]>([])
+const pickedWorkIds = ref<number[]>([])
 const hideGalgame = ref(false)
 const showExplanation = ref(false)
 const isSubmitting = ref(false)
@@ -60,7 +60,7 @@ watch(
     explanation.value = d.explanation
     showExplanation.value = !!d.explanation
     hideGalgame.value = d.hide_galgame
-    pickedGalgameIds.value = [...d.galgame_ids]
+    pickedWorkIds.value = [...d.galgame_ids]
     initialSelected.value = d.galgames.map((g) => ({
       id: g.id,
       name: g.name || `#${g.id}`
@@ -172,7 +172,7 @@ const resetForm = () => {
   question.value = ''
   description.value = ''
   explanation.value = ''
-  pickedGalgameIds.value = []
+  pickedWorkIds.value = []
   hideGalgame.value = false
   initialSelected.value = []
   showExplanation.value = false
@@ -197,7 +197,7 @@ const submit = async () => {
     content,
     explanation: explanation.value,
     hide_galgame: hideGalgame.value,
-    galgame_ids: props.galgameId ? [props.galgameId] : pickedGalgameIds.value
+    galgame_ids: props.workId ? [props.workId] : pickedWorkIds.value
   }
 
   const valid = useKunSchemaValidator(createGalgameQuizSchema, body)
@@ -254,7 +254,7 @@ const submit = async () => {
     </div>
 
     <KunInfo
-      v-if="galgameId"
+      v-if="workId"
       color="primary"
       icon="lucide:link"
       title="已关联当前 Galgame"
@@ -262,12 +262,12 @@ const submit = async () => {
     />
     <GalgameQuizGalgamePicker
       v-else
-      v-model="pickedGalgameIds"
+      v-model="pickedWorkIds"
       :initial-selected="initialSelected"
     />
 
     <div
-      v-if="galgameId || pickedGalgameIds.length"
+      v-if="workId || pickedWorkIds.length"
       class="flex items-center justify-between gap-3"
     >
       <div>

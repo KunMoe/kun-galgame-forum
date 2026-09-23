@@ -117,7 +117,7 @@ func TestWizard_ItemsComeFromTheCatalogSearch(t *testing.T) {
 	}
 }
 
-func TestWizard_ItemsAreKeyedByGIDAndDropWithdrawnRows(t *testing.T) {
+func TestWizard_ItemsAreKeyedByWorkIDAndDropWithdrawnRows(t *testing.T) {
 	rec := &wizardRecorder{}
 	page := wizardSearch(t, rec.service(t))
 
@@ -129,22 +129,20 @@ func TestWizard_ItemsAreKeyedByGIDAndDropWithdrawnRows(t *testing.T) {
 		if it.ClaimState == "declined" || it.ClaimState == "hidden" {
 			t.Errorf("item %d leaked with claim_state=%q — the wizard must drop non-live/draft/pending rows", it.ID, it.ClaimState)
 		}
-		if it.ID <= 0 && it.WorkID <= 0 {
-			t.Errorf("item with claim_state=%q leaked with neither a gid nor a work id — "+
-				"its row has nothing to act on", it.ClaimState)
+		if it.ID <= 0 {
+			t.Errorf("item with claim_state=%q leaked with no work id", it.ClaimState)
 		}
 	}
-	if page.Items[0].ID != 292 || page.Items[1].ID != 9978 || page.Items[3].ID != 5150 {
-		t.Errorf("ids = %d,%d,%d, want the gids 292,9978,5150",
+	if page.Items[0].ID != 11 || page.Items[1].ID != 12 || page.Items[3].ID != 16 {
+		t.Errorf("ids = %d,%d,%d, want the catalog work ids 11,12,16",
 			page.Items[0].ID, page.Items[1].ID, page.Items[3].ID)
 	}
-	if page.Items[2].ID != 14 || page.Items[2].WorkID != 14 {
-		t.Errorf("unclaimed row = id %d work_id %d, want catalog work id 14",
-			page.Items[2].ID, page.Items[2].WorkID)
+	if page.Items[2].ID != 14 {
+		t.Errorf("unclaimed row = id %d, want catalog work id 14", page.Items[2].ID)
 	}
 	if page.Items[2].ClaimState != "none" {
 		t.Errorf("unclaimed row claim_state = %q, want none — calling it a draft made the wizard "+
-			"offer 认领此草稿 over a work nobody had ever touched, and routed it at the gid endpoint",
+			"offer 认领此草稿 over a work nobody had ever touched, and routed it at the claim endpoint",
 			page.Items[2].ClaimState)
 	}
 	if page.Items[0].VndbID != "v22610" {

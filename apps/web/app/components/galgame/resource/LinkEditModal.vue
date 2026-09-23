@@ -21,7 +21,7 @@ import {
 } from '~~/shared/utils/galgameResourceVocab'
 
 const props = defineProps<{
-  galgameId: number
+  workId: number
   resource?: GalgameResourceDetailLink | null
   refresh: () => void
 }>()
@@ -172,14 +172,14 @@ const handleSubmit = async () => {
   const body = isEditing.value
     ? {
         ...form.value,
-        galgame_id: props.galgameId,
+        galgame_id: props.workId,
         galgame_resource_id: props.resource!.id
       }
-    : { ...form.value, galgame_id: props.galgameId }
+    : { ...form.value, galgame_id: props.workId }
 
   isSubmitting.value = true
   const result = await nuxtApp.runWithContext(() =>
-    kunFetch(`/galgame/${props.galgameId}/resource`, { method, body })
+    kunFetch(`/galgame/${props.workId}/resource`, { method, body })
   )
   isSubmitting.value = false
 

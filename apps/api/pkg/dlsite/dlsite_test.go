@@ -66,14 +66,14 @@ func TestLink(t *testing.T) {
 }
 
 func TestVerifiedWhitelist(t *testing.T) {
-	const want = 4319
+	const want = 4317
 	if got := VerifiedCount(); got != want {
 		t.Errorf("VerifiedCount() = %d, want %d (verified.tsv mis-vendored?)", got, want)
 	}
 
 	t.Run("a conflicted game uses infra's pinned ruling", func(t *testing.T) {
-		if got := VerifiedWorkno(4156); got != "RJ090411" {
-			t.Errorf("VerifiedWorkno(4156) = %q, want RJ090411 (infra pinned)", got)
+		if got := VerifiedWorkno(4123); got != "RJ090411" {
+			t.Errorf("VerifiedWorkno(4123) = %q, want RJ090411 (infra pinned)", got)
 		}
 	})
 
@@ -83,16 +83,17 @@ func TestVerifiedWhitelist(t *testing.T) {
 		}
 	})
 
-	t.Run("an unknown galgame has no entry", func(t *testing.T) {
+	t.Run("an unknown work has no entry", func(t *testing.T) {
 		if got := VerifiedWorkno(999999999); got != "" {
 			t.Errorf("VerifiedWorkno(999999999) = %q, want \"\"", got)
 		}
 	})
 
 	t.Run("every entry is a well-formed workno", func(t *testing.T) {
-		for id := 1; id <= 70000; id++ {
-			if wn := VerifiedWorkno(id); wn != "" && !ValidWorkno(wn) {
-				t.Fatalf("galgame %d maps to malformed workno %q", id, wn)
+		verifiedOnce.Do(loadVerified)
+		for id, wn := range verifiedMap {
+			if !ValidWorkno(wn) {
+				t.Fatalf("work %d maps to malformed workno %q", id, wn)
 			}
 		}
 	})

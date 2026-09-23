@@ -10,12 +10,12 @@ type QuizListRequest struct {
 	Category   string `query:"category"`
 	Type       string `query:"type"`
 	Difficulty int    `query:"difficulty" validate:"omitempty,min=1,max=10"`
-	GalgameID  int    `query:"galgame_id"`
+	WorkID     int    `query:"galgame_id"`
 	UserID     int    `query:"user_id"`
 }
 
 type CreateQuizRequest struct {
-	GalgameIDs   []int           `json:"galgame_ids" validate:"omitempty,dive,min=1"`
+	WorkIDs      []int           `json:"galgame_ids" validate:"omitempty,dive,min=1"`
 	HideGalgame  bool            `json:"hide_galgame"`
 	Category     string          `json:"category" validate:"required,oneof=plot character system music voice company trivia other"`
 	Type         string          `json:"type" validate:"required,oneof=single multiple judge fill essay"`
@@ -29,7 +29,7 @@ type CreateQuizRequest struct {
 
 type UpdateQuizRequest struct {
 	QuizID       int             `json:"quiz_id" validate:"required,min=1"`
-	GalgameIDs   []int           `json:"galgame_ids" validate:"omitempty,dive,min=1"`
+	WorkIDs      []int           `json:"galgame_ids" validate:"omitempty,dive,min=1"`
 	HideGalgame  bool            `json:"hide_galgame"`
 	Category     string          `json:"category" validate:"required,oneof=plot character system music voice company trivia other"`
 	Type         string          `json:"type" validate:"required,oneof=single multiple judge fill essay"`
@@ -43,7 +43,7 @@ type UpdateQuizRequest struct {
 
 type QuizEditData struct {
 	ID           int                `json:"id"`
-	GalgameIDs   []int              `json:"galgame_ids"`
+	WorkIDs      []int              `json:"galgame_ids"`
 	HideGalgame  bool               `json:"hide_galgame"`
 	Category     string             `json:"category"`
 	Type         string             `json:"type"`

@@ -13,8 +13,8 @@ const diff = ref<GalgameEditDiff | null>(null)
 const isLoading = ref(false)
 
 const loadDiff = async () => {
-  const gid = data.value?.galgame_id
-  if (!gid || diff.value || isLoading.value) return
+  const workId = data.value?.galgame_id
+  if (!workId || diff.value || isLoading.value) return
   isLoading.value = true
   try {
     let seq = data.value?.revision_number
@@ -22,13 +22,13 @@ const loadDiff = async () => {
       const rowId = data.value?.revision_id
       if (!rowId) return
       const history = await kunFetch<GalgameEditRevisionList>(
-        `/galgame/${gid}/edit/revisions?limit=200`
+        `/galgame/${workId}/edit/revisions?limit=200`
       )
       seq = history?.items?.find((r) => (r.legacy_id ?? r.id) === rowId)?.seq
     }
     if (!seq || seq <= 1) return
     const res = await kunFetch<GalgameEditDiff>(
-      `/galgame/${gid}/edit/diff?from=${seq - 1}&to=${seq}`
+      `/galgame/${workId}/edit/diff?from=${seq - 1}&to=${seq}`
     )
     if (res) diff.value = res
   } finally {

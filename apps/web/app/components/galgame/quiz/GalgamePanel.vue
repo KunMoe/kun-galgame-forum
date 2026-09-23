@@ -1,6 +1,6 @@
 <script setup lang="ts">
 const route = useRoute()
-const gid = computed(() => parseInt((route.params as { gid: string }).gid))
+const workId = computed(() => parseInt((route.params as { id: string }).id))
 
 const emit = defineEmits<{
   'update:loading': [boolean]
@@ -9,7 +9,7 @@ const emit = defineEmits<{
 const params = reactive({
   page: usePageQuery(),
   limit: 12,
-  galgame_id: gid.value
+  galgame_id: workId.value
 })
 const { data, status, refresh } = await useKunFetch<QuizListPage>(
   '/galgame-quiz/all',
@@ -63,7 +63,7 @@ const onPublished = () => {
 
     <GalgameQuizPublish
       v-model="showPublish"
-      :galgame-id="gid"
+      :work-id="workId"
       @on-published="onPublished"
     />
   </div>

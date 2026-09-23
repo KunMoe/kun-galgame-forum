@@ -2,7 +2,7 @@ package dto
 
 type UserResourceItem struct {
 	ID          int      `json:"id"`
-	GalgameID   int      `json:"galgame_id"`
+	WorkID      int      `json:"galgame_id"`
 	GalgameName string   `json:"galgame_name"`
 	Type        string   `json:"type"`
 	Language    string   `json:"language"`

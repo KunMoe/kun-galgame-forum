@@ -29,7 +29,6 @@ type GalgameService struct {
 	resourceMetaRepo *repository.GalgameResourceMetaRepository
 	detailRatingRepo *repository.GalgameDetailRatingRepository
 	contributorRepo  *repository.GalgameContributorRepository
-	mergeRepo        *repository.GalgameMergeRepository
 	stateRepo        *userRepo.StateRepository
 	galgameClient    *client.GalgameClient
 	userClient       *userclient.Client
@@ -45,7 +44,6 @@ func NewGalgameService(
 	resourceMetaRepo *repository.GalgameResourceMetaRepository,
 	detailRatingRepo *repository.GalgameDetailRatingRepository,
 	contributorRepo *repository.GalgameContributorRepository,
-	mergeRepo *repository.GalgameMergeRepository,
 	stateRepo *userRepo.StateRepository,
 	galgameClient *client.GalgameClient,
 	userClient *userclient.Client,
@@ -60,7 +58,6 @@ func NewGalgameService(
 		storeLinks:       storeLinks,
 		detailRatingRepo: detailRatingRepo,
 		contributorRepo:  contributorRepo,
-		mergeRepo:        mergeRepo,
 		stateRepo:        stateRepo,
 		galgameClient:    galgameClient,
 		userClient:       userClient,
@@ -70,26 +67,26 @@ func NewGalgameService(
 
 func (s *GalgameService) ToggleLike(
 	ctx context.Context,
-	userID, galgameID int,
+	userID, workID int,
 ) *errors.AppError {
-	ownerID, name := s.fetchOwnerAndName(ctx, galgameID)
+	ownerID, name := s.fetchOwnerAndName(ctx, workID)
 	if ownerID == userID {
 		return errors.ErrBadRequest("您不能给自己点赞")
 	}
 
 	txErr := s.galgameRepo.DB().Transaction(func(tx *gorm.DB) error {
-		liked, err := s.interactionRepo.ToggleLike(tx, userID, galgameID)
+		liked, err := s.interactionRepo.ToggleLike(tx, userID, workID)
 		if err != nil {
 			return err
 		}
 		if !liked {
 			s.helpers.AdjustMoemoepoint(tx, ownerID, -1,
-				moemoepoint.ReasonLiked, moemoepoint.Ref("galgame", galgameID))
+				moemoepoint.ReasonLiked, moemoepoint.Ref("galgame", workID))
 			return nil
 		}
 		s.helpers.AdjustMoemoepoint(tx, ownerID, 1,
-			moemoepoint.ReasonLiked, moemoepoint.Ref("galgame", galgameID))
-		return s.helpers.CreateGalgameMessageWithContent(tx, userID, ownerID, "liked", name, galgameID)
+			moemoepoint.ReasonLiked, moemoepoint.Ref("galgame", workID))
+		return s.helpers.CreateGalgameMessageWithContent(tx, userID, ownerID, "liked", name, workID)
 	})
 	if txErr != nil {
 		return errors.ErrInternal("点赞失败")
@@ -142,46 +139,46 @@ func (s *GalgameService) GetMyInteractions(ctx context.Context, userID int, toke
 // A work is favourited when it sits in any of the reader's folders. Asking
 // upstream costs one request; the alternative is a second copy of the
 // memberships in this database, which is what the cutover removed.
-func (s *GalgameService) isFavorited(ctx context.Context, token string, galgameID int) bool {
+func (s *GalgameService) isFavorited(ctx context.Context, token string, workID int) bool {
 	if token == "" || s.catalog == nil {
 		return false
 	}
-	folders, err := s.catalog.MyFoldersContaining(ctx, token, int64(galgameID))
+	folders, err := s.catalog.MyFoldersContaining(ctx, token, int64(workID))
 	if err != nil {
 		if stderrors.Is(err, catalogclient.ErrInsufficientScope) {
-			warnFavoriteScope.warn("galgame: favourite state unreadable, token lacks folder:read", "galgame_id", galgameID)
+			warnFavoriteScope.warn("galgame: favourite state unreadable, token lacks folder:read", "work_id", workID)
 		} else {
-			slog.Warn("galgame: favourite state unreadable", "galgame_id", galgameID, "err", err)
+			slog.Warn("galgame: favourite state unreadable", "work_id", workID, "err", err)
 		}
 		return false
 	}
 	return len(folders) > 0
 }
 
-func (s *GalgameService) fetchOwnerAndName(ctx context.Context, galgameID int) (int, string) {
-	return s.ownerOf(galgameID), truncate(s.entryName(ctx, galgameID), constants.TextPreviewLength)
+func (s *GalgameService) fetchOwnerAndName(ctx context.Context, workID int) (int, string) {
+	return s.ownerOf(workID), truncate(s.entryName(ctx, workID), constants.TextPreviewLength)
 }
 
-func (s *GalgameService) ownerOf(galgameID int) int {
-	if s.galgameRepo == nil || galgameID <= 0 {
+func (s *GalgameService) ownerOf(workID int) int {
+	if s.galgameRepo == nil || workID <= 0 {
 		return 0
 	}
-	row := s.galgameRepo.FindLocal(galgameID)
+	row := s.galgameRepo.FindLocal(workID)
 	if row.CreatorUserID == nil {
 		return 0
 	}
 	return *row.CreatorUserID
 }
 
-func (s *GalgameService) entryName(ctx context.Context, galgameID int) string {
+func (s *GalgameService) entryName(ctx context.Context, workID int) string {
 	if s.galgameClient == nil {
 		return ""
 	}
-	rows, appErr := s.galgameClient.CatalogRowsByGIDs(ctx, []int{galgameID}, "names", "all")
+	rows, appErr := s.galgameClient.CatalogRowsByWorkIDs(ctx, []int{workID}, "names", "all")
 	if appErr != nil {
 		return ""
 	}
-	row, ok := rows[galgameID]
+	row, ok := rows[workID]
 	if !ok {
 		return ""
 	}
@@ -191,41 +188,34 @@ func (s *GalgameService) entryName(ctx context.Context, galgameID int) string {
 
 func (s *GalgameService) GetDetail(
 	ctx context.Context,
-	galgameID, currentUserID int,
+	workID, currentUserID int,
 	token string,
 	isSFW bool,
 ) (*dto.GalgameDetail, *errors.AppError) {
-	d, found, appErr := s.galgameClient.CatalogWorkDetail(ctx, galgameID)
+	d, found, appErr := s.galgameClient.CatalogWorkDetail(ctx, workID)
 	if appErr != nil {
 		return nil, appErr
 	}
 	if !found {
-		// The catalog merge that killed this gid also erased the claim that named
-		// it, so the survivor is only knowable from the ledger the merge sync
-		// writes. Without this the page 404s and the resources posted under it
-		// are unreachable rather than moved.
-		if newGID, moved := s.mergeRepo.RedirectTarget(galgameID); moved {
-			return &dto.GalgameDetail{MovedTo: newGID}, nil
-		}
 		return nil, errors.ErrNotFound("未找到该 Galgame")
 	}
-	g := client.CatalogDetailToFull(ctx, d, galgameID)
+	g := client.CatalogDetailToFull(ctx, d, workID)
 	s.galgameClient.HydrateOfficialLinks(ctx, &g)
 
-	go s.galgameRepo.IncrementView(galgameID)
+	go s.galgameRepo.IncrementView(workID)
 
-	local := s.galgameRepo.FindLocal(galgameID)
-	isLiked := s.interactionRepo.UserLiked(currentUserID, galgameID)
-	isFavorited := s.isFavorited(ctx, token, galgameID)
+	local := s.galgameRepo.FindLocal(workID)
+	isLiked := s.interactionRepo.UserLiked(currentUserID, workID)
+	isFavorited := s.isFavorited(ctx, token, workID)
 
-	platforms, languages, types := s.resourceMetaRepo.FindResourceMetaByGalgame(galgameID)
+	platforms, languages, types := s.resourceMetaRepo.FindResourceMetaByWork(workID)
 
-	ratings := s.buildDetailRatings(ctx, galgameID, currentUserID, g)
+	ratings := s.buildDetailRatings(ctx, workID, currentUserID, g)
 
-	if owner := s.ownerOf(galgameID); owner > 0 {
+	if owner := s.ownerOf(workID); owner > 0 {
 		g.UserID = owner
 	}
-	g.Contributor = s.contributorsOf(galgameID)
+	g.Contributor = s.contributorsOf(workID)
 	users := s.hydrateDetailUsers(ctx, g)
 	detail := galgameDetailFromNextMoe(g, users)
 	store := s.storeLinks.Resolve(g.ID, g.Refs["dlsite"])
@@ -245,19 +235,19 @@ func (s *GalgameService) GetDetail(
 	detail.Language = languages
 	detail.Type = types
 	detail.Ratings = ratings
-	agg := s.listRepo.BayesianRatings([]int{galgameID})[galgameID]
+	agg := s.listRepo.BayesianRatings([]int{workID})[workID]
 	detail.Rating = agg.Score
 	detail.RatingCount = agg.Count
-	s.hydrateCoverVotes(ctx, galgameID, token, detail.Covers)
-	detail.MyPlaytime = s.hydrateMyPlaytime(ctx, galgameID, token)
+	s.hydrateCoverVotes(ctx, workID, token, detail.Covers)
+	detail.MyPlaytime = s.hydrateMyPlaytime(ctx, workID, token)
 	if isSFW {
 		detail.Tag = withoutSexualTags(detail.Tag)
 	}
 	return &detail, nil
 }
 
-func (s *GalgameService) contributorsOf(galgameID int) []dto.NextMoeContributor {
-	rows := s.contributorRepo.FindContributors(galgameID, contributorMaxPerGalgame)
+func (s *GalgameService) contributorsOf(workID int) []dto.NextMoeContributor {
+	rows := s.contributorRepo.FindContributors(workID, contributorMaxPerGalgame)
 	out := make([]dto.NextMoeContributor, 0, len(rows))
 	for _, row := range rows {
 		out = append(out, dto.NextMoeContributor{UserID: int(row.UserID)})
@@ -281,10 +271,10 @@ func (s *GalgameService) hydrateDetailUsers(ctx context.Context, g dto.NextMoeGa
 
 func (s *GalgameService) buildDetailRatings(
 	ctx context.Context,
-	galgameID, currentUserID int,
+	workID, currentUserID int,
 	g dto.NextMoeGalgameDetailFull,
 ) []dto.GalgameDetailRating {
-	rows := s.detailRatingRepo.FindRatingsByGalgame(galgameID)
+	rows := s.detailRatingRepo.FindRatingsByGalgame(workID)
 	if len(rows) == 0 {
 		return []dto.GalgameDetailRating{}
 	}
@@ -304,7 +294,7 @@ func (s *GalgameService) buildDetailRatings(
 		if !userclient.IsRenderable(u) {
 			continue
 		}
-		out = append(out, detailRatingFromRow(r, u, likedSet[r.ID], galgameID, g))
+		out = append(out, detailRatingFromRow(r, u, likedSet[r.ID], workID, g))
 	}
 	return out
 }

@@ -77,12 +77,12 @@ func (h *RatingHandler) UpdateRating(c fiber.Ctx) error {
 	if appErr := utils.ParseAndValidate(c, &req); appErr != nil {
 		return response.Error(c, appErr)
 	}
-	gid, appErr := h.ratingService.UpdateRating(c.Context(), user.ID, &req)
+	workID, appErr := h.ratingService.UpdateRating(c.Context(), user.ID, &req)
 	if appErr != nil {
 		return response.Error(c, appErr)
 	}
 	err := response.OKMessage(c, "评分更新成功")
-	h.playtimeService.SyncWorkState(c.Context(), gid, middleware.GetAccessToken(c), req.PlayStatus)
+	h.playtimeService.SyncWorkState(c.Context(), workID, middleware.GetAccessToken(c), req.PlayStatus)
 	return err
 }
 

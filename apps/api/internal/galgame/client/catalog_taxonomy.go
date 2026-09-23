@@ -286,8 +286,10 @@ func (c *GalgameClient) fetchSexualTagIDs(ctx context.Context, ids []int) map[in
 	return out
 }
 
+var labelSourceKeys = []string{"curated", "galgame_wiki"}
+
 func (c *GalgameClient) LookupWikiLabel(ctx context.Context, wikiID int) (int64, bool, *errors.AppError) {
-	for _, source := range anchorSourceKeys {
+	for _, source := range labelSourceKeys {
 		id, found, appErr := c.lookupLabelBySource(ctx, source, wikiID)
 		if appErr != nil || found {
 			return id, found, appErr

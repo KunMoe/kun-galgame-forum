@@ -34,7 +34,7 @@ type RecentGalgameRow struct {
 	CreatorUserID *int   `gorm:"column:creator_user_id"`
 }
 
-func (r *RSSRepository) FindRecentGalgameIDs(limit int) []RecentGalgameRow {
+func (r *RSSRepository) FindRecentWorkIDs(limit int) []RecentGalgameRow {
 	var rows []RecentGalgameRow
 	r.db.Table("galgame").
 		Select("id, created, creator_user_id").

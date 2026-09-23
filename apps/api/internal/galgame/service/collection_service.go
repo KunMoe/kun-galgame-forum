@@ -217,7 +217,7 @@ func (s *CollectionService) worksLeavingTheLibrary(ctx context.Context, token st
 	return out
 }
 
-func (s *CollectionService) SetMembership(ctx context.Context, userID int, token string, galgameID int, targetIDs []int) *errors.AppError {
+func (s *CollectionService) SetMembership(ctx context.Context, userID int, token string, workID int, targetIDs []int) *errors.AppError {
 	targetIDs = dedupInts(targetIDs)
 	owned, err := s.collectionRepo.FolderIDsOwnedBy(userID, targetIDs)
 	if err != nil {
@@ -231,7 +231,7 @@ func (s *CollectionService) SetMembership(ctx context.Context, userID int, token
 		target[fid] = true
 	}
 
-	holding, err := s.catalog.MyFoldersContaining(ctx, token, int64(galgameID))
+	holding, err := s.catalog.MyFoldersContaining(ctx, token, int64(workID))
 	if err != nil {
 		return collectionErr(err, "读取收藏状态失败")
 	}
@@ -244,7 +244,7 @@ func (s *CollectionService) SetMembership(ctx context.Context, userID int, token
 		if current[fid] {
 			continue
 		}
-		if err := s.catalog.PutFolderItem(ctx, token, fid, int64(galgameID)); err != nil {
+		if err := s.catalog.PutFolderItem(ctx, token, fid, int64(workID)); err != nil {
 			return collectionErr(err, "更新收藏失败")
 		}
 	}
@@ -252,7 +252,7 @@ func (s *CollectionService) SetMembership(ctx context.Context, userID int, token
 		if target[fid] {
 			continue
 		}
-		if err := s.catalog.DeleteFolderItem(ctx, token, fid, int64(galgameID)); err != nil {
+		if err := s.catalog.DeleteFolderItem(ctx, token, fid, int64(workID)); err != nil {
 			return collectionErr(err, "更新收藏失败")
 		}
 	}
@@ -266,36 +266,36 @@ func (s *CollectionService) SetMembership(ctx context.Context, userID int, token
 	// Local side effects follow the upstream write, never precede it: points
 	// and a message for a favourite that was never stored would be worse than
 	// a favourite whose points were missed.
-	ownerID, name := s.galgameService.fetchOwnerAndName(ctx, galgameID)
+	ownerID, name := s.galgameService.fetchOwnerAndName(ctx, workID)
 	delta := 1
 	if lastRemove {
 		delta = -1
 	}
 	txErr := s.collectionRepo.DB().Transaction(func(tx *gorm.DB) error {
-		if err := s.collectionRepo.EnsureGalgameLocal(tx, galgameID); err != nil {
+		if err := s.collectionRepo.EnsureGalgameLocal(tx, workID); err != nil {
 			return err
 		}
-		if err := s.collectionRepo.AdjustGalgameFavoriteCount(tx, galgameID, delta); err != nil {
+		if err := s.collectionRepo.AdjustGalgameFavoriteCount(tx, workID, delta); err != nil {
 			return err
 		}
 		if ownerID == 0 || ownerID == userID {
 			return nil
 		}
 		s.helpers.AdjustMoemoepoint(tx, ownerID, delta,
-			moemoepoint.ReasonLiked, moemoepoint.Ref("galgame", galgameID))
+			moemoepoint.ReasonLiked, moemoepoint.Ref("galgame", workID))
 		if firstAdd {
-			return s.helpers.CreateGalgameMessageWithContent(tx, userID, ownerID, "favorite", name, galgameID)
+			return s.helpers.CreateGalgameMessageWithContent(tx, userID, ownerID, "favorite", name, workID)
 		}
 		return nil
 	})
 	if txErr != nil {
 		slog.Error("collection: membership stored but local bookkeeping failed",
-			"galgame_id", galgameID, "user_id", userID, "err", txErr)
+			"work_id", workID, "user_id", userID, "err", txErr)
 	}
 	return nil
 }
 
-func (s *CollectionService) GetMyCollectionsForGalgame(ctx context.Context, userID int, token string, galgameID int) ([]dto.MyCollectionForGalgame, *errors.AppError) {
+func (s *CollectionService) GetMyCollectionsForGalgame(ctx context.Context, userID int, token string, workID int) ([]dto.MyCollectionForGalgame, *errors.AppError) {
 	folders, err := s.catalog.MyFolders(ctx, token)
 	if err != nil {
 		return nil, collectionErr(err, "读取收藏夹失败")
@@ -304,7 +304,7 @@ func (s *CollectionService) GetMyCollectionsForGalgame(ctx context.Context, user
 	// blank name (deviation 112: only the backfill may make an unnamed default),
 	// and the lazy create this face used to do sent name:"" — every reader with
 	// no folders got 422 → 233 instead of an empty picker.
-	holding, err := s.catalog.MyFoldersContaining(ctx, token, int64(galgameID))
+	holding, err := s.catalog.MyFoldersContaining(ctx, token, int64(workID))
 	if err != nil {
 		return nil, collectionErr(err, "读取收藏状态失败")
 	}
@@ -423,7 +423,7 @@ func (s *CollectionService) ListForUser(ctx context.Context, ownerID, viewerID i
 func (s *CollectionService) resolvePreviewCovers(ctx context.Context, token string, folders []catalogclient.Folder, isSFW bool) map[int64][]string {
 	result := make(map[int64][]string, len(folders))
 	byFolder := make(map[int64][]int, len(folders))
-	allGids := []int{}
+	allWorkIDs := []int{}
 	for _, f := range folders {
 		result[f.ID] = []string{}
 		if f.ItemCount == 0 {
@@ -435,20 +435,20 @@ func (s *CollectionService) resolvePreviewCovers(ctx context.Context, token stri
 		}
 		for _, it := range items {
 			byFolder[f.ID] = append(byFolder[f.ID], int(it.WorkID))
-			allGids = append(allGids, int(it.WorkID))
+			allWorkIDs = append(allWorkIDs, int(it.WorkID))
 		}
 	}
-	if len(allGids) == 0 {
+	if len(allWorkIDs) == 0 {
 		return result
 	}
-	briefMap, appErr := s.galgameClient.GetBatchPublic(ctx, dedupInts(allGids), isSFW)
+	briefMap, appErr := s.galgameClient.GetBatchPublic(ctx, dedupInts(allWorkIDs), isSFW)
 	if appErr != nil {
 		return result
 	}
-	for fid, gids := range byFolder {
-		covers := make([]string, 0, len(gids))
-		for _, gid := range gids {
-			if b, ok := briefMap[gid]; ok && b.EffectiveBannerURL != "" {
+	for fid, workIDs := range byFolder {
+		covers := make([]string, 0, len(workIDs))
+		for _, workID := range workIDs {
+			if b, ok := briefMap[workID]; ok && b.EffectiveBannerURL != "" {
 				covers = append(covers, b.EffectiveBannerURL)
 			}
 		}

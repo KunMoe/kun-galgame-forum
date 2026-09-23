@@ -610,6 +610,7 @@ G1 迁 v1 时应沿用这套：字符串 `{galgame_id}`、先译 catalog id、pr
 31. Bearer staff：收藏夹用 `user.Can`，正确。本段无 `perm.CanUser` / `role.Can*`。
 32. `encodePageCursor` 编码页码而非 offset（`catalog_v2.go:196`）。drafts/library 翻页依赖上游把该游标当页码。
 33. 本段 23 条里，点赞、外链、GetDetail、ListMine、Create/SetMembership **没有**打到 handler 的契约测试。
+34. `GalgameUserStatsService.Stats` 的 `PublishedToday` 用 `startOfToday()` 取进程时区（`galgame_user_stats.go:72`），API 容器是 UTC，于是「今天」从北京时间 08:00 起算；每日 cron 的时区已导出为 `cron.ScheduleLocation()`（U1）。同一个 `Stats()` 把 catalog 失败吞成 0（`:51-66`），读者看到的「合并编辑 0」分不出是真 0 还是上游挂了。U2 只在 v1 字段文档里写明，没改 galgame/**（U 轨 2026-09-23 转交）。
 
 ---
 

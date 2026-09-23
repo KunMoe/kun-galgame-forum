@@ -199,7 +199,7 @@ type GalgameDetailRating struct {
 	ReplayValue  int                        `json:"replay_value"`
 	LikeCount    int                        `json:"like_count"`
 	IsLiked      bool                       `json:"is_liked"`
-	GalgameID    int                        `json:"galgame_id"`
+	WorkID       int                        `json:"galgame_id"`
 	Created      string                     `json:"created"`
 	Updated      string                     `json:"updated"`
 	Galgame      GalgameDetailRatingGalgame `json:"galgame"`
@@ -244,7 +244,6 @@ type GalgameIntro struct {
 
 type GalgameDetail struct {
 	ID                         int                      `json:"id"`
-	MovedTo                    int                      `json:"moved_to,omitempty"`
 	VndbID                     string                   `json:"vndb_id"`
 	User                       UserBrief                `json:"user"`
 	Name                       string                   `json:"name"`

@@ -33,7 +33,7 @@ type UserGalgameCard struct {
 
 type UserGalgameComment struct {
 	ID          int64     `json:"id"`
-	GalgameID   int       `json:"galgame_id"`
+	WorkID      int       `json:"galgame_id"`
 	Content     string    `json:"content"`
 	ContentHtml string    `json:"content_html"`
 	User        UserBrief `json:"user"`

@@ -45,7 +45,7 @@ func TestGalgameCommentEnforcerTombstoneMapHit(t *testing.T) {
 
 	cli := communityclient.New(communityclient.Config{BaseURL: srv.URL, ClientID: "cid", ClientSecret: "sec"})
 	enf := NewGalgameCommentEnforcer(cli, fakeCommentMap{row: &model.GalgameCommentCommunityMap{
-		OldCommentID: 5, ThreadID: 7, PostID: 900, GalgameID: 42,
+		OldCommentID: 5, ThreadID: 7, PostID: 900, WorkID: 42,
 	}})
 
 	if err := enf.Tombstone(context.Background(), 5); err != nil {

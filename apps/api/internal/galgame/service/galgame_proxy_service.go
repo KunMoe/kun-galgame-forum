@@ -27,9 +27,9 @@ func NewGalgameProxyService(
 
 func (s *GalgameProxyService) GetGalgameLinks(
 	ctx context.Context,
-	gid string,
+	workID string,
 ) ([]dto.GalgameLink, *errors.AppError) {
-	gidInt, err := strconv.Atoi(gid)
+	gidInt, err := strconv.Atoi(workID)
 	if err != nil || gidInt <= 0 {
 		return nil, errors.ErrBadRequest("无效的 Galgame ID")
 	}
@@ -40,9 +40,9 @@ func (s *GalgameProxyService) GetGalgameLinks(
 	out := make([]dto.GalgameLink, 0, len(rows))
 	for _, r := range rows {
 		out = append(out, dto.GalgameLink{
-			GalgameID: gidInt,
-			Name:      r.Name,
-			Link:      r.Link,
+			WorkID: gidInt,
+			Name:   r.Name,
+			Link:   r.Link,
 		})
 	}
 	return out, nil

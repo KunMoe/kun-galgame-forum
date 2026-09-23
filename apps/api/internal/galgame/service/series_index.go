@@ -92,7 +92,7 @@ func (s *SeriesService) buildCard(ctx context.Context, row seriesIndexRow) index
 	}
 
 	items := make([]dto.NextMoeGalgameItem, 0, len(members.Items))
-	gids := make([]int, 0, len(members.Items))
+	workIDs := make([]int, 0, len(members.Items))
 	for i := range members.Items {
 		if !client.CatalogItemRenderable(&members.Items[i]) {
 			continue
@@ -102,10 +102,10 @@ func (s *SeriesService) buildCard(ctx context.Context, row seriesIndexRow) index
 			continue
 		}
 		items = append(items, it)
-		gids = append(gids, it.ID)
+		workIDs = append(workIDs, it.ID)
 	}
 
-	listable := s.listableGIDs(gids)
+	listable := s.listableWorkIDs(workIDs)
 	sampleNSFW := false
 	for _, it := range items {
 		if !listable[it.ID] {
@@ -129,21 +129,21 @@ func (s *SeriesService) buildCard(ctx context.Context, row seriesIndexRow) index
 	return indexedSeries{card: card, hasNSFW: row.hasNSFW}
 }
 
-func (s *SeriesService) listableGIDs(gids []int) map[int]bool {
-	out := make(map[int]bool, len(gids))
-	if len(gids) == 0 {
+func (s *SeriesService) listableWorkIDs(workIDs []int) map[int]bool {
+	out := make(map[int]bool, len(workIDs))
+	if len(workIDs) == 0 {
 		return out
 	}
 	if s.galgameSvc == nil {
-		for _, gid := range gids {
-			out[gid] = true
+		for _, id := range workIDs {
+			out[id] = true
 		}
 		return out
 	}
 	ids, _ := s.galgameSvc.listRepo.ListIDs(model.GalgameListFilter{
-		RestrictIDs: gids,
+		RestrictIDs: workIDs,
 		Page:        1,
-		Limit:       len(gids),
+		Limit:       len(workIDs),
 		SortOrder:   "desc",
 	})
 	for _, id := range ids {

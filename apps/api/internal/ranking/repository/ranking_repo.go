@@ -71,12 +71,12 @@ func (r *RankingRepository) FindGalgameLocal(sortField, sortOrder string, page, 
 		ms := strconv.FormatFloat(m, 'f', 6, 64)
 		bayes := "(" + c + " * " + ms + " + rt.rsum) / (" + c + " + rt.rcnt)"
 		q := r.db.Table("galgame g").
-			Joins("JOIN (SELECT galgame_id, SUM(overall) AS rsum, COUNT(*) AS rcnt " +
-				"FROM galgame_rating GROUP BY galgame_id) rt ON rt.galgame_id = g.id").
+			Joins("JOIN (SELECT work_id, SUM(overall) AS rsum, COUNT(*) AS rcnt " +
+				"FROM galgame_rating GROUP BY work_id) rt ON rt.work_id = g.id").
 			Select("g.id, g.creator_user_id, ROUND((" + bayes + ")::numeric, 2) AS value").
 			Where("g.published")
 		if !showNoResource {
-			q = q.Where("EXISTS (SELECT 1 FROM galgame_resource gr WHERE gr.galgame_id = g.id)")
+			q = q.Where("EXISTS (SELECT 1 FROM galgame_resource gr WHERE gr.work_id = g.id)")
 		}
 		q.Order(bayes + " " + sortOrder).
 			Offset((page - 1) * limit).
@@ -93,7 +93,7 @@ func (r *RankingRepository) FindGalgameLocal(sortField, sortOrder string, page, 
 		Select("id, creator_user_id, " + col + " AS value").
 		Where("published")
 	if !showNoResource {
-		q = q.Where("EXISTS (SELECT 1 FROM galgame_resource gr WHERE gr.galgame_id = galgame.id)")
+		q = q.Where("EXISTS (SELECT 1 FROM galgame_resource gr WHERE gr.work_id = galgame.id)")
 	}
 	q.Order(col + " " + sortOrder).
 		Offset((page - 1) * limit).

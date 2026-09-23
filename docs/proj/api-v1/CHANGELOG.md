@@ -1,5 +1,13 @@
 # API v1 changelog
 
+## G0 window (galgame id is the catalog work id)
+
+Breaking for the one v1 galgame face.
+
+- `GET /api/v1/galgames/{galgame_id}/moyu-patches` (`listGalgameMoyuPatches`) is now `GET /api/v1/works/{work_id}/moyu-patches` (`listWorkMoyuPatches`), tag `works`. Same response. The old path answers 404. No App build calls it.
+- Every galgame id the site shows — the `/galgame/:id` page, every legacy `/api/*` field named `gid` or `galgame_id` — is now the catalog work id. 13,493 pages changed number in the renumber; merged-away numbers are not redirected. The legacy field names are unchanged until their faces move to v1.
+
+
 ## 2026-09-23 (D docs)
 
 Breaking for every `/api/doc/**` face and `GET /api/admin/doc/article`; all sixteen are gone.

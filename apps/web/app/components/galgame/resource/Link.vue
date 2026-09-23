@@ -229,7 +229,7 @@ const handleMarkValid = async () => {
 
         <GalgameResourceLike
           v-if="!isOwner"
-          :galgame-id="resource.galgame_id"
+          :work-id="resource.galgame_id"
           :galgame-resource-id="resource.id"
           :target-user-id="resource.user.id"
           :is-liked="resource.is_liked"

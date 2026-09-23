@@ -45,7 +45,7 @@ type Spec struct {
 	TopicID    int
 	ReplyFloor int
 	CommentID  int
-	GalgameID  int
+	WorkID     int
 	ToolsetID  int
 	WebsiteURL string
 }
@@ -122,8 +122,8 @@ func buildNotifyLink(spec Spec) string {
 	switch {
 	case spec.TopicID > 0:
 		return BuildTopicLink(spec.TopicID, spec.ReplyFloor, spec.CommentID)
-	case spec.GalgameID > 0:
-		return fmt.Sprintf("/galgame/%d", spec.GalgameID)
+	case spec.WorkID > 0:
+		return fmt.Sprintf("/galgame/%d", spec.WorkID)
 	case spec.ToolsetID > 0:
 		return fmt.Sprintf("/toolset/%d", spec.ToolsetID)
 	case spec.WebsiteURL != "":

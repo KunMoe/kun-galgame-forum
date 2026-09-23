@@ -4,7 +4,7 @@ import type { ApexOptions } from 'apexcharts'
 
 const props = withDefaults(
   defineProps<{
-    galgameId: number
+    workId: number
     source: string
     buckets: number[]
     categories: string[]
@@ -27,7 +27,7 @@ const colors = computed(() =>
 const options = computed(
   (): ApexOptions => ({
     chart: {
-      id: `galgame-rating-distribution-${props.source}-${props.galgameId}`,
+      id: `galgame-rating-distribution-${props.source}-${props.workId}`,
       type: 'bar',
       height: 200,
       toolbar: { show: false },

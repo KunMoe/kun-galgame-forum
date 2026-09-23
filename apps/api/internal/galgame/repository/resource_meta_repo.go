@@ -14,7 +14,7 @@ func NewGalgameResourceMetaRepository(db *gorm.DB) *GalgameResourceMetaRepositor
 	return &GalgameResourceMetaRepository{db: db}
 }
 
-func (r *GalgameResourceMetaRepository) FindResourceMetaByGalgame(galgameID int) (platforms, languages, types []string) {
+func (r *GalgameResourceMetaRepository) FindResourceMetaByWork(workID int) (platforms, languages, types []string) {
 	type row struct {
 		Platform string `gorm:"column:platform"`
 		Language string `gorm:"column:language"`
@@ -23,7 +23,7 @@ func (r *GalgameResourceMetaRepository) FindResourceMetaByGalgame(galgameID int)
 	var rows []row
 	r.db.Table("galgame_resource").
 		Select("DISTINCT platform, language, type").
-		Where("galgame_id = ?", galgameID).Scan(&rows)
+		Where("work_id = ?", workID).Scan(&rows)
 
 	pSet, lSet, tSet := map[string]bool{}, map[string]bool{}, map[string]bool{}
 	for _, x := range rows {
@@ -40,14 +40,14 @@ func (r *GalgameResourceMetaRepository) FindResourceMetaByGalgame(galgameID int)
 	return mapKeys(pSet), mapKeys(lSet), mapKeys(tSet)
 }
 
-func (r *GalgameResourceMetaRepository) FindResourceMetaBatch(galgameIDs []int) []model.GalgameResourceMeta {
-	if len(galgameIDs) == 0 {
+func (r *GalgameResourceMetaRepository) FindResourceMetaBatch(workIDs []int) []model.GalgameResourceMeta {
+	if len(workIDs) == 0 {
 		return nil
 	}
 	var rows []model.GalgameResourceMeta
 	r.db.Table("galgame_resource").
-		Select("DISTINCT galgame_id, platform, language").
-		Where("galgame_id IN ?", galgameIDs).Scan(&rows)
+		Select("DISTINCT work_id, platform, language").
+		Where("work_id IN ?", workIDs).Scan(&rows)
 	return rows
 }
 

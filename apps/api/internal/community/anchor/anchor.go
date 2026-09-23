@@ -25,9 +25,9 @@ type Target struct {
 	// Title is the game's name, and only ResolveNamed fills it: the galgame
 	// table caches no title, because catalog owns the name.
 	Title string
-	// GalgameID is set only for a site_game wall; the galgame comment surfaces
+	// WorkID is set only for a site_game wall; the galgame comment surfaces
 	// key off it.
-	GalgameID int
+	WorkID int
 }
 
 // site_resource packs the source into the anchor id as a prefix, because one
@@ -67,11 +67,11 @@ func (r *Resolver) Resolve(refs []Ref) map[Ref]Target {
 		}
 		switch ref.Kind {
 		case communityclient.AnchorSiteGame:
-			gid, err := strconv.Atoi(ref.ID)
-			if err != nil || gid <= 0 {
+			workID, err := strconv.Atoi(ref.ID)
+			if err != nil || workID <= 0 {
 				continue
 			}
-			out[ref] = Target{Link: "/galgame/" + ref.ID, Label: "Galgame", GalgameID: gid}
+			out[ref] = Target{Link: "/galgame/" + ref.ID, Label: "Galgame", WorkID: workID}
 		case communityclient.AnchorSiteResource:
 			source, rawID, ok := strings.Cut(ref.ID, ":")
 			id, err := strconv.Atoi(rawID)
@@ -129,22 +129,22 @@ func (r *Resolver) ResolveNamed(ctx context.Context, refs []Ref) map[Ref]Target 
 	if r.galgame == nil {
 		return targets
 	}
-	gids := make([]int, 0, len(targets))
+	workIDs := make([]int, 0, len(targets))
 	for _, target := range targets {
-		if target.GalgameID > 0 {
-			gids = append(gids, target.GalgameID)
+		if target.WorkID > 0 {
+			workIDs = append(workIDs, target.WorkID)
 		}
 	}
-	if len(gids) == 0 {
+	if len(workIDs) == 0 {
 		return targets
 	}
-	briefs, appErr := r.galgame.GetBatch(ctx, gids)
+	briefs, appErr := r.galgame.GetBatch(ctx, workIDs)
 	if appErr != nil {
 		slog.Warn("anchor: galgame name enrichment failed (best-effort)", "error", appErr)
 		return targets
 	}
 	for ref, target := range targets {
-		if brief, ok := briefs[target.GalgameID]; ok && brief.Name != "" {
+		if brief, ok := briefs[target.WorkID]; ok && brief.Name != "" {
 			target.Title = brief.Name
 			targets[ref] = target
 		}

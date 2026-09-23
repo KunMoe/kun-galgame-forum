@@ -7,10 +7,10 @@ import (
 	"kun-galgame-api/pkg/errors"
 )
 
-func CatalogDetailToFull(ctx context.Context, d *catWorkDetail, gid int) dto.NextMoeGalgameDetailFull {
+func CatalogDetailToFull(ctx context.Context, d *catWorkDetail, workID int) dto.NextMoeGalgameDetailFull {
 	characters := catalogRosterToNextMoe(ctx, d.Characters)
 	f := dto.NextMoeGalgameDetailFull{
-		ID:               gid,
+		ID:               workID,
 		ContentLimit:     contentLimitOf(d.Claim, d.ContentRating),
 		AgeLimit:         ageLimitFromRating(d.ContentRating),
 		OriginalLanguage: productLocale(d.OLang),
@@ -287,8 +287,8 @@ type GalgameLink struct {
 	Source string `json:"source"`
 }
 
-func (c *GalgameClient) CatalogWorkLinks(ctx context.Context, gid int) ([]GalgameLink, *errors.AppError) {
-	d, found, appErr := c.CatalogWorkDetail(ctx, gid)
+func (c *GalgameClient) CatalogWorkLinks(ctx context.Context, workID int) ([]GalgameLink, *errors.AppError) {
+	d, found, appErr := c.CatalogWorkDetail(ctx, workID)
 	if appErr != nil {
 		return nil, appErr
 	}

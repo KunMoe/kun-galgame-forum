@@ -27,7 +27,7 @@ func (s *SearchService) SearchResources(
 	}
 
 	res := s.resource.Search(
-		ctx, keywords, s.resource.MatchedGalgameIDs(ctx, raw, isSFW), page, limit, 0, isSFW)
+		ctx, keywords, s.resource.MatchedWorkIDs(ctx, raw, isSFW), page, limit, 0, isSFW)
 	return &dto.PaginatedResult[galgameDto.ResourceCard]{
 		Items: res.Resources,
 		Total: res.Total,

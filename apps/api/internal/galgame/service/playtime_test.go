@@ -84,13 +84,12 @@ func TestAssembleMine_StateOnlyWorkHasZeroMinutes(t *testing.T) {
 		map[int64]catalogclient.WorkStateRecord{
 			7: {WorkID: 7, State: catalogclient.WorkStateWish},
 		},
-		map[int64]int{7: 1},
 	)
 	if len(out) != 1 {
 		t.Fatalf("len = %d, want 1", len(out))
 	}
-	if out[0].minutes != 0 || out[0].clients != 0 || out[0].status != playstate.Wish || out[0].gid != 1 {
-		t.Errorf("got %+v, want minutes 0 clients 0 status wish gid 1", out[0])
+	if out[0].minutes != 0 || out[0].clients != 0 || out[0].status != playstate.Wish || out[0].workID != 7 {
+		t.Errorf("got %+v, want minutes 0 clients 0 status wish work 7", out[0])
 	}
 }
 
@@ -107,7 +106,6 @@ func TestAssembleMine_FinishedWorksCountsDoneMain(t *testing.T) {
 			9:  {WorkID: 9, State: catalogclient.WorkStateDoing},
 			11: {WorkID: 11, State: catalogclient.WorkStateDone, Completion: strPtr("all")},
 		},
-		map[int64]int{7: 1, 9: 2, 11: 3},
 	)
 	if len(out) != 3 {
 		t.Fatalf("len = %d, want 3", len(out))
@@ -144,7 +142,6 @@ func TestAssembleMine_KeepsWithdrawnPlaytimeWhenAStateRemains(t *testing.T) {
 		map[int64]catalogclient.WorkStateRecord{
 			7: {WorkID: 7, State: catalogclient.WorkStateWish},
 		},
-		map[int64]int{7: 1, 9: 2},
 	)
 	if len(out) != 1 {
 		t.Fatalf("len = %d, want 1 — withdrawn with no state must drop", len(out))

@@ -84,11 +84,11 @@ type Links struct {
 
 // Resolve is nil-safe and never blocks: a service wired without a resolver, or
 // a galgame with no known workno, renders the 补票提示 in its plain form.
-func (r *Resolver) Resolve(galgameID int, refsWorkno string) Links {
+func (r *Resolver) Resolve(workID int, refsWorkno string) Links {
 	if r == nil {
 		return Links{}
 	}
-	workno := dlsite.WorknoFor(galgameID, refsWorkno)
+	workno := dlsite.WorknoFor(workID, refsWorkno)
 	if workno == "" {
 		return Links{}
 	}

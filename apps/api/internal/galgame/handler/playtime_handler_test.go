@@ -101,7 +101,7 @@ func playtimeTestApp(t *testing.T, catalogURL string, user *middleware.UserInfo)
 		c.Locals(string(middleware.OAuthAccessTokenKey), "user-jwt")
 		return c.Next()
 	})
-	authed.Put("/galgame/:gid/playtime", h.Report)
+	authed.Put("/galgame/:id/playtime", h.Report)
 	return app
 }
 
@@ -109,7 +109,7 @@ func TestReportPlaytimeTravelsAsTheUserAndAnswersTheFold(t *testing.T) {
 	fake := &fakePlaytimeFace{foldMinutes: 900}
 	app := playtimeTestApp(t, fake.server(t).URL, plainUser)
 
-	status, raw := doJSON(t, app, "PUT", "/api/galgame/1/playtime",
+	status, raw := doJSON(t, app, "PUT", "/api/galgame/1000/playtime",
 		`{"minutes":720,"status":"done_main"}`)
 	if status != http.StatusOK {
 		t.Fatalf("report: status = %d body %s", status, raw)
@@ -163,7 +163,7 @@ func TestReportPlaytimeSendsCompletionFromTheFlatValue(t *testing.T) {
 	fake := &fakePlaytimeFace{foldMinutes: 720}
 	app := playtimeTestApp(t, fake.server(t).URL, plainUser)
 
-	status, raw := doJSON(t, app, "PUT", "/api/galgame/1/playtime",
+	status, raw := doJSON(t, app, "PUT", "/api/galgame/1000/playtime",
 		`{"minutes":720,"status":"done_all"}`)
 	if status != http.StatusOK {
 		t.Fatalf("report: status = %d body %s", status, raw)
@@ -203,7 +203,7 @@ func TestReportPlaytimeRejectsBadInputWithoutCallingCatalog(t *testing.T) {
 			fake := &fakePlaytimeFace{}
 			app := playtimeTestApp(t, fake.server(t).URL, plainUser)
 
-			status, raw := doJSON(t, app, "PUT", "/api/galgame/1/playtime", tc.body)
+			status, raw := doJSON(t, app, "PUT", "/api/galgame/1000/playtime", tc.body)
 			if status != http.StatusBadRequest {
 				t.Fatalf("status = %d body %s", status, raw)
 			}
@@ -221,7 +221,7 @@ func TestReportPlaytimeAsksForReauthOnAScopeDenial(t *testing.T) {
 	}
 	app := playtimeTestApp(t, fake.server(t).URL, plainUser)
 
-	status, raw := doJSON(t, app, "PUT", "/api/galgame/1/playtime", `{"minutes":720,"status":"done_main"}`)
+	status, raw := doJSON(t, app, "PUT", "/api/galgame/1000/playtime", `{"minutes":720,"status":"done_main"}`)
 	if status != http.StatusForbidden {
 		t.Fatalf("status = %d body %s", status, raw)
 	}
@@ -242,7 +242,7 @@ func TestReportPlaytimeStatusOnlyDoesNotWritePlaytime(t *testing.T) {
 	fake := &fakePlaytimeFace{}
 	app := playtimeTestApp(t, fake.server(t).URL, plainUser)
 
-	status, raw := doJSON(t, app, "PUT", "/api/galgame/1/playtime", `{"status":"wish"}`)
+	status, raw := doJSON(t, app, "PUT", "/api/galgame/1000/playtime", `{"status":"wish"}`)
 	if status != http.StatusOK {
 		t.Fatalf("report: status = %d body %s", status, raw)
 	}
@@ -281,7 +281,7 @@ func TestReportPlaytimeMinutesOnlyDoesNotWriteWorkState(t *testing.T) {
 	fake := &fakePlaytimeFace{foldMinutes: 480}
 	app := playtimeTestApp(t, fake.server(t).URL, plainUser)
 
-	status, raw := doJSON(t, app, "PUT", "/api/galgame/1/playtime", `{"minutes":480}`)
+	status, raw := doJSON(t, app, "PUT", "/api/galgame/1000/playtime", `{"minutes":480}`)
 	if status != http.StatusOK {
 		t.Fatalf("report: status = %d body %s", status, raw)
 	}
@@ -320,7 +320,7 @@ func TestReportPlaytimeEmptyStatusDeletesWorkState(t *testing.T) {
 	fake := &fakePlaytimeFace{foldMinutes: 0}
 	app := playtimeTestApp(t, fake.server(t).URL, plainUser)
 
-	status, raw := doJSON(t, app, "PUT", "/api/galgame/1/playtime", `{"minutes":0,"status":""}`)
+	status, raw := doJSON(t, app, "PUT", "/api/galgame/1000/playtime", `{"minutes":0,"status":""}`)
 	if status != http.StatusOK {
 		t.Fatalf("report: status = %d body %s", status, raw)
 	}

@@ -38,7 +38,7 @@ type RatingInitialData = {
 }
 
 const props = defineProps<{
-  galgameId: number
+  workId: number
   modelValue: boolean
   initialData?: RatingInitialData
   presetPlayState?: KunGalgamePlayState
@@ -224,7 +224,7 @@ const submit = async () => {
     }
   } else {
     const body = {
-      galgame_id: props.galgameId,
+      galgame_id: props.workId,
       recommend: recommend.value,
       overall: overall.value,
       play_status: playStatus.value,

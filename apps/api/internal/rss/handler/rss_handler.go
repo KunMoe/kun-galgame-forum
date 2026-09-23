@@ -41,7 +41,7 @@ func (h *RSSHandler) GetTopicRSS(c fiber.Ctx) error {
 }
 
 func (h *RSSHandler) GetGalgameRSS(c fiber.Ctx) error {
-	rows := h.repo.FindRecentGalgameIDs(10)
+	rows := h.repo.FindRecentWorkIDs(10)
 	if len(rows) == 0 {
 		return response.OK(c, []dto.GalgameRSSItem{})
 	}

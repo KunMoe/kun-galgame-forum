@@ -35,7 +35,6 @@ func NewSubmissionService(
 const submissionSite = client.ClaimSiteKungal
 
 type SubmitResult struct {
-	GID        int    `json:"gid"`
 	WorkID     int64  `json:"work_id"`
 	ClaimState string `json:"claim_state"`
 	// False when the submitter uploaded a banner that did not make it onto the
@@ -81,14 +80,14 @@ func (s *SubmissionService) Submit(
 	if err != nil {
 		return nil, submitError(err)
 	}
-	gid := int(res.ProductWorkID)
+	workID := int(res.WorkID)
 	// Stamp the submitter now rather than waiting for the claim feed to say so
 	// ten minutes later: it is what authorises the submitter to open their own
 	// unpublished entry, and it survives a Redis flush. The row stays
 	// published=false, so it shows up in no list and no feed.
-	if uid > 0 {
-		if err := s.galgameRepo.SubmitLocal(s.galgameRepo.DB().WithContext(ctx), gid, uid); err != nil {
-			slog.Warn("submit: 记录本地投稿人失败", "gid", gid, "uid", uid, "error", err)
+	if uid > 0 && workID > 0 {
+		if err := s.galgameRepo.SubmitLocal(s.galgameRepo.DB().WithContext(ctx), workID, uid); err != nil {
+			slog.Warn("submit: 记录本地投稿人失败", "work_id", workID, "uid", uid, "error", err)
 		}
 	}
 	patch := form.CoverPatch()
@@ -97,7 +96,7 @@ func (s *SubmissionService) Submit(
 		attached = s.attachBanner(ctx, accessToken, res.WorkID, patch)
 	}
 	return &SubmitResult{
-		GID: gid, WorkID: res.WorkID, ClaimState: res.ClaimState, BannerAttached: attached,
+		WorkID: res.WorkID, ClaimState: res.ClaimState, BannerAttached: attached,
 	}, nil
 }
 
@@ -131,17 +130,17 @@ func adoptAndPublish(
 func (s *SubmissionService) Resubmit(
 	ctx context.Context,
 	accessToken string,
-	gid int,
+	workID int,
 ) (*catalogclient.ClaimActionResult, *errors.AppError) {
-	return s.act(ctx, accessToken, gid, catalogclient.ClaimActionSubmit, "")
+	return s.act(ctx, accessToken, workID, catalogclient.ClaimActionSubmit, "")
 }
 
 func (s *SubmissionService) Withdraw(
 	ctx context.Context,
 	accessToken string,
-	gid int,
+	workID int,
 ) (*catalogclient.ClaimActionResult, *errors.AppError) {
-	return s.act(ctx, accessToken, gid, catalogclient.ClaimActionWithdraw, "")
+	return s.act(ctx, accessToken, workID, catalogclient.ClaimActionWithdraw, "")
 }
 
 // Approving a submission moves the claim state and nothing else, so a banner
@@ -176,20 +175,17 @@ func (s *SubmissionService) attachBanner(
 func (s *SubmissionService) DeleteDraft(
 	ctx context.Context,
 	accessToken string,
-	gid int,
+	workID int,
 ) *errors.AppError {
-	workID, appErr := s.workIDOf(ctx, gid)
-	if appErr != nil {
-		return appErr
-	}
+	id := int64(workID)
 	// Owner-only and draft-only are catalog's checks, and they have to stay
 	// catalog's: the local delete below cascades, so it must not run until the
 	// authority has agreed this row is a disposable draft.
-	if err := s.catalog.DeleteMyClaim(ctx, accessToken, workID); err != nil {
+	if err := s.catalog.DeleteMyClaim(ctx, accessToken, id); err != nil {
 		return claimActionError(err)
 	}
-	if err := s.galgameRepo.DeleteLocalDraft(gid); err != nil {
-		slog.Error("delete draft: 上游草稿已删除, 本地行未能清理", "gid", gid, "error", err)
+	if err := s.galgameRepo.DeleteLocalDraft(workID); err != nil {
+		slog.Error("delete draft: 上游草稿已删除, 本地行未能清理", "work_id", workID, "error", err)
 		return errors.ErrInternal("草稿已删除, 但本站条目清理失败, 请联系管理员")
 	}
 	return nil
@@ -198,33 +194,17 @@ func (s *SubmissionService) DeleteDraft(
 func (s *SubmissionService) act(
 	ctx context.Context,
 	accessToken string,
-	gid int,
+	workID int,
 	action string,
 	reason string,
 ) (*catalogclient.ClaimActionResult, *errors.AppError) {
-	workID, appErr := s.workIDOf(ctx, gid)
-	if appErr != nil {
-		return nil, appErr
-	}
-	res, err := s.catalog.ActOnClaimUser(ctx, accessToken, workID, action, catalogclient.UserClaimActionRequest{
+	res, err := s.catalog.ActOnClaimUser(ctx, accessToken, int64(workID), action, catalogclient.UserClaimActionRequest{
 		Reason: reason,
 	})
 	if err != nil {
 		return nil, claimActionError(err)
 	}
 	return res, nil
-}
-
-func (s *SubmissionService) workIDOf(ctx context.Context, gid int) (int64, *errors.AppError) {
-	ids, appErr := s.galgameClient.CatalogWorkIDs(ctx, []int{gid})
-	if appErr != nil {
-		return 0, appErr
-	}
-	workID, ok := ids[gid]
-	if !ok {
-		return 0, errors.ErrNotFound("条目不存在")
-	}
-	return workID, nil
 }
 
 // Catalog's duplicate gate is soft: the same request with confirm_duplicates

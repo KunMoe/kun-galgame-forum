@@ -25,9 +25,9 @@ type GalgameLocal struct {
 func (GalgameLocal) TableName() string { return "galgame" }
 
 type GalgameLike struct {
-	ID        int `gorm:"primaryKey;autoIncrement" json:"id"`
-	GalgameID int `gorm:"column:galgame_id;not null;uniqueIndex:idx_galgame_like" json:"galgame_id"`
-	UserID    int `gorm:"column:user_id;not null;uniqueIndex:idx_galgame_like" json:"user_id"`
+	ID     int `gorm:"primaryKey;autoIncrement" json:"id"`
+	WorkID int `gorm:"column:work_id;not null;uniqueIndex:idx_galgame_like" json:"galgame_id"`
+	UserID int `gorm:"column:user_id;not null;uniqueIndex:idx_galgame_like" json:"user_id"`
 
 	CreatedAt time.Time `gorm:"column:created" json:"created"`
 	UpdatedAt time.Time `gorm:"column:updated" json:"updated"`
@@ -36,20 +36,12 @@ type GalgameLike struct {
 func (GalgameLike) TableName() string { return "galgame_like" }
 
 type GalgameFavorite struct {
-	ID        int `gorm:"primaryKey;autoIncrement" json:"id"`
-	GalgameID int `gorm:"column:galgame_id;not null;uniqueIndex:idx_galgame_favorite" json:"galgame_id"`
-	UserID    int `gorm:"column:user_id;not null;uniqueIndex:idx_galgame_favorite" json:"user_id"`
+	ID     int `gorm:"primaryKey;autoIncrement" json:"id"`
+	WorkID int `gorm:"column:work_id;not null;uniqueIndex:idx_galgame_favorite" json:"galgame_id"`
+	UserID int `gorm:"column:user_id;not null;uniqueIndex:idx_galgame_favorite" json:"user_id"`
 
 	CreatedAt time.Time `gorm:"column:created" json:"created"`
 	UpdatedAt time.Time `gorm:"column:updated" json:"updated"`
 }
 
 func (GalgameFavorite) TableName() string { return "galgame_favorite" }
-
-type GalgameRedirect struct {
-	OldGID  int       `gorm:"column:old_gid;primaryKey" json:"old_gid"`
-	NewGID  int       `gorm:"column:new_gid;not null" json:"new_gid"`
-	Created time.Time `gorm:"column:created" json:"created"`
-}
-
-func (GalgameRedirect) TableName() string { return "galgame_redirect" }

@@ -15,9 +15,9 @@ const { data, status: fetchStatus } =
 
 const briefName = (item: GalgameEditProposalItem): string => {
   if (!item.galgame) {
-    return `Galgame #${item.gid || item.entity_id}`
+    return `Galgame #${item.gid}`
   }
-  return item.galgame.name || `Galgame #${item.gid || item.entity_id}`
+  return item.galgame.name || `Galgame #${item.gid}`
 }
 </script>
 

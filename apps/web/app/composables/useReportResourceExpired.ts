@@ -10,7 +10,7 @@ export const useReportResourceExpired = () => {
   const nuxtApp = useNuxtApp()
 
   const report = async (
-    galgameId: number,
+    workId: number,
     resourceId: number,
     onMarked?: () => void
   ) => {
@@ -28,7 +28,7 @@ export const useReportResourceExpired = () => {
     status.value = 'checking'
     const result = await nuxtApp.runWithContext(() =>
       kunFetch<{ verdict: string; marked: boolean }>(
-        `/galgame/${galgameId}/resource/expired`,
+        `/galgame/${workId}/resource/expired`,
         { method: 'PUT', body: { galgame_resource_id: resourceId } }
       )
     )

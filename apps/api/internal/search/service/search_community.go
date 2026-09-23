@@ -86,14 +86,14 @@ func (s *SearchService) renderGalComments(ctx context.Context, q string, page *c
 			title = target.Label
 		}
 		items = append(items, dto.GalCommentItem{
-			ID:        row.Post.ID,
-			Content:   galCommentSnippet(row.Post.ContentRaw, q),
-			Link:      target.Link,
-			Title:     title,
-			Label:     target.Label,
-			GalgameID: target.GalgameID,
-			User:      dto.UserBrief{ID: author.ID, Name: author.Name, Avatar: author.Avatar},
-			Created:   row.Post.CreatedAt,
+			ID:      row.Post.ID,
+			Content: galCommentSnippet(row.Post.ContentRaw, q),
+			Link:    target.Link,
+			Title:   title,
+			Label:   target.Label,
+			WorkID:  target.WorkID,
+			User:    dto.UserBrief{ID: author.ID, Name: author.Name, Avatar: author.Avatar},
+			Created: row.Post.CreatedAt,
 		})
 	}
 	return &dto.GalCommentResult{Items: items, NextCursor: page.NextCursor}

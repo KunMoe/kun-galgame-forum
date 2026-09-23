@@ -38,19 +38,11 @@ func playStateFinished(status string) bool {
 	}
 }
 
-func (s *GalgameService) hydrateMyPlaytime(ctx context.Context, gid int, accessToken string) *dto.GalgameMyPlaytime {
+func (s *GalgameService) hydrateMyPlaytime(ctx context.Context, workID int, accessToken string) *dto.GalgameMyPlaytime {
 	if s.catalog == nil || accessToken == "" || s.galgameClient == nil {
 		return nil
 	}
-	ids, appErr := s.galgameClient.CatalogWorkIDs(ctx, []int{gid})
-	if appErr != nil {
-		return nil
-	}
-	workID, ok := ids[gid]
-	if !ok {
-		return nil
-	}
-	got, err := s.catalog.MyPlaytime(ctx, accessToken, workID)
+	got, err := s.catalog.MyPlaytime(ctx, accessToken, int64(workID))
 	if err != nil {
 		// A token minted before playtime joined the authorize scope is the
 		// ordinary case here, not a fault: the detail page just shows no
@@ -59,16 +51,16 @@ func (s *GalgameService) hydrateMyPlaytime(ctx context.Context, gid int, accessT
 		// invisible on the sibling call sites for an hour — so it is counted now
 		// rather than swallowed.
 		if errors.Is(err, catalogclient.ErrInsufficientScope) {
-			warnPlaytimeScope.warn("galgame detail: own playtime unavailable, token lacks playtime:read", "gid", gid)
+			warnPlaytimeScope.warn("galgame detail: own playtime unavailable, token lacks playtime:read", "work_id", workID)
 		} else {
-			slog.Warn("galgame detail: own playtime unavailable", "gid", gid, "error", err)
+			slog.Warn("galgame detail: own playtime unavailable", "work_id", workID, "error", err)
 		}
 		return nil
 	}
 	status := ""
-	ws, err := s.catalog.MyWorkState(ctx, accessToken, workID)
+	ws, err := s.catalog.MyWorkState(ctx, accessToken, int64(workID))
 	if err != nil {
-		slog.Warn("galgame detail: own work-state unavailable", "gid", gid, "error", err)
+		slog.Warn("galgame detail: own work-state unavailable", "work_id", workID, "error", err)
 	} else if ws != nil {
 		status = playstate.FromCatalog(ws.State, ws.Completion)
 	}
@@ -105,23 +97,16 @@ func NewPlaytimeService(
 
 func (s *PlaytimeService) Report(
 	ctx context.Context,
-	gid int,
+	workID int,
 	accessToken string,
 	minutes *int,
 	status *string,
 ) (*dto.GalgameMyPlaytime, error) {
-	ids, appErr := s.galgameClient.CatalogWorkIDs(ctx, []int{gid})
-	if appErr != nil {
-		return nil, appErr
-	}
-	workID, ok := ids[gid]
-	if !ok {
-		return nil, apperrors.ErrNotFound("条目不存在")
-	}
+	id := int64(workID)
 
 	writtenMinutes := 0
 	if minutes != nil {
-		if _, err := s.catalog.ReportPlaytime(ctx, accessToken, workID,
+		if _, err := s.catalog.ReportPlaytime(ctx, accessToken, id,
 			catalogclient.PlaytimeReport{Minutes: *minutes}); err != nil {
 			return nil, err
 		}
@@ -131,7 +116,7 @@ func (s *PlaytimeService) Report(
 	flat := ""
 	if status != nil {
 		if *status == "" {
-			if err := s.catalog.DeleteWorkState(ctx, accessToken, workID); err != nil {
+			if err := s.catalog.DeleteWorkState(ctx, accessToken, id); err != nil {
 				return nil, err
 			}
 		} else {
@@ -143,7 +128,7 @@ func (s *PlaytimeService) Report(
 			// authoritative. Echoing a previously stored completion would
 			// ignore the picker and wipe a different application's value
 			// only by accident of GET-then-PUT.
-			stored, err := s.catalog.PutWorkState(ctx, accessToken, workID, catState, completion)
+			stored, err := s.catalog.PutWorkState(ctx, accessToken, id, catState, completion)
 			if err != nil {
 				return nil, err
 			}
@@ -154,7 +139,7 @@ func (s *PlaytimeService) Report(
 			}
 		}
 	} else {
-		ws, err := s.catalog.MyWorkState(ctx, accessToken, workID)
+		ws, err := s.catalog.MyWorkState(ctx, accessToken, id)
 		if err != nil {
 			slog.Warn("galgame playtime: own work-state unavailable after report", "error", err)
 		} else if ws != nil {
@@ -162,41 +147,31 @@ func (s *PlaytimeService) Report(
 		}
 	}
 
-	return s.foldedMyPlaytime(ctx, accessToken, workID, writtenMinutes, flat)
+	return s.foldedMyPlaytime(ctx, accessToken, id, writtenMinutes, flat)
 }
 
 // SyncWorkState mirrors a published rating's play state onto catalog. The
 // rating is already committed when this runs, so every failure is logged and
 // swallowed: a catalog outage must not fail a rating the user already wrote.
-func (s *PlaytimeService) SyncWorkState(ctx context.Context, gid int, accessToken, playStatus string) {
+func (s *PlaytimeService) SyncWorkState(ctx context.Context, workID int, accessToken, playStatus string) {
 	if accessToken == "" {
 		return
 	}
 	catState, completion, ok := playstate.ToCatalog(playStatus)
 	if !ok {
-		slog.Warn("galgame rating: skip work-state sync, unknown play status", "gid", gid, "play_status", playStatus)
+		slog.Warn("galgame rating: skip work-state sync, unknown play status", "work_id", workID, "play_status", playStatus)
 		return
 	}
 	if s.catalog == nil || s.galgameClient == nil {
-		slog.Warn("galgame rating: skip work-state sync, catalog unavailable", "gid", gid)
+		slog.Warn("galgame rating: skip work-state sync, catalog unavailable", "work_id", workID)
 		return
 	}
-	ids, appErr := s.galgameClient.CatalogWorkIDs(ctx, []int{gid})
-	if appErr != nil {
-		slog.Warn("galgame rating: work-state sync failed", "gid", gid, "error", appErr)
-		return
-	}
-	workID, found := ids[gid]
-	if !found {
-		slog.Warn("galgame rating: work-state sync failed, no catalog work", "gid", gid)
-		return
-	}
-	if _, err := s.catalog.PutWorkState(ctx, accessToken, workID, catState, completion); err != nil {
+	if _, err := s.catalog.PutWorkState(ctx, accessToken, int64(workID), catState, completion); err != nil {
 		if errors.Is(err, catalogclient.ErrInsufficientScope) {
-			warnRatingWorkStateScope.warn("galgame rating: work-state sync unavailable, token lacks scope", "gid", gid)
+			warnRatingWorkStateScope.warn("galgame rating: work-state sync unavailable, token lacks scope", "work_id", workID)
 			return
 		}
-		slog.Warn("galgame rating: work-state sync failed", "gid", gid, "error", err)
+		slog.Warn("galgame rating: work-state sync failed", "work_id", workID, "error", err)
 	}
 }
 
@@ -222,7 +197,6 @@ func (s *PlaytimeService) foldedMyPlaytime(
 }
 
 type foldedPlaytime struct {
-	gid       int
 	workID    int64
 	minutes   int
 	clients   int
@@ -248,24 +222,7 @@ func (s *PlaytimeService) ListMine(
 	order, byWork := foldRecords(playtimeRows)
 	states, stateOrder := indexWorkStates(stateRows)
 
-	workIDs := make([]int64, 0, len(order)+len(stateOrder))
-	seenWork := make(map[int64]struct{}, len(order)+len(stateOrder))
-	for _, id := range order {
-		workIDs = append(workIDs, id)
-		seenWork[id] = struct{}{}
-	}
-	for _, id := range stateOrder {
-		if _, ok := seenWork[id]; ok {
-			continue
-		}
-		workIDs = append(workIDs, id)
-	}
-	gidByWork, appErr := s.galgameClient.GIDsByCatalogIDs(ctx, workIDs)
-	if appErr != nil {
-		return nil, appErr
-	}
-
-	folded := assembleMine(order, byWork, stateOrder, states, gidByWork)
+	folded := assembleMine(order, byWork, stateOrder, states)
 
 	out := &dto.PlaytimeMinePage{
 		Items:     []dto.PlaytimeMineItem{},
@@ -286,11 +243,11 @@ func (s *PlaytimeService) ListMine(
 	end := min(start+limit, len(folded))
 	window := folded[start:end]
 
-	gids := make([]int, 0, len(window))
+	workIDs := make([]int, 0, len(window))
 	for _, f := range window {
-		gids = append(gids, f.gid)
+		workIDs = append(workIDs, int(f.workID))
 	}
-	cards, appErr := s.galgameService.HydrateCardsByIDs(ctx, gids, isSFW)
+	cards, appErr := s.galgameService.HydrateCardsByIDs(ctx, workIDs, isSFW)
 	if appErr != nil {
 		return nil, appErr
 	}
@@ -299,7 +256,7 @@ func (s *PlaytimeService) ListMine(
 		byID[c.ID] = c
 	}
 	for _, f := range window {
-		card, ok := byID[f.gid]
+		card, ok := byID[int(f.workID)]
 		if !ok {
 			continue
 		}
@@ -383,13 +340,11 @@ func assembleMine(
 	byWork map[int64]foldedPlaytime,
 	stateOrder []int64,
 	states map[int64]catalogclient.WorkStateRecord,
-	gidByWork map[int64]int,
 ) []foldedPlaytime {
 	derived := make([]foldedPlaytime, 0, len(playtimeOrder))
 	seen := make(map[int64]struct{}, len(playtimeOrder)+len(stateOrder))
 	for _, workID := range playtimeOrder {
-		gid, ok := gidByWork[workID]
-		if !ok || gid <= 0 {
+		if workID <= 0 {
 			continue
 		}
 		f := byWork[workID]
@@ -402,7 +357,6 @@ func assembleMine(
 			}
 			f.minutes = 0
 		}
-		f.gid = gid
 		derived = append(derived, f)
 		seen[workID] = struct{}{}
 	}
@@ -413,8 +367,7 @@ func assembleMine(
 		if _, ok := seen[workID]; ok {
 			continue
 		}
-		gid, ok := gidByWork[workID]
-		if !ok || gid <= 0 {
+		if workID <= 0 {
 			continue
 		}
 		rec := states[workID]
@@ -423,7 +376,6 @@ func assembleMine(
 			continue
 		}
 		out = append(out, foldedPlaytime{
-			gid:     gid,
 			workID:  workID,
 			minutes: 0,
 			clients: 0,

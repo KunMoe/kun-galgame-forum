@@ -65,7 +65,7 @@ func (s *EngineService) GetDetail(
 	}
 
 	filter := buildEntityFilter(rawQuery)
-	memberIDs, appErr := s.galgameClient.CatalogMemberGIDs(ctx,
+	memberIDs, appErr := s.galgameClient.CatalogMemberWorkIDs(ctx,
 		entityMemberQuery("engine_id", id, filter), isSFW, taxonomyMemberPageCap)
 	if appErr != nil {
 		return nil, appErr

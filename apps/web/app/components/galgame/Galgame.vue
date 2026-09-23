@@ -169,7 +169,7 @@ const hasContributorCard = computed(
 
             <KunTabPanel value="patch" :loading="patchLoading">
               <GalgamePatchContainer
-                :galgame-id="galgame.id"
+                :work-id="galgame.id"
                 @has-resource="hasPatchResource = $event"
                 @update:loading="patchLoading = $event"
               />

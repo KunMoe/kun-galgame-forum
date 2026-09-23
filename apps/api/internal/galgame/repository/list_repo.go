@@ -13,9 +13,9 @@ import (
 
 const bayesianPriorC = 10.0
 
-const ratingAggJoin = "LEFT JOIN (SELECT galgame_id, SUM(overall) AS rsum, " +
-	"COUNT(*) AS rcnt FROM galgame_rating GROUP BY galgame_id) rt " +
-	"ON rt.galgame_id = g.id"
+const ratingAggJoin = "LEFT JOIN (SELECT work_id, SUM(overall) AS rsum, " +
+	"COUNT(*) AS rcnt FROM galgame_rating GROUP BY work_id) rt " +
+	"ON rt.work_id = g.id"
 
 type GalgameListRepository struct {
 	db *gorm.DB
@@ -99,7 +99,7 @@ func (r *GalgameListRepository) ListIDs(f model.GalgameListFilter) (ids []int, t
 				q = applyRatingFilter(q, f, bayes)
 			}
 			if !f.Indexed && !f.ShowNoResource {
-				q = q.Where("EXISTS (SELECT 1 FROM galgame_resource gr WHERE gr.galgame_id = g.id)")
+				q = q.Where("EXISTS (SELECT 1 FROM galgame_resource gr WHERE gr.work_id = g.id)")
 			}
 			return q
 		}
@@ -119,7 +119,7 @@ func (r *GalgameListRepository) ListIDs(f model.GalgameListFilter) (ids []int, t
 
 	inner := applyContentLimit(applyPublished(r.db.Table("galgame g").
 		Select("DISTINCT g.id").
-		Joins("JOIN galgame_resource gr ON gr.galgame_id = g.id"), f), f)
+		Joins("JOIN galgame_resource gr ON gr.work_id = g.id"), f), f)
 	if f.RestrictIDs != nil {
 		inner = inner.Where("g.id = ANY(?::int[])", intArrayLit(f.RestrictIDs))
 	}
@@ -156,7 +156,7 @@ func (r *GalgameListRepository) ListIDs(f model.GalgameListFilter) (ids []int, t
 
 	main := applyPublished(r.db.Table("galgame g").
 		Select("g.id").
-		Joins("JOIN galgame_resource gr ON gr.galgame_id = g.id"), f)
+		Joins("JOIN galgame_resource gr ON gr.work_id = g.id"), f)
 	groupBy := "g.id, " + sortCol
 	if isSubquerySort {
 		groupBy = "g.id"
@@ -168,7 +168,7 @@ func (r *GalgameListRepository) ListIDs(f model.GalgameListFilter) (ids []int, t
 
 	var rows []idRow
 	main.
-		Where("gr.galgame_id IN (?)", inner).
+		Where("gr.work_id IN (?)", inner).
 		Group(groupBy).
 		Order(orderClause).
 		Offset((f.Page - 1) * f.Limit).Limit(f.Limit).
@@ -252,7 +252,7 @@ func (r *GalgameListRepository) ListCollectedCalendar(isSFW bool) []CollectedMon
 	q := r.db.Table("galgame g").
 		Select("EXTRACT(YEAR FROM g.created)::int AS year, EXTRACT(MONTH FROM g.created)::int AS month").
 		Where("g.published").
-		Where("EXISTS (SELECT 1 FROM galgame_resource gr WHERE gr.galgame_id = g.id)")
+		Where("EXISTS (SELECT 1 FROM galgame_resource gr WHERE gr.work_id = g.id)")
 	applyContentLimit(q, model.GalgameListFilter{SFWOnly: isSFW}).
 		Group("EXTRACT(YEAR FROM g.created)::int, EXTRACT(MONTH FROM g.created)::int").
 		Order("EXTRACT(YEAR FROM g.created)::int DESC, EXTRACT(MONTH FROM g.created)::int ASC").
@@ -269,15 +269,15 @@ func (r *GalgameListRepository) BayesianRatings(ids []int) map[int]RatingInfo {
 	r.db.Table("galgame_rating").Select("COALESCE(AVG(overall), 0)").Scan(&m)
 
 	type aggRow struct {
-		GalgameID int     `gorm:"column:galgame_id"`
-		Rsum      float64 `gorm:"column:rsum"`
-		Rcnt      int     `gorm:"column:rcnt"`
+		WorkID int     `gorm:"column:work_id"`
+		Rsum   float64 `gorm:"column:rsum"`
+		Rcnt   int     `gorm:"column:rcnt"`
 	}
 	var rows []aggRow
 	r.db.Table("galgame_rating").
-		Select("galgame_id, SUM(overall) AS rsum, COUNT(*) AS rcnt").
-		Where("galgame_id IN ?", ids).
-		Group("galgame_id").
+		Select("work_id, SUM(overall) AS rsum, COUNT(*) AS rcnt").
+		Where("work_id IN ?", ids).
+		Group("work_id").
 		Scan(&rows)
 
 	for _, row := range rows {
@@ -285,7 +285,7 @@ func (r *GalgameListRepository) BayesianRatings(ids []int) map[int]RatingInfo {
 			continue
 		}
 		score := (bayesianPriorC*m + row.Rsum) / (bayesianPriorC + float64(row.Rcnt))
-		out[row.GalgameID] = RatingInfo{
+		out[row.WorkID] = RatingInfo{
 			Score: math.Round(score*10) / 10,
 			Count: row.Rcnt,
 		}
@@ -337,10 +337,10 @@ func applyGameTypeFilter(q *gorm.DB, f model.GalgameListFilter) *gorm.DB {
 	case "", "all":
 		return q
 	case "uncategorized":
-		return q.Where("NOT EXISTS (SELECT 1 FROM galgame_rating grt WHERE grt.galgame_id = g.id AND grt.galgame_type <> '[]'::jsonb)")
+		return q.Where("NOT EXISTS (SELECT 1 FROM galgame_rating grt WHERE grt.work_id = g.id AND grt.galgame_type <> '[]'::jsonb)")
 	default:
 		return q.Where(
-			"EXISTS (SELECT 1 FROM galgame_rating grt WHERE grt.galgame_id = g.id AND grt.galgame_type @> ?)",
+			"EXISTS (SELECT 1 FROM galgame_rating grt WHERE grt.work_id = g.id AND grt.galgame_type @> ?)",
 			"[\""+f.GameType+"\"]",
 		)
 	}

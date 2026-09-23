@@ -16,7 +16,7 @@ func NewGalgameProxyHandler(galgameProxyService *service.GalgameProxyService) *G
 }
 
 func (h *GalgameProxyHandler) GetGalgameLinks(c fiber.Ctx) error {
-	links, appErr := h.galgameProxyService.GetGalgameLinks(c.Context(), c.Params("gid"))
+	links, appErr := h.galgameProxyService.GetGalgameLinks(c.Context(), c.Params("id"))
 	if appErr != nil {
 		return response.Error(c, appErr)
 	}

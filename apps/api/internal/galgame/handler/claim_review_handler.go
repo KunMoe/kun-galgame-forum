@@ -34,7 +34,7 @@ func (h *ClaimReviewHandler) Review(c fiber.Ctx) error {
 	if appErr != nil {
 		return response.Error(c, appErr)
 	}
-	gid, appErr := submissionGID(c)
+	workID, appErr := submissionWorkID(c)
 	if appErr != nil {
 		return response.Error(c, appErr)
 	}
@@ -42,7 +42,7 @@ func (h *ClaimReviewHandler) Review(c fiber.Ctx) error {
 	if err := c.Bind().Body(&req); err != nil {
 		return response.Error(c, errors.ErrBadRequest("请求格式错误"))
 	}
-	res, appErr := h.svc.Review(c.Context(), token, gid, req.Action, req.Reason)
+	res, appErr := h.svc.Review(c.Context(), token, workID, req.Action, req.Reason)
 	if appErr != nil {
 		return response.Error(c, appErr)
 	}

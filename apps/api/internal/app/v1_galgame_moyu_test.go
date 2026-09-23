@@ -19,12 +19,11 @@ import (
 )
 
 const (
-	moyuGID         = 4121
-	moyuCatalogID   = 61311
+	moyuWorkID      = 61311
 	moyuPublisher   = 910000101
 	moyuDeparted    = 910000102
 	moyuAvatarHash  = "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
-	moyuSpecPath    = "/galgames/{galgame_id}/moyu-patches"
+	moyuSpecPath    = "/works/{work_id}/moyu-patches"
 	moyuPatchesPage = `{"object":"list","next_cursor":null,"total":null,"items":[
 		{"object":"patch","id":"61311","vndb_id":"v4145","catalog_work_id":"61311",
 		 "web_url":"https://www.moyu.moe/galgame/61311","resources":[
@@ -42,16 +41,13 @@ const (
 			 "publisher":{"object":"user","id":"910000102","name":"","avatar_url":""}}]}]}`
 )
 
-type fakeWorkIDs struct{ err *legacyErrors.AppError }
+type fakeWorks struct{ err *legacyErrors.AppError }
 
-func (f fakeWorkIDs) CatalogWorkIDForGID(_ context.Context, gid int) (int64, bool, *legacyErrors.AppError) {
+func (f fakeWorks) CatalogWorkExists(_ context.Context, workID int) (bool, *legacyErrors.AppError) {
 	if f.err != nil {
-		return 0, false, f.err
+		return false, f.err
 	}
-	if gid == moyuGID {
-		return moyuCatalogID, true, nil
-	}
-	return 0, false, nil
+	return workID == moyuWorkID, nil
 }
 
 type fakeUsers struct{}
@@ -74,7 +70,7 @@ type moyuFix struct {
 	gotQuery atomic.Value
 }
 
-func newMoyuFix(t *testing.T, works fakeWorkIDs, apiKey string) *moyuFix {
+func newMoyuFix(t *testing.T, works fakeWorks, apiKey string) *moyuFix {
 	t.Helper()
 	f := &moyuFix{}
 	f.status.Store(http.StatusOK)
@@ -107,9 +103,9 @@ func newMoyuFix(t *testing.T, works fakeWorkIDs, apiKey string) *moyuFix {
 	return f
 }
 
-func (f *moyuFix) get(t *testing.T, galgameID string) (*http.Response, []byte) {
+func (f *moyuFix) get(t *testing.T, workID string) (*http.Response, []byte) {
 	t.Helper()
-	req := httptest.NewRequest(http.MethodGet, "/api/v1/galgames/"+galgameID+"/moyu-patches", nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/works/"+workID+"/moyu-patches", nil)
 	resp, err := f.app.Fiber.Test(req)
 	if err != nil {
 		t.Fatal(err)
@@ -135,9 +131,9 @@ func problemCode(t *testing.T, body []byte) string {
 }
 
 func TestV1GalgameMoyuPatches(t *testing.T) {
-	f := newMoyuFix(t, fakeWorkIDs{}, "nmk_live_test")
+	f := newMoyuFix(t, fakeWorks{}, "nmk_live_test")
 
-	resp, body := f.get(t, "4121")
+	resp, body := f.get(t, "61311")
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("status %d: %s", resp.StatusCode, body)
 	}
@@ -191,7 +187,7 @@ func TestV1GalgameMoyuPatches(t *testing.T) {
 		t.Errorf("note_markdown = %v", second.NoteMarkdown)
 	}
 
-	f.get(t, "4121")
+	f.get(t, "61311")
 	if n := f.upstream.Load(); n != 1 {
 		t.Errorf("upstream calls = %d, want 1: the second read must come from the cache", n)
 	}
@@ -199,34 +195,34 @@ func TestV1GalgameMoyuPatches(t *testing.T) {
 
 func TestV1GalgameMoyuPatchesErrors(t *testing.T) {
 	t.Run("unknown galgame", func(t *testing.T) {
-		f := newMoyuFix(t, fakeWorkIDs{}, "nmk_live_test")
+		f := newMoyuFix(t, fakeWorks{}, "nmk_live_test")
 		resp, body := f.get(t, "999")
 		if resp.StatusCode != http.StatusNotFound || problemCode(t, body) != "NOT_FOUND" {
 			t.Errorf("status %d: %s", resp.StatusCode, body)
 		}
 	})
 	t.Run("malformed id", func(t *testing.T) {
-		f := newMoyuFix(t, fakeWorkIDs{}, "nmk_live_test")
+		f := newMoyuFix(t, fakeWorks{}, "nmk_live_test")
 		resp, body := f.get(t, "0")
 		if resp.StatusCode != http.StatusBadRequest || problemCode(t, body) != "INVALID_PARAMETER" {
 			t.Errorf("status %d: %s", resp.StatusCode, body)
 		}
 	})
 	t.Run("moyu refuses", func(t *testing.T) {
-		f := newMoyuFix(t, fakeWorkIDs{}, "nmk_live_test")
+		f := newMoyuFix(t, fakeWorks{}, "nmk_live_test")
 		f.status.Store(http.StatusTooManyRequests)
-		resp, body := f.get(t, "4121")
+		resp, body := f.get(t, "61311")
 		if resp.StatusCode != http.StatusServiceUnavailable || problemCode(t, body) != "SERVICE_UNAVAILABLE" {
 			t.Errorf("status %d: %s", resp.StatusCode, body)
 		}
 		f.status.Store(http.StatusOK)
-		if resp, _ := f.get(t, "4121"); resp.StatusCode != http.StatusOK {
+		if resp, _ := f.get(t, "61311"); resp.StatusCode != http.StatusOK {
 			t.Errorf("a refusal must not be cached, got %d", resp.StatusCode)
 		}
 	})
 	t.Run("no key", func(t *testing.T) {
-		f := newMoyuFix(t, fakeWorkIDs{}, "")
-		resp, body := f.get(t, "4121")
+		f := newMoyuFix(t, fakeWorks{}, "")
+		resp, body := f.get(t, "61311")
 		if resp.StatusCode != http.StatusServiceUnavailable || problemCode(t, body) != "SERVICE_UNAVAILABLE" {
 			t.Errorf("status %d: %s", resp.StatusCode, body)
 		}
@@ -235,8 +231,8 @@ func TestV1GalgameMoyuPatchesErrors(t *testing.T) {
 		}
 	})
 	t.Run("catalog down", func(t *testing.T) {
-		f := newMoyuFix(t, fakeWorkIDs{err: legacyErrors.ErrInternal("catalog down")}, "nmk_live_test")
-		resp, body := f.get(t, "4121")
+		f := newMoyuFix(t, fakeWorks{err: legacyErrors.ErrInternal("catalog down")}, "nmk_live_test")
+		resp, body := f.get(t, "61311")
 		if resp.StatusCode != http.StatusServiceUnavailable || problemCode(t, body) != "SERVICE_UNAVAILABLE" {
 			t.Errorf("status %d: %s", resp.StatusCode, body)
 		}

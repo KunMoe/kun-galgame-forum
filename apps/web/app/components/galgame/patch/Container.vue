@@ -8,7 +8,7 @@ import {
 import { patchNoteText } from './noteText'
 
 const props = defineProps<{
-  galgameId: number
+  workId: number
 }>()
 
 const emit = defineEmits<{
@@ -19,10 +19,10 @@ const emit = defineEmits<{
 // A failed lookup is not reported: moyu is another site, and the tab is only
 // drawn when there is something in it.
 const { data, status } = useApi<ListMoyuPatch>(
-  () => `galgame-moyu-patches:${props.galgameId}`,
+  () => `galgame-moyu-patches:${props.workId}`,
   (api, { signal }) =>
-    api.GET('/galgames/{galgame_id}/moyu-patches', {
-      params: { path: { galgame_id: String(props.galgameId) } },
+    api.GET('/works/{work_id}/moyu-patches', {
+      params: { path: { work_id: String(props.workId) } },
       signal
     }),
   { lazy: true, server: false }

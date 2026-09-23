@@ -138,15 +138,15 @@ type setResourcePublishBanRequest struct {
 }
 
 func (h *ResourceHandler) SetResourcePublishBan(c fiber.Ctx) error {
-	gid, err := strconv.Atoi(c.Params("gid"))
-	if err != nil || gid <= 0 {
+	workID, err := strconv.Atoi(c.Params("id"))
+	if err != nil || workID <= 0 {
 		return response.Error(c, errors.ErrBadRequest("无效的 Galgame ID"))
 	}
 	var req setResourcePublishBanRequest
 	if err := c.Bind().Body(&req); err != nil {
 		return response.Error(c, errors.ErrBadRequest("请求格式错误"))
 	}
-	if appErr := h.resourceService.SetResourcePublishBan(gid, req.Banned); appErr != nil {
+	if appErr := h.resourceService.SetResourcePublishBan(workID, req.Banned); appErr != nil {
 		return response.Error(c, appErr)
 	}
 	if req.Banned {

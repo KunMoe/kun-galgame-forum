@@ -76,14 +76,14 @@ func (s *OfficialService) GetDetail(
 	}
 	memberIDs := make([]int, 0, len(members))
 	viaIDs := []int{}
-	viaByGID := make(map[int]*dto.OfficialBrief, len(members))
+	viaByWorkID := make(map[int]*dto.OfficialBrief, len(members))
 	for _, m := range members {
-		memberIDs = append(memberIDs, m.GID)
+		memberIDs = append(memberIDs, m.WorkID)
 		if m.Via == nil {
 			continue
 		}
-		viaIDs = append(viaIDs, m.GID)
-		viaByGID[m.GID] = &dto.OfficialBrief{ID: int(m.Via.ID), Name: m.Via.Name(ctx)}
+		viaIDs = append(viaIDs, m.WorkID)
+		viaByWorkID[m.WorkID] = &dto.OfficialBrief{ID: int(m.Via.ID), Name: m.Via.Name(ctx)}
 	}
 
 	filter.RestrictIDs = memberIDs
@@ -99,7 +99,7 @@ func (s *OfficialService) GetDetail(
 	}
 	cards := listCardsToEntityCards(page.Galgames)
 	for i := range cards {
-		cards[i].ViaOfficial = viaByGID[cards[i].ID]
+		cards[i].ViaOfficial = viaByWorkID[cards[i].ID]
 	}
 
 	name, original := client.CatalogEntityNames(ctx, o.Localized, o.DisplayName, "")

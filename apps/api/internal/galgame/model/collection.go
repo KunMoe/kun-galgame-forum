@@ -35,7 +35,7 @@ func (GalgameCollection) TableName() string { return "galgame_collection" }
 type GalgameCollectionItem struct {
 	ID           int `gorm:"primaryKey;autoIncrement" json:"id"`
 	CollectionID int `gorm:"column:collection_id;not null;uniqueIndex:idx_gci_unique" json:"collection_id"`
-	GalgameID    int `gorm:"column:galgame_id;not null;uniqueIndex:idx_gci_unique" json:"galgame_id"`
+	WorkID       int `gorm:"column:work_id;not null;uniqueIndex:idx_gci_unique" json:"galgame_id"`
 	UserID       int `gorm:"column:user_id;not null" json:"user_id"`
 
 	CreatedAt time.Time `gorm:"column:created" json:"created"`

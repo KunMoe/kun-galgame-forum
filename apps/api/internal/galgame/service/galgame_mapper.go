@@ -23,10 +23,10 @@ func groupResourceMeta(rows []model.GalgameResourceMeta) (platforms, languages m
 	languages = make(map[int][]string)
 	for _, r := range rows {
 		if r.Platform != "" {
-			platforms[r.GalgameID] = appendUniqueStr(platforms[r.GalgameID], r.Platform)
+			platforms[r.WorkID] = appendUniqueStr(platforms[r.WorkID], r.Platform)
 		}
 		if r.Language != "" {
-			languages[r.GalgameID] = appendUniqueStr(languages[r.GalgameID], r.Language)
+			languages[r.WorkID] = appendUniqueStr(languages[r.WorkID], r.Language)
 		}
 	}
 	return
@@ -276,7 +276,7 @@ func detailRatingFromRow(
 	r repository.GalgameDetailRatingRow,
 	user userclient.User,
 	isLiked bool,
-	galgameID int,
+	workID int,
 	g dto.NextMoeGalgameDetailFull,
 ) dto.GalgameDetailRating {
 	return dto.GalgameDetailRating{
@@ -299,7 +299,7 @@ func detailRatingFromRow(
 		ReplayValue:  r.ReplayValue,
 		LikeCount:    r.LikeCount,
 		IsLiked:      isLiked,
-		GalgameID:    galgameID,
+		WorkID:       workID,
 		Created:      r.Created,
 		Updated:      r.Updated,
 		Galgame: dto.GalgameDetailRatingGalgame{

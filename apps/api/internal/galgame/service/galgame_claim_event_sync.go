@@ -54,7 +54,7 @@ func NewGalgameClaimEventSync(
 const (
 	claimCursorKey = "catalog:claim:cron:since"
 
-	claimSubmitterKeyPrefix = "catalog:claim:submitter:"
+	claimSubmitterKeyPrefix = "catalog:claim:submitter:v2:"
 
 	claimSubmitterTTL = 90 * 24 * time.Hour
 
@@ -154,7 +154,7 @@ const (
 )
 
 func effectOf(ev *catalogclient.ClaimEventFeedItem) claimEffect {
-	if ev.ProductWorkID == nil || *ev.ProductWorkID <= 0 {
+	if ev.WorkID <= 0 {
 		return claimEffectNone
 	}
 	switch ev.ToState {
@@ -183,9 +183,9 @@ func isApproval(ev *catalogclient.ClaimEventFeedItem) bool {
 		ev.FromState != nil && *ev.FromState == catalogclient.ClaimStatePending
 }
 
-func (s *GalgameClaimEventSync) claimantOf(ctx context.Context, ev *catalogclient.ClaimEventFeedItem, gid int) int {
+func (s *GalgameClaimEventSync) claimantOf(ctx context.Context, ev *catalogclient.ClaimEventFeedItem, workID int) int {
 	if isApproval(ev) {
-		return s.submitterOf(ctx, ev.WorkID, gid)
+		return s.submitterOf(ctx, ev.WorkID, workID)
 	}
 	// Adopting an unclaimed draft is not authorship. "Everything else that
 	// reaches live really is the actor's own entry" was the belief here, and it
@@ -205,27 +205,27 @@ func (s *GalgameClaimEventSync) claimantOf(ctx context.Context, ev *catalogclien
 func (s *GalgameClaimEventSync) apply(ctx context.Context, ev *catalogclient.ClaimEventFeedItem) (retry bool) {
 	switch effectOf(ev) {
 	case claimEffectSeedStub:
-		gid := int(*ev.ProductWorkID)
-		creator := s.claimantOf(ctx, ev, gid)
+		workID := int(ev.WorkID)
+		creator := s.claimantOf(ctx, ev, workID)
 		if err := s.galgameRepo.DB().Transaction(func(tx *gorm.DB) error {
-			if err := s.galgameRepo.EnsureLocalStub(tx, gid); err != nil {
+			if err := s.galgameRepo.EnsureLocalStub(tx, workID); err != nil {
 				return err
 			}
 			if creator > 0 {
-				return s.galgameRepo.SetCreatorIfUnset(tx, gid, creator)
+				return s.galgameRepo.SetCreatorIfUnset(tx, workID, creator)
 			}
 			return nil
 		}); err != nil {
-			slog.Warn("claim live: 建立本地行失败, 将重试", "event", ev.ID, "gid", gid, "error", err)
+			slog.Warn("claim live: 建立本地行失败, 将重试", "event", ev.ID, "work_id", workID, "error", err)
 			return true
 		}
 		if isApproval(ev) {
-			return s.awardApproval(ctx, ev, gid)
+			return s.awardApproval(ctx, ev, workID)
 		}
 	case claimEffectUnpublish:
-		if err := s.galgameRepo.UnpublishLocal(int(*ev.ProductWorkID)); err != nil {
+		if err := s.galgameRepo.UnpublishLocal(int(ev.WorkID)); err != nil {
 			slog.Warn("claim unpublish: 下架本地行失败, 将重试",
-				"event", ev.ID, "gid", *ev.ProductWorkID, "error", err)
+				"event", ev.ID, "work_id", ev.WorkID, "error", err)
 			return true
 		}
 	case claimEffectRememberSubmitter:
@@ -236,15 +236,15 @@ func (s *GalgameClaimEventSync) apply(ctx context.Context, ev *catalogclient.Cla
 	return false
 }
 
-func (s *GalgameClaimEventSync) awardApproval(ctx context.Context, ev *catalogclient.ClaimEventFeedItem, gid int) (retry bool) {
-	uid := s.submitterOf(ctx, ev.WorkID, gid)
+func (s *GalgameClaimEventSync) awardApproval(ctx context.Context, ev *catalogclient.ClaimEventFeedItem, workID int) (retry bool) {
+	uid := s.submitterOf(ctx, ev.WorkID, workID)
 	if uid <= 0 {
 		slog.Error("claim approve: 无法归属投稿人, 跳过发奖",
-			"event", ev.ID, "work", ev.WorkID, "gid", gid)
+			"event", ev.ID, "work", ev.WorkID)
 		return false
 	}
 	if err := moemoepoint.AwardSync(uid, constants.RewardCreateGalgame,
-		moemoepoint.ReasonContentApproved, moemoepoint.Ref("galgame", gid),
+		moemoepoint.ReasonContentApproved, moemoepoint.Ref("galgame", workID),
 		moemoepoint.Key("claim_approved", strconv.FormatInt(ev.ID, 10))); err != nil {
 		if moemoepoint.IsPermanentAwardError(err) {
 			slog.Error("claim approve: 发奖被 OAuth 永久拒绝, 跳过该事件",
@@ -270,14 +270,14 @@ func (s *GalgameClaimEventSync) rememberSubmitter(ctx context.Context, ev *catal
 // Redis only remembers the submitter for 90 days and loses it on a flush, so
 // Submit also stamps the creator on the local row the moment a submission lands.
 // That row is the durable answer; the cache just saves a query.
-func (s *GalgameClaimEventSync) submitterOf(ctx context.Context, workID int64, gid int) int {
-	if v, err := s.rdb.Get(ctx, claimSubmitterKeyPrefix+strconv.FormatInt(workID, 10)).Int(); err == nil {
+func (s *GalgameClaimEventSync) submitterOf(ctx context.Context, catalogWorkID int64, workID int) int {
+	if v, err := s.rdb.Get(ctx, claimSubmitterKeyPrefix+strconv.FormatInt(catalogWorkID, 10)).Int(); err == nil {
 		return v
 	}
-	if gid <= 0 {
+	if workID <= 0 {
 		return 0
 	}
-	return userclient.DerefID(s.galgameRepo.FindLocal(gid).CreatorUserID)
+	return userclient.DerefID(s.galgameRepo.FindLocal(workID).CreatorUserID)
 }
 
 func (s *GalgameClaimEventSync) readCursor(ctx context.Context) (since int64, seeded bool, err error) {

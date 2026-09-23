@@ -12,16 +12,16 @@ import (
 func Register(svc *Service) func(huma.API) {
 	return func(api huma.API) {
 		huma.Register(api, v1.Public(huma.Operation{
-			OperationID: "listGalgameMoyuPatches",
+			OperationID: "listWorkMoyuPatches",
 			Method:      http.MethodGet,
-			Path:        "/galgames/{galgame_id}/moyu-patches",
-			Summary:     "List a galgame's patches on moyu",
-			Description: "Lists the pages www.moyu.moe, the KUN Galgame patch site, holds for the galgame, each with its live resources. " +
+			Path:        "/works/{work_id}/moyu-patches",
+			Summary:     "List a work's patches on moyu",
+			Description: "Lists the pages www.moyu.moe, the KUN Galgame patch site, holds for the work, each with its live resources. " +
 				"Usually one page: moyu dedupes on the VNDB string, so a game that arrived under two spellings has two, and the page a reader should land on comes first. " +
-				"The whole set in one response; it is never paged. An empty list means moyu has nothing for the galgame. " +
+				"The whole set in one response; it is never paged. An empty list means moyu has nothing for the work. " +
 				"No download link, share code or password is carried; send a reader to web_url. " +
-				"An answer may be up to 30 minutes old. NOT_FOUND when the galgame does not exist.",
-			Tags: []string{"galgames"},
+				"An answer may be up to 30 minutes old. NOT_FOUND when the work does not exist.",
+			Tags: []string{"works"},
 			Responses: map[string]*huma.Response{
 				"503": {
 					Description: "SERVICE_UNAVAILABLE: www.moyu.moe, the catalog or the account service cannot be reached.",

@@ -34,13 +34,13 @@ var knownActivityTypes = map[string]struct{}{
 }
 
 type ActivityRow struct {
-	TypeStr   string    `gorm:"column:type_str"`
-	ID        int       `gorm:"column:id"`
-	Content   string    `gorm:"column:content"`
-	Link      string    `gorm:"column:link"`
-	Created   time.Time `gorm:"column:created"`
-	UserID    int       `gorm:"column:user_id"`
-	GalgameID int       `gorm:"column:galgame_id"`
+	TypeStr string    `gorm:"column:type_str"`
+	ID      int       `gorm:"column:id"`
+	Content string    `gorm:"column:content"`
+	Link    string    `gorm:"column:link"`
+	Created time.Time `gorm:"column:created"`
+	UserID  int       `gorm:"column:user_id"`
+	WorkID  int       `gorm:"column:work_id"`
 }
 
 func (r *ActivityRepository) IsKnownType(typeStr string) bool {
@@ -369,9 +369,9 @@ type GalgameCounts struct {
 	CreatorUserID *int
 }
 
-func (r *ActivityRepository) FetchGalgameCounts(galgameIDs []int) (map[int]GalgameCounts, error) {
+func (r *ActivityRepository) FetchGalgameCounts(workIDs []int) (map[int]GalgameCounts, error) {
 	out := map[int]GalgameCounts{}
-	if len(galgameIDs) == 0 {
+	if len(workIDs) == 0 {
 		return out, nil
 	}
 	var rows []struct {
@@ -384,7 +384,7 @@ func (r *ActivityRepository) FetchGalgameCounts(galgameIDs []int) (map[int]Galga
 	if err := r.db.Raw(`
 		SELECT id, resource_count, like_count, favorite_count, creator_user_id
 		FROM galgame
-		WHERE id IN ? AND published`, galgameIDs).Scan(&rows).Error; err != nil {
+		WHERE id IN ? AND published`, workIDs).Scan(&rows).Error; err != nil {
 		return out, err
 	}
 	for _, row := range rows {
@@ -630,7 +630,7 @@ func (r *ActivityRepository) FetchFeed(types []string, limit int, cur *Cursor, i
 		conds = append(conds, "NOT fa.is_nsfw")
 	}
 	if !showNoResource {
-		conds = append(conds, "(fa.type <> 'GALGAME_CREATION' OR EXISTS (SELECT 1 FROM galgame_resource r WHERE r.galgame_id = fa.galgame_id))")
+		conds = append(conds, "(fa.type <> 'GALGAME_CREATION' OR EXISTS (SELECT 1 FROM galgame_resource r WHERE r.work_id = fa.work_id))")
 	}
 	const inHelp = "EXISTS (SELECT 1 FROM topic_section_relation tsr " +
 		"JOIN topic_section ts ON ts.id = tsr.topic_section_id " +
@@ -646,7 +646,7 @@ func (r *ActivityRepository) FetchFeed(types []string, limit int, cur *Cursor, i
 		args = append(args, cur.Created, cur.TypeStr, cur.ID)
 	}
 
-	sql := "SELECT fa.type AS type_str, fa.source_id AS id, fa.content, fa.link, fa.created, fa.user_id, fa.galgame_id FROM feed_activity fa"
+	sql := "SELECT fa.type AS type_str, fa.source_id AS id, fa.content, fa.link, fa.created, fa.user_id, fa.work_id FROM feed_activity fa"
 	if len(conds) > 0 {
 		sql += " WHERE " + strings.Join(conds, " AND ")
 	}
@@ -680,7 +680,7 @@ func (r *ActivityRepository) FetchTopicFeed(limit int, cur *Cursor, isSFW bool, 
 	}
 	sql := "SELECT 'TOPIC_CREATION' AS type_str, t.id, t.title AS content, " +
 		"'/topic/' || t.id::text AS link, t.status_update_time AS created, " +
-		"t.user_id, 0 AS galgame_id FROM topic t WHERE " + strings.Join(conds, " AND ") +
+		"t.user_id, 0 AS work_id FROM topic t WHERE " + strings.Join(conds, " AND ") +
 		fmt.Sprintf(" ORDER BY t.status_update_time DESC, t.id DESC LIMIT %d", limit)
 	var rows []ActivityRow
 	if err := r.db.Raw(sql, args...).Scan(&rows).Error; err != nil {

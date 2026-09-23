@@ -53,10 +53,10 @@ func (r *QuizRepository) ListPaginated(f model.QuizFilter) ([]model.GalgameQuizR
 	if f.Difficulty > 0 {
 		query = query.Where("q.difficulty = ?", f.Difficulty)
 	}
-	if f.GalgameID > 0 {
+	if f.WorkID > 0 {
 		query = query.Where(
-			"EXISTS (SELECT 1 FROM galgame_quiz_galgame gg WHERE gg.quiz_id = q.id AND gg.galgame_id = ?)",
-			f.GalgameID,
+			"EXISTS (SELECT 1 FROM galgame_quiz_galgame gg WHERE gg.quiz_id = q.id AND gg.work_id = ?)",
+			f.WorkID,
 		)
 	}
 	if f.UserID > 0 {
@@ -209,23 +209,23 @@ func (r *QuizRepository) AdjustQuizFavoriteCount(tx *gorm.DB, quizID, delta int)
 		UpdateColumn("favorite_count", gorm.Expr("favorite_count + ?", delta)).Error
 }
 
-func (r *QuizRepository) FindQuizGalgameIDs(quizID int) []int {
+func (r *QuizRepository) FindQuizWorkIDs(quizID int) []int {
 	var ids []int
 	r.db.Table("galgame_quiz_galgame").
 		Where("quiz_id = ?", quizID).
-		Order("galgame_id").
-		Pluck("galgame_id", &ids)
+		Order("work_id").
+		Pluck("work_id", &ids)
 	return ids
 }
 
-func (r *QuizRepository) SetQuizGalgames(tx *gorm.DB, quizID int, galgameIDs []int) error {
+func (r *QuizRepository) SetQuizGalgames(tx *gorm.DB, quizID int, workIDs []int) error {
 	if err := tx.Where("quiz_id = ?", quizID).
 		Delete(&model.GalgameQuizGalgame{}).Error; err != nil {
 		return err
 	}
-	seen := make(map[int]struct{}, len(galgameIDs))
-	rows := make([]model.GalgameQuizGalgame, 0, len(galgameIDs))
-	for _, id := range galgameIDs {
+	seen := make(map[int]struct{}, len(workIDs))
+	rows := make([]model.GalgameQuizGalgame, 0, len(workIDs))
+	for _, id := range workIDs {
 		if id <= 0 {
 			continue
 		}
@@ -233,7 +233,7 @@ func (r *QuizRepository) SetQuizGalgames(tx *gorm.DB, quizID int, galgameIDs []i
 			continue
 		}
 		seen[id] = struct{}{}
-		rows = append(rows, model.GalgameQuizGalgame{QuizID: quizID, GalgameID: id})
+		rows = append(rows, model.GalgameQuizGalgame{QuizID: quizID, WorkID: id})
 	}
 	if len(rows) == 0 {
 		return nil

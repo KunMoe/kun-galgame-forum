@@ -20,7 +20,7 @@ const chunkSize = 500
 func main() {
 	_ = godotenv.Load()
 
-	file := flag.String("file", "", "Path to the frozen wiki contributor TSV (galgame_id, catalog_work_id, user_id, created)")
+	file := flag.String("file", "", "Path to the frozen wiki contributor TSV (work_id, catalog_work_id, user_id, created)")
 	apply := flag.Bool("apply", false, "Write to the database (default: report only)")
 	flag.Parse()
 
@@ -69,13 +69,13 @@ func main() {
 		slog.Error("写入贡献者失败", "inserted", inserted, "error", err)
 		os.Exit(1)
 	}
-	gids, err := refreshCounts(db, rows)
+	workIDs, err := refreshCounts(db, rows)
 	if err != nil {
 		slog.Error("刷新 contributor_count 失败", "error", err)
 		os.Exit(1)
 	}
 	fmt.Printf("seed 完成: 新增 %d, 已存在 %d, 刷新 contributor_count 的 galgame %d 个\n",
-		inserted, updated, gids)
+		inserted, updated, workIDs)
 }
 
 func countPresent(db *gorm.DB, rows []seedRow) (int, error) {
@@ -85,13 +85,13 @@ func countPresent(db *gorm.DB, rows []seedRow) (int, error) {
 		values := make([]string, 0, len(chunk))
 		for _, r := range chunk {
 			values = append(values, "(?::bigint, ?::bigint)")
-			args = append(args, r.GalgameID, r.UserID)
+			args = append(args, r.WorkID, r.UserID)
 		}
 		var n int64
 		if err := db.Raw(`
 			SELECT COUNT(*) FROM galgame_contributor c
-			JOIN (VALUES `+strings.Join(values, ", ")+`) AS v(galgame_id, user_id)
-			  ON c.galgame_id = v.galgame_id AND c.user_id = v.user_id`,
+			JOIN (VALUES `+strings.Join(values, ", ")+`) AS v(work_id, user_id)
+			  ON c.work_id = v.work_id AND c.user_id = v.user_id`,
 			args...).Scan(&n).Error; err != nil {
 			return present, err
 		}
@@ -106,14 +106,14 @@ func seed(db *gorm.DB, rows []seedRow) (inserted, updated int, err error) {
 		values := make([]string, 0, len(chunk))
 		for _, r := range chunk {
 			values = append(values, "(?::bigint, ?::bigint, ?::timestamptz, ?::timestamptz, 0, 0)")
-			args = append(args, r.GalgameID, r.UserID, r.Created, r.Created)
+			args = append(args, r.WorkID, r.UserID, r.Created, r.Created)
 		}
 		var flags []bool
 		if err := db.Raw(`
 			INSERT INTO galgame_contributor
-				(galgame_id, user_id, first_at, last_at, revision_count, source)
+				(work_id, user_id, first_at, last_at, revision_count, source)
 			VALUES `+strings.Join(values, ", ")+`
-			ON CONFLICT (galgame_id, user_id) DO UPDATE SET
+			ON CONFLICT (work_id, user_id) DO UPDATE SET
 				first_at = LEAST(galgame_contributor.first_at, excluded.first_at)
 			RETURNING (xmax = 0) AS inserted`,
 			args...).Scan(&flags).Error; err != nil {
@@ -132,23 +132,23 @@ func seed(db *gorm.DB, rows []seedRow) (inserted, updated int, err error) {
 
 func refreshCounts(db *gorm.DB, rows []seedRow) (int, error) {
 	seen := map[int64]bool{}
-	gids := make([]int64, 0, len(rows))
+	workIDs := make([]int64, 0, len(rows))
 	for _, r := range rows {
-		if !seen[r.GalgameID] {
-			seen[r.GalgameID] = true
-			gids = append(gids, r.GalgameID)
+		if !seen[r.WorkID] {
+			seen[r.WorkID] = true
+			workIDs = append(workIDs, r.WorkID)
 		}
 	}
-	for i := 0; i < len(gids); i += chunkSize {
-		end := min(i+chunkSize, len(gids))
+	for i := 0; i < len(workIDs); i += chunkSize {
+		end := min(i+chunkSize, len(workIDs))
 		if err := db.Exec(`
 			UPDATE galgame SET contributor_count = (
-				SELECT COUNT(*) FROM galgame_contributor c WHERE c.galgame_id = galgame.id
-			) WHERE id IN ?`, gids[i:end]).Error; err != nil {
+				SELECT COUNT(*) FROM galgame_contributor c WHERE c.work_id = galgame.id
+			) WHERE id IN ?`, workIDs[i:end]).Error; err != nil {
 			return 0, err
 		}
 	}
-	return len(gids), nil
+	return len(workIDs), nil
 }
 
 func chunks(rows []seedRow) [][]seedRow {

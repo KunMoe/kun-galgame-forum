@@ -33,10 +33,10 @@ type GalgameDetailRatingRow struct {
 	UserID       int    `gorm:"column:user_id"`
 }
 
-func (r *GalgameDetailRatingRepository) FindRatingsByGalgame(galgameID int) []GalgameDetailRatingRow {
+func (r *GalgameDetailRatingRepository) FindRatingsByGalgame(workID int) []GalgameDetailRatingRow {
 	var rows []GalgameDetailRatingRow
 	r.db.Table("galgame_rating").
-		Where("galgame_id = ?", galgameID).
+		Where("work_id = ?", workID).
 		Order("created DESC").
 		Scan(&rows)
 	return rows

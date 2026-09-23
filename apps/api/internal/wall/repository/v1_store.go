@@ -123,14 +123,14 @@ func (s *Store) RemoveLike(postID int64, userID int) error {
 	return s.db.Exec(`DELETE FROM galgame_post_like WHERE post_id = ? AND user_id = ?`, postID, userID).Error
 }
 
-func (s *Store) BumpGalgame(galgameID, delta int) error {
+func (s *Store) BumpGalgame(workID, delta int) error {
 	return s.db.Transaction(func(tx *gorm.DB) error {
 		if delta > 0 {
-			if err := tx.Exec(`INSERT INTO galgame (id, updated) VALUES (?, now()) ON CONFLICT (id) DO NOTHING`, galgameID).Error; err != nil {
+			if err := tx.Exec(`INSERT INTO galgame (id, updated) VALUES (?, now()) ON CONFLICT (id) DO NOTHING`, workID).Error; err != nil {
 				return err
 			}
 		}
-		return tx.Exec(`UPDATE galgame SET comment_count = GREATEST(comment_count + ?, 0) WHERE id = ?`, delta, galgameID).Error
+		return tx.Exec(`UPDATE galgame SET comment_count = GREATEST(comment_count + ?, 0) WHERE id = ?`, delta, workID).Error
 	})
 }
 
@@ -157,12 +157,12 @@ func (s *Store) InsertMessageOnce(m Message) error {
 
 // The feed keys rows by an int4 source id; a community post id beyond it
 // cannot be represented, so the row is skipped rather than truncated.
-func (s *Store) FeedUpsert(feedType string, postID int64, userID, galgameID int, content, link string, nsfw bool, created time.Time) error {
+func (s *Store) FeedUpsert(feedType string, postID int64, userID, workID int, content, link string, nsfw bool, created time.Time) error {
 	if postID > math.MaxInt32 {
 		return nil
 	}
 	return s.db.Exec("SELECT feed_upsert(?, ?, ?, ?, ?, ?, ?, ?)",
-		feedType, postID, userID, galgameID, content, link, nsfw, created).Error
+		feedType, postID, userID, workID, content, link, nsfw, created).Error
 }
 
 func (s *Store) FeedDelete(feedType string, postID int64) error {

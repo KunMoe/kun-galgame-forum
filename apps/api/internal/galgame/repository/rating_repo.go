@@ -48,11 +48,11 @@ func (r *RatingRepository) FindLikerIDs(ratingID int) []int {
 	return out
 }
 
-func (r *RatingRepository) GalgameRatingStats(galgameID int) (sum, count int64) {
+func (r *RatingRepository) GalgameRatingStats(workID int) (sum, count int64) {
 	r.db.Table("galgame_rating").Select("COALESCE(SUM(overall), 0)").
-		Where("galgame_id = ?", galgameID).Scan(&sum)
+		Where("work_id = ?", workID).Scan(&sum)
 	r.db.Table("galgame_rating").
-		Where("galgame_id = ?", galgameID).Count(&count)
+		Where("work_id = ?", workID).Count(&count)
 	return
 }
 
@@ -92,10 +92,10 @@ func (r *RatingRepository) ListPaginated(f model.RatingFilter) ([]model.GalgameR
 	return rows, total
 }
 
-func (r *RatingRepository) ExistsByUserGalgame(galgameID, userID int) bool {
+func (r *RatingRepository) ExistsByUserGalgame(workID, userID int) bool {
 	var cnt int64
 	r.db.Table("galgame_rating").
-		Where("galgame_id = ? AND user_id = ?", galgameID, userID).
+		Where("work_id = ? AND user_id = ?", workID, userID).
 		Count(&cnt)
 	return cnt > 0
 }
@@ -127,9 +127,9 @@ func (r *RatingRepository) DeleteByID(tx *gorm.DB, ratingID int) error {
 // The column is creator_user_id. `Select("user_id")` named a column the table
 // has never had, and Scan's error is dropped, so this quietly returned 0 —
 // every "someone rated your entry" notification went to nobody.
-func (r *RatingRepository) FindGalgameOwner(galgameID int) int {
+func (r *RatingRepository) FindGalgameOwner(workID int) int {
 	var userID int
-	r.db.Table("galgame").Select("creator_user_id").Where("id = ?", galgameID).Scan(&userID)
+	r.db.Table("galgame").Select("creator_user_id").Where("id = ?", workID).Scan(&userID)
 	return userID
 }
 

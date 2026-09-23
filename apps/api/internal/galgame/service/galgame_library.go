@@ -64,8 +64,8 @@ func (s *GalgameService) catalogLibrary(
 		if !client.CatalogItemRenderable(&res.Items[i]) {
 			continue
 		}
-		if gid := client.CatalogItemGID(&res.Items[i]); gid > 0 {
-			ids = append(ids, gid)
+		if id := int(res.Items[i].ID); id > 0 {
+			ids = append(ids, id)
 		}
 	}
 	cards, appErr := s.HydrateCardsByIDs(ctx, ids, isSFW)

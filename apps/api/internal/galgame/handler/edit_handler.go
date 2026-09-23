@@ -32,16 +32,16 @@ type EditHandler struct {
 }
 
 type EntryOwners interface {
-	OwnerOf(gid int) int
+	OwnerOf(workID int) int
 }
 
 type repoOwners struct{ repo *repository.GalgameRepository }
 
-func (r repoOwners) OwnerOf(gid int) int {
-	if r.repo == nil || gid <= 0 {
+func (r repoOwners) OwnerOf(workID int) int {
+	if r.repo == nil || workID <= 0 {
 		return 0
 	}
-	row := r.repo.FindLocal(gid)
+	row := r.repo.FindLocal(workID)
 	if row.CreatorUserID == nil {
 		return 0
 	}
@@ -109,62 +109,42 @@ func collectProposalUIDs(items []catalogclient.EditProposal) map[int]bool {
 // Must equal the forum OAuth client's oauth_clients.catalog_site binding.
 const catalogSite = "kungal"
 
-// THE ID-SPACE TRAP, and the reason for every workIDOf / gidOf / entryOf call
-// in this file: a kungal URL carries a gid, the engine speaks registry work
-// ids, and the two spaces OVERLAP. A missed translation does not fail — it
-// silently addresses a different game.
 const entityTypeGame = catalogclient.EntityTypeWork
 
 const fieldKeyPrefix = catalogclient.FieldKeyPrefix
 
 var errEditDown = errors.New(errors.CodeBiz, "资料库编辑服务暂不可用", http.StatusServiceUnavailable)
 
-func (h *EditHandler) ownerOf(_ context.Context, gid int64) int {
+func (h *EditHandler) ownerOf(_ context.Context, workID int64) int {
 	if h.owners == nil {
 		return 0
 	}
-	return h.owners.OwnerOf(int(gid))
+	return h.owners.OwnerOf(int(workID))
 }
 
 func (h *EditHandler) isGameOwner(ctx context.Context, workID, uid int64) bool {
-	gid := h.gidOf(ctx, workID)
-	if gid == 0 {
+	if workID <= 0 {
 		return false
 	}
-	owner := h.ownerOf(ctx, int64(gid))
+	owner := h.ownerOf(ctx, workID)
 	return owner > 0 && int64(owner) == uid
 }
 
-func (h *EditHandler) workIDOf(ctx context.Context, gid int64) (int64, *errors.AppError) {
-	if h.galgameClient == nil {
-		return 0, errEditDown
-	}
-	ids, appErr := h.galgameClient.CatalogWorkIDs(ctx, []int{int(gid)})
-	if appErr != nil {
-		return 0, appErr
-	}
-	workID, ok := ids[int(gid)]
-	if !ok {
-		return 0, errors.ErrNotFound("条目不存在")
-	}
-	return workID, nil
-}
-
 type editEntry struct {
-	GID      int
+	WorkID   int
 	OwnerUID int
 	Name     string
 }
 
 func (h *EditHandler) entryOf(ctx context.Context, workID int64) editEntry {
-	gid := h.gidOf(ctx, workID)
-	if gid == 0 {
+	if workID <= 0 {
 		return editEntry{}
 	}
-	entry := editEntry{GID: gid, OwnerUID: h.ownerOf(ctx, int64(gid))}
+	id := int(workID)
+	entry := editEntry{WorkID: id, OwnerUID: h.ownerOf(ctx, workID)}
 	if h.galgameClient != nil {
-		if rows, appErr := h.galgameClient.CatalogRowsByGIDs(ctx, []int{gid}, "names", "all"); appErr == nil {
-			if row, ok := rows[gid]; ok {
+		if rows, appErr := h.galgameClient.CatalogRowsByWorkIDs(ctx, []int{id}, "names", "all"); appErr == nil {
+			if row, ok := rows[id]; ok {
 				brief := client.CatalogItemToBrief(ctx, &row)
 				entry.Name = client.BriefName(&brief)
 			}
@@ -173,25 +153,13 @@ func (h *EditHandler) entryOf(ctx context.Context, workID int64) editEntry {
 	return entry
 }
 
-func (h *EditHandler) gidOf(ctx context.Context, workID int64) int {
-	if h.galgameClient == nil {
-		return 0
-	}
-	gids, appErr := h.galgameClient.GIDsByCatalogIDs(ctx, []int64{workID})
-	if appErr != nil {
-		slog.Warn("galgame edit: work id → gid failed", "work", workID, "error", appErr)
-		return 0
-	}
-	return gids[workID]
-}
-
-func (h *EditHandler) notifyDecision(prop *catalogclient.EditProposal, gid int, senderID int64, kind msgService.NotifyKind, content string) {
+func (h *EditHandler) notifyDecision(prop *catalogclient.EditProposal, workID int, senderID int64, kind msgService.NotifyKind, content string) {
 	if h.notifier == nil {
 		return
 	}
 	if err := h.notifier.Emit(nil, msgService.Spec{
 		SenderID: int(senderID), ReceiverID: int(prop.ProposerUID),
-		Kind: kind, Content: content, GalgameID: gid,
+		Kind: kind, Content: content, WorkID: workID,
 	}); err != nil {
 		slog.Warn("galgame edit: decision notification failed",
 			"proposal", prop.ID, "kind", kind, "error", err)
@@ -298,12 +266,12 @@ func userToken(c fiber.Ctx) (string, *errors.AppError) {
 	return token, nil
 }
 
-func parseGid(c fiber.Ctx) (int64, *errors.AppError) {
-	gid, err := strconv.ParseInt(c.Params("gid"), 10, 64)
-	if err != nil || gid <= 0 {
+func parseWorkID(c fiber.Ctx) (int64, *errors.AppError) {
+	id, err := strconv.ParseInt(c.Params("id"), 10, 64)
+	if err != nil || id <= 0 {
 		return 0, errors.ErrBadRequest("无效的 Galgame ID")
 	}
-	return gid, nil
+	return id, nil
 }
 
 func parseProposalID(c fiber.Ctx) (int64, *errors.AppError) {
@@ -323,7 +291,7 @@ func queryInt(c fiber.Ctx, key string) int {
 }
 
 func (h *EditHandler) Bootstrap(c fiber.Ctx) error {
-	gid, appErr := parseGid(c)
+	workID, appErr := parseWorkID(c)
 	if appErr != nil {
 		return response.Error(c, appErr)
 	}
@@ -332,10 +300,6 @@ func (h *EditHandler) Bootstrap(c fiber.Ctx) error {
 		return response.Error(c, appErr)
 	}
 	ctx := c.Context()
-	workID, appErr := h.workIDOf(ctx, gid)
-	if appErr != nil {
-		return response.Error(c, appErr)
-	}
 	values, err := h.catalog.EditSnapshotUser(ctx, token, entityTypeGame, workID)
 	if err != nil {
 		return userEditError(c, err)
@@ -349,11 +313,11 @@ func (h *EditHandler) Bootstrap(c fiber.Ctx) error {
 	// before this call existed.
 	vocab, err := h.catalog.Vocabularies(ctx)
 	if err != nil {
-		slog.Warn("galgame edit: vocabularies unreadable", "gid", gid, "error", err)
+		slog.Warn("galgame edit: vocabularies unreadable", "work_id", workID, "error", err)
 		vocab = map[string]catalogclient.Vocabulary{}
 	}
 	return response.OK(c, fiber.Map{
-		"gid":          gid,
+		"gid":          workID,
 		"values":       values,
 		"fields":       schema.Fields,
 		"vocabularies": vocab,
@@ -376,7 +340,7 @@ type editSubmitRequest struct {
 }
 
 func (h *EditHandler) Submit(c fiber.Ctx) error {
-	gid, appErr := parseGid(c)
+	workID, appErr := parseWorkID(c)
 	if appErr != nil {
 		return response.Error(c, appErr)
 	}
@@ -399,10 +363,6 @@ func (h *EditHandler) Submit(c fiber.Ctx) error {
 	if len(req.Note) > 2000 {
 		return response.Error(c, errors.ErrValidation("编辑说明过长"))
 	}
-	workID, appErr := h.workIDOf(c.Context(), gid)
-	if appErr != nil {
-		return response.Error(c, appErr)
-	}
 	result, err := h.catalog.CreateEditProposalUser(c.Context(), token, catalogclient.UserEditCreateRequest{
 		EntityType: entityTypeGame, EntityID: workID,
 		Patch: req.Patch, Note: req.Note,
@@ -422,35 +382,31 @@ func (h *EditHandler) Submit(c fiber.Ctx) error {
 
 func (h *EditHandler) submitSideEffects(ctx context.Context, prop *catalogclient.EditProposal) {
 	entry := h.entryOf(ctx, prop.EntityID)
-	if entry.GID == 0 {
+	if entry.WorkID == 0 {
 		return
 	}
 	if h.notifier != nil && entry.OwnerUID > 0 {
 		if err := h.notifier.Emit(nil, msgService.Spec{
 			SenderID: int(prop.ProposerUID), ReceiverID: entry.OwnerUID,
 			Kind: msgService.NotifyRequested, Content: entry.Name,
-			GalgameID: entry.GID,
+			WorkID: entry.WorkID,
 		}); err != nil {
 			slog.Warn("galgame edit: requested notification failed", "proposal", prop.ID, "error", err)
 		}
 	}
 	if h.repo != nil {
 		if err := h.repo.DB().WithContext(ctx).Exec(`
-			INSERT INTO galgame_activity (wiki_pr_id, galgame_id, user_id, type, created)
+			INSERT INTO galgame_activity (wiki_pr_id, work_id, user_id, type, created)
 			VALUES (?, ?, ?, 'GALGAME_PR_CREATION', now())
 			ON CONFLICT (wiki_pr_id) DO NOTHING
-		`, prop.ID, entry.GID, prop.ProposerUID).Error; err != nil {
+		`, prop.ID, entry.WorkID, prop.ProposerUID).Error; err != nil {
 			slog.Warn("galgame edit: activity timeline write failed", "proposal", prop.ID, "error", err)
 		}
 	}
 }
 
 func (h *EditHandler) Revisions(c fiber.Ctx) error {
-	gid, appErr := parseGid(c)
-	if appErr != nil {
-		return response.Error(c, appErr)
-	}
-	workID, appErr := h.workIDOf(c.Context(), gid)
+	workID, appErr := parseWorkID(c)
 	if appErr != nil {
 		return response.Error(c, appErr)
 	}
@@ -466,7 +422,7 @@ func (h *EditHandler) Revisions(c fiber.Ctx) error {
 		}
 	}
 	return response.OK(c, fiber.Map{
-		"gid": gid, "items": items, "users": h.userMap(c.Context(), uids),
+		"gid": workID, "items": items, "users": h.userMap(c.Context(), uids),
 		"can_revert": h.canRevert(c, workID),
 	})
 }
@@ -500,7 +456,7 @@ type editRevertRequest struct {
 }
 
 func (h *EditHandler) Revert(c fiber.Ctx) error {
-	gid, appErr := parseGid(c)
+	workID, appErr := parseWorkID(c)
 	if appErr != nil {
 		return response.Error(c, appErr)
 	}
@@ -519,10 +475,6 @@ func (h *EditHandler) Revert(c fiber.Ctx) error {
 		return response.Error(c, errors.ErrValidation("说明过长"))
 	}
 	ctx := c.Context()
-	workID, appErr := h.workIDOf(ctx, gid)
-	if appErr != nil {
-		return response.Error(c, appErr)
-	}
 	revisionID, err := h.catalog.RevisionIDBySeq(ctx, entityTypeGame, workID, req.ToSeq)
 	if err != nil {
 		if stderrors.Is(err, catalogclient.ErrNotFound) {
@@ -538,17 +490,13 @@ func (h *EditHandler) Revert(c fiber.Ctx) error {
 }
 
 func (h *EditHandler) Diff(c fiber.Ctx) error {
-	gid, appErr := parseGid(c)
+	workID, appErr := parseWorkID(c)
 	if appErr != nil {
 		return response.Error(c, appErr)
 	}
 	from, to := queryInt(c, "from"), queryInt(c, "to")
 	if from < 1 || to < 1 {
 		return response.Error(c, errors.ErrBadRequest("需要 from/to 版本号"))
-	}
-	workID, appErr := h.workIDOf(c.Context(), gid)
-	if appErr != nil {
-		return response.Error(c, appErr)
 	}
 	diff, err := h.catalog.DiffEditRevisions(c.Context(), entityTypeGame, workID, from, to)
 	if err != nil {
@@ -559,7 +507,7 @@ func (h *EditHandler) Diff(c fiber.Ctx) error {
 
 type proposalItem struct {
 	catalogclient.EditProposal
-	GID     int                  `json:"gid"`
+	WorkID  int                  `json:"gid"`
 	Galgame *client.GalgameBrief `json:"galgame,omitempty"`
 }
 
@@ -572,34 +520,29 @@ func (h *EditHandler) enrich(ctx context.Context, items []catalogclient.EditProp
 			workIDs = append(workIDs, id)
 		}
 	}
-	var gidByWork map[int64]int
-	if len(workIDs) > 0 && h.galgameClient != nil {
-		var appErr *errors.AppError
-		if gidByWork, appErr = h.galgameClient.GIDsByCatalogIDs(ctx, workIDs); appErr != nil {
-			slog.Warn("galgame edit: work id → gid enrichment failed", "error", appErr)
+	ids := make([]int, 0, len(workIDs))
+	for _, id := range workIDs {
+		if id > 0 {
+			ids = append(ids, int(id))
 		}
 	}
-	gids := make([]int, 0, len(gidByWork))
-	for _, gid := range gidByWork {
-		gids = append(gids, gid)
-	}
 	var briefs map[int]client.GalgameBrief
-	if len(gids) > 0 && h.galgameClient != nil {
-		rows, appErr := h.galgameClient.CatalogRowsByGIDs(ctx, gids, "names,covers", "all")
+	if len(ids) > 0 && h.galgameClient != nil {
+		rows, appErr := h.galgameClient.CatalogRowsByWorkIDs(ctx, ids, "names,covers", "all")
 		if appErr != nil {
 			slog.Warn("galgame edit: brief enrichment failed", "error", appErr)
 		} else {
 			briefs = make(map[int]client.GalgameBrief, len(rows))
-			for gid := range rows {
-				row := rows[gid]
-				briefs[gid] = client.CatalogItemToBrief(ctx, &row)
+			for workID := range rows {
+				row := rows[workID]
+				briefs[workID] = client.CatalogItemToBrief(ctx, &row)
 			}
 		}
 	}
 	out := make([]proposalItem, 0, len(items))
 	for i := range items {
-		item := proposalItem{EditProposal: items[i], GID: gidByWork[items[i].EntityID]}
-		if b, ok := briefs[item.GID]; ok {
+		item := proposalItem{EditProposal: items[i], WorkID: int(items[i].EntityID)}
+		if b, ok := briefs[item.WorkID]; ok {
 			brief := b
 			item.Galgame = &brief
 		}
@@ -638,12 +581,8 @@ func (h *EditHandler) Mine(c fiber.Ctx) error {
 		return response.Error(c, appErr)
 	}
 	var entityID int64
-	if gid := queryInt(c, "gid"); gid > 0 {
-		workID, appErr := h.workIDOf(c.Context(), int64(gid))
-		if appErr != nil {
-			return response.Error(c, appErr)
-		}
-		entityID = workID
+	if workID := queryInt(c, "gid"); workID > 0 {
+		entityID = int64(workID)
 	}
 	items, err := h.catalog.ListEditProposalsUser(c.Context(), token, catalogclient.UserEditProposalFilter{
 		EntityType: entityTypeGame, EntityID: entityID, Mine: true,
@@ -706,7 +645,7 @@ func canDecide(prop *catalogclient.EditProposal, fields []catalogclient.EditSche
 }
 
 func (h *EditHandler) GameProposals(c fiber.Ctx) error {
-	gid, appErr := parseGid(c)
+	workID, appErr := parseWorkID(c)
 	if appErr != nil {
 		return response.Error(c, appErr)
 	}
@@ -716,10 +655,6 @@ func (h *EditHandler) GameProposals(c fiber.Ctx) error {
 	default:
 		return response.Error(c, errors.ErrBadRequest("未知的提案状态"))
 	}
-	workID, appErr := h.workIDOf(c.Context(), gid)
-	if appErr != nil {
-		return response.Error(c, appErr)
-	}
 	items, err := h.catalog.ListEditProposals(c.Context(), catalogclient.EditProposalFilter{
 		EntityType: entityTypeGame, EntityID: workID, Site: catalogSite,
 		Status: status, Limit: queryInt(c, "limit"),
@@ -728,7 +663,7 @@ func (h *EditHandler) GameProposals(c fiber.Ctx) error {
 		return editError(c, err)
 	}
 	return response.OK(c, fiber.Map{
-		"gid": gid, "items": items,
+		"gid": workID, "items": items,
 		"users": h.userMap(c.Context(), collectProposalUIDs(items)),
 	})
 }
@@ -846,16 +781,16 @@ func (h *EditHandler) mergeSideEffects(ctx context.Context, prop *catalogclient.
 			moemoepoint.Key("galgame_edit_merged", strconv.FormatInt(prop.ID, 10)))
 	}
 	entry := h.entryOf(ctx, prop.EntityID)
-	if h.repo != nil && entry.GID > 0 {
-		if err := h.repo.Touch(h.repo.DB().WithContext(ctx), entry.GID); err != nil {
-			slog.Warn("galgame edit: resource_update_time bump failed", "gid", entry.GID, "error", err)
+	if h.repo != nil && entry.WorkID > 0 {
+		if err := h.repo.Touch(h.repo.DB().WithContext(ctx), entry.WorkID); err != nil {
+			slog.Warn("galgame edit: resource_update_time bump failed", "work_id", entry.WorkID, "error", err)
 		}
 	}
 	content := entry.Name
 	if rev != nil && rev.AmenderUID != nil {
 		content = strings.TrimSpace(content + "（审核时有修正）")
 	}
-	h.notifyDecision(prop, entry.GID, mergerID, msgService.NotifyMerged, content)
+	h.notifyDecision(prop, entry.WorkID, mergerID, msgService.NotifyMerged, content)
 }
 
 func (h *EditHandler) Decline(c fiber.Ctx) error {
@@ -895,7 +830,7 @@ func (h *EditHandler) Decline(c fiber.Ctx) error {
 	if entry.Name != "" {
 		content = entry.Name + "：" + req.Note
 	}
-	h.notifyDecision(target, entry.GID, int64(user.ID), msgService.NotifyDeclined, content)
+	h.notifyDecision(target, entry.WorkID, int64(user.ID), msgService.NotifyDeclined, content)
 	return response.OK(c, prop)
 }
 

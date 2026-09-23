@@ -37,7 +37,7 @@ type FollowItem struct {
 	Link       string `json:"link"`
 	Title      string `json:"title"`
 	Label      string `json:"label"`
-	GalgameID  int    `json:"galgame_id,omitempty"`
+	WorkID     int    `json:"galgame_id,omitempty"`
 }
 
 type FollowList struct {
@@ -200,7 +200,7 @@ func (s *Service) Following(ctx context.Context, userID int, cursor string, limi
 			Link:       target.Link,
 			Title:      title,
 			Label:      target.Label,
-			GalgameID:  target.GalgameID,
+			WorkID:     target.WorkID,
 		})
 	}
 	return &FollowList{Items: items, NextCursor: page.NextCursor}, nil

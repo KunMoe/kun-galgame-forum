@@ -45,7 +45,7 @@ func sfwResources(q *gorm.DB, sfw bool) *gorm.DB {
 	if !sfw {
 		return q
 	}
-	return q.Joins("JOIN galgame g ON g.id = galgame_resource.galgame_id").
+	return q.Joins("JOIN galgame g ON g.id = galgame_resource.work_id").
 		Where("g.content_limit IS NULL OR g.content_limit = 'sfw'")
 }
 
@@ -71,15 +71,15 @@ func (r *ResourceRepository) ListPaginated(page, limit int, sfw bool) []model.Ga
 // belongs to — and the second one has to arrive as ids, because the forum keeps
 // no local copy of a game's name.
 func (r *ResourceRepository) SearchPaginated(
-	keywords []string, galgameIDs []int, page, limit int, sfw bool,
+	keywords []string, workIDs []int, page, limit int, sfw bool,
 ) ([]model.GalgameResourceRow, int64) {
 	query := sfwResources(r.db.Table("galgame_resource"), sfw)
 	for _, kw := range keywords {
 		like := "%" + kw + "%"
-		if len(galgameIDs) > 0 {
+		if len(workIDs) > 0 {
 			query = query.Where(
-				"(galgame_resource.note ILIKE ? OR galgame_resource.galgame_id IN ?)",
-				like, galgameIDs)
+				"(galgame_resource.note ILIKE ? OR galgame_resource.work_id IN ?)",
+				like, workIDs)
 			continue
 		}
 		query = query.Where("galgame_resource.note ILIKE ?", like)
@@ -91,9 +91,9 @@ func (r *ResourceRepository) SearchPaginated(
 	selection := "galgame_resource.*"
 	order := "galgame_resource.created DESC"
 	var args []any
-	if len(galgameIDs) > 0 {
-		selection += ", (CASE WHEN galgame_resource.galgame_id IN ? THEN 1 ELSE 0 END) AS relevance"
-		args = append(args, galgameIDs)
+	if len(workIDs) > 0 {
+		selection += ", (CASE WHEN galgame_resource.work_id IN ? THEN 1 ELSE 0 END) AS relevance"
+		args = append(args, workIDs)
 		order = "relevance DESC, " + order
 	}
 
@@ -113,32 +113,32 @@ func (r *ResourceRepository) FindByID(id int) (model.GalgameResourceRow, bool) {
 	return row, true
 }
 
-func (r *ResourceRepository) IsResourcePublishBanned(galgameID int) bool {
+func (r *ResourceRepository) IsResourcePublishBanned(workID int) bool {
 	var banned []bool
-	r.db.Table("galgame").Where("id = ?", galgameID).Pluck("resource_publish_banned", &banned)
+	r.db.Table("galgame").Where("id = ?", workID).Pluck("resource_publish_banned", &banned)
 	return len(banned) > 0 && banned[0]
 }
 
-func (r *ResourceRepository) SetResourcePublishBanned(galgameID int, banned bool) error {
+func (r *ResourceRepository) SetResourcePublishBanned(workID int, banned bool) error {
 	return r.db.Clauses(clause.OnConflict{
 		Columns:   []clause.Column{{Name: "id"}},
 		DoUpdates: clause.Assignments(map[string]any{"resource_publish_banned": banned}),
-	}).Create(&model.GalgameLocal{ID: galgameID, ResourcePublishBanned: banned}).Error
+	}).Create(&model.GalgameLocal{ID: workID, ResourcePublishBanned: banned}).Error
 }
 
-func (r *ResourceRepository) FindByGalgameID(galgameID int) []model.GalgameResourceRow {
+func (r *ResourceRepository) FindByWorkID(workID int) []model.GalgameResourceRow {
 	var rows []model.GalgameResourceRow
 	r.db.Table("galgame_resource").
-		Where("galgame_id = ?", galgameID).
+		Where("work_id = ?", workID).
 		Order("status ASC, RANDOM()").
 		Scan(&rows)
 	return rows
 }
 
-func (r *ResourceRepository) FindRecommendations(galgameID, excludeID, limit int) []model.GalgameResourceRow {
+func (r *ResourceRepository) FindRecommendations(workID, excludeID, limit int) []model.GalgameResourceRow {
 	var rows []model.GalgameResourceRow
 	r.db.Table("galgame_resource").
-		Where("galgame_id = ? AND id != ?", galgameID, excludeID).
+		Where("work_id = ? AND id != ?", workID, excludeID).
 		Order("like_count DESC").
 		Limit(limit).
 		Scan(&rows)
@@ -160,11 +160,11 @@ func (r *ResourceRepository) FindLinks(resourceID int) []string {
 	return out
 }
 
-func (r *ResourceRepository) AggregateByGalgame(galgameID int) []model.ResourceAggregate {
+func (r *ResourceRepository) AggregateByGalgame(workID int) []model.ResourceAggregate {
 	var aggs []model.ResourceAggregate
 	r.db.Table("galgame_resource").
 		Select("DISTINCT platform, language, type").
-		Where("galgame_id = ?", galgameID).
+		Where("work_id = ?", workID).
 		Scan(&aggs)
 	return aggs
 }
@@ -198,11 +198,11 @@ func (r *ResourceRepository) FindLikedSet(userID int, resourceIDs []int) map[int
 	return out
 }
 
-func (r *ResourceRepository) FindGalgameLocal(galgameID int) GalgameLocalRow {
+func (r *ResourceRepository) FindGalgameLocal(workID int) GalgameLocalRow {
 	var row GalgameLocalRow
 	r.db.Table("galgame").
 		Select("id, like_count, favorite_count, view, resource_update_time, creator_user_id, published").
-		Where("id = ?", galgameID).Scan(&row)
+		Where("id = ?", workID).Scan(&row)
 	return row
 }
 
@@ -297,12 +297,12 @@ func (r *ResourceRepository) AdjustLikeCount(tx *gorm.DB, resourceID, delta int)
 		Update("like_count", gorm.Expr("like_count + ?", delta)).Error
 }
 
-func (r *ResourceRepository) AdjustLocalResourceCount(tx *gorm.DB, galgameID, delta int) error {
-	return tx.Table("galgame").Where("id = ?", galgameID).
+func (r *ResourceRepository) AdjustLocalResourceCount(tx *gorm.DB, workID, delta int) error {
+	return tx.Table("galgame").Where("id = ?", workID).
 		Update("resource_count", gorm.Expr("resource_count + ?", delta)).Error
 }
 
-func (r *ResourceRepository) TouchGalgameUpdated(tx *gorm.DB, galgameID int) error {
-	return tx.Table("galgame").Where("id = ?", galgameID).
+func (r *ResourceRepository) TouchGalgameUpdated(tx *gorm.DB, workID int) error {
+	return tx.Table("galgame").Where("id = ?", workID).
 		UpdateColumn("resource_update_time", time.Now()).Error
 }

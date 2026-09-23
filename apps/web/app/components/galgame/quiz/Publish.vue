@@ -1,7 +1,7 @@
 <script setup lang="ts">
 const props = defineProps<{
   modelValue: boolean
-  galgameId?: number
+  workId?: number
   editData?: QuizEditData | null
 }>()
 
@@ -22,7 +22,7 @@ const close = () => emits('update:modelValue', false)
     @update:model-value="(v) => emits('update:modelValue', v)"
   >
     <GalgameQuizForm
-      :galgame-id="props.galgameId"
+      :work-id="props.workId"
       :edit-data="props.editData"
       @published="
         (q) => {

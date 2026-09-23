@@ -124,7 +124,7 @@ const playStatusTally = computed(() =>
     <div class="space-y-1">
       <h4 class="font-medium">评分分布</h4>
       <GalgameHeaderRatingDistributionChart
-        :galgame-id="galgame.id"
+        :work-id="galgame.id"
         :source="KUN_GALGAME_LOCAL_RATING_SOURCE"
         :buckets="buckets"
         :categories="categories"

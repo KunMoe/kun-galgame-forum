@@ -7,24 +7,17 @@ const route = useRoute()
 
 const { allowsNsfw } = useContentStance()
 
-const gid = computed(() => {
-  return parseInt((route.params as { gid: string }).gid)
+const workId = computed(() => {
+  return parseInt((route.params as { id: string }).id)
 })
 
-const { data } = await useKunFetch<GalgameDetail>(`/galgame/${gid.value}`, {
+const { data } = await useKunFetch<GalgameDetail>(`/galgame/${workId.value}`, {
   method: 'GET',
   watch: false,
-  query: { galgame_id: gid.value }
+  query: { galgame_id: workId.value }
 })
 
-if (data.value?.moved_to) {
-  await navigateTo(`/galgame/${data.value.moved_to}`, {
-    redirectCode: 301,
-    replace: true
-  })
-}
-
-const galgame = data.value?.moved_to ? null : data.value
+const galgame = data.value
 const isShowGalgame = ref(true)
 
 if (galgame) {
@@ -178,12 +171,12 @@ if (galgame) {
 
 <template>
   <div>
-    <div v-if="data && !data.moved_to">
+    <div v-if="data">
       <Galgame v-if="isShowGalgame" :galgame="data" />
 
       <KunNsfwGate v-else noun="Galgame" @reveal="isShowGalgame = true" />
     </div>
 
-    <KunNull v-else-if="!data?.moved_to" description="未找到这个 Galgame" />
+    <KunNull v-else description="未找到这个 Galgame" />
   </div>
 </template>

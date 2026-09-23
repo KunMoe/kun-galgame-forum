@@ -76,8 +76,18 @@ expect_migrate_fail 069_galgame_contributor -dir up
 # 4. Drop the stale table so 069 can recreate it.
 psql "${TEST_DATABASE_DSN}" -v ON_ERROR_STOP=1 -c "DROP TABLE galgame_contributor CASCADE;"
 
-# 5. Remainder of the default up set, including 069 and 096.
-run_migrate -dir up
+# The runner's own default exclude list, read rather than copied: when a number
+# leaves that list, this follows. Step 5 extends it and the freshness check at
+# the end skips it, because a deploy-then-drop migration is deliberately applied
+# nowhere until its own moment and would fail that check forever.
+excluded="$(sed -n 's/.*flag\.String("exclude", "\([^"]*\)".*/\1/p' cmd/migrate/main.go | head -1)"
+
+# 5. Remainder of the default up set, including 069 and 096, but not 141: step 7
+#    re-runs 018 against the post-005 shape, and 018 reads
+#    galgame_resource.galgame_id, which 141 renames to work_id. With 141 in this
+#    pass the bootstrap died at "column r.galgame_id does not exist (SQLSTATE
+#    42703)".
+run_migrate -dir up -exclude "${excluded},141"
 
 # 6. Excluded-by-default migrations, one at a time, after 007 exists.
 run_migrate -only 005
@@ -95,11 +105,9 @@ run_migrate -only 069
 run_migrate -only 079
 run_migrate -only 092
 
-# The newest migration is the freshness check below, but a deploy-then-drop
-# migration is deliberately applied nowhere until its own moment, so it would
-# fail that check forever. Read the runner's own exclude list rather than
-# keeping a second copy here: when a number leaves that list, this follows.
-excluded="$(sed -n 's/.*flag\.String("exclude", "\([^"]*\)".*/\1/p' cmd/migrate/main.go | head -1)"
+# 8. 141 last, once nothing re-runs against the old column names.
+run_migrate -only 141
+
 is_excluded() {
 	local prefix="${1%%_*}"
 	case ",${excluded}," in

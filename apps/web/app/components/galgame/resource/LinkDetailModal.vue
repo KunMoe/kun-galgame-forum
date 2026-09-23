@@ -304,7 +304,7 @@ const handleEditDone = () => {
           </KunInfo>
 
           <GalgameResourceBuyLegitNotice
-            :galgame-id="resource.galgame_id"
+            :work-id="resource.galgame_id"
             :purchase-url="resource.dlsite_purchase_url"
             :coupon-url="resource.dlsite_coupon_url"
             :campaign-name="resource.dlsite_campaign_name"
@@ -367,7 +367,7 @@ const handleEditDone = () => {
     <GalgameResourceLinkEditModal
       v-if="detail"
       v-model="isEditOpen"
-      :galgame-id="resource.galgame_id"
+      :work-id="resource.galgame_id"
       :resource="detail"
       :refresh="handleEditDone"
     />

@@ -7,11 +7,11 @@ type ResourceListRequest struct {
 }
 
 type GalgameResourcesRequest struct {
-	GalgameID int `query:"galgame_id" validate:"required,min=1"`
+	WorkID int `query:"galgame_id" validate:"required,min=1"`
 }
 
 type CreateGalgameResourceRequest struct {
-	GalgameID    int      `json:"galgame_id" validate:"required,min=1"`
+	WorkID       int      `json:"galgame_id" validate:"required,min=1"`
 	Type         string   `json:"type" validate:"required"`
 	Title        string   `json:"title" validate:"max=200"`
 	VersionLabel string   `json:"version_label" validate:"max=64"`
@@ -29,7 +29,7 @@ type CreateGalgameResourceRequest struct {
 
 type UpdateGalgameResourceRequest struct {
 	GalgameResourceID int      `json:"galgame_resource_id" validate:"required,min=1"`
-	GalgameID         int      `json:"galgame_id"`
+	WorkID            int      `json:"galgame_id"`
 	Type              string   `json:"type" validate:"required"`
 	Title             string   `json:"title" validate:"max=200"`
 	VersionLabel      string   `json:"version_label" validate:"max=64"`
@@ -71,7 +71,7 @@ type UserBrief struct {
 type ResourceCard struct {
 	ID                 int       `json:"id"`
 	View               int       `json:"view"`
-	GalgameID          int       `json:"galgame_id"`
+	WorkID             int       `json:"galgame_id"`
 	User               UserBrief `json:"user"`
 	Type               string    `json:"type"`
 	Title              string    `json:"title"`
@@ -102,7 +102,7 @@ type ResourceCard struct {
 type ResourceMeta struct {
 	ID                 int       `json:"id"`
 	View               int       `json:"view"`
-	GalgameID          int       `json:"galgame_id"`
+	WorkID             int       `json:"galgame_id"`
 	User               UserBrief `json:"user"`
 	Type               string    `json:"type"`
 	Title              string    `json:"title"`

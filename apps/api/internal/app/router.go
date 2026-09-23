@@ -116,8 +116,8 @@ func (a *App) setupRoutes() {
 	api.Get("/toolset/:id/resource/detail", a.ToolsetResourceHandler.GetResourceDetail)
 
 	api.Get("/galgame", a.GalgameHandler.GetList)
-	// Every literal /galgame/<segment> route must precede /galgame/:gid: the
-	// catch-all binds "mine" / "calendar" / "drafts" as a gid and then fails
+	// Every literal /galgame/<segment> route must precede /galgame/:id: the
+	// catch-all binds "mine" / "calendar" / "drafts" as a work id and then fails
 	// inside GetDetail with Atoi("mine").
 	api.Get("/galgame/mine", userAuth, a.GalgameSubmissionHandler.ListMine)
 	api.Get(
@@ -139,8 +139,8 @@ func (a *App) setupRoutes() {
 	api.Get("/galgame/calendar/tba", a.GalgameCalendarHandler.GetTBA)
 	api.Get("/galgame/calendar/upcoming", a.GalgameCalendarHandler.GetUpcoming)
 	api.Get("/galgame/drafts", a.GalgameDraftsHandler.GetDrafts)
-	api.Get("/galgame/:gid/edit/diff", a.GalgameEditHandler.Diff)
-	api.Get("/galgame/:gid/edit/proposals", a.GalgameEditHandler.GameProposals)
+	api.Get("/galgame/:id/edit/diff", a.GalgameEditHandler.Diff)
+	api.Get("/galgame/:id/edit/proposals", a.GalgameEditHandler.GameProposals)
 	api.Get("/galgame-tag", a.GalgameEntityHandler.GetTagList)
 	api.Get("/galgame-tag/search", a.GalgameEntityHandler.SearchTags)
 	api.Get("/galgame-tag/multi", a.GalgameEntityHandler.GetMultiTagGalgames)
@@ -180,12 +180,12 @@ func (a *App) setupRoutes() {
 	optAuth.Get("/galgame-quiz/all", a.GalgameQuizHandler.GetAllQuizzes)
 	optAuth.Get("/galgame-quiz/:id", a.GalgameQuizHandler.GetQuizPlay)
 
-	optAuth.Get("/galgame/:gid/resource/all", a.GalgameResourceHandler.GetGalgameResources)
+	optAuth.Get("/galgame/:id/resource/all", a.GalgameResourceHandler.GetGalgameResources)
 	// Both comment READ halves must mount before the auth boundary below, or
 	// anonymous reads start demanding a session. Their writes mount after it.
-	optAuth.Get("/galgame/:gid/link/all", a.GalgameProxyHandler.GetGalgameLinks)
-	optAuth.Get("/galgame/:gid/edit/revisions", a.GalgameEditHandler.Revisions)
-	optAuth.Get("/galgame/:gid", a.GalgameHandler.GetDetail)
+	optAuth.Get("/galgame/:id/link/all", a.GalgameProxyHandler.GetGalgameLinks)
+	optAuth.Get("/galgame/:id/edit/revisions", a.GalgameEditHandler.Revisions)
+	optAuth.Get("/galgame/:id", a.GalgameHandler.GetDetail)
 
 	optAuth.Get("/galgame/collection/:cid", a.GalgameCollectionHandler.GetDetail)
 	optAuth.Get("/user/:id/collections", a.GalgameCollectionHandler.GetUserCollections)
@@ -210,31 +210,31 @@ func (a *App) setupRoutes() {
 	authed.Post("/image/galgame", a.ImageHandler.UploadGalgameImage)
 
 	authed.Post("/galgame/submit", a.GalgameSubmissionHandler.Submit)
-	authed.Post("/galgame/:gid/resubmit", a.GalgameSubmissionHandler.Resubmit)
-	authed.Delete("/galgame/:gid", a.GalgameSubmissionHandler.Withdraw)
-	authed.Delete("/galgame/:gid/draft", a.GalgameSubmissionHandler.DeleteDraft)
+	authed.Post("/galgame/:id/resubmit", a.GalgameSubmissionHandler.Resubmit)
+	authed.Delete("/galgame/:id", a.GalgameSubmissionHandler.Withdraw)
+	authed.Delete("/galgame/:id/draft", a.GalgameSubmissionHandler.DeleteDraft)
 
 	authed.Get("/galgame/interactions/mine", a.GalgameHandler.MyInteractions)
 	authed.Get("/galgame/playtime/mine", a.GalgamePlaytimeHandler.ListMine)
-	authed.Put("/galgame/:gid/like", a.GalgameHandler.ToggleLike)
+	authed.Put("/galgame/:id/like", a.GalgameHandler.ToggleLike)
 	// Unlike every other catalog write here, this one travels as the USER: the
 	// session's OAuth token goes out as a Bearer and the registry derives the
 	// actor from it.
-	authed.Put("/galgame/:gid/playtime", a.GalgamePlaytimeHandler.Report)
-	authed.Put("/galgame/:gid/cover/:coverId/vote", a.GalgameCoverVoteHandler.Vote)
-	authed.Delete("/galgame/:gid/cover/:coverId/vote", a.GalgameCoverVoteHandler.Unvote)
+	authed.Put("/galgame/:id/playtime", a.GalgamePlaytimeHandler.Report)
+	authed.Put("/galgame/:id/cover/:coverId/vote", a.GalgameCoverVoteHandler.Vote)
+	authed.Delete("/galgame/:id/cover/:coverId/vote", a.GalgameCoverVoteHandler.Unvote)
 	authed.Post("/galgame/collection", a.GalgameCollectionHandler.Create)
 	authed.Patch("/galgame/collection/:cid", a.GalgameCollectionHandler.Update)
 	authed.Delete("/galgame/collection/:cid", a.GalgameCollectionHandler.Delete)
-	authed.Get("/galgame/:gid/collections/mine", a.GalgameCollectionHandler.MyCollectionsForGalgame)
-	authed.Put("/galgame/:gid/collections", a.GalgameCollectionHandler.SetMembership)
+	authed.Get("/galgame/:id/collections/mine", a.GalgameCollectionHandler.MyCollectionsForGalgame)
+	authed.Put("/galgame/:id/collections", a.GalgameCollectionHandler.SetMembership)
 
-	authed.Post("/galgame/:gid/resource", a.GalgameResourceHandler.CreateResource)
-	authed.Put("/galgame/:gid/resource", a.GalgameResourceHandler.UpdateResource)
-	authed.Delete("/galgame/:gid/resource", a.GalgameResourceHandler.DeleteResource)
-	authed.Put("/galgame/:gid/resource/like", a.GalgameResourceHandler.ToggleLike)
-	authed.Put("/galgame/:gid/resource/valid", a.GalgameResourceHandler.MarkValid)
-	authed.Put("/galgame/:gid/resource/expired", a.GalgameResourceHandler.MarkExpired)
+	authed.Post("/galgame/:id/resource", a.GalgameResourceHandler.CreateResource)
+	authed.Put("/galgame/:id/resource", a.GalgameResourceHandler.UpdateResource)
+	authed.Delete("/galgame/:id/resource", a.GalgameResourceHandler.DeleteResource)
+	authed.Put("/galgame/:id/resource/like", a.GalgameResourceHandler.ToggleLike)
+	authed.Put("/galgame/:id/resource/valid", a.GalgameResourceHandler.MarkValid)
+	authed.Put("/galgame/:id/resource/expired", a.GalgameResourceHandler.MarkExpired)
 
 	authed.Post("/galgame-rating", a.GalgameRatingHandler.CreateRating)
 	authed.Put("/galgame-rating/:id", a.GalgameRatingHandler.UpdateRating)
@@ -251,8 +251,8 @@ func (a *App) setupRoutes() {
 	authed.Get("/galgame-quiz/:id/edit", a.GalgameQuizHandler.GetQuizForEdit)
 	authed.Put("/galgame-quiz/:id", a.GalgameQuizHandler.UpdateQuiz)
 
-	authed.Get("/galgame/:gid/edit/bootstrap", a.GalgameEditHandler.Bootstrap)
-	authed.Post("/galgame/:gid/edit/proposals", a.GalgameEditHandler.Submit)
+	authed.Get("/galgame/:id/edit/bootstrap", a.GalgameEditHandler.Bootstrap)
+	authed.Post("/galgame/:id/edit/proposals", a.GalgameEditHandler.Submit)
 	authed.Get("/galgame-edit/mine", a.GalgameEditHandler.Mine)
 	authed.Post("/galgame-edit/proposals/:id/withdraw", a.GalgameEditHandler.Withdraw)
 	authed.Get("/galgame-edit/queue", middleware.RequireModerator(), a.GalgameEditHandler.Queue)
@@ -260,7 +260,7 @@ func (a *App) setupRoutes() {
 	authed.Post("/galgame-edit/proposals/:id/amend", a.GalgameEditHandler.Amend)
 	authed.Post("/galgame-edit/proposals/:id/merge", a.GalgameEditHandler.Merge)
 	authed.Post("/galgame-edit/proposals/:id/decline", a.GalgameEditHandler.Decline)
-	authed.Post("/galgame/:gid/edit/revert", a.GalgameEditHandler.Revert)
+	authed.Post("/galgame/:id/edit/revert", a.GalgameEditHandler.Revert)
 
 	authed.Post("/toolset", a.ToolsetHandler.Create)
 	authed.Put("/toolset/:id", a.ToolsetHandler.Update)
@@ -289,12 +289,12 @@ func (a *App) setupRoutes() {
 	galgameAdmin := authed.Group("")
 	galgameAdmin.Get("/admin/galgame/submissions", middleware.RequirePermission(perm.GalgameClaimReview), a.GalgameClaimReviewHandler.PendingQueue)
 	galgameAdmin.Post(
-		"/admin/galgame/:gid/review",
+		"/admin/galgame/:id/review",
 		middleware.RequirePermission(perm.GalgameClaimReview),
 		a.GalgameClaimReviewHandler.Review,
 	)
 	galgameAdmin.Put(
-		"/admin/galgame/:gid/resource-publish-ban",
+		"/admin/galgame/:id/resource-publish-ban",
 		middleware.RequirePermission(perm.GalgameBanResourcePublish),
 		a.GalgameResourceHandler.SetResourcePublishBan,
 	)

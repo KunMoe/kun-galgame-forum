@@ -17,7 +17,7 @@ import (
 
 type AwardFunc func(userID, delta int, reason, ref, key string)
 
-type GalgameResolver func(ctx context.Context, galgameID int) (bool, error)
+type GalgameResolver func(ctx context.Context, workID int) (bool, error)
 
 type Service struct {
 	store     *repository.Store

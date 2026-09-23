@@ -68,11 +68,11 @@ const relationIds = (key: string): number[] => {
 }
 
 onMounted(async () => {
-  const gid = proposal.value?.gid
-  if (!gid) {
+  const workId = proposal.value?.gid
+  if (!workId) {
     return
   }
-  const detail = await kunFetch<GalgameDetail>(`/galgame/${gid}`, {
+  const detail = await kunFetch<GalgameDetail>(`/galgame/${workId}`, {
     method: 'GET'
   })
   const toMap = (arr?: { id: number; name: string }[]) =>

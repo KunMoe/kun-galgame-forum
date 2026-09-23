@@ -148,7 +148,7 @@ type GalgameActivityData struct {
 	Language       string                  `json:"language"`
 	AgeLimit       string                  `json:"age_limit"`
 	ReleaseDate    *string                 `json:"release_date"`
-	GalgameID      int                     `json:"galgame_id,omitempty"`
+	WorkID         int                     `json:"galgame_id,omitempty"`
 	RevisionID     int                     `json:"revision_id,omitempty"`
 	RevisionNumber int                     `json:"revision_number,omitempty"`
 	Developer      string                  `json:"developer,omitempty"`

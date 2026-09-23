@@ -105,7 +105,7 @@ func TestOnlyEditsReachTheTimeline(t *testing.T) {
 	}
 }
 
-func TestFeedItemCarriesGIDAndRevisionNumber(t *testing.T) {
+func TestFeedItemCarriesWorkIDAndRevisionNumber(t *testing.T) {
 	var item catalogclient.EditRevisionFeedItem
 	raw := `{"id":41,"entity_family":"galgame","entity_type":"galgame.game",
 		"entity_id":1207,"seq":8,"action":2,"changed_fields":["galgame.game.name_ja_jp"],
@@ -115,7 +115,7 @@ func TestFeedItemCarriesGIDAndRevisionNumber(t *testing.T) {
 		t.Fatalf("unmarshal: %v", err)
 	}
 	if item.EntityID != 1207 {
-		t.Errorf("entity_id = %d, want the gid 1207", item.EntityID)
+		t.Errorf("entity_id = %d, want the work id 1207", item.EntityID)
 	}
 	if item.Seq != 8 {
 		t.Errorf("seq = %d, want the revision number 8", item.Seq)

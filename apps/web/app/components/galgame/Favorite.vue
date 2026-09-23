@@ -1,6 +1,6 @@
 <script setup lang="ts">
 const props = defineProps<{
-  galgameId: number
+  workId: number
   targetUserId?: number
   favoriteCount: number
   isFavorited: boolean
@@ -39,7 +39,7 @@ const onSaved = (payload: { favorited: boolean }) => {
     favoriteCount.value += payload.favorited ? 1 : -1
   }
   isFavorited.value = payload.favorited
-  useMyGalgameInteractions().setFavorited(props.galgameId, payload.favorited)
+  useMyGalgameInteractions().setFavorited(props.workId, payload.favorited)
   emits('saved', payload)
 }
 </script>
@@ -61,7 +61,7 @@ const onSaved = (payload: { favorited: boolean }) => {
 
   <GalgameCollectionPickerModal
     v-model="pickerOpen"
-    :galgame-id="galgameId"
+    :work-id="workId"
     @saved="onSaved"
   />
 </template>

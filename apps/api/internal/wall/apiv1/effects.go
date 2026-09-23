@@ -59,11 +59,11 @@ func (s *Service) afterCreate(ctx context.Context, sub *subject, authorID int, b
 	if err != nil {
 		created = time.Now()
 	}
-	galgameID := 0
+	workID := 0
 	if sub.spec.typ == "galgame" {
-		galgameID = sub.id
+		workID = sub.id
 	}
-	if err := s.store.FeedUpsert(sub.spec.feedType, post.ID, authorID, galgameID,
+	if err := s.store.FeedUpsert(sub.spec.feedType, post.ID, authorID, workID,
 		truncateRunes(body, feedPreviewLength), sub.pageLink(), sub.isNSFW, created); err != nil {
 		slog.Warn("wall feed upsert failed (best-effort)", "post_id", post.ID, "error", err)
 	}
@@ -112,7 +112,7 @@ func (s *Service) afterDelete(sub *subject, postID int64) {
 	}
 }
 
-func (s *Service) notifyNewMentions(editorID, galgameID int, oldBody, newBody string, postID int64) {
+func (s *Service) notifyNewMentions(editorID, workID int, oldBody, newBody string, postID int64) {
 	old := map[int]bool{}
 	for _, id := range markdown.ExtractMentionIDs(oldBody) {
 		old[id] = true
@@ -129,8 +129,8 @@ func (s *Service) notifyNewMentions(editorID, galgameID int, oldBody, newBody st
 	preview := truncateRunes(markdown.StripReferenceTokens(newBody), 233)
 	var h galgameService.InteractionHelpers
 	for _, id := range added {
-		if err := h.CreateGalgameCommentMention(s.store.DB(), editorID, id, preview, galgameID, int(postID)); err != nil {
-			slog.Warn("wall mention notification failed (best-effort)", "galgame_id", galgameID, "post_id", postID, "receiver_id", id, "error", err)
+		if err := h.CreateGalgameCommentMention(s.store.DB(), editorID, id, preview, workID, int(postID)); err != nil {
+			slog.Warn("wall mention notification failed (best-effort)", "work_id", workID, "post_id", postID, "receiver_id", id, "error", err)
 		}
 	}
 }

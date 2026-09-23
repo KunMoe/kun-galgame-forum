@@ -72,11 +72,11 @@ watch(
 const pickerOpen = ref(false)
 const pickerId = ref(0)
 
-const openPicker = (gid: number) => {
+const openPicker = (workId: number) => {
   if (!requireLogin()) {
     return
   }
-  pickerId.value = gid
+  pickerId.value = workId
   pickerOpen.value = true
 }
 
@@ -127,7 +127,7 @@ const cards = computed(() =>
     >
       <div
         v-for="card in cards"
-        :key="card.galgame.catalog_id ?? card.galgame.id"
+        :key="card.galgame.id"
         class="relative"
       >
         <KunCard
@@ -283,7 +283,7 @@ const cards = computed(() =>
 
     <GalgameCollectionPickerModal
       v-model="pickerOpen"
-      :galgame-id="pickerId"
+      :work-id="pickerId"
       @saved="onPickerSaved"
     />
   </div>

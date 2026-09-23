@@ -4,14 +4,14 @@ import { KUN_GALGAME_EXTERNAL_RATING_MAP } from '~/constants/galgame-rating'
 const props = defineProps<{ refs?: Record<string, string> }>()
 
 const route = useRoute()
-const gid = computed(() => parseInt((route.params as { gid: string }).gid))
+const workId = computed(() => parseInt((route.params as { id: string }).id))
 
 const { data } = await useKunFetch<GalgameLink[]>(
-  `/galgame/${gid.value}/link/all`,
+  `/galgame/${workId.value}/link/all`,
   {
     lazy: true,
     method: 'GET',
-    query: { galgame_id: gid.value },
+    query: { galgame_id: workId.value },
     watch: false
   }
 )

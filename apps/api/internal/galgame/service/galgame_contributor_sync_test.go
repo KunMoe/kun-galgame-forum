@@ -7,25 +7,29 @@ import (
 	"kun-galgame-api/pkg/catalogclient"
 )
 
-func revision(id int64, gid *int64, actor int64, amender *int64, at time.Time) catalogclient.WorkRevisionFeedItem {
-	return catalogclient.WorkRevisionFeedItem{
+func revision(id int64, workID *int64, actor int64, amender *int64, at time.Time) catalogclient.WorkRevisionFeedItem {
+	item := catalogclient.WorkRevisionFeedItem{
 		ID: id, ActorUID: actor, AmenderUID: amender,
-		Site: "kungal", ProductWorkID: gid, CreatedAt: at,
+		Site: "kungal", ProductWorkID: workID, CreatedAt: at,
 	}
+	if workID != nil {
+		item.WorkID = *workID
+	}
+	return item
 }
 
 func TestContributorTouchesFoldsAPage(t *testing.T) {
 	t0 := time.Date(2025, 7, 20, 21, 58, 23, 0, time.UTC)
 	t1 := t0.Add(48 * time.Hour)
-	gid := ptr(int64(4321))
+	workID := ptr(int64(4321))
 
-	touches, gids := contributorTouches([]catalogclient.WorkRevisionFeedItem{
-		revision(1, gid, 61516, nil, t1),
-		revision(2, gid, 61516, nil, t0),
+	touches, workIDs := contributorTouches([]catalogclient.WorkRevisionFeedItem{
+		revision(1, workID, 61516, nil, t1),
+		revision(2, workID, 61516, nil, t0),
 	})
 
-	if len(gids) != 1 || gids[0] != 4321 {
-		t.Fatalf("gids = %v, want one entry 4321 (the count refresh's target list)", gids)
+	if len(workIDs) != 1 || workIDs[0] != 4321 {
+		t.Fatalf("workIDs = %v, want one entry 4321 (the count refresh's target list)", workIDs)
 	}
 	if len(touches) != 1 {
 		t.Fatalf("touches = %d, want the two revisions folded onto one pair", len(touches))
@@ -44,17 +48,17 @@ func TestContributorTouchesFoldsAPage(t *testing.T) {
 
 func TestContributorTouchesCreditsBothIdentities(t *testing.T) {
 	now := time.Now().UTC()
-	gid := ptr(int64(77))
+	workID := ptr(int64(77))
 
 	touches, _ := contributorTouches([]catalogclient.WorkRevisionFeedItem{
-		revision(1, gid, 100, ptr(int64(200)), now),
+		revision(1, workID, 100, ptr(int64(200)), now),
 	})
 	if len(touches) != 2 {
 		t.Fatalf("touches = %d, want the actor and the amender credited separately", len(touches))
 	}
 
 	self, _ := contributorTouches([]catalogclient.WorkRevisionFeedItem{
-		revision(2, gid, 100, ptr(int64(100)), now),
+		revision(2, workID, 100, ptr(int64(100)), now),
 	})
 	if len(self) != 1 || self[0].Count != 1 {
 		t.Fatalf("self-amendment = %+v, want a single contribution", self)
@@ -63,12 +67,12 @@ func TestContributorTouchesCreditsBothIdentities(t *testing.T) {
 
 func TestContributorTouchesSkipsUnanchoredRevisions(t *testing.T) {
 	now := time.Now().UTC()
-	for _, gid := range []*int64{nil, ptr(int64(0))} {
-		touches, gids := contributorTouches([]catalogclient.WorkRevisionFeedItem{
-			revision(1, gid, 100, nil, now),
+	for _, workID := range []*int64{nil, ptr(int64(0))} {
+		touches, workIDs := contributorTouches([]catalogclient.WorkRevisionFeedItem{
+			revision(1, workID, 100, nil, now),
 		})
-		if len(touches) != 0 || len(gids) != 0 {
-			t.Errorf("anchor %v yielded %d touches / %d gids, want none", gid, len(touches), len(gids))
+		if len(touches) != 0 || len(workIDs) != 0 {
+			t.Errorf("anchor %v yielded %d touches / %d work ids, want none", workID, len(touches), len(workIDs))
 		}
 	}
 	if touches, _ := contributorTouches([]catalogclient.WorkRevisionFeedItem{
@@ -80,10 +84,10 @@ func TestContributorTouchesSkipsUnanchoredRevisions(t *testing.T) {
 
 func TestMaxRevisionIDNeverRewinds(t *testing.T) {
 	now := time.Now().UTC()
-	gid := ptr(int64(1))
+	workID := ptr(int64(1))
 	items := []catalogclient.WorkRevisionFeedItem{
-		revision(30, gid, 1, nil, now),
-		revision(12, gid, 1, nil, now),
+		revision(30, workID, 1, nil, now),
+		revision(12, workID, 1, nil, now),
 	}
 	if got := maxRevisionID(items, 5); got != 30 {
 		t.Errorf("maxRevisionID = %d, want 30", got)

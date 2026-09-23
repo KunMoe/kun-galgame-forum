@@ -76,7 +76,7 @@ const handleSubmitGalgame = async () => {
   let duplicates = false
   const submit = (confirmDuplicates: boolean) =>
     kunFetch<{
-      gid: number
+      work_id: number
       claim_state: string
       banner_attached: boolean
     }>('/galgame/submit', {
@@ -110,7 +110,7 @@ const handleSubmitGalgame = async () => {
   }
   isPublishing.value = false
 
-  if (created?.gid) {
+  if (created?.work_id) {
     if (bannerHash && !created.banner_attached) {
       useMessage('封面上传失败, 请在「我的提交」中重新添加封面', 'warn', 7777)
     }
@@ -127,7 +127,7 @@ const handleSubmitGalgame = async () => {
       isLive ? 'Galgame 已发布' : 'Galgame 申请已提交, 等待审核',
       5
     )
-    await navigateTo(isLive ? `/galgame/${created.gid}` : '/edit/galgame/mine')
+    await navigateTo(isLive ? `/galgame/${created.work_id}` : '/edit/galgame/mine')
     usePersistEditGalgameStore().resetEditGalgameStore()
   }
 }

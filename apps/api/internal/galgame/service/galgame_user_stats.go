@@ -87,7 +87,7 @@ func distinctEntityIDs(items []catalogclient.EditProposal) []int64 {
 	return out
 }
 
-func (s *GalgameUserStatsService) PublishedGIDs(
+func (s *GalgameUserStatsService) PublishedWorkIDs(
 	_ context.Context, uid int64, page, limit int,
 ) ([]int, int64, error) {
 	if page < 1 {
@@ -99,7 +99,7 @@ func (s *GalgameUserStatsService) PublishedGIDs(
 	return s.galgameRepo.PublishedIDsByCreator(int(uid), page, limit)
 }
 
-func (s *GalgameUserStatsService) ContributedGIDs(ctx context.Context, uid int64) ([]int, error) {
+func (s *GalgameUserStatsService) ContributedWorkIDs(ctx context.Context, uid int64) ([]int, error) {
 	items, err := s.catalog.ListEditProposals(ctx, catalogclient.EditProposalFilter{
 		EntityType: catalogclient.EntityTypeWork, ProposerUID: uid,
 		Status: "merged", Limit: contributedScan,
@@ -108,15 +108,11 @@ func (s *GalgameUserStatsService) ContributedGIDs(ctx context.Context, uid int64
 		return nil, err
 	}
 	workIDs := distinctEntityIDs(items)
-	gidByWork, appErr := s.galgameClient.GIDsByCatalogIDs(ctx, workIDs)
-	if appErr != nil {
-		return nil, appErr
-	}
-	gids := make([]int, 0, len(workIDs))
+	ids := make([]int, 0, len(workIDs))
 	for _, id := range workIDs {
-		if gid, ok := gidByWork[id]; ok {
-			gids = append(gids, gid)
+		if id > 0 {
+			ids = append(ids, int(id))
 		}
 	}
-	return gids, nil
+	return ids, nil
 }

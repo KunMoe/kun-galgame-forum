@@ -12,25 +12,25 @@ const handleWithdraw = async (item: UserClaimItem) => {
   if (!ok) {
     return
   }
-  const gid = galgameClaimGid(item)
-  isWithdrawing.value = { ...isWithdrawing.value, [gid]: true }
-  const res = await kunFetch<string>(`/galgame/${gid}`, {
+  const workId = item.work_id
+  isWithdrawing.value = { ...isWithdrawing.value, [workId]: true }
+  const res = await kunFetch<string>(`/galgame/${workId}`, {
     method: 'DELETE'
   })
-  isWithdrawing.value = { ...isWithdrawing.value, [gid]: false }
+  isWithdrawing.value = { ...isWithdrawing.value, [workId]: false }
   if (res !== null) {
     useMessage('已撤回', 'success')
     refresh()
   }
 }
 
-const previewGid = ref(0)
+const previewWorkId = ref(0)
 const previewState = ref('')
 const previewReason = ref('')
 const isPreviewOpen = ref(false)
 
 const openPreview = (item: UserClaimItem) => {
-  previewGid.value = galgameClaimGid(item)
+  previewWorkId.value = item.work_id
   previewState.value = item.claim_state
   previewReason.value =
     item.claim_state === CLAIM_STATE_DECLINED ? (item.last_reason ?? '') : ''
@@ -40,12 +40,12 @@ const openPreview = (item: UserClaimItem) => {
 const isResubmitting = ref<Record<number, boolean>>({})
 
 const handleResubmit = async (item: UserClaimItem) => {
-  const gid = galgameClaimGid(item)
-  isResubmitting.value = { ...isResubmitting.value, [gid]: true }
-  const res = await kunFetch<unknown>(`/galgame/${gid}/resubmit`, {
+  const workId = item.work_id
+  isResubmitting.value = { ...isResubmitting.value, [workId]: true }
+  const res = await kunFetch<unknown>(`/galgame/${workId}/resubmit`, {
     method: 'POST'
   })
-  isResubmitting.value = { ...isResubmitting.value, [gid]: false }
+  isResubmitting.value = { ...isResubmitting.value, [workId]: false }
   if (res !== null) {
     useMessage('已重新提交审核', 'success')
     refresh()
@@ -62,12 +62,12 @@ const handleDelete = async (item: UserClaimItem) => {
   if (!ok) {
     return
   }
-  const gid = galgameClaimGid(item)
-  isDeleting.value = { ...isDeleting.value, [gid]: true }
-  const res = await kunFetch<string>(`/galgame/${gid}/draft`, {
+  const workId = item.work_id
+  isDeleting.value = { ...isDeleting.value, [workId]: true }
+  const res = await kunFetch<string>(`/galgame/${workId}/draft`, {
     method: 'DELETE'
   })
-  isDeleting.value = { ...isDeleting.value, [gid]: false }
+  isDeleting.value = { ...isDeleting.value, [workId]: false }
   if (res !== null) {
     useMessage('已删除', 'success')
     refresh()
@@ -123,11 +123,11 @@ const handleDelete = async (item: UserClaimItem) => {
         </template>
 
         <template #actions>
-          <template v-if="galgameClaimGid(item)">
+          <template v-if="item.work_id">
             <KunButton size="sm" variant="flat" @click="openPreview(item)">
               预览
             </KunButton>
-            <KunLink :to="`/galgame/${galgameClaimGid(item)}/edit`">
+            <KunLink :to="`/galgame/${item.work_id}/edit`">
               <KunButton size="sm" variant="flat">编辑</KunButton>
             </KunLink>
             <KunButton
@@ -135,8 +135,8 @@ const handleDelete = async (item: UserClaimItem) => {
               size="sm"
               color="primary"
               variant="flat"
-              :loading="isResubmitting[galgameClaimGid(item)]"
-              :disabled="isResubmitting[galgameClaimGid(item)]"
+              :loading="isResubmitting[item.work_id]"
+              :disabled="isResubmitting[item.work_id]"
               @click="handleResubmit(item)"
             >
               重新提交
@@ -146,8 +146,8 @@ const handleDelete = async (item: UserClaimItem) => {
               size="sm"
               color="danger"
               variant="flat"
-              :loading="isWithdrawing[galgameClaimGid(item)]"
-              :disabled="isWithdrawing[galgameClaimGid(item)]"
+              :loading="isWithdrawing[item.work_id]"
+              :disabled="isWithdrawing[item.work_id]"
               @click="handleWithdraw(item)"
             >
               撤回
@@ -157,8 +157,8 @@ const handleDelete = async (item: UserClaimItem) => {
               size="sm"
               color="danger"
               variant="flat"
-              :loading="isDeleting[galgameClaimGid(item)]"
-              :disabled="isDeleting[galgameClaimGid(item)]"
+              :loading="isDeleting[item.work_id]"
+              :disabled="isDeleting[item.work_id]"
               @click="handleDelete(item)"
             >
               删除
@@ -180,9 +180,9 @@ const handleDelete = async (item: UserClaimItem) => {
     </KunButton>
 
     <GalgamePreviewModal
-      v-if="previewGid"
+      v-if="previewWorkId"
       v-model="isPreviewOpen"
-      :gid="previewGid"
+      :work-id="previewWorkId"
       :claim-state="previewState"
       :decline-reason="previewReason"
     />

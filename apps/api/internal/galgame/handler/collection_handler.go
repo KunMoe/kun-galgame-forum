@@ -106,7 +106,7 @@ func (h *GalgameCollectionHandler) MyCollectionsForGalgame(c fiber.Ctx) error {
 	if appErr != nil {
 		return response.Error(c, appErr)
 	}
-	gid, err := strconv.Atoi(c.Params("gid"))
+	workID, err := strconv.Atoi(c.Params("id"))
 	if err != nil {
 		return response.Error(c, errors.ErrBadRequest("无效的 Galgame ID"))
 	}
@@ -114,7 +114,7 @@ func (h *GalgameCollectionHandler) MyCollectionsForGalgame(c fiber.Ctx) error {
 	if appErr != nil {
 		return response.Error(c, appErr)
 	}
-	cols, appErr := h.collectionService.GetMyCollectionsForGalgame(c.Context(), user.ID, token, gid)
+	cols, appErr := h.collectionService.GetMyCollectionsForGalgame(c.Context(), user.ID, token, workID)
 	if appErr != nil {
 		return response.Error(c, appErr)
 	}
@@ -126,7 +126,7 @@ func (h *GalgameCollectionHandler) SetMembership(c fiber.Ctx) error {
 	if appErr != nil {
 		return response.Error(c, appErr)
 	}
-	gid, err := strconv.Atoi(c.Params("gid"))
+	workID, err := strconv.Atoi(c.Params("id"))
 	if err != nil {
 		return response.Error(c, errors.ErrBadRequest("无效的 Galgame ID"))
 	}
@@ -138,7 +138,7 @@ func (h *GalgameCollectionHandler) SetMembership(c fiber.Ctx) error {
 	if appErr != nil {
 		return response.Error(c, appErr)
 	}
-	if appErr := h.collectionService.SetMembership(c.Context(), user.ID, token, gid, req.CollectionIDs); appErr != nil {
+	if appErr := h.collectionService.SetMembership(c.Context(), user.ID, token, workID, req.CollectionIDs); appErr != nil {
 		return response.Error(c, appErr)
 	}
 	return response.OKMessage(c, "操作成功")

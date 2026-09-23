@@ -106,7 +106,6 @@ const buildGalgame = async (id: number): Promise<KunOgCard | null> => {
   })
   if (
     !game ||
-    game.moved_to ||
     game.content_limit === 'nsfw' ||
     game.indexed === false
   ) {

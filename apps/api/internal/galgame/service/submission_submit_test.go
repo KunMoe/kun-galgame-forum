@@ -141,9 +141,6 @@ func TestSubmitAdoptsTheRegistryIssuedID(t *testing.T) {
 	if _, ok := rec.body["actor"]; ok {
 		t.Errorf("the mint must assert no actor: %v", rec.body)
 	}
-	if res.GID != 90210 {
-		t.Errorf("gid = %d, want the registry-issued 90210", res.GID)
-	}
 	if res.WorkID != 90210 || res.ClaimState != "pending" {
 		t.Errorf("result = %+v, want the minted work in pending", res)
 	}
@@ -336,25 +333,6 @@ func TestSubmitReportsABannerItCouldNotMerge(t *testing.T) {
 	if res.BannerAttached {
 		t.Error("banner_attached = true after a refused merge; silence here is what " +
 			"hid a broken cover patch for the whole life of the feature")
-	}
-}
-
-func TestSubmittedEntryIsReachableByItsOwnID(t *testing.T) {
-	rec := &submitRecorder{}
-	svc := rec.service(t)
-
-	res, appErr := svc.Submit(t.Context(), "user-jwt", 0,
-		&SubmissionForm{NameJaJP: "白恋サクラ", AgeLimit: "all", ContentLimit: "sfw"})
-	if appErr != nil {
-		t.Fatalf("Submit: %v", appErr)
-	}
-
-	workID, appErr := svc.workIDOf(t.Context(), res.GID)
-	if appErr != nil {
-		t.Fatalf("resolving the freshly issued gid %d: %v", res.GID, appErr)
-	}
-	if workID != res.WorkID {
-		t.Errorf("gid %d resolved to work %d, want %d", res.GID, workID, res.WorkID)
 	}
 }
 

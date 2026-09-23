@@ -2,12 +2,12 @@
 const { data, items, hasMore, isLoadingMore, loadMore } =
   await useGalgameClaimList('/galgame/audited')
 
-const previewGid = ref(0)
+const previewWorkId = ref(0)
 const previewState = ref('')
 const isPreviewOpen = ref(false)
 
 const openPreview = (item: UserClaimItem) => {
-  previewGid.value = galgameClaimGid(item)
+  previewWorkId.value = item.work_id
   previewState.value = item.claim_state
   isPreviewOpen.value = true
 }
@@ -58,13 +58,13 @@ const openPreview = (item: UserClaimItem) => {
 
         <template #actions>
           <KunLink
-            v-if="galgameClaimGid(item) && isPublicState(item.claim_state)"
-            :to="`/galgame/${galgameClaimGid(item)}`"
+            v-if="item.work_id && isPublicState(item.claim_state)"
+            :to="`/galgame/${item.work_id}`"
           >
             <KunButton size="sm" variant="flat">查看</KunButton>
           </KunLink>
           <KunButton
-            v-else-if="galgameClaimGid(item)"
+            v-else-if="item.work_id"
             size="sm"
             variant="flat"
             @click="openPreview(item)"
@@ -87,9 +87,9 @@ const openPreview = (item: UserClaimItem) => {
     </KunButton>
 
     <GalgamePreviewModal
-      v-if="previewGid"
+      v-if="previewWorkId"
       v-model="isPreviewOpen"
-      :gid="previewGid"
+      :work-id="previewWorkId"
       :claim-state="previewState"
     />
   </div>

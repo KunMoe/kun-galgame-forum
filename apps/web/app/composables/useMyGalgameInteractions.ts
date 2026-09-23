@@ -15,15 +15,15 @@ export const useMyGalgameInteractions = () => {
   const mergeFavorited = (ids: number[]) => {
     if (!ids.length) return
     const set = new Set(favorited.value)
-    for (const gid of ids) {
-      set.add(gid)
+    for (const workId of ids) {
+      set.add(workId)
     }
     favorited.value = [...set]
   }
 
   const flushFavorited = async () => {
     flushScheduled.value = false
-    const ids = [...new Set(pending.value)].filter((gid) => gid > 0)
+    const ids = [...new Set(pending.value)].filter((workId) => workId > 0)
     pending.value = []
     if (!id) return
     if (!ids.length && likedLoaded.value) return
@@ -52,10 +52,10 @@ export const useMyGalgameInteractions = () => {
     }
   }
 
-  const ensureLoaded = async (gids?: number[]) => {
+  const ensureLoaded = async (workIds?: number[]) => {
     if (!id) return
-    if (gids?.length) {
-      pending.value = [...pending.value, ...gids]
+    if (workIds?.length) {
+      pending.value = [...pending.value, ...workIds]
     }
     if (likedLoaded.value && !pending.value.length) return
     if (flushScheduled.value) return
@@ -68,19 +68,19 @@ export const useMyGalgameInteractions = () => {
   const likedSet = computed(() => new Set(liked.value))
   const favoritedSet = computed(() => new Set(favorited.value))
 
-  const setFavorited = (gid: number, isFav: boolean) => {
+  const setFavorited = (workId: number, isFav: boolean) => {
     const set = new Set(favorited.value)
     if (isFav) {
-      set.add(gid)
+      set.add(workId)
     } else {
-      set.delete(gid)
+      set.delete(workId)
     }
     favorited.value = [...set]
   }
 
   return {
-    isLiked: (gid: number) => likedSet.value.has(gid),
-    isFavorited: (gid: number) => favoritedSet.value.has(gid),
+    isLiked: (workId: number) => likedSet.value.has(workId),
+    isFavorited: (workId: number) => favoritedSet.value.has(workId),
     setFavorited,
     ensureLoaded
   }

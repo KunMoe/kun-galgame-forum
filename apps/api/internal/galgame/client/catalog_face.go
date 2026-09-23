@@ -7,7 +7,6 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
-	"time"
 
 	"kun-galgame-api/pkg/errors"
 )
@@ -15,28 +14,6 @@ import (
 const catalogIDsChunk = 100
 
 const catalogSpoilerCeiling = 2
-
-var anchorSourceKeys = []string{"curated", "galgame_wiki"}
-
-func isAnchorSource(source string) bool {
-	for _, k := range anchorSourceKeys {
-		if source == k {
-			return true
-		}
-	}
-	return false
-}
-
-const (
-	gidLookupHitTTL  = 30 * time.Minute
-	gidLookupMissTTL = 2 * time.Minute
-)
-
-type gidLookupEntry struct {
-	catalogID int64
-	found     bool
-	expire    time.Time
-}
 
 // The works list gates localized{} and latin behind include=names, the same
 // switch as the four-slot names block it replaces. Dropping "names" here
@@ -80,159 +57,6 @@ func contentLimitFor(isSFW bool) string {
 	return "all"
 }
 
-func (c *GalgameClient) catalogIDsForGIDs(ctx context.Context, gids []int) (map[int]int64, *errors.AppError) {
-	out := make(map[int]int64, len(gids))
-	var missing []int
-	now := time.Now()
-
-	c.gidMu.RLock()
-	for _, gid := range gids {
-		if e, ok := c.gidCache[gid]; ok && now.Before(e.expire) {
-			if e.found {
-				out[gid] = e.catalogID
-			}
-		} else {
-			missing = append(missing, gid)
-		}
-	}
-	c.gidMu.RUnlock()
-	if len(missing) == 0 {
-		return out, nil
-	}
-
-	gidStride := max(catalogIDsChunk/len(anchorSourceKeys), 1)
-
-	resolved := make(map[int]int64, len(missing))
-	for start := 0; start < len(missing); start += gidStride {
-		end := min(start+gidStride, len(missing))
-		chunk := missing[start:end]
-
-		refs := make([]string, 0, len(chunk)*len(anchorSourceKeys))
-		want := make(map[string]int, len(chunk)*len(anchorSourceKeys))
-		for _, gid := range chunk {
-			ext := strconv.Itoa(gid)
-			for _, source := range anchorSourceKeys {
-				token := source + ":" + ext
-				refs = append(refs, token)
-				want[token] = gid
-			}
-		}
-		q := url.Values{
-			"refs":    {strings.Join(refs, ",")},
-			"limit":   {strconv.Itoa(catalogIDsChunk)},
-			"include": {"refs"},
-		}
-		openPopulation(q)
-		data, appErr := c.CatalogGet(ctx, "/catalog/works", q)
-		if appErr != nil {
-			return nil, appErr
-		}
-		var parsed struct {
-			Items   []CatalogWorkListItem `json:"items"`
-			Missing []string              `json:"missing"`
-		}
-		if err := json.Unmarshal(data, &parsed); err != nil {
-			return nil, errors.ErrInternal("解析 Catalog 批量解析响应失败")
-		}
-		miss := make(map[string]bool, len(parsed.Missing))
-		for _, token := range parsed.Missing {
-			miss[token] = true
-		}
-		inChunk := make(map[int]bool, len(chunk))
-		for _, gid := range chunk {
-			inChunk[gid] = true
-		}
-		for i := range parsed.Items {
-			row := &parsed.Items[i]
-			if g := row.gid(); g > 0 && inChunk[g] {
-				resolved[g] = row.ID
-			}
-			for _, ref := range row.Refs {
-				token := ref.Source + ":" + ref.ExternalID
-				gid, ok := want[token]
-				if !ok || miss[token] {
-					continue
-				}
-				resolved[gid] = row.ID
-			}
-		}
-	}
-
-	var unresolved []int
-	for _, gid := range missing {
-		if _, ok := resolved[gid]; !ok {
-			unresolved = append(unresolved, gid)
-		}
-	}
-	if len(unresolved) > 0 {
-		adopted, appErr := c.adoptedWorkIDs(ctx, unresolved)
-		if appErr != nil {
-			return nil, appErr
-		}
-		for gid, id := range adopted {
-			resolved[gid] = id
-			out[gid] = id
-		}
-	}
-
-	c.gidMu.Lock()
-	if len(c.gidCache) > batchCacheMaxEntries {
-		clear(c.gidCache)
-	}
-	for _, gid := range missing {
-		id, ok := resolved[gid]
-		ttl := gidLookupMissTTL
-		if ok {
-			ttl = gidLookupHitTTL
-			out[gid] = id
-		}
-		c.gidCache[gid] = gidLookupEntry{catalogID: id, found: ok, expire: now.Add(ttl)}
-	}
-	c.gidMu.Unlock()
-	return out, nil
-}
-
-func (c *GalgameClient) CatalogWorkIDForGID(ctx context.Context, gid int) (int64, bool, *errors.AppError) {
-	idMap, appErr := c.catalogIDsForGIDs(ctx, []int{gid})
-	if appErr != nil {
-		return 0, false, appErr
-	}
-	id, ok := idMap[gid]
-	return id, ok, nil
-}
-
-// The second half of the gid bridge. A work minted through the submission face
-// carries NO external_ref anchor — there is no upstream to have issued one — so
-// the anchor lookup answers "no such work" rather than an error, and every page
-// of a post-switchover entry would 404 silently.
-//
-// THE ROUND-TRIP CHECK IS NOT DEFENSIVE, IT IS THE WHOLE CORRECTNESS ARGUMENT:
-// a legacy gid is also a syntactically valid work id, so resolving gid 42 by
-// fetching work 42 would hand back a different game. An adopted id satisfies
-// `claim.site_work_id == the id asked for` by construction; a coincidence does not.
-//
-// The content gates are open because this resolves an IDENTITY. Filtering it by
-// the reader's preference would make an r18 entry unresolvable rather than
-// merely invisible; visibility belongs to the row fetch that follows.
-func (c *GalgameClient) adoptedWorkIDs(ctx context.Context, gids []int) (map[int]int64, *errors.AppError) {
-	ids := make([]int64, len(gids))
-	for i, gid := range gids {
-		ids[i] = int64(gid)
-	}
-	rows, appErr := c.worksByCatalogIDs(ctx, ids, "", "all")
-	if appErr != nil {
-		return nil, appErr
-	}
-	out := make(map[int]int64, len(rows))
-	for i := range rows {
-		row := &rows[i]
-		if gid := row.gid(); gid > 0 && int64(gid) == row.ID {
-			out[gid] = row.ID
-		}
-	}
-	return out, nil
-}
-
 func (c *GalgameClient) worksByCatalogIDs(ctx context.Context, ids []int64, include, contentLimit string) ([]CatalogWorkListItem, *errors.AppError) {
 	var out []CatalogWorkListItem
 	for start := 0; start < len(ids); start += catalogIDsChunk {
@@ -265,46 +89,20 @@ func (c *GalgameClient) worksByCatalogIDs(ctx context.Context, ids []int64, incl
 	return out, nil
 }
 
-func (c *GalgameClient) CatalogWorkIDs(ctx context.Context, gids []int) (map[int]int64, *errors.AppError) {
-	if len(gids) == 0 {
-		return map[int]int64{}, nil
-	}
-	return c.catalogIDsForGIDs(ctx, gids)
-}
-
-func (c *GalgameClient) GIDsByCatalogIDs(ctx context.Context, ids []int64) (map[int64]int, *errors.AppError) {
+func (c *GalgameClient) CatalogRowsByWorkIDs(ctx context.Context, ids []int, include, contentLimit string) (map[int]CatalogWorkListItem, *errors.AppError) {
 	if len(ids) == 0 {
-		return map[int64]int{}, nil
+		return map[int]CatalogWorkListItem{}, nil
 	}
-	rows, appErr := c.worksByCatalogIDs(ctx, ids, "", "all")
-	if appErr != nil {
-		return nil, appErr
-	}
-	out := make(map[int64]int, len(rows))
-	for i := range rows {
-		if gid := rows[i].gid(); gid > 0 {
-			out[rows[i].ID] = gid
+	catIDs := make([]int64, 0, len(ids))
+	for _, id := range ids {
+		if id > 0 {
+			catIDs = append(catIDs, int64(id))
 		}
 	}
-	return out, nil
-}
-
-func (c *GalgameClient) CatalogRowsByGIDs(ctx context.Context, gids []int, include, contentLimit string) (map[int]CatalogWorkListItem, *errors.AppError) {
-	if len(gids) == 0 {
+	if len(catIDs) == 0 {
 		return map[int]CatalogWorkListItem{}, nil
 	}
-	idMap, appErr := c.catalogIDsForGIDs(ctx, gids)
-	if appErr != nil {
-		return nil, appErr
-	}
-	if len(idMap) == 0 {
-		return map[int]CatalogWorkListItem{}, nil
-	}
-	ids := make([]int64, 0, len(idMap))
-	for _, id := range idMap {
-		ids = append(ids, id)
-	}
-	rows, appErr := c.worksByCatalogIDs(ctx, ids, include, contentLimit)
+	rows, appErr := c.worksByCatalogIDs(ctx, catIDs, include, contentLimit)
 	if appErr != nil {
 		return nil, appErr
 	}
@@ -314,8 +112,8 @@ func (c *GalgameClient) CatalogRowsByGIDs(ctx context.Context, gids []int, inclu
 		if !row.isRenderable() {
 			continue
 		}
-		if gid := row.gid(); gid > 0 {
-			out[gid] = row
+		if row.ID > 0 {
+			out[int(row.ID)] = row
 		}
 	}
 	return out, nil
@@ -338,23 +136,6 @@ func mirrorOf(row *CatalogWorkListItem) CatalogMirror {
 		m.ReleaseDate = *row.ReleaseDate
 	}
 	return m
-}
-
-// MirrorByGIDs reads the mirrored fields for local rows. Both gates are open on
-// purpose: this syncs what catalog's verdict IS, and asking for it through a
-// reader's own content_limit would only ever return rows that already agree
-// with it.
-func (c *GalgameClient) MirrorByGIDs(ctx context.Context, gids []int) (map[int]CatalogMirror, *errors.AppError) {
-	rows, appErr := c.CatalogRowsByGIDs(ctx, gids, "", "all")
-	if appErr != nil {
-		return nil, appErr
-	}
-	out := make(map[int]CatalogMirror, len(rows))
-	for gid := range rows {
-		row := rows[gid]
-		out[gid] = mirrorOf(&row)
-	}
-	return out, nil
 }
 
 type catWorkDetail struct {
@@ -499,25 +280,25 @@ func (s *catWorkSeries) Label(ctx context.Context) string {
 	return CatalogEntityName(ctx, s.Localized, cmp.Or(s.DisplayName, s.Name), "")
 }
 
-func (c *GalgameClient) CatalogWorkDetail(ctx context.Context, gid int) (*catWorkDetail, bool, *errors.AppError) {
-	idMap, appErr := c.catalogIDsForGIDs(ctx, []int{gid})
-	if appErr != nil {
-		return nil, false, appErr
-	}
-	catalogID, ok := idMap[gid]
-	if !ok {
+func (c *GalgameClient) CatalogWorkExists(ctx context.Context, workID int) (bool, *errors.AppError) {
+	_, found, err := c.CatalogWorkDetail(ctx, workID)
+	return found, err
+}
+
+func (c *GalgameClient) CatalogWorkDetail(ctx context.Context, workID int) (*catWorkDetail, bool, *errors.AppError) {
+	if workID <= 0 {
 		return nil, false, nil
 	}
 	// The tag panel's 剧透等级 filter defaults to level 0 and reveals the rest on
 	// demand, so it needs the rows to filter: asking for spoilers=0 here made
 	// levels 1 and 2 match nothing, forever. SEO text must still cut back to
-	// level 0 — see pages/galgame/[gid]/index.vue.
+	// level 0 — see pages/galgame/[id]/index.vue.
 	q := url.Values{
 		"spoilers": {strconv.Itoa(catalogSpoilerCeiling)},
 		"include":  {"credits"},
 	}
 	openPopulation(q)
-	data, appErr := c.CatalogGet(ctx, "/catalog/works/"+strconv.FormatInt(catalogID, 10), q)
+	data, appErr := c.CatalogGet(ctx, "/catalog/works/"+strconv.Itoa(workID), q)
 	if appErr != nil {
 		if appErr.StatusCode == 404 {
 			return nil, false, nil
@@ -576,21 +357,21 @@ func (c *GalgameClient) CatalogWorksList(ctx context.Context, q url.Values) (*Ca
 	return page, nil
 }
 
-func (c *GalgameClient) CatalogMemberGIDs(ctx context.Context, filter url.Values, isSFW bool, pageCap int) ([]int, *errors.AppError) {
+func (c *GalgameClient) CatalogMemberWorkIDs(ctx context.Context, filter url.Values, isSFW bool, pageCap int) ([]int, *errors.AppError) {
 	members, appErr := c.catalogMembers(ctx, filter, isSFW, pageCap)
 	if appErr != nil {
 		return nil, appErr
 	}
-	gids := make([]int, 0, len(members))
+	ids := make([]int, 0, len(members))
 	for _, m := range members {
-		gids = append(gids, m.GID)
+		ids = append(ids, m.WorkID)
 	}
-	return gids, nil
+	return ids, nil
 }
 
 type CatalogRollupMember struct {
-	GID int
-	Via *CatalogLabelVia
+	WorkID int
+	Via    *CatalogLabelVia
 }
 
 func (c *GalgameClient) CatalogLabelRollupMembers(ctx context.Context, labelID, sort string, isSFW bool, pageCap int) ([]CatalogRollupMember, *errors.AppError) {
@@ -622,10 +403,10 @@ func (c *GalgameClient) catalogMembers(ctx context.Context, filter url.Values, i
 			if !res.Items[i].isRenderable() {
 				continue
 			}
-			if gid := res.Items[i].gid(); gid > 0 {
+			if id := int(res.Items[i].ID); id > 0 {
 				members = append(members, CatalogRollupMember{
-					GID: gid,
-					Via: res.Items[i].ViaLabel,
+					WorkID: id,
+					Via:    res.Items[i].ViaLabel,
 				})
 			}
 		}
@@ -670,85 +451,4 @@ func (c *GalgameClient) CatalogCalendar(ctx context.Context, bucket string, q ur
 		page.NextCursor = *parsed.NextCursor
 	}
 	return page, nil
-}
-
-// GIDsToCatalogIDs is the gid bridge exported for the merge sync. The dead-gid
-// pass reads it as a negative: a gid that resolves to nothing may be folded.
-// The stale-gid pass reads the same map as a positive: a leftover curated gid
-// must resolve back to the survivor, or it is a coincidence and must not fold.
-func (c *GalgameClient) GIDsToCatalogIDs(ctx context.Context, gids []int) (map[int]int64, *errors.AppError) {
-	return c.catalogIDsForGIDs(ctx, gids)
-}
-
-// ForgetGIDs drops cached resolutions so the next lookup asks catalog.
-//
-// The merge sync must call this before it decides a gid is dead. gidLookupHitTTL
-// is 30 minutes, and the redirect cursor advances whether or not a fold happened
-// — one stale hit is one page that stays 404 forever.
-func (c *GalgameClient) ForgetGIDs(gids []int) {
-	if len(gids) == 0 {
-		return
-	}
-	c.gidMu.Lock()
-	for _, gid := range gids {
-		delete(c.gidCache, gid)
-	}
-	c.gidMu.Unlock()
-}
-
-// GIDsForCatalogIDs reads the bridge the other way: catalog id to the forum gid
-// that names the work. It is the claim's site_work_id, or for an unclaimed work
-// the catalog id itself — which is a CANDIDATE, not an answer, because 10,289 of
-// the forum's gids are also the catalog id of a different work. The caller has
-// to round-trip it through GIDsToCatalogIDs before acting on it.
-func (c *GalgameClient) GIDsForCatalogIDs(ctx context.Context, ids []int64) (map[int64]int, *errors.AppError) {
-	if len(ids) == 0 {
-		return map[int64]int{}, nil
-	}
-	rows, appErr := c.worksByCatalogIDs(ctx, ids, "", "all")
-	if appErr != nil {
-		return nil, appErr
-	}
-	out := make(map[int64]int, len(rows))
-	for i := range rows {
-		if gid := rows[i].gid(); gid > 0 {
-			out[rows[i].ID] = gid
-		}
-	}
-	return out, nil
-}
-
-// StaleGIDsForCatalogIDs names, per catalog id, the curated gids that are NOT the work's
-// current gid. A merge moves the source work's curated ref onto the survivor, so the survivor
-// answers for a forum page it no longer is: that page is the one to fold.
-func (c *GalgameClient) StaleGIDsForCatalogIDs(ctx context.Context, ids []int64) (map[int64][]int, *errors.AppError) {
-	if len(ids) == 0 {
-		return map[int64][]int{}, nil
-	}
-	rows, appErr := c.worksByCatalogIDs(ctx, ids, "refs", "all")
-	if appErr != nil {
-		return nil, appErr
-	}
-	out := make(map[int64][]int, len(rows))
-	for i := range rows {
-		row := &rows[i]
-		canonical := row.gid()
-		var stale []int
-		seen := map[int]bool{}
-		for _, ref := range row.Refs {
-			if !isAnchorSource(ref.Source) {
-				continue
-			}
-			gid, err := strconv.Atoi(ref.ExternalID)
-			if err != nil || gid <= 0 || gid == canonical || seen[gid] {
-				continue
-			}
-			seen[gid] = true
-			stale = append(stale, gid)
-		}
-		if len(stale) > 0 {
-			out[row.ID] = stale
-		}
-	}
-	return out, nil
 }

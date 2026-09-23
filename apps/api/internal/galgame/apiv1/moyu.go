@@ -25,8 +25,8 @@ const (
 
 var errUnconfigured = errors.New("apiv1 galgames: service is not configured")
 
-type workIDs interface {
-	CatalogWorkIDForGID(ctx context.Context, gid int) (int64, bool, *legacyErrors.AppError)
+type workExists interface {
+	CatalogWorkExists(ctx context.Context, workID int) (bool, *legacyErrors.AppError)
 }
 
 type userLookup interface {
@@ -34,14 +34,14 @@ type userLookup interface {
 }
 
 type Service struct {
-	works workIDs
+	works workExists
 	moyu  *moyuclient.Client
 	users userLookup
 	rdb   *redis.Client
 	cdn   string
 }
 
-func New(works workIDs, moyu *moyuclient.Client, users userLookup, rdb *redis.Client, cdn string) *Service {
+func New(works workExists, moyu *moyuclient.Client, users userLookup, rdb *redis.Client, cdn string) *Service {
 	return &Service{works: works, moyu: moyu, users: users, rdb: rdb, cdn: cdn}
 }
 
@@ -79,7 +79,7 @@ type MoyuPatchResource struct {
 }
 
 type listGalgameMoyuPatchesInput struct {
-	GalgameID string `path:"galgame_id" pattern:"^[1-9][0-9]{0,18}$" maxLength:"19" doc:"Galgame id."`
+	WorkID string `path:"work_id" pattern:"^[1-9][0-9]{0,18}$" maxLength:"19" doc:"Catalog work id, which is also the forum galgame page id."`
 }
 
 type listGalgameMoyuPatchesOutput struct {
@@ -90,18 +90,18 @@ func (s *Service) listGalgameMoyuPatches(ctx context.Context, in *listGalgameMoy
 	if s == nil {
 		return nil, problem.Internal(errUnconfigured)
 	}
-	gid, ok := repr.ParseID(repr.DecimalID(in.GalgameID))
+	workID, ok := repr.ParseID(repr.DecimalID(in.WorkID))
 	if !ok {
 		return nil, notFound()
 	}
-	catalogID, found, appErr := s.works.CatalogWorkIDForGID(ctx, gid)
+	found, appErr := s.works.CatalogWorkExists(ctx, workID)
 	if appErr != nil {
 		return nil, problem.Unavailable(appErr)
 	}
 	if !found {
 		return nil, notFound()
 	}
-	patches, err := s.patchesFor(ctx, catalogID)
+	patches, err := s.patchesFor(ctx, int64(workID))
 	if err != nil {
 		return nil, problem.Unavailable(err)
 	}

@@ -41,15 +41,9 @@ func fakeGalgame(t *testing.T) *httptest.Server {
 	t.Helper()
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch {
-		case r.URL.Path == "/v2/catalog/works" && r.URL.Query().Get("refs") != "":
-			if strings.Contains(r.URL.Query().Get("refs"), ":1") {
-				_, _ = w.Write([]byte(`{"object":"list","items":[{"id":"1000","claim":{"site":"kungal","site_work_id":"1","state":"live"},"refs":[{"source":"curated","external_id":"1"}]}]}`))
-				return
-			}
-			_, _ = w.Write([]byte(`{"object":"list","items":[],"missing":[]}`))
 		case r.URL.Path == "/v2/catalog/works":
 			_, _ = w.Write([]byte(`{"object":"list","items":[{"object":"work","id":"1000",` +
-				`"claim":{"site":"kungal","site_work_id":"1","state":"live"},` +
+				`"claim":{"site":"kungal","site_work_id":"1000","state":"live"},` +
 				`"localized":{"zh-Hans":{"value":"测试游戏","is_machine":false}}}]}`))
 		default:
 			w.WriteHeader(http.StatusNotFound)
@@ -62,7 +56,7 @@ func fakeGalgame(t *testing.T) *httptest.Server {
 
 type fakeOwners map[int]int
 
-func (f fakeOwners) OwnerOf(gid int) int { return f[gid] }
+func (f fakeOwners) OwnerOf(workID int) int { return f[workID] }
 
 type fakeEditFace struct {
 	mu             sync.Mutex
@@ -205,7 +199,7 @@ func editTestAppFull(t *testing.T, catalogURL, galgameURL string, user *middlewa
 		galgameClient = client.New(galgameURL, "nm_test", "")
 	}
 	h := NewEditHandler(cc, galgameClient, nil, notifier, nil).
-		WithOwners(fakeOwners{1: 7})
+		WithOwners(fakeOwners{1000: 7})
 
 	app := fiber.New()
 	authStub := func(c fiber.Ctx) error {
@@ -224,12 +218,12 @@ func editTestAppFull(t *testing.T, catalogURL, galgameURL string, user *middlewa
 		return c.Next()
 	}
 	api := app.Group("/api")
-	api.Get("/galgame/:gid/edit/revisions", optAuthStub, h.Revisions)
-	api.Get("/galgame/:gid/edit/diff", h.Diff)
-	api.Get("/galgame/:gid/edit/proposals", h.GameProposals)
+	api.Get("/galgame/:id/edit/revisions", optAuthStub, h.Revisions)
+	api.Get("/galgame/:id/edit/diff", h.Diff)
+	api.Get("/galgame/:id/edit/proposals", h.GameProposals)
 	authed := api.Group("", authStub)
-	authed.Get("/galgame/:gid/edit/bootstrap", h.Bootstrap)
-	authed.Post("/galgame/:gid/edit/proposals", h.Submit)
+	authed.Get("/galgame/:id/edit/bootstrap", h.Bootstrap)
+	authed.Post("/galgame/:id/edit/proposals", h.Submit)
 	authed.Get("/galgame-edit/mine", h.Mine)
 	authed.Post("/galgame-edit/proposals/:id/withdraw", h.Withdraw)
 	authed.Get("/galgame-edit/queue", middleware.RequireModerator(), h.Queue)
@@ -237,7 +231,7 @@ func editTestAppFull(t *testing.T, catalogURL, galgameURL string, user *middlewa
 	authed.Post("/galgame-edit/proposals/:id/amend", h.Amend)
 	authed.Post("/galgame-edit/proposals/:id/merge", h.Merge)
 	authed.Post("/galgame-edit/proposals/:id/decline", h.Decline)
-	authed.Post("/galgame/:gid/edit/revert", h.Revert)
+	authed.Post("/galgame/:id/edit/revert", h.Revert)
 	return app
 }
 
@@ -266,9 +260,9 @@ var plainUser = &middleware.UserInfo{ID: 7, Name: "user", Roles: nil}
 func TestEditDegradesWhenUnconfigured(t *testing.T) {
 	app := editTestApp(t, "", moderatorUser)
 	for _, tc := range []struct{ method, path, body string }{
-		{"GET", "/api/galgame/1/edit/bootstrap", ""},
-		{"POST", "/api/galgame/1/edit/proposals", `{"patch":{"catalog.work.name_zh_cn":"x"}}`},
-		{"GET", "/api/galgame/1/edit/revisions", ""},
+		{"GET", "/api/galgame/1000/edit/bootstrap", ""},
+		{"POST", "/api/galgame/1000/edit/proposals", `{"patch":{"catalog.work.name_zh_cn":"x"}}`},
+		{"GET", "/api/galgame/1000/edit/revisions", ""},
 		{"GET", "/api/galgame-edit/queue", ""},
 		{"GET", "/api/galgame-edit/mine", ""},
 	} {
@@ -286,11 +280,11 @@ func TestEditNoWriteAssertsAnActor(t *testing.T) {
 		nm := fakeGalgame(t)
 		app := editTestAppFull(t, fake.server(t).URL, nm.URL, user, nil)
 		for _, tc := range []struct{ method, path, body string }{
-			{"POST", "/api/galgame/1/edit/proposals", `{"patch":{"catalog.work.name_zh_cn":"新标题"},"note":"typo"}`},
+			{"POST", "/api/galgame/1000/edit/proposals", `{"patch":{"catalog.work.name_zh_cn":"新标题"},"note":"typo"}`},
 			{"POST", "/api/galgame-edit/proposals/7/amend", `{"set":{"catalog.work.name_zh_cn":"修正"}}`},
 			{"POST", "/api/galgame-edit/proposals/7/merge", `{"note":""}`},
 			{"POST", "/api/galgame-edit/proposals/7/decline", `{"note":"理由"}`},
-			{"POST", "/api/galgame/1/edit/revert", `{"to_seq":3}`},
+			{"POST", "/api/galgame/1000/edit/revert", `{"to_seq":3}`},
 		} {
 			if status, raw := doJSON(t, app, tc.method, tc.path, tc.body); status != http.StatusOK {
 				t.Fatalf("%s as %s: status = %d body %s", tc.path, user.Name, status, raw)
@@ -319,7 +313,7 @@ func TestEditNoWriteAssertsAnActor(t *testing.T) {
 func TestEditSubmitPassesThePatchThrough(t *testing.T) {
 	fake := &fakeEditFace{}
 	app := editTestApp(t, fake.server(t).URL, plainUser)
-	if status, raw := doJSON(t, app, "POST", "/api/galgame/1/edit/proposals",
+	if status, raw := doJSON(t, app, "POST", "/api/galgame/1000/edit/proposals",
 		`{"patch":{"catalog.work.name_zh_cn":"新标题"},"note":"typo"}`); status != http.StatusOK {
 		t.Fatalf("submit: status = %d body %s", status, raw)
 	}
@@ -340,7 +334,7 @@ func TestEditRevertRidesTheUserToken(t *testing.T) {
 	fake := &fakeEditFace{}
 	nm := fakeGalgame(t)
 	app := editTestAppFull(t, fake.server(t).URL, nm.URL, plainUser, nil)
-	status, raw := doJSON(t, app, "POST", "/api/galgame/1/edit/revert", `{"to_seq":3,"note":"回滚测试"}`)
+	status, raw := doJSON(t, app, "POST", "/api/galgame/1000/edit/revert", `{"to_seq":3,"note":"回滚测试"}`)
 	if status != http.StatusOK {
 		t.Fatalf("revert: status = %d body %s", status, raw)
 	}
@@ -358,7 +352,7 @@ func TestEditRevertDeniedByInfra(t *testing.T) {
 		userBody: `{"code":233,"message":"field review denied"}`}
 	nm := fakeGalgame(t)
 	app := editTestAppFull(t, fake.server(t).URL, nm.URL, bystander, nil)
-	status, raw := doJSON(t, app, "POST", "/api/galgame/1/edit/revert", `{"to_seq":3}`)
+	status, raw := doJSON(t, app, "POST", "/api/galgame/1000/edit/revert", `{"to_seq":3}`)
 	if status != http.StatusForbidden {
 		t.Fatalf("denied revert: status = %d body %s, want 403", status, raw)
 	}
@@ -375,7 +369,7 @@ func TestEditSubmitLocalValidation(t *testing.T) {
 		`{"patch":{"galgame.game.name_zh_cn":"x"}}`,
 		`{"patch":{"gid":1}}`,
 	} {
-		status, _ := doJSON(t, app, "POST", "/api/galgame/1/edit/proposals", body)
+		status, _ := doJSON(t, app, "POST", "/api/galgame/1000/edit/proposals", body)
 		if status != http.StatusBadRequest {
 			t.Fatalf("body %s: status = %d, want 400", body, status)
 		}
@@ -427,7 +421,7 @@ func TestEditViewGates(t *testing.T) {
 	}
 
 	anon := editTestApp(t, fake.server(t).URL, nil)
-	status, _ = doJSON(t, anon, "GET", "/api/galgame/1/edit/bootstrap", "")
+	status, _ = doJSON(t, anon, "GET", "/api/galgame/1000/edit/bootstrap", "")
 	if status != http.StatusUnauthorized {
 		t.Fatalf("anonymous bootstrap: status = %d, want 401", status)
 	}
@@ -489,7 +483,7 @@ func TestEditRevisionsCanRevertFromProjection(t *testing.T) {
 				user = moderatorUser
 			}
 			app := editTestApp(t, fake.server(t).URL, user)
-			status, raw := doJSON(t, app, "GET", "/api/galgame/1/edit/revisions", "")
+			status, raw := doJSON(t, app, "GET", "/api/galgame/1000/edit/revisions", "")
 			if status != http.StatusOK {
 				t.Fatalf("revisions: status = %d body %s", status, raw)
 			}
@@ -549,7 +543,7 @@ func TestEditOwnerReview(t *testing.T) {
 		t.Fatalf("want exactly one merged notice, got %d", len(sink.specs))
 	}
 	n := sink.specs[0]
-	if n.Kind != msgService.NotifyMerged || n.ReceiverID != 9 || n.SenderID != 7 || n.GalgameID != 1 {
+	if n.Kind != msgService.NotifyMerged || n.ReceiverID != 9 || n.SenderID != 7 || n.WorkID != 1000 {
 		t.Fatalf("merged notice shape: %+v", n)
 	}
 	if !strings.Contains(n.Content, "测试游戏") || !strings.Contains(n.Content, "修正") {
@@ -586,7 +580,7 @@ func TestEditDeclineNotification(t *testing.T) {
 		t.Fatalf("want exactly one declined notice, got %d", len(sink.specs))
 	}
 	n := sink.specs[0]
-	if n.Kind != msgService.NotifyDeclined || n.ReceiverID != 9 || n.SenderID != 42 || n.GalgameID != 1 {
+	if n.Kind != msgService.NotifyDeclined || n.ReceiverID != 9 || n.SenderID != 42 || n.WorkID != 1000 {
 		t.Fatalf("declined notice shape: %+v", n)
 	}
 	if !strings.Contains(n.Content, "资料来源不可靠，请补充出处") {
@@ -597,7 +591,7 @@ func TestEditDeclineNotification(t *testing.T) {
 func TestEditGameProposals(t *testing.T) {
 	fake := &fakeEditFace{}
 	app := editTestApp(t, fake.server(t).URL, nil)
-	status, raw := doJSON(t, app, "GET", "/api/galgame/1/edit/proposals", "")
+	status, raw := doJSON(t, app, "GET", "/api/galgame/1000/edit/proposals", "")
 	if status != http.StatusOK {
 		t.Fatalf("game proposals: status = %d body %s", status, raw)
 	}
@@ -628,13 +622,13 @@ func TestEditTenantPin(t *testing.T) {
 func TestEditBootstrapShape(t *testing.T) {
 	fake := &fakeEditFace{}
 	app := editTestApp(t, fake.server(t).URL, plainUser)
-	status, raw := doJSON(t, app, "GET", "/api/galgame/1/edit/bootstrap", "")
+	status, raw := doJSON(t, app, "GET", "/api/galgame/1000/edit/bootstrap", "")
 	if status != http.StatusOK {
 		t.Fatalf("bootstrap: status = %d body %s", status, raw)
 	}
 	var out struct {
 		Data struct {
-			Gid       int64          `json:"gid"`
+			WorkID    int64          `json:"gid"`
 			Values    map[string]any `json:"values"`
 			Fields    []any          `json:"fields"`
 			CanReview bool           `json:"can_review"`
@@ -643,7 +637,7 @@ func TestEditBootstrapShape(t *testing.T) {
 	if err := json.Unmarshal(raw, &out); err != nil {
 		t.Fatalf("unmarshal: %v", err)
 	}
-	if out.Data.Gid != 1 || out.Data.Values["catalog.work.name_zh_cn"] != "现值" {
+	if out.Data.WorkID != 1000 || out.Data.Values["catalog.work.name_zh_cn"] != "现值" {
 		t.Fatalf("bootstrap shape wrong: %s", raw)
 	}
 	if len(out.Data.Fields) != 3 || out.Data.CanReview {

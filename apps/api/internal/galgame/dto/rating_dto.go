@@ -13,7 +13,7 @@ type RatingListRequest struct {
 }
 
 type CreateRatingRequest struct {
-	GalgameID    int      `json:"galgame_id" validate:"required,min=1"`
+	WorkID       int      `json:"galgame_id" validate:"required,min=1"`
 	Recommend    string   `json:"recommend" validate:"required"`
 	Overall      int      `json:"overall" validate:"required,min=1,max=10"`
 	GalgameType  []string `json:"galgame_type" validate:"required,min=1"`

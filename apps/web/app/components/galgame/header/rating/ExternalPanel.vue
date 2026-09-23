@@ -152,7 +152,7 @@ const link = computed(() => {
     <div v-if="buckets" class="space-y-1">
       <h4 class="font-medium">评分分布</h4>
       <GalgameHeaderRatingDistributionChart
-        :galgame-id="galgame.id"
+        :work-id="galgame.id"
         :source="source"
         :buckets="buckets"
         :categories="categories"

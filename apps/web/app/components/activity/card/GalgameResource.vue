@@ -12,9 +12,9 @@ const data = computed(
   () => props.activity.data as GalgameActivityData | undefined
 )
 const resource = computed(() => data.value?.resource)
-const gid = computed(() => data.value?.galgame_id ?? 0)
+const workId = computed(() => data.value?.galgame_id ?? 0)
 const galgameLink = computed(() =>
-  gid.value ? `/galgame/${gid.value}` : props.activity.link
+  workId.value ? `/galgame/${workId.value}` : props.activity.link
 )
 </script>
 

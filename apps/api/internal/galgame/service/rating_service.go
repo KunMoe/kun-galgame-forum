@@ -78,13 +78,13 @@ func (s *RatingService) GetAllRatings(
 	})
 
 	userIDs := make([]int, len(rows))
-	galgameIDs := make([]int, len(rows))
+	workIDs := make([]int, len(rows))
 	for i, r := range rows {
 		userIDs[i] = r.UserID
-		galgameIDs[i] = r.GalgameID
+		workIDs[i] = r.WorkID
 	}
 	userMap := s.userClient.Hydrate(ctx, userIDs)
-	briefMap := s.fetchGalgameBriefsPublic(ctx, galgameIDs, isSFW)
+	briefMap := s.fetchGalgameBriefsPublic(ctx, workIDs, isSFW)
 
 	cards := make([]dto.RatingCard, 0, len(rows))
 	for _, r := range rows {
@@ -92,7 +92,7 @@ func (s *RatingService) GetAllRatings(
 		if !userclient.IsRenderable(u) {
 			continue
 		}
-		b, hasBrief := briefMap[r.GalgameID]
+		b, hasBrief := briefMap[r.WorkID]
 		if !hasBrief {
 			continue
 		}
@@ -131,7 +131,7 @@ func (s *RatingService) GetRatingDetail(
 	}
 	userMap := s.userClient.Hydrate(ctx, uids)
 
-	galgame := s.buildRatingGalgame(ctx, row.GalgameID)
+	galgame := s.buildRatingGalgame(ctx, row.WorkID)
 
 	authorBriefs := make([]dto.UserBrief, 0, len(likerIDs))
 	for _, id := range likerIDs {
@@ -168,7 +168,7 @@ func (s *RatingService) CreateRating(
 	userID int,
 	req *dto.CreateRatingRequest,
 ) (*dto.CreatedRating, *errors.AppError) {
-	if s.ratingRepo.ExistsByUserGalgame(req.GalgameID, userID) {
+	if s.ratingRepo.ExistsByUserGalgame(req.WorkID, userID) {
 		return nil, errors.ErrBadRequest("您已经发布过该 Galgame 的评分了")
 	}
 
@@ -189,13 +189,13 @@ func (s *RatingService) CreateRating(
 		Art:          req.Art, Story: req.Story, Music: req.Music,
 		Character: req.Character, Route: req.Route, System: req.System,
 		Voice: req.Voice, ReplayValue: req.ReplayValue,
-		GalgameID: req.GalgameID, UserID: userID,
+		WorkID: req.WorkID, UserID: userID,
 	}
 	reward := ratingReward(len(req.ShortSummary))
 
 	txErr := s.ratingRepo.DB().Transaction(func(tx *gorm.DB) error {
 		if err := tx.Clauses(clause.OnConflict{DoNothing: true}).
-			Create(&model.GalgameLocal{ID: req.GalgameID}).Error; err != nil {
+			Create(&model.GalgameLocal{ID: req.WorkID}).Error; err != nil {
 			return err
 		}
 		if err := s.ratingRepo.Create(tx, rating); err != nil {
@@ -215,7 +215,7 @@ func (s *RatingService) CreateRating(
 	s.scan.ScanBg(gate.SubjectKindGalgameRating, strconv.Itoa(rating.ID), req.ShortSummary, int64(userID))
 
 	user, _, _ := s.userClient.User(ctx, userID)
-	briefMap := s.fetchGalgameBriefs(ctx, []int{req.GalgameID})
+	briefMap := s.fetchGalgameBriefs(ctx, []int{req.WorkID})
 
 	return &dto.CreatedRating{
 		ID:           rating.ID,
@@ -236,9 +236,9 @@ func (s *RatingService) CreateRating(
 		Created: rating.CreatedAt.Format(time.RFC3339),
 		Updated: rating.UpdatedAt.Format(time.RFC3339),
 		Galgame: dto.RatingGalgameBrief{
-			ID:           req.GalgameID,
-			ContentLimit: briefMap[req.GalgameID].ContentLimit,
-			Name:         briefMap[req.GalgameID].Name,
+			ID:           req.WorkID,
+			ContentLimit: briefMap[req.WorkID].ContentLimit,
+			Name:         briefMap[req.WorkID].Name,
 		},
 	}, nil
 }
@@ -292,7 +292,7 @@ func (s *RatingService) UpdateRating(
 		slog.Info("trust check hold", "subject_kind", gate.SubjectKindGalgameRating, "subject_id", req.GalgameRatingID, "author_id", rating.UserID, "matched", matched)
 	}
 	s.scan.ScanBg(gate.SubjectKindGalgameRating, strconv.Itoa(req.GalgameRatingID), req.ShortSummary, int64(rating.UserID))
-	return rating.GalgameID, nil
+	return rating.WorkID, nil
 }
 
 func (s *RatingService) DeleteRating(
@@ -302,7 +302,7 @@ func (s *RatingService) DeleteRating(
 	if err != nil {
 		return errors.ErrNotFound("未找到评分")
 	}
-	galgameOwner := s.ratingRepo.FindGalgameOwner(rating.GalgameID)
+	galgameOwner := s.ratingRepo.FindGalgameOwner(rating.WorkID)
 	if rating.UserID != userID && galgameOwner != userID && !canModerate {
 		return errors.ErrForbidden("没有删除该评分的权限")
 	}
@@ -355,7 +355,7 @@ func (s *RatingService) ToggleRatingLike(
 		s.helpers.AdjustMoemoepoint(tx, rating.UserID, delta,
 			moemoepoint.ReasonLiked, moemoepoint.Ref("galgame_rating", req.GalgameRatingID))
 		return s.helpers.CreateGalgameMessageWithContent(
-			tx, userID, rating.UserID, "liked", preview, rating.GalgameID,
+			tx, userID, rating.UserID, "liked", preview, rating.WorkID,
 		)
 	})
 	if txErr != nil {
@@ -366,12 +366,12 @@ func (s *RatingService) ToggleRatingLike(
 
 func (s *RatingService) fetchGalgameBriefs(
 	ctx context.Context,
-	galgameIDs []int,
+	workIDs []int,
 ) map[int]client.GalgameBrief {
-	if len(galgameIDs) == 0 {
+	if len(workIDs) == 0 {
 		return map[int]client.GalgameBrief{}
 	}
-	m, _ := s.galgameClient.GetBatch(ctx, galgameIDs)
+	m, _ := s.galgameClient.GetBatch(ctx, workIDs)
 	if m == nil {
 		return map[int]client.GalgameBrief{}
 	}
@@ -380,13 +380,13 @@ func (s *RatingService) fetchGalgameBriefs(
 
 func (s *RatingService) fetchGalgameBriefsPublic(
 	ctx context.Context,
-	galgameIDs []int,
+	workIDs []int,
 	isSFW bool,
 ) map[int]client.GalgameBrief {
-	if len(galgameIDs) == 0 {
+	if len(workIDs) == 0 {
 		return map[int]client.GalgameBrief{}
 	}
-	m, _ := s.galgameClient.GetBatchPublic(ctx, galgameIDs, isSFW)
+	m, _ := s.galgameClient.GetBatchPublic(ctx, workIDs, isSFW)
 	if m == nil {
 		return map[int]client.GalgameBrief{}
 	}
@@ -395,14 +395,14 @@ func (s *RatingService) fetchGalgameBriefsPublic(
 
 func (s *RatingService) buildRatingGalgame(
 	ctx context.Context,
-	galgameID int,
+	workID int,
 ) dto.RatingGalgameDetail {
 	summary := dto.RatingGalgameDetail{
-		ID:       galgameID,
+		ID:       workID,
 		Official: []dto.RatingOfficial{},
 	}
-	if d, found, appErr := s.galgameClient.CatalogWorkDetail(ctx, galgameID); appErr == nil && found {
-		g := client.CatalogDetailToFull(ctx, d, galgameID)
+	if d, found, appErr := s.galgameClient.CatalogWorkDetail(ctx, workID); appErr == nil && found {
+		g := client.CatalogDetailToFull(ctx, d, workID)
 		s.galgameClient.HydrateOfficialLinks(ctx, &g)
 		summary.ID = g.ID
 		summary.EffectiveBannerHash = g.EffectiveBannerHash
@@ -418,7 +418,7 @@ func (s *RatingService) buildRatingGalgame(
 		summary.Official = nextMoeOfficialsToDTO(g.Official)
 	}
 
-	sum, count := s.ratingRepo.GalgameRatingStats(galgameID)
+	sum, count := s.ratingRepo.GalgameRatingStats(workID)
 	summary.Rating = sum
 	summary.RatingCount = count
 	return summary

@@ -24,11 +24,6 @@ func (r *coverPlaneRecorder) server(t *testing.T) *httptest.Server {
 	t.Helper()
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		if req.URL.Path == "/v2/catalog/works" && req.URL.Query().Get("refs") != "" {
-			_, _ = w.Write([]byte(`{"object":"list","items":[{"id":"1000","claim":{"site":"kungal","site_work_id":"1","state":"live"},"refs":[{"source":"curated","external_id":"1"}]}]}`))
-			return
-		}
-
 		r.mu.Lock()
 		r.path, r.query, r.auth = req.URL.Path, req.URL.RawQuery, req.Header.Get("Authorization")
 		stale := r.staleToken
@@ -62,7 +57,7 @@ func TestCoverVotesReadAsTheViewerWhenTheyHaveAToken(t *testing.T) {
 	rec := &coverPlaneRecorder{}
 	covers := []dto.GalgameCover{{ImageHash: "abc"}}
 
-	rec.service(t).hydrateCoverVotes(t.Context(), 1, "user-jwt", covers)
+	rec.service(t).hydrateCoverVotes(t.Context(), 1000, "user-jwt", covers)
 
 	rec.mu.Lock()
 	defer rec.mu.Unlock()
@@ -84,7 +79,7 @@ func TestCoverVotesFallBackToPublicCountsOnAStaleToken(t *testing.T) {
 	rec := &coverPlaneRecorder{staleToken: true}
 	covers := []dto.GalgameCover{{ImageHash: "abc"}}
 
-	rec.service(t).hydrateCoverVotes(t.Context(), 1, "pre-scope-jwt", covers)
+	rec.service(t).hydrateCoverVotes(t.Context(), 1000, "pre-scope-jwt", covers)
 
 	rec.mu.Lock()
 	defer rec.mu.Unlock()
@@ -103,7 +98,7 @@ func TestCoverVotesStayAnonymousWithoutAToken(t *testing.T) {
 	rec := &coverPlaneRecorder{}
 	covers := []dto.GalgameCover{{ImageHash: "abc"}}
 
-	rec.service(t).hydrateCoverVotes(t.Context(), 1, "", covers)
+	rec.service(t).hydrateCoverVotes(t.Context(), 1000, "", covers)
 
 	rec.mu.Lock()
 	defer rec.mu.Unlock()

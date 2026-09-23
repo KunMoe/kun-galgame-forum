@@ -9,17 +9,17 @@ import {
 } from '~/constants/galgameEdit'
 
 const route = useRoute()
-const gid = computed(() => parseInt((route.params as { gid: string }).gid))
+const workId = computed(() => parseInt((route.params as { id: string }).id))
 
 useKunDisableSeo('编辑 Galgame 资料')
 
 const { data: bootstrap, status } = await useKunFetch<GalgameEditBootstrap>(
-  `/galgame/${gid.value}/edit/bootstrap`,
+  `/galgame/${workId.value}/edit/bootstrap`,
   { method: 'GET', watch: false }
 )
 
 const { data: detail } = await useKunFetch<GalgameDetail>(
-  `/galgame/${gid.value}`,
+  `/galgame/${workId.value}`,
   { method: 'GET', watch: false }
 )
 const editNames = computed<GalgameEditNames>(() => {
@@ -51,12 +51,12 @@ const { data: mine, refresh: refreshMine } =
   await useKunFetch<GalgameEditProposalList>('/galgame-edit/mine', {
     method: 'GET',
     watch: false,
-    query: { gid: gid.value }
+    query: { gid: workId.value }
   })
 
 const { data: pending, refresh: refreshPending } =
   await useKunFetch<GalgameEditProposalList>(
-    `/galgame/${gid.value}/edit/proposals`,
+    `/galgame/${workId.value}/edit/proposals`,
     { method: 'GET', watch: false }
   )
 
@@ -114,7 +114,7 @@ const handleSubmit = async () => {
   fieldErrors.value = {}
   formErrors.value = []
   const result = await kunFetch<GalgameEditSubmitResult>(
-    `/galgame/${gid.value}/edit/proposals`,
+    `/galgame/${workId.value}/edit/proposals`,
     {
       method: 'POST',
       body: { patch: patch.value, note: note.value },
@@ -184,7 +184,7 @@ const handleWithdraw = async (id: number) => {
             variant="light"
             color="default"
             size="sm"
-            @click="navigateTo(`/galgame/${gid}`)"
+            @click="navigateTo(`/galgame/${workId}`)"
           >
             <KunIcon name="lucide:arrow-left" />
             返回游戏页
@@ -193,7 +193,7 @@ const handleWithdraw = async (id: number) => {
             variant="light"
             color="default"
             size="sm"
-            @click="navigateTo(`/galgame/${gid}/history`)"
+            @click="navigateTo(`/galgame/${workId}/history`)"
           >
             <KunIcon name="lucide:history" />
             修订历史

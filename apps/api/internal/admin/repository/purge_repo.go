@@ -84,8 +84,8 @@ func (r *PurgeRepository) PurgeUserContent(userID int) (dto.UserContentStats, er
 			{&affTopics, `SELECT DISTINCT topic_id FROM topic_reply WHERE user_id = ?
 				UNION SELECT DISTINCT topic_id FROM topic_comment WHERE user_id = ?`},
 			{&affReplies, `SELECT DISTINCT topic_reply_id FROM topic_comment WHERE user_id = ?`},
-			{&affGalgames, `SELECT DISTINCT galgame_id FROM galgame_rating WHERE user_id = ?
-				UNION SELECT DISTINCT galgame_id FROM galgame_resource WHERE user_id = ?`},
+			{&affGalgames, `SELECT DISTINCT work_id FROM galgame_rating WHERE user_id = ?
+				UNION SELECT DISTINCT work_id FROM galgame_resource WHERE user_id = ?`},
 			{&affChatRooms, `SELECT DISTINCT chat_room_id FROM chat_message WHERE sender_id = ?
 				UNION SELECT chat_room_id FROM chat_room_participant WHERE user_id = ?`},
 		}
@@ -241,8 +241,8 @@ func (r *PurgeRepository) PurgeUserContent(userID int) (dto.UserContentStats, er
 			{recountSpec{"topic", "reply_count", "topic_id", ""}, "topic_reply", affTopics},
 			{recountSpec{"topic", "comment_count", "topic_id", ""}, "topic_comment", affTopics},
 			{recountSpec{"topic_reply", "comment_count", "topic_reply_id", ""}, "topic_comment", affReplies},
-			{recountSpec{"galgame", "rating_count", "galgame_id", ""}, "galgame_rating", affGalgames},
-			{recountSpec{"galgame", "resource_count", "galgame_id", ""}, "galgame_resource", affGalgames},
+			{recountSpec{"galgame", "rating_count", "work_id", ""}, "galgame_rating", affGalgames},
+			{recountSpec{"galgame", "resource_count", "work_id", ""}, "galgame_resource", affGalgames},
 		}
 		for _, rc := range recounts {
 			if err := recount(tx, rc.spec, rc.childTable, rc.ids); err != nil {
@@ -291,11 +291,11 @@ var interactionDeletes = []interactionDelete{
 	{table: "topic_comment_like"},
 	{table: "topic_poll_vote", recounts: []recountSpec{{"topic_poll_option", "vote_count", "option_id", ""}}},
 	{table: "topic_lottery_entry", recounts: []recountSpec{{"topic_lottery", "entry_count", "lottery_id", ""}}},
-	{table: "galgame_like", recounts: []recountSpec{{"galgame", "like_count", "galgame_id", ""}}},
+	{table: "galgame_like", recounts: []recountSpec{{"galgame", "like_count", "work_id", ""}}},
 	{table: "galgame_favorite"},
 	{table: "galgame_collection_item", recounts: []recountSpec{
 		{"galgame_collection", "item_count", "collection_id", ""},
-		{"galgame", "favorite_count", "galgame_id", "COUNT(DISTINCT user_id)"},
+		{"galgame", "favorite_count", "work_id", "COUNT(DISTINCT user_id)"},
 	}},
 	{table: "galgame_collection_viewer"},
 	{table: "galgame_post_like"},

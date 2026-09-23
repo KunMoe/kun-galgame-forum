@@ -56,7 +56,7 @@ func (s *UserContentService) GetUserGalgameCards(
 		return []dto.UserGalgameCard{}, 0, nil
 	}
 	if req.Type == "galgame_publish" {
-		ids, total, err := s.galgameStats.PublishedGIDs(ctx, int64(userID), req.Page, req.Limit)
+		ids, total, err := s.galgameStats.PublishedWorkIDs(ctx, int64(userID), req.Page, req.Limit)
 		if err != nil || len(ids) == 0 {
 			return []dto.UserGalgameCard{}, total, nil
 		}
@@ -64,7 +64,7 @@ func (s *UserContentService) GetUserGalgameCards(
 	}
 
 	if req.Type == "galgame_contributed" {
-		ids, err := s.galgameStats.ContributedGIDs(ctx, int64(userID))
+		ids, err := s.galgameStats.ContributedWorkIDs(ctx, int64(userID))
 		if err != nil {
 			return []dto.UserGalgameCard{}, 0, nil
 		}
@@ -76,7 +76,7 @@ func (s *UserContentService) GetUserGalgameCards(
 		return s.galgameCardsByIDs(ctx, ids, isSFW), total, nil
 	}
 
-	ids, total, err := s.userContentRepo.FindUserGalgameIDs(userID, req.Type, req.Page, req.Limit, req.ShowNoResource)
+	ids, total, err := s.userContentRepo.FindUserWorkIDs(userID, req.Type, req.Page, req.Limit, req.ShowNoResource)
 	if err != nil {
 		return nil, 0, errors.ErrInternal("获取用户 Galgame 列表失败")
 	}
@@ -143,7 +143,7 @@ func (s *UserContentService) buildGalgameCards(
 		ids[i] = b.ID
 	}
 	localMap := s.userContentRepo.FindGalgameLocalStats(ids)
-	metaRows := s.userContentRepo.FindResourceMetaByGalgameIDs(ids)
+	metaRows := s.userContentRepo.FindResourceMetaByWorkIDs(ids)
 	platformMap, languageMap := groupResourceMeta(metaRows)
 
 	userIDs := collectUniqueIDs(ids, func(id int) int { return userclient.DerefID(localMap[id].CreatorUserID) })
@@ -244,7 +244,7 @@ func (s *UserContentService) authoredGalgameComments(ctx context.Context, userID
 		av := entry.Post
 		items = append(items, dto.UserGalgameComment{
 			ID:          av.Post.ID,
-			GalgameID:   anchorGalgameID(av.Thread),
+			WorkID:      anchorWorkID(av.Thread),
 			Content:     av.Post.ContentRaw,
 			ContentHtml: markdown.Render(av.Post.ContentRaw),
 			User:        dto.UserBrief{ID: owner.ID, Name: owner.Name, Avatar: owner.Avatar},
@@ -299,7 +299,7 @@ func (s *UserContentService) likedGalgameComments(ctx context.Context, userID in
 		}
 		items = append(items, dto.UserGalgameComment{
 			ID:          av.Post.ID,
-			GalgameID:   anchorGalgameID(av.Thread),
+			WorkID:      anchorWorkID(av.Thread),
 			Content:     av.Post.ContentRaw,
 			ContentHtml: markdown.Render(av.Post.ContentRaw),
 			User:        dto.UserBrief{ID: author.ID, Name: author.Name, Avatar: author.Avatar},
@@ -318,12 +318,12 @@ func communityDown(err error) bool {
 	return err != nil && !stderrors.As(err, &apiErr) && !stderrors.Is(err, communityclient.ErrRateLimited)
 }
 
-func anchorGalgameID(thread communityclient.PostThreadContext) int {
+func anchorWorkID(thread communityclient.PostThreadContext) int {
 	if thread.AnchorKind != communityclient.AnchorSiteGame {
 		return 0
 	}
-	gid, _ := strconv.Atoi(thread.AnchorID)
-	return gid
+	workID, _ := strconv.Atoi(thread.AnchorID)
+	return workID
 }
 
 func (s *UserContentService) GetUserResources(
@@ -341,7 +341,7 @@ func (s *UserContentService) GetUserResources(
 	}
 
 	resourceIDs := make([]int, len(rows))
-	galgameIDs := collectUniqueIDs(rows, func(r repository.UserResource) int { return r.GalgameID })
+	workIDs := collectUniqueIDs(rows, func(r repository.UserResource) int { return r.WorkID })
 	for i, r := range rows {
 		resourceIDs[i] = r.ID
 	}
@@ -352,13 +352,13 @@ func (s *UserContentService) GetUserResources(
 	}
 
 	var briefMap map[int]client.GalgameBrief
-	if len(galgameIDs) > 0 {
-		briefMap, _ = s.galgameClient.GetBatchPublic(ctx, galgameIDs, isSFW)
+	if len(workIDs) > 0 {
+		briefMap, _ = s.galgameClient.GetBatchPublic(ctx, workIDs, isSFW)
 	}
 
 	items := make([]dto.UserResourceItem, 0, len(rows))
 	for _, r := range rows {
-		b, hasBrief := briefMap[r.GalgameID]
+		b, hasBrief := briefMap[r.WorkID]
 		if !hasBrief {
 			continue
 		}
@@ -369,7 +369,7 @@ func (s *UserContentService) GetUserResources(
 		name := b.Name
 		items = append(items, dto.UserResourceItem{
 			ID:          r.ID,
-			GalgameID:   r.GalgameID,
+			WorkID:      r.WorkID,
 			GalgameName: name,
 			Type:        r.Type,
 			Language:    r.Language,
@@ -401,10 +401,10 @@ func (s *UserContentService) GetUserRatings(
 		return nil, errors.ErrInternal("获取用户评分列表失败")
 	}
 
-	galgameIDs := collectUniqueIDs(rows, func(r repository.UserRating) int { return r.GalgameID })
+	workIDs := collectUniqueIDs(rows, func(r repository.UserRating) int { return r.WorkID })
 	var briefMap map[int]client.GalgameBrief
-	if len(galgameIDs) > 0 {
-		briefMap, _ = s.galgameClient.GetBatchPublic(ctx, galgameIDs, isSFW)
+	if len(workIDs) > 0 {
+		briefMap, _ = s.galgameClient.GetBatchPublic(ctx, workIDs, isSFW)
 	}
 
 	uids := collectUniqueIDs(rows, func(r repository.UserRating) int { return r.UserID })
@@ -412,7 +412,7 @@ func (s *UserContentService) GetUserRatings(
 
 	items := make([]dto.UserRatingItem, 0, len(rows))
 	for _, r := range rows {
-		b, hasBrief := briefMap[r.GalgameID]
+		b, hasBrief := briefMap[r.WorkID]
 		if !hasBrief {
 			continue
 		}
@@ -421,7 +421,7 @@ func (s *UserContentService) GetUserRatings(
 			_ = json.Unmarshal([]byte(r.GalgameType), &galgameType)
 		}
 
-		galgame := dto.UserRatingGalgame{ID: r.GalgameID}
+		galgame := dto.UserRatingGalgame{ID: r.WorkID}
 		if hasBrief {
 			galgame = dto.UserRatingGalgame{
 				ID:           b.ID,

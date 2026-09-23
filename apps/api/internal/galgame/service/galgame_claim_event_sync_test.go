@@ -18,29 +18,33 @@ import (
 
 func ptr[T any](v T) *T { return &v }
 
-func event(id int64, from *string, to string, productWorkID *int64) *catalogclient.ClaimEventFeedItem {
-	return &catalogclient.ClaimEventFeedItem{
-		ID: id, WorkID: 900 + id, FromState: from, ToState: to,
-		ProductWorkID: productWorkID, Site: "kungal",
+func event(id int64, from *string, to string, workID *int64) *catalogclient.ClaimEventFeedItem {
+	ev := &catalogclient.ClaimEventFeedItem{
+		ID: id, FromState: from, ToState: to, Site: "kungal",
 	}
+	if workID != nil {
+		ev.WorkID = *workID
+		ev.ProductWorkID = workID
+	}
+	return ev
 }
 
 func TestEffectOfTransition(t *testing.T) {
-	gid := ptr(int64(4321))
+	workID := ptr(int64(4321))
 	cases := []struct {
 		name string
 		ev   *catalogclient.ClaimEventFeedItem
 		want claimEffect
 	}{
-		{"birth into live seeds the stub", event(1, nil, catalogclient.ClaimStateLive, gid), claimEffectSeedStub},
-		{"approval seeds the stub", event(2, ptr(catalogclient.ClaimStatePending), catalogclient.ClaimStateLive, gid), claimEffectSeedStub},
-		{"ban unpublishes, never deletes (the children cascade)", event(3, ptr(catalogclient.ClaimStateLive), catalogclient.ClaimStateHidden, gid), claimEffectUnpublish},
-		{"submit remembers the submitter", event(4, ptr(catalogclient.ClaimStateDraft), catalogclient.ClaimStatePending, gid), claimEffectRememberSubmitter},
-		{"withdrawal does not unpublish", event(5, ptr(catalogclient.ClaimStateLive), catalogclient.ClaimStateDraft, gid), claimEffectNone},
-		{"decline does not unpublish", event(6, ptr(catalogclient.ClaimStatePending), catalogclient.ClaimStateDeclined, gid), claimEffectNone},
-		{"no product anchor is inert", event(7, nil, catalogclient.ClaimStateLive, nil), claimEffectNone},
-		{"zero product anchor is inert", event(8, nil, catalogclient.ClaimStateLive, ptr(int64(0))), claimEffectNone},
-		{"an unknown state is reported, not guessed", event(9, nil, "archived", gid), claimEffectUnknownState},
+		{"birth into live seeds the stub", event(1, nil, catalogclient.ClaimStateLive, workID), claimEffectSeedStub},
+		{"approval seeds the stub", event(2, ptr(catalogclient.ClaimStatePending), catalogclient.ClaimStateLive, workID), claimEffectSeedStub},
+		{"ban unpublishes, never deletes (the children cascade)", event(3, ptr(catalogclient.ClaimStateLive), catalogclient.ClaimStateHidden, workID), claimEffectUnpublish},
+		{"submit remembers the submitter", event(4, ptr(catalogclient.ClaimStateDraft), catalogclient.ClaimStatePending, workID), claimEffectRememberSubmitter},
+		{"withdrawal does not unpublish", event(5, ptr(catalogclient.ClaimStateLive), catalogclient.ClaimStateDraft, workID), claimEffectNone},
+		{"decline does not unpublish", event(6, ptr(catalogclient.ClaimStatePending), catalogclient.ClaimStateDeclined, workID), claimEffectNone},
+		{"no work id is inert", event(7, nil, catalogclient.ClaimStateLive, nil), claimEffectNone},
+		{"zero work id is inert", event(8, nil, catalogclient.ClaimStateLive, ptr(int64(0))), claimEffectNone},
+		{"an unknown state is reported, not guessed", event(9, nil, "archived", workID), claimEffectUnknownState},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -52,57 +56,57 @@ func TestEffectOfTransition(t *testing.T) {
 }
 
 func TestOnlyApprovalAwardsFromTheFeed(t *testing.T) {
-	gid := ptr(int64(11))
-	if !isApproval(event(1, ptr(catalogclient.ClaimStatePending), catalogclient.ClaimStateLive, gid)) {
+	workID := ptr(int64(11))
+	if !isApproval(event(1, ptr(catalogclient.ClaimStatePending), catalogclient.ClaimStateLive, workID)) {
 		t.Error("pending → live is the approval route and must award")
 	}
-	if isApproval(event(2, ptr(catalogclient.ClaimStateDraft), catalogclient.ClaimStateLive, gid)) {
+	if isApproval(event(2, ptr(catalogclient.ClaimStateDraft), catalogclient.ClaimStateLive, workID)) {
 		t.Error("draft → live is the owner publishing; the request path already awarded it")
 	}
-	if isApproval(event(3, nil, catalogclient.ClaimStateLive, gid)) {
+	if isApproval(event(3, nil, catalogclient.ClaimStateLive, workID)) {
 		t.Error("a claim born live has no submission to reward")
 	}
-	if isApproval(event(4, ptr(catalogclient.ClaimStatePending), catalogclient.ClaimStateDeclined, gid)) {
+	if isApproval(event(4, ptr(catalogclient.ClaimStatePending), catalogclient.ClaimStateDeclined, workID)) {
 		t.Error("a decline is not an approval")
 	}
 }
 
 func TestClaimantAttribution(t *testing.T) {
-	gid := ptr(int64(11))
+	workID := ptr(int64(11))
 	s := NewGalgameClaimEventSync(nil, nil, redis.NewClient(&redis.Options{Addr: "127.0.0.1:1", MaxRetries: -1}))
 
 	// draft -> live is the publish half of adoptAndPublish, which the resource
 	// lane fires silently on a first download link. Adopting an unclaimed draft
 	// is not authorship: 2,073 kungal pages named a creator the retired wiki
 	// does not, and the complaint that found it was five games at once.
-	adopt := event(1, ptr(catalogclient.ClaimStateDraft), catalogclient.ClaimStateLive, gid)
+	adopt := event(1, ptr(catalogclient.ClaimStateDraft), catalogclient.ClaimStateLive, workID)
 	adopt.ActorUID = 61516
 	if got := s.claimantOf(t.Context(), adopt, 11); got != 0 {
 		t.Errorf("draft adopt: claimant = %d, want 0 — taking over an unclaimed draft "+
 			"does not make the actor the entry's author", got)
 	}
 
-	withdrawn := event(5, ptr(catalogclient.ClaimStateDeclined), catalogclient.ClaimStateLive, gid)
+	withdrawn := event(5, ptr(catalogclient.ClaimStateDeclined), catalogclient.ClaimStateLive, workID)
 	withdrawn.ActorUID = 61516
 	if got := s.claimantOf(t.Context(), withdrawn, 11); got != 0 {
 		t.Errorf("declined -> live: claimant = %d, want 0", got)
 	}
 
-	born := event(2, nil, catalogclient.ClaimStateLive, gid)
+	born := event(2, nil, catalogclient.ClaimStateLive, workID)
 	born.ActorUID = 7
 	if got := s.claimantOf(t.Context(), born, 11); got != 7 {
 		t.Errorf("born live: claimant = %d, want the event's actor 7", got)
 	}
 
-	// gid 0 keeps the local-row fallback out of it: with neither a memo nor a
+	// Work id 0 keeps the local-row fallback out of it: with neither a memo nor a
 	// row, an approval must still refuse to name the reviewer.
-	approval := event(3, ptr(catalogclient.ClaimStatePending), catalogclient.ClaimStateLive, gid)
+	approval := event(3, ptr(catalogclient.ClaimStatePending), catalogclient.ClaimStateLive, workID)
 	approval.ActorUID = 2
 	if got := s.claimantOf(t.Context(), approval, 0); got != 0 {
 		t.Errorf("approval without memo: claimant = %d, want 0 (never the reviewer)", got)
 	}
 
-	unban := event(4, ptr(catalogclient.ClaimStateHidden), catalogclient.ClaimStateLive, gid)
+	unban := event(4, ptr(catalogclient.ClaimStateHidden), catalogclient.ClaimStateLive, workID)
 	unban.ActorUID = 2
 	if got := s.claimantOf(t.Context(), unban, 11); got != 0 {
 		t.Errorf("unban: claimant = %d, want 0 — lifting a ban does not make the admin the author", got)

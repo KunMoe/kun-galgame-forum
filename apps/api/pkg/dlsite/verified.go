@@ -7,8 +7,11 @@ import (
 	"sync"
 )
 
-// verified.tsv is the infra-audited galgame_id → DLsite workno whitelist
-// (`galgame_id \t workno \t score \t matched_field`, header row first).
+// verified.tsv is the infra-audited work_id → DLsite workno whitelist
+// (`work_id \t workno \t score \t matched_field`, header row first). Its keys
+// were forum gids until the G0 renumber rewrote them through
+// galgame_renumber_2026; the two pages folded into work 4082 carried different
+// worknos, so that work now has no whitelist entry.
 //
 // WHY A VENDORED SNAPSHOT. The canonical source is the catalog's refs.dlsite,
 // which arrives on the galgame read faces and updates itself. But refs covers
@@ -38,9 +41,9 @@ var (
 	verifiedMap  map[int]string
 )
 
-func VerifiedWorkno(galgameID int) string {
+func VerifiedWorkno(workID int) string {
 	verifiedOnce.Do(loadVerified)
-	return verifiedMap[galgameID]
+	return verifiedMap[workID]
 }
 
 func VerifiedCount() int {
@@ -49,7 +52,7 @@ func VerifiedCount() int {
 }
 
 var pinnedWorkno = map[int]string{
-	4156: "RJ090411",
+	4123: "RJ090411",
 }
 
 func loadVerified() {

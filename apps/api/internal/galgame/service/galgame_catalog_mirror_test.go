@@ -196,10 +196,10 @@ func TestMirrorHoldsTheCursorWhenRedisIsDown(t *testing.T) {
 // nothing does now, so it has to expire.
 func TestOrphanMemoExpires(t *testing.T) {
 	s := NewGalgameCatalogMirror(nil, nil, nil)
-	answered := func(gids ...int) map[int]client.CatalogMirror {
+	answered := func(workIDs ...int) map[int]client.CatalogMirror {
 		out := map[int]client.CatalogMirror{}
-		for _, gid := range gids {
-			out[gid] = client.CatalogMirror{ContentLimit: "sfw"}
+		for _, workID := range workIDs {
+			out[workID] = client.CatalogMirror{ContentLimit: "sfw"}
 		}
 		return out
 	}

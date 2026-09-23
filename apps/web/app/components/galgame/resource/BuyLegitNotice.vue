@@ -2,7 +2,7 @@
 import { KUN_DLSITE_ANNOUNCE_TOPIC_ID } from '~/constants/dlsite'
 
 const props = defineProps<{
-  galgameId: number
+  workId: number
   purchaseUrl?: string
   couponUrl?: string
 }>()
@@ -91,7 +91,7 @@ const perks = [
     <p class="text-sm">
       Galgame 厂商制作游戏不易, 很多厂商如今都在炒冷饭, 可见经济并不宽裕。
       如果条件允许, 可前往
-      <KunLink size="sm" :to="`/galgame/${galgameId}`" class-name="inline">
+      <KunLink size="sm" :to="`/galgame/${workId}`" class-name="inline">
         Galgame 详情
       </KunLink>
       中的制作商部分进行正版补票, 感谢您对 Galgame 业界做出的贡献。

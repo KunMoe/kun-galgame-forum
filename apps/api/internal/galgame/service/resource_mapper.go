@@ -21,11 +21,11 @@ func decodeProviderNames(raw json.RawMessage) []string {
 	return out
 }
 
-func collectIDs(rows []model.GalgameResourceRow) (galgameIDs, userIDs []int) {
-	galgameIDs = make([]int, 0, len(rows))
+func collectIDs(rows []model.GalgameResourceRow) (workIDs, userIDs []int) {
+	workIDs = make([]int, 0, len(rows))
 	userIDs = make([]int, 0, len(rows))
 	for _, r := range rows {
-		galgameIDs = append(galgameIDs, r.GalgameID)
+		workIDs = append(workIDs, r.WorkID)
 		userIDs = append(userIDs, r.UserID)
 	}
 	return
@@ -77,7 +77,7 @@ func rowToCard(r model.GalgameResourceRow, u userclient.User, isLiked bool) dto.
 	return dto.ResourceCard{
 		ID:            r.ID,
 		View:          r.View,
-		GalgameID:     r.GalgameID,
+		WorkID:        r.WorkID,
 		User:          userBriefToDTO(u),
 		Type:          r.Type,
 		Title:         r.Title,
@@ -116,7 +116,7 @@ func rowToMeta(
 	return dto.ResourceMeta{
 		ID:            r.ID,
 		View:          r.View,
-		GalgameID:     r.GalgameID,
+		WorkID:        r.WorkID,
 		User:          userBriefToDTO(owner),
 		Type:          r.Type,
 		Title:         r.Title,

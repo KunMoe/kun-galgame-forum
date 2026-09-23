@@ -98,7 +98,7 @@ export default defineNuxtConfig({
 
   routeRules: {
     '/emoji/**': { headers: { 'cache-control': 'public, max-age=2592000' } },
-    // Without this the retired path falls through to /galgame/[gid] and
+    // Without this the retired path falls through to /galgame/[id] and
     // answers "未找到这个 Galgame" instead of 404ing or moving.
     '/galgame/library': { redirect: { to: '/gallib', statusCode: 301 } },
     '/galgame-resource': {

@@ -34,7 +34,7 @@ func (f GalgameListFilter) HasResourcePredicate() bool {
 }
 
 type GalgameResourceMeta struct {
-	GalgameID int    `gorm:"column:galgame_id"`
-	Platform  string `gorm:"column:platform"`
-	Language  string `gorm:"column:language"`
+	WorkID   int    `gorm:"column:work_id"`
+	Platform string `gorm:"column:platform"`
+	Language string `gorm:"column:language"`
 }

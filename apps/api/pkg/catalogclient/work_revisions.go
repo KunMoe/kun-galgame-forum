@@ -9,6 +9,7 @@ import (
 
 type WorkRevisionFeedItem struct {
 	ID            int64     `json:"id"`
+	WorkID        int64     `json:"work_id"`
 	ActorUID      int64     `json:"actor_uid"`
 	AmenderUID    *int64    `json:"amender_uid"`
 	Site          string    `json:"site"`
@@ -45,14 +46,18 @@ func (c *Client) WorkRevisionsAfter(
 	out := &WorkRevisionFeedPage{Items: make([]WorkRevisionFeedItem, 0, len(rows))}
 	for _, it := range rows {
 		item := WorkRevisionFeedItem{
-			ID: parseFlexID(it.ID), ActorUID: parseFlexID(it.ActorUID),
-			Site: it.Site, CreatedAt: it.time(),
+			ID: parseFlexID(it.ID), WorkID: parseFlexID(it.EntityID),
+			ActorUID: parseFlexID(it.ActorUID),
+			Site:     it.Site, CreatedAt: it.time(),
 		}
 		if n := parseFlexID(it.AmenderUID); n != 0 {
 			item.AmenderUID = &n
 		}
 		if n := parseFlexID(it.SiteWorkID); n != 0 {
 			item.ProductWorkID = &n
+			if item.WorkID == 0 {
+				item.WorkID = n
+			}
 		}
 		out.Items = append(out.Items, item)
 	}

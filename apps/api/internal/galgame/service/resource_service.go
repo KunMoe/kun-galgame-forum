@@ -87,7 +87,7 @@ func (s *ResourceService) GetResourceList(
 	isSFW bool,
 ) (*dto.ResourceListPage, *errors.AppError) {
 	if keywords := strings.Fields(strings.TrimSpace(req.Keywords)); len(keywords) > 0 {
-		ids := s.MatchedGalgameIDs(ctx, req.Keywords, isSFW)
+		ids := s.MatchedWorkIDs(ctx, req.Keywords, isSFW)
 		return s.Search(ctx, keywords, ids, req.Page, req.Limit, currentUserID, isSFW), nil
 	}
 
@@ -100,11 +100,11 @@ func (s *ResourceService) GetResourceList(
 	}, nil
 }
 
-// MatchedGalgameIDs is the half of a resource keyword match the forum cannot do
+// MatchedWorkIDs is the half of a resource keyword match the forum cannot do
 // itself: it keeps no local copy of a game's name, so the games a keyword hits
 // have to come back from catalog as ids. A failed catalog search costs that
 // half, not the search — the note half is local and answers on its own.
-func (s *ResourceService) MatchedGalgameIDs(ctx context.Context, raw string, isSFW bool) []int {
+func (s *ResourceService) MatchedWorkIDs(ctx context.Context, raw string, isSFW bool) []int {
 	if s.galgameClient == nil {
 		return nil
 	}
@@ -122,23 +122,23 @@ func (s *ResourceService) MatchedGalgameIDs(ctx context.Context, raw string, isS
 	}
 	ids := make([]int, 0, len(res.Items))
 	for i := range res.Items {
-		if gid := client.CatalogItemGID(&res.Items[i]); gid > 0 {
-			ids = append(ids, gid)
+		if id := int(res.Items[i].ID); id > 0 {
+			ids = append(ids, id)
 		}
 	}
 	return ids
 }
 
-// Search answers the search page's resource lane. galgameIDs are the games
+// Search answers the search page's resource lane. workIDs are the games
 // catalog matched on the same keyword; the note match is the repository's.
 func (s *ResourceService) Search(
 	ctx context.Context,
 	keywords []string,
-	galgameIDs []int,
+	workIDs []int,
 	page, limit, currentUserID int,
 	isSFW bool,
 ) *dto.ResourceListPage {
-	rows, total := s.resourceRepo.SearchPaginated(keywords, galgameIDs, page, limit, isSFW)
+	rows, total := s.resourceRepo.SearchPaginated(keywords, workIDs, page, limit, isSFW)
 	return &dto.ResourceListPage{
 		Resources: s.hydrateCards(ctx, rows, currentUserID, isSFW),
 		Total:     total,
@@ -151,8 +151,8 @@ func (s *ResourceService) hydrateCards(
 	currentUserID int,
 	isSFW bool,
 ) []dto.ResourceCard {
-	galgameIDs, userIDs := collectIDs(rows)
-	briefMap := s.fetchGalgameBriefsPublic(ctx, galgameIDs, isSFW)
+	workIDs, userIDs := collectIDs(rows)
+	briefMap := s.fetchGalgameBriefsPublic(ctx, workIDs, isSFW)
 	userMap := s.userClient.Hydrate(ctx, userIDs)
 
 	resourceIDs := make([]int, len(rows))
@@ -167,7 +167,7 @@ func (s *ResourceService) hydrateCards(
 		if !userclient.IsRenderable(u) {
 			continue
 		}
-		b, hasBrief := briefMap[r.GalgameID]
+		b, hasBrief := briefMap[r.WorkID]
 		if !hasBrief {
 			continue
 		}
@@ -204,15 +204,15 @@ func (s *ResourceService) GetResourceDetail(
 
 	resource := rowToMeta(row, links, isLiked, ownerUser)
 
-	if b, ok := s.fetchGalgameBriefs(ctx, []int{row.GalgameID})[row.GalgameID]; ok {
+	if b, ok := s.fetchGalgameBriefs(ctx, []int{row.WorkID})[row.WorkID]; ok {
 		store := s.dlsiteLinks(b)
 		resource.DlsitePurchaseURL, resource.DlsiteCouponURL, resource.DlsiteCampaignName = store.PurchaseURL, store.CouponURL, store.CampaignName
 	}
 
-	galgameSummary := s.buildGalgameSummary(ctx, row.GalgameID)
+	galgameSummary := s.buildGalgameSummary(ctx, row.WorkID)
 
-	recRows := s.resourceRepo.FindRecommendations(row.GalgameID, resourceID, 6)
-	recommendations := s.buildRecommendations(ctx, recRows, row.GalgameID, currentUserID)
+	recRows := s.resourceRepo.FindRecommendations(row.WorkID, resourceID, 6)
+	recommendations := s.buildRecommendations(ctx, recRows, row.WorkID, currentUserID)
 
 	return &dto.ResourceDetailPage{
 		Galgame:         galgameSummary,
@@ -250,7 +250,7 @@ func (s *ResourceService) GetGalgameResources(
 	req *dto.GalgameResourcesRequest,
 	currentUserID int,
 ) ([]dto.ResourceCard, *errors.AppError) {
-	rows := s.resourceRepo.FindByGalgameID(req.GalgameID)
+	rows := s.resourceRepo.FindByWorkID(req.WorkID)
 
 	userIDs := make([]int, len(rows))
 	resourceIDs := make([]int, len(rows))
@@ -263,7 +263,7 @@ func (s *ResourceService) GetGalgameResources(
 
 	var store storelink.Links
 	if len(rows) > 0 {
-		if b, ok := s.fetchGalgameBriefs(ctx, []int{req.GalgameID})[req.GalgameID]; ok {
+		if b, ok := s.fetchGalgameBriefs(ctx, []int{req.WorkID})[req.WorkID]; ok {
 			store = s.dlsiteLinks(b)
 		}
 	}
@@ -301,7 +301,7 @@ func (s *ResourceService) CreateResource(
 		return axesErr
 	}
 	req.Note = markdown.NormalizeStoredContent(req.Note)
-	if s.resourceRepo.IsResourcePublishBanned(req.GalgameID) {
+	if s.resourceRepo.IsResourcePublishBanned(req.WorkID) {
 		return errors.ErrForbidden("该游戏已被禁止发布下载资源")
 	}
 	moderationText := resourceModerationText(req.Note, req.Link)
@@ -326,7 +326,7 @@ func (s *ResourceService) CreateResource(
 		Code:         req.Code,
 		Password:     req.Password,
 		Note:         req.Note,
-		GalgameID:    req.GalgameID,
+		WorkID:       req.WorkID,
 		UserID:       userID,
 	}
 
@@ -337,12 +337,12 @@ func (s *ResourceService) CreateResource(
 			// became its author on every card, list, ranking and RSS item — the
 			// 066 migration's own contract says the column is frozen wiki
 			// history, "backfilled once, never written again on the read path".
-			if err := s.galgameRepo.PublishLocal(tx, req.GalgameID); err != nil {
+			if err := s.galgameRepo.PublishLocal(tx, req.WorkID); err != nil {
 				return err
 			}
 		} else {
 			tx.Clauses(clause.OnConflict{DoNothing: true}).
-				Create(&model.GalgameLocal{ID: req.GalgameID})
+				Create(&model.GalgameLocal{ID: req.WorkID})
 		}
 		if err := s.resourceRepo.Create(tx, res); err != nil {
 			return err
@@ -356,13 +356,13 @@ func (s *ResourceService) CreateResource(
 		if err := s.resourceRepo.CreateLinks(tx, res.ID, req.Link); err != nil {
 			return err
 		}
-		if err := s.resourceRepo.AdjustLocalResourceCount(tx, req.GalgameID, 1); err != nil {
+		if err := s.resourceRepo.AdjustLocalResourceCount(tx, req.WorkID, 1); err != nil {
 			return err
 		}
-		if err := s.resourceRepo.TouchGalgameUpdated(tx, req.GalgameID); err != nil {
+		if err := s.resourceRepo.TouchGalgameUpdated(tx, req.WorkID); err != nil {
 			return err
 		}
-		// res.ID, not req.GalgameID: the ledger renders this ref as the "#id" next
+		// res.ID, not req.WorkID: the ledger renders this ref as the "#id" next
 		// to the entry, the delete path already stores the resource id, and the
 		// two halves of one resource's history were landing under different
 		// numbers — unpairable, and the create half pointed at a galgame.
@@ -378,7 +378,7 @@ func (s *ResourceService) CreateResource(
 		slog.Info("trust check hold", "subject_kind", gate.SubjectKindGalgameResource, "subject_id", res.ID, "author_id", userID, "matched", matched)
 	}
 	s.scan.ScanBg(gate.SubjectKindGalgameResource, strconv.Itoa(res.ID), moderationText, int64(userID))
-	s.claimOnFirstResource(ctx, accessToken, req.GalgameID)
+	s.claimOnFirstResource(ctx, accessToken, req.WorkID)
 	return nil
 }
 
@@ -386,21 +386,21 @@ func claimRefusedByState(appErr *errors.AppError) bool {
 	return appErr != nil && appErr.StatusCode == http.StatusConflict
 }
 
-func (s *ResourceService) claimOnFirstResource(ctx context.Context, accessToken string, gid int) {
+func (s *ResourceService) claimOnFirstResource(ctx context.Context, accessToken string, workID int) {
 	if accessToken == "" || s.catalog == nil || !s.catalog.Configured() {
 		return
 	}
-	if _, appErr := adoptAndPublish(ctx, s.catalog, accessToken, int64(gid)); appErr != nil {
+	if _, appErr := adoptAndPublish(ctx, s.catalog, accessToken, int64(workID)); appErr != nil {
 		if claimRefusedByState(appErr) {
-			slog.Info("resource: catalog 作品已有归属, 跳过静默认领", "gid", gid)
+			slog.Info("resource: catalog 作品已有归属, 跳过静默认领", "work_id", workID)
 			return
 		}
-		slog.Warn("resource: 静默认领 catalog 作品失败", "gid", gid, "error", appErr)
+		slog.Warn("resource: 静默认领 catalog 作品失败", "work_id", workID, "error", appErr)
 	}
 }
 
-func (s *ResourceService) SetResourcePublishBan(galgameID int, banned bool) *errors.AppError {
-	if err := s.resourceRepo.SetResourcePublishBanned(galgameID, banned); err != nil {
+func (s *ResourceService) SetResourcePublishBan(workID int, banned bool) *errors.AppError {
+	if err := s.resourceRepo.SetResourcePublishBanned(workID, banned); err != nil {
 		return errors.ErrInternal("更新资源发布禁止状态失败")
 	}
 	return nil
@@ -432,7 +432,7 @@ func (s *ResourceService) UpdateResource(
 	if row.UserID != userID && !canModerate {
 		return errors.ErrForbidden("您没有权限更新这个 Galgame 资源")
 	}
-	if s.resourceRepo.IsResourcePublishBanned(row.GalgameID) {
+	if s.resourceRepo.IsResourcePublishBanned(row.WorkID) {
 		return errors.ErrForbidden("该游戏已被禁止发布下载资源")
 	}
 
@@ -476,7 +476,7 @@ func (s *ResourceService) UpdateResource(
 		if err := s.resourceRepo.ReplaceProviderNames(tx, req.GalgameResourceID, providerNames); err != nil {
 			return err
 		}
-		return s.resourceRepo.TouchGalgameUpdated(tx, row.GalgameID)
+		return s.resourceRepo.TouchGalgameUpdated(tx, row.WorkID)
 	})
 	if txErr != nil {
 		return errors.ErrInternal("更新 Galgame 资源失败")
@@ -506,7 +506,7 @@ func (s *ResourceService) DeleteResource(
 		if err := s.resourceRepo.DeleteByID(tx, resourceID); err != nil {
 			return err
 		}
-		return s.resourceRepo.AdjustLocalResourceCount(tx, row.GalgameID, -1)
+		return s.resourceRepo.AdjustLocalResourceCount(tx, row.WorkID, -1)
 	})
 	if txErr != nil {
 		return errors.ErrInternal("删除 Galgame 资源失败")
@@ -552,7 +552,7 @@ func (s *ResourceService) ToggleLike(
 		s.helpers.AdjustMoemoepoint(tx, row.UserID, delta,
 			moemoepoint.ReasonLiked, moemoepoint.Ref("galgame_resource", req.GalgameResourceID))
 		return s.helpers.CreateGalgameMessageWithContent(
-			tx, userID, row.UserID, "liked", preview, row.GalgameID,
+			tx, userID, row.UserID, "liked", preview, row.WorkID,
 		)
 	})
 	if txErr != nil {
@@ -607,7 +607,7 @@ func (s *ResourceService) MarkExpired(ctx context.Context, userID int, resourceI
 			return err
 		}
 		return s.helpers.CreateGalgameMessageWithContent(
-			tx, userID, row.UserID, "expired", preview, row.GalgameID,
+			tx, userID, row.UserID, "expired", preview, row.WorkID,
 		)
 	})
 	if txErr != nil {
@@ -618,12 +618,12 @@ func (s *ResourceService) MarkExpired(ctx context.Context, userID int, resourceI
 
 func (s *ResourceService) fetchGalgameBriefs(
 	ctx context.Context,
-	galgameIDs []int,
+	workIDs []int,
 ) map[int]client.GalgameBrief {
-	if len(galgameIDs) == 0 {
+	if len(workIDs) == 0 {
 		return map[int]client.GalgameBrief{}
 	}
-	briefMap, _ := s.galgameClient.GetBatch(ctx, galgameIDs)
+	briefMap, _ := s.galgameClient.GetBatch(ctx, workIDs)
 	if briefMap == nil {
 		return map[int]client.GalgameBrief{}
 	}
@@ -632,13 +632,13 @@ func (s *ResourceService) fetchGalgameBriefs(
 
 func (s *ResourceService) fetchGalgameBriefsPublic(
 	ctx context.Context,
-	galgameIDs []int,
+	workIDs []int,
 	isSFW bool,
 ) map[int]client.GalgameBrief {
-	if len(galgameIDs) == 0 {
+	if len(workIDs) == 0 {
 		return map[int]client.GalgameBrief{}
 	}
-	briefMap, _ := s.galgameClient.GetBatchPublic(ctx, galgameIDs, isSFW)
+	briefMap, _ := s.galgameClient.GetBatchPublic(ctx, workIDs, isSFW)
 	if briefMap == nil {
 		return map[int]client.GalgameBrief{}
 	}
@@ -647,22 +647,22 @@ func (s *ResourceService) fetchGalgameBriefsPublic(
 
 func (s *ResourceService) buildGalgameSummary(
 	ctx context.Context,
-	galgameID int,
+	workID int,
 ) dto.ResourceGalgameSummary {
 	summary := dto.ResourceGalgameSummary{
-		ID:       galgameID,
+		ID:       workID,
 		Platform: []string{}, Language: []string{}, Type: []string{},
 	}
 
-	briefMap := s.fetchGalgameBriefs(ctx, []int{galgameID})
-	b, ok := briefMap[galgameID]
+	briefMap := s.fetchGalgameBriefs(ctx, []int{workID})
+	b, ok := briefMap[workID]
 	if !ok {
 		return summary
 	}
 
-	aggs := s.resourceRepo.AggregateByGalgame(galgameID)
+	aggs := s.resourceRepo.AggregateByGalgame(workID)
 	platforms, languages, types := collectAggregate(aggs)
-	local := s.resourceRepo.FindGalgameLocal(galgameID)
+	local := s.resourceRepo.FindGalgameLocal(workID)
 
 	return dto.ResourceGalgameSummary{
 		ID:                       b.ID,
@@ -686,7 +686,7 @@ func (s *ResourceService) buildGalgameSummary(
 func (s *ResourceService) buildRecommendations(
 	ctx context.Context,
 	rows []model.GalgameResourceRow,
-	galgameID int,
+	workID int,
 	currentUserID int,
 ) []dto.ResourceCard {
 	userIDs := make([]int, len(rows))
@@ -696,7 +696,7 @@ func (s *ResourceService) buildRecommendations(
 		resourceIDs[i] = r.ID
 	}
 	userMap := s.userClient.Hydrate(ctx, userIDs)
-	briefMap := s.fetchGalgameBriefs(ctx, []int{galgameID})
+	briefMap := s.fetchGalgameBriefs(ctx, []int{workID})
 	likedSet := s.resourceRepo.FindLikedSet(currentUserID, resourceIDs)
 
 	cards := make([]dto.ResourceCard, 0, len(rows))
@@ -706,7 +706,7 @@ func (s *ResourceService) buildRecommendations(
 			continue
 		}
 		card := rowToCard(r, u, likedSet[r.ID])
-		if b, ok := briefMap[galgameID]; ok {
+		if b, ok := briefMap[workID]; ok {
 			card.GalgameName = b.Name
 		}
 		cards = append(cards, card)

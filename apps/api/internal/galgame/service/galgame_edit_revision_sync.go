@@ -76,12 +76,10 @@ func (s *GalgameEditRevisionSync) Run() {
 			break
 		}
 
-		gidByWork := s.gidsFor(ctx, page.Items)
-
 		holding := false
 		for i := range page.Items {
 			rev := &page.Items[i]
-			if err := s.upsert(rev, gidByWork[rev.EntityID]); err != nil {
+			if err := s.upsert(rev, int(rev.EntityID)); err != nil {
 				slog.Warn("catalog 修订入库失败, 持有游标重试", "rev_id", rev.ID, "error", err)
 				holding = true
 				break
@@ -124,41 +122,18 @@ func isTimelineEdit(action int16) bool {
 	return action != catalogclient.EditActionCreated
 }
 
-func (s *GalgameEditRevisionSync) upsert(rev *catalogclient.EditRevisionFeedItem, gid int) error {
+func (s *GalgameEditRevisionSync) upsert(rev *catalogclient.EditRevisionFeedItem, workID int) error {
 	if !isTimelineEdit(rev.Action) {
 		return nil
 	}
-	if gid == 0 {
+	if workID == 0 {
 		return nil
 	}
 	return s.db.Exec(`
-		INSERT INTO galgame_activity (edit_revision_id, wiki_revision_number, galgame_id, user_id, type, created)
+		INSERT INTO galgame_activity (edit_revision_id, wiki_revision_number, work_id, user_id, type, created)
 		VALUES (?, ?, ?, ?, 'GALGAME_EDIT', ?)
 		ON CONFLICT (edit_revision_id) DO NOTHING
-	`, rev.ID, rev.Seq, gid, rev.ActorUID, rev.CreatedAt).Error
-}
-
-func (s *GalgameEditRevisionSync) gidsFor(
-	ctx context.Context,
-	items []catalogclient.EditRevisionFeedItem,
-) map[int64]int {
-	workIDs := make([]int64, 0, len(items))
-	seen := make(map[int64]bool, len(items))
-	for i := range items {
-		if id := items[i].EntityID; !seen[id] {
-			seen[id] = true
-			workIDs = append(workIDs, id)
-		}
-	}
-	if s.galgameClient == nil {
-		return map[int64]int{}
-	}
-	gids, appErr := s.galgameClient.GIDsByCatalogIDs(ctx, workIDs)
-	if appErr != nil {
-		slog.Warn("catalog 修订 work id → gid 失败", "error", appErr)
-		return map[int64]int{}
-	}
-	return gids
+	`, rev.ID, rev.Seq, workID, rev.ActorUID, rev.CreatedAt).Error
 }
 
 func (s *GalgameEditRevisionSync) readCursor(ctx context.Context) (int64, bool, error) {

@@ -114,11 +114,11 @@ type GalCommentItem struct {
 	Link    string `json:"link"`
 	// Title is the game's name where catalog answered with one, and the anchor's
 	// own label otherwise — a resource wall has no name to borrow.
-	Title     string    `json:"title"`
-	Label     string    `json:"label"`
-	GalgameID int       `json:"galgame_id,omitempty"`
-	User      UserBrief `json:"user"`
-	Created   string    `json:"created"`
+	Title   string    `json:"title"`
+	Label   string    `json:"label"`
+	WorkID  int       `json:"galgame_id,omitempty"`
+	User    UserBrief `json:"user"`
+	Created string    `json:"created"`
 }
 
 type GalCommentResult struct {

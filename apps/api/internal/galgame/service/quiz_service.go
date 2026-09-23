@@ -75,7 +75,7 @@ func (s *QuizService) GetAllQuizzes(
 		SortField:  req.SortField,
 		SortOrder:  sortOrder,
 		Difficulty: req.Difficulty,
-		GalgameID:  req.GalgameID,
+		WorkID:     req.WorkID,
 		UserID:     req.UserID,
 		Page:       req.Page,
 		Limit:      req.Limit,
@@ -168,7 +168,7 @@ func (s *QuizService) GetQuizPlay(
 
 	galgames := []dto.QuizGalgameDetail{}
 	if !quiz.HideGalgame || myAnswer != nil {
-		galgames = s.galgamesDetailFor(ctx, s.quizRepo.FindQuizGalgameIDs(quizID))
+		galgames = s.galgamesDetailFor(ctx, s.quizRepo.FindQuizWorkIDs(quizID))
 	}
 
 	play := &dto.QuizPlay{
@@ -234,7 +234,7 @@ func (s *QuizService) CreateQuiz(
 		if err := s.quizRepo.Create(tx, quiz); err != nil {
 			return err
 		}
-		if err := s.quizRepo.SetQuizGalgames(tx, quiz.ID, req.GalgameIDs); err != nil {
+		if err := s.quizRepo.SetQuizGalgames(tx, quiz.ID, req.WorkIDs); err != nil {
 			return err
 		}
 		if err := s.quizRepo.CreateAnswer(tx, &model.GalgameQuizAnswer{
@@ -506,7 +506,7 @@ func (s *QuizService) UpdateQuiz(
 		if err := s.quizRepo.UpdateQuizFields(tx, req.QuizID, fields); err != nil {
 			return err
 		}
-		if err := s.quizRepo.SetQuizGalgames(tx, req.QuizID, req.GalgameIDs); err != nil {
+		if err := s.quizRepo.SetQuizGalgames(tx, req.QuizID, req.WorkIDs); err != nil {
 			return err
 		}
 		if regradable {
@@ -575,10 +575,10 @@ func (s *QuizService) GetQuizForEdit(
 	if quiz.UserID != userID && !canModerate {
 		return nil, errors.ErrForbidden("没有编辑该题目的权限")
 	}
-	galgameIDs := s.quizRepo.FindQuizGalgameIDs(quizID)
+	workIDs := s.quizRepo.FindQuizWorkIDs(quizID)
 	return &dto.QuizEditData{
 		ID:           quiz.ID,
-		GalgameIDs:   galgameIDs,
+		WorkIDs:      workIDs,
 		HideGalgame:  quiz.HideGalgame,
 		Category:     quiz.Category,
 		Type:         quiz.Type,
@@ -588,7 +588,7 @@ func (s *QuizService) GetQuizForEdit(
 		Description:  quiz.Description,
 		Content:      quiz.Content,
 		Explanation:  quiz.Explanation,
-		Galgames:     s.galgameBriefsFor(ctx, galgameIDs),
+		Galgames:     s.galgameBriefsFor(ctx, workIDs),
 	}, nil
 }
 
@@ -680,11 +680,11 @@ func (s *QuizService) galgamesDetailFor(ctx context.Context, ids []int) []dto.Qu
 	return out
 }
 
-func (s *QuizService) fetchBriefs(ctx context.Context, galgameIDs []int) map[int]client.GalgameBrief {
-	if len(galgameIDs) == 0 {
+func (s *QuizService) fetchBriefs(ctx context.Context, workIDs []int) map[int]client.GalgameBrief {
+	if len(workIDs) == 0 {
 		return map[int]client.GalgameBrief{}
 	}
-	m, _ := s.galgameClient.GetBatch(ctx, galgameIDs)
+	m, _ := s.galgameClient.GetBatch(ctx, workIDs)
 	if m == nil {
 		return map[int]client.GalgameBrief{}
 	}
@@ -712,8 +712,8 @@ func (s *QuizService) SearchGalgameOptions(
 		if !client.CatalogItemRenderable(&res.Items[i]) {
 			continue
 		}
-		if gid := client.CatalogItemGID(&res.Items[i]); gid > 0 {
-			ids = append(ids, gid)
+		if id := int(res.Items[i].ID); id > 0 {
+			ids = append(ids, id)
 		}
 		if len(ids) >= quizGalgameSearchLimit {
 			break

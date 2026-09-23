@@ -381,11 +381,11 @@ func newWallFix(t *testing.T) *wallFix {
 	})
 	community := communityclient.New(communityclient.Config{BaseURL: cmSrv.URL, ClientID: "c", ClientSecret: "s"})
 	convert := &content.Converter{CDNBase: "https://image.test.example", SiteBase: "https://www.kungal.com", Users: uc.Users}
-	resolve := func(_ context.Context, gid int) (bool, error) {
+	resolve := func(_ context.Context, workID int) (bool, error) {
 		if f.failGC.Load() {
 			return false, fmt.Errorf("catalog down")
 		}
-		return gid == rcGalgame, nil
+		return workID == rcGalgame, nil
 	}
 	f.app = &App{
 		Fiber:  newFiber(),
@@ -448,9 +448,9 @@ func (f *wallFix) seed(t *testing.T) {
 	}
 	now := time.Now()
 	run(`INSERT INTO galgame (id, updated, creator_user_id) VALUES (?, ?, ?)`, rcGalgame, now, rcCreator)
-	run(`INSERT INTO galgame_rating (id, galgame_id, user_id, recommend, overall, updated) VALUES (?, ?, ?, 'yes', 8, ?), (?, ?, ?, 'yes', 8, ?)`,
+	run(`INSERT INTO galgame_rating (id, work_id, user_id, recommend, overall, updated) VALUES (?, ?, ?, 'yes', 8, ?), (?, ?, ?, 'yes', 8, ?)`,
 		rcRating, rcGalgame, rcBob, now, rcRatingBanned, rcGalgame, rcBanned, now)
-	run(`INSERT INTO galgame_resource (id, galgame_id, user_id, updated) VALUES (?, ?, ?, ?)`, rcResource, rcGalgame, rcBob, now)
+	run(`INSERT INTO galgame_resource (id, work_id, user_id, updated) VALUES (?, ?, ?, ?)`, rcResource, rcGalgame, rcBob, now)
 	run(`INSERT INTO galgame_toolset (id, user_id, updated) VALUES (?, ?, ?), (?, ?, ?)`, rcToolsetA, rcBob, now, rcToolsetB, rcOther, now)
 	run(`INSERT INTO galgame_quiz (id, user_id, type, question, spoiler_level) VALUES (?, ?, 'single', 'q', 'none'), (?, ?, 'single', 'q', 'serious')`,
 		rcQuizOpen, rcBob, rcQuizSpoiler, rcBob)

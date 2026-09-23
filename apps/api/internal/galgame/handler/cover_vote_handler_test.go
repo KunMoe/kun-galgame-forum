@@ -63,8 +63,8 @@ func voteTestApp(t *testing.T, catalogURL string, user *middleware.UserInfo) *fi
 		c.Locals(string(middleware.OAuthAccessTokenKey), "user-jwt")
 		return c.Next()
 	})
-	authed.Put("/galgame/:gid/cover/:coverId/vote", h.Vote)
-	authed.Delete("/galgame/:gid/cover/:coverId/vote", h.Unvote)
+	authed.Put("/galgame/:id/cover/:coverId/vote", h.Vote)
+	authed.Delete("/galgame/:id/cover/:coverId/vote", h.Unvote)
 	return app
 }
 
@@ -157,18 +157,6 @@ func TestCoverVoteErrorPassThrough(t *testing.T) {
 				t.Fatalf("code = %d, want %d (body %s)", env.Code, tc.wantCode, raw)
 			}
 		})
-	}
-}
-
-func TestCoverVoteUnknownEntry(t *testing.T) {
-	fake := &fakeVoteFace{}
-	app := voteTestApp(t, fake.server(t).URL, plainUser)
-	status, raw := doJSON(t, app, "PUT", "/api/galgame/999/cover/88/vote", "")
-	if status != http.StatusNotFound {
-		t.Fatalf("status = %d body %s, want 404", status, raw)
-	}
-	if len(fake.requests) != 0 {
-		t.Fatalf("an unresolvable gid must not reach the vote face: %+v", fake.requests)
 	}
 }
 

@@ -10,7 +10,7 @@ catalog 在 2026-07-06 按 gid 顺序、用自增序列铸 `catalog_work.id`，w
 
 ## 1. 输入：改号表
 
-论坛的改号命令在 `-apply` 的同一事务里，把改号表写进论坛库 `kungalgame` 的一张表（表名在 G0a 定稿时写进本节，暂定 `galgame_renumber_2026`），同时导出 TSV 到宿主机。列：`old_id int`、`new_id bigint`、`how text`（`curated` / `claim` / `already_catalog_id`）、`folded_into bigint`（10 组重复页里被合并掉的那一个，否则为 null）。
+论坛的改号命令 `align-galgame-ids -apply` 在同一事务里，把改号表写进论坛库 `kungalgame` 的表 `galgame_renumber_2026`（迁移 140，已上线，窗口前为空）。列：`old_id bigint` 主键、`new_id bigint`、`how text`（`curated` / `claim` / `unchanged`）、`created`。重复页没有单独的列：被合并掉的旧号与幸存旧号指向同一个 `new_id`；哪一个是幸存者见命令的报告目录 `folds.tsv`（列 `new_id survivor losers moved dropped comments`），G 会话在窗口里把它交给你。全量演练（生产库拷贝，2026-09-23）：66,108 行，`curated` 64,515、`claim` 335、`unchanged` 1,258；10 组重复页。
 
 - 改号表覆盖**所有旧号**，不只是论坛的 15,990 行本地作品：`curated` 锚点的全部 64,515 个 `external_id`、kungal claim 的全部 `product_work_id`、论坛本地全部行。原因是链接、评论串、举报里的 `/galgame/<n>` 大量指向论坛没有本地行、但今天靠锚点照样能打开的旧号（例如 community 的 site_game 串有 70,480 个，远多于本地行）。
 - 规则（与网站今天的路由一致，已在线上抽样 30/30 核对）：`n` 有 `curated` 锚点 → 锚点的作品；否则 `n` 恰好是一条 kungal claim 的 `product_work_id` → 那条 claim 的作品；否则 → `n` 本身。**改号表里查不到的号一律按原样保留**，不要猜。

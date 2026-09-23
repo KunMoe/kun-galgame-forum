@@ -52,7 +52,7 @@ The forum owns topics, replies, messages, resources, ratings, quizzes, collectio
 | Identity and user profile                       | OAuth; numeric user IDs stay identical across services                                        |
 | Browser authentication                          | An opaque `kungal_session` cookie backed by Redis; OAuth tokens never live in browser storage |
 | Moemoepoint balance and ledger                  | OAuth; the forum keeps only a cached local view where required                                |
-| Visual novel metadata, claims, and edit history | Catalog; newly submitted works adopt the registry-issued work ID as their forum gid           |
+| Visual novel metadata, claims, and edit history | Catalog; the forum galgame id is the catalog work id, with no mapping                         |
 | Avatars and content images                      | The content-addressed `image_service`                                                         |
 | Galgame and resource comment threads            | The shared Community service                                                                  |
 | Reports and enforcement                         | The shared Trust service                                                                      |

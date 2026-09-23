@@ -4,13 +4,13 @@ const props = defineProps<{ activity: ActivityItem }>()
 const data = computed(
   () => props.activity.data as GalgameActivityData | undefined
 )
-const gid = computed(() => data.value?.galgame_id ?? 0)
+const workId = computed(() => data.value?.galgame_id ?? 0)
 const detailLink = computed(() =>
-  gid.value ? `/galgame/${gid.value}` : props.activity.link
+  workId.value ? `/galgame/${workId.value}` : props.activity.link
 )
 
 const { isLiked, isFavorited, ensureLoaded } = useMyGalgameInteractions()
-onMounted(() => ensureLoaded(gid.value ? [gid.value] : []))
+onMounted(() => ensureLoaded(workId.value ? [workId.value] : []))
 </script>
 
 <template>
@@ -24,16 +24,16 @@ onMounted(() => ensureLoaded(gid.value ? [gid.value] : []))
 
       <div class="flex items-center gap-2">
         <GalgameLike
-          :galgame-id="gid"
+          :work-id="workId"
           :target-user-id="activity.actor?.id ?? 0"
           :like-count="data?.like_count ?? 0"
-          :is-liked="isLiked(gid)"
+          :is-liked="isLiked(workId)"
         />
         <GalgameFavorite
-          :galgame-id="gid"
+          :work-id="workId"
           :target-user-id="activity.actor?.id ?? 0"
           :favorite-count="data?.favorite_count ?? 0"
-          :is-favorited="isFavorited(gid)"
+          :is-favorited="isFavorited(workId)"
         />
         <KunLink
           underline="none"

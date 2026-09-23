@@ -87,11 +87,11 @@ func (r *GalgameRepository) IncrementView(id int) {
 	_ = viewstats.BumpDaily(r.db, viewstats.GalgameDaily, id)
 }
 
-func (r *GalgameRepository) PublishLocal(tx *gorm.DB, galgameID int) error {
+func (r *GalgameRepository) PublishLocal(tx *gorm.DB, workID int) error {
 	return tx.Clauses(clause.OnConflict{
 		Columns:   []clause.Column{{Name: "id"}},
 		DoUpdates: clause.Assignments(map[string]any{"published": true}),
-	}).Create(&model.GalgameLocal{ID: galgameID, Published: true}).Error
+	}).Create(&model.GalgameLocal{ID: workID, Published: true}).Error
 }
 
 // ids the catalog mirror still has to confirm — normally empty, and non-empty
@@ -131,9 +131,9 @@ func (r *GalgameRepository) SetReleaseDates(dates map[int]string) (int64, error)
 	}
 	rows := make([]string, 0, len(dates))
 	args := make([]any, 0, len(dates)*2)
-	for gid, date := range dates {
+	for workID, date := range dates {
 		rows = append(rows, "(?::int, ?::date)")
-		args = append(args, gid, sql.NullString{String: date, Valid: date != ""})
+		args = append(args, workID, sql.NullString{String: date, Valid: date != ""})
 	}
 	res := r.db.Exec(`UPDATE galgame g SET release_date = v.d, release_date_synced_at = now()
 		FROM (VALUES `+strings.Join(rows, ",")+`) AS v(id, d)
@@ -160,8 +160,8 @@ func (r *GalgameRepository) SetContentLimits(idsByLimit map[string][]int) (int64
 	return affected, nil
 }
 
-func (r *GalgameRepository) UnpublishLocal(galgameID int) error {
-	return r.db.Model(&model.GalgameLocal{}).Where("id = ?", galgameID).
+func (r *GalgameRepository) UnpublishLocal(workID int) error {
+	return r.db.Model(&model.GalgameLocal{}).Where("id = ?", workID).
 		UpdateColumn("published", false).Error
 }
 
@@ -170,38 +170,38 @@ func (r *GalgameRepository) UnpublishLocal(galgameID int) error {
 // rather than cascades: galgame_resource is ON DELETE CASCADE, and a draft claim
 // carrying a published resource is reachable, because publishing a resource sets
 // `published` without moving the claim state.
-func (r *GalgameRepository) DeleteLocalDraft(galgameID int) error {
+func (r *GalgameRepository) DeleteLocalDraft(workID int) error {
 	return r.db.Exec(`DELETE FROM galgame WHERE id = ?
-		AND NOT EXISTS (SELECT 1 FROM galgame_resource r WHERE r.galgame_id = galgame.id)`,
-		galgameID).Error
+		AND NOT EXISTS (SELECT 1 FROM galgame_resource r WHERE r.work_id = galgame.id)`,
+		workID).Error
 }
 
-func (r *GalgameRepository) EnsureLocalStub(tx *gorm.DB, galgameID int) error {
+func (r *GalgameRepository) EnsureLocalStub(tx *gorm.DB, workID int) error {
 	return tx.Clauses(clause.OnConflict{DoNothing: true}).
-		Create(&model.GalgameLocal{ID: galgameID}).Error
+		Create(&model.GalgameLocal{ID: workID}).Error
 }
 
 // Two callers only: SubmitLocal, and the claim feed's approval branch. The
 // column is the 066 migration's frozen wiki-era submitter, and every other
 // caller has been wrong — the resource lane called it on a first download link,
 // so 2,073 pages ended up naming an author the retired wiki does not.
-func (r *GalgameRepository) SetCreatorIfUnset(tx *gorm.DB, galgameID, userID int) error {
+func (r *GalgameRepository) SetCreatorIfUnset(tx *gorm.DB, workID, userID int) error {
 	return tx.Model(&model.GalgameLocal{}).
-		Where("id = ? AND creator_user_id IS NULL", galgameID).
+		Where("id = ? AND creator_user_id IS NULL", workID).
 		UpdateColumn("creator_user_id", userID).Error
 }
 
-func (r *GalgameRepository) Touch(tx *gorm.DB, galgameID int) error {
-	if err := r.EnsureLocalStub(tx, galgameID); err != nil {
+func (r *GalgameRepository) Touch(tx *gorm.DB, workID int) error {
+	if err := r.EnsureLocalStub(tx, workID); err != nil {
 		return err
 	}
-	return tx.Model(&model.GalgameLocal{}).Where("id = ?", galgameID).
+	return tx.Model(&model.GalgameLocal{}).Where("id = ?", workID).
 		UpdateColumn("resource_update_time", time.Now()).Error
 }
 
-func (r *GalgameRepository) SubmitLocal(tx *gorm.DB, galgameID, userID int) error {
-	if err := r.EnsureLocalStub(tx, galgameID); err != nil {
+func (r *GalgameRepository) SubmitLocal(tx *gorm.DB, workID, userID int) error {
+	if err := r.EnsureLocalStub(tx, workID); err != nil {
 		return err
 	}
-	return r.SetCreatorIfUnset(tx, galgameID, userID)
+	return r.SetCreatorIfUnset(tx, workID, userID)
 }

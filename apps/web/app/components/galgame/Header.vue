@@ -203,7 +203,7 @@ const onFavoriteSaved = (payload: { favorited: boolean }) => {
       </button>
       <GalgameCovers
         v-model="coversOpen"
-        :gid="galgame.id"
+        :work-id="galgame.id"
         :covers="galgame.covers"
       />
     </div>
@@ -317,14 +317,14 @@ const onFavoriteSaved = (payload: { favorited: boolean }) => {
             />
 
             <GalgameLike
-              :galgame-id="galgame.id"
+              :work-id="galgame.id"
               :target-user-id="galgame.user.id"
               :like-count="galgame.like_count"
               :is-liked="galgame.is_liked"
             />
 
             <GalgameFavorite
-              :galgame-id="galgame.id"
+              :work-id="galgame.id"
               :target-user-id="galgame.user.id"
               :favorite-count="favoriteCount"
               :is-favorited="isFavorited"
@@ -410,7 +410,7 @@ const onFavoriteSaved = (payload: { favorited: boolean }) => {
 
             <GalgameRatingPublish
               v-model="isRatingOpen"
-              :galgame-id="galgame.id"
+              :work-id="galgame.id"
               :preset-play-state="ratingInvite ?? undefined"
               @on-published="onRatingPublished"
             />
@@ -422,7 +422,7 @@ const onFavoriteSaved = (payload: { favorited: boolean }) => {
 
   <GalgameCollectionPickerModal
     v-model="favoritePickerOpen"
-    :galgame-id="galgame.id"
+    :work-id="galgame.id"
     @saved="onFavoriteSaved"
   />
 </template>

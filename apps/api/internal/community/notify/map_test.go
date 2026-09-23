@@ -31,7 +31,7 @@ func baseNote(kind int32) communityclient.NotificationView {
 }
 
 func TestMapNotification(t *testing.T) {
-	game := &anchor.Target{Link: "/galgame/4178", Label: "Galgame", GalgameID: 4178}
+	game := &anchor.Target{Link: "/galgame/4178", Label: "Galgame", WorkID: 4178}
 	quiz := &anchor.Target{Link: "/galgame-quiz/4", Label: "游戏答题"}
 	top := &communityclient.PostView{ID: 100, ReplyToPostID: 0, ContentRaw: "[@kun](kungal-user:9) hello"}
 	reply := &communityclient.PostView{ID: 100, ReplyToPostID: 50, ContentRaw: "a reply"}
@@ -184,7 +184,7 @@ func TestMapNotification(t *testing.T) {
 
 func TestMapNotificationGalgameCommentLink(t *testing.T) {
 	n := baseNote(communityclient.InboxMentioned)
-	game := &anchor.Target{Link: "/galgame/4178", Label: "Galgame", GalgameID: 4178}
+	game := &anchor.Target{Link: "/galgame/4178", Label: "Galgame", WorkID: 4178}
 	got := MapNotification(n, nil, game)
 	if got == nil || got.Link != "/galgame/4178?comment=100" {
 		t.Fatalf("link = %v", got)

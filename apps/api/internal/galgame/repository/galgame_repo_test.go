@@ -22,7 +22,7 @@ func TestDeleteLocalDraftRefusesARowThatCarriesAResource(t *testing.T) {
 	all := []int{bare, withResource}
 
 	cleanup := func() {
-		db.Exec("DELETE FROM galgame_resource WHERE galgame_id = ANY(?::int[])", intArrayLit(all))
+		db.Exec("DELETE FROM galgame_resource WHERE work_id = ANY(?::int[])", intArrayLit(all))
 		db.Exec("DELETE FROM galgame WHERE id = ANY(?::int[])", intArrayLit(all))
 	}
 	cleanup()
@@ -34,7 +34,7 @@ func TestDeleteLocalDraftRefusesARowThatCarriesAResource(t *testing.T) {
 		}
 	}
 	if err := db.Create(&model.GalgameResource{
-		GalgameID: withResource, UserID: 1, Platform: "windows", Language: "ja", Type: "game",
+		WorkID: withResource, UserID: 1, Platform: "windows", Language: "ja", Type: "game",
 	}).Error; err != nil {
 		t.Fatalf("seed resource: %v", err)
 	}
@@ -55,7 +55,7 @@ func TestDeleteLocalDraftRefusesARowThatCarriesAResource(t *testing.T) {
 	if rows != 1 {
 		t.Error("a row carrying a resource must survive rather than cascade it away")
 	}
-	db.Table("galgame_resource").Where("galgame_id = ?", withResource).Count(&rows)
+	db.Table("galgame_resource").Where("work_id = ?", withResource).Count(&rows)
 	if rows != 1 {
 		t.Error("the resource was cascade-deleted")
 	}

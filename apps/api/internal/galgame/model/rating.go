@@ -23,7 +23,7 @@ type GalgameRating struct {
 	Voice        int             `gorm:"default:0" json:"voice"`
 	ReplayValue  int             `gorm:"column:replay_value;default:0" json:"replay_value"`
 
-	GalgameID    int `gorm:"column:galgame_id;not null;constraint:OnDelete:RESTRICT" json:"galgame_id"`
+	WorkID       int `gorm:"column:work_id;not null;constraint:OnDelete:RESTRICT" json:"galgame_id"`
 	UserID       int `gorm:"column:user_id;not null" json:"user_id"`
 	LikeCount    int `gorm:"column:like_count;default:0" json:"like_count"`
 	CommentCount int `gorm:"column:comment_count;default:0" json:"comment_count"`
@@ -66,7 +66,7 @@ type GalgameRatingRow struct {
 	Created      string `gorm:"column:created"`
 	Updated      string `gorm:"column:updated"`
 	UserID       int    `gorm:"column:user_id"`
-	GalgameID    int    `gorm:"column:galgame_id"`
+	WorkID       int    `gorm:"column:work_id"`
 }
 
 type RatingFilter struct {

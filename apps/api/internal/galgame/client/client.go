@@ -99,9 +99,6 @@ type GalgameClient struct {
 
 	tagSexualMu    sync.RWMutex
 	tagSexualCache map[batchCacheKey]batchCacheEntry[bool]
-
-	gidMu    sync.RWMutex
-	gidCache map[int]gidLookupEntry
 }
 
 func New(baseURL, apiKey, imageCDNBase string) *GalgameClient {
@@ -132,7 +129,6 @@ func New(baseURL, apiKey, imageCDNBase string) *GalgameClient {
 		imageCDNBase: imageCDNBase,
 		briefCache:   map[batchCacheKey]batchCacheEntry[GalgameBrief]{},
 		detailCache:  map[batchCacheKey]batchCacheEntry[GalgameDetailBrief]{},
-		gidCache:     map[int]gidLookupEntry{},
 
 		labelLinkCache: map[batchCacheKey]batchCacheEntry[string]{},
 		tagSexualCache: map[batchCacheKey]batchCacheEntry[bool]{},
@@ -193,7 +189,6 @@ func BriefName(b *GalgameBrief) string {
 
 type GalgameBrief struct {
 	ID                  int     `json:"id"`
-	WorkID              int64   `json:"work_id"`
 	VndbID              string  `json:"vndb_id"`
 	Name                string  `json:"name"`
 	NameOriginal        string  `json:"name_original"`
@@ -235,41 +230,41 @@ type GalgameDetailBrief struct {
 
 func (c *GalgameClient) GetBatchDetailPublic(ctx context.Context, ids []int, isSFW bool) (map[int]GalgameDetailBrief, *errors.AppError) {
 	return cachedBatch(ctx, &c.detailMu, c.detailCache, ids, isSFW, func(miss []int) (map[int]GalgameDetailBrief, *errors.AppError) {
-		rows, appErr := c.CatalogRowsByGIDs(ctx, miss, catalogDetailBriefInclude, contentLimitFor(isSFW))
+		rows, appErr := c.CatalogRowsByWorkIDs(ctx, miss, catalogDetailBriefInclude, contentLimitFor(isSFW))
 		if appErr != nil {
 			return nil, appErr
 		}
 		result := make(map[int]GalgameDetailBrief, len(rows))
-		for gid := range rows {
-			row := rows[gid]
-			result[gid] = CatalogItemToDetailBrief(ctx, &row)
+		for workID := range rows {
+			row := rows[workID]
+			result[workID] = CatalogItemToDetailBrief(ctx, &row)
 		}
 		return result, nil
 	})
 }
 
 func (c *GalgameClient) GetBatch(ctx context.Context, ids []int) (map[int]GalgameBrief, *errors.AppError) {
-	return c.batchByGIDs(ctx, ids, "all")
+	return c.batchByWorkIDs(ctx, ids, "all")
 }
 
 func (c *GalgameClient) GetBatchPublic(ctx context.Context, ids []int, isSFW bool) (map[int]GalgameBrief, *errors.AppError) {
 	return cachedBatch(ctx, &c.briefMu, c.briefCache, ids, isSFW, func(miss []int) (map[int]GalgameBrief, *errors.AppError) {
-		return c.batchByGIDs(ctx, miss, contentLimitFor(isSFW))
+		return c.batchByWorkIDs(ctx, miss, contentLimitFor(isSFW))
 	})
 }
 
-func (c *GalgameClient) batchByGIDs(ctx context.Context, ids []int, contentLimit string) (map[int]GalgameBrief, *errors.AppError) {
+func (c *GalgameClient) batchByWorkIDs(ctx context.Context, ids []int, contentLimit string) (map[int]GalgameBrief, *errors.AppError) {
 	if len(ids) == 0 {
 		return map[int]GalgameBrief{}, nil
 	}
-	rows, appErr := c.CatalogRowsByGIDs(ctx, ids, catalogBriefInclude, contentLimit)
+	rows, appErr := c.CatalogRowsByWorkIDs(ctx, ids, catalogBriefInclude, contentLimit)
 	if appErr != nil {
 		return nil, appErr
 	}
 	result := make(map[int]GalgameBrief, len(rows))
-	for gid := range rows {
-		row := rows[gid]
-		result[gid] = CatalogItemToBrief(ctx, &row)
+	for workID := range rows {
+		row := rows[workID]
+		result[workID] = CatalogItemToBrief(ctx, &row)
 	}
 	return result, nil
 }

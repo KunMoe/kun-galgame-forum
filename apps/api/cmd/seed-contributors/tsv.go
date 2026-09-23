@@ -9,9 +9,9 @@ import (
 )
 
 type seedRow struct {
-	GalgameID int64
-	UserID    int64
-	Created   time.Time
+	WorkID  int64
+	UserID  int64
+	Created time.Time
 }
 
 type parseStats struct {
@@ -41,15 +41,15 @@ func parseContributorTSV(r io.Reader) ([]seedRow, parseStats, error) {
 			stats.Skipped++
 			continue
 		}
-		gid, err1 := strconv.ParseInt(strings.TrimSpace(parts[0]), 10, 64)
+		workID, err1 := strconv.ParseInt(strings.TrimSpace(parts[0]), 10, 64)
 		uid, err2 := strconv.ParseInt(strings.TrimSpace(parts[2]), 10, 64)
 		created, err3 := parseLedgerTime(strings.TrimSpace(parts[3]))
-		if err1 != nil || err2 != nil || err3 != nil || gid <= 0 || uid <= 0 {
+		if err1 != nil || err2 != nil || err3 != nil || workID <= 0 || uid <= 0 {
 			stats.Skipped++
 			continue
 		}
 
-		key := [2]int64{gid, uid}
+		key := [2]int64{workID, uid}
 		if at, ok := index[key]; ok {
 			stats.Folded++
 			if created.Before(rows[at].Created) {
@@ -58,7 +58,7 @@ func parseContributorTSV(r io.Reader) ([]seedRow, parseStats, error) {
 			continue
 		}
 		index[key] = len(rows)
-		rows = append(rows, seedRow{GalgameID: gid, UserID: uid, Created: created})
+		rows = append(rows, seedRow{WorkID: workID, UserID: uid, Created: created})
 	}
 	return rows, stats, sc.Err()
 }

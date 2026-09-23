@@ -38,7 +38,7 @@ func (h *CoverVoteHandler) cast(c fiber.Ctx, vote bool) error {
 	if _, appErr := middleware.MustGetUser(c); appErr != nil {
 		return response.Error(c, appErr)
 	}
-	gid, appErr := parseGid(c)
+	workID, appErr := parseWorkID(c)
 	if appErr != nil {
 		return response.Error(c, appErr)
 	}
@@ -52,10 +52,6 @@ func (h *CoverVoteHandler) cast(c fiber.Ctx, vote bool) error {
 	}
 	if h.catalog == nil || h.galgameClient == nil {
 		return response.Error(c, errVoteDown)
-	}
-	workID, appErr := h.workIDOf(c, gid)
-	if appErr != nil {
-		return response.Error(c, appErr)
 	}
 
 	var result *catalogclient.CoverVoteResult
@@ -73,18 +69,6 @@ func (h *CoverVoteHandler) cast(c fiber.Ctx, vote bool) error {
 		"vote_count": result.VoteCount,
 		"voted":      result.Voted,
 	})
-}
-
-func (h *CoverVoteHandler) workIDOf(c fiber.Ctx, gid int64) (int64, *errors.AppError) {
-	ids, appErr := h.galgameClient.CatalogWorkIDs(c.Context(), []int{int(gid)})
-	if appErr != nil {
-		return 0, appErr
-	}
-	workID, ok := ids[int(gid)]
-	if !ok {
-		return 0, errors.ErrNotFound("条目不存在")
-	}
-	return workID, nil
 }
 
 func coverVoteError(c fiber.Ctx, err error) error {

@@ -17,7 +17,7 @@ func NewUserContentRepository(db *gorm.DB) *UserContentRepository {
 	return &UserContentRepository{db: db}
 }
 
-func (r *UserContentRepository) FindUserGalgameIDs(userID int, queryType string, page, limit int, showNoResource bool) ([]int, int64, error) {
+func (r *UserContentRepository) FindUserWorkIDs(userID int, queryType string, page, limit int, showNoResource bool) ([]int, int64, error) {
 	offset := (page - 1) * limit
 	var total int64
 
@@ -26,18 +26,18 @@ func (r *UserContentRepository) FindUserGalgameIDs(userID int, queryType string,
 	switch queryType {
 	case "galgame_like":
 		baseQuery = baseQuery.
-			Joins("JOIN galgame_like ON galgame_like.galgame_id = galgame.id").
+			Joins("JOIN galgame_like ON galgame_like.work_id = galgame.id").
 			Where("galgame_like.user_id = ?", userID)
 	case "galgame_favorite":
 		baseQuery = baseQuery.
-			Joins("JOIN galgame_favorite ON galgame_favorite.galgame_id = galgame.id").
+			Joins("JOIN galgame_favorite ON galgame_favorite.work_id = galgame.id").
 			Where("galgame_favorite.user_id = ?", userID)
 	default:
 		return []int{}, 0, nil
 	}
 
 	if !showNoResource {
-		baseQuery = baseQuery.Where("EXISTS (SELECT 1 FROM galgame_resource gr WHERE gr.galgame_id = galgame.id)")
+		baseQuery = baseQuery.Where("EXISTS (SELECT 1 FROM galgame_resource gr WHERE gr.work_id = galgame.id)")
 	}
 
 	if err := baseQuery.Count(&total).Error; err != nil {
@@ -205,17 +205,17 @@ func (r *UserContentRepository) FindUserComments(userID int, queryType string, p
 }
 
 type UserResource struct {
-	ID        int    `gorm:"column:id" json:"id"`
-	GalgameID int    `gorm:"column:galgame_id" json:"galgame_id"`
-	Type      string `gorm:"column:type" json:"type"`
-	Language  string `gorm:"column:language" json:"language"`
-	Platform  string `gorm:"column:platform" json:"platform"`
-	Size      string `gorm:"column:size" json:"size"`
-	Code      string `gorm:"column:code" json:"code"`
-	Password  string `gorm:"column:password" json:"password"`
-	Note      string `gorm:"column:note" json:"note"`
-	Status    int    `gorm:"column:status" json:"status"`
-	Created   string `gorm:"column:created" json:"created"`
+	ID       int    `gorm:"column:id" json:"id"`
+	WorkID   int    `gorm:"column:work_id" json:"galgame_id"`
+	Type     string `gorm:"column:type" json:"type"`
+	Language string `gorm:"column:language" json:"language"`
+	Platform string `gorm:"column:platform" json:"platform"`
+	Size     string `gorm:"column:size" json:"size"`
+	Code     string `gorm:"column:code" json:"code"`
+	Password string `gorm:"column:password" json:"password"`
+	Note     string `gorm:"column:note" json:"note"`
+	Status   int    `gorm:"column:status" json:"status"`
+	Created  string `gorm:"column:created" json:"created"`
 }
 
 type ResourceLink struct {
@@ -229,7 +229,7 @@ func (r *UserContentRepository) FindUserResources(userID int, queryType string, 
 	var total int64
 
 	baseQuery := r.db.Table("galgame_resource").
-		Select("galgame_resource.id, galgame_resource.galgame_id, galgame_resource.type, galgame_resource.language, galgame_resource.platform, galgame_resource.size, galgame_resource.code, galgame_resource.password, galgame_resource.note, galgame_resource.status, galgame_resource.created")
+		Select("galgame_resource.id, galgame_resource.work_id, galgame_resource.type, galgame_resource.language, galgame_resource.platform, galgame_resource.size, galgame_resource.code, galgame_resource.password, galgame_resource.note, galgame_resource.status, galgame_resource.created")
 
 	switch queryType {
 	case "expire":
@@ -268,7 +268,7 @@ func (r *UserContentRepository) FindResourceLinks(resourceIDs []int) (map[int][]
 
 type UserRating struct {
 	ID           int    `gorm:"column:id" json:"id"`
-	GalgameID    int    `gorm:"column:galgame_id" json:"galgame_id"`
+	WorkID       int    `gorm:"column:work_id" json:"galgame_id"`
 	Recommend    string `gorm:"column:recommend" json:"recommend"`
 	Overall      int    `gorm:"column:overall" json:"overall"`
 	View         int    `gorm:"column:view" json:"view"`
@@ -300,7 +300,7 @@ func (r *UserContentRepository) FindUserRatings(userID int, page, limit int) ([]
 	}
 
 	err := r.db.Table("galgame_rating").
-		Select(`galgame_rating.id, galgame_rating.galgame_id, galgame_rating.recommend, galgame_rating.overall, galgame_rating.view,
+		Select(`galgame_rating.id, galgame_rating.work_id, galgame_rating.recommend, galgame_rating.overall, galgame_rating.view,
 			galgame_rating.art, galgame_rating.story, galgame_rating.music, galgame_rating.character, galgame_rating.route, galgame_rating.system, galgame_rating.voice, galgame_rating.replay_value,
 			galgame_rating.galgame_type, galgame_rating.play_status, galgame_rating.short_summary, galgame_rating.spoiler_level, galgame_rating.like_count,
 			galgame_rating.user_id,
@@ -334,18 +334,18 @@ func (r *UserContentRepository) FindGalgameLocalStats(ids []int) map[int]Galgame
 }
 
 type GalgameResourceMeta struct {
-	GalgameID int    `gorm:"column:galgame_id"`
-	Platform  string `gorm:"column:platform"`
-	Language  string `gorm:"column:language"`
+	WorkID   int    `gorm:"column:work_id"`
+	Platform string `gorm:"column:platform"`
+	Language string `gorm:"column:language"`
 }
 
-func (r *UserContentRepository) FindResourceMetaByGalgameIDs(ids []int) []GalgameResourceMeta {
+func (r *UserContentRepository) FindResourceMetaByWorkIDs(ids []int) []GalgameResourceMeta {
 	if len(ids) == 0 {
 		return nil
 	}
 	var rows []GalgameResourceMeta
 	r.db.Table("galgame_resource").
-		Select("DISTINCT galgame_id, platform, language").
-		Where("galgame_id IN ?", ids).Scan(&rows)
+		Select("DISTINCT work_id, platform, language").
+		Where("work_id IN ?", ids).Scan(&rows)
 	return rows
 }

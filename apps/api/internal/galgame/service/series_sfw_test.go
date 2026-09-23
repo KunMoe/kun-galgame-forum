@@ -34,10 +34,10 @@ func seriesStub(t *testing.T, hasNSFWField bool) *httptest.Server {
 			})
 			return
 		}
-		member := func(gid int) map[string]any {
+		member := func(id int) map[string]any {
 			return map[string]any{
-				"id": gid + 1000, "display_name": "作品",
-				"claim": map[string]any{"site": "kungal", "site_work_id": gid, "state": "live"},
+				"id": id, "display_name": "作品",
+				"claim": map[string]any{"site": "kungal", "site_work_id": id, "state": "live"},
 			}
 		}
 		items := []map[string]any{}

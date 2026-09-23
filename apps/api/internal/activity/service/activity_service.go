@@ -876,8 +876,8 @@ func (s *ActivityService) enrichGalgameItems(
 ) []dto.ActivityItem {
 	idSet := map[int]struct{}{}
 	for _, r := range rows {
-		if r.GalgameID > 0 {
-			idSet[r.GalgameID] = struct{}{}
+		if r.WorkID > 0 {
+			idSet[r.WorkID] = struct{}{}
 		}
 	}
 	if len(idSet) == 0 {
@@ -912,44 +912,44 @@ func (s *ActivityService) enrichGalgameItems(
 		return d.Intros[0].Intro
 	}
 
-	creationGIDs := make([]int, 0)
+	creationWorkIDs := make([]int, 0)
 	editIDs := make([]int, 0)
-	editGIDs := make([]int, 0)
-	prGIDs := make([]int, 0)
+	editWorkIDs := make([]int, 0)
+	prWorkIDs := make([]int, 0)
 	ratingIDs := make([]int, 0)
 	for _, r := range rows {
 		switch {
-		case r.TypeStr == "GALGAME_CREATION" && r.GalgameID > 0:
-			creationGIDs = append(creationGIDs, r.GalgameID)
+		case r.TypeStr == "GALGAME_CREATION" && r.WorkID > 0:
+			creationWorkIDs = append(creationWorkIDs, r.WorkID)
 		case r.TypeStr == "GALGAME_EDIT":
 			editIDs = append(editIDs, r.ID)
-			if r.GalgameID > 0 {
-				editGIDs = append(editGIDs, r.GalgameID)
+			if r.WorkID > 0 {
+				editWorkIDs = append(editWorkIDs, r.WorkID)
 			}
-		case r.TypeStr == "GALGAME_PR_CREATION" && r.GalgameID > 0:
-			prGIDs = append(prGIDs, r.GalgameID)
+		case r.TypeStr == "GALGAME_PR_CREATION" && r.WorkID > 0:
+			prWorkIDs = append(prWorkIDs, r.WorkID)
 		case r.TypeStr == "GALGAME_RATING_CREATION":
 			ratingIDs = append(ratingIDs, r.ID)
 		}
 	}
-	countsMap, _ := s.repo.FetchGalgameCounts(creationGIDs)
+	countsMap, _ := s.repo.FetchGalgameCounts(creationWorkIDs)
 	revMap, _ := s.repo.FetchEditRevisions(editIDs)
 	ratingMap, _ := s.repo.FetchRatingActivityData(ratingIDs)
 
 	detailMap := map[int]client.GalgameDetailBrief{}
-	if detailGIDs := append(append(append([]int{}, creationGIDs...), editGIDs...), prGIDs...); len(detailGIDs) > 0 {
-		if m, appErr := s.galgameClient.GetBatchDetailPublic(ctx, detailGIDs, isSFW); appErr == nil {
+	if detailWorkIDs := append(append(append([]int{}, creationWorkIDs...), editWorkIDs...), prWorkIDs...); len(detailWorkIDs) > 0 {
+		if m, appErr := s.galgameClient.GetBatchDetailPublic(ctx, detailWorkIDs, isSFW); appErr == nil {
 			detailMap = m
 		}
 	}
 
 	kept := make([]dto.ActivityItem, 0, len(items))
 	for i, r := range rows {
-		if r.GalgameID == 0 {
+		if r.WorkID == 0 {
 			kept = append(kept, items[i])
 			continue
 		}
-		b, ok := briefMap[r.GalgameID]
+		b, ok := briefMap[r.WorkID]
 		if !ok {
 			continue
 		}
@@ -960,9 +960,9 @@ func (s *ActivityService) enrichGalgameItems(
 			Language:    b.OriginalLanguage,
 			AgeLimit:    b.AgeLimit,
 			ReleaseDate: b.ReleaseDate,
-			GalgameID:   r.GalgameID,
+			WorkID:      r.WorkID,
 		}
-		if d, ok := detailMap[r.GalgameID]; ok &&
+		if d, ok := detailMap[r.WorkID]; ok &&
 			(r.TypeStr == "GALGAME_CREATION" || r.TypeStr == "GALGAME_EDIT" ||
 				r.TypeStr == "GALGAME_PR_CREATION") {
 			ga.Developer = strings.Join(d.Officials, "、")
@@ -975,7 +975,7 @@ func (s *ActivityService) enrichGalgameItems(
 			}
 		}
 		if r.TypeStr == "GALGAME_CREATION" {
-			c := countsMap[r.GalgameID]
+			c := countsMap[r.WorkID]
 			ga.ResourceCount = c.ResourceCount
 			ga.LikeCount = c.LikeCount
 			ga.FavoriteCount = c.FavoriteCount
@@ -1004,7 +1004,7 @@ func (s *ActivityService) enrichGalgameItems(
 		case "GALGAME_CREATION":
 			items[i].Content = name
 			if items[i].Actor.ID == 0 {
-				items[i].Actor.ID = userclient.DerefID(countsMap[r.GalgameID].CreatorUserID)
+				items[i].Actor.ID = userclient.DerefID(countsMap[r.WorkID].CreatorUserID)
 			}
 		case "GALGAME_RESOURCE_CREATION":
 			items[i].Content = fmt.Sprintf("在《%s》发布了下载资源", name)

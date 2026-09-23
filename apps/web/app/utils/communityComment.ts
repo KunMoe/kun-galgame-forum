@@ -1,7 +1,7 @@
 import type { WallSubjectType } from '#shared/utils/api/schemas'
 
 export type CommunityCommentTarget =
-  | { kind: 'galgame'; galgameId: number }
+  | { kind: 'galgame'; workId: number }
   | { kind: 'rating'; ratingId: number }
   | { kind: 'website'; websiteId: number }
   | { kind: 'toolset'; toolsetId: number }
@@ -38,12 +38,12 @@ export const communityCommentSurface = (
     case 'galgame':
       return {
         subjectType: 'galgame',
-        subjectId: String(target.galgameId),
+        subjectId: String(target.workId),
         maxLength: 5000,
         anchorPrefix: 'galgame-comment',
         composerPlaceholder: MENTION_PLACEHOLDER,
         showsReplyTarget: false,
-        wallAnchor: { anchor_kind: SITE_GAME, anchor_id: String(target.galgameId) }
+        wallAnchor: { anchor_kind: SITE_GAME, anchor_id: String(target.workId) }
       }
     case 'rating':
       return {

@@ -5,32 +5,23 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
-	"strings"
 	"testing"
 
 	"kun-galgame-api/internal/galgame/dto"
 )
 
-func detailStub(t *testing.T, gid int, catalogID int64, body string) (*httptest.Server, *url.Values) {
+func detailStub(t *testing.T, workID int64, body string) (*httptest.Server, *url.Values) {
 	t.Helper()
 	var seen url.Values
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		switch {
-		case req.URL.Path == "/v2/catalog/works" && req.URL.Query().Get("refs") != "":
-			_, _ = w.Write([]byte(`{"object":"list","items":[{"id":"` + itoa(catalogID) +
-				`","claim":{"site":"kungal","site_work_id":"` + itoa(int64(gid)) + `","state":"live"},` +
-				`"refs":[{"source":"curated","external_id":"` + itoa(int64(gid)) + `"}]}]}`))
-		case req.URL.Path == "/v2/catalog/works" && strings.Contains(req.URL.Query().Get("ids"), itoa(catalogID)):
-			_, _ = w.Write([]byte(`{"object":"list","items":[{"id":"` + itoa(catalogID) +
-				`","claim":{"site":"kungal","site_work_id":"` + itoa(int64(gid)) + `","state":"live"}}]}`))
-		case req.URL.Path == "/v2/catalog/works/"+itoa(catalogID):
+		if req.URL.Path == "/v2/catalog/works/"+itoa(workID) {
 			seen = req.URL.Query()
 			_, _ = w.Write([]byte(body))
-		default:
-			t.Errorf("unexpected upstream call: %s", req.URL.Path)
-			_, _ = w.Write([]byte(`{"object":"work","id":"0"}`))
+			return
 		}
+		t.Errorf("unexpected upstream call: %s", req.URL.Path)
+		_, _ = w.Write([]byte(`{"object":"work","id":"0"}`))
 	}))
 	t.Cleanup(srv.Close)
 	return srv, &seen
@@ -38,18 +29,18 @@ func detailStub(t *testing.T, gid int, catalogID int64, body string) (*httptest.
 
 func fullOf(t *testing.T, body string) dto.NextMoeGalgameDetailFull {
 	t.Helper()
-	const gid, catalogID = 777, 4242
-	srv, _ := detailStub(t, gid, catalogID, body)
+	const workID int64 = 4242
+	srv, _ := detailStub(t, workID, body)
 	c := New(srv.URL, "nm_test_key", "")
 
-	d, found, appErr := c.CatalogWorkDetail(context.Background(), gid)
+	d, found, appErr := c.CatalogWorkDetail(context.Background(), int(workID))
 	if appErr != nil {
 		t.Fatalf("CatalogWorkDetail: %v", appErr)
 	}
 	if !found {
 		t.Fatal("CatalogWorkDetail: not found, want the stubbed work")
 	}
-	return CatalogDetailToFull(context.Background(), d, gid)
+	return CatalogDetailToFull(context.Background(), d, int(workID))
 }
 
 func TestCatalogDetail_HeroPrefersTheLandscapeCover(t *testing.T) {
@@ -204,14 +195,14 @@ func TestCatalogDetail_WorkCountReachesAllThreeChipFamilies(t *testing.T) {
 }
 
 func TestCatalogDetail_TagsArriveAtTheFullSpoilerCeiling(t *testing.T) {
-	const gid, catalogID = 777, 4242
+	const workID int64 = 4242
 	body := `{"object":"work","id":"4242","display_name":"Kun","content_rating":"all_ages","olang":"ja",
 		"tags":[{"name":"純愛","canonical_id":51,"kind":"content","spoiler":0,"sexual":false},
 		        {"name":"ヒロイン死亡","canonical_id":52,"kind":"content","spoiler":2,"sexual":false}]}`
-	srv, seen := detailStub(t, gid, catalogID, body)
+	srv, seen := detailStub(t, workID, body)
 	c := New(srv.URL, "nm_test_key", "")
 
-	d, found, appErr := c.CatalogWorkDetail(context.Background(), gid)
+	d, found, appErr := c.CatalogWorkDetail(context.Background(), int(workID))
 	if appErr != nil || !found {
 		t.Fatalf("CatalogWorkDetail = (%v, %v)", appErr, found)
 	}
@@ -222,7 +213,7 @@ func TestCatalogDetail_TagsArriveAtTheFullSpoilerCeiling(t *testing.T) {
 		t.Error("v1's numeric spoilers= leaked; v2 drops it silently and answers the none ceiling")
 	}
 
-	f := CatalogDetailToFull(context.Background(), d, gid)
+	f := CatalogDetailToFull(context.Background(), d, int(workID))
 	if len(f.Tag) != 2 || f.Tag[1].SpoilerLevel != 2 {
 		t.Errorf("Tag = %+v, want the spoiler row carried with its level", f.Tag)
 	}

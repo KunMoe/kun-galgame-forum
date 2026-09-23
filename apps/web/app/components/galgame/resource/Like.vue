@@ -1,6 +1,6 @@
 <script setup lang="ts">
 const props = defineProps<{
-  galgameId: number
+  workId: number
   galgameResourceId: number
   targetUserId: number
   isLiked: boolean
@@ -29,7 +29,7 @@ const onChange = async (next: boolean) => {
     return
   }
   pending.value = true
-  const result = await kunFetch(`/galgame/${props.galgameId}/resource/like`, {
+  const result = await kunFetch(`/galgame/${props.workId}/resource/like`, {
     method: 'PUT',
     body: { galgame_resource_id: props.galgameResourceId }
   })

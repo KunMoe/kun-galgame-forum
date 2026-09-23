@@ -18,7 +18,7 @@ type cachedFolderItem struct {
 }
 
 func folderItemsCacheKey(folder *catalogclient.Folder) string {
-	return "kungal:folder-items:v1:" + strconv.FormatInt(folder.ID, 10) + ":" + folder.UpdatedAt
+	return "kungal:folder-items:v2:" + strconv.FormatInt(folder.ID, 10) + ":" + folder.UpdatedAt
 }
 
 // loadFolderContents prefers the public lane even when the viewer owns the

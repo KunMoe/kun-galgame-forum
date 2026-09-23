@@ -15,11 +15,11 @@ func NewGalgameContributorRepository(db *gorm.DB) *GalgameContributorRepository 
 }
 
 type ContributorTouch struct {
-	GalgameID int64
-	UserID    int64
-	Count     int
-	FirstAt   time.Time
-	LastAt    time.Time
+	WorkID  int64
+	UserID  int64
+	Count   int
+	FirstAt time.Time
+	LastAt  time.Time
 }
 
 func (r *GalgameContributorRepository) UpsertRevisionTouches(touches []ContributorTouch) error {
@@ -30,13 +30,13 @@ func (r *GalgameContributorRepository) UpsertRevisionTouches(touches []Contribut
 		for _, t := range touches {
 			if err := tx.Exec(`
 				INSERT INTO galgame_contributor
-					(galgame_id, user_id, first_at, last_at, revision_count, source)
+					(work_id, user_id, first_at, last_at, revision_count, source)
 				VALUES (?, ?, ?, ?, ?, 1)
-				ON CONFLICT (galgame_id, user_id) DO UPDATE SET
+				ON CONFLICT (work_id, user_id) DO UPDATE SET
 					revision_count = galgame_contributor.revision_count + excluded.revision_count,
 					first_at = LEAST(galgame_contributor.first_at, excluded.first_at),
 					last_at = GREATEST(galgame_contributor.last_at, excluded.last_at)
-			`, t.GalgameID, t.UserID, t.FirstAt, t.LastAt, t.Count).Error; err != nil {
+			`, t.WorkID, t.UserID, t.FirstAt, t.LastAt, t.Count).Error; err != nil {
 				return err
 			}
 		}
@@ -44,14 +44,14 @@ func (r *GalgameContributorRepository) UpsertRevisionTouches(touches []Contribut
 	})
 }
 
-func (r *GalgameContributorRepository) RefreshContributorCounts(gids []int64) error {
-	if len(gids) == 0 {
+func (r *GalgameContributorRepository) RefreshContributorCounts(workIDs []int64) error {
+	if len(workIDs) == 0 {
 		return nil
 	}
 	return r.db.Exec(`
 		UPDATE galgame SET contributor_count = (
-			SELECT COUNT(*) FROM galgame_contributor c WHERE c.galgame_id = galgame.id
-		) WHERE id IN ?`, gids).Error
+			SELECT COUNT(*) FROM galgame_contributor c WHERE c.work_id = galgame.id
+		) WHERE id IN ?`, workIDs).Error
 }
 
 type ContributorBrief struct {
@@ -59,11 +59,11 @@ type ContributorBrief struct {
 	RevisionCount int   `gorm:"column:revision_count"`
 }
 
-func (r *GalgameContributorRepository) FindContributors(galgameID, limit int) []ContributorBrief {
+func (r *GalgameContributorRepository) FindContributors(workID, limit int) []ContributorBrief {
 	var rows []ContributorBrief
 	r.db.Table("galgame_contributor").
 		Select("user_id, revision_count").
-		Where("galgame_id = ?", galgameID).
+		Where("work_id = ?", workID).
 		Order("revision_count DESC, first_at ASC").
 		Limit(limit).
 		Scan(&rows)

@@ -96,11 +96,11 @@ func (s *HomeService) getHomeGalgames(ctx context.Context, isSFW bool) ([]dto.Ho
 		return []dto.HomeGalgame{}, nil
 	}
 
-	galgameIDs := make([]int, len(localRows))
+	workIDs := make([]int, len(localRows))
 	for i, r := range localRows {
-		galgameIDs[i] = r.ID
+		workIDs[i] = r.ID
 	}
-	briefMap, appErr := s.galgameClient.GetBatchPublic(ctx, galgameIDs, isSFW)
+	briefMap, appErr := s.galgameClient.GetBatchPublic(ctx, workIDs, isSFW)
 	if appErr != nil {
 		return nil, appErr
 	}
@@ -108,18 +108,18 @@ func (s *HomeService) getHomeGalgames(ctx context.Context, isSFW bool) ([]dto.Ho
 	userMap := s.userClient.Hydrate(ctx, userclient.CollectIDs(localRows,
 		func(lr repository.GalgameLocalRow) int { return userclient.DerefID(lr.CreatorUserID) }))
 
-	resources := s.repo.FindResourcePlatformLanguage(galgameIDs)
+	resources := s.repo.FindResourcePlatformLanguage(workIDs)
 	platformMap := map[int]map[string]bool{}
 	languageMap := map[int]map[string]bool{}
 	for _, r := range resources {
-		if platformMap[r.GalgameID] == nil {
-			platformMap[r.GalgameID] = map[string]bool{}
+		if platformMap[r.WorkID] == nil {
+			platformMap[r.WorkID] = map[string]bool{}
 		}
-		if languageMap[r.GalgameID] == nil {
-			languageMap[r.GalgameID] = map[string]bool{}
+		if languageMap[r.WorkID] == nil {
+			languageMap[r.WorkID] = map[string]bool{}
 		}
-		platformMap[r.GalgameID][r.Platform] = true
-		languageMap[r.GalgameID][r.Language] = true
+		platformMap[r.WorkID][r.Platform] = true
+		languageMap[r.WorkID][r.Language] = true
 	}
 
 	result := make([]dto.HomeGalgame, 0, homeGalgameLimit)

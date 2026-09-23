@@ -78,11 +78,11 @@ func TestQuizAuthoringModerationText(t *testing.T) {
 func TestRatingCreateDenyAndScan(t *testing.T) {
 	db := testdb.Open(t)
 
-	const gid = 2_000_000_777
+	const workID = 2_000_000_777
 	const uid = 2_000_000_778
 	cleanup := func() {
-		db.Exec("DELETE FROM galgame_rating WHERE galgame_id = ? AND user_id = ?", gid, uid)
-		db.Exec("DELETE FROM galgame WHERE id = ?", gid)
+		db.Exec("DELETE FROM galgame_rating WHERE work_id = ? AND user_id = ?", workID, uid)
+		db.Exec("DELETE FROM galgame WHERE id = ?", workID)
 	}
 	cleanup()
 	defer cleanup()
@@ -93,7 +93,7 @@ func TestRatingCreateDenyAndScan(t *testing.T) {
 
 	reqOf := func() *dto.CreateRatingRequest {
 		return &dto.CreateRatingRequest{
-			GalgameID: gid, Recommend: "recommend", Overall: 8,
+			WorkID: workID, Recommend: "recommend", Overall: 8,
 			GalgameType: []string{"adv"}, PlayStatus: "played",
 			ShortSummary: "这是一段用于审核测试的评测正文",
 		}
@@ -106,7 +106,7 @@ func TestRatingCreateDenyAndScan(t *testing.T) {
 		t.Fatalf("deny: want 422 error, got %v", appErr)
 	}
 	var cnt int64
-	db.Model(&model.GalgameRating{}).Where("galgame_id = ? AND user_id = ?", gid, uid).Count(&cnt)
+	db.Model(&model.GalgameRating{}).Where("work_id = ? AND user_id = ?", workID, uid).Count(&cnt)
 	if cnt != 0 {
 		t.Fatalf("deny persisted %d rating row(s), want 0", cnt)
 	}

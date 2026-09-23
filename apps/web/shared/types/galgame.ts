@@ -113,7 +113,6 @@ export interface GalgameIntro {
 
 export interface GalgameDetail {
   id: number
-  moved_to?: number
   vndb_id: string
   user: KunUser
   name: string
@@ -183,7 +182,6 @@ export interface GalgameCard {
   rating?: number
   rating_count?: number
   is_on_forum?: boolean
-  catalog_id?: number
   platform: string[]
   language: string[]
   resource_update_time: Date | string
@@ -224,7 +222,6 @@ export interface UserClaimItem {
   work_id: number
   display_name: string
   site: string
-  product_work_id: number | null
   claim_state: string
 
   last_event_id: number

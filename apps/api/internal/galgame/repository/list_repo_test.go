@@ -23,7 +23,7 @@ func TestListIDsSFWFilter(t *testing.T) {
 	all := []int{unsynced, safe, adult}
 
 	cleanup := func() {
-		db.Exec("DELETE FROM galgame_resource WHERE galgame_id = ANY(?::int[])", intArrayLit(all))
+		db.Exec("DELETE FROM galgame_resource WHERE work_id = ANY(?::int[])", intArrayLit(all))
 		db.Exec("DELETE FROM galgame WHERE id = ANY(?::int[])", intArrayLit(all))
 	}
 	cleanup()
@@ -73,7 +73,7 @@ func seed(t *testing.T, db *gorm.DB, id int, contentLimit *string) {
 		t.Fatalf("seed galgame %d: %v", id, err)
 	}
 	if err := db.Create(&model.GalgameResource{
-		GalgameID: id, UserID: 1, Platform: "windows", Language: "ja", Type: "game",
+		WorkID: id, UserID: 1, Platform: "windows", Language: "ja", Type: "game",
 	}).Error; err != nil {
 		t.Fatalf("seed resource for %d: %v", id, err)
 	}
@@ -110,7 +110,7 @@ func TestOrderRestrictIDsKeepsUnknownMembersLast(t *testing.T) {
 	all := []int{absent, quiet, busy, absentToo, middling}
 
 	cleanup := func() {
-		db.Exec("DELETE FROM galgame_resource WHERE galgame_id = ANY(?::int[])", intArrayLit(local))
+		db.Exec("DELETE FROM galgame_resource WHERE work_id = ANY(?::int[])", intArrayLit(local))
 		db.Exec("DELETE FROM galgame WHERE id = ANY(?::int[])", intArrayLit(local))
 	}
 	cleanup()
@@ -185,7 +185,7 @@ func TestListIDsCollectedFilter(t *testing.T) {
 	all := []int{before, newYear, midYear, lastDay, after}
 
 	cleanup := func() {
-		db.Exec("DELETE FROM galgame_resource WHERE galgame_id = ANY(?::int[])", intArrayLit(all))
+		db.Exec("DELETE FROM galgame_resource WHERE work_id = ANY(?::int[])", intArrayLit(all))
 		db.Exec("DELETE FROM galgame WHERE id = ANY(?::int[])", intArrayLit(all))
 	}
 	cleanup()
@@ -248,7 +248,7 @@ func TestCollectedCalendarHonoursTheReadersGate(t *testing.T) {
 
 	const id = 2_000_200_100
 	cleanup := func() {
-		db.Exec("DELETE FROM galgame_resource WHERE galgame_id = ?", id)
+		db.Exec("DELETE FROM galgame_resource WHERE work_id = ?", id)
 		db.Exec("DELETE FROM galgame WHERE id = ?", id)
 	}
 	cleanup()

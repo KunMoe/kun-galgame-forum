@@ -1,7 +1,7 @@
 <script setup lang="ts">
 const props = defineProps<{
   modelValue: boolean
-  galgameId: number
+  workId: number
 }>()
 
 const emits = defineEmits<{
@@ -25,7 +25,7 @@ const createOpen = ref(false)
 const load = async (preserveSelection = false) => {
   pending.value = true
   const res = await kunFetch<{ collections: MyCollectionForGalgame[] }>(
-    `/galgame/${props.galgameId}/collections/mine`
+    `/galgame/${props.workId}/collections/mine`
   )
   pending.value = false
   collections.value = res?.collections ?? []
@@ -37,9 +37,9 @@ const load = async (preserveSelection = false) => {
 }
 
 watch(
-  () => [isOpen.value, props.galgameId] as const,
-  ([open, gid]) => {
-    if (open && gid > 0) {
+  () => [isOpen.value, props.workId] as const,
+  ([open, workId]) => {
+    if (open && workId > 0) {
       createOpen.value = false
       void load()
     }
@@ -69,7 +69,7 @@ const save = async () => {
   saving.value = true
   const ids = [...selected.value]
   const result = await kunFetch<string>(
-    `/galgame/${props.galgameId}/collections`,
+    `/galgame/${props.workId}/collections`,
     { method: 'PUT', body: { collection_ids: ids } }
   )
   saving.value = false

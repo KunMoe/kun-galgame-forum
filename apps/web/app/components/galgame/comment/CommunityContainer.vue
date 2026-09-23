@@ -7,9 +7,9 @@ const emit = defineEmits<{
 
 const route = useRoute()
 const api = useApiClient()
-const gid = parseInt((route.params as { gid: string }).gid)
+const workId = parseInt((route.params as { id: string }).id)
 
-const target: CommunityCommentTarget = { kind: 'galgame', galgameId: gid }
+const target: CommunityCommentTarget = { kind: 'galgame', workId }
 
 const galgame = inject<GalgameDetail>('galgame')
 
@@ -46,7 +46,7 @@ const ensureLoadedAndScroll = async (postId: string) => {
   if (
     !found.ok ||
     found.data.subject_type !== 'galgame' ||
-    found.data.subject_id !== String(gid)
+    found.data.subject_id !== String(workId)
   ) {
     return
   }

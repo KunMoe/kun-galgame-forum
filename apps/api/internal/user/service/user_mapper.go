@@ -25,10 +25,10 @@ func groupResourceMeta(rows []repository.GalgameResourceMeta) (platforms, langua
 	languages = make(map[int][]string)
 	for _, r := range rows {
 		if r.Platform != "" {
-			platforms[r.GalgameID] = appendUniqueStr(platforms[r.GalgameID], r.Platform)
+			platforms[r.WorkID] = appendUniqueStr(platforms[r.WorkID], r.Platform)
 		}
 		if r.Language != "" {
-			languages[r.GalgameID] = appendUniqueStr(languages[r.GalgameID], r.Language)
+			languages[r.WorkID] = appendUniqueStr(languages[r.WorkID], r.Language)
 		}
 	}
 	return

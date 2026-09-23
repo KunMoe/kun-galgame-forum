@@ -19,12 +19,12 @@ func NewSubmissionHandler(svc *service.SubmissionService) *SubmissionHandler {
 	return &SubmissionHandler{svc: svc}
 }
 
-func submissionGID(c fiber.Ctx) (int, *errors.AppError) {
-	gid, err := strconv.Atoi(c.Params("gid"))
-	if err != nil || gid <= 0 {
+func submissionWorkID(c fiber.Ctx) (int, *errors.AppError) {
+	workID, err := strconv.Atoi(c.Params("id"))
+	if err != nil || workID <= 0 {
 		return 0, errors.ErrBadRequest("无效的 Galgame ID")
 	}
-	return gid, nil
+	return workID, nil
 }
 
 func (h *SubmissionHandler) Submit(c fiber.Ctx) error {
@@ -52,11 +52,11 @@ func (h *SubmissionHandler) Resubmit(c fiber.Ctx) error {
 	if appErr != nil {
 		return response.Error(c, appErr)
 	}
-	gid, appErr := submissionGID(c)
+	workID, appErr := submissionWorkID(c)
 	if appErr != nil {
 		return response.Error(c, appErr)
 	}
-	res, appErr := h.svc.Resubmit(c.Context(), token, gid)
+	res, appErr := h.svc.Resubmit(c.Context(), token, workID)
 	if appErr != nil {
 		return response.Error(c, appErr)
 	}
@@ -68,11 +68,11 @@ func (h *SubmissionHandler) Withdraw(c fiber.Ctx) error {
 	if appErr != nil {
 		return response.Error(c, appErr)
 	}
-	gid, appErr := submissionGID(c)
+	workID, appErr := submissionWorkID(c)
 	if appErr != nil {
 		return response.Error(c, appErr)
 	}
-	if _, appErr := h.svc.Withdraw(c.Context(), token, gid); appErr != nil {
+	if _, appErr := h.svc.Withdraw(c.Context(), token, workID); appErr != nil {
 		return response.Error(c, appErr)
 	}
 	return response.OKMessage(c, "撤回成功")
@@ -83,11 +83,11 @@ func (h *SubmissionHandler) DeleteDraft(c fiber.Ctx) error {
 	if appErr != nil {
 		return response.Error(c, appErr)
 	}
-	gid, appErr := submissionGID(c)
+	workID, appErr := submissionWorkID(c)
 	if appErr != nil {
 		return response.Error(c, appErr)
 	}
-	if appErr := h.svc.DeleteDraft(c.Context(), token, gid); appErr != nil {
+	if appErr := h.svc.DeleteDraft(c.Context(), token, workID); appErr != nil {
 		return response.Error(c, appErr)
 	}
 	return response.OKMessage(c, "删除成功")

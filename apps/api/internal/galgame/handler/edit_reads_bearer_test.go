@@ -25,7 +25,7 @@ func TestEditReadsRideTheUserPlane(t *testing.T) {
 		name, path string
 		user       *middleware.UserInfo
 	}{
-		{"bootstrap", "/api/galgame/1/edit/bootstrap", moderatorUser},
+		{"bootstrap", "/api/galgame/1000/edit/bootstrap", moderatorUser},
 		{"queue", "/api/galgame-edit/queue", moderatorUser},
 		{"mine", "/api/galgame-edit/mine", plainUser},
 		{"workbench", "/api/galgame-edit/proposals/7", moderatorUser},

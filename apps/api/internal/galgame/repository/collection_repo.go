@@ -22,9 +22,9 @@ func NewGalgameCollectionRepository(db *gorm.DB) *GalgameCollectionRepository {
 
 func (r *GalgameCollectionRepository) DB() *gorm.DB { return r.db }
 
-func (r *GalgameCollectionRepository) EnsureGalgameLocal(tx *gorm.DB, galgameID int) error {
+func (r *GalgameCollectionRepository) EnsureGalgameLocal(tx *gorm.DB, workID int) error {
 	return tx.Clauses(clause.OnConflict{DoNothing: true}).
-		Create(&model.GalgameLocal{ID: galgameID}).Error
+		Create(&model.GalgameLocal{ID: workID}).Error
 }
 
 // galgame_local.favorite_count backs the "most favourited" ranking and nothing
@@ -34,15 +34,15 @@ func (r *GalgameCollectionRepository) EnsureGalgameLocal(tx *gorm.DB, galgameID 
 // the patch site does not reach it. That is a known, bounded divergence in a
 // ranking's sort key; the cure is a catalog-side sort=popularity, not a second
 // copy of the memberships.
-func (r *GalgameCollectionRepository) AdjustGalgameFavoriteCount(tx *gorm.DB, galgameID, delta int) error {
-	return tx.Model(&model.GalgameLocal{}).Where("id = ?", galgameID).
+func (r *GalgameCollectionRepository) AdjustGalgameFavoriteCount(tx *gorm.DB, workID, delta int) error {
+	return tx.Model(&model.GalgameLocal{}).Where("id = ?", workID).
 		Update("favorite_count", gorm.Expr("favorite_count + ?", delta)).Error
 }
 
-func (r *GalgameCollectionRepository) DecrementFavoriteCounts(tx *gorm.DB, galgameIDs []int) error {
-	if len(galgameIDs) == 0 {
+func (r *GalgameCollectionRepository) DecrementFavoriteCounts(tx *gorm.DB, workIDs []int) error {
+	if len(workIDs) == 0 {
 		return nil
 	}
-	return tx.Model(&model.GalgameLocal{}).Where("id IN ?", galgameIDs).
+	return tx.Model(&model.GalgameLocal{}).Where("id IN ?", workIDs).
 		Update("favorite_count", gorm.Expr("GREATEST(favorite_count - 1, 0)")).Error
 }

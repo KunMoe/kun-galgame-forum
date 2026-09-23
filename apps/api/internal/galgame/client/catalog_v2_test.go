@@ -297,96 +297,6 @@ func TestLiveV2Calendar(t *testing.T) {
 	}
 }
 
-// The gid bridge is the one lane that was already on v2, and it is how every
-// legacy forum id finds its catalog work. HydrateCardsByIDs drops an id it
-// cannot resolve, so a break here is a short page, never an error.
-func TestLiveV2GIDBridge(t *testing.T) {
-	c, ctx := liveClient(t), context.Background()
-	raw := os.Getenv("SMOKE_GIDS")
-	if raw == "" {
-		t.Skip("set SMOKE_GIDS to a comma-separated list of published forum gids")
-	}
-	var gids []int
-	for _, part := range strings.Split(raw, ",") {
-		if n, err := strconv.Atoi(strings.TrimSpace(part)); err == nil {
-			gids = append(gids, n)
-		}
-	}
-	ids, appErr := c.CatalogWorkIDs(ctx, gids)
-	if appErr != nil {
-		t.Fatalf("CatalogWorkIDs: %v", appErr)
-	}
-	// A handful of unresolved gids are forum rows whose catalog work was deleted;
-	// they are data drift and always have been. A PROPORTION of them is the read
-	// regression this test exists for — the 2026-08 olang bug lost 1.6% of the
-	// catalogue this way, and because HydrateCardsByIDs skips what it cannot
-	// resolve, the only symptom was pages that came back one row short.
-	if lost := len(gids) - len(ids); lost > 0 {
-		var sample []int
-		for _, gid := range gids {
-			if _, ok := ids[gid]; !ok && len(sample) < 20 {
-				sample = append(sample, gid)
-			}
-		}
-		t.Logf("bridge resolved %d of %d gids; unresolved: %v", len(ids), len(gids), sample)
-		if lost*200 > len(gids) {
-			t.Errorf("%d of %d gids (%.1f%%) resolve to nothing — that is a lane fault, not drift",
-				lost, len(gids), float64(lost)*100/float64(len(gids)))
-		}
-	}
-	rows, appErr := c.CatalogRowsByGIDs(ctx, gids, "names,covers,refs,labels", "all")
-	if appErr != nil {
-		t.Fatalf("CatalogRowsByGIDs: %v", appErr)
-	}
-	// A shortfall here is normally the forum's own gates doing their job: catalog
-	// hides a work the forum still has published, or the claim's site_work_id no
-	// longer round-trips to the gid the anchor names. Those are drift, not a read
-	// regression. Only a LIVE row that failed to hydrate means the lane is broken,
-	// and that is the case worth a red test — HydrateCardsByIDs skips what it
-	// cannot resolve, so upstream breakage shows up as a short page, never an error.
-	if len(rows) != len(gids) {
-		var missingIDs []int64
-		byCatalogID := map[int64]int{}
-		for _, gid := range gids {
-			if _, ok := rows[gid]; !ok && ids[gid] != 0 {
-				missingIDs = append(missingIDs, ids[gid])
-				byCatalogID[ids[gid]] = gid
-			}
-		}
-		explained, dropped := 0, map[int64]string{}
-		if len(missingIDs) > 0 {
-			back, appErr := c.CatalogRowsByCatalogIDs(ctx, missingIDs, false)
-			if appErr != nil {
-				t.Fatalf("re-reading the missing rows: %v", appErr)
-			}
-			for id := range back {
-				row := back[id]
-				switch {
-				case row.Claim == nil:
-					dropped[id] = "no claim"
-				case row.Claim.State == "live":
-					dropped[id] = "LIVE and still lost"
-				default:
-					explained++
-				}
-			}
-		}
-		t.Logf("hydrated %d of %d gids; %d explained by claim state, %d with no catalog row",
-			len(rows), len(gids), explained, len(gids)-len(ids))
-		for id, why := range dropped {
-			t.Errorf("gid %d -> catalog %d: %s", byCatalogID[id], id, why)
-		}
-	}
-	for gid := range rows {
-		row := rows[gid]
-		b := CatalogItemToBrief(ctx, &row)
-		if b.Name == "" {
-			t.Errorf("gid %d hydrated with no name", gid)
-			break
-		}
-	}
-}
-
 func TestV2CatalogPath(t *testing.T) {
 	cases := map[string]string{
 		"/catalog/works/search":            "/v2/catalog/works",
@@ -445,8 +355,8 @@ func TestLiveMirrorChannel(t *testing.T) {
 		if appErr != nil {
 			t.Fatalf("MirrorByCatalogIDs: %v", appErr)
 		}
-		for gid, row := range got {
-			limits[gid] = row.ContentLimit
+		for workID, row := range got {
+			limits[workID] = row.ContentLimit
 		}
 		if page.NextCursor == "" {
 			break
@@ -458,16 +368,15 @@ func TestLiveMirrorChannel(t *testing.T) {
 	}
 
 	if len(limits) == 0 {
-		t.Fatalf("read %d changed works and matched none to a forum row — "+
-			"the claim block is how a catalog id becomes a gid", rows)
+		t.Fatalf("read %d changed works and matched none to a forum row", rows)
 	}
-	for gid, limit := range limits {
+	for workID, limit := range limits {
 		if limit != "sfw" && limit != "nsfw" {
-			t.Fatalf("gid %d carries verdict %q", gid, limit)
+			t.Fatalf("work %d carries verdict %q", workID, limit)
 		}
 	}
 	t.Logf("changes: rows=%d gone=%d matched=%d", rows, gone, len(limits))
-	for gid, limit := range limits {
-		t.Logf("gid=%d limit=%s", gid, limit)
+	for workID, limit := range limits {
+		t.Logf("work_id=%d limit=%s", workID, limit)
 	}
 }

@@ -6,12 +6,12 @@ import {
 } from '~/constants/galgameEdit'
 
 const route = useRoute()
-const gid = computed(() => parseInt((route.params as { gid: string }).gid))
+const workId = computed(() => parseInt((route.params as { id: string }).id))
 
 useKunDisableSeo('Galgame 修订历史')
 
 const { data, status, refresh } = await useKunFetch<GalgameEditRevisionList>(
-  `/galgame/${gid.value}/edit/revisions`,
+  `/galgame/${workId.value}/edit/revisions`,
   { method: 'GET', watch: false, query: { limit: 200 } }
 )
 
@@ -23,7 +23,7 @@ const handleDiff = async (fromSeq: number, toSeq: number) => {
   diffLoading.value = true
   diffOpen.value = true
   diff.value = await kunFetch<GalgameEditDiff>(
-    `/galgame/${gid.value}/edit/diff`,
+    `/galgame/${workId.value}/edit/diff`,
     { method: 'GET', query: { from: fromSeq, to: toSeq } }
   )
   diffLoading.value = false
@@ -47,7 +47,7 @@ const handleRevert = async () => {
   }
   reverting.value = true
   const result = await kunFetch<GalgameEditRevertResult>(
-    `/galgame/${gid.value}/edit/revert`,
+    `/galgame/${workId.value}/edit/revert`,
     { method: 'POST', body: { to_seq: revertTarget.value } }
   )
   reverting.value = false
@@ -76,7 +76,7 @@ const handleRevert = async () => {
           variant="light"
           color="default"
           size="sm"
-          @click="navigateTo(`/galgame/${gid}`)"
+          @click="navigateTo(`/galgame/${workId}`)"
         >
           <KunIcon name="lucide:arrow-left" />
           返回游戏页
@@ -85,7 +85,7 @@ const handleRevert = async () => {
           variant="light"
           color="default"
           size="sm"
-          @click="navigateTo(`/galgame/${gid}/edit`)"
+          @click="navigateTo(`/galgame/${workId}/edit`)"
         >
           <KunIcon name="lucide:pencil" />
           编辑资料

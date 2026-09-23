@@ -29,7 +29,7 @@ const pendingQueueLimit = 30
 // four-slot names block among it — and re-elected the display title in
 // TypeScript instead of reusing the one election every other surface uses.
 type PendingClaim struct {
-	GID     int    `json:"gid"`
+	WorkID  int    `json:"gid"`
 	Name    string `json:"name"`
 	State   string `json:"state"`
 	Updated string `json:"updated"`
@@ -65,7 +65,7 @@ func (s *ClaimReviewService) PendingQueue(
 		row := &page.Items[i]
 		name, _ := row.Names(ctx)
 		items = append(items, PendingClaim{
-			GID:     row.GID(),
+			WorkID:  int(row.ID),
 			Name:    name,
 			State:   row.ClaimState(),
 			Updated: row.Updated,
@@ -84,7 +84,7 @@ var reviewActions = map[string]bool{
 func (s *ClaimReviewService) Review(
 	ctx context.Context,
 	accessToken string,
-	gid int,
+	workID int,
 	action string,
 	reason string,
 ) (*catalogclient.ClaimActionResult, *errors.AppError) {
@@ -94,15 +94,7 @@ func (s *ClaimReviewService) Review(
 	if action == catalogclient.ClaimActionDecline && reason == "" {
 		return nil, errors.ErrValidation("拒绝时必须填写理由")
 	}
-	ids, appErr := s.galgameClient.CatalogWorkIDs(ctx, []int{gid})
-	if appErr != nil {
-		return nil, appErr
-	}
-	workID, ok := ids[gid]
-	if !ok {
-		return nil, errors.ErrNotFound("条目不存在")
-	}
-	res, err := s.catalog.ActOnClaimUser(ctx, accessToken, workID, action, catalogclient.UserClaimActionRequest{
+	res, err := s.catalog.ActOnClaimUser(ctx, accessToken, int64(workID), action, catalogclient.UserClaimActionRequest{
 		Reason: reason,
 	})
 	if err != nil {

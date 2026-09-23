@@ -70,14 +70,6 @@ func (c *GalgameClient) CatalogChanges(ctx context.Context, cursor string, limit
 	return page, nil
 }
 
-// MirrorByCatalogIDs is the mirror channel's half of MirrorByGIDs: the feed
-// names catalog ids, and the hydrated row carries the claim block, so the gid
-// comes back with the fields and the gid cache is never involved.
-//
-// Only a kungal claim may name a local row. 10,289 of the forum's 11,562 gids
-// are ALSO the catalog id of a different work, so the catalog-id fallback that
-// gid() takes for an unclaimed row would write one game's fields onto another
-// game's row on nearly every page.
 func (c *GalgameClient) MirrorByCatalogIDs(ctx context.Context, ids []int64) (map[int]CatalogMirror, *errors.AppError) {
 	out := make(map[int]CatalogMirror, len(ids))
 	if len(ids) == 0 {
@@ -89,13 +81,10 @@ func (c *GalgameClient) MirrorByCatalogIDs(ctx context.Context, ids []int64) (ma
 	}
 	for i := range rows {
 		row := &rows[i]
-		if !row.isRenderable() || row.Claim == nil {
+		if !row.isRenderable() || row.ID <= 0 {
 			continue
 		}
-		if !isKungalClaim(row.Claim.Site) || row.Claim.SiteWorkID <= 0 {
-			continue
-		}
-		out[row.Claim.SiteWorkID] = mirrorOf(row)
+		out[int(row.ID)] = mirrorOf(row)
 	}
 	return out, nil
 }

@@ -56,28 +56,13 @@ func (r *catalogRecorder) count() int {
 	return len(r.paths)
 }
 
-func catalogStub(t *testing.T, rec *catalogRecorder, lookup map[string]int64, works map[int64]string) *httptest.Server {
+func catalogStub(t *testing.T, rec *catalogRecorder, works map[int64]string) *httptest.Server {
 	t.Helper()
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		rec.record(req)
 		w.Header().Set("Content-Type", "application/json")
 
 		switch {
-		case req.URL.Path == "/v2/catalog/works" && req.URL.Query().Get("refs") != "":
-			var rows []string
-			for _, token := range strings.Split(req.URL.Query().Get("refs"), ",") {
-				ext := token
-				if i := strings.LastIndex(token, ":"); i >= 0 {
-					ext = token[i+1:]
-				}
-				if id, ok := lookup[ext]; ok {
-					if frag, ok := works[id]; ok {
-						rows = append(rows, frag)
-					}
-				}
-			}
-			_, _ = w.Write([]byte(`{"object":"list","items":[` + strings.Join(rows, ",") + `],"missing":[]}`))
-
 		case req.URL.Path == "/v2/catalog/works":
 			var rows []string
 			for _, raw := range strings.Split(req.URL.Query().Get("ids"), ",") {
@@ -119,10 +104,10 @@ func atoi64(s string) int64 {
 	return out
 }
 
-func liveRow(catalogID int64, gid int, name string) string {
-	return `{"id":` + itoa(catalogID) + `,"medium":"galgame","display_name":"` + name +
+func liveRow(id int64, name string) string {
+	return `{"id":` + itoa(id) + `,"medium":"galgame","display_name":"` + name +
 		`","content_rating":"all_ages","olang":"ja","release_date":"2024-06-14",` +
-		`"claim":{"site":"kungal","site_work_id":` + itoa(int64(gid)) + `,"state":"live"},` +
+		`"claim":{"site":"kungal","site_work_id":` + itoa(id) + `,"state":"live"},` +
 		`"updated":"2026-01-01T00:00:00Z","latin":"` + name + `Latin",` +
 		`"localized":{"zh-Hans":{"value":"` + name + `CN","kind":"official","machine":true}},` +
 		`"covers":{"portrait":{"url":"https://cdn.example/ab/cd/abcdef.webp","width":600,"height":800,"thumbhash":"TH"},"banner":null},` +
@@ -134,7 +119,7 @@ func liveRow(catalogID int64, gid int, name string) string {
 // Russian or untagged title at all, and 41,386 production rows have no lang.
 func TestCatalogWorkListItem_NameComesFromTheLocalizedPrimitive(t *testing.T) {
 	var it CatalogWorkListItem
-	if err := json.Unmarshal([]byte(liveRow(4242, 777, "Kun")), &it); err != nil {
+	if err := json.Unmarshal([]byte(liveRow(4242, "Kun")), &it); err != nil {
 		t.Fatalf("unmarshal: %v", err)
 	}
 	name, original := it.Names(context.Background())
@@ -155,44 +140,24 @@ func TestCatalogWorkListItem_NameComesFromTheLocalizedPrimitive(t *testing.T) {
 	}
 }
 
-func TestCatalogBridge_TwoHopAndGIDKeying(t *testing.T) {
+func TestGetBatch_KeysByWorkID(t *testing.T) {
 	rec := &catalogRecorder{}
-	srv := catalogStub(t, rec,
-		map[string]int64{"777": 4242},
-		map[int64]string{4242: liveRow(4242, 777, "Kun")},
-	)
+	srv := catalogStub(t, rec, map[int64]string{4242: liveRow(4242, "Kun")})
 	c := New(srv.URL, "nm_test_key", "")
 
-	got, err := c.GetBatch(context.Background(), []int{777})
+	got, err := c.GetBatch(context.Background(), []int{4242})
 	if err != nil {
 		t.Fatalf("GetBatch: %v", err)
 	}
-
-	if p := rec.pathAt(0); p != "/v2/catalog/works" {
-		t.Errorf("first call = %q, want /v2/catalog/works", p)
+	if rec.queryAt(0).Get("ids") != "4242" {
+		t.Errorf("works ids = %q, want 4242", rec.queryAt(0).Get("ids"))
 	}
-	if rec.queryAt(0).Get("refs") == "" {
-		t.Errorf("first call missing refs=")
-	}
-	if p := rec.pathAt(1); p != "/v2/catalog/works" {
-		t.Errorf("second call = %q, want /v2/catalog/works", p)
-	}
-	if ids := rec.queryAt(1).Get("ids"); ids != "4242" {
-		t.Errorf("works ids = %q, want 4242 (the catalog id, not the gid)", ids)
-	}
-	if lim := rec.queryAt(1).Get("limit"); lim != "100" {
-		t.Errorf("works limit = %q, want 100", lim)
-	}
-
-	b, ok := got[777]
+	b, ok := got[4242]
 	if !ok {
-		t.Fatalf("result not keyed by gid 777: %#v", got)
+		t.Fatalf("result not keyed by work id 4242: %#v", got)
 	}
-	if b.ID != 777 {
-		t.Errorf("brief.ID = %d, want 777 (the gid, never the catalog id)", b.ID)
-	}
-	if _, leaked := got[4242]; leaked {
-		t.Error("result is keyed by the catalog id — the two id spaces overlap, so this attaches another game's local stats")
+	if b.ID != 4242 {
+		t.Errorf("brief.ID = %d, want 4242", b.ID)
 	}
 	if b.Name != "KunCN" || b.NameOriginal != "Kun" {
 		t.Errorf("names not projected: %+v", b)
@@ -217,16 +182,13 @@ func TestCatalogBridge_TwoHopAndGIDKeying(t *testing.T) {
 	}
 }
 
-func TestCatalogBridge_HiddenClaimNeverRenders(t *testing.T) {
-	hidden := strings.Replace(liveRow(4242, 777, "Banned"), `"state":"live"`, `"state":"hidden"`, 1)
+func TestCatalogBatch_HiddenClaimNeverRenders(t *testing.T) {
+	hidden := strings.Replace(liveRow(4242, "Banned"), `"state":"live"`, `"state":"hidden"`, 1)
 	rec := &catalogRecorder{}
-	srv := catalogStub(t, rec,
-		map[string]int64{"777": 4242},
-		map[int64]string{4242: hidden},
-	)
+	srv := catalogStub(t, rec, map[int64]string{4242: hidden})
 	c := New(srv.URL, "nm_test_key", "")
 
-	got, err := c.GetBatch(context.Background(), []int{777})
+	got, err := c.GetBatch(context.Background(), []int{4242})
 	if err != nil {
 		t.Fatalf("GetBatch: %v", err)
 	}
@@ -235,46 +197,40 @@ func TestCatalogBridge_HiddenClaimNeverRenders(t *testing.T) {
 	}
 }
 
-func TestCatalogBridge_UnresolvedGIDIsAbsentNotAnError(t *testing.T) {
+func TestCatalogBatch_UnknownWorkIDIsAbsentNotAnError(t *testing.T) {
 	rec := &catalogRecorder{}
-	srv := catalogStub(t, rec, map[string]int64{}, map[int64]string{})
+	srv := catalogStub(t, rec, map[int64]string{})
 	c := New(srv.URL, "nm_test_key", "")
 
 	got, err := c.GetBatch(context.Background(), []int{999})
 	if err != nil {
-		t.Fatalf("an unregistered gid must not be an error: %v", err)
+		t.Fatalf("an unknown work id must not be an error: %v", err)
 	}
 	if len(got) != 0 {
 		t.Fatalf("got %#v, want empty", got)
 	}
-	if rec.count() != 2 {
-		t.Errorf("made %d calls, want 2 (anchor lookup, then the identity attempt)", rec.count())
+	if rec.count() != 1 {
+		t.Errorf("made %d calls, want 1", rec.count())
 	}
 }
 
-func TestCatalogBridge_GatesAreParametersNotPostFilters(t *testing.T) {
+func TestCatalogBatch_GatesAreParametersNotPostFilters(t *testing.T) {
 	rec := &catalogRecorder{}
-	srv := catalogStub(t, rec,
-		map[string]int64{"777": 4242},
-		map[int64]string{4242: liveRow(4242, 777, "Kun")},
-	)
+	srv := catalogStub(t, rec, map[int64]string{4242: liveRow(4242, "Kun")})
 	c := New(srv.URL, "nm_test_key", "")
 
-	if _, err := c.GetBatchPublic(context.Background(), []int{777}, true); err != nil {
+	if _, err := c.GetBatchPublic(context.Background(), []int{4242}, true); err != nil {
 		t.Fatalf("GetBatchPublic sfw: %v", err)
 	}
-	if v := rec.queryAt(1).Get("nsfw"); v != "true" {
+	if v := rec.queryAt(0).Get("nsfw"); v != "true" {
 		t.Errorf("sfw caller sent nsfw=%q, want true — closing the age gate drops 94.5%% of the registry", v)
 	}
-	if v := rec.queryAt(1).Get("content_limit"); v != "sfw" {
+	if v := rec.queryAt(0).Get("content_limit"); v != "sfw" {
 		t.Errorf("sfw caller sent content_limit=%q, want sfw — the setting must reach the wire as the editorial gate", v)
-	}
-	if v := rec.queryAt(0).Get("nsfw"); v != "true" {
-		t.Errorf("lookup sent nsfw=%q, want true (identity resolution is not content)", v)
 	}
 
 	before := rec.count()
-	if _, err := c.GetBatchPublic(context.Background(), []int{777}, false); err != nil {
+	if _, err := c.GetBatchPublic(context.Background(), []int{4242}, false); err != nil {
 		t.Fatalf("GetBatchPublic nsfw: %v", err)
 	}
 	if v := rec.queryAt(before).Get("nsfw"); v != "true" {
@@ -287,18 +243,18 @@ func TestCatalogBridge_GatesAreParametersNotPostFilters(t *testing.T) {
 
 func TestCatalogDisplayLimit_ReadsTheEditorialAxis(t *testing.T) {
 	r18SfwEntry := strings.Replace(
-		strings.Replace(liveRow(4242, 777, "Kun"), `"content_rating":"all_ages"`, `"content_rating":"r18"`, 1),
+		strings.Replace(liveRow(4242, "Kun"), `"content_rating":"all_ages"`, `"content_rating":"r18"`, 1),
 		`"state":"live"`, `"state":"live","content_limit":"sfw"`, 1)
 
 	rec := &catalogRecorder{}
-	srv := catalogStub(t, rec, map[string]int64{"777": 4242}, map[int64]string{4242: r18SfwEntry})
+	srv := catalogStub(t, rec, map[int64]string{4242: r18SfwEntry})
 	c := New(srv.URL, "nm_test_key", "")
 
-	got, err := c.GetBatch(context.Background(), []int{777})
+	got, err := c.GetBatch(context.Background(), []int{4242})
 	if err != nil {
 		t.Fatalf("GetBatch: %v", err)
 	}
-	b, ok := got[777]
+	b, ok := got[4242]
 	if !ok {
 		t.Fatalf("row missing: %#v", got)
 	}
@@ -317,46 +273,20 @@ func TestCatalogDisplayLimit_FallsBackToTheAgeAxis(t *testing.T) {
 	} {
 		t.Run(name, func(t *testing.T) {
 			body := strings.Replace(
-				strings.Replace(liveRow(4242, 777, "Kun"), `"content_rating":"all_ages"`, `"content_rating":"r18"`, 1),
+				strings.Replace(liveRow(4242, "Kun"), `"content_rating":"all_ages"`, `"content_rating":"r18"`, 1),
 				`"state":"live"`, claim, 1)
 			rec := &catalogRecorder{}
-			srv := catalogStub(t, rec, map[string]int64{"777": 4242}, map[int64]string{4242: body})
+			srv := catalogStub(t, rec, map[int64]string{4242: body})
 			c := New(srv.URL, "nm_test_key", "")
 
-			got, err := c.GetBatch(context.Background(), []int{777})
+			got, err := c.GetBatch(context.Background(), []int{4242})
 			if err != nil {
 				t.Fatalf("GetBatch: %v", err)
 			}
-			if b := got[777]; b.ContentLimit != "nsfw" {
+			if b := got[4242]; b.ContentLimit != "nsfw" {
 				t.Errorf("content_limit = %q, want nsfw — with no verdict the age axis is the only signal", b.ContentLimit)
 			}
 		})
-	}
-}
-
-func TestCatalogBridge_LookupIsMemoized(t *testing.T) {
-	rec := &catalogRecorder{}
-	srv := catalogStub(t, rec,
-		map[string]int64{"777": 4242},
-		map[int64]string{4242: liveRow(4242, 777, "Kun")},
-	)
-	c := New(srv.URL, "nm_test_key", "")
-	ctx := context.Background()
-
-	if _, err := c.GetBatch(ctx, []int{777}); err != nil {
-		t.Fatalf("first GetBatch: %v", err)
-	}
-	if _, err := c.GetBatch(ctx, []int{777}); err != nil {
-		t.Fatalf("second GetBatch: %v", err)
-	}
-	lookups := 0
-	for i := range rec.count() {
-		if rec.pathAt(i) == "/v2/catalog/works" && rec.queryAt(i).Get("refs") != "" {
-			lookups++
-		}
-	}
-	if lookups != 1 {
-		t.Errorf("made %d lookup calls, want 1 (the gid→catalog id memo is what keeps the second hop cheap)", lookups)
 	}
 }
 
@@ -438,36 +368,36 @@ func TestCatalogFace_PathsAndCredentials(t *testing.T) {
 // An entity with no members must restrict the local list to nothing. ListIDs
 // reads a nil RestrictIDs as "no restriction at all", so a nil here would list
 // the whole forum on the page of a tag nobody uses.
-func TestCatalogMemberGIDsIsNeverNil(t *testing.T) {
+func TestCatalogMemberWorkIDsIsNeverNil(t *testing.T) {
 	rec := &catalogRecorder{}
-	srv := catalogStub(t, rec, map[string]int64{}, map[int64]string{})
+	srv := catalogStub(t, rec, map[int64]string{})
 	c := New(srv.URL, "nm_test_key", "")
 
-	gids, err := c.CatalogMemberGIDs(context.Background(),
+	workIDs, err := c.CatalogMemberWorkIDs(context.Background(),
 		url.Values{"tag_id": {"5"}}, true, 200)
 	if err != nil {
-		t.Fatalf("CatalogMemberGIDs: %v", err)
+		t.Fatalf("CatalogMemberWorkIDs: %v", err)
 	}
-	if gids == nil {
+	if workIDs == nil {
 		t.Fatal("an empty membership walk returned nil, which restricts nothing")
 	}
 }
 
-func TestCatalogMemberGIDsCarriesTheWalkSort(t *testing.T) {
+func TestCatalogMemberWorkIDsCarriesTheWalkSort(t *testing.T) {
 	rec := &catalogRecorder{}
-	srv := catalogStub(t, rec, map[string]int64{}, map[int64]string{})
+	srv := catalogStub(t, rec, map[int64]string{})
 	c := New(srv.URL, "nm_test_key", "")
 
-	if _, err := c.CatalogMemberGIDs(context.Background(),
+	if _, err := c.CatalogMemberWorkIDs(context.Background(),
 		url.Values{"tag_id": {"5"}, "sort": {"released_desc"}}, true, 200); err != nil {
-		t.Fatalf("CatalogMemberGIDs: %v", err)
+		t.Fatalf("CatalogMemberWorkIDs: %v", err)
 	}
 	if got := rec.queryAt(0).Get("sort"); got != "released_desc" {
 		t.Errorf("sort = %q, want released_desc — the walk order is the page order", got)
 	}
 }
 
-func TestCatalogMemberGIDs_DoesNotGateOnClaimState(t *testing.T) {
+func TestCatalogMemberWorkIDs_DoesNotGateOnClaimState(t *testing.T) {
 	// The forum's own vocabulary is v1's; only the wire is v2's, and the company
 	// filter is the one that gets renamed on the way out.
 	for family, filter := range map[string]struct{ in, wire string }{
@@ -477,12 +407,12 @@ func TestCatalogMemberGIDs_DoesNotGateOnClaimState(t *testing.T) {
 	} {
 		t.Run(family, func(t *testing.T) {
 			rec := &catalogRecorder{}
-			srv := catalogStub(t, rec, map[string]int64{}, map[int64]string{})
+			srv := catalogStub(t, rec, map[int64]string{})
 			c := New(srv.URL, "nm_test_key", "")
 
-			if _, err := c.CatalogMemberGIDs(context.Background(),
+			if _, err := c.CatalogMemberWorkIDs(context.Background(),
 				url.Values{filter.in: {"5"}}, true, 200); err != nil {
-				t.Fatalf("CatalogMemberGIDs: %v", err)
+				t.Fatalf("CatalogMemberWorkIDs: %v", err)
 			}
 			if p := rec.pathAt(0); p != "/v2/catalog/works" {
 				t.Fatalf("path = %q, want /v2/catalog/works", p)
@@ -530,18 +460,18 @@ func TestCoverSlots_PortraitRidesSeparately(t *testing.T) {
 		},
 	} {
 		t.Run(name, func(t *testing.T) {
-			row := strings.Replace(liveRow(4242, 777, "Kun"),
+			row := strings.Replace(liveRow(4242, "Kun"),
 				`"covers":{"portrait":{"url":"https://cdn.example/ab/cd/abcdef.webp","width":600,"height":800,"thumbhash":"TH"},"banner":null}`,
 				`"covers":`+tc.covers, 1)
 			rec := &catalogRecorder{}
-			srv := catalogStub(t, rec, map[string]int64{"777": 4242}, map[int64]string{4242: row})
+			srv := catalogStub(t, rec, map[int64]string{4242: row})
 			c := New(srv.URL, "nm_test_key", "")
 
-			got, err := c.GetBatch(context.Background(), []int{777})
+			got, err := c.GetBatch(context.Background(), []int{4242})
 			if err != nil {
 				t.Fatalf("GetBatch: %v", err)
 			}
-			b := got[777]
+			b := got[4242]
 			if b.EffectivePortraitURL != tc.wantPortrait {
 				t.Errorf("effective portrait = %q, want %q", b.EffectivePortraitURL, tc.wantPortrait)
 			}
@@ -574,18 +504,18 @@ func TestCoverSlots_BannerWinsPortraitFallsBack(t *testing.T) {
 		},
 	} {
 		t.Run(name, func(t *testing.T) {
-			row := strings.Replace(liveRow(4242, 777, "Kun"),
+			row := strings.Replace(liveRow(4242, "Kun"),
 				`"covers":{"portrait":{"url":"https://cdn.example/ab/cd/abcdef.webp","width":600,"height":800,"thumbhash":"TH"},"banner":null}`,
 				`"covers":`+tc.covers, 1)
 			rec := &catalogRecorder{}
-			srv := catalogStub(t, rec, map[string]int64{"777": 4242}, map[int64]string{4242: row})
+			srv := catalogStub(t, rec, map[int64]string{4242: row})
 			c := New(srv.URL, "nm_test_key", "")
 
-			got, err := c.GetBatch(context.Background(), []int{777})
+			got, err := c.GetBatch(context.Background(), []int{4242})
 			if err != nil {
 				t.Fatalf("GetBatch: %v", err)
 			}
-			b := got[777]
+			b := got[4242]
 			if b.EffectiveBannerURL != tc.wantURL {
 				t.Errorf("effective banner = %q, want %q", b.EffectiveBannerURL, tc.wantURL)
 			}
@@ -630,8 +560,8 @@ func TestCatalogLabelRollupMembers_AsksForTheHopAndKeepsTheAttribution(t *testin
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		rec.record(req)
 		w.Header().Set("Content-Type", "application/json")
-		own := liveRow(4242, 777, "Own")
-		via := strings.TrimSuffix(liveRow(4243, 778, "Imprinted"), "}") +
+		own := liveRow(4242, "Own")
+		via := strings.TrimSuffix(liveRow(4243, "Imprinted"), "}") +
 			`,"via_label":{"id":24,"display_name":"Key",` +
 			`"localized":{"zh-Hans":{"value":"键社","kind":"translation"}}}}`
 		_, _ = w.Write([]byte(`{"object":"list","items":[` +
@@ -659,11 +589,11 @@ func TestCatalogLabelRollupMembers_AsksForTheHopAndKeepsTheAttribution(t *testin
 	if len(members) != 2 {
 		t.Fatalf("members = %d, want 2", len(members))
 	}
-	if members[0].GID != 777 || members[0].Via != nil {
-		t.Errorf("own work = %+v, want gid 777 with no via — a company's own game must not read as borrowed", members[0])
+	if members[0].WorkID != 4242 || members[0].Via != nil {
+		t.Errorf("own work = %+v, want work 4242 with no via — a company's own game must not read as borrowed", members[0])
 	}
-	if members[1].GID != 778 || members[1].Via == nil {
-		t.Fatalf("rolled-up work = %+v, want gid 778 with a via", members[1])
+	if members[1].WorkID != 4243 || members[1].Via == nil {
+		t.Fatalf("rolled-up work = %+v, want work 4243 with a via", members[1])
 	}
 	if members[1].Via.ID != 24 || members[1].Via.Name(context.Background()) != "键社" {
 		t.Errorf("via = %+v, want id 24 rendered as 键社", *members[1].Via)

@@ -58,18 +58,16 @@ const loadMore = async () => {
   nextCursor.value = next.next_cursor ?? ''
 }
 
-const gidOf = (row: PendingClaim) => row.gid
-
 const displayName = (row: PendingClaim): string => row.name || `#${row.gid}`
 
 const isActing = ref<Record<number, boolean>>({})
 
-const previewGid = ref(0)
+const previewWorkId = ref(0)
 const previewState = ref('')
 const isPreviewOpen = ref(false)
 
 const openPreview = (row: PendingClaim) => {
-  previewGid.value = gidOf(row)
+  previewWorkId.value = row.gid
   previewState.value = row.state
   isPreviewOpen.value = true
 }
@@ -123,13 +121,13 @@ const applyVerdict = async (
   action: 'approve' | 'decline' | 'ban',
   reason: string
 ) => {
-  const gid = gidOf(row)
-  isActing.value = { ...isActing.value, [gid]: true }
-  const res = await kunFetch<unknown>(`/admin/galgame/${gid}/review`, {
+  const workId = row.gid
+  isActing.value = { ...isActing.value, [workId]: true }
+  const res = await kunFetch<unknown>(`/admin/galgame/${workId}/review`, {
     method: 'POST',
     body: { action, reason }
   })
-  isActing.value = { ...isActing.value, [gid]: false }
+  isActing.value = { ...isActing.value, [workId]: false }
   if (res !== null) {
     useMessage('已处理', 'success')
     refresh()
@@ -191,7 +189,7 @@ const handleConfirmReason = async () => {
           >
             <span v-if="row.updated"><KunTime :time="row.updated" /></span>
             <span v-if="row.updated">·</span>
-            <span>galgame_id: {{ gidOf(row) }}</span>
+            <span>galgame_id: {{ row.gid }}</span>
           </div>
         </div>
         <div class="flex shrink-0 flex-wrap gap-2">
@@ -201,8 +199,8 @@ const handleConfirmReason = async () => {
           <KunButton
             size="sm"
             color="success"
-            :loading="isActing[gidOf(row)]"
-            :disabled="isActing[gidOf(row)]"
+            :loading="isActing[row.gid]"
+            :disabled="isActing[row.gid]"
             @click="handleApprove(row)"
           >
             通过
@@ -211,8 +209,8 @@ const handleConfirmReason = async () => {
             size="sm"
             color="danger"
             variant="flat"
-            :loading="isActing[gidOf(row)]"
-            :disabled="isActing[gidOf(row)]"
+            :loading="isActing[row.gid]"
+            :disabled="isActing[row.gid]"
             @click="openReasonModal('decline', row)"
           >
             拒绝
@@ -221,8 +219,8 @@ const handleConfirmReason = async () => {
             size="sm"
             color="default"
             variant="light"
-            :loading="isActing[gidOf(row)]"
-            :disabled="isActing[gidOf(row)]"
+            :loading="isActing[row.gid]"
+            :disabled="isActing[row.gid]"
             @click="openReasonModal('ban', row)"
           >
             封禁
@@ -243,9 +241,9 @@ const handleConfirmReason = async () => {
     </KunButton>
 
     <GalgamePreviewModal
-      v-if="previewGid"
+      v-if="previewWorkId"
       v-model="isPreviewOpen"
-      :gid="previewGid"
+      :work-id="previewWorkId"
       :claim-state="previewState"
     />
 

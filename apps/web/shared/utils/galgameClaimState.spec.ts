@@ -1,13 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import {
-  galgameClaimGid,
-  galgameClaimStateBadge,
-  isPublicState
-} from './galgameClaimState'
-import type { UserClaimItem } from '../types/galgame'
-
-const claim = (product_work_id: number | null): UserClaimItem =>
-  ({ work_id: 4649, product_work_id }) as UserClaimItem
+import { galgameClaimStateBadge, isPublicState } from './galgameClaimState'
 
 describe('galgameClaimStateBadge', () => {
   it('names every state in the registry vocabulary', () => {
@@ -52,10 +44,5 @@ describe('galgameClaimStateBadge', () => {
     expect(isPublicState('live')).toBe(true)
     expect(isPublicState('draft')).toBe(false)
     expect(isPublicState('hidden')).toBe(false)
-  })
-
-  it('never falls back to the catalog work_id for a forum link', () => {
-    expect(galgameClaimGid(claim(1207))).toBe(1207)
-    expect(galgameClaimGid(claim(null))).toBe(0)
   })
 })
