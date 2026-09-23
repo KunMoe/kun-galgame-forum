@@ -1,5 +1,15 @@
 # API v1 changelog
 
+## 2026-09-24 (G4.1 work detail vocabularies)
+
+Fixes `GET /api/v1/works/{work_id}` narrowing catalog's vocabularies:
+
+- **Characters with no recorded role were missing from the roster.** Catalog's `roster_role` includes `unknown` (5% of roster rows; mostly characters reached only through a voice credit), and G4 dropped those rows. `roster[].character_kind` now includes `unknown`.
+- `content_rating` adds `sensitive` (catalog's middle age rating), which G4 reported as `all_ages`.
+- `credits[].display_name` is no longer cut at 128 characters, `screenshots[].caption` at 512, and `external_ratings[].source_rank` may be 0.
+- Aliases, voiced-character names and external ids were length-checked in bytes, which dropped long CJK titles; they are checked in characters.
+- `roster[].identity` is removed. It is catalog's opaque proposal token, not display text, and nothing read it.
+
 ## 2026-09-24 (G4 galgame work detail)
 
 Breaking for `GET /api/galgame/:id`, `PUT /api/galgame/:id/like`, `GET /api/galgame/:id/link/all`, `GET /api/galgame/interactions/mine` and `GET /api/galgame/drafts`; all five are gone. `DELETE /api/galgame/:id` (submission withdraw) stays until G7. No App build calls them; `docs/proj/app-direct-api.md` names the replacements.

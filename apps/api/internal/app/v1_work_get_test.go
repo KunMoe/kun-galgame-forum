@@ -2,6 +2,7 @@ package app
 
 import (
 	"encoding/json"
+	"fmt"
 	"kun-galgame-api/pkg/catalogclient"
 	"net/http"
 	"testing"
@@ -201,5 +202,35 @@ func TestV1WorkRefIsSubsetOfWork(t *testing.T) {
 		if asJSONType(got) != asJSONType(v) {
 			t.Errorf("Work[%s] type %s, WorkRef type %s", k, asJSONType(got), asJSONType(v))
 		}
+	}
+}
+
+func TestV1GetWorkKeepsCatalogsWiderVocabularies(t *testing.T) {
+	f := newWorkFix(t)
+	resp, body := f.wk(t, http.MethodGet, g4WorkPath(g4WorkLive), "/works/{work_id}", "", nil)
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("get %d %+v", resp.StatusCode, body)
+	}
+	kinds := map[string]string{}
+	roster, _ := body["roster"].([]any)
+	for _, r := range roster {
+		c, _ := r.(map[string]any)
+		kinds[fmt.Sprint(c["id"])] = fmt.Sprint(c["character_kind"])
+	}
+	if kinds["7001"] != "main" || kinds["7002"] != "unknown" {
+		t.Errorf("roster kinds %v: catalog's roster_role includes unknown (5%% of prod rows) and those characters must stay", kinds)
+	}
+	aliases, _ := body["aliases"].([]any)
+	found := false
+	for _, a := range aliases {
+		found = found || a == g4LongCJKTitle
+	}
+	if !found {
+		t.Errorf("a 300-character CJK alias (900 bytes) was dropped: %v", aliases)
+	}
+
+	resp, body = f.wk(t, http.MethodGet, g4WorkPath(g4WorkNoOwner), "/works/{work_id}", "", nil)
+	if resp.StatusCode != http.StatusOK || body["content_rating"] != "sensitive" {
+		t.Errorf("sensitive work: %d content_rating=%v", resp.StatusCode, body["content_rating"])
 	}
 }

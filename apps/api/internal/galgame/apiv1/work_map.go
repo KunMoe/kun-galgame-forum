@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"kun-galgame-api/internal/apiv1/repr"
 	"kun-galgame-api/internal/galgame/client"
@@ -34,7 +35,7 @@ var (
 		"anime_studio": true, "doujin_circle": true, "group": true,
 	}
 	characterKinds = map[string]bool{
-		"main": true, "secondary": true, "appears": true,
+		"main": true, "secondary": true, "appears": true, "unknown": true,
 	}
 	spoilerLevels = []string{"none", "minor", "major"}
 )
@@ -59,10 +60,12 @@ func catalogTime(s string) repr.DateTime {
 }
 
 func contentRatingOf(rating string) string {
-	if rating == "r18" {
-		return "r18"
+	switch rating {
+	case "r18", "sensitive":
+		return rating
+	default:
+		return "all_ages"
 	}
-	return "all_ages"
 }
 
 func originalLanguageOf(olang string) *string {
@@ -92,7 +95,7 @@ func aliasesOf(d *client.CatalogWorkDetail, displayName string) []entityapiv1.Al
 	out := []entityapiv1.AliasName{}
 	seen := map[string]bool{displayName: true, "": true}
 	for _, t := range d.Titles {
-		if seen[t.Title] || len(t.Title) > 512 {
+		if seen[t.Title] || utf8.RuneCountInString(t.Title) > 512 {
 			continue
 		}
 		seen[t.Title] = true
@@ -116,7 +119,8 @@ func externalRefsOf(d *client.CatalogWorkDetail) []WorkExternalRef {
 	out := []WorkExternalRef{}
 	for _, r := range d.Refs {
 		site := strings.ToLower(r.Source)
-		if r.ExternalID == "" || len(r.ExternalID) > 64 || !siteOK(site) {
+		if r.ExternalID == "" || utf8.RuneCountInString(r.ExternalID) > 64 || !siteOK(site) {
+			slog.Warn("work external refs: ref row dropped", "site", r.Source, "external_id", r.ExternalID)
 			continue
 		}
 		out = append(out, WorkExternalRef{Site: site, ExternalID: r.ExternalID})
@@ -181,13 +185,14 @@ func tagsOf(d *client.CatalogWorkDetail, includeNSFW bool) []WorkTag {
 func creditsOf(d *client.CatalogWorkDetail) []WorkCreditGroup {
 	out := []WorkCreditGroup{}
 	for _, g := range d.Credits {
-		if g.RoleKey == "" || strings.ContainsAny(g.RoleKey, " \t\n") {
+		if g.RoleKey == "" || strings.ContainsAny(g.RoleKey, " \t\n") || utf8.RuneCountInString(g.RoleKey) > 64 {
+			slog.Warn("work credits: role group dropped", "role_key", g.RoleKey)
 			continue
 		}
 		people := []WorkCreditPerson{}
 		for _, p := range g.Credits {
 			voiced := []VoicedCharacter{}
-			if p.Character != "" && len(p.Character) <= 512 {
+			if p.Character != "" && utf8.RuneCountInString(p.Character) <= 512 {
 				voiced = append(voiced, VoicedCharacter(p.Character))
 			}
 			people = append(people, WorkCreditPerson{
@@ -198,11 +203,7 @@ func creditsOf(d *client.CatalogWorkDetail) []WorkCreditGroup {
 				VoicedCharacters: voiced,
 			})
 		}
-		name := g.RoleName
-		if len(name) > 128 {
-			name = string([]rune(name)[:128])
-		}
-		out = append(out, WorkCreditGroup{RoleKey: g.RoleKey, DisplayName: name, People: people})
+		out = append(out, WorkCreditGroup{RoleKey: g.RoleKey, DisplayName: g.RoleName, People: people})
 	}
 	return out
 }
@@ -224,10 +225,6 @@ func charactersOf(ctx context.Context, d *client.CatalogWorkDetail, cdn string) 
 				Lang:        workrepr.Lang(v.Lang),
 			})
 		}
-		identity := c.Identity
-		if len(identity) > 512 {
-			identity = string([]rune(identity)[:512])
-		}
 		out = append(out, WorkCharacter{
 			CharacterRef: entityapiv1.CharacterRef{
 				Object: "character", ID: repr.ID(int(c.ID)),
@@ -237,7 +234,6 @@ func charactersOf(ctx context.Context, d *client.CatalogWorkDetail, cdn string) 
 			Figure:        workrepr.ImageFromURL(cdn, c.Figure, c.FigureMeta.Width, c.FigureMeta.Height, c.FigureMeta.Thumbhash, nil),
 			CharacterKind: kind,
 			Spoiler:       spoilerOf(c.Spoiler),
-			Identity:      identity,
 			Voices:        voices,
 		})
 	}
@@ -249,6 +245,7 @@ func playtimesOf(d *client.CatalogWorkDetail) []WorkPlaytimeAggregate {
 	for _, r := range d.Playtimes {
 		site := strings.ToLower(r.Source)
 		if !siteOK(site) {
+			slog.Warn("work playtimes: row dropped", "site", r.Source)
 			continue
 		}
 		out = append(out, WorkPlaytimeAggregate{Site: site, Minutes: max(r.Minutes, 0), VoteCount: max(r.VoteCount, 0)})
@@ -261,6 +258,7 @@ func externalRatingsOf(d *client.CatalogWorkDetail) []WorkExternalRating {
 	for _, r := range d.Ratings {
 		site := strings.ToLower(r.Source)
 		if !siteOK(site) {
+			slog.Warn("work external ratings: row dropped", "site", r.Source)
 			continue
 		}
 		buckets := []WorkExternalRatingBucket{}
@@ -274,13 +272,9 @@ func externalRatingsOf(d *client.CatalogWorkDetail) []WorkExternalRating {
 				Lowest: r.Stats.Min, Highest: r.Stats.Max,
 			}
 		}
-		var rank *int
-		if r.Rank != nil && *r.Rank >= 1 {
-			rank = r.Rank
-		}
 		out = append(out, WorkExternalRating{
 			Object: "work_external_rating", Site: site, RatingValue: r.Score,
-			VoteCount: max(r.VoteCount, 0), SourceRank: rank, Buckets: buckets, Stats: stats,
+			VoteCount: max(r.VoteCount, 0), SourceRank: r.Rank, Buckets: buckets, Stats: stats,
 		})
 	}
 	return out
@@ -537,11 +531,9 @@ func coversOf(d *client.CatalogWorkDetail, cdn string, tallies []catalogclient.C
 			hash = hashFromURL(c.URL)
 		}
 		img := workrepr.ImageFromURL(cdn, c.URL, c.Width, c.Height, c.Thumbhash, c.Sexual)
-		if img == nil {
-			continue
-		}
 		site := strings.ToLower(c.Source)
-		if !siteOK(site) {
+		if img == nil || !siteOK(site) {
+			slog.Warn("work covers: cover row dropped", "index", i, "site", c.Source, "has_image", img != nil)
 			continue
 		}
 		item := WorkCover{
@@ -577,16 +569,14 @@ func screenshotsOf(d *client.CatalogWorkDetail, cdn string) []WorkScreenshot {
 			continue
 		}
 		img := workrepr.ImageFromURL(cdn, sh.URL, sh.Width, sh.Height, sh.Thumbhash, sh.Sexual)
-		if img == nil {
-			continue
-		}
 		site := strings.ToLower(sh.Source)
-		if !siteOK(site) {
+		if img == nil || !siteOK(site) {
+			slog.Warn("work screenshots: screenshot row dropped", "index", i, "site", sh.Source, "has_image", img != nil)
 			continue
 		}
 		caption := sh.Caption
-		if r := []rune(caption); len(r) > 512 {
-			caption = string(r[:512])
+		if r := []rune(caption); len(r) > 2048 {
+			caption = string(r[:2048])
 		}
 		out = append(out, WorkScreenshot{
 			Object: "work_screenshot", Image: img, Caption: caption, Site: site, SortOrder: i,

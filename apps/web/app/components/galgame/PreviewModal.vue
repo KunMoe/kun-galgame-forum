@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import { settle } from '#shared/utils/api/problem'
 import type { Work } from '#shared/utils/api/schemas'
-import { getGalgameOriginalLanguageName } from '~/constants/galgame'
+import {
+  getGalgameOriginalLanguageName,
+  KUN_GALGAME_CONTENT_RATING_MAP
+} from '~/constants/galgame'
 import { pickCatalogIntro } from '#shared/utils/catalogName'
 
 const props = defineProps<{
@@ -78,7 +81,7 @@ const metaRows = computed(() => {
     },
     {
       label: '分级',
-      value: d.content_rating === 'r18' ? 'R18' : '全年龄'
+      value: KUN_GALGAME_CONTENT_RATING_MAP[d.content_rating].label
     },
     { label: '别名', value: d.aliases.join('、') }
   ].filter((row) => row.value)

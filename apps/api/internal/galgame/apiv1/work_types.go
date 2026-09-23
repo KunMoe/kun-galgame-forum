@@ -12,7 +12,7 @@ type Work struct {
 	workrepr.WorkSummary
 	Aliases                 []entityapiv1.AliasName     `json:"aliases" maxItems:"1000" doc:"Other titles, never display_name. Empty array, never null."`
 	OriginalLanguage        *string                     `json:"original_language" maxLength:"35" pattern:"^[A-Za-z]{1,8}(-[A-Za-z0-9]{1,8})*$" doc:"The work's original language as a BCP-47 tag. null when catalog has none."`
-	ContentRating           string                      `json:"content_rating" enum:"all_ages,r18" maxLength:"8" doc:"Age rating: all_ages or r18."`
+	ContentRating           string                      `json:"content_rating" enum:"all_ages,sensitive,r18" maxLength:"9" doc:"Age rating, catalog's age axis: all_ages, sensitive or r18. Not the forum's SFW gate, which is is_nsfw."`
 	Intros                  []workrepr.CatalogIntro     `json:"intros" doc:"Descriptions in every language catalog has. Empty array, never null."`
 	Links                   []workrepr.CatalogLink      `json:"links" doc:"Official site, database pages and other links, in catalog's order. Empty array, never null."`
 	ExternalRefs            []WorkExternalRef           `json:"external_refs" doc:"The work's entries on other sites, such as its VNDB or Bangumi id. Empty array, never null."`
@@ -55,7 +55,7 @@ type WorkCoverViewer struct {
 type WorkScreenshot struct {
 	Object    string      `json:"object" enum:"work_screenshot" maxLength:"15" doc:"Type discriminant. Always work_screenshot."`
 	Image     *repr.Image `json:"image" doc:"The screenshot at original size. Never null on a screenshot; the type is shared with images that can be absent."`
-	Caption   string      `json:"caption" maxLength:"512" doc:"Caption. Empty string when none. Free text; never use it as a decision input."`
+	Caption   string      `json:"caption" maxLength:"2048" doc:"Caption. Empty string when none. Free text; never use it as a decision input."`
 	Site      string      `json:"site" maxLength:"64" pattern:"^[a-z0-9][a-z0-9_-]*$" doc:"Where the image came from. An open vocabulary."`
 	SortOrder int         `json:"sort_order" minimum:"0" maximum:"9999" doc:"Catalog order among screenshots."`
 }
@@ -84,7 +84,7 @@ type WorkTag struct {
 
 type WorkCreditGroup struct {
 	RoleKey     string             `json:"role_key" maxLength:"64" pattern:"^\\S+$" doc:"Catalog's role key, such as scenario, illustration, music or voice-actor. An open vocabulary."`
-	DisplayName string             `json:"display_name" maxLength:"128" doc:"The role's name as catalog records it. Free text; never use it as a decision input."`
+	DisplayName string             `json:"display_name" maxLength:"512" doc:"The role's name as catalog records it. Free text; never use it as a decision input."`
 	People      []WorkCreditPerson `json:"people" doc:"People credited in this role. Empty array, never null."`
 }
 
@@ -104,9 +104,8 @@ type WorkCharacter struct {
 	entityapiv1.CharacterRef
 	Image         *repr.Image                 `json:"image" doc:"The character's portrait. null when catalog has none."`
 	Figure        *repr.Image                 `json:"figure" doc:"A full-body standing picture. null when catalog has none."`
-	CharacterKind string                      `json:"character_kind" enum:"main,secondary,appears" maxLength:"9" doc:"How large a part the character plays."`
+	CharacterKind string                      `json:"character_kind" enum:"main,secondary,appears,unknown" maxLength:"9" doc:"How large a part the character plays. unknown when catalog has no role recorded, as for a character reached only through a voice credit."`
 	Spoiler       string                      `json:"spoiler" enum:"none,minor,major" maxLength:"5" doc:"How much naming the character gives away."`
-	Identity      string                      `json:"identity" maxLength:"512" doc:"Who the character is in the story. Empty string when none. Free text; never use it as a decision input."`
 	Voices        []entityapiv1.CreditNameRef `json:"voices" doc:"Who voices the character. Empty array, never null."`
 }
 
@@ -120,7 +119,7 @@ type WorkExternalRating struct {
 	Site        string                     `json:"site" maxLength:"64" pattern:"^[a-z0-9][a-z0-9_-]*$" doc:"The rating source, such as vndb or erogamescape. An open vocabulary."`
 	RatingValue float64                    `json:"rating_value" minimum:"0" doc:"The source's own score, on the source's own scale."`
 	VoteCount   int                        `json:"vote_count" minimum:"0" doc:"Votes that source counted."`
-	SourceRank  *int                       `json:"source_rank" minimum:"1" doc:"Rank on that source. null when unranked."`
+	SourceRank  *int                       `json:"source_rank" minimum:"0" doc:"Rank on that source, as it publishes it. null when unranked."`
 	Buckets     []WorkExternalRatingBucket `json:"buckets" doc:"That source's histogram. Empty array, never null."`
 	Stats       *WorkExternalRatingStats   `json:"stats" doc:"That source's summary statistics. null when none."`
 }

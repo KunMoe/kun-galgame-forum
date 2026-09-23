@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 	"testing"
 	"time"
 
@@ -26,6 +27,8 @@ const (
 	g4PortraitHash = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
 	g4SafeHash     = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
 )
+
+var g4LongCJKTitle = strings.Repeat("长", 300)
 
 type workFix struct {
 	*writeFix
@@ -127,7 +130,7 @@ func newWorkCatalog(t *testing.T) *fakeCatalog {
 		works: []geWork{
 			{id: g4WorkLive, name: "LiveWork", limit: "sfw", rating: "all_ages"},
 			{id: g4WorkNoLocal, name: "GhostWork", limit: "sfw", rating: "all_ages"},
-			{id: g4WorkNoOwner, name: "NoOwner", limit: "sfw", rating: "all_ages"},
+			{id: g4WorkNoOwner, name: "NoOwner", limit: "sfw", rating: "sensitive"},
 			{id: g4WorkOwner, name: "OwnerWork", limit: "sfw", rating: "all_ages"},
 		},
 	}
@@ -151,7 +154,11 @@ func g4LiveDetail(t *testing.T) *client.CatalogWorkDetail {
 		"content_rating": "all_ages", "created": "2026-01-01T00:00:00Z", "updated": "2026-01-02T00:00:00Z",
 		"localized": {"zh-Hans": {"value": "现场作", "machine": false}},
 		"claim": {"site": "kungal", "site_work_id": %d, "state": "live", "content_limit": "sfw"},
-		"titles": [{"lang": "zh-Hans", "title": "别名一"}],
+		"titles": [{"lang": "zh-Hans", "title": "别名一"}, {"lang": "ja", "title": %q}],
+		"characters": [
+			{"id": 7001, "display_name": "Lead", "kind": "main", "spoiler": 0},
+			{"id": 7002, "display_name": "VoiceOnly", "kind": "unknown", "spoiler": 0}
+		],
 		"cover_slots": {"portrait": {"url": %q, "width": 600, "height": 850, "thumbhash": "AbC+"}},
 		"covers": [
 			{"id": 11, "url": %q, "kind": "main", "source": "vndb", "width": 600, "height": 850, "thumbhash": "AbC+"},
@@ -162,7 +169,7 @@ func g4LiveDetail(t *testing.T) *client.CatalogWorkDetail {
 			{"canonical_id": 5102, "name": "H", "display_name": "H", "kind": "content", "spoiler": 0, "sexual": true, "tier": "normal", "work_count": 1}
 		],
 		"refs": [{"source": "vndb", "external_id": "v1"}]
-	}`, g4WorkLive, g4WorkLive,
+	}`, g4WorkLive, g4WorkLive, g4LongCJKTitle,
 		fmt.Sprintf("https://image.other.example/aa/aa/%s.webp", g4PortraitHash),
 		fmt.Sprintf("https://image.other.example/aa/aa/%s.webp", g4PortraitHash),
 		fmt.Sprintf("https://image.other.example/bb/bb/%s.webp", g4SafeHash))

@@ -174,9 +174,13 @@ export const KUN_GALGAME_INTRO_LANGUAGE_MAP: Record<string, string> = {
 export const getGalgameIntroLanguageName = (lang: string): string =>
   KUN_GALGAME_INTRO_LANGUAGE_MAP[lang] ?? lang
 
-export const KUN_GALGAME_AGE_LIMIT_MAP: Record<string, string> = {
-  all: '本游戏不含有成人内容',
-  r18: '本游戏可能含有成人内容'
+export const KUN_GALGAME_CONTENT_RATING_MAP: Record<
+  'all_ages' | 'sensitive' | 'r18',
+  { label: string; tip: string; color: 'success' | 'warning' | 'danger' }
+> = {
+  all_ages: { label: '全年龄', tip: '本游戏不含有成人内容', color: 'success' },
+  sensitive: { label: '敏感', tip: '本游戏含有敏感内容', color: 'warning' },
+  r18: { label: 'R18', tip: '本游戏可能含有成人内容', color: 'danger' }
 }
 
 export const KUN_GALGAME_CONTENT_LIMIT_MAP: Record<string, string> = {

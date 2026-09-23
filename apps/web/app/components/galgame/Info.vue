@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import {
-  KUN_GALGAME_AGE_LIMIT_MAP,
+  KUN_GALGAME_CONTENT_RATING_MAP,
   getGalgameOriginalLanguageName
 } from '~/constants/galgame'
 import type {
@@ -15,7 +15,7 @@ defineProps<{
   engines: Engine[]
   series: SeriesSummary[]
   originalLanguage: string | null
-  contentRating: 'all_ages' | 'r18'
+  contentRating: Work['content_rating']
   releaseDate?: string | null
   releaseDatePrecision?: 'day' | 'month' | 'year' | null
 }>()
@@ -24,9 +24,6 @@ const galgame = inject<Work>('galgame')
 const nameOf = useCatalogName()
 
 const getLanguageName = getGalgameOriginalLanguageName
-
-const ageKey = (rating: 'all_ages' | 'r18') =>
-  rating === 'r18' ? 'r18' : 'all'
 
 const releaseText = (
   date?: string | null,
@@ -128,13 +125,13 @@ const releaseText = (
         <dd>
           <KunTooltip
             position="left"
-            :text="KUN_GALGAME_AGE_LIMIT_MAP[ageKey(contentRating)]"
+            :text="KUN_GALGAME_CONTENT_RATING_MAP[contentRating].tip"
           >
             <KunChip
               variant="flat"
-              :color="contentRating === 'all_ages' ? 'success' : 'danger'"
+              :color="KUN_GALGAME_CONTENT_RATING_MAP[contentRating].color"
             >
-              {{ contentRating === 'all_ages' ? '全年龄' : 'R18' }}
+              {{ KUN_GALGAME_CONTENT_RATING_MAP[contentRating].label }}
             </KunChip>
           </KunTooltip>
         </dd>

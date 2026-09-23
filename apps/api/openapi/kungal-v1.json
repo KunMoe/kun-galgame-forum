@@ -21152,12 +21152,13 @@
             "type": "array"
           },
           "content_rating": {
-            "description": "Age rating: all_ages or r18.",
+            "description": "Age rating, catalog's age axis: all_ages, sensitive or r18. Not the forum's SFW gate, which is is_nsfw.",
             "enum": [
               "all_ages",
+              "sensitive",
               "r18"
             ],
-            "maxLength": 8,
+            "maxLength": 9,
             "type": "string",
             "x-vocabulary-closed": true
           },
@@ -21605,11 +21606,12 @@
       "WorkCharacter": {
         "properties": {
           "character_kind": {
-            "description": "How large a part the character plays.",
+            "description": "How large a part the character plays. unknown when catalog has no role recorded, as for a character reached only through a voice credit.",
             "enum": [
               "main",
               "secondary",
-              "appears"
+              "appears",
+              "unknown"
             ],
             "maxLength": 9,
             "type": "string",
@@ -21636,11 +21638,6 @@
             "maxLength": 20,
             "minLength": 1,
             "pattern": "^[0-9]+$",
-            "type": "string"
-          },
-          "identity": {
-            "description": "Who the character is in the story. Empty string when none. Free text; never use it as a decision input.",
-            "maxLength": 512,
             "type": "string"
           },
           "image": {
@@ -21702,7 +21699,6 @@
           "figure",
           "character_kind",
           "spoiler",
-          "identity",
           "voices",
           "object",
           "id",
@@ -21944,7 +21940,7 @@
         "properties": {
           "display_name": {
             "description": "The role's name as catalog records it. Free text; never use it as a decision input.",
-            "maxLength": 128,
+            "maxLength": 512,
             "type": "string"
           },
           "people": {
@@ -22160,9 +22156,9 @@
             "type": "string"
           },
           "source_rank": {
-            "description": "Rank on that source. null when unranked.",
+            "description": "Rank on that source, as it publishes it. null when unranked.",
             "format": "int64",
-            "minimum": 1,
+            "minimum": 0,
             "type": [
               "integer",
               "null"
@@ -22496,7 +22492,7 @@
         "properties": {
           "caption": {
             "description": "Caption. Empty string when none. Free text; never use it as a decision input.",
-            "maxLength": 512,
+            "maxLength": 2048,
             "type": "string"
           },
           "image": {

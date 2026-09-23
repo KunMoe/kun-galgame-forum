@@ -11667,10 +11667,10 @@ export interface components {
             /** @description Credited companies. Empty array, never null. */
             companies: components["schemas"]["WorkCompany"][];
             /**
-             * @description Age rating: all_ages or r18.
+             * @description Age rating, catalog's age axis: all_ages, sensitive or r18. Not the forum's SFW gate, which is is_nsfw.
              * @enum {string}
              */
-            content_rating: "all_ages" | "r18";
+            content_rating: "all_ages" | "sensitive" | "r18";
             /** @description People who contributed to the forum page, unrenderable accounts dropped. Empty array, never null. */
             contributors: components["schemas"]["UserRef"][];
             /** @description The portrait cover at its original size, never the 16:9 crop. null when the work has none. */
@@ -11789,18 +11789,16 @@ export interface components {
         };
         WorkCharacter: {
             /**
-             * @description How large a part the character plays.
+             * @description How large a part the character plays. unknown when catalog has no role recorded, as for a character reached only through a voice credit.
              * @enum {string}
              */
-            character_kind: "main" | "secondary" | "appears";
+            character_kind: "main" | "secondary" | "appears" | "unknown";
             /** @description The entity's own name. Never empty. Free text; never use it as a decision input. */
             display_name: string;
             /** @description A full-body standing picture. null when catalog has none. */
             figure: components["schemas"]["Image"] | null;
             /** @description Character id: the catalog character id, which is also the id in the web's /galgame/character/{id}. */
             id: string;
-            /** @description Who the character is in the story. Empty string when none. Free text; never use it as a decision input. */
-            identity: string;
             /** @description The character's portrait. null when catalog has none. */
             image: components["schemas"]["Image"] | null;
             /** @description Romanization of the name. null when none is recorded. Free text; never use it as a decision input. */
@@ -11967,7 +11965,7 @@ export interface components {
             site: string;
             /**
              * Format: int64
-             * @description Rank on that source. null when unranked.
+             * @description Rank on that source, as it publishes it. null when unranked.
              */
             source_rank: number | null;
             /** @description That source's summary statistics. null when none. */

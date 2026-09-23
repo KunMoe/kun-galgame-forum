@@ -338,6 +338,25 @@ G8 要求全 spec 里同名属性同型（含可空与 format），G14 要求每
 - **v2 的竖版 / 横幅槽位此前永远不带等级。** 论坛的 v2 改写（`client/catalog_v2.go` `imageToSlot`）从 v2 `cover` / `banner` 合成 `cover_slots` 时只抄了 url / 宽高 / thumbhash，`sexual` 丢了，所以 K-G27 的指针解码单做是空转：`WorkRef.cover.sexual` 在生产里恒 `null`。改写现在把 v2 的 `safe`/`suggestive`/`explicit` 映成 0/1/2 写进槽位，`null` 保持缺席。槽位的等级只有 `workrepr` 读，旧面不受影响。**影响面**：所有带 `WorkRef` 的 v1 面（资源、题目、排行、搜索、活动…）的 `cover.sexual` 从恒 `null` 变成真实等级；网页按 `sexual` 模糊的地方要在浏览器里看一遍。
 - **`resource_types` 读的是标量 `galgame_resource.type`**，不是 jsonb 轴（资源表只有平台 / 语言是 jsonb）。去重后过 `CompatType` + `TypeKeys`。
 
+### 3.14 G4.1：部署后抓到的收窄（2026-09-24，以此为准）
+
+G4 上线后生产日志几分钟里出现 1,802 条 `work characters: unknown character_kind, row dropped`。catalog 的 `roster_role` 是 `main|secondary|appears|unknown`，本面只收前三个，`unknown`（只经声优署名连到作品的角色）整行丢掉：prod catalog 239,744 行里 12,425 行（5%），旧页是显示的。教训：**封闭词表要对 infra 的定义（`apiv2/repr/work_block.go` / `entity.go`）逐个比，不能对 dev 数据恰好有的值比**。逐字段审计与处理：
+
+| 字段 | infra | G4 | G4.1 |
+|---|---|---|---|
+| `roster[].character_kind` | `main,secondary,appears,unknown` | 丢 `unknown` 行 | 收下 `unknown`；网页不画徽章（与旧页同） |
+| `content_rating` | `all_ages,sensitive,r18` | `sensitive` 压成 `all_ages`（3,016 部，旧面同样压） | 三值原样；网页标「敏感」（编辑引擎本来就是三档） |
+| `credits[].display_name`（`role_name`） | ≤512 | 截到 128 | ≤512，不截（生产无超 128 的） |
+| `external_ratings[].source_rank`（`rank`） | ≥0 | 0 → `null` | ≥0 原样（生产无 0） |
+| `screenshots[].caption` | ≤2048 | 截到 512 | ≤2048（生产无超 512 的） |
+| `aliases` / 配音角色名 / 外部 id | 字符长度 | 按**字节**数判超长：300 字的中文别名（900 字节）被丢（生产 2 条标题） | 按字符数 |
+| `roster[].identity` | 不透明的 roster 行 token（≤64），供编辑提案回传 | 当成「故事里的身份」自由文本下发 | **不下发**：网页从不读，编辑提案走编辑引擎自己的 bootstrap（K26） |
+| `attribution_role` / `company_kind` / `tag_kind` / `spoiler` / `tier` / `sexual` | 与本面相同 | — | 核对过，无收窄 |
+| 各 `source` / `site` | 开放词表 ≤64 | 正则 `^[a-z0-9][a-z0-9_-]*$` 过滤 | 生产 `catalog_source.key` 21 个全过；过滤处都改成打 WARN（原来静默） |
+| 简介 `lang` | BCP-47 | 正则过滤 | 生产 4 个值全过 |
+
+仍然有意丢掉、且打 WARN 的：没有 URL / 站点不合规的封面与截图、没有 id 的封面、`role_key` 为空或含空白的署名组（生产 0）、不合规的外部 ref / 评分 / 游玩聚合行。未映射标签（无 canonical id）与 hidden 层照旧跳过（旧面同样行为）。
+
 ## 4. 逐条操作
 
 通用：401 `MISSING_CREDENTIAL` / `INVALID_CREDENTIAL`（required；optional 的坏 Bearer）、403 `ACCOUNT_BANNED`、500 `INTERNAL_ERROR`、503 `SERVICE_UNAVAILABLE`（会话存储 / userclient / catalog）。每个 401 带 `WWW-Authenticate`。v1 全部 `Cache-Control: no-store`。
