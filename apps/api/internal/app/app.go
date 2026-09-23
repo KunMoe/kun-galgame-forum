@@ -35,6 +35,7 @@ import (
 	"kun-galgame-api/internal/moemoepoint"
 	newsapiv1 "kun-galgame-api/internal/news/apiv1"
 	overviewapiv1 "kun-galgame-api/internal/overview/apiv1"
+	quizapiv1 "kun-galgame-api/internal/quiz/apiv1"
 	rankingapiv1 "kun-galgame-api/internal/ranking/apiv1"
 	rankingRepo "kun-galgame-api/internal/ranking/repository"
 	rssHandler "kun-galgame-api/internal/rss/handler"
@@ -99,6 +100,7 @@ type App struct {
 	GalgameV1       *galgameapiv1.Service
 	GalgameEntityV1 *galgameentityv1.Service
 	GalgameRatingV1 *ratingapiv1.Service
+	QuizCatalog     quizapiv1.Catalog
 	WallV1          *wallapiv1.Service
 	OverviewV1      *overviewapiv1.Service
 	RankingV1       *rankingapiv1.Service
@@ -116,7 +118,6 @@ type App struct {
 	GalgameHandler            *galgameHandler.GalgameHandler
 	GalgameCollectionHandler  *galgameHandler.GalgameCollectionHandler
 	GalgameResourceHandler    *galgameHandler.ResourceHandler
-	GalgameQuizHandler        *galgameHandler.QuizHandler
 	GalgameCalendarHandler    *galgameHandler.CalendarHandler
 	GalgameDraftsHandler      *galgameHandler.DraftsHandler
 	GalgameProxyHandler       *galgameHandler.GalgameProxyHandler
@@ -402,8 +403,6 @@ func New(cfg *config.Config) *App {
 	galgameCommunityPostRepo := galgameRepo.NewCommunityPostRepository(db)
 	galgameResourceRepo := galgameRepo.NewResourceRepository(db)
 	galgameResourceSvc := galgameService.NewResourceService(galgameResourceRepo, galgameLocalRepo, gc, catalogCli, uc, linkChecker, trustCheck, trustScan, storeLinks)
-	galgameQuizRepo := galgameRepo.NewQuizRepository(db)
-	galgameQuizSvc := galgameService.NewQuizService(galgameQuizRepo, gc, uc, trustCheck, trustScan)
 	creatorSvc := galgameService.NewCreatorService(galgameRepo.NewRatingStore(db), galgameUserStatsSvc, uc)
 	galgameInteractionRepo := galgameRepo.NewGalgameInteractionRepository(db)
 	galgameListRepo := galgameRepo.NewGalgameListRepository(db)
@@ -502,6 +501,7 @@ func New(cfg *config.Config) *App {
 		GalgameV1:                 galgameapiv1.New(gc, moyuCli, uc, rdb, cfg.NextMoeAPI.ImageCDNBase),
 		GalgameEntityV1:           galgameentityv1.New(gc, db, cfg.NextMoeAPI.ImageCDNBase),
 		GalgameRatingV1:           newRatingV1(db, gc, uc, trustCheck, trustScan, galgamePlaytimeSvc, cfg.NextMoeAPI.ImageCDNBase),
+		QuizCatalog:               gc,
 		TrustV1:                   trustapiv1.New(trustCli, uc, cfg.Trust.Site, cfg.NextMoeAPI.ImageCDNBase),
 		WallV1:                    newWallV1(db, communityCli, uc, gc, imageMetaResolve(imageMeta), cfg.NextMoeAPI.ImageCDNBase),
 		ActivityV1:                newActivityV1(db, gc, uc, imageMetaResolve(imageMeta), cfg.NextMoeAPI.ImageCDNBase),
@@ -516,7 +516,6 @@ func New(cfg *config.Config) *App {
 		GalgameHandler:            galgameHandler.NewGalgameHandler(galgameCoreSvc),
 		GalgameCollectionHandler:  galgameHandler.NewGalgameCollectionHandler(galgameCollectionSvc),
 		GalgameResourceHandler:    galgameHandler.NewResourceHandler(galgameResourceSvc),
-		GalgameQuizHandler:        galgameHandler.NewQuizHandler(galgameQuizSvc),
 		GalgameCalendarHandler:    galgameHandler.NewCalendarHandler(galgameCalendarSvc),
 		GalgameDraftsHandler:      galgameHandler.NewDraftsHandler(galgameDraftsSvc),
 		GalgameProxyHandler:       galgameHandler.NewGalgameProxyHandler(galgameProxySvc),

@@ -240,7 +240,7 @@ K18：只有本次提交的文本走 trust——`prompt_text`、`description_mar
 | 他人收藏 / 取消 | `liked` ±1 | `kungal:favorited:quiz_favorite_{row}` / `kungal:unfavorited:quiz_favorite_{row}` | `galgame_quiz:<id>`（自己的不给，W4 收藏先例：`engage_favorite.go:35-36,68-69`） |
 | 答对 | 0 | 不调用 | — |
 
-键不再含 `KeyNonce`（修 E30）。发分等提交成功之后（W4 `pendingAward`）。OAuth 不可用 → 写面 503（既有 pusher 行为）。收藏键用行的 `id`（迁移 143 加列）：取消再收藏会插入新行、拿到新 id，所以正好再给一次。
+键不再含 `KeyNonce`（修 E30）。发分等提交成功之后，经 pusher 异步推送（与 G1、W4 相同；实现时核实，旧稿「OAuth 不可用 → 503」不对：推送不阻塞写面，靠稳定幂等键重试）。收藏键用行的 `id`（迁移 143 加列）：取消再收藏会插入新行、拿到新 id，所以正好再给一次。
 
 答对奖励保持 0。网页「答对可获得萌萌点」删掉（修 E16）。出题 +2 / 删除 −2 的文案保留。
 
@@ -279,6 +279,7 @@ K18：只有本次提交的文本走 trust——`prompt_text`、`description_mar
 - 作答集合里，`is_correct` 与 `submission` 只发给已经作答或能看见键的人；其余人两项都是 `null`。
 - 详情：`single` / `multiple` 有 `choices`（无键），`judge` 的 `choices` 是 `[]`。键在 `solution`。
 - POST answers 的 201 是调用者的作答加上 `solution`。
+- 作答在同一事务里给作者写一条 `quiz-answered` 通知（旧面就有，生产 10,423 条，契约初稿漏了，实现时补回）：`sender` 作答者、`receiver` 作者、`link` `/galgame-quiz/{id}`、同一 sender / receiver / link 已有则不重复写；正文照旧面 `选择「A. 选项」，回答正确`（多选以「、」连接，判断题 `正确` / `错误`）。
 
 作答：
 
@@ -367,7 +368,7 @@ Query：`quiz_ids` 必填，1–100，逗号形（`explode: false`，与 `me/top
 
 | 状态 | code |
 |---|---|
-| 422 | `VALIDATION_FAILED`（缺席 / 空 / 超过 100 / 非正十进制） |
+| 400 | `INVALID_PARAMETER`（缺席 / 空 / 超过 100 / 非正十进制；与 `/me/topic-states` 相同，实现时按先例改） |
 
 ### 4.7 `listWorkSuggestions` · `GET /work-suggestions` · public · 200 `List<WorkRef>`
 
@@ -527,6 +528,7 @@ CREATE TRIGGER trg_feed_galgame_quiz
 | 10 | 作答 INSERT 把唯一约束冲突映射成 500 | 已有 answerer 行再 POST → 409 `ALREADY_EXISTS`，无第二行 |
 | 11 | 去掉「作者不能答」的检查 | 作者 POST answers → 403 `SELF_ANSWER_FORBIDDEN`，无 answerer 行 |
 | 12 | `is_work_hidden` 为真时仍填 `works` | 未作答 GET 的 `works` 是 `[]`；作答后同一调用者拿到非空 `WorkRef[]` |
+| 13 | 作答不再给作者写 `quiz-answered` 通知（实现时补） | 作答后 `message` 里恰有一条 sender=作答者、receiver=作者、正文 `选择「正确」，回答正确` |
 
 ## 8. 开放问题
 

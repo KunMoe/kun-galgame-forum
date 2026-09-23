@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"maps"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -135,6 +136,7 @@ type fakeCatalog struct {
 	rollup    map[string][]geMember
 	seriesMem map[int][]int
 	gotLimits []string
+	searched  []url.Values
 }
 
 func decodeInto(t *testing.T, raw string, out any) {
@@ -395,9 +397,26 @@ func (f *fakeCatalog) CatalogWorksSearch(_ context.Context, q url.Values) (*clie
 	if e := f.err(); e != nil {
 		return nil, e
 	}
+	f.mu.Lock()
+	f.searched = append(f.searched, maps.Clone(q))
+	f.mu.Unlock()
 	limit := q.Get("content_limit")
 	var ids []int
 	switch {
+	case q.Get("q") != "":
+		kw := strings.ToLower(q.Get("q"))
+		for _, w := range f.works {
+			if strings.Contains(strings.ToLower(w.name), kw) {
+				ids = append(ids, w.id)
+			}
+		}
+		if len(ids) == 0 {
+			for id, row := range f.rows {
+				if strings.Contains(strings.ToLower(row.DisplayName), kw) {
+					ids = append(ids, id)
+				}
+			}
+		}
 	case q.Get("series_id") != "":
 		sid, _ := strconv.Atoi(q.Get("series_id"))
 		ids = f.sortMembers(f.seriesMem[sid], q.Get("sort"))

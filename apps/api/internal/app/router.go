@@ -16,6 +16,7 @@ import (
 	newsapiv1 "kun-galgame-api/internal/news/apiv1"
 	overviewapiv1 "kun-galgame-api/internal/overview/apiv1"
 	permissionapiv1 "kun-galgame-api/internal/permission/apiv1"
+	quizapiv1 "kun-galgame-api/internal/quiz/apiv1"
 	rankingapiv1 "kun-galgame-api/internal/ranking/apiv1"
 	searchapiv1 "kun-galgame-api/internal/search/apiv1"
 	sectionapiv1 "kun-galgame-api/internal/section/apiv1"
@@ -63,6 +64,7 @@ func (a *App) setupRoutes() {
 		messageapiv1.Register(a.newMessageV1()),
 		websiteapiv1.Register(a.newWebsiteV1()),
 		toolsetapiv1.Register(a.newToolsetV1()),
+		quizapiv1.Register(a.newQuizV1()),
 		updateapiv1.Register(a.newUpdateV1()),
 		trustapiv1.Register(a.TrustV1),
 		permissionapiv1.Register(a.newPermissionV1()),
@@ -123,7 +125,6 @@ func (a *App) setupRoutes() {
 		userAuth,
 		a.GalgameSubmissionHandler.SearchWithPending,
 	)
-	api.Get("/galgame/search/picker", a.GalgameQuizHandler.SearchGalgames)
 	api.Get("/galgame/calendar", a.GalgameCalendarHandler.GetMonth)
 	api.Get("/galgame/collected-calendar", a.GalgameHandler.CollectedCalendar)
 	api.Get("/galgame/calendar/today", a.GalgameCalendarHandler.GetToday)
@@ -133,11 +134,6 @@ func (a *App) setupRoutes() {
 	api.Get("/galgame/drafts", a.GalgameDraftsHandler.GetDrafts)
 	api.Get("/galgame/:id/edit/diff", a.GalgameEditHandler.Diff)
 	api.Get("/galgame/:id/edit/proposals", a.GalgameEditHandler.GameProposals)
-	api.Get(
-		"/galgame-quiz/:id/answers",
-		a.Authn.OptionalAuth(),
-		a.GalgameQuizHandler.GetQuizAnswers,
-	)
 
 	optAuth := api.Group("", a.Authn.OptionalAuth())
 	// The rating and resource families sit here, not in the public group above:
@@ -148,8 +144,6 @@ func (a *App) setupRoutes() {
 	optAuth.Get("/galgame-resource/:id/detail", a.GalgameResourceHandler.GetResourceDownloadDetail)
 	optAuth.Get("/galgame-resource/:id", a.GalgameResourceHandler.GetResourceDetail)
 
-	optAuth.Get("/galgame-quiz/all", a.GalgameQuizHandler.GetAllQuizzes)
-	optAuth.Get("/galgame-quiz/:id", a.GalgameQuizHandler.GetQuizPlay)
 
 	optAuth.Get("/galgame/:id/resource/all", a.GalgameResourceHandler.GetGalgameResources)
 	// Both comment READ halves must mount before the auth boundary below, or
@@ -198,15 +192,6 @@ func (a *App) setupRoutes() {
 	authed.Put("/galgame/:id/resource/valid", a.GalgameResourceHandler.MarkValid)
 	authed.Put("/galgame/:id/resource/expired", a.GalgameResourceHandler.MarkExpired)
 
-	authed.Get("/galgame-quiz/mine/answered", a.GalgameQuizHandler.GetMyAnswered)
-	authed.Get("/galgame-quiz/mine/favorites", a.GalgameQuizHandler.GetMyFavorites)
-	authed.Post("/galgame-quiz", a.GalgameQuizHandler.CreateQuiz)
-	authed.Delete("/galgame-quiz/:id", a.GalgameQuizHandler.DeleteQuiz)
-	authed.Post("/galgame-quiz/:id/answer", a.GalgameQuizHandler.AnswerQuiz)
-	authed.Put("/galgame-quiz/:id/quality", a.GalgameQuizHandler.RateQuizQuality)
-	authed.Put("/galgame-quiz/:id/favorite", a.GalgameQuizHandler.ToggleQuizFavorite)
-	authed.Get("/galgame-quiz/:id/edit", a.GalgameQuizHandler.GetQuizForEdit)
-	authed.Put("/galgame-quiz/:id", a.GalgameQuizHandler.UpdateQuiz)
 
 	authed.Get("/galgame/:id/edit/bootstrap", a.GalgameEditHandler.Bootstrap)
 	authed.Post("/galgame/:id/edit/proposals", a.GalgameEditHandler.Submit)
