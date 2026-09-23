@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import {
   KUN_QUIZ_TYPE_CONST,
-  KUN_QUIZ_ENABLED_TYPE_CONST,
   KUN_QUIZ_TYPE_MAP,
   KUN_QUIZ_TYPE_ICON_MAP,
   KUN_QUIZ_TYPE_DESCRIPTION_MAP,
@@ -9,21 +8,47 @@ import {
   KUN_QUIZ_CATEGORY_MAP,
   KUN_QUIZ_SPOILER_CONST,
   KUN_QUIZ_SPOILER_MAP,
+  KUN_QUIZ_PROMPT_MAX,
   kunQuizDifficultyLabel,
   kunQuizDifficultyColor
 } from '~/constants/galgame-quiz'
 import { createGalgameQuizSchema } from '~/validations/galgame-quiz'
+import { settle } from '#shared/utils/api/problem'
+import { useIdempotencyKey } from '~/composables/useIdempotencyKey'
+import type {
+  Quiz,
+  QuizCategory,
+  QuizCreate,
+  QuizPatch,
+  QuizSource,
+  QuizSpoilerLevel,
+  QuizType,
+  WorkRef
+} from '#shared/utils/api/schemas'
+import { coerceQuizType } from '~/store/modules/edit/quiz'
+import type { RecentQuizGalgame } from '~/store/modules/edit/quizGalgame'
+
+type QuizEditorValue = {
+  choices: string[]
+  correct_choice_indexes: number[]
+  is_statement_true: boolean | null
+}
 
 const props = defineProps<{
-  workId?: number
-  editData?: QuizEditData | null
+  workId?: string
+  source?: QuizSource | null
+  works?: WorkRef[]
 }>()
 
 const emits = defineEmits<{
-  published: [quiz: GalgameQuizCard]
+  published: [quiz: Quiz]
   updated: []
   cancel: []
 }>()
+
+const api = useApiClient()
+const createKey = useIdempotencyKey()
+const workName = useWorkName()
 
 const category = ref<QuizCategory>('trivia')
 const type = ref<QuizType>('single')
@@ -32,42 +57,62 @@ const spoilerLevel = ref<QuizSpoilerLevel>('none')
 const question = ref('')
 const description = ref('')
 const explanation = ref('')
-const pickedWorkIds = ref<number[]>([])
+const pickedWorkIds = ref<string[]>([])
 const hideGalgame = ref(false)
 const showExplanation = ref(false)
 const isSubmitting = ref(false)
 
 const editorRef = ref<{
-  getContent: () => Record<string, unknown>
+  getValue: () => QuizEditorValue
   validate: () => string | null
   reset: () => void
-  load: (content: Record<string, unknown>) => void
+  load: (content: QuizEditorValue) => void
 } | null>(null)
 
-const initialSelected = ref<{ id: number; name: string }[]>([])
-const isEditing = computed(() => !!props.editData)
+const initialSelected = ref<RecentQuizGalgame[]>([])
+const isEditing = computed(() => !!props.source)
+const original = ref<QuizSource | null>(null)
+
+const worksOf = (d: QuizSource): RecentQuizGalgame[] => {
+  const byId = new Map((props.works ?? []).map((w) => [w.id, w]))
+  return d.work_ids.map((id) => {
+    const work = byId.get(id)
+    if (work) {
+      return {
+        id: work.id,
+        name: workName(work),
+        coverUrl: work.cover?.url,
+        thumbhash: work.cover?.thumbhash ?? undefined,
+        isNsfw: work.is_nsfw
+      }
+    }
+    return { id, name: `#${id}` }
+  })
+}
 
 watch(
-  () => props.editData,
+  () => props.source,
   async (d) => {
     if (!d) return
-    category.value = d.category
-    type.value = d.type
+    original.value = d
+    category.value = d.quiz_category
+    type.value = d.quiz_type
     difficulty.value = d.difficulty
     spoilerLevel.value = d.spoiler_level
-    question.value = d.question
-    description.value = d.description
-    explanation.value = d.explanation
-    showExplanation.value = !!d.explanation
-    hideGalgame.value = d.hide_galgame
-    pickedWorkIds.value = [...d.galgame_ids]
-    initialSelected.value = d.galgames.map((g) => ({
-      id: g.id,
-      name: g.name || `#${g.id}`
-    }))
+    question.value = d.prompt_text
+    description.value = d.description_markdown
+    explanation.value = d.explanation_markdown
+    showExplanation.value = !!d.explanation_markdown
+    hideGalgame.value = d.is_work_hidden
+    pickedWorkIds.value = [...d.work_ids]
+    initialSelected.value = worksOf(d)
     await nextTick()
     if (!editorRef.value) await nextTick()
-    editorRef.value?.load(d.content as unknown as Record<string, unknown>)
+    editorRef.value?.load({
+      choices: d.choices,
+      correct_choice_indexes: d.correct_choice_indexes,
+      is_statement_true: d.is_statement_true
+    })
   },
   { immediate: true }
 )
@@ -89,7 +134,7 @@ watch(
     hideGalgame
   ],
   () => {
-    if (props.editData || isRestoring.value) return
+    if (props.source || isRestoring.value) return
     persist.category = category.value
     persist.type = type.value
     persist.difficulty = difficulty.value
@@ -102,16 +147,16 @@ watch(
   }
 )
 
-const onContentChange = (content: Record<string, unknown>) => {
-  if (props.editData || isRestoring.value) return
+const onContentChange = (content: QuizEditorValue) => {
+  if (props.source || isRestoring.value) return
   persist.content = content
 }
 
 onMounted(async () => {
-  if (props.editData) return
+  if (props.source) return
   isRestoring.value = true
   category.value = persist.category
-  type.value = persist.type
+  type.value = coerceQuizType(persist.type)
   difficulty.value = persist.difficulty
   spoilerLevel.value = persist.spoilerLevel
   question.value = persist.question
@@ -123,25 +168,25 @@ onMounted(async () => {
   const saved = persist.content
   await nextTick()
   if (!editorRef.value) await nextTick()
-  if (saved && Object.keys(saved).length) {
-    editorRef.value?.load(saved)
+  if (saved && Array.isArray(saved.choices)) {
+    editorRef.value?.load(saved as QuizEditorValue)
   }
   await nextTick()
   isRestoring.value = false
 })
 
-const typeGroupOptions = KUN_QUIZ_TYPE_CONST.map((t) => {
-  const enabled = (KUN_QUIZ_ENABLED_TYPE_CONST as readonly string[]).includes(t)
-  return {
+const typeGroupOptions = computed(() =>
+  KUN_QUIZ_TYPE_CONST.map((t) => ({
     value: t,
-    label: KUN_QUIZ_TYPE_MAP[t] ?? t,
-    icon: KUN_QUIZ_TYPE_ICON_MAP[t] ?? 'lucide:circle',
-    disabled: !enabled
-  }
-})
+    label: KUN_QUIZ_TYPE_MAP[t],
+    icon: KUN_QUIZ_TYPE_ICON_MAP[t],
+    disabled: isEditing.value
+  }))
+)
 const typeSelection = computed<QuizType[]>({
   get: () => [type.value],
   set: (arr) => {
+    if (isEditing.value) return
     const last = arr[arr.length - 1]
     if (last) type.value = last
   }
@@ -149,7 +194,7 @@ const typeSelection = computed<QuizType[]>({
 
 const categoryOptions = KUN_QUIZ_CATEGORY_CONST.map((c) => ({
   value: c,
-  label: KUN_QUIZ_CATEGORY_MAP[c] ?? c
+  label: KUN_QUIZ_CATEGORY_MAP[c]
 }))
 const categorySelection = computed<QuizCategory[]>({
   get: () => [category.value],
@@ -161,7 +206,7 @@ const categorySelection = computed<QuizCategory[]>({
 
 const spoilerOptions = KUN_QUIZ_SPOILER_CONST.map((s) => ({
   value: s,
-  label: KUN_QUIZ_SPOILER_MAP[s] ?? s
+  label: KUN_QUIZ_SPOILER_MAP[s]
 }))
 
 const resetForm = () => {
@@ -179,65 +224,139 @@ const resetForm = () => {
   editorRef.value?.reset()
 }
 
+const workIds = () =>
+  props.workId ? [props.workId] : pickedWorkIds.value.map(String)
+
+const createPayload = (): QuizCreate => {
+  const value = editorRef.value?.getValue() ?? {
+    choices: [],
+    correct_choice_indexes: [],
+    is_statement_true: null
+  }
+  const payload: QuizCreate = {
+    quiz_type: type.value,
+    quiz_category: category.value,
+    difficulty: difficulty.value,
+    spoiler_level: spoilerLevel.value,
+    prompt_text: question.value,
+    description_markdown: description.value,
+    explanation_markdown: explanation.value,
+    is_work_hidden: hideGalgame.value,
+    work_ids: workIds()
+  }
+  if (type.value === 'judge') {
+    payload.is_statement_true = value.is_statement_true
+    payload.correct_choice_indexes = []
+  } else {
+    payload.choices = value.choices
+    payload.correct_choice_indexes = value.correct_choice_indexes
+  }
+  return payload
+}
+
+const sameArray = <T,>(a: T[], b: T[]) => JSON.stringify(a) === JSON.stringify(b)
+
+const patchFromChanges = (): QuizPatch => {
+  const before = original.value
+  const body: QuizPatch = {}
+  if (!before) return body
+  const value = editorRef.value?.getValue() ?? {
+    choices: [],
+    correct_choice_indexes: [],
+    is_statement_true: null
+  }
+  if (question.value !== before.prompt_text) body.prompt_text = question.value
+  if (description.value !== before.description_markdown) {
+    body.description_markdown = description.value
+  }
+  if (explanation.value !== before.explanation_markdown) {
+    body.explanation_markdown = explanation.value
+  }
+  if (category.value !== before.quiz_category) {
+    body.quiz_category = category.value
+  }
+  if (difficulty.value !== before.difficulty) body.difficulty = difficulty.value
+  if (spoilerLevel.value !== before.spoiler_level) {
+    body.spoiler_level = spoilerLevel.value
+  }
+  if (hideGalgame.value !== before.is_work_hidden) {
+    body.is_work_hidden = hideGalgame.value
+  }
+  const ids = workIds()
+  if (!sameArray(ids, before.work_ids)) body.work_ids = ids
+  if (before.quiz_type !== 'judge' && !sameArray(value.choices, before.choices)) {
+    body.choices = value.choices
+  }
+  if (!sameArray(value.correct_choice_indexes, before.correct_choice_indexes)) {
+    body.correct_choice_indexes = value.correct_choice_indexes
+  }
+  if (before.quiz_type === 'judge') {
+    if (value.is_statement_true !== before.is_statement_true) {
+      body.is_statement_true = value.is_statement_true
+    }
+  }
+  return body
+}
+
 const submit = async () => {
   const contentError = editorRef.value?.validate()
   if (contentError) {
     useMessage(contentError, 'warn')
     return
   }
-  const content = editorRef.value?.getContent() ?? {}
 
-  const body: Record<string, unknown> = {
-    category: category.value,
-    type: type.value,
-    difficulty: difficulty.value,
-    spoiler_level: spoilerLevel.value,
-    question: question.value,
-    description: description.value,
-    content,
-    explanation: explanation.value,
-    hide_galgame: hideGalgame.value,
-    galgame_ids: props.workId ? [props.workId] : pickedWorkIds.value
-  }
-
-  const valid = useKunSchemaValidator(createGalgameQuizSchema, body)
-  if (!valid) {
-    return
-  }
-
-  if (isEditing.value && props.editData) {
-    body.quiz_id = props.editData.id
+  if (isEditing.value && props.source) {
+    const body = patchFromChanges()
+    const valid = useKunSchemaValidator(createGalgameQuizSchema, {
+      ...createPayload(),
+      ...body
+    })
+    if (!valid) return
+    if (Object.keys(body).length === 0) {
+      useMessage('已保存修改', 'success')
+      emits('updated')
+      return
+    }
     isSubmitting.value = true
-    const ok = await kunFetch<{ regraded: number }>(
-      `/galgame-quiz/${props.editData.id}`,
-      { method: 'PUT', body }
+    const ok = await settle(
+      api.PATCH('/quizzes/{quiz_id}', {
+        params: { path: { quiz_id: props.source.quiz_id } },
+        body
+      })
     )
     isSubmitting.value = false
-    if (ok) {
-      const regraded = ok.regraded ?? 0
-      useMessage(
-        regraded > 0
-          ? `已保存修改，${regraded} 条作答已更正为正确并补发萌萌点`
-          : '已保存修改',
-        'success'
-      )
-      emits('updated')
+    if (!ok.ok) {
+      reportProblem(ok.problem)
+      return
     }
+    useMessage('已保存修改', 'success')
+    emits('updated')
     return
   }
 
+  const payload = createPayload()
+  const valid = useKunSchemaValidator(createGalgameQuizSchema, payload)
+  if (!valid) return
+
   isSubmitting.value = true
-  const res = await kunFetch<GalgameQuizCard>('/galgame-quiz', {
-    method: 'POST',
-    body
-  })
+  const res = await settle(
+    api.POST('/quizzes', {
+      params: {
+        header: { 'Idempotency-Key': createKey.take('/quizzes', payload) }
+      },
+      body: payload
+    })
+  )
   isSubmitting.value = false
-  if (res) {
-    useMessage('出题成功', 'success')
-    resetForm()
-    persist.reset()
-    emits('published', res)
+  if (!res.ok) {
+    reportProblem(res.problem)
+    return
   }
+  createKey.clear()
+  useMessage('出题成功', 'success')
+  resetForm()
+  persist.reset()
+  emits('published', res.data)
 }
 </script>
 
@@ -280,10 +399,7 @@ const submit = async () => {
     </div>
 
     <div class="space-y-2">
-      <div class="flex items-center gap-2">
-        <label class="text-sm font-medium">题型</label>
-        <span class="text-default-400 text-xs">填空、问答即将实装</span>
-      </div>
+      <label class="text-sm font-medium">题型</label>
       <KunCheckBoxGroup
         v-model="typeSelection"
         :options="typeGroupOptions"
@@ -302,7 +418,7 @@ const submit = async () => {
       label="题目"
       :rows="2"
       placeholder="例如: 《永不枯萎的世界与终结之花》中莲什么时候来过月经"
-      :maxlength="2000"
+      :maxlength="KUN_QUIZ_PROMPT_MAX"
       :show-char-count="true"
       auto-grow
     />

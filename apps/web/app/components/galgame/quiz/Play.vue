@@ -9,11 +9,24 @@ import {
   kunQuizDifficultyLabel,
   kunQuizDifficultyColor
 } from '~/constants/galgame-quiz'
-import { answerGalgameQuizSchema } from '~/validations/galgame-quiz'
+import { settle } from '#shared/utils/api/problem'
+import type {
+  Quiz,
+  QuizQuality,
+  QuizSource,
+  QuizSubmission
+} from '#shared/utils/api/schemas'
+import { contentPlainText } from '~/utils/contentPlainText'
+import { toKunUser } from '~/utils/userRef'
+import { useIdempotencyKey } from '~/composables/useIdempotencyKey'
 
-const props = defineProps<{ quiz: GalgameQuizPlay }>()
+const props = defineProps<{ quiz: Quiz }>()
 
 const router = useRouter()
+const api = useApiClient()
+const answerKey = useIdempotencyKey()
+const workName = useWorkName()
+
 const returnToLibrary = () => {
   const back = window.history.state?.back
   if (typeof back === 'string' && /^\/galgame-quiz(\?|#|$)/.test(back)) {
@@ -23,15 +36,46 @@ const returnToLibrary = () => {
   }
 }
 
-const state = ref<GalgameQuizPlay>({ ...props.quiz })
-const canEditAnyQuiz = useCan('quiz.edit_any')
-const canDeleteAnyQuiz = useCan('quiz.delete_any')
+const state = ref<Quiz>({ ...props.quiz })
+watch(
+  () => props.quiz,
+  (next) => {
+    state.value = { ...next }
+  }
+)
 
 const answerRef = ref<{
-  getSubmitted: () => Record<string, unknown>
+  getSubmitted: () => QuizSubmission
   validate: () => string | null
 } | null>(null)
 const isSubmitting = ref(false)
+
+const applyQuality = (r: QuizQuality) => {
+  state.value = {
+    ...state.value,
+    quality_average: r.quality_average,
+    quality_count: r.quality_count,
+    viewer: state.value.viewer
+      ? {
+          ...state.value.viewer,
+          quality_rating: r.viewer?.quality_rating ?? null
+        }
+      : state.value.viewer
+  }
+}
+
+const reloadQuiz = async () => {
+  const fresh = await settle(
+    api.GET('/quizzes/{quiz_id}', {
+      params: { path: { quiz_id: state.value.id } }
+    })
+  )
+  if (!fresh.ok) {
+    reportProblem(fresh.problem)
+    return
+  }
+  state.value = fresh.data
+}
 
 const submitAnswer = async () => {
   if (!requireLogin()) return
@@ -40,64 +84,80 @@ const submitAnswer = async () => {
     useMessage(err, 'warn')
     return
   }
-  const submitted = answerRef.value?.getSubmitted() ?? {}
-  const body = { quiz_id: state.value.id, submitted }
-  const valid = useKunSchemaValidator(answerGalgameQuizSchema, body)
-  if (!valid) return
+  const body = answerRef.value?.getSubmitted()
+  if (!body) return
 
   isSubmitting.value = true
-  const res = await kunFetch<QuizAnswerResult>(
-    `/galgame-quiz/${state.value.id}/answer`,
-    { method: 'POST', body }
+  const res = await settle(
+    api.POST('/quizzes/{quiz_id}/answers', {
+      params: {
+        path: { quiz_id: state.value.id },
+        header: {
+          'Idempotency-Key': answerKey.take(
+            `/quizzes/${state.value.id}/answers`,
+            body
+          )
+        }
+      },
+      body
+    })
   )
   isSubmitting.value = false
-  if (res) {
-    state.value.my_answer = res
-    state.value.answer_count += 1
-    if (res.is_correct) state.value.correct_count += 1
-    if (res.reward_delta > 0) {
-      useMessage(`回答正确, +${res.reward_delta} 萌萌点`, 'success')
+  if (!res.ok) {
+    reportProblem(res.problem)
+    if (res.problem.code === 'ALREADY_EXISTS') {
+      await reloadQuiz()
     }
-    if (state.value.hide_galgame && !state.value.galgames.length) {
-      const fresh = await kunFetch<GalgameQuizPlay>(
-        `/galgame-quiz/${state.value.id}`
-      )
-      if (fresh) state.value.galgames = fresh.galgames
+    return
+  }
+  answerKey.clear()
+  const posted = res.data
+  if (posted.answer && posted.solution) {
+    state.value = {
+      ...state.value,
+      solution: posted.solution,
+      answer_count: state.value.answer_count + 1,
+      correct_count:
+        state.value.correct_count + (posted.answer.is_correct ? 1 : 0),
+      viewer: state.value.viewer
+        ? {
+            ...state.value.viewer,
+            has_answered: true,
+            answer: posted.answer
+          }
+        : state.value.viewer
     }
   }
-}
-
-const onRated = (r: QuizQualityResult) => {
-  state.value.quality_average = r.quality_average
-  state.value.quality_count = r.quality_count
-  if (state.value.my_answer) {
-    state.value.my_answer.quality_rating = r.quality_rating
-  }
+  await reloadQuiz()
 }
 
 const isDeleting = ref(false)
-const canEdit = computed(() => state.value.is_author || canEditAnyQuiz.value)
-const canDelete = computed(
-  () => state.value.is_author || canDeleteAnyQuiz.value
-)
+const canEdit = computed(() => state.value.viewer?.can_edit ?? false)
+const canDelete = computed(() => state.value.viewer?.can_delete ?? false)
 const canManage = computed(() => canEdit.value || canDelete.value)
+const author = computed(() => toKunUser(state.value.author))
+const hasDescription = computed(
+  () => contentPlainText(state.value.content).trim().length > 0
+)
+const showAnswerInput = computed(
+  () => !state.value.viewer?.has_answered && !state.value.solution
+)
+const showResult = computed(() => !!state.value.solution)
 
 const showEdit = ref(false)
-const editData = ref<QuizEditData | null>(null)
+const editSource = ref<QuizSource | null>(null)
 const openEdit = async () => {
-  const data = await kunFetch<QuizEditData>(
-    `/galgame-quiz/${state.value.id}/edit`
+  const data = await settle(
+    api.GET('/quizzes/{quiz_id}/source', {
+      params: { path: { quiz_id: state.value.id } }
+    })
   )
-  if (data) {
-    editData.value = data
-    showEdit.value = true
+  if (!data.ok) {
+    reportProblem(data.problem)
+    return
   }
-}
-const reloadQuiz = async () => {
-  const fresh = await kunFetch<GalgameQuizPlay>(
-    `/galgame-quiz/${state.value.id}`
-  )
-  if (fresh) state.value = fresh
+  editSource.value = data.data
+  showEdit.value = true
 }
 
 const remove = async () => {
@@ -107,15 +167,42 @@ const remove = async () => {
   )
   if (!ok) return
   isDeleting.value = true
-  const res = await kunFetch(
-    `/galgame-quiz/${state.value.id}?quiz_id=${state.value.id}`,
-    { method: 'DELETE' }
+  const res = await settle(
+    api.DELETE('/quizzes/{quiz_id}', {
+      params: { path: { quiz_id: state.value.id } }
+    })
   )
   isDeleting.value = false
-  if (res) {
-    useMessage('已删除', 'success')
-    returnToLibrary()
+  if (!res.ok) {
+    reportProblem(res.problem)
+    return
   }
+  useMessage('已删除', 'success')
+  returnToLibrary()
+}
+
+const favoriteQuiz = async (next: boolean) => {
+  const options = { params: { path: { quiz_id: state.value.id } } }
+  const result = await settle(
+    next
+      ? api.PUT('/quizzes/{quiz_id}/favorite', options)
+      : api.DELETE('/quizzes/{quiz_id}/favorite', options)
+  )
+  if (!result.ok) {
+    reportProblem(result.problem)
+    return false
+  }
+  state.value = {
+    ...state.value,
+    favorite_count: result.data.favorite_count,
+    viewer: state.value.viewer
+      ? {
+          ...state.value.viewer,
+          has_favorited: result.data.viewer?.has_favorited ?? next
+        }
+      : state.value.viewer
+  }
+  return true
 }
 
 const correctRate = computed(() =>
@@ -169,10 +256,13 @@ const correctRate = computed(() =>
     <KunCard :is-transparent="false">
       <div class="space-y-4">
         <div class="flex flex-wrap items-center gap-2">
-          <KunChip :color="KUN_QUIZ_TYPE_COLOR_MAP[state.type]" variant="flat">
+          <KunChip
+            :color="KUN_QUIZ_TYPE_COLOR_MAP[state.quiz_type]"
+            variant="flat"
+          >
             <span class="flex items-center gap-1">
-              <KunIcon :name="KUN_QUIZ_TYPE_ICON_MAP[state.type]" />
-              {{ KUN_QUIZ_TYPE_MAP[state.type] }}
+              <KunIcon :name="KUN_QUIZ_TYPE_ICON_MAP[state.quiz_type]" />
+              {{ KUN_QUIZ_TYPE_MAP[state.quiz_type] }}
             </span>
           </KunChip>
           <KunChip
@@ -183,7 +273,7 @@ const correctRate = computed(() =>
             {{ state.difficulty }}
           </KunChip>
           <KunChip variant="light">
-            {{ KUN_QUIZ_CATEGORY_MAP[state.category] }}
+            {{ KUN_QUIZ_CATEGORY_MAP[state.quiz_category] }}
           </KunChip>
           <KunChip
             v-if="state.spoiler_level !== 'none'"
@@ -193,17 +283,15 @@ const correctRate = computed(() =>
             {{ KUN_QUIZ_SPOILER_MAP[state.spoiler_level] }}
           </KunChip>
           <KunLink
-            v-for="g in state.galgames"
-            :key="g.id"
-            :to="`/galgame/${g.id}`"
+            v-for="work in state.works"
+            :key="work.id"
+            :to="`/galgame/${work.id}`"
             class="text-sm"
           >
-            {{ g.name }}
+            {{ workName(work) }}
           </KunLink>
           <KunChip
-            v-if="
-              !state.galgames.length && state.hide_galgame && !state.my_answer
-            "
+            v-if="!state.works.length && state.is_work_hidden"
             variant="flat"
             size="sm"
           >
@@ -214,17 +302,14 @@ const correctRate = computed(() =>
         </div>
 
         <div role="heading" aria-level="1">
-          <KunContent
-            :content="state.question_html"
-            :compact="true"
-            class-name="text-xl font-bold break-words whitespace-pre-wrap"
+          <ContentDocument
+            :document="state.prompt"
+            compact
+            class-name="text-xl font-bold break-words"
           />
         </div>
 
-        <KunContent
-          v-if="state.description_html"
-          :content="renderKatex(state.description_html)"
-        />
+        <ContentDocument v-if="hasDescription" :document="state.content" />
 
         <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
           <div
@@ -233,13 +318,13 @@ const correctRate = computed(() =>
             <span class="text-default-700 flex items-center gap-1">
               <KunAvatar
                 :disable-floating="true"
-                :user="state.user"
+                :user="author"
                 size="xs"
                 :is-navigation="false"
               />
-              {{ state.user.name }}
+              {{ author.name }}
             </span>
-            <KunTime :time="state.created" />
+            <KunTime :time="state.created_at" />
             <span class="flex items-center gap-1">
               <KunIcon name="lucide:users" />{{ state.answer_count }} 人作答
             </span>
@@ -251,13 +336,13 @@ const correctRate = computed(() =>
           <div class="text-default-500 ml-auto flex items-center gap-1">
             <span class="inline-flex items-center gap-1.5 px-2 py-1 text-sm">
               <KunIcon name="lucide:eye" class="text-[1.15rem]" />{{
-                state.view
+                state.view_count
               }}
             </span>
             <FavoriteToggle
-              :favorited="state.is_favorited"
+              :favorited="state.viewer?.has_favorited ?? false"
               :count="state.favorite_count"
-              :endpoint="`/galgame-quiz/${state.id}/favorite`"
+              :action="favoriteQuiz"
               :messages="['已收藏', '已取消收藏']"
             />
           </div>
@@ -265,24 +350,25 @@ const correctRate = computed(() =>
 
         <KunDivider />
 
-        <div v-if="!state.my_answer" class="space-y-4">
+        <div v-if="showAnswerInput" class="space-y-4">
           <GalgameQuizPlayAnswerInput
             ref="answerRef"
-            :type="state.type"
-            :content="state.content"
+            :type="state.quiz_type"
+            :choices="state.choices"
           />
           <div class="flex justify-end">
             <KunButton :loading="isSubmitting" @click="submitAnswer">
-              {{ state.type === 'essay' ? '提交并查看参考答案' : '提交答案' }}
+              提交答案
             </KunButton>
           </div>
         </div>
 
         <GalgameQuizPlayResult
-          v-else
+          v-else-if="showResult && state.solution"
           :quiz="state"
-          :result="state.my_answer"
-          @rated="onRated"
+          :answer="state.viewer?.answer ?? null"
+          :solution="state.solution"
+          @rated="applyQuality"
         />
 
         <KunDivider />
@@ -293,7 +379,8 @@ const correctRate = computed(() =>
 
     <GalgameQuizPublish
       v-model="showEdit"
-      :edit-data="editData"
+      :source="editSource"
+      :works="state.works"
       @on-updated="reloadQuiz"
     />
   </div>

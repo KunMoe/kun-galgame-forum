@@ -1,5 +1,9 @@
 <script setup lang="ts">
-const props = defineProps<{ quiz: GalgameQuizPlay }>()
+import type { Quiz, QuizAnswer, QuizSubmission } from '#shared/utils/api/schemas'
+import { toKunUser } from '~/utils/userRef'
+import { problemMessage } from '#shared/utils/api/message'
+
+const props = defineProps<{ quiz: Quiz }>()
 
 const expanded = ref(false)
 const bodyRef = ref<HTMLElement | null>(null)
@@ -23,43 +27,50 @@ const onTransitionEnd = (e: TransitionEvent) => {
   if (e.propertyName === 'max-height' && expanded.value)
     maxHeight.value = 'none'
 }
-const recordsData = ref<QuizAnswererRecord[] | null>(null)
-const loading = ref(false)
+
+const workName = useWorkName()
+const {
+  items: records,
+  hasMore,
+  loadingMore,
+  loadMore,
+  refresh,
+  status,
+  problem
+} = await useCursorList<QuizAnswer>(
+  () => `quiz-answers:${props.quiz.id}`,
+  (api, cursor, { signal }) =>
+    api.GET('/quizzes/{quiz_id}/answers', {
+      params: {
+        path: { quiz_id: props.quiz.id },
+        query: {
+          limit: 20,
+          ...(cursor ? { cursor } : {})
+        }
+      },
+      signal
+    })
+)
+
+watch(
+  () => props.quiz.answer_count,
+  () => {
+    refresh()
+  }
+)
 
 const wrong = computed(() => props.quiz.answer_count - props.quiz.correct_count)
 
 const letter = (i: number) => String.fromCharCode(65 + i)
-const formatSubmitted = (s: QuizSubmitted): string => {
-  switch (props.quiz.type) {
-    case 'single': {
-      const v = (s as { value: number }).value
-      return typeof v === 'number' ? `选 ${letter(v)}` : ''
-    }
-    case 'multiple': {
-      const vals = (s as { values: number[] }).values ?? []
-      return vals.length ? `选 ${vals.map(letter).join('、')}` : '未选'
-    }
-    case 'judge':
-      return (s as { value: boolean }).value ? '答: 正确' : '答: 错误'
-    case 'fill': {
-      const vals = (s as { values: string[] }).values ?? []
-      return `填: ${vals.map((v) => v || '(空)').join(' / ')}`
-    }
-    case 'essay':
-      return `答: ${(s as { text: string }).text || '(空)'}`
-    default:
-      return ''
+const formatSubmitted = (s: QuizSubmission): string => {
+  if (props.quiz.quiz_type === 'judge') {
+    if (s.is_statement_true === true) return '答: 正确'
+    if (s.is_statement_true === false) return '答: 错误'
+    return ''
   }
+  if (!s.choice_indexes.length) return '未选'
+  return `选 ${s.choice_indexes.map(letter).join('、')}`
 }
-
-onMounted(async () => {
-  loading.value = true
-  const data = await kunFetch<QuizAnswererRecord[]>(
-    `/galgame-quiz/${props.quiz.id}/answers`
-  )
-  recordsData.value = data ?? []
-  loading.value = false
-})
 </script>
 
 <template>
@@ -73,45 +84,36 @@ onMounted(async () => {
       >
         <div class="space-y-4">
           <div
-            v-for="g in quiz.galgames"
-            :key="g.id"
+            v-for="work in quiz.works"
+            :key="work.id"
             class="border-default-200 flex gap-3 rounded-lg border p-2"
           >
             <div
-              class="bg-default-100 h-20 w-32 shrink-0 overflow-hidden rounded-lg"
+              class="bg-default-100 h-20 w-14 shrink-0 overflow-hidden rounded-lg"
             >
               <KunImage
-                v-if="g.banner"
-                :src="g.banner"
-                :thumbhash="g.banner_thumbhash"
-                width="128"
-                height="80"
+                v-if="work.cover"
+                :src="work.cover.url"
+                :thumbhash="work.cover.thumbhash ?? undefined"
+                :width="work.cover.width ?? 56"
+                :height="work.cover.height ?? 80"
                 object-fit="cover"
                 class-name="h-full w-full"
               />
             </div>
             <div class="min-w-0 flex-1">
-              <KunLink :to="`/galgame/${g.id}`" class="font-medium">
-                {{ g.name }}
+              <KunLink :to="`/galgame/${work.id}`" class="font-medium">
+                {{ workName(work) }}
               </KunLink>
               <div class="mt-1 flex flex-wrap items-center gap-1">
-                <KunChip v-if="g.age_limit" size="sm" variant="flat">
-                  {{ g.age_limit }}
-                </KunChip>
-                <KunChip v-if="g.original_language" size="sm" variant="light">
-                  {{ g.original_language }}
+                <KunChip v-if="work.is_nsfw" size="sm" variant="flat" color="danger">
+                  NSFW
                 </KunChip>
               </div>
-              <p
-                v-if="g.officials.length"
-                class="text-default-500 mt-1 line-clamp-2 text-xs"
-              >
-                {{ g.officials.join('、') }}
-              </p>
             </div>
           </div>
           <div
-            v-if="!quiz.galgames.length && quiz.hide_galgame && !quiz.my_answer"
+            v-if="!quiz.works.length && quiz.is_work_hidden"
             class="text-default-500 border-default-200 flex items-center gap-2 rounded-lg border border-dashed p-3 text-sm"
           >
             <KunIcon name="lucide:lock" />
@@ -139,7 +141,10 @@ onMounted(async () => {
                 <p class="text-default-500">
                   共 {{ quiz.answer_count }} 人作答
                 </p>
-                <p v-if="quiz.quality_count > 0" class="text-default-500">
+                <p
+                  v-if="quiz.quality_count > 0 && quiz.quality_average != null"
+                  class="text-default-500"
+                >
                   质量 {{ quiz.quality_average }} ({{ quiz.quality_count }} 人)
                 </p>
               </div>
@@ -149,31 +154,33 @@ onMounted(async () => {
 
           <div>
             <p class="text-default-400 mb-1 text-xs">作答记录</p>
-            <p v-if="loading" class="text-default-500 text-sm">加载中…</p>
-            <p
-              v-else-if="!recordsData?.length"
-              class="text-default-500 text-sm"
-            >
+            <p v-if="problem" class="text-default-500 text-sm">
+              {{ problemMessage(problem) }}
+            </p>
+            <p v-else-if="status === 'pending'" class="text-default-500 text-sm">
+              加载中…
+            </p>
+            <p v-else-if="!records.length" class="text-default-500 text-sm">
               还没有人作答
             </p>
             <div v-else class="max-h-64 space-y-1 overflow-y-auto pr-1">
               <div
-                v-for="(rec, i) in recordsData"
-                :key="i"
+                v-for="rec in records"
+                :key="rec.id"
                 class="hover:bg-default-100 rounded-md px-1 py-1"
               >
                 <div class="flex items-center gap-2 text-sm">
                   <KunAvatar
                     :disable-floating="true"
-                    :user="rec.user"
+                    :user="toKunUser(rec.answerer)"
                     size="xs"
                     :is-navigation="false"
                   />
                   <span class="text-default-700 min-w-0 flex-1 truncate">
-                    {{ rec.user.name }}
+                    {{ toKunUser(rec.answerer).name }}
                   </span>
                   <KunTime
-                    :time="rec.created"
+                    :time="rec.answered_at"
                     class="text-default-400 text-xs"
                   />
                   <KunChip
@@ -194,12 +201,22 @@ onMounted(async () => {
                   </KunChip>
                 </div>
                 <p
-                  v-if="rec.submitted"
+                  v-if="rec.submission"
                   class="text-default-500 mt-0.5 pl-7 text-xs break-words whitespace-pre-wrap"
                 >
-                  {{ formatSubmitted(rec.submitted) }}
+                  {{ formatSubmitted(rec.submission) }}
                 </p>
               </div>
+              <KunButton
+                v-if="hasMore"
+                variant="light"
+                size="sm"
+                class-name="w-full"
+                :loading="loadingMore"
+                @click="loadMore"
+              >
+                加载更多
+              </KunButton>
             </div>
           </div>
         </div>

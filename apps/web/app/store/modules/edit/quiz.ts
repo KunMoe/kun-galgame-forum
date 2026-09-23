@@ -1,5 +1,11 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
+import type {
+  QuizCategory,
+  QuizSpoilerLevel,
+  QuizType
+} from '#shared/utils/api/schemas'
+import { KUN_QUIZ_TYPE_CONST } from '~/constants/galgame-quiz'
 
 export const usePersistEditQuizStore = defineStore(
   'KUNGalgameEditQuiz',
@@ -48,3 +54,8 @@ export const usePersistEditQuizStore = defineStore(
     }
   }
 )
+
+export const coerceQuizType = (value: string): QuizType =>
+  (KUN_QUIZ_TYPE_CONST as readonly string[]).includes(value)
+    ? (value as QuizType)
+    : 'single'

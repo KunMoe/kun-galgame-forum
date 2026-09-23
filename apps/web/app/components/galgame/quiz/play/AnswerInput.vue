@@ -1,56 +1,36 @@
 <script setup lang="ts">
 import type { KunRadioOption, KunCheckBoxGroupOption } from '@kungal/ui-vue'
+import type { QuizSubmission, QuizType } from '#shared/utils/api/schemas'
 
 const props = defineProps<{
   type: QuizType
-  content: QuizPublicContent
+  choices: string[]
 }>()
 
 const singleValue = ref(-1)
 const multiValues = ref<number[]>([])
 const judgeValue = ref<'true' | 'false' | ''>('')
-const fillValues = ref<string[]>([])
-const essayText = ref('')
-
-const optionList = computed(
-  () => (props.content as QuizPublicSingle).options ?? []
-)
-const blankCount = computed(
-  () => (props.content as QuizPublicFill).blank_count ?? 0
-)
-
-watch(
-  blankCount,
-  (n) => {
-    fillValues.value = Array.from(
-      { length: n },
-      (_, i) => fillValues.value[i] ?? ''
-    )
-  },
-  { immediate: true }
-)
 
 const choiceOptions = computed<KunRadioOption<number>[]>(() =>
-  optionList.value.map((o, i) => ({ value: i, label: o }))
+  props.choices.map((o, i) => ({ value: i, label: o }))
 )
 const checkChoiceOptions = computed<KunCheckBoxGroupOption<number>[]>(
   () => choiceOptions.value
 )
 
-const getSubmitted = (): Record<string, unknown> => {
+const getSubmitted = (): QuizSubmission => {
   switch (props.type) {
     case 'single':
-      return { value: singleValue.value }
+      return { choice_indexes: [singleValue.value] }
     case 'multiple':
-      return { values: [...multiValues.value].sort((a, b) => a - b) }
+      return {
+        choice_indexes: [...multiValues.value].sort((a, b) => a - b)
+      }
     case 'judge':
-      return { value: judgeValue.value === 'true' }
-    case 'fill':
-      return { values: fillValues.value.map((v) => v.trim()) }
-    case 'essay':
-      return { text: essayText.value.trim() }
-    default:
-      return {}
+      return {
+        choice_indexes: [],
+        is_statement_true: judgeValue.value === 'true'
+      }
   }
 }
 
@@ -62,12 +42,6 @@ const validate = (): string | null => {
       return multiValues.value.length > 0 ? null : '请至少选择一个答案'
     case 'judge':
       return judgeValue.value ? null : '请选择正确或错误'
-    case 'fill':
-      return fillValues.value.every((v) => v.trim()) ? null : '请填写所有的空'
-    case 'essay':
-      return essayText.value.trim() ? null : '请写下你的回答'
-    default:
-      return '未知题型'
   }
 }
 
@@ -99,27 +73,6 @@ defineExpose({ getSubmitted, validate })
       ]"
       orientation="horizontal"
       variant="card"
-    />
-
-    <div v-else-if="type === 'fill'" class="space-y-2">
-      <KunInput
-        v-for="(_, i) in fillValues"
-        :key="i"
-        v-model="fillValues[i]"
-        :label="`第 ${i + 1} 空`"
-        placeholder="填写你的答案"
-      />
-    </div>
-
-    <KunTextarea
-      v-else-if="type === 'essay'"
-      v-model="essayText"
-      label="你的回答"
-      :rows="4"
-      placeholder="写下你的回答, 提交后可查看参考答案 (问答题不计分)"
-      :maxlength="2000"
-      :show-char-count="true"
-      auto-grow
     />
   </div>
 </template>

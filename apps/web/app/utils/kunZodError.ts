@@ -64,7 +64,18 @@ export const KUN_FIELD_LABELS: Record<string, string> = {
   release_channel: '版本',
   homepage_urls: '主页',
   rating: '评分',
-  note: '备注'
+  note: '备注',
+  prompt_text: '题干',
+  description_markdown: '描述',
+  explanation_markdown: '解析',
+  quiz_type: '题型',
+  quiz_category: '分类',
+  choices: '选项',
+  correct_choice_indexes: '正确答案',
+  is_statement_true: '判断答案',
+  work_ids: '关联作品',
+  is_work_hidden: '隐藏关联作品',
+  difficulty: '难度'
 }
 
 interface KunZodIssue {

@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { kunQuizDifficultyLabel } from '~/constants/galgame-quiz'
+import { settle } from '#shared/utils/api/problem'
 
 import type { Activity, ActivityQuiz } from '#shared/utils/api/schemas'
 
 const props = defineProps<{ activity: Activity; quiz: ActivityQuiz }>()
+const api = useApiClient()
 
-const quizId = computed(() => Number(props.quiz.quiz_id))
+const quizId = computed(() => String(props.quiz.quiz_id))
 
 const summary = computed(
   () =>
@@ -17,7 +19,23 @@ const descriptionText = computed(() =>
 )
 
 const { isFavorited, setFavorited, ensureLoaded } = useMyQuizInteractions()
-onMounted(ensureLoaded)
+onMounted(() => ensureLoaded(quizId.value ? [quizId.value] : []))
+
+const toggleFavorite = async (next: boolean) => {
+  if (!quizId.value) return false
+  const options = { params: { path: { quiz_id: quizId.value } } }
+  const result = await settle(
+    next
+      ? api.PUT('/quizzes/{quiz_id}/favorite', options)
+      : api.DELETE('/quizzes/{quiz_id}/favorite', options)
+  )
+  if (!result.ok) {
+    reportProblem(result.problem)
+    return false
+  }
+  setFavorited(quizId.value, result.data.viewer?.has_favorited ?? next)
+  return true
+}
 </script>
 
 <template>
@@ -52,9 +70,8 @@ onMounted(ensureLoaded)
         <FavoriteToggle
           :favorited="isFavorited(quizId)"
           :count="quiz.favorite_count"
-          :endpoint="`/galgame-quiz/${quizId}/favorite`"
+          :action="toggleFavorite"
           size="sm"
-          @changed="(v: boolean) => setFavorited(quizId, v)"
         />
         <KunLink
           underline="none"

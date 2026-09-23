@@ -22,15 +22,15 @@ describe('FavoriteToggle', () => {
       props: {
         favorited: false,
         count: 3,
-        endpoint: '/galgame-quiz/9/favorite',
-        body: { galgame_quiz_id: 9 }
+        endpoint: '/example/favorite',
+        body: { id: 9 }
       }
     })
     const reaction = wrapper.findComponent({ name: 'KunReaction' })
     await reaction.vm.$emit('change', true)
-    expect(kunFetch).toHaveBeenCalledWith('/galgame-quiz/9/favorite', {
+    expect(kunFetch).toHaveBeenCalledWith('/example/favorite', {
       method: 'PUT',
-      body: { galgame_quiz_id: 9 }
+      body: { id: 9 }
     })
   })
 

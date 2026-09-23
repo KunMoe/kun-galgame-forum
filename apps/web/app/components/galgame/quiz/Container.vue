@@ -7,10 +7,19 @@ import {
   quizDifficultyOptions,
   quizSortFieldOptions
 } from './_filters'
+import { KUN_QUIZ_SORT_FIELD_CONST } from '~/constants/galgame-quiz'
+import type {
+  PageListQuizSummary,
+  QuizCategory,
+  QuizSort,
+  QuizType
+} from '#shared/utils/api/schemas'
+import { problemMessage } from '#shared/utils/api/message'
 
 const route = useRoute()
 const userStore = usePersistUserStore()
 const isLoggedIn = computed(() => !!userStore.id)
+const { allowsNsfw } = useContentStance()
 
 const opts = { mode: 'replace' as const }
 const page = useRouteQuery('page', 1, { ...opts, transform: Number })
@@ -21,39 +30,90 @@ const difficulty = useRouteQuery('difficulty', 0, {
   ...opts,
   transform: Number
 })
-const sortField = useRouteQuery<string>('sort_field', 'update_time', opts)
+const sortField = useRouteQuery<string>('sort_field', 'bumped_at', opts)
 const sortOrder = useRouteQuery<'asc' | 'desc'>('sort_order', 'desc', opts)
 const limit = 50
 
 const activeTab = computed(() => (isLoggedIn.value ? tab.value : 'all'))
-const requestUrl = computed(() =>
-  activeTab.value === 'mine'
-    ? '/galgame-quiz/mine/answered'
-    : '/galgame-quiz/all'
-)
 
-const { data, status, refresh } = await useKunFetch<QuizListPage>(requestUrl, {
-  method: 'GET',
-  query: {
-    page,
-    limit,
-    sort_field: sortField,
-    sort_order: sortOrder,
-    category,
-    type,
-    difficulty
-  },
-  watch: false
+const sort = computed<QuizSort>(() => {
+  const mapped =
+    sortField.value === 'update_time'
+      ? 'bumped_at'
+      : sortField.value === 'time'
+        ? 'created'
+        : sortField.value
+  const field = (KUN_QUIZ_SORT_FIELD_CONST as readonly string[]).includes(
+    mapped
+  )
+    ? mapped
+    : 'bumped_at'
+  const order = sortOrder.value === 'asc' ? 'asc' : 'desc'
+  return `${field}_${order}` as QuizSort
 })
+
+const listQuery = computed(() => {
+  const query: {
+    page: number
+    limit: number
+    sort: QuizSort
+    include_nsfw: boolean
+    quiz_type?: QuizType
+    quiz_category?: QuizCategory
+    difficulty?: number
+  } = {
+    page: page.value,
+    limit,
+    sort: sort.value,
+    include_nsfw: allowsNsfw.value
+  }
+  if (type.value !== 'all') {
+    query.quiz_type = type.value as QuizType
+  }
+  if (category.value !== 'all') {
+    query.quiz_category = category.value as QuizCategory
+  }
+  if (difficulty.value > 0) {
+    query.difficulty = difficulty.value
+  }
+  return query
+})
+
+const { data, status, problem, refresh } = await useApi<PageListQuizSummary>(
+  () =>
+    activeTab.value === 'mine'
+      ? `me-answered-quizzes:${page.value}:${limit}`
+      : `quizzes:${JSON.stringify(listQuery.value)}`,
+  (api, { signal }) => {
+    if (activeTab.value === 'mine') {
+      return api.GET('/me/answered-quizzes', {
+        params: { query: { page: page.value, limit } },
+        signal
+      })
+    }
+    return api.GET('/quizzes', {
+      params: { query: listQuery.value },
+      signal
+    })
+  }
+)
 
 const listPath = route.path
 watch(
   () => route.fullPath,
   () => {
     if (route.path !== listPath) return
-    refresh()
     if (import.meta.client) window.scrollTo({ top: 0, behavior: 'smooth' })
   }
+)
+
+watch(
+  sortField,
+  (v) => {
+    if (v === 'update_time') sortField.value = 'bumped_at'
+    else if (v === 'time') sortField.value = 'created'
+  },
+  { immediate: true }
 )
 
 watch([category, type, difficulty, sortField, sortOrder, tab], () => {
@@ -89,9 +149,7 @@ const onPublished = () => {
       <KunHeader name="Galgame 题库">
         <template #description>
           <p class="text-default-500">
-            由 Galgame 爱好者共同建设的题库,
-            支持单选、多选、判断、填空、问答等题型。答对可获得萌萌点,
-            出题合格同样有奖励。
+            由 Galgame 爱好者共同建设的题库, 支持单选、多选、判断等题型。出题合格有奖励。
           </p>
         </template>
       </KunHeader>
@@ -145,9 +203,10 @@ const onPublished = () => {
       </div>
     </div>
 
+    <KunNull v-if="problem" :description="problemMessage(problem)" />
     <GalgameQuizList
-      v-if="data && data.quiz_data.length"
-      :quizzes="data.quiz_data"
+      v-else-if="data && data.items.length"
+      :quizzes="data.items"
     />
     <KunNull
       v-else-if="status !== 'pending'"

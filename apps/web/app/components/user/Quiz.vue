@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import type { KunTabItem } from '@kungal/ui-vue'
 import { useRouteQuery } from '@vueuse/router'
+import type { PageListQuizSummary } from '#shared/utils/api/schemas'
+import { problemMessage } from '#shared/utils/api/message'
 
 const props = defineProps<{
   userId: number
@@ -8,11 +10,8 @@ const props = defineProps<{
 
 const { id } = storeToRefs(usePersistUserStore())
 const isOwner = computed(() => !!id.value && id.value === props.userId)
+const { allowsNsfw } = useContentStance()
 
-// The tab goes in the URL with the page, or a restored page would land on
-// whichever tab happens to be the default. /mine/answered answers for the
-// *viewer*, so a hand-typed ?tab=answered on someone else's profile would show
-// a reader their own history under that name — hence isOwner here too.
 const tabQuery = useRouteQuery<string>('tab', 'publish', { mode: 'replace' })
 const tab = computed(() =>
   tabQuery.value === 'answered' && isOwner.value ? 'answered' : 'publish'
@@ -27,21 +26,38 @@ const tabItems = computed<KunTabItem[]>(() => {
   return items
 })
 
-const params = reactive({
-  page: usePageQuery(),
-  limit: 50,
-  user_id: props.userId
-})
-const requestUrl = computed(() =>
-  tab.value === 'answered' ? '/galgame-quiz/mine/answered' : '/galgame-quiz/all'
+const page = usePageQuery()
+const limit = 50
+const authorId = computed(() => String(props.userId))
+
+const { data, status, problem } = await useApi<PageListQuizSummary>(
+  () =>
+    tab.value === 'answered'
+      ? `me-answered-quizzes:${page.value}:${limit}`
+      : `quizzes-author:${authorId.value}:${page.value}:${limit}:${allowsNsfw.value}`,
+  (api, { signal }) => {
+    if (tab.value === 'answered') {
+      return api.GET('/me/answered-quizzes', {
+        params: { query: { page: page.value, limit } },
+        signal
+      })
+    }
+    return api.GET('/quizzes', {
+      params: {
+        query: {
+          page: page.value,
+          limit,
+          author_id: authorId.value,
+          include_nsfw: allowsNsfw.value
+        }
+      },
+      signal
+    })
+  }
 )
-const { data, status } = await useKunFetch<QuizListPage>(requestUrl, {
-  method: 'GET',
-  query: params
-})
 
 const onTab = (v: string) => {
-  params.page = 1
+  page.value = 1
   tabQuery.value = v
 }
 </script>
@@ -57,12 +73,13 @@ const onTab = (v: string) => {
       @update:model-value="onTab"
     />
 
-    <template v-if="data && data.quiz_data.length">
-      <GalgameQuizList :quizzes="data.quiz_data" />
+    <KunNull v-if="problem" :description="problemMessage(problem)" />
+    <template v-else-if="data && data.items.length">
+      <GalgameQuizList :quizzes="data.items" />
       <KunPagination
-        v-if="data.total > params.limit"
-        v-model:current-page="params.page"
-        :total-page="Math.ceil(data.total / params.limit)"
+        v-if="data.total > limit"
+        v-model:current-page="page"
+        :total-page="Math.ceil(data.total / limit)"
         :is-loading="status === 'pending'"
       />
     </template>

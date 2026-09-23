@@ -8,10 +8,14 @@ import {
   kunQuizDifficultyLabel,
   kunQuizDifficultyColor
 } from '~/constants/galgame-quiz'
+import type { QuizSummary } from '#shared/utils/api/schemas'
+import { toKunUser } from '~/utils/userRef'
 
-defineProps<{ quizzes: GalgameQuizCard[] }>()
+defineProps<{ quizzes: QuizSummary[] }>()
 
-const correctRate = (q: GalgameQuizCard) =>
+const authorOf = (quiz: QuizSummary) => toKunUser(quiz.author)
+
+const correctRate = (q: QuizSummary) =>
   q.answer_count > 0
     ? Math.round((q.correct_count / q.answer_count) * 100)
     : null
@@ -27,22 +31,17 @@ const correctRate = (q: GalgameQuizCard) =>
     >
       <div class="flex w-6 shrink-0 justify-center text-lg">
         <KunIcon
-          v-if="quiz.my_status === 'correct'"
+          v-if="quiz.viewer?.is_correct === true"
           name="lucide:circle-check"
           class="text-success"
         />
         <KunIcon
-          v-else-if="quiz.my_status === 'incorrect'"
+          v-else-if="quiz.viewer?.is_correct === false"
           name="lucide:circle-x"
           class="text-danger"
         />
         <KunIcon
-          v-else-if="quiz.my_status === 'author'"
-          name="lucide:pen-line"
-          class="text-primary"
-        />
-        <KunIcon
-          v-else-if="quiz.my_status === 'answered'"
+          v-else-if="quiz.viewer?.has_answered"
           name="lucide:circle-check"
           class="text-default-400"
         />
@@ -50,9 +49,9 @@ const correctRate = (q: GalgameQuizCard) =>
       </div>
 
       <div class="min-w-0 flex-1">
-        <KunContent
-          :content="quiz.question_html"
-          :compact="true"
+        <ContentDocument
+          :document="quiz.prompt"
+          compact
           class-name="font-medium break-words"
         />
         <div
@@ -61,18 +60,18 @@ const correctRate = (q: GalgameQuizCard) =>
           <span class="text-default-700 flex items-center gap-1">
             <KunAvatar
               :disable-floating="true"
-              :user="quiz.user"
+              :user="authorOf(quiz)"
               size="xs"
               :is-navigation="false"
             />
-            {{ quiz.user.name }}
+            {{ authorOf(quiz).name }}
           </span>
-          <KunTime :time="quiz.status_update_time" />
+          <KunTime :time="quiz.bumped_at" />
           <span class="flex items-center gap-1">
-            <KunIcon :name="KUN_QUIZ_TYPE_ICON_MAP[quiz.type]" />
-            {{ KUN_QUIZ_TYPE_MAP[quiz.type] }}
+            <KunIcon :name="KUN_QUIZ_TYPE_ICON_MAP[quiz.quiz_type]" />
+            {{ KUN_QUIZ_TYPE_MAP[quiz.quiz_type] }}
           </span>
-          <span>{{ KUN_QUIZ_CATEGORY_MAP[quiz.category] }}</span>
+          <span>{{ KUN_QUIZ_CATEGORY_MAP[quiz.quiz_category] }}</span>
           <KunChip
             v-if="quiz.spoiler_level !== 'none'"
             :color="KUN_QUIZ_SPOILER_COLOR_MAP[quiz.spoiler_level]"
@@ -82,7 +81,7 @@ const correctRate = (q: GalgameQuizCard) =>
             {{ KUN_QUIZ_SPOILER_MAP[quiz.spoiler_level] }}
           </KunChip>
           <span class="flex items-center gap-1">
-            <KunIcon name="lucide:eye" />{{ quiz.view }}
+            <KunIcon name="lucide:eye" />{{ quiz.view_count }}
           </span>
           <span class="flex items-center gap-1">
             <KunIcon name="lucide:users" />{{ quiz.answer_count }}

@@ -1,63 +1,48 @@
 import type { KunUIColor } from '@kungal/ui-core'
+import type {
+  QuizCategory,
+  QuizSpoilerLevel,
+  QuizType
+} from '#shared/utils/api/schemas'
 
 export const KUN_QUIZ_SPOILER_CONST = ['none', 'portion', 'serious'] as const
 
-export const KUN_QUIZ_SPOILER_MAP: Record<string, string> = {
+export const KUN_QUIZ_SPOILER_MAP: Record<QuizSpoilerLevel, string> = {
   none: '无剧透',
   portion: '部分剧透',
   serious: '严重剧透'
 }
 
-export const KUN_QUIZ_SPOILER_COLOR_MAP: Record<string, KunUIColor> = {
+export const KUN_QUIZ_SPOILER_COLOR_MAP: Record<QuizSpoilerLevel, KunUIColor> = {
   none: 'success',
   portion: 'warning',
   serious: 'danger'
 }
 
-export const KUN_QUIZ_TYPE_CONST = [
-  'single',
-  'multiple',
-  'judge',
-  'fill',
-  'essay'
-] as const
+export const KUN_QUIZ_TYPE_CONST = ['single', 'multiple', 'judge'] as const
 
-export const KUN_QUIZ_ENABLED_TYPE_CONST = [
-  'single',
-  'multiple',
-  'judge'
-] as const
-
-export const KUN_QUIZ_TYPE_MAP: Record<string, string> = {
+export const KUN_QUIZ_TYPE_MAP: Record<QuizType, string> = {
   single: '单选',
   multiple: '多选',
-  judge: '判断',
-  fill: '填空',
-  essay: '问答'
+  judge: '判断'
 }
 
-export const KUN_QUIZ_TYPE_ICON_MAP: Record<string, string> = {
+export const KUN_QUIZ_TYPE_ICON_MAP: Record<QuizType, string> = {
   single: 'lucide:circle-dot',
   multiple: 'lucide:list-checks',
-  judge: 'lucide:scale',
-  fill: 'lucide:pencil-line',
-  essay: 'lucide:text'
+  judge: 'lucide:scale'
 }
 
-export const KUN_QUIZ_TYPE_COLOR_MAP: Record<string, KunUIColor> = {
+export const KUN_QUIZ_TYPE_COLOR_MAP: Record<QuizType, KunUIColor> = {
   single: 'primary',
   multiple: 'secondary',
-  judge: 'success',
-  fill: 'warning',
-  essay: 'default'
+  judge: 'success'
 }
 
-export const KUN_QUIZ_TYPE_DESCRIPTION_MAP: Record<string, string> = {
+export const KUN_QUIZ_TYPE_DESCRIPTION_MAP: Record<QuizType, string> = {
   single: '给出多个选项, 只有一个正确答案',
   multiple: '给出多个选项, 有一个或多个正确答案',
-  judge: '判断一句话是否正确',
-  fill: '填写一个或多个空, 系统忽略大小写与空格自动判分',
-  essay: '开放式问答, 不自动判分、不发放萌萌点, 仅展示参考答案'
+  judge: '判断一句话是否正确'
 }
 
 export const KUN_QUIZ_CATEGORY_CONST = [
@@ -71,7 +56,7 @@ export const KUN_QUIZ_CATEGORY_CONST = [
   'other'
 ] as const
 
-export const KUN_QUIZ_CATEGORY_MAP: Record<string, string> = {
+export const KUN_QUIZ_CATEGORY_MAP: Record<QuizCategory, string> = {
   plot: '剧情',
   character: '角色',
   system: '系统',
@@ -83,8 +68,8 @@ export const KUN_QUIZ_CATEGORY_MAP: Record<string, string> = {
 }
 
 export const KUN_QUIZ_SORT_FIELD_CONST = [
-  'update_time',
-  'time',
+  'bumped_at',
+  'created',
   'view',
   'view_1d',
   'view_7d',
@@ -92,6 +77,11 @@ export const KUN_QUIZ_SORT_FIELD_CONST = [
   'difficulty',
   'answer_count'
 ] as const
+
+export const KUN_QUIZ_PROMPT_MAX = 200
+export const KUN_QUIZ_CHOICE_MAX = 200
+export const KUN_QUIZ_CHOICE_LIMIT = 20
+export const KUN_QUIZ_WORK_LIMIT = 20
 
 export const kunQuizDifficultyLabel = (d: number): string => {
   if (d <= 2) return '入门'

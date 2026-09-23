@@ -3,38 +3,54 @@ import {
   usePersistQuizGalgameStore,
   type RecentQuizGalgame
 } from '~/store/modules/edit/quizGalgame'
+import type { WorkRef } from '#shared/utils/api/schemas'
+import { KUN_QUIZ_WORK_LIMIT } from '~/constants/galgame-quiz'
 
 const props = defineProps<{
-  modelValue: number[]
+  modelValue: string[]
   initialSelected?: RecentQuizGalgame[]
 }>()
-const emits = defineEmits<{ 'update:modelValue': [value: number[]] }>()
+const emits = defineEmits<{ 'update:modelValue': [value: string[]] }>()
 
 const store = usePersistQuizGalgameStore()
 const { recent } = storeToRefs(store)
+const workName = useWorkName()
 
 const selectedList = ref<RecentQuizGalgame[]>([])
 
 const emitIds = () =>
   emits(
     'update:modelValue',
-    selectedList.value.map((g) => g.id)
+    selectedList.value.map((g) => String(g.id))
   )
 
+const toRecent = (work: WorkRef): RecentQuizGalgame => ({
+  id: work.id,
+  name: workName(work),
+  coverUrl: work.cover?.url,
+  thumbhash: work.cover?.thumbhash ?? undefined,
+  isNsfw: work.is_nsfw
+})
+
 const pick = (game: RecentQuizGalgame) => {
-  if (selectedList.value.some((g) => g.id === game.id)) return
-  selectedList.value.push(game)
+  const id = String(game.id)
+  if (selectedList.value.some((g) => String(g.id) === id)) return
+  if (selectedList.value.length >= KUN_QUIZ_WORK_LIMIT) {
+    useMessage('最多关联 20 部作品', 'warn')
+    return
+  }
+  const next = { ...game, id }
+  selectedList.value.push(next)
   emitIds()
-  store.add(game)
+  store.add(next)
 }
 
-const remove = (id: number) => {
-  selectedList.value = selectedList.value.filter((g) => g.id !== id)
+const pickWork = (work: WorkRef) => pick(toRecent(work))
+
+const remove = (id: string) => {
+  selectedList.value = selectedList.value.filter((g) => String(g.id) !== id)
   emitIds()
 }
-
-const officialsText = (g: RecentQuizGalgame) =>
-  g.officials?.length ? g.officials.join('、') : ''
 
 watch(
   () => props.modelValue,
@@ -45,7 +61,9 @@ watch(
 watch(
   () => props.initialSelected,
   (v) => {
-    if (v && v.length) selectedList.value = v.map((g) => ({ ...g }))
+    if (v && v.length) {
+      selectedList.value = v.map((g) => ({ ...g, id: String(g.id) }))
+    }
   },
   { immediate: true }
 )
@@ -53,7 +71,7 @@ watch(
 
 <template>
   <div class="space-y-2">
-    <label class="text-sm font-medium">关联 Galgame（可选, 可多选）</label>
+    <label class="text-sm font-medium">关联 Galgame（可选, 最多 20 部）</label>
 
     <div v-if="selectedList.length" class="space-y-2">
       <div
@@ -61,12 +79,12 @@ watch(
         :key="g.id"
         class="border-default-200 flex items-center gap-3 rounded-lg border p-2"
       >
-        <div class="bg-default-100 h-12 w-20 shrink-0 overflow-hidden rounded">
+        <div class="bg-default-100 h-12 w-9 shrink-0 overflow-hidden rounded">
           <KunImage
-            v-if="g.banner"
-            :src="g.banner"
+            v-if="g.coverUrl"
+            :src="g.coverUrl"
             :thumbhash="g.thumbhash"
-            width="80"
+            width="36"
             height="48"
             object-fit="cover"
             class-name="h-full w-full"
@@ -74,15 +92,13 @@ watch(
         </div>
         <div class="min-w-0 flex-1">
           <p class="truncate font-medium">{{ g.name }}</p>
-          <p v-if="officialsText(g)" class="text-default-500 truncate text-xs">
-            {{ officialsText(g) }}
-          </p>
+          <p v-if="g.isNsfw" class="text-danger text-xs">NSFW</p>
         </div>
         <KunButton
           :is-icon-only="true"
           variant="light"
           size="sm"
-          @click="remove(g.id)"
+          @click="remove(String(g.id))"
         >
           <KunIcon name="lucide:x" />
         </KunButton>
@@ -90,9 +106,10 @@ watch(
     </div>
 
     <GalgameSearchAutocomplete
-      :exclude-ids="selectedList.map((g) => g.id)"
+      v-if="selectedList.length < KUN_QUIZ_WORK_LIMIT"
+      :exclude-ids="selectedList.map((g) => String(g.id))"
       placeholder="输入游戏名搜索并关联"
-      @select="pick"
+      @select="pickWork"
     />
 
     <div v-if="recent.length" class="space-y-1">
@@ -103,14 +120,14 @@ watch(
           :key="g.id"
           type="button"
           class="border-default-200 hover:border-primary flex items-center gap-2 rounded-lg border p-1 pr-2 transition-colors"
-          @click="pick(g)"
+          @click="pick({ ...g, id: String(g.id) })"
         >
-          <div class="bg-default-100 h-8 w-12 shrink-0 overflow-hidden rounded">
+          <div class="bg-default-100 h-8 w-6 shrink-0 overflow-hidden rounded">
             <KunImage
-              v-if="g.banner"
-              :src="g.banner"
+              v-if="g.coverUrl"
+              :src="g.coverUrl"
               :thumbhash="g.thumbhash"
-              width="48"
+              width="24"
               height="32"
               object-fit="cover"
               class-name="h-full w-full"

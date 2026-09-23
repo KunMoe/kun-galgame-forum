@@ -1,13 +1,16 @@
 <script setup lang="ts">
+import type { Quiz, QuizSource, WorkRef } from '#shared/utils/api/schemas'
+
 const props = defineProps<{
   modelValue: boolean
-  workId?: number
-  editData?: QuizEditData | null
+  workId?: string
+  source?: QuizSource | null
+  works?: WorkRef[]
 }>()
 
 const emits = defineEmits<{
   'update:modelValue': [value: boolean]
-  onPublished: [quiz: GalgameQuizCard]
+  onPublished: [quiz: Quiz]
   onUpdated: []
 }>()
 
@@ -23,7 +26,8 @@ const close = () => emits('update:modelValue', false)
   >
     <GalgameQuizForm
       :work-id="props.workId"
-      :edit-data="props.editData"
+      :source="props.source"
+      :works="props.works"
       @published="
         (q) => {
           emits('onPublished', q)

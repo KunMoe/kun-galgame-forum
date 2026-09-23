@@ -1,19 +1,31 @@
 <script setup lang="ts">
+import type { PageListQuizSummary } from '#shared/utils/api/schemas'
+import { problemMessage } from '#shared/utils/api/message'
+
 const route = useRoute()
-const workId = computed(() => parseInt((route.params as { id: string }).id))
+const workId = computed(() => String((route.params as { id: string }).id))
 
 const emit = defineEmits<{
   'update:loading': [boolean]
 }>()
 
-const params = reactive({
-  page: usePageQuery(),
-  limit: 12,
-  galgame_id: workId.value
-})
-const { data, status, refresh } = await useKunFetch<QuizListPage>(
-  '/galgame-quiz/all',
-  { method: 'GET', query: params }
+const page = usePageQuery()
+const limit = 12
+
+const { data, status, problem, refresh } = await useApi<PageListQuizSummary>(
+  () => `quizzes-work:${workId.value}:${page.value}:${limit}`,
+  (api, { signal }) =>
+    api.GET('/quizzes', {
+      params: {
+        query: {
+          page: page.value,
+          limit,
+          work_id: workId.value,
+          include_nsfw: true
+        }
+      },
+      signal
+    })
 )
 watchEffect(() => emit('update:loading', status.value === 'pending'))
 
@@ -23,7 +35,7 @@ const openPublish = () => {
   showPublish.value = true
 }
 const onPublished = () => {
-  params.page = 1
+  page.value = 1
   refresh()
 }
 </script>
@@ -45,9 +57,10 @@ const onPublished = () => {
       </KunButton>
     </div>
 
+    <KunNull v-if="problem" :description="problemMessage(problem)" />
     <GalgameQuizList
-      v-if="data && data.quiz_data.length"
-      :quizzes="data.quiz_data"
+      v-else-if="data && data.items.length"
+      :quizzes="data.items"
     />
     <KunNull
       v-else-if="status !== 'pending'"
@@ -55,9 +68,9 @@ const onPublished = () => {
     />
 
     <KunPagination
-      v-if="(data?.total || 0) > params.limit"
-      v-model:current-page="params.page"
-      :total-page="Math.ceil((data?.total || 0) / params.limit)"
+      v-if="(data?.total || 0) > limit"
+      v-model:current-page="page"
+      :total-page="Math.ceil((data?.total || 0) / limit)"
       :is-loading="status === 'pending'"
     />
 

@@ -1,25 +1,36 @@
 <script setup lang="ts">
+import type { QuizType } from '#shared/utils/api/schemas'
+import {
+  KUN_QUIZ_CHOICE_LIMIT,
+  KUN_QUIZ_CHOICE_MAX
+} from '~/constants/galgame-quiz'
+
+type QuizEditorValue = {
+  choices: string[]
+  correct_choice_indexes: number[]
+  is_statement_true: boolean | null
+}
+
 const props = defineProps<{ type: QuizType }>()
-const emits = defineEmits<{ change: [content: Record<string, unknown>] }>()
+const emits = defineEmits<{ change: [content: QuizEditorValue] }>()
 
 const options = ref<string[]>(['', ''])
 const singleAnswer = ref(0)
 const multiAnswers = ref<number[]>([])
 const judgeAnswer = ref<'true' | 'false'>('true')
-const blanks = ref<string[][]>([[]])
-const essayReference = ref('')
 
 const reset = () => {
   options.value = ['', '']
   singleAnswer.value = 0
   multiAnswers.value = []
   judgeAnswer.value = 'true'
-  blanks.value = [[]]
-  essayReference.value = ''
 }
 watch(() => props.type, reset)
 
-const addOption = () => options.value.push('')
+const addOption = () => {
+  if (options.value.length >= KUN_QUIZ_CHOICE_LIMIT) return
+  options.value.push('')
+}
 const removeOption = (i: number) => {
   if (options.value.length <= 2) return
   options.value.splice(i, 1)
@@ -48,118 +59,65 @@ const correctLabel = computed(() =>
 const toggleCorrect = (i: number) =>
   setCorrect(i, props.type === 'single' ? true : !isCorrect(i))
 
-const addBlank = () => blanks.value.push([])
-const removeBlank = (i: number) => {
-  if (blanks.value.length <= 1) return
-  blanks.value.splice(i, 1)
-}
-
-const getContent = (): Record<string, unknown> => {
-  switch (props.type) {
-    case 'single':
-      return {
-        options: options.value.map((o) => o.trim()),
-        answer: singleAnswer.value
-      }
-    case 'multiple':
-      return {
-        options: options.value.map((o) => o.trim()),
-        answers: [...multiAnswers.value].sort((a, b) => a - b)
-      }
-    case 'judge':
-      return { answer: judgeAnswer.value === 'true' }
-    case 'fill':
-      return {
-        blanks: blanks.value.map((accepted) => ({
-          accepted: accepted.map((a) => a.trim()).filter(Boolean)
-        }))
-      }
-    case 'essay':
-      return { reference: essayReference.value.trim() }
-    default:
-      return {}
+const getValue = (): QuizEditorValue => {
+  if (props.type === 'judge') {
+    return {
+      choices: [],
+      correct_choice_indexes: [],
+      is_statement_true: judgeAnswer.value === 'true'
+    }
+  }
+  return {
+    choices: options.value.map((o) => o.trim()),
+    correct_choice_indexes:
+      props.type === 'single'
+        ? [singleAnswer.value]
+        : [...multiAnswers.value].sort((a, b) => a - b),
+    is_statement_true: null
   }
 }
 
 watch(
-  [
-    options,
-    singleAnswer,
-    multiAnswers,
-    judgeAnswer,
-    blanks,
-    essayReference,
-    () => props.type
-  ],
-  () => emits('change', getContent()),
+  [options, singleAnswer, multiAnswers, judgeAnswer, () => props.type],
+  () => emits('change', getValue()),
   { deep: true }
 )
 
 const validate = (): string | null => {
-  switch (props.type) {
-    case 'single':
-    case 'multiple': {
-      const opts = options.value.map((o) => o.trim())
-      if (opts.length < 2) return '至少需要 2 个选项'
-      if (opts.some((o) => !o)) return '选项内容不能为空'
-      if (props.type === 'single' && singleAnswer.value >= opts.length)
-        return '请标记正确答案'
-      if (props.type === 'multiple' && multiAnswers.value.length === 0)
-        return '请至少标记一个正确答案'
-      return null
-    }
-    case 'judge':
-      return null
-    case 'fill': {
-      if (blanks.value.length === 0) return '至少需要 1 个空'
-      const bad = blanks.value.some(
-        (accepted) => accepted.map((a) => a.trim()).filter(Boolean).length === 0
-      )
-      if (bad) return '每个空至少填写 1 个可接受答案'
-      return null
-    }
-    case 'essay':
-      return essayReference.value.trim() ? null : '请填写参考答案'
-    default:
-      return '未知题型'
-  }
+  if (props.type === 'judge') return null
+  const opts = options.value.map((o) => o.trim())
+  if (opts.length < 2) return '至少需要 2 个选项'
+  if (opts.length > KUN_QUIZ_CHOICE_LIMIT) return '最多 20 个选项'
+  if (opts.some((o) => !o)) return '选项内容不能为空'
+  if (opts.some((o) => o.length > KUN_QUIZ_CHOICE_MAX))
+    return '选项长度不能超过 200 字'
+  if (new Set(opts).size !== opts.length) return '选项不能重复'
+  if (props.type === 'single' && singleAnswer.value >= opts.length)
+    return '请标记正确答案'
+  if (props.type === 'multiple' && multiAnswers.value.length === 0)
+    return '请至少标记一个正确答案'
+  return null
 }
 
-const load = (content: Record<string, unknown>) => {
-  switch (props.type) {
-    case 'single': {
-      const c = content as { options?: string[]; answer?: number }
-      options.value = c.options?.length ? [...c.options] : ['', '']
-      singleAnswer.value = typeof c.answer === 'number' ? c.answer : 0
-      break
-    }
-    case 'multiple': {
-      const c = content as { options?: string[]; answers?: number[] }
-      options.value = c.options?.length ? [...c.options] : ['', '']
-      multiAnswers.value = Array.isArray(c.answers) ? [...c.answers] : []
-      break
-    }
-    case 'judge': {
-      const c = content as { answer?: boolean }
-      judgeAnswer.value = c.answer ? 'true' : 'false'
-      break
-    }
-    case 'fill': {
-      const c = content as { blanks?: { accepted: string[] }[] }
-      blanks.value = c.blanks?.length
-        ? c.blanks.map((b) => [...(b.accepted ?? [])])
-        : [[]]
-      break
-    }
-    case 'essay': {
-      const c = content as { reference?: string }
-      essayReference.value = c.reference ?? ''
-      break
-    }
+const load = (value: QuizEditorValue) => {
+  if (props.type === 'judge') {
+    judgeAnswer.value = value.is_statement_true ? 'true' : 'false'
+    return
   }
+  options.value = value.choices?.length ? [...value.choices] : ['', '']
+  if (props.type === 'single') {
+    singleAnswer.value =
+      typeof value.correct_choice_indexes?.[0] === 'number'
+        ? value.correct_choice_indexes[0]
+        : 0
+    return
+  }
+  multiAnswers.value = Array.isArray(value.correct_choice_indexes)
+    ? [...value.correct_choice_indexes]
+    : []
 }
 
-defineExpose({ getContent, validate, reset, load })
+defineExpose({ getValue, validate, reset, load })
 </script>
 
 <template>
@@ -170,7 +128,7 @@ defineExpose({ getContent, validate, reset, load })
         <span class="text-default-400 text-xs">
           点「设为正确答案」标记（{{
             type === 'single' ? '单选题唯一' : '多选题可多个'
-          }}）
+          }}，2–20 个）
         </span>
       </div>
 
@@ -204,6 +162,7 @@ defineExpose({ getContent, validate, reset, load })
           <KunInput
             v-model="options[i]"
             :placeholder="`选项 ${i + 1}`"
+            :maxlength="KUN_QUIZ_CHOICE_MAX"
             class-name="grow"
           />
 
@@ -220,7 +179,12 @@ defineExpose({ getContent, validate, reset, load })
         </div>
       </div>
 
-      <KunButton variant="light" size="sm" @click="addOption">
+      <KunButton
+        variant="light"
+        size="sm"
+        :disabled="options.length >= KUN_QUIZ_CHOICE_LIMIT"
+        @click="addOption"
+      >
         <span class="flex items-center gap-1">
           <KunIcon name="lucide:plus" />添加选项
         </span>
@@ -255,49 +219,6 @@ defineExpose({ getContent, validate, reset, load })
           <KunIcon name="lucide:circle-x" />错误
         </button>
       </div>
-    </template>
-
-    <template v-else-if="type === 'fill'">
-      <div class="space-y-2">
-        <label class="text-sm font-medium">
-          每个空的可接受答案 (回车添加, 判分时忽略大小写与空格)
-        </label>
-        <div v-for="(_, i) in blanks" :key="i" class="flex items-start gap-2">
-          <KunTagInput
-            v-model="blanks[i]"
-            :label="`第 ${i + 1} 空`"
-            placeholder="输入一个可接受答案后回车"
-            class-name="grow"
-          />
-          <KunButton
-            :is-icon-only="true"
-            variant="light"
-            color="danger"
-            class-name="mt-6"
-            :disabled="blanks.length <= 1"
-            @click="removeBlank(i)"
-          >
-            <KunIcon name="lucide:trash-2" />
-          </KunButton>
-        </div>
-        <KunButton variant="flat" size="sm" @click="addBlank">
-          <span class="flex items-center gap-1">
-            <KunIcon name="lucide:plus" />添加空
-          </span>
-        </KunButton>
-      </div>
-    </template>
-
-    <template v-else-if="type === 'essay'">
-      <KunTextarea
-        v-model="essayReference"
-        label="参考答案 (问答题不自动判分, 仅在作答后展示此参考答案)"
-        :rows="4"
-        placeholder="请填写这道题的参考答案"
-        :maxlength="2000"
-        :show-char-count="true"
-        auto-grow
-      />
     </template>
   </div>
 </template>
