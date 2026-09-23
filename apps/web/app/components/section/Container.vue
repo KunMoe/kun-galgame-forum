@@ -1,11 +1,18 @@
 <script setup lang="ts">
+import type { TopicSummary } from '#shared/utils/api/schemas'
+import type { operations } from '#shared/types/api/v1'
+import { problemMessage } from '#shared/utils/api/message'
 import { KUN_TOPIC_CATEGORY, KUN_TOPIC_SECTION } from '~/constants/topic'
 import { KUN_TOPIC_SECTION_DESCRIPTION_MAP } from '~/constants/section'
+import { useCursorList } from '~/composables/useCursorList'
+
+type SectionSlug = NonNullable<
+  NonNullable<operations['listTopics']['parameters']['query']>['section']
+>
 
 const props = defineProps<{
-  section: string
+  section: SectionSlug
 }>()
-const page = usePageQuery()
 
 const categoryMap: Record<string, string> = {
   g: 'galgame',
@@ -16,26 +23,26 @@ const category = computed(
   () => KUN_TOPIC_CATEGORY[categoryMap[props.section[0]!]!]!
 )
 
-const { data, status } = await useKunFetch<SectionTopicList>('/section', {
-  query: {
-    section: props.section,
-    sort_order: 'desc',
-    page,
-    limit: 30
-  }
-})
+const { allowsNsfw: includeNsfw } = useContentStance()
 
-watch(
-  () => status.value,
-  () => {
-    if (status.value === 'success') {
-      window?.scrollTo({
-        top: 0,
-        behavior: 'smooth'
+const { items, hasMore, problem, status, loadingMore, loadMore, refresh } =
+  await useCursorList<TopicSummary>(
+    () =>
+      `section-topics:${props.section}:${includeNsfw.value ? 'nsfw' : 'sfw'}`,
+    (api, cursor, { signal }) =>
+      api.GET('/topics', {
+        params: {
+          query: {
+            section: props.section,
+            sort: 'created_desc',
+            limit: 30,
+            include_nsfw: includeNsfw.value,
+            ...(cursor ? { cursor } : {})
+          }
+        },
+        signal
       })
-    }
-  }
-)
+  )
 </script>
 
 <template>
@@ -56,66 +63,38 @@ watch(
       </template>
     </KunHeader>
 
-    <KunCard
-      :is-hoverable="true"
-      :is-transparent="false"
-      :is-pressable="true"
-      content-class="items-start flex flex-row gap-3 flex-nowrap"
-      v-for="(topic, index) in data?.topics"
-      :key="index"
-      :href="`/topic/${topic.id}`"
-    >
-      <KunAvatar
-        :disable-floating="true"
-        :user="topic.user"
-        :is-navigation="false"
+    <template v-if="problem">
+      <KunNull :description="problemMessage(problem)" />
+      <div class="flex justify-center">
+        <KunButton variant="flat" size="sm" @click="() => refresh()">
+          重试
+        </KunButton>
+      </div>
+    </template>
+
+    <template v-else>
+      <KunLoading :loading="status === 'pending'">
+        <div class="divide-default-200/60 divide-y">
+          <TopicCard v-for="topic in items" :key="topic.id" :topic="topic" />
+        </div>
+      </KunLoading>
+
+      <KunNull
+        v-if="status !== 'pending' && !items.length"
+        description="这个版块还没有话题"
       />
 
-      <div class="w-full space-y-2">
-        <div class="flex items-center">
-          <div class="mr-2 font-bold">{{ topic.user.name }}</div>
-          <div class="text-default-500 text-sm">
-            <KunTime :time="topic.created" type="datetime" show-year />
-          </div>
-        </div>
-
-        <h2 class="hover:text-primary text-lg transition-colors">
-          {{ topic.title }}
-        </h2>
-
-        <TopicBadgeGroup
-          :section="[]"
-          :has-best-answer="topic.has_best_answer"
-          :mini-apps="topic.mini_apps"
-          :is-n-s-f-w-topic="topic.is_nsfw_topic"
-        />
-
-        <div class="text-default-500 line-clamp-2 text-sm break-all">
-          {{ markdownToText(topic.content) }}
-        </div>
-
-        <div class="text-default-700 flex gap-4 text-sm">
-          <div class="flex items-center gap-2 text-inherit">
-            <KunIcon name="lucide:eye" />
-            {{ topic.view }}
-          </div>
-          <div class="flex items-center gap-2 text-inherit">
-            <KunIcon name="lucide:thumbs-up" />
-            {{ topic.like_count }}
-          </div>
-          <div class="flex items-center gap-2 text-inherit">
-            <KunIcon name="carbon:reply" />
-            {{ topic.reply_count }}
-          </div>
-        </div>
+      <div v-if="items.length" class="flex justify-center pt-4">
+        <KunButton
+          v-if="hasMore"
+          variant="light"
+          :loading="loadingMore"
+          @click="loadMore"
+        >
+          加载更多
+        </KunButton>
+        <span v-else class="text-default-400 text-sm">没有更多话题了</span>
       </div>
-    </KunCard>
-
-    <KunPagination
-      v-if="data"
-      v-model:current-page="page"
-      :total-page="Math.ceil(data.total / 30)"
-      :is-loading="status === 'pending'"
-    />
+    </template>
   </div>
 </template>

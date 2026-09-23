@@ -1,8 +1,9 @@
 <script setup lang="ts">
+import type { components } from '#shared/types/api/v1'
 import { KUN_TOPIC_SECTION } from '~/constants/topic'
 
 defineProps<{
-  sections: CategorySectionStats[]
+  sections: components['schemas']['Section'][]
   categoryName: string
 }>()
 </script>
@@ -12,12 +13,12 @@ defineProps<{
     <KunCard
       :is-transparent="false"
       v-for="section in sections"
-      :key="section.id"
-      :href="`/section/${section.name}`"
+      :key="section.section"
+      :href="`/section/${section.section}`"
     >
       <div class="mb-4 flex items-center justify-between">
         <h2 class="text-lg font-semibold">
-          {{ KUN_TOPIC_SECTION[section.name] }}
+          {{ KUN_TOPIC_SECTION[section.section] }}
         </h2>
         <div class="text-default-500 flex items-center gap-4 text-sm">
           <div class="flex items-center gap-2 text-inherit">
@@ -36,7 +37,7 @@ defineProps<{
           {{ section.latest_topic?.title }}
         </h3>
         <p class="text-default-500 text-sm">
-          <KunTime :time="section.latest_topic?.created || ''" />
+          <KunTime :time="section.latest_topic?.created_at || ''" />
         </p>
       </div>
     </KunCard>

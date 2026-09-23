@@ -1592,6 +1592,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/sections": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List topic sections
+         * @description Every topic section in vocabulary order with its size and newest topic, empty sections included. Not paged: the vocabulary is closed and small. The topics of one section are listTopics with section set.
+         */
+        get: operations["listSections"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/todos": {
         parameters: {
             query?: never;
@@ -3685,6 +3705,17 @@ export interface components {
              */
             object: "list";
         };
+        ListSection: {
+            /** @description Members of this page. Empty array, never null. */
+            items: components["schemas"]["Section"][];
+            /** @description Opaque keyset cursor. Omitted on the last page. */
+            next_cursor?: string;
+            /**
+             * @description Type discriminant. Always list.
+             * @enum {string}
+             */
+            object: "list";
+        };
         ListTopicDraftSummary: {
             /** @description Members of this page. Empty array, never null. */
             items: components["schemas"]["TopicDraftSummary"][];
@@ -5300,6 +5331,51 @@ export interface components {
         RolePermissionsViewer: {
             /** @description Whether the caller may replace this role's overrides: the role is not locked and ranks below the caller's highest role. Each key is still subject to the caller holding it. */
             can_edit: boolean;
+        };
+        Section: {
+            /**
+             * @description The topic category the section belongs to.
+             * @enum {string}
+             */
+            category: "galgame" | "technique" | "others";
+            /** @description The newest of those topics whose author is still shown. null when there is none. */
+            latest_topic: components["schemas"]["SectionLatestTopic"] | null;
+            /**
+             * @description Type discriminant. Always section.
+             * @enum {string}
+             */
+            object: "section";
+            /**
+             * @description The section, as filed on a topic's sections and as the /section/{section} page segment.
+             * @enum {string}
+             */
+            section: "g-walkthrough" | "g-chatting" | "g-article" | "g-seeking" | "g-news" | "g-releases" | "g-other" | "t-crack" | "t-web" | "t-languages" | "t-help" | "t-linux" | "t-practical" | "t-ai" | "t-android" | "t-adobe" | "t-algorithm" | "t-other" | "o-anime" | "o-comics" | "o-music" | "o-novel" | "o-daily" | "o-essay" | "o-forum" | "o-patch" | "o-other";
+            /**
+             * Format: int64
+             * @description Published topics filed under the section that anyone may open, NSFW ones included. A size statistic, not the total of any list.
+             */
+            topic_count: number;
+            /**
+             * Format: int64
+             * @description Views summed over the same topics as topic_count.
+             */
+            view_count: number;
+        };
+        SectionLatestTopic: {
+            /**
+             * Format: date-time
+             * @description Creation time.
+             */
+            created_at: string;
+            /** @description Topic id. JSON string of a decimal integer. */
+            id: string;
+            /**
+             * @description Type discriminant. Always topic.
+             * @enum {string}
+             */
+            object: "topic";
+            /** @description Topic title. Free text; never use it as a decision input. */
+            title: string;
         };
         SpoilerNode: {
             /** @description Block nodes hidden until the reader reveals them. */
@@ -15460,6 +15536,56 @@ export interface operations {
             };
         };
     };
+    listSections: {
+        parameters: {
+            query?: {
+                /** @description When set, only this category's sections. Omitted means all of them. */
+                category?: "galgame" | "technique" | "others";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListSection"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the account service cannot tell which newest topics have a shown author. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     listTodos: {
         parameters: {
             query?: {
@@ -15907,6 +16033,8 @@ export interface operations {
                 category?: "galgame" | "technique" | "others";
                 /** @description When true, NSFW topics are included. Default false. */
                 include_nsfw?: boolean;
+                /** @description When set, only topics filed under this section. Omitted means every section. */
+                section?: "g-walkthrough" | "g-chatting" | "g-article" | "g-seeking" | "g-news" | "g-releases" | "g-other" | "t-crack" | "t-web" | "t-languages" | "t-help" | "t-linux" | "t-practical" | "t-ai" | "t-android" | "t-adobe" | "t-algorithm" | "t-other" | "o-anime" | "o-comics" | "o-music" | "o-novel" | "o-daily" | "o-essay" | "o-forum" | "o-patch" | "o-other";
             };
             header?: never;
             path?: never;
