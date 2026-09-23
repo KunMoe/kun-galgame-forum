@@ -117,6 +117,7 @@ func TestV1UpdateLogWrites(t *testing.T) {
 
 func TestV1UpdateLogWritesNeedTheirPermissions(t *testing.T) {
 	f := newUpdateFix(t, nil)
+	rows := f.scalar(t, `SELECT COUNT(*) FROM update_log`)
 	log := fmt.Sprintf("/api/v1/update-logs/%d", upLogMin)
 	bearer := http.Header{"Authorization": {"Bearer staff-token"}}
 	body := map[string]any{"change_type": "fix", "release_version": "1.0.0", "text": "x"}
@@ -144,7 +145,7 @@ func TestV1UpdateLogWritesNeedTheirPermissions(t *testing.T) {
 	if n := f.scalar(t, `SELECT COUNT(*) FROM update_log WHERE id = ? AND content = 'log 0' || chr(10) || 'second line'`, upLogMin); n != 1 {
 		t.Error("a refused write changed the entry")
 	}
-	if n := f.scalar(t, `SELECT COUNT(*) FROM update_log`); n != 12 {
+	if n := f.scalar(t, `SELECT COUNT(*) FROM update_log`); n != rows {
 		t.Errorf("a refused create wrote a row: %d", n)
 	}
 }

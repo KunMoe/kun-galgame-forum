@@ -237,7 +237,8 @@
 
 1. **`useCursorList` 多了只读的 `total`**：取最近一页带回来的 `total`，后续页不带就保留上一次的值；两条 vitest 钉住。`GET /todos` 是全站第一个真的用 `include_total` 的集合（`collect.Total` 早就在，一直没有消费者）。
 2. **更新日志的 `PATCH` 空对象**同待办：权限照判，行不存在仍是 404，存在则 200 不写。
-3. 旧的 `canEndClaimedTodo` 单测随 handler 一起删了；它测的规则现在由 `TestV1TodoTransitions` 与 `TestV1TodoViewerMatchesTheGates` 覆盖。
+3. rebase 到 U2（#189）之后：`legacy_route_baseline` **220 → 209**，`legacy-fetch-baseline` 243 → 236（§2 与 §6 的 224 → 213、247 → 240 是 U2 合并之前的数）。
+4. 旧的 `canEndClaimedTodo` 单测随 handler 一起删了；它测的规则现在由 `TestV1TodoTransitions` 与 `TestV1TodoViewerMatchesTheGates` 覆盖。
 
 ### 8.1 变异（14 条 + 9 拆成两个集合，15 次全杀）
 
