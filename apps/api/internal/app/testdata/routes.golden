@@ -44,7 +44,6 @@ GET    /api/admin/galgame/submissions                 cors.New → middleware.Na
 GET    /api/admin/overview/all                        cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → RequirePermission → OverviewHandler.GetOverview
 GET    /api/admin/overview/stats                      cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → RequirePermission → OverviewHandler.GetStats
 GET    /api/admin/user/:id/content-stats              cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → RequirePermission → PurgeHandler.GetUserContentStats
-GET    /api/auth/me                                   cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → OAuthHandler.Me
 GET    /api/galgame                                   cors.New → middleware.NamePreference → ContentStance → GalgameHandler.GetList
 GET    /api/galgame-edit/mine                         cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → EditHandler.Mine
 GET    /api/galgame-edit/proposals/:id                cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → EditHandler.ProposalDetail
@@ -142,6 +141,7 @@ GET    /api/v1/lotteries/:lottery_id                  cors.New → v1Headers →
 GET    /api/v1/lotteries/:lottery_id/entries          cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/lotteries/:lottery_id/winners/:winner_id cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/me                                     cors.New → v1Headers → fiberAdapter.Handle
+GET    /api/v1/me/account                             cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/me/conversations                       cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/me/conversations/:user_id              cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/me/conversations/:user_id/messages     cors.New → v1Headers → fiberAdapter.Handle

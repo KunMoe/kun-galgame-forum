@@ -85,7 +85,7 @@ App 用 AppAuth + PKCE 直接从 OP 换出 access token，然后 `Authorization:
 | `GET /api/galgame/:gid` | 匿名+ | 详情 |
 | `GET /api/v1/users/{user_id}` | 公开 | 公开资料。未知或封禁/注销用户 404 |
 | `POST /api/v1/topics`、`POST /api/v1/topics/{topic_id}/replies` | Bearer | **必须**带幂等键（§2）。旧 `POST /api/topic`、`POST /api/topic/:tid/reply` 已于 2026-09-22 删除；话题 id 在路径上，不再放进请求体 |
-| `GET /api/auth/me` | Bearer | 当前用户；Bearer 下 `roles` 已剥掉 staff 角色 |
+| `GET /api/v1/me/account` | Bearer | 当前用户；Bearer 下 `roles` 已剥掉 staff 角色，`content_stance` 恒为 `null`（立场问账号中心） |
 
 #### 通知与未读
 

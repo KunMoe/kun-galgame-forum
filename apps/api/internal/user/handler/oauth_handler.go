@@ -67,31 +67,3 @@ func (h *OAuthHandler) Logout(c fiber.Ctx) error {
 
 	return response.OKMessage(c, "已登出")
 }
-
-func (h *OAuthHandler) Me(c fiber.Ctx) error {
-	noStore(c)
-	user, err := middleware.MustGetUser(c)
-	if err != nil {
-		return response.Error(c, err)
-	}
-
-	profile, appErr := h.authService.GetProfile(c.Context(), user.ID)
-	if appErr != nil {
-		return response.Error(c, appErr)
-	}
-	enrichProfileFromSession(profile, user)
-
-	return response.OK(c, profile)
-}
-
-func enrichProfileFromSession(p *dto.UserProfile, u *middleware.UserInfo) {
-	p.Sub = u.Sub
-	p.Roles = u.Roles
-	p.AdultConfirmed = u.AdultConfirmed
-	p.NSFWDisplay = u.NSFWDisplay
-}
-
-// Cloudflare rewrites a downstream's own max-age into a much longer one, so a
-// cached preference response shows the reader a stance they already changed on
-// another device. The upstream contract sets no-store on the same faces.
-func noStore(c fiber.Ctx) { c.Set("Cache-Control", "no-store") }

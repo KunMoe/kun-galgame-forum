@@ -35,6 +35,82 @@
         ],
         "type": "object"
       },
+      "Account": {
+        "properties": {
+          "avatar": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Image"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Avatar from the account center's current record. null when the account has no image-service hash."
+          },
+          "content_stance": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ContentStance"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The adult-content stance this web session carries. null for a Bearer request, which carries none: read it from the account center."
+          },
+          "id": {
+            "description": "The caller's user id. JSON string of a decimal integer.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "name": {
+            "description": "Display name from the account center's current record. null when the account no longer exists; show a localized label. Free text; never use it as a decision input.",
+            "maxLength": 64,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "object": {
+            "description": "Type discriminant. Always account.",
+            "enum": [
+              "account"
+            ],
+            "maxLength": 7,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "roles": {
+            "description": "Ranked roles this credential carries, lowest rank first. A Bearer request never carries moderator, admin or ren. Other account roles are not listed.",
+            "items": {
+              "description": "A ranked role carried by the credential.",
+              "enum": [
+                "creator",
+                "moderator",
+                "admin",
+                "ren"
+              ],
+              "maxLength": 9,
+              "type": "string",
+              "x-vocabulary-closed": true
+            },
+            "maxItems": 4,
+            "type": "array"
+          }
+        },
+        "required": [
+          "object",
+          "id",
+          "name",
+          "avatar",
+          "roles",
+          "content_stance"
+        ],
+        "type": "object"
+      },
       "AdminDoc": {
         "properties": {
           "banner": {
@@ -2042,6 +2118,30 @@
         "required": [
           "object",
           "children"
+        ],
+        "type": "object"
+      },
+      "ContentStance": {
+        "properties": {
+          "is_adult_confirmed": {
+            "description": "Whether the account has confirmed it is an adult.",
+            "type": "boolean"
+          },
+          "nsfw_display": {
+            "description": "How adult content is displayed for this account.",
+            "enum": [
+              "hide",
+              "blur",
+              "show"
+            ],
+            "maxLength": 4,
+            "type": "string",
+            "x-vocabulary-closed": true
+          }
+        },
+        "required": [
+          "is_adult_confirmed",
+          "nsfw_display"
         ],
         "type": "object"
       },
@@ -23583,6 +23683,76 @@
         "summary": "Get the caller's forum status",
         "tags": [
           "users"
+        ]
+      }
+    },
+    "/me/account": {
+      "get": {
+        "description": "Who the caller is: name and avatar from the account center's current record, roles and the adult-content stance as this credential carries them. A Bearer request and a web session of the same person can therefore differ: Bearer carries no staff role and no stance.",
+        "operationId": "getMyAccount",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Account"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the account center cannot be reached."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get the account behind this credential",
+        "tags": [
+          "me"
         ]
       }
     },

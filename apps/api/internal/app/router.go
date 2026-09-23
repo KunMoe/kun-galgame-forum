@@ -4,6 +4,7 @@ import (
 	"kun-galgame-api/internal/apiv1"
 	"kun-galgame-api/internal/apiv1/content"
 	appreleaseapiv1 "kun-galgame-api/internal/apprelease/apiv1"
+	authapiv1 "kun-galgame-api/internal/auth/apiv1"
 	docapiv1 "kun-galgame-api/internal/doc/apiv1"
 	friendlinkapiv1 "kun-galgame-api/internal/friendlink/apiv1"
 	galgameapiv1 "kun-galgame-api/internal/galgame/apiv1"
@@ -12,11 +13,11 @@ import (
 	"kun-galgame-api/internal/middleware"
 	permissionapiv1 "kun-galgame-api/internal/permission/apiv1"
 	sectionapiv1 "kun-galgame-api/internal/section/apiv1"
+	toolsetapiv1 "kun-galgame-api/internal/toolset/apiv1"
 	topicapiv1 "kun-galgame-api/internal/topic/apiv1"
 	topicRepo "kun-galgame-api/internal/topic/repository"
 	trustapiv1 "kun-galgame-api/internal/trust/apiv1"
 	updateapiv1 "kun-galgame-api/internal/update/apiv1"
-	toolsetapiv1 "kun-galgame-api/internal/toolset/apiv1"
 	userapiv1 "kun-galgame-api/internal/user/apiv1"
 	wallapiv1 "kun-galgame-api/internal/wall/apiv1"
 	websiteapiv1 "kun-galgame-api/internal/website/apiv1"
@@ -62,6 +63,7 @@ func (a *App) setupRoutes() {
 		friendlinkapiv1.Register(a.newFriendLinkV1()),
 		appreleaseapiv1.Register(a.newAppReleaseV1()),
 		sectionapiv1.Register(a.newSectionV1()),
+		authapiv1.Register(a.newAuthV1()),
 	)
 
 	// Deliberately touches neither DB nor Redis: the container HEALTHCHECK reads
@@ -91,7 +93,6 @@ func (a *App) setupRoutes() {
 	api.Get("/user/:id/comments", a.UserHandler.GetUserComments)
 	api.Get("/user/:id/resources", a.UserHandler.GetUserResources)
 	api.Get("/user/:id/ratings", a.UserHandler.GetUserRatings)
-
 
 	api.Get("/ranking/galgame", a.RankingHandler.GetGalgameRanking)
 	api.Get("/ranking/topic", a.RankingHandler.GetTopicRanking)
@@ -173,14 +174,10 @@ func (a *App) setupRoutes() {
 	optAuth.Get("/galgame/collection/:cid", a.GalgameCollectionHandler.GetDetail)
 	optAuth.Get("/user/:id/collections", a.GalgameCollectionHandler.GetUserCollections)
 
-
-
 	// THE AUTH BOUNDARY. This empty-prefix group registers Auth as Use() on
 	// "/api", so it applies to EVERY route below this line. Nothing public or
 	// optAuth may be registered after this point.
 	authed := api.Group("", a.Authn.Auth())
-	authed.Get("/auth/me", a.OAuthHandler.Me)
-
 
 	authed.Post("/image/topic", a.ImageHandler.UploadTopicImage)
 	authed.Post("/image/cover", a.ImageHandler.UploadCoverImage)

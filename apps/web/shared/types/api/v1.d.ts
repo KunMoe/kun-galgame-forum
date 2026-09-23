@@ -1024,6 +1024,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/me/account": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the account behind this credential
+         * @description Who the caller is: name and avatar from the account center's current record, roles and the adult-content stance as this credential carries them. A Bearer request and a web session of the same person can therefore differ: Bearer carries no staff role and no stance.
+         */
+        get: operations["getMyAccount"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/me/avatar": {
         parameters: {
             query?: never;
@@ -3043,6 +3063,23 @@ export interface components {
             /** @description Granted users when access_scope is users, in grant order. The author is never listed. Banned and deleted users keep their entry with name null. Empty array otherwise. */
             users: components["schemas"]["UserRef"][];
         };
+        Account: {
+            /** @description Avatar from the account center's current record. null when the account has no image-service hash. */
+            avatar: components["schemas"]["Image"] | null;
+            /** @description The adult-content stance this web session carries. null for a Bearer request, which carries none: read it from the account center. */
+            content_stance: components["schemas"]["ContentStance"] | null;
+            /** @description The caller's user id. JSON string of a decimal integer. */
+            id: string;
+            /** @description Display name from the account center's current record. null when the account no longer exists; show a localized label. Free text; never use it as a decision input. */
+            name: string | null;
+            /**
+             * @description Type discriminant. Always account.
+             * @enum {string}
+             */
+            object: "account";
+            /** @description Ranked roles this credential carries, lowest rank first. A Bearer request never carries moderator, admin or ren. Other account roles are not listed. */
+            roles: ("creator" | "moderator" | "admin" | "ren")[];
+        };
         AdminDoc: {
             /** @description Banner image. null when the doc has none. */
             banner: components["schemas"]["Image"] | null;
@@ -3770,6 +3807,15 @@ export interface components {
              * @enum {string}
              */
             object: "document";
+        };
+        ContentStance: {
+            /** @description Whether the account has confirmed it is an adult. */
+            is_adult_confirmed: boolean;
+            /**
+             * @description How adult content is displayed for this account.
+             * @enum {string}
+             */
+            nsfw_display: "hide" | "blur" | "show";
         };
         Conversation: {
             /** @description Equals peer.id and the user_id path segment. The conversation has no other identity. */
@@ -14190,6 +14236,62 @@ export interface operations {
                 };
             };
             /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getMyAccount: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Account"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the account center cannot be reached. */
             503: {
                 headers: {
                     [name: string]: unknown;

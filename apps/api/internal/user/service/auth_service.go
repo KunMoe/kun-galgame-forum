@@ -139,32 +139,6 @@ func (s *AuthService) Logout(ctx context.Context, sessionToken string) error {
 	return s.rdb.Del(ctx, middleware.SessionKey(sessionToken)).Err()
 }
 
-func (s *AuthService) GetProfile(
-	ctx context.Context,
-	userID int,
-) (*dto.UserProfile, *errors.AppError) {
-	u, ok, err := s.userClient.User(ctx, userID)
-	if err != nil {
-		return nil, errors.ErrInternal("查询用户信息失败")
-	}
-	if !ok {
-		return nil, errors.ErrNotFound("用户不存在")
-	}
-	state, _ := s.stateRepo.FindByID(userID)
-	moe := 0
-	if state != nil {
-		moe = state.Moemoepoint
-	}
-	return &dto.UserProfile{
-		ID:          u.ID,
-		Name:        u.Name,
-		Avatar:      u.Avatar,
-		Roles:       u.Roles,
-		Moemoepoint: moe,
-		Bio:         u.Bio,
-	}, nil
-}
-
 func generateSessionToken() (string, error) {
 	b := make([]byte, 32)
 	if _, err := rand.Read(b); err != nil {
