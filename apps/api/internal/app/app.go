@@ -40,7 +40,6 @@ import (
 	"kun-galgame-api/internal/infrastructure/markdown"
 	"kun-galgame-api/internal/infrastructure/storage"
 	"kun-galgame-api/internal/infrastructure/storelink"
-	msgHandler "kun-galgame-api/internal/message/handler"
 	msgRepo "kun-galgame-api/internal/message/repository"
 	msgService "kun-galgame-api/internal/message/service"
 	"kun-galgame-api/internal/middleware"
@@ -111,6 +110,7 @@ type App struct {
 	TrustCheck     *gate.CheckService
 	TrustScan      *gate.ScanService
 	Notifier       msgService.Notifier
+	Messages       *msgService.MessageService
 	UserClient     *userclient.Client
 	UserService    *service.UserService
 	CreatorService *galgameService.CreatorService
@@ -124,8 +124,6 @@ type App struct {
 	UserHandler                 *handler.UserHandler
 	HomeHandler                 *homeHandler.HomeHandler
 	LotteryService              *topicService.LotteryService
-	MessageHandler              *msgHandler.MessageHandler
-	MessageChatHandler          *msgHandler.ChatHandler
 	AdminOverviewHandler        *adminHandler.OverviewHandler
 	AdminPurgeHandler           *adminHandler.PurgeHandler
 	AdminTopicHandler           *adminHandler.TopicAdminHandler
@@ -190,7 +188,6 @@ func New(cfg *config.Config) *App {
 	userStatsRepo := repository.NewUserStatsRepository(db)
 	userContentRepo := repository.NewUserContentRepository(db)
 	messageRepository := msgRepo.NewMessageRepository(db)
-	chatRepository := msgRepo.NewChatRepository(db)
 
 	gc := client.New(
 		cfg.NextMoeAPI.BaseURL,
@@ -420,8 +417,7 @@ func New(cfg *config.Config) *App {
 	authService := service.NewAuthService(userStateRepo, rdb, oauthClient, uc)
 	userService := service.NewUserService(userStateRepo, userStatsRepo, rdb, gc, galgameUserStatsSvc, uc, communityCli)
 	userContentService := service.NewUserContentService(userContentRepo, gc, galgameUserStatsSvc, uc, communityCli)
-	messageSvc := msgService.NewMessageService(messageRepository, userStateRepo, uc, communityCli)
-	chatSvc := msgService.NewChatService(chatRepository, uc)
+	messageSvc := msgService.NewMessageService(communityCli)
 	notifier := msgService.NewNotifier(messageRepository)
 
 	topicRepository := topicRepo.NewTopicRepository(db)
@@ -576,6 +572,7 @@ func New(cfg *config.Config) *App {
 		TrustCheck:                  trustCheck,
 		TrustScan:                   trustScan,
 		Notifier:                    notifier,
+		Messages:                    messageSvc,
 		UserClient:                  uc,
 		UserService:                 userService,
 		CreatorService:              creatorSvc,
@@ -588,8 +585,6 @@ func New(cfg *config.Config) *App {
 		UserHandler:                 handler.NewUserHandler(userService, userContentService),
 		HomeHandler:                 homeHandler.NewHomeHandler(homeService.NewHomeService(homeRepo.NewHomeRepository(db), gc, uc, rdb)),
 		LotteryService:              lotterySvc,
-		MessageHandler:              msgHandler.NewMessageHandler(messageSvc),
-		MessageChatHandler:          msgHandler.NewChatHandler(chatSvc),
 		AdminOverviewHandler:        adminHandler.NewOverviewHandler(adminOverviewSvc),
 		AdminPurgeHandler:           adminHandler.NewPurgeHandler(adminPurgeSvc),
 		AdminTopicHandler:           adminHandler.NewTopicAdminHandler(adminTopicSvc),

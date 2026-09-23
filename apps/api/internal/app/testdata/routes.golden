@@ -11,7 +11,6 @@ DELETE /api/galgame/:gid/cover/:coverId/vote          cors.New → middleware.Na
 DELETE /api/galgame/:gid/draft                        cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → SubmissionHandler.DeleteDraft
 DELETE /api/galgame/:gid/resource                     cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → ResourceHandler.DeleteResource
 DELETE /api/galgame/collection/:cid                   cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → GalgameCollectionHandler.Delete
-DELETE /api/message/:id                               cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → MessageHandler.DeleteMessage
 DELETE /api/toolset/:id                               cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → ToolsetHandler.Delete
 DELETE /api/toolset/:id/resource                      cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → ResourceHandler.DeleteResource
 DELETE /api/update/history                            cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → RequirePermission → UpdateHandler.DeleteHistory
@@ -20,6 +19,7 @@ DELETE /api/v1/comments/:comment_id                   cors.New → v1Headers →
 DELETE /api/v1/comments/:comment_id/like              cors.New → v1Headers → fiberAdapter.Handle
 DELETE /api/v1/lotteries/:lottery_id                  cors.New → v1Headers → fiberAdapter.Handle
 DELETE /api/v1/lotteries/:lottery_id/entries/me       cors.New → v1Headers → fiberAdapter.Handle
+DELETE /api/v1/me/notifications/:notification_id      cors.New → v1Headers → fiberAdapter.Handle
 DELETE /api/v1/me/topic-drafts/:draft_id              cors.New → v1Headers → fiberAdapter.Handle
 DELETE /api/v1/polls/:poll_id                         cors.New → v1Headers → fiberAdapter.Handle
 DELETE /api/v1/polls/:poll_id/vote                    cors.New → v1Headers → fiberAdapter.Handle
@@ -115,12 +115,6 @@ GET    /api/galgame/playtime/mine                     cors.New → middleware.Na
 GET    /api/galgame/search/picker                     cors.New → middleware.NamePreference → ContentStance → QuizHandler.SearchGalgames
 GET    /api/galgame/search/wizard                     cors.New → middleware.NamePreference → ContentStance → Auth → SubmissionHandler.SearchWithPending
 GET    /api/home                                      cors.New → middleware.NamePreference → ContentStance → HomeHandler.GetHome
-GET    /api/message                                   cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → MessageHandler.GetMessages
-GET    /api/message/admin                             cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → MessageHandler.GetSystemMessages
-GET    /api/message/chat/history                      cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → ChatHandler.GetChatHistory
-GET    /api/message/muted                             cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → MessageHandler.GetMutedMessages
-GET    /api/message/nav/contact                       cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → ChatHandler.GetNavContact
-GET    /api/message/nav/system                        cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → MessageHandler.GetNavSummary
 GET    /api/news                                      cors.New → middleware.NamePreference → ContentStance → NewsHandler.GetFeed
 GET    /api/news/archive                              cors.New → middleware.NamePreference → ContentStance → NewsHandler.GetArchive
 GET    /api/news/month                                cors.New → middleware.NamePreference → ContentStance → NewsHandler.GetMonth
@@ -165,8 +159,15 @@ GET    /api/v1/lotteries/:lottery_id                  cors.New → v1Headers →
 GET    /api/v1/lotteries/:lottery_id/entries          cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/lotteries/:lottery_id/winners/:winner_id cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/me                                     cors.New → v1Headers → fiberAdapter.Handle
+GET    /api/v1/me/conversations                       cors.New → v1Headers → fiberAdapter.Handle
+GET    /api/v1/me/conversations/:user_id              cors.New → v1Headers → fiberAdapter.Handle
+GET    /api/v1/me/conversations/:user_id/messages     cors.New → v1Headers → fiberAdapter.Handle
+GET    /api/v1/me/conversations/:user_id/messages/:message_id cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/me/creator-status                      cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/me/moemoepoint-entries                 cors.New → v1Headers → fiberAdapter.Handle
+GET    /api/v1/me/notifications                       cors.New → v1Headers → fiberAdapter.Handle
+GET    /api/v1/me/notifications/:notification_id      cors.New → v1Headers → fiberAdapter.Handle
+GET    /api/v1/me/notifications/summary               cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/me/preferences                         cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/me/topic-drafts                        cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/me/topic-drafts/:draft_id              cors.New → v1Headers → fiberAdapter.Handle
@@ -202,6 +203,7 @@ PATCH  /api/galgame/collection/:cid                   cors.New → middleware.Na
 PATCH  /api/v1/comments/:comment_id                   cors.New → v1Headers → fiberAdapter.Handle
 PATCH  /api/v1/lotteries/:lottery_id                  cors.New → v1Headers → fiberAdapter.Handle
 PATCH  /api/v1/lotteries/:lottery_id/winners/:winner_id cors.New → v1Headers → fiberAdapter.Handle
+PATCH  /api/v1/me/conversations/:user_id/messages/:message_id cors.New → v1Headers → fiberAdapter.Handle
 PATCH  /api/v1/me/profile                             cors.New → v1Headers → fiberAdapter.Handle
 PATCH  /api/v1/polls/:poll_id                         cors.New → v1Headers → fiberAdapter.Handle
 PATCH  /api/v1/replies/:reply_id                      cors.New → v1Headers → fiberAdapter.Handle
@@ -235,8 +237,6 @@ POST   /api/image/cover                               cors.New → middleware.Na
 POST   /api/image/galgame                             cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → ImageHandler.UploadGalgameImage
 POST   /api/image/message                             cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → ImageHandler.UploadMessageImage
 POST   /api/image/topic                               cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → ImageHandler.UploadTopicImage
-POST   /api/message/chat/recall                       cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → ChatHandler.RecallChatMessage
-POST   /api/message/chat/send                         cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → ChatHandler.SendChatMessage
 POST   /api/report/submit                             cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → TrustHandler.SubmitReport
 POST   /api/toolset                                   cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → ToolsetHandler.Create
 POST   /api/toolset/:id/resource                      cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → ResourceHandler.CreateResource
@@ -252,6 +252,7 @@ POST   /api/update/todo/complete                      cors.New → middleware.Na
 POST   /api/update/todo/discard                       cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → UpdateHandler.DiscardTodo
 POST   /api/v1/lotteries/:lottery_id/code-reveals     cors.New → v1Headers → fiberAdapter.Handle
 POST   /api/v1/me/check-ins                           cors.New → v1Headers → fiberAdapter.Handle
+POST   /api/v1/me/conversations/:user_id/messages     cors.New → v1Headers → fiberAdapter.Handle
 POST   /api/v1/me/creator-applications                cors.New → v1Headers → fiberAdapter.Handle
 POST   /api/v1/me/topic-drafts                        cors.New → v1Headers → fiberAdapter.Handle
 POST   /api/v1/replies/:reply_id/comments             cors.New → v1Headers → fiberAdapter.Handle
@@ -290,8 +291,6 @@ PUT    /api/galgame/:gid/resource                     cors.New → middleware.Na
 PUT    /api/galgame/:gid/resource/expired             cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → ResourceHandler.MarkExpired
 PUT    /api/galgame/:gid/resource/like                cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → ResourceHandler.ToggleLike
 PUT    /api/galgame/:gid/resource/valid               cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → ResourceHandler.MarkValid
-PUT    /api/message/admin/read                        cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → MessageHandler.MarkAdminRead
-PUT    /api/message/system/read                       cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → MessageHandler.MarkAllRead
 PUT    /api/toolset/:id                               cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → ToolsetHandler.Update
 PUT    /api/toolset/:id/practicality                  cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → PracticalityHandler.UpsertPracticality
 PUT    /api/toolset/:id/resource                      cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → ResourceHandler.UpdateResource
@@ -301,6 +300,8 @@ PUT    /api/user/notification-preferences             cors.New → middleware.Na
 PUT    /api/v1/comments/:comment_id/like              cors.New → v1Headers → fiberAdapter.Handle
 PUT    /api/v1/lotteries/:lottery_id/entries/me       cors.New → v1Headers → fiberAdapter.Handle
 PUT    /api/v1/me/avatar                              cors.New → v1Headers → fiberAdapter.Handle
+PUT    /api/v1/me/conversations/:user_id/read-marker  cors.New → v1Headers → fiberAdapter.Handle
+PUT    /api/v1/me/notifications/read-marker           cors.New → v1Headers → fiberAdapter.Handle
 PUT    /api/v1/me/nsfw-display                        cors.New → v1Headers → fiberAdapter.Handle
 PUT    /api/v1/me/preferences                         cors.New → v1Headers → fiberAdapter.Handle
 PUT    /api/v1/polls/:poll_id/vote                    cors.New → v1Headers → fiberAdapter.Handle

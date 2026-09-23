@@ -4,6 +4,7 @@ import (
 	"kun-galgame-api/internal/apiv1"
 	"kun-galgame-api/internal/apiv1/content"
 	galgameapiv1 "kun-galgame-api/internal/galgame/apiv1"
+	messageapiv1 "kun-galgame-api/internal/message/apiv1"
 	"kun-galgame-api/internal/middleware"
 	topicapiv1 "kun-galgame-api/internal/topic/apiv1"
 	topicRepo "kun-galgame-api/internal/topic/repository"
@@ -39,6 +40,7 @@ func (a *App) setupRoutes() {
 		galgameapiv1.Register(a.GalgameV1),
 		wallapiv1.Register(a.WallV1),
 		userapiv1.Register(a.newUserV1()),
+		messageapiv1.Register(a.newMessageV1()),
 	)
 
 	// Deliberately touches neither DB nor Redis: the container HEALTHCHECK reads
@@ -214,20 +216,9 @@ func (a *App) setupRoutes() {
 
 	authed.Get("/perm/mine", a.AdminUserPermissionHandler.GetMine)
 
-	authed.Get("/message", a.MessageHandler.GetMessages)
-	authed.Get("/message/muted", a.MessageHandler.GetMutedMessages)
-	authed.Delete("/message/:id", a.MessageHandler.DeleteMessage)
-	authed.Put("/message/system/read", a.MessageHandler.MarkAllRead)
-	authed.Get("/message/admin", a.MessageHandler.GetSystemMessages)
-	authed.Put("/message/admin/read", a.MessageHandler.MarkAdminRead)
-	authed.Get("/message/nav/system", a.MessageHandler.GetNavSummary)
 	authed.Post("/community/wall/read", a.CommunityEngagementHandler.WallRead)
 	authed.Post("/community/wall/follow", a.CommunityEngagementHandler.WallFollow)
 	authed.Get("/community/following", a.CommunityEngagementHandler.Following)
-	authed.Get("/message/nav/contact", a.MessageChatHandler.GetNavContact)
-	authed.Get("/message/chat/history", a.MessageChatHandler.GetChatHistory)
-	authed.Post("/message/chat/send", a.MessageChatHandler.SendChatMessage)
-	authed.Post("/message/chat/recall", a.MessageChatHandler.RecallChatMessage)
 
 	authed.Post("/image/topic", a.ImageHandler.UploadTopicImage)
 	authed.Post("/image/cover", a.ImageHandler.UploadCoverImage)

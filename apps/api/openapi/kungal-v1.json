@@ -466,6 +466,74 @@
         ],
         "type": "object"
       },
+      "Conversation": {
+        "properties": {
+          "id": {
+            "description": "Equals peer.id and the user_id path segment. The conversation has no other identity.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "last_message": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DirectMessage"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The message with the greatest id in the conversation. null when there are no messages."
+          },
+          "last_message_at": {
+            "description": "created_at of last_message. null when there are no messages.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "message_count": {
+            "description": "Messages in the conversation, including recalled ones.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "object": {
+            "description": "Type discriminant. Always conversation.",
+            "enum": [
+              "conversation"
+            ],
+            "maxLength": 12,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "peer": {
+            "$ref": "#/components/schemas/UserRef",
+            "description": "The other participant."
+          },
+          "unread_count": {
+            "description": "Messages the peer sent that the caller has not marked read.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "object",
+          "id",
+          "peer",
+          "message_count",
+          "unread_count",
+          "last_message",
+          "last_message_at"
+        ],
+        "type": "object"
+      },
       "CreateCreatorApplicationBody": {
         "properties": {
           "statement": {
@@ -653,6 +721,167 @@
           "is_creator",
           "eligibility",
           "application"
+        ],
+        "type": "object"
+      },
+      "DirectMessage": {
+        "properties": {
+          "content": {
+            "$ref": "#/components/schemas/ContentDocument",
+            "description": "Message body as a node tree. An empty document (children is an empty array) when state is recalled; clients read state, not emptiness."
+          },
+          "created_at": {
+            "description": "Creation time.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": "string"
+          },
+          "id": {
+            "description": "Message id. JSON string of a decimal integer.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "object": {
+            "description": "Type discriminant. Always direct_message.",
+            "enum": [
+              "direct_message"
+            ],
+            "maxLength": 14,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "recalled_at": {
+            "description": "Time of the recall. null while state is sent.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "sender": {
+            "$ref": "#/components/schemas/UserRef",
+            "description": "The user who sent the message."
+          },
+          "state": {
+            "description": "Lifecycle state. recalled is irreversible.",
+            "enum": [
+              "sent",
+              "recalled"
+            ],
+            "maxLength": 8,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "viewer": {
+            "$ref": "#/components/schemas/DirectMessageViewer",
+            "description": "The caller's own state on this message."
+          }
+        },
+        "required": [
+          "object",
+          "id",
+          "sender",
+          "state",
+          "content",
+          "created_at",
+          "recalled_at",
+          "viewer"
+        ],
+        "type": "object"
+      },
+      "DirectMessageCreate": {
+        "properties": {
+          "content_markdown": {
+            "description": "Message body as Markdown source. Length is checked on the raw value. After NormalizeStoredContent, a value that is empty once leading and trailing whitespace is removed is refused as REQUIRED. Free text; never use it as a decision input.",
+            "maxLength": 1000,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "content_markdown"
+        ],
+        "type": "object"
+      },
+      "DirectMessagePatch": {
+        "properties": {
+          "state": {
+            "description": "Target state. The only legal value is recalled; recall is irreversible, so sent is not a target.",
+            "enum": [
+              "recalled"
+            ],
+            "maxLength": 8,
+            "type": "string",
+            "x-vocabulary-closed": true
+          }
+        },
+        "required": [
+          "state"
+        ],
+        "type": "object"
+      },
+      "DirectMessageReadMarker": {
+        "properties": {
+          "marked_count": {
+            "description": "How many of the peer's messages this request marked read. Zero on a replay.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "object": {
+            "description": "Type discriminant. Always direct_message_read_marker.",
+            "enum": [
+              "direct_message_read_marker"
+            ],
+            "maxLength": 26,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "unread_count": {
+            "description": "The peer's messages still unmarked after this request.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "object",
+          "marked_count",
+          "unread_count"
+        ],
+        "type": "object"
+      },
+      "DirectMessageReadMarkerWrite": {
+        "properties": {
+          "up_to_id": {
+            "description": "Inclusive upper bound. Only the peer's messages with id at most this are marked. Need not name a row that exists.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "up_to_id"
+        ],
+        "type": "object"
+      },
+      "DirectMessageViewer": {
+        "properties": {
+          "is_mine": {
+            "description": "Whether the caller sent this message.",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "is_mine"
         ],
         "type": "object"
       },
@@ -1095,6 +1324,68 @@
         ],
         "type": "object"
       },
+      "ListConversation": {
+        "properties": {
+          "items": {
+            "description": "Members of this page. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/Conversation"
+            },
+            "type": "array"
+          },
+          "next_cursor": {
+            "description": "Opaque keyset cursor. Omitted on the last page.",
+            "maxLength": 512,
+            "pattern": "^cur_[A-Za-z0-9_-]+$",
+            "type": "string"
+          },
+          "object": {
+            "description": "Type discriminant. Always list.",
+            "enum": [
+              "list"
+            ],
+            "maxLength": 4,
+            "type": "string",
+            "x-vocabulary-closed": true
+          }
+        },
+        "required": [
+          "object",
+          "items"
+        ],
+        "type": "object"
+      },
+      "ListDirectMessage": {
+        "properties": {
+          "items": {
+            "description": "Members of this page. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/DirectMessage"
+            },
+            "type": "array"
+          },
+          "next_cursor": {
+            "description": "Opaque keyset cursor. Omitted on the last page.",
+            "maxLength": 512,
+            "pattern": "^cur_[A-Za-z0-9_-]+$",
+            "type": "string"
+          },
+          "object": {
+            "description": "Type discriminant. Always list.",
+            "enum": [
+              "list"
+            ],
+            "maxLength": 4,
+            "type": "string",
+            "x-vocabulary-closed": true
+          }
+        },
+        "required": [
+          "object",
+          "items"
+        ],
+        "type": "object"
+      },
       "ListItemNode": {
         "properties": {
           "children": {
@@ -1294,6 +1585,37 @@
           "start",
           "is_spread",
           "children"
+        ],
+        "type": "object"
+      },
+      "ListNotification": {
+        "properties": {
+          "items": {
+            "description": "Members of this page. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/Notification"
+            },
+            "type": "array"
+          },
+          "next_cursor": {
+            "description": "Opaque keyset cursor. Omitted on the last page.",
+            "maxLength": 512,
+            "pattern": "^cur_[A-Za-z0-9_-]+$",
+            "type": "string"
+          },
+          "object": {
+            "description": "Type discriminant. Always list.",
+            "enum": [
+              "list"
+            ],
+            "maxLength": 4,
+            "type": "string",
+            "x-vocabulary-closed": true
+          }
+        },
+        "required": [
+          "object",
+          "items"
         ],
         "type": "object"
       },
@@ -3086,6 +3408,208 @@
           "name",
           "avatar",
           "bio"
+        ],
+        "type": "object"
+      },
+      "Notification": {
+        "properties": {
+          "actor": {
+            "$ref": "#/components/schemas/UserRef",
+            "description": "The user who triggered this notification. name is null when the account no longer exists."
+          },
+          "actor_count": {
+            "description": "How many people are folded into this mirrored row. Values stored below 1 are emitted as 1. Only followed_thread_activity is greater than 1 in production.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "created_at": {
+            "description": "Creation time. For a mirrored row this is the upstream updated_at, and folding may move it forward.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": "string"
+          },
+          "excerpt_markdown": {
+            "description": "Markdown snapshot stored on the row, truncated to 1000 runes. May be empty. Free text; never use it as a decision input.",
+            "maxLength": 1000,
+            "type": "string"
+          },
+          "id": {
+            "description": "Notification id. JSON string of a decimal integer.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "is_read": {
+            "description": "Whether this notification has been marked read.",
+            "type": "boolean"
+          },
+          "item_count": {
+            "description": "How many upstream posts are folded into this mirrored row. Values stored below 1 are emitted as 1.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "notification_type": {
+            "description": "Notification type. Closed vocabulary of v1 tokens.",
+            "enum": [
+              "upvoted",
+              "liked",
+              "favorited",
+              "replied",
+              "commented",
+              "mentioned",
+              "followed_thread_activity",
+              "best_answer_chosen",
+              "reply_pinned",
+              "quiz_answered",
+              "resource_link_reported",
+              "edit_requested",
+              "edit_merged",
+              "edit_declined",
+              "lottery_won",
+              "lottery_drawn",
+              "lottery_code_expired",
+              "poll_closed"
+            ],
+            "maxLength": 24,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "object": {
+            "description": "Type discriminant. Always notification.",
+            "enum": [
+              "notification"
+            ],
+            "maxLength": 12,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "path": {
+            "description": "In-site web path of the target, stored as the legacy link. Always starts with a slash.",
+            "maxLength": 100,
+            "pattern": "^/",
+            "type": "string"
+          },
+          "source": {
+            "description": "local for rows written by this forum; community for rows mirrored from the infra community primitive.",
+            "enum": [
+              "local",
+              "community"
+            ],
+            "maxLength": 9,
+            "type": "string",
+            "x-vocabulary-closed": true
+          }
+        },
+        "required": [
+          "object",
+          "id",
+          "notification_type",
+          "actor",
+          "actor_count",
+          "item_count",
+          "path",
+          "excerpt_markdown",
+          "source",
+          "is_read",
+          "created_at"
+        ],
+        "type": "object"
+      },
+      "NotificationReadMarker": {
+        "properties": {
+          "marked_count": {
+            "description": "How many unread rows this request marked. Zero on a replay.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "object": {
+            "description": "Type discriminant. Always notification_read_marker.",
+            "enum": [
+              "notification_read_marker"
+            ],
+            "maxLength": 24,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "unread_count": {
+            "description": "Unread rows remaining in this partition after the mark, counted in SQL.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "object",
+          "marked_count",
+          "unread_count"
+        ],
+        "type": "object"
+      },
+      "NotificationReadMarkerWrite": {
+        "properties": {
+          "is_muted": {
+            "description": "When true, only the muted partition is marked. When false or omitted, only the unmuted partition is marked. Default false.",
+            "type": "boolean"
+          },
+          "up_to_id": {
+            "description": "Inclusive upper bound. Rows with id greater than this are left unread. Need not name a row the caller owns.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "up_to_id"
+        ],
+        "type": "object"
+      },
+      "NotificationSummary": {
+        "properties": {
+          "latest": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Notification"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The first renderable row of the unmuted partition in listNotifications order. null when that partition has none."
+          },
+          "muted_unread_count": {
+            "description": "Unread rows in the muted partition, counted in SQL. Includes rows whose actor is banned.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "object": {
+            "description": "Type discriminant. Always notification_summary.",
+            "enum": [
+              "notification_summary"
+            ],
+            "maxLength": 21,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "unread_count": {
+            "description": "Unread rows in the unmuted partition, counted in SQL. Includes rows whose actor is banned, which listNotifications drops, so this is not the length of that list.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "object",
+          "unread_count",
+          "muted_unread_count",
+          "latest"
         ],
         "type": "object"
       },
@@ -8598,6 +9122,907 @@
         ]
       }
     },
+    "/me/conversations": {
+      "get": {
+        "description": "Lists conversations that have at least one message, newest last message first, ties broken by descending room id, which lives only inside the cursor. last_message and last_message_at come from the chat_message row with the greatest id, not from chat_room.last_message_*. A conversation whose peer is banned is dropped with the same page-refill rule as listNotifications. The cursor is bound to the caller.",
+        "operationId": "listConversations",
+        "parameters": [
+          {
+            "description": "Opaque keyset cursor from a previous page of this collection.",
+            "explode": false,
+            "in": "query",
+            "name": "cursor",
+            "schema": {
+              "description": "Opaque keyset cursor from a previous page of this collection.",
+              "maxLength": 512,
+              "pattern": "^cur_[A-Za-z0-9_-]+$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Page size. 1–100, default 20. Values above 100 are rejected, not clamped.",
+            "explode": false,
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 20,
+              "description": "Page size. 1–100, default 20. Values above 100 are rejected, not clamped.",
+              "format": "int64",
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListConversation"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "INVALID_CURSOR or LIMIT_TOO_LARGE."
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List the caller's direct-message conversations",
+        "tags": [
+          "messages"
+        ]
+      }
+    },
+    "/me/conversations/{user_id}": {
+      "get": {
+        "description": "Returns the conversation with user_id. A conversation with no messages, including when no room exists, is 200 with message_count 0, unread_count 0, last_message null and last_message_at null. It does not create a room. A missing or banned peer is NOT_FOUND; user_id equal to the caller is NOT_FOUND; a failure of /users/batch is SERVICE_UNAVAILABLE.",
+        "operationId": "getConversation",
+        "parameters": [
+          {
+            "description": "The other participant's user id. Equal to the caller is NOT_FOUND.",
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "description": "The other participant's user id. Equal to the caller is NOT_FOUND.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Conversation"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when the peer does not exist, is not renderable, or is the caller."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the account service cannot be reached."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get a conversation with one user",
+        "tags": [
+          "messages"
+        ]
+      }
+    },
+    "/me/conversations/{user_id}/messages": {
+      "get": {
+        "description": "Lists messages in the conversation with user_id as a cursor page, greatest id first. A missing room is 200 with an empty list; it does not create a room and does not mark messages read. Rows are selected by chat_room_id only. A missing or banned peer is NOT_FOUND; user_id equal to the caller is NOT_FOUND; a failure of /users/batch is SERVICE_UNAVAILABLE. The cursor is bound to (caller, peer).",
+        "operationId": "listDirectMessages",
+        "parameters": [
+          {
+            "description": "The other participant's user id. Equal to the caller is NOT_FOUND.",
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "description": "The other participant's user id. Equal to the caller is NOT_FOUND.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Opaque keyset cursor from a previous page of this collection.",
+            "explode": false,
+            "in": "query",
+            "name": "cursor",
+            "schema": {
+              "description": "Opaque keyset cursor from a previous page of this collection.",
+              "maxLength": 512,
+              "pattern": "^cur_[A-Za-z0-9_-]+$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Page size. 1–100, default 20. Values above 100 are rejected, not clamped.",
+            "explode": false,
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 20,
+              "description": "Page size. 1–100, default 20. Values above 100 are rejected, not clamped.",
+              "format": "int64",
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListDirectMessage"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "INVALID_CURSOR or LIMIT_TOO_LARGE."
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when the peer does not exist, is not renderable, or is the caller."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the account service cannot be reached."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List direct messages with one user",
+        "tags": [
+          "messages"
+        ]
+      },
+      "post": {
+        "description": "Creates a message in the conversation with user_id and returns it. Idempotency-Key is required. content_markdown is length-checked on the raw value (max 1000). After NormalizeStoredContent, a value that is empty once whitespace is trimmed is VALIDATION_FAILED REQUIRED at /content_markdown. A missing or banned peer is NOT_FOUND; user_id equal to the caller is NOT_FOUND; a failure of /users/batch is SERVICE_UNAVAILABLE and nothing is written. A missing room is created by name \u003csmaller id\u003e-\u003clarger id\u003e with INSERT ON CONFLICT (name) DO NOTHING, then selected by name; both participants use ON CONFLICT (chat_room_id, user_id) DO NOTHING, so a concurrent first send is not 500. Location is the canonical path of the new message.",
+        "operationId": "sendDirectMessage",
+        "parameters": [
+          {
+            "description": "Caller-generated UUID (canonical 8-4-4-4-12 hex, any version) or 26-character Crockford ULID. Scoped to (user, operation, key) for 24 hours.",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "description": "Caller-generated UUID (canonical 8-4-4-4-12 hex, any version) or 26-character Crockford ULID. Scoped to (user, operation, key) for 24 hours.",
+              "maxLength": 36,
+              "minLength": 26,
+              "pattern": "^([0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}|[0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{26})$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "The other participant's user id. Equal to the caller is NOT_FOUND.",
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "description": "The other participant's user id. Equal to the caller is NOT_FOUND.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DirectMessageCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DirectMessage"
+                }
+              }
+            },
+            "description": "Created",
+            "headers": {
+              "Location": {
+                "schema": {
+                  "description": "Canonical path of the new message, such as /api/v1/me/conversations/3/messages/41.",
+                  "format": "uri-reference",
+                  "maxLength": 96,
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when the peer does not exist, is not renderable, or is the caller."
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "415": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unsupported Media Type"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED when content_markdown is blank after trimming or exceeds 1000 characters."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the account service cannot be reached. Nothing is written."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Send a direct message",
+        "tags": [
+          "messages"
+        ]
+      }
+    },
+    "/me/conversations/{user_id}/messages/{message_id}": {
+      "get": {
+        "description": "Returns one message in the conversation with user_id. A missing room is NOT_FOUND. A message that is not in this conversation is NOT_FOUND. A missing or banned peer is NOT_FOUND; user_id equal to the caller is NOT_FOUND; a failure of /users/batch is SERVICE_UNAVAILABLE. A recalled message is a tombstone: state recalled, content an empty document, recalled_at set.",
+        "operationId": "getDirectMessage",
+        "parameters": [
+          {
+            "description": "The other participant's user id. Equal to the caller is NOT_FOUND.",
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "description": "The other participant's user id. Equal to the caller is NOT_FOUND.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Message id.",
+            "in": "path",
+            "name": "message_id",
+            "required": true,
+            "schema": {
+              "description": "Message id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DirectMessage"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when the message is not in this conversation, the room is missing, the peer does not exist, is not renderable, or is the caller."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the account service cannot be reached."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get a direct message",
+        "tags": [
+          "messages"
+        ]
+      },
+      "patch": {
+        "description": "Recalls the caller's message. state must be recalled; recall is irreversible, so sent is not a target. There is no time limit. A message that is not in this conversation is NOT_FOUND. A message the peer sent is PERMISSION_REQUIRED; the caller can see it, so it is not NOT_FOUND. Already recalled is 200 with no further write. A recalled message is still in both histories as a tombstone: state recalled, content an empty document, recalled_at set. If it was the latest message in the room, chat_room.last_message_content is set to the empty string; the server never writes a sentence there.",
+        "operationId": "updateDirectMessage",
+        "parameters": [
+          {
+            "description": "The other participant's user id. Equal to the caller is NOT_FOUND.",
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "description": "The other participant's user id. Equal to the caller is NOT_FOUND.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Message id.",
+            "in": "path",
+            "name": "message_id",
+            "required": true,
+            "schema": {
+              "description": "Message id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DirectMessagePatch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DirectMessage"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "PERMISSION_REQUIRED when the message was sent by the peer."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when the message is not in this conversation, or user_id is the caller."
+          },
+          "415": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unsupported Media Type"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Recall a direct message",
+        "tags": [
+          "messages"
+        ]
+      }
+    },
+    "/me/conversations/{user_id}/read-marker": {
+      "put": {
+        "description": "Marks the peer's messages in this conversation whose id is at most up_to_id as read by the caller, writing chat_message_read_by with ON CONFLICT DO NOTHING. A missing room is 200 with marked_count 0 and unread_count 0. A missing or banned peer is NOT_FOUND; user_id equal to the caller is NOT_FOUND; a failure of /users/batch is SERVICE_UNAVAILABLE. Replaying the same request is 200.",
+        "operationId": "markDirectMessagesRead",
+        "parameters": [
+          {
+            "description": "The other participant's user id. Equal to the caller is NOT_FOUND.",
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "description": "The other participant's user id. Equal to the caller is NOT_FOUND.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DirectMessageReadMarkerWrite"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DirectMessageReadMarker"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when the peer does not exist, is not renderable, or is the caller."
+          },
+          "415": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unsupported Media Type"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the account service cannot be reached."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Mark direct messages read up to an id",
+        "tags": [
+          "messages"
+        ]
+      }
+    },
     "/me/creator-applications": {
       "post": {
         "description": "Submits a creator-role application. Location points at the caller's creator-status resource.",
@@ -8929,6 +10354,536 @@
         "summary": "List the caller's moemoepoint ledger",
         "tags": [
           "users"
+        ]
+      }
+    },
+    "/me/notifications": {
+      "get": {
+        "description": "Lists the caller's notifications as a cursor page, newest first, ties broken by descending id. There is one sort and no sort parameter. is_muted=false is the types the caller has not muted; is_muted=true is only the muted types. The partitions are disjoint and together are every row. An empty muted list makes the muted partition empty and the default partition everything. notification_type further intersects the chosen partition; is_muted=false with a muted notification_type is a legal empty list. The cursor is bound to (caller, is_muted, notification_type); reusing it with another combination is INVALID_CURSOR. Rows whose actor is banned are dropped; the server keeps fetching limit+1 batches until it has limit+1 renderable rows or the source is exhausted, scanning at most 10 times limit rows, and emits next_cursor at the last scanned row if that cap is hit. A missing actor is emitted as a user with name null. Unknown stored types are dropped. unread_count lives on the summary, not here: the SQL count includes banned actors that this list drops.",
+        "operationId": "listNotifications",
+        "parameters": [
+          {
+            "description": "Opaque keyset cursor from a previous page of this collection.",
+            "explode": false,
+            "in": "query",
+            "name": "cursor",
+            "schema": {
+              "description": "Opaque keyset cursor from a previous page of this collection.",
+              "maxLength": 512,
+              "pattern": "^cur_[A-Za-z0-9_-]+$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Page size. 1–100, default 20. Values above 100 are rejected, not clamped.",
+            "explode": false,
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 20,
+              "description": "Page size. 1–100, default 20. Values above 100 are rejected, not clamped.",
+              "format": "int64",
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "When false, only types the caller has not muted. When true, only types the caller has muted. The two partitions are disjoint and together are every row. is_muted=false with notification_type set to a muted type is a legal empty list.",
+            "explode": false,
+            "in": "query",
+            "name": "is_muted",
+            "schema": {
+              "default": false,
+              "description": "When false, only types the caller has not muted. When true, only types the caller has muted. The two partitions are disjoint and together are every row. is_muted=false with notification_type set to a muted type is a legal empty list.",
+              "type": "boolean"
+            }
+          },
+          {
+            "description": "When set, restrict the chosen partition to this notification type. Omitted means every type in the partition. An unknown token is UNKNOWN_ENUM_VALUE.",
+            "explode": false,
+            "in": "query",
+            "name": "notification_type",
+            "schema": {
+              "description": "When set, restrict the chosen partition to this notification type. Omitted means every type in the partition. An unknown token is UNKNOWN_ENUM_VALUE.",
+              "enum": [
+                "upvoted",
+                "liked",
+                "favorited",
+                "replied",
+                "commented",
+                "mentioned",
+                "followed_thread_activity",
+                "best_answer_chosen",
+                "reply_pinned",
+                "quiz_answered",
+                "resource_link_reported",
+                "edit_requested",
+                "edit_merged",
+                "edit_declined",
+                "lottery_won",
+                "lottery_drawn",
+                "lottery_code_expired",
+                "poll_closed"
+              ],
+              "maxLength": 24,
+              "type": "string",
+              "x-vocabulary-closed": true
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListNotification"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "INVALID_CURSOR, LIMIT_TOO_LARGE, or UNKNOWN_ENUM_VALUE."
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List the caller's notifications",
+        "tags": [
+          "messages"
+        ]
+      }
+    },
+    "/me/notifications/read-marker": {
+      "put": {
+        "description": "Marks unread notifications in one partition whose id is at most up_to_id as read. is_muted selects the partition; the other partition is untouched, as are rows with id greater than up_to_id. up_to_id need not name a row the caller owns. Banned actors' rows are marked, so a red dot that only those rows held can go out. Mirrored rows that were marked are forwarded to community by id. Replaying the same request returns marked_count 0 and is still 200.",
+        "operationId": "markNotificationsRead",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NotificationReadMarkerWrite"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationReadMarker"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "415": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unsupported Media Type"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Mark notifications read up to an id",
+        "tags": [
+          "messages"
+        ]
+      }
+    },
+    "/me/notifications/summary": {
+      "get": {
+        "description": "Returns unread_count for the unmuted partition, muted_unread_count for the muted partition, and latest, the first renderable unmuted row in listNotifications order. The two counts are SQL counts and include rows whose actor is banned, which listNotifications drops, so they are not the length of that list. latest is null when the unmuted partition has no renderable row. Any query failure is INTERNAL_ERROR.",
+        "operationId": "getNotificationSummary",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationSummary"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get notification unread counts",
+        "tags": [
+          "messages"
+        ]
+      }
+    },
+    "/me/notifications/{notification_id}": {
+      "delete": {
+        "description": "Deletes one of the caller's notifications. A missing id or another user's notification is NOT_FOUND; the two are indistinguishable. Deleting an unread mirrored row forwards a read to community.",
+        "operationId": "deleteNotification",
+        "parameters": [
+          {
+            "description": "Notification id.",
+            "in": "path",
+            "name": "notification_id",
+            "required": true,
+            "schema": {
+              "description": "Notification id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when the notification does not exist or belongs to another user."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Delete a notification",
+        "tags": [
+          "messages"
+        ]
+      },
+      "get": {
+        "description": "Returns one of the caller's notifications. A missing id, another user's notification, a stored type outside the vocabulary, or an actor that is not renderable is NOT_FOUND; they are indistinguishable.",
+        "operationId": "getNotification",
+        "parameters": [
+          {
+            "description": "Notification id.",
+            "in": "path",
+            "name": "notification_id",
+            "required": true,
+            "schema": {
+              "description": "Notification id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Notification"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when the notification does not exist, belongs to another user, has a type outside the vocabulary, or its actor is not renderable."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get a notification",
+        "tags": [
+          "messages"
         ]
       }
     },

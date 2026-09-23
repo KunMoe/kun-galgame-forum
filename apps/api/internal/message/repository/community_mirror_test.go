@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"math"
 	"testing"
 	"time"
 
@@ -93,7 +94,7 @@ func TestUpsertCommunityMirrorSeqGuard(t *testing.T) {
 	}
 }
 
-func TestMarkAllReadReturnsMirroredIDs(t *testing.T) {
+func TestMarkReadUpToReturnsMirroredIDs(t *testing.T) {
 	db := testdb.Open(t)
 	repo := NewMessageRepository(db)
 
@@ -117,9 +118,12 @@ func TestMarkAllReadReturnsMirroredIDs(t *testing.T) {
 		t.Fatalf("insert local: %v", err)
 	}
 
-	ids, err := repo.MarkAllRead(receiver)
+	marked, ids, unreadLeft, err := repo.MarkReadUpTo(receiver, math.MaxInt32, false, nil)
 	if err != nil {
-		t.Fatalf("MarkAllRead: %v", err)
+		t.Fatalf("MarkReadUpTo: %v", err)
+	}
+	if marked != 2 || unreadLeft != 0 {
+		t.Fatalf("marked = %d, unread = %d, want 2 and 0", marked, unreadLeft)
 	}
 	if len(ids) != 1 || ids[0] != nid {
 		t.Fatalf("ids = %v, want [%d]", ids, nid)
