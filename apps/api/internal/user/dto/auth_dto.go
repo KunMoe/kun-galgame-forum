@@ -28,37 +28,6 @@ type UserProfile struct {
 	NSFWDisplay    string   `json:"nsfw_display"`
 }
 
-type UserProfileDetail struct {
-	ID          int       `json:"id"`
-	Name        string    `json:"name"`
-	Avatar      string    `json:"avatar"`
-	Roles       []string  `json:"roles"`
-	Status      int       `json:"status"`
-	Moemoepoint int       `json:"moemoepoint"`
-	Bio         string    `json:"bio"`
-	CreatedAt   time.Time `json:"created"`
-
-	Topic                  int64 `json:"topic"`
-	TopicPoll              int64 `json:"topic_poll"`
-	TopicLottery           int64 `json:"topic_lottery"`
-	ReplyCreated           int64 `json:"reply_created"`
-	CommentCreated         int64 `json:"comment_created"`
-	Galgame                int64 `json:"galgame"`
-	ContributeGalgame      int64 `json:"contribute_galgame"`
-	GalgameComment         int64 `json:"galgame_comment"`
-	GalgameRating          int64 `json:"galgame_rating"`
-	GalgameResource        int64 `json:"galgame_resource"`
-	GalgameToolset         int64 `json:"galgame_toolset"`
-	GalgameToolsetResource int64 `json:"galgame_toolset_resource"`
-
-	Upvote  int64 `json:"upvote"`
-	Like    int64 `json:"like"`
-	Dislike int64 `json:"dislike"`
-
-	DailyTopicCount   int64 `json:"daily_topic_count"`
-	DailyGalgameCount int64 `json:"daily_galgame_count"`
-}
-
 type UserGalgamesRequest struct {
 	Type           string `query:"type" validate:"required"`
 	Page           int    `query:"page" validate:"min=1"`

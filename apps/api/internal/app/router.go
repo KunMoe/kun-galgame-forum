@@ -64,12 +64,6 @@ func (a *App) setupRoutes() {
 	auth.Post("/logout", a.OAuthHandler.Logout)
 
 	userAuth := a.Authn.Auth()
-	// Every fixed /user/* path must stay ahead of /user/:id, or the literal
-	// segment binds as :id.
-	api.Get("/user/:id/floating", a.UserHandler.GetFloatingCard)
-	api.Get("/user/notification-preferences", userAuth, a.UserHandler.GetNotificationPreferences)
-	api.Put("/user/notification-preferences", userAuth, a.UserHandler.UpdateNotificationPreferences)
-	api.Get("/user/:id", a.UserHandler.GetProfile)
 	api.Get("/user/:id/galgames", a.UserHandler.GetUserGalgames)
 	api.Get("/user/:id/galgame-comments", a.UserHandler.GetUserGalgameComments)
 	api.Get("/user/:id/topics", a.Authn.OptionalAuth(), a.UserHandler.GetUserTopics)

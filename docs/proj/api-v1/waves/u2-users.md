@@ -37,7 +37,7 @@ UserProfile  object="user", id, name, avatar: Image|null, bio, roles: [string],
 ```
 
 - `object` 与 `UserRef`、`MyProfile` 同为 `"user"`（K10：摘要与详情同一个 object，重叠字段同名同型）。`name` / `bio` 按 G8 是 `string|null`；本面只下发可渲染的用户，所以实际不会是 null。
-- `roles`：OAuth `roles` ∪ `site_roles`（`userclient` 已合并），开放词表，`maxItems 16`，每项 `maxLength 32`。展示用（徽标），**不是**权限判据。
+- `roles`：OAuth `roles` ∪ `site_roles`（`userclient` 已合并）里属于 `creator` / `moderator` / `admin` / `ren` 的那些，**封闭**枚举，`maxItems 4`。展示用（徽标），**不是**权限判据。（初稿写的是开放词表；G8 要求全 spec 的 `roles` 同型，而话题 ACL 的 `AccessGrants.roles` 已是这四个值的封闭枚举——网页也只用这四个显示徽标。隐含的 `user` 与站点自定义角色不下发。）
 - `created_at`：注册时间，取 OAuth `created_at`；解析不了才退回 `kungal_user_state.created`（「首次出现在论坛」，见记忆 `kungal-user-state-lazy-provisioning`），description 写明。
 - `moemoepoint`：`kungal_user_state` 的**缓存**余额（C3），**无 minimum**（生产有负数），与 U1 `Me.moemoepoint` 同型。OAuth 把余额当隐私，论坛一直公开展示（资料页、排行榜）；本段**保持公开**，这是对普查 §1.1 那条口径分歧的裁决（K24）。
 - **不下发** `status`：见 3.1.1。
@@ -66,14 +66,14 @@ UserProfile  object="user", id, name, avatar: Image|null, bio, roles: [string],
 | `received_dislike_count` | `dislike` | 自己的话题收到的踩 |
 | `topic_today_count` | `daily_topic_count` | 今天发的话题，**「今天」是北京日**（与 cron、U1 签到同一个时区常量） |
 
-- G 域那三个计数由 `GalgameUserStatsService.Stats` 给出，它自己把 catalog 错误吞成 0。G0 正在重写 galgame 域，**本段不改它**，description 写明「上游不可用时可能为 0」。
+- G 域那三个计数由 `GalgameUserStatsService.Stats` 给出，它自己把 catalog 错误吞成 0，而且「今日发布」按**进程本地时区**算（`galgame_user_stats.go` 的 `time.Now()`，容器是 UTC）。G0 正在重写 galgame 域，**本段不改它**，description 写明；已告知 G 轨。
 - 本地 SQL 计数失败 → `500`（旧实现 500，不变）。
 
 ### 3.2 `GET /api/v1/users?ids=` → `ListUserRef`
 
 U1 已有 `GET /users?q=`。本段加 `ids`：
 
-- `ids`：逗号分隔的十进制 id，1–100 个（逗号形，见 `kungal-api-v1-rebuild`：huma 只读首个重复键），去重，保持请求顺序。
+- `ids`：逗号分隔的十进制 id，1–100 个（逗号形，见 `kungal-api-v1-rebuild`：huma 只读首个重复键），去重，保持请求顺序。超过 100 个 → **`400 INVALID_PARAMETER`**（`TOO_MANY_ITEMS`）：上限在 schema 里，平台层在 handler 之前就拒了，与 `me/topic-states?topic_ids=` 同一行为（初稿误写成 422）。
 - **`q` 与 `ids` 恰好一个**。都缺 → `422 VALIDATION_FAILED`（`parameter q`，`REQUIRED`）；都给 → `422`（`parameter ids`，`INCONSISTENT_WITH`）。
 - 响应 `{object:"list", items:[UserRef], missing:[id]}`：请求了但不存在或不可渲染的 id 进 `missing`，不区分原因（与 `me/topic-states` 同一规则）。`q` 模式下 `missing` 恒为 `[]`。`missing` 是新增字段，永远存在。
 - 走 `userclient.Users`（`/users/batch`，热缓存 + singleflight），一次请求最多一次上游批量。上游失败 → `503`。
@@ -121,7 +121,7 @@ MutedType = notifytype.Type 的 18 个 v1 token ∪ "chat"（封闭）
 | 4 | `topic_today_count` 改回 `CURRENT_DATE`（UTC） | 北京 00:30 发的话题计入「今天」（测试钉时钟） |
 | 5 | community 上游失败时回 0 而不是 null | `community_comment_count` 为 null |
 | 6 | `ids` 模式把不可渲染的 id 静默丢掉而不进 `missing` | `missing` 收全 |
-| 7 | `ids` 上限 100 → 1000 | 101 个 id → 422 `TOO_MANY_ITEMS` |
+| 7 | `ids` 上限 100 → 1000 | 101 个 id → 400 `TOO_MANY_ITEMS` |
 | 8 | `q` 与 `ids` 同时给不报错 | → 422 `INCONSISTENT_WITH` |
 | 9 | 通知偏好 PUT 存 v1 token 而不经 `ToDB` | 存储是库值（直接查表），且红点的静音过滤仍生效 |
 | 10 | GET 不经 `FromDB`，把库值原样下发 | 下发的是 v1 token（`favorite` → `favorited`） |

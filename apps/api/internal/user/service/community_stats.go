@@ -38,16 +38,16 @@ func (c *visiblePostsCache) set(userID int, count int64) {
 	c.entries[userID] = visiblePostsEntry{count: count, expires: time.Now().Add(communityStatsTTL)}
 }
 
-func (s *UserService) communityVisiblePosts(ctx context.Context, userID int) int64 {
+func (s *UserService) communityVisiblePosts(ctx context.Context, userID int) (int64, bool) {
 	if count, fresh, _ := s.commentCache.get(userID); fresh {
-		return count
+		return count, true
+	}
+	if s.community == nil || !s.community.Configured() {
+		return s.staleOrUnknown(userID)
 	}
 	resp, err := s.community.AuthorStats(ctx, []int64{int64(userID)})
 	if err != nil {
-		if stale, _, ok := s.commentCache.get(userID); ok {
-			return stale
-		}
-		return 0
+		return s.staleOrUnknown(userID)
 	}
 	var count int64
 	for _, st := range resp.Stats {
@@ -57,5 +57,13 @@ func (s *UserService) communityVisiblePosts(ctx context.Context, userID int) int
 		}
 	}
 	s.commentCache.set(userID, count)
-	return count
+	return count, true
+}
+
+func (s *UserService) staleOrUnknown(userID int) (int64, bool) {
+	if stale, _, ok := s.commentCache.get(userID); ok {
+		return stale, true
+	}
+	// Community errors used to become 0, which looked like the user had never posted.
+	return 0, false
 }

@@ -1,7 +1,7 @@
 package repository
 
 import (
-	"kun-galgame-api/internal/user/model"
+	"time"
 
 	"gorm.io/gorm"
 )
@@ -14,30 +14,43 @@ func NewUserStatsRepository(db *gorm.DB) *UserStatsRepository {
 	return &UserStatsRepository{db: db}
 }
 
-type UserStats = model.UserStats
+type LocalProfileCounts struct {
+	TopicCount           int64 `gorm:"column:topic_count"`
+	PollCount            int64 `gorm:"column:poll_count"`
+	LotteryCount         int64 `gorm:"column:lottery_count"`
+	ReplyCount           int64 `gorm:"column:reply_count"`
+	TopicCommentCount    int64 `gorm:"column:topic_comment_count"`
+	GalgameRatingCount   int64 `gorm:"column:galgame_rating_count"`
+	GalgameResourceCount int64 `gorm:"column:galgame_resource_count"`
+	ToolsetCount         int64 `gorm:"column:toolset_count"`
+	ToolsetResourceCount int64 `gorm:"column:toolset_resource_count"`
+	ReceivedUpvoteCount  int64 `gorm:"column:received_upvote_count"`
+	ReceivedLikeCount    int64 `gorm:"column:received_like_count"`
+	ReceivedDislikeCount int64 `gorm:"column:received_dislike_count"`
+	TopicTodayCount      int64 `gorm:"column:topic_today_count"`
+}
 
-func (r *UserStatsRepository) GetUserStats(userID int) (*model.UserStats, error) {
-	var stats model.UserStats
+func (r *UserStatsRepository) ProfileCounts(userID int, todayStart time.Time) (LocalProfileCounts, error) {
+	var stats LocalProfileCounts
+	// The production profile counted galgame_website, the website directory.
+	// The DB session zone is UTC, so CURRENT_DATE started "today" at 08:00 Beijing.
 	err := r.db.Raw(`
 		SELECT
-			(SELECT COUNT(*) FROM topic WHERE user_id = @userID) AS topic,
-			(SELECT COUNT(*) FROM topic_poll WHERE user_id = @userID) AS topic_poll,
-			(SELECT COUNT(*) FROM topic_lottery WHERE user_id = @userID) AS topic_lottery,
-			(SELECT COUNT(*) FROM topic_reply WHERE user_id = @userID AND status = 0) AS reply_created,
-			(SELECT COUNT(*) FROM topic_comment WHERE user_id = @userID AND status = 0) AS comment_created,
-			-- galgame_comment (now "all community comment areas") is overlaid by the
-			-- service from the community primitive's visible_posts (charter step 06a),
-			-- not counted from the frozen galgame_comment table here.
-			(SELECT COUNT(*) FROM galgame_rating WHERE user_id = @userID) AS galgame_rating,
-			(SELECT COUNT(*) FROM galgame_resource WHERE user_id = @userID) AS galgame_resource,
-			(SELECT COUNT(*) FROM galgame_website WHERE user_id = @userID) AS galgame_toolset,
-			(SELECT COUNT(*) FROM galgame_toolset_resource WHERE user_id = @userID) AS galgame_toolset_resource,
-			(SELECT COUNT(*) FROM topic_upvote WHERE topic_id IN (SELECT id FROM topic WHERE user_id = @userID)) AS upvote,
-			(SELECT COUNT(*) FROM topic_reaction WHERE reaction = 'like' AND topic_id IN (SELECT id FROM topic WHERE user_id = @userID)) AS "like",
-			(SELECT COUNT(*) FROM topic_reaction WHERE reaction = 'dislike' AND topic_id IN (SELECT id FROM topic WHERE user_id = @userID)) AS dislike,
-			(SELECT COUNT(*) FROM topic WHERE user_id = @userID AND created >= CURRENT_DATE) AS daily_topic_count
-	`, map[string]any{"userID": userID}).Scan(&stats).Error
-	return &stats, err
+			(SELECT COUNT(*) FROM topic WHERE user_id = @userID AND status != 1) AS topic_count,
+			(SELECT COUNT(*) FROM topic_poll WHERE user_id = @userID) AS poll_count,
+			(SELECT COUNT(*) FROM topic_lottery WHERE user_id = @userID) AS lottery_count,
+			(SELECT COUNT(*) FROM topic_reply WHERE user_id = @userID AND status = 0) AS reply_count,
+			(SELECT COUNT(*) FROM topic_comment WHERE user_id = @userID AND status = 0) AS topic_comment_count,
+			(SELECT COUNT(*) FROM galgame_rating WHERE user_id = @userID) AS galgame_rating_count,
+			(SELECT COUNT(*) FROM galgame_resource WHERE user_id = @userID) AS galgame_resource_count,
+			(SELECT COUNT(*) FROM galgame_toolset WHERE user_id = @userID) AS toolset_count,
+			(SELECT COUNT(*) FROM galgame_toolset_resource WHERE user_id = @userID) AS toolset_resource_count,
+			(SELECT COUNT(*) FROM topic_upvote WHERE topic_id IN (SELECT id FROM topic WHERE user_id = @userID)) AS received_upvote_count,
+			(SELECT COUNT(*) FROM topic_reaction WHERE reaction = 'like' AND topic_id IN (SELECT id FROM topic WHERE user_id = @userID)) AS received_like_count,
+			(SELECT COUNT(*) FROM topic_reaction WHERE reaction = 'dislike' AND topic_id IN (SELECT id FROM topic WHERE user_id = @userID)) AS received_dislike_count,
+			(SELECT COUNT(*) FROM topic WHERE user_id = @userID AND created >= @todayStart) AS topic_today_count
+	`, map[string]any{"userID": userID, "todayStart": todayStart}).Scan(&stats).Error
+	return stats, err
 }
 
 func (r *UserStatsRepository) CountUnreadMessages(userID int, mutedLocal []string) (int64, error) {
@@ -59,27 +72,4 @@ func (r *UserStatsRepository) CountUnreadChatMessages(userID int) (int64, error)
 		Where("id NOT IN (SELECT chat_message_id FROM chat_message_read_by WHERE user_id = ?)", userID).
 		Count(&count).Error
 	return count, err
-}
-
-type FloatingStatsRow struct {
-	TopicCount        int64 `gorm:"column:topic_count"`
-	TopicReplyCount   int64 `gorm:"column:topic_reply_count"`
-	TopicCommentCount int64 `gorm:"column:topic_comment_count"`
-	ResourceCount     int64 `gorm:"column:resource_count"`
-}
-
-func (r *UserStatsRepository) FindFloatingStats(userID int) FloatingStatsRow {
-	var stats FloatingStatsRow
-	r.db.Raw(`
-		SELECT
-			(SELECT COUNT(*) FROM topic WHERE user_id = @userID) AS topic_count,
-			(SELECT COUNT(*) FROM topic_reply WHERE user_id = @userID AND status = 0) AS topic_reply_count,
-			-- Only the local topic_comment count here; the community comment areas
-			-- (galgame + website + …) are added by the service from the primitive's
-			-- visible_posts (charter step 06a), replacing the old galgame_comment +
-			-- galgame_website_comment frozen-table terms.
-			(SELECT COUNT(*) FROM topic_comment WHERE user_id = @userID AND status = 0) AS topic_comment_count,
-			(SELECT COUNT(*) FROM galgame_resource WHERE user_id = @userID) AS resource_count
-	`, map[string]any{"userID": userID}).Scan(&stats)
-	return stats
 }

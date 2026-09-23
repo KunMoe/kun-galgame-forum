@@ -194,9 +194,12 @@ func TestV1UserFacesRequireACredential(t *testing.T) {
 		{http.MethodPut, mePath + "/preferences", "/me/preferences", map[string]any{"doc": map[string]any{}}},
 		{http.MethodPut, mePath + "/nsfw-display", "/me/nsfw-display", map[string]any{"nsfw_display": "hide"}},
 		{http.MethodGet, "/api/v1/users?q=kun", "/users", nil},
+		{http.MethodGet, "/api/v1/users?ids=1", "/users", nil},
 		{http.MethodPatch, mePath + "/profile", "/me/profile", map[string]any{"bio": "x"}},
 		{http.MethodGet, mePath + "/creator-status", "/me/creator-status", nil},
 		{http.MethodPost, mePath + "/creator-applications", "/me/creator-applications", map[string]any{"statement": "x"}},
+		{http.MethodGet, mePath + "/notification-preferences", "/me/notification-preferences", nil},
+		{http.MethodPut, mePath + "/notification-preferences", "/me/notification-preferences", map[string]any{"muted_types": []string{}}},
 	}
 	for _, c := range cases {
 		t.Run(c.method+" "+c.spec, func(t *testing.T) {

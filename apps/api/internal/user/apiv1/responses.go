@@ -36,3 +36,7 @@ func invalidCursor() *problem.Problem {
 		problem.AtParameter("cursor", problem.ReasonInvalidFormat, "pass the next_cursor from a previous page of this collection", nil),
 	)
 }
+
+func notFound() *problem.Problem {
+	return problem.New(problem.CodeNotFound, "Nothing visible exists at this URL.")
+}

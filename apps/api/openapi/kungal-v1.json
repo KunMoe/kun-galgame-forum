@@ -183,6 +183,42 @@
         ],
         "type": "object"
       },
+      "BatchListUserRef": {
+        "properties": {
+          "items": {
+            "description": "One member per requested id that the caller may see. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/UserRef"
+            },
+            "type": "array"
+          },
+          "missing": {
+            "description": "Requested ids that did not come back, in the order they were requested. Empty array, never null. The reason is deliberately not given.",
+            "items": {
+              "maxLength": 20,
+              "minLength": 1,
+              "pattern": "^[0-9]+$",
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "object": {
+            "description": "Type discriminant. Always list.",
+            "enum": [
+              "list"
+            ],
+            "maxLength": 4,
+            "type": "string",
+            "x-vocabulary-closed": true
+          }
+        },
+        "required": [
+          "object",
+          "items",
+          "missing"
+        ],
+        "type": "object"
+      },
       "BlockNode": {
         "description": "A block node. Switch on object; render an unknown type's children, or its value as text.",
         "discriminator": {
@@ -2098,37 +2134,6 @@
         ],
         "type": "object"
       },
-      "ListUserRef": {
-        "properties": {
-          "items": {
-            "description": "Members of this page. Empty array, never null.",
-            "items": {
-              "$ref": "#/components/schemas/UserRef"
-            },
-            "type": "array"
-          },
-          "next_cursor": {
-            "description": "Opaque keyset cursor. Omitted on the last page.",
-            "maxLength": 512,
-            "pattern": "^cur_[A-Za-z0-9_-]+$",
-            "type": "string"
-          },
-          "object": {
-            "description": "Type discriminant. Always list.",
-            "enum": [
-              "list"
-            ],
-            "maxLength": 4,
-            "type": "string",
-            "x-vocabulary-closed": true
-          }
-        },
-        "required": [
-          "object",
-          "items"
-        ],
-        "type": "object"
-      },
       "ListWallComment": {
         "properties": {
           "items": {
@@ -3720,6 +3725,57 @@
         ],
         "type": "object"
       },
+      "NotificationPreferences": {
+        "properties": {
+          "muted_types": {
+            "description": "Notification types the caller has muted. Empty array if none.",
+            "items": {
+              "description": "Notification type the caller has muted. Closed vocabulary of v1 tokens plus chat for private messages.",
+              "enum": [
+                "upvoted",
+                "liked",
+                "favorited",
+                "replied",
+                "commented",
+                "mentioned",
+                "followed_thread_activity",
+                "best_answer_chosen",
+                "reply_pinned",
+                "quiz_answered",
+                "resource_link_reported",
+                "edit_requested",
+                "edit_merged",
+                "edit_declined",
+                "lottery_won",
+                "lottery_drawn",
+                "lottery_code_expired",
+                "poll_closed",
+                "chat"
+              ],
+              "maxLength": 24,
+              "type": "string",
+              "x-vocabulary-closed": true
+            },
+            "maxItems": 19,
+            "type": "array",
+            "uniqueItems": true
+          },
+          "object": {
+            "description": "Type discriminant. Always notification_preferences.",
+            "enum": [
+              "notification_preferences"
+            ],
+            "maxLength": 24,
+            "type": "string",
+            "x-vocabulary-closed": true
+          }
+        },
+        "required": [
+          "object",
+          "muted_types"
+        ],
+        "type": "object"
+      },
       "NotificationReadMarker": {
         "properties": {
           "marked_count": {
@@ -4760,6 +4816,47 @@
           "type",
           "title",
           "description"
+        ],
+        "type": "object"
+      },
+      "PutNotificationPreferencesBody": {
+        "properties": {
+          "muted_types": {
+            "description": "Notification types to mute, replacing the stored set. Empty array mutes nothing.",
+            "items": {
+              "description": "Notification type the caller has muted. Closed vocabulary of v1 tokens plus chat for private messages.",
+              "enum": [
+                "upvoted",
+                "liked",
+                "favorited",
+                "replied",
+                "commented",
+                "mentioned",
+                "followed_thread_activity",
+                "best_answer_chosen",
+                "reply_pinned",
+                "quiz_answered",
+                "resource_link_reported",
+                "edit_requested",
+                "edit_merged",
+                "edit_declined",
+                "lottery_won",
+                "lottery_drawn",
+                "lottery_code_expired",
+                "poll_closed",
+                "chat"
+              ],
+              "maxLength": 24,
+              "type": "string",
+              "x-vocabulary-closed": true
+            },
+            "maxItems": 19,
+            "type": "array",
+            "uniqueItems": true
+          }
+        },
+        "required": [
+          "muted_types"
         ],
         "type": "object"
       },
@@ -6856,6 +6953,229 @@
             ]
           }
         },
+        "type": "object"
+      },
+      "UserCounts": {
+        "properties": {
+          "community_comment_count": {
+            "description": "Visible posts on community comment walls. null when the community service is unavailable and there is no cached value.",
+            "format": "int64",
+            "minimum": 0,
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "contributed_galgame_count": {
+            "description": "Galgames the user has contributed an edit to. May be 0 when the catalog is unavailable.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "galgame_rating_count": {
+            "description": "Galgame ratings the user authored.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "galgame_resource_count": {
+            "description": "Galgame resources the user authored.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "lottery_count": {
+            "description": "Lotteries the user created.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "poll_count": {
+            "description": "Polls the user created.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "published_galgame_count": {
+            "description": "Galgames the user has published. May be 0 when the catalog is unavailable.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "published_galgame_today_count": {
+            "description": "Galgames the user published today by the galgame-domain clock. May be 0 when the catalog is unavailable.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "received_dislike_count": {
+            "description": "Dislikes on topics the user authored.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "received_like_count": {
+            "description": "Likes on topics the user authored.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "received_upvote_count": {
+            "description": "Upvotes on topics the user authored.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "reply_count": {
+            "description": "Replies the user authored that are not hidden.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "toolset_count": {
+            "description": "Toolsets the user authored.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "toolset_resource_count": {
+            "description": "Toolset resources the user authored.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "topic_comment_count": {
+            "description": "Topic comments the user authored that are not hidden.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "topic_count": {
+            "description": "Topics the user authored that are not hidden.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "topic_today_count": {
+            "description": "Topics the user authored on the current Asia/Shanghai calendar day.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "topic_count",
+          "poll_count",
+          "lottery_count",
+          "reply_count",
+          "topic_comment_count",
+          "community_comment_count",
+          "published_galgame_count",
+          "contributed_galgame_count",
+          "published_galgame_today_count",
+          "galgame_rating_count",
+          "galgame_resource_count",
+          "toolset_count",
+          "toolset_resource_count",
+          "received_upvote_count",
+          "received_like_count",
+          "received_dislike_count",
+          "topic_today_count"
+        ],
+        "type": "object"
+      },
+      "UserProfile": {
+        "properties": {
+          "avatar": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Image"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Avatar image. null when the account has no image-service hash."
+          },
+          "bio": {
+            "description": "Profile bio as stored. Empty string when none. Free text; never use it as a decision input.",
+            "maxLength": 107,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "counts": {
+            "$ref": "#/components/schemas/UserCounts",
+            "description": "Public activity counts for this user."
+          },
+          "created_at": {
+            "description": "When the account was registered. Taken from the account service; falls back to when the user first appeared on this forum if that timestamp cannot be parsed.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": "string"
+          },
+          "id": {
+            "description": "User id. JSON string of a decimal integer.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "moemoepoint": {
+            "description": "The user's moemoepoint balance as this forum last cached it from OAuth. It can lag the live balance. It can be negative. Public on this face.",
+            "format": "int64",
+            "minimum": -2147483648,
+            "type": "integer"
+          },
+          "name": {
+            "description": "Display name. null when the account no longer exists; show a localized label. Free text; never use it as a decision input.",
+            "maxLength": 64,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "object": {
+            "description": "Type discriminant. Always user.",
+            "enum": [
+              "user"
+            ],
+            "maxLength": 4,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "roles": {
+            "description": "Badge roles among creator, moderator, admin and ren, including site roles. Other account roles are not listed. Display only; never a permission check. Empty array if none.",
+            "items": {
+              "description": "Role shown as a profile badge. Display only; never a permission check.",
+              "enum": [
+                "creator",
+                "moderator",
+                "admin",
+                "ren"
+              ],
+              "maxLength": 9,
+              "type": "string",
+              "x-vocabulary-closed": true
+            },
+            "maxItems": 4,
+            "type": "array"
+          }
+        },
+        "required": [
+          "object",
+          "id",
+          "name",
+          "avatar",
+          "bio",
+          "roles",
+          "created_at",
+          "moemoepoint",
+          "counts"
+        ],
         "type": "object"
       },
       "UserRef": {
@@ -10941,6 +11261,184 @@
           }
         ],
         "summary": "List the caller's moemoepoint ledger",
+        "tags": [
+          "users"
+        ]
+      }
+    },
+    "/me/notification-preferences": {
+      "get": {
+        "description": "Returns the notification types the caller has muted. Unknown stored values are dropped. An account with no forum state returns an empty list.",
+        "operationId": "getNotificationPreferences",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationPreferences"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get the caller's muted notification types",
+        "tags": [
+          "users"
+        ]
+      },
+      "put": {
+        "description": "Replaces the notification types the caller has muted. Unknown tokens are refused. The stored values are the forum's database keys; the response uses the same v1 tokens as the request.",
+        "operationId": "putNotificationPreferences",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PutNotificationPreferencesBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationPreferences"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "415": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unsupported Media Type"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED when muted_types holds an unknown token or a duplicate."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Replace the caller's muted notification types",
         "tags": [
           "users"
         ]
@@ -17337,30 +17835,45 @@
     },
     "/users": {
       "get": {
-        "description": "Returns users whose names match q. It is not paginated. Banned accounts are omitted. limit is 1–20.",
+        "description": "Returns users whose names match q, or the users named in ids. Exactly one of q or ids is required. It is not paginated. Banned accounts are omitted from q results and listed in missing for ids. limit is 1–20 and applies to q.",
         "operationId": "listUsers",
         "parameters": [
           {
-            "description": "Name query. After trimming whitespace it must not be empty. Free text; never use it as a decision input.",
+            "description": "Name query. After trimming whitespace it must not be empty. Exactly one of q or ids is required. Free text; never use it as a decision input.",
             "explode": false,
             "in": "query",
             "name": "q",
-            "required": true,
             "schema": {
-              "description": "Name query. After trimming whitespace it must not be empty. Free text; never use it as a decision input.",
+              "description": "Name query. After trimming whitespace it must not be empty. Exactly one of q or ids is required. Free text; never use it as a decision input.",
               "maxLength": 64,
-              "minLength": 1,
               "type": "string"
             }
           },
           {
-            "description": "Page size. 1–20, default 8. Values above 20 are rejected, not clamped.",
+            "description": "User ids to resolve, comma-separated. 1 to 100 of them. Exactly one of q or ids is required.",
+            "explode": false,
+            "in": "query",
+            "name": "ids",
+            "schema": {
+              "description": "User ids to resolve, comma-separated. 1 to 100 of them. Exactly one of q or ids is required.",
+              "items": {
+                "maxLength": 20,
+                "minLength": 1,
+                "pattern": "^[0-9]+$",
+                "type": "string"
+              },
+              "maxItems": 100,
+              "type": "array"
+            }
+          },
+          {
+            "description": "Page size for q. 1–20, default 8. Values above 20 are rejected, not clamped. Ignored when ids is set.",
             "explode": false,
             "in": "query",
             "name": "limit",
             "schema": {
               "default": 8,
-              "description": "Page size. 1–20, default 8. Values above 20 are rejected, not clamped.",
+              "description": "Page size for q. 1–20, default 8. Values above 20 are rejected, not clamped. Ignored when ids is set.",
               "format": "int64",
               "maximum": 20,
               "minimum": 1,
@@ -17373,7 +17886,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ListUserRef"
+                  "$ref": "#/components/schemas/BatchListUserRef"
                 }
               }
             },
@@ -17387,7 +17900,7 @@
                 }
               }
             },
-            "description": "LIMIT_TOO_LARGE when limit is greater than 20."
+            "description": "LIMIT_TOO_LARGE when limit is greater than 20. INVALID_PARAMETER when ids holds more than 100 values."
           },
           "401": {
             "content": {
@@ -17417,7 +17930,7 @@
                 }
               }
             },
-            "description": "VALIDATION_FAILED when q is only whitespace."
+            "description": "VALIDATION_FAILED when neither q nor ids is given, both are given, q is only whitespace, or an id is not a positive integer."
           },
           "500": {
             "content": {
@@ -17448,7 +17961,83 @@
             "bearer": []
           }
         ],
-        "summary": "Search users by name",
+        "summary": "Search or resolve users",
+        "tags": [
+          "users"
+        ]
+      }
+    },
+    "/users/{user_id}": {
+      "get": {
+        "description": "Returns one user's public profile and activity counts. NOT_FOUND when the account does not exist or is not renderable. topic_count excludes hidden topics. topic_today_count uses the Asia/Shanghai calendar day. community_comment_count is null when the community service is unavailable and there is no cached value.",
+        "operationId": "getUser",
+        "parameters": [
+          {
+            "description": "User id.",
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "description": "User id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserProfile"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the account service cannot be reached."
+          }
+        },
+        "summary": "Get a user's public profile",
         "tags": [
           "users"
         ]

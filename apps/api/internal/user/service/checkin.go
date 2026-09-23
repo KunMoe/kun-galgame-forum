@@ -15,6 +15,7 @@ import (
 var (
 	ErrAlreadyCheckedIn = errors.New("already checked in today")
 	ErrUpstream         = errors.New("account service unavailable")
+	ErrNotFound         = errors.New("user not found")
 )
 
 type CheckInResult struct {

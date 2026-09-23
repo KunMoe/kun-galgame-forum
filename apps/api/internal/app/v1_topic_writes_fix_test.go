@@ -108,15 +108,16 @@ func (denyChecker) Check(_ context.Context, _ trustclient.CheckRequest) (*trustc
 
 type writeFix struct {
 	*App
-	db     *gorm.DB
-	rdb    *redis.Client
-	spec   *specConformance
-	oauth  *httptest.Server
-	mux    *http.ServeMux
-	awards []awardCall
-	mu     sync.Mutex
-	nBatch atomic.Int32
-	failOA atomic.Bool
+	db         *gorm.DB
+	rdb        *redis.Client
+	spec       *specConformance
+	oauth      *httptest.Server
+	mux        *http.ServeMux
+	awards     []awardCall
+	mu         sync.Mutex
+	nBatch     atomic.Int32
+	failOA     atomic.Bool
+	oauthExtra []map[string]any
 }
 
 func newWriteFix(t *testing.T, checker gate.Checker) *writeFix {
@@ -149,6 +150,9 @@ func newWriteFix(t *testing.T, checker gate.Checker) *writeFix {
 				"id": id, "name": fmt.Sprintf("m%d", id), "status": 0, "roles": []string{"user"},
 			})
 		}
+		f.mu.Lock()
+		users = append(users, f.oauthExtra...)
+		f.mu.Unlock()
 		_ = json.NewEncoder(w).Encode(map[string]any{
 			"code": 0,
 			"data": map[string]any{"users": users, "not_found": []int{}},
@@ -410,6 +414,18 @@ func (f *writeFix) alice(t *testing.T) {
 	f.putSession(t, "sess-bob", w3UserBob)
 	f.putSession(t, "sess-staff", w3UserStaff, "user", "moderator")
 	f.putSession(t, "sess-other", w3UserOther)
+}
+
+func (f *writeFix) addOAuthUser(id int, name string, status int, extra map[string]any) {
+	u := map[string]any{
+		"id": id, "name": name, "status": status, "roles": []string{"user"},
+	}
+	for k, v := range extra {
+		u[k] = v
+	}
+	f.mu.Lock()
+	f.oauthExtra = append(f.oauthExtra, u)
+	f.mu.Unlock()
 }
 
 func problemMap(t *testing.T, body []byte) map[string]any {

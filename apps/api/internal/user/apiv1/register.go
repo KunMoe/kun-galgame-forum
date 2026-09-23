@@ -86,6 +86,27 @@ func Register(u *Users) func(huma.API) {
 			Tags:        []string{"users"},
 		}), u.getMe)
 
+		huma.Register(api, v1.Required(huma.Operation{
+			OperationID: "getNotificationPreferences",
+			Method:      http.MethodGet,
+			Path:        "/me/notification-preferences",
+			Summary:     "Get the caller's muted notification types",
+			Description: "Returns the notification types the caller has muted. Unknown stored values are dropped. An account with no forum state returns an empty list.",
+			Tags:        []string{"users"},
+		}), u.getNotificationPreferences)
+
+		huma.Register(api, v1.Required(huma.Operation{
+			OperationID: "putNotificationPreferences",
+			Method:      http.MethodPut,
+			Path:        "/me/notification-preferences",
+			Summary:     "Replace the caller's muted notification types",
+			Description: "Replaces the notification types the caller has muted. Unknown tokens are refused. The stored values are the forum's database keys; the response uses the same v1 tokens as the request.",
+			Tags:        []string{"users"},
+			Responses: problemResponses(map[int]string{
+				422: "VALIDATION_FAILED when muted_types holds an unknown token or a duplicate.",
+			}),
+		}), u.putNotificationPreferences)
+
 		huma.Register(api, v1.IdempotencyOptional(v1.Required(huma.Operation{
 			OperationID: "createCheckIn",
 			Method:      http.MethodPost,
@@ -164,17 +185,33 @@ func Register(u *Users) func(huma.API) {
 			OperationID: "listUsers",
 			Method:      http.MethodGet,
 			Path:        "/users",
-			Summary:     "Search users by name",
-			Description: "Returns users whose names match q. It is not paginated. Banned accounts are omitted. " +
-				"limit is 1–20.",
+			Summary:     "Search or resolve users",
+			Description: "Returns users whose names match q, or the users named in ids. Exactly one of q or ids is required. " +
+				"It is not paginated. Banned accounts are omitted from q results and listed in missing for ids. " +
+				"limit is 1–20 and applies to q.",
 			Tags:        []string{"users"},
 			Middlewares: huma.Middlewares{withUpstream},
 			Responses: problemResponses(map[int]string{
-				400: "LIMIT_TOO_LARGE when limit is greater than 20.",
-				422: "VALIDATION_FAILED when q is only whitespace.",
+				400: "LIMIT_TOO_LARGE when limit is greater than 20. INVALID_PARAMETER when ids holds more than 100 values.",
+				422: "VALIDATION_FAILED when neither q nor ids is given, both are given, q is only whitespace, or an id is not a positive integer.",
 				503: "SERVICE_UNAVAILABLE when the account service cannot be reached.",
 			}),
 		}), u.listUsers)
+
+		huma.Register(api, v1.Public(huma.Operation{
+			OperationID: "getUser",
+			Method:      http.MethodGet,
+			Path:        "/users/{user_id}",
+			Summary:     "Get a user's public profile",
+			Description: "Returns one user's public profile and activity counts. " +
+				"NOT_FOUND when the account does not exist or is not renderable. " +
+				"topic_count excludes hidden topics. topic_today_count uses the Asia/Shanghai calendar day. " +
+				"community_comment_count is null when the community service is unavailable and there is no cached value.",
+			Tags: []string{"users"},
+			Responses: problemResponses(map[int]string{
+				503: "SERVICE_UNAVAILABLE when the account service cannot be reached.",
+			}),
+		}), u.getUser)
 
 		huma.Register(api, v1.Required(huma.Operation{
 			OperationID: "patchMyProfile",

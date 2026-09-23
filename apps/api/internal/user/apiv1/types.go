@@ -2,6 +2,7 @@ package apiv1
 
 import (
 	"kun-galgame-api/internal/apiv1/repr"
+	"kun-galgame-api/internal/message/notifytype"
 
 	"github.com/danielgtaylor/huma/v2"
 )
@@ -89,4 +90,75 @@ type CreatorStatus struct {
 	IsCreator   bool                `json:"is_creator" doc:"Whether the caller already holds the creator role."`
 	Eligibility CreatorEligibility  `json:"eligibility" doc:"Current eligibility snapshot."`
 	Application *CreatorApplication `json:"application" doc:"The caller's latest creator application. null when they have never applied."`
+}
+
+type UserRole string
+
+var displayRoles = []string{"creator", "moderator", "admin", "ren"}
+
+// Same vocabulary as the topic ACL's roles: G8 holds every `roles` property in
+// the spec to one schema, and these four are all the profile badges show.
+func (UserRole) Schema(huma.Registry) *huma.Schema {
+	n := 9
+	enum := make([]any, len(displayRoles))
+	for i, r := range displayRoles {
+		enum[i] = r
+	}
+	return &huma.Schema{
+		Type:        huma.TypeString,
+		Enum:        enum,
+		MaxLength:   &n,
+		Description: "Role shown as a profile badge. Display only; never a permission check.",
+	}
+}
+
+type UserProfile struct {
+	Object      string         `json:"object" enum:"user" maxLength:"4" doc:"Type discriminant. Always user."`
+	ID          repr.DecimalID `json:"id" doc:"User id. JSON string of a decimal integer."`
+	Name        *string        `json:"name" maxLength:"64" doc:"Display name. null when the account no longer exists; show a localized label. Free text; never use it as a decision input."`
+	Avatar      *repr.Image    `json:"avatar" doc:"Avatar image. null when the account has no image-service hash."`
+	Bio         *string        `json:"bio" maxLength:"107" doc:"Profile bio as stored. Empty string when none. Free text; never use it as a decision input."`
+	Roles       []UserRole     `json:"roles" maxItems:"4" doc:"Badge roles among creator, moderator, admin and ren, including site roles. Other account roles are not listed. Display only; never a permission check. Empty array if none."`
+	CreatedAt   repr.DateTime  `json:"created_at" doc:"When the account was registered. Taken from the account service; falls back to when the user first appeared on this forum if that timestamp cannot be parsed."`
+	Moemoepoint int            `json:"moemoepoint" minimum:"-2147483648" doc:"The user's moemoepoint balance as this forum last cached it from OAuth. It can lag the live balance. It can be negative. Public on this face."`
+	Counts      UserCounts     `json:"counts" doc:"Public activity counts for this user."`
+}
+
+type UserCounts struct {
+	TopicCount                 int  `json:"topic_count" minimum:"0" doc:"Topics the user authored that are not hidden."`
+	PollCount                  int  `json:"poll_count" minimum:"0" doc:"Polls the user created."`
+	LotteryCount               int  `json:"lottery_count" minimum:"0" doc:"Lotteries the user created."`
+	ReplyCount                 int  `json:"reply_count" minimum:"0" doc:"Replies the user authored that are not hidden."`
+	TopicCommentCount          int  `json:"topic_comment_count" minimum:"0" doc:"Topic comments the user authored that are not hidden."`
+	CommunityCommentCount      *int `json:"community_comment_count" minimum:"0" doc:"Visible posts on community comment walls. null when the community service is unavailable and there is no cached value."`
+	PublishedGalgameCount      int  `json:"published_galgame_count" minimum:"0" doc:"Galgames the user has published. May be 0 when the catalog is unavailable."`
+	ContributedGalgameCount    int  `json:"contributed_galgame_count" minimum:"0" doc:"Galgames the user has contributed an edit to. May be 0 when the catalog is unavailable."`
+	PublishedGalgameTodayCount int  `json:"published_galgame_today_count" minimum:"0" doc:"Galgames the user published today by the galgame-domain clock. May be 0 when the catalog is unavailable."`
+	GalgameRatingCount         int  `json:"galgame_rating_count" minimum:"0" doc:"Galgame ratings the user authored."`
+	GalgameResourceCount       int  `json:"galgame_resource_count" minimum:"0" doc:"Galgame resources the user authored."`
+	ToolsetCount               int  `json:"toolset_count" minimum:"0" doc:"Toolsets the user authored."`
+	ToolsetResourceCount       int  `json:"toolset_resource_count" minimum:"0" doc:"Toolset resources the user authored."`
+	ReceivedUpvoteCount        int  `json:"received_upvote_count" minimum:"0" doc:"Upvotes on topics the user authored."`
+	ReceivedLikeCount          int  `json:"received_like_count" minimum:"0" doc:"Likes on topics the user authored."`
+	ReceivedDislikeCount       int  `json:"received_dislike_count" minimum:"0" doc:"Dislikes on topics the user authored."`
+	TopicTodayCount            int  `json:"topic_today_count" minimum:"0" doc:"Topics the user authored on the current Asia/Shanghai calendar day."`
+}
+
+type MutedType string
+
+func (MutedType) Schema(huma.Registry) *huma.Schema {
+	types := notifytype.All()
+	values := make([]string, 0, len(types)+1)
+	for _, t := range types {
+		values = append(values, string(t))
+	}
+	values = append(values, notifytype.KeyChat)
+	s := repr.ClosedEnum(values...)
+	s.Description = "Notification type the caller has muted. Closed vocabulary of v1 tokens plus chat for private messages."
+	return s
+}
+
+type NotificationPreferences struct {
+	Object     string      `json:"object" enum:"notification_preferences" maxLength:"24" doc:"Type discriminant. Always notification_preferences."`
+	MutedTypes []MutedType `json:"muted_types" maxItems:"19" uniqueItems:"true" doc:"Notification types the caller has muted. Empty array if none."`
 }

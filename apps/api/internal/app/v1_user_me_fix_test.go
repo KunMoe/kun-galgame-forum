@@ -294,4 +294,3 @@ func nextCursor(body map[string]any) string {
 	s, _ := body["next_cursor"].(string)
 	return s
 }
-

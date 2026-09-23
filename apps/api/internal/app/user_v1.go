@@ -16,8 +16,9 @@ func (a *App) newUserV1() *userapiv1.Users {
 		if state == nil {
 			state = repository.NewStateRepository(a.DB)
 		}
+		galgameStats := galgameService.NewGalgameUserStatsService(nil, nil, galgameRepo.NewGalgameRepository(a.DB))
 		users = service.NewUserService(
-			state, repository.NewUserStatsRepository(a.DB), a.Redis, nil, nil, a.UserClient, nil,
+			state, repository.NewUserStatsRepository(a.DB), a.Redis, nil, galgameStats, a.UserClient, nil,
 		)
 		a.UserService = users
 		if a.UserState == nil {

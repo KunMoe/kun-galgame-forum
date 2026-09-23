@@ -15,42 +15,16 @@ import (
 )
 
 type UserHandler struct {
-	userService        *service.UserService
 	userContentService *service.UserContentService
 }
 
 func NewUserHandler(
-	userService *service.UserService,
+	_ *service.UserService,
 	userContentService *service.UserContentService,
 ) *UserHandler {
 	return &UserHandler{
-		userService:        userService,
 		userContentService: userContentService,
 	}
-}
-
-func (h *UserHandler) GetProfile(c fiber.Ctx) error {
-	userID, err := strconv.Atoi(c.Params("id"))
-	if err != nil {
-		return response.Error(c, errors.ErrBadRequest("无效的用户 ID"))
-	}
-	profile, appErr := h.userService.GetUserProfile(c.Context(), userID)
-	if appErr != nil {
-		return response.Error(c, appErr)
-	}
-	return response.OK(c, profile)
-}
-
-func (h *UserHandler) GetFloatingCard(c fiber.Ctx) error {
-	var req dto.FloatingCardRequest
-	if appErr := utils.ParseQueryAndValidate(c, &req); appErr != nil {
-		return response.Error(c, appErr)
-	}
-	card, appErr := h.userService.GetFloatingCard(c.Context(), req.UserID)
-	if appErr != nil {
-		return response.Error(c, appErr)
-	}
-	return response.OK(c, card)
 }
 
 func (h *UserHandler) GetUserGalgames(c fiber.Ctx) error {
@@ -171,31 +145,4 @@ func (h *UserHandler) GetUserRatings(c fiber.Ctx) error {
 		return response.Error(c, appErr)
 	}
 	return response.OK(c, page)
-}
-
-func (h *UserHandler) GetNotificationPreferences(c fiber.Ctx) error {
-	user, appErr := middleware.MustGetUser(c)
-	if appErr != nil {
-		return response.Error(c, appErr)
-	}
-	prefs, appErr := h.userService.GetNotificationPreferences(user.ID)
-	if appErr != nil {
-		return response.Error(c, appErr)
-	}
-	return response.OK(c, prefs)
-}
-func (h *UserHandler) UpdateNotificationPreferences(c fiber.Ctx) error {
-	user, appErr := middleware.MustGetUser(c)
-	if appErr != nil {
-		return response.Error(c, appErr)
-	}
-	var req dto.UpdateNotificationPreferenceRequest
-	if appErr := utils.ParseAndValidate(c, &req); appErr != nil {
-		return response.Error(c, appErr)
-	}
-	prefs, appErr := h.userService.UpdateNotificationPreferences(user.ID, req.MutedTypes)
-	if appErr != nil {
-		return response.Error(c, appErr)
-	}
-	return response.OK(c, prefs)
 }
