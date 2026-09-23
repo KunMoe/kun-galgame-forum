@@ -1,5 +1,20 @@
 # API v1 changelog
 
+## 2026-09-23 (G2 quizzes)
+
+Breaking for every `/api/galgame-quiz*` route and `GET /api/galgame/search/picker`. 13 legacy routes go; no App build calls them.
+
+Offered:
+
+- `GET /api/v1/quizzes`: page-number (`limit` 1–100, default 50); filters `work_id`, `author_id`, `quiz_type`, `quiz_category`, `difficulty`, `spoiler_level`, `include_nsfw`; `sort` defaults to `bumped_at_desc`. Quizzes linked to an NSFW work are left out unless `include_nsfw=true`; quizzes by unrenderable authors are left out of both `items` and `total`.
+- `GET` / `PATCH` / `DELETE /api/v1/quizzes/{quiz_id}`, `POST /api/v1/quizzes` (Idempotency-Key required, 201), and `GET …/source` (the Markdown and the answer key, for editors).
+- `GET …/answers` (cursor, newest first) and `POST …/answers` (Idempotency-Key required, 201 `{answer, solution}`; the author may not answer, `403 SELF_ANSWER_FORBIDDEN`; a second answer is `409 ALREADY_EXISTS`).
+- `PUT` / `DELETE …/favorite` (slot, both 200) and `PUT …/quality-rating` `{rating}` 1–10 (only after answering: `403 QUIZ_ANSWER_REQUIRED`, which the author also gets).
+- `GET /api/v1/me/answered-quizzes` (page-number) and `GET /api/v1/me/quiz-states?quiz_ids=` (the `/me/topic-states` shape: `has_favorited` per readable id, the rest in `missing`).
+- `GET /api/v1/work-suggestions?q=`: at most 12 `WorkRef`s from catalog for the quiz work picker.
+
+The answer key (`solution`: `correct_choice_indexes`, `is_statement_true`, `explanation`) and every field derived from it (`is_correct`, other people's `submission`) reach only people who answered, the author and editors. `prompt` is a small document (text, line breaks, inline spoilers); `content` and `explanation` are full documents. Only `single`, `multiple` and `judge` exist. `quiz_type` cannot change, and a changed key regrades every answer both ways. A correct answer earns no moemoepoint, as before, and the author still gets the quiz-answered notice.
+
 ## 2026-09-23 (GR galgame ratings)
 
 Breaking for the six `/api/galgame-rating*` faces; they are gone. No App build calls them.

@@ -9,7 +9,7 @@
 | 段 | 范围 | 旧路由 | 状态 |
 |---|---|---|---|
 | G1 | 工具集：列表、用户列表、详情、写、资源、分片上传、实用性（[契约](g1-toolsets.md)，迁移 142） | 16 | ✅ 2026-09-23 #215；G1.1（资源字段改名 `toolset_resource_type`、`download_url` 可空、迁移 144） |
-| G2 | 题库 `/quizzes`（[契约](g2-quizzes.md)，迁移 143） | 13 | 契约已定，实现中（分支 `api-v1/g2-quiz`） |
+| G2 | 题库 `/quizzes`（[契约](g2-quizzes.md)，迁移 143） | 13 | 已实现，PR 待合（分支 `api-v1/g2-quiz`） |
 | G3 | galgame 资源：浏览、详情、按作品列、写、赞、有效/失效、发布禁止 | 11 | |
 | G4 | 作品详情 `GET /works/{work_id}`、赞、外链、我的互动；删 `/galgame/drafts` | 6 | 等 GE 的实体摘要 |
 | G5 | 浏览 `/works`（本地引擎）+ 资料库集合（catalog 引擎）+ sitemap + 发售月历 + collected months；外加 `/rss/galgame`（2026-09-23 由 X1 移交：改读 `/works?sort=created_desc`，旧 handler 照常退役） | 9 + 1 | 等 GE 的 `WorkSummary` |
@@ -47,6 +47,7 @@ G1 的 16 条加 G3 的 11 条就是 resources + toolsets 普查的 27 条。
 - GE 的 `WorkSummary` 与 intro / link 形状已随 #210 落地：intro 是 `{locale, value, is_machine, data_source}`，外链是 `{site, url}`，嵌入字段名是 `work_summary`（`work` / `works` 归 X2 的 `WorkRef`）。G4 的 `Work` 与 G5 的 `/works` 直接复用。
 
 - `catCoverSlot.Sexual` 目前按 `int` 解码，分不清「判为安全的 0」和「没判」，所以 `WorkRef.cover.sexual` 与 GE 的 `banner.sexual` 恒为 `null`。要改成指针，再把竖版封面的等级传进 `ImageMeta.Sexual`。在 G4 之前做。
+- G3 搬资源创建时（2026-09-23 37 在 prod 诊断，不热修）：`claimOnFirstResource`（`resource_service.go:381`）其实**每次**创建都跑，每次是两笔上游写（`adoptAndPublish` 的认领 + 发布）。用户 104136 约 31 小时发了 529 条资源、覆盖 300 部作品（166 条是约 10 秒间隔的重复对），耗尽 catalog 每账号 24 小时 100 笔认领写的额度，14:34Z 起每次创建都记 ERROR `claim action: 上游错误 status=429`。本地页面不丢（`PublishLocal` 在事务里），只是窗口内 catalog 侧认领被跳过。v1 要：① 只在作品的第一条资源、或本地行尚未 published 时才发静默认领；② 上游 429 是预期的额度状态，记 WARN 不记 ERROR。
 - G3 的资源类型守卫用 `slices.Contains(resourcevocab.TypeKeys, t)`，**不要**用 `resourcevocab.IsType`：它的索引含 `LegacyTypeKeys`，`IsType("image")` 为真，而 `workrepr.ResourceType` 的 schema 枚举只有 `TypeKeys`，回出去的 200 违反自己的 spec（c8 在 #209 里撞上并用变异题钉住）。生产 0 行遗留类型，TypeKeys 之外的值按数据错 500。
 - G5 接 `/rss/galgame` 时要修的线上 bug（2026-09-23 37 在 prod 诊断）：handler 先取最新 10 条 `published` 行再按 SFW 水合丢行，那 10 条里 9 条是 `content_limit = nsfw`，feed 只剩 1 条且不留日志——**NSFW 过滤必须在 SQL 里、LIMIT 之前**（本地 `/works` 引擎的做法）。另：10 行的 `created` 全在 G0 窗口 09:34–11:16Z，懒建本地行的批量创建把「最新」冲掉了，排序键要重新定（首个资源发布时间？catalog 的创建时间？）；幸存的 236211 用户 / 横幅 / 简介全空，可能是系统懒建的无作者行。不急，不单独热修。
 - `galgame_renumber_2026` 已无读者（folder 改写已完成），可在 G 的某个迁移里删表。
