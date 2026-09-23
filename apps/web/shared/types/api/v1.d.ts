@@ -532,26 +532,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/galgames/{galgame_id}/moyu-patches": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * List a galgame's patches on moyu
-         * @description Lists the pages www.moyu.moe, the KUN Galgame patch site, holds for the galgame, each with its live resources. Usually one page: moyu dedupes on the VNDB string, so a game that arrived under two spellings has two, and the page a reader should land on comes first. The whole set in one response; it is never paged. An empty list means moyu has nothing for the galgame. No download link, share code or password is carried; send a reader to web_url. An answer may be up to 30 minutes old. NOT_FOUND when the galgame does not exist.
-         */
-        get: operations["listGalgameMoyuPatches"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/lotteries/{lottery_id}": {
         parameters: {
             query?: never;
@@ -2163,6 +2143,26 @@ export interface paths {
          * @description Clears the caller's like. Removing a like that is not there changes nothing. The counters move only when the caller's row is really added or removed. NSFW sites can be liked and favorited like any other. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED, and a failure of that lookup is SERVICE_UNAVAILABLE with nothing written. Returns both counters and the caller's state after the request.
          */
         delete: operations["unlikeWebsite"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/works/{work_id}/moyu-patches": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List a work's patches on moyu
+         * @description Lists the pages www.moyu.moe, the KUN Galgame patch site, holds for the work, each with its live resources. Usually one page: moyu dedupes on the VNDB string, so a game that arrived under two spellings has two, and the page a reader should land on comes first. The whole set in one response; it is never paged. An empty list means moyu has nothing for the work. No download link, share code or password is carried; send a reader to web_url. An answer may be up to 30 minutes old. NOT_FOUND when the work does not exist.
+         */
+        get: operations["listWorkMoyuPatches"];
+        put?: never;
+        post?: never;
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -9573,65 +9573,6 @@ export interface operations {
                 };
             };
             /** @description SERVICE_UNAVAILABLE when the account service cannot resolve the author or a mention. */
-            503: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["Problem"];
-                };
-            };
-        };
-    };
-    listGalgameMoyuPatches: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Galgame id. */
-                galgame_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ListMoyuPatch"];
-                };
-            };
-            /** @description Bad Request */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["Problem"];
-                };
-            };
-            /** @description Not Found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["Problem"];
-                };
-            };
-            /** @description Internal Server Error */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["Problem"];
-                };
-            };
-            /** @description SERVICE_UNAVAILABLE: www.moyu.moe, the catalog or the account service cannot be reached. */
             503: {
                 headers: {
                     [name: string]: unknown;
@@ -18733,6 +18674,65 @@ export interface operations {
                 };
             };
             /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listWorkMoyuPatches: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Catalog work id, which is also the forum galgame page id. */
+                work_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListMoyuPatch"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE: www.moyu.moe, the catalog or the account service cannot be reached. */
             503: {
                 headers: {
                     [name: string]: unknown;

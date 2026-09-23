@@ -15770,82 +15770,6 @@
         ]
       }
     },
-    "/galgames/{galgame_id}/moyu-patches": {
-      "get": {
-        "description": "Lists the pages www.moyu.moe, the KUN Galgame patch site, holds for the galgame, each with its live resources. Usually one page: moyu dedupes on the VNDB string, so a game that arrived under two spellings has two, and the page a reader should land on comes first. The whole set in one response; it is never paged. An empty list means moyu has nothing for the galgame. No download link, share code or password is carried; send a reader to web_url. An answer may be up to 30 minutes old. NOT_FOUND when the galgame does not exist.",
-        "operationId": "listGalgameMoyuPatches",
-        "parameters": [
-          {
-            "description": "Galgame id.",
-            "in": "path",
-            "name": "galgame_id",
-            "required": true,
-            "schema": {
-              "description": "Galgame id.",
-              "maxLength": 19,
-              "pattern": "^[1-9][0-9]{0,18}$",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ListMoyuPatch"
-                }
-              }
-            },
-            "description": "OK"
-          },
-          "400": {
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            },
-            "description": "Bad Request"
-          },
-          "404": {
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            },
-            "description": "Not Found"
-          },
-          "500": {
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            },
-            "description": "Internal Server Error"
-          },
-          "503": {
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            },
-            "description": "SERVICE_UNAVAILABLE: www.moyu.moe, the catalog or the account service cannot be reached."
-          }
-        },
-        "summary": "List a galgame's patches on moyu",
-        "tags": [
-          "galgames"
-        ]
-      }
-    },
     "/lotteries/{lottery_id}": {
       "delete": {
         "description": "Deletes the lottery with its prizes, entries and held codes, and refunds the author's escrow if it still holds any. The author may delete it before the draw; staff holding the manage permission may also delete a drawn one. Nobody may delete it while it is being drawn. NOT_FOUND when the lottery does not exist, was created by a banned user, or belongs to a topic getTopic would not return to the caller.",
@@ -28823,6 +28747,82 @@
         "summary": "Like a website",
         "tags": [
           "websites"
+        ]
+      }
+    },
+    "/works/{work_id}/moyu-patches": {
+      "get": {
+        "description": "Lists the pages www.moyu.moe, the KUN Galgame patch site, holds for the work, each with its live resources. Usually one page: moyu dedupes on the VNDB string, so a game that arrived under two spellings has two, and the page a reader should land on comes first. The whole set in one response; it is never paged. An empty list means moyu has nothing for the work. No download link, share code or password is carried; send a reader to web_url. An answer may be up to 30 minutes old. NOT_FOUND when the work does not exist.",
+        "operationId": "listWorkMoyuPatches",
+        "parameters": [
+          {
+            "description": "Catalog work id, which is also the forum galgame page id.",
+            "in": "path",
+            "name": "work_id",
+            "required": true,
+            "schema": {
+              "description": "Catalog work id, which is also the forum galgame page id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListMoyuPatch"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE: www.moyu.moe, the catalog or the account service cannot be reached."
+          }
+        },
+        "summary": "List a work's patches on moyu",
+        "tags": [
+          "works"
         ]
       }
     }
