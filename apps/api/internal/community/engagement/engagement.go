@@ -58,6 +58,13 @@ func (s *Service) WallRead(ctx context.Context, userID int, ref anchor.Ref, thre
 	if !s.community.Configured() {
 		return idle, nil
 	}
+	// The v1 wall list does not expose the community thread id, so a v1 page
+	// sends 0 and the thread is looked up here.
+	if threadID == 0 {
+		if page, err := s.community.GetComments(ctx, ref.Kind, ref.ID, "", "1"); err == nil && page.Thread != nil {
+			threadID = page.Thread.ID
+		}
+	}
 
 	var threadRow *communityclient.ThreadUserView
 	var anchorRow *communityclient.AnchorSubscriptionView

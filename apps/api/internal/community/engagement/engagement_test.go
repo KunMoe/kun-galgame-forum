@@ -125,6 +125,25 @@ func TestWallReadAdvancesAnAnchorWatcherWithAThread(t *testing.T) {
 	}
 }
 
+func TestWallReadFindsTheThreadWhenNoneIsSent(t *testing.T) {
+	fake := &fakeCommunity{
+		commentsThread: map[string]any{"id": 7, "anchor_kind": 1, "anchor_id": "7"},
+		threadStates: []map[string]any{
+			{"thread_id": 7, "user_id": 3, "last_read_post_number": 4, "highest_post_number": 9,
+				"unread_count": 5, "notification_level": 3},
+		},
+	}
+	svc := serve(t, fake)
+
+	state, appErr := svc.WallRead(context.Background(), 3, gameRef(), 0)
+	if appErr != nil {
+		t.Fatalf("WallRead: %v", appErr)
+	}
+	if !slices.Contains(fake.paths, "POST /threads/7/read") || state.ThreadID != 7 {
+		t.Errorf("thread not resolved from the anchor: state %+v, paths %v", state, fake.paths)
+	}
+}
+
 func TestWallFollowUnfollowWritesLevelOneNeverMuted(t *testing.T) {
 	fake := &fakeCommunity{commentsThread: map[string]any{"id": 7, "anchor_kind": 1, "anchor_id": "7"}}
 	svc := serve(t, fake)

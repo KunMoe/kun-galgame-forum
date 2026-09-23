@@ -11,12 +11,13 @@ const TypeURIPrefix = "https://developer.nextmoe.dev/problems/"
 type Domain string
 
 const (
-	DomainPlatform Domain = "platform"
+	DomainPlatform   Domain = "platform"
 	DomainKungal     Domain = "kungal"
+	DomainMe         Domain = "me"
 	DomainModeration Domain = "moderation"
 )
 
-var DomainOrder = []Domain{DomainPlatform, DomainKungal, DomainModeration}
+var DomainOrder = []Domain{DomainPlatform, DomainKungal, DomainMe, DomainModeration}
 
 type ExtDef struct {
 	Name string
@@ -67,6 +68,9 @@ const (
 	CodePollClosed                   = "POLL_CLOSED"
 	CodeVoteAlreadyCast              = "VOTE_ALREADY_CAST"
 	CodeSelfUpvoteForbidden          = "SELF_UPVOTE_FORBIDDEN"
+	CodeRateLimited                  = "RATE_LIMITED"
+	CodeQuizAnswerRequired           = "QUIZ_ANSWER_REQUIRED"
+	CodeInvalidStateTransition       = "INVALID_STATE_TRANSITION"
 )
 
 const (
@@ -124,6 +128,9 @@ var Codes = []Def{
 	{CodePollClosed, DomainKungal, http.StatusConflict, "Poll closed", "The poll no longer accepts votes: it is past closes_at. Nothing about the request is wrong.", nil},
 	{CodeVoteAlreadyCast, DomainKungal, http.StatusConflict, "Vote already cast", "The caller has already voted and this poll does not allow changing a vote.", nil},
 	{CodeSelfUpvoteForbidden, DomainKungal, http.StatusForbidden, "Self upvote forbidden", "Users cannot upvote their own topics.", nil},
+	{CodeRateLimited, DomainPlatform, http.StatusTooManyRequests, "Rate limited", "A rate limit was exceeded. Retry-After, in seconds, is present only when the limiter says when to retry.", nil},
+	{CodeQuizAnswerRequired, DomainKungal, http.StatusForbidden, "Quiz answer required", "The quiz hides its game or carries spoilers, so its comment wall is open only to its author and to users who have answered it.", nil},
+	{CodeInvalidStateTransition, DomainMe, http.StatusConflict, "Invalid state transition", "The current state does not allow this transition. detail names the current state.", nil},
 }
 
 var Reasons = []ReasonDef{

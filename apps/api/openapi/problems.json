@@ -92,6 +92,15 @@
     },
     {
       "object": "problem_type",
+      "code": "RATE_LIMITED",
+      "domain": "platform",
+      "status": 429,
+      "type": "https://developer.nextmoe.dev/problems/platform/rate-limited",
+      "title": "Rate limited",
+      "description": "A rate limit was exceeded. Retry-After, in seconds, is present only when the limiter says when to retry."
+    },
+    {
+      "object": "problem_type",
       "code": "SCOPE_REQUIRED",
       "domain": "platform",
       "status": 403,
@@ -200,6 +209,15 @@
     },
     {
       "object": "problem_type",
+      "code": "QUIZ_ANSWER_REQUIRED",
+      "domain": "kungal",
+      "status": 403,
+      "type": "https://developer.nextmoe.dev/problems/kungal/quiz-answer-required",
+      "title": "Quiz answer required",
+      "description": "The quiz hides its game or carries spoilers, so its comment wall is open only to its author and to users who have answered it."
+    },
+    {
+      "object": "problem_type",
       "code": "SELF_LIKE_FORBIDDEN",
       "domain": "kungal",
       "status": 403,
@@ -233,6 +251,15 @@
       "type": "https://developer.nextmoe.dev/problems/kungal/vote-already-cast",
       "title": "Vote already cast",
       "description": "The caller has already voted and this poll does not allow changing a vote."
+    },
+    {
+      "object": "problem_type",
+      "code": "INVALID_STATE_TRANSITION",
+      "domain": "me",
+      "status": 409,
+      "type": "https://developer.nextmoe.dev/problems/me/invalid-state-transition",
+      "title": "Invalid state transition",
+      "description": "The current state does not allow this transition. detail names the current state."
     },
     {
       "object": "problem_type",

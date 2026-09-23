@@ -26,7 +26,10 @@
     "SELF_UPVOTE_FORBIDDEN": "不能推自己的话题",
     "POLL_CLOSED": "投票已截止，无法再投",
     "VOTE_ALREADY_CAST": "这个投票不允许改投，你已经投过了",
-    "DRAFT_LIMIT_REACHED": "草稿数量已达上限，请先删除一些草稿再保存"
+    "DRAFT_LIMIT_REACHED": "草稿数量已达上限，请先删除一些草稿再保存",
+    "RATE_LIMITED": "操作太频繁，请稍等一会儿再试",
+    "QUIZ_ANSWER_REQUIRED": "作答后才能参与这道题目的讨论",
+    "INVALID_STATE_TRANSITION": "内容的状态已经变化，请刷新页面后重试"
   },
   "reason": {
     "DUPLICATE_ITEM": {

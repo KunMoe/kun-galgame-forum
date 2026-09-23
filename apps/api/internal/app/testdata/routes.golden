@@ -5,19 +5,14 @@ DELETE /api/doc/article                               cors.New → middleware.Na
 DELETE /api/doc/category                              cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → RequirePermission → CategoryHandler.DeleteCategory
 DELETE /api/doc/tag                                   cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → RequirePermission → TagHandler.DeleteTag
 DELETE /api/galgame-quiz/:id                          cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → QuizHandler.DeleteQuiz
-DELETE /api/galgame-quiz/:id/comments/:postId         cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → ResourceCommentHandler.QuizDelete
 DELETE /api/galgame-rating/:id                        cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → RatingHandler.DeleteRating
-DELETE /api/galgame-rating/:id/comments/:postId       cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → ResourceCommentHandler.RatingDelete
-DELETE /api/galgame-resource/:id/comments/:postId     cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → ResourceCommentHandler.ResourceDelete
 DELETE /api/galgame/:gid                              cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → SubmissionHandler.Withdraw
 DELETE /api/galgame/:gid/cover/:coverId/vote          cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → CoverVoteHandler.Unvote
 DELETE /api/galgame/:gid/draft                        cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → SubmissionHandler.DeleteDraft
 DELETE /api/galgame/:gid/resource                     cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → ResourceHandler.DeleteResource
 DELETE /api/galgame/collection/:cid                   cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → GalgameCollectionHandler.Delete
-DELETE /api/galgame/comments/:postId                  cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → CommunityCommentHandler.Delete
 DELETE /api/message/:id                               cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → MessageHandler.DeleteMessage
 DELETE /api/toolset/:id                               cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → ToolsetHandler.Delete
-DELETE /api/toolset/:id/comments/:postId              cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → ResourceCommentHandler.ToolsetDelete
 DELETE /api/toolset/:id/resource                      cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → ResourceHandler.DeleteResource
 DELETE /api/topic/:tid/lottery                        cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → LotteryHandler.DeleteLottery
 DELETE /api/update/history                            cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → RequirePermission → UpdateHandler.DeleteHistory
@@ -33,11 +28,12 @@ DELETE /api/v1/topics/:topic_id/best-answer           cors.New → v1Headers →
 DELETE /api/v1/topics/:topic_id/favorite              cors.New → v1Headers → fiberAdapter.Handle
 DELETE /api/v1/topics/:topic_id/pinned-reply          cors.New → v1Headers → fiberAdapter.Handle
 DELETE /api/v1/topics/:topic_id/reactions/:reaction   cors.New → v1Headers → fiberAdapter.Handle
+DELETE /api/v1/wall-comments/:wall_comment_id         cors.New → v1Headers → fiberAdapter.Handle
+DELETE /api/v1/wall-comments/:wall_comment_id/like    cors.New → v1Headers → fiberAdapter.Handle
 DELETE /api/website-category                          cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → RequirePermission → CategoryHandler.DeleteWebsiteCategory
 DELETE /api/website-tag                               cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → RequirePermission → TagHandler.DeleteWebsiteTag
 DELETE /api/website-tag-group                         cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → RequirePermission → TagGroupHandler.DeleteWebsiteTagGroup
 DELETE /api/website/:domain                           cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → RequirePermission → WebsiteHandler.DeleteWebsite
-DELETE /api/website/:domain/comments/:postId          cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → ResourceCommentHandler.WebsiteDelete
 GET    /api/activity                                  cors.New → middleware.NamePreference → ContentStance → ActivityHandler.GetActivity
 GET    /api/activity/tab                              cors.New → middleware.NamePreference → ContentStance → ActivityHandler.GetTab
 GET    /api/activity/timeline                         cors.New → middleware.NamePreference → ContentStance → ActivityHandler.GetTimeline
@@ -77,17 +73,14 @@ GET    /api/galgame-official/legacy/:id               cors.New → middleware.Na
 GET    /api/galgame-official/search                   cors.New → middleware.NamePreference → ContentStance → EntityHandler.SearchOfficials
 GET    /api/galgame-quiz/:id                          cors.New → middleware.NamePreference → ContentStance → OptionalAuth → QuizHandler.GetQuizPlay
 GET    /api/galgame-quiz/:id/answers                  cors.New → middleware.NamePreference → ContentStance → OptionalAuth → QuizHandler.GetQuizAnswers
-GET    /api/galgame-quiz/:id/comments                 cors.New → middleware.NamePreference → ContentStance → OptionalAuth → ResourceCommentHandler.QuizList
 GET    /api/galgame-quiz/:id/edit                     cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → QuizHandler.GetQuizForEdit
 GET    /api/galgame-quiz/all                          cors.New → middleware.NamePreference → ContentStance → OptionalAuth → QuizHandler.GetAllQuizzes
 GET    /api/galgame-quiz/mine/answered                cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → QuizHandler.GetMyAnswered
 GET    /api/galgame-quiz/mine/favorites               cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → QuizHandler.GetMyFavorites
 GET    /api/galgame-rating/:id                        cors.New → middleware.NamePreference → ContentStance → OptionalAuth → RatingHandler.GetRatingDetail
-GET    /api/galgame-rating/:id/comments               cors.New → middleware.NamePreference → ContentStance → OptionalAuth → ResourceCommentHandler.RatingList
 GET    /api/galgame-rating/all                        cors.New → middleware.NamePreference → ContentStance → RatingHandler.GetAllRatings
 GET    /api/galgame-resource                          cors.New → middleware.NamePreference → ContentStance → OptionalAuth → ResourceHandler.GetResourceList
 GET    /api/galgame-resource/:id                      cors.New → middleware.NamePreference → ContentStance → OptionalAuth → ResourceHandler.GetResourceDetail
-GET    /api/galgame-resource/:id/comments             cors.New → middleware.NamePreference → ContentStance → OptionalAuth → ResourceCommentHandler.ResourceList
 GET    /api/galgame-resource/:id/detail               cors.New → middleware.NamePreference → ContentStance → OptionalAuth → ResourceHandler.GetResourceDownloadDetail
 GET    /api/galgame-series                            cors.New → middleware.NamePreference → ContentStance → EntityHandler.GetSeriesList
 GET    /api/galgame-series/:id                        cors.New → middleware.NamePreference → ContentStance → EntityHandler.GetSeriesDetail
@@ -100,8 +93,6 @@ GET    /api/galgame-tag/multi                         cors.New → middleware.Na
 GET    /api/galgame-tag/search                        cors.New → middleware.NamePreference → ContentStance → EntityHandler.SearchTags
 GET    /api/galgame/:gid                              cors.New → middleware.NamePreference → ContentStance → OptionalAuth → GalgameHandler.GetDetail
 GET    /api/galgame/:gid/collections/mine             cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → GalgameCollectionHandler.MyCollectionsForGalgame
-GET    /api/galgame/:gid/comments                     cors.New → middleware.NamePreference → ContentStance → OptionalAuth → CommunityCommentHandler.List
-GET    /api/galgame/:gid/comments/locate              cors.New → middleware.NamePreference → ContentStance → OptionalAuth → CommunityCommentHandler.Locate
 GET    /api/galgame/:gid/edit/bootstrap               cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → EditHandler.Bootstrap
 GET    /api/galgame/:gid/edit/diff                    cors.New → middleware.NamePreference → ContentStance → EditHandler.Diff
 GET    /api/galgame/:gid/edit/proposals               cors.New → middleware.NamePreference → ContentStance → EditHandler.GameProposals
@@ -150,7 +141,6 @@ GET    /api/search/quick                              cors.New → middleware.Na
 GET    /api/section                                   cors.New → middleware.NamePreference → ContentStance → OptionalAuth → SectionHandler.GetSectionTopics
 GET    /api/toolset                                   cors.New → middleware.NamePreference → ContentStance → OptionalAuth → ToolsetHandler.GetList
 GET    /api/toolset/:id                               cors.New → middleware.NamePreference → ContentStance → OptionalAuth → ToolsetHandler.GetDetail
-GET    /api/toolset/:id/comments                      cors.New → middleware.NamePreference → ContentStance → OptionalAuth → ResourceCommentHandler.ToolsetList
 GET    /api/toolset/:id/practicality                  cors.New → middleware.NamePreference → ContentStance → OptionalAuth → PracticalityHandler.GetPracticality
 GET    /api/toolset/:id/resource/detail               cors.New → middleware.NamePreference → ContentStance → ResourceHandler.GetResourceDetail
 GET    /api/topic/:tid/lottery/entrants               cors.New → middleware.NamePreference → ContentStance → OptionalAuth → LotteryHandler.GetEntrants
@@ -194,6 +184,9 @@ GET    /api/v1/topics/:topic_id/reactions             cors.New → v1Headers →
 GET    /api/v1/topics/:topic_id/replies               cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/topics/:topic_id/source                cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/topics/:topic_id/upvotes               cors.New → v1Headers → fiberAdapter.Handle
+GET    /api/v1/wall-comments                          cors.New → v1Headers → fiberAdapter.Handle
+GET    /api/v1/wall-comments/:wall_comment_id         cors.New → v1Headers → fiberAdapter.Handle
+GET    /api/v1/wall-comments/:wall_comment_id/source  cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/website                                   cors.New → middleware.NamePreference → ContentStance → OptionalAuth → WebsiteHandler.GetWebsites
 GET    /api/website-category                          cors.New → middleware.NamePreference → ContentStance → CategoryHandler.GetWebsiteCategories
 GET    /api/website-category/:name                    cors.New → middleware.NamePreference → ContentStance → CategoryHandler.GetWebsiteCategory
@@ -201,13 +194,13 @@ GET    /api/website-tag                               cors.New → middleware.Na
 GET    /api/website-tag-group                         cors.New → middleware.NamePreference → ContentStance → TagGroupHandler.GetWebsiteTagGroups
 GET    /api/website-tag/:name                         cors.New → middleware.NamePreference → ContentStance → TagHandler.GetWebsiteTagDetail
 GET    /api/website/:domain                           cors.New → middleware.NamePreference → ContentStance → OptionalAuth → WebsiteHandler.GetWebsiteDetail
-GET    /api/website/:domain/comments                  cors.New → middleware.NamePreference → ContentStance → OptionalAuth → ResourceCommentHandler.WebsiteList
 GET    /healthz                                       cors.New → App.setupRoutes
 PATCH  /api/galgame/collection/:cid                   cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → GalgameCollectionHandler.Update
 PATCH  /api/v1/comments/:comment_id                   cors.New → v1Headers → fiberAdapter.Handle
 PATCH  /api/v1/polls/:poll_id                         cors.New → v1Headers → fiberAdapter.Handle
 PATCH  /api/v1/replies/:reply_id                      cors.New → v1Headers → fiberAdapter.Handle
 PATCH  /api/v1/topics/:topic_id                       cors.New → v1Headers → fiberAdapter.Handle
+PATCH  /api/v1/wall-comments/:wall_comment_id         cors.New → v1Headers → fiberAdapter.Handle
 POST   /api/admin/friend-link                         cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → RequirePermission → FriendLinkHandler.Create
 POST   /api/admin/galgame/:gid/review                 cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → RequirePermission → ClaimReviewHandler.Review
 POST   /api/admin/trust/review-items/:id/claim        cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → RequirePermission → TrustHandler.ClaimReviewItem
@@ -225,17 +218,12 @@ POST   /api/galgame-edit/proposals/:id/merge          cors.New → middleware.Na
 POST   /api/galgame-edit/proposals/:id/withdraw       cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → EditHandler.Withdraw
 POST   /api/galgame-quiz                              cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → QuizHandler.CreateQuiz
 POST   /api/galgame-quiz/:id/answer                   cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → QuizHandler.AnswerQuiz
-POST   /api/galgame-quiz/:id/comments                 cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → ResourceCommentHandler.QuizCreate
 POST   /api/galgame-rating                            cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → RatingHandler.CreateRating
-POST   /api/galgame-rating/:id/comments               cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → ResourceCommentHandler.RatingCreate
-POST   /api/galgame-resource/:id/comments             cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → ResourceCommentHandler.ResourceCreate
-POST   /api/galgame/:gid/comments                     cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → CommunityCommentHandler.Create
 POST   /api/galgame/:gid/edit/proposals               cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → EditHandler.Submit
 POST   /api/galgame/:gid/edit/revert                  cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → EditHandler.Revert
 POST   /api/galgame/:gid/resource                     cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → ResourceHandler.CreateResource
 POST   /api/galgame/:gid/resubmit                     cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → SubmissionHandler.Resubmit
 POST   /api/galgame/collection                        cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → GalgameCollectionHandler.Create
-POST   /api/galgame/comments/:postId/flag             cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → CommunityCommentHandler.Flag
 POST   /api/galgame/submit                            cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → SubmissionHandler.Submit
 POST   /api/image/cover                               cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → ImageHandler.UploadCoverImage
 POST   /api/image/galgame                             cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → ImageHandler.UploadGalgameImage
@@ -245,7 +233,6 @@ POST   /api/message/chat/recall                       cors.New → middleware.Na
 POST   /api/message/chat/send                         cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → ChatHandler.SendChatMessage
 POST   /api/report/submit                             cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → TrustHandler.SubmitReport
 POST   /api/toolset                                   cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → ToolsetHandler.Create
-POST   /api/toolset/:id/comments                      cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → ResourceCommentHandler.ToolsetCreate
 POST   /api/toolset/:id/resource                      cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → ResourceHandler.CreateResource
 POST   /api/toolset/:id/upload/abort                  cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → UploadHandler.UploadAbort
 POST   /api/toolset/:id/upload/complete               cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → UploadHandler.UploadComplete
@@ -273,11 +260,12 @@ POST   /api/v1/topics/:topic_id/polls                 cors.New → v1Headers →
 POST   /api/v1/topics/:topic_id/replies               cors.New → v1Headers → fiberAdapter.Handle
 POST   /api/v1/topics/:topic_id/upvotes               cors.New → v1Headers → fiberAdapter.Handle
 POST   /api/v1/topics/:topic_id/views                 cors.New → v1Headers → fiberAdapter.Handle
+POST   /api/v1/wall-comments                          cors.New → v1Headers → fiberAdapter.Handle
+POST   /api/v1/wall-comments/:wall_comment_id/flags   cors.New → v1Headers → fiberAdapter.Handle
 POST   /api/website                                   cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → RequirePermission → WebsiteHandler.CreateWebsite
 POST   /api/website-category                          cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → RequirePermission → CategoryHandler.CreateWebsiteCategory
 POST   /api/website-tag                               cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → RequirePermission → TagHandler.CreateWebsiteTag
 POST   /api/website-tag-group                         cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → RequirePermission → TagGroupHandler.CreateWebsiteTagGroup
-POST   /api/website/:domain/comments                  cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → ResourceCommentHandler.WebsiteCreate
 PUT    /api/admin/friend-link                         cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → RequirePermission → FriendLinkHandler.Update
 PUT    /api/admin/friend-link/reorder                 cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → RequirePermission → FriendLinkHandler.Reorder
 PUT    /api/admin/galgame/:gid/resource-publish-ban   cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → RequirePermission → ResourceHandler.SetResourcePublishBan
@@ -301,8 +289,6 @@ PUT    /api/galgame/:gid/resource                     cors.New → middleware.Na
 PUT    /api/galgame/:gid/resource/expired             cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → ResourceHandler.MarkExpired
 PUT    /api/galgame/:gid/resource/like                cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → ResourceHandler.ToggleLike
 PUT    /api/galgame/:gid/resource/valid               cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → ResourceHandler.MarkValid
-PUT    /api/galgame/comments/:postId                  cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → CommunityCommentHandler.Update
-PUT    /api/galgame/comments/:postId/like             cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → CommunityCommentHandler.ToggleLike
 PUT    /api/message/admin/read                        cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → MessageHandler.MarkAdminRead
 PUT    /api/message/system/read                       cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → MessageHandler.MarkAllRead
 PUT    /api/toolset/:id                               cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → ToolsetHandler.Update
@@ -324,6 +310,7 @@ PUT    /api/v1/topics/:topic_id/best-answer           cors.New → v1Headers →
 PUT    /api/v1/topics/:topic_id/favorite              cors.New → v1Headers → fiberAdapter.Handle
 PUT    /api/v1/topics/:topic_id/pinned-reply          cors.New → v1Headers → fiberAdapter.Handle
 PUT    /api/v1/topics/:topic_id/reactions/:reaction   cors.New → v1Headers → fiberAdapter.Handle
+PUT    /api/v1/wall-comments/:wall_comment_id/like    cors.New → v1Headers → fiberAdapter.Handle
 PUT    /api/website-category                          cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → RequirePermission → CategoryHandler.UpdateWebsiteCategory
 PUT    /api/website-tag                               cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → RequirePermission → TagHandler.UpdateWebsiteTag
 PUT    /api/website-tag-group                         cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → RequirePermission → TagGroupHandler.UpdateWebsiteTagGroup

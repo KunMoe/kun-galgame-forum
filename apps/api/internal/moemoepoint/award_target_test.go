@@ -28,13 +28,15 @@ var actorParams = map[string]bool{
 	"currentUserID": true,
 }
 
-// The two award shapes in this repo: the interaction helpers take the
-// transaction first, the package functions do not.
+// The award shapes in this repo: the interaction helpers take the transaction
+// first, the package functions do not, and the v1 wall service calls an
+// injected award func with the package function's arguments.
 var awardShapes = map[string]struct{ target, reason int }{
 	"AdjustMoemoepoint": {1, 3},
 	"adjustMoemoepoint": {1, 3},
 	"Award":             {0, 2},
 	"AwardSync":         {0, 2},
+	"award":             {0, 2},
 }
 
 // v1 collects its awards as struct literals and flushes them after the commit,

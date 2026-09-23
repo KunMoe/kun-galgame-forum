@@ -7,6 +7,7 @@ import (
 	"kun-galgame-api/internal/middleware"
 	topicapiv1 "kun-galgame-api/internal/topic/apiv1"
 	topicRepo "kun-galgame-api/internal/topic/repository"
+	wallapiv1 "kun-galgame-api/internal/wall/apiv1"
 	"kun-galgame-api/pkg/perm"
 
 	"github.com/gofiber/fiber/v3"
@@ -34,6 +35,7 @@ func (a *App) setupRoutes() {
 		topicapiv1.RegisterPolls(a.newTopicV1Polls(topicReads)),
 		topicapiv1.RegisterDrafts(a.newTopicV1Drafts()),
 		galgameapiv1.Register(a.GalgameV1),
+		wallapiv1.Register(a.WallV1),
 	)
 
 	// Deliberately touches neither DB nor Redis: the container HEALTHCHECK reads
@@ -210,8 +212,6 @@ func (a *App) setupRoutes() {
 	optAuth.Get("/galgame/:gid/resource/all", a.GalgameResourceHandler.GetGalgameResources)
 	// Both comment READ halves must mount before the auth boundary below, or
 	// anonymous reads start demanding a session. Their writes mount after it.
-	a.GalgameCommunityCommentHandler.RegisterReads(optAuth)
-	a.ResourceCommentHandler.RegisterReads(optAuth)
 	optAuth.Get("/galgame/:gid/link/all", a.GalgameProxyHandler.GetGalgameLinks)
 	optAuth.Get("/galgame/:gid/edit/revisions", a.GalgameEditHandler.Revisions)
 	optAuth.Get("/galgame/:gid", a.GalgameHandler.GetDetail)
@@ -290,10 +290,6 @@ func (a *App) setupRoutes() {
 	authed.Delete("/galgame/collection/:cid", a.GalgameCollectionHandler.Delete)
 	authed.Get("/galgame/:gid/collections/mine", a.GalgameCollectionHandler.MyCollectionsForGalgame)
 	authed.Put("/galgame/:gid/collections", a.GalgameCollectionHandler.SetMembership)
-
-	a.GalgameCommunityCommentHandler.RegisterWrites(authed)
-
-	a.ResourceCommentHandler.RegisterWrites(authed)
 
 	authed.Post("/galgame/:gid/resource", a.GalgameResourceHandler.CreateResource)
 	authed.Put("/galgame/:gid/resource", a.GalgameResourceHandler.UpdateResource)

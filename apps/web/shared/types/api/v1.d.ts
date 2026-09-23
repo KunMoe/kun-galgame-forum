@@ -664,6 +664,122 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/wall-comments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List a page's comment wall
+         * @description Lists the comments on the wall of one page — a galgame, a galgame rating, resource or quiz, a toolset or a website — as a cursor page in the order they were posted. Replies appear in that order too; group them by root_comment_id. Comments by banned users and comments held for review that the caller did not write are left out without reading on, so a page can hold fewer than limit items; continue while next_cursor is present. A deleted comment stays as a tombstone so its replies keep their parent.
+         */
+        get: operations["listWallComments"];
+        put?: never;
+        /**
+         * Comment on a page's wall
+         * @description Posts a comment on a page's wall and returns it as getWallComment would to its author; the community service may hold it for review, and then state is held. addressee is derived, not sent: the parent's author for a reply, the rating's author for a top-level comment on a rating wall. The owner of a resource, toolset or quiz is notified of a top-level comment unless they already follow the wall. On a galgame wall, users mentioned in the body are notified.
+         */
+        post: operations["createWallComment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/wall-comments/{wall_comment_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a wall comment
+         * @description Returns one wall comment, for a permalink; subject_type and subject_id say which page it is on. A deleted comment comes back as its tombstone. NOT_FOUND when the comment does not exist, is on a page this forum does not host a wall for, was written by a banned user, is held for review and the caller is not its author, or is on a wall listWallComments would refuse the caller; these are indistinguishable.
+         */
+        get: operations["getWallComment"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete a wall comment
+         * @description Turns the comment into a tombstone; its replies stay. It needs can_delete. Deleting a tombstone again succeeds and changes nothing. NOT_FOUND when the comment does not exist, is on a page this forum does not host a wall for, was written by a banned user, is held for review and the caller is not its author, or is on a wall listWallComments would refuse the caller; these are indistinguishable.
+         */
+        delete: operations["deleteWallComment"];
+        options?: never;
+        head?: never;
+        /**
+         * Update a wall comment
+         * @description Replaces the comment body and returns the comment as getWallComment would. It needs can_edit. A body equal to the stored one changes nothing. Staff editing someone else's comment sets is_edited_by_moderator. On a galgame wall, users newly mentioned by the edit are notified. NOT_FOUND when the comment does not exist, is on a page this forum does not host a wall for, was written by a banned user, is held for review and the caller is not its author, or is on a wall listWallComments would refuse the caller; these are indistinguishable.
+         */
+        patch: operations["updateWallComment"];
+        trace?: never;
+    };
+    "/wall-comments/{wall_comment_id}/flags": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Flag a wall comment
+         * @description Reports the comment to the moderators. A flag has no id and cannot be read back; flagging the same comment again is accepted and counts once. NOT_FOUND when the comment does not exist, is on a page this forum does not host a wall for, was written by a banned user, is held for review and the caller is not its author, or is on a wall listWallComments would refuse the caller; these are indistinguishable.
+         */
+        post: operations["flagWallComment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/wall-comments/{wall_comment_id}/like": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Like a wall comment
+         * @description Sets the caller's like and returns the comment. Liking an already liked comment changes nothing. The author earns 1 moemoepoint. NOT_FOUND when the comment does not exist, is on a page this forum does not host a wall for, was written by a banned user, is held for review and the caller is not its author, or is on a wall listWallComments would refuse the caller; these are indistinguishable.
+         */
+        put: operations["likeWallComment"];
+        post?: never;
+        /**
+         * Remove a like from a wall comment
+         * @description Removes the caller's like and returns the comment. Removing a like that is not there changes nothing. The author loses the moemoepoint the like earned. NOT_FOUND when the comment does not exist, is on a page this forum does not host a wall for, was written by a banned user, is held for review and the caller is not its author, or is on a wall listWallComments would refuse the caller; these are indistinguishable.
+         */
+        delete: operations["unlikeWallComment"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/wall-comments/{wall_comment_id}/source": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a wall comment's editable source
+         * @description Returns the stored Markdown of the comment, to fill an edit form. It needs can_edit. NOT_FOUND when the comment does not exist, is on a page this forum does not host a wall for, was written by a banned user, is held for review and the caller is not its author, or is on a wall listWallComments would refuse the caller; these are indistinguishable.
+         */
+        get: operations["getWallCommentSource"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1086,6 +1202,17 @@ export interface components {
         ListTopicUpvote: {
             /** @description Members of this page. Empty array, never null. */
             items: components["schemas"]["TopicUpvote"][];
+            /** @description Opaque keyset cursor. Omitted on the last page. */
+            next_cursor?: string;
+            /**
+             * @description Type discriminant. Always list.
+             * @enum {string}
+             */
+            object: "list";
+        };
+        ListWallComment: {
+            /** @description Members of this page. Empty array, never null. */
+            items: components["schemas"]["WallComment"][];
             /** @description Opaque keyset cursor. Omitted on the last page. */
             next_cursor?: string;
             /**
@@ -2179,6 +2306,105 @@ export interface components {
              * @description Absolute URL of the video file.
              */
             url: string;
+        };
+        WallComment: {
+            /** @description The user the comment is addressed to: the parent comment's author for a reply, the rating's author for a top-level comment on a rating wall, null otherwise. */
+            addressee: components["schemas"]["UserRef"] | null;
+            /** @description Comment author. */
+            author: components["schemas"]["UserRef"];
+            /** @description Comment body as a node tree. An empty document when state is deleted. */
+            content: components["schemas"]["ContentDocument"];
+            /**
+             * Format: date-time
+             * @description Creation time.
+             */
+            created_at: string;
+            /**
+             * Format: date-time
+             * @description Time of the latest edit. null when never edited.
+             */
+            edited_at: string | null;
+            /** @description Wall comment id. JSON string of a decimal integer. Its own id space, unrelated to topic comments. */
+            id: string;
+            /** @description Whether the latest edit was made by staff rather than the author. */
+            is_edited_by_moderator: boolean;
+            /**
+             * Format: int64
+             * @description Like count.
+             */
+            like_count: number;
+            /**
+             * @description Type discriminant. Always wall_comment.
+             * @enum {string}
+             */
+            object: "wall_comment";
+            /** @description Id of the wall comment this one answers. null for a top-level comment. The parent may be absent from a list. */
+            parent_comment_id: string | null;
+            /** @description Id of the top-level comment this one's reply chain starts from. null for a top-level comment. Clients that draw two levels group by it. */
+            root_comment_id: string | null;
+            /**
+             * @description visible: shown to everyone. held: waiting for review, shown only to its author. deleted: a tombstone kept so replies keep their parent; content is an empty document.
+             * @enum {string}
+             */
+            state: "visible" | "held" | "deleted";
+            /** @description Id of that page: a galgame, rating, resource, quiz, toolset or website id, by subject_type. */
+            subject_id: string;
+            /**
+             * @description Kind of page whose wall the comment is on.
+             * @enum {string}
+             */
+            subject_type: "galgame" | "galgame_rating" | "galgame_resource" | "galgame_quiz" | "toolset" | "website";
+            /** @description The caller's own state on this comment. null for an anonymous caller. */
+            viewer: components["schemas"]["WallCommentViewer"] | null;
+        };
+        WallCommentCreate: {
+            /** @description Comment body as Markdown source. The wall sets the real limit: 5000 characters on a galgame, 1314 on a rating, 1007 elsewhere, counted on the value as sent. A body of only whitespace is refused as TOO_SHORT. Free text; never use it as a decision input. */
+            content_markdown: string;
+            /** @description Id of a comment on the same wall that this one answers. Absent or null for a top-level comment. */
+            parent_comment_id?: string | null;
+            /** @description Id of that page. */
+            subject_id: string;
+            /**
+             * @description Kind of page whose wall to comment on.
+             * @enum {string}
+             */
+            subject_type: "galgame" | "galgame_rating" | "galgame_resource" | "galgame_quiz" | "toolset" | "website";
+        };
+        WallCommentFlag: {
+            /**
+             * @description Why the comment is flagged.
+             * @enum {string}
+             */
+            flag_reason: "spam" | "abuse" | "off_topic" | "other" | "nsfw_mislabel";
+            /** @description Free-text note for the moderators. Absent or null for none. Free text; never use it as a decision input. */
+            note?: string | null;
+        };
+        WallCommentPatch: {
+            /** @description New body as Markdown source, checked as in createWallComment. Free text; never use it as a decision input. */
+            content_markdown: string;
+        };
+        WallCommentSource: {
+            /** @description Comment body as the stored Markdown source. Free text; never use it as a decision input. */
+            content_markdown: string;
+            /**
+             * @description Type discriminant. Always wall_comment_source.
+             * @enum {string}
+             */
+            object: "wall_comment_source";
+            /** @description Id of the wall comment. */
+            wall_comment_id: string;
+        };
+        WallCommentViewer: {
+            /** @description Whether the caller may delete the comment: its author, staff holding this wall's delete permission, or the owner of the page the wall belongs to (a resource's publisher, a toolset's owner, a quiz's author, a rating's author). Always false on a tombstone. */
+            can_delete: boolean;
+            /** @description Whether the caller may edit the comment: its author, or staff holding this wall's edit permission. Requests authenticated with a Bearer token never carry staff powers. Always false on a tombstone. */
+            can_edit: boolean;
+            /** @description Whether the caller may flag the comment: anyone but its author, unless it is a tombstone. */
+            can_flag: boolean;
+            /** @description Whether the caller may like the comment: anyone but its author, unless it is a tombstone. */
+            can_like: boolean;
+            /** @description Whether the caller liked the comment. */
+            has_liked: boolean;
         };
     };
     responses: never;
@@ -6196,6 +6422,834 @@ export interface operations {
                 };
             };
             /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listWallComments: {
+        parameters: {
+            query: {
+                /** @description Opaque keyset cursor from a previous page of this collection. */
+                cursor?: string;
+                /** @description Page size. 1–100, default 20. Values above 100 are rejected, not clamped. */
+                limit?: number;
+                /** @description Kind of page whose wall to list. */
+                subject_type: "galgame" | "galgame_rating" | "galgame_resource" | "galgame_quiz" | "toolset" | "website";
+                /** @description Id of that page. */
+                subject_id: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListWallComment"];
+                };
+            };
+            /** @description INVALID_PARAMETER when subject_type or subject_id is missing or subject_id is malformed; UNKNOWN_ENUM_VALUE for an undeclared subject_type; LIMIT_TOO_LARGE; INVALID_CURSOR, including a cursor from another wall. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description QUIZ_ANSWER_REQUIRED when the wall belongs to a quiz that hides its game or carries spoilers and the caller is neither its author, nor one who answered it, nor staff holding that wall's edit or delete permission. ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the page does not exist or this forum would not show it: a galgame the catalog does not resolve, or a rating, resource, quiz or toolset whose owner is banned. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    createWallComment: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Caller-generated UUID (canonical 8-4-4-4-12 hex, any version) or 26-character Crockford ULID. Scoped to (user, operation, key) for 24 hours. */
+                "Idempotency-Key": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WallCommentCreate"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    Location?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WallComment"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description QUIZ_ANSWER_REQUIRED when the wall belongs to a quiz that hides its game or carries spoilers and the caller is neither its author, nor one who answered it, nor staff holding that wall's edit or delete permission. SCOPE_REQUIRED or ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the page does not exist or this forum would not show it: a galgame the catalog does not resolve, or a rating, resource, quiz or toolset whose owner is banned. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description INVALID_STATE_TRANSITION when the wall is closed; IDEMPOTENCY_KEY_REUSED or IDEMPOTENCY_REQUEST_IN_PROGRESS. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description VALIDATION_FAILED when the body is blank or over the wall's limit, mentions more than 20 users, or parent_comment_id is not a visible comment on this wall; CONTENT_REJECTED when the word list refuses the body. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description RATE_LIMITED when the community service's new-account limit refuses the comment. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getWallComment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Wall comment id. */
+                wall_comment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WallComment"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description QUIZ_ANSWER_REQUIRED when the wall belongs to a quiz that hides its game or carries spoilers and the caller is neither its author, nor one who answered it, nor staff holding that wall's edit or delete permission. ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    deleteWallComment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Wall comment id. */
+                wall_comment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description PERMISSION_REQUIRED when the caller may read but not delete the comment; QUIZ_ANSWER_REQUIRED when the wall belongs to a quiz that hides its game or carries spoilers and the caller is neither its author, nor one who answered it, nor staff holding that wall's edit or delete permission. SCOPE_REQUIRED or ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    updateWallComment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Wall comment id. */
+                wall_comment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WallCommentPatch"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WallComment"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description PERMISSION_REQUIRED when the caller may read but not edit the comment; QUIZ_ANSWER_REQUIRED when the wall belongs to a quiz that hides its game or carries spoilers and the caller is neither its author, nor one who answered it, nor staff holding that wall's edit or delete permission. SCOPE_REQUIRED or ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description INVALID_STATE_TRANSITION when the comment is a tombstone. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description VALIDATION_FAILED when the body is blank or over the wall's limit; CONTENT_REJECTED when the word list refuses the body. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description RATE_LIMITED when the community service's new-account limit refuses the edit. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    flagWallComment: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Caller-generated UUID (canonical 8-4-4-4-12 hex, any version) or 26-character Crockford ULID. Scoped to (user, operation, key) for 24 hours. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                /** @description Wall comment id. */
+                wall_comment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WallCommentFlag"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description PERMISSION_REQUIRED on the caller's own comment; QUIZ_ANSWER_REQUIRED when the wall belongs to a quiz that hides its game or carries spoilers and the caller is neither its author, nor one who answered it, nor staff holding that wall's edit or delete permission. SCOPE_REQUIRED or ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description INVALID_STATE_TRANSITION when the comment is a tombstone; IDEMPOTENCY_KEY_REUSED or IDEMPOTENCY_REQUEST_IN_PROGRESS. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    likeWallComment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Wall comment id. */
+                wall_comment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WallComment"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SELF_LIKE_FORBIDDEN on the caller's own comment; QUIZ_ANSWER_REQUIRED when the wall belongs to a quiz that hides its game or carries spoilers and the caller is neither its author, nor one who answered it, nor staff holding that wall's edit or delete permission. SCOPE_REQUIRED or ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description INVALID_STATE_TRANSITION when the comment is a tombstone. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    unlikeWallComment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Wall comment id. */
+                wall_comment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WallComment"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SELF_LIKE_FORBIDDEN on the caller's own comment; QUIZ_ANSWER_REQUIRED when the wall belongs to a quiz that hides its game or carries spoilers and the caller is neither its author, nor one who answered it, nor staff holding that wall's edit or delete permission. SCOPE_REQUIRED or ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description INVALID_STATE_TRANSITION when the comment is a tombstone. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getWallCommentSource: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Wall comment id. */
+                wall_comment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WallCommentSource"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description PERMISSION_REQUIRED when the caller may read but not edit the comment; QUIZ_ANSWER_REQUIRED when the wall belongs to a quiz that hides its game or carries spoilers and the caller is neither its author, nor one who answered it, nor staff holding that wall's edit or delete permission. SCOPE_REQUIRED or ACCOUNT_BANNED. */
             403: {
                 headers: {
                     [name: string]: unknown;
