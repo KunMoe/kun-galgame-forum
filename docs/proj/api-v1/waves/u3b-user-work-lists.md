@@ -62,9 +62,10 @@
 - **`state`**（可选，`valid` / `expired`，缺席 = 都在）：与 G3 的列表同一个过滤器。旧的 `valid` / `expire` 两个「类型」其实就是这个状态过滤，不再是关系。
 - **可见性与 G3 的列表完全相同**（G3 §3.4）：所属作品本地 `published = true`；`include_nsfw=false` 排除 `content_limit = 'nsfw'`；作者不可渲染的资源从 COUNT 与页中一起去掉（`liked` 下别人的资源同样适用）；`userclient` / catalog 失败 → `503`。**这几个谓词不复制**，整条管线复用 G3 的 `listGalgameResources`：
   - `repository.ResourceListFilter` 加两个字段 `UploaderID int`（`r.user_id = ?`）与 `LikedBy int`（`EXISTS (SELECT 1 FROM galgame_resource_like l WHERE l.galgame_resource_id = r.id AND l.user_id = ?)`），在 `apply` 里与其它条件并列；
-  - `resourceapiv1` 导出一个方法 `ListForUser(ctx, filter, page, limit) (repr.PageList[GalgameResource], *problem.Problem)`：`DistinctAuthors → keepAuthors → Count → List → assemble`，与 `listGalgameResources` 同一顺序（最好让后者也改调它，只留一份）；`assemble` 因此不必导出。
-  - G 同意本 PR 加这个导出，diff 请 G 过目。
-- 排序：资源的 `created DESC, id DESC`（`liked` 同样按资源的时间，与旧实现同一对象）。
+  - `resourceapiv1` 导出一个方法 `ListForUser(ctx, filter, page, limit) (repr.PageList[GalgameResource], *problem.Problem)`：`DistinctAuthors → keepAuthors → Count → ClampTotal → List → assemble`，与 `listGalgameResources` 同一顺序；`assemble` 因此不必导出。
+  - **`listGalgameResources` 不动**（G 的条件）：它有 `q` / catalog 命中的相关度排序与排序 token，`ListForUser` 没有；不改调，G3 的浏览面零行为风险。
+  - G 已批准（2026-09-23），diff 请 G 过目。
+- 排序：资源的 `created DESC, id DESC`。**`liked` 也按资源的时间，不按赞的时间**——与旧实现同一排序对象，是有意的，别「修」成按赞的时间（`galgame_resource_like` 的时间不进排序）。
 
 ### 4.3 评分：切到 `GET /ratings?author_id=`
 
@@ -129,6 +130,7 @@ tab 的 URL 段不变（`/user/:id/galgame/galgame-like` 等），只在调用�
 | 10 | 评论墙游标指纹去掉 `subject_type` | 换 `subject_type` 复用游标 → `INVALID_CURSOR` |
 | 11 | 取消每请求 3 次上游取页的上限 | 假上游记到的调用次数 ≤ 3 |
 | 12 | 资料主人不可渲染时仍返回（任一集合） | 封禁用户 → 404 |
+| 13 | `LikedBy` 移出 `apply`、只加在页查询上（COUNT 不带它） | `relation=liked` 的 `total` 等于全量遍历到的条目数（同 G3 #3 钉作者谓词的方式；G 的条件） |
 
 ## 8. 删旧路由
 
