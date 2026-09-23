@@ -151,7 +151,7 @@ infra 的 `errors[]` 只有英文 `detail`。客户端要本地化「标题最�
 | 日期以 `_date` 结尾且 `format: date` | `release_date` |
 | 计数以 `_count` 结尾，整数，`minimum: 0`；时间窗计数写成 `<名词>_<窗口>_count` | `reply_count`、`view_7d_count` |
 | 引用 id 以 `_id` / `_ids` 结尾且为字符串 | `topic_id`、`user_ids` |
-| 外部命名空间的 id 名字里说清是谁的 | catalog 的叫 `catalog_work_id`，**永不**叫裸 `work_id`（见 memory：10,289 个数值撞车） |
+| 外部命名空间的 id 名字里说清是谁的 | galgame 作品的 id 叫 `work_id`：G0（2026-09-23）之后论坛作品 id 就是 catalog 的 `catalog_work.id`，同一个数，不存在「论坛 id」与「catalog id」两套（根 CLAUDE.md 铁律 3）。其它外部 id 仍要写明归属，如 `vndb_id` |
 | 数组用复数 | `sections`、`comments`、`cover_images` |
 | Markdown 源叫 `content_markdown`，结构化正文叫 `content` | 两者同名不同型就违反 A4 |
 
@@ -167,7 +167,7 @@ infra 的 `errors[]` 只有英文 `detail`。客户端要本地化「标题最�
 
 | 旧 | v1 |
 |---|---|
-| `gid`、路径 `:gid` | `galgame_id`、`{galgame_id}`（论坛自己的作品 id）；catalog 的 id 叫 `catalog_work_id` |
+| `gid` / `galgame_id`、路径 `:gid` | `work_id`、`{work_id}`；集合是 `/works`（例：`/api/v1/works/{work_id}/moyu-patches`）。这一行原先写的是 `galgame_id` 与 `catalog_work_id`，G0 改号后作废 |
 | `tid`、路径 `:tid` | `topic_id`、`{topic_id}` |
 | `created` / `edited` / `updated` | `created_at` / `edited_at` / `updated_at` |
 | `status_update_time` | `bumped_at`：顶帖时间。回复等互动会刷新它，但创建超过 3 个月的话题不再被顶（`model.BumpCutoff`），所以它不是「最后活跃时间」。命名同 Discourse |
