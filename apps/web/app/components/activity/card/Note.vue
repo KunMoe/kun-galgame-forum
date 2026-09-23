@@ -1,5 +1,9 @@
 <script setup lang="ts">
-import { KUN_UPDATE_LOG_STATUS_MAP } from '~/constants/update'
+import type { TodoState } from '#shared/utils/api/schemas'
+import {
+  KUN_TODO_STATE_LABEL,
+  kunTodoStateOfLegacyStatus
+} from '~/constants/update'
 
 const props = defineProps<{ activity: ActivityItem }>()
 
@@ -16,20 +20,19 @@ const meta = computed(() =>
     : { icon: 'lucide:megaphone', label: '更新日志', color: 'text-primary' }
 )
 
-const TODO_STATUS_CLASS: Record<number, string> = {
-  0: 'bg-default-100 text-default-600',
-  1: 'bg-primary/10 text-primary',
-  2: 'bg-success/10 text-success',
-  3: 'bg-default-100 text-default-500'
+const TODO_STATE_CLASS: Record<TodoState, string> = {
+  pending: 'bg-default-100 text-default-600',
+  in_progress: 'bg-primary/10 text-primary',
+  done: 'bg-success/10 text-success',
+  discarded: 'bg-default-100 text-default-500'
 }
 const badge = computed<{ text: string; class: string } | null>(() => {
   if (isTodo.value) {
     const s = data.value?.status
-    if (s === undefined || s === null) return null
-    return {
-      text: KUN_UPDATE_LOG_STATUS_MAP[s] ?? '',
-      class: TODO_STATUS_CLASS[s] ?? 'bg-default-100 text-default-600'
-    }
+    const state =
+      s === undefined || s === null ? undefined : kunTodoStateOfLegacyStatus(s)
+    if (!state) return null
+    return { text: KUN_TODO_STATE_LABEL[state], class: TODO_STATE_CLASS[state] }
   }
   return data.value?.version
     ? { text: data.value.version, class: 'bg-primary/10 text-primary' }

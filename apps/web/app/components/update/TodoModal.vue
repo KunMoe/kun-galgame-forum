@@ -1,16 +1,17 @@
 <script setup lang="ts">
-import { kunTodoTypeOptions } from '~/constants/update'
-import { createTodoSchema, updateTodoSchema } from '~/validations/todo'
-import type { CreateTodoPayload, UpdateTodoPayload } from './types'
+import { KUN_TODO_PROJECTS, KUN_TODO_PROJECT_LABEL } from '~/constants/update'
+import { todoSchema } from '~/validations/todo'
+import type { TodoCreate } from '#shared/utils/api/schemas'
 
 const props = defineProps<{
   modelValue: boolean
-  initialData?: UpdateTodoPayload
+  initialData?: TodoCreate
+  isEditing: boolean
 }>()
 
 const emits = defineEmits<{
   'update:modelValue': [value: boolean]
-  submit: [data: CreateTodoPayload | UpdateTodoPayload]
+  submit: [data: TodoCreate]
 }>()
 
 const isModalOpen = computed({
@@ -18,53 +19,32 @@ const isModalOpen = computed({
   set: (value) => emits('update:modelValue', value)
 })
 
-const isEditing = computed(() => !!props.initialData?.todo_id)
-const isSubmitting = ref(false)
+const projectOptions = KUN_TODO_PROJECTS.map((project) => ({
+  value: project,
+  label: KUN_TODO_PROJECT_LABEL[project]
+}))
 
-interface TodoFormData {
-  todo_id: number
-  type: CreateTodoPayload['type']
-  content: string
-}
+const emptyForm = (): TodoCreate => ({ project: 'forum', text: '' })
 
-const getInitialFormData = (): TodoFormData => ({
-  todo_id: 0,
-  type: 'forum',
-  content: '',
-  ...(props.initialData || {})
-})
-
-const formData = reactive<TodoFormData>(getInitialFormData())
+const formData = reactive<TodoCreate>(emptyForm())
 
 watch(
   () => isModalOpen.value,
   (isOpen) => {
     if (isOpen) {
-      isSubmitting.value = false
-      Object.assign(formData, getInitialFormData())
+      Object.assign(formData, props.initialData ?? emptyForm())
     }
   }
 )
 
-// Parsed by the schema that matches the mode, so what is emitted is exactly
-// what that endpoint accepts — a create has no todo_id and, since the status
-// is the server's to decide, no status either.
 const handleSubmit = () => {
-  isSubmitting.value = true
-  const result = isEditing.value
-    ? updateTodoSchema.safeParse(formData)
-    : createTodoSchema.safeParse(formData)
-
+  const result = todoSchema.safeParse(formData)
   if (!result.success) {
     const message = JSON.parse(result.error.message)[0]
     useMessage(formatKunZodIssue(message), 'warn')
-    isSubmitting.value = false
     return
   }
-
   emits('submit', result.data)
-  isSubmitting.value = false
-  isModalOpen.value = false
 }
 </script>
 
@@ -81,13 +61,13 @@ const handleSubmit = () => {
 
       <div class="space-y-4">
         <KunSelect
-          v-model="formData.type"
-          :options="kunTodoTypeOptions"
+          v-model="formData.project"
+          :options="projectOptions"
           label="待办类型"
           required
         />
         <KunTextarea
-          v-model="formData.content"
+          v-model="formData.text"
           label="待办内容 (1000 字符之内)"
           :rows="5"
         />
@@ -97,11 +77,7 @@ const handleSubmit = () => {
         <KunButton variant="light" color="danger" @click="isModalOpen = false">
           取消
         </KunButton>
-        <KunButton
-          @click="handleSubmit"
-          color="primary"
-          :loading="isSubmitting"
-        >
+        <KunButton @click="handleSubmit" color="primary">
           {{ isEditing ? '保存更改' : '创建' }}
         </KunButton>
       </div>

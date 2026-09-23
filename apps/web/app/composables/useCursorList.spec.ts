@@ -77,6 +77,31 @@ describe('useCursorList', () => {
     stop()
   })
 
+  it('exposes the total a page carries and keeps it when a later page has none', async () => {
+    const withTotal = (items: Item[], total: number, next?: string) => {
+      const page = ok(items, next)
+      return { ...page, data: { ...page.data, total } }
+    }
+    const fetchPage = vi
+      .fn()
+      .mockResolvedValueOnce(withTotal([item('1')], 3, 'c2'))
+      .mockResolvedValueOnce(ok([item('2')], 'c3'))
+      .mockResolvedValueOnce(withTotal([item('3')], 2))
+    const { list, stop } = await runList('total-1', fetchPage)
+    expect(list.total.value).toBe(3)
+    await list.loadMore()
+    expect(list.total.value).toBe(3)
+    await list.loadMore()
+    expect(list.total.value).toBe(2)
+    stop()
+  })
+
+  it('has no total when the collection sends none', async () => {
+    const { list, stop } = await runList('total-2', async () => ok([item('1')]))
+    expect(list.total.value).toBeUndefined()
+    stop()
+  })
+
   it('loads the first page, appends loadMore, and skips duplicate ids', async () => {
     const fetchPage = vi
       .fn()

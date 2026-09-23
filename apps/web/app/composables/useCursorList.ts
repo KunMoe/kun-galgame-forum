@@ -3,9 +3,13 @@ import type { ApiClient } from '#shared/utils/api/client'
 import { isHistoryPop } from '~/utils/historyPop'
 import { useApiClient } from './useApi'
 
-type Page<Item> = { items: Item[]; next_cursor?: string }
+type Page<Item> = { items: Item[]; next_cursor?: string; total?: number }
 
-type Snapshot<Item> = { items: Item[]; nextCursor: string | undefined }
+type Snapshot<Item> = {
+  items: Item[]
+  nextCursor: string | undefined
+  total: number | undefined
+}
 
 type FetchPage<Item> = (
   api: ApiClient,
@@ -16,6 +20,7 @@ type FetchPage<Item> = (
 type UseCursorListReturn<Item> = {
   items: Ref<Item[]>
   hasMore: Ref<boolean>
+  total: Ref<number | undefined>
   problem: ComputedRef<ClientProblem | null>
   status: ReturnType<typeof useAsyncData>['status']
   loadingMore: Ref<boolean>
@@ -49,6 +54,7 @@ export const useCursorList = <Item extends { id: string }>(
   const api = useApiClient()
   const items = ref<Item[]>([]) as Ref<Item[]>
   const hasMore = ref(false)
+  const total = ref<number | undefined>(undefined)
   const nextCursor = ref<string | undefined>(undefined)
   const loadingMore = ref(false)
   let loadMoreGeneration = 0
@@ -75,7 +81,8 @@ export const useCursorList = <Item extends { id: string }>(
           ok: true as const,
           data: {
             items: snap.items,
-            ...(snap.nextCursor ? { next_cursor: snap.nextCursor } : {})
+            ...(snap.nextCursor ? { next_cursor: snap.nextCursor } : {}),
+            ...(snap.total === undefined ? {} : { total: snap.total })
           }
         }
       }
@@ -86,9 +93,11 @@ export const useCursorList = <Item extends { id: string }>(
     items.value = page.items
     nextCursor.value = page.next_cursor
     hasMore.value = Boolean(page.next_cursor)
+    total.value = page.total
     rememberSnapshot(dataKey, {
       items: page.items,
-      nextCursor: page.next_cursor
+      nextCursor: page.next_cursor,
+      total: page.total
     })
   }
 
@@ -107,6 +116,7 @@ export const useCursorList = <Item extends { id: string }>(
           items.value = []
           hasMore.value = false
           nextCursor.value = undefined
+          total.value = undefined
           seenKey = curr.dataKey
           return
         }
@@ -120,6 +130,7 @@ export const useCursorList = <Item extends { id: string }>(
         items.value = []
         hasMore.value = false
         nextCursor.value = undefined
+        total.value = undefined
       }
     },
     { immediate: true, flush: 'sync' }
@@ -157,15 +168,18 @@ export const useCursorList = <Item extends { id: string }>(
     items.value = merged
     nextCursor.value = result.data.next_cursor
     hasMore.value = Boolean(result.data.next_cursor)
+    total.value = result.data.total ?? total.value
     rememberSnapshot(dataKey, {
       items: merged,
-      nextCursor: result.data.next_cursor
+      nextCursor: result.data.next_cursor,
+      total: total.value
     })
   }
 
   const result: UseCursorListReturn<Item> = {
     items,
     hasMore,
+    total,
     problem,
     status: asyncData.status,
     loadingMore,

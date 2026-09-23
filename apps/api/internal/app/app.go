@@ -66,8 +66,6 @@ import (
 	"kun-galgame-api/internal/trust/gate"
 	trustHandler "kun-galgame-api/internal/trust/handler"
 	trustService "kun-galgame-api/internal/trust/service"
-	updateHandler "kun-galgame-api/internal/update/handler"
-	updateRepo "kun-galgame-api/internal/update/repository"
 	"kun-galgame-api/internal/user/handler"
 	"kun-galgame-api/internal/user/oauth"
 	"kun-galgame-api/internal/user/repository"
@@ -138,7 +136,6 @@ type App struct {
 	WebsiteCategoryHandler      *websiteHandler.CategoryHandler
 	WebsiteTagHandler           *websiteHandler.TagHandler
 	WebsiteTagGroupHandler      *websiteHandler.TagGroupHandler
-	UpdateHandler               *updateHandler.UpdateHandler
 	AppReleaseHandler           *appReleaseHandler.ReleaseHandler
 	FriendLinkHandler           *friendHandler.FriendLinkHandler
 	TrustHandler                *trustHandler.TrustHandler
@@ -597,7 +594,6 @@ func New(cfg *config.Config) *App {
 		WebsiteCategoryHandler:      websiteHandler.NewCategoryHandler(websiteCategorySvc),
 		WebsiteTagHandler:           websiteHandler.NewTagHandler(websiteTagSvc),
 		WebsiteTagGroupHandler:      websiteHandler.NewTagGroupHandler(websiteTagGroupSvc),
-		UpdateHandler:               updateHandler.NewUpdateHandler(updateRepo.NewUpdateRepository(db), uc, trustCheck, trustScan),
 		AppReleaseHandler:           appReleaseHandler.NewReleaseHandler(cfg.AppRelease),
 		FriendLinkHandler:           friendHandler.NewFriendLinkHandler(friendRepo.NewFriendLinkRepository(db), cfg.NextMoeAPI.ImageCDNBase),
 		TrustHandler:                trustHandler.NewTrustHandler(trustService.NewTrustService(trustCli, cfg.Trust.Site), trustEnforce, cfg.Trust.CallbackSecret),

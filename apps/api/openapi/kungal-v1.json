@@ -682,6 +682,43 @@
         ],
         "type": "object"
       },
+      "CountedListTodo": {
+        "properties": {
+          "items": {
+            "description": "Members of this page. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/Todo"
+            },
+            "type": "array"
+          },
+          "next_cursor": {
+            "description": "Opaque keyset cursor. Omitted on the last page.",
+            "maxLength": 512,
+            "pattern": "^cur_[A-Za-z0-9_-]+$",
+            "type": "string"
+          },
+          "object": {
+            "description": "Type discriminant. Always list.",
+            "enum": [
+              "list"
+            ],
+            "maxLength": 4,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "total": {
+            "description": "Present only when include_total=true. Same visibility gate as items.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "object",
+          "items"
+        ],
+        "type": "object"
+      },
       "CreateCreatorApplicationBody": {
         "properties": {
           "statement": {
@@ -2109,6 +2146,37 @@
             "description": "Members of this page. Empty array, never null.",
             "items": {
               "$ref": "#/components/schemas/TopicUpvote"
+            },
+            "type": "array"
+          },
+          "next_cursor": {
+            "description": "Opaque keyset cursor. Omitted on the last page.",
+            "maxLength": 512,
+            "pattern": "^cur_[A-Za-z0-9_-]+$",
+            "type": "string"
+          },
+          "object": {
+            "description": "Type discriminant. Always list.",
+            "enum": [
+              "list"
+            ],
+            "maxLength": 4,
+            "type": "string",
+            "x-vocabulary-closed": true
+          }
+        },
+        "required": [
+          "object",
+          "items"
+        ],
+        "type": "object"
+      },
+      "ListUpdateLog": {
+        "properties": {
+          "items": {
+            "description": "Members of this page. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/UpdateLog"
             },
             "type": "array"
           },
@@ -5530,6 +5598,220 @@
         ],
         "type": "object"
       },
+      "Todo": {
+        "properties": {
+          "author": {
+            "$ref": "#/components/schemas/UserRef",
+            "description": "User who opened the task."
+          },
+          "claimer": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UserRef"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "User who claimed the task. null when it was never claimed, was released or reopened, or was claimed before claimers were recorded."
+          },
+          "completed_at": {
+            "description": "Time the task was completed. Non-null only when state is done.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "created_at": {
+            "description": "Creation time.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": "string"
+          },
+          "id": {
+            "description": "Todo id. JSON string of a decimal integer.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "object": {
+            "description": "Type discriminant. Always todo.",
+            "enum": [
+              "todo"
+            ],
+            "maxLength": 4,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "project": {
+            "description": "Which site the task is about: forum is this forum, patch is the patch site.",
+            "enum": [
+              "forum",
+              "patch"
+            ],
+            "maxLength": 5,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "state": {
+            "description": "pending: open and unclaimed. in_progress: claimed. done and discarded end the task; done is final, discarded can be reopened.",
+            "enum": [
+              "pending",
+              "in_progress",
+              "done",
+              "discarded"
+            ],
+            "maxLength": 11,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "text": {
+            "description": "Task description as plain text, not Markdown. Render it as text and keep its line breaks. Free text; never use it as a decision input.",
+            "maxLength": 1000,
+            "type": "string"
+          },
+          "updated_at": {
+            "description": "Time of the latest write to the task, state changes included.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": "string"
+          },
+          "viewer": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TodoViewer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The caller's own capabilities on this task. null for an anonymous caller. Each flag is the exact gate updateTodo applies."
+          }
+        },
+        "required": [
+          "object",
+          "id",
+          "project",
+          "state",
+          "text",
+          "author",
+          "claimer",
+          "completed_at",
+          "created_at",
+          "updated_at",
+          "viewer"
+        ],
+        "type": "object"
+      },
+      "TodoCreate": {
+        "properties": {
+          "project": {
+            "description": "Which site the task is about.",
+            "enum": [
+              "forum",
+              "patch"
+            ],
+            "maxLength": 5,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "text": {
+            "description": "Task description as plain text, counted on the value as sent. A body of only whitespace is TOO_SHORT. Free text; never use it as a decision input.",
+            "maxLength": 1000,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "project",
+          "text"
+        ],
+        "type": "object"
+      },
+      "TodoPatch": {
+        "properties": {
+          "project": {
+            "description": "New project. Absent keeps the stored one.",
+            "enum": [
+              "forum",
+              "patch"
+            ],
+            "maxLength": 5,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "state": {
+            "description": "Target state. Never together with another field. See updateTodo for the transitions and who may make each.",
+            "enum": [
+              "pending",
+              "in_progress",
+              "done",
+              "discarded"
+            ],
+            "maxLength": 11,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "text": {
+            "description": "New description, checked as in createTodo. Absent keeps the stored one. Free text; never use it as a decision input.",
+            "maxLength": 1000,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "TodoViewer": {
+        "properties": {
+          "can_claim": {
+            "description": "Whether the caller may move the task to in_progress: it is pending and the caller holds update_log.edit.",
+            "type": "boolean"
+          },
+          "can_complete": {
+            "description": "Whether the caller may move the task to done: it is in_progress and the caller is its claimer or holds update_log.edit.",
+            "type": "boolean"
+          },
+          "can_delete": {
+            "description": "Whether the caller holds update_log.delete. Requests authenticated with a Bearer token never carry it.",
+            "type": "boolean"
+          },
+          "can_discard": {
+            "description": "Whether the caller may move the task to discarded: it is pending and the caller is its author, or it is in_progress and the caller is its claimer or holds update_log.edit.",
+            "type": "boolean"
+          },
+          "can_edit": {
+            "description": "Whether the caller may change project and text: the author, while the task is pending or in_progress.",
+            "type": "boolean"
+          },
+          "can_release": {
+            "description": "Whether the caller may move the task back to pending: it is in_progress and the caller is its claimer.",
+            "type": "boolean"
+          },
+          "can_reopen": {
+            "description": "Whether the caller may move a discarded task back to pending: the caller holds update_log.reopen.",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "can_edit",
+          "can_delete",
+          "can_claim",
+          "can_complete",
+          "can_discard",
+          "can_release",
+          "can_reopen"
+        ],
+        "type": "object"
+      },
       "Topic": {
         "properties": {
           "access_scope": {
@@ -6939,6 +7221,184 @@
           "can_upvote",
           "can_set_best_answer",
           "can_pin_reply"
+        ],
+        "type": "object"
+      },
+      "UpdateLog": {
+        "properties": {
+          "change_type": {
+            "description": "What kind of change the entry records. Clients map the token to a localized label.",
+            "enum": [
+              "feat",
+              "perf",
+              "fix",
+              "style",
+              "mod",
+              "chore",
+              "sec",
+              "refactor",
+              "docs",
+              "test"
+            ],
+            "maxLength": 8,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "created_at": {
+            "description": "Creation time.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": "string"
+          },
+          "id": {
+            "description": "Update log id. JSON string of a decimal integer.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "object": {
+            "description": "Type discriminant. Always update_log.",
+            "enum": [
+              "update_log"
+            ],
+            "maxLength": 10,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "release_version": {
+            "description": "Site version the change shipped in, such as 4.4.93. Free text; never use it as a decision input.",
+            "maxLength": 20,
+            "type": "string"
+          },
+          "text": {
+            "description": "Entry body as plain text, not Markdown. Render it as text and keep its line breaks. Free text; never use it as a decision input.",
+            "maxLength": 1000,
+            "type": "string"
+          },
+          "updated_at": {
+            "description": "Time of the latest write to the entry.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": "string"
+          },
+          "viewer": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UpdateLogViewer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The caller's own capabilities on this entry. null for an anonymous caller."
+          }
+        },
+        "required": [
+          "object",
+          "id",
+          "change_type",
+          "release_version",
+          "text",
+          "created_at",
+          "updated_at",
+          "viewer"
+        ],
+        "type": "object"
+      },
+      "UpdateLogCreate": {
+        "properties": {
+          "change_type": {
+            "description": "What kind of change the entry records.",
+            "enum": [
+              "feat",
+              "perf",
+              "fix",
+              "style",
+              "mod",
+              "chore",
+              "sec",
+              "refactor",
+              "docs",
+              "test"
+            ],
+            "maxLength": 8,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "release_version": {
+            "description": "Site version the change shipped in. Leading and trailing whitespace is removed after the length check; a value that is then empty is TOO_SHORT. Free text; never use it as a decision input.",
+            "maxLength": 20,
+            "minLength": 1,
+            "type": "string"
+          },
+          "text": {
+            "description": "Entry body as plain text, counted on the value as sent. A body of only whitespace is TOO_SHORT. Free text; never use it as a decision input.",
+            "maxLength": 1000,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "change_type",
+          "release_version",
+          "text"
+        ],
+        "type": "object"
+      },
+      "UpdateLogPatch": {
+        "properties": {
+          "change_type": {
+            "description": "New change type. Absent keeps the stored one.",
+            "enum": [
+              "feat",
+              "perf",
+              "fix",
+              "style",
+              "mod",
+              "chore",
+              "sec",
+              "refactor",
+              "docs",
+              "test"
+            ],
+            "maxLength": 8,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "release_version": {
+            "description": "New version, checked as in createUpdateLog. Absent keeps the stored one. Free text; never use it as a decision input.",
+            "maxLength": 20,
+            "minLength": 1,
+            "type": "string"
+          },
+          "text": {
+            "description": "New body, checked as in createUpdateLog. Absent keeps the stored one. Free text; never use it as a decision input.",
+            "maxLength": 1000,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "UpdateLogViewer": {
+        "properties": {
+          "can_delete": {
+            "description": "Whether the caller holds update_log.delete. Requests authenticated with a Bearer token never carry it.",
+            "type": "boolean"
+          },
+          "can_edit": {
+            "description": "Whether the caller holds update_log.edit. Requests authenticated with a Bearer token never carry it.",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "can_edit",
+          "can_delete"
         ],
         "type": "object"
       },
@@ -14800,6 +15260,628 @@
         ]
       }
     },
+    "/todos": {
+      "get": {
+        "description": "Lists tasks as a cursor page, newest first, ties broken by descending id. There is one sort and no sort parameter. state keeps only tasks in that state; absent lists every state. The cursor is bound to state; reusing it with another state is INVALID_CURSOR. include_total=true adds total, counted under the same state filter as items. Tasks by banned authors are listed like any other.",
+        "operationId": "listTodos",
+        "parameters": [
+          {
+            "description": "Opaque keyset cursor from a previous page of this collection.",
+            "explode": false,
+            "in": "query",
+            "name": "cursor",
+            "schema": {
+              "description": "Opaque keyset cursor from a previous page of this collection.",
+              "maxLength": 512,
+              "pattern": "^cur_[A-Za-z0-9_-]+$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Page size. 1–100, default 20. Values above 100 are rejected, not clamped.",
+            "explode": false,
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 20,
+              "description": "Page size. 1–100, default 20. Values above 100 are rejected, not clamped.",
+              "format": "int64",
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "When true, the response includes total counted under the same predicate as items.",
+            "explode": false,
+            "in": "query",
+            "name": "include_total",
+            "schema": {
+              "description": "When true, the response includes total counted under the same predicate as items.",
+              "type": "boolean"
+            }
+          },
+          {
+            "description": "Only tasks in this state. Absent lists every state.",
+            "explode": false,
+            "in": "query",
+            "name": "state",
+            "schema": {
+              "description": "Only tasks in this state. Absent lists every state.",
+              "enum": [
+                "pending",
+                "in_progress",
+                "done",
+                "discarded"
+              ],
+              "maxLength": 11,
+              "type": "string",
+              "x-vocabulary-closed": true
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CountedListTodo"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "INVALID_CURSOR, LIMIT_TOO_LARGE, or UNKNOWN_ENUM_VALUE."
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          },
+          {}
+        ],
+        "summary": "List the todo board",
+        "tags": [
+          "todos"
+        ]
+      },
+      "post": {
+        "description": "Opens a task on the board and returns it. Any signed-in user may; Idempotency-Key is required. A new task is always pending with no claimer. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED, and a failure of that lookup is SERVICE_UNAVAILABLE with nothing written. text is length-checked on the raw value and stored after NormalizeStoredContent; a value that is then blank is VALIDATION_FAILED TOO_SHORT. text goes through the trust-and-safety check: a refusal is CONTENT_REJECTED with nothing written, a hold is written. Location is the canonical path of the new task.",
+        "operationId": "createTodo",
+        "parameters": [
+          {
+            "description": "Caller-generated UUID (canonical 8-4-4-4-12 hex, any version) or 26-character Crockford ULID. Scoped to (user, operation, key) for 24 hours.",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "description": "Caller-generated UUID (canonical 8-4-4-4-12 hex, any version) or 26-character Crockford ULID. Scoped to (user, operation, key) for 24 hours.",
+              "maxLength": 36,
+              "minLength": 26,
+              "pattern": "^([0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}|[0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{26})$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TodoCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Todo"
+                }
+              }
+            },
+            "description": "Created",
+            "headers": {
+              "Location": {
+                "schema": {
+                  "description": "Absolute path of the new task, such as /api/v1/todos/261.",
+                  "format": "uri-reference",
+                  "maxLength": 64,
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "ACCOUNT_BANNED."
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "IDEMPOTENCY_KEY_REUSED or IDEMPOTENCY_REQUEST_IN_PROGRESS."
+          },
+          "415": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unsupported Media Type"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED when text is blank or too long or project is outside its vocabulary; CONTENT_REJECTED when the trust-and-safety check refuses text."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Open a todo",
+        "tags": [
+          "todos"
+        ]
+      }
+    },
+    "/todos/{todo_id}": {
+      "delete": {
+        "description": "Deletes a task and its home-feed card, in any state. Needs update_log.delete, checked before the task is looked up.",
+        "operationId": "deleteTodo",
+        "parameters": [
+          {
+            "description": "Todo id.",
+            "in": "path",
+            "name": "todo_id",
+            "required": true,
+            "schema": {
+              "description": "Todo id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "PERMISSION_REQUIRED without update_log.delete; ACCOUNT_BANNED."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when the task does not exist."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Delete a todo",
+        "tags": [
+          "todos"
+        ]
+      },
+      "get": {
+        "description": "Returns one task.",
+        "operationId": "getTodo",
+        "parameters": [
+          {
+            "description": "Todo id.",
+            "in": "path",
+            "name": "todo_id",
+            "required": true,
+            "schema": {
+              "description": "Todo id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Todo"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when the task does not exist."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          },
+          {}
+        ],
+        "summary": "Get a todo",
+        "tags": [
+          "todos"
+        ]
+      },
+      "patch": {
+        "description": "With state, moves the task; state is never sent with another field (VALIDATION_FAILED INCONSISTENT_WITH at /state). The transitions are: pending to in_progress (claim; update_log.edit; the caller becomes the claimer), pending to discarded (the author), in_progress to done (the claimer or update_log.edit; sets completed_at), in_progress to discarded (the claimer or update_log.edit), in_progress to pending (release; the claimer only; clears the claimer), discarded to pending (reopen; update_log.reopen; clears the claimer). done is final. Any other pair, including the state the task is already in, is INVALID_STATE_TRANSITION, checked before permissions; a listed pair the caller may not make is PERMISSION_REQUIRED. The write is guarded on the state that was read, so losing a race to another caller is INVALID_STATE_TRANSITION too. Without state, changes project and text: the author only, and only while the task is pending or in_progress (otherwise INVALID_STATE_TRANSITION, checked first). text is checked as in createTodo; the trust-and-safety check runs only when the stored text changes. An empty object writes nothing. Every flag in viewer is exactly the gate this operation applies. Update_log permissions are never carried by a Bearer request.",
+        "operationId": "updateTodo",
+        "parameters": [
+          {
+            "description": "Todo id.",
+            "in": "path",
+            "name": "todo_id",
+            "required": true,
+            "schema": {
+              "description": "Todo id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TodoPatch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Todo"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "PERMISSION_REQUIRED when the caller may not make this transition or edit; ACCOUNT_BANNED."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when the task does not exist."
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "INVALID_STATE_TRANSITION when the transition is not in the state machine, the task is done or discarded and cannot be edited, or another caller moved it first."
+          },
+          "415": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unsupported Media Type"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED when state is sent with another field, text is blank or too long, or a value is outside its vocabulary; CONTENT_REJECTED when the trust-and-safety check refuses changed text."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Edit a todo or move it to another state",
+        "tags": [
+          "todos"
+        ]
+      }
+    },
     "/topics": {
       "get": {
         "description": "Lists topics visible to the caller as a cursor page. Anonymous callers see public published topics. Signed-in callers also see login-scoped topics. Role and user grants never appear. Hidden topics never appear. Topics by banned authors are left out; the server reads on to fill the page, so every page but the last holds limit items unless a long run of such topics cuts it short. Continue while next_cursor is present, whatever the page size.",
@@ -17830,6 +18912,589 @@
         "summary": "Record a topic view",
         "tags": [
           "topics"
+        ]
+      }
+    },
+    "/update-logs": {
+      "get": {
+        "description": "Lists the site's changelog as a cursor page, newest first, ties broken by descending id. There is one sort, no sort parameter and no filter.",
+        "operationId": "listUpdateLogs",
+        "parameters": [
+          {
+            "description": "Opaque keyset cursor from a previous page of this collection.",
+            "explode": false,
+            "in": "query",
+            "name": "cursor",
+            "schema": {
+              "description": "Opaque keyset cursor from a previous page of this collection.",
+              "maxLength": 512,
+              "pattern": "^cur_[A-Za-z0-9_-]+$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Page size. 1–100, default 20. Values above 100 are rejected, not clamped.",
+            "explode": false,
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 20,
+              "description": "Page size. 1–100, default 20. Values above 100 are rejected, not clamped.",
+              "format": "int64",
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListUpdateLog"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "INVALID_CURSOR or LIMIT_TOO_LARGE."
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          },
+          {}
+        ],
+        "summary": "List update log entries",
+        "tags": [
+          "update-logs"
+        ]
+      },
+      "post": {
+        "description": "Creates a changelog entry and returns it. Needs update_log.create, which a Bearer request never carries. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED, and a failure of that lookup is SERVICE_UNAVAILABLE with nothing written. release_version is trimmed after its length check; text is stored after NormalizeStoredContent, which turns a pasted image-service URL into an /image/\u003chash\u003e token. Either one blank is VALIDATION_FAILED TOO_SHORT. There is no trust-and-safety check. Location is the canonical path of the new entry.",
+        "operationId": "createUpdateLog",
+        "parameters": [
+          {
+            "description": "Caller-generated UUID (canonical 8-4-4-4-12 hex, any version) or 26-character Crockford ULID. Scoped to (user, operation, key) for 24 hours.",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "schema": {
+              "description": "Caller-generated UUID (canonical 8-4-4-4-12 hex, any version) or 26-character Crockford ULID. Scoped to (user, operation, key) for 24 hours.",
+              "maxLength": 36,
+              "minLength": 26,
+              "pattern": "^([0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}|[0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{26})$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateLogCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UpdateLog"
+                }
+              }
+            },
+            "description": "Created",
+            "headers": {
+              "Location": {
+                "schema": {
+                  "description": "Absolute path of the new entry, such as /api/v1/update-logs/1235.",
+                  "format": "uri-reference",
+                  "maxLength": 64,
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "PERMISSION_REQUIRED without update_log.create; ACCOUNT_BANNED."
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "415": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unsupported Media Type"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED when release_version or text is blank or too long, or change_type is not in the vocabulary."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create an update log entry",
+        "tags": [
+          "update-logs"
+        ]
+      }
+    },
+    "/update-logs/{update_log_id}": {
+      "delete": {
+        "description": "Deletes a changelog entry and its home-feed card. Needs update_log.delete, checked before the entry is looked up.",
+        "operationId": "deleteUpdateLog",
+        "parameters": [
+          {
+            "description": "Update log id.",
+            "in": "path",
+            "name": "update_log_id",
+            "required": true,
+            "schema": {
+              "description": "Update log id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "PERMISSION_REQUIRED without update_log.delete; ACCOUNT_BANNED."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when the entry does not exist."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Delete an update log entry",
+        "tags": [
+          "update-logs"
+        ]
+      },
+      "get": {
+        "description": "Returns one changelog entry.",
+        "operationId": "getUpdateLog",
+        "parameters": [
+          {
+            "description": "Update log id.",
+            "in": "path",
+            "name": "update_log_id",
+            "required": true,
+            "schema": {
+              "description": "Update log id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UpdateLog"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when the entry does not exist."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          },
+          {}
+        ],
+        "summary": "Get an update log entry",
+        "tags": [
+          "update-logs"
+        ]
+      },
+      "patch": {
+        "description": "Changes the fields that are sent and returns the entry. Needs update_log.edit, checked before the entry is looked up. Fields are checked as in createUpdateLog. An empty object writes nothing and returns the entry.",
+        "operationId": "updateUpdateLog",
+        "parameters": [
+          {
+            "description": "Update log id.",
+            "in": "path",
+            "name": "update_log_id",
+            "required": true,
+            "schema": {
+              "description": "Update log id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateLogPatch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UpdateLog"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "PERMISSION_REQUIRED without update_log.edit; ACCOUNT_BANNED."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when the entry does not exist."
+          },
+          "415": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unsupported Media Type"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED when a sent field is blank, too long, or outside its vocabulary."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Edit an update log entry",
+        "tags": [
+          "update-logs"
         ]
       }
     },

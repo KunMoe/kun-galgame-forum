@@ -8,6 +8,7 @@ import (
 	"kun-galgame-api/internal/middleware"
 	topicapiv1 "kun-galgame-api/internal/topic/apiv1"
 	topicRepo "kun-galgame-api/internal/topic/repository"
+	updateapiv1 "kun-galgame-api/internal/update/apiv1"
 	userapiv1 "kun-galgame-api/internal/user/apiv1"
 	wallapiv1 "kun-galgame-api/internal/wall/apiv1"
 	"kun-galgame-api/pkg/perm"
@@ -42,6 +43,7 @@ func (a *App) setupRoutes() {
 		wallapiv1.Register(a.WallV1),
 		userapiv1.Register(a.newUserV1()),
 		messageapiv1.Register(a.newMessageV1()),
+		updateapiv1.Register(a.newUpdateV1()),
 	)
 
 	// Deliberately touches neither DB nor Redis: the container HEALTHCHECK reads
@@ -90,9 +92,6 @@ func (a *App) setupRoutes() {
 	api.Get("/website-tag", a.WebsiteTagHandler.GetWebsiteTags)
 	api.Get("/website-tag-group", a.WebsiteTagGroupHandler.GetWebsiteTagGroups)
 	api.Get("/website-tag/:name", a.WebsiteTagHandler.GetWebsiteTagDetail)
-
-	api.Get("/update/history", a.UpdateHandler.GetHistory)
-	api.Get("/update/todo", a.UpdateHandler.GetTodos)
 
 	api.Get("/friend-link", a.FriendLinkHandler.List)
 
@@ -358,20 +357,6 @@ func (a *App) setupRoutes() {
 	wsAdmin.Post("/website-tag-group", middleware.RequirePermission(perm.WebsiteCreate), a.WebsiteTagGroupHandler.CreateWebsiteTagGroup)
 	wsAdmin.Put("/website-tag-group", middleware.RequirePermission(perm.WebsiteEdit), a.WebsiteTagGroupHandler.UpdateWebsiteTagGroup)
 	wsAdmin.Delete("/website-tag-group", middleware.RequirePermission(perm.WebsiteDelete), a.WebsiteTagGroupHandler.DeleteWebsiteTagGroup)
-
-	updateAdmin := authed.Group("")
-	updateAdmin.Post("/update/history", middleware.RequirePermission(perm.UpdateLogCreate), a.UpdateHandler.CreateHistory)
-	updateAdmin.Put("/update/history", middleware.RequirePermission(perm.UpdateLogEdit), a.UpdateHandler.UpdateHistory)
-	updateAdmin.Delete("/update/history", middleware.RequirePermission(perm.UpdateLogDelete), a.UpdateHandler.DeleteHistory)
-	updateAdmin.Post("/update/todo/claim", middleware.RequirePermission(perm.UpdateLogEdit), a.UpdateHandler.ClaimTodo)
-	updateAdmin.Delete("/update/todo", middleware.RequirePermission(perm.UpdateLogDelete), a.UpdateHandler.DeleteTodo)
-
-	// Creating, editing, completing and discarding a todo are open to any
-	// logged-in user; ownership is enforced in the handlers.
-	authed.Post("/update/todo", a.UpdateHandler.CreateTodo)
-	authed.Put("/update/todo", a.UpdateHandler.UpdateTodo)
-	authed.Post("/update/todo/complete", a.UpdateHandler.CompleteTodo)
-	authed.Post("/update/todo/discard", a.UpdateHandler.DiscardTodo)
 
 	friendAdmin := authed.Group("")
 	friendAdmin.Post("/admin/friend-link", middleware.RequirePermission(perm.FriendLinkCreate), a.FriendLinkHandler.Create)

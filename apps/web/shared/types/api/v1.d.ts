@@ -948,6 +948,58 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/todos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the todo board
+         * @description Lists tasks as a cursor page, newest first, ties broken by descending id. There is one sort and no sort parameter. state keeps only tasks in that state; absent lists every state. The cursor is bound to state; reusing it with another state is INVALID_CURSOR. include_total=true adds total, counted under the same state filter as items. Tasks by banned authors are listed like any other.
+         */
+        get: operations["listTodos"];
+        put?: never;
+        /**
+         * Open a todo
+         * @description Opens a task on the board and returns it. Any signed-in user may; Idempotency-Key is required. A new task is always pending with no claimer. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED, and a failure of that lookup is SERVICE_UNAVAILABLE with nothing written. text is length-checked on the raw value and stored after NormalizeStoredContent; a value that is then blank is VALIDATION_FAILED TOO_SHORT. text goes through the trust-and-safety check: a refusal is CONTENT_REJECTED with nothing written, a hold is written. Location is the canonical path of the new task.
+         */
+        post: operations["createTodo"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/todos/{todo_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a todo
+         * @description Returns one task.
+         */
+        get: operations["getTodo"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete a todo
+         * @description Deletes a task and its home-feed card, in any state. Needs update_log.delete, checked before the task is looked up.
+         */
+        delete: operations["deleteTodo"];
+        options?: never;
+        head?: never;
+        /**
+         * Edit a todo or move it to another state
+         * @description With state, moves the task; state is never sent with another field (VALIDATION_FAILED INCONSISTENT_WITH at /state). The transitions are: pending to in_progress (claim; update_log.edit; the caller becomes the claimer), pending to discarded (the author), in_progress to done (the claimer or update_log.edit; sets completed_at), in_progress to discarded (the claimer or update_log.edit), in_progress to pending (release; the claimer only; clears the claimer), discarded to pending (reopen; update_log.reopen; clears the claimer). done is final. Any other pair, including the state the task is already in, is INVALID_STATE_TRANSITION, checked before permissions; a listed pair the caller may not make is PERMISSION_REQUIRED. The write is guarded on the state that was read, so losing a race to another caller is INVALID_STATE_TRANSITION too. Without state, changes project and text: the author only, and only while the task is pending or in_progress (otherwise INVALID_STATE_TRANSITION, checked first). text is checked as in createTodo; the trust-and-safety check runs only when the stored text changes. An empty object writes nothing. Every flag in viewer is exactly the gate this operation applies. Update_log permissions are never carried by a Bearer request.
+         */
+        patch: operations["updateTodo"];
+        trace?: never;
+    };
     "/topics": {
         parameters: {
             query?: never;
@@ -1246,6 +1298,58 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/update-logs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List update log entries
+         * @description Lists the site's changelog as a cursor page, newest first, ties broken by descending id. There is one sort, no sort parameter and no filter.
+         */
+        get: operations["listUpdateLogs"];
+        put?: never;
+        /**
+         * Create an update log entry
+         * @description Creates a changelog entry and returns it. Needs update_log.create, which a Bearer request never carries. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED, and a failure of that lookup is SERVICE_UNAVAILABLE with nothing written. release_version is trimmed after its length check; text is stored after NormalizeStoredContent, which turns a pasted image-service URL into an /image/<hash> token. Either one blank is VALIDATION_FAILED TOO_SHORT. There is no trust-and-safety check. Location is the canonical path of the new entry.
+         */
+        post: operations["createUpdateLog"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/update-logs/{update_log_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get an update log entry
+         * @description Returns one changelog entry.
+         */
+        get: operations["getUpdateLog"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete an update log entry
+         * @description Deletes a changelog entry and its home-feed card. Needs update_log.delete, checked before the entry is looked up.
+         */
+        delete: operations["deleteUpdateLog"];
+        options?: never;
+        head?: never;
+        /**
+         * Edit an update log entry
+         * @description Changes the fields that are sent and returns the entry. Needs update_log.edit, checked before the entry is looked up. Fields are checked as in createUpdateLog. An empty object writes nothing and returns the entry.
+         */
+        patch: operations["updateUpdateLog"];
         trace?: never;
     };
     "/users": {
@@ -1655,6 +1759,22 @@ export interface components {
              * @description Messages the peer sent that the caller has not marked read.
              */
             unread_count: number;
+        };
+        CountedListTodo: {
+            /** @description Members of this page. Empty array, never null. */
+            items: components["schemas"]["Todo"][];
+            /** @description Opaque keyset cursor. Omitted on the last page. */
+            next_cursor?: string;
+            /**
+             * @description Type discriminant. Always list.
+             * @enum {string}
+             */
+            object: "list";
+            /**
+             * Format: int64
+             * @description Present only when include_total=true. Same visibility gate as items.
+             */
+            total?: number;
         };
         CreateCreatorApplicationBody: {
             /** @description Statement for the reviewers. Empty string is allowed. Free text; never use it as a decision input. */
@@ -2204,6 +2324,17 @@ export interface components {
         ListTopicUpvote: {
             /** @description Members of this page. Empty array, never null. */
             items: components["schemas"]["TopicUpvote"][];
+            /** @description Opaque keyset cursor. Omitted on the last page. */
+            next_cursor?: string;
+            /**
+             * @description Type discriminant. Always list.
+             * @enum {string}
+             */
+            object: "list";
+        };
+        ListUpdateLog: {
+            /** @description Members of this page. Empty array, never null. */
+            items: components["schemas"]["UpdateLog"][];
             /** @description Opaque keyset cursor. Omitted on the last page. */
             next_cursor?: string;
             /**
@@ -3477,6 +3608,87 @@ export interface components {
              */
             object: "thematic_break";
         };
+        Todo: {
+            /** @description User who opened the task. */
+            author: components["schemas"]["UserRef"];
+            /** @description User who claimed the task. null when it was never claimed, was released or reopened, or was claimed before claimers were recorded. */
+            claimer: components["schemas"]["UserRef"] | null;
+            /**
+             * Format: date-time
+             * @description Time the task was completed. Non-null only when state is done.
+             */
+            completed_at: string | null;
+            /**
+             * Format: date-time
+             * @description Creation time.
+             */
+            created_at: string;
+            /** @description Todo id. JSON string of a decimal integer. */
+            id: string;
+            /**
+             * @description Type discriminant. Always todo.
+             * @enum {string}
+             */
+            object: "todo";
+            /**
+             * @description Which site the task is about: forum is this forum, patch is the patch site.
+             * @enum {string}
+             */
+            project: "forum" | "patch";
+            /**
+             * @description pending: open and unclaimed. in_progress: claimed. done and discarded end the task; done is final, discarded can be reopened.
+             * @enum {string}
+             */
+            state: "pending" | "in_progress" | "done" | "discarded";
+            /** @description Task description as plain text, not Markdown. Render it as text and keep its line breaks. Free text; never use it as a decision input. */
+            text: string;
+            /**
+             * Format: date-time
+             * @description Time of the latest write to the task, state changes included.
+             */
+            updated_at: string;
+            /** @description The caller's own capabilities on this task. null for an anonymous caller. Each flag is the exact gate updateTodo applies. */
+            viewer: components["schemas"]["TodoViewer"] | null;
+        };
+        TodoCreate: {
+            /**
+             * @description Which site the task is about.
+             * @enum {string}
+             */
+            project: "forum" | "patch";
+            /** @description Task description as plain text, counted on the value as sent. A body of only whitespace is TOO_SHORT. Free text; never use it as a decision input. */
+            text: string;
+        };
+        TodoPatch: {
+            /**
+             * @description New project. Absent keeps the stored one.
+             * @enum {string}
+             */
+            project?: "forum" | "patch";
+            /**
+             * @description Target state. Never together with another field. See updateTodo for the transitions and who may make each.
+             * @enum {string}
+             */
+            state?: "pending" | "in_progress" | "done" | "discarded";
+            /** @description New description, checked as in createTodo. Absent keeps the stored one. Free text; never use it as a decision input. */
+            text?: string;
+        };
+        TodoViewer: {
+            /** @description Whether the caller may move the task to in_progress: it is pending and the caller holds update_log.edit. */
+            can_claim: boolean;
+            /** @description Whether the caller may move the task to done: it is in_progress and the caller is its claimer or holds update_log.edit. */
+            can_complete: boolean;
+            /** @description Whether the caller holds update_log.delete. Requests authenticated with a Bearer token never carry it. */
+            can_delete: boolean;
+            /** @description Whether the caller may move the task to discarded: it is pending and the caller is its author, or it is in_progress and the caller is its claimer or holds update_log.edit. */
+            can_discard: boolean;
+            /** @description Whether the caller may change project and text: the author, while the task is pending or in_progress. */
+            can_edit: boolean;
+            /** @description Whether the caller may move the task back to pending: it is in_progress and the caller is its claimer. */
+            can_release: boolean;
+            /** @description Whether the caller may move a discarded task back to pending: the caller holds update_log.reopen. */
+            can_reopen: boolean;
+        };
         Topic: {
             /**
              * @description Who may read the topic: everyone, signed-in users, holders of granted roles, or granted users. The author and staff always may.
@@ -3912,6 +4124,64 @@ export interface components {
             has_liked: boolean;
             /** @description Whether the caller has upvoted the topic. */
             has_upvoted: boolean;
+        };
+        UpdateLog: {
+            /**
+             * @description What kind of change the entry records. Clients map the token to a localized label.
+             * @enum {string}
+             */
+            change_type: "feat" | "perf" | "fix" | "style" | "mod" | "chore" | "sec" | "refactor" | "docs" | "test";
+            /**
+             * Format: date-time
+             * @description Creation time.
+             */
+            created_at: string;
+            /** @description Update log id. JSON string of a decimal integer. */
+            id: string;
+            /**
+             * @description Type discriminant. Always update_log.
+             * @enum {string}
+             */
+            object: "update_log";
+            /** @description Site version the change shipped in, such as 4.4.93. Free text; never use it as a decision input. */
+            release_version: string;
+            /** @description Entry body as plain text, not Markdown. Render it as text and keep its line breaks. Free text; never use it as a decision input. */
+            text: string;
+            /**
+             * Format: date-time
+             * @description Time of the latest write to the entry.
+             */
+            updated_at: string;
+            /** @description The caller's own capabilities on this entry. null for an anonymous caller. */
+            viewer: components["schemas"]["UpdateLogViewer"] | null;
+        };
+        UpdateLogCreate: {
+            /**
+             * @description What kind of change the entry records.
+             * @enum {string}
+             */
+            change_type: "feat" | "perf" | "fix" | "style" | "mod" | "chore" | "sec" | "refactor" | "docs" | "test";
+            /** @description Site version the change shipped in. Leading and trailing whitespace is removed after the length check; a value that is then empty is TOO_SHORT. Free text; never use it as a decision input. */
+            release_version: string;
+            /** @description Entry body as plain text, counted on the value as sent. A body of only whitespace is TOO_SHORT. Free text; never use it as a decision input. */
+            text: string;
+        };
+        UpdateLogPatch: {
+            /**
+             * @description New change type. Absent keeps the stored one.
+             * @enum {string}
+             */
+            change_type?: "feat" | "perf" | "fix" | "style" | "mod" | "chore" | "sec" | "refactor" | "docs" | "test";
+            /** @description New version, checked as in createUpdateLog. Absent keeps the stored one. Free text; never use it as a decision input. */
+            release_version?: string;
+            /** @description New body, checked as in createUpdateLog. Absent keeps the stored one. Free text; never use it as a decision input. */
+            text?: string;
+        };
+        UpdateLogViewer: {
+            /** @description Whether the caller holds update_log.delete. Requests authenticated with a Bearer token never carry it. */
+            can_delete: boolean;
+            /** @description Whether the caller holds update_log.edit. Requests authenticated with a Bearer token never carry it. */
+            can_edit: boolean;
         };
         UpvoteCreate: {
             /** @description A note shown with the upvote. Absent or null for none. Leading and trailing whitespace is removed, and a note of only whitespace counts as none. Free text; never use it as a decision input. */
@@ -9324,6 +9594,440 @@ export interface operations {
             };
         };
     };
+    listTodos: {
+        parameters: {
+            query?: {
+                /** @description Opaque keyset cursor from a previous page of this collection. */
+                cursor?: string;
+                /** @description Page size. 1–100, default 20. Values above 100 are rejected, not clamped. */
+                limit?: number;
+                /** @description When true, the response includes total counted under the same predicate as items. */
+                include_total?: boolean;
+                /** @description Only tasks in this state. Absent lists every state. */
+                state?: "pending" | "in_progress" | "done" | "discarded";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CountedListTodo"];
+                };
+            };
+            /** @description INVALID_CURSOR, LIMIT_TOO_LARGE, or UNKNOWN_ENUM_VALUE. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    createTodo: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Caller-generated UUID (canonical 8-4-4-4-12 hex, any version) or 26-character Crockford ULID. Scoped to (user, operation, key) for 24 hours. */
+                "Idempotency-Key": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TodoCreate"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    Location?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Todo"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description IDEMPOTENCY_KEY_REUSED or IDEMPOTENCY_REQUEST_IN_PROGRESS. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description VALIDATION_FAILED when text is blank or too long or project is outside its vocabulary; CONTENT_REJECTED when the trust-and-safety check refuses text. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getTodo: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Todo id. */
+                todo_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Todo"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the task does not exist. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    deleteTodo: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Todo id. */
+                todo_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description PERMISSION_REQUIRED without update_log.delete; ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the task does not exist. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    updateTodo: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Todo id. */
+                todo_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TodoPatch"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Todo"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description PERMISSION_REQUIRED when the caller may not make this transition or edit; ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the task does not exist. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description INVALID_STATE_TRANSITION when the transition is not in the state machine, the task is done or discarded and cannot be edited, or another caller moved it first. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description VALIDATION_FAILED when state is sent with another field, text is blank or too long, or a value is outside its vocabulary; CONTENT_REJECTED when the trust-and-safety check refuses changed text. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     listTopics: {
         parameters: {
             query?: {
@@ -11328,6 +12032,427 @@ export interface operations {
             };
             /** @description Not Found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listUpdateLogs: {
+        parameters: {
+            query?: {
+                /** @description Opaque keyset cursor from a previous page of this collection. */
+                cursor?: string;
+                /** @description Page size. 1–100, default 20. Values above 100 are rejected, not clamped. */
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListUpdateLog"];
+                };
+            };
+            /** @description INVALID_CURSOR or LIMIT_TOO_LARGE. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    createUpdateLog: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Caller-generated UUID (canonical 8-4-4-4-12 hex, any version) or 26-character Crockford ULID. Scoped to (user, operation, key) for 24 hours. */
+                "Idempotency-Key"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateLogCreate"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    Location?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UpdateLog"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description PERMISSION_REQUIRED without update_log.create; ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description VALIDATION_FAILED when release_version or text is blank or too long, or change_type is not in the vocabulary. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getUpdateLog: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Update log id. */
+                update_log_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UpdateLog"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the entry does not exist. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    deleteUpdateLog: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Update log id. */
+                update_log_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description PERMISSION_REQUIRED without update_log.delete; ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the entry does not exist. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    updateUpdateLog: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Update log id. */
+                update_log_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateLogPatch"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UpdateLog"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description PERMISSION_REQUIRED without update_log.edit; ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the entry does not exist. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description VALIDATION_FAILED when a sent field is blank, too long, or outside its vocabulary. */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };

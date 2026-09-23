@@ -1,19 +1,20 @@
 <script setup lang="ts">
-import { KUN_UPDATE_LOG, KUN_UPDATE_LOG_TYPE_MAP } from '~/constants/update'
 import {
-  createUpdateLogSchema,
-  updateUpdateLogSchema
-} from '~/validations/update-log'
-import type { UpdateUpdateLogPayload } from './types'
+  KUN_UPDATE_LOG_CHANGE_TYPES,
+  KUN_UPDATE_LOG_CHANGE_TYPE_LABEL
+} from '~/constants/update'
+import { updateLogSchema } from '~/validations/update-log'
+import type { UpdateLogCreate } from '#shared/utils/api/schemas'
 
 const props = defineProps<{
   modelValue: boolean
-  initialData?: UpdateUpdateLogPayload
+  initialData?: UpdateLogCreate
+  isEditing: boolean
 }>()
 
 const emits = defineEmits<{
   'update:modelValue': [value: boolean]
-  submit: [data: UpdateUpdateLogPayload]
+  submit: [data: UpdateLogCreate]
 }>()
 
 const isModalOpen = computed({
@@ -21,50 +22,36 @@ const isModalOpen = computed({
   set: (value) => emits('update:modelValue', value)
 })
 
-const isEditing = computed(() => !!props.initialData?.update_log_id)
-const isSubmitting = ref(false)
-
-const logTypeOptions = KUN_UPDATE_LOG.map((type) => ({
-  label: KUN_UPDATE_LOG_TYPE_MAP[type] ?? '',
-  value: type ?? 'feat'
+const changeTypeOptions = KUN_UPDATE_LOG_CHANGE_TYPES.map((type) => ({
+  label: KUN_UPDATE_LOG_CHANGE_TYPE_LABEL[type],
+  value: type
 }))
 
-const getInitialFormData = (): UpdateUpdateLogPayload => ({
-  update_log_id: 0,
-  version: '',
-  type: 'feat',
-  content: '',
-  ...(props.initialData || {})
+const emptyForm = (): UpdateLogCreate => ({
+  change_type: 'feat',
+  release_version: '',
+  text: ''
 })
 
-const formData = reactive<UpdateUpdateLogPayload>(getInitialFormData())
+const formData = reactive<UpdateLogCreate>(emptyForm())
 
 watch(
   () => isModalOpen.value,
   (isOpen) => {
     if (isOpen) {
-      isSubmitting.value = false
-      Object.assign(formData, getInitialFormData())
+      Object.assign(formData, props.initialData ?? emptyForm())
     }
   }
 )
 
 const handleSubmit = () => {
-  isSubmitting.value = true
-  const schema = isEditing.value ? updateUpdateLogSchema : createUpdateLogSchema
-
-  const result = schema.safeParse(formData)
-
+  const result = updateLogSchema.safeParse(formData)
   if (!result.success) {
     const message = JSON.parse(result.error.message)[0]
     useMessage(formatKunZodIssue(message), 'warn')
-    isSubmitting.value = false
     return
   }
-
-  emits('submit', { update_log_id: formData.update_log_id, ...result.data })
-  isSubmitting.value = false
-  isModalOpen.value = false
+  emits('submit', result.data)
 }
 </script>
 
@@ -80,15 +67,15 @@ const handleSubmit = () => {
       </h2>
 
       <div class="space-y-4">
-        <KunInput v-model="formData.version" label="版本号" required />
+        <KunInput v-model="formData.release_version" label="版本号" required />
         <KunSelect
-          v-model="formData.type"
-          :options="logTypeOptions"
+          v-model="formData.change_type"
+          :options="changeTypeOptions"
           label="日志类型"
           required
         />
         <KunTextarea
-          v-model="formData.content"
+          v-model="formData.text"
           label="更新内容 (1000 字符之内)"
           :rows="5"
         />
@@ -98,11 +85,7 @@ const handleSubmit = () => {
         <KunButton variant="light" color="danger" @click="isModalOpen = false">
           取消
         </KunButton>
-        <KunButton
-          @click="handleSubmit"
-          color="primary"
-          :loading="isSubmitting"
-        >
+        <KunButton @click="handleSubmit" color="primary">
           {{ isEditing ? '保存更改' : '创建' }}
         </KunButton>
       </div>

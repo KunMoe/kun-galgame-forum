@@ -19,7 +19,9 @@ export type LotteryEntry = components['schemas']['LotteryEntry']
 export type LotteryCreate = components['schemas']['LotteryCreate']
 export type LotteryPatch = components['schemas']['LotteryPatch']
 export type LotteryPrizeInput = LotteryCreate['prizes'][number]
-export type LotteryEnterBlockedReason = NonNullable<LotteryViewer['enter_blocked_reason']>
+export type LotteryEnterBlockedReason = NonNullable<
+  LotteryViewer['enter_blocked_reason']
+>
 export type HiddenTopicSummary = components['schemas']['HiddenTopicSummary']
 export type AdminTopic = components['schemas']['AdminTopic']
 export type TopicEngagement = components['schemas']['TopicEngagement']
@@ -94,4 +96,15 @@ export type WallComment = components['schemas']['WallComment']
 export type WallCommentViewer = components['schemas']['WallCommentViewer']
 export type WallSubjectType =
   operations['listWallComments']['parameters']['query']['subject_type']
-export type WallFlagReason = components['schemas']['WallCommentFlag']['flag_reason']
+export type WallFlagReason =
+  components['schemas']['WallCommentFlag']['flag_reason']
+export type UpdateLog = components['schemas']['UpdateLog']
+export type UpdateLogCreate = components['schemas']['UpdateLogCreate']
+export type UpdateLogPatch = components['schemas']['UpdateLogPatch']
+export type UpdateLogChangeType = UpdateLog['change_type']
+export type Todo = components['schemas']['Todo']
+export type TodoViewer = components['schemas']['TodoViewer']
+export type TodoCreate = components['schemas']['TodoCreate']
+export type TodoPatch = components['schemas']['TodoPatch']
+export type TodoState = Todo['state']
+export type TodoProject = Todo['project']

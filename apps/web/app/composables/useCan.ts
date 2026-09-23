@@ -63,7 +63,8 @@ const MODERATOR_PERMISSIONS = [
 const ADMIN_ONLY_PERMISSIONS = [
   'admin.dashboard',
   'user.purge_content',
-  'topic.delete_any'
+  'topic.delete_any',
+  'update_log.reopen'
 ] as const
 
 const ADMIN_PERMISSIONS = [

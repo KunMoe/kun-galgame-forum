@@ -1,4 +1,9 @@
 import type { KunTabItem } from '@kungal/ui-vue'
+import type {
+  TodoProject,
+  TodoState,
+  UpdateLogChangeType
+} from '#shared/utils/api/schemas'
 
 export const kunUpdateLogTabItem: KunTabItem[] = [
   {
@@ -13,23 +18,27 @@ export const kunUpdateLogTabItem: KunTabItem[] = [
   }
 ]
 
-export const KUN_UPDATE_LOG = [
+export const KUN_UPDATE_LOG_CHANGE_TYPES = [
   'feat',
-  'pref',
+  'perf',
   'fix',
-  'styles',
+  'style',
   'mod',
   'chore',
   'sec',
   'refactor',
   'docs',
   'test'
-] as const
-export const KUN_UPDATE_LOG_TYPE_MAP: Record<string, string> = {
+] as const satisfies readonly UpdateLogChangeType[]
+
+export const KUN_UPDATE_LOG_CHANGE_TYPE_LABEL: Record<
+  UpdateLogChangeType,
+  string
+> = {
   feat: '增加功能',
-  pref: '性能优化',
+  perf: '性能优化',
   fix: '错误修复',
-  styles: '样式修改',
+  style: '样式修改',
   mod: '功能更改',
   chore: '其它修改',
   sec: '安全提升',
@@ -38,26 +47,44 @@ export const KUN_UPDATE_LOG_TYPE_MAP: Record<string, string> = {
   test: '测试用例'
 }
 
-export const KUN_TODO_TYPE_MAP: Record<string, string> = {
+export const KUN_TODO_PROJECTS = [
+  'forum',
+  'patch'
+] as const satisfies readonly TodoProject[]
+
+export const KUN_TODO_PROJECT_LABEL: Record<TodoProject, string> = {
   forum: '论坛',
   patch: '补丁站'
 }
-export const kunTodoTypeOptions = [
-  { value: 'forum', label: '论坛' },
-  { value: 'patch', label: '补丁站' }
-] as const
-export const KUN_TODO_TYPE_CONST = ['forum', 'patch'] as const
 
-export const KUN_TODO_STATUS = {
-  PENDING: 0,
-  CLAIMED: 1,
-  DONE: 2,
-  DISCARDED: 3
-} as const
+export const KUN_TODO_STATES = [
+  'pending',
+  'in_progress',
+  'done',
+  'discarded'
+] as const satisfies readonly TodoState[]
 
-export const KUN_UPDATE_LOG_STATUS_MAP: Record<string, string> = {
-  [KUN_TODO_STATUS.PENDING]: '待处理',
-  [KUN_TODO_STATUS.CLAIMED]: '进行中',
-  [KUN_TODO_STATUS.DONE]: '已完成',
-  [KUN_TODO_STATUS.DISCARDED]: '已废弃'
+export const KUN_TODO_STATE_LABEL: Record<TodoState, string> = {
+  pending: '待处理',
+  in_progress: '进行中',
+  done: '已完成',
+  discarded: '已废弃'
 }
+
+export const KUN_TODO_STATE_ICON: Record<TodoState, string> = {
+  pending: 'lucide:circle-divide',
+  in_progress: 'lucide:loader',
+  done: 'lucide:check',
+  discarded: 'lucide:x'
+}
+
+export const KUN_TODO_STATE_TEXT_CLASS: Record<TodoState, string> = {
+  pending: 'text-default',
+  in_progress: 'text-primary',
+  done: 'text-success',
+  discarded: 'text-danger'
+}
+
+export const kunTodoStateOfLegacyStatus = (
+  status: number
+): TodoState | undefined => KUN_TODO_STATES[status]
