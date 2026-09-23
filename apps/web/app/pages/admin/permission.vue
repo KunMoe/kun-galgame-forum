@@ -105,15 +105,27 @@ const deltasFor = (role: string) => {
   return out
 }
 
+// Counted against what is saved, not against the baseline: stored overrides
+// are not pending, and a role the viewer cannot edit must never join the PATCH,
+// which refuses the whole write for one such role.
+const changedCount = (role: string) => {
+  const saved = effective.value[role] ?? new Set<string>()
+  const work = working.value[role] ?? new Set<string>()
+  return KUN_PERMISSION_KEYS.filter((key) => saved.has(key) !== work.has(key))
+    .length
+}
+
 const pendingByRole = computed(() =>
   Object.fromEntries(
     KUN_PERM_EDITABLE_ROLES.map(
-      (role) => [role, deltasFor(role).length] as [string, number]
+      (role) => [role, changedCount(role)] as [string, number]
     )
   )
 )
 const dirtyRoles = computed(() =>
-  KUN_PERM_EDITABLE_ROLES.filter((role) => (pendingByRole.value[role] ?? 0) > 0)
+  KUN_PERM_EDITABLE_ROLES.filter(
+    (role) => editable.value[role] && (pendingByRole.value[role] ?? 0) > 0
+  )
 )
 const totalPending = computed(() =>
   dirtyRoles.value.reduce(
