@@ -1,3 +1,5 @@
+import { settle } from '#shared/utils/api/problem'
+import type { Preferences } from '#shared/utils/api/schemas'
 import type { KUNGalgameSettingsStore } from '~/store/types/settings'
 
 export interface KunCloudPreferences {
@@ -16,17 +18,6 @@ export interface KunCloudPreferences {
   gallery_sexual_levels: number[]
   gallery_violence_levels: number[]
 }
-
-interface KunPreferencesEnvelope {
-  // The proxy hands back whatever the account holds, and a namespace nobody has
-  // written yet answers 200 with an empty document rather than 404.
-  doc: Partial<KunCloudPreferences> | null
-  version: number
-  updated_at: string | null
-}
-
-const CODE_CLOUD_PREFERENCES_UNAVAILABLE = 240
-const CODE_CLOUD_PREFERENCES_CONFLICT = 241
 
 const WRITE_DEBOUNCE_MS = 1000
 
@@ -63,6 +54,7 @@ const isSameDoc = (a: KunCloudPreferences, b: KunCloudPreferences) =>
   JSON.stringify(a) === JSON.stringify(b)
 
 export const useCloudPreferences = () => {
+  const api = useApiClient()
   const cardStore = usePersistGalgameCardStore()
   const settingsStore = usePersistSettingsStore()
 
@@ -125,48 +117,47 @@ export const useCloudPreferences = () => {
     }
   }
 
+  const pull = async (): Promise<Preferences | null> => {
+    const result = await settle(api.GET('/me/preferences'))
+    if (!result.ok) {
+      if (result.problem.code === 'SCOPE_REQUIRED') {
+        cloudUnavailable = true
+        return null
+      }
+      reportProblem(result.problem)
+      return null
+    }
+    return result.data
+  }
+
   const push = async (): Promise<void> => {
     if (cloudUnavailable) return
-    let conflicted = false
-    const resp = await kunFetch<KunPreferencesEnvelope>('/user/preferences', {
-      method: 'PUT',
-      body: { doc: snapshot() },
-      headers: { 'If-Match': `"${cloudVersion}"` },
-      onApiError: (envelope: { code: number; message: string }) => {
-        if (envelope.code === CODE_CLOUD_PREFERENCES_UNAVAILABLE) {
-          cloudUnavailable = true
-          return true
-        }
-        if (envelope.code === CODE_CLOUD_PREFERENCES_CONFLICT) {
-          conflicted = true
-          return true
-        }
-        return false
-      }
-    })
-    if (resp) {
-      cloudVersion = resp.version
+    const result = await settle(
+      api.PUT('/me/preferences', {
+        params: {
+          header: { 'If-Match': `"${cloudVersion}"` }
+        },
+        body: { doc: snapshot() as unknown as Preferences['doc'] }
+      })
+    )
+    if (result.ok) {
+      cloudVersion = result.data.version
       return
     }
-    if (conflicted) {
+    if (result.problem.code === 'SCOPE_REQUIRED') {
+      cloudUnavailable = true
+      return
+    }
+    if (result.problem.status === 412) {
       const fresh = await pull()
       if (fresh) {
         cloudVersion = fresh.version
-        applyDoc(fresh.doc ?? {})
+        applyDoc(fresh.doc as Partial<KunCloudPreferences>)
       }
+      return
     }
+    reportProblem(result.problem)
   }
-
-  const pull = async (): Promise<KunPreferencesEnvelope | null> =>
-    kunFetch<KunPreferencesEnvelope>('/user/preferences', {
-      onApiError: (envelope: { code: number; message: string }) => {
-        if (envelope.code === CODE_CLOUD_PREFERENCES_UNAVAILABLE) {
-          cloudUnavailable = true
-          return true
-        }
-        return false
-      }
-    })
 
   const scheduleWrite = () => {
     if (cloudUnavailable) return
@@ -213,7 +204,7 @@ export const useCloudPreferences = () => {
     if (resp.version === 0) {
       if (!isSameDoc(snapshot(), DEFAULTS)) await push()
     } else {
-      applyDoc(resp.doc ?? {})
+      applyDoc(resp.doc as Partial<KunCloudPreferences>)
     }
     startWatching()
   }

@@ -11,6 +11,13 @@ const { reportProblem } = vi.hoisted(() => ({
 
 mockNuxtImport('reportProblem', () => reportProblem)
 
+// A signed-in store starts the cloud-preferences sync, and through the typed
+// client its GET /me/preferences lands in this spec's fetch stub first.
+mockNuxtImport('useCloudPreferences', () => () => ({
+  sync: async () => {},
+  flush: async () => {}
+}))
+
 const engagement = (over: Partial<TopicEngagement> = {}): TopicEngagement => ({
   object: 'topic_engagement',
   topic_id: '42',

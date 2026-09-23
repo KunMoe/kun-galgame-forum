@@ -9,6 +9,13 @@ import TopicPollLog from './Log.vue'
 const { reportProblem } = vi.hoisted(() => ({ reportProblem: vi.fn() }))
 mockNuxtImport('reportProblem', () => reportProblem)
 
+// A signed-in store starts the cloud-preferences sync, and through the typed
+// client its GET /me/preferences lands in this spec's fetch stub first.
+mockNuxtImport('useCloudPreferences', () => () => ({
+  sync: async () => {},
+  flush: async () => {}
+}))
+
 const user = (id: string): UserRef => ({
   object: 'user',
   id,

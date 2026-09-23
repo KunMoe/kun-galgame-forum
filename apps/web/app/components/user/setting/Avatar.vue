@@ -1,23 +1,16 @@
 <script setup lang="ts">
+import { settle } from '#shared/utils/api/problem'
+
 const ACCEPT_TYPES = 'image/png,image/jpeg,image/webp,image/gif,image/avif'
 const MAX_BYTES = 4 * 1024 * 1024
 
+const api = useApiClient()
 const userStore = usePersistUserStore()
 
 const fileInput = ref<HTMLInputElement | null>(null)
 const previewUrl = ref<string | null>(null)
 const pendingFile = ref<File | null>(null)
 const isUploading = ref(false)
-
-interface AvatarUploadResponse {
-  hash: string
-  url: string
-  variant_urls?: Record<string, string>
-  width: number
-  height: number
-  size_bytes: number
-  deduplicated: boolean
-}
 
 const openPicker = () => fileInput.value?.click()
 
@@ -55,18 +48,22 @@ const submit = async () => {
   const fd = new FormData()
   fd.append('file', pendingFile.value)
 
-  const result = await kunFetch<AvatarUploadResponse>('/user/avatar', {
-    method: 'POST',
-    body: fd
-  })
+  const result = await settle(
+    api.PUT('/me/avatar', {
+      body: fd as unknown as { file?: string },
+      bodySerializer: (body) => body
+    })
+  )
   isUploading.value = false
 
-  if (result?.url) {
-    useMessage('头像更新成功', 'success')
-    userStore.avatar = result.url
-    userStore.avatarMin = withImageVariant(result.url, '100')
-    clearPick()
+  if (!result.ok) {
+    reportProblem(result.problem)
+    return
   }
+  useMessage('头像更新成功', 'success')
+  userStore.avatar = result.data.url
+  userStore.avatarMin = withImageVariant(result.data.url, '100')
+  clearPick()
 }
 </script>
 

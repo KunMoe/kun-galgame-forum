@@ -1,32 +1,17 @@
 <script setup lang="ts">
-interface CreatorEligibility {
-  eligible: boolean
-  merged_prs: number
-  galgames_published: number
-  reviews_100: number
-  moemoepoint: number
-  need_merged_prs: number
-  need_galgames: number
-  need_reviews: number
-  need_moemoepoint: number
-}
-interface CreatorApplicationInfo {
-  id: number
-  status: string
-  decline_reason: string
-}
-interface CreatorStatus {
-  eligibility: CreatorEligibility
-  application: CreatorApplicationInfo | null
-  is_creator: boolean
-}
+import { settle } from '#shared/utils/api/problem'
+import type { CreatorStatus } from '#shared/utils/api/schemas'
+import { useIdempotencyKey } from '~/composables/useIdempotencyKey'
+
+const api = useApiClient()
+const applyKey = useIdempotencyKey()
 
 const { showKUNGalgameCreatorApply: isOpen } = storeToRefs(
   useTempSettingStore()
 )
 
 const status = ref<CreatorStatus | null>(null)
-const message = ref('')
+const statement = ref('')
 const loading = ref(false)
 const failed = ref(false)
 const submitting = ref(false)
@@ -34,10 +19,11 @@ const submitting = ref(false)
 const load = async () => {
   loading.value = true
   failed.value = false
-  const res = await kunFetch<CreatorStatus>('/user/creator/status')
-  if (res) {
-    status.value = res
+  const result = await settle(api.GET('/me/creator-status'))
+  if (result.ok) {
+    status.value = result.data
   } else {
+    reportProblem(result.problem)
     failed.value = true
   }
   loading.value = false
@@ -45,7 +31,7 @@ const load = async () => {
 
 watch(isOpen, (open) => {
   if (open) {
-    message.value = ''
+    statement.value = ''
     load()
   }
 })
@@ -53,11 +39,11 @@ watch(isOpen, (open) => {
 const eligibility = computed(() => status.value?.eligibility ?? null)
 const application = computed(() => status.value?.application ?? null)
 const isCreator = computed(
-  () => !!status.value?.is_creator || application.value?.status === 'approved'
+  () => !!status.value?.is_creator || application.value?.state === 'approved'
 )
-const isPending = computed(() => application.value?.status === 'pending')
-const isDeclined = computed(() => application.value?.status === 'declined')
-const isEligible = computed(() => !!eligibility.value?.eligible)
+const isPending = computed(() => application.value?.state === 'pending')
+const isDeclined = computed(() => application.value?.state === 'declined')
+const isEligible = computed(() => !!eligibility.value?.is_eligible)
 const canApply = computed(
   () => isEligible.value && !isPending.value && !isCreator.value
 )
@@ -87,16 +73,20 @@ const conditions = computed(() => {
   return [
     {
       label: '已经被合并的 Galgame 信息更新请求',
-      cur: e.merged_prs,
-      need: e.need_merged_prs
+      cur: e.merged_pr_count,
+      need: e.required_merged_pr_count
     },
     {
       label: '已发布 Galgame',
-      cur: e.galgames_published,
-      need: e.need_galgames
+      cur: e.published_galgame_count,
+      need: e.required_published_galgame_count
     },
-    { label: '百字以上简评', cur: e.reviews_100, need: e.need_reviews },
-    { label: '萌萌点', cur: e.moemoepoint, need: e.need_moemoepoint }
+    {
+      label: '百字以上简评',
+      cur: e.long_review_count,
+      need: e.required_long_review_count
+    },
+    { label: '萌萌点', cur: e.moemoepoint, need: e.required_moemoepoint }
   ].map((c) => ({
     ...c,
     met: c.cur >= c.need,
@@ -107,15 +97,25 @@ const conditions = computed(() => {
 const handleApply = async () => {
   if (!canApply.value) return
   submitting.value = true
-  const res = await kunFetch<CreatorApplicationInfo>('/user/creator/apply', {
-    method: 'POST',
-    body: { message: message.value }
-  })
+  const body = { statement: statement.value }
+  const result = await settle(
+    api.POST('/me/creator-applications', {
+      params: {
+        header: {
+          'Idempotency-Key': applyKey.take('/me/creator-applications', body)
+        }
+      },
+      body
+    })
+  )
   submitting.value = false
-  if (res) {
-    useMessage('申请已提交，等待管理员审核', 'success')
-    await load()
+  if (!result.ok) {
+    reportProblem(result.problem)
+    return
   }
+  applyKey.clear()
+  useMessage('申请已提交，等待管理员审核', 'success')
+  await load()
 }
 </script>
 
@@ -229,7 +229,7 @@ const handleApply = async () => {
             name="creator-message"
             placeholder="(可选) 附言：向管理员说明你的情况"
             :rows="2"
-            v-model="message"
+            v-model="statement"
           />
 
           <div class="flex items-center justify-end gap-2 pt-1">

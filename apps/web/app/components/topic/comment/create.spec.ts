@@ -14,6 +14,13 @@ const { api, reportProblem } = vi.hoisted(() => ({
 mockNuxtImport('useApiClient', () => () => api)
 mockNuxtImport('reportProblem', () => reportProblem)
 
+// A signed-in store starts the cloud-preferences sync, which calls api.GET on
+// this POST-only stub.
+mockNuxtImport('useCloudPreferences', () => () => ({
+  sync: async () => {},
+  flush: async () => {}
+}))
+
 type PostInit = {
   params: { path: { reply_id: string }; header: Record<string, string> }
   body: { text: string; parent_comment_id?: string }

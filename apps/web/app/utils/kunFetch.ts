@@ -1,3 +1,5 @@
+import { settle } from '#shared/utils/api/problem'
+
 export interface KunApiFieldError {
   pointer?: string
   parameter?: string
@@ -47,6 +49,50 @@ const extractForwardedCookies = (cookieHeader?: string): string | undefined => {
 
 let authExpiryTimer: ReturnType<typeof setTimeout> | null = null
 
+export const handleBannedAccount = (message?: string) => {
+  const userStore = usePersistUserStore()
+  if (userStore.id) {
+    userStore.resetUser()
+  }
+  useMessage(message || '您的账号已被封禁', 'error', 10000)
+}
+
+export const probeSessionExpiry = (message?: string) => {
+  const userStore = usePersistUserStore()
+  if (!userStore.id || authExpiryTimer) {
+    return
+  }
+  const nuxtApp = useNuxtApp()
+  const api = useApiClient()
+  authExpiryTimer = setTimeout(async () => {
+    authExpiryTimer = null
+    const store = usePersistUserStore()
+    if (!store.id) {
+      return
+    }
+    let dead = false
+    try {
+      const result = await settle(api.GET('/me'))
+      if (!result.ok && result.problem.code === 'ACCOUNT_BANNED') {
+        handleBannedAccount()
+        nuxtApp.runWithContext(() => navigateTo('/'))
+        return
+      }
+      dead =
+        !result.ok &&
+        (result.problem.status === 401 || result.problem.status === 403)
+    } catch {
+      dead = false
+    }
+    if (!dead || !store.id) {
+      return
+    }
+    store.resetUser()
+    useMessage(message || '登录已失效，请重新登录', 'error', 7777)
+    nuxtApp.runWithContext(() => navigateTo('/'))
+  }, 1500)
+}
+
 // A 429 carries no forum envelope — it is refused before a handler runs — so it
 // fell through to 「网络请求失败，请稍后重试」 on the kunFetch path and to
 // nothing at all on the useKunFetch one, whose onResponseError only speaks when
@@ -74,11 +120,7 @@ const handleApiError = async (code: number, message: string) => {
   if (import.meta.server) return
 
   if (code === CODE_BANNED) {
-    const userStore = usePersistUserStore()
-    if (userStore.id) {
-      userStore.resetUser()
-    }
-    useMessage(message || '您的账号已被封禁', 'error', 10000)
+    handleBannedAccount(message)
     return
   }
 
@@ -88,38 +130,7 @@ const handleApiError = async (code: number, message: string) => {
   }
 
   if (code === CODE_AUTH_EXPIRED) {
-    const userStore = usePersistUserStore()
-    if (!userStore.id || authExpiryTimer) {
-      return
-    }
-    const nuxtApp = useNuxtApp()
-    const config = useRuntimeConfig()
-    authExpiryTimer = setTimeout(async () => {
-      authExpiryTimer = null
-      const store = usePersistUserStore()
-      if (!store.id) {
-        return
-      }
-      let dead = false
-      try {
-        const resp = await $fetch<KunApiResponse<unknown>>(
-          `${config.public.apiBaseUrl}/api/user/status`,
-          { credentials: 'include' }
-        )
-        dead = !resp || resp.code !== 0
-      } catch (e) {
-        const status =
-          (e as { status?: number; response?: { status?: number } })?.status ??
-          (e as { response?: { status?: number } })?.response?.status
-        dead = status === 401 || status === 403
-      }
-      if (!dead || !store.id) {
-        return
-      }
-      store.resetUser()
-      useMessage(message || '登录已失效，请重新登录', 'error', 7777)
-      nuxtApp.runWithContext(() => navigateTo('/'))
-    }, 1500)
+    probeSessionExpiry(message)
     return
   }
 

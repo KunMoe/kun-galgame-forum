@@ -1,15 +1,9 @@
 <script setup lang="ts">
-interface MoemoepointLogEntry {
-  id: number
-  delta: number
-  reason: string
-  source_app: string
-  ref: string
-  created_at: string
-  is_local: boolean
-}
+import { settle } from '#shared/utils/api/problem'
+import type { MoemoepointEntry } from '#shared/utils/api/schemas'
 
 const PAGE_SIZE = 20
+const api = useApiClient()
 
 const { showKUNGalgameMoemoepointLog: isOpen } = storeToRefs(
   useTempSettingStore()
@@ -26,16 +20,6 @@ const REASON_META: Record<string, { label: string; icon: string }> = {
   migration: { label: '初始迁移', icon: 'lucide:database' },
   register_gift: { label: '注册礼物', icon: 'lucide:party-popper' },
   name_change: { label: '修改用户名', icon: 'lucide:user-round-pen' }
-}
-
-const SOURCE_LABEL: Record<string, string> = {
-  kungal: '鲲 Galgame',
-  moyu: '鲲补丁',
-  patch: '鲲补丁',
-  touchgal: 'TouchGal',
-  sticker: '贴纸小铺',
-  stickers: '贴纸小铺',
-  oauth: '账号中心'
 }
 
 const REF_KIND_LABEL: Record<string, string> = {
@@ -74,7 +58,7 @@ const BEHAVIOR_LABEL: Record<string, string> = {
 
 const refKindOf = (ref: string) => ref.split(':')[0] ?? ''
 
-const behaviorLabel = (entry: MoemoepointLogEntry): string => {
+const behaviorLabel = (entry: MoemoepointEntry): string => {
   const kind = refKindOf(entry.ref)
   const specific = BEHAVIOR_LABEL[`${entry.reason}:${kind}`]
   if (specific) return specific
@@ -99,20 +83,11 @@ const REF_LINK_BASE: Record<string, string> = {
   toolset: '/toolset'
 }
 
-const refHref = (entry: MoemoepointLogEntry): string => {
-  if (!entry.is_local) return ''
+const refHref = (entry: MoemoepointEntry): string => {
+  if (entry.source !== 'this_site') return ''
   const base = REF_LINK_BASE[refKindOf(entry.ref)]
   const id = entry.ref.split(':')[1]
   return base && id ? `${base}/${id}` : ''
-}
-
-const isOpaqueId = (value: string) => /^[0-9a-f]{16,}$/i.test(value)
-
-const sourceLabel = (app: string): string => {
-  if (!app) return ''
-  const slug = app.replace(/-backend$/, '')
-  if (SOURCE_LABEL[slug]) return SOURCE_LABEL[slug]
-  return isOpaqueId(slug) ? '' : slug
 }
 
 const refId = (refValue: string): string => {
@@ -121,51 +96,50 @@ const refId = (refValue: string): string => {
 }
 
 const metaSegments = (
-  entry: MoemoepointLogEntry
+  entry: MoemoepointEntry
 ): { text: string; href?: string }[] => {
   const segments: { text: string; href?: string }[] = []
-  const source = sourceLabel(entry.source_app)
-  if (source) segments.push({ text: source })
+  if (entry.source === 'account_center') segments.push({ text: '账号中心' })
   const id = refId(entry.ref)
   if (id) segments.push({ text: id, href: refHref(entry) || undefined })
   segments.push({ text: formatTimeDifference(entry.created_at) })
   return segments
 }
 
-const entries = ref<MoemoepointLogEntry[]>([])
+const entries = ref<MoemoepointEntry[]>([])
 const status = ref<'idle' | 'loading' | 'loadingMore' | 'error'>('idle')
-const hasMore = ref(true)
+const nextCursor = ref<string | undefined>()
 
 const fetchPage = async (more = false) => {
-  if (more && (!hasMore.value || status.value === 'loadingMore')) return
+  if (more && (!nextCursor.value || status.value === 'loadingMore')) return
   status.value = more ? 'loadingMore' : 'loading'
 
-  const beforeId =
-    more && entries.value.length
-      ? entries.value[entries.value.length - 1]!.id
-      : 0
+  const page = await settle(
+    api.GET('/me/moemoepoint-entries', {
+      params: {
+        query: {
+          limit: PAGE_SIZE,
+          cursor: more ? nextCursor.value : undefined
+        }
+      }
+    })
+  )
 
-  const page = await kunFetch<{
-    items: MoemoepointLogEntry[]
-    has_more: boolean
-  }>('/user/moemoepoint/log', {
-    query: { limit: PAGE_SIZE, before_id: beforeId }
-  })
-
-  if (page === null) {
+  if (!page.ok) {
+    reportProblem(page.problem)
     status.value = 'error'
     return
   }
 
-  entries.value = more ? [...entries.value, ...page.items] : page.items
-  hasMore.value = page.has_more
+  entries.value = more ? [...entries.value, ...page.data.items] : page.data.items
+  nextCursor.value = page.data.next_cursor
   status.value = 'idle'
 }
 
 watch(isOpen, (open) => {
   if (!open) return
   entries.value = []
-  hasMore.value = true
+  nextCursor.value = undefined
   fetchPage(false)
 })
 </script>
@@ -237,7 +211,7 @@ watch(isOpen, (open) => {
         </div>
 
         <KunButton
-          v-if="hasMore"
+          v-if="nextCursor"
           variant="light"
           class-name="mt-1"
           :loading="status === 'loadingMore'"

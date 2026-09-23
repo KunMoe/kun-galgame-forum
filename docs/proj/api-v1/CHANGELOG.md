@@ -1,5 +1,25 @@
 # API v1 changelog
 
+## 2026-09-23 (U1 me)
+
+Breaking for `/api/user/status` and the other U1 `/api/user/*` faces in this segment.
+
+Offered:
+
+- `GET /api/v1/me` — caller's cached moemoepoint, today's check-in gate, unread flag, creator flag, today's toolset upload bytes
+- `POST /api/v1/me/check-ins` — Beijing-day check-in; reward is a deterministic function of that day (0–7)
+- `GET /api/v1/me/moemoepoint-entries` — cursor ledger (`limit` 1–50); each entry has `source`: `this_site` / `account_center` / `other_site`
+- `GET` / `PUT /api/v1/me/preferences` — cloud preference document; `If-Match` is the quoted version
+- `PUT /api/v1/me/nsfw-display` — `hide` / `blur` / `show`
+- `GET /api/v1/users?q=` — name search (`limit` 1–20), not paged
+- `PATCH /api/v1/me/profile` — `name` and/or `bio`
+- `PUT /api/v1/me/avatar` — multipart field `file`
+- `GET /api/v1/me/creator-status` / `POST /api/v1/me/creator-applications`
+
+`GET /api/v1/me` field names vs the retired status face: `moemoepoint` (was `moemoepoints`), `has_checked_in_today` (was `is_check_in`), `has_unread_messages` (was `has_new_message`; notifications and private messages, not system announcements), `toolset_upload_today_bytes` (was `daily_toolset_upload_bytes`).
+
+Retired: `GET /api/user/status`. The rest of this segment's `/api/user/*` faces are gone with it (`check-in`, `moemoepoint/log`, `preferences`, `nsfw`, `search`, `bio`, `username`, `avatar`, `creator/status`, `creator/apply`). `GET`/`PUT /api/user/notification-preferences` stays until U2.
+
 ## 2026-09-18
 
 First `/api/v1` surface.

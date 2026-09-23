@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { watchDebounced } from '@vueuse/core'
+import { settle } from '#shared/utils/api/problem'
+import { toKunUser } from '~/utils/userRef'
 
 interface TopicAccessUser {
   id: number
@@ -14,6 +16,7 @@ const props = defineProps<{
 
 const selected = defineModel<number[]>({ required: true })
 
+const api = useApiClient()
 const { id: currentUserId } = usePersistUserStore()
 const config = useRuntimeConfig()
 
@@ -22,8 +25,8 @@ const keyword = ref('')
 const results = ref<TopicAccessUser[]>([])
 const searching = ref(false)
 
-// access_grants.user_ids carries bare ids and /user/search only matches names, so
-// the floating card is the only id -> name face there is. Raw $fetch on purpose:
+// access_grants.user_ids carries bare ids and user name search only matches names,
+// so the floating card is the only id -> name face there is. Raw $fetch on purpose:
 // it 404s on a banned or deleted grantee, and kunFetch would pop one error toast
 // per unresolvable id the moment the author opens the editor.
 const resolve = async (id: number) => {
@@ -63,11 +66,20 @@ watchDebounced(
       return
     }
     searching.value = true
-    const users = await kunFetch<TopicAccessUser[]>('/user/search', {
-      query: { q, limit: 8 }
-    })
+    const page = await settle(
+      api.GET('/users', {
+        params: { query: { q, limit: 8 } }
+      })
+    )
     searching.value = false
-    results.value = (users ?? []).filter((user) => user.id !== currentUserId)
+    if (!page.ok) {
+      reportProblem(page.problem)
+      results.value = []
+      return
+    }
+    results.value = page.data.items
+      .map(toKunUser)
+      .filter((user) => user.id !== currentUserId)
   },
   { debounce: 300, maxWait: 1000 }
 )

@@ -3,11 +3,14 @@ import type {
   MentionUser,
   StickerPack
 } from '@kungal/editor-core'
+import { settle } from '#shared/utils/api/problem'
+import { toKunUser } from '~/utils/userRef'
 
 export const useKunEditorAdapters = (opts?: {
   image?: boolean
 }): KunEditorAdapters => {
   const allowImage = opts?.image !== false
+  const api = useApiClient()
 
   const uploadImage = async (file: File) => {
     const form = new FormData()
@@ -23,10 +26,20 @@ export const useKunEditorAdapters = (opts?: {
     return url
   }
 
-  const searchMentionUsers = async (query: string): Promise<MentionUser[]> =>
-    (await kunFetch<MentionUser[]>('/user/search', {
-      query: { q: query, limit: 8 }
-    })) ?? []
+  const searchMentionUsers = async (query: string): Promise<MentionUser[]> => {
+    const q = query.trim()
+    if (!q) return []
+    const result = await settle(
+      api.GET('/users', {
+        params: { query: { q, limit: 8 } }
+      })
+    )
+    if (!result.ok) {
+      reportProblem(result.problem)
+      return []
+    }
+    return result.data.items.map(toKunUser)
+  }
 
   // The packs come from sticker.kungal.com through our own cached server
   // route. The URLs it hands back are content-addressed, and they are what

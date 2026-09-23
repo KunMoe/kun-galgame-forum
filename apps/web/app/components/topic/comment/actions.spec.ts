@@ -11,6 +11,13 @@ const { useComponentMessageStore } = vi.hoisted(() => ({
 
 mockNuxtImport('useComponentMessageStore', () => useComponentMessageStore)
 
+// A signed-in store starts the cloud-preferences sync, and through the typed
+// client its GET /me/preferences lands in this spec's fetch stub first.
+mockNuxtImport('useCloudPreferences', () => () => ({
+  sync: async () => {},
+  flush: async () => {}
+}))
+
 const user = (id: string): UserRef => ({
   object: 'user',
   id,

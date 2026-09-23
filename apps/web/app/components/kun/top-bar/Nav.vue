@@ -1,5 +1,8 @@
 <script setup lang="ts">
+import { settle } from '#shared/utils/api/problem'
+
 const route = useRoute()
+const api = useApiClient()
 
 const { showKUNGalgameHamburger, messageStatus } = storeToRefs(
   useTempSettingStore()
@@ -26,17 +29,12 @@ watch(
 
 onMounted(async () => {
   if (id.value) {
-    const result = await kunFetch<{
-      moemoepoints: number
-      is_check_in: boolean
-      has_new_message: boolean
-      daily_toolset_upload_bytes: number
-    }>('/user/status')
-    if (result) {
-      isCheckIn.value = result.is_check_in
-      moemoepoint.value = result.moemoepoints
-      messageStatus.value = result.has_new_message ? 'new' : 'online'
-      dailyToolsetUploadBytes.value = result.daily_toolset_upload_bytes
+    const result = await settle(api.GET('/me'))
+    if (result.ok) {
+      isCheckIn.value = result.data.has_checked_in_today
+      moemoepoint.value = result.data.moemoepoint
+      messageStatus.value = result.data.has_unread_messages ? 'new' : 'online'
+      dailyToolsetUploadBytes.value = result.data.toolset_upload_today_bytes
     }
   }
 

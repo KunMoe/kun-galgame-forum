@@ -1,7 +1,12 @@
 <script setup lang="ts">
+import { settle } from '#shared/utils/api/problem'
 import type { KnownAccount } from '~/composables/useKnownAccounts'
+import { useIdempotencyKey } from '~/composables/useIdempotencyKey'
 
 const emit = defineEmits<{ close: [] }>()
+
+const api = useApiClient()
+const checkInKey = useIdempotencyKey()
 
 const { id, sub, name, moemoepoint, isCheckIn } = storeToRefs(
   usePersistUserStore()
@@ -52,25 +57,37 @@ const handleCheckIn = async () => {
   emit('close')
   isCheckIn.value = true
 
-  const result = await kunFetch<number>('/user/check-in', {
-    method: 'POST'
-  })
+  const result = await settle(
+    api.POST('/me/check-ins', {
+      params: {
+        header: {
+          'Idempotency-Key': checkInKey.take('/me/check-ins', {})
+        }
+      }
+    })
+  )
 
-  if (result === null) {
+  if (!result.ok) {
+    if (result.problem.code === 'ALREADY_EXISTS') {
+      return
+    }
+    isCheckIn.value = false
+    reportProblem(result.problem)
     return
   }
+  checkInKey.clear()
+  moemoepoint.value = result.data.moemoepoint
+  const awarded = result.data.moemoepoint_awarded
 
-  moemoepoint.value += result
-
-  if (result === 0) {
+  if (awarded === 0) {
     useKunLoliInfo(
       '杂~~~鱼~♡杂鱼~♡ 臭杂鱼♡. 签到成功，您今日什么也没获得...',
       5000
     )
-  } else if (result === 7) {
+  } else if (awarded === 7) {
     useKunLoliInfo('杂鱼~♡♡♡♡♡. 签到成功, 您今日好运获得了 7 萌萌点哦!', 5000)
   } else {
-    useKunLoliInfo(`杂~~~鱼~♡. 签到成功，您今日获得了 ${result} 萌萌点`, 5000)
+    useKunLoliInfo(`杂~~~鱼~♡. 签到成功，您今日获得了 ${awarded} 萌萌点`, 5000)
   }
 }
 

@@ -1,8 +1,9 @@
+import { settle } from '#shared/utils/api/problem'
+
 export type KunStanceWriteResult = 'ok' | 'unavailable' | 'failed'
 
-const CODE_CLOUD_PREFERENCES_UNAVAILABLE = 240
-
 export const useContentStance = () => {
+  const api = useApiClient()
   const userStore = usePersistUserStore()
   const { showKUNGalgameContentLimit } = storeToRefs(usePersistSettingsStore())
 
@@ -25,24 +26,20 @@ export const useContentStance = () => {
   const setStance = async (
     next: KunContentStance
   ): Promise<KunStanceWriteResult> => {
-    let outcome: KunStanceWriteResult = 'failed'
-    const result = await kunFetch<{
-      nsfw_display: string
-      adult_confirmed: boolean
-    }>('/user/nsfw', {
-      method: 'PUT',
-      body: { nsfw_display: next },
-      onApiError: (envelope: { code: number; message: string }) => {
-        if (envelope.code === CODE_CLOUD_PREFERENCES_UNAVAILABLE) {
-          outcome = 'unavailable'
-          return true
-        }
-        return false
+    const result = await settle(
+      api.PUT('/me/nsfw-display', {
+        body: { nsfw_display: next }
+      })
+    )
+    if (!result.ok) {
+      if (result.problem.code === 'SCOPE_REQUIRED') {
+        return 'unavailable'
       }
-    })
-    if (!result) return outcome
+      reportProblem(result.problem)
+      return 'failed'
+    }
 
-    userStore.setContentStance(result.adult_confirmed, result.nsfw_display)
+    userStore.setContentStance(true, result.data.nsfw_display)
     return 'ok'
   }
 

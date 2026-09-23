@@ -1,6 +1,8 @@
 <script setup lang="ts">
+import { settle } from '#shared/utils/api/problem'
 import { KUN_MOEMOEPOINT } from '~/constants/moemoepoint'
 
+const api = useApiClient()
 const userStore = usePersistUserStore()
 
 const inputValue = ref('')
@@ -16,16 +18,19 @@ const handleChangeUsername = async () => {
     return
   }
 
-  const result = await kunFetch('/user/username', {
-    method: 'PUT',
-    body: { username: next }
-  })
+  const result = await settle(
+    api.PATCH('/me/profile', {
+      body: { name: next }
+    })
+  )
 
-  if (result) {
-    useMessage(10124, 'success')
-    userStore.name = next
-    inputValue.value = ''
+  if (!result.ok) {
+    reportProblem(result.problem)
+    return
   }
+  useMessage(10124, 'success')
+  userStore.name = next
+  inputValue.value = ''
 }
 </script>
 

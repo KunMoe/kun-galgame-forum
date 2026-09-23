@@ -89,11 +89,11 @@ App 用 AppAuth + PKCE 直接从 OP 换出 access token，然后 `Authorization:
 
 #### 通知与未读
 
-论坛**没有** SSE / WebSocket，网页也是轮询。红点只轮询 `GET /api/user/status` 一个接口，打开消息页时再拉列表。社区墙的通知已由论坛镜像进 `/api/message`（`community: true` 的行），不必再单独拉社区。
+论坛**没有** SSE / WebSocket，网页也是轮询。红点只轮询 `GET /api/v1/me` 一个接口，打开消息页时再拉列表。社区墙的通知已由论坛镜像进 `/api/message`（`community: true` 的行），不必再单独拉社区。
 
 | 端点 | 方式 | 说明 |
 |---|---|---|
-| `GET /api/user/status` | Bearer | `has_new_message`：通知、系统公告、私信任一有未读就是 true（已静音的类型不计）；另有 `moemoepoints` `is_check_in` |
+| `GET /api/v1/me` | Bearer | `has_unread_messages`：通知或私信未读即为 true（已静音的类型不计；系统公告不再计入）；另有 `moemoepoint` `has_checked_in_today` `is_creator` `toolset_upload_today_bytes` |
 | `GET /api/message/nav/system` | Bearer | 两行：`route:"notice"`（通知）和 `route:"system"`（系统公告），各带 `unread_count` `count` `content` `last_message_time` |
 | `GET /api/message` | Bearer | `page`、`limit`（≤30）、`sort_order=asc\|desc`（**必填**）→ `{messages:[{id, sender{id,name,avatar}, receiver_id, link, content, status:"unread"\|"read", type, created, item_count, actor_count, community}], total}`。这个端点**忽略** `type` 参数 |
 | `PUT /api/message/system/read` | Bearer | 全部通知标为已读（同时转发给社区） |
@@ -126,7 +126,7 @@ App 用 AppAuth + PKCE 直接从 OP 换出 access token，然后 `Authorization:
 # 匿名
 curl -s 'https://www.kungal.com/api/v1/topics?limit=10&sort=bumped_desc'
 # Bearer：未读红点
-curl -s 'https://www.kungal.com/api/user/status' -H "Authorization: Bearer $AT"
+curl -s 'https://www.kungal.com/api/v1/me' -H "Authorization: Bearer $AT"
 # Bearer：发回复（幂等键必填）
 curl -s -X POST 'https://www.kungal.com/api/v1/topics/4230/replies' \
   -H "Authorization: Bearer $AT" \

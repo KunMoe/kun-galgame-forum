@@ -2173,8 +2173,6 @@ export interface components {
             delta: number;
             /** @description Ledger entry id. JSON string of a decimal integer. */
             id: string;
-            /** @description Whether this entry was issued by this site's OAuth client. */
-            is_from_this_site: boolean;
             /**
              * @description Type discriminant. Always moemoepoint_entry.
              * @enum {string}
@@ -2184,6 +2182,11 @@ export interface components {
             reason: string;
             /** @description Triggering entity reference as stored upstream. Empty string when none. Free text; never use it as a decision input. */
             ref: string;
+            /**
+             * @description Who issued the entry: this_site, account_center (the OAuth account service itself, e.g. a rename charge or an admin adjustment), or other_site. Closed.
+             * @enum {string}
+             */
+            source: "this_site" | "account_center" | "other_site";
         };
         MoyuPatch: {
             /** @description The page's id on www.moyu.moe. Neither a galgame id nor a catalog work id. */

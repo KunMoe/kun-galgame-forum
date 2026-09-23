@@ -1,7 +1,11 @@
 <script setup lang="ts">
+import { settle } from '#shared/utils/api/problem'
+
 const props = defineProps<{
   user: UserInfo
 }>()
+
+const api = useApiClient()
 
 const bioValue = ref('')
 const user = computed(() => props.user)
@@ -16,15 +20,18 @@ const handleChangeBio = async () => {
     return
   }
 
-  const result = await kunFetch('/user/bio', {
-    method: 'PUT',
-    body: { bio: bioValue.value }
-  })
+  const result = await settle(
+    api.PATCH('/me/profile', {
+      body: { bio: bioValue.value }
+    })
+  )
 
-  if (result) {
-    useMessage(10117, 'success')
-    bioValue.value = ''
+  if (!result.ok) {
+    reportProblem(result.problem)
+    return
   }
+  useMessage(10117, 'success')
+  bioValue.value = ''
 }
 
 onMounted(() => {
