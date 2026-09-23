@@ -40,11 +40,10 @@ import (
 	rankingRepo "kun-galgame-api/internal/ranking/repository"
 	rssHandler "kun-galgame-api/internal/rss/handler"
 	rssRepo "kun-galgame-api/internal/rss/repository"
+	searchapiv1 "kun-galgame-api/internal/search/apiv1"
 	searchHandler "kun-galgame-api/internal/search/handler"
 	searchRepo "kun-galgame-api/internal/search/repository"
 	searchService "kun-galgame-api/internal/search/service"
-	toolsetRepo "kun-galgame-api/internal/toolset/repository"
-	toolsetService "kun-galgame-api/internal/toolset/service"
 	topicapiv1 "kun-galgame-api/internal/topic/apiv1"
 	topicRepo "kun-galgame-api/internal/topic/repository"
 	topicService "kun-galgame-api/internal/topic/service"
@@ -103,6 +102,7 @@ type App struct {
 	WallV1          *wallapiv1.Service
 	OverviewV1      *overviewapiv1.Service
 	RankingV1       *rankingapiv1.Service
+	SearchV1        *searchapiv1.Service
 	TrustV1         *trustapiv1.Service
 
 	OAuthHandler              *handler.OAuthHandler
@@ -442,13 +442,6 @@ func New(cfg *config.Config) *App {
 	adminUserPermRepo := adminRepo.NewUserPermissionRepository(db)
 	adminPermSync := adminService.NewPermissionOverrideSync(adminRolePermRepo, adminUserPermRepo)
 
-	toolsetRepository := toolsetRepo.NewToolsetRepository(db)
-	toolsetResourceRepo := toolsetRepo.NewResourceRepository(db)
-	toolsetPracticalityRepo := toolsetRepo.NewPracticalityRepository(db)
-	toolsetCoreSvc := toolsetService.NewToolsetService(
-		toolsetRepository, toolsetResourceRepo, toolsetPracticalityRepo, uc,
-	)
-
 	galgameCommentEnforcer := galgameService.NewGalgameCommentEnforcer(communityCli, galgameCommunityPostRepo)
 	trustRegistry := enforce.Registry{
 		"forum_topic": {
@@ -537,9 +530,7 @@ func New(cfg *config.Config) *App {
 		ActivityHandler:           activityHandler.NewActivityHandler(activityService.NewActivityService(activityRepo.NewActivityRepository(db), gc, uc, rdb)),
 		ImageHandler:              imageHandler.NewImageHandler(imageService.NewImageService(imageRepo.NewImageRepository(db), imgCli, catalogCli)),
 		SearchHandler: searchHandler.NewSearchHandler(searchService.NewSearchService(
-			searchRepo.NewSearchRepository(db), gc, galgameEnricher, uc,
-			galgameService.NewEntitySearchService(gc, galgameTagSvc), toolsetCoreSvc,
-			galgameResourceSvc, communityCli, anchorResolver,
+			galgameService.NewEntitySearchService(gc, galgameTagSvc), galgameResourceSvc,
 		)),
 		Artifact:    artCli,
 		FileStorage: fileStorageClient,
@@ -565,6 +556,10 @@ func New(cfg *config.Config) *App {
 	app.Fiber = newFiber()
 
 	app.RankingV1 = rankingapiv1.New(rankingRepo.NewRankingRepository(db), uc, gc, app.newTopicV1(), cfg.NextMoeAPI.ImageCDNBase)
+	app.SearchV1 = searchapiv1.New(searchapiv1.Deps{
+		Repo: searchRepo.NewSearchRepository(db), Topics: app.newTopicV1(), Users: uc, Galgame: gc,
+		Community: communityCli, Anchors: anchorResolver, CDN: cfg.NextMoeAPI.ImageCDNBase,
+	})
 	app.setupRoutes()
 	return app
 }

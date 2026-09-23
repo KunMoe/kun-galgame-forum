@@ -21,16 +21,12 @@ func TestBuilders_BindEveryPlaceholder(t *testing.T) {
 	topicTwo, topicTwoArgs := topicRelevance(two)
 	bodyOne, bodyOneArgs := contentRelevance("r.content", one)
 	bodyTwo, bodyTwoArgs := contentRelevance("r.content", two)
-	snipOne, snipOneArgs := contentSnippet("r.content", one)
-	snipTwo, snipTwoArgs := contentSnippet("r.content", two)
 
 	for _, c := range []builderCase{
 		{"topic/one", topicOne, topicOneArgs},
 		{"topic/two", topicTwo, topicTwoArgs},
 		{"content/one", bodyOne, bodyOneArgs},
 		{"content/two", bodyTwo, bodyTwoArgs},
-		{"snippet/one", snipOne, snipOneArgs},
-		{"snippet/two", snipTwo, snipTwoArgs},
 	} {
 		if got, want := strings.Count(c.sql, "?"), len(c.args); got != want {
 			t.Errorf("%s: %d placeholders, %d binds\n%s", c.name, got, want, c.sql)
@@ -64,16 +60,6 @@ func TestAdjacencyPattern_EscapesRegexMetacharacters(t *testing.T) {
 	}
 	if !regexp.MustCompile(got).MatchString("c++ (beta)") {
 		t.Errorf("%q should match the literal text it was built from", got)
-	}
-}
-
-func TestContentSnippet_BindsTheHitPositionTwice(t *testing.T) {
-	sql, args := contentSnippet("c.content", []string{"Galgame"})
-	if len(args) != 2 || args[0] != "galgame" || args[1] != "galgame" {
-		t.Fatalf("args = %v, want the lowered keyword bound for the guard and the offset", args)
-	}
-	if !strings.Contains(sql, "'…' || SUBSTRING") {
-		t.Errorf("a windowed excerpt must be marked as not starting at the body's start:\n%s", sql)
 	}
 }
 

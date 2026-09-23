@@ -16,9 +16,6 @@ const (
 	weightPhraseContent = 10
 	// One long rant repeating the term must not outrank everything else.
 	maxRepeatBonus = 5
-
-	snippetLen  = 233
-	snippetLead = 30
 )
 
 // adjacencyPattern matches the keywords sitting next to each other whatever
@@ -80,27 +77,4 @@ func contentRelevance(col string, keywords []string) (string, []any) {
 		maxRepeatBonus, col, col, len([]rune(lead))))
 	args = append(args, strings.ToLower(lead))
 	return strings.Join(parts, " + "), args
-}
-
-// contentSnippet windows the body around the earliest keyword hit. The old
-// excerpt was always the first 233 characters, so a hit deep in a long reply
-// produced a preview with none of the searched words in it.
-func contentSnippet(col string, keywords []string) (string, []any) {
-	hits := make([]string, 0, len(keywords))
-	args := make([]any, 0, len(keywords))
-	for _, kw := range keywords {
-		hits = append(hits, fmt.Sprintf("NULLIF(POSITION(? IN lower(%s)), 0)", col))
-		args = append(args, strings.ToLower(kw))
-	}
-	first := hits[0]
-	if len(hits) > 1 {
-		// LEAST skips NULLs, so a keyword that only matched another column
-		// does not drag the window back to the start.
-		first = "LEAST(" + strings.Join(hits, ", ") + ")"
-	}
-	expr := fmt.Sprintf(
-		"CASE WHEN %s > %d THEN '…' || SUBSTRING(%s FROM %s - %d FOR %d) ELSE SUBSTRING(%s FROM 1 FOR %d) END",
-		first, snippetLead, col, first, snippetLead, snippetLen, col, snippetLen)
-	// `first` is emitted twice, so its placeholders are bound twice in order.
-	return expr, append(args, args...)
 }

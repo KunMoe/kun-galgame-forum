@@ -15,6 +15,7 @@ import (
 	overviewapiv1 "kun-galgame-api/internal/overview/apiv1"
 	permissionapiv1 "kun-galgame-api/internal/permission/apiv1"
 	rankingapiv1 "kun-galgame-api/internal/ranking/apiv1"
+	searchapiv1 "kun-galgame-api/internal/search/apiv1"
 	sectionapiv1 "kun-galgame-api/internal/section/apiv1"
 	toolsetapiv1 "kun-galgame-api/internal/toolset/apiv1"
 	topicapiv1 "kun-galgame-api/internal/topic/apiv1"
@@ -66,6 +67,7 @@ func (a *App) setupRoutes() {
 		friendlinkapiv1.Register(a.newFriendLinkV1()),
 		appreleaseapiv1.Register(a.newAppReleaseV1()),
 		rankingapiv1.Register(a.RankingV1),
+		searchapiv1.Register(a.SearchV1),
 		overviewapiv1.Register(a.OverviewV1),
 		sectionapiv1.Register(a.newSectionV1()),
 		authapiv1.Register(a.newAuthV1()),
@@ -103,9 +105,6 @@ func (a *App) setupRoutes() {
 	api.Get("/activity/timeline", a.ActivityHandler.GetTimeline)
 
 	api.Get("/search", a.Authn.OptionalAuth(), a.SearchHandler.Search)
-	api.Get("/search/quick", a.Authn.OptionalAuth(), a.SearchHandler.QuickSearch)
-	api.Get("/search/overview", a.Authn.OptionalAuth(), a.SearchHandler.Overview)
-	api.Get("/search/gal-comment", a.Authn.OptionalAuth(), a.SearchHandler.SearchGalComments)
 	api.Get("/search/entity", a.Authn.OptionalAuth(), a.SearchHandler.SearchEntities)
 	api.Get("/search/entity/resolve", a.Authn.OptionalAuth(), a.SearchHandler.ResolveEntities)
 

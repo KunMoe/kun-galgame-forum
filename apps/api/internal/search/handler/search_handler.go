@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"kun-galgame-api/internal/middleware"
 	"kun-galgame-api/internal/search/dto"
 	"kun-galgame-api/internal/search/service"
 	"kun-galgame-api/pkg/response"
@@ -16,32 +15,6 @@ type SearchHandler struct {
 
 func NewSearchHandler(searchService *service.SearchService) *SearchHandler {
 	return &SearchHandler{searchService: searchService}
-}
-
-func (h *SearchHandler) QuickSearch(c fiber.Ctx) error {
-	var req dto.QuickSearchRequest
-	if appErr := utils.ParseQueryAndValidate(c, &req); appErr != nil {
-		return response.Error(c, appErr)
-	}
-
-	res, appErr := h.searchService.QuickSearch(c.Context(), req.Keywords, middleware.GetUser(c) != nil)
-	if appErr != nil {
-		return response.Error(c, appErr)
-	}
-	return response.OK(c, res)
-}
-
-func (h *SearchHandler) Overview(c fiber.Ctx) error {
-	var req dto.OverviewRequest
-	if appErr := utils.ParseQueryAndValidate(c, &req); appErr != nil {
-		return response.Error(c, appErr)
-	}
-
-	res, appErr := h.searchService.Overview(c.Context(), req.Keywords, utils.IsSFW(c), middleware.GetUser(c) != nil)
-	if appErr != nil {
-		return response.Error(c, appErr)
-	}
-	return response.OK(c, res)
 }
 
 func (h *SearchHandler) SearchEntities(c fiber.Ctx) error {
@@ -78,70 +51,16 @@ func (h *SearchHandler) ResolveEntities(c fiber.Ctx) error {
 	return response.OK(c, dto.EntityResolveResult{Items: items})
 }
 
-// SearchGalComments is its own route rather than a type= on Search: the
-// community face is keyset and answers no total, so it cannot ride the
-// {items, total} envelope every other lane returns.
-func (h *SearchHandler) SearchGalComments(c fiber.Ctx) error {
-	var req dto.GalCommentSearchRequest
-	if appErr := utils.ParseQueryAndValidate(c, &req); appErr != nil {
-		return response.Error(c, appErr)
-	}
-
-	res, appErr := h.searchService.SearchGalComments(c.Context(), req.Keywords, req.Cursor, req.Limit)
-	if appErr != nil {
-		return response.Error(c, appErr)
-	}
-	return response.OK(c, res)
-}
-
 func (h *SearchHandler) Search(c fiber.Ctx) error {
 	var req dto.SearchRequest
 	if appErr := utils.ParseQueryAndValidate(c, &req); appErr != nil {
 		return response.Error(c, appErr)
 	}
-
-	switch req.Type {
-	case "topic":
-		res, appErr := h.searchService.SearchTopics(c.Context(), req.Keywords, req.Page, req.Limit, middleware.GetUser(c) != nil)
-		if appErr != nil {
-			return response.Error(c, appErr)
-		}
-		return response.Paginated(c, res.Items, res.Total)
-	case "galgame":
-		res, appErr := h.searchService.SearchGalgames(
-			c.Context(), req.Keywords, req.Page, req.Limit, false, req.GalgameFilter,
-		)
-		if appErr != nil {
-			return response.Error(c, appErr)
-		}
-		return response.Paginated(c, res.Items, res.Total)
-	case "resource":
-		res, appErr := h.searchService.SearchResources(
-			c.Context(), req.Keywords, req.Page, req.Limit, utils.IsSFW(c),
-		)
-		if appErr != nil {
-			return response.Error(c, appErr)
-		}
-		return response.Paginated(c, res.Items, res.Total)
-	case "user":
-		res, appErr := h.searchService.SearchUsers(c.Context(), req.Keywords, req.Page, req.Limit, middleware.GetUser(c) != nil)
-		if appErr != nil {
-			return response.Error(c, appErr)
-		}
-		return response.Paginated(c, res.Items, res.Total)
-	case "reply":
-		res, appErr := h.searchService.SearchReplies(c.Context(), req.Keywords, req.Page, req.Limit, middleware.GetUser(c) != nil)
-		if appErr != nil {
-			return response.Error(c, appErr)
-		}
-		return response.Paginated(c, res.Items, res.Total)
-	case "comment":
-		res, appErr := h.searchService.SearchComments(c.Context(), req.Keywords, req.Page, req.Limit, middleware.GetUser(c) != nil)
-		if appErr != nil {
-			return response.Error(c, appErr)
-		}
-		return response.Paginated(c, res.Items, res.Total)
-	default:
-		return response.OK(c, []any{})
+	res, appErr := h.searchService.SearchResources(
+		c.Context(), req.Keywords, req.Page, req.Limit, utils.IsSFW(c),
+	)
+	if appErr != nil {
+		return response.Error(c, appErr)
 	}
+	return response.Paginated(c, res.Items, res.Total)
 }
