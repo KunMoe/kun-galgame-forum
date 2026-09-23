@@ -93,7 +93,7 @@ G 编号沿用 infra 07 §2 的同名门，F 编号是论坛补的。**每道门
 1. **先加**：新字段 / 新端点与旧的并存。旧的在 spec 标 `deprecated: true`，响应带 `Deprecation`、`Sunset` 与 `Link rel="deprecation"`。
 2. **再迁**：发一个用新形状的 App 版本。
 3. **看数据**：按 `User-Agent: kungal-app/<版本>` 统计，旧版本还有多少流量在打旧形状。
-4. **收口**：旧版本流量可以接受时，调高 `/api/app/version`（迁移后为 `/api/v1/app/version`）的 `min_version`，旧 App 弹强制更新。
+4. **收口**：旧版本流量可以接受时，调高 `/api/v1/app/version` 的 `min_version`，旧 App 弹强制更新。
 5. **后删**：到 `Sunset` 后旧的回 `410 GONE`。
 
 整体性的大改（换数据模型）按单个资源开新路径，不整体升 `/api/v2`。

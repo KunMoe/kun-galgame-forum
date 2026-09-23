@@ -118,7 +118,7 @@ App 用 AppAuth + PKCE 直接从 OP 换出 access token，然后 `Authorization:
 | `GET /api/galgame/:gid/resource/all?galgame_id=:gid` | 匿名+ | 某作品的资源卡片列表 |
 | `GET /api/galgame-resource/:id/detail` | 匿名+ | galgame 资源的下载信息：`link[]` `code` `password`。这些是外部网盘或磁链，文件不在论坛托管 |
 | `GET /api/toolset/:id/resource/detail?toolset_resource_id=:rid` | 公开 | 工具资源。`type` 为 `"s3"` 时，`content` 是 artifact **预签名 URL**：有效期 24 小时，支持 `Range` 断点续传，过期后再调一次换新 URL |
-| `GET /api/app/version` | 公开 | App 自身安装包的下载地址（§4） |
+| `GET /api/v1/app/version` | 公开 | App 自身安装包的下载地址（§4） |
 
 #### curl 示例
 
@@ -168,14 +168,13 @@ Go api 自己就能供数，**不依赖 Nitro**。`/api/galgame` 和 `/api/galga
 - `/api/v1` 不受影响：它本来就不读偏好 cookie 和请求头，用显式查询参数。
 - 「优先显示原名」偏好仍只认 `KUNGalgameSettings` cookie。
 
-## 4. 版本闸：`GET /api/app/version`
+## 4. 版本闸：`GET /api/v1/app/version`
 
-公开接口，返回现有信封：
+公开接口，不带信封（2026-09-23 随 X1a 从 `/api/app/version` 迁来，形状只多了 `object`）：
 
 ```json
-{ "code": 0, "message": "成功", "data": {
-  "min_version": "0.1.0", "latest_version": "0.1.0", "notes": "",
-  "downloads": { "android": "…", "ios": "…", "windows": "…", "linux": "…" } } }
+{ "object": "app_version", "min_version": "0.1.0", "latest_version": "0.1.0", "notes": "",
+  "downloads": { "android": "…", "ios": "…", "windows": "…", "linux": "…" } }
 ```
 
 - 数据来自环境变量 `KUN_APP_MIN_VERSION` / `KUN_APP_LATEST_VERSION` / `KUN_APP_RELEASE_NOTES` / `KUN_APP_DOWNLOAD_{ANDROID,IOS,WINDOWS,LINUX}`，改了要重启 kungal-api。

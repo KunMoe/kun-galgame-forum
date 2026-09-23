@@ -150,3 +150,31 @@ AppVersion  object="app_version", min_version, latest_version, notes,
 ## 9. 迁移
 
 **无。**
+
+## 10. 实现时对本契约的修正（2026-09-23，只增不改）
+
+1. **`name` 改名 `title`**。G8 要求全 spec 同名字段同型，而 `UserRef.name` 是 `string|null`，友链的站名是非空字符串。WS 的网站已经把站名叫 `title`，这里跟着用。请求体同步改名。
+2. **变异 11 只测删除**：`PATCH` 不存在的 id 由之后的重读回 404，是等价变异（同 D §13 #5），不单列。
+3. **网页的编辑只发改过的字段**（`PATCH`），测试时抓到的请求体是 `{"title":"…"}`。
+
+### 变异执行结果
+
+13/13 杀。
+
+| # | 结果 |
+|---|---|
+| 1 | `TestV1FriendLinksWalk`、`TestV1FriendLinksShelfAndCursor` |
+| 2 | `TestV1FriendLinksWalk` |
+| 3 | `TestV1FriendLinksShelfAndCursor` |
+| 4、5 | `TestV1FriendLinkWritesNeedTheirPermissions`（5 号的做法：用户级覆盖撤掉 `friend_link.delete`，版主仍能改、不能删） |
+| 6、9、10、11 | `TestV1FriendLinkCreateAndPatch` |
+| 7、8 | `TestV1FriendLinkOrderReplacesTheShelf` |
+| 12 | `TestV1FriendLinkUnknownStatusIsNotNormal` |
+| 13 | `TestCapabilityChecksGoThroughUserInfo`（静态守卫） |
+
+### 浏览器实测（开发库，worktree 构建的二进制，无头 Chromium）
+
+- **匿名**：友链页列出全部 43 条，三个分类齐全；SEO 描述由 API 数据生成，包含每一条；已下线的站带「已下线」标签；`/app` 下载页显示最新版本号。
+- **普通用户**：`/admin/friend-link` 被挡回首页；API 返回 `403 PERMISSION_REQUIRED`。
+- **管理员**：`javascript:` 链接在表单里就被拦下；新建的链接排在所属分类的最后；编辑后 `PATCH` 只带改过的 `title`；拖拽后 `PUT /admin/friend-link-order` 返回 204，页面上的顺序与库里一致；删除后接口返回 404。
+- 测试完已用 API 把开发库的顺序恢复原样，测试链接已删除。

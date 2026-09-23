@@ -7,6 +7,19 @@ Breaking for the one v1 galgame face.
 - `GET /api/v1/galgames/{galgame_id}/moyu-patches` (`listGalgameMoyuPatches`) is now `GET /api/v1/works/{work_id}/moyu-patches` (`listWorkMoyuPatches`), tag `works`. Same response. The old path answers 404. No App build calls it.
 - Every galgame id the site shows — the `/galgame/:id` page, every legacy `/api/*` field named `gid` or `galgame_id` — is now the catalog work id. 13,493 pages changed number in the renumber; merged-away numbers are not redirected. The legacy field names are unchanged until their faces move to v1.
 
+## 2026-09-23 (X1a friend links, app version)
+
+Breaking for `GET /api/friend-link`, the four `/api/admin/friend-link*` writes and `GET /api/app/version`; all six are gone.
+
+Offered:
+
+- `GET /api/v1/friend-links`: a flat cursor list, shelf by shelf (`official` → `galgame` → `others`), with an optional `friend_link_category` filter. The old grouped object is gone; clients group the list themselves.
+- `GET` / `PATCH` / `DELETE /api/v1/admin/friend-links/{friend_link_id}` and `POST /api/v1/admin/friend-links`, gated by `friend_link.*`.
+- `PUT /api/v1/admin/friend-link-order`: `{friend_link_category, friend_link_ids}`, which must name every link on that shelf exactly once.
+- `GET /api/v1/app/version`: the app's version gate. The fields are unchanged, plus `object: "app_version"` and no envelope. **App-visible.**
+
+Friend-link field names vs the retired faces: `friend_link_category` (was `category`), `title` (was `name`), `url` (was `link`; must be http or https), `banner` as an `Image` or `null` (was `banner` / `banner_image_hash` / `banner_url`), and `state` = `normal` / `down` (was `status`; `essential` was never used and is gone). `sort_order`, `created` and `updated` are not sent.
+
 ## 2026-09-23 (D docs)
 
 Breaking for every `/api/doc/**` face and `GET /api/admin/doc/article`; all sixteen are gone.
