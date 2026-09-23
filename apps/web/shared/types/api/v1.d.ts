@@ -2584,7 +2584,7 @@ export interface components {
              * @description Type URI domain segment.
              * @enum {string}
              */
-            domain: "platform" | "kungal" | "moderation";
+            domain: "platform" | "kungal" | "me" | "moderation";
             /**
              * @description Type discriminant. Always problem_type.
              * @enum {string}

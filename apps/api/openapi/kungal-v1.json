@@ -3942,6 +3942,7 @@
             "enum": [
               "platform",
               "kungal",
+              "me",
               "moderation"
             ],
             "maxLength": 16,

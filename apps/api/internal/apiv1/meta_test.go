@@ -3,7 +3,9 @@ package apiv1
 import (
 	"encoding/json"
 	"net/http"
+	"reflect"
 	"slices"
+	"strings"
 	"testing"
 
 	"kun-galgame-api/pkg/problem"
@@ -73,6 +75,21 @@ func TestMetaEndpointsMatchRegistry(t *testing.T) {
 	for i := 1; i < len(reasonList.Items); i++ {
 		if reasonList.Items[i-1].Reason > reasonList.Items[i].Reason {
 			t.Errorf("reasons unsorted %s then %s", reasonList.Items[i-1].Reason, reasonList.Items[i].Reason)
+		}
+	}
+}
+
+// The enum was a hand-written tag while domains live in problem.DomainOrder;
+// adding the `me` domain made GET /problems answer a value its own schema forbids.
+func TestProblemTypeDomainEnumCoversRegistry(t *testing.T) {
+	f, ok := reflect.TypeOf(problemType{}).FieldByName("Domain")
+	if !ok {
+		t.Fatal("problemType has no Domain field")
+	}
+	enum := strings.Split(f.Tag.Get("enum"), ",")
+	for _, d := range problem.DomainOrder {
+		if !slices.Contains(enum, string(d)) {
+			t.Errorf("domain %q is registered but missing from problemType.domain enum %v", d, enum)
 		}
 	}
 }
