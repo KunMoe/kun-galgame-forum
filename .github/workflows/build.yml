@@ -10,6 +10,9 @@ name: build-and-push
 on:
   push:
     branches: [master]
+    paths-ignore:
+      - "docs/**"
+      - "**/*.md"
   workflow_dispatch: {}
 
 permissions:
@@ -66,9 +69,22 @@ jobs:
       - name: Trigger Dokploy redeploy
         env:
           WEBHOOK: ${{ secrets.DOKPLOY_WEBHOOK_KUNGAL }}
+          TITLE: ${{ github.event.head_commit.message || github.sha }}
         run: |
           if [ -z "$WEBHOOK" ]; then
             echo "DOKPLOY_WEBHOOK_KUNGAL not set — images pushed to GHCR, skipping redeploy trigger."
             exit 0
           fi
-          curl -fsS -X POST "$WEBHOOK"
+          # The compose is sourceType=github, so Dokploy branch-matches the
+          # request as a GitHub push event. The bodyless POST this step sent
+          # until 2026-09-23 got {"message":"Branch Not Match"} on every run,
+          # which `curl -f` counted as success: no merge was ever deployed by
+          # CI, and the host's compose checkout froze at the last panel deploy.
+          # Masquerade as a push (as nextmoe-infra does) and require a 200.
+          body=$(jq -n --arg ref "$GITHUB_REF" --arg sha "$GITHUB_SHA" --arg title "$TITLE" \
+            '{ref: $ref, head_commit: {id: $sha, message: $title}}')
+          code=$(curl -sS -o response.json -w '%{http_code}' -X POST "$WEBHOOK" \
+            -H 'content-type: application/json' -H 'x-github-event: push' \
+            --data-raw "$body")
+          cat response.json; echo
+          [ "$code" = "200" ]
