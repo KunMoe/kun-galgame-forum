@@ -51,13 +51,6 @@ func MainURL(cdnBase, hash, ext string) string {
 		strings.TrimRight(cdnBase, "/"), hash[:2], hash[2:4], hash, ext)
 }
 
-func ResolveURL(cdnBase, hash, fallback string) string {
-	if url := MainURL(cdnBase, hash, "webp"); url != "" {
-		return url
-	}
-	return fallback
-}
-
 func VariantURL(cdnBase, hash, variant, ext string) string {
 	if len(hash) < 4 {
 		return ""
