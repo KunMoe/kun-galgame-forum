@@ -92,7 +92,7 @@ git ls-remote --heads origin 'api-v1/*'
 | U | 用户 `/user/**`：~~**U1**「我」的面 12 条~~ ✅ → ~~**U2** 公开资料、名片、通知偏好 4 条~~ ✅ → **U3**「某用户的 X」9 条（等 G0 的 `work_id` 重编号） | 9 | 120–129 | 已认领（分支 `api-v1/u-user`） |
 | G | galgame 主域 + `-edit` + `-quiz` + `-resource` + `toolset` + 各自的 admin/user 面（**不含** `/galgame/:gid/comments*` 与 `/galgame/comments/*`，已归 RC） | 85 | 140–159 | 最大的一坨，**一个 owner**，内部自己切 3–4 个 PR 串行 |
 | GE | galgame 实体六件套 `-character` `-engine` `-official` `-series` `-staff` `-tag` | 18 | 160–164 | 共用 `EntityHandler`，必须同一轨 |
-| D | 文档 `/doc` + `/website-tag` + `/website-category` | 26 | 165–169 | 共用 `TagHandler` / `CategoryHandler` |
+| D | 文档 `/doc/**` + `/admin/doc/article`（[契约](waves/d-doc.md)） | 16 | 165–169 | 已认领（分支 `api-v1/d-doc`）。原写「与网站标签/分类共用 `TagHandler` / `CategoryHandler`」是两个包里类型同名的误判，那 10 条归 WS |
 | GR | galgame 评分 `/galgame-rating` | 6 | 190–194 | |
 | X | 零散：`/search` 6、`/friend-link`(+admin) 5、`/news` 4、`/image` 4、`/ranking` 3、`/community` 3、`/auth` 3、`/activity` 3、`/rss` 2、`/category`+`/section` 2、`/admin` 总览 2、`/home` 1、`/app` 1 | 39 | 195–209 | 可拆成几个小 PR |
 
