@@ -38,6 +38,7 @@ G1 的 16 条加 G3 的 11 条就是 resources + toolsets 普查的 27 条。
 - **筛选词表**（GE 先落地，G5 原样复用）：`resource_type` / `resource_platform` / `resource_language` 取 `internal/galgame/resourcevocab` 的键；`game_type` 词表归 GR；排序 token `resource_updated_{desc,asc}` `created_{desc,asc}` `view_{desc,asc}` `view_{1d,7d,30d}_desc` `release_date_{desc,asc}` `rating_{desc,asc}`，默认 `resource_updated_desc`。GE 在 `list_repo.go` 里加的是一条新的轴谓词路径，旧的标量路径不动，直到 G5 删掉 `/api/galgame`。
 - **U3 的「某用户的 X」形状**：`/users/{user_id}/<x>`、页码集合、主人不可渲染 404。G 的 `/users/{user_id}/toolsets`（G1）与 `/users/{user_id}/collections`（G6）照此。
 - **galgame 资源的字段名**（2026-09-23 裁，#209 的活动资源是第一个用例）：类型叫 `resource_type`，取 `internal/galgame/resourcevocab` 的封闭词表（与 GE 的 `/…/works?resource_type=` 同名同词表）；平台 / 语言是数组 `resource_platforms` / `resource_languages`（`workrepr` 的元素类型，与 `WorkSummary` 同形），不用旧的单值 `platform`；活动里的评分对象叫 `galgame_rating`，标量 PUT 体仍叫 `rating`。工具集的 `file` / `link` 因此改名 `toolset_resource_type`（G1.1）。
+- **`GET /works/{work_id}`**（G3 为过 G17 先落地的薄面，2026-09-23 37 批准）：200 是 `WorkRef`，由 `WorkRefOf` 构建，只在 catalog 不认识或 hidden 时 404，**不看**本地 `published`（首份资源发布在未发布作品上正是方案③的路径）。G4 把 200 扩成 `Work` 时必须是**严格超集**：WorkRef 的每个字段同名同型，只加不改。
 - **`ENTITY_MERGED`**（GE 注册）：G4 的合并作品复用，仍是 404（用户裁决不重定向），只是带 `current_id`。
 - **GE 独有的面**：多标签交集 `GET /api/v1/tagged-works?tag_ids=`；实体的作品子集合 `…/{entity_id}/works`。
 
