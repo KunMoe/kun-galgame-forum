@@ -2194,6 +2194,70 @@
         },
         "type": "object"
       },
+      "FollowedWall": {
+        "properties": {
+          "object": {
+            "description": "Type discriminant. Always followed_wall.",
+            "enum": [
+              "followed_wall"
+            ],
+            "maxLength": 13,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "subject_id": {
+            "description": "Id of the page whose wall this is.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "subject_type": {
+            "description": "Kind of page whose comment wall this is.",
+            "enum": [
+              "galgame",
+              "galgame_rating",
+              "galgame_resource",
+              "galgame_quiz",
+              "toolset",
+              "website"
+            ],
+            "maxLength": 16,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "website": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WebsiteSummary"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The site, for a website wall. null for every other kind of wall, and for a website that no longer exists."
+          },
+          "work": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WorkRef"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The work, for a galgame wall. null for every other kind of wall, and for a galgame wall whose work catalog no longer shows."
+          }
+        },
+        "required": [
+          "object",
+          "subject_type",
+          "subject_id",
+          "work",
+          "website"
+        ],
+        "type": "object"
+      },
       "FriendLink": {
         "properties": {
           "banner": {
@@ -2885,6 +2949,37 @@
             "description": "Members of this page. Empty array, never null.",
             "items": {
               "$ref": "#/components/schemas/DocSummary"
+            },
+            "type": "array"
+          },
+          "next_cursor": {
+            "description": "Opaque keyset cursor. Omitted on the last page.",
+            "maxLength": 512,
+            "pattern": "^cur_[A-Za-z0-9_-]+$",
+            "type": "string"
+          },
+          "object": {
+            "description": "Type discriminant. Always list.",
+            "enum": [
+              "list"
+            ],
+            "maxLength": 4,
+            "type": "string",
+            "x-vocabulary-closed": true
+          }
+        },
+        "required": [
+          "object",
+          "items"
+        ],
+        "type": "object"
+      },
+      "ListFollowedWall": {
+        "properties": {
+          "items": {
+            "description": "Members of this page. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/FollowedWall"
             },
             "type": "array"
           },
@@ -3636,6 +3731,24 @@
         "required": [
           "object",
           "items"
+        ],
+        "type": "object"
+      },
+      "LocalizedName": {
+        "properties": {
+          "is_machine": {
+            "description": "Whether the name is a machine translation.",
+            "type": "boolean"
+          },
+          "value": {
+            "description": "The name in this locale. Free text; never use it as a decision input.",
+            "maxLength": 512,
+            "type": "string"
+          }
+        },
+        "required": [
+          "value",
+          "is_machine"
         ],
         "type": "object"
       },
@@ -10680,6 +10793,59 @@
         ],
         "type": "object"
       },
+      "WallState": {
+        "properties": {
+          "id": {
+            "description": "The wall's subject id, the same value as subject_id.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "is_following": {
+            "description": "Whether the caller gets notified of every new comment on this wall.",
+            "type": "boolean"
+          },
+          "object": {
+            "description": "Type discriminant. Always wall_state.",
+            "enum": [
+              "wall_state"
+            ],
+            "maxLength": 10,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "subject_id": {
+            "description": "Id of the page whose wall this is.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "subject_type": {
+            "description": "Kind of page whose comment wall this is.",
+            "enum": [
+              "galgame",
+              "galgame_rating",
+              "galgame_resource",
+              "galgame_quiz",
+              "toolset",
+              "website"
+            ],
+            "maxLength": 16,
+            "type": "string",
+            "x-vocabulary-closed": true
+          }
+        },
+        "required": [
+          "object",
+          "id",
+          "subject_type",
+          "subject_id",
+          "is_following"
+        ],
+        "type": "object"
+      },
       "Website": {
         "properties": {
           "comment_count": {
@@ -11454,6 +11620,71 @@
           "has_favorited",
           "can_edit",
           "can_delete"
+        ],
+        "type": "object"
+      },
+      "WorkRef": {
+        "properties": {
+          "cover": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Image"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The portrait cover at its original size, never the 16:9 crop. null when the work has none."
+          },
+          "display_name": {
+            "description": "The entity's own name. Never empty. Free text; never use it as a decision input.",
+            "maxLength": 512,
+            "type": "string"
+          },
+          "id": {
+            "description": "Work id: the catalog work id, which is also the id in the web's /galgame/{id}.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "is_nsfw": {
+            "description": "Whether this forum displays the work as adult content: the editorial display axis (the claim's content limit), not the age rating.",
+            "type": "boolean"
+          },
+          "latin": {
+            "description": "Romanization of the name. null when none is recorded. Free text; never use it as a decision input.",
+            "maxLength": 512,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "localized": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/LocalizedName"
+            },
+            "description": "Names by BCP-47 tag, sparse. Empty object when there are none, never null.",
+            "type": "object"
+          },
+          "object": {
+            "description": "Type discriminant. Always work.",
+            "enum": [
+              "work"
+            ],
+            "maxLength": 4,
+            "type": "string",
+            "x-vocabulary-closed": true
+          }
+        },
+        "required": [
+          "object",
+          "id",
+          "cover",
+          "is_nsfw",
+          "display_name",
+          "latin",
+          "localized"
         ],
         "type": "object"
       }
@@ -21204,6 +21435,608 @@
         "summary": "Get the caller's own state on a batch of topics",
         "tags": [
           "topics"
+        ]
+      }
+    },
+    "/me/walls": {
+      "get": {
+        "description": "The comment walls the caller follows, in the community service's order. A page can be shorter than limit, even empty, while next_cursor is present: walls this forum no longer recognises are left out. The last page omits next_cursor.",
+        "operationId": "listFollowedWalls",
+        "parameters": [
+          {
+            "description": "Opaque keyset cursor from a previous page of this collection.",
+            "explode": false,
+            "in": "query",
+            "name": "cursor",
+            "schema": {
+              "description": "Opaque keyset cursor from a previous page of this collection.",
+              "maxLength": 512,
+              "pattern": "^cur_[A-Za-z0-9_-]+$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Page size. 1–100, default 20. Values above 100 are rejected, not clamped.",
+            "explode": false,
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 20,
+              "description": "Page size. 1–100, default 20. Values above 100 are rejected, not clamped.",
+              "format": "int64",
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListFollowedWall"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the community service is unreachable or unconfigured."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List the walls the caller follows",
+        "tags": [
+          "walls"
+        ]
+      }
+    },
+    "/me/walls/{subject_type}/{subject_id}": {
+      "get": {
+        "description": "Whether the caller follows the wall. Reading it marks nothing.",
+        "operationId": "getWallState",
+        "parameters": [
+          {
+            "description": "Kind of page whose comment wall this is.",
+            "in": "path",
+            "name": "subject_type",
+            "required": true,
+            "schema": {
+              "description": "Kind of page whose comment wall this is.",
+              "enum": [
+                "galgame",
+                "galgame_rating",
+                "galgame_resource",
+                "galgame_quiz",
+                "toolset",
+                "website"
+              ],
+              "maxLength": 16,
+              "type": "string",
+              "x-vocabulary-closed": true
+            }
+          },
+          {
+            "description": "Id of the page whose wall this is.",
+            "in": "path",
+            "name": "subject_id",
+            "required": true,
+            "schema": {
+              "description": "Id of the page whose wall this is.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WallState"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SCOPE_REQUIRED or ACCOUNT_BANNED; QUIZ_ANSWER_REQUIRED when the wall belongs to a quiz that hides its game or carries spoilers and the caller is neither its author, nor one who answered it, nor staff holding that wall's edit or delete permission. "
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when the page does not exist or its author is banned."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the community service is unreachable or unconfigured."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get the caller's standing on a wall",
+        "tags": [
+          "walls"
+        ]
+      }
+    },
+    "/me/walls/{subject_type}/{subject_id}/follow": {
+      "delete": {
+        "description": "Back to the default: replies and mentions addressed to the caller still notify, other comments do not. Unfollowing a wall the caller does not follow changes nothing.",
+        "operationId": "unfollowWall",
+        "parameters": [
+          {
+            "description": "Kind of page whose comment wall this is.",
+            "in": "path",
+            "name": "subject_type",
+            "required": true,
+            "schema": {
+              "description": "Kind of page whose comment wall this is.",
+              "enum": [
+                "galgame",
+                "galgame_rating",
+                "galgame_resource",
+                "galgame_quiz",
+                "toolset",
+                "website"
+              ],
+              "maxLength": 16,
+              "type": "string",
+              "x-vocabulary-closed": true
+            }
+          },
+          {
+            "description": "Id of the page whose wall this is.",
+            "in": "path",
+            "name": "subject_id",
+            "required": true,
+            "schema": {
+              "description": "Id of the page whose wall this is.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WallState"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SCOPE_REQUIRED or ACCOUNT_BANNED; QUIZ_ANSWER_REQUIRED when the wall belongs to a quiz that hides its game or carries spoilers and the caller is neither its author, nor one who answered it, nor staff holding that wall's edit or delete permission. "
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when the page does not exist or its author is banned."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the community service is unreachable or unconfigured."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Stop following a wall",
+        "tags": [
+          "walls"
+        ]
+      },
+      "put": {
+        "description": "The caller is notified of every new comment on the wall. Following a followed wall changes nothing.",
+        "operationId": "followWall",
+        "parameters": [
+          {
+            "description": "Kind of page whose comment wall this is.",
+            "in": "path",
+            "name": "subject_type",
+            "required": true,
+            "schema": {
+              "description": "Kind of page whose comment wall this is.",
+              "enum": [
+                "galgame",
+                "galgame_rating",
+                "galgame_resource",
+                "galgame_quiz",
+                "toolset",
+                "website"
+              ],
+              "maxLength": 16,
+              "type": "string",
+              "x-vocabulary-closed": true
+            }
+          },
+          {
+            "description": "Id of the page whose wall this is.",
+            "in": "path",
+            "name": "subject_id",
+            "required": true,
+            "schema": {
+              "description": "Id of the page whose wall this is.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WallState"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SCOPE_REQUIRED or ACCOUNT_BANNED; QUIZ_ANSWER_REQUIRED when the wall belongs to a quiz that hides its game or carries spoilers and the caller is neither its author, nor one who answered it, nor staff holding that wall's edit or delete permission. "
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when the page does not exist or its author is banned."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the community service is unreachable or unconfigured."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Follow a wall",
+        "tags": [
+          "walls"
+        ]
+      }
+    },
+    "/me/walls/{subject_type}/{subject_id}/read-marker": {
+      "put": {
+        "description": "Marks every comment on the wall read for the caller, along with this forum's notifications about them. It only acts on a wall the caller has written on or follows; on any other wall it just returns the standing.",
+        "operationId": "markWallRead",
+        "parameters": [
+          {
+            "description": "Kind of page whose comment wall this is.",
+            "in": "path",
+            "name": "subject_type",
+            "required": true,
+            "schema": {
+              "description": "Kind of page whose comment wall this is.",
+              "enum": [
+                "galgame",
+                "galgame_rating",
+                "galgame_resource",
+                "galgame_quiz",
+                "toolset",
+                "website"
+              ],
+              "maxLength": 16,
+              "type": "string",
+              "x-vocabulary-closed": true
+            }
+          },
+          {
+            "description": "Id of the page whose wall this is.",
+            "in": "path",
+            "name": "subject_id",
+            "required": true,
+            "schema": {
+              "description": "Id of the page whose wall this is.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WallState"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SCOPE_REQUIRED or ACCOUNT_BANNED; QUIZ_ANSWER_REQUIRED when the wall belongs to a quiz that hides its game or carries spoilers and the caller is neither its author, nor one who answered it, nor staff holding that wall's edit or delete permission. "
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when the page does not exist or its author is banned."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the community service is unreachable or unconfigured."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Mark a wall read",
+        "tags": [
+          "walls"
         ]
       }
     },

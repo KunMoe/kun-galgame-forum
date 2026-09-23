@@ -176,5 +176,85 @@ func Register(svc *Service) func(huma.API) {
 				409: "INVALID_STATE_TRANSITION when the comment is a tombstone; IDEMPOTENCY_KEY_REUSED or IDEMPOTENCY_REQUEST_IN_PROGRESS.",
 			}),
 		})), svc.flagWallComment)
+
+		registerFollowing(api, svc)
 	}
+}
+
+func registerFollowing(api huma.API, svc *Service) {
+	tags := []string{"walls"}
+	wallMissing := "NOT_FOUND when the page does not exist or its author is banned."
+	upstreamDown := "SERVICE_UNAVAILABLE when the community service is unreachable or unconfigured."
+
+	huma.Register(api, v1.Required(huma.Operation{
+		OperationID: "listFollowedWalls",
+		Method:      http.MethodGet,
+		Path:        "/me/walls",
+		Summary:     "List the walls the caller follows",
+		Description: "The comment walls the caller follows, in the community service's order. " +
+			"A page can be shorter than limit, even empty, while next_cursor is present: walls this forum no longer recognises are left out. " +
+			"The last page omits next_cursor.",
+		Tags: tags,
+		Responses: problemResponses(map[int]string{
+			503: upstreamDown,
+		}),
+	}), svc.listFollowedWalls)
+
+	huma.Register(api, v1.Required(huma.Operation{
+		OperationID: "getWallState",
+		Method:      http.MethodGet,
+		Path:        "/me/walls/{subject_type}/{subject_id}",
+		Summary:     "Get the caller's standing on a wall",
+		Description: "Whether the caller follows the wall. Reading it marks nothing.",
+		Tags:        tags,
+		Responses: problemResponses(map[int]string{
+			403: "SCOPE_REQUIRED or ACCOUNT_BANNED; " + quizGate,
+			404: wallMissing,
+			503: upstreamDown,
+		}),
+	}), svc.getWallState)
+
+	huma.Register(api, v1.Required(huma.Operation{
+		OperationID: "followWall",
+		Method:      http.MethodPut,
+		Path:        "/me/walls/{subject_type}/{subject_id}/follow",
+		Summary:     "Follow a wall",
+		Description: "The caller is notified of every new comment on the wall. Following a followed wall changes nothing.",
+		Tags:        tags,
+		Responses: problemResponses(map[int]string{
+			403: "SCOPE_REQUIRED or ACCOUNT_BANNED; " + quizGate,
+			404: wallMissing,
+			503: upstreamDown,
+		}),
+	}), svc.followWall)
+
+	huma.Register(api, v1.Required(huma.Operation{
+		OperationID: "unfollowWall",
+		Method:      http.MethodDelete,
+		Path:        "/me/walls/{subject_type}/{subject_id}/follow",
+		Summary:     "Stop following a wall",
+		Description: "Back to the default: replies and mentions addressed to the caller still notify, other comments do not. " +
+			"Unfollowing a wall the caller does not follow changes nothing.",
+		Tags: tags,
+		Responses: problemResponses(map[int]string{
+			403: "SCOPE_REQUIRED or ACCOUNT_BANNED; " + quizGate,
+			404: wallMissing,
+			503: upstreamDown,
+		}),
+	}), svc.unfollowWall)
+
+	huma.Register(api, v1.Required(huma.Operation{
+		OperationID: "markWallRead",
+		Method:      http.MethodPut,
+		Path:        "/me/walls/{subject_type}/{subject_id}/read-marker",
+		Summary:     "Mark a wall read",
+		Description: "Marks every comment on the wall read for the caller, along with this forum's notifications about them. " +
+			"It only acts on a wall the caller has written on or follows; on any other wall it just returns the standing.",
+		Tags: tags,
+		Responses: problemResponses(map[int]string{
+			403: "SCOPE_REQUIRED or ACCOUNT_BANNED; " + quizGate,
+			404: wallMissing,
+			503: upstreamDown,
+		}),
+	}), svc.markWallRead)
 }

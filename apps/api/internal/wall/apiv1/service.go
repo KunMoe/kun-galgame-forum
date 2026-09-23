@@ -27,6 +27,9 @@ type Service struct {
 	galgame   GalgameResolver
 	award     AwardFunc
 	cdn       string
+	readSync  ReadSyncFunc
+	works     WorkRefsFunc
+	websites  WebsitesFunc
 }
 
 func New(

@@ -3,6 +3,7 @@ package apiv1
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"strconv"
 	"strings"
 	"time"
@@ -513,4 +514,27 @@ func (s *Service) deleteAdminWebsite(ctx context.Context, in *websiteIDInput) (*
 		return nil, storeProblem(err)
 	}
 	return &noContentOutput{}, nil
+}
+
+func (s *Service) SummariesByIDs(ids []int) (map[int]WebsiteSummary, error) {
+	rows := make([]repository.WebsiteRow, 0, len(ids))
+	for _, id := range ids {
+		row, err := s.store.FindWebsite(id)
+		if errors.Is(err, repository.ErrNotFound) {
+			continue
+		}
+		if err != nil {
+			return nil, err
+		}
+		rows = append(rows, *row)
+	}
+	summaries, p := s.summaries(rows)
+	if p != nil {
+		return nil, p
+	}
+	out := make(map[int]WebsiteSummary, len(summaries))
+	for i, sum := range summaries {
+		out[rows[i].ID] = sum
+	}
+	return out, nil
 }

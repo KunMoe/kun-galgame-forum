@@ -200,9 +200,6 @@ func (a *App) setupRoutes() {
 	authed := api.Group("", a.Authn.Auth())
 	authed.Get("/auth/me", a.OAuthHandler.Me)
 
-	authed.Post("/community/wall/read", a.CommunityEngagementHandler.WallRead)
-	authed.Post("/community/wall/follow", a.CommunityEngagementHandler.WallFollow)
-	authed.Get("/community/following", a.CommunityEngagementHandler.Following)
 
 	authed.Post("/image/topic", a.ImageHandler.UploadTopicImage)
 	authed.Post("/image/cover", a.ImageHandler.UploadCoverImage)

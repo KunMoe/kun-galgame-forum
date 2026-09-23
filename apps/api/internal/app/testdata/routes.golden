@@ -21,6 +21,7 @@ DELETE /api/v1/lotteries/:lottery_id                  cors.New → v1Headers →
 DELETE /api/v1/lotteries/:lottery_id/entries/me       cors.New → v1Headers → fiberAdapter.Handle
 DELETE /api/v1/me/notifications/:notification_id      cors.New → v1Headers → fiberAdapter.Handle
 DELETE /api/v1/me/topic-drafts/:draft_id              cors.New → v1Headers → fiberAdapter.Handle
+DELETE /api/v1/me/walls/:subject_type/:subject_id/follow cors.New → v1Headers → fiberAdapter.Handle
 DELETE /api/v1/polls/:poll_id                         cors.New → v1Headers → fiberAdapter.Handle
 DELETE /api/v1/polls/:poll_id/vote                    cors.New → v1Headers → fiberAdapter.Handle
 DELETE /api/v1/replies/:reply_id                      cors.New → v1Headers → fiberAdapter.Handle
@@ -44,7 +45,6 @@ GET    /api/admin/overview/stats                      cors.New → middleware.Na
 GET    /api/admin/user/:id/content-stats              cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → RequirePermission → PurgeHandler.GetUserContentStats
 GET    /api/auth/me                                   cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → OAuthHandler.Me
 GET    /api/category                                  cors.New → middleware.NamePreference → ContentStance → SectionHandler.GetCategories
-GET    /api/community/following                       cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → EngagementHandler.Following
 GET    /api/galgame                                   cors.New → middleware.NamePreference → ContentStance → GalgameHandler.GetList
 GET    /api/galgame-character/:id                     cors.New → middleware.NamePreference → ContentStance → EntityHandler.GetCharacterDetail
 GET    /api/galgame-character/search                  cors.New → middleware.NamePreference → ContentStance → EntityHandler.SearchCharacters
@@ -168,6 +168,8 @@ GET    /api/v1/me/preferences                         cors.New → v1Headers →
 GET    /api/v1/me/topic-drafts                        cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/me/topic-drafts/:draft_id              cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/me/topic-states                        cors.New → v1Headers → fiberAdapter.Handle
+GET    /api/v1/me/walls                               cors.New → v1Headers → fiberAdapter.Handle
+GET    /api/v1/me/walls/:subject_type/:subject_id     cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/polls/:poll_id                         cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/polls/:poll_id/votes                   cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/problems                               cors.New → v1Headers → fiberAdapter.Handle
@@ -225,8 +227,6 @@ PATCH  /api/v1/wall-comments/:wall_comment_id         cors.New → v1Headers →
 POST   /api/admin/galgame/:id/review                  cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → RequirePermission → ClaimReviewHandler.Review
 POST   /api/auth/logout                               cors.New → middleware.NamePreference → ContentStance → OAuthHandler.Logout
 POST   /api/auth/oauth/callback                       cors.New → middleware.NamePreference → ContentStance → OAuthHandler.Callback
-POST   /api/community/wall/follow                     cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → EngagementHandler.WallFollow
-POST   /api/community/wall/read                       cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → EngagementHandler.WallRead
 POST   /api/galgame-edit/proposals/:id/amend          cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → EditHandler.Amend
 POST   /api/galgame-edit/proposals/:id/decline        cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → EditHandler.Decline
 POST   /api/galgame-edit/proposals/:id/merge          cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → EditHandler.Merge
@@ -302,6 +302,8 @@ PUT    /api/v1/me/notification-preferences            cors.New → v1Headers →
 PUT    /api/v1/me/notifications/read-marker           cors.New → v1Headers → fiberAdapter.Handle
 PUT    /api/v1/me/nsfw-display                        cors.New → v1Headers → fiberAdapter.Handle
 PUT    /api/v1/me/preferences                         cors.New → v1Headers → fiberAdapter.Handle
+PUT    /api/v1/me/walls/:subject_type/:subject_id/follow cors.New → v1Headers → fiberAdapter.Handle
+PUT    /api/v1/me/walls/:subject_type/:subject_id/read-marker cors.New → v1Headers → fiberAdapter.Handle
 PUT    /api/v1/polls/:poll_id/vote                    cors.New → v1Headers → fiberAdapter.Handle
 PUT    /api/v1/replies/:reply_id/reactions/:reaction  cors.New → v1Headers → fiberAdapter.Handle
 PUT    /api/v1/topics/:topic_id/best-answer           cors.New → v1Headers → fiberAdapter.Handle

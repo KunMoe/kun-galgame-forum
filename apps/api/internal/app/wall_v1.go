@@ -5,10 +5,15 @@ import (
 
 	"kun-galgame-api/internal/apiv1"
 	"kun-galgame-api/internal/apiv1/content"
+	"kun-galgame-api/internal/apiv1/repr"
+	galgameapiv1 "kun-galgame-api/internal/galgame/apiv1"
 	"kun-galgame-api/internal/galgame/client"
+	msgRepo "kun-galgame-api/internal/message/repository"
 	"kun-galgame-api/internal/moemoepoint"
 	wallapiv1 "kun-galgame-api/internal/wall/apiv1"
 	wallRepo "kun-galgame-api/internal/wall/repository"
+	websiteapiv1 "kun-galgame-api/internal/website/apiv1"
+	websiteRepo "kun-galgame-api/internal/website/repository"
 	"kun-galgame-api/pkg/communityclient"
 	"kun-galgame-api/pkg/imageclient"
 	"kun-galgame-api/pkg/userclient"
@@ -32,5 +37,19 @@ func newWallV1(
 		}
 		return found, nil
 	}
-	return wallapiv1.New(wallRepo.NewStore(db), community, users, convert, resolve, moemoepoint.Award, cdn)
+	works := func(ctx context.Context, workIDs []int) (map[int]repr.WorkRef, error) {
+		rows, appErr := galgame.CatalogRowsByWorkIDs(ctx, workIDs, "names,covers", "all")
+		if appErr != nil {
+			return nil, appErr
+		}
+		out := make(map[int]repr.WorkRef, len(rows))
+		for id := range rows {
+			row := rows[id]
+			out[id] = galgameapiv1.WorkRefOf(ctx, &row, cdn)
+		}
+		return out, nil
+	}
+	return wallapiv1.New(wallRepo.NewStore(db), community, users, convert, resolve, moemoepoint.Award, cdn).
+		WithFollowing(msgRepo.NewMessageRepository(db).MarkCommunityThreadRead, works,
+			websiteapiv1.New(websiteRepo.NewStore(db), users, images, cdn).SummariesByIDs)
 }

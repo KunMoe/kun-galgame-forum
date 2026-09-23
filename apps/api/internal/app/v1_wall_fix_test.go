@@ -17,11 +17,15 @@ import (
 	"time"
 
 	"kun-galgame-api/internal/apiv1/content"
+	"kun-galgame-api/internal/apiv1/repr"
+	msgRepo "kun-galgame-api/internal/message/repository"
 	"kun-galgame-api/internal/middleware"
 	"kun-galgame-api/internal/testdb"
 	"kun-galgame-api/internal/user/oauth"
 	wallapiv1 "kun-galgame-api/internal/wall/apiv1"
 	wallRepo "kun-galgame-api/internal/wall/repository"
+	websiteapiv1 "kun-galgame-api/internal/website/apiv1"
+	websiteRepo "kun-galgame-api/internal/website/repository"
 	"kun-galgame-api/pkg/communityclient"
 	"kun-galgame-api/pkg/userclient"
 
@@ -93,6 +97,18 @@ type fakeCommunity struct {
 	closed    atomic.Bool
 	bogus     atomic.Bool
 	lastReq   communityclient.CommentRequest
+
+	anchorSubs  map[int64]map[string]int32
+	threadSubs  map[[2]int64]int32
+	reads       [][2]int64
+	levelWrites []levelWrite
+}
+
+type levelWrite struct {
+	scope string
+	user  int64
+	key   string
+	level int32
 }
 
 func newFakeCommunity() *fakeCommunity {
@@ -100,6 +116,7 @@ func newFakeCommunity() *fakeCommunity {
 		threads: map[string]*fakeThread{}, posts: map[int64]*fakePost{},
 		reactions: map[[2]int64]bool{}, follows: map[int64]bool{},
 		nextPost: 7_000_000, nextThr: 800_000,
+		anchorSubs: map[int64]map[string]int32{}, threadSubs: map[[2]int64]int32{},
 	}
 }
 
@@ -247,12 +264,86 @@ func (c *fakeCommunity) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		var req communityclient.ThreadStatesRequest
 		_ = json.NewDecoder(r.Body).Decode(&req)
 		states := []communityclient.ThreadUserView{}
-		if c.follows[req.UserID] {
+		for _, tid := range req.ThreadIDs {
+			if level, ok := c.threadSubs[[2]int64{tid, req.UserID}]; ok {
+				states = append(states, communityclient.ThreadUserView{ThreadID: tid, UserID: req.UserID, NotificationLevel: level})
+			}
+		}
+		if len(states) == 0 && c.follows[req.UserID] {
 			states = append(states, communityclient.ThreadUserView{ThreadID: req.ThreadIDs[0], UserID: req.UserID})
 		}
 		writeEnvelope(w, 200, 0, "", communityclient.ThreadStatesResponse{States: states})
 	case path == "/anchors/states":
-		writeEnvelope(w, 200, 0, "", communityclient.AnchorStatesResponse{States: []communityclient.AnchorSubscriptionView{}})
+		var req communityclient.AnchorStatesRequest
+		_ = json.NewDecoder(r.Body).Decode(&req)
+		states := []communityclient.AnchorSubscriptionView{}
+		for _, a := range req.Anchors {
+			if level, ok := c.anchorSubs[req.UserID][anchorKey(a.AnchorKind, a.AnchorID)]; ok {
+				states = append(states, communityclient.AnchorSubscriptionView{UserID: req.UserID, AnchorKind: a.AnchorKind, AnchorID: a.AnchorID, NotificationLevel: level})
+			}
+		}
+		writeEnvelope(w, 200, 0, "", communityclient.AnchorStatesResponse{States: states})
+	case r.Method == http.MethodPost && path == "/anchors/notification":
+		var req communityclient.AnchorNotificationRequest
+		_ = json.NewDecoder(r.Body).Decode(&req)
+		key := anchorKey(req.AnchorKind, req.AnchorID)
+		if c.anchorSubs[req.UserID] == nil {
+			c.anchorSubs[req.UserID] = map[string]int32{}
+		}
+		c.anchorSubs[req.UserID][key] = req.Level
+		c.levelWrites = append(c.levelWrites, levelWrite{"anchor", req.UserID, key, req.Level})
+		writeEnvelope(w, 200, 0, "", communityclient.AnchorSubscriptionView{UserID: req.UserID, AnchorKind: req.AnchorKind, AnchorID: req.AnchorID, NotificationLevel: req.Level})
+	case r.Method == http.MethodPost && strings.HasPrefix(path, "/threads/"):
+		idStr, action, _ := strings.Cut(strings.TrimPrefix(path, "/threads/"), "/")
+		tid, _ := strconv.ParseInt(idStr, 10, 64)
+		var highest int32
+		for _, th := range c.threads {
+			if th.id == tid {
+				highest = th.highest
+			}
+		}
+		switch action {
+		case "notification":
+			var req communityclient.ThreadNotificationRequest
+			_ = json.NewDecoder(r.Body).Decode(&req)
+			c.threadSubs[[2]int64{tid, req.UserID}] = req.Level
+			c.levelWrites = append(c.levelWrites, levelWrite{"thread", req.UserID, idStr, req.Level})
+			writeEnvelope(w, 200, 0, "", communityclient.ThreadUserView{ThreadID: tid, UserID: req.UserID, NotificationLevel: req.Level, HighestPostNumber: highest})
+		case "read":
+			var req communityclient.ThreadReadRequest
+			_ = json.NewDecoder(r.Body).Decode(&req)
+			c.reads = append(c.reads, [2]int64{tid, req.UserID})
+			level, ok := c.threadSubs[[2]int64{tid, req.UserID}]
+			if !ok {
+				level = communityclient.NotificationNormal
+				c.threadSubs[[2]int64{tid, req.UserID}] = level
+			}
+			writeEnvelope(w, 200, 0, "", communityclient.ThreadUserView{ThreadID: tid, UserID: req.UserID, NotificationLevel: level,
+				LastReadPostNumber: min(req.LastReadPostNumber, highest), HighestPostNumber: highest})
+		default:
+			writeEnvelope(w, http.StatusNotFound, 40400, "no route "+path, nil)
+		}
+	case r.Method == http.MethodGet && strings.HasPrefix(path, "/users/") && strings.HasSuffix(path, "/anchor-subscriptions"):
+		uid, _ := strconv.ParseInt(strings.TrimSuffix(strings.TrimPrefix(path, "/users/"), "/anchor-subscriptions"), 10, 64)
+		keys := make([]string, 0, len(c.anchorSubs[uid]))
+		for k := range c.anchorSubs[uid] {
+			keys = append(keys, k)
+		}
+		sort.Strings(keys)
+		start, _ := strconv.Atoi(r.URL.Query().Get("cursor"))
+		limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
+		end := min(start+limit, len(keys))
+		subs := []communityclient.AnchorSubscriptionView{}
+		for _, k := range keys[min(start, len(keys)):end] {
+			kindStr, anchorID, _ := strings.Cut(k, "|")
+			kind, _ := strconv.Atoi(kindStr)
+			subs = append(subs, communityclient.AnchorSubscriptionView{UserID: uid, AnchorKind: int32(kind), AnchorID: anchorID, NotificationLevel: c.anchorSubs[uid][k]})
+		}
+		next := ""
+		if end < len(keys) {
+			next = strconv.Itoa(end)
+		}
+		writeEnvelope(w, 200, 0, "", communityclient.AnchorSubscriptionListResponse{Subscriptions: subs, NextCursor: next})
 	default:
 		writeEnvelope(w, http.StatusNotFound, 40400, "no route "+path, nil)
 	}
@@ -335,6 +426,19 @@ type wallFix struct {
 	failGC atomic.Bool
 }
 
+func (f *wallFix) workRefs(_ context.Context, ids []int) (map[int]repr.WorkRef, error) {
+	if f.failGC.Load() {
+		return nil, fmt.Errorf("catalog down")
+	}
+	out := map[int]repr.WorkRef{}
+	for _, id := range ids {
+		if id == rcGalgame {
+			out[id] = repr.NewWorkRef(id, repr.NewCatalogName("RC Game", "RC Geemu", nil), nil, false)
+		}
+	}
+	return out, nil
+}
+
 func newWallFix(t *testing.T) *wallFix {
 	t.Helper()
 	db := testdb.Open(t)
@@ -393,7 +497,9 @@ func newWallFix(t *testing.T) *wallFix {
 		DB:     db,
 		Redis:  rdb,
 		Authn:  middleware.NewAuthenticator(rdb, nil, middleware.NewBearer(rcVerifier{}, rdb, nil)),
-		WallV1: wallapiv1.New(wallRepo.NewStore(db), community, uc, convert, resolve, f.recordAward, "https://image.test.example"),
+		WallV1: wallapiv1.New(wallRepo.NewStore(db), community, uc, convert, resolve, f.recordAward, "https://image.test.example").
+			WithFollowing(msgRepo.NewMessageRepository(db).MarkCommunityThreadRead, f.workRefs,
+				websiteapiv1.New(websiteRepo.NewStore(db), uc, nil, "https://image.test.example").SummariesByIDs),
 	}
 	f.app.setupRoutes()
 	f.spec = newSpecConformance(t)

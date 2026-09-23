@@ -13,8 +13,6 @@ import (
 	adminService "kun-galgame-api/internal/admin/service"
 	"kun-galgame-api/internal/apiv1"
 	"kun-galgame-api/internal/community/anchor"
-	"kun-galgame-api/internal/community/engagement"
-	communityHandler "kun-galgame-api/internal/community/handler"
 	communitynotify "kun-galgame-api/internal/community/notify"
 	communitytrust "kun-galgame-api/internal/community/trust"
 	galgameapiv1 "kun-galgame-api/internal/galgame/apiv1"
@@ -138,7 +136,6 @@ type App struct {
 	ActivityHandler            *activityHandler.ActivityHandler
 	ImageHandler               *imageHandler.ImageHandler
 	SearchHandler              *searchHandler.SearchHandler
-	CommunityEngagementHandler *communityHandler.EngagementHandler
 	ToolsetHandler             *toolsetHandler.ToolsetHandler
 	ToolsetPracticalityHandler *toolsetHandler.PracticalityHandler
 	ToolsetResourceHandler     *toolsetHandler.ResourceHandler
@@ -572,9 +569,6 @@ func New(cfg *config.Config) *App {
 			galgameService.NewEntitySearchService(gc, galgameTagSvc), toolsetCoreSvc,
 			galgameResourceSvc, communityCli, anchorResolver,
 		)),
-		CommunityEngagementHandler: communityHandler.NewEngagementHandler(
-			engagement.New(communityCli, anchorResolver, messageRepository),
-		),
 		ToolsetHandler:             toolsetHandler.NewToolsetHandler(toolsetCoreSvc),
 		ToolsetPracticalityHandler: toolsetHandler.NewPracticalityHandler(toolsetPracticalitySvc),
 		ToolsetResourceHandler:     toolsetHandler.NewResourceHandler(toolsetResourceSvc),
