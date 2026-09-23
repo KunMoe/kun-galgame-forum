@@ -1,5 +1,18 @@
 # API v1 changelog
 
+## 2026-09-23 (TS reports and review inbox)
+
+Offered:
+
+- `GET /api/v1/report-reasons` — public; the reasons the trust service currently offers, `{key, display_name}`. Refreshed every five minutes; `503` when the trust service is down (there is no built-in fallback list any more)
+- `POST /api/v1/reports` — `204`; `subject_kind` must be a kind this forum registers, `reason_key` one of the listed reasons, `subject_url` (optional) must start with `https://www.kungal.com/`. `Idempotency-Key` optional; repeating a report of the same content counts once
+- `GET /api/v1/admin/review-items` — page-number collection (`page`, `limit` 1–100, optional `state`), needs `trust.review`; a Bearer request never has it
+- `GET` / `PATCH /api/v1/admin/review-items/{review_item_id}` — the item with its reports; `PATCH {state: claimed | actioned | dismissed}` claims or decides it
+
+Vocabulary: `state` `pending` / `claimed` / `actioned` / `dismissed`; `opened_by` is open (`reports`, `ai_text`, `ai_image`, `community_forward`, `mislabel`, `manual`, `ai_sample`, and `unknown` for an origin this forum does not know yet); `action` `none` / `hide` / `remove` / `warn_user` / `restrict` / `escalate_idp`. `subject_kind` and `reason_key` are open vocabularies.
+
+Retired: `GET /api/report/reasons`, `POST /api/report/submit`, `GET /api/admin/trust/review-items`, `GET /api/admin/trust/review-items/:id`, `POST /api/admin/trust/review-items/:id/claim`, `POST /api/admin/trust/review-items/:id/decide`. `POST /api/trust/callback` stays: it is infra's HMAC callback, not an end-user face.
+
 ## 2026-09-23 (UP update logs and todo board)
 
 Offered:

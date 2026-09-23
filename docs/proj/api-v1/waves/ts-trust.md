@@ -217,3 +217,41 @@
 | 10 | 非 `actioned` 时静默忽略 `action` | `{"state":"dismissed","action":"hide"}` → `422 INCONSISTENT_WITH /action`，假上游没收到 decide |
 | 11 | 上游 409 译成 503 | 认领已被认领的条目 → `409 INVALID_STATE_TRANSITION` |
 | 12 | 理由接口在上游失败时回内置列表 | 假上游 500 → `GET /report-reasons` 为 `503` |
+
+## 8. 实现时对本契约的修正（2026-09-23，只增不改）
+
+1. **举报详情里的理由是对象，不是键。** `ReviewReport.reason_key`（可空）与 `ReportCreate.reason_key`（必填、非空）同名不同可空性，G8 拦下。改成 `report_reason: ReportReason | null`，顺带让审核页直接拿到 `display_name`，不用再按键查一次。
+2. **提交举报先按 OAuth 当前记录判封禁**（与 RC 的 `requireActive` 同理：会话只在刷新令牌时才知道自己被封）。封禁 → `403 ACCOUNT_BANNED`；OAuth 不可用 → `503`（K17 的失败关闭），举报不发出。
+3. **操作描述里不点名 reason。** G4 把描述里的每个大写蛇形词都当错误码去注册表里找，`UNKNOWN_VALUE` 这种 reason 会被判「不在注册表」。422 的描述改成白话写出哪一项、为什么。
+4. PATCH 的路径参数最初放在嵌入的未导出结构体里，F10 当场红（W2 踩过的同一个坑）；改成直写字段。
+5. 审核页的「处置理由」下拉复用 `useReportReasons`，与举报弹窗共用同一份缓存。
+
+## 9. 验收记录
+
+**闸**：`make lint` 零输出；`KUN_REQUIRE_TEST_DB=1 go test -count=1 -p 1 ./...` 66 个包全绿（专属库 `kungal_test_ts_trust`）；`make openapi` / `gen:api` 无漂移；`pnpm lint`、`pnpm typecheck`（`vue-tsc -b --force`）、`pnpm -F web test`（62 文件 426 条）全绿；`deadcode` 与 master 相比没有新增。TS 的测试不碰本地库：五个操作全是上游代理，测试用内存假 trust 上游 + 只回被请求 id 的假 OAuth。
+
+**变异**（`internal/trust/apiv1`，逐条改、跑、还原）：12/12 变红。
+
+| # | 改动 | 变红的测试 |
+|---|---|---|
+| 1 | 列表不查 `trust.review` | `TestV1ReviewInboxRejects`、`TestV1ReviewItemMissing` |
+| 2 | `user.Can` → `perm.CanUser` | `TestV1ReviewBearerNeverReviews`（被个人授予 `trust.review` 的 Bearer 用户拿到了 200） |
+| 3 | `reporter_id` 写成 0 | `TestV1CreateReport` |
+| 4 | 写侧不查 `subject_url` 的源 | `TestV1CreateReportRejects/foreign_link`、`/look-alike_host` |
+| 5 | 读侧原样下发 `subject_url` | `TestV1ReviewItemDetail` |
+| 6 | 不先校验 `reason_key` | `TestV1CreateReportRejects/unknown_reason`（假上游回 422 → 论坛 503） |
+| 7 | 列表不转发 `state` | `TestV1ReviewInboxStateFilter` |
+| 8 | 列表不强制 `site` | `TestV1ReviewInboxWalk`、`TestV1ReviewInboxShape` |
+| 9 | `actioned` 不要求 `action` | `TestV1ReviewItemDecideRejects/actioned_without_action` |
+| 10 | 非 `actioned` 静默忽略 `action` | `TestV1ReviewItemDecideRejects/dismissed_with_action` |
+| 11 | 上游 409 → 503 | `TestV1ReviewItemClaim` |
+| 12 | 理由接口上游失败回内置列表 | `TestV1ReportReasonsUpstreamDown` |
+
+排序：假上游按 `priority DESC, id DESC` 出，种子里 7 个条目共享同一 `priority` 跨页，`limit` 2 与 3 各翻一遍与期望序逐条相等。排序本身在 infra，论坛只负责不丢不重、`total` 与 `items` 同谓词。
+
+**浏览器实测**（本分支自起 API :2344 + 网页 :2343，打**真的**本地 kun_trust 与 OAuth，管理员会话持本地账号中心签发的真令牌；无头 Chromium）：
+
+- 匿名进 `/admin/moderation` → 跳登录页；普通用户 → 被中间件送回首页；普通用户直打 `GET /api/v1/admin/review-items` → `403 PERMISSION_REQUIRED`。
+- 普通用户与管理员各在话题 4241 的「更多 → 举报」里选「垃圾信息」提交：`GET /report-reasons` 200、`POST /reports` 204、提示「举报已提交」；上游两行举报的 `reporter_id` 分别是 10 与 8，管理员的员工权重当场开出审核条目。
+- 管理员在收件箱点开该条目：举报人显示为用户卡片（头像 + 名字），理由显示「垃圾信息」；点「认领」→ `PATCH` 200，显示「处理中，认领人 xiaohuo」；处置动作选「不处置（仅记录）」、理由从下拉选「垃圾信息」→ `PATCH` 200；上游落下 `action = 0, reason_code = spam` 的处置。「全部」页签按优先级列出 30 条并带分页器，游戏资源 / 社区评论 / 游戏评价等新 kind 都有中文标签。
+- 清理：本地 kun_trust 的两行举报、审核条目与处置已删（审计表是哈希链，没动），两个会话已删，自起的两个进程已按 PID 停止。
