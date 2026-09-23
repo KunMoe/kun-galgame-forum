@@ -82,15 +82,10 @@ GET    /api/galgame/playtime/mine                     cors.New → middleware.Na
 GET    /api/galgame/search/picker                     cors.New → middleware.NamePreference → ContentStance → QuizHandler.SearchGalgames
 GET    /api/galgame/search/wizard                     cors.New → middleware.NamePreference → ContentStance → Auth → SubmissionHandler.SearchWithPending
 GET    /api/home                                      cors.New → middleware.NamePreference → ContentStance → HomeHandler.GetHome
-GET    /api/news                                      cors.New → middleware.NamePreference → ContentStance → NewsHandler.GetFeed
-GET    /api/news/archive                              cors.New → middleware.NamePreference → ContentStance → NewsHandler.GetArchive
-GET    /api/news/month                                cors.New → middleware.NamePreference → ContentStance → NewsHandler.GetMonth
-GET    /api/news/sources                              cors.New → middleware.NamePreference → ContentStance → NewsHandler.GetSources
 GET    /api/ranking/galgame                           cors.New → middleware.NamePreference → ContentStance → RankingHandler.GetGalgameRanking
 GET    /api/ranking/topic                             cors.New → middleware.NamePreference → ContentStance → RankingHandler.GetTopicRanking
 GET    /api/ranking/user                              cors.New → middleware.NamePreference → ContentStance → RankingHandler.GetUserRanking
 GET    /api/rss/galgame                               cors.New → middleware.NamePreference → ContentStance → RSSHandler.GetGalgameRSS
-GET    /api/rss/topic                                 cors.New → middleware.NamePreference → ContentStance → RSSHandler.GetTopicRSS
 GET    /api/search                                    cors.New → middleware.NamePreference → ContentStance → OptionalAuth → SearchHandler.Search
 GET    /api/search/entity                             cors.New → middleware.NamePreference → ContentStance → OptionalAuth → SearchHandler.SearchEntities
 GET    /api/search/entity/resolve                     cors.New → middleware.NamePreference → ContentStance → OptionalAuth → SearchHandler.ResolveEntities
@@ -159,6 +154,11 @@ GET    /api/v1/me/topic-drafts/:draft_id              cors.New → v1Headers →
 GET    /api/v1/me/topic-states                        cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/me/walls                               cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/me/walls/:subject_type/:subject_id     cors.New → v1Headers → fiberAdapter.Handle
+GET    /api/v1/news-archive                           cors.New → v1Headers → fiberAdapter.Handle
+GET    /api/v1/news-archive/:year/:month              cors.New → v1Headers → fiberAdapter.Handle
+GET    /api/v1/news-archive/:year/:month/items        cors.New → v1Headers → fiberAdapter.Handle
+GET    /api/v1/news-items                             cors.New → v1Headers → fiberAdapter.Handle
+GET    /api/v1/news-sources                           cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/polls/:poll_id                         cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/polls/:poll_id/votes                   cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/problems                               cors.New → v1Headers → fiberAdapter.Handle

@@ -1596,6 +1596,106 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/news-archive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the news archive index
+         * @description Item counts by year, and by month for the one year asked about, under the same filters as listNewsItems. Years and months are cut on Asia/Shanghai.
+         */
+        get: operations["getNewsArchive"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/news-archive/{year}/{month}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get one month of news
+         * @description How many items one month holds and how they fall across its days, every day listed. The items themselves are listNewsMonthItems.
+         */
+        get: operations["getNewsMonth"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/news-archive/{year}/{month}/items": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List one month of news
+         * @description One month of news items, newest first, as a page-number collection: a month is a reference page, and a reader who wants its third week should not scroll the first two. total counts the month after the day filter.
+         */
+        get: operations["listNewsMonthItems"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/news-items": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List news items
+         * @description The partner news index, newest first. A cursor collection over the news service's own cursor; the cursor is bound to every filter and to limit. limit is 1–50 because that is the news service's page cap.
+         */
+        get: operations["listNewsItems"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/news-sources": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List news partners
+         * @description The whole partner directory, which is where a news item's news_source key resolves to a name and attribution. Not paged.
+         */
+        get: operations["listNewsSources"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/polls/{poll_id}": {
         parameters: {
             query?: never;
@@ -3845,6 +3945,22 @@ export interface components {
              */
             unread_count: number;
         };
+        CountedListNewsItem: {
+            /** @description Members of this page. Empty array, never null. */
+            items: components["schemas"]["NewsItem"][];
+            /** @description Opaque keyset cursor. Omitted on the last page. */
+            next_cursor?: string;
+            /**
+             * @description Type discriminant. Always list.
+             * @enum {string}
+             */
+            object: "list";
+            /**
+             * Format: int64
+             * @description Present only when include_total=true. Same visibility gate as items.
+             */
+            total?: number;
+        };
         CountedListTodo: {
             /** @description Members of this page. Empty array, never null. */
             items: components["schemas"]["Todo"][];
@@ -4056,6 +4172,18 @@ export interface components {
             display_name: string;
             /** @description Catalog's role key, such as scenario, illustration, music or voice-actor. An open vocabulary. */
             role_key: string;
+        };
+        DayCount: {
+            /**
+             * Format: int64
+             * @description Items published that day.
+             */
+            count: number;
+            /**
+             * Format: int64
+             * @description Day of the month, Asia/Shanghai.
+             */
+            day: number;
         };
         DirectMessage: {
             /** @description Message body as a node tree. An empty document (children is an empty array) when state is recalled; clients read state, not emptiness. */
@@ -4696,6 +4824,17 @@ export interface components {
         ListMoyuPatch: {
             /** @description Members of this page. Empty array, never null. */
             items: components["schemas"]["MoyuPatch"][];
+            /** @description Opaque keyset cursor. Omitted on the last page. */
+            next_cursor?: string;
+            /**
+             * @description Type discriminant. Always list.
+             * @enum {string}
+             */
+            object: "list";
+        };
+        ListNewsSource: {
+            /** @description Members of this page. Empty array, never null. */
+            items: components["schemas"]["NewsSource"][];
             /** @description Opaque keyset cursor. Omitted on the last page. */
             next_cursor?: string;
             /**
@@ -5383,6 +5522,18 @@ export interface components {
              */
             source: "this_site" | "account_center" | "other_site";
         };
+        MonthCount: {
+            /**
+             * Format: int64
+             * @description Items published that month.
+             */
+            count: number;
+            /**
+             * Format: int64
+             * @description Calendar month, Asia/Shanghai.
+             */
+            month: number;
+        };
         MoyuPatch: {
             /** @description The page's id on www.moyu.moe. Neither a galgame id nor a catalog work id. */
             id: string;
@@ -5455,6 +5606,90 @@ export interface components {
              * @enum {string}
              */
             object: "user";
+        };
+        NewsArchive: {
+            /** @description Months of the requested year that have items. Empty unless year was sent and is one of years. */
+            months: components["schemas"]["MonthCount"][];
+            /**
+             * @description Type discriminant. Always news_archive.
+             * @enum {string}
+             */
+            object: "news_archive";
+            /** @description Years that have items, newest first. */
+            years: components["schemas"]["YearCount"][];
+        };
+        NewsItem: {
+            /** @description News item id. JSON string of a decimal integer. */
+            id: string;
+            /**
+             * @description news for bulletins, column for longer pieces.
+             * @enum {string}
+             */
+            lane: "news" | "column";
+            /** @description Key of the partner that published the item. Name, homepage and attribution come from listNewsSources; an item shown on its own must still carry its partner's attribution. */
+            news_source: string;
+            /**
+             * @description Type discriminant. Always news_item.
+             * @enum {string}
+             */
+            object: "news_item";
+            /** @description The partner's own excerpt. There is no body: source_url is the only way to the full text. Free text; never use it as a decision input. */
+            preview: string;
+            /**
+             * Format: date-time
+             * @description When the partner published it.
+             */
+            published_at: string;
+            /**
+             * Format: uri
+             * @description The item on the partner's site.
+             */
+            source_url: string;
+            /** @description Headline. Free text; never use it as a decision input. */
+            title: string;
+        };
+        NewsMonth: {
+            /** @description Every day of the month, empty days included. */
+            days: components["schemas"]["DayCount"][];
+            /**
+             * Format: int64
+             * @description Items in the whole month under the filters.
+             */
+            item_count: number;
+            /**
+             * Format: int64
+             * @description Calendar month, Asia/Shanghai.
+             */
+            month: number;
+            /**
+             * @description Type discriminant. Always news_month.
+             * @enum {string}
+             */
+            object: "news_month";
+            /**
+             * Format: int64
+             * @description Calendar year, Asia/Shanghai.
+             */
+            year: number;
+        };
+        NewsSource: {
+            /** @description The attribution the partner requires next to its items. Free text; never use it as a decision input. */
+            attribution: string;
+            /** @description The partner's column index. Empty string if none. */
+            column_url: string;
+            /** @description Partner name. Free text; never use it as a decision input. */
+            display_name: string;
+            /** @description The forum account the partner publishes under. null when there is none, it is not shown, or the account service could not be reached: it is decoration, and the directory does not fail over it. */
+            forum_account: components["schemas"]["UserRef"] | null;
+            /** @description The partner's homepage. Empty string if none. */
+            homepage_url: string;
+            /** @description The partner key that news items carry in news_source. */
+            key: string;
+            /**
+             * @description Type discriminant. Always news_source.
+             * @enum {string}
+             */
+            object: "news_source";
         };
         Notification: {
             /** @description The user who triggered this notification. name is null when the account no longer exists. */
@@ -5659,6 +5894,25 @@ export interface components {
         PageListHiddenTopicSummary: {
             /** @description Members of this page. Empty array, never null. */
             items: components["schemas"]["HiddenTopicSummary"][];
+            /**
+             * @description Type discriminant. Always list.
+             * @enum {string}
+             */
+            object: "list";
+            /**
+             * Format: int64
+             * @description Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.
+             */
+            total: number;
+            /**
+             * @description eq when total is exact, gte when it stopped at the depth limit and there are at least that many.
+             * @enum {string}
+             */
+            total_relation: "eq" | "gte";
+        };
+        PageListNewsItem: {
+            /** @description Members of this page. Empty array, never null. */
+            items: components["schemas"]["NewsItem"][];
             /**
              * @description Type discriminant. Always list.
              * @enum {string}
@@ -8702,6 +8956,18 @@ export interface components {
              * @description Times the work's forum page was read. 0 for a work the forum has no page for.
              */
             view_count: number;
+        };
+        YearCount: {
+            /**
+             * Format: int64
+             * @description Items published that year.
+             */
+            count: number;
+            /**
+             * Format: int64
+             * @description Calendar year, Asia/Shanghai.
+             */
+            year: number;
         };
     };
     responses: never;
@@ -16994,6 +17260,298 @@ export interface operations {
                 };
             };
             /** @description SERVICE_UNAVAILABLE when the community service is unreachable or unconfigured. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getNewsArchive: {
+        parameters: {
+            query?: {
+                /** @description Only this lane. Omitted means both. */
+                lane?: "news" | "column";
+                /** @description Only this partner. Omitted means every partner. */
+                news_source?: string;
+                /** @description Also break this year down by month. */
+                year?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NewsArchive"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the news service is not configured or cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getNewsMonth: {
+        parameters: {
+            query?: {
+                /** @description Only this lane. Omitted means both. */
+                lane?: "news" | "column";
+                /** @description Only this partner. Omitted means every partner. */
+                news_source?: string;
+            };
+            header?: never;
+            path: {
+                /** @description Calendar year, Asia/Shanghai. */
+                year: number;
+                /** @description Calendar month, Asia/Shanghai. */
+                month: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NewsMonth"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the news service is not configured or cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listNewsMonthItems: {
+        parameters: {
+            query?: {
+                /** @description 1-based page number. page × limit may not exceed 10000. */
+                page?: number;
+                /** @description Page size. 1–100, default 20. Values above 100 are rejected, not clamped. */
+                limit?: number;
+                /** @description Only this lane. Omitted means both. */
+                lane?: "news" | "column";
+                /** @description Only this partner. Omitted means every partner. */
+                news_source?: string;
+                /** @description Only this day of the month. 0 or omitted means the whole month. */
+                day?: number;
+            };
+            header?: never;
+            path: {
+                /** @description Calendar year, Asia/Shanghai. */
+                year: number;
+                /** @description Calendar month, Asia/Shanghai. */
+                month: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PageListNewsItem"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the news service is not configured or cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listNewsItems: {
+        parameters: {
+            query?: {
+                /** @description Opaque cursor from a previous page's next_cursor. It is bound to every filter and to limit. */
+                cursor?: string;
+                /** @description Page size. 1–50, default 20. The news service pages at most 50; values above 50 are rejected, not clamped. */
+                limit?: number;
+                /** @description When true, total counts every item under the same filters. */
+                include_total?: boolean;
+                /** @description Only this lane. Omitted means both. */
+                lane?: "news" | "column";
+                /** @description Only this partner. Omitted means every partner. */
+                news_source?: string;
+                /** @description Only items published in this year, Asia/Shanghai. 0 or omitted means any year. */
+                year?: number;
+                /** @description Only items published in this month of year. Needs year. */
+                month?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CountedListNewsItem"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the news service is not configured or cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listNewsSources: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListNewsSource"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the news service is not configured or cannot be reached. */
             503: {
                 headers: {
                     [name: string]: unknown;
