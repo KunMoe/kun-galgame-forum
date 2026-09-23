@@ -1599,6 +1599,101 @@
         ],
         "type": "object"
       },
+      "AspectScores": {
+        "properties": {
+          "art": {
+            "description": "null when not rated.",
+            "format": "int64",
+            "maximum": 10,
+            "minimum": 1,
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "character": {
+            "description": "null when not rated.",
+            "format": "int64",
+            "maximum": 10,
+            "minimum": 1,
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "music": {
+            "description": "null when not rated.",
+            "format": "int64",
+            "maximum": 10,
+            "minimum": 1,
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "replay_value": {
+            "description": "null when not rated.",
+            "format": "int64",
+            "maximum": 10,
+            "minimum": 1,
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "route": {
+            "description": "null when not rated.",
+            "format": "int64",
+            "maximum": 10,
+            "minimum": 1,
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "story": {
+            "description": "null when not rated.",
+            "format": "int64",
+            "maximum": 10,
+            "minimum": 1,
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "system": {
+            "description": "null when not rated.",
+            "format": "int64",
+            "maximum": 10,
+            "minimum": 1,
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "voice": {
+            "description": "null when not rated.",
+            "format": "int64",
+            "maximum": 10,
+            "minimum": 1,
+            "type": [
+              "integer",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "art",
+          "story",
+          "music",
+          "character",
+          "route",
+          "system",
+          "voice",
+          "replay_value"
+        ],
+        "type": "object"
+      },
       "BatchListTopicState": {
         "properties": {
           "items": {
@@ -8713,6 +8808,49 @@
         ],
         "type": "object"
       },
+      "PageListRatingSummary": {
+        "properties": {
+          "items": {
+            "description": "Members of this page. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/RatingSummary"
+            },
+            "type": "array"
+          },
+          "object": {
+            "description": "Type discriminant. Always list.",
+            "enum": [
+              "list"
+            ],
+            "maxLength": 4,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "total": {
+            "description": "Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "total_relation": {
+            "description": "eq when total is exact, gte when it stopped at the depth limit and there are at least that many.",
+            "enum": [
+              "eq",
+              "gte"
+            ],
+            "maxLength": 3,
+            "type": "string",
+            "x-vocabulary-closed": true
+          }
+        },
+        "required": [
+          "object",
+          "items",
+          "total",
+          "total_relation"
+        ],
+        "type": "object"
+      },
       "PageListReplySearchHit": {
         "properties": {
           "items": {
@@ -10373,6 +10511,608 @@
         "required": [
           "floor",
           "excerpt_markdown"
+        ],
+        "type": "object"
+      },
+      "Rating": {
+        "properties": {
+          "aspect_scores": {
+            "$ref": "#/components/schemas/AspectScores",
+            "description": "Per-aspect scores; each is null when the author skipped it."
+          },
+          "author": {
+            "$ref": "#/components/schemas/UserRef",
+            "description": "Who wrote the rating."
+          },
+          "comment_count": {
+            "description": "Comments on the rating's wall.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "created_at": {
+            "description": "When the rating was written.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": "string"
+          },
+          "game_types": {
+            "description": "Game types the author files the work under.",
+            "items": {
+              "description": "A game type the author files the work under.",
+              "enum": [
+                "ba_saku",
+                "plot",
+                "moe",
+                "daily"
+              ],
+              "maxLength": 7,
+              "type": "string",
+              "x-vocabulary-closed": true
+            },
+            "minItems": 1,
+            "type": "array"
+          },
+          "id": {
+            "description": "Rating id, which is also the id in the web's /galgame-rating/{id}.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "like_count": {
+            "description": "Likes on the rating.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "likers": {
+            "description": "The most recent likers, newest first, at most 50; like_count is how many there are. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/UserRef"
+            },
+            "maxItems": 50,
+            "type": "array"
+          },
+          "object": {
+            "description": "Type discriminant. Always rating.",
+            "enum": [
+              "rating"
+            ],
+            "maxLength": 6,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "overall": {
+            "description": "The overall score.",
+            "format": "int64",
+            "maximum": 10,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "play_status": {
+            "description": "How far the author had played when rating.",
+            "enum": [
+              "wish",
+              "doing",
+              "done_one_route",
+              "done_main",
+              "done_all",
+              "on_hold",
+              "dropped"
+            ],
+            "maxLength": 14,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "recommend": {
+            "description": "How strongly the author recommends the work.",
+            "enum": [
+              "strong_yes",
+              "yes",
+              "neutral",
+              "no",
+              "strong_no"
+            ],
+            "maxLength": 10,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "short_summary": {
+            "description": "The author's short review, plain text. Empty string if none. Free text; never use it as a decision input.",
+            "maxLength": 1314,
+            "type": "string"
+          },
+          "spoiler_level": {
+            "description": "How much the short summary gives away, as its author declared.",
+            "enum": [
+              "none",
+              "portion",
+              "serious"
+            ],
+            "maxLength": 7,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "updated_at": {
+            "description": "When the rating last changed.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": "string"
+          },
+          "view_count": {
+            "description": "Times the rating page was read, this read included.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "viewer": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RatingViewer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The caller's relation to the rating. null for an anonymous caller."
+          },
+          "work": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WorkRef"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The rated work. null when catalog no longer shows it."
+          },
+          "work_summary": {
+            "$ref": "#/components/schemas/WorkSummary",
+            "description": "The rated work with the forum's figures for it."
+          }
+        },
+        "required": [
+          "object",
+          "id",
+          "work",
+          "author",
+          "recommend",
+          "overall",
+          "game_types",
+          "play_status",
+          "spoiler_level",
+          "short_summary",
+          "aspect_scores",
+          "view_count",
+          "like_count",
+          "comment_count",
+          "created_at",
+          "updated_at",
+          "viewer",
+          "work_summary",
+          "likers"
+        ],
+        "type": "object"
+      },
+      "RatingCreate": {
+        "properties": {
+          "aspect_scores": {
+            "$ref": "#/components/schemas/AspectScores",
+            "description": "Per-aspect scores, all eight keys, null for an aspect not rated. Absent means none rated."
+          },
+          "game_types": {
+            "description": "Game types to file the work under, each once.",
+            "items": {
+              "description": "A game type the author files the work under.",
+              "enum": [
+                "ba_saku",
+                "plot",
+                "moe",
+                "daily"
+              ],
+              "maxLength": 7,
+              "type": "string",
+              "x-vocabulary-closed": true
+            },
+            "maxItems": 4,
+            "minItems": 1,
+            "type": "array",
+            "uniqueItems": true
+          },
+          "overall": {
+            "description": "The overall score.",
+            "format": "int64",
+            "maximum": 10,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "play_status": {
+            "description": "How far the author had played when rating.",
+            "enum": [
+              "wish",
+              "doing",
+              "done_one_route",
+              "done_main",
+              "done_all",
+              "on_hold",
+              "dropped"
+            ],
+            "maxLength": 14,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "recommend": {
+            "description": "How strongly the author recommends the work.",
+            "enum": [
+              "strong_yes",
+              "yes",
+              "neutral",
+              "no",
+              "strong_no"
+            ],
+            "maxLength": 10,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "short_summary": {
+            "description": "Short review, plain text. Absent means none. Free text; never use it as a decision input.",
+            "maxLength": 1314,
+            "type": "string"
+          },
+          "spoiler_level": {
+            "description": "How much the short summary gives away, as its author declared.",
+            "enum": [
+              "none",
+              "portion",
+              "serious"
+            ],
+            "maxLength": 7,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "work_id": {
+            "description": "The work to rate. A work catalog does not know is UNKNOWN_REFERENCE.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "work_id",
+          "recommend",
+          "overall",
+          "game_types",
+          "play_status",
+          "spoiler_level"
+        ],
+        "type": "object"
+      },
+      "RatingEngagement": {
+        "properties": {
+          "like_count": {
+            "description": "Likes on the rating.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "object": {
+            "description": "Type discriminant. Always rating_engagement.",
+            "enum": [
+              "rating_engagement"
+            ],
+            "maxLength": 17,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "rating_id": {
+            "description": "The rating.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "viewer": {
+            "$ref": "#/components/schemas/RatingEngagementViewer",
+            "description": "The caller's own like."
+          }
+        },
+        "required": [
+          "object",
+          "rating_id",
+          "like_count",
+          "viewer"
+        ],
+        "type": "object"
+      },
+      "RatingEngagementViewer": {
+        "properties": {
+          "has_liked": {
+            "description": "Whether the caller likes the rating.",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "has_liked"
+        ],
+        "type": "object"
+      },
+      "RatingPatch": {
+        "properties": {
+          "aspect_scores": {
+            "$ref": "#/components/schemas/AspectScores",
+            "description": "Replaces every per-aspect score: all eight keys, null for an aspect not rated."
+          },
+          "game_types": {
+            "description": "Game types to file the work under, each once.",
+            "items": {
+              "description": "A game type the author files the work under.",
+              "enum": [
+                "ba_saku",
+                "plot",
+                "moe",
+                "daily"
+              ],
+              "maxLength": 7,
+              "type": "string",
+              "x-vocabulary-closed": true
+            },
+            "maxItems": 4,
+            "minItems": 1,
+            "type": "array",
+            "uniqueItems": true
+          },
+          "overall": {
+            "description": "The overall score.",
+            "format": "int64",
+            "maximum": 10,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "play_status": {
+            "description": "How far the author had played when rating.",
+            "enum": [
+              "wish",
+              "doing",
+              "done_one_route",
+              "done_main",
+              "done_all",
+              "on_hold",
+              "dropped"
+            ],
+            "maxLength": 14,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "recommend": {
+            "description": "How strongly the author recommends the work.",
+            "enum": [
+              "strong_yes",
+              "yes",
+              "neutral",
+              "no",
+              "strong_no"
+            ],
+            "maxLength": 10,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "short_summary": {
+            "description": "Short review, plain text; an empty string removes it. Free text; never use it as a decision input.",
+            "maxLength": 1314,
+            "type": "string"
+          },
+          "spoiler_level": {
+            "description": "How much the short summary gives away, as its author declared.",
+            "enum": [
+              "none",
+              "portion",
+              "serious"
+            ],
+            "maxLength": 7,
+            "type": "string",
+            "x-vocabulary-closed": true
+          }
+        },
+        "type": "object"
+      },
+      "RatingSummary": {
+        "properties": {
+          "aspect_scores": {
+            "$ref": "#/components/schemas/AspectScores",
+            "description": "Per-aspect scores; each is null when the author skipped it."
+          },
+          "author": {
+            "$ref": "#/components/schemas/UserRef",
+            "description": "Who wrote the rating."
+          },
+          "comment_count": {
+            "description": "Comments on the rating's wall.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "created_at": {
+            "description": "When the rating was written.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": "string"
+          },
+          "game_types": {
+            "description": "Game types the author files the work under.",
+            "items": {
+              "description": "A game type the author files the work under.",
+              "enum": [
+                "ba_saku",
+                "plot",
+                "moe",
+                "daily"
+              ],
+              "maxLength": 7,
+              "type": "string",
+              "x-vocabulary-closed": true
+            },
+            "minItems": 1,
+            "type": "array"
+          },
+          "id": {
+            "description": "Rating id, which is also the id in the web's /galgame-rating/{id}.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "like_count": {
+            "description": "Likes on the rating.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "object": {
+            "description": "Type discriminant. Always rating.",
+            "enum": [
+              "rating"
+            ],
+            "maxLength": 6,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "overall": {
+            "description": "The overall score.",
+            "format": "int64",
+            "maximum": 10,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "play_status": {
+            "description": "How far the author had played when rating.",
+            "enum": [
+              "wish",
+              "doing",
+              "done_one_route",
+              "done_main",
+              "done_all",
+              "on_hold",
+              "dropped"
+            ],
+            "maxLength": 14,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "recommend": {
+            "description": "How strongly the author recommends the work.",
+            "enum": [
+              "strong_yes",
+              "yes",
+              "neutral",
+              "no",
+              "strong_no"
+            ],
+            "maxLength": 10,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "short_summary": {
+            "description": "The author's short review, plain text. Empty string if none. Free text; never use it as a decision input.",
+            "maxLength": 1314,
+            "type": "string"
+          },
+          "spoiler_level": {
+            "description": "How much the short summary gives away, as its author declared.",
+            "enum": [
+              "none",
+              "portion",
+              "serious"
+            ],
+            "maxLength": 7,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "updated_at": {
+            "description": "When the rating last changed.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": "string"
+          },
+          "view_count": {
+            "description": "Times the rating page was read.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "viewer": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RatingViewer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The caller's relation to the rating. null for an anonymous caller."
+          },
+          "work": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WorkRef"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The rated work. null when catalog no longer shows it."
+          }
+        },
+        "required": [
+          "object",
+          "id",
+          "work",
+          "author",
+          "recommend",
+          "overall",
+          "game_types",
+          "play_status",
+          "spoiler_level",
+          "short_summary",
+          "aspect_scores",
+          "view_count",
+          "like_count",
+          "comment_count",
+          "created_at",
+          "updated_at",
+          "viewer"
+        ],
+        "type": "object"
+      },
+      "RatingViewer": {
+        "properties": {
+          "can_delete": {
+            "description": "Whether the caller may delete the rating: its author, the work page's creator, or staff holding rating.delete_any.",
+            "type": "boolean"
+          },
+          "can_edit": {
+            "description": "Whether the caller may change the rating: only its author.",
+            "type": "boolean"
+          },
+          "has_liked": {
+            "description": "Whether the caller likes the rating.",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "has_liked",
+          "can_edit",
+          "can_delete"
         ],
         "type": "object"
       },
@@ -32312,6 +33052,909 @@
         "summary": "Rank works",
         "tags": [
           "rankings"
+        ]
+      }
+    },
+    "/ratings": {
+      "get": {
+        "description": "A page-number collection: page × limit may not exceed 10000. Ratings of adult works appear only with include_nsfw=true. Ratings by banned authors and of works catalog no longer shows are left out of items but still counted in total, so a page can hold fewer than limit items before the last page.",
+        "operationId": "listRatings",
+        "parameters": [
+          {
+            "description": "1-based page number. page × limit may not exceed 10000.",
+            "explode": false,
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "default": 1,
+              "description": "1-based page number. page × limit may not exceed 10000.",
+              "format": "int64",
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Page size. 1–100, default 24. Values above 100 are rejected, not clamped.",
+            "explode": false,
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 24,
+              "description": "Page size. 1–100, default 24. Values above 100 are rejected, not clamped.",
+              "format": "int64",
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Sort order; ties break on id in the same direction. created: when the rating was written. view: page reads. overall: the overall score.",
+            "explode": false,
+            "in": "query",
+            "name": "sort",
+            "schema": {
+              "default": "created_desc",
+              "description": "Sort order; ties break on id in the same direction. created: when the rating was written. view: page reads. overall: the overall score.",
+              "enum": [
+                "created_desc",
+                "created_asc",
+                "view_desc",
+                "view_asc",
+                "overall_desc",
+                "overall_asc"
+              ],
+              "maxLength": 12,
+              "type": "string",
+              "x-vocabulary-closed": true
+            }
+          },
+          {
+            "description": "Only ratings of this work. Omitted means every work.",
+            "explode": false,
+            "in": "query",
+            "name": "work_id",
+            "schema": {
+              "description": "Only ratings of this work. Omitted means every work.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Only ratings by this user. Omitted means everyone.",
+            "explode": false,
+            "in": "query",
+            "name": "author_id",
+            "schema": {
+              "description": "Only ratings by this user. Omitted means everyone.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Only ratings declaring this spoiler level. Omitted means any.",
+            "explode": false,
+            "in": "query",
+            "name": "spoiler_level",
+            "schema": {
+              "description": "Only ratings declaring this spoiler level. Omitted means any.",
+              "enum": [
+                "none",
+                "portion",
+                "serious"
+              ],
+              "maxLength": 7,
+              "type": "string",
+              "x-vocabulary-closed": true
+            }
+          },
+          {
+            "description": "Only ratings with this play status. Omitted means any.",
+            "explode": false,
+            "in": "query",
+            "name": "play_status",
+            "schema": {
+              "description": "Only ratings with this play status. Omitted means any.",
+              "enum": [
+                "wish",
+                "doing",
+                "done_one_route",
+                "done_main",
+                "done_all",
+                "on_hold",
+                "dropped"
+              ],
+              "maxLength": 14,
+              "type": "string",
+              "x-vocabulary-closed": true
+            }
+          },
+          {
+            "description": "Only ratings filing the work under this game type. Omitted means any.",
+            "explode": false,
+            "in": "query",
+            "name": "game_type",
+            "schema": {
+              "description": "Only ratings filing the work under this game type. Omitted means any.",
+              "enum": [
+                "ba_saku",
+                "plot",
+                "moe",
+                "daily"
+              ],
+              "maxLength": 7,
+              "type": "string",
+              "x-vocabulary-closed": true
+            }
+          },
+          {
+            "description": "When true, ratings of adult works are included. Default false.",
+            "explode": false,
+            "in": "query",
+            "name": "include_nsfw",
+            "schema": {
+              "default": false,
+              "description": "When true, ratings of adult works are included. Default false.",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageListRatingSummary"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "INVALID_PARAMETER when page × limit is too deep or an id is malformed; UNKNOWN_SORT or UNKNOWN_ENUM_VALUE for a value outside the vocabulary."
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the account service or catalog cannot be reached."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          },
+          {}
+        ],
+        "summary": "List galgame ratings",
+        "tags": [
+          "galgame-ratings"
+        ]
+      },
+      "post": {
+        "description": "Writes the caller's rating of a work and returns it as getRating would. A user rates a work once; change that rating with updateRating. work_id must name a work catalog shows (UNKNOWN_REFERENCE). The author earns moemoepoints by the short summary's length, and the play status is copied to the caller's catalog work state.",
+        "operationId": "createRating",
+        "parameters": [
+          {
+            "description": "Caller-generated UUID (canonical 8-4-4-4-12 hex, any version) or 26-character Crockford ULID. Scoped to (user, operation, key) for 24 hours.",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "description": "Caller-generated UUID (canonical 8-4-4-4-12 hex, any version) or 26-character Crockford ULID. Scoped to (user, operation, key) for 24 hours.",
+              "maxLength": 36,
+              "minLength": 26,
+              "pattern": "^([0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}|[0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{26})$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RatingCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Rating"
+                }
+              }
+            },
+            "description": "Created",
+            "headers": {
+              "Location": {
+                "schema": {
+                  "description": "Absolute path of the new rating, /api/v1/ratings/{rating_id}.",
+                  "format": "uri-reference",
+                  "maxLength": 64,
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "ACCOUNT_BANNED when the caller's account is banned."
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "ALREADY_EXISTS when the caller has already rated the work; IDEMPOTENCY_KEY_REUSED or IDEMPOTENCY_REQUEST_IN_PROGRESS."
+          },
+          "415": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unsupported Media Type"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED when a field is out of range or work_id names no work catalog shows; CONTENT_REJECTED when the trust-and-safety check refuses the short summary."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the account service or catalog cannot be reached."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Rate a galgame",
+        "tags": [
+          "galgame-ratings"
+        ]
+      }
+    },
+    "/ratings/{rating_id}": {
+      "delete": {
+        "description": "Deletes the rating with its likes and comments; the author loses the moemoepoints it earned. The author, the work page's creator and staff holding rating.delete_any may delete it; a Bearer request never holds staff powers.",
+        "operationId": "deleteRating",
+        "parameters": [
+          {
+            "description": "Rating id.",
+            "in": "path",
+            "name": "rating_id",
+            "required": true,
+            "schema": {
+              "description": "Rating id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "PERMISSION_REQUIRED when the caller may not delete the rating; ACCOUNT_BANNED when the caller's account is banned."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when no such rating exists."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the account service or catalog cannot be reached."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Delete a galgame rating",
+        "tags": [
+          "galgame-ratings"
+        ]
+      },
+      "get": {
+        "description": "Every read counts one view. A rating of an adult work is returned whatever the caller's content preference; work.is_nsfw tells the client.",
+        "operationId": "getRating",
+        "parameters": [
+          {
+            "description": "Rating id.",
+            "in": "path",
+            "name": "rating_id",
+            "required": true,
+            "schema": {
+              "description": "Rating id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Rating"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when no such rating exists, its author is banned, or catalog no longer shows its work."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the account service or catalog cannot be reached."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          },
+          {}
+        ],
+        "summary": "Get a galgame rating",
+        "tags": [
+          "galgame-ratings"
+        ]
+      },
+      "patch": {
+        "description": "Changes the fields sent and returns the rating as getRating would. Only the author may. A changed short summary is checked again and moves the author's moemoepoints by the difference in reward; a changed play status is copied to the caller's catalog work state.",
+        "operationId": "updateRating",
+        "parameters": [
+          {
+            "description": "Rating id.",
+            "in": "path",
+            "name": "rating_id",
+            "required": true,
+            "schema": {
+              "description": "Rating id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RatingPatch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Rating"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "PERMISSION_REQUIRED when the caller is not the author; ACCOUNT_BANNED when the caller's account is banned."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when no such rating exists, its author is banned, or catalog no longer shows its work."
+          },
+          "415": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unsupported Media Type"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED when a field is out of range; CONTENT_REJECTED when the trust-and-safety check refuses the short summary."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the account service or catalog cannot be reached."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update a galgame rating",
+        "tags": [
+          "galgame-ratings"
+        ]
+      }
+    },
+    "/ratings/{rating_id}/like": {
+      "delete": {
+        "description": "Removes the caller's like. Removing a like that is not there changes nothing. The author loses the moemoepoint the like earned.",
+        "operationId": "unlikeRating",
+        "parameters": [
+          {
+            "description": "Rating id.",
+            "in": "path",
+            "name": "rating_id",
+            "required": true,
+            "schema": {
+              "description": "Rating id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RatingEngagement"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SELF_LIKE_FORBIDDEN on the caller's own rating; ACCOUNT_BANNED when the caller's account is banned."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when no such rating exists, its author is banned, or catalog no longer shows its work."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the account service or catalog cannot be reached."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Remove a like from a galgame rating",
+        "tags": [
+          "galgame-ratings"
+        ]
+      },
+      "put": {
+        "description": "Sets the caller's like. Liking an already liked rating changes nothing. The author earns 1 moemoepoint and is notified.",
+        "operationId": "likeRating",
+        "parameters": [
+          {
+            "description": "Rating id.",
+            "in": "path",
+            "name": "rating_id",
+            "required": true,
+            "schema": {
+              "description": "Rating id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RatingEngagement"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SELF_LIKE_FORBIDDEN on the caller's own rating; ACCOUNT_BANNED when the caller's account is banned."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when no such rating exists, its author is banned, or catalog no longer shows its work."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the account service or catalog cannot be reached."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Like a galgame rating",
+        "tags": [
+          "galgame-ratings"
         ]
       }
     },

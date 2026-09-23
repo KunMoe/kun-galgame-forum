@@ -28,7 +28,7 @@ func (a *App) newUserV1() *userapiv1.Users {
 	creators := a.CreatorService
 	if creators == nil && a.DB != nil && a.UserClient != nil {
 		creators = galgameService.NewCreatorService(
-			galgameRepo.NewRatingRepository(a.DB),
+			galgameRepo.NewRatingStore(a.DB),
 			galgameService.NewGalgameUserStatsService(nil, nil, galgameRepo.NewGalgameRepository(a.DB)),
 			a.UserClient,
 		)

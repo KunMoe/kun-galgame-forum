@@ -10,6 +10,7 @@ import (
 	friendlinkapiv1 "kun-galgame-api/internal/friendlink/apiv1"
 	galgameapiv1 "kun-galgame-api/internal/galgame/apiv1"
 	galgameentityv1 "kun-galgame-api/internal/galgame/entityapiv1"
+	ratingapiv1 "kun-galgame-api/internal/galgame/ratingapiv1"
 	messageapiv1 "kun-galgame-api/internal/message/apiv1"
 	"kun-galgame-api/internal/middleware"
 	newsapiv1 "kun-galgame-api/internal/news/apiv1"
@@ -56,6 +57,7 @@ func (a *App) setupRoutes() {
 		topicapiv1.RegisterAdminTopics(a.newTopicV1Admin(topicReads)),
 		galgameapiv1.Register(a.GalgameV1),
 		galgameentityv1.Register(a.GalgameEntityV1),
+		ratingapiv1.Register(a.GalgameRatingV1),
 		wallapiv1.Register(a.WallV1),
 		userapiv1.Register(a.newUserV1()),
 		messageapiv1.Register(a.newMessageV1()),
@@ -131,7 +133,6 @@ func (a *App) setupRoutes() {
 	api.Get("/galgame/drafts", a.GalgameDraftsHandler.GetDrafts)
 	api.Get("/galgame/:id/edit/diff", a.GalgameEditHandler.Diff)
 	api.Get("/galgame/:id/edit/proposals", a.GalgameEditHandler.GameProposals)
-	api.Get("/galgame-rating/all", a.GalgameRatingHandler.GetAllRatings)
 	api.Get(
 		"/galgame-quiz/:id/answers",
 		a.Authn.OptionalAuth(),
@@ -146,8 +147,6 @@ func (a *App) setupRoutes() {
 	optAuth.Get("/galgame-resource", a.GalgameResourceHandler.GetResourceList)
 	optAuth.Get("/galgame-resource/:id/detail", a.GalgameResourceHandler.GetResourceDownloadDetail)
 	optAuth.Get("/galgame-resource/:id", a.GalgameResourceHandler.GetResourceDetail)
-
-	optAuth.Get("/galgame-rating/:id", a.GalgameRatingHandler.GetRatingDetail)
 
 	optAuth.Get("/galgame-quiz/all", a.GalgameQuizHandler.GetAllQuizzes)
 	optAuth.Get("/galgame-quiz/:id", a.GalgameQuizHandler.GetQuizPlay)
@@ -198,11 +197,6 @@ func (a *App) setupRoutes() {
 	authed.Put("/galgame/:id/resource/like", a.GalgameResourceHandler.ToggleLike)
 	authed.Put("/galgame/:id/resource/valid", a.GalgameResourceHandler.MarkValid)
 	authed.Put("/galgame/:id/resource/expired", a.GalgameResourceHandler.MarkExpired)
-
-	authed.Post("/galgame-rating", a.GalgameRatingHandler.CreateRating)
-	authed.Put("/galgame-rating/:id", a.GalgameRatingHandler.UpdateRating)
-	authed.Delete("/galgame-rating/:id", a.GalgameRatingHandler.DeleteRating)
-	authed.Put("/galgame-rating/:id/like", a.GalgameRatingHandler.ToggleLike)
 
 	authed.Get("/galgame-quiz/mine/answered", a.GalgameQuizHandler.GetMyAnswered)
 	authed.Get("/galgame-quiz/mine/favorites", a.GalgameQuizHandler.GetMyFavorites)

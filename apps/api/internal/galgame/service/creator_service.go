@@ -40,12 +40,12 @@ type CreatorEligibility struct {
 }
 
 type CreatorService struct {
-	ratingRepo *repository.RatingRepository
+	ratingRepo *repository.RatingStore
 	stats      *GalgameUserStatsService
 	userClient *userclient.Client
 }
 
-func NewCreatorService(ratingRepo *repository.RatingRepository, stats *GalgameUserStatsService, userClient *userclient.Client) *CreatorService {
+func NewCreatorService(ratingRepo *repository.RatingStore, stats *GalgameUserStatsService, userClient *userclient.Client) *CreatorService {
 	return &CreatorService{ratingRepo: ratingRepo, stats: stats, userClient: userClient}
 }
 

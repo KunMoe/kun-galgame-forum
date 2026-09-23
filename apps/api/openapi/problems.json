@@ -313,7 +313,7 @@
       "status": 403,
       "type": "https://developer.nextmoe.dev/problems/kungal/self-like-forbidden",
       "title": "Self like forbidden",
-      "description": "Users cannot like their own topics, replies or comments."
+      "description": "Users cannot like what they wrote themselves."
     },
     {
       "object": "problem_type",

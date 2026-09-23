@@ -1,6 +1,7 @@
 package service
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -315,4 +316,11 @@ func emptyStrSliceIfNil(s []string) []string {
 		return []string{}
 	}
 	return s
+}
+
+func rawJSON(s string) json.RawMessage {
+	if s == "" {
+		return json.RawMessage("[]")
+	}
+	return json.RawMessage(s)
 }
