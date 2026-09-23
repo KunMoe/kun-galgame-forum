@@ -129,5 +129,6 @@ done
 - 09:50:32 `-apply -include-dm` 提交。合并 10 组（与演练相同），`galgame` 改号 13,593 行，`message.link` 215,345，`chat_message` 33，`chat_room` 2。改号表 66,160 行，其中 63,595 行变号。`verified.tsv` 与线上改号表逐行一致（4,320 行）。
 - 窗口内完成 infra 改写，随后部署 #192（`203d73a37`）。09:57:56 migrate 执行 141，约 09:58 API 恢复健康。清了 §6 的四个 Redis 前缀。
 - 验证：§0 的 20 个样本全部回对的 `vndb_id`；`/api/v1/works/5234/moyu-patches` 200，旧路径 404；原来挂在 1970 的评论墙帖子出现在 1966；API 日志没有新的错误类型。G 会话事后复核了库：141 已记录，`galgame_redirect` 与序列已删，没有任何 `galgame_id` 列，`feed_activity` 76,260 条里链接与 `work_id` 不一致的为 0。
+- catalog 收藏条目的改写结果见 [`gid-is-work-id.md`](gid-is-work-id.md) §7。
 - 备份（论坛全库 dump 与 infra 各表）在 `kungal-neo:~/g0/backup`，暂留。
 
