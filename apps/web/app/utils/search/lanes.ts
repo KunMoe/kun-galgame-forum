@@ -103,9 +103,9 @@ export const fetchLanePage = async (
         query: { keywords: q, type: 'resource', page, limit }
       })
     case 'toolset':
-      return kunFetch<LanePage>('/toolset', {
-        method: 'GET',
-        query: { query: q, page, limit }
-      })
+      return unwrap(
+        await settle(api.GET('/toolsets', { params: { query: paged } })),
+        report
+      )
   }
 }
