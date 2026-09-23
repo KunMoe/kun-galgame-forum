@@ -87,7 +87,10 @@ excluded="$(sed -n 's/.*flag\.String("exclude", "\([^"]*\)".*/\1/p' cmd/migrate/
 #    galgame_resource.galgame_id, which 141 renames to work_id. With 141 in this
 #    pass the bootstrap died at "column r.galgame_id does not exist (SQLSTATE
 #    42703)".
-run_migrate -dir up -exclude "${excluded},141"
+#    145 names work_id in its trigger, so it waits for 141 too: in this pass it
+#    died at "column \"work_id\" of relation \"galgame_resource\" does not exist
+#    (SQLSTATE 42703)".
+run_migrate -dir up -exclude "${excluded},141,145"
 
 # 6. Excluded-by-default migrations, one at a time, after 007 exists.
 run_migrate -only 005
@@ -105,8 +108,10 @@ run_migrate -only 069
 run_migrate -only 079
 run_migrate -only 092
 
-# 8. 141 last, once nothing re-runs against the old column names.
+# 8. 141 last, once nothing re-runs against the old column names, then what
+#    depends on its work_id.
 run_migrate -only 141
+run_migrate -only 145
 
 is_excluded() {
 	local prefix="${1%%_*}"
