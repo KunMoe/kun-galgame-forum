@@ -8,19 +8,21 @@ import type {
   Rating as SchemaRating,
   PropertyValue
 } from 'schema-dts'
+import { aspectDims } from '~/utils/galgame/ratingCard'
 
 definePageMeta({ key: (route) => route.path })
 
 const route = useRoute()
-const id = computed(() => parseInt((route.params as { id: string }).id))
+const id = computed(() => (route.params as { id: string }).id)
+const nameOf = useCatalogName()
 
-const { data, refresh } = await useKunFetch<GalgameRatingDetails>(
-  `/galgame-rating/${id.value}`,
-  {
-    method: 'GET',
-    watch: false,
-    query: { galgame_rating_id: id.value }
-  }
+const { data, refresh } = await useApi(
+  () => `rating:${id.value}`,
+  (api, { signal }) =>
+    api.GET('/ratings/{rating_id}', {
+      params: { path: { rating_id: id.value } },
+      signal
+    })
 )
 
 const jsonLd = computed<WithContext<Review> | null>(() => {
@@ -29,9 +31,12 @@ const jsonLd = computed<WithContext<Review> | null>(() => {
   }
 
   const rating = data.value
-  const titleBase = rating.galgame.name
+  const work = rating.work_summary
+  const author = toKunUser(rating.author)
+  const titleBase = nameOf(work).name
   const pageUrl = `${kungal.domain.main}${route.path}`
-  const gameUrl = `${kungal.domain.main}/galgame/${rating.galgame.id}`
+  const gameUrl = `${kungal.domain.main}/galgame/${work.id}`
+  const dims = aspectDims(rating.aspect_scores)
 
   const publisherSchema: Organization = {
     '@type': 'Organization',
@@ -44,22 +49,18 @@ const jsonLd = computed<WithContext<Review> | null>(() => {
 
   const authorSchema: Person = {
     '@type': 'Person',
-    name: rating.user.name,
-    url: `${kungal.domain.main}/user/${rating.user.id}`
+    name: author.name,
+    url: `${kungal.domain.main}/user/${author.id}`
   }
 
   const itemReviewedSchema: VideoGame = {
     '@type': 'VideoGame',
     name: titleBase,
     url: gameUrl,
-    image: getEffectiveBanner(rating.galgame),
-    inLanguage: rating.galgame.original_language,
-    isFamilyFriendly: rating.galgame.age_limit !== 'r18',
-    ...(rating.galgame.official?.length && {
-      publisher: rating.galgame.official.map((o) => ({
-        '@type': 'Organization',
-        name: o.name
-      }))
+    image: work.banner?.url,
+    isFamilyFriendly: !work.is_nsfw,
+    ...(work.maker && {
+      publisher: { '@type': 'Organization', name: nameOf(work.maker).name }
     })
   }
 
@@ -71,23 +72,23 @@ const jsonLd = computed<WithContext<Review> | null>(() => {
   }
 
   const additionalProps: PropertyValue[] = [
-    { name: '艺术风格', value: rating.art },
-    { name: '故事情节', value: rating.story },
-    { name: '音乐体验', value: rating.music },
-    { name: '角色塑造', value: rating.character },
-    { name: '路线设计', value: rating.route },
-    { name: '系统交互', value: rating.system },
-    { name: '声优演绎', value: rating.voice },
-    { name: '重玩价值', value: rating.replay_value }
+    { name: '艺术风格', value: dims.art },
+    { name: '故事情节', value: dims.story },
+    { name: '音乐体验', value: dims.music },
+    { name: '角色塑造', value: dims.character },
+    { name: '路线设计', value: dims.route },
+    { name: '系统交互', value: dims.system },
+    { name: '声优演绎', value: dims.voice },
+    { name: '重玩价值', value: dims.replay_value }
   ].map((p) => ({ '@type': 'PropertyValue', ...p }))
 
   return {
     '@context': 'https://schema.org',
     '@type': 'Review',
     mainEntityOfPage: pageUrl,
-    headline: `${rating.user.name} 对 ${titleBase} 的评价`,
-    datePublished: new Date(rating.created).toISOString(),
-    dateModified: new Date(rating.updated).toISOString(),
+    headline: `${author.name} 对 ${titleBase} 的评价`,
+    datePublished: rating.created_at,
+    dateModified: rating.updated_at,
     author: authorSchema,
     publisher: publisherSchema,
     itemReviewed: itemReviewedSchema,
@@ -102,7 +103,7 @@ const jsonLd = computed<WithContext<Review> | null>(() => {
       {
         '@type': 'InteractionCounter',
         interactionType: { '@type': 'WatchAction' },
-        userInteractionCount: rating.view
+        userInteractionCount: rating.view_count
       }
     ],
     additionalProperty: additionalProps
@@ -110,8 +111,11 @@ const jsonLd = computed<WithContext<Review> | null>(() => {
 })
 
 if (data.value) {
-  if (data.value.galgame.content_limit === 'nsfw') {
-    useKunDisableSeo(`${data.value.user.name} 的评价`)
+  const rating = data.value
+  const work = rating.work_summary
+  const author = toKunUser(rating.author)
+  if (work.is_nsfw) {
+    useKunDisableSeo(`${author.name} 的评价`)
   } else {
     useHead({
       script: [
@@ -123,26 +127,26 @@ if (data.value) {
       ]
     })
 
-    const titleBase = data.value.galgame.name
-    const original = data.value.galgame.name_original
-    const title = original
-      ? `${data.value.user.name} 对 ${titleBase} (${original}) 的评价`
-      : `${data.value.user.name} 对 ${titleBase} 的评价`
+    const { name: titleBase, original } = nameOf(work)
+    const title =
+      original && original !== titleBase
+        ? `${author.name} 对 ${titleBase} (${original}) 的评价`
+        : `${author.name} 对 ${titleBase} 的评价`
 
     const description = truncateRunes(
-      data.value.short_summary
-        ? markdownToText(data.value.short_summary)
-        : `${data.value.user.name} 对 ${titleBase} 的评分 ${data.value.overall}/10`,
+      rating.short_summary
+        ? markdownToText(rating.short_summary)
+        : `${author.name} 对 ${titleBase} 的评分 ${rating.overall}/10`,
       175
     )
 
     useKunSeoMeta({
       title,
       description,
-      ogImage: getEffectiveBanner(data.value.galgame),
-      articleAuthor: [`${kungal.domain.main}/user/${data.value.user.id}`],
-      articlePublishedTime: data.value.created.toString(),
-      articleModifiedTime: data.value.updated.toString()
+      ogImage: work.banner?.url ?? '',
+      articleAuthor: [`${kungal.domain.main}/user/${author.id}`],
+      articlePublishedTime: rating.created_at,
+      articleModifiedTime: rating.updated_at
     })
   }
 } else {
@@ -152,12 +156,7 @@ if (data.value) {
 
 <template>
   <div>
-    <GalgameRatingDetail
-      v-if="data"
-      :data="data"
-      :rating-id="id"
-      :refresh="refresh"
-    />
+    <GalgameRatingDetail v-if="data" :data="data" :refresh="refresh" />
     <KunNull v-else description="未找到该评分" />
   </div>
 </template>

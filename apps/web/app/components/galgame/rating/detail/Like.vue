@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { settle } from '#shared/utils/api/problem'
+
 const props = defineProps<{
   ratingId?: number
   targetUserId: number
@@ -7,6 +9,7 @@ const props = defineProps<{
 }>()
 
 const { id } = usePersistUserStore()
+const api = useApiClient()
 const isLiked = ref(props.isLiked)
 const likeCount = ref(props.likeCount)
 const pending = ref(false)
@@ -28,15 +31,20 @@ const onChange = async (next: boolean) => {
     return
   }
   pending.value = true
-  const res = await kunFetch(`/galgame-rating/${props.ratingId}/like`, {
-    method: 'PUT',
-    body: { galgame_rating_id: props.ratingId }
-  })
+  const params = { path: { rating_id: String(props.ratingId) } }
+  const result = await settle(
+    next
+      ? api.PUT('/ratings/{rating_id}/like', { params })
+      : api.DELETE('/ratings/{rating_id}/like', { params })
+  )
   pending.value = false
-  if (!res) {
+  if (!result.ok) {
     revert(next)
+    reportProblem(result.problem)
     return
   }
+  isLiked.value = result.data.viewer.has_liked
+  likeCount.value = result.data.like_count
   useMessage(next ? 10233 : 10234, 'success')
 }
 </script>

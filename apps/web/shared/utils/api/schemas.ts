@@ -265,3 +265,13 @@ export type WorkDigest = components['schemas']['WorkDigest']
 export type ListActivitiesQuery = NonNullable<
   operations['listActivities']['parameters']['query']
 >
+export type RatingSummary = components['schemas']['RatingSummary']
+export type Rating = components['schemas']['Rating']
+export type RatingCreate = components['schemas']['RatingCreate']
+export type RatingPatch = components['schemas']['RatingPatch']
+export type RatingEngagement = components['schemas']['RatingEngagement']
+export type AspectScores = components['schemas']['AspectScores']
+export type RatingPage = components['schemas']['PageListRatingSummary']
+export type RatingsQuery = NonNullable<
+  operations['listRatings']['parameters']['query']
+>

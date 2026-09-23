@@ -1,8 +1,5 @@
 <script setup lang="ts">
-import {
-  KUN_GALGAME_PLAY_STATE_MAP,
-  type KunGalgamePlayState
-} from '~/constants/galgame-playtime'
+import { KUN_GALGAME_PLAY_STATE_MAP } from '~/constants/galgame-playtime'
 import {
   KUN_GALGAME_RATING_RECOMMEND_MAP,
   KUN_GALGAME_RATING_RECOMMEND_COLOR_MAP,
@@ -12,32 +9,35 @@ import {
   KUN_GALGAME_DIM_LABELS,
   KUN_GALGAME_DIM_DESCRIPTIONS
 } from '~/constants/galgame-rating'
+import type { Rating } from '#shared/utils/api/schemas'
+import { settle } from '#shared/utils/api/problem'
 import { calcGalgameRating } from '~~/algorithms/GalgameRatingAlg'
+import { aspectDims } from '~/utils/galgame/ratingCard'
 
 const props = defineProps<{
-  ratingId: number
-  data: GalgameRatingDetails
+  data: Rating
   refresh: () => void
 }>()
 
 const { id: userId } = usePersistUserStore()
-const canDeleteAnyRating = useCan('rating.delete_any')
+const api = useApiClient()
+const author = computed(() => toKunUser(props.data.author))
+const dims = computed(() => aspectDims(props.data.aspect_scores))
+const likers = computed(() => props.data.likers.map(toKunUser))
 
 const spoilerRevealed = ref(false)
 const isSummaryMasked = computed(
   () => props.data.spoiler_level === 'serious' && !spoilerRevealed.value
 )
 
-const canEdit = computed(() => props.data.user.id === userId)
-const canDelete = computed(
-  () => props.data.user.id === userId || canDeleteAnyRating.value
-)
+const canEdit = computed(() => props.data.viewer?.can_edit ?? false)
+const canDelete = computed(() => props.data.viewer?.can_delete ?? false)
 const rating = computed(() =>
   calcGalgameRating(
-    { ...props.data },
+    dims.value,
     props.data.overall,
-    props.data.play_status as KunGalgamePlayState,
-    props.data.recommend as 'no'
+    props.data.play_status,
+    props.data.recommend
   )
 )
 
@@ -57,14 +57,17 @@ const handleDeleteRating = async () => {
     return
   }
 
-  const res = await kunFetch(`/galgame-rating/${props.data.id}`, {
-    method: 'DELETE',
-    query: { galgame_rating_id: props.data.id }
-  })
-  if (res) {
-    useMessage('删除成功', 'success')
-    await navigateTo(`/galgame/${props.data.galgame.id}`)
+  const result = await settle(
+    api.DELETE('/ratings/{rating_id}', {
+      params: { path: { rating_id: props.data.id } }
+    })
+  )
+  if (!result.ok) {
+    reportProblem(result.problem)
+    return
   }
+  useMessage('删除成功', 'success')
+  await navigateTo(`/galgame/${props.data.work_summary.id}`)
 }
 </script>
 
@@ -75,7 +78,7 @@ const handleDeleteRating = async () => {
       :is-hoverable="false"
       content-class="space-y-3"
     >
-      <GalgameRatingDetailGalgame :galgame="data.galgame" />
+      <GalgameRatingDetailGalgame :work="data.work_summary" />
     </KunCard>
 
     <KunCard
@@ -89,19 +92,19 @@ const handleDeleteRating = async () => {
             <KunAvatar
               class-name="size-15"
               image-class-name="size-15"
-              :user="data.user"
+              :user="author"
             />
 
             <div class="flex flex-col gap-1">
               <div class="flex items-center gap-3 text-lg font-bold sm:text-xl">
                 <span>
-                  {{ data.user.name }}
+                  {{ author.name }}
                 </span>
               </div>
 
               <div class="text-default-500 flex items-center gap-2 text-sm">
                 <KunIcon name="lucide:calendar" />
-                <KunTime :time="data.created" type="datetime" show-year />
+                <KunTime :time="data.created_at" type="datetime" show-year />
               </div>
             </div>
 
@@ -126,7 +129,7 @@ const handleDeleteRating = async () => {
             <div class="text-default-500 text-sm">通关状态</div>
             <KunChip color="primary">
               {{
-                KUN_GALGAME_PLAY_STATE_MAP[data.play_status as KunGalgamePlayState]
+                KUN_GALGAME_PLAY_STATE_MAP[data.play_status]
               }}
             </KunChip>
 
@@ -178,16 +181,7 @@ const handleDeleteRating = async () => {
         </div>
 
         <GalgameRatingRadar
-          :model-value="{
-            art: data.art,
-            story: data.story,
-            music: data.music,
-            character: data.character,
-            route: data.route,
-            system: data.system,
-            voice: data.voice,
-            replay_value: data.replay_value
-          }"
+          :model-value="dims"
           :readonly="true"
           :size="300"
         />
@@ -209,19 +203,16 @@ const handleDeleteRating = async () => {
             <span class="font-medium">
               {{ KUN_GALGAME_DIM_LABELS[dim] }}
             </span>
-            <KunChip color="secondary">{{ data[dim] }}</KunChip>
+            <KunChip color="secondary">{{ dims[dim] }}</KunChip>
           </div>
           <p class="text-default-500 text-sm">
-            {{ KUN_GALGAME_DIM_DESCRIPTIONS[dim][data[dim]] }}
+            {{ KUN_GALGAME_DIM_DESCRIPTIONS[dim][dims[dim]] }}
           </p>
         </div>
       </div>
 
-      <div
-        v-if="data.liked_users?.length"
-        class="flex flex-wrap items-center gap-2"
-      >
-        <KunAvatarGroup :users="data.liked_users" :ellipsis="false" />
+      <div v-if="likers.length" class="flex flex-wrap items-center gap-2">
+        <KunAvatarGroup :users="likers" :ellipsis="false" />
         <span class="text-default-500 text-sm">点赞了该评分</span>
       </div>
 
@@ -230,14 +221,14 @@ const handleDeleteRating = async () => {
           <KunButton size="lg" color="default" variant="light">
             <KunIcon name="lucide:eye" />
             <span class="text-sm">浏览</span>
-            <span class="text-sm">{{ data.view }}</span>
+            <span class="text-sm">{{ data.view_count }}</span>
           </KunButton>
 
           <GalgameRatingDetailLike
-            :rating-id="data.id"
-            :target-user-id="data.user.id"
+            :rating-id="Number(data.id)"
+            :target-user-id="author.id"
             :like-count="data.like_count"
-            :is-liked="data.is_liked"
+            :is-liked="data.viewer?.has_liked ?? false"
           />
         </div>
 
@@ -264,31 +255,21 @@ const handleDeleteRating = async () => {
       </div>
     </KunCard>
 
-    <GalgameRatingCommentCommunityContainer
-      v-if="data"
-      :rating-id="data.id"
-    />
+    <GalgameRatingCommentCommunityContainer :rating-id="Number(data.id)" />
 
     <GalgameRatingPublish
-      v-if="data && canEdit"
+      v-if="canEdit"
       v-model="isEditOpen"
-      :work-id="data.galgame.id"
+      :work-id="Number(data.work_summary.id)"
       :initial-data="{
-        galgameRatingId: data.id,
-        recommend: data.recommend as 'no',
+        galgameRatingId: Number(data.id),
+        recommend: data.recommend,
         overall: data.overall,
-        play_status: data.play_status as KunGalgamePlayState,
-        spoiler_level: data.spoiler_level as 'none',
+        play_status: data.play_status,
+        spoiler_level: data.spoiler_level,
         short_summary: data.short_summary,
-        art: data.art,
-        story: data.story,
-        music: data.music,
-        character: data.character,
-        route: data.route,
-        system: data.system,
-        voice: data.voice,
-        replay_value: data.replay_value,
-        galgameType: data.galgame_type
+        ...dims,
+        galgameType: [...data.game_types]
       }"
       @on-updated="refresh"
     />

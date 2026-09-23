@@ -51,6 +51,34 @@ export const collectTopicUrls = async (
 const ENTITY_PAGE_LIMIT = 100
 const ENTITY_MAX_PAGES = 100
 
+export const collectRatingUrls = async (
+  api: ApiClient
+): Promise<SitemapUrl[]> => {
+  const urls: SitemapUrl[] = []
+  for (let page = 1; page <= ENTITY_MAX_PAGES; page++) {
+    const result = await settle(
+      api.GET('/ratings', {
+        params: { query: { page, limit: ENTITY_PAGE_LIMIT } }
+      })
+    )
+    if (!result.ok) {
+      break
+    }
+    for (const item of result.data.items) {
+      urls.push({
+        loc: `/galgame-rating/${item.id}`,
+        lastmod: item.updated_at,
+        changefreq: 'daily',
+        priority: 0.6
+      })
+    }
+    if (page * ENTITY_PAGE_LIMIT >= result.data.total) {
+      break
+    }
+  }
+  return urls
+}
+
 type EntityPage = { items: { id: string }[]; total: number }
 
 const collectPagedIds = async (
@@ -251,25 +279,14 @@ export const buildSitemapUrls = async (
       loc: (r) => `/galgame/resource/${num(r, 'id')}`,
       lastmod: (r) => toIso(r.edited ?? r.created),
       priority: 0.6
-    },
-    {
-      path: '/galgame-rating/all',
-      pick: (d) =>
-        ((d as { rating_data?: [] })?.rating_data ?? []) as Record<
-          string,
-          unknown
-        >[],
-      total: (d) => (d as { total?: number })?.total,
-      loc: (r) => `/galgame-rating/${num(r, 'id')}`,
-      lastmod: (r) => toIso(r.updated ?? r.created),
-      priority: 0.6
     }
   ]
 
   const groups = await Promise.all([
     collectTopicUrls(createApiClient({ origin: apiBase, timeoutMs: 15000 })),
     ...paged.map((src) => collect(src)),
-    collectEntityUrls(createApiClient({ origin: apiBase, timeoutMs: 15000 }))
+    collectEntityUrls(createApiClient({ origin: apiBase, timeoutMs: 15000 })),
+    collectRatingUrls(createApiClient({ origin: apiBase, timeoutMs: 15000 }))
   ])
 
   const seen = new Set<string>()

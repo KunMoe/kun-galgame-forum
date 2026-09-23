@@ -1,36 +1,39 @@
 <script setup lang="ts">
-import {
-  KUN_GALGAME_AGE_LIMIT_MAP,
-  getGalgameOriginalLanguageName
-} from '~/constants/galgame'
+import type { WorkSummary } from '#shared/utils/api/schemas'
 
-defineProps<{
-  galgame: GalgameRatingGalgameInfo
+const props = defineProps<{
+  work: WorkSummary
 }>()
 
-const getLanguageName = getGalgameOriginalLanguageName
+const nameOf = useCatalogName()
+const name = computed(() => nameOf(props.work).name)
+const maker = computed(() =>
+  props.work.maker
+    ? { id: props.work.maker.id, name: nameOf(props.work.maker).name }
+    : null
+)
 </script>
 
 <template>
   <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
     <div
-      className="relative rounded-lg w-full h-full overflow-hidden md:col-span-1 aspect-video"
+      class="relative aspect-video h-full w-full overflow-hidden rounded-lg md:col-span-1"
     >
       <KunImage
         class="size-full rounded-lg object-cover"
-        :src="getEffectiveBanner(galgame)"
+        :src="work.banner?.url ?? ''"
         loading="lazy"
-        :thumbhash="resolveBannerThumbhash(galgame)"
-        :alt="galgame.name"
+        :thumbhash="work.banner?.thumbhash ?? ''"
+        :alt="name"
       />
     </div>
 
     <div class="space-y-3">
-      <KunLink :to="`/galgame/${galgame.id}`" underline="none">
+      <KunLink :to="`/galgame/${work.id}`" underline="none">
         <h1
           class="text-content hover:text-primary text-lg font-bold transition-colors sm:text-2xl"
         >
-          {{ `${galgame.name}` }}
+          {{ name }}
         </h1>
       </KunLink>
 
@@ -38,53 +41,41 @@ const getLanguageName = getGalgameOriginalLanguageName
         <div class="flex items-center gap-2">
           <KunIcon class-name="text-warning text-2xl" name="lucide:lollipop" />
           <span class="text-warning text-xl font-bold">
-            {{
-              galgame.rating_count
-                ? (galgame.rating / galgame.rating_count).toFixed(1)
-                : '0.0'
-            }}
+            {{ work.rating_score?.toFixed(1) ?? '0.0' }}
           </span>
         </div>
         <span class="bg-default-300 h-3 w-px" />
         <div class="flex items-center gap-2">
           <KunIcon name="lucide:users" />
-          <span>{{ galgame.rating_count }} 人评分</span>
+          <span>{{ work.rating_count }} 人评分</span>
         </div>
       </div>
 
-      <div class="flex items-center gap-2">
-        <span
-          class="text-default-500 dark:text-default-400 text-sm font-medium"
-        >
-          年龄限制
-        </span>
-        <KunTooltip
-          position="left"
-          :text="KUN_GALGAME_AGE_LIMIT_MAP[galgame.age_limit]"
-        >
-          <KunChip
-            variant="flat"
-            :color="galgame.age_limit === 'all' ? 'success' : 'danger'"
+      <div class="flex flex-wrap items-center gap-2">
+        <template v-if="maker">
+          <span
+            class="text-default-500 dark:text-default-400 text-sm font-medium"
           >
-            {{ galgame.age_limit === 'all' ? '全年龄' : 'R18' }}
+            制作会社
+          </span>
+          <KunLink :to="`/galgame/official/${maker.id}`" size="sm">
+            {{ maker.name }}
+          </KunLink>
+        </template>
+
+        <span v-if="maker && work.release_date" class="bg-default-300 h-3 w-px" />
+
+        <template v-if="work.release_date">
+          <span
+            class="text-default-500 dark:text-default-400 text-sm font-medium"
+          >
+            发售日期
+          </span>
+          <KunChip color="warning" variant="flat">
+            {{ work.release_date }}
           </KunChip>
-        </KunTooltip>
-
-        <span class="bg-default-300 h-3 w-px" />
-
-        <span
-          class="text-default-500 dark:text-default-400 text-sm font-medium"
-        >
-          原始语言
-        </span>
-        <KunChip color="warning" variant="flat">
-          {{ getLanguageName(galgame.original_language) }}
-        </KunChip>
+        </template>
       </div>
-
-      <dl>
-        <GalgameDetailOfficial :official="galgame.official" />
-      </dl>
     </div>
   </div>
 </template>

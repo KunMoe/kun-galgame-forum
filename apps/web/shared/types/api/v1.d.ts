@@ -1928,6 +1928,82 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/ratings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List galgame ratings
+         * @description A page-number collection: page × limit may not exceed 10000. Ratings of adult works appear only with include_nsfw=true. Ratings by banned authors and of works catalog no longer shows are left out of items but still counted in total, so a page can hold fewer than limit items before the last page.
+         */
+        get: operations["listRatings"];
+        put?: never;
+        /**
+         * Rate a galgame
+         * @description Writes the caller's rating of a work and returns it as getRating would. A user rates a work once; change that rating with updateRating. work_id must name a work catalog shows (UNKNOWN_REFERENCE). The author earns moemoepoints by the short summary's length, and the play status is copied to the caller's catalog work state.
+         */
+        post: operations["createRating"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ratings/{rating_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a galgame rating
+         * @description Every read counts one view. A rating of an adult work is returned whatever the caller's content preference; work.is_nsfw tells the client.
+         */
+        get: operations["getRating"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete a galgame rating
+         * @description Deletes the rating with its likes and comments; the author loses the moemoepoints it earned. The author, the work page's creator and staff holding rating.delete_any may delete it; a Bearer request never holds staff powers.
+         */
+        delete: operations["deleteRating"];
+        options?: never;
+        head?: never;
+        /**
+         * Update a galgame rating
+         * @description Changes the fields sent and returns the rating as getRating would. Only the author may. A changed short summary is checked again and moves the author's moemoepoints by the difference in reward; a changed play status is copied to the caller's catalog work state.
+         */
+        patch: operations["updateRating"];
+        trace?: never;
+    };
+    "/ratings/{rating_id}/like": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Like a galgame rating
+         * @description Sets the caller's like. Liking an already liked rating changes nothing. The author earns 1 moemoepoint and is notified.
+         */
+        put: operations["likeRating"];
+        post?: never;
+        /**
+         * Remove a like from a galgame rating
+         * @description Removes the caller's like. Removing a like that is not there changes nothing. The author loses the moemoepoint the like earned.
+         */
+        delete: operations["unlikeRating"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/replies/{reply_id}": {
         parameters: {
             query?: never;
@@ -4005,6 +4081,48 @@ export interface components {
             voices: components["schemas"]["CreditNameRef"][];
             /** @description The work the character appears in. */
             work_summary: components["schemas"]["WorkSummary"];
+        };
+        AspectScores: {
+            /**
+             * Format: int64
+             * @description null when not rated.
+             */
+            art: number | null;
+            /**
+             * Format: int64
+             * @description null when not rated.
+             */
+            character: number | null;
+            /**
+             * Format: int64
+             * @description null when not rated.
+             */
+            music: number | null;
+            /**
+             * Format: int64
+             * @description null when not rated.
+             */
+            replay_value: number | null;
+            /**
+             * Format: int64
+             * @description null when not rated.
+             */
+            route: number | null;
+            /**
+             * Format: int64
+             * @description null when not rated.
+             */
+            story: number | null;
+            /**
+             * Format: int64
+             * @description null when not rated.
+             */
+            system: number | null;
+            /**
+             * Format: int64
+             * @description null when not rated.
+             */
+            voice: number | null;
         };
         BatchListTopicState: {
             /** @description One member per requested id that the caller may see. Empty array, never null. */
@@ -6661,6 +6779,25 @@ export interface components {
              */
             total_relation: "eq" | "gte";
         };
+        PageListRatingSummary: {
+            /** @description Members of this page. Empty array, never null. */
+            items: components["schemas"]["RatingSummary"][];
+            /**
+             * @description Type discriminant. Always list.
+             * @enum {string}
+             */
+            object: "list";
+            /**
+             * Format: int64
+             * @description Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.
+             */
+            total: number;
+            /**
+             * @description eq when total is exact, gte when it stopped at the depth limit and there are at least that many.
+             * @enum {string}
+             */
+            total_relation: "eq" | "gte";
+        };
         PageListReplySearchHit: {
             /** @description Members of this page. Empty array, never null. */
             items: components["schemas"]["ReplySearchHit"][];
@@ -7306,6 +7443,228 @@ export interface components {
              * @description Floor of the quoted reply.
              */
             floor: number;
+        };
+        Rating: {
+            /** @description Per-aspect scores; each is null when the author skipped it. */
+            aspect_scores: components["schemas"]["AspectScores"];
+            /** @description Who wrote the rating. */
+            author: components["schemas"]["UserRef"];
+            /**
+             * Format: int64
+             * @description Comments on the rating's wall.
+             */
+            comment_count: number;
+            /**
+             * Format: date-time
+             * @description When the rating was written.
+             */
+            created_at: string;
+            /** @description Game types the author files the work under. */
+            game_types: ("ba_saku" | "plot" | "moe" | "daily")[];
+            /** @description Rating id, which is also the id in the web's /galgame-rating/{id}. */
+            id: string;
+            /**
+             * Format: int64
+             * @description Likes on the rating.
+             */
+            like_count: number;
+            /** @description The most recent likers, newest first, at most 50; like_count is how many there are. Empty array, never null. */
+            likers: components["schemas"]["UserRef"][];
+            /**
+             * @description Type discriminant. Always rating.
+             * @enum {string}
+             */
+            object: "rating";
+            /**
+             * Format: int64
+             * @description The overall score.
+             */
+            overall: number;
+            /**
+             * @description How far the author had played when rating.
+             * @enum {string}
+             */
+            play_status: "wish" | "doing" | "done_one_route" | "done_main" | "done_all" | "on_hold" | "dropped";
+            /**
+             * @description How strongly the author recommends the work.
+             * @enum {string}
+             */
+            recommend: "strong_yes" | "yes" | "neutral" | "no" | "strong_no";
+            /** @description The author's short review, plain text. Empty string if none. Free text; never use it as a decision input. */
+            short_summary: string;
+            /**
+             * @description How much the short summary gives away, as its author declared.
+             * @enum {string}
+             */
+            spoiler_level: "none" | "portion" | "serious";
+            /**
+             * Format: date-time
+             * @description When the rating last changed.
+             */
+            updated_at: string;
+            /**
+             * Format: int64
+             * @description Times the rating page was read, this read included.
+             */
+            view_count: number;
+            /** @description The caller's relation to the rating. null for an anonymous caller. */
+            viewer: components["schemas"]["RatingViewer"] | null;
+            /** @description The rated work. null when catalog no longer shows it. */
+            work: components["schemas"]["WorkRef"] | null;
+            /** @description The rated work with the forum's figures for it. */
+            work_summary: components["schemas"]["WorkSummary"];
+        };
+        RatingCreate: {
+            /** @description Per-aspect scores, all eight keys, null for an aspect not rated. Absent means none rated. */
+            aspect_scores?: components["schemas"]["AspectScores"];
+            /** @description Game types to file the work under, each once. */
+            game_types: ("ba_saku" | "plot" | "moe" | "daily")[];
+            /**
+             * Format: int64
+             * @description The overall score.
+             */
+            overall: number;
+            /**
+             * @description How far the author had played when rating.
+             * @enum {string}
+             */
+            play_status: "wish" | "doing" | "done_one_route" | "done_main" | "done_all" | "on_hold" | "dropped";
+            /**
+             * @description How strongly the author recommends the work.
+             * @enum {string}
+             */
+            recommend: "strong_yes" | "yes" | "neutral" | "no" | "strong_no";
+            /** @description Short review, plain text. Absent means none. Free text; never use it as a decision input. */
+            short_summary?: string;
+            /**
+             * @description How much the short summary gives away, as its author declared.
+             * @enum {string}
+             */
+            spoiler_level: "none" | "portion" | "serious";
+            /** @description The work to rate. A work catalog does not know is UNKNOWN_REFERENCE. */
+            work_id: string;
+        };
+        RatingEngagement: {
+            /**
+             * Format: int64
+             * @description Likes on the rating.
+             */
+            like_count: number;
+            /**
+             * @description Type discriminant. Always rating_engagement.
+             * @enum {string}
+             */
+            object: "rating_engagement";
+            /** @description The rating. */
+            rating_id: string;
+            /** @description The caller's own like. */
+            viewer: components["schemas"]["RatingEngagementViewer"];
+        };
+        RatingEngagementViewer: {
+            /** @description Whether the caller likes the rating. */
+            has_liked: boolean;
+        };
+        RatingPatch: {
+            /** @description Replaces every per-aspect score: all eight keys, null for an aspect not rated. */
+            aspect_scores?: components["schemas"]["AspectScores"];
+            /** @description Game types to file the work under, each once. */
+            game_types?: ("ba_saku" | "plot" | "moe" | "daily")[];
+            /**
+             * Format: int64
+             * @description The overall score.
+             */
+            overall?: number;
+            /**
+             * @description How far the author had played when rating.
+             * @enum {string}
+             */
+            play_status?: "wish" | "doing" | "done_one_route" | "done_main" | "done_all" | "on_hold" | "dropped";
+            /**
+             * @description How strongly the author recommends the work.
+             * @enum {string}
+             */
+            recommend?: "strong_yes" | "yes" | "neutral" | "no" | "strong_no";
+            /** @description Short review, plain text; an empty string removes it. Free text; never use it as a decision input. */
+            short_summary?: string;
+            /**
+             * @description How much the short summary gives away, as its author declared.
+             * @enum {string}
+             */
+            spoiler_level?: "none" | "portion" | "serious";
+        };
+        RatingSummary: {
+            /** @description Per-aspect scores; each is null when the author skipped it. */
+            aspect_scores: components["schemas"]["AspectScores"];
+            /** @description Who wrote the rating. */
+            author: components["schemas"]["UserRef"];
+            /**
+             * Format: int64
+             * @description Comments on the rating's wall.
+             */
+            comment_count: number;
+            /**
+             * Format: date-time
+             * @description When the rating was written.
+             */
+            created_at: string;
+            /** @description Game types the author files the work under. */
+            game_types: ("ba_saku" | "plot" | "moe" | "daily")[];
+            /** @description Rating id, which is also the id in the web's /galgame-rating/{id}. */
+            id: string;
+            /**
+             * Format: int64
+             * @description Likes on the rating.
+             */
+            like_count: number;
+            /**
+             * @description Type discriminant. Always rating.
+             * @enum {string}
+             */
+            object: "rating";
+            /**
+             * Format: int64
+             * @description The overall score.
+             */
+            overall: number;
+            /**
+             * @description How far the author had played when rating.
+             * @enum {string}
+             */
+            play_status: "wish" | "doing" | "done_one_route" | "done_main" | "done_all" | "on_hold" | "dropped";
+            /**
+             * @description How strongly the author recommends the work.
+             * @enum {string}
+             */
+            recommend: "strong_yes" | "yes" | "neutral" | "no" | "strong_no";
+            /** @description The author's short review, plain text. Empty string if none. Free text; never use it as a decision input. */
+            short_summary: string;
+            /**
+             * @description How much the short summary gives away, as its author declared.
+             * @enum {string}
+             */
+            spoiler_level: "none" | "portion" | "serious";
+            /**
+             * Format: date-time
+             * @description When the rating last changed.
+             */
+            updated_at: string;
+            /**
+             * Format: int64
+             * @description Times the rating page was read.
+             */
+            view_count: number;
+            /** @description The caller's relation to the rating. null for an anonymous caller. */
+            viewer: components["schemas"]["RatingViewer"] | null;
+            /** @description The rated work. null when catalog no longer shows it. */
+            work: components["schemas"]["WorkRef"] | null;
+        };
+        RatingViewer: {
+            /** @description Whether the caller may delete the rating: its author, the work page's creator, or staff holding rating.delete_any. */
+            can_delete: boolean;
+            /** @description Whether the caller may change the rating: only its author. */
+            can_edit: boolean;
+            /** @description Whether the caller likes the rating. */
+            has_liked: boolean;
         };
         Reaction: {
             /**
@@ -19640,6 +19999,595 @@ export interface operations {
                 };
             };
             /** @description SERVICE_UNAVAILABLE when the catalog or the account service is unreachable. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listRatings: {
+        parameters: {
+            query?: {
+                /** @description 1-based page number. page × limit may not exceed 10000. */
+                page?: number;
+                /** @description Page size. 1–100, default 24. Values above 100 are rejected, not clamped. */
+                limit?: number;
+                /** @description Sort order; ties break on id in the same direction. created: when the rating was written. view: page reads. overall: the overall score. */
+                sort?: "created_desc" | "created_asc" | "view_desc" | "view_asc" | "overall_desc" | "overall_asc";
+                /** @description Only ratings of this work. Omitted means every work. */
+                work_id?: string;
+                /** @description Only ratings by this user. Omitted means everyone. */
+                author_id?: string;
+                /** @description Only ratings declaring this spoiler level. Omitted means any. */
+                spoiler_level?: "none" | "portion" | "serious";
+                /** @description Only ratings with this play status. Omitted means any. */
+                play_status?: "wish" | "doing" | "done_one_route" | "done_main" | "done_all" | "on_hold" | "dropped";
+                /** @description Only ratings filing the work under this game type. Omitted means any. */
+                game_type?: "ba_saku" | "plot" | "moe" | "daily";
+                /** @description When true, ratings of adult works are included. Default false. */
+                include_nsfw?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PageListRatingSummary"];
+                };
+            };
+            /** @description INVALID_PARAMETER when page × limit is too deep or an id is malformed; UNKNOWN_SORT or UNKNOWN_ENUM_VALUE for a value outside the vocabulary. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the account service or catalog cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    createRating: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Caller-generated UUID (canonical 8-4-4-4-12 hex, any version) or 26-character Crockford ULID. Scoped to (user, operation, key) for 24 hours. */
+                "Idempotency-Key": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RatingCreate"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    Location?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Rating"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description ACCOUNT_BANNED when the caller's account is banned. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description ALREADY_EXISTS when the caller has already rated the work; IDEMPOTENCY_KEY_REUSED or IDEMPOTENCY_REQUEST_IN_PROGRESS. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description VALIDATION_FAILED when a field is out of range or work_id names no work catalog shows; CONTENT_REJECTED when the trust-and-safety check refuses the short summary. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the account service or catalog cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getRating: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Rating id. */
+                rating_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Rating"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when no such rating exists, its author is banned, or catalog no longer shows its work. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the account service or catalog cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    deleteRating: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Rating id. */
+                rating_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description PERMISSION_REQUIRED when the caller may not delete the rating; ACCOUNT_BANNED when the caller's account is banned. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when no such rating exists. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the account service or catalog cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    updateRating: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Rating id. */
+                rating_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RatingPatch"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Rating"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description PERMISSION_REQUIRED when the caller is not the author; ACCOUNT_BANNED when the caller's account is banned. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when no such rating exists, its author is banned, or catalog no longer shows its work. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description VALIDATION_FAILED when a field is out of range; CONTENT_REJECTED when the trust-and-safety check refuses the short summary. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the account service or catalog cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    likeRating: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Rating id. */
+                rating_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RatingEngagement"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SELF_LIKE_FORBIDDEN on the caller's own rating; ACCOUNT_BANNED when the caller's account is banned. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when no such rating exists, its author is banned, or catalog no longer shows its work. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the account service or catalog cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    unlikeRating: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Rating id. */
+                rating_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RatingEngagement"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SELF_LIKE_FORBIDDEN on the caller's own rating; ACCOUNT_BANNED when the caller's account is banned. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when no such rating exists, its author is banned, or catalog no longer shows its work. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the account service or catalog cannot be reached. */
             503: {
                 headers: {
                     [name: string]: unknown;

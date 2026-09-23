@@ -1,5 +1,12 @@
 <script setup lang="ts">
 import { useRouteQuery } from '@vueuse/router'
+import type { RatingsQuery } from '#shared/utils/api/schemas'
+import { KUN_GALGAME_PLAY_STATE_CONST } from '~/constants/galgame-playtime'
+import {
+  KUN_GALGAME_RATING_GAME_TYPE_CONST,
+  KUN_GALGAME_RATING_SPOILER_CONST
+} from '~/constants/galgame-rating'
+import { ratingToCard } from '~/utils/galgame/ratingCard'
 import {
   spoilerOptions,
   playStatusOptions,
@@ -35,13 +42,41 @@ watch(
   }
 )
 
-const { data, status } = await useKunFetch<{
-  rating_data: GalgameRatingCard[]
-  total: number
-}>(`/galgame-rating/all`, {
-  method: 'GET',
-  query: params
+const known = <T extends string>(value: string, vocab: readonly T[]) =>
+  vocab.includes(value as T) ? (value as T) : undefined
+
+const { allowsNsfw } = useContentStance()
+const query = computed<RatingsQuery>(() => {
+  const column = params.sort_field === 'time' ? 'created' : params.sort_field
+  const order = params.sort_order === 'asc' ? 'asc' : 'desc'
+  const sort = known(`${column}_${order}`, [
+    'created_desc',
+    'created_asc',
+    'view_desc',
+    'view_asc',
+    'overall_desc',
+    'overall_asc'
+  ] as const)
+  return {
+    page: params.page,
+    limit: params.limit,
+    sort,
+    spoiler_level: known(params.spoiler_level, KUN_GALGAME_RATING_SPOILER_CONST),
+    play_status: known(params.play_status, KUN_GALGAME_PLAY_STATE_CONST),
+    game_type: known(params.galgame_type, KUN_GALGAME_RATING_GAME_TYPE_CONST),
+    include_nsfw: allowsNsfw.value
+  }
 })
+
+const nameOf = useCatalogName()
+const { data, status } = await useApi(
+  () => `ratings:${JSON.stringify(query.value)}`,
+  (api, { signal }) =>
+    api.GET('/ratings', { params: { query: query.value }, signal })
+)
+const ratings = computed(() =>
+  (data.value?.items ?? []).map((r) => ratingToCard(r, nameOf))
+)
 </script>
 
 <template>
@@ -92,7 +127,7 @@ const { data, status } = await useKunFetch<{
       </div>
     </div>
 
-    <GalgameRatingCard v-if="data" :ratings="data.rating_data" />
+    <GalgameRatingCard v-if="data" :ratings="ratings" />
 
     <KunPagination
       v-if="(data?.total || 0) > params.limit"

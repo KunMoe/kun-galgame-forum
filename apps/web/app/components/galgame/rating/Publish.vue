@@ -13,11 +13,15 @@ import {
   KUN_GALGAME_RATING_GAME_TYPE_MAP,
   KUN_GALGAME_RATING_GAME_TYPE_DESCRIPTION_MAP
 } from '~/constants/galgame-rating'
-import {
-  createGalgameRatingSchema,
-  updateGalgameRatingSchema
-} from '~/validations/galgame-rating'
+import type { RatingCreate, RatingPatch } from '#shared/utils/api/schemas'
+import { settle } from '#shared/utils/api/problem'
+import { galgameRatingFormSchema } from '~/validations/galgame-rating'
 import { usePersistEditGalgameRatingStore } from '~/store/modules/edit/rating'
+import { useIdempotencyKey } from '~/composables/useIdempotencyKey'
+import {
+  dimsToAspectScores,
+  ratingToGalgamePageCard
+} from '~/utils/galgame/ratingCard'
 
 type RatingInitialData = {
   galgameRatingId: number
@@ -184,82 +188,64 @@ const resetForm = () => {
   selectedTypes.value = []
 }
 
+const api = useApiClient()
+const createKey = useIdempotencyKey()
+const nameOf = useCatalogName()
+
 const submit = async () => {
+  const fields = {
+    recommend: recommend.value,
+    overall: overall.value,
+    game_types: [...selectedTypes.value],
+    play_status: playStatus.value,
+    spoiler_level: spoilerLevel.value,
+    short_summary: shortSummary.value,
+    aspect_scores: dimsToAspectScores(dims.value)
+  }
+  if (!useKunSchemaValidator(galgameRatingFormSchema, fields)) {
+    return
+  }
+  const valid = fields as RatingPatch & Omit<RatingCreate, 'work_id'>
+
+  isSubmitting.value = true
   if (isEditing.value) {
-    const body = {
-      galgame_rating_id: props.initialData!.galgameRatingId,
-      recommend: recommend.value,
-      overall: overall.value,
-      play_status: playStatus.value,
-      spoiler_level: spoilerLevel.value,
-      short_summary: shortSummary.value,
-      art: dims.value.art,
-      story: dims.value.story,
-      music: dims.value.music,
-      character: dims.value.character,
-      route: dims.value.route,
-      system: dims.value.system,
-      voice: dims.value.voice,
-      replay_value: dims.value.replay_value,
-      galgame_type: selectedTypes.value
-    }
-    const valid = useKunSchemaValidator(updateGalgameRatingSchema, body)
-    if (!valid) {
+    const result = await settle(
+      api.PATCH('/ratings/{rating_id}', {
+        params: {
+          path: { rating_id: String(props.initialData!.galgameRatingId) }
+        },
+        body: valid
+      })
+    )
+    isSubmitting.value = false
+    if (!result.ok) {
+      reportProblem(result.problem)
       return
     }
-
-    isSubmitting.value = true
-    const res = await kunFetch(
-      `/galgame-rating/${props.initialData!.galgameRatingId}`,
-      {
-        method: 'PUT',
-        body
-      }
-    )
-    isSubmitting.value = false
-    if (res) {
-      useMessage('更新成功', 'success')
-      emits('onUpdated')
-      close()
-    }
-  } else {
-    const body = {
-      galgame_id: props.workId,
-      recommend: recommend.value,
-      overall: overall.value,
-      play_status: playStatus.value,
-      spoiler_level: spoilerLevel.value,
-      short_summary: shortSummary.value,
-      art: dims.value.art,
-      story: dims.value.story,
-      music: dims.value.music,
-      character: dims.value.character,
-      route: dims.value.route,
-      system: dims.value.system,
-      voice: dims.value.voice,
-      replay_value: dims.value.replay_value,
-      galgame_type: selectedTypes.value
-    }
-    const valid = useKunSchemaValidator(createGalgameRatingSchema, body)
-    if (!valid) return
-
-    isSubmitting.value = true
-    const res = await kunFetch<GalgameRatingCardOnGalgamePage>(
-      '/galgame-rating',
-      {
-        method: 'POST',
-        body
-      }
-    )
-    isSubmitting.value = false
-    if (res) {
-      useMessage('发布成功', 'success')
-      resetForm()
-      close()
-      emits('onPublished', res)
-      shortSummaryStore.value = ''
-    }
+    useMessage('更新成功', 'success')
+    emits('onUpdated')
+    close()
+    return
   }
+
+  const body: RatingCreate = { work_id: String(props.workId), ...valid }
+  const result = await settle(
+    api.POST('/ratings', {
+      params: { header: { 'Idempotency-Key': createKey.take('/ratings', body) } },
+      body
+    })
+  )
+  isSubmitting.value = false
+  if (!result.ok) {
+    reportProblem(result.problem)
+    return
+  }
+  createKey.clear()
+  useMessage('发布成功', 'success')
+  resetForm()
+  close()
+  emits('onPublished', ratingToGalgamePageCard(result.data, nameOf))
+  shortSummaryStore.value = ''
 }
 </script>
 
