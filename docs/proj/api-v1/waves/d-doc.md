@@ -298,3 +298,9 @@ v1 的 `banner` 只认 hash，而生产 29 张横幅一张 hash 都没有。不�
 | 13 | 删除：杀（`TestV1AdminDocGetAndDelete`）；`PATCH`：等价变异，见上文 #5 |
 | 14 | 杀：`TestV1DocUnknownCategoryIsNotFiledElsewhere` |
 | 15 | 杀：`TestCapabilityChecksGoThroughUserInfo`（静态守卫） |
+
+## 14. 上线（2026-09-23）
+
+- PR #193 合并为 `5e4321f2`，09:19:59Z 手动部署（Dokploy webhook 没有触发）。迁移 166 随部署执行，165 于 09:20:40Z 手动 `--only=165`，之后已从默认 exclude 中移除。
+- 横幅回填在合并前做完，29 张全部补上 hash（§8 的做法）。线上 29 篇文档的 `banner` 都指向图床。
+- 已知缺口，尚未排期：图床 GC 的 `reference_ping` 只扫文本里的 `/image/<hash>` token，外加一张写死的 hash 数组表（目前只有抽奖奖品）。**裸存的 `*_image_hash` 列从来没被 ping 过**，包括 `doc_article.banner_image_hash`、`friend_link.banner_image_hash`、`galgame_website.icon_image_hash`，所以这些图会按图床的 TTL 过期：60 天转冷存储，365 天软删除。修法是在 `internal/infrastructure/cron/reference_ping.go` 的清单里补上这几列。
