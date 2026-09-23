@@ -180,3 +180,30 @@ func TestV1GetMeNotificationCountFailureIs500WithChatMuted(t *testing.T) {
 	resp, body := f.call(t, http.MethodGet, mePath, "/me", "sess-alice", "", nil, nil)
 	mustCode(t, resp, body, http.StatusInternalServerError, "INTERNAL_ERROR")
 }
+
+func TestV1UserFacesRequireACredential(t *testing.T) {
+	f := newMeFix(t)
+	cases := []struct {
+		method, url, spec string
+		body              any
+	}{
+		{http.MethodGet, mePath, "/me", nil},
+		{http.MethodPost, mePath + "/check-ins", "/me/check-ins", nil},
+		{http.MethodGet, mePath + "/moemoepoint-entries", "/me/moemoepoint-entries", nil},
+		{http.MethodGet, mePath + "/preferences", "/me/preferences", nil},
+		{http.MethodPut, mePath + "/preferences", "/me/preferences", map[string]any{"doc": map[string]any{}}},
+		{http.MethodPut, mePath + "/nsfw-display", "/me/nsfw-display", map[string]any{"nsfw_display": "hide"}},
+		{http.MethodGet, "/api/v1/users?q=kun", "/users", nil},
+		{http.MethodPatch, mePath + "/profile", "/me/profile", map[string]any{"bio": "x"}},
+		{http.MethodGet, mePath + "/creator-status", "/me/creator-status", nil},
+		{http.MethodPost, mePath + "/creator-applications", "/me/creator-applications", map[string]any{"statement": "x"}},
+	}
+	for _, c := range cases {
+		t.Run(c.method+" "+c.spec, func(t *testing.T) {
+			resp, body := f.call(t, c.method, c.url, c.spec, "", "", nil, c.body)
+			mustCode(t, resp, body, http.StatusUnauthorized, "MISSING_CREDENTIAL")
+		})
+	}
+	resp, body := f.putAvatar(t, "", "png-bytes", "image/png", "a.png")
+	mustCode(t, resp, body, http.StatusUnauthorized, "MISSING_CREDENTIAL")
+}
