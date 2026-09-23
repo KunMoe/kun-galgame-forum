@@ -2,6 +2,9 @@
 import { watchDebounced } from '@vueuse/core'
 import type { KunTabItem } from '@kungal/ui-vue'
 import { topicHiddenByMeta } from '~/constants/topic'
+import { settle } from '#shared/utils/api/problem'
+import type { AdminTopic, HiddenTopicSummary } from '#shared/utils/api/schemas'
+import { toKunUser } from '~/utils/userRef'
 
 definePageMeta({
   middleware: 'permission',
@@ -10,50 +13,21 @@ definePageMeta({
 
 useKunDisableSeo('隐藏话题管理')
 
-interface HiddenTopic {
-  id: number
-  title: string
-  hidden_by: string
-  reply_count: number
-  status_update_time: Date | string
-  created: Date | string
-  user: KunUser
-}
-
-interface HiddenTopicList {
-  topics: HiddenTopic[]
-  total: number
-}
-
-interface TopicPurgeStats {
-  id: number
-  title: string
-  status: number
-  hidden_by: string
-  user: KunUser
-  replies: number
-  comments: number
-  polls: number
-  lotteries: number
-  drawn_lotteries: number
-  favorites: number
-}
-
 type PurgeCountKey =
-  | 'replies'
-  | 'comments'
-  | 'polls'
-  | 'lotteries'
-  | 'drawn_lotteries'
-  | 'favorites'
+  | 'reply_count'
+  | 'comment_count'
+  | 'poll_count'
+  | 'lottery_count'
+  | 'drawn_lottery_count'
+  | 'favorite_count'
 
 const PURGE_COUNT_LABELS: { key: PurgeCountKey; label: string }[] = [
-  { key: 'replies', label: '回复' },
-  { key: 'comments', label: '评论' },
-  { key: 'polls', label: '投票' },
-  { key: 'lotteries', label: '抽奖' },
-  { key: 'drawn_lotteries', label: '已开奖抽奖' },
-  { key: 'favorites', label: '收藏' }
+  { key: 'reply_count', label: '回复' },
+  { key: 'comment_count', label: '评论' },
+  { key: 'poll_count', label: '投票' },
+  { key: 'lottery_count', label: '抽奖' },
+  { key: 'drawn_lottery_count', label: '已开奖抽奖' },
+  { key: 'favorite_count', label: '收藏' }
 ]
 
 const HIDDEN_BY_TABS: KunTabItem[] = [
@@ -63,7 +37,10 @@ const HIDDEN_BY_TABS: KunTabItem[] = [
   { value: 'trust', textValue: '风纪隐藏' }
 ]
 
+type HiddenBy = NonNullable<HiddenTopicSummary['hidden_by']>
+
 const canDeleteTopic = useCan('topic.delete_any')
+const api = useApiClient()
 
 const activeFilter = ref('all')
 const searchQuery = ref('')
@@ -71,58 +48,78 @@ const searchQuery = ref('')
 const pageData = reactive({
   page: 1,
   limit: 30,
-  hidden_by: '',
-  keywords: ''
+  hidden_by: '' as HiddenBy | '',
+  q: ''
 })
 
 watch(activeFilter, (value) => {
-  pageData.hidden_by = value === 'all' ? '' : value
+  pageData.hidden_by = value === 'all' ? '' : (value as HiddenBy)
   pageData.page = 1
 })
 
 watchDebounced(
   searchQuery,
   (value) => {
-    pageData.keywords = value.trim()
+    pageData.q = value.trim()
     pageData.page = 1
   },
   { debounce: 500, maxWait: 1000 }
 )
 
-const { data, status } = await useKunFetch<HiddenTopicList>(
-  '/admin/topic/hidden',
-  { query: pageData }
+const { data, status, refresh } = await useApi(
+  () =>
+    `admin-hidden-topics:${pageData.page}:${pageData.limit}:${pageData.hidden_by}:${pageData.q}`,
+  (client, { signal }) =>
+    client.GET('/admin/hidden-topics', {
+      params: {
+        query: {
+          page: pageData.page,
+          limit: pageData.limit,
+          ...(pageData.hidden_by ? { hidden_by: pageData.hidden_by } : {}),
+          ...(pageData.q ? { q: pageData.q } : {})
+        }
+      },
+      signal
+    })
 )
+
+const topics = computed(() => data.value?.items ?? [])
+const total = computed(() => data.value?.total ?? 0)
 
 const isPurgeOpen = ref(false)
 const isLoadingStats = ref(false)
 const isPurging = ref(false)
-const purgeTarget = ref<TopicPurgeStats | null>(null)
+const purgeTarget = ref<AdminTopic | null>(null)
 
 const purgeTotal = computed(() => {
   const target = purgeTarget.value
   if (!target) {
     return 0
   }
-  // drawn_lotteries is a subset of lotteries; summing both counts them twice
+  // drawn_lottery_count is a subset of lottery_count; summing both counts them twice
   return PURGE_COUNT_LABELS.reduce(
     (sum, item) =>
-      item.key === 'drawn_lotteries' ? sum : sum + target[item.key],
+      item.key === 'drawn_lottery_count' ? sum : sum + target[item.key],
     0
   )
 })
 
-const openPurge = async (topic: HiddenTopic) => {
+const openPurge = async (topic: HiddenTopicSummary) => {
   isPurgeOpen.value = true
   isLoadingStats.value = true
   purgeTarget.value = null
-  purgeTarget.value = await kunFetch<TopicPurgeStats>(
-    `/admin/topic/${topic.id}/purge-stats`
+  const result = await settle(
+    api.GET('/admin/topics/{topic_id}', {
+      params: { path: { topic_id: topic.id } }
+    })
   )
   isLoadingStats.value = false
-  if (!purgeTarget.value) {
+  if (!result.ok) {
+    reportProblem(result.problem)
     isPurgeOpen.value = false
+    return
   }
+  purgeTarget.value = result.data
 }
 
 const handlePurge = async () => {
@@ -131,21 +128,20 @@ const handlePurge = async () => {
     return
   }
   isPurging.value = true
-  const deleted = await kunFetch<TopicPurgeStats>(`/admin/topic/${target.id}`, {
-    method: 'DELETE'
-  })
+  const result = await settle(
+    api.DELETE('/admin/topics/{topic_id}', {
+      params: { path: { topic_id: target.id } }
+    })
+  )
   isPurging.value = false
-  if (!deleted) {
+  if (!result.ok) {
+    reportProblem(result.problem)
     return
   }
-
   isPurgeOpen.value = false
   purgeTarget.value = null
-  if (data.value) {
-    data.value.topics = data.value.topics.filter((t) => t.id !== deleted.id)
-    data.value.total = Math.max(0, data.value.total - 1)
-  }
-  useMessage(`已彻底删除话题《${deleted.title}》`, 'success')
+  useMessage(`已彻底删除话题《${target.title}》`, 'success')
+  await refresh()
 }
 </script>
 
@@ -181,11 +177,11 @@ const handlePurge = async () => {
 
     <KunLoading v-if="status === 'pending'" />
 
-    <KunNull v-else-if="!data?.topics.length" description="暂无被隐藏的话题" />
+    <KunNull v-else-if="!topics.length" description="暂无被隐藏的话题" />
 
     <div v-else class="flex flex-col gap-3">
       <div
-        v-for="topic in data.topics"
+        v-for="topic in topics"
         :key="topic.id"
         class="dark:border-default-200 flex flex-col gap-3 rounded-lg border border-transparent p-3 sm:flex-row sm:items-start"
       >
@@ -197,13 +193,13 @@ const handlePurge = async () => {
             <KunChip
               size="xs"
               variant="flat"
-              :color="topicHiddenByMeta(topic.hidden_by).color"
+              :color="topicHiddenByMeta(topic.hidden_by ?? '').color"
             >
-              {{ topicHiddenByMeta(topic.hidden_by).label }}
+              {{ topicHiddenByMeta(topic.hidden_by ?? '').label }}
             </KunChip>
           </div>
 
-          <KunUserChip :user="topic.user" size="xs" />
+          <KunUserChip :user="toKunUser(topic.author)" size="xs" />
 
           <div
             class="text-default-500 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm"
@@ -215,16 +211,12 @@ const handlePurge = async () => {
             <span class="flex items-center gap-1">
               <KunIcon name="lucide:eye-off" class="size-4" />
               隐藏于
-              <KunTime
-                :time="topic.status_update_time"
-                type="datetime"
-                show-year
-              />
+              <KunTime :time="topic.bumped_at" type="datetime" show-year />
             </span>
             <span class="flex items-center gap-1">
               <KunIcon name="lucide:clock" class="size-4" />
               发布于
-              <KunTime :time="topic.created" type="date" show-year />
+              <KunTime :time="topic.created_at" type="date" show-year />
             </span>
           </div>
         </div>
@@ -244,9 +236,9 @@ const handlePurge = async () => {
     </div>
 
     <KunPagination
-      v-if="data && data.total > pageData.limit"
+      v-if="total > pageData.limit"
       v-model:current-page="pageData.page"
-      :total-page="Math.ceil(data.total / pageData.limit)"
+      :total-page="Math.ceil(total / pageData.limit)"
       :is-loading="status === 'pending'"
     />
 
@@ -254,7 +246,7 @@ const handlePurge = async () => {
       v-model="isPurgeOpen"
       role="alertdialog"
       title="彻底删除这个话题"
-      description="删除后无法恢复, 话题及其下的全部内容都会从数据库中抹除, 已发放的萌萌点不会退回。"
+      description="删除后无法恢复, 话题及其下的全部内容都会从数据库中抹除, 已发放的萌萌点不会追回。"
       inner-class-name="w-full max-w-lg"
     >
       <KunLoading v-if="isLoadingStats" />
@@ -270,7 +262,7 @@ const handlePurge = async () => {
 
         <div class="space-y-1">
           <p class="font-medium break-words">{{ purgeTarget.title }}</p>
-          <KunUserChip :user="purgeTarget.user" size="xs" />
+          <KunUserChip :user="toKunUser(purgeTarget.author)" size="xs" />
         </div>
 
         <div class="flex flex-wrap gap-2 text-sm">
@@ -287,6 +279,14 @@ const handlePurge = async () => {
 
         <p class="text-default-500 text-sm">
           共 {{ purgeTotal }} 项关联数据将一并删除。
+        </p>
+
+        <p
+          v-if="purgeTarget.open_lottery_escrow > 0"
+          class="text-default-500 text-sm"
+        >
+          进行中的抽奖托管着
+          {{ purgeTarget.open_lottery_escrow }} 萌萌点, 删除时会退回给抽奖发起人。
         </p>
 
         <div class="flex justify-end gap-2">

@@ -323,6 +323,9 @@ func CheckF9(doc *huma.OpenAPI) []string {
 			accepts := slices.ContainsFunc(op.Parameters, func(p *huma.Param) bool {
 				return p.In == "query" && p.Name == "include_total"
 			})
+			paged := slices.ContainsFunc(op.Parameters, func(p *huma.Param) bool {
+				return p.In == "query" && p.Name == "page"
+			})
 			for status, resp := range op.Responses {
 				if !isSuccess(status) {
 					continue
@@ -334,7 +337,15 @@ func CheckF9(doc *huma.OpenAPI) []string {
 					}
 					at := fmt.Sprintf("%s %s %s %s", opMethod(op), path, status, mt)
 					_, declares := s.Properties["total"]
+					_, pageNumber := s.Properties["total_relation"]
 					switch {
+					case pageNumber && !paged:
+						errs = append(errs, "F9: "+at+" is a page-number collection but the operation has no page parameter")
+					case pageNumber && accepts:
+						errs = append(errs, "F9: "+at+" is a page-number collection, which always sends total, but the operation accepts include_total")
+					case pageNumber && !declares:
+						errs = append(errs, "F9: "+at+" is a page-number collection but does not declare total")
+					case pageNumber:
 					case declares && !accepts:
 						errs = append(errs, "F9: "+at+" declares total but the operation has no include_total parameter")
 					case accepts && !declares:

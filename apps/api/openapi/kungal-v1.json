@@ -35,6 +35,118 @@
         ],
         "type": "object"
       },
+      "AdminTopic": {
+        "properties": {
+          "author": {
+            "$ref": "#/components/schemas/UserRef",
+            "description": "The topic's author."
+          },
+          "comment_count": {
+            "description": "Comments the purge deletes.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "drawn_lottery_count": {
+            "description": "Of lottery_count, how many are drawn: their winners lose the page they collect prizes from.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "favorite_count": {
+            "description": "Favorites the purge deletes.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "hidden_by": {
+            "description": "Who hid the topic. null when state is published.",
+            "enum": [
+              "author",
+              "moderator",
+              "trust",
+              null
+            ],
+            "maxLength": 9,
+            "type": [
+              "string",
+              "null"
+            ],
+            "x-vocabulary-closed": true
+          },
+          "id": {
+            "description": "Topic id. JSON string of a decimal integer.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "lottery_count": {
+            "description": "Lotteries the purge deletes, drawn or not.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "object": {
+            "description": "Type discriminant. Always admin_topic.",
+            "enum": [
+              "admin_topic"
+            ],
+            "maxLength": 11,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "open_lottery_escrow": {
+            "description": "Moemoepoint held by the topic's open lotteries, which purgeTopic hands back to their authors, who paid for those point prizes.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "poll_count": {
+            "description": "Polls the purge deletes.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "reply_count": {
+            "description": "Replies the purge deletes.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "state": {
+            "description": "Lifecycle state.",
+            "enum": [
+              "published",
+              "hidden"
+            ],
+            "maxLength": 9,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "title": {
+            "description": "Topic title as stored. Free text; never use it as a decision input.",
+            "maxLength": 233,
+            "type": "string"
+          }
+        },
+        "required": [
+          "object",
+          "id",
+          "title",
+          "state",
+          "hidden_by",
+          "author",
+          "reply_count",
+          "comment_count",
+          "poll_count",
+          "lottery_count",
+          "drawn_lottery_count",
+          "favorite_count",
+          "open_lottery_escrow"
+        ],
+        "type": "object"
+      },
       "BatchListTopicState": {
         "properties": {
           "items": {
@@ -1044,6 +1156,94 @@
           "depth",
           "anchor",
           "children"
+        ],
+        "type": "object"
+      },
+      "HiddenTopicSummary": {
+        "properties": {
+          "author": {
+            "$ref": "#/components/schemas/UserRef",
+            "description": "The topic's author. Banned authors are listed too: this is a staff table."
+          },
+          "bumped_at": {
+            "description": "Bump time, which is also this collection's sort key.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": "string"
+          },
+          "created_at": {
+            "description": "Creation time.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": "string"
+          },
+          "hidden_by": {
+            "description": "Who hid the topic: its author, a moderator, or the trust-and-safety service.",
+            "enum": [
+              "author",
+              "moderator",
+              "trust",
+              null
+            ],
+            "maxLength": 9,
+            "type": [
+              "string",
+              "null"
+            ],
+            "x-vocabulary-closed": true
+          },
+          "id": {
+            "description": "Topic id. JSON string of a decimal integer.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "object": {
+            "description": "Type discriminant. Always topic.",
+            "enum": [
+              "topic"
+            ],
+            "maxLength": 5,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "reply_count": {
+            "description": "Number of replies.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "state": {
+            "description": "Lifecycle state. Always hidden in this collection.",
+            "enum": [
+              "published",
+              "hidden"
+            ],
+            "maxLength": 9,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "title": {
+            "description": "Topic title as stored. Free text; never use it as a decision input.",
+            "maxLength": 233,
+            "type": "string"
+          }
+        },
+        "required": [
+          "object",
+          "id",
+          "title",
+          "state",
+          "hidden_by",
+          "author",
+          "reply_count",
+          "bumped_at",
+          "created_at"
         ],
         "type": "object"
       },
@@ -3639,6 +3839,49 @@
         "required": [
           "object",
           "nsfw_display"
+        ],
+        "type": "object"
+      },
+      "PageListHiddenTopicSummary": {
+        "properties": {
+          "items": {
+            "description": "Members of this page. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/HiddenTopicSummary"
+            },
+            "type": "array"
+          },
+          "object": {
+            "description": "Type discriminant. Always list.",
+            "enum": [
+              "list"
+            ],
+            "maxLength": 4,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "total": {
+            "description": "Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "total_relation": {
+            "description": "eq when total is exact, gte when it stopped at the depth limit and there are at least that many.",
+            "enum": [
+              "eq",
+              "gte"
+            ],
+            "maxLength": 3,
+            "type": "string",
+            "x-vocabulary-closed": true
+          }
+        },
+        "required": [
+          "object",
+          "items",
+          "total",
+          "total_relation"
         ],
         "type": "object"
       },
@@ -7011,6 +7254,352 @@
   },
   "openapi": "3.1.0",
   "paths": {
+    "/admin/hidden-topics": {
+      "get": {
+        "description": "The staff table of every hidden topic, whoever hid it, newest bump first with ties broken by descending id. A page-number collection: page × limit may not exceed 10000, and total counts under the same filters as items. It needs the topic.view_hidden permission, which a Bearer request never carries.",
+        "operationId": "listHiddenTopics",
+        "parameters": [
+          {
+            "description": "1-based page number. page × limit may not exceed 10000.",
+            "explode": false,
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "default": 1,
+              "description": "1-based page number. page × limit may not exceed 10000.",
+              "format": "int64",
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Page size. 1–100, default 20. Values above 100 are rejected, not clamped.",
+            "explode": false,
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 20,
+              "description": "Page size. 1–100, default 20. Values above 100 are rejected, not clamped.",
+              "format": "int64",
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Only topics hidden this way. Absent means every hidden topic.",
+            "explode": false,
+            "in": "query",
+            "name": "hidden_by",
+            "schema": {
+              "description": "Only topics hidden this way. Absent means every hidden topic.",
+              "enum": [
+                "author",
+                "moderator",
+                "trust"
+              ],
+              "maxLength": 9,
+              "type": "string",
+              "x-vocabulary-closed": true
+            }
+          },
+          {
+            "description": "Case-insensitive substring of the title. Free text; never use it as a decision input.",
+            "explode": false,
+            "in": "query",
+            "name": "q",
+            "schema": {
+              "description": "Case-insensitive substring of the title. Free text; never use it as a decision input.",
+              "maxLength": 100,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageListHiddenTopicSummary"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "PERMISSION_REQUIRED when the caller lacks topic.view_hidden."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List hidden topics",
+        "tags": [
+          "topics"
+        ]
+      }
+    },
+    "/admin/topics/{topic_id}": {
+      "delete": {
+        "description": "Deletes the topic for good, with its replies, comments, polls, lotteries, favorites, view buckets and the notifications that link to it. An open lottery's escrowed moemoepoint goes back to its author first. Hiding is the reversible alternative. It needs the topic.delete_any permission.",
+        "operationId": "purgeTopic",
+        "parameters": [
+          {
+            "description": "Topic id.",
+            "in": "path",
+            "name": "topic_id",
+            "required": true,
+            "schema": {
+              "description": "Topic id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "PERMISSION_REQUIRED when the caller lacks topic.delete_any."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when the topic does not exist."
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "LOTTERY_DRAWN when one of the topic's lotteries is being drawn right now; retry once the draw ends."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Purge a topic",
+        "tags": [
+          "topics"
+        ]
+      },
+      "get": {
+        "description": "The topic as staff see it before purging it: what purgeTopic would delete with it, and how much lottery escrow it would hand back. It needs the topic.delete_any permission.",
+        "operationId": "getAdminTopic",
+        "parameters": [
+          {
+            "description": "Topic id.",
+            "in": "path",
+            "name": "topic_id",
+            "required": true,
+            "schema": {
+              "description": "Topic id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminTopic"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "PERMISSION_REQUIRED when the caller lacks topic.delete_any."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when the topic does not exist."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get a topic's staff view",
+        "tags": [
+          "topics"
+        ]
+      }
+    },
     "/comments/{comment_id}": {
       "delete": {
         "description": "Deletes the comment with its likes. It needs can_delete. Its own replies stay and become top-level comments. An author deleting their own comment is charged 3 moemoepoint times one plus its likes; staff deleting it charges the author 3. The charge never blocks the deletion: it is capped at the author's cached balance, so an author with nothing left pays nothing. NOT_FOUND under the same conditions as getComment.",

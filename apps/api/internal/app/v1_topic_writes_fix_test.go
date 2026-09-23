@@ -70,7 +70,7 @@ const (
 	w3TopicPaid    = 930000208
 
 	w3CoverHash        = "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
-	gradedExplicitHash = "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+	gradedExplicitHash = "c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3"
 	w3CoverAlt         = "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
 )
 

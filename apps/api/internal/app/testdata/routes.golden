@@ -1,5 +1,4 @@
 DELETE /api/admin/friend-link                         cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → RequirePermission → FriendLinkHandler.Delete
-DELETE /api/admin/topic/:tid                          cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → RequirePermission → TopicAdminHandler.Delete
 DELETE /api/admin/user/:id/content                    cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → RequirePermission → PurgeHandler.PurgeUserContent
 DELETE /api/doc/article                               cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → RequirePermission → ArticleHandler.DeleteArticle
 DELETE /api/doc/category                              cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → RequirePermission → CategoryHandler.DeleteCategory
@@ -15,6 +14,7 @@ DELETE /api/toolset/:id                               cors.New → middleware.Na
 DELETE /api/toolset/:id/resource                      cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → ResourceHandler.DeleteResource
 DELETE /api/update/history                            cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → RequirePermission → UpdateHandler.DeleteHistory
 DELETE /api/update/todo                               cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → RequirePermission → UpdateHandler.DeleteTodo
+DELETE /api/v1/admin/topics/:topic_id                 cors.New → v1Headers → fiberAdapter.Handle
 DELETE /api/v1/comments/:comment_id                   cors.New → v1Headers → fiberAdapter.Handle
 DELETE /api/v1/comments/:comment_id/like              cors.New → v1Headers → fiberAdapter.Handle
 DELETE /api/v1/lotteries/:lottery_id                  cors.New → v1Headers → fiberAdapter.Handle
@@ -44,8 +44,6 @@ GET    /api/admin/overview/all                        cors.New → middleware.Na
 GET    /api/admin/overview/stats                      cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → RequirePermission → OverviewHandler.GetStats
 GET    /api/admin/permission-audit                    cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → RequireAdmin → PermissionAuditHandler.List
 GET    /api/admin/role-permissions                    cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → RequireAdmin → RolePermissionHandler.GetMatrix
-GET    /api/admin/topic/:tid/purge-stats              cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → RequirePermission → TopicAdminHandler.PurgeStats
-GET    /api/admin/topic/hidden                        cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → RequirePermission → TopicAdminHandler.ListHidden
 GET    /api/admin/trust/review-items                  cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → RequirePermission → TrustHandler.ListReviewItems
 GET    /api/admin/trust/review-items/:id              cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → RequirePermission → TrustHandler.GetReviewItem
 GET    /api/admin/user-permissions/:uid               cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → RequireAdmin → UserPermissionHandler.GetView
@@ -152,6 +150,8 @@ GET    /api/user/:id/resources                        cors.New → middleware.Na
 GET    /api/user/:id/toolsets                         cors.New → middleware.NamePreference → ContentStance → ToolsetHandler.GetUserToolsets
 GET    /api/user/:id/topics                           cors.New → middleware.NamePreference → ContentStance → OptionalAuth → UserHandler.GetUserTopics
 GET    /api/user/notification-preferences             cors.New → middleware.NamePreference → ContentStance → Auth → UserHandler.GetNotificationPreferences
+GET    /api/v1/admin/hidden-topics                    cors.New → v1Headers → fiberAdapter.Handle
+GET    /api/v1/admin/topics/:topic_id                 cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/comments/:comment_id                   cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/comments/:comment_id/source            cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/galgames/:galgame_id/moyu-patches      cors.New → v1Headers → fiberAdapter.Handle

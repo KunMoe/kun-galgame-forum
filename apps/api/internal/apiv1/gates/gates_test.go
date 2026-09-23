@@ -399,6 +399,31 @@ func TestF9PairedTotalPasses(t *testing.T) {
 	}
 }
 
+type pagedIn struct {
+	collect.PageNumber
+}
+
+type pagedCountedIn struct {
+	collect.PageNumber
+	collect.Total
+}
+
+func TestF9PageNumberCollectionPasses(t *testing.T) {
+	if errs := gates.CheckAll(spec(t, listing[pagedIn, repr.PageList[repr.UserRef]])); len(errs) > 0 {
+		t.Fatalf("a page-number collection failed:\n%s", strings.Join(errs, "\n"))
+	}
+}
+
+func TestF9PageNumberCollectionWithoutPage(t *testing.T) {
+	expect(t, gates.CheckF9(spec(t, listing[struct{}, repr.PageList[repr.UserRef]])),
+		"GET /things 200 application/json is a page-number collection but the operation has no page parameter")
+}
+
+func TestF9PageNumberCollectionWithIncludeTotal(t *testing.T) {
+	expect(t, gates.CheckF9(spec(t, listing[pagedCountedIn, repr.PageList[repr.UserRef]])),
+		"GET /things 200 application/json is a page-number collection, which always sends total, but the operation accepts include_total")
+}
+
 func TestClosedEnumSetsExtension(t *testing.T) {
 	s := repr.ClosedEnum("safe", "suggestive", "explicit")
 	if s.Extensions["x-vocabulary-closed"] != true {

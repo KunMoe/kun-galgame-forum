@@ -4,6 +4,50 @@
  */
 
 export interface paths {
+    "/admin/hidden-topics": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List hidden topics
+         * @description The staff table of every hidden topic, whoever hid it, newest bump first with ties broken by descending id. A page-number collection: page × limit may not exceed 10000, and total counts under the same filters as items. It needs the topic.view_hidden permission, which a Bearer request never carries.
+         */
+        get: operations["listHiddenTopics"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/topics/{topic_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a topic's staff view
+         * @description The topic as staff see it before purging it: what purgeTopic would delete with it, and how much lottery escrow it would hand back. It needs the topic.delete_any permission.
+         */
+        get: operations["getAdminTopic"];
+        put?: never;
+        post?: never;
+        /**
+         * Purge a topic
+         * @description Deletes the topic for good, with its replies, comments, polls, lotteries, favorites, view buckets and the notifications that link to it. An open lottery's escrowed moemoepoint goes back to its author first. Hiding is the reversible alternative. It needs the topic.delete_any permission.
+         */
+        delete: operations["purgeTopic"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/comments/{comment_id}": {
         parameters: {
             query?: never;
@@ -1326,6 +1370,64 @@ export interface components {
             /** @description Granted users when access_scope is users, in grant order. The author is never listed. Banned and deleted users keep their entry with name null. Empty array otherwise. */
             users: components["schemas"]["UserRef"][];
         };
+        AdminTopic: {
+            /** @description The topic's author. */
+            author: components["schemas"]["UserRef"];
+            /**
+             * Format: int64
+             * @description Comments the purge deletes.
+             */
+            comment_count: number;
+            /**
+             * Format: int64
+             * @description Of lottery_count, how many are drawn: their winners lose the page they collect prizes from.
+             */
+            drawn_lottery_count: number;
+            /**
+             * Format: int64
+             * @description Favorites the purge deletes.
+             */
+            favorite_count: number;
+            /**
+             * @description Who hid the topic. null when state is published.
+             * @enum {string|null}
+             */
+            hidden_by: "author" | "moderator" | "trust" | null;
+            /** @description Topic id. JSON string of a decimal integer. */
+            id: string;
+            /**
+             * Format: int64
+             * @description Lotteries the purge deletes, drawn or not.
+             */
+            lottery_count: number;
+            /**
+             * @description Type discriminant. Always admin_topic.
+             * @enum {string}
+             */
+            object: "admin_topic";
+            /**
+             * Format: int64
+             * @description Moemoepoint held by the topic's open lotteries, which purgeTopic hands back to their authors, who paid for those point prizes.
+             */
+            open_lottery_escrow: number;
+            /**
+             * Format: int64
+             * @description Polls the purge deletes.
+             */
+            poll_count: number;
+            /**
+             * Format: int64
+             * @description Replies the purge deletes.
+             */
+            reply_count: number;
+            /**
+             * @description Lifecycle state.
+             * @enum {string}
+             */
+            state: "published" | "hidden";
+            /** @description Topic title as stored. Free text; never use it as a decision input. */
+            title: string;
+        };
         BatchListTopicState: {
             /** @description One member per requested id that the caller may see. Empty array, never null. */
             items: components["schemas"]["TopicState"][];
@@ -1726,6 +1828,44 @@ export interface components {
              * @enum {string}
              */
             object: "heading";
+        };
+        HiddenTopicSummary: {
+            /** @description The topic's author. Banned authors are listed too: this is a staff table. */
+            author: components["schemas"]["UserRef"];
+            /**
+             * Format: date-time
+             * @description Bump time, which is also this collection's sort key.
+             */
+            bumped_at: string;
+            /**
+             * Format: date-time
+             * @description Creation time.
+             */
+            created_at: string;
+            /**
+             * @description Who hid the topic: its author, a moderator, or the trust-and-safety service.
+             * @enum {string|null}
+             */
+            hidden_by: "author" | "moderator" | "trust" | null;
+            /** @description Topic id. JSON string of a decimal integer. */
+            id: string;
+            /**
+             * @description Type discriminant. Always topic.
+             * @enum {string}
+             */
+            object: "topic";
+            /**
+             * Format: int64
+             * @description Number of replies.
+             */
+            reply_count: number;
+            /**
+             * @description Lifecycle state. Always hidden in this collection.
+             * @enum {string}
+             */
+            state: "published" | "hidden";
+            /** @description Topic title as stored. Free text; never use it as a decision input. */
+            title: string;
         };
         Image: {
             /** @description Image-service content hash. */
@@ -2675,6 +2815,25 @@ export interface components {
              * @enum {string}
              */
             object: "nsfw_display";
+        };
+        PageListHiddenTopicSummary: {
+            /** @description Members of this page. Empty array, never null. */
+            items: components["schemas"]["HiddenTopicSummary"][];
+            /**
+             * @description Type discriminant. Always list.
+             * @enum {string}
+             */
+            object: "list";
+            /**
+             * Format: int64
+             * @description Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.
+             */
+            total: number;
+            /**
+             * @description eq when total is exact, gte when it stopped at the depth limit and there are at least that many.
+             * @enum {string}
+             */
+            total_relation: "eq" | "gte";
         };
         ParagraphNode: {
             /** @description Inline nodes of the paragraph. Empty array for a blank line the author kept. */
@@ -3834,6 +3993,241 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    listHiddenTopics: {
+        parameters: {
+            query?: {
+                /** @description 1-based page number. page × limit may not exceed 10000. */
+                page?: number;
+                /** @description Page size. 1–100, default 20. Values above 100 are rejected, not clamped. */
+                limit?: number;
+                /** @description Only topics hidden this way. Absent means every hidden topic. */
+                hidden_by?: "author" | "moderator" | "trust";
+                /** @description Case-insensitive substring of the title. Free text; never use it as a decision input. */
+                q?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PageListHiddenTopicSummary"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description PERMISSION_REQUIRED when the caller lacks topic.view_hidden. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getAdminTopic: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Topic id. */
+                topic_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminTopic"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description PERMISSION_REQUIRED when the caller lacks topic.delete_any. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the topic does not exist. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    purgeTopic: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Topic id. */
+                topic_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description PERMISSION_REQUIRED when the caller lacks topic.delete_any. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the topic does not exist. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description LOTTERY_DRAWN when one of the topic's lotteries is being drawn right now; retry once the draw ends. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     getComment: {
         parameters: {
             query?: never;
