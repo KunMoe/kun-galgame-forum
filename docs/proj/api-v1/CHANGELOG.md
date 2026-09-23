@@ -1,5 +1,30 @@
 # API v1 changelog
 
+## 2026-09-24 (G4 galgame work detail)
+
+Breaking for `GET /api/galgame/:id`, `PUT /api/galgame/:id/like`, `GET /api/galgame/:id/link/all`, `GET /api/galgame/interactions/mine` and `GET /api/galgame/drafts`; all five are gone. `DELETE /api/galgame/:id` (submission withdraw) stays until G7. No App build calls them; `docs/proj/app-direct-api.md` names the replacements.
+
+Offered:
+
+- `GET /api/v1/works/{work_id}` now answers the full `Work` (G3 answered a `WorkRef`; every `WorkRef` field keeps its name and type). Beyond the `WorkSummary` fields, it carries:
+  - `aliases`, `original_language`, `content_rating` (`all_ages` | `r18`), `intros` (Markdown source), `links` (the old `/link/all`), `external_refs`;
+  - `covers` (with `vote_count` and `viewer.has_voted`), `screenshots`, `companies` (with `attribution_roles`), `engines`, `series`, `tags`, `credits`, `roster`;
+  - `external_ratings` (`rating_value`, `source_rank`, `buckets`, `stats`), `playtimes`, `resource_types`, `favorite_count` (catalog's favourites metric), `is_resource_publish_banned`, `creator`, `contributors`, `dlsite`;
+  - `viewer` (`has_liked`, `has_favorited`, `playtime` with `play_state`, `can_ban_resource_publish`).
+
+  It does not carry the ratings list; read `GET /api/v1/ratings?work_id=`. Adult tags are left out unless `include_nsfw=true`; the work itself is not gated (`is_nsfw`). A merged work is `404 ENTITY_MERGED` with `object: "work"` and `current_id`. Every read counts one view.
+- `PUT` / `DELETE /api/v1/works/{work_id}/like` (slot, both 200 `{work_id, like_count, viewer: {has_liked}}`). Liking your own page is `403 SELF_LIKE_FORBIDDEN` (was `400`); an unknown or hidden work is `404`.
+- `GET /api/v1/me/work-states?work_ids=` (1–100, comma form): `has_liked` / `has_favorited` per readable id, the rest in `missing`. It replaces the dump of every like the caller ever made. If the caller's folders cannot be read, `has_favorited` is `false` and `has_liked` is still answered.
+
+`WorkRef.cover.sexual` (on every face that carries a `WorkRef`) is now the portrait's real grade; it was always `null`.
+
+Fixed:
+
+- **The folder picker could empty every folder.** It re-reads the caller's folders when it opens. If that read failed, it showed an empty list, and Save sent `PUT /galgame/:id/collections {collection_ids: []}`, taking the work out of every folder the caller had put it in. Save now waits for a successful read.
+- A like on a page with no creator paid moemoepoint to user 0, and replaying `PUT /like` undid the like (it was a toggle).
+- The view counter ran in a goroutine that dropped its error. It now counts synchronously and still feeds the 7-day / 30-day rankings.
+- `/link/all` answered an unknown or hidden work with `200 []`; the links are now part of the work, which is `404`.
+
 ## 2026-09-24 (G3 galgame resources)
 
 Breaking for every `/api/galgame-resource*` and `/api/galgame/:id/resource*` route, `PUT /api/admin/galgame/:id/resource-publish-ban`, and `GET /api/search` (its last lane, `type=resource`). 12 legacy routes go; no App build calls them.
