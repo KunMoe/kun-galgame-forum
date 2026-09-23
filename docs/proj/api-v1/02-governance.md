@@ -55,7 +55,7 @@ G 编号沿用 infra 07 §2 的同名门，F 编号是论坛补的。**每道门
 | **G14** | 字符串必须有 `enum` / `format` / `pattern` 之一或自由文本声明，且全部有 `maxLength`；数值有 `minimum` | spec 测试 | api |
 | **G16** | `request_id` 匹配 `^req_[0-9A-HJKMNP-TV-Z]{26}$`；游标匹配 `^cur_` | spec 测试 + 契约测试 | api · db |
 | **G17** | 写得进去就读得出来：写操作路径里的每个 `{x_id}`，以它结尾的那段路径必须有 GET，且其 200 响应是带 `id` 的对象。例如 `PUT /topics/{topic_id}/like` 要求 `GET /topics/{topic_id}` | spec 测试 | api |
-| **F1** | 命名规则（[01 §3](01-standard.md)），property 与参数都查：布尔以 `is_` / `has_` / `can_` 开头（查询参数另允许 `include_`）、`_at` ↔ date-time、`_date` ↔ date、`_count` 为非负整数、封闭枚举值是 snake_case（具名例外只有 `sections`：论坛的 URL slug） | spec 测试 | api |
+| **F1** | 命名规则（[01 §3](01-standard.md)），property 与参数都查：布尔以 `is_` / `has_` / `can_` 开头（查询参数另允许 `include_`）、`_at` ↔ date-time、`_date` ↔ date、`_count` 为非负整数、封闭枚举值是 snake_case（具名例外只有 `sections` / `section`：论坛的 URL slug） | spec 测试 | api |
 | **F8** | v1 源码（与 G5 同一组目录）里没有中日韩文字的字符串字面量：给人看的文字由客户端按语言出，服务端发 code 或 `null`。W0a-5 验收时发现删号作者经 `userclient.Placeholder` 以「已注销用户」上了线，现在 `UserRef.name` 为 `null` | Go AST | api |
 | **F9** | 列表响应声明 `total` 当且仅当操作接受 `include_total`：`repr.List` 不带 `total`，嵌了 `collect.Total` 的集合返回 `repr.CountedList`。W0b-3 之前 `List` 自带 `total`，三个端点都声明了一个永远不会出现的字段，生成的类型里是一个读出来恒为 `undefined` 的 `total?: number` | spec 测试 | api |
 | **F10** | 路径模板里的每个 `{变量}` 恰有一个同名 `in: path` 参数，反之亦然。W2 契约初稿把路径参数放进未导出类型的嵌入结构体，huma 静默丢掉，`/topics/{topic_id}` 没有参数也没推导出 400，其余各门全部放行 | spec 测试 | api |

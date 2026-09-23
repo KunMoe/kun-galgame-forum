@@ -318,7 +318,7 @@ func CheckF1(doc *huma.OpenAPI) []string {
 		if strings.HasSuffix(name, "_count") && (r.Type != huma.TypeInteger || r.Minimum == nil || *r.Minimum != 0) {
 			errs = append(errs, "F1: "+at+" must be an integer with minimum 0")
 		}
-		if name == "sections" {
+		if name == "sections" || name == "section" {
 			return
 		}
 		if languageTagProperties[name] {

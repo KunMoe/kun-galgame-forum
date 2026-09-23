@@ -40,17 +40,17 @@ func TestLikesSortTokenMapsToLikeCount(t *testing.T) {
 }
 
 func TestFingerprintIncludesNSFWAndAuth(t *testing.T) {
-	base := listFingerprint("bumped_desc", "", false, false)
-	if listFingerprint("bumped_desc", "", true, false) == base {
+	base := listFingerprint("bumped_desc", "", "", false, false)
+	if listFingerprint("bumped_desc", "", "", true, false) == base {
 		t.Fatal("include_nsfw must affect the cursor fingerprint")
 	}
-	if listFingerprint("bumped_desc", "", false, true) == base {
+	if listFingerprint("bumped_desc", "", "", false, true) == base {
 		t.Fatal("signed-in vs anonymous must affect the cursor fingerprint")
 	}
-	if listFingerprint("bumped_desc", "galgame", false, false) == base {
+	if listFingerprint("bumped_desc", "galgame", "", false, false) == base {
 		t.Fatal("category must affect the cursor fingerprint")
 	}
-	if listFingerprint("created_desc", "", false, false) == base {
+	if listFingerprint("created_desc", "", "", false, false) == base {
 		t.Fatal("sort must affect the cursor fingerprint")
 	}
 }

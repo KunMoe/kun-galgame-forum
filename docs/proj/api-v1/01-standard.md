@@ -159,7 +159,7 @@ infra 的 `errors[]` 只有英文 `detail`。客户端要本地化「标题最�
 
 | 词表 | 取值形如 | 理由 |
 |---|---|---|
-| 话题版块 `sections` | `g-walkthrough` | 它们同时是 `/section/{key}` 页面的 URL 段，改拼写就改了公开 URL |
+| 话题版块 `sections` / `section` | `g-walkthrough` | 它们同时是 `/section/{key}` 页面的 URL 段，改拼写就改了公开 URL。单数的 `section` 是同一个词表（`listTopics` 的过滤参数、`Section` 对象的键），X1b 加入 |
 | 语言标签（`language`；工具集 `interface_language`；资源 `languages` / `resource_language` / `resource_languages`） | `zh-cn` | 小写 BCP 47 标签：存储、写路径与网页词表都用它，WS 的 `language` 已按同样的标签下发；改成 `zh_cn` 就要在每次读写上永久翻译。F1 对这几个属性改查「小写 BCP 47 或 `other` / `others`」 |
 
 **禁用名**（任何 property 或参数名都不得是）：`kind`、`gid`、`tid`、`uid`、`rid`、`pid`、`cid`、`created`、`updated`、`edited`、`view`、`status_update_time`、`user`，以及成功响应顶层的 `code` / `message` / `data` / `success`。

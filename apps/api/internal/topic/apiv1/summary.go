@@ -2,6 +2,7 @@ package apiv1
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 
 	"kun-galgame-api/internal/apiv1/repr"
@@ -18,6 +19,10 @@ const sectionEnum = "g-walkthrough,g-chatting,g-article,g-seeking,g-news,g-relea
 	"o-anime,o-comics,o-music,o-novel,o-daily,o-essay,o-forum,o-patch,o-other"
 
 type SectionSlug string
+
+func IsSectionSlug(s string) bool {
+	return slices.Contains(strings.Split(sectionEnum, ","), s)
+}
 
 func (SectionSlug) Schema(huma.Registry) *huma.Schema {
 	parts := strings.Split(sectionEnum, ",")

@@ -3486,6 +3486,37 @@
         ],
         "type": "object"
       },
+      "ListSection": {
+        "properties": {
+          "items": {
+            "description": "Members of this page. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/Section"
+            },
+            "type": "array"
+          },
+          "next_cursor": {
+            "description": "Opaque keyset cursor. Omitted on the last page.",
+            "maxLength": 512,
+            "pattern": "^cur_[A-Za-z0-9_-]+$",
+            "type": "string"
+          },
+          "object": {
+            "description": "Type discriminant. Always list.",
+            "enum": [
+              "list"
+            ],
+            "maxLength": 4,
+            "type": "string",
+            "x-vocabulary-closed": true
+          }
+        },
+        "required": [
+          "object",
+          "items"
+        ],
+        "type": "object"
+      },
       "ListTopicDraftSummary": {
         "properties": {
           "items": {
@@ -7897,6 +7928,137 @@
         },
         "required": [
           "can_edit"
+        ],
+        "type": "object"
+      },
+      "Section": {
+        "properties": {
+          "category": {
+            "description": "The topic category the section belongs to.",
+            "enum": [
+              "galgame",
+              "technique",
+              "others"
+            ],
+            "maxLength": 9,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "latest_topic": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SectionLatestTopic"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The newest of those topics whose author is still shown. null when there is none."
+          },
+          "object": {
+            "description": "Type discriminant. Always section.",
+            "enum": [
+              "section"
+            ],
+            "maxLength": 7,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "section": {
+            "description": "The section, as filed on a topic's sections and as the /section/{section} page segment.",
+            "enum": [
+              "g-walkthrough",
+              "g-chatting",
+              "g-article",
+              "g-seeking",
+              "g-news",
+              "g-releases",
+              "g-other",
+              "t-crack",
+              "t-web",
+              "t-languages",
+              "t-help",
+              "t-linux",
+              "t-practical",
+              "t-ai",
+              "t-android",
+              "t-adobe",
+              "t-algorithm",
+              "t-other",
+              "o-anime",
+              "o-comics",
+              "o-music",
+              "o-novel",
+              "o-daily",
+              "o-essay",
+              "o-forum",
+              "o-patch",
+              "o-other"
+            ],
+            "maxLength": 13,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "topic_count": {
+            "description": "Published topics filed under the section that anyone may open, NSFW ones included. A size statistic, not the total of any list.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "view_count": {
+            "description": "Views summed over the same topics as topic_count.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "object",
+          "section",
+          "category",
+          "topic_count",
+          "view_count",
+          "latest_topic"
+        ],
+        "type": "object"
+      },
+      "SectionLatestTopic": {
+        "properties": {
+          "created_at": {
+            "description": "Creation time.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": "string"
+          },
+          "id": {
+            "description": "Topic id. JSON string of a decimal integer.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "object": {
+            "description": "Type discriminant. Always topic.",
+            "enum": [
+              "topic"
+            ],
+            "maxLength": 5,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "title": {
+            "description": "Topic title. Free text; never use it as a decision input.",
+            "maxLength": 233,
+            "type": "string"
+          }
+        },
+        "required": [
+          "object",
+          "id",
+          "title",
+          "created_at"
         ],
         "type": "object"
       },
@@ -24036,6 +24198,77 @@
         ]
       }
     },
+    "/sections": {
+      "get": {
+        "description": "Every topic section in vocabulary order with its size and newest topic, empty sections included. Not paged: the vocabulary is closed and small. The topics of one section are listTopics with section set.",
+        "operationId": "listSections",
+        "parameters": [
+          {
+            "description": "When set, only this category's sections. Omitted means all of them.",
+            "explode": false,
+            "in": "query",
+            "name": "category",
+            "schema": {
+              "description": "When set, only this category's sections. Omitted means all of them.",
+              "enum": [
+                "galgame",
+                "technique",
+                "others"
+              ],
+              "maxLength": 9,
+              "type": "string",
+              "x-vocabulary-closed": true
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListSection"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the account service cannot tell which newest topics have a shown author."
+          }
+        },
+        "summary": "List topic sections",
+        "tags": [
+          "topics"
+        ]
+      }
+    },
     "/todos": {
       "get": {
         "description": "Lists tasks as a cursor page, newest first, ties broken by descending id. There is one sort and no sort parameter. state keeps only tasks in that state; absent lists every state. The cursor is bound to state; reusing it with another state is INVALID_CURSOR. include_total=true adds total, counted under the same state filter as items. Tasks by banned authors are listed like any other.",
@@ -24748,6 +24981,47 @@
               "default": false,
               "description": "When true, NSFW topics are included. Default false.",
               "type": "boolean"
+            }
+          },
+          {
+            "description": "When set, only topics filed under this section. Omitted means every section.",
+            "explode": false,
+            "in": "query",
+            "name": "section",
+            "schema": {
+              "description": "When set, only topics filed under this section. Omitted means every section.",
+              "enum": [
+                "g-walkthrough",
+                "g-chatting",
+                "g-article",
+                "g-seeking",
+                "g-news",
+                "g-releases",
+                "g-other",
+                "t-crack",
+                "t-web",
+                "t-languages",
+                "t-help",
+                "t-linux",
+                "t-practical",
+                "t-ai",
+                "t-android",
+                "t-adobe",
+                "t-algorithm",
+                "t-other",
+                "o-anime",
+                "o-comics",
+                "o-music",
+                "o-novel",
+                "o-daily",
+                "o-essay",
+                "o-forum",
+                "o-patch",
+                "o-other"
+              ],
+              "maxLength": 13,
+              "type": "string",
+              "x-vocabulary-closed": true
             }
           }
         ],

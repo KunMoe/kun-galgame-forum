@@ -10,6 +10,7 @@ import (
 	messageapiv1 "kun-galgame-api/internal/message/apiv1"
 	"kun-galgame-api/internal/middleware"
 	permissionapiv1 "kun-galgame-api/internal/permission/apiv1"
+	sectionapiv1 "kun-galgame-api/internal/section/apiv1"
 	topicapiv1 "kun-galgame-api/internal/topic/apiv1"
 	topicRepo "kun-galgame-api/internal/topic/repository"
 	trustapiv1 "kun-galgame-api/internal/trust/apiv1"
@@ -56,6 +57,7 @@ func (a *App) setupRoutes() {
 		docapiv1.Register(a.newDocV1()),
 		friendlinkapiv1.Register(a.newFriendLinkV1()),
 		appreleaseapiv1.Register(a.newAppReleaseV1()),
+		sectionapiv1.Register(a.newSectionV1()),
 	)
 
 	// Deliberately touches neither DB nor Redis: the container HEALTHCHECK reads
@@ -90,9 +92,6 @@ func (a *App) setupRoutes() {
 	api.Get("/ranking/galgame", a.RankingHandler.GetGalgameRanking)
 	api.Get("/ranking/topic", a.RankingHandler.GetTopicRanking)
 	api.Get("/ranking/user", a.RankingHandler.GetUserRanking)
-
-	api.Get("/section", a.Authn.OptionalAuth(), a.SectionHandler.GetSectionTopics)
-	api.Get("/category", a.SectionHandler.GetCategories)
 
 	api.Get("/activity", a.ActivityHandler.GetActivity)
 	api.Get("/activity/tab", a.ActivityHandler.GetTab)

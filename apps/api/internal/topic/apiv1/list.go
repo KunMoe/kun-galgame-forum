@@ -45,9 +45,10 @@ func New(
 
 type listTopicsInput struct {
 	collect.Page
-	Sort        SortToken `query:"sort" default:"bumped_desc"`
-	Category    string    `query:"category" enum:"galgame,technique,others" maxLength:"9" doc:"When set, only this category. Omitted means every category. There is no all token."`
-	IncludeNSFW bool      `query:"include_nsfw" default:"false" doc:"When true, NSFW topics are included. Default false."`
+	Sort        SortToken   `query:"sort" default:"bumped_desc"`
+	Category    string      `query:"category" enum:"galgame,technique,others" maxLength:"9" doc:"When set, only this category. Omitted means every category. There is no all token."`
+	IncludeNSFW bool        `query:"include_nsfw" default:"false" doc:"When true, NSFW topics are included. Default false."`
+	Section     SectionSlug `query:"section" doc:"When set, only topics filed under this section. Omitted means every section."`
 }
 
 type listTopicsOutput struct {
@@ -68,7 +69,7 @@ func (s *Service) listTopics(ctx context.Context, in *listTopicsInput) (*listTop
 		)
 	}
 	authenticated := v1.User(ctx) != nil
-	fp := listFingerprint(spec.Token, in.Category, in.IncludeNSFW, authenticated)
+	fp := listFingerprint(spec.Token, in.Category, string(in.Section), in.IncludeNSFW, authenticated)
 	keys, curErr := collect.DecodeCursor(in.Cursor, spec.Token, fp)
 	if curErr != nil {
 		return nil, curErr
@@ -82,6 +83,7 @@ func (s *Service) listTopics(ctx context.Context, in *listTopicsInput) (*listTop
 		SortKey:       spec.Key,
 		Direction:     spec.Direction,
 		Category:      in.Category,
+		Section:       string(in.Section),
 		IncludeNSFW:   in.IncludeNSFW,
 		Authenticated: authenticated,
 		Pos:           pos,

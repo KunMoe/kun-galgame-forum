@@ -84,8 +84,14 @@ func lookupSort(token string) (sortSpec, bool) {
 	return s, ok
 }
 
-func listFingerprint(sort, category string, includeNSFW, authenticated bool) string {
-	return collect.Fingerprint(sort, category, boolKey(includeNSFW), boolKey(authenticated))
+// The section joins the fingerprint only when set, so cursors issued before
+// the filter existed stay valid.
+func listFingerprint(sort, category, section string, includeNSFW, authenticated bool) string {
+	values := []string{sort, category, boolKey(includeNSFW), boolKey(authenticated)}
+	if section != "" {
+		values = append(values, "section:"+section)
+	}
+	return collect.Fingerprint(values...)
 }
 
 func boolKey(v bool) string {

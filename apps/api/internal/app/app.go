@@ -45,9 +45,6 @@ import (
 	searchHandler "kun-galgame-api/internal/search/handler"
 	searchRepo "kun-galgame-api/internal/search/repository"
 	searchService "kun-galgame-api/internal/search/service"
-	sectionHandler "kun-galgame-api/internal/section/handler"
-	sectionRepo "kun-galgame-api/internal/section/repository"
-	sectionService "kun-galgame-api/internal/section/service"
 	toolsetHandler "kun-galgame-api/internal/toolset/handler"
 	toolsetRepo "kun-galgame-api/internal/toolset/repository"
 	toolsetService "kun-galgame-api/internal/toolset/service"
@@ -115,7 +112,6 @@ type App struct {
 	AdminOverviewHandler       *adminHandler.OverviewHandler
 	AdminPurgeHandler          *adminHandler.PurgeHandler
 	RankingHandler             *rankingHandler.RankingHandler
-	SectionHandler             *sectionHandler.SectionHandler
 	TrustHandler               *trustHandler.TrustHandler
 	RSSHandler                 *rssHandler.RSSHandler
 	NewsHandler                *newsHandler.NewsHandler
@@ -541,7 +537,6 @@ func New(cfg *config.Config) *App {
 		AdminOverviewHandler:     adminHandler.NewOverviewHandler(adminOverviewSvc),
 		AdminPurgeHandler:        adminHandler.NewPurgeHandler(adminPurgeSvc),
 		RankingHandler:           rankingHandler.NewRankingHandler(rankingService.NewRankingService(rankingRepo.NewRankingRepository(db), gc, uc)),
-		SectionHandler:           sectionHandler.NewSectionHandler(sectionService.NewSectionService(sectionRepo.NewSectionRepository(db), uc)),
 		TrustHandler:             trustHandler.NewTrustHandler(trustEnforce, cfg.Trust.CallbackSecret),
 		RSSHandler:               rssHandler.NewRSSHandler(rssRepo.NewRSSRepository(db), gc, uc),
 		NewsHandler:              newsHandler.NewNewsHandler(newsCli, uc),

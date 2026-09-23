@@ -43,6 +43,7 @@ type KeysetQuery struct {
 	SortKey       string
 	Direction     string
 	Category      string
+	Section       string
 	IncludeNSFW   bool
 	Authenticated bool
 	Limit         int
@@ -93,6 +94,10 @@ func (r *TopicListRepository) FindKeyset(q KeysetQuery) ([]TopicKeysetRow, error
 	}
 	if q.Category != "" {
 		query = query.Where("topic.category = ?", q.Category)
+	}
+	if q.Section != "" {
+		query = query.Where(`topic.id IN (SELECT tsr.topic_id FROM topic_section_relation tsr
+			JOIN topic_section ts ON ts.id = tsr.topic_section_id WHERE ts.name = ?)`, q.Section)
 	}
 
 	if q.Pos != nil {

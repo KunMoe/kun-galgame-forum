@@ -1,12 +1,11 @@
 package repository
 
 import (
-	topicRepo "kun-galgame-api/internal/topic/repository"
 	"time"
 
-	"gorm.io/gorm"
+	topicRepo "kun-galgame-api/internal/topic/repository"
 
-	"kun-galgame-api/pkg/miniapp"
+	"gorm.io/gorm"
 )
 
 type SectionRepository struct {
@@ -17,20 +16,6 @@ func NewSectionRepository(db *gorm.DB) *SectionRepository {
 	return &SectionRepository{db: db}
 }
 
-type SectionTopicRow struct {
-	ID           int
-	Title        string
-	Content      string
-	View         int
-	LikeCount    int
-	ReplyCount   int
-	Status       int
-	IsNSFW       bool
-	BestAnswerID *int
-	UserID       int
-	Created      time.Time
-}
-
 type SectionStatRow struct {
 	SectionID   int    `gorm:"column:section_id"`
 	SectionName string `gorm:"column:section_name"`
@@ -39,64 +24,47 @@ type SectionStatRow struct {
 }
 
 type LatestTopicRow struct {
-	ID      int    `gorm:"column:id"`
-	Title   string `gorm:"column:title"`
-	Created string `gorm:"column:created"`
-	UserID  int    `gorm:"column:user_id"`
+	ID      int       `gorm:"column:id"`
+	Title   string    `gorm:"column:title"`
+	Created time.Time `gorm:"column:created"`
+	UserID  int       `gorm:"column:user_id"`
 }
 
-func (r *SectionRepository) FindSectionTopics(
-	section, sortOrder string, page, limit int, authenticated bool,
-) (rows []SectionTopicRow, total int64, err error) {
-	query := r.db.Table("topic t").
-		Select(`t.id, t.title, SUBSTRING(t.content, 1, 233) AS content,
-			t.view, t.like_count, t.reply_count, t.status, t.is_nsfw,
-			t.best_answer_id, t.user_id, t.created`).
-		Joins("JOIN topic_section_relation tsr ON tsr.topic_id = t.id").
-		Joins("JOIN topic_section ts ON ts.id = tsr.topic_section_id").
-		Where("ts.name = ? AND t.status != 1", section).
-		Where(topicRepo.SharedListPredicate("t", authenticated))
+// sectionCategory maps a section to the topic category its name prefix files
+// it under; a topic counts toward a section only when its own category agrees.
+const sectionCategory = `CASE left(ts.name, 2) WHEN 'g-' THEN 'galgame' WHEN 't-' THEN 'technique' WHEN 'o-' THEN 'others' END`
 
-	if err = query.Count(&total).Error; err != nil {
-		return
-	}
-
-	err = query.Order("t.created " + sortOrder).
-		Offset((page - 1) * limit).
-		Limit(limit).
-		Find(&rows).Error
-	return
-}
-
-func (r *SectionRepository) FindCategoryStats(category string) ([]SectionStatRow, error) {
-	var rows []SectionStatRow
-	err := r.db.Raw(`
+// Stats counts every section, empty ones included, over published topics an
+// anonymous reader can open.
+func (r *SectionRepository) Stats(prefix string) ([]SectionStatRow, error) {
+	q := `
 		SELECT ts.id AS section_id, ts.name AS section_name,
-			COUNT(DISTINCT t.id) AS topic_count,
-			COALESCE(SUM(t.view), 0) AS view_count
+			COUNT(t.id) AS topic_count, COALESCE(SUM(t.view), 0) AS view_count
 		FROM topic_section ts
-		JOIN topic_section_relation tsr ON tsr.topic_section_id = ts.id
-		JOIN topic t ON t.id = tsr.topic_id AND t.status != 1
-			AND `+topicRepo.SharedListPredicate("t", false)+` AND t.category = ?
+		LEFT JOIN topic_section_relation tsr ON tsr.topic_section_id = ts.id
+		LEFT JOIN topic t ON t.id = tsr.topic_id AND t.status != 1
+			AND ` + topicRepo.SharedListPredicate("t", false) + `
+			AND t.category = ` + sectionCategory + `
+		WHERE ts.name LIKE ?
 		GROUP BY ts.id, ts.name
-		ORDER BY ts.id
-	`, category).Scan(&rows).Error
+		ORDER BY ts.id`
+	var rows []SectionStatRow
+	err := r.db.Raw(q, prefix+"%").Scan(&rows).Error
 	return rows, err
 }
 
-func (r *SectionRepository) FindLatestTopicsInSection(sectionID int, category string, limit int) []LatestTopicRow {
-	var rows []LatestTopicRow
-	r.db.Raw(`
+func (r *SectionRepository) LatestTopics(sectionID, limit int) ([]LatestTopicRow, error) {
+	q := `
 		SELECT t.id, t.title, t.created, t.user_id
 		FROM topic t
 		JOIN topic_section_relation tsr ON tsr.topic_id = t.id
-		WHERE tsr.topic_section_id = ? AND t.status != 1
-			AND `+topicRepo.SharedListPredicate("t", false)+` AND t.category = ?
-		ORDER BY t.created DESC LIMIT ?
-	`, sectionID, category, limit).Scan(&rows)
-	return rows
-}
-
-func (r *SectionRepository) FindTopicMiniApps(topicIDs []int) map[int][]string {
-	return miniapp.ByTopic(r.db, topicIDs)
+		JOIN topic_section ts ON ts.id = tsr.topic_section_id
+		WHERE ts.id = ? AND t.status != 1
+			AND ` + topicRepo.SharedListPredicate("t", false) + `
+			AND t.category = ` + sectionCategory + `
+		ORDER BY t.created DESC, t.id DESC
+		LIMIT ?`
+	var rows []LatestTopicRow
+	err := r.db.Raw(q, sectionID, limit).Scan(&rows).Error
+	return rows, err
 }

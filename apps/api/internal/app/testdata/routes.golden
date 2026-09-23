@@ -44,7 +44,6 @@ GET    /api/admin/overview/all                        cors.New → middleware.Na
 GET    /api/admin/overview/stats                      cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → RequirePermission → OverviewHandler.GetStats
 GET    /api/admin/user/:id/content-stats              cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → RequirePermission → PurgeHandler.GetUserContentStats
 GET    /api/auth/me                                   cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → OAuthHandler.Me
-GET    /api/category                                  cors.New → middleware.NamePreference → ContentStance → SectionHandler.GetCategories
 GET    /api/galgame                                   cors.New → middleware.NamePreference → ContentStance → GalgameHandler.GetList
 GET    /api/galgame-character/:id                     cors.New → middleware.NamePreference → ContentStance → EntityHandler.GetCharacterDetail
 GET    /api/galgame-character/search                  cors.New → middleware.NamePreference → ContentStance → EntityHandler.SearchCharacters
@@ -116,7 +115,6 @@ GET    /api/search/entity/resolve                     cors.New → middleware.Na
 GET    /api/search/gal-comment                        cors.New → middleware.NamePreference → ContentStance → OptionalAuth → SearchHandler.SearchGalComments
 GET    /api/search/overview                           cors.New → middleware.NamePreference → ContentStance → OptionalAuth → SearchHandler.Overview
 GET    /api/search/quick                              cors.New → middleware.NamePreference → ContentStance → OptionalAuth → SearchHandler.QuickSearch
-GET    /api/section                                   cors.New → middleware.NamePreference → ContentStance → OptionalAuth → SectionHandler.GetSectionTopics
 GET    /api/toolset                                   cors.New → middleware.NamePreference → ContentStance → OptionalAuth → ToolsetHandler.GetList
 GET    /api/toolset/:id                               cors.New → middleware.NamePreference → ContentStance → OptionalAuth → ToolsetHandler.GetDetail
 GET    /api/toolset/:id/practicality                  cors.New → middleware.NamePreference → ContentStance → OptionalAuth → PracticalityHandler.GetPracticality
@@ -178,6 +176,7 @@ GET    /api/v1/replies/:reply_id                      cors.New → v1Headers →
 GET    /api/v1/replies/:reply_id/reactions            cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/replies/:reply_id/source               cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/report-reasons                         cors.New → v1Headers → fiberAdapter.Handle
+GET    /api/v1/sections                               cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/todos                                  cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/todos/:todo_id                         cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/topics                                 cors.New → v1Headers → fiberAdapter.Handle
