@@ -33,13 +33,13 @@ func (MoemoepointReason) Schema(huma.Registry) *huma.Schema {
 }
 
 type MoemoepointEntry struct {
-	Object         string            `json:"object" enum:"moemoepoint_entry" maxLength:"17" doc:"Type discriminant. Always moemoepoint_entry."`
-	ID             repr.DecimalID    `json:"id" doc:"Ledger entry id. JSON string of a decimal integer."`
-	Delta          int               `json:"delta" minimum:"-2147483648" doc:"Signed change. Negative when moemoepoint was deducted."`
-	Reason         MoemoepointReason `json:"reason" doc:"Ledger reason token."`
-	Ref            string            `json:"ref" maxLength:"80" doc:"Triggering entity reference as stored upstream. Empty string when none. Free text; never use it as a decision input."`
-	CreatedAt      repr.DateTime     `json:"created_at" doc:"When the ledger entry was written."`
-	Source         string            `json:"source" enum:"this_site,account_center,other_site" maxLength:"14" doc:"Who issued the entry: this_site, account_center (the OAuth account service itself, e.g. a rename charge or an admin adjustment), or other_site. Closed."`
+	Object    string            `json:"object" enum:"moemoepoint_entry" maxLength:"17" doc:"Type discriminant. Always moemoepoint_entry."`
+	ID        repr.DecimalID    `json:"id" doc:"Ledger entry id. JSON string of a decimal integer."`
+	Delta     int               `json:"delta" minimum:"-2147483648" doc:"Signed change. Negative when moemoepoint was deducted."`
+	Reason    MoemoepointReason `json:"reason" doc:"Ledger reason token."`
+	Ref       string            `json:"ref" maxLength:"80" doc:"Triggering entity reference as stored upstream. Empty string when none. Free text; never use it as a decision input."`
+	CreatedAt repr.DateTime     `json:"created_at" doc:"When the ledger entry was written."`
+	Source    string            `json:"source" enum:"this_site,account_center,other_site" maxLength:"14" doc:"Who issued the entry: this_site, account_center (the OAuth account service itself, e.g. a rename charge or an admin adjustment), or other_site. Closed."`
 }
 
 type Preferences struct {

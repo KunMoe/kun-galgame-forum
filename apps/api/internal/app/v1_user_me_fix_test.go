@@ -35,7 +35,6 @@ type meFix struct {
 	nsfwNoScope  atomic.Bool
 	creatorPost  atomic.Int32
 	creatorState atomic.Value
-	logReason400 atomic.Bool
 	logFail      atomic.Bool
 	searchFail   atomic.Bool
 	avatarFail   atomic.Bool
@@ -97,10 +96,6 @@ func (f *meFix) installUpstream() {
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-		if f.logReason400.Load() {
-			writeHouse(w, 400, 7, nil)
-			return
-		}
 		limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
 		if limit <= 0 {
 			limit = 20
@@ -146,7 +141,7 @@ func (f *meFix) installUpstream() {
 			bio = v
 		}
 		writeHouse(w, 200, 0, map[string]any{
-			"id": w3UserAlice, "name": name, "bio": bio,
+			"uuid": "0097dd9f-b72b-4b1e-9d6c-2f1a3e5c7b90", "name": name, "bio": bio,
 			"avatar": "", "avatar_image_hash": meAvatarHash,
 		})
 	})

@@ -81,14 +81,6 @@ func TestV1MoemoepointLimit51IsLimitTooLarge(t *testing.T) {
 	mustCode(t, resp, body, http.StatusBadRequest, "LIMIT_TOO_LARGE")
 }
 
-func TestV1MoemoepointUnknownReasonIsInvalidParameter(t *testing.T) {
-	f := newMeFix(t)
-	f.logReason400.Store(true)
-	resp, body := f.call(t, http.MethodGet, mePath+"/moemoepoint-entries?reason=liked", "/me/moemoepoint-entries", "sess-alice", "", nil, nil)
-	mustCode(t, resp, body, http.StatusBadRequest, "INVALID_PARAMETER")
-	fieldErr(t, body, "parameter", "reason", "INVALID_FORMAT")
-}
-
 func TestV1MoemoepointMalformedCursorIsInvalidCursor(t *testing.T) {
 	f := newMeFix(t)
 	resp, body := f.call(t, http.MethodGet, mePath+"/moemoepoint-entries?cursor=nope", "/me/moemoepoint-entries", "sess-alice", "", nil, nil)

@@ -110,7 +110,7 @@ func Register(u *Users) func(huma.API) {
 				"The cursor is bound to the caller and the reason filter.",
 			Tags: []string{"users"},
 			Responses: problemResponses(map[int]string{
-				400: "LIMIT_TOO_LARGE when limit is greater than 50. INVALID_CURSOR when the cursor was issued for a different reason. INVALID_PARAMETER when reason is rejected upstream.",
+				400: "LIMIT_TOO_LARGE when limit is greater than 50. INVALID_CURSOR when the cursor was issued for a different reason. INVALID_PARAMETER when reason is not a lowercase token. An unknown but well-formed reason is an empty page, not an error: the ledger filters by it and never rejects it.",
 				503: "SERVICE_UNAVAILABLE when the account service cannot be reached.",
 			}),
 		}), u.listMoemoepointEntries)

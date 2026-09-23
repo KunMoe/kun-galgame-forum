@@ -24,7 +24,6 @@ type patchMyProfileOutput struct {
 }
 
 type authMeUser struct {
-	ID              int    `json:"id"`
 	Name            string `json:"name"`
 	Avatar          string `json:"avatar"`
 	AvatarImageHash string `json:"avatar_image_hash"`
@@ -60,7 +59,7 @@ func (s *Users) patchMyProfile(ctx context.Context, in *patchMyProfileInput) (*p
 	if in.Body.Name != nil {
 		s.refreshMoemoepointCache(ctx, user.ID)
 	}
-	out, err := mapMyProfile(s.cdn, data)
+	out, err := mapMyProfile(s.cdn, user.ID, data)
 	if err != nil {
 		return nil, problem.Internal(err)
 	}
@@ -81,7 +80,8 @@ func (s *Users) refreshMoemoepointCache(ctx context.Context, userID int) {
 	}
 }
 
-func mapMyProfile(cdn string, data json.RawMessage) (MyProfile, error) {
+// /auth/me identifies the account by uuid only; the numeric id is the session's.
+func mapMyProfile(cdn string, userID int, data json.RawMessage) (MyProfile, error) {
 	var src authMeUser
 	if err := json.Unmarshal(data, &src); err != nil {
 		return MyProfile{}, err
@@ -90,7 +90,7 @@ func mapMyProfile(cdn string, data json.RawMessage) (MyProfile, error) {
 	bio := src.Bio
 	return MyProfile{
 		Object: "user",
-		ID:     repr.ID(src.ID),
+		ID:     repr.ID(userID),
 		Name:   &name,
 		Avatar: repr.NewImage(cdn, src.AvatarImageHash, nil),
 		Bio:    &bio,

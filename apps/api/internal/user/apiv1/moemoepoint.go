@@ -61,12 +61,6 @@ func (s *Users) listMoemoepointEntries(ctx context.Context, in *listMoemoepointE
 
 	page, err := s.accounts.MoemoepointLog(ctx, user.ID, limit, beforeID, in.Reason)
 	if err != nil {
-		if userclientCode(err) != 0 {
-			return nil, problem.New(problem.CodeInvalidParameter,
-				"reason is not a known ledger token.",
-				problem.AtParameter("reason", problem.ReasonInvalidFormat,
-					"pass a reason the moemoepoint ledger accepts", nil))
-		}
 		return nil, unavailable(err)
 	}
 

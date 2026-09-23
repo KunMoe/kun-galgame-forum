@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/textproto"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -81,7 +82,7 @@ func TestV1PatchProfile(t *testing.T) {
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("%d %+v", resp.StatusCode, body)
 	}
-	if body["object"] != "user" || body["bio"] != "new bio" {
+	if body["object"] != "user" || body["bio"] != "new bio" || body["id"] != strconv.Itoa(w3UserAlice) {
 		t.Fatalf("%+v", body)
 	}
 }
