@@ -26,7 +26,7 @@ var requiredCodes = []struct {
 	{CodeIdempotencyKeyReused, DomainPlatform, 409},
 	{CodeIdempotencyRequestInProgress, DomainKungal, 409},
 	{CodeUnsupportedMediaType, DomainPlatform, 415},
-	{CodePayloadTooLarge, DomainPlatform, 413},
+	{CodePayloadTooLarge, DomainKungal, 413},
 	{CodeValidationFailed, DomainPlatform, 422},
 	{CodeInternalError, DomainPlatform, 500},
 	{CodeServiceUnavailable, DomainPlatform, 503},

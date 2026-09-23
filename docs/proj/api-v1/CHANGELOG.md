@@ -1,5 +1,20 @@
 # API v1 changelog
 
+## 2026-09-23 (X1d image uploads, 413 everywhere)
+
+Breaking for `POST /api/image/topic`, `/api/image/cover`, `/api/image/message` and `/api/image/galgame`; all four are gone. No App build calls them.
+
+Offered:
+
+- `POST /api/v1/images`: multipart `file` + `purpose` (`content` | `message`). Returns `201` with `Location` and an `Image`. It replaces the topic, cover and message routes. `content` covers everything published on the site; `message` is for private messages. The daily limit stays at 50 per user (Asia/Shanghai), and a failed upload no longer counts against it.
+- `POST /api/v1/work-edit-images`: multipart `file` + `preset` (`cover` | `screenshot`). It proxies catalog `/v2/me/edit-images` with the caller's own token and returns `201` with an `Image`. The old preset names `galgame_banner` / `galgame_screenshot` are no longer accepted.
+
+Shape vs the retired routes: every upload returns an `Image` (`url`, `hash`, `width`, `height`, `thumbhash`, `sexual`). The topic and message routes used to return a bare `/image/<hash>` string. The client now builds that string from `hash`, and should keep persisting the token or the hash, never `url`. `sexual` is a string (`safe` | `suggestive` | `explicit`) or `null` for an image not graded yet; it used to be an integer.
+
+New codes: `IMAGE_DAILY_LIMIT_REACHED` (429, with `limit`), `IMAGE_REJECTED` (422, the image host's moderation) and `PAYLOAD_TOO_LARGE` (413).
+
+**Every v1 operation:** a request body over the limit used to answer `500 INTERNAL_ERROR`. The limit is 1 MiB for a JSON body and 10 MiB + 64 KiB for anything else. It now answers `413 PAYLOAD_TOO_LARGE`, and every operation with a request body declares 413.
+
 ## 2026-09-24 (user name search limit)
 
 - `GET /api/v1/search/users` and `GET /api/v1/users?q=`: `q` is now at most 50 characters (was 107 and 64). The account service refuses longer name queries, and the forum used to pass them on and answer `503`. A longer `q` is now `400 INVALID_PARAMETER` at the edge.

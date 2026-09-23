@@ -134,7 +134,7 @@ var Codes = []Def{
 	{CodeIdempotencyKeyReused, DomainPlatform, http.StatusConflict, "Idempotency key reused", "The same Idempotency-Key was sent with a different request body.", nil},
 	{CodeIdempotencyRequestInProgress, DomainKungal, http.StatusConflict, "Idempotency request in progress", "A request with the same Idempotency-Key is still being processed. Retry after it completes.", nil},
 	{CodeUnsupportedMediaType, DomainPlatform, http.StatusUnsupportedMediaType, "Unsupported media type", "The request body media type is not supported.", nil},
-	{CodePayloadTooLarge, DomainPlatform, http.StatusRequestEntityTooLarge, "Payload too large", "The request body is larger than the operation accepts: 1 MiB for a JSON body, 10 MiB plus 64 KiB for any other.", nil},
+	{CodePayloadTooLarge, DomainKungal, http.StatusRequestEntityTooLarge, "Payload too large", "The request body is larger than the operation accepts: 1 MiB for a JSON body, 10 MiB plus 64 KiB for any other.", nil},
 	{CodeValidationFailed, DomainPlatform, http.StatusUnprocessableEntity, "Validation failed", "The request is syntactically valid but semantically not. errors[] is present and non-empty.", nil},
 	{CodeInternalError, DomainPlatform, http.StatusInternalServerError, "Internal error", "A bug on our side, including the output of panic recovery.", nil},
 	{CodeServiceUnavailable, DomainPlatform, http.StatusServiceUnavailable, "Service unavailable", "A dependency is unavailable. The request may be retried.", nil},
