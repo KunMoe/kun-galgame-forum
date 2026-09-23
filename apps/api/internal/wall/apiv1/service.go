@@ -51,10 +51,8 @@ func (s *Service) ready() bool {
 }
 
 type subject struct {
-	spec subjectSpec
-	id   int
-	// ownerID is the user whose page the wall is on, when that user holds
-	// powers over it; zero for galgame and website walls.
+	spec        subjectSpec
+	id          int
 	ownerID     int
 	websiteSlug string
 	isNSFW      bool
@@ -87,8 +85,6 @@ func viewerID(u *middleware.UserInfo) int {
 	return u.ID
 }
 
-// resolveSubject answers whether the caller may read the wall at all. The wall
-// belongs to its page: a page this forum would 404 has no readable wall either.
 func (s *Service) resolveSubject(ctx context.Context, spec subjectSpec, id int, viewer *middleware.UserInfo) (*subject, *problem.Problem) {
 	sub := &subject{spec: spec, id: id}
 	var err error

@@ -96,3 +96,27 @@ Breaking for anything still on `/api/topic/**`. Nothing was: the web moved with 
 A caller left on one of these now gets `401`, not `404`: the auth boundary in `router.go` is a `Use()` on `/api`, so every unmatched legacy path answers 401 to an anonymous request. That is how `/api/**` has always answered an unknown path — only `/api/v1/**` answers the proper `404` problem+json.
 
 Still legacy, still mounted, each waiting on its own wave: `/topic/:tid/reply/locate`, `/topic/interactions/mine`, the four `/topic/draft*`, the four `/topic/:tid/comment*`, the six `/topic/:tid/poll*` and the eleven `/topic/:tid/lottery*`.
+
+## 2026-09-22 (RC · comment walls)
+
+Additive for the App; the web's legacy comment-wall routes are removed.
+
+- Nine operations on one collection, `/api/v1/wall-comments`, serve the comment walls of six kinds of page: `listWallComments`, `createWallComment` (requires `Idempotency-Key`), `getWallComment`, `getWallCommentSource`, `updateWallComment`, `deleteWallComment`, `likeWallComment` / `unlikeWallComment` (`PUT` / `DELETE …/like`, both idempotent) and `flagWallComment` (`POST …/flags` → `204`).
+- A wall is named by `subject_type` (`galgame`, `galgame_rating`, `galgame_resource`, `galgame_quiz`, `toolset`, `website`) and `subject_id`. The collection is flat because none of the six pages has a v1 read yet, and gate G17 refuses a write under a path id with no `GET`.
+- `WallComment` is its own resource with its own id space; it is not a topic `Comment`. Its body is full Markdown as a `ContentDocument`. A deleted comment stays in lists as a tombstone (`state: deleted`, empty document) so its replies keep their parent. `addressee` is the person the comment is addressed to and can be `null`, which is why it is not called `in_reply_to_user`.
+- The list sends no `total`. The page's own `comment_count` is the number to show.
+- New error codes: `RATE_LIMITED` (platform, 429; the community service's new-account limit, no `Retry-After` because upstream sends none), `QUIZ_ANSWER_REQUIRED` (kungal, 403; the wall of a quiz that hides its game or has spoilers is open only to its author, those who answered, and staff with that wall's permissions) and `INVALID_STATE_TRANSITION` (me, 409; editing, liking or flagging a tombstone, or posting to a closed wall). It was named in 01 §2 but had never been registered.
+
+Removed legacy routes (22):
+
+| Legacy | v1 |
+|---|---|
+| `GET /api/{galgame-rating,website,toolset,galgame-resource,galgame-quiz}/:id/comments`, `GET /api/galgame/:gid/comments` | `GET /api/v1/wall-comments?subject_type=…&subject_id=…` |
+| `POST` on the same six | `POST /api/v1/wall-comments` |
+| `DELETE /api/{…five…}/:id/comments/:postId`, `DELETE /api/galgame/comments/:postId` | `DELETE /api/v1/wall-comments/{wall_comment_id}` |
+| `PUT /api/galgame/comments/:postId` | `PATCH /api/v1/wall-comments/{wall_comment_id}` |
+| `PUT /api/galgame/comments/:postId/like` (a toggle) | `PUT` / `DELETE /api/v1/wall-comments/{wall_comment_id}/like` |
+| `POST /api/galgame/comments/:postId/flag` | `POST /api/v1/wall-comments/{wall_comment_id}/flags` |
+| `GET /api/galgame/:gid/comments/locate` | not rebuilt; migration 135 rewrote the notification links that needed it |
+
+Following a wall and its read receipts stay on the legacy `/api/community/wall/*` routes for now; `thread_id` may be sent as `0` and the server finds the thread.

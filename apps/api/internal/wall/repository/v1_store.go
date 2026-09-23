@@ -147,8 +147,6 @@ type Message struct {
 	Link       string
 }
 
-// InsertMessageOnce skips a notification identical to one already sent, as the
-// legacy walls did: a commenter who repeats themselves notifies the owner once.
 func (s *Store) InsertMessageOnce(m Message) error {
 	return s.db.Exec(`INSERT INTO message (sender_id, receiver_id, type, content, link, status, created, updated)
 		SELECT ?, ?, ?, ?, ?, 'unread', now(), now()
@@ -174,7 +172,6 @@ func (s *Store) FeedDelete(feedType string, postID int64) error {
 	return s.db.Exec("SELECT feed_delete(?, ?)", feedType, postID).Error
 }
 
-// Posts imported from the pre-community tables kept their old ids in the feed.
 func (s *Store) LegacyFeedID(galgame bool, source string, postID int64) (int, error) {
 	var ids []int
 	var err error

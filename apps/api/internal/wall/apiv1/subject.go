@@ -25,10 +25,8 @@ func (SubjectType) Schema(huma.Registry) *huma.Schema {
 }
 
 type subjectSpec struct {
-	typ        SubjectType
-	anchorKind int32
-	// site_resource packs the page kind into the anchor id ("rating:12"); a
-	// site_game anchor id is the bare galgame id.
+	typ          SubjectType
+	anchorKind   int32
 	anchorPrefix string
 	editPerm     perm.Permission
 	deletePerm   perm.Permission
@@ -37,11 +35,9 @@ type subjectSpec struct {
 	// The table whose comment_count this wall maintains. galgame_rating has a
 	// column nobody reads and the legacy wall never maintained it.
 	counterTable string
-	// Owners of these walls are notified of new top-level comments and may
-	// delete any comment on their wall.
-	hasOwner   bool
-	linkPrefix string
-	legacyKey  string
+	hasOwner     bool
+	linkPrefix   string
+	legacyKey    string
 }
 
 var subjects = map[SubjectType]subjectSpec{

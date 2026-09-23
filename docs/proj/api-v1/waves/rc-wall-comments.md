@@ -228,3 +228,43 @@ Nitro `server/`：零调用。Flutter App（`../kungal-apps`）：零调用。
 | M12 | 上游 429 映射成 503 | 新人限流 → `429 RATE_LIMITED` |
 | M13 | 写面在 `/users/batch` 失败时放行（K17 失效） | OAuth 不可用时发表 → `503`，上游没有收到帖子 |
 | M14 | 删除墓碑时照样减计数 | 删两次：`204` 两次，父资源 `comment_count` 只减 1 |
+
+## 9. 实现中改的（都在实现提交里，理由写在这里）
+
+| 改了什么 | 为什么 |
+|---|---|
+| D6 加一条：持这堵墙编辑或删除权限的 staff 也能过题目闸 | 按原文，没答过剧透题的版主连这堵墙都读不到，更删不了违规帖 |
+| 举报体的 `reason` → `flag_reason`；`note` 改成可空 | G8：`reason` 与 `Problem.errors[].reason` 同名异型；`note` 与 `UpvoteCreate.note` 可空性要一致 |
+| list 与 create 显式声明 `404` | 这两个操作路径上没有 id，G4 推导不出 404，而主体闸会发它；契约一致性测试当场抓到 |
+| 每个写操作先按 OAuth 当前记录查调用者：封禁 → `403 ACCOUNT_BANNED`，查不到 → `503` | 会话只在刷新令牌时才知道封禁，否则被封的人在令牌到期前一直能写 |
+| galgame 墙 `@` 超过 20 人 → `422` + `TOO_MANY_ITEMS` | 旧写面的同一条规则（D11 保留现状），§3.5 漏写了这个 reason |
+| 新注册 `INVALID_STATE_TRANSITION`（me 域）并把 `DomainMe` 加进域表 | 01 §2 早写了要复用它，但注册表里一直没有 |
+| X 轨 `WallRead` 加 `thread_id` 缺席时的回落 | D20；只加不改，另附单测 |
+| `moemoepoint` 的「赞给作者」AST 门认识注入的 `award` 调用形 | 删掉旧的 `ToggleLike` 让它只数到 14 处、低于 15 的防瞎阈值；新的点赞路径正是它该看的 |
+
+## 10. 变异执行结果
+
+脚本逐条改、跑、还原；两条最初「编译不过」（M6、M9 会留下未使用变量），按 §3.3 换成等价的恒真 / 恒假写法后重跑。
+
+| # | 结果 | 杀死它的测试 |
+|---|---|---|
+| M1 | 杀死 | `TestV1WallDeletePermissions` |
+| M2 | 杀死 | `TestV1WallDeletePermissions` |
+| M3 | 杀死 | `TestV1WallDeletePermissions`、`TestV1WallCreateRatingAddressesTheRatingAuthor` |
+| M4 | 杀死 | `TestV1WallQuizGate` |
+| M5 | 杀死 | `TestV1WallQuizGate` |
+| M6 | **先存活**，补测试后杀死 | `TestV1WallLikeIsASlot`。纠偏路径让重复 `PUT` 在接口层看不出差别；补的断言是「重放不得触达只会切换的上游」 |
+| M7 | 杀死 | `TestV1WallLikeRefuses` |
+| M8 | 杀死 | `TestV1WallListRefusesBadInput` |
+| M9 | 杀死 | `TestV1WallListWalksEveryPageInPostOrder`、`TestV1WallListShapesATombstoneAndAHeldPost` |
+| M10 | 杀死 | `TestV1WallCreateRefuses`、`TestV1WallUpdate` |
+| M11 | 杀死 | `TestV1WallCreateRatingAddressesTheRatingAuthor` |
+| M12 | 杀死 | `TestV1WallCreateRefuses` |
+| M13 | 杀死 | `TestV1WallCreateRefuses` |
+| M14 | 杀死 | `TestV1WallDeleteTwiceCountsOnce` |
+
+## 11. 验收时抓到的
+
+- 旧会话的封禁滞后（§9 第 4 行）是写测试时被 `ACCOUNT_BANNED` 用例抓到的：身份中间件对会话用户只在刷新时查封禁。
+- 浏览器实测（开发环境，匿名 / 普通用户 / staff）：六面墙都由 SSR 渲染；题目剧透墙对匿名和普通用户显示「作答后可见」，对 staff 打开；发表 → 编辑（`**` 渲染成粗体，出现「已编辑」）→ 点赞 / 取消 → 刷新 → 删除成墓碑；举报弹窗 `204`；galgame `?comment=` 深链先 `GET` 单条再翻页。页面上的 `401 /api/user/preferences` 与头像 hydration 不一致都来自测试用的假会话（假 OAuth 令牌、假 user store cookie），与本轨无关。
+- 开发库 community 里留下 2 条测试墓碑（资源 32023 墙上），以及评分 358 墙上的 1 条测试举报。

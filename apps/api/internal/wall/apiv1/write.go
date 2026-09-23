@@ -17,8 +17,6 @@ import (
 
 const maxMentions = 20
 
-// checkBody applies the wall's limit to the value as sent (K19), before the
-// stored form is derived from it.
 func checkBody(spec subjectSpec, raw string) (string, *problem.Problem) {
 	if strings.TrimSpace(raw) == "" {
 		min := 1

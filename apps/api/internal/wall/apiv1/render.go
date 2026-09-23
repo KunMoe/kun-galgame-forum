@@ -39,8 +39,6 @@ func caps(sub *subject, p communityclient.PostView, viewer *middleware.UserInfo)
 	}
 }
 
-// render maps posts of one wall in order. A post by a banned author, or a held
-// post the caller did not write, maps to nil and is left out.
 func (s *Service) render(ctx context.Context, sub *subject, posts []communityclient.PostView, viewer *middleware.UserInfo) ([]*WallComment, *problem.Problem) {
 	out := make([]*WallComment, len(posts))
 	if len(posts) == 0 {
