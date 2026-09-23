@@ -330,7 +330,7 @@
                 "type": "null"
               }
             ],
-            "description": "The revision the edit made. Set for galgame_edit when the revision is known."
+            "description": "The revision the edit made. Set for galgame_edit unless neither its number nor its wiki id is recorded."
           },
           "work_stats": {
             "anyOf": [
@@ -17687,23 +17687,29 @@
       },
       "WorkRevision": {
         "properties": {
-          "revision_id": {
-            "description": "Revision id in the editing engine.",
+          "legacy_revision_id": {
+            "description": "The retired wiki's id for the revision, which the editing engine's revision history lists as legacy_id. null for edits made in the editing engine.",
             "maxLength": 20,
             "minLength": 1,
             "pattern": "^[0-9]+$",
-            "type": "string"
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "revision_number": {
-            "description": "Sequence number of the revision on the work.",
+            "description": "Sequence number of the revision on the work: what the diff between revisions takes. null for some edits from the retired wiki, which carry only legacy_revision_id.",
             "format": "int64",
             "minimum": 1,
-            "type": "integer"
+            "type": [
+              "integer",
+              "null"
+            ]
           }
         },
         "required": [
-          "revision_id",
-          "revision_number"
+          "revision_number",
+          "legacy_revision_id"
         ],
         "type": "object"
       },

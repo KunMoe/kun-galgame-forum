@@ -374,8 +374,16 @@ func (s *Service) build(ctx context.Context, r repository.FeedRow, b *batch) *Ac
 				a.WorkStats = &WorkStats{ResourceCount: w.ResourceCount, LikeCount: w.LikeCount, FavoriteCount: w.FavoriteCount}
 			}
 		case "GALGAME_EDIT":
-			if rv, ok := b.revisions[r.SourceID]; ok && rv.RevisionID > 0 && rv.RevisionNumber > 0 {
-				a.WorkRevision = &WorkRevision{RevisionID: repr.ID(rv.RevisionID), RevisionNumber: rv.RevisionNumber}
+			if rv, ok := b.revisions[r.SourceID]; ok && (rv.RevisionID > 0 || rv.RevisionNumber > 0) {
+				wr := &WorkRevision{}
+				if rv.RevisionNumber > 0 {
+					wr.RevisionNumber = &rv.RevisionNumber
+				}
+				if rv.RevisionID > 0 {
+					id := repr.ID(rv.RevisionID)
+					wr.LegacyRevisionID = &id
+				}
+				a.WorkRevision = wr
 			}
 		}
 	case "GALGAME_RATING_CREATION":

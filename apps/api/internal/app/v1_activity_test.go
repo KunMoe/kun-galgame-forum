@@ -22,6 +22,7 @@ var allowedBlocks = map[string][]string{
 	"topic_comment_creation":    {"comment"},
 	"galgame_creation":          {"work", "work_digest", "work_stats"},
 	"galgame_resource_creation": {"work", "resource"},
+	"galgame_edit":              {"work", "work_digest", "work_revision"},
 }
 
 func (f *activityFix) expected(t *testing.T, extra string, args ...any) []string {
@@ -234,6 +235,22 @@ func TestV1ActivitiesShape(t *testing.T) {
 	if fmt.Sprint(performer["id"]) != fmt.Sprint(acUserAlice) || wd["release"] != "2024-05" || asInt(ws["favorite_count"]) != 5 ||
 		ref["object"] != "work" || ref["display_name"] != fmt.Sprintf("Work %d", acWorkShown) {
 		t.Errorf("galgame_creation %+v", work)
+	}
+	revisionOf := func(source int) any {
+		it := activityByID(items, f.rowID(t, "GALGAME_EDIT", source))
+		if it == nil {
+			t.Fatalf("galgame_edit %d is missing", source)
+		}
+		return it["work_revision"]
+	}
+	if rv, _ := revisionOf(acEditEngine).(map[string]any); asInt(rv["revision_number"]) != 3 || rv["legacy_revision_id"] != nil {
+		t.Errorf("engine edit revision %+v", rv)
+	}
+	if rv, _ := revisionOf(acEditWiki).(map[string]any); rv["revision_number"] != nil || rv["legacy_revision_id"] != "950000877" {
+		t.Errorf("wiki edit revision %+v", rv)
+	}
+	if rv := revisionOf(acEditBare); rv != nil {
+		t.Errorf("an edit with no revision recorded got %+v", rv)
 	}
 	for _, it := range items {
 		if w, _ := it["work"].(map[string]any); w != nil && fmt.Sprint(w["id"]) == fmt.Sprint(acWorkGone) {

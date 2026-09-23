@@ -59,6 +59,9 @@ const (
 	acWorkGone   = 950000602
 	acWorkAdult  = 950000603
 	acResShown   = 950000701
+	acEditEngine = 950000801
+	acEditWiki   = 950000802
+	acEditBare   = 950000803
 	acActivities = "/activities"
 )
 
@@ -181,6 +184,7 @@ func (f *activityFix) cleanup() {
 	_ = f.db.Exec(`DELETE FROM topic WHERE id BETWEEN ? AND ?`, acTopicMin, acTopicMax).Error
 	_ = f.db.Exec(`DELETE FROM topic_section WHERE id BETWEEN ? AND ?`, acSecChat, acSecSeek).Error
 	_ = f.db.Exec(`DELETE FROM galgame_resource WHERE work_id BETWEEN ? AND ?`, lo, hi).Error
+	_ = f.db.Exec(`DELETE FROM galgame_activity WHERE work_id BETWEEN ? AND ?`, lo, hi).Error
 	_ = f.db.Exec(`DELETE FROM galgame WHERE id BETWEEN ? AND ?`, lo, hi).Error
 	_ = f.db.Exec(`DELETE FROM feed_activity WHERE user_id BETWEEN ? AND ? OR source_id BETWEEN ? AND ? OR work_id BETWEEN ? AND ?`,
 		lo, hi, lo, hi, lo, hi).Error
@@ -245,6 +249,11 @@ func (f *activityFix) seed(t *testing.T) {
 			VALUES (?, ?, ?, 'game', 'zh-cn', 'windows', '1.7GB', 'note', ?, ?)`,
 			acResShown+i, w, acUserBob, acTie.Add(5*time.Hour), acTie.Add(5*time.Hour))
 	}
+	f.run(t, `INSERT INTO galgame_activity (id, wiki_revision_id, work_id, user_id, type, created, wiki_revision_number, edit_revision_id)
+		VALUES (?, NULL, ?, ?, 'GALGAME_EDIT', ?, 3, ?), (?, 950000877, ?, ?, 'GALGAME_EDIT', ?, NULL, NULL), (?, NULL, ?, ?, 'GALGAME_EDIT', ?, NULL, NULL)`,
+		acEditEngine, acWorkShown, acUserBob, acTie.Add(6*time.Hour), acEditEngine,
+		acEditWiki, acWorkShown, acUserBob, acTie.Add(6*time.Hour),
+		acEditBare, acWorkShown, acUserBob, acTie.Add(6*time.Hour))
 }
 
 func (f *activityFix) call(t *testing.T, q url.Values) (*http.Response, map[string]any) {

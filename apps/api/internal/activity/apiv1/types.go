@@ -85,7 +85,7 @@ type Activity struct {
 	Work            *repr.WorkRef            `json:"work" doc:"The work. Set for the galgame kinds tied to a work."`
 	WorkDigest      *WorkDigest              `json:"work_digest" doc:"Developers, intro and release of the work. Set for galgame_creation, galgame_edit and galgame_pr_creation."`
 	WorkStats       *WorkStats               `json:"work_stats" doc:"Counters of the work on this forum. Set for galgame_creation."`
-	WorkRevision    *WorkRevision            `json:"work_revision" doc:"The revision the edit made. Set for galgame_edit when the revision is known."`
+	WorkRevision    *WorkRevision            `json:"work_revision" doc:"The revision the edit made. Set for galgame_edit unless neither its number nor its wiki id is recorded."`
 	Rating          *ActivityRating          `json:"rating" doc:"The rating. Set for galgame_rating_creation."`
 	Resource        *ActivityResource        `json:"resource" doc:"The download resource. Set for galgame_resource_creation."`
 	Quiz            *ActivityQuiz            `json:"quiz" doc:"The quiz. Set for galgame_quiz_creation."`
@@ -170,8 +170,8 @@ type WorkStats struct {
 }
 
 type WorkRevision struct {
-	RevisionID     repr.DecimalID `json:"revision_id" doc:"Revision id in the editing engine."`
-	RevisionNumber int            `json:"revision_number" minimum:"1" doc:"Sequence number of the revision on the work."`
+	RevisionNumber   *int            `json:"revision_number" minimum:"1" doc:"Sequence number of the revision on the work: what the diff between revisions takes. null for some edits from the retired wiki, which carry only legacy_revision_id."`
+	LegacyRevisionID *repr.DecimalID `json:"legacy_revision_id" doc:"The retired wiki's id for the revision, which the editing engine's revision history lists as legacy_id. null for edits made in the editing engine."`
 }
 
 type ActivityRating struct {
