@@ -45,6 +45,13 @@ Offered:
 Walls are addressed by the same `subject_type` vocabulary as `/wall-comments`. A missing page is `404`, an unanswered spoiler quiz `403 QUIZ_ANSWER_REQUIRED`, an upstream failure `503`.
 
 Retired: `POST /api/community/wall/read`, `POST /api/community/wall/follow`, `GET /api/community/following`.
+## 2026-09-23 (X2-auth account)
+
+Offered:
+
+- `GET /api/v1/me/account` — who the credential is: `name` and `avatar` from the account center's current record (both `null` when the account no longer exists), the ranked `roles` the credential carries, and `content_stance` `{is_adult_confirmed, nsfw_display}`. `content_stance` is always `null` for a Bearer request, which carries no stance; read it from the account center. A Bearer request never carries moderator, admin or ren.
+
+Retired: `GET /api/auth/me`. `POST /api/auth/oauth/callback` and `POST /api/auth/logout` stay outside v1: they are the web's cookie-session plumbing, not faces the App may call.
 
 ## 2026-09-23 (G0 galgame id is the catalog work id)
 

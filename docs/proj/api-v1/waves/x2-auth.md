@@ -109,3 +109,37 @@
 | 7 | 查无此人回 404 / 500 | OAuth 查无此人 → `200`，`name` `avatar` 为 `null` |
 | 8 | 头像不从哈希构造（恒 `null`） | 有头像哈希的账号 → `avatar.url` 为图床地址、`avatar.hash` 为该哈希 |
 | 9 | 操作挂成 `public` 档 | 匿名 → `401 MISSING_CREDENTIAL` |
+
+## 7. 实现时对本契约的修正（2026-09-23，只增不改）
+
+1. **成人向立场收进可空的 `content_stance` 对象。** Bearer 请求的 `UserInfo` 根本不带立场（身份中间件只给会话挂立场，v1 本身也不读立场），平铺的 `is_adult_confirmed` / `nsfw_display` 只能给 Bearer 编一个 `false` / `hide`；而把 `nsfw_display` 改成可空又会与 U1 `NsfwDisplay.nsfw_display`（非空）同名不同可空性，G8 拦下。于是 `Account.content_stance: { is_adult_confirmed, nsfw_display } | null`，Bearer 恒为 `null`（立场问账号中心，App 本来就这么做）。会话里没存显示方式的老会话回退 `hide`。
+2. 代码放在新包 `internal/auth/apiv1`，不碰 U 轨的 `internal/user/apiv1`；`AuthService.GetProfile` 随旧路由成为死代码，删除。
+3. **旧路径带会话访问回 `500` 而不是 `404`**：`/api` 上的鉴权 `Use()` 放行之后没有路由，落进旧错误处理器的「未处理的错误」。这是全部已删旧路由的既有表现；升级前开着的旧页面里 `useRefreshMe` 对错误一律 `.catch(() => null)`，无害。
+
+## 8. 验收记录
+
+**闸**：`make lint` 零输出；`KUN_REQUIRE_TEST_DB=1 go test -count=1 -p 1 ./...` 全绿（专属库 `kungal_test_x2_auth`，rebase 到 `c8f8419f` 后复跑）；`make openapi` / `gen:api` 无漂移，G8 在合并后的整份文档上通过；`pnpm lint`、`pnpm typecheck`、`pnpm -F web test`（427）全绿；`deadcode` 与 master 相比无新增。测试不碰库：内存 Redis 会话 + 只回被请求 id 的假 OAuth + 假 Bearer 校验器。
+
+**变异**：9/9 变红。
+
+| # | 改动 | 变红的测试 |
+|---|---|---|
+| 1 | 不过滤角色 | `TestV1AccountSession`（spec 也拒）、`TestV1AccountBearer`、`TestV1AccountLegacyStance` |
+| 2 | 角色改读 OAuth 档案 | `TestV1AccountSession`、`TestV1AccountBearer`（档案是 moderator 的 Bearer 用户拿到了 moderator） |
+| 3 | `is_adult_confirmed` 写死 `false` | `TestV1AccountSession` |
+| 4 | `nsfw_display` 写死 `hide` | `TestV1AccountSession` |
+| 5 | 名字取会话里的旧名 | `TestV1AccountSession`、`TestV1AccountGone` |
+| 6 | OAuth 挂了退回 200 | `TestV1AccountRejects` |
+| 7 | 查无此人回 404 | `TestV1AccountGone` |
+| 8 | 头像恒 `null` | `TestV1AccountSession` |
+| 9 | 挂成 `public` 档 | `TestV1AccountSession`、`TestV1AccountBearer`、`TestV1AccountLegacyStance` |
+
+`ACCOUNT_BANNED` / `SCOPE_REQUIRED` 只来自身份中间件（刷新令牌时账号中心判封禁），本操作没有自己的判断，由中间件的测试覆盖。
+
+**浏览器实测**（本分支自起 API :2392 + 网页 :2391，dev 库与本地账号中心，管理员会话持真令牌；无头 Chromium）：
+
+- 匿名访问首页：不发 `/me/account`。
+- 登录态，但持久化仓库里故意放旧数据（名字 `stale-name`、角色 `["user"]`、立场 `show`）：页面加载时 `GET /api/v1/me/account` 200，仓库被覆盖成真名 xiaohuo、`["admin"]`、会话里的立场与图床头像。
+- 顶栏头像 →「退出登录」→「仅退出本站」：`POST /api/auth/logout` 200，仓库清空、`kungal_session` cookie 被清，Redis 里的会话键已删除。
+- 登录链路没有变：「登录」弹窗 →「登录」跳到账号中心 `/oauth/authorize`，`redirect_uri=http://127.0.0.1:2333/auth/callback`（本地登记的网页地址）、PKCE `S256`；`POST /api/auth/oauth/callback` 仍在，假授权码回的还是原来的 `233`。
+- 清理：自起的两个进程已按 PID 停止，测试会话已随登出删除。
