@@ -131,7 +131,7 @@
 
 ## 8. 验收记录
 
-**闸**：`make lint` 零输出；`KUN_REQUIRE_TEST_DB=1 go test -count=1 -p 1 ./...` 全绿（专属库 `kungal_test_x2_overview`，rebase 到 `9e7c496f` 后在重建的库上复跑，`legacy_route_baseline` 153 → 151、`legacy-fetch-baseline` 183 → 181）；`make openapi` / `gen:api` 无漂移；`pnpm lint`、`pnpm typecheck`、`pnpm -F web test`（427）全绿；`deadcode` 与 master 相比无新增。
+**闸**：`make lint` 零输出；`KUN_REQUIRE_TEST_DB=1 go test -count=1 -p 1 ./...` 全绿（专属库 `kungal_test_x2_overview`，rebase 到 `74dd3d1e9` 后在重建的库上复跑，`legacy_route_baseline` 108 → 106、`legacy-fetch-baseline` 134 → 132）；`make openapi` / `gen:api` 无漂移；`pnpm lint`、`pnpm typecheck`、`pnpm -F web test`（427）全绿；`deadcode` 与 master 相比无新增。
 
 **变异**：10/10 变红。第 3 条初版写成 `'UTC' || '%s'`，拼出的是非法时区名，测试是因 SQL 报错而红、不算数；改成把 `"UTC"` 当时区传进仓储后重跑，红在语义上（隐藏话题从 03-10 的桶跑到 03-09）。
 
