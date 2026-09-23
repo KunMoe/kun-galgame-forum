@@ -278,6 +278,7 @@ v1 的 `banner` 只认 hash，而生产 29 张横幅一张 hash 都没有。不�
 5. **变异 13b（`PATCH` 不存在的 id 静默成功）是等价变异**：`Update` 之后还要 `loadAdminDoc` 重读，缺席照样 404。于是删掉了仓储层多余的 `found` 返回值，只留重读这一个判据，这道题也就不再适用。
 6. **变异 15 由静态守卫杀掉**，行为测试杀不掉：Bearer 夹具的版主角色在 `SiteRoles` 里，`perm.CanUser(u.ID, u.Roles, …)` 照样判不出管理能力（与 T4 §8 #6 同理）。`internal/middleware/bearer_guard_test.go` 扫到 `perm.CanUser(` 就红。
 
+7. **rebase 之后在最终代码上重跑了全部变异，全杀。** 管理面挪进 `admin.go` 之后，`service.go` 里只剩分类映射这一处用 `fmt`，变异 14 的原写法（删掉 `fmt.Errorf`）变成了未使用导入、编译不过——按规矩这是废题，换成「`if false` 包住原返回、再 `return "other", nil`」的等价破坏，照样被杀。另补了一个用例：账号服务不可用时 `getDoc` 回 `503`、列表不受影响（闸 7 对照时发现漏了）。
 ### 变异执行结果
 
 | # | 结果 |
