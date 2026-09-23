@@ -508,6 +508,63 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/characters": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Search characters
+         * @description A page-number collection.
+         */
+        get: operations["listCharacters"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/characters/{character_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get a character */
+        get: operations["getCharacter"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/characters/{character_id}/appearances": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List a character's appearances
+         * @description Works the character appears in, with who voices it there, in catalog's order. A cursor collection.
+         */
+        get: operations["listCharacterAppearances"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/comments/{comment_id}": {
         parameters: {
             query?: never;
@@ -580,6 +637,140 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/companies": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List galgame companies
+         * @description Without q: every company catalog files works under, most works first, ties broken by ascending id. A page-number collection.
+         */
+        get: operations["listCompanies"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/companies/{company_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get a galgame company */
+        get: operations["getCompany"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/companies/{company_id}/graph": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a company's family graph
+         * @description Parent companies, subsidiaries, imprints, renames and spin-offs around the company.
+         */
+        get: operations["getCompanyGraph"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/companies/{company_id}/works": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List a company's works
+         * @description A page-number collection. Without a resource or game_type filter it holds every catalog work filed under the entity, including works the forum has no page for; any of those filters narrows it to works with a forum resource. Ties break on catalog's own order, or on descending id once a filter applies. A company's works include its imprints' works; via narrows to one or the other.
+         */
+        get: operations["listCompanyWorks"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/credit-names": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Search credit names
+         * @description The names staff and voice actors are credited under. A page-number collection.
+         */
+        get: operations["listCreditNames"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/credit-names/{credit_name_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get a credit name */
+        get: operations["getCreditName"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/credit-names/{credit_name_id}/credits": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List a credit name's credits
+         * @description Works credited to the name, in catalog's order. A cursor collection.
+         */
+        get: operations["listCreditNameCredits"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/docs": {
         parameters: {
             query?: never;
@@ -612,6 +803,63 @@ export interface paths {
          * @description A doc with its body, addressed by the slug of its /doc/{slug} page. Each successful read counts one view.
          */
         get: operations["getDoc"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/engines": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List galgame engines
+         * @description Every engine catalog records, most works first, ties broken by ascending id. A page-number collection.
+         */
+        get: operations["listEngines"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/engines/{engine_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get a galgame engine */
+        get: operations["getEngine"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/engines/{engine_id}/works": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List an engine's works
+         * @description A page-number collection. Without a resource or game_type filter it holds every catalog work filed under the entity, including works the forum has no page for; any of those filters narrows it to works with a forum resource. Ties break on catalog's own order, or on descending id once a filter applies.
+         */
+        get: operations["listEngineWorks"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1586,6 +1834,163 @@ export interface paths {
          * @description Files a report with the trust-and-safety service on behalf of the caller. A report has no id the reporter can read back. Reporting the same content again is accepted and counts once.
          */
         post: operations["createReport"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/sections": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List topic sections
+         * @description Every topic section in vocabulary order with its size and newest topic, empty sections included. Not paged: the vocabulary is closed and small. The topics of one section are listTopics with section set.
+         */
+        get: operations["listSections"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/series": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List galgame series
+         * @description Without q: series with at least one work the forum lists, most listed works first, ties broken by ascending id. A page-number collection.
+         */
+        get: operations["listSeries"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/series/{series_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get a galgame series */
+        get: operations["getSeries"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/series/{series_id}/works": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List a series' works
+         * @description A page-number collection. Without a resource or game_type filter it holds every catalog work filed under the entity, including works the forum has no page for; any of those filters narrows it to works with a forum resource. Ties break on catalog's own order, or on descending id once a filter applies.
+         */
+        get: operations["listSeriesWorks"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/tagged-works": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List works carrying every given tag
+         * @description Catalog's own search population, newest release first; unlike a tag's works collection it takes no forum filter or sort. A page-number collection.
+         */
+        get: operations["listTaggedWorks"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/tags": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List galgame tags
+         * @description Without q: every visible tag catalog files works under, most works first, ties broken by ascending id. Hidden tags never appear; adult tags only with include_nsfw=true. A page-number collection.
+         */
+        get: operations["listTags"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/tags/{tag_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a galgame tag
+         * @description An adult tag is NOT_FOUND unless include_nsfw=true, the same answer as a tag that does not exist.
+         */
+        get: operations["getTag"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/tags/{tag_id}/works": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List a tag's works
+         * @description A page-number collection. Without a resource or game_type filter it holds every catalog work filed under the entity, including works the forum has no page for; any of those filters narrows it to works with a forum resource. Ties break on catalog's own order, or on descending id once a filter applies.
+         */
+        get: operations["listTagWorks"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -2588,6 +2993,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/wiki-company-redirects/{wiki_company_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Resolve a retired wiki company id
+         * @description The retired galgame wiki numbered companies on its own; old links carry those numbers.
+         */
+        get: operations["getWikiCompanyRedirect"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/works/{work_id}/moyu-patches": {
         parameters: {
             query?: never;
@@ -2897,6 +3322,17 @@ export interface components {
              */
             object: "app_version";
         };
+        Appearance: {
+            /**
+             * @description Type discriminant. Always appearance.
+             * @enum {string}
+             */
+            object: "appearance";
+            /** @description Who voices the character in that work. Empty array, never null. */
+            voices: components["schemas"]["CreditNameRef"][];
+            /** @description The work the character appears in. */
+            work_summary: components["schemas"]["WorkSummary"];
+        };
         BatchListTopicState: {
             /** @description One member per requested id that the caller may see. Empty array, never null. */
             items: components["schemas"]["TopicState"][];
@@ -2937,6 +3373,35 @@ export interface components {
              */
             object: "break";
         };
+        CatalogIntro: {
+            /** @description Where catalog took the text from, such as vndb or erogamescape. null when unrecorded. */
+            data_source: string | null;
+            /** @description Whether the text is a machine translation. */
+            is_machine: boolean;
+            /** @description BCP-47 tag of the text, as catalog records it. */
+            locale: string;
+            /** @description The text. Free text; never use it as a decision input. */
+            value: string;
+        };
+        CatalogLink: {
+            /** @description What the link points at, such as official_site, twitter, vndb, bangumi or erogamescape. An open vocabulary; clients label the tokens themselves. */
+            site: string;
+            /**
+             * Format: uri
+             * @description The address.
+             */
+            url: string;
+        };
+        CatalogName: {
+            /** @description The entity's own name. Never empty. Free text; never use it as a decision input. */
+            display_name: string;
+            /** @description Romanization of the name. null when none is recorded. Free text; never use it as a decision input. */
+            latin: string | null;
+            /** @description Names by BCP-47 tag, sparse. Empty object when there are none, never null. */
+            localized: {
+                [key: string]: components["schemas"]["LocalizedName"];
+            };
+        };
         CategoryCreate: {
             /** @description Plain-text description. Absent means empty. Free text; never use it as a decision input. */
             description?: string;
@@ -2962,6 +3427,80 @@ export interface components {
              * @description New position.
              */
             sort_order?: number;
+        };
+        Character: {
+            /** @description The entity's own name. Never empty. Free text; never use it as a decision input. */
+            display_name: string;
+            /** @description A full-body standing picture. null when catalog has none. */
+            figure: components["schemas"]["Image"] | null;
+            /** @description Character id: the catalog character id, which is also the id in the web's /galgame/character/{id}. */
+            id: string;
+            /** @description The character's portrait. null when catalog has none. */
+            image: components["schemas"]["Image"] | null;
+            /** @description Profiles in every language catalog has, unordered. Empty array, never null. */
+            intros: components["schemas"]["CatalogIntro"][];
+            /** @description The character's own language as a BCP-47 tag. null when unrecorded. */
+            lang: string | null;
+            /** @description Romanization of the name. null when none is recorded. Free text; never use it as a decision input. */
+            latin: string | null;
+            /** @description Database pages about the character. Empty array, never null. */
+            links: components["schemas"]["CatalogLink"][];
+            /** @description Names by BCP-47 tag, sparse. Empty object when there are none, never null. */
+            localized: {
+                [key: string]: components["schemas"]["LocalizedName"];
+            };
+            /**
+             * @description Type discriminant. Always character.
+             * @enum {string}
+             */
+            object: "character";
+            /** @description Traits in catalog's order. Adult traits are left out unless include_nsfw=true. Empty array, never null. */
+            traits: components["schemas"]["CharacterTrait"][];
+        };
+        CharacterRef: {
+            /** @description The entity's own name. Never empty. Free text; never use it as a decision input. */
+            display_name: string;
+            /** @description Character id: the catalog character id, which is also the id in the web's /galgame/character/{id}. */
+            id: string;
+            /** @description Romanization of the name. null when none is recorded. Free text; never use it as a decision input. */
+            latin: string | null;
+            /** @description Names by BCP-47 tag, sparse. Empty object when there are none, never null. */
+            localized: {
+                [key: string]: components["schemas"]["LocalizedName"];
+            };
+            /**
+             * @description Type discriminant. Always character.
+             * @enum {string}
+             */
+            object: "character";
+        };
+        CharacterTrait: {
+            /** @description The entity's own name. Never empty. Free text; never use it as a decision input. */
+            display_name: string;
+            /** @description Catalog trait id. */
+            id: string;
+            /** @description Whether the trait is one the story later reveals to be false. */
+            is_lie: boolean;
+            /** @description Whether the trait is adult content. */
+            is_sexual: boolean;
+            /** @description Romanization of the name. null when none is recorded. Free text; never use it as a decision input. */
+            latin: string | null;
+            /** @description Names by BCP-47 tag, sparse. Empty object when there are none, never null. */
+            localized: {
+                [key: string]: components["schemas"]["LocalizedName"];
+            };
+            /**
+             * @description Type discriminant. Always trait.
+             * @enum {string}
+             */
+            object: "trait";
+            /**
+             * @description How much the trait gives away.
+             * @enum {string}
+             */
+            spoiler: "none" | "minor" | "major";
+            /** @description The group the trait sits in, such as hair or personality. */
+            trait_group: components["schemas"]["CatalogName"];
         };
         CheckIn: {
             /**
@@ -3069,6 +3608,150 @@ export interface components {
             can_like: boolean;
             /** @description Whether the caller liked the comment. */
             has_liked: boolean;
+        };
+        Company: {
+            /** @description Other names it goes by, never its display_name. Empty array, never null. */
+            aliases: string[];
+            /**
+             * Format: int64
+             * @description Works catalog files under it, NSFW ones included. How many a reader can page through is the total of its works collection.
+             */
+            catalog_work_count: number;
+            /**
+             * @description What sort of company it is.
+             * @enum {string}
+             */
+            company_kind: "game_brand" | "bunko" | "publisher" | "anime_studio" | "doujin_circle" | "group";
+            /** @description The entity's own name. Never empty. Free text; never use it as a decision input. */
+            display_name: string;
+            /** @description Company id: the catalog company id, which is also the id in the web's /galgame/official/{id}. */
+            id: string;
+            /** @description Descriptions in every language catalog has, unordered. Empty array, never null. */
+            intros: components["schemas"]["CatalogIntro"][];
+            /** @description The company's own language as a BCP-47 tag. null when unrecorded. */
+            lang: string | null;
+            /** @description Romanization of the name. null when none is recorded. Free text; never use it as a decision input. */
+            latin: string | null;
+            /** @description Official site, social accounts and database pages, in catalog's order. Empty array, never null. */
+            links: components["schemas"]["CatalogLink"][];
+            /** @description Names by BCP-47 tag, sparse. Empty object when there are none, never null. */
+            localized: {
+                [key: string]: components["schemas"]["LocalizedName"];
+            };
+            /** @description The company's logo. null when catalog has none. */
+            logo: components["schemas"]["Image"] | null;
+            /**
+             * @description Type discriminant. Always company.
+             * @enum {string}
+             */
+            object: "company";
+        };
+        CompanyGraph: {
+            /** @description The company the graph was drawn around. */
+            company_id: string;
+            /** @description Relations between the nodes, each stored in both directions. Empty array, never null. */
+            edges: components["schemas"]["CompanyGraphEdge"][];
+            /** @description Every company in the family, this one included. Empty array, never null. */
+            nodes: components["schemas"]["CompanyGraphNode"][];
+            /**
+             * @description Type discriminant. Always company_graph.
+             * @enum {string}
+             */
+            object: "company_graph";
+        };
+        CompanyGraphEdge: {
+            /** @description The company the relation is stated from. */
+            from_company_id: string;
+            /**
+             * @description What to_company is to from_company. Every relation also appears reversed: parent with subsidiary, imprint with imprint_of, succeeded_by with formerly, spawned with origin.
+             * @enum {string}
+             */
+            relation: "parent" | "subsidiary" | "imprint" | "imprint_of" | "succeeded_by" | "formerly" | "spawned" | "origin";
+            /** @description The company it points at. */
+            to_company_id: string;
+        };
+        CompanyGraphNode: {
+            /**
+             * Format: int64
+             * @description Works catalog files under it, NSFW ones included. How many a reader can page through is the total of its works collection.
+             */
+            catalog_work_count: number;
+            /** @description The entity's own name. Never empty. Free text; never use it as a decision input. */
+            display_name: string;
+            /** @description Company id. */
+            id: string;
+            /** @description Romanization of the name. null when none is recorded. Free text; never use it as a decision input. */
+            latin: string | null;
+            /** @description Names by BCP-47 tag, sparse. Empty object when there are none, never null. */
+            localized: {
+                [key: string]: components["schemas"]["LocalizedName"];
+            };
+            /** @description The company's logo. null when catalog has none. */
+            logo: components["schemas"]["Image"] | null;
+            /**
+             * @description Type discriminant. Always company.
+             * @enum {string}
+             */
+            object: "company";
+        };
+        CompanyRef: {
+            /** @description The entity's own name. Never empty. Free text; never use it as a decision input. */
+            display_name: string;
+            /** @description Company id: the catalog company id, which is also the id in the web's /galgame/official/{id}. */
+            id: string;
+            /** @description Romanization of the name. null when none is recorded. Free text; never use it as a decision input. */
+            latin: string | null;
+            /** @description Names by BCP-47 tag, sparse. Empty object when there are none, never null. */
+            localized: {
+                [key: string]: components["schemas"]["LocalizedName"];
+            };
+            /**
+             * @description Type discriminant. Always company.
+             * @enum {string}
+             */
+            object: "company";
+        };
+        CompanySummary: {
+            /** @description Other names it goes by, never its display_name. Empty array, never null. */
+            aliases: string[];
+            /**
+             * Format: int64
+             * @description Works catalog files under it, NSFW ones included. How many a reader can page through is the total of its works collection.
+             */
+            catalog_work_count: number;
+            /**
+             * @description What sort of company it is.
+             * @enum {string}
+             */
+            company_kind: "game_brand" | "bunko" | "publisher" | "anime_studio" | "doujin_circle" | "group";
+            /** @description The entity's own name. Never empty. Free text; never use it as a decision input. */
+            display_name: string;
+            /** @description Company id: the catalog company id, which is also the id in the web's /galgame/official/{id}. */
+            id: string;
+            /** @description Romanization of the name. null when none is recorded. Free text; never use it as a decision input. */
+            latin: string | null;
+            /** @description Names by BCP-47 tag, sparse. Empty object when there are none, never null. */
+            localized: {
+                [key: string]: components["schemas"]["LocalizedName"];
+            };
+            /** @description The company's logo. null when catalog has none. */
+            logo: components["schemas"]["Image"] | null;
+            /**
+             * @description Type discriminant. Always company.
+             * @enum {string}
+             */
+            object: "company";
+        };
+        CompanyWork: {
+            /**
+             * @description Type discriminant. Always company_work.
+             * @enum {string}
+             */
+            object: "company_work";
+            /** @description The imprint of this company the work is credited to, when it counts here only through that imprint. null for the company's own works. */
+            via_company: components["schemas"]["CompanyRef"] | null;
+            /** @description The work. */
+            work_summary: components["schemas"]["WorkSummary"];
         };
         CompletePartBody: {
             /** @description ETag returned by the object store. Free text; never use it as a decision input. */
@@ -3236,6 +3919,97 @@ export interface components {
              * @enum {string}
              */
             object: "creator_status";
+        };
+        Credit: {
+            /** @description For a voice credit, the characters voiced. Empty array, never null. */
+            characters: components["schemas"]["CreditCharacter"][];
+            /** @description What the name did on the work, most prominent first. */
+            credit_roles: components["schemas"]["CreditRole"][];
+            /**
+             * @description Type discriminant. Always credit.
+             * @enum {string}
+             */
+            object: "credit";
+            /** @description The credited work. */
+            work_summary: components["schemas"]["WorkSummary"];
+        };
+        CreditCharacter: {
+            /** @description The character's id when catalog links one. null when the credit names the character only as text. */
+            character_id: string | null;
+            /** @description The character's name as the credit writes it, in the source language. Free text; never use it as a decision input. */
+            display_name: string;
+        };
+        CreditName: {
+            /**
+             * Format: int64
+             * @description null when unrecorded.
+             */
+            birth_day: number | null;
+            /**
+             * Format: int64
+             * @description null when unrecorded.
+             */
+            birth_month: number | null;
+            /**
+             * Format: int64
+             * @description null when unrecorded. Birthdays are often known only in part.
+             */
+            birth_year: number | null;
+            /** @description The entity's own name. Never empty. Free text; never use it as a decision input. */
+            display_name: string;
+            /**
+             * @description null when unrecorded.
+             * @enum {string|null}
+             */
+            gender: "male" | "female" | null;
+            /** @description Credit name id: the catalog credit name id, which is also the id in the web's /galgame/staff/{id}. */
+            id: string;
+            /** @description Profiles in every language catalog has, unordered. Empty array, never null. */
+            intros: components["schemas"]["CatalogIntro"][];
+            /** @description The name's own language as a BCP-47 tag. null when unrecorded. */
+            lang: string | null;
+            /** @description Romanization of the name. null when none is recorded. Free text; never use it as a decision input. */
+            latin: string | null;
+            /** @description Database pages and sites about the person. Empty array, never null. */
+            links: components["schemas"]["CatalogLink"][];
+            /** @description Names by BCP-47 tag, sparse. Empty object when there are none, never null. */
+            localized: {
+                [key: string]: components["schemas"]["LocalizedName"];
+            };
+            /**
+             * @description Type discriminant. Always credit_name.
+             * @enum {string}
+             */
+            object: "credit_name";
+            /** @description A photo of the person. null when catalog has none. */
+            photo: components["schemas"]["Image"] | null;
+            /** @description Other names the same person is credited under. Empty array, never null. */
+            siblings: components["schemas"]["CreditNameRef"][];
+        };
+        CreditNameRef: {
+            /** @description The entity's own name. Never empty. Free text; never use it as a decision input. */
+            display_name: string;
+            /** @description Credit name id: the catalog credit name id, which is also the id in the web's /galgame/staff/{id}. */
+            id: string;
+            /** @description The name's own language as a BCP-47 tag. null when unrecorded. */
+            lang: string | null;
+            /** @description Romanization of the name. null when none is recorded. Free text; never use it as a decision input. */
+            latin: string | null;
+            /** @description Names by BCP-47 tag, sparse. Empty object when there are none, never null. */
+            localized: {
+                [key: string]: components["schemas"]["LocalizedName"];
+            };
+            /**
+             * @description Type discriminant. Always credit_name.
+             * @enum {string}
+             */
+            object: "credit_name";
+        };
+        CreditRole: {
+            /** @description The role's name as catalog records it. Free text; never use it as a decision input. */
+            display_name: string;
+            /** @description Catalog's role key, such as scenario, illustration, music or voice-actor. An open vocabulary. */
+            role_key: string;
         };
         DirectMessage: {
             /** @description Message body as a node tree. An empty document (children is an empty array) when state is recalled; clients read state, not emptiness. */
@@ -3435,6 +4209,32 @@ export interface components {
              * @enum {string}
              */
             object: "emphasis";
+        };
+        Engine: {
+            /** @description Other names it goes by, never its display_name. Empty array, never null. */
+            aliases: string[];
+            /**
+             * Format: int64
+             * @description Works catalog files under it, NSFW ones included. How many a reader can page through is the total of its works collection.
+             */
+            catalog_work_count: number;
+            /** @description Catalog's note on the engine, in whatever language it was written. Empty string if none. Free text; never use it as a decision input. */
+            description: string;
+            /** @description The entity's own name. Never empty. Free text; never use it as a decision input. */
+            display_name: string;
+            /** @description Engine id: the catalog engine id, which is also the id in the web's /galgame/engine/{id}. */
+            id: string;
+            /** @description Romanization of the name. null when none is recorded. Free text; never use it as a decision input. */
+            latin: string | null;
+            /** @description Names by BCP-47 tag, sparse. Empty object when there are none, never null. */
+            localized: {
+                [key: string]: components["schemas"]["LocalizedName"];
+            };
+            /**
+             * @description Type discriminant. Always engine.
+             * @enum {string}
+             */
+            object: "engine";
         };
         FieldError: {
             /** @description English diagnostic for this location. Free text; never use it as a decision input. */
@@ -3726,9 +4526,31 @@ export interface components {
              */
             url: string;
         };
+        ListAppearance: {
+            /** @description Members of this page. Empty array, never null. */
+            items: components["schemas"]["Appearance"][];
+            /** @description Opaque keyset cursor. Omitted on the last page. */
+            next_cursor?: string;
+            /**
+             * @description Type discriminant. Always list.
+             * @enum {string}
+             */
+            object: "list";
+        };
         ListConversation: {
             /** @description Members of this page. Empty array, never null. */
             items: components["schemas"]["Conversation"][];
+            /** @description Opaque keyset cursor. Omitted on the last page. */
+            next_cursor?: string;
+            /**
+             * @description Type discriminant. Always list.
+             * @enum {string}
+             */
+            object: "list";
+        };
+        ListCredit: {
+            /** @description Members of this page. Empty array, never null. */
+            items: components["schemas"]["Credit"][];
             /** @description Opaque keyset cursor. Omitted on the last page. */
             next_cursor?: string;
             /**
@@ -3934,6 +4756,17 @@ export interface components {
         ListReportReason: {
             /** @description Members of this page. Empty array, never null. */
             items: components["schemas"]["ReportReason"][];
+            /** @description Opaque keyset cursor. Omitted on the last page. */
+            next_cursor?: string;
+            /**
+             * @description Type discriminant. Always list.
+             * @enum {string}
+             */
+            object: "list";
+        };
+        ListSection: {
+            /** @description Members of this page. Empty array, never null. */
+            items: components["schemas"]["Section"][];
             /** @description Opaque keyset cursor. Omitted on the last page. */
             next_cursor?: string;
             /**
@@ -4682,6 +5515,101 @@ export interface components {
              */
             object: "nsfw_display";
         };
+        PageListCharacterRef: {
+            /** @description Members of this page. Empty array, never null. */
+            items: components["schemas"]["CharacterRef"][];
+            /**
+             * @description Type discriminant. Always list.
+             * @enum {string}
+             */
+            object: "list";
+            /**
+             * Format: int64
+             * @description Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.
+             */
+            total: number;
+            /**
+             * @description eq when total is exact, gte when it stopped at the depth limit and there are at least that many.
+             * @enum {string}
+             */
+            total_relation: "eq" | "gte";
+        };
+        PageListCompanySummary: {
+            /** @description Members of this page. Empty array, never null. */
+            items: components["schemas"]["CompanySummary"][];
+            /**
+             * @description Type discriminant. Always list.
+             * @enum {string}
+             */
+            object: "list";
+            /**
+             * Format: int64
+             * @description Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.
+             */
+            total: number;
+            /**
+             * @description eq when total is exact, gte when it stopped at the depth limit and there are at least that many.
+             * @enum {string}
+             */
+            total_relation: "eq" | "gte";
+        };
+        PageListCompanyWork: {
+            /** @description Members of this page. Empty array, never null. */
+            items: components["schemas"]["CompanyWork"][];
+            /**
+             * @description Type discriminant. Always list.
+             * @enum {string}
+             */
+            object: "list";
+            /**
+             * Format: int64
+             * @description Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.
+             */
+            total: number;
+            /**
+             * @description eq when total is exact, gte when it stopped at the depth limit and there are at least that many.
+             * @enum {string}
+             */
+            total_relation: "eq" | "gte";
+        };
+        PageListCreditNameRef: {
+            /** @description Members of this page. Empty array, never null. */
+            items: components["schemas"]["CreditNameRef"][];
+            /**
+             * @description Type discriminant. Always list.
+             * @enum {string}
+             */
+            object: "list";
+            /**
+             * Format: int64
+             * @description Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.
+             */
+            total: number;
+            /**
+             * @description eq when total is exact, gte when it stopped at the depth limit and there are at least that many.
+             * @enum {string}
+             */
+            total_relation: "eq" | "gte";
+        };
+        PageListEngine: {
+            /** @description Members of this page. Empty array, never null. */
+            items: components["schemas"]["Engine"][];
+            /**
+             * @description Type discriminant. Always list.
+             * @enum {string}
+             */
+            object: "list";
+            /**
+             * Format: int64
+             * @description Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.
+             */
+            total: number;
+            /**
+             * @description eq when total is exact, gte when it stopped at the depth limit and there are at least that many.
+             * @enum {string}
+             */
+            total_relation: "eq" | "gte";
+        };
         PageListHiddenTopicSummary: {
             /** @description Members of this page. Empty array, never null. */
             items: components["schemas"]["HiddenTopicSummary"][];
@@ -4739,9 +5667,66 @@ export interface components {
              */
             total_relation: "eq" | "gte";
         };
+        PageListSeriesSummary: {
+            /** @description Members of this page. Empty array, never null. */
+            items: components["schemas"]["SeriesSummary"][];
+            /**
+             * @description Type discriminant. Always list.
+             * @enum {string}
+             */
+            object: "list";
+            /**
+             * Format: int64
+             * @description Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.
+             */
+            total: number;
+            /**
+             * @description eq when total is exact, gte when it stopped at the depth limit and there are at least that many.
+             * @enum {string}
+             */
+            total_relation: "eq" | "gte";
+        };
+        PageListTagSummary: {
+            /** @description Members of this page. Empty array, never null. */
+            items: components["schemas"]["TagSummary"][];
+            /**
+             * @description Type discriminant. Always list.
+             * @enum {string}
+             */
+            object: "list";
+            /**
+             * Format: int64
+             * @description Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.
+             */
+            total: number;
+            /**
+             * @description eq when total is exact, gte when it stopped at the depth limit and there are at least that many.
+             * @enum {string}
+             */
+            total_relation: "eq" | "gte";
+        };
         PageListToolsetSummary: {
             /** @description Members of this page. Empty array, never null. */
             items: components["schemas"]["ToolsetSummary"][];
+            /**
+             * @description Type discriminant. Always list.
+             * @enum {string}
+             */
+            object: "list";
+            /**
+             * Format: int64
+             * @description Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.
+             */
+            total: number;
+            /**
+             * @description eq when total is exact, gte when it stopped at the depth limit and there are at least that many.
+             * @enum {string}
+             */
+            total_relation: "eq" | "gte";
+        };
+        PageListWorkSummary: {
+            /** @description Members of this page. Empty array, never null. */
+            items: components["schemas"]["WorkSummary"][];
             /**
              * @description Type discriminant. Always list.
              * @enum {string}
@@ -5597,6 +6582,138 @@ export interface components {
             /** @description Whether the caller may replace this role's overrides: the role is not locked and ranks below the caller's highest role. Each key is still subject to the caller holding it. */
             can_edit: boolean;
         };
+        Section: {
+            /**
+             * @description The topic category the section belongs to.
+             * @enum {string}
+             */
+            category: "galgame" | "technique" | "others";
+            /** @description The newest of those topics whose author is still shown. null when there is none. */
+            latest_topic: components["schemas"]["SectionLatestTopic"] | null;
+            /**
+             * @description Type discriminant. Always section.
+             * @enum {string}
+             */
+            object: "section";
+            /**
+             * @description The section, as filed on a topic's sections and as the /section/{section} page segment.
+             * @enum {string}
+             */
+            section: "g-walkthrough" | "g-chatting" | "g-article" | "g-seeking" | "g-news" | "g-releases" | "g-other" | "t-crack" | "t-web" | "t-languages" | "t-help" | "t-linux" | "t-practical" | "t-ai" | "t-android" | "t-adobe" | "t-algorithm" | "t-other" | "o-anime" | "o-comics" | "o-music" | "o-novel" | "o-daily" | "o-essay" | "o-forum" | "o-patch" | "o-other";
+            /**
+             * Format: int64
+             * @description Published topics filed under the section that anyone may open, NSFW ones included. A size statistic, not the total of any list.
+             */
+            topic_count: number;
+            /**
+             * Format: int64
+             * @description Views summed over the same topics as topic_count.
+             */
+            view_count: number;
+        };
+        SectionLatestTopic: {
+            /**
+             * Format: date-time
+             * @description Creation time.
+             */
+            created_at: string;
+            /** @description Topic id. JSON string of a decimal integer. */
+            id: string;
+            /**
+             * @description Type discriminant. Always topic.
+             * @enum {string}
+             */
+            object: "topic";
+            /** @description Topic title. Free text; never use it as a decision input. */
+            title: string;
+        };
+        Series: {
+            /**
+             * Format: int64
+             * @description Works catalog files under it, NSFW ones included. How many a reader can page through is the total of its works collection.
+             */
+            catalog_work_count: number;
+            /** @description The entity's own name. Never empty. Free text; never use it as a decision input. */
+            display_name: string;
+            /** @description Whether any work of the series is adult content. null when catalog does not know. */
+            has_nsfw_works: boolean | null;
+            /** @description Series id: the catalog series id, which is also the id in the web's /galgame/series/{id}. */
+            id: string;
+            /** @description Descriptions in every language catalog has, unordered. Empty array, never null. */
+            intros: components["schemas"]["CatalogIntro"][];
+            /** @description Romanization of the name. null when none is recorded. Free text; never use it as a decision input. */
+            latin: string | null;
+            /**
+             * Format: int64
+             * @description Works of the series the forum lists: ones with a resource and a published page.
+             */
+            listed_work_count: number;
+            /** @description Names by BCP-47 tag, sparse. Empty object when there are none, never null. */
+            localized: {
+                [key: string]: components["schemas"]["LocalizedName"];
+            };
+            /**
+             * @description Type discriminant. Always series.
+             * @enum {string}
+             */
+            object: "series";
+            /** @description Up to five listed works of the series, earliest release first. Empty array, never null. */
+            sample_works: components["schemas"]["SeriesSampleWork"][];
+        };
+        SeriesSampleWork: {
+            /** @description The landscape art at its original size, never the 16:9 crop. null when the work has none; clients fall back to cover. */
+            banner: components["schemas"]["Image"] | null;
+            /** @description The portrait cover at its original size, never the 16:9 crop. null when the work has none. */
+            cover: components["schemas"]["Image"] | null;
+            /** @description The entity's own name. Never empty. Free text; never use it as a decision input. */
+            display_name: string;
+            /** @description Work id: the catalog work id, which is also the id in the web's /galgame/{id}. */
+            id: string;
+            /** @description Whether this forum displays the work as adult content: the editorial display axis (the claim's content limit), not the age rating. */
+            is_nsfw: boolean;
+            /** @description Romanization of the name. null when none is recorded. Free text; never use it as a decision input. */
+            latin: string | null;
+            /** @description Names by BCP-47 tag, sparse. Empty object when there are none, never null. */
+            localized: {
+                [key: string]: components["schemas"]["LocalizedName"];
+            };
+            /**
+             * @description Type discriminant. Always work.
+             * @enum {string}
+             */
+            object: "work";
+        };
+        SeriesSummary: {
+            /**
+             * Format: int64
+             * @description Works catalog files under it, NSFW ones included. How many a reader can page through is the total of its works collection.
+             */
+            catalog_work_count: number;
+            /** @description The entity's own name. Never empty. Free text; never use it as a decision input. */
+            display_name: string;
+            /** @description Whether any work of the series is adult content. null when catalog does not know; a browse without include_nsfw leaves out true and null alike. */
+            has_nsfw_works: boolean | null;
+            /** @description Series id: the catalog series id, which is also the id in the web's /galgame/series/{id}. */
+            id: string;
+            /** @description Romanization of the name. null when none is recorded. Free text; never use it as a decision input. */
+            latin: string | null;
+            /**
+             * Format: int64
+             * @description Works of the series the forum lists: ones with a resource and a published page.
+             */
+            listed_work_count: number;
+            /** @description Names by BCP-47 tag, sparse. Empty object when there are none, never null. */
+            localized: {
+                [key: string]: components["schemas"]["LocalizedName"];
+            };
+            /**
+             * @description Type discriminant. Always series.
+             * @enum {string}
+             */
+            object: "series";
+            /** @description Up to five listed works of the series, earliest release first. Empty array, never null. */
+            sample_works: components["schemas"]["SeriesSampleWork"][];
+        };
         SpoilerNode: {
             /** @description Block nodes hidden until the reader reveals them. */
             children: components["schemas"]["BlockNode"][];
@@ -5655,6 +6772,39 @@ export interface components {
              * @enum {string}
              */
             object: "table_row";
+        };
+        Tag: {
+            /**
+             * Format: int64
+             * @description Works catalog files under it, NSFW ones included. How many a reader can page through is the total of its works collection.
+             */
+            catalog_work_count: number;
+            /** @description The entity's own name. Never empty. Free text; never use it as a decision input. */
+            display_name: string;
+            /** @description Tag id: the catalog tag id, which is also the id in the web's /galgame/tag/{id}. */
+            id: string;
+            /** @description Descriptions in every language catalog has, unordered. Empty array, never null. */
+            intros: components["schemas"]["CatalogIntro"][];
+            /** @description Whether catalog keeps the tag out of sight. A hidden tag is never listed or searched, but its own page still answers. */
+            is_hidden: boolean;
+            /** @description Whether the tag is adult content. Such a tag is NOT_FOUND unless include_nsfw=true. */
+            is_sexual: boolean;
+            /** @description Romanization of the name. null when none is recorded. Free text; never use it as a decision input. */
+            latin: string | null;
+            /** @description Names by BCP-47 tag, sparse. Empty object when there are none, never null. */
+            localized: {
+                [key: string]: components["schemas"]["LocalizedName"];
+            };
+            /**
+             * @description Type discriminant. Always tag.
+             * @enum {string}
+             */
+            object: "tag";
+            /**
+             * @description What the tag describes: content is the story and characters, meta is the game as a product.
+             * @enum {string}
+             */
+            tag_kind: "content" | "meta";
         };
         TagCreate: {
             /** @description Plain-text description. Absent means empty. Free text; never use it as a decision input. */
@@ -5715,6 +6865,35 @@ export interface components {
             slug?: string;
             /** @description New group id. null moves the tag out of every group; absent keeps it. */
             website_tag_group_id?: string | null;
+        };
+        TagSummary: {
+            /**
+             * Format: int64
+             * @description Works catalog files under it, NSFW ones included. How many a reader can page through is the total of its works collection.
+             */
+            catalog_work_count: number;
+            /** @description The entity's own name. Never empty. Free text; never use it as a decision input. */
+            display_name: string;
+            /** @description Tag id: the catalog tag id, which is also the id in the web's /galgame/tag/{id}. */
+            id: string;
+            /** @description Whether the tag is adult content. Such tags are left out unless include_nsfw=true. */
+            is_sexual: boolean;
+            /** @description Romanization of the name. null when none is recorded. Free text; never use it as a decision input. */
+            latin: string | null;
+            /** @description Names by BCP-47 tag, sparse. Empty object when there are none, never null. */
+            localized: {
+                [key: string]: components["schemas"]["LocalizedName"];
+            };
+            /**
+             * @description Type discriminant. Always tag.
+             * @enum {string}
+             */
+            object: "tag";
+            /**
+             * @description What the tag describes: content is the story and characters, meta is the game as a product.
+             * @enum {string}
+             */
+            tag_kind: "content" | "meta";
         };
         TextNode: {
             /**
@@ -5880,9 +7059,9 @@ export interface components {
             release_channel: "stable" | "beta" | "alpha" | "rc";
             /**
              * Format: date-time
-             * @description Time a resource of this toolset was last added.
+             * @description Time a resource of this toolset was last added; its creation time before the first. Never null on a toolset; nullable only to match the work summary field of the same name.
              */
-            resource_updated_at: string;
+            resource_updated_at: string | null;
             /** @description Name of the tool. Free text; never use it as a decision input. */
             title: string;
             /** @description Resources of the toolset, newest first. Empty array, never null. */
@@ -6178,9 +7357,9 @@ export interface components {
             release_channel: "stable" | "beta" | "alpha" | "rc";
             /**
              * Format: date-time
-             * @description Time a resource of this toolset was last added.
+             * @description Time a resource of this toolset was last added; its creation time before the first. Never null on a toolset; nullable only to match the work summary field of the same name.
              */
-            resource_updated_at: string;
+            resource_updated_at: string | null;
             /** @description Name of the tool. Free text; never use it as a decision input. */
             title: string;
             /**
@@ -7380,6 +8559,17 @@ export interface components {
             /** @description Whether the caller liked the site. */
             has_liked: boolean;
         };
+        WikiCompanyRedirect: {
+            /** @description The catalog company it became. */
+            company_id: string;
+            /**
+             * @description Type discriminant. Always wiki_company_redirect.
+             * @enum {string}
+             */
+            object: "wiki_company_redirect";
+            /** @description The company id the retired galgame wiki used. */
+            wiki_company_id: string;
+        };
         WorkRef: {
             /** @description The portrait cover at its original size, never the 16:9 crop. null when the work has none. */
             cover: components["schemas"]["Image"] | null;
@@ -7400,6 +8590,72 @@ export interface components {
              * @enum {string}
              */
             object: "work";
+        };
+        WorkSummary: {
+            /** @description The landscape art at its original size, never the 16:9 crop. null when the work has none; clients fall back to cover. */
+            banner: components["schemas"]["Image"] | null;
+            /** @description The portrait cover at its original size, never the 16:9 crop. null when the work has none. */
+            cover: components["schemas"]["Image"] | null;
+            /** @description The entity's own name. Never empty. Free text; never use it as a decision input. */
+            display_name: string;
+            /** @description Work id: the catalog work id, which is also the id in the web's /galgame/{id}. */
+            id: string;
+            /** @description Whether this forum displays the work as adult content: the editorial display axis (the claim's content limit), not the age rating. */
+            is_nsfw: boolean;
+            /** @description Whether the forum has a listable page for the work. A catalog work the forum has no row for is false, with every forum count 0. */
+            is_published: boolean;
+            /** @description Romanization of the name. null when none is recorded. Free text; never use it as a decision input. */
+            latin: string | null;
+            /**
+             * Format: int64
+             * @description Likes on the forum page.
+             */
+            like_count: number;
+            /** @description Names by BCP-47 tag, sparse. Empty object when there are none, never null. */
+            localized: {
+                [key: string]: components["schemas"]["LocalizedName"];
+            };
+            /** @description The credited company a card names as the maker: developer, then circle, then brand, then publisher. null when no credited company has a name. */
+            maker: components["schemas"]["CompanyRef"] | null;
+            /**
+             * @description Type discriminant. Always work.
+             * @enum {string}
+             */
+            object: "work";
+            /**
+             * Format: int64
+             * @description Forum ratings of the work.
+             */
+            rating_count: number;
+            /**
+             * Format: double
+             * @description Bayesian average of the forum's ratings, one decimal. null when rating_count is 0.
+             */
+            rating_score: number | null;
+            /**
+             * Format: date
+             * @description Release date. A month- or year-precise date is the first day of that month or year. null when catalog has none.
+             */
+            release_date: string | null;
+            /**
+             * @description How much of release_date is known. null when release_date is null.
+             * @enum {string|null}
+             */
+            release_date_precision: "day" | "month" | "year" | null;
+            /** @description Languages of the work's forum resources, each once, in vocabulary order. Empty array, never null. */
+            resource_languages: ("zh-cn" | "zh-tw" | "ja-jp" | "en-us" | "other")[];
+            /** @description Platforms the work's forum resources run on, each once, in vocabulary order. Empty array, never null. */
+            resource_platforms: ("win" | "and" | "ios" | "mac" | "lin" | "web" | "mob" | "swi" | "sw2" | "n3d" | "nds" | "wii" | "wiu" | "gba" | "gbc" | "nes" | "sfc" | "ps1" | "ps2" | "ps3" | "ps4" | "ps5" | "psp" | "psv" | "xb1" | "xb3" | "xbo" | "xxs" | "sat" | "smd" | "scd" | "drc" | "pce" | "pcf" | "tdo" | "p88" | "p98" | "x1s" | "x68" | "fm7" | "fm8" | "fmt" | "msx" | "dos" | "dvd" | "bdp" | "vnd" | "oth")[];
+            /**
+             * Format: date-time
+             * @description When a resource of the work last changed. null when it has none.
+             */
+            resource_updated_at: string | null;
+            /**
+             * Format: int64
+             * @description Times the work's forum page was read. 0 for a work the forum has no page for.
+             */
+            view_count: number;
         };
     };
     responses: never;
@@ -10650,6 +11906,188 @@ export interface operations {
             };
         };
     };
+    listCharacters: {
+        parameters: {
+            query: {
+                /** @description Name search, required: this family has no browse order. The collection is catalog's 100 best name matches in relevance order. Free text; never use it as a decision input. */
+                q: string;
+                /** @description 1-based page number. page × limit may not exceed 100. */
+                page?: number;
+                /** @description Page size. 1–100, default 20. Values above 100 are rejected, not clamped. */
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PageListCharacterRef"];
+                };
+            };
+            /** @description INVALID_PARAMETER when q is only whitespace or page × limit exceeds 100. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when catalog cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getCharacter: {
+        parameters: {
+            query?: {
+                /** @description When true, adult traits are included. Default false. */
+                include_nsfw?: boolean;
+            };
+            header?: never;
+            path: {
+                /** @description Character id. */
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Character"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when no such entity is visible. ENTITY_MERGED when the entity was merged into another; current_id names it. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when catalog cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listCharacterAppearances: {
+        parameters: {
+            query?: {
+                /** @description Opaque cursor from a previous page of this collection. */
+                cursor?: string;
+                /** @description Page size. 1–50, default 20. Values above 50 are rejected, not clamped. A page can come back shorter when works on it are hidden from this reader. */
+                limit?: number;
+                /** @description When true, adult works are included. Default false. A cursor only continues the include_nsfw it was made with. */
+                include_nsfw?: boolean;
+            };
+            header?: never;
+            path: {
+                /** @description Character id. */
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListAppearance"];
+                };
+            };
+            /** @description INVALID_CURSOR when the cursor is broken or was made with another include_nsfw. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when no such entity is visible. ENTITY_MERGED when the entity was merged into another; current_id names it. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when catalog cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     getComment: {
         parameters: {
             query?: never;
@@ -11132,6 +12570,437 @@ export interface operations {
             };
         };
     };
+    listCompanies: {
+        parameters: {
+            query?: {
+                /** @description Name search. Set, the collection is catalog's 100 best name matches in relevance order. Free text; never use it as a decision input. */
+                q?: string;
+                /** @description Only companies of this kind. Omitted means every kind. */
+                company_kind?: "game_brand" | "bunko" | "publisher" | "anime_studio" | "doujin_circle" | "group";
+                /** @description 1-based page number. page × limit may not exceed 10000, or 100 when q is set. */
+                page?: number;
+                /** @description Page size. 1–100, default 50. Values above 100 are rejected, not clamped. */
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PageListCompanySummary"];
+                };
+            };
+            /** @description INVALID_PARAMETER when page × limit is too deep. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when catalog cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getCompany: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Company id. */
+                company_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Company"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when no such entity is visible. ENTITY_MERGED when the entity was merged into another; current_id names it. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when catalog cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getCompanyGraph: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Company id. */
+                company_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CompanyGraph"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when no such entity is visible. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when catalog cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listCompanyWorks: {
+        parameters: {
+            query?: {
+                /** @description own: only the company's own works. imprint: only works credited to one of its imprints. Omitted means both. */
+                via?: "own" | "imprint";
+                /** @description 1-based page number. page × limit may not exceed 10000. */
+                page?: number;
+                /** @description Page size. 1–100, default 24. Values above 100 are rejected, not clamped. */
+                limit?: number;
+                /** @description Sort order. resource_updated: when a resource last changed. created: when the forum page was made. view / view_1d / view_7d / view_30d: page reads, all time or over the last day, 7 or 30 days. release_date: the release date. rating: the bayesian forum rating. Works the forum has no page for rank after every work it has. */
+                sort?: "resource_updated_desc" | "resource_updated_asc" | "created_desc" | "created_asc" | "view_desc" | "view_asc" | "view_1d_desc" | "view_1d_asc" | "view_7d_desc" | "view_7d_asc" | "view_30d_desc" | "view_30d_asc" | "release_date_desc" | "release_date_asc" | "rating_desc" | "rating_asc";
+                /** @description Only works with at least one forum resource of this type. Omitted means no filter. */
+                resource_type?: "game" | "patch" | "collection" | "crack_fix" | "mod" | "tool" | "walkthrough" | "ost" | "voice" | "cg" | "wallpaper" | "artbook" | "video" | "other";
+                /** @description Only works with at least one forum resource for this platform. Omitted means no filter. */
+                resource_platform?: "win" | "and" | "ios" | "mac" | "lin" | "web" | "mob" | "swi" | "sw2" | "n3d" | "nds" | "wii" | "wiu" | "gba" | "gbc" | "nes" | "sfc" | "ps1" | "ps2" | "ps3" | "ps4" | "ps5" | "psp" | "psv" | "xb1" | "xb3" | "xbo" | "xxs" | "sat" | "smd" | "scd" | "drc" | "pce" | "pcf" | "tdo" | "p88" | "p98" | "x1s" | "x68" | "fm7" | "fm8" | "fmt" | "msx" | "dos" | "dvd" | "bdp" | "vnd" | "oth";
+                /** @description Only works with at least one forum resource in this language. Omitted means no filter. */
+                resource_language?: "zh-cn" | "zh-tw" | "ja-jp" | "en-us" | "other";
+                /** @description Only works a forum rating labels with this game type; uncategorized is works no rating labels at all. Omitted means no filter. */
+                game_type?: "ba_saku" | "plot" | "moe" | "daily" | "uncategorized";
+                /** @description When true, adult works are included. Default false. */
+                include_nsfw?: boolean;
+            };
+            header?: never;
+            path: {
+                /** @description Company id. */
+                company_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PageListCompanyWork"];
+                };
+            };
+            /** @description INVALID_PARAMETER when page × limit is too deep. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when no such entity is visible. ENTITY_MERGED when the entity was merged into another; current_id names it. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when catalog cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listCreditNames: {
+        parameters: {
+            query: {
+                /** @description Name search, required: this family has no browse order. The collection is catalog's 100 best name matches in relevance order. Free text; never use it as a decision input. */
+                q: string;
+                /** @description 1-based page number. page × limit may not exceed 100. */
+                page?: number;
+                /** @description Page size. 1–100, default 20. Values above 100 are rejected, not clamped. */
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PageListCreditNameRef"];
+                };
+            };
+            /** @description INVALID_PARAMETER when q is only whitespace or page × limit exceeds 100. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when catalog cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getCreditName: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Credit name id. */
+                credit_name_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreditName"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when no such entity is visible. ENTITY_MERGED when the entity was merged into another; current_id names it. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when catalog cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listCreditNameCredits: {
+        parameters: {
+            query?: {
+                /** @description Opaque cursor from a previous page of this collection. */
+                cursor?: string;
+                /** @description Page size. 1–50, default 20. Values above 50 are rejected, not clamped. A page can come back shorter when works on it are hidden from this reader. */
+                limit?: number;
+                /** @description When true, adult works are included. Default false. A cursor only continues the include_nsfw it was made with. */
+                include_nsfw?: boolean;
+            };
+            header?: never;
+            path: {
+                /** @description Credit name id. */
+                credit_name_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListCredit"];
+                };
+            };
+            /** @description INVALID_CURSOR when the cursor is broken or was made with another include_nsfw. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when no such entity is visible. ENTITY_MERGED when the entity was merged into another; current_id names it. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when catalog cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     listDocs: {
         parameters: {
             query?: {
@@ -11230,6 +13099,195 @@ export interface operations {
                 };
             };
             /** @description SERVICE_UNAVAILABLE when the account service cannot resolve the author or a mention. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listEngines: {
+        parameters: {
+            query?: {
+                /** @description Case-insensitive substring of any of the engine's names or aliases. Free text; never use it as a decision input. */
+                q?: string;
+                /** @description 1-based page number. page × limit may not exceed 10000. */
+                page?: number;
+                /** @description Page size. 1–100, default 100. Values above 100 are rejected, not clamped. */
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PageListEngine"];
+                };
+            };
+            /** @description INVALID_PARAMETER when page × limit is too deep. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when catalog cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getEngine: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Engine id. */
+                engine_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Engine"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when no such entity is visible. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when catalog cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listEngineWorks: {
+        parameters: {
+            query?: {
+                /** @description 1-based page number. page × limit may not exceed 10000. */
+                page?: number;
+                /** @description Page size. 1–100, default 24. Values above 100 are rejected, not clamped. */
+                limit?: number;
+                /** @description Sort order. resource_updated: when a resource last changed. created: when the forum page was made. view / view_1d / view_7d / view_30d: page reads, all time or over the last day, 7 or 30 days. release_date: the release date. rating: the bayesian forum rating. Works the forum has no page for rank after every work it has. */
+                sort?: "resource_updated_desc" | "resource_updated_asc" | "created_desc" | "created_asc" | "view_desc" | "view_asc" | "view_1d_desc" | "view_1d_asc" | "view_7d_desc" | "view_7d_asc" | "view_30d_desc" | "view_30d_asc" | "release_date_desc" | "release_date_asc" | "rating_desc" | "rating_asc";
+                /** @description Only works with at least one forum resource of this type. Omitted means no filter. */
+                resource_type?: "game" | "patch" | "collection" | "crack_fix" | "mod" | "tool" | "walkthrough" | "ost" | "voice" | "cg" | "wallpaper" | "artbook" | "video" | "other";
+                /** @description Only works with at least one forum resource for this platform. Omitted means no filter. */
+                resource_platform?: "win" | "and" | "ios" | "mac" | "lin" | "web" | "mob" | "swi" | "sw2" | "n3d" | "nds" | "wii" | "wiu" | "gba" | "gbc" | "nes" | "sfc" | "ps1" | "ps2" | "ps3" | "ps4" | "ps5" | "psp" | "psv" | "xb1" | "xb3" | "xbo" | "xxs" | "sat" | "smd" | "scd" | "drc" | "pce" | "pcf" | "tdo" | "p88" | "p98" | "x1s" | "x68" | "fm7" | "fm8" | "fmt" | "msx" | "dos" | "dvd" | "bdp" | "vnd" | "oth";
+                /** @description Only works with at least one forum resource in this language. Omitted means no filter. */
+                resource_language?: "zh-cn" | "zh-tw" | "ja-jp" | "en-us" | "other";
+                /** @description Only works a forum rating labels with this game type; uncategorized is works no rating labels at all. Omitted means no filter. */
+                game_type?: "ba_saku" | "plot" | "moe" | "daily" | "uncategorized";
+                /** @description When true, adult works are included. Default false. */
+                include_nsfw?: boolean;
+            };
+            header?: never;
+            path: {
+                /** @description Engine id. */
+                engine_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PageListWorkSummary"];
+                };
+            };
+            /** @description INVALID_PARAMETER when page × limit is too deep. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when no such entity is visible. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when catalog cannot be reached. */
             503: {
                 headers: {
                     [name: string]: unknown;
@@ -16253,6 +18311,497 @@ export interface operations {
             };
         };
     };
+    listSections: {
+        parameters: {
+            query?: {
+                /** @description When set, only this category's sections. Omitted means all of them. */
+                category?: "galgame" | "technique" | "others";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListSection"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the account service cannot tell which newest topics have a shown author. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listSeries: {
+        parameters: {
+            query?: {
+                /** @description Case-insensitive substring of any of the series' names. Set, the collection is every catalog series that matches, listed works or not, most works first. Free text; never use it as a decision input. */
+                q?: string;
+                /** @description 1-based page number. page × limit may not exceed 10000. */
+                page?: number;
+                /** @description Page size. 1–100, default 12. Values above 100 are rejected, not clamped. */
+                limit?: number;
+                /** @description When true, series with adult works are included. Default false: only series catalog says have none. */
+                include_nsfw?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PageListSeriesSummary"];
+                };
+            };
+            /** @description INVALID_PARAMETER when page × limit is too deep. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when catalog cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getSeries: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Series id. */
+                series_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Series"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when no such entity is visible. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when catalog cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listSeriesWorks: {
+        parameters: {
+            query?: {
+                /** @description 1-based page number. page × limit may not exceed 10000. */
+                page?: number;
+                /** @description Page size. 1–100, default 24. Values above 100 are rejected, not clamped. */
+                limit?: number;
+                /** @description Sort order. resource_updated: when a resource last changed. created: when the forum page was made. view / view_1d / view_7d / view_30d: page reads, all time or over the last day, 7 or 30 days. release_date: the release date. rating: the bayesian forum rating. Works the forum has no page for rank after every work it has. */
+                sort?: "resource_updated_desc" | "resource_updated_asc" | "created_desc" | "created_asc" | "view_desc" | "view_asc" | "view_1d_desc" | "view_1d_asc" | "view_7d_desc" | "view_7d_asc" | "view_30d_desc" | "view_30d_asc" | "release_date_desc" | "release_date_asc" | "rating_desc" | "rating_asc";
+                /** @description Only works with at least one forum resource of this type. Omitted means no filter. */
+                resource_type?: "game" | "patch" | "collection" | "crack_fix" | "mod" | "tool" | "walkthrough" | "ost" | "voice" | "cg" | "wallpaper" | "artbook" | "video" | "other";
+                /** @description Only works with at least one forum resource for this platform. Omitted means no filter. */
+                resource_platform?: "win" | "and" | "ios" | "mac" | "lin" | "web" | "mob" | "swi" | "sw2" | "n3d" | "nds" | "wii" | "wiu" | "gba" | "gbc" | "nes" | "sfc" | "ps1" | "ps2" | "ps3" | "ps4" | "ps5" | "psp" | "psv" | "xb1" | "xb3" | "xbo" | "xxs" | "sat" | "smd" | "scd" | "drc" | "pce" | "pcf" | "tdo" | "p88" | "p98" | "x1s" | "x68" | "fm7" | "fm8" | "fmt" | "msx" | "dos" | "dvd" | "bdp" | "vnd" | "oth";
+                /** @description Only works with at least one forum resource in this language. Omitted means no filter. */
+                resource_language?: "zh-cn" | "zh-tw" | "ja-jp" | "en-us" | "other";
+                /** @description Only works a forum rating labels with this game type; uncategorized is works no rating labels at all. Omitted means no filter. */
+                game_type?: "ba_saku" | "plot" | "moe" | "daily" | "uncategorized";
+                /** @description When true, adult works are included. Default false. */
+                include_nsfw?: boolean;
+            };
+            header?: never;
+            path: {
+                /** @description Series id. */
+                series_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PageListWorkSummary"];
+                };
+            };
+            /** @description INVALID_PARAMETER when page × limit is too deep. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when no such entity is visible. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when catalog cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listTaggedWorks: {
+        parameters: {
+            query: {
+                /** @description Tag ids, comma-separated. Only works carrying every one of them. 1–10. */
+                tag_ids: string[];
+                /** @description 1-based page number. page × limit may not exceed 10000. */
+                page?: number;
+                /** @description Page size. 1–100, default 24. Values above 100 are rejected, not clamped. */
+                limit?: number;
+                /** @description When true, adult works are included. Default false. */
+                include_nsfw?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PageListWorkSummary"];
+                };
+            };
+            /** @description INVALID_PARAMETER when tag_ids is empty, longer than 10, or not ids, or page × limit is too deep. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when catalog cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listTags: {
+        parameters: {
+            query?: {
+                /** @description Name search. Set, the collection is catalog's 100 best name matches in relevance order, hidden and gated tags removed. Free text; never use it as a decision input. */
+                q?: string;
+                /** @description 1-based page number. page × limit may not exceed 10000, or 100 when q is set. */
+                page?: number;
+                /** @description Page size. 1–100, default 100. Values above 100 are rejected, not clamped. */
+                limit?: number;
+                /** @description When true, adult tags are included. Default false. */
+                include_nsfw?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PageListTagSummary"];
+                };
+            };
+            /** @description INVALID_PARAMETER when page × limit is too deep. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when catalog cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getTag: {
+        parameters: {
+            query?: {
+                /** @description When true, an adult tag answers. Default false: it is NOT_FOUND. */
+                include_nsfw?: boolean;
+            };
+            header?: never;
+            path: {
+                /** @description Tag id. */
+                tag_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Tag"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when no such entity is visible. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when catalog cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listTagWorks: {
+        parameters: {
+            query?: {
+                /** @description 1-based page number. page × limit may not exceed 10000. */
+                page?: number;
+                /** @description Page size. 1–100, default 24. Values above 100 are rejected, not clamped. */
+                limit?: number;
+                /** @description Sort order. resource_updated: when a resource last changed. created: when the forum page was made. view / view_1d / view_7d / view_30d: page reads, all time or over the last day, 7 or 30 days. release_date: the release date. rating: the bayesian forum rating. Works the forum has no page for rank after every work it has. */
+                sort?: "resource_updated_desc" | "resource_updated_asc" | "created_desc" | "created_asc" | "view_desc" | "view_asc" | "view_1d_desc" | "view_1d_asc" | "view_7d_desc" | "view_7d_asc" | "view_30d_desc" | "view_30d_asc" | "release_date_desc" | "release_date_asc" | "rating_desc" | "rating_asc";
+                /** @description Only works with at least one forum resource of this type. Omitted means no filter. */
+                resource_type?: "game" | "patch" | "collection" | "crack_fix" | "mod" | "tool" | "walkthrough" | "ost" | "voice" | "cg" | "wallpaper" | "artbook" | "video" | "other";
+                /** @description Only works with at least one forum resource for this platform. Omitted means no filter. */
+                resource_platform?: "win" | "and" | "ios" | "mac" | "lin" | "web" | "mob" | "swi" | "sw2" | "n3d" | "nds" | "wii" | "wiu" | "gba" | "gbc" | "nes" | "sfc" | "ps1" | "ps2" | "ps3" | "ps4" | "ps5" | "psp" | "psv" | "xb1" | "xb3" | "xbo" | "xxs" | "sat" | "smd" | "scd" | "drc" | "pce" | "pcf" | "tdo" | "p88" | "p98" | "x1s" | "x68" | "fm7" | "fm8" | "fmt" | "msx" | "dos" | "dvd" | "bdp" | "vnd" | "oth";
+                /** @description Only works with at least one forum resource in this language. Omitted means no filter. */
+                resource_language?: "zh-cn" | "zh-tw" | "ja-jp" | "en-us" | "other";
+                /** @description Only works a forum rating labels with this game type; uncategorized is works no rating labels at all. Omitted means no filter. */
+                game_type?: "ba_saku" | "plot" | "moe" | "daily" | "uncategorized";
+                /** @description When true, adult works are included. Default false. */
+                include_nsfw?: boolean;
+            };
+            header?: never;
+            path: {
+                /** @description Tag id. */
+                tag_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PageListWorkSummary"];
+                };
+            };
+            /** @description INVALID_PARAMETER when page × limit is too deep. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when no such entity is visible. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when catalog cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     listTodos: {
         parameters: {
             query?: {
@@ -18250,6 +20799,8 @@ export interface operations {
                 category?: "galgame" | "technique" | "others";
                 /** @description When true, NSFW topics are included. Default false. */
                 include_nsfw?: boolean;
+                /** @description When set, only topics filed under this section. Omitted means every section. */
+                section?: "g-walkthrough" | "g-chatting" | "g-article" | "g-seeking" | "g-news" | "g-releases" | "g-other" | "t-crack" | "t-web" | "t-languages" | "t-help" | "t-linux" | "t-practical" | "t-ai" | "t-android" | "t-adobe" | "t-algorithm" | "t-other" | "o-anime" | "o-comics" | "o-music" | "o-novel" | "o-daily" | "o-essay" | "o-forum" | "o-patch" | "o-other";
             };
             header?: never;
             path?: never;
@@ -22394,6 +24945,65 @@ export interface operations {
                 };
             };
             /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getWikiCompanyRedirect: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The company id the retired galgame wiki used. */
+                wiki_company_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WikiCompanyRedirect"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the number maps to no company. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when catalog cannot be reached. */
             503: {
                 headers: {
                     [name: string]: unknown;

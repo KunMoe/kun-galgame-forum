@@ -206,7 +206,7 @@ func (s *Service) summary(
 		ViewCount: r.View, DownloadCount: downloads, CommentCount: r.CommentCount,
 		PracticalityAverage: prac.Average, PracticalityCount: prac.Count, PracticalityDistribution: starCounts(dist),
 		CreatedAt: repr.Timestamp(r.CreatedAt), UpdatedAt: repr.Timestamp(r.UpdatedAt),
-		EditedAt: repr.TimestampPtr(r.Edited), ResourceUpdatedAt: repr.Timestamp(r.ResourceUpdateTime),
+		EditedAt: repr.TimestampPtr(r.Edited), ResourceUpdatedAt: repr.TimestampPtr(&r.ResourceUpdateTime),
 	}, nil
 }
 

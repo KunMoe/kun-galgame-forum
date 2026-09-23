@@ -50,7 +50,7 @@ type ToolsetSummary struct {
 	CreatedAt                repr.DateTime  `json:"created_at" doc:"Creation time."`
 	UpdatedAt                repr.DateTime  `json:"updated_at" doc:"Time of the latest write to the row."`
 	EditedAt                 *repr.DateTime `json:"edited_at" doc:"Time of the latest edit. null when never edited."`
-	ResourceUpdatedAt        repr.DateTime  `json:"resource_updated_at" doc:"Time a resource of this toolset was last added."`
+	ResourceUpdatedAt        *repr.DateTime `json:"resource_updated_at" doc:"Time a resource of this toolset was last added; its creation time before the first. Never null on a toolset; nullable only to match the work summary field of the same name."`
 }
 
 type Toolset struct {
@@ -73,7 +73,7 @@ type Toolset struct {
 	CreatedAt                repr.DateTime            `json:"created_at" doc:"Creation time."`
 	UpdatedAt                repr.DateTime            `json:"updated_at" doc:"Time of the latest write to the row."`
 	EditedAt                 *repr.DateTime           `json:"edited_at" doc:"Time of the latest edit. null when never edited."`
-	ResourceUpdatedAt        repr.DateTime            `json:"resource_updated_at" doc:"Time a resource of this toolset was last added."`
+	ResourceUpdatedAt        *repr.DateTime           `json:"resource_updated_at" doc:"Time a resource of this toolset was last added; its creation time before the first. Never null on a toolset; nullable only to match the work summary field of the same name."`
 	Content                  content.ContentDocument  `json:"content" doc:"Description as a node tree. An empty document when there is no description."`
 	Contributors             []repr.UserRef           `json:"contributors" doc:"Users who have contributed a resource. Unrenderable accounts are omitted. Empty array, never null."`
 	Resources                []ToolsetResourceSummary `json:"toolset_resources" doc:"Resources of the toolset, newest first. Empty array, never null."`

@@ -14,7 +14,7 @@ Offered:
 - Uploads: `POST …/uploads` (init), `GET …/uploads/{upload_id}` (resume), `PATCH …/uploads/{upload_id}` `{state: "completed"}`, `DELETE …/uploads/{upload_id}` (abort). Only the caller who started an upload can see or change it. Over the daily quota → `429 QUOTA_EXCEEDED` with `Retry-After`.
 - `PUT …/practicality` `{rating}`. The legacy GET is gone: the detail carries the average, count, five-bucket distribution and `viewer.practicality_rating`.
 
-Names: `title`, `toolset_type`, `release_channel`, `interface_language`, `toolset_resources`; a resource has `resource_type` `file`/`link` and a nested `archive` or `link`. The detail sends `content` (a document), not HTML, and no comment preview (read `/wall-comments?subject_type=toolset`).
+Names: `title`, `toolset_type`, `release_channel`, `interface_language`, `toolset_resources`; a resource has `resource_type` `file`/`link` and a nested `archive` or `link`. The detail sends `content` (a document), not HTML, and no comment preview (read `/wall-comments?subject_type=toolset`). `resource_updated_at` is typed nullable to match the work summary's field of the same name, but a toolset always has one.
 
 ## 2026-09-23 (GE galgame entities)
 
