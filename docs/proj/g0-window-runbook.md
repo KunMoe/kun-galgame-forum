@@ -5,7 +5,7 @@
 
 ## 0. 窗口前
 
-- G0b PR 全绿、已审、**未合并**。它删掉了 `cmd/align-galgame-ids`，所以改号只能用合并之前的 tools 镜像跑（宿主机上现有的 `kungal-tools:latest` 是 G0a 版，2026-09-23T06:22Z 构建，内含 `align-galgame-ids`）。
+- G0b PR（#192）全绿、已审、**未合并**。它删掉了 `cmd/align-galgame-ids`，所以改号只能用合并之前的 tools 镜像跑（宿主机上现有的 `kungal-tools:latest` 是 G0a 版，2026-09-23T06:22Z 构建，内含 `align-galgame-ids`）。
 - 通知 T / U / M / RC 会话：窗口期间不合并、不部署。别的轨一合并，webhook 可能在改号事务中途把旧版 API 拉起来。
 - infra 会话已读完任务书，§2 各项的 dry-run 已在 staging 或本地演练过；`forumratings` 读 `work_id` 的版本已构建好，等窗口部署。
 - 本地准备：`git show origin/master:apps/api/cmd/align-galgame-ids/catalog_map.sql > catalog_map.sql`，`scp` 到宿主机 `~/g0/`。
@@ -82,7 +82,7 @@ infra 会话按任务书 §2 执行：claim `product_work_id := id`、community 
 ## 6. 部署 G0b
 
 ```
-gh pr merge <G0b> --squash          # 本地
+gh pr merge 192 --squash          # 本地
 # 等 build-and-push 完成（约 3 分钟）
 $C pull kungal-api web
 $C up -d migrate kungal-api web
