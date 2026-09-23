@@ -1,5 +1,20 @@
 # API v1 changelog
 
+## 2026-09-24 (G3 galgame resources)
+
+Breaking for every `/api/galgame-resource*` and `/api/galgame/:id/resource*` route, `PUT /api/admin/galgame/:id/resource-publish-ban`, and `GET /api/search` (its last lane, `type=resource`). 12 legacy routes go; no App build calls them.
+
+Offered:
+
+- `GET /api/v1/galgame-resources`: page-number (`limit` 1–100, default 50); `q` searches notes and work names; `include_nsfw`, `state` (`valid` / `expired`) and `sort` (`created_desc` default, `created_asc`). Resources on NSFW works are left out unless `include_nsfw=true`, and resources by unrenderable authors are left out of both `items` and `total`. A catalog failure is `503`, not a silent notes-only search.
+- `GET /api/v1/galgame-resources/{resource_id}` (counts a view), `PATCH` (partial; `state: "valid"` marks it working again), `DELETE` (204), and `GET …/source` (every editable field with the links and codes, for editors, no download counted).
+- `POST …/downloads`: the only way to get `download_urls`, `extraction_code` and `archive_password`; it counts the download. Anonymous callers may use it.
+- `PUT` / `DELETE …/like` (slot) and `POST …/expiry-reports` (`{verdict: alive | dead | unchecked, state}`; an already expired resource is 200, no longer 400).
+- `GET /api/v1/works/{work_id}/resources` (page-number) and `POST` (Idempotency-Key required, 201). A banned work is `403 RESOURCE_PUBLISH_BANNED`.
+- `PUT` / `DELETE /api/v1/works/{work_id}/resource-publish-ban` (staff, cookie only) and `GET /api/v1/works/{work_id}` (a `WorkRef`; G4 widens it to the full work).
+
+Names: `resource_type`, `resource_languages`, `resource_platforms`, `resource_runtimes` (stored kebab-case keys such as `native-win`), `version_label` tokens (`official_latest` `stable` `mirror` `localized` `unknown`), `state`, `size` (free text), `content` (the note as a document; the Markdown is `content_markdown` on `/source`), `work` (`WorkRef`), `dlsite` (`{purchase_url, coupon_url, campaign_name} | null`). No resource GET carries a link or a code any more; the old `link_domain` (which held the first full URL) is gone. Deleting a resource takes back 3 moemoepoint, the same as creating it gave, and the like counts stay with the author.
+
 ## 2026-09-24 (X1d image uploads, 413 everywhere)
 
 Breaking for `POST /api/image/topic`, `/api/image/cover`, `/api/image/message` and `/api/image/galgame`; all four are gone. No App build calls them.

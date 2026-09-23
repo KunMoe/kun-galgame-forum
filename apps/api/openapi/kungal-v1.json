@@ -4029,6 +4029,39 @@
         ],
         "type": "object"
       },
+      "DlsiteOffer": {
+        "properties": {
+          "campaign_name": {
+            "description": "Name of a running campaign. null on the static coupon page. Free text; never use it as a decision input.",
+            "maxLength": 256,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "coupon_url": {
+            "description": "Coupon or campaign landing URL. null when none.",
+            "format": "uri",
+            "maxLength": 4096,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "purchase_url": {
+            "description": "Short link or affiliate template for the DLsite product.",
+            "format": "uri",
+            "maxLength": 4096,
+            "type": "string"
+          }
+        },
+        "required": [
+          "purchase_url",
+          "coupon_url",
+          "campaign_name"
+        ],
+        "type": "object"
+      },
       "Doc": {
         "properties": {
           "author": {
@@ -4856,6 +4889,1086 @@
             "type": "string"
           }
         },
+        "type": "object"
+      },
+      "GalgameResource": {
+        "properties": {
+          "author": {
+            "$ref": "#/components/schemas/UserRef",
+            "description": "Uploader of the resource."
+          },
+          "comment_count": {
+            "description": "Comments on the resource's wall.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "content": {
+            "$ref": "#/components/schemas/ContentDocument",
+            "description": "Note as a Markdown document. An empty document when there is no note."
+          },
+          "created_at": {
+            "description": "Creation time.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": "string"
+          },
+          "dlsite": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DlsiteOffer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "DLsite purchase offer for the work. null when there is no DLsite workno."
+          },
+          "download_count": {
+            "description": "Times download secrets were issued.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "edited_at": {
+            "description": "Time of the latest edit. null when never edited.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "id": {
+            "description": "Resource id.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "like_count": {
+            "description": "Number of likes.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "object": {
+            "description": "Type discriminant. Always galgame_resource.",
+            "enum": [
+              "galgame_resource"
+            ],
+            "maxLength": 16,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "provider_names": {
+            "description": "Host names derived from the download URLs. Empty array, never null.",
+            "items": {
+              "description": "A download-host name derived from the URLs. Free text; never use it as a decision input.",
+              "maxLength": 256,
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "resource_languages": {
+            "description": "Languages of the resource. Never empty, never null.",
+            "items": {
+              "description": "A resource language. Lower-case BCP 47, plus other.",
+              "enum": [
+                "zh-cn",
+                "zh-tw",
+                "ja-jp",
+                "en-us",
+                "other"
+              ],
+              "maxLength": 5,
+              "type": "string",
+              "x-vocabulary-closed": true
+            },
+            "minItems": 1,
+            "type": "array"
+          },
+          "resource_platforms": {
+            "description": "Platforms of the resource. Empty array when only runtimes apply. Never null.",
+            "items": {
+              "description": "A resource platform token, such as win or and.",
+              "enum": [
+                "win",
+                "and",
+                "ios",
+                "mac",
+                "lin",
+                "web",
+                "mob",
+                "swi",
+                "sw2",
+                "n3d",
+                "nds",
+                "wii",
+                "wiu",
+                "gba",
+                "gbc",
+                "nes",
+                "sfc",
+                "ps1",
+                "ps2",
+                "ps3",
+                "ps4",
+                "ps5",
+                "psp",
+                "psv",
+                "xb1",
+                "xb3",
+                "xbo",
+                "xxs",
+                "sat",
+                "smd",
+                "scd",
+                "drc",
+                "pce",
+                "pcf",
+                "tdo",
+                "p88",
+                "p98",
+                "x1s",
+                "x68",
+                "fm7",
+                "fm8",
+                "fmt",
+                "msx",
+                "dos",
+                "dvd",
+                "bdp",
+                "vnd",
+                "oth"
+              ],
+              "maxLength": 3,
+              "type": "string",
+              "x-vocabulary-closed": true
+            },
+            "type": "array"
+          },
+          "resource_runtimes": {
+            "description": "Runtimes of the resource. Empty array when none. Never null.",
+            "items": {
+              "description": "A resource runtime token, such as native-win. Lower-case kebab-case, plus other.",
+              "enum": [
+                "native-win",
+                "native-and",
+                "native-ios",
+                "winlator",
+                "gamehub",
+                "kirikiroid2",
+                "krkrsdl2",
+                "onscripter",
+                "joiplay",
+                "easyrpg",
+                "renpy-android",
+                "tyranor",
+                "tyranor-next",
+                "other"
+              ],
+              "maxLength": 13,
+              "type": "string",
+              "x-vocabulary-closed": true
+            },
+            "type": "array"
+          },
+          "resource_type": {
+            "description": "Kind of download.",
+            "enum": [
+              "game",
+              "patch",
+              "collection",
+              "crack_fix",
+              "mod",
+              "tool",
+              "walkthrough",
+              "ost",
+              "voice",
+              "cg",
+              "wallpaper",
+              "artbook",
+              "video",
+              "other"
+            ],
+            "maxLength": 11,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "size": {
+            "description": "Size as the uploader wrote it, such as 1.5 GB. Free text; never use it as a decision input.",
+            "maxLength": 64,
+            "type": "string"
+          },
+          "state": {
+            "description": "Whether the links are currently treated as working.",
+            "enum": [
+              "valid",
+              "expired"
+            ],
+            "maxLength": 7,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "title": {
+            "description": "Optional title. Empty string when none. Free text; never use it as a decision input.",
+            "maxLength": 200,
+            "type": "string"
+          },
+          "updated_at": {
+            "description": "Time of the latest write to the row.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": "string"
+          },
+          "version_label": {
+            "description": "Version token. null when none.",
+            "enum": [
+              "official_latest",
+              "stable",
+              "mirror",
+              "localized",
+              "unknown",
+              null
+            ],
+            "maxLength": 15,
+            "type": [
+              "string",
+              "null"
+            ],
+            "x-vocabulary-closed": true
+          },
+          "view_count": {
+            "description": "Lifetime view count.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "viewer": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/GalgameResourceViewer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The caller's own state. null for an anonymous caller."
+          },
+          "work": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WorkRef"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The work this resource belongs to. Never null on this face; nullable to match WorkRef elsewhere."
+          }
+        },
+        "required": [
+          "object",
+          "id",
+          "work",
+          "author",
+          "resource_type",
+          "resource_languages",
+          "resource_platforms",
+          "resource_runtimes",
+          "title",
+          "version_label",
+          "size",
+          "provider_names",
+          "content",
+          "state",
+          "view_count",
+          "download_count",
+          "like_count",
+          "comment_count",
+          "created_at",
+          "updated_at",
+          "edited_at",
+          "dlsite",
+          "viewer"
+        ],
+        "type": "object"
+      },
+      "GalgameResourceCreate": {
+        "properties": {
+          "archive_password": {
+            "description": "Archive password. Empty string when none. Free text; never use it as a decision input.",
+            "maxLength": 1007,
+            "type": "string"
+          },
+          "content_markdown": {
+            "description": "Markdown note. Empty when none. Free text; never use it as a decision input.",
+            "maxLength": 10000,
+            "type": "string"
+          },
+          "download_urls": {
+            "description": "Download links, 1 to 20.",
+            "items": {
+              "description": "A download URL: http, https, ftp, ftps, magnet, ed2k or thunder, at most 4096 characters.",
+              "maxLength": 4096,
+              "pattern": "^(https?|ftps?|magnet|ed2k|thunder):",
+              "type": "string"
+            },
+            "maxItems": 20,
+            "minItems": 1,
+            "type": "array"
+          },
+          "extraction_code": {
+            "description": "Extraction code. Empty string when none. Free text; never use it as a decision input.",
+            "maxLength": 1007,
+            "type": "string"
+          },
+          "resource_languages": {
+            "description": "Languages, at least one, unique in the request.",
+            "items": {
+              "description": "A resource language. Lower-case BCP 47, plus other.",
+              "enum": [
+                "zh-cn",
+                "zh-tw",
+                "ja-jp",
+                "en-us",
+                "other"
+              ],
+              "maxLength": 5,
+              "type": "string",
+              "x-vocabulary-closed": true
+            },
+            "minItems": 1,
+            "type": "array"
+          },
+          "resource_platforms": {
+            "description": "Platforms, unique in the request. Must not be empty together with resource_runtimes.",
+            "items": {
+              "description": "A resource platform token, such as win or and.",
+              "enum": [
+                "win",
+                "and",
+                "ios",
+                "mac",
+                "lin",
+                "web",
+                "mob",
+                "swi",
+                "sw2",
+                "n3d",
+                "nds",
+                "wii",
+                "wiu",
+                "gba",
+                "gbc",
+                "nes",
+                "sfc",
+                "ps1",
+                "ps2",
+                "ps3",
+                "ps4",
+                "ps5",
+                "psp",
+                "psv",
+                "xb1",
+                "xb3",
+                "xbo",
+                "xxs",
+                "sat",
+                "smd",
+                "scd",
+                "drc",
+                "pce",
+                "pcf",
+                "tdo",
+                "p88",
+                "p98",
+                "x1s",
+                "x68",
+                "fm7",
+                "fm8",
+                "fmt",
+                "msx",
+                "dos",
+                "dvd",
+                "bdp",
+                "vnd",
+                "oth"
+              ],
+              "maxLength": 3,
+              "type": "string",
+              "x-vocabulary-closed": true
+            },
+            "type": "array"
+          },
+          "resource_runtimes": {
+            "description": "Runtimes, unique in the request. Required when resource_type has a runtime axis.",
+            "items": {
+              "description": "A resource runtime token, such as native-win. Lower-case kebab-case, plus other.",
+              "enum": [
+                "native-win",
+                "native-and",
+                "native-ios",
+                "winlator",
+                "gamehub",
+                "kirikiroid2",
+                "krkrsdl2",
+                "onscripter",
+                "joiplay",
+                "easyrpg",
+                "renpy-android",
+                "tyranor",
+                "tyranor-next",
+                "other"
+              ],
+              "maxLength": 13,
+              "type": "string",
+              "x-vocabulary-closed": true
+            },
+            "type": "array"
+          },
+          "resource_type": {
+            "description": "Kind of download.",
+            "enum": [
+              "game",
+              "patch",
+              "collection",
+              "crack_fix",
+              "mod",
+              "tool",
+              "walkthrough",
+              "ost",
+              "voice",
+              "cg",
+              "wallpaper",
+              "artbook",
+              "video",
+              "other"
+            ],
+            "maxLength": 11,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "size": {
+            "description": "Size as N[.NN] MB or GB. Free text; never use it as a decision input.",
+            "maxLength": 64,
+            "type": "string"
+          },
+          "title": {
+            "description": "Optional title, a single line. Empty string when none. Free text; never use it as a decision input.",
+            "maxLength": 200,
+            "type": "string"
+          },
+          "version_label": {
+            "description": "Version token. Absent or null means none.",
+            "enum": [
+              "official_latest",
+              "stable",
+              "mirror",
+              "localized",
+              "unknown",
+              null
+            ],
+            "maxLength": 15,
+            "type": [
+              "string",
+              "null"
+            ],
+            "x-vocabulary-closed": true
+          }
+        },
+        "required": [
+          "resource_type",
+          "resource_languages",
+          "size",
+          "download_urls"
+        ],
+        "type": "object"
+      },
+      "GalgameResourceDownload": {
+        "properties": {
+          "archive_password": {
+            "description": "Archive password. Empty string when none. Free text; never use it as a decision input.",
+            "maxLength": 1007,
+            "type": "string"
+          },
+          "download_urls": {
+            "description": "Stored download links, in row order. Never null.",
+            "items": {
+              "description": "A download URL: http, https, ftp, ftps, magnet, ed2k or thunder, at most 4096 characters.",
+              "maxLength": 4096,
+              "pattern": "^(https?|ftps?|magnet|ed2k|thunder):",
+              "type": "string"
+            },
+            "maxItems": 20,
+            "minItems": 1,
+            "type": "array"
+          },
+          "extraction_code": {
+            "description": "Extraction code. Empty string when none. Free text; never use it as a decision input.",
+            "maxLength": 1007,
+            "type": "string"
+          },
+          "object": {
+            "description": "Type discriminant. Always galgame_resource_download.",
+            "enum": [
+              "galgame_resource_download"
+            ],
+            "maxLength": 25,
+            "type": "string",
+            "x-vocabulary-closed": true
+          }
+        },
+        "required": [
+          "object",
+          "download_urls",
+          "extraction_code",
+          "archive_password"
+        ],
+        "type": "object"
+      },
+      "GalgameResourceEngagement": {
+        "properties": {
+          "like_count": {
+            "description": "Number of likes after this request.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "object": {
+            "description": "Type discriminant. Always galgame_resource_engagement.",
+            "enum": [
+              "galgame_resource_engagement"
+            ],
+            "maxLength": 27,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "resource_id": {
+            "description": "Id of the resource.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "viewer": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/GalgameResourceEngagementViewer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The caller's like state after this request."
+          }
+        },
+        "required": [
+          "object",
+          "resource_id",
+          "like_count",
+          "viewer"
+        ],
+        "type": "object"
+      },
+      "GalgameResourceEngagementViewer": {
+        "properties": {
+          "has_liked": {
+            "description": "Whether the caller liked the resource.",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "has_liked"
+        ],
+        "type": "object"
+      },
+      "GalgameResourceExpiryReport": {
+        "properties": {
+          "object": {
+            "description": "Type discriminant. Always galgame_resource_expiry_report.",
+            "enum": [
+              "galgame_resource_expiry_report"
+            ],
+            "maxLength": 30,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "resource_id": {
+            "description": "Id of the resource.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "state": {
+            "description": "The resource's state after this request.",
+            "enum": [
+              "valid",
+              "expired"
+            ],
+            "maxLength": 7,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "verdict": {
+            "description": "Link-check outcome.",
+            "enum": [
+              "alive",
+              "dead",
+              "unchecked"
+            ],
+            "maxLength": 9,
+            "type": "string",
+            "x-vocabulary-closed": true
+          }
+        },
+        "required": [
+          "object",
+          "resource_id",
+          "verdict",
+          "state"
+        ],
+        "type": "object"
+      },
+      "GalgameResourcePatch": {
+        "properties": {
+          "archive_password": {
+            "description": "New archive password. Free text; never use it as a decision input.",
+            "maxLength": 1007,
+            "type": "string"
+          },
+          "content_markdown": {
+            "description": "New Markdown note. Free text; never use it as a decision input.",
+            "maxLength": 10000,
+            "type": "string"
+          },
+          "download_urls": {
+            "description": "When present, replaces every download link.",
+            "items": {
+              "description": "A download URL: http, https, ftp, ftps, magnet, ed2k or thunder, at most 4096 characters.",
+              "maxLength": 4096,
+              "pattern": "^(https?|ftps?|magnet|ed2k|thunder):",
+              "type": "string"
+            },
+            "maxItems": 20,
+            "minItems": 1,
+            "type": "array"
+          },
+          "extraction_code": {
+            "description": "New extraction code. Free text; never use it as a decision input.",
+            "maxLength": 1007,
+            "type": "string"
+          },
+          "resource_languages": {
+            "description": "When present, replaces every language.",
+            "items": {
+              "description": "A resource language. Lower-case BCP 47, plus other.",
+              "enum": [
+                "zh-cn",
+                "zh-tw",
+                "ja-jp",
+                "en-us",
+                "other"
+              ],
+              "maxLength": 5,
+              "type": "string",
+              "x-vocabulary-closed": true
+            },
+            "minItems": 1,
+            "type": "array"
+          },
+          "resource_platforms": {
+            "description": "When present, replaces every platform.",
+            "items": {
+              "description": "A resource platform token, such as win or and.",
+              "enum": [
+                "win",
+                "and",
+                "ios",
+                "mac",
+                "lin",
+                "web",
+                "mob",
+                "swi",
+                "sw2",
+                "n3d",
+                "nds",
+                "wii",
+                "wiu",
+                "gba",
+                "gbc",
+                "nes",
+                "sfc",
+                "ps1",
+                "ps2",
+                "ps3",
+                "ps4",
+                "ps5",
+                "psp",
+                "psv",
+                "xb1",
+                "xb3",
+                "xbo",
+                "xxs",
+                "sat",
+                "smd",
+                "scd",
+                "drc",
+                "pce",
+                "pcf",
+                "tdo",
+                "p88",
+                "p98",
+                "x1s",
+                "x68",
+                "fm7",
+                "fm8",
+                "fmt",
+                "msx",
+                "dos",
+                "dvd",
+                "bdp",
+                "vnd",
+                "oth"
+              ],
+              "maxLength": 3,
+              "type": "string",
+              "x-vocabulary-closed": true
+            },
+            "type": "array"
+          },
+          "resource_runtimes": {
+            "description": "When present, replaces every runtime.",
+            "items": {
+              "description": "A resource runtime token, such as native-win. Lower-case kebab-case, plus other.",
+              "enum": [
+                "native-win",
+                "native-and",
+                "native-ios",
+                "winlator",
+                "gamehub",
+                "kirikiroid2",
+                "krkrsdl2",
+                "onscripter",
+                "joiplay",
+                "easyrpg",
+                "renpy-android",
+                "tyranor",
+                "tyranor-next",
+                "other"
+              ],
+              "maxLength": 13,
+              "type": "string",
+              "x-vocabulary-closed": true
+            },
+            "type": "array"
+          },
+          "resource_type": {
+            "description": "New kind of download.",
+            "enum": [
+              "game",
+              "patch",
+              "collection",
+              "crack_fix",
+              "mod",
+              "tool",
+              "walkthrough",
+              "ost",
+              "voice",
+              "cg",
+              "wallpaper",
+              "artbook",
+              "video",
+              "other"
+            ],
+            "maxLength": 11,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "size": {
+            "description": "New size as N[.NN] MB or GB. Free text; never use it as a decision input.",
+            "maxLength": 64,
+            "type": "string"
+          },
+          "state": {
+            "description": "Only valid is accepted. expired is NOT_ALLOWED_VALUE.",
+            "enum": [
+              "valid",
+              "expired"
+            ],
+            "maxLength": 7,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "title": {
+            "description": "New title, a single line. Free text; never use it as a decision input.",
+            "maxLength": 200,
+            "type": "string"
+          },
+          "version_label": {
+            "description": "New version token. null clears it.",
+            "enum": [
+              "official_latest",
+              "stable",
+              "mirror",
+              "localized",
+              "unknown",
+              null
+            ],
+            "maxLength": 15,
+            "type": [
+              "string",
+              "null"
+            ],
+            "x-vocabulary-closed": true
+          }
+        },
+        "type": "object"
+      },
+      "GalgameResourceSource": {
+        "properties": {
+          "archive_password": {
+            "description": "Archive password. Empty string when none. Free text; never use it as a decision input.",
+            "maxLength": 1007,
+            "type": "string"
+          },
+          "content_markdown": {
+            "description": "Stored Markdown of the note. Free text; never use it as a decision input.",
+            "maxLength": 10000,
+            "type": "string"
+          },
+          "download_urls": {
+            "description": "Stored download links, in row order. Never null.",
+            "items": {
+              "description": "A download URL: http, https, ftp, ftps, magnet, ed2k or thunder, at most 4096 characters.",
+              "maxLength": 4096,
+              "pattern": "^(https?|ftps?|magnet|ed2k|thunder):",
+              "type": "string"
+            },
+            "maxItems": 20,
+            "minItems": 1,
+            "type": "array"
+          },
+          "extraction_code": {
+            "description": "Extraction code. Empty string when none. Free text; never use it as a decision input.",
+            "maxLength": 1007,
+            "type": "string"
+          },
+          "object": {
+            "description": "Type discriminant. Always galgame_resource_source.",
+            "enum": [
+              "galgame_resource_source"
+            ],
+            "maxLength": 23,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "resource_id": {
+            "description": "Id of the resource.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "resource_languages": {
+            "description": "Languages of the resource. Never empty, never null.",
+            "items": {
+              "description": "A resource language. Lower-case BCP 47, plus other.",
+              "enum": [
+                "zh-cn",
+                "zh-tw",
+                "ja-jp",
+                "en-us",
+                "other"
+              ],
+              "maxLength": 5,
+              "type": "string",
+              "x-vocabulary-closed": true
+            },
+            "minItems": 1,
+            "type": "array"
+          },
+          "resource_platforms": {
+            "description": "Platforms of the resource. Empty array when only runtimes apply. Never null.",
+            "items": {
+              "description": "A resource platform token, such as win or and.",
+              "enum": [
+                "win",
+                "and",
+                "ios",
+                "mac",
+                "lin",
+                "web",
+                "mob",
+                "swi",
+                "sw2",
+                "n3d",
+                "nds",
+                "wii",
+                "wiu",
+                "gba",
+                "gbc",
+                "nes",
+                "sfc",
+                "ps1",
+                "ps2",
+                "ps3",
+                "ps4",
+                "ps5",
+                "psp",
+                "psv",
+                "xb1",
+                "xb3",
+                "xbo",
+                "xxs",
+                "sat",
+                "smd",
+                "scd",
+                "drc",
+                "pce",
+                "pcf",
+                "tdo",
+                "p88",
+                "p98",
+                "x1s",
+                "x68",
+                "fm7",
+                "fm8",
+                "fmt",
+                "msx",
+                "dos",
+                "dvd",
+                "bdp",
+                "vnd",
+                "oth"
+              ],
+              "maxLength": 3,
+              "type": "string",
+              "x-vocabulary-closed": true
+            },
+            "type": "array"
+          },
+          "resource_runtimes": {
+            "description": "Runtimes of the resource. Empty array when none. Never null.",
+            "items": {
+              "description": "A resource runtime token, such as native-win. Lower-case kebab-case, plus other.",
+              "enum": [
+                "native-win",
+                "native-and",
+                "native-ios",
+                "winlator",
+                "gamehub",
+                "kirikiroid2",
+                "krkrsdl2",
+                "onscripter",
+                "joiplay",
+                "easyrpg",
+                "renpy-android",
+                "tyranor",
+                "tyranor-next",
+                "other"
+              ],
+              "maxLength": 13,
+              "type": "string",
+              "x-vocabulary-closed": true
+            },
+            "type": "array"
+          },
+          "resource_type": {
+            "description": "Kind of download.",
+            "enum": [
+              "game",
+              "patch",
+              "collection",
+              "crack_fix",
+              "mod",
+              "tool",
+              "walkthrough",
+              "ost",
+              "voice",
+              "cg",
+              "wallpaper",
+              "artbook",
+              "video",
+              "other"
+            ],
+            "maxLength": 11,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "size": {
+            "description": "Size as the uploader wrote it. Free text; never use it as a decision input.",
+            "maxLength": 64,
+            "type": "string"
+          },
+          "title": {
+            "description": "Stored title. Empty string when none. Free text; never use it as a decision input.",
+            "maxLength": 200,
+            "type": "string"
+          },
+          "version_label": {
+            "description": "Version token. null when none.",
+            "enum": [
+              "official_latest",
+              "stable",
+              "mirror",
+              "localized",
+              "unknown",
+              null
+            ],
+            "maxLength": 15,
+            "type": [
+              "string",
+              "null"
+            ],
+            "x-vocabulary-closed": true
+          }
+        },
+        "required": [
+          "object",
+          "resource_id",
+          "resource_type",
+          "title",
+          "version_label",
+          "resource_languages",
+          "resource_platforms",
+          "resource_runtimes",
+          "size",
+          "download_urls",
+          "extraction_code",
+          "archive_password",
+          "content_markdown"
+        ],
+        "type": "object"
+      },
+      "GalgameResourceViewer": {
+        "properties": {
+          "can_delete": {
+            "description": "Whether the caller may delete this resource. Requests authenticated with a Bearer token never carry staff powers.",
+            "type": "boolean"
+          },
+          "can_edit": {
+            "description": "Whether the caller may edit this resource. Requests authenticated with a Bearer token never carry staff powers.",
+            "type": "boolean"
+          },
+          "has_liked": {
+            "description": "Whether the caller liked this resource.",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "has_liked",
+          "can_edit",
+          "can_delete"
+        ],
         "type": "object"
       },
       "HeadingNode": {
@@ -8758,6 +9871,49 @@
             "description": "Members of this page. Empty array, never null.",
             "items": {
               "$ref": "#/components/schemas/Engine"
+            },
+            "type": "array"
+          },
+          "object": {
+            "description": "Type discriminant. Always list.",
+            "enum": [
+              "list"
+            ],
+            "maxLength": 4,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "total": {
+            "description": "Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "total_relation": {
+            "description": "eq when total is exact, gte when it stopped at the depth limit and there are at least that many.",
+            "enum": [
+              "eq",
+              "gte"
+            ],
+            "maxLength": 3,
+            "type": "string",
+            "x-vocabulary-closed": true
+          }
+        },
+        "required": [
+          "object",
+          "items",
+          "total",
+          "total_relation"
+        ],
+        "type": "object"
+      },
+      "PageListGalgameResource": {
+        "properties": {
+          "items": {
+            "description": "Members of this page. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/GalgameResource"
             },
             "type": "array"
           },
@@ -20087,6 +21243,36 @@
         ],
         "type": "object"
       },
+      "WorkResourcePublishBan": {
+        "properties": {
+          "is_resource_publish_banned": {
+            "description": "Whether new download resources may not be published on this work.",
+            "type": "boolean"
+          },
+          "object": {
+            "description": "Type discriminant. Always work_resource_publish_ban.",
+            "enum": [
+              "work_resource_publish_ban"
+            ],
+            "maxLength": 25,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "work_id": {
+            "description": "Work id.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "object",
+          "work_id",
+          "is_resource_publish_banned"
+        ],
+        "type": "object"
+      },
       "WorkRevision": {
         "properties": {
           "legacy_revision_id": {
@@ -27831,6 +29017,1054 @@
         "summary": "List friend links",
         "tags": [
           "friend-links"
+        ]
+      }
+    },
+    "/galgame-resources": {
+      "get": {
+        "description": "Lists download resources as a page-number collection. Default sort is created_desc, default limit 50. Resources whose author is not renderable are omitted from both items and total. include_nsfw=false excludes resources on a local NSFW work. Secrets are never included.",
+        "operationId": "listGalgameResources",
+        "parameters": [
+          {
+            "description": "1-based page number. page × limit may not exceed 10000.",
+            "explode": false,
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "default": 1,
+              "description": "1-based page number. page × limit may not exceed 10000.",
+              "format": "int64",
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Page size. 1–100, default 50. Values above 100 are rejected, not clamped.",
+            "explode": false,
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 50,
+              "description": "Page size. 1–100, default 50. Values above 100 are rejected, not clamped.",
+              "format": "int64",
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Case-insensitive search over the note and catalog work names. Omitted or blank means no search. Free text; never use it as a decision input.",
+            "explode": false,
+            "in": "query",
+            "name": "q",
+            "schema": {
+              "description": "Case-insensitive search over the note and catalog work names. Omitted or blank means no search. Free text; never use it as a decision input.",
+              "maxLength": 107,
+              "type": "string"
+            }
+          },
+          {
+            "description": "When true, resources on an NSFW work are included. Default false.",
+            "explode": false,
+            "in": "query",
+            "name": "include_nsfw",
+            "schema": {
+              "default": false,
+              "description": "When true, resources on an NSFW work are included. Default false.",
+              "type": "boolean"
+            }
+          },
+          {
+            "description": "When set, only this state. Omitted means every state.",
+            "explode": false,
+            "in": "query",
+            "name": "state",
+            "schema": {
+              "description": "When set, only this state. Omitted means every state.",
+              "enum": [
+                "valid",
+                "expired"
+              ],
+              "maxLength": 7,
+              "type": "string",
+              "x-vocabulary-closed": true
+            }
+          },
+          {
+            "description": "Sort token. Default created_desc.",
+            "explode": false,
+            "in": "query",
+            "name": "sort",
+            "schema": {
+              "default": "created_desc",
+              "description": "Sort token. Default created_desc.",
+              "enum": [
+                "created_desc",
+                "created_asc"
+              ],
+              "maxLength": 12,
+              "type": "string",
+              "x-vocabulary-closed": true
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageListGalgameResource"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "UNKNOWN_ENUM_VALUE, UNKNOWN_SORT, LIMIT_TOO_LARGE, or INVALID_PARAMETER."
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          },
+          {}
+        ],
+        "summary": "List galgame download resources",
+        "tags": [
+          "galgame-resources"
+        ]
+      }
+    },
+    "/galgame-resources/{resource_id}": {
+      "delete": {
+        "description": "Deletes a resource. Needs can_delete. Requests authenticated with a Bearer token never carry resource permissions. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED, and a failure of that lookup is SERVICE_UNAVAILABLE with nothing written. ",
+        "operationId": "deleteGalgameResource",
+        "parameters": [
+          {
+            "description": "Resource id.",
+            "in": "path",
+            "name": "resource_id",
+            "required": true,
+            "schema": {
+              "description": "Resource id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "PERMISSION_REQUIRED without can_delete; ACCOUNT_BANNED."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when the resource does not exist, its author is not renderable, or the work is unpublished."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Delete a download resource",
+        "tags": [
+          "galgame-resources"
+        ]
+      },
+      "get": {
+        "description": "Returns the resource without download secrets and counts one view. An unrenderable author or unpublished work is NOT_FOUND. viewer is null for an anonymous caller.",
+        "operationId": "getGalgameResource",
+        "parameters": [
+          {
+            "description": "Resource id.",
+            "in": "path",
+            "name": "resource_id",
+            "required": true,
+            "schema": {
+              "description": "Resource id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GalgameResource"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when the resource does not exist, its author is not renderable, or the work is unpublished."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          },
+          {}
+        ],
+        "summary": "Get a galgame download resource",
+        "tags": [
+          "galgame-resources"
+        ]
+      },
+      "patch": {
+        "description": "Changes the fields that are sent and returns the resource. Needs can_edit. Requests authenticated with a Bearer token never carry resource permissions. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED, and a failure of that lookup is SERVICE_UNAVAILABLE with nothing written. Only content_markdown and download_urls, when sent, go through the trust-and-safety check. download_urls and axis arrays, when present, replace the whole set. state may only be valid.",
+        "operationId": "updateGalgameResource",
+        "parameters": [
+          {
+            "description": "Resource id.",
+            "in": "path",
+            "name": "resource_id",
+            "required": true,
+            "schema": {
+              "description": "Resource id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GalgameResourcePatch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GalgameResource"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "PERMISSION_REQUIRED without can_edit; RESOURCE_PUBLISH_BANNED; ACCOUNT_BANNED."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when the resource does not exist, its author is not renderable, or the work is unpublished."
+          },
+          "413": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Request Entity Too Large"
+          },
+          "415": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unsupported Media Type"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED or CONTENT_REJECTED."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Edit a download resource",
+        "tags": [
+          "galgame-resources"
+        ]
+      }
+    },
+    "/galgame-resources/{resource_id}/downloads": {
+      "post": {
+        "description": "Returns the stored download URLs and codes, and counts one download. Anonymous callers may use it. Secrets never appear on GET.",
+        "operationId": "createGalgameResourceDownload",
+        "parameters": [
+          {
+            "description": "Resource id.",
+            "in": "path",
+            "name": "resource_id",
+            "required": true,
+            "schema": {
+              "description": "Resource id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GalgameResourceDownload"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when the resource does not exist, its author is not renderable, or the work is unpublished."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          },
+          {}
+        ],
+        "summary": "Issue download secrets for a resource",
+        "tags": [
+          "galgame-resources"
+        ]
+      }
+    },
+    "/galgame-resources/{resource_id}/expiry-reports": {
+      "post": {
+        "description": "Checks the stored links and may mark the resource expired. Already expired is 200 with no side effects. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED, and a failure of that lookup is SERVICE_UNAVAILABLE with nothing written. ",
+        "operationId": "createGalgameResourceExpiryReport",
+        "parameters": [
+          {
+            "description": "Caller-generated UUID (canonical 8-4-4-4-12 hex, any version) or 26-character Crockford ULID. Scoped to (user, operation, key) for 24 hours.",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "schema": {
+              "description": "Caller-generated UUID (canonical 8-4-4-4-12 hex, any version) or 26-character Crockford ULID. Scoped to (user, operation, key) for 24 hours.",
+              "maxLength": 36,
+              "minLength": 26,
+              "pattern": "^([0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}|[0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{26})$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Resource id.",
+            "in": "path",
+            "name": "resource_id",
+            "required": true,
+            "schema": {
+              "description": "Resource id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GalgameResourceExpiryReport"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when the resource does not exist, its author is not renderable, or the work is unpublished."
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "IDEMPOTENCY_KEY_REUSED or IDEMPOTENCY_REQUEST_IN_PROGRESS."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Report a resource as expired",
+        "tags": [
+          "galgame-resources"
+        ]
+      }
+    },
+    "/galgame-resources/{resource_id}/like": {
+      "delete": {
+        "description": "Clears the caller's like. Unliking when not liked changes nothing. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED, and a failure of that lookup is SERVICE_UNAVAILABLE with nothing written. ",
+        "operationId": "deleteGalgameResourceLike",
+        "parameters": [
+          {
+            "description": "Resource id.",
+            "in": "path",
+            "name": "resource_id",
+            "required": true,
+            "schema": {
+              "description": "Resource id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GalgameResourceEngagement"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "ACCOUNT_BANNED."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when the resource does not exist, its author is not renderable, or the work is unpublished."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Unlike a download resource",
+        "tags": [
+          "galgame-resources"
+        ]
+      },
+      "put": {
+        "description": "Sets the caller's like. Liking again changes nothing. Liking one's own resource is SELF_LIKE_FORBIDDEN. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED, and a failure of that lookup is SERVICE_UNAVAILABLE with nothing written. ",
+        "operationId": "putGalgameResourceLike",
+        "parameters": [
+          {
+            "description": "Resource id.",
+            "in": "path",
+            "name": "resource_id",
+            "required": true,
+            "schema": {
+              "description": "Resource id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GalgameResourceEngagement"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SELF_LIKE_FORBIDDEN or ACCOUNT_BANNED."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when the resource does not exist, its author is not renderable, or the work is unpublished."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Like a download resource",
+        "tags": [
+          "galgame-resources"
+        ]
+      }
+    },
+    "/galgame-resources/{resource_id}/source": {
+      "get": {
+        "description": "Returns the editable fields of a resource, secrets included, without counting a download. Needs viewer.can_edit. Requests authenticated with a Bearer token never carry resource permissions. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED, and a failure of that lookup is SERVICE_UNAVAILABLE with nothing written. ",
+        "operationId": "getGalgameResourceSource",
+        "parameters": [
+          {
+            "description": "Resource id.",
+            "in": "path",
+            "name": "resource_id",
+            "required": true,
+            "schema": {
+              "description": "Resource id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GalgameResourceSource"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "PERMISSION_REQUIRED without can_edit; ACCOUNT_BANNED."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when the resource does not exist, its author is not renderable, or the work is unpublished."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get a resource's edit source",
+        "tags": [
+          "galgame-resources"
         ]
       }
     },
@@ -50774,6 +53008,111 @@
         ]
       }
     },
+    "/works/{work_id}": {
+      "get": {
+        "description": "Returns a WorkRef for the catalog work. Hidden or unknown works are NOT_FOUND. Local published is not required.",
+        "operationId": "getWork",
+        "parameters": [
+          {
+            "description": "Catalog work id, which is also the forum galgame page id.",
+            "in": "path",
+            "name": "work_id",
+            "required": true,
+            "schema": {
+              "description": "Catalog work id, which is also the forum galgame page id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkRef"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when the work does not exist or is hidden."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the catalog cannot be reached."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          },
+          {}
+        ],
+        "summary": "Get a work",
+        "tags": [
+          "works"
+        ]
+      }
+    },
     "/works/{work_id}/moyu-patches": {
       "get": {
         "description": "Lists the pages www.moyu.moe, the KUN Galgame patch site, holds for the work, each with its live resources. Usually one page: moyu dedupes on the VNDB string, so a game that arrived under two spellings has two, and the page a reader should land on comes first. The whole set in one response; it is never paged. An empty list means moyu has nothing for the work. No download link, share code or password is carried; send a reader to web_url. An answer may be up to 30 minutes old. NOT_FOUND when the work does not exist.",
@@ -50845,6 +53184,535 @@
           }
         },
         "summary": "List a work's patches on moyu",
+        "tags": [
+          "works"
+        ]
+      }
+    },
+    "/works/{work_id}/resource-publish-ban": {
+      "delete": {
+        "description": "Clears the resource-publish ban. Needs galgame.ban_resource_publish. Requests authenticated with a Bearer token never carry resource permissions. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED, and a failure of that lookup is SERVICE_UNAVAILABLE with nothing written. A missing local row is 200 with is_resource_publish_banned false.",
+        "operationId": "deleteWorkResourcePublishBan",
+        "parameters": [
+          {
+            "description": "Work id.",
+            "in": "path",
+            "name": "work_id",
+            "required": true,
+            "schema": {
+              "description": "Work id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkResourcePublishBan"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "PERMISSION_REQUIRED, including on a Bearer request; ACCOUNT_BANNED."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when the work does not exist or is hidden."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Lift the resource-publish ban on a work",
+        "tags": [
+          "works"
+        ]
+      },
+      "put": {
+        "description": "Sets the resource-publish ban. Needs galgame.ban_resource_publish. Requests authenticated with a Bearer token never carry resource permissions. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED, and a failure of that lookup is SERVICE_UNAVAILABLE with nothing written. An unknown catalog work is NOT_FOUND and writes no local row.",
+        "operationId": "putWorkResourcePublishBan",
+        "parameters": [
+          {
+            "description": "Work id.",
+            "in": "path",
+            "name": "work_id",
+            "required": true,
+            "schema": {
+              "description": "Work id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkResourcePublishBan"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "PERMISSION_REQUIRED, including on a Bearer request; ACCOUNT_BANNED."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when the work does not exist or is hidden."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Ban publishing download resources on a work",
+        "tags": [
+          "works"
+        ]
+      }
+    },
+    "/works/{work_id}/resources": {
+      "get": {
+        "description": "Lists download resources of a work as a page-number collection, valid first then newest. An unknown, hidden or unpublished work is NOT_FOUND. An empty list is 200 with total 0. NSFW is not gated.",
+        "operationId": "listWorkResources",
+        "parameters": [
+          {
+            "description": "Work id.",
+            "in": "path",
+            "name": "work_id",
+            "required": true,
+            "schema": {
+              "description": "Work id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "1-based page number. page × limit may not exceed 10000.",
+            "explode": false,
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "default": 1,
+              "description": "1-based page number. page × limit may not exceed 10000.",
+              "format": "int64",
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Page size. 1–100, default 50. Values above 100 are rejected, not clamped.",
+            "explode": false,
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 50,
+              "description": "Page size. 1–100, default 50. Values above 100 are rejected, not clamped.",
+              "format": "int64",
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "When set, only this state. Omitted means every state.",
+            "explode": false,
+            "in": "query",
+            "name": "state",
+            "schema": {
+              "description": "When set, only this state. Omitted means every state.",
+              "enum": [
+                "valid",
+                "expired"
+              ],
+              "maxLength": 7,
+              "type": "string",
+              "x-vocabulary-closed": true
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageListGalgameResource"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "LIMIT_TOO_LARGE, INVALID_PARAMETER, or UNKNOWN_ENUM_VALUE."
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when the work does not exist, is hidden, or is unpublished."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          },
+          {}
+        ],
+        "summary": "List a work's download resources",
+        "tags": [
+          "works"
+        ]
+      },
+      "post": {
+        "description": "Creates a download resource on the work. Idempotency-Key is required. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED, and a failure of that lookup is SERVICE_UNAVAILABLE with nothing written. A banned work is RESOURCE_PUBLISH_BANNED. Location is the new resource's path.",
+        "operationId": "createWorkResource",
+        "parameters": [
+          {
+            "description": "Caller-generated UUID (canonical 8-4-4-4-12 hex, any version) or 26-character Crockford ULID. Scoped to (user, operation, key) for 24 hours.",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "description": "Caller-generated UUID (canonical 8-4-4-4-12 hex, any version) or 26-character Crockford ULID. Scoped to (user, operation, key) for 24 hours.",
+              "maxLength": 36,
+              "minLength": 26,
+              "pattern": "^([0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}|[0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{26})$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Work id.",
+            "in": "path",
+            "name": "work_id",
+            "required": true,
+            "schema": {
+              "description": "Work id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GalgameResourceCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GalgameResource"
+                }
+              }
+            },
+            "description": "Created",
+            "headers": {
+              "Location": {
+                "schema": {
+                  "description": "Absolute path of the new resource, such as /api/v1/galgame-resources/12.",
+                  "format": "uri-reference",
+                  "maxLength": 96,
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "INVALID_PARAMETER when Idempotency-Key is missing or malformed."
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "RESOURCE_PUBLISH_BANNED or ACCOUNT_BANNED."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when the work does not exist or is hidden."
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "IDEMPOTENCY_KEY_REUSED or IDEMPOTENCY_REQUEST_IN_PROGRESS."
+          },
+          "413": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Request Entity Too Large"
+          },
+          "415": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unsupported Media Type"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED or CONTENT_REJECTED."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create a download resource",
         "tags": [
           "works"
         ]

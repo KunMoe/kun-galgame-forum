@@ -9,8 +9,8 @@
 | 段 | 范围 | 旧路由 | 状态 |
 |---|---|---|---|
 | G1 | 工具集：列表、用户列表、详情、写、资源、分片上传、实用性（[契约](g1-toolsets.md)，迁移 142） | 16 | ✅ 2026-09-23 #215；G1.1（资源字段改名 `toolset_resource_type`、`download_url` 可空、迁移 144） |
-| G2 | 题库 `/quizzes`（[契约](g2-quizzes.md)，迁移 143） | 13 | 已实现，PR 待合（分支 `api-v1/g2-quiz`） |
-| G3 | galgame 资源：浏览、详情、按作品列、写、赞、有效/失效、发布禁止 | 11 | |
+| G2 | 题库 `/quizzes`（[契约](g2-quizzes.md)，迁移 143） | 13 | ✅ 2026-09-24 #219 |
+| G3 | galgame 资源：浏览、详情、按作品列、写、赞、有效/失效、发布禁止，外加 `/search` 的资源车道（[契约](g3-resources.md)，迁移 145） | 12 | 已实现，PR 待合（分支 `api-v1/g3-resources`） |
 | G4 | 作品详情 `GET /works/{work_id}`、赞、外链、我的互动；删 `/galgame/drafts` | 6 | 等 GE 的实体摘要 |
 | G5 | 浏览 `/works`（本地引擎）+ 资料库集合（catalog 引擎）+ sitemap + 发售月历 + collected months；外加 `/rss/galgame`（2026-09-23 由 X1 移交：改读 `/works?sort=created_desc`，旧 handler 照常退役） | 9 + 1 | 等 GE 的 `WorkSummary` |
 | G6 | catalog 用户面：封面投票、游玩时长、收藏夹（含 `/users/{user_id}/collections`） | 11 | |
