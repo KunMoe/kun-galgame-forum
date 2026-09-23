@@ -1694,6 +1694,42 @@
         ],
         "type": "object"
       },
+      "BatchListQuizState": {
+        "properties": {
+          "items": {
+            "description": "One member per requested id that the caller may see. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/QuizState"
+            },
+            "type": "array"
+          },
+          "missing": {
+            "description": "Requested ids that did not come back, in the order they were requested. Empty array, never null. The reason is deliberately not given.",
+            "items": {
+              "maxLength": 20,
+              "minLength": 1,
+              "pattern": "^[0-9]+$",
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "object": {
+            "description": "Type discriminant. Always list.",
+            "enum": [
+              "list"
+            ],
+            "maxLength": 4,
+            "type": "string",
+            "x-vocabulary-closed": true
+          }
+        },
+        "required": [
+          "object",
+          "items",
+          "missing"
+        ],
+        "type": "object"
+      },
       "BatchListTopicState": {
         "properties": {
           "items": {
@@ -3226,6 +3262,43 @@
         ],
         "type": "object"
       },
+      "CountedListQuizAnswer": {
+        "properties": {
+          "items": {
+            "description": "Members of this page. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/QuizAnswer"
+            },
+            "type": "array"
+          },
+          "next_cursor": {
+            "description": "Opaque keyset cursor. Omitted on the last page.",
+            "maxLength": 512,
+            "pattern": "^cur_[A-Za-z0-9_-]+$",
+            "type": "string"
+          },
+          "object": {
+            "description": "Type discriminant. Always list.",
+            "enum": [
+              "list"
+            ],
+            "maxLength": 4,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "total": {
+            "description": "Present only when include_total=true. Same visibility gate as items.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "object",
+          "items"
+        ],
+        "type": "object"
+      },
       "CountedListTodo": {
         "properties": {
           "items": {
@@ -4321,6 +4394,18 @@
         "required": [
           "object",
           "children"
+        ],
+        "type": "object"
+      },
+      "EngagementViewer": {
+        "properties": {
+          "has_favorited": {
+            "description": "Whether the caller favorited the quiz.",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "has_favorited"
         ],
         "type": "object"
       },
@@ -6317,6 +6402,37 @@
             "description": "Members of this page. Empty array, never null.",
             "items": {
               "$ref": "#/components/schemas/WorkRankingEntry"
+            },
+            "type": "array"
+          },
+          "next_cursor": {
+            "description": "Opaque keyset cursor. Omitted on the last page.",
+            "maxLength": 512,
+            "pattern": "^cur_[A-Za-z0-9_-]+$",
+            "type": "string"
+          },
+          "object": {
+            "description": "Type discriminant. Always list.",
+            "enum": [
+              "list"
+            ],
+            "maxLength": 4,
+            "type": "string",
+            "x-vocabulary-closed": true
+          }
+        },
+        "required": [
+          "object",
+          "items"
+        ],
+        "type": "object"
+      },
+      "ListWorkRef": {
+        "properties": {
+          "items": {
+            "description": "Members of this page. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/WorkRef"
             },
             "type": "array"
           },
@@ -8808,6 +8924,49 @@
         ],
         "type": "object"
       },
+      "PageListQuizSummary": {
+        "properties": {
+          "items": {
+            "description": "Members of this page. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/QuizSummary"
+            },
+            "type": "array"
+          },
+          "object": {
+            "description": "Type discriminant. Always list.",
+            "enum": [
+              "list"
+            ],
+            "maxLength": 4,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "total": {
+            "description": "Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "total_relation": {
+            "description": "eq when total is exact, gte when it stopped at the depth limit and there are at least that many.",
+            "enum": [
+              "eq",
+              "gte"
+            ],
+            "maxLength": 3,
+            "type": "string",
+            "x-vocabulary-closed": true
+          }
+        },
+        "required": [
+          "object",
+          "items",
+          "total",
+          "total_relation"
+        ],
+        "type": "object"
+      },
       "PageListRatingSummary": {
         "properties": {
           "items": {
@@ -10491,6 +10650,1172 @@
         },
         "required": [
           "doc"
+        ],
+        "type": "object"
+      },
+      "QualityPut": {
+        "properties": {
+          "rating": {
+            "description": "Quality rating, 1–10.",
+            "format": "int64",
+            "maximum": 10,
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "rating"
+        ],
+        "type": "object"
+      },
+      "QualityViewer": {
+        "properties": {
+          "quality_rating": {
+            "description": "The rating just written. Never null in this response.",
+            "format": "int64",
+            "maximum": 10,
+            "minimum": 1,
+            "type": [
+              "integer",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "quality_rating"
+        ],
+        "type": "object"
+      },
+      "Quiz": {
+        "properties": {
+          "answer_count": {
+            "description": "Number of answerers, excluding the author row.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "author": {
+            "$ref": "#/components/schemas/UserRef",
+            "description": "Author of the quiz."
+          },
+          "bumped_at": {
+            "description": "Time of the latest bump: an answer inside the three-day window, or an edit.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": "string"
+          },
+          "choices": {
+            "description": "Option texts of a single or multiple choice quiz, without the answer key. Empty array for a judge quiz. Never null.",
+            "items": {
+              "description": "One option of a single or multiple choice quiz. Free text; never use it as a decision input.",
+              "maxLength": 200,
+              "type": "string"
+            },
+            "maxItems": 20,
+            "type": "array"
+          },
+          "comment_count": {
+            "description": "Comments on the quiz's wall.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "content": {
+            "$ref": "#/components/schemas/ContentDocument",
+            "description": "Description as a Markdown document. An empty document when there is no description."
+          },
+          "correct_count": {
+            "description": "Number of correct answerers.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "created_at": {
+            "description": "Creation time.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": "string"
+          },
+          "difficulty": {
+            "description": "Difficulty, 1–10.",
+            "format": "int64",
+            "maximum": 10,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "favorite_count": {
+            "description": "Number of favorites.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "id": {
+            "description": "Quiz id.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "is_work_hidden": {
+            "description": "Whether linked works stay hidden until the caller may see the answer key.",
+            "type": "boolean"
+          },
+          "object": {
+            "description": "Type discriminant. Always quiz.",
+            "enum": [
+              "quiz"
+            ],
+            "maxLength": 4,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "prompt": {
+            "$ref": "#/components/schemas/ContentDocument",
+            "description": "The question as a restricted document of paragraph, text, break and inline_spoiler nodes."
+          },
+          "quality_average": {
+            "description": "Mean rating, one decimal place. null when nobody has rated.",
+            "format": "double",
+            "maximum": 10,
+            "minimum": 1,
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "quality_count": {
+            "description": "Number of ratings.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "quiz_category": {
+            "description": "Subject of the quiz.",
+            "enum": [
+              "plot",
+              "character",
+              "system",
+              "music",
+              "voice",
+              "company",
+              "trivia",
+              "other"
+            ],
+            "maxLength": 9,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "quiz_type": {
+            "description": "Kind of quiz.",
+            "enum": [
+              "single",
+              "multiple",
+              "judge"
+            ],
+            "maxLength": 8,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "solution": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/QuizSolution"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The answer key and explanation. null when the caller may not see them."
+          },
+          "spoiler_level": {
+            "description": "How much of a work the prompt spoils.",
+            "enum": [
+              "none",
+              "portion",
+              "serious"
+            ],
+            "maxLength": 7,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "updated_at": {
+            "description": "Time of the latest write to the row.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": "string"
+          },
+          "view_count": {
+            "description": "Lifetime view count. Each read of this operation adds one.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "viewer": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/QuizViewer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The caller's own state. null for an anonymous caller."
+          },
+          "works": {
+            "description": "Linked works. Empty when is_work_hidden is true and the caller may not see the answer key. Never null.",
+            "items": {
+              "$ref": "#/components/schemas/WorkRef"
+            },
+            "maxItems": 20,
+            "type": "array"
+          }
+        },
+        "required": [
+          "object",
+          "id",
+          "prompt",
+          "quiz_type",
+          "quiz_category",
+          "difficulty",
+          "spoiler_level",
+          "author",
+          "view_count",
+          "answer_count",
+          "correct_count",
+          "favorite_count",
+          "quality_average",
+          "quality_count",
+          "comment_count",
+          "created_at",
+          "updated_at",
+          "bumped_at",
+          "content",
+          "choices",
+          "solution",
+          "is_work_hidden",
+          "works",
+          "viewer"
+        ],
+        "type": "object"
+      },
+      "QuizAnswer": {
+        "properties": {
+          "answered_at": {
+            "description": "Time they answered.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": "string"
+          },
+          "answerer": {
+            "$ref": "#/components/schemas/UserRef",
+            "description": "User who answered."
+          },
+          "id": {
+            "description": "Answer row id.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "is_correct": {
+            "description": "Whether they were correct. null when the caller may not see the answer key.",
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "object": {
+            "description": "Type discriminant. Always quiz_answer.",
+            "enum": [
+              "quiz_answer"
+            ],
+            "maxLength": 11,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "quiz_id": {
+            "description": "Id of the quiz.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "submission": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/QuizSubmission"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "What they submitted. null when the caller may not see the answer key."
+          }
+        },
+        "required": [
+          "object",
+          "id",
+          "quiz_id",
+          "answerer",
+          "submission",
+          "is_correct",
+          "answered_at"
+        ],
+        "type": "object"
+      },
+      "QuizAnswerResult": {
+        "properties": {
+          "answer": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/QuizAnswer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The row just written. Never null here; nullable because the detail's viewer.answer is."
+          },
+          "object": {
+            "description": "Type discriminant. Always quiz_answer_result.",
+            "enum": [
+              "quiz_answer_result"
+            ],
+            "maxLength": 18,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "solution": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/QuizSolution"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The answer key and explanation. Never null here; nullable because the detail's solution is."
+          }
+        },
+        "required": [
+          "object",
+          "answer",
+          "solution"
+        ],
+        "type": "object"
+      },
+      "QuizCreate": {
+        "properties": {
+          "choices": {
+            "description": "Option texts. Required with 2–20 unique items for single and multiple; inconsistent on judge.",
+            "items": {
+              "description": "One option of a single or multiple choice quiz. Free text; never use it as a decision input.",
+              "maxLength": 200,
+              "type": "string"
+            },
+            "maxItems": 20,
+            "type": "array"
+          },
+          "correct_choice_indexes": {
+            "description": "0-based indexes of the correct choices. Exactly one for single, at least one unique in range for multiple, empty for judge.",
+            "items": {
+              "description": "0-based index into the quiz's choices.",
+              "maximum": 19,
+              "minimum": 0,
+              "type": "integer"
+            },
+            "maxItems": 20,
+            "type": "array"
+          },
+          "description_markdown": {
+            "description": "Markdown description. May be empty. Free text; never use it as a decision input.",
+            "maxLength": 20000,
+            "type": "string"
+          },
+          "difficulty": {
+            "description": "Difficulty, 1–10.",
+            "format": "int64",
+            "maximum": 10,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "explanation_markdown": {
+            "description": "Markdown explanation shown after answering. May be empty. Free text; never use it as a decision input.",
+            "maxLength": 2000,
+            "type": "string"
+          },
+          "is_statement_true": {
+            "description": "Whether the judge statement is true. Required for judge; must be null or absent otherwise.",
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "is_work_hidden": {
+            "description": "Whether linked works stay hidden until the caller may see the answer key.",
+            "type": "boolean"
+          },
+          "prompt_text": {
+            "description": "The question. Length is checked on the raw value; only whitespace is TOO_SHORT. Free text; never use it as a decision input.",
+            "maxLength": 200,
+            "minLength": 1,
+            "type": "string"
+          },
+          "quiz_category": {
+            "description": "Subject of the quiz.",
+            "enum": [
+              "plot",
+              "character",
+              "system",
+              "music",
+              "voice",
+              "company",
+              "trivia",
+              "other"
+            ],
+            "maxLength": 9,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "quiz_type": {
+            "description": "Kind of quiz. Immutable after create.",
+            "enum": [
+              "single",
+              "multiple",
+              "judge"
+            ],
+            "maxLength": 8,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "spoiler_level": {
+            "description": "How much of a work the prompt spoils. Omitted is none.",
+            "enum": [
+              "none",
+              "portion",
+              "serious"
+            ],
+            "maxLength": 7,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "work_ids": {
+            "description": "Linked catalog work ids, unique, at most 20. Each must exist in catalog.",
+            "items": {
+              "maxLength": 20,
+              "minLength": 1,
+              "pattern": "^[0-9]+$",
+              "type": "string"
+            },
+            "maxItems": 20,
+            "type": "array"
+          }
+        },
+        "required": [
+          "prompt_text",
+          "quiz_type",
+          "quiz_category",
+          "difficulty"
+        ],
+        "type": "object"
+      },
+      "QuizEngagement": {
+        "properties": {
+          "favorite_count": {
+            "description": "Number of favorites after this request.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "object": {
+            "description": "Type discriminant. Always quiz_engagement.",
+            "enum": [
+              "quiz_engagement"
+            ],
+            "maxLength": 15,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "quiz_id": {
+            "description": "Id of the quiz.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "viewer": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EngagementViewer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The caller's favorite state after this request."
+          }
+        },
+        "required": [
+          "object",
+          "quiz_id",
+          "favorite_count",
+          "viewer"
+        ],
+        "type": "object"
+      },
+      "QuizPatch": {
+        "properties": {
+          "choices": {
+            "description": "When present, replaces every option.",
+            "items": {
+              "description": "One option of a single or multiple choice quiz. Free text; never use it as a decision input.",
+              "maxLength": 200,
+              "type": "string"
+            },
+            "maxItems": 20,
+            "type": "array"
+          },
+          "correct_choice_indexes": {
+            "description": "When present, replaces the answer key indexes.",
+            "items": {
+              "description": "0-based index into the quiz's choices.",
+              "maximum": 19,
+              "minimum": 0,
+              "type": "integer"
+            },
+            "maxItems": 20,
+            "type": "array"
+          },
+          "description_markdown": {
+            "description": "New Markdown description. Free text; never use it as a decision input.",
+            "maxLength": 20000,
+            "type": "string"
+          },
+          "difficulty": {
+            "description": "New difficulty, 1–10.",
+            "format": "int64",
+            "maximum": 10,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "explanation_markdown": {
+            "description": "New Markdown explanation. Free text; never use it as a decision input.",
+            "maxLength": 2000,
+            "type": "string"
+          },
+          "is_statement_true": {
+            "description": "When present and not null, replaces whether the judge statement is true.",
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "is_work_hidden": {
+            "description": "When present, replaces the hidden-works flag.",
+            "type": "boolean"
+          },
+          "prompt_text": {
+            "description": "New prompt. Free text; never use it as a decision input.",
+            "maxLength": 200,
+            "minLength": 1,
+            "type": "string"
+          },
+          "quiz_category": {
+            "description": "New subject.",
+            "enum": [
+              "plot",
+              "character",
+              "system",
+              "music",
+              "voice",
+              "company",
+              "trivia",
+              "other"
+            ],
+            "maxLength": 9,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "quiz_type": {
+            "description": "Kind of quiz. A value different from the stored type is IMMUTABLE.",
+            "enum": [
+              "single",
+              "multiple",
+              "judge"
+            ],
+            "maxLength": 8,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "spoiler_level": {
+            "description": "New spoiler level.",
+            "enum": [
+              "none",
+              "portion",
+              "serious"
+            ],
+            "maxLength": 7,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "work_ids": {
+            "description": "When present, replaces every linked work.",
+            "items": {
+              "maxLength": 20,
+              "minLength": 1,
+              "pattern": "^[0-9]+$",
+              "type": "string"
+            },
+            "maxItems": 20,
+            "type": "array"
+          }
+        },
+        "type": "object"
+      },
+      "QuizQuality": {
+        "properties": {
+          "object": {
+            "description": "Type discriminant. Always quiz_quality.",
+            "enum": [
+              "quiz_quality"
+            ],
+            "maxLength": 12,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "quality_average": {
+            "description": "Mean rating after this request, one decimal place.",
+            "format": "double",
+            "maximum": 10,
+            "minimum": 1,
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "quality_count": {
+            "description": "Number of ratings after this request.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "quiz_id": {
+            "description": "Id of the quiz.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "viewer": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/QualityViewer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The caller's rating after this request."
+          }
+        },
+        "required": [
+          "object",
+          "quiz_id",
+          "quality_average",
+          "quality_count",
+          "viewer"
+        ],
+        "type": "object"
+      },
+      "QuizSolution": {
+        "properties": {
+          "correct_choice_indexes": {
+            "description": "0-based indexes of the correct choices. Empty array for a judge quiz.",
+            "items": {
+              "description": "0-based index into the quiz's choices.",
+              "maximum": 19,
+              "minimum": 0,
+              "type": "integer"
+            },
+            "maxItems": 20,
+            "type": "array"
+          },
+          "explanation": {
+            "$ref": "#/components/schemas/ContentDocument",
+            "description": "Explanation as a Markdown document. An empty document when there is none."
+          },
+          "is_statement_true": {
+            "description": "Whether a judge quiz's statement is true. null on other quiz types.",
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "object": {
+            "description": "Type discriminant. Always quiz_solution.",
+            "enum": [
+              "quiz_solution"
+            ],
+            "maxLength": 13,
+            "type": "string",
+            "x-vocabulary-closed": true
+          }
+        },
+        "required": [
+          "object",
+          "correct_choice_indexes",
+          "is_statement_true",
+          "explanation"
+        ],
+        "type": "object"
+      },
+      "QuizSource": {
+        "properties": {
+          "choices": {
+            "description": "Option texts. Empty array for a judge quiz. Never null.",
+            "items": {
+              "description": "One option of a single or multiple choice quiz. Free text; never use it as a decision input.",
+              "maxLength": 200,
+              "type": "string"
+            },
+            "maxItems": 20,
+            "type": "array"
+          },
+          "correct_choice_indexes": {
+            "description": "0-based indexes of the correct choices. Empty array for a judge quiz.",
+            "items": {
+              "description": "0-based index into the quiz's choices.",
+              "maximum": 19,
+              "minimum": 0,
+              "type": "integer"
+            },
+            "maxItems": 20,
+            "type": "array"
+          },
+          "description_markdown": {
+            "description": "Stored Markdown of the description. Free text; never use it as a decision input.",
+            "maxLength": 20000,
+            "type": "string"
+          },
+          "difficulty": {
+            "description": "Difficulty, 1–10.",
+            "format": "int64",
+            "maximum": 10,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "explanation_markdown": {
+            "description": "Stored Markdown of the explanation. Free text; never use it as a decision input.",
+            "maxLength": 2000,
+            "type": "string"
+          },
+          "is_statement_true": {
+            "description": "Whether a judge quiz's statement is true. null on other quiz types.",
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "is_work_hidden": {
+            "description": "Whether linked works stay hidden until the caller may see the answer key.",
+            "type": "boolean"
+          },
+          "object": {
+            "description": "Type discriminant. Always quiz_source.",
+            "enum": [
+              "quiz_source"
+            ],
+            "maxLength": 11,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "prompt_text": {
+            "description": "Stored prompt text. Free text; never use it as a decision input.",
+            "maxLength": 200,
+            "type": "string"
+          },
+          "quiz_category": {
+            "description": "Subject of the quiz.",
+            "enum": [
+              "plot",
+              "character",
+              "system",
+              "music",
+              "voice",
+              "company",
+              "trivia",
+              "other"
+            ],
+            "maxLength": 9,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "quiz_id": {
+            "description": "Id of the quiz.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "quiz_type": {
+            "description": "Kind of quiz.",
+            "enum": [
+              "single",
+              "multiple",
+              "judge"
+            ],
+            "maxLength": 8,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "spoiler_level": {
+            "description": "How much of a work the prompt spoils.",
+            "enum": [
+              "none",
+              "portion",
+              "serious"
+            ],
+            "maxLength": 7,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "work_ids": {
+            "description": "Linked work ids. Empty array when there are none. Never null.",
+            "items": {
+              "maxLength": 20,
+              "minLength": 1,
+              "pattern": "^[0-9]+$",
+              "type": "string"
+            },
+            "maxItems": 20,
+            "type": "array"
+          }
+        },
+        "required": [
+          "object",
+          "quiz_id",
+          "quiz_type",
+          "quiz_category",
+          "difficulty",
+          "spoiler_level",
+          "prompt_text",
+          "description_markdown",
+          "explanation_markdown",
+          "choices",
+          "correct_choice_indexes",
+          "is_statement_true",
+          "work_ids",
+          "is_work_hidden"
+        ],
+        "type": "object"
+      },
+      "QuizState": {
+        "properties": {
+          "has_favorited": {
+            "description": "Whether the caller favorited the quiz.",
+            "type": "boolean"
+          },
+          "object": {
+            "description": "Type discriminant. Always quiz_state.",
+            "enum": [
+              "quiz_state"
+            ],
+            "maxLength": 10,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "quiz_id": {
+            "description": "Id of the quiz this state is about.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "object",
+          "quiz_id",
+          "has_favorited"
+        ],
+        "type": "object"
+      },
+      "QuizSubmission": {
+        "properties": {
+          "choice_indexes": {
+            "description": "0-based indexes of the chosen options. Empty array for a judge quiz.",
+            "items": {
+              "description": "0-based index into the quiz's choices.",
+              "maximum": 19,
+              "minimum": 0,
+              "type": "integer"
+            },
+            "maxItems": 20,
+            "type": "array"
+          },
+          "is_statement_true": {
+            "description": "The answerer's verdict on a judge quiz's statement. null or absent on other quiz types.",
+            "type": [
+              "boolean",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "choice_indexes"
+        ],
+        "type": "object"
+      },
+      "QuizSummary": {
+        "properties": {
+          "answer_count": {
+            "description": "Number of answerers, excluding the author row.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "author": {
+            "$ref": "#/components/schemas/UserRef",
+            "description": "Author of the quiz."
+          },
+          "bumped_at": {
+            "description": "Time of the latest bump: an answer inside the three-day window, or an edit.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": "string"
+          },
+          "comment_count": {
+            "description": "Comments on the quiz's wall.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "correct_count": {
+            "description": "Number of correct answerers.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "created_at": {
+            "description": "Creation time.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": "string"
+          },
+          "difficulty": {
+            "description": "Difficulty, 1–10.",
+            "format": "int64",
+            "maximum": 10,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "favorite_count": {
+            "description": "Number of favorites.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "id": {
+            "description": "Quiz id.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "object": {
+            "description": "Type discriminant. Always quiz.",
+            "enum": [
+              "quiz"
+            ],
+            "maxLength": 4,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "prompt": {
+            "$ref": "#/components/schemas/ContentDocument",
+            "description": "The question as a restricted document of paragraph, text, break and inline_spoiler nodes."
+          },
+          "quality_average": {
+            "description": "Mean rating, one decimal place. null when nobody has rated.",
+            "format": "double",
+            "maximum": 10,
+            "minimum": 1,
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "quality_count": {
+            "description": "Number of ratings.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "quiz_category": {
+            "description": "Subject of the quiz.",
+            "enum": [
+              "plot",
+              "character",
+              "system",
+              "music",
+              "voice",
+              "company",
+              "trivia",
+              "other"
+            ],
+            "maxLength": 9,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "quiz_type": {
+            "description": "Kind of quiz.",
+            "enum": [
+              "single",
+              "multiple",
+              "judge"
+            ],
+            "maxLength": 8,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "spoiler_level": {
+            "description": "How much of a work the prompt spoils.",
+            "enum": [
+              "none",
+              "portion",
+              "serious"
+            ],
+            "maxLength": 7,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "updated_at": {
+            "description": "Time of the latest write to the row.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": "string"
+          },
+          "view_count": {
+            "description": "Lifetime view count.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "viewer": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/QuizSummaryViewer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The caller's own state. null for an anonymous caller."
+          }
+        },
+        "required": [
+          "object",
+          "id",
+          "prompt",
+          "quiz_type",
+          "quiz_category",
+          "difficulty",
+          "spoiler_level",
+          "author",
+          "view_count",
+          "answer_count",
+          "correct_count",
+          "favorite_count",
+          "quality_average",
+          "quality_count",
+          "comment_count",
+          "created_at",
+          "updated_at",
+          "bumped_at",
+          "viewer"
+        ],
+        "type": "object"
+      },
+      "QuizSummaryViewer": {
+        "properties": {
+          "has_answered": {
+            "description": "Whether the caller has an answerer row. The author's author row does not count.",
+            "type": "boolean"
+          },
+          "is_correct": {
+            "description": "Whether the caller was correct. null when they have not answered.",
+            "type": [
+              "boolean",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "has_answered",
+          "is_correct"
+        ],
+        "type": "object"
+      },
+      "QuizViewer": {
+        "properties": {
+          "answer": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/QuizAnswer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The caller's own answer. null when they have not answered."
+          },
+          "can_delete": {
+            "description": "Whether the caller may delete this quiz. Requests authenticated with a Bearer token never carry staff powers.",
+            "type": "boolean"
+          },
+          "can_edit": {
+            "description": "Whether the caller may edit this quiz. Requests authenticated with a Bearer token never carry staff powers.",
+            "type": "boolean"
+          },
+          "has_answered": {
+            "description": "Whether the caller has an answerer row. The author's author row does not count.",
+            "type": "boolean"
+          },
+          "has_favorited": {
+            "description": "Whether the caller favorited the quiz.",
+            "type": "boolean"
+          },
+          "quality_rating": {
+            "description": "The caller's rating, 1–10. null when they have not rated.",
+            "format": "int64",
+            "maximum": 10,
+            "minimum": 1,
+            "type": [
+              "integer",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "has_answered",
+          "answer",
+          "can_edit",
+          "can_delete",
+          "has_favorited",
+          "quality_rating"
         ],
         "type": "object"
       },
@@ -27574,6 +28899,115 @@
         ]
       }
     },
+    "/me/answered-quizzes": {
+      "get": {
+        "description": "Lists quizzes the caller has an answerer row on, newest answer first. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED, and a failure of that lookup is SERVICE_UNAVAILABLE with nothing written. Quizzes whose author is not renderable are omitted from both items and total.",
+        "operationId": "listMyAnsweredQuizzes",
+        "parameters": [
+          {
+            "description": "1-based page number. page × limit may not exceed 10000.",
+            "explode": false,
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "default": 1,
+              "description": "1-based page number. page × limit may not exceed 10000.",
+              "format": "int64",
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Page size. 1–100, default 50. Values above 100 are rejected, not clamped.",
+            "explode": false,
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 50,
+              "description": "Page size. 1–100, default 50. Values above 100 are rejected, not clamped.",
+              "format": "int64",
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageListQuizSummary"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "LIMIT_TOO_LARGE or INVALID_PARAMETER."
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "ACCOUNT_BANNED."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List quizzes the caller has answered",
+        "tags": [
+          "me"
+        ]
+      }
+    },
     "/me/avatar": {
       "put": {
         "description": "Uploads a new avatar image as multipart field file. The image must be image/* and at most 4 MiB.",
@@ -30254,6 +31688,116 @@
         ]
       }
     },
+    "/me/quiz-states": {
+      "get": {
+        "description": "Answers, for each quiz id named in quiz_ids, whether the caller favorited it. It is a batch read and is not paginated: quiz_ids is required, holds 1 to 100 ids. An id that does not exist, is deleted, or whose author is not renderable is missing.",
+        "operationId": "listMyQuizStates",
+        "parameters": [
+          {
+            "description": "Quiz ids to answer for, comma-separated. 1 to 100 of them.",
+            "explode": false,
+            "in": "query",
+            "name": "quiz_ids",
+            "required": true,
+            "schema": {
+              "description": "Quiz ids to answer for, comma-separated. 1 to 100 of them.",
+              "items": {
+                "maxLength": 20,
+                "minLength": 1,
+                "pattern": "^[0-9]+$",
+                "type": "string"
+              },
+              "maxItems": 100,
+              "type": "array"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BatchListQuizState"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "ACCOUNT_BANNED."
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED when quiz_ids is absent, empty, holds more than 100 ids, or holds something that is not a positive decimal integer."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Batch-read the caller's quiz favorite states",
+        "tags": [
+          "me"
+        ]
+      }
+    },
     "/me/topic-drafts": {
       "get": {
         "description": "Lists the caller's own topic drafts, most recently written first, ties broken by descending id. There is one sort and no sort parameter. A draft is private to its author. Another author's draft is NOT_FOUND, never 403: a stranger must not learn that the id exists.",
@@ -32754,6 +34298,1476 @@
         "summary": "List every field-level error reason",
         "tags": [
           "meta"
+        ]
+      }
+    },
+    "/quizzes": {
+      "get": {
+        "description": "Lists quizzes as a page-number collection. Default sort is bumped_at_desc, default limit 50. Quizzes whose author is not renderable are omitted from both items and total. include_nsfw=false excludes quizzes linked to a local NSFW work.",
+        "operationId": "listQuizzes",
+        "parameters": [
+          {
+            "description": "1-based page number. page × limit may not exceed 10000.",
+            "explode": false,
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "default": 1,
+              "description": "1-based page number. page × limit may not exceed 10000.",
+              "format": "int64",
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Page size. 1–100, default 50. Values above 100 are rejected, not clamped.",
+            "explode": false,
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 50,
+              "description": "Page size. 1–100, default 50. Values above 100 are rejected, not clamped.",
+              "format": "int64",
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "When set, only quizzes linked to this work.",
+            "explode": false,
+            "in": "query",
+            "name": "work_id",
+            "schema": {
+              "description": "When set, only quizzes linked to this work.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "When set, only quizzes this user authored.",
+            "explode": false,
+            "in": "query",
+            "name": "author_id",
+            "schema": {
+              "description": "When set, only quizzes this user authored.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "When set, only this type. Omitted means every type.",
+            "explode": false,
+            "in": "query",
+            "name": "quiz_type",
+            "schema": {
+              "description": "When set, only this type. Omitted means every type.",
+              "enum": [
+                "single",
+                "multiple",
+                "judge"
+              ],
+              "maxLength": 8,
+              "type": "string",
+              "x-vocabulary-closed": true
+            }
+          },
+          {
+            "description": "When set, only this category. Omitted means every category.",
+            "explode": false,
+            "in": "query",
+            "name": "quiz_category",
+            "schema": {
+              "description": "When set, only this category. Omitted means every category.",
+              "enum": [
+                "plot",
+                "character",
+                "system",
+                "music",
+                "voice",
+                "company",
+                "trivia",
+                "other"
+              ],
+              "maxLength": 9,
+              "type": "string",
+              "x-vocabulary-closed": true
+            }
+          },
+          {
+            "description": "When set, only this difficulty. Omitted means every difficulty; 0 is out of range.",
+            "explode": false,
+            "in": "query",
+            "name": "difficulty",
+            "schema": {
+              "description": "When set, only this difficulty. Omitted means every difficulty; 0 is out of range.",
+              "format": "int64",
+              "maximum": 10,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "When set, only this spoiler level. Omitted means every level.",
+            "explode": false,
+            "in": "query",
+            "name": "spoiler_level",
+            "schema": {
+              "description": "When set, only this spoiler level. Omitted means every level.",
+              "enum": [
+                "none",
+                "portion",
+                "serious"
+              ],
+              "maxLength": 7,
+              "type": "string",
+              "x-vocabulary-closed": true
+            }
+          },
+          {
+            "description": "When true, quizzes linked to an NSFW work are included. Default false.",
+            "explode": false,
+            "in": "query",
+            "name": "include_nsfw",
+            "schema": {
+              "default": false,
+              "description": "When true, quizzes linked to an NSFW work are included. Default false.",
+              "type": "boolean"
+            }
+          },
+          {
+            "description": "Sort token. Default bumped_at_desc.",
+            "explode": false,
+            "in": "query",
+            "name": "sort",
+            "schema": {
+              "default": "bumped_at_desc",
+              "description": "Sort token. Default bumped_at_desc.",
+              "enum": [
+                "bumped_at_desc",
+                "bumped_at_asc",
+                "created_desc",
+                "created_asc",
+                "view_desc",
+                "view_asc",
+                "view_1d_desc",
+                "view_1d_asc",
+                "view_7d_desc",
+                "view_7d_asc",
+                "view_30d_desc",
+                "view_30d_asc",
+                "difficulty_desc",
+                "difficulty_asc",
+                "answer_count_desc",
+                "answer_count_asc"
+              ],
+              "maxLength": 17,
+              "type": "string",
+              "x-vocabulary-closed": true
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageListQuizSummary"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "UNKNOWN_ENUM_VALUE, UNKNOWN_SORT, LIMIT_TOO_LARGE, or INVALID_PARAMETER."
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          },
+          {}
+        ],
+        "summary": "List quizzes",
+        "tags": [
+          "quizzes"
+        ]
+      },
+      "post": {
+        "description": "Creates a quiz and returns it. Idempotency-Key is required. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED, and a failure of that lookup is SERVICE_UNAVAILABLE with nothing written. prompt_text is length-checked on the raw value; only whitespace is TOO_SHORT. Location is the new quiz's path.",
+        "operationId": "createQuiz",
+        "parameters": [
+          {
+            "description": "Caller-generated UUID (canonical 8-4-4-4-12 hex, any version) or 26-character Crockford ULID. Scoped to (user, operation, key) for 24 hours.",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "description": "Caller-generated UUID (canonical 8-4-4-4-12 hex, any version) or 26-character Crockford ULID. Scoped to (user, operation, key) for 24 hours.",
+              "maxLength": 36,
+              "minLength": 26,
+              "pattern": "^([0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}|[0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{26})$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QuizCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Quiz"
+                }
+              }
+            },
+            "description": "Created",
+            "headers": {
+              "Location": {
+                "schema": {
+                  "description": "Absolute path of the new quiz, such as /api/v1/quizzes/12.",
+                  "format": "uri-reference",
+                  "maxLength": 64,
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "INVALID_PARAMETER when Idempotency-Key is missing or malformed."
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "ACCOUNT_BANNED."
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "IDEMPOTENCY_KEY_REUSED or IDEMPOTENCY_REQUEST_IN_PROGRESS."
+          },
+          "415": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unsupported Media Type"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED or CONTENT_REJECTED."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create a quiz",
+        "tags": [
+          "quizzes"
+        ]
+      }
+    },
+    "/quizzes/{quiz_id}": {
+      "delete": {
+        "description": "Deletes a quiz and its answers, favorites, links and quality votes. Needs can_delete. Requests authenticated with a Bearer token never carry quiz permissions. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED, and a failure of that lookup is SERVICE_UNAVAILABLE with nothing written. ",
+        "operationId": "deleteQuiz",
+        "parameters": [
+          {
+            "description": "Quiz id.",
+            "in": "path",
+            "name": "quiz_id",
+            "required": true,
+            "schema": {
+              "description": "Quiz id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "PERMISSION_REQUIRED without can_delete; ACCOUNT_BANNED."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when the quiz does not exist or its author is not renderable."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Delete a quiz",
+        "tags": [
+          "quizzes"
+        ]
+      },
+      "get": {
+        "description": "Returns the quiz and counts one view. An unrenderable author is NOT_FOUND. viewer is null for an anonymous caller. solution is null until the caller has answered, is the author, or can_edit.",
+        "operationId": "getQuiz",
+        "parameters": [
+          {
+            "description": "Quiz id.",
+            "in": "path",
+            "name": "quiz_id",
+            "required": true,
+            "schema": {
+              "description": "Quiz id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Quiz"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when the quiz does not exist or its author is not renderable."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          },
+          {}
+        ],
+        "summary": "Get a quiz",
+        "tags": [
+          "quizzes"
+        ]
+      },
+      "patch": {
+        "description": "Changes the fields that are sent and returns the quiz. Needs can_edit. Requests authenticated with a Bearer token never carry quiz permissions. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED, and a failure of that lookup is SERVICE_UNAVAILABLE with nothing written. Only prompt_text, description_markdown, explanation_markdown and choices, when sent, go through the trust-and-safety check. quiz_type cannot change. A changed answer key regrades every answerer in the same transaction.",
+        "operationId": "updateQuiz",
+        "parameters": [
+          {
+            "description": "Quiz id.",
+            "in": "path",
+            "name": "quiz_id",
+            "required": true,
+            "schema": {
+              "description": "Quiz id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QuizPatch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Quiz"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "PERMISSION_REQUIRED without can_edit; ACCOUNT_BANNED."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when the quiz does not exist or its author is not renderable."
+          },
+          "415": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unsupported Media Type"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED or CONTENT_REJECTED."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Edit a quiz",
+        "tags": [
+          "quizzes"
+        ]
+      }
+    },
+    "/quizzes/{quiz_id}/answers": {
+      "get": {
+        "description": "Lists answerer rows newest first as a cursor collection. submission and is_correct are null unless the caller has answered, is the author, or can_edit. Unrenderable answerers are omitted.",
+        "operationId": "listQuizAnswers",
+        "parameters": [
+          {
+            "description": "Quiz id.",
+            "in": "path",
+            "name": "quiz_id",
+            "required": true,
+            "schema": {
+              "description": "Quiz id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Opaque keyset cursor from a previous page of this collection.",
+            "explode": false,
+            "in": "query",
+            "name": "cursor",
+            "schema": {
+              "description": "Opaque keyset cursor from a previous page of this collection.",
+              "maxLength": 512,
+              "pattern": "^cur_[A-Za-z0-9_-]+$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Page size. 1–100, default 20. Values above 100 are rejected, not clamped.",
+            "explode": false,
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 20,
+              "description": "Page size. 1–100, default 20. Values above 100 are rejected, not clamped.",
+              "format": "int64",
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "When true, the response includes total counted under the same predicate as items.",
+            "explode": false,
+            "in": "query",
+            "name": "include_total",
+            "schema": {
+              "description": "When true, the response includes total counted under the same predicate as items.",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CountedListQuizAnswer"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "INVALID_CURSOR or LIMIT_TOO_LARGE."
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when the quiz does not exist or its author is not renderable."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          },
+          {}
+        ],
+        "summary": "List answers to a quiz",
+        "tags": [
+          "quizzes"
+        ]
+      },
+      "post": {
+        "description": "Records the caller's answer. Idempotency-Key is required. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED, and a failure of that lookup is SERVICE_UNAVAILABLE with nothing written. The author cannot answer their own quiz. A second answer is ALREADY_EXISTS. Location is the quiz path.",
+        "operationId": "createQuizAnswer",
+        "parameters": [
+          {
+            "description": "Caller-generated UUID (canonical 8-4-4-4-12 hex, any version) or 26-character Crockford ULID. Scoped to (user, operation, key) for 24 hours.",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "description": "Caller-generated UUID (canonical 8-4-4-4-12 hex, any version) or 26-character Crockford ULID. Scoped to (user, operation, key) for 24 hours.",
+              "maxLength": 36,
+              "minLength": 26,
+              "pattern": "^([0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}|[0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{26})$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Quiz id.",
+            "in": "path",
+            "name": "quiz_id",
+            "required": true,
+            "schema": {
+              "description": "Quiz id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QuizSubmission"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QuizAnswerResult"
+                }
+              }
+            },
+            "description": "Created",
+            "headers": {
+              "Location": {
+                "schema": {
+                  "description": "Absolute path of the quiz, such as /api/v1/quizzes/12.",
+                  "format": "uri-reference",
+                  "maxLength": 64,
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "INVALID_PARAMETER when Idempotency-Key is missing or malformed."
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SELF_ANSWER_FORBIDDEN or ACCOUNT_BANNED."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when the quiz does not exist or its author is not renderable."
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "ALREADY_EXISTS, IDEMPOTENCY_KEY_REUSED or IDEMPOTENCY_REQUEST_IN_PROGRESS."
+          },
+          "415": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unsupported Media Type"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED or CONTENT_REJECTED."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Answer a quiz",
+        "tags": [
+          "quizzes"
+        ]
+      }
+    },
+    "/quizzes/{quiz_id}/favorite": {
+      "delete": {
+        "description": "Clears the caller's favorite. Unfavoriting when not favorited changes nothing. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED, and a failure of that lookup is SERVICE_UNAVAILABLE with nothing written. ",
+        "operationId": "deleteQuizFavorite",
+        "parameters": [
+          {
+            "description": "Quiz id.",
+            "in": "path",
+            "name": "quiz_id",
+            "required": true,
+            "schema": {
+              "description": "Quiz id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QuizEngagement"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "ACCOUNT_BANNED."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when the quiz does not exist or its author is not renderable."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Unfavorite a quiz",
+        "tags": [
+          "quizzes"
+        ]
+      },
+      "put": {
+        "description": "Sets the caller's favorite. Favoriting again changes nothing. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED, and a failure of that lookup is SERVICE_UNAVAILABLE with nothing written. ",
+        "operationId": "putQuizFavorite",
+        "parameters": [
+          {
+            "description": "Quiz id.",
+            "in": "path",
+            "name": "quiz_id",
+            "required": true,
+            "schema": {
+              "description": "Quiz id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QuizEngagement"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "ACCOUNT_BANNED."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when the quiz does not exist or its author is not renderable."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Favorite a quiz",
+        "tags": [
+          "quizzes"
+        ]
+      }
+    },
+    "/quizzes/{quiz_id}/quality-rating": {
+      "put": {
+        "description": "Sets the caller's 1–10 rating. Needs an answerer row; the author has none. Rating again with the same value changes nothing. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED, and a failure of that lookup is SERVICE_UNAVAILABLE with nothing written. ",
+        "operationId": "putQuizQualityRating",
+        "parameters": [
+          {
+            "description": "Quiz id.",
+            "in": "path",
+            "name": "quiz_id",
+            "required": true,
+            "schema": {
+              "description": "Quiz id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QualityPut"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QuizQuality"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "QUIZ_ANSWER_REQUIRED when the caller has not answered; ACCOUNT_BANNED."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when the quiz does not exist or its author is not renderable."
+          },
+          "415": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unsupported Media Type"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Rate a quiz's quality",
+        "tags": [
+          "quizzes"
+        ]
+      }
+    },
+    "/quizzes/{quiz_id}/source": {
+      "get": {
+        "description": "Returns the stored fields including the answer key. Needs viewer.can_edit. Requests authenticated with a Bearer token never carry quiz permissions. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED, and a failure of that lookup is SERVICE_UNAVAILABLE with nothing written. ",
+        "operationId": "getQuizSource",
+        "parameters": [
+          {
+            "description": "Quiz id.",
+            "in": "path",
+            "name": "quiz_id",
+            "required": true,
+            "schema": {
+              "description": "Quiz id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QuizSource"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "PERMISSION_REQUIRED without can_edit; ACCOUNT_BANNED."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when the quiz does not exist or its author is not renderable."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get a quiz's edit source",
+        "tags": [
+          "quizzes"
         ]
       }
     },
@@ -46646,6 +49660,93 @@
         "summary": "Resolve a retired wiki company id",
         "tags": [
           "galgame-companies"
+        ]
+      }
+    },
+    "/work-suggestions": {
+      "get": {
+        "description": "Searches catalog works by free text and returns at most 12 WorkRef values. Not paginated. include_nsfw=false applies the SFW content_limit gate. Hidden claims are omitted.",
+        "operationId": "listWorkSuggestions",
+        "parameters": [
+          {
+            "description": "Search text. Length is checked on the raw value; only whitespace is TOO_SHORT. Free text; never use it as a decision input.",
+            "explode": false,
+            "in": "query",
+            "name": "q",
+            "schema": {
+              "description": "Search text. Length is checked on the raw value; only whitespace is TOO_SHORT. Free text; never use it as a decision input.",
+              "maxLength": 100,
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          {
+            "description": "When true, NSFW works are included. Default false.",
+            "explode": false,
+            "in": "query",
+            "name": "include_nsfw",
+            "schema": {
+              "default": false,
+              "description": "When true, NSFW works are included. Default false.",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListWorkRef"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "INVALID_PARAMETER."
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED when q is too short or too long."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when catalog cannot be reached."
+          }
+        },
+        "summary": "Suggest works for linking to a quiz",
+        "tags": [
+          "works"
         ]
       }
     },

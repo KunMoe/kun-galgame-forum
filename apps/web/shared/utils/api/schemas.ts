@@ -274,6 +274,7 @@ export type AspectScores = components['schemas']['AspectScores']
 export type RatingPage = components['schemas']['PageListRatingSummary']
 export type RatingsQuery = NonNullable<
   operations['listRatings']['parameters']['query']
+>
 
 export type Quiz = components['schemas']['Quiz']
 export type QuizSummary = components['schemas']['QuizSummary']

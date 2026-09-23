@@ -1104,6 +1104,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/me/answered-quizzes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List quizzes the caller has answered
+         * @description Lists quizzes the caller has an answerer row on, newest answer first. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED, and a failure of that lookup is SERVICE_UNAVAILABLE with nothing written. Quizzes whose author is not renderable are omitted from both items and total.
+         */
+        get: operations["listMyAnsweredQuizzes"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/me/avatar": {
         parameters: {
             query?: never;
@@ -1504,6 +1524,26 @@ export interface paths {
         patch: operations["patchMyProfile"];
         trace?: never;
     };
+    "/me/quiz-states": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Batch-read the caller's quiz favorite states
+         * @description Answers, for each quiz id named in quiz_ids, whether the caller favorited it. It is a batch read and is not paginated: quiz_ids is required, holds 1 to 100 ids. An id that does not exist, is deleted, or whose author is not renderable is missing.
+         */
+        get: operations["listMyQuizStates"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/me/topic-drafts": {
         parameters: {
             query?: never;
@@ -1860,6 +1900,146 @@ export interface paths {
          * @description The closed registry of field-level reasons. Unauthenticated. Values in this list never appear as top-level codes.
          */
         get: operations["listProblemReasons"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/quizzes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List quizzes
+         * @description Lists quizzes as a page-number collection. Default sort is bumped_at_desc, default limit 50. Quizzes whose author is not renderable are omitted from both items and total. include_nsfw=false excludes quizzes linked to a local NSFW work.
+         */
+        get: operations["listQuizzes"];
+        put?: never;
+        /**
+         * Create a quiz
+         * @description Creates a quiz and returns it. Idempotency-Key is required. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED, and a failure of that lookup is SERVICE_UNAVAILABLE with nothing written. prompt_text is length-checked on the raw value; only whitespace is TOO_SHORT. Location is the new quiz's path.
+         */
+        post: operations["createQuiz"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/quizzes/{quiz_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a quiz
+         * @description Returns the quiz and counts one view. An unrenderable author is NOT_FOUND. viewer is null for an anonymous caller. solution is null until the caller has answered, is the author, or can_edit.
+         */
+        get: operations["getQuiz"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete a quiz
+         * @description Deletes a quiz and its answers, favorites, links and quality votes. Needs can_delete. Requests authenticated with a Bearer token never carry quiz permissions. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED, and a failure of that lookup is SERVICE_UNAVAILABLE with nothing written.
+         */
+        delete: operations["deleteQuiz"];
+        options?: never;
+        head?: never;
+        /**
+         * Edit a quiz
+         * @description Changes the fields that are sent and returns the quiz. Needs can_edit. Requests authenticated with a Bearer token never carry quiz permissions. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED, and a failure of that lookup is SERVICE_UNAVAILABLE with nothing written. Only prompt_text, description_markdown, explanation_markdown and choices, when sent, go through the trust-and-safety check. quiz_type cannot change. A changed answer key regrades every answerer in the same transaction.
+         */
+        patch: operations["updateQuiz"];
+        trace?: never;
+    };
+    "/quizzes/{quiz_id}/answers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List answers to a quiz
+         * @description Lists answerer rows newest first as a cursor collection. submission and is_correct are null unless the caller has answered, is the author, or can_edit. Unrenderable answerers are omitted.
+         */
+        get: operations["listQuizAnswers"];
+        put?: never;
+        /**
+         * Answer a quiz
+         * @description Records the caller's answer. Idempotency-Key is required. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED, and a failure of that lookup is SERVICE_UNAVAILABLE with nothing written. The author cannot answer their own quiz. A second answer is ALREADY_EXISTS. Location is the quiz path.
+         */
+        post: operations["createQuizAnswer"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/quizzes/{quiz_id}/favorite": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Favorite a quiz
+         * @description Sets the caller's favorite. Favoriting again changes nothing. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED, and a failure of that lookup is SERVICE_UNAVAILABLE with nothing written.
+         */
+        put: operations["putQuizFavorite"];
+        post?: never;
+        /**
+         * Unfavorite a quiz
+         * @description Clears the caller's favorite. Unfavoriting when not favorited changes nothing. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED, and a failure of that lookup is SERVICE_UNAVAILABLE with nothing written.
+         */
+        delete: operations["deleteQuizFavorite"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/quizzes/{quiz_id}/quality-rating": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Rate a quiz's quality
+         * @description Sets the caller's 1–10 rating. Needs an answerer row; the author has none. Rating again with the same value changes nothing. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED, and a failure of that lookup is SERVICE_UNAVAILABLE with nothing written.
+         */
+        put: operations["putQuizQualityRating"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/quizzes/{quiz_id}/source": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a quiz's edit source
+         * @description Returns the stored fields including the answer key. Needs viewer.can_edit. Requests authenticated with a Bearer token never carry quiz permissions. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED, and a failure of that lookup is SERVICE_UNAVAILABLE with nothing written.
+         */
+        get: operations["getQuizSource"];
         put?: never;
         post?: never;
         delete?: never;
@@ -3509,6 +3689,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/work-suggestions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Suggest works for linking to a quiz
+         * @description Searches catalog works by free text and returns at most 12 WorkRef values. Not paginated. include_nsfw=false applies the SFW content_limit gate. Hidden claims are omitted.
+         */
+        get: operations["listWorkSuggestions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/works/{work_id}/moyu-patches": {
         parameters: {
             query?: never;
@@ -4124,6 +4324,17 @@ export interface components {
              */
             voice: number | null;
         };
+        BatchListQuizState: {
+            /** @description One member per requested id that the caller may see. Empty array, never null. */
+            items: components["schemas"]["QuizState"][];
+            /** @description Requested ids that did not come back, in the order they were requested. Empty array, never null. The reason is deliberately not given. */
+            missing: string[];
+            /**
+             * @description Type discriminant. Always list.
+             * @enum {string}
+             */
+            object: "list";
+        };
         BatchListTopicState: {
             /** @description One member per requested id that the caller may see. Empty array, never null. */
             items: components["schemas"]["TopicState"][];
@@ -4650,6 +4861,22 @@ export interface components {
              */
             total?: number;
         };
+        CountedListQuizAnswer: {
+            /** @description Members of this page. Empty array, never null. */
+            items: components["schemas"]["QuizAnswer"][];
+            /** @description Opaque keyset cursor. Omitted on the last page. */
+            next_cursor?: string;
+            /**
+             * @description Type discriminant. Always list.
+             * @enum {string}
+             */
+            object: "list";
+            /**
+             * Format: int64
+             * @description Present only when include_total=true. Same visibility gate as items.
+             */
+            total?: number;
+        };
         CountedListTodo: {
             /** @description Members of this page. Empty array, never null. */
             items: components["schemas"]["Todo"][];
@@ -5072,6 +5299,10 @@ export interface components {
              * @enum {string}
              */
             object: "emphasis";
+        };
+        EngagementViewer: {
+            /** @description Whether the caller favorited the quiz. */
+            has_favorited: boolean;
         };
         Engine: {
             /** @description Other names it goes by, never its display_name. Empty array, never null. */
@@ -5795,6 +6026,17 @@ export interface components {
         ListWorkRankingEntry: {
             /** @description Members of this page. Empty array, never null. */
             items: components["schemas"]["WorkRankingEntry"][];
+            /** @description Opaque keyset cursor. Omitted on the last page. */
+            next_cursor?: string;
+            /**
+             * @description Type discriminant. Always list.
+             * @enum {string}
+             */
+            object: "list";
+        };
+        ListWorkRef: {
+            /** @description Members of this page. Empty array, never null. */
+            items: components["schemas"]["WorkRef"][];
             /** @description Opaque keyset cursor. Omitted on the last page. */
             next_cursor?: string;
             /**
@@ -6779,6 +7021,25 @@ export interface components {
              */
             total_relation: "eq" | "gte";
         };
+        PageListQuizSummary: {
+            /** @description Members of this page. Empty array, never null. */
+            items: components["schemas"]["QuizSummary"][];
+            /**
+             * @description Type discriminant. Always list.
+             * @enum {string}
+             */
+            object: "list";
+            /**
+             * Format: int64
+             * @description Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.
+             */
+            total: number;
+            /**
+             * @description eq when total is exact, gte when it stopped at the depth limit and there are at least that many.
+             * @enum {string}
+             */
+            total_relation: "eq" | "gte";
+        };
         PageListRatingSummary: {
             /** @description Members of this page. Empty array, never null. */
             items: components["schemas"]["RatingSummary"][];
@@ -7434,6 +7695,444 @@ export interface components {
             doc: {
                 [key: string]: unknown;
             };
+        };
+        QualityPut: {
+            /**
+             * Format: int64
+             * @description Quality rating, 1–10.
+             */
+            rating: number;
+        };
+        QualityViewer: {
+            /**
+             * Format: int64
+             * @description The rating just written. Never null in this response.
+             */
+            quality_rating: number | null;
+        };
+        Quiz: {
+            /**
+             * Format: int64
+             * @description Number of answerers, excluding the author row.
+             */
+            answer_count: number;
+            /** @description Author of the quiz. */
+            author: components["schemas"]["UserRef"];
+            /**
+             * Format: date-time
+             * @description Time of the latest bump: an answer inside the three-day window, or an edit.
+             */
+            bumped_at: string;
+            /** @description Option texts of a single or multiple choice quiz, without the answer key. Empty array for a judge quiz. Never null. */
+            choices: string[];
+            /**
+             * Format: int64
+             * @description Comments on the quiz's wall.
+             */
+            comment_count: number;
+            /** @description Description as a Markdown document. An empty document when there is no description. */
+            content: components["schemas"]["ContentDocument"];
+            /**
+             * Format: int64
+             * @description Number of correct answerers.
+             */
+            correct_count: number;
+            /**
+             * Format: date-time
+             * @description Creation time.
+             */
+            created_at: string;
+            /**
+             * Format: int64
+             * @description Difficulty, 1–10.
+             */
+            difficulty: number;
+            /**
+             * Format: int64
+             * @description Number of favorites.
+             */
+            favorite_count: number;
+            /** @description Quiz id. */
+            id: string;
+            /** @description Whether linked works stay hidden until the caller may see the answer key. */
+            is_work_hidden: boolean;
+            /**
+             * @description Type discriminant. Always quiz.
+             * @enum {string}
+             */
+            object: "quiz";
+            /** @description The question as a restricted document of paragraph, text, break and inline_spoiler nodes. */
+            prompt: components["schemas"]["ContentDocument"];
+            /**
+             * Format: double
+             * @description Mean rating, one decimal place. null when nobody has rated.
+             */
+            quality_average: number | null;
+            /**
+             * Format: int64
+             * @description Number of ratings.
+             */
+            quality_count: number;
+            /**
+             * @description Subject of the quiz.
+             * @enum {string}
+             */
+            quiz_category: "plot" | "character" | "system" | "music" | "voice" | "company" | "trivia" | "other";
+            /**
+             * @description Kind of quiz.
+             * @enum {string}
+             */
+            quiz_type: "single" | "multiple" | "judge";
+            /** @description The answer key and explanation. null when the caller may not see them. */
+            solution: components["schemas"]["QuizSolution"] | null;
+            /**
+             * @description How much of a work the prompt spoils.
+             * @enum {string}
+             */
+            spoiler_level: "none" | "portion" | "serious";
+            /**
+             * Format: date-time
+             * @description Time of the latest write to the row.
+             */
+            updated_at: string;
+            /**
+             * Format: int64
+             * @description Lifetime view count. Each read of this operation adds one.
+             */
+            view_count: number;
+            /** @description The caller's own state. null for an anonymous caller. */
+            viewer: components["schemas"]["QuizViewer"] | null;
+            /** @description Linked works. Empty when is_work_hidden is true and the caller may not see the answer key. Never null. */
+            works: components["schemas"]["WorkRef"][];
+        };
+        QuizAnswer: {
+            /**
+             * Format: date-time
+             * @description Time they answered.
+             */
+            answered_at: string;
+            /** @description User who answered. */
+            answerer: components["schemas"]["UserRef"];
+            /** @description Answer row id. */
+            id: string;
+            /** @description Whether they were correct. null when the caller may not see the answer key. */
+            is_correct: boolean | null;
+            /**
+             * @description Type discriminant. Always quiz_answer.
+             * @enum {string}
+             */
+            object: "quiz_answer";
+            /** @description Id of the quiz. */
+            quiz_id: string;
+            /** @description What they submitted. null when the caller may not see the answer key. */
+            submission: components["schemas"]["QuizSubmission"] | null;
+        };
+        QuizAnswerResult: {
+            /** @description The row just written. Never null here; nullable because the detail's viewer.answer is. */
+            answer: components["schemas"]["QuizAnswer"] | null;
+            /**
+             * @description Type discriminant. Always quiz_answer_result.
+             * @enum {string}
+             */
+            object: "quiz_answer_result";
+            /** @description The answer key and explanation. Never null here; nullable because the detail's solution is. */
+            solution: components["schemas"]["QuizSolution"] | null;
+        };
+        QuizCreate: {
+            /** @description Option texts. Required with 2–20 unique items for single and multiple; inconsistent on judge. */
+            choices?: string[];
+            /** @description 0-based indexes of the correct choices. Exactly one for single, at least one unique in range for multiple, empty for judge. */
+            correct_choice_indexes?: number[];
+            /** @description Markdown description. May be empty. Free text; never use it as a decision input. */
+            description_markdown?: string;
+            /**
+             * Format: int64
+             * @description Difficulty, 1–10.
+             */
+            difficulty: number;
+            /** @description Markdown explanation shown after answering. May be empty. Free text; never use it as a decision input. */
+            explanation_markdown?: string;
+            /** @description Whether the judge statement is true. Required for judge; must be null or absent otherwise. */
+            is_statement_true?: boolean | null;
+            /** @description Whether linked works stay hidden until the caller may see the answer key. */
+            is_work_hidden?: boolean;
+            /** @description The question. Length is checked on the raw value; only whitespace is TOO_SHORT. Free text; never use it as a decision input. */
+            prompt_text: string;
+            /**
+             * @description Subject of the quiz.
+             * @enum {string}
+             */
+            quiz_category: "plot" | "character" | "system" | "music" | "voice" | "company" | "trivia" | "other";
+            /**
+             * @description Kind of quiz. Immutable after create.
+             * @enum {string}
+             */
+            quiz_type: "single" | "multiple" | "judge";
+            /**
+             * @description How much of a work the prompt spoils. Omitted is none.
+             * @enum {string}
+             */
+            spoiler_level?: "none" | "portion" | "serious";
+            /** @description Linked catalog work ids, unique, at most 20. Each must exist in catalog. */
+            work_ids?: string[];
+        };
+        QuizEngagement: {
+            /**
+             * Format: int64
+             * @description Number of favorites after this request.
+             */
+            favorite_count: number;
+            /**
+             * @description Type discriminant. Always quiz_engagement.
+             * @enum {string}
+             */
+            object: "quiz_engagement";
+            /** @description Id of the quiz. */
+            quiz_id: string;
+            /** @description The caller's favorite state after this request. */
+            viewer: components["schemas"]["EngagementViewer"] | null;
+        };
+        QuizPatch: {
+            /** @description When present, replaces every option. */
+            choices?: string[];
+            /** @description When present, replaces the answer key indexes. */
+            correct_choice_indexes?: number[];
+            /** @description New Markdown description. Free text; never use it as a decision input. */
+            description_markdown?: string;
+            /**
+             * Format: int64
+             * @description New difficulty, 1–10.
+             */
+            difficulty?: number;
+            /** @description New Markdown explanation. Free text; never use it as a decision input. */
+            explanation_markdown?: string;
+            /** @description When present and not null, replaces whether the judge statement is true. */
+            is_statement_true?: boolean | null;
+            /** @description When present, replaces the hidden-works flag. */
+            is_work_hidden?: boolean;
+            /** @description New prompt. Free text; never use it as a decision input. */
+            prompt_text?: string;
+            /**
+             * @description New subject.
+             * @enum {string}
+             */
+            quiz_category?: "plot" | "character" | "system" | "music" | "voice" | "company" | "trivia" | "other";
+            /**
+             * @description Kind of quiz. A value different from the stored type is IMMUTABLE.
+             * @enum {string}
+             */
+            quiz_type?: "single" | "multiple" | "judge";
+            /**
+             * @description New spoiler level.
+             * @enum {string}
+             */
+            spoiler_level?: "none" | "portion" | "serious";
+            /** @description When present, replaces every linked work. */
+            work_ids?: string[];
+        };
+        QuizQuality: {
+            /**
+             * @description Type discriminant. Always quiz_quality.
+             * @enum {string}
+             */
+            object: "quiz_quality";
+            /**
+             * Format: double
+             * @description Mean rating after this request, one decimal place.
+             */
+            quality_average: number | null;
+            /**
+             * Format: int64
+             * @description Number of ratings after this request.
+             */
+            quality_count: number;
+            /** @description Id of the quiz. */
+            quiz_id: string;
+            /** @description The caller's rating after this request. */
+            viewer: components["schemas"]["QualityViewer"] | null;
+        };
+        QuizSolution: {
+            /** @description 0-based indexes of the correct choices. Empty array for a judge quiz. */
+            correct_choice_indexes: number[];
+            /** @description Explanation as a Markdown document. An empty document when there is none. */
+            explanation: components["schemas"]["ContentDocument"];
+            /** @description Whether a judge quiz's statement is true. null on other quiz types. */
+            is_statement_true: boolean | null;
+            /**
+             * @description Type discriminant. Always quiz_solution.
+             * @enum {string}
+             */
+            object: "quiz_solution";
+        };
+        QuizSource: {
+            /** @description Option texts. Empty array for a judge quiz. Never null. */
+            choices: string[];
+            /** @description 0-based indexes of the correct choices. Empty array for a judge quiz. */
+            correct_choice_indexes: number[];
+            /** @description Stored Markdown of the description. Free text; never use it as a decision input. */
+            description_markdown: string;
+            /**
+             * Format: int64
+             * @description Difficulty, 1–10.
+             */
+            difficulty: number;
+            /** @description Stored Markdown of the explanation. Free text; never use it as a decision input. */
+            explanation_markdown: string;
+            /** @description Whether a judge quiz's statement is true. null on other quiz types. */
+            is_statement_true: boolean | null;
+            /** @description Whether linked works stay hidden until the caller may see the answer key. */
+            is_work_hidden: boolean;
+            /**
+             * @description Type discriminant. Always quiz_source.
+             * @enum {string}
+             */
+            object: "quiz_source";
+            /** @description Stored prompt text. Free text; never use it as a decision input. */
+            prompt_text: string;
+            /**
+             * @description Subject of the quiz.
+             * @enum {string}
+             */
+            quiz_category: "plot" | "character" | "system" | "music" | "voice" | "company" | "trivia" | "other";
+            /** @description Id of the quiz. */
+            quiz_id: string;
+            /**
+             * @description Kind of quiz.
+             * @enum {string}
+             */
+            quiz_type: "single" | "multiple" | "judge";
+            /**
+             * @description How much of a work the prompt spoils.
+             * @enum {string}
+             */
+            spoiler_level: "none" | "portion" | "serious";
+            /** @description Linked work ids. Empty array when there are none. Never null. */
+            work_ids: string[];
+        };
+        QuizState: {
+            /** @description Whether the caller favorited the quiz. */
+            has_favorited: boolean;
+            /**
+             * @description Type discriminant. Always quiz_state.
+             * @enum {string}
+             */
+            object: "quiz_state";
+            /** @description Id of the quiz this state is about. */
+            quiz_id: string;
+        };
+        QuizSubmission: {
+            /** @description 0-based indexes of the chosen options. Empty array for a judge quiz. */
+            choice_indexes: number[];
+            /** @description The answerer's verdict on a judge quiz's statement. null or absent on other quiz types. */
+            is_statement_true?: boolean | null;
+        };
+        QuizSummary: {
+            /**
+             * Format: int64
+             * @description Number of answerers, excluding the author row.
+             */
+            answer_count: number;
+            /** @description Author of the quiz. */
+            author: components["schemas"]["UserRef"];
+            /**
+             * Format: date-time
+             * @description Time of the latest bump: an answer inside the three-day window, or an edit.
+             */
+            bumped_at: string;
+            /**
+             * Format: int64
+             * @description Comments on the quiz's wall.
+             */
+            comment_count: number;
+            /**
+             * Format: int64
+             * @description Number of correct answerers.
+             */
+            correct_count: number;
+            /**
+             * Format: date-time
+             * @description Creation time.
+             */
+            created_at: string;
+            /**
+             * Format: int64
+             * @description Difficulty, 1–10.
+             */
+            difficulty: number;
+            /**
+             * Format: int64
+             * @description Number of favorites.
+             */
+            favorite_count: number;
+            /** @description Quiz id. */
+            id: string;
+            /**
+             * @description Type discriminant. Always quiz.
+             * @enum {string}
+             */
+            object: "quiz";
+            /** @description The question as a restricted document of paragraph, text, break and inline_spoiler nodes. */
+            prompt: components["schemas"]["ContentDocument"];
+            /**
+             * Format: double
+             * @description Mean rating, one decimal place. null when nobody has rated.
+             */
+            quality_average: number | null;
+            /**
+             * Format: int64
+             * @description Number of ratings.
+             */
+            quality_count: number;
+            /**
+             * @description Subject of the quiz.
+             * @enum {string}
+             */
+            quiz_category: "plot" | "character" | "system" | "music" | "voice" | "company" | "trivia" | "other";
+            /**
+             * @description Kind of quiz.
+             * @enum {string}
+             */
+            quiz_type: "single" | "multiple" | "judge";
+            /**
+             * @description How much of a work the prompt spoils.
+             * @enum {string}
+             */
+            spoiler_level: "none" | "portion" | "serious";
+            /**
+             * Format: date-time
+             * @description Time of the latest write to the row.
+             */
+            updated_at: string;
+            /**
+             * Format: int64
+             * @description Lifetime view count.
+             */
+            view_count: number;
+            /** @description The caller's own state. null for an anonymous caller. */
+            viewer: components["schemas"]["QuizSummaryViewer"] | null;
+        };
+        QuizSummaryViewer: {
+            /** @description Whether the caller has an answerer row. The author's author row does not count. */
+            has_answered: boolean;
+            /** @description Whether the caller was correct. null when they have not answered. */
+            is_correct: boolean | null;
+        };
+        QuizViewer: {
+            /** @description The caller's own answer. null when they have not answered. */
+            answer: components["schemas"]["QuizAnswer"] | null;
+            /** @description Whether the caller may delete this quiz. Requests authenticated with a Bearer token never carry staff powers. */
+            can_delete: boolean;
+            /** @description Whether the caller may edit this quiz. Requests authenticated with a Bearer token never carry staff powers. */
+            can_edit: boolean;
+            /** @description Whether the caller has an answerer row. The author's author row does not count. */
+            has_answered: boolean;
+            /** @description Whether the caller favorited the quiz. */
+            has_favorited: boolean;
+            /**
+             * Format: int64
+             * @description The caller's rating, 1–10. null when they have not rated.
+             */
+            quality_rating: number | null;
         };
         QuotedReply: {
             /** @description The quoted reply as stored, cut to 200 characters. Free text; never use it as a decision input. */
@@ -16268,6 +16967,76 @@ export interface operations {
             };
         };
     };
+    listMyAnsweredQuizzes: {
+        parameters: {
+            query?: {
+                /** @description 1-based page number. page × limit may not exceed 10000. */
+                page?: number;
+                /** @description Page size. 1–100, default 50. Values above 100 are rejected, not clamped. */
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PageListQuizSummary"];
+                };
+            };
+            /** @description LIMIT_TOO_LARGE or INVALID_PARAMETER. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     putMyAvatar: {
         parameters: {
             query?: never;
@@ -18185,6 +18954,83 @@ export interface operations {
             };
         };
     };
+    listMyQuizStates: {
+        parameters: {
+            query: {
+                /** @description Quiz ids to answer for, comma-separated. 1 to 100 of them. */
+                quiz_ids: string[];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BatchListQuizState"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description VALIDATION_FAILED when quiz_ids is absent, empty, holds more than 100 ids, or holds something that is not a positive decimal integer. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     listTopicDrafts: {
         parameters: {
             query?: {
@@ -19838,6 +20684,969 @@ export interface operations {
             };
             /** @description Internal Server Error */
             500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listQuizzes: {
+        parameters: {
+            query?: {
+                /** @description 1-based page number. page × limit may not exceed 10000. */
+                page?: number;
+                /** @description Page size. 1–100, default 50. Values above 100 are rejected, not clamped. */
+                limit?: number;
+                /** @description When set, only quizzes linked to this work. */
+                work_id?: string;
+                /** @description When set, only quizzes this user authored. */
+                author_id?: string;
+                /** @description When set, only this type. Omitted means every type. */
+                quiz_type?: "single" | "multiple" | "judge";
+                /** @description When set, only this category. Omitted means every category. */
+                quiz_category?: "plot" | "character" | "system" | "music" | "voice" | "company" | "trivia" | "other";
+                /** @description When set, only this difficulty. Omitted means every difficulty; 0 is out of range. */
+                difficulty?: number;
+                /** @description When set, only this spoiler level. Omitted means every level. */
+                spoiler_level?: "none" | "portion" | "serious";
+                /** @description When true, quizzes linked to an NSFW work are included. Default false. */
+                include_nsfw?: boolean;
+                /** @description Sort token. Default bumped_at_desc. */
+                sort?: "bumped_at_desc" | "bumped_at_asc" | "created_desc" | "created_asc" | "view_desc" | "view_asc" | "view_1d_desc" | "view_1d_asc" | "view_7d_desc" | "view_7d_asc" | "view_30d_desc" | "view_30d_asc" | "difficulty_desc" | "difficulty_asc" | "answer_count_desc" | "answer_count_asc";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PageListQuizSummary"];
+                };
+            };
+            /** @description UNKNOWN_ENUM_VALUE, UNKNOWN_SORT, LIMIT_TOO_LARGE, or INVALID_PARAMETER. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    createQuiz: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Caller-generated UUID (canonical 8-4-4-4-12 hex, any version) or 26-character Crockford ULID. Scoped to (user, operation, key) for 24 hours. */
+                "Idempotency-Key": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["QuizCreate"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    Location?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Quiz"];
+                };
+            };
+            /** @description INVALID_PARAMETER when Idempotency-Key is missing or malformed. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description IDEMPOTENCY_KEY_REUSED or IDEMPOTENCY_REQUEST_IN_PROGRESS. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description VALIDATION_FAILED or CONTENT_REJECTED. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getQuiz: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Quiz id. */
+                quiz_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Quiz"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the quiz does not exist or its author is not renderable. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    deleteQuiz: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Quiz id. */
+                quiz_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description PERMISSION_REQUIRED without can_delete; ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the quiz does not exist or its author is not renderable. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    updateQuiz: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Quiz id. */
+                quiz_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["QuizPatch"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Quiz"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description PERMISSION_REQUIRED without can_edit; ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the quiz does not exist or its author is not renderable. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description VALIDATION_FAILED or CONTENT_REJECTED. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listQuizAnswers: {
+        parameters: {
+            query?: {
+                /** @description Opaque keyset cursor from a previous page of this collection. */
+                cursor?: string;
+                /** @description Page size. 1–100, default 20. Values above 100 are rejected, not clamped. */
+                limit?: number;
+                /** @description When true, the response includes total counted under the same predicate as items. */
+                include_total?: boolean;
+            };
+            header?: never;
+            path: {
+                /** @description Quiz id. */
+                quiz_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CountedListQuizAnswer"];
+                };
+            };
+            /** @description INVALID_CURSOR or LIMIT_TOO_LARGE. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the quiz does not exist or its author is not renderable. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    createQuizAnswer: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Caller-generated UUID (canonical 8-4-4-4-12 hex, any version) or 26-character Crockford ULID. Scoped to (user, operation, key) for 24 hours. */
+                "Idempotency-Key": string;
+            };
+            path: {
+                /** @description Quiz id. */
+                quiz_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["QuizSubmission"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    Location?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QuizAnswerResult"];
+                };
+            };
+            /** @description INVALID_PARAMETER when Idempotency-Key is missing or malformed. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SELF_ANSWER_FORBIDDEN or ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the quiz does not exist or its author is not renderable. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description ALREADY_EXISTS, IDEMPOTENCY_KEY_REUSED or IDEMPOTENCY_REQUEST_IN_PROGRESS. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description VALIDATION_FAILED or CONTENT_REJECTED. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    putQuizFavorite: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Quiz id. */
+                quiz_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QuizEngagement"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the quiz does not exist or its author is not renderable. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    deleteQuizFavorite: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Quiz id. */
+                quiz_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QuizEngagement"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the quiz does not exist or its author is not renderable. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    putQuizQualityRating: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Quiz id. */
+                quiz_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["QualityPut"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QuizQuality"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description QUIZ_ANSWER_REQUIRED when the caller has not answered; ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the quiz does not exist or its author is not renderable. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description VALIDATION_FAILED. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getQuizSource: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Quiz id. */
+                quiz_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QuizSource"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description PERMISSION_REQUIRED without can_edit; ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the quiz does not exist or its author is not renderable. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -28770,6 +30579,67 @@ export interface operations {
             };
             /** @description NOT_FOUND when the number maps to no company. */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when catalog cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listWorkSuggestions: {
+        parameters: {
+            query?: {
+                /** @description Search text. Length is checked on the raw value; only whitespace is TOO_SHORT. Free text; never use it as a decision input. */
+                q?: string;
+                /** @description When true, NSFW works are included. Default false. */
+                include_nsfw?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListWorkRef"];
+                };
+            };
+            /** @description INVALID_PARAMETER. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description VALIDATION_FAILED when q is too short or too long. */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };
