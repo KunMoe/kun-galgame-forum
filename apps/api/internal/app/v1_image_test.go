@@ -188,7 +188,7 @@ func (f *writeFix) postHeadersOnly(t *testing.T, path, contentType string, lengt
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 	if _, err := fmt.Fprintf(conn, "POST /api/v1%s HTTP/1.1\r\nHost: kungal.test\r\nContent-Type: %s\r\nContent-Length: %d\r\nCookie: %s=sess-alice\r\n\r\n",
 		path, contentType, length, middleware.SessionCookieName); err != nil {
 		t.Fatal(err)
