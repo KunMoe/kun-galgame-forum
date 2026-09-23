@@ -206,6 +206,7 @@ Offered:
 Shape vs the retired faces: `doc_category` is a closed enum `galgame` / `notice` / `kun` / `other` and replaces `category_id` + `category{}`. `banner` is an `Image` or `null` and replaces `banner` / `banner_image_hash` / `banner_url`. `is_pinned` was `is_pin`, `view_count` was `view`, `published_at` was `published_time`, `edited_at` was `edited_time`. `path`, `status`, `sort_order`, `created`, `updated`, `tag_ids`, `content_html` and `toc` are gone; clients build `/doc/{slug}` themselves and take the table of contents from the `heading` nodes.
 
 Removed without replacement: doc categories as their own resource (now the enum), doc tags (never used), and the draft/hidden `status` (never used; every doc is public).
+
 ## 2026-09-23 (WS website directory)
 
 Offered:
@@ -220,6 +221,7 @@ Offered:
 Field names vs the retired faces: `host` (was `url` / the card's `domain`), `title` (was `name`), `urls` (was the `domain` array; every element is an http(s) URL), `founded` (was `create_time`), `is_nsfw` (was `age_limit`), `state` (was `status`, same values), `score` (was `price` and `level`), `icon: Image | null` plus `external_icon_url` (were `icon` / `icon_image_hash` / `icon_url`), `view_count` (was `view`), `website_category` / `website_tags` (were `category` / `tags`), `slug` / `label` on categories, tags and groups (were `name` / `label`), `website_tag_group_id` (was `group_id`), `is_multi_select` (was `multi_select`). The detail no longer carries `comment`; read the wall through `/api/v1/wall-comments`.
 
 Retired: every `/api/website`, `/api/website-tag*`, `/api/website-category*` and `/api/website-tag-group` route (21).
+
 ## 2026-09-23 (P permissions)
 
 Offered:
@@ -260,6 +262,7 @@ Offered:
 Field names vs the retired faces: `change_type` (was `type`; tokens `perf` and `style`, were `pref` and `styles`), `release_version` (was `version`), `text` (was `content`, plain text, not Markdown), `project` (was the todo's `type`), `state` `pending` / `in_progress` / `done` / `discarded` (was integer `status` 0–3), `author` / `claimer` (were `user` / `claimed_user`), `completed_at` (was `completed_time`, now only set when `done`).
 
 Retired: every `/api/update/**` route (`history` GET/POST/PUT/DELETE, `todo` GET/POST/PUT/DELETE, `todo/claim`, `todo/complete`, `todo/discard`).
+
 ## 2026-09-23 (U2 users)
 
 Breaking for `GET /api/user/:id`, `GET /api/user/:id/floating`, and `GET`/`PUT /api/user/notification-preferences`.
