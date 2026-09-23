@@ -118,7 +118,7 @@
 
 ## 8. 验收记录
 
-**闸**：`make lint` 零输出；`KUN_REQUIRE_TEST_DB=1 go test -count=1 -p 1 ./...` 全绿（专属库 `kungal_test_x2_auth`，rebase 到 `c8f8419f` 后复跑）；`make openapi` / `gen:api` 无漂移，G8 在合并后的整份文档上通过；`pnpm lint`、`pnpm typecheck`、`pnpm -F web test`（427）全绿；`deadcode` 与 master 相比无新增。测试不碰库：内存 Redis 会话 + 只回被请求 id 的假 OAuth + 假 Bearer 校验器。
+**闸**：`make lint` 零输出；`KUN_REQUIRE_TEST_DB=1 go test -count=1 -p 1 ./...` 全绿（专属库 `kungal_test_x2_auth`，rebase 到 `9e7c496f` 后复跑，`legacy_route_baseline` 153 → 152）；`make openapi` / `gen:api` 无漂移，G8 在合并后的整份文档上通过；`pnpm lint`、`pnpm typecheck`、`pnpm -F web test`（427）全绿；`deadcode` 与 master 相比无新增。测试不碰库：内存 Redis 会话 + 只回被请求 id 的假 OAuth + 假 Bearer 校验器。
 
 **变异**：9/9 变红。
 
