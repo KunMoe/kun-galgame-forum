@@ -225,3 +225,15 @@ export type ToolsetReleaseChannel = Toolset['release_channel']
 export type ToolsetResourceType = ToolsetResourceSummary['toolset_resource_type']
 export type AdminOverview = components['schemas']['AdminOverview']
 export type OverviewDay = components['schemas']['OverviewDay']
+export type TopicRankingEntry = components['schemas']['TopicRankingEntry']
+export type UserRankingEntry = components['schemas']['UserRankingEntry']
+export type WorkRankingEntry = components['schemas']['WorkRankingEntry']
+export type TopicRankingSort = NonNullable<
+  NonNullable<operations['listTopicRanking']['parameters']['query']>['sort']
+>
+export type UserRankingSort = NonNullable<
+  NonNullable<operations['listUserRanking']['parameters']['query']>['sort']
+>
+export type WorkRankingSort = NonNullable<
+  NonNullable<operations['listWorkRanking']['parameters']['query']>['sort']
+>

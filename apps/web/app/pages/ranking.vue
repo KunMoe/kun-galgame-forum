@@ -34,7 +34,7 @@ const currentSortItems = computed(() => {
 
 const sortOptions = computed(() => {
   return currentSortItems.value.map((item) => ({
-    value: item.sortField,
+    value: item.sort,
     label: item.label,
     icon: item.icon
   }))
@@ -60,29 +60,25 @@ const sortOptions = computed(() => {
         <div class="w-48">
           <KunSelect
             v-if="activeTab === 'topic'"
-            v-model="topicRankingPageData.sort_field"
+            v-model="topicRankingPageData.sort"
             :options="
-              sortOptions as KunSelectOption<
-                typeof topicRankingPageData.sort_field
-              >[]
+              sortOptions as KunSelectOption<typeof topicRankingPageData.sort>[]
             "
           />
           <KunSelect
             v-if="activeTab === 'galgame'"
-            v-model="galgameRankingPageData.sort_field"
+            v-model="galgameRankingPageData.sort"
             :options="
               sortOptions as KunSelectOption<
-                typeof galgameRankingPageData.sort_field
+                typeof galgameRankingPageData.sort
               >[]
             "
           />
           <KunSelect
             v-if="activeTab === 'user'"
-            v-model="userRankingPageData.sort_field"
+            v-model="userRankingPageData.sort"
             :options="
-              sortOptions as KunSelectOption<
-                typeof userRankingPageData.sort_field
-              >[]
+              sortOptions as KunSelectOption<typeof userRankingPageData.sort>[]
             "
           />
         </div>

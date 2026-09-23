@@ -1,165 +1,39 @@
 import type { KunTabItem } from '@kungal/ui-vue'
+import type {
+  TopicRankingSort,
+  UserRankingSort,
+  WorkRankingSort
+} from '#shared/utils/api/schemas'
 
-export type RankingTopicSortField =
-  | 'view'
-  | 'upvote'
-  | 'like'
-  | 'favorite'
-  | 'reply'
-  | 'comment'
-
-export type RankingGalgameSortField =
-  | 'view'
-  | 'like'
-  | 'favorite'
-  | 'resource'
-  | 'rating'
-
-export type RankingUserSortField =
-  | 'moemoepoint'
-  | 'topic'
-  | 'reply_created'
-  | 'comment_created'
-  | 'galgame_resource'
-
-export interface RankingItem {
-  index: number
+export interface RankingSortItem<S extends string> {
   icon: string
-  name: string
   label: string
+  sort: S
 }
 
-export interface RankingTopic extends RankingItem {
-  sortField: RankingTopicSortField
-}
-
-export interface RankingGalgame extends RankingItem {
-  sortField: RankingGalgameSortField
-}
-
-export interface RankingUser extends RankingItem {
-  sortField: RankingUserSortField
-}
-
-export const topicSortItem: RankingTopic[] = [
-  {
-    index: 1,
-    icon: 'lucide:eye',
-    name: 'view',
-    sortField: 'view',
-    label: '浏览数'
-  },
-  {
-    index: 2,
-    icon: 'carbon:reply',
-    name: 'reply',
-    sortField: 'reply',
-    label: '回复数'
-  },
-  {
-    index: 3,
-    icon: 'uil:comment-dots',
-    name: 'comment',
-    sortField: 'comment',
-    label: '评论数'
-  },
-  {
-    index: 4,
-    icon: 'lucide:thumbs-up',
-    name: 'like',
-    sortField: 'like',
-    label: '点赞数'
-  },
-  {
-    index: 5,
-    icon: 'lucide:sparkles',
-    name: 'upvote',
-    sortField: 'upvote',
-    label: '被推数'
-  },
-  {
-    index: 6,
-    icon: 'lucide:heart',
-    name: 'favorite',
-    sortField: 'favorite',
-    label: '收藏数'
-  }
+export const topicSortItem: RankingSortItem<TopicRankingSort>[] = [
+  { icon: 'lucide:eye', label: '浏览数', sort: 'views_desc' },
+  { icon: 'carbon:reply', label: '回复数', sort: 'replies_desc' },
+  { icon: 'uil:comment-dots', label: '评论数', sort: 'comments_desc' },
+  { icon: 'lucide:thumbs-up', label: '点赞数', sort: 'likes_desc' },
+  { icon: 'lucide:sparkles', label: '被推数', sort: 'upvotes_desc' },
+  { icon: 'lucide:heart', label: '收藏数', sort: 'favorites_desc' }
 ]
 
-export const galgameSortItem: RankingGalgame[] = [
-  {
-    index: 1,
-    icon: 'lucide:eye',
-    name: 'view',
-    sortField: 'view',
-    label: '浏览数'
-  },
-  {
-    index: 2,
-    icon: 'lucide:thumbs-up',
-    name: 'like',
-    sortField: 'like',
-    label: '点赞数'
-  },
-  {
-    index: 3,
-    icon: 'lucide:heart',
-    name: 'favorite',
-    sortField: 'favorite',
-    label: '收藏数'
-  },
-  {
-    index: 4,
-    icon: 'lucide:box',
-    name: 'resource',
-    sortField: 'resource',
-    label: '资源数'
-  },
-  {
-    index: 5,
-    icon: 'lucide:star',
-    name: 'rating',
-    sortField: 'rating',
-    label: '评分'
-  }
+export const galgameSortItem: RankingSortItem<WorkRankingSort>[] = [
+  { icon: 'lucide:eye', label: '浏览数', sort: 'views_desc' },
+  { icon: 'lucide:thumbs-up', label: '点赞数', sort: 'likes_desc' },
+  { icon: 'lucide:heart', label: '收藏数', sort: 'favorites_desc' },
+  { icon: 'lucide:box', label: '资源数', sort: 'resources_desc' },
+  { icon: 'lucide:star', label: '评分', sort: 'rating_desc' }
 ]
 
-export const userSortItem: RankingUser[] = [
-  {
-    index: 1,
-    icon: 'lucide:lollipop',
-    name: 'moemoepoint',
-    sortField: 'moemoepoint',
-    label: '萌萌点'
-  },
-  {
-    index: 2,
-    icon: 'lucide:square-gantt-chart',
-    name: 'topic',
-    sortField: 'topic',
-    label: '话题数'
-  },
-  {
-    index: 3,
-    icon: 'carbon:reply',
-    name: 'reply_created',
-    sortField: 'reply_created',
-    label: '回复数'
-  },
-  {
-    index: 4,
-    icon: 'uil:comment-dots',
-    name: 'comment_created',
-    sortField: 'comment_created',
-    label: '评论数'
-  },
-  {
-    index: 5,
-    icon: 'lucide:box',
-    name: 'galgame_resource',
-    sortField: 'galgame_resource',
-    label: 'Galgame 资源'
-  }
+export const userSortItem: RankingSortItem<UserRankingSort>[] = [
+  { icon: 'lucide:lollipop', label: '萌萌点', sort: 'moemoepoint_desc' },
+  { icon: 'lucide:square-gantt-chart', label: '话题数', sort: 'topics_desc' },
+  { icon: 'carbon:reply', label: '回复数', sort: 'replies_desc' },
+  { icon: 'uil:comment-dots', label: '评论数', sort: 'comments_desc' },
+  { icon: 'lucide:box', label: 'Galgame 资源', sort: 'resources_desc' }
 ]
 
 export const rankingPageTabs: KunTabItem[] = [

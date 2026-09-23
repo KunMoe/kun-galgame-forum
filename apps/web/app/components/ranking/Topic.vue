@@ -1,19 +1,39 @@
 <script setup lang="ts">
 import { topicSortItem } from '~/constants/ranking'
-import { topicRankingPageData, getRankClasses } from './pageData'
+import { toKunUser } from '~/utils/userRef'
+import { RANKING_LIMIT, topicRankingPageData, getRankClasses } from './pageData'
 
-const { data } = await useKunFetch<RankingTopicItem[]>('/ranking/topic', {
-  query: topicRankingPageData
-})
+const { allowsNsfw } = useContentStance()
+
+const { data } = await useApi(
+  () =>
+    `ranking-topics:${topicRankingPageData.sort}:${allowsNsfw.value ? 'nsfw' : 'sfw'}`,
+  (client, { signal }) =>
+    client.GET('/rankings/topics', {
+      params: {
+        query: {
+          sort: topicRankingPageData.sort,
+          limit: RANKING_LIMIT,
+          include_nsfw: allowsNsfw.value
+        }
+      },
+      signal
+    })
+)
+
+const icon = computed(
+  () =>
+    topicSortItem.find((i) => i.sort === topicRankingPageData.sort)?.icon ?? ''
+)
 </script>
 
 <template>
   <ul v-if="data" class="space-y-3">
-    <li v-for="(topic, index) in data" :key="topic.id">
+    <li v-for="(entry, index) in data.items" :key="entry.topic.id">
       <KunLink
         color="default"
         underline="none"
-        :to="`/topic/${topic.id}`"
+        :to="`/topic/${entry.topic.id}`"
         :class-name="
           cn(
             'relative flex items-center gap-3 rounded-xl border p-3 transition-colors',
@@ -24,35 +44,29 @@ const { data } = await useKunFetch<RankingTopicItem[]>('/ranking/topic', {
         <RankingMedal :index="index" />
 
         <div class="flex-1">
-          <h3 class="truncate font-semibold">{{ topic.title }}</h3>
+          <h3 class="truncate font-semibold">{{ entry.topic.title }}</h3>
           <div class="mt-1 flex items-center gap-2">
-            <KunAvatar :user="topic.user" size="sm" :is-navigation="false" />
-            <span class="text-default-500 text-sm">{{ topic.user.name }}</span>
+            <KunAvatar
+              :user="toKunUser(entry.topic.author)"
+              size="sm"
+              :is-navigation="false"
+            />
+            <span class="text-default-500 text-sm">
+              {{ toKunUser(entry.topic.author).name }}
+            </span>
 
             <div class="flex shrink-0 items-center gap-2 sm:hidden">
-              <KunIcon
-                :name="
-                  topicSortItem.find((i) => i.sortField === topic.sort_field)
-                    ?.icon || ''
-                "
-                class="text-primary h-5 w-5"
-              />
+              <KunIcon :name="icon" class="text-primary h-5 w-5" />
               <span class="text-default-500 text-sm">
-                {{ topic.value }}
+                {{ entry.metric_value }}
               </span>
             </div>
           </div>
         </div>
 
         <div class="hidden shrink-0 items-center gap-2 sm:flex">
-          <KunIcon
-            :name="
-              topicSortItem.find((i) => i.sortField === topic.sort_field)
-                ?.icon || ''
-            "
-            class="text-primary h-5 w-5"
-          />
-          <span class="text-lg font-medium">{{ topic.value }}</span>
+          <KunIcon :name="icon" class="text-primary h-5 w-5" />
+          <span class="text-lg font-medium">{{ entry.metric_value }}</span>
         </div>
       </KunLink>
     </li>

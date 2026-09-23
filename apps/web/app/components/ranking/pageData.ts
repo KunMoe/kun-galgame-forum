@@ -1,33 +1,21 @@
 import type {
-  getTopicRankingSchema,
-  getGalgameRankingSchema,
-  getUserRankingSchema
-} from '~/validations/ranking'
-import type { z } from 'zod'
+  TopicRankingSort,
+  UserRankingSort,
+  WorkRankingSort
+} from '#shared/utils/api/schemas'
 
-type Topic = z.infer<typeof getTopicRankingSchema>
-type Galgame = z.infer<typeof getGalgameRankingSchema>
-type User = z.infer<typeof getUserRankingSchema>
+export const RANKING_LIMIT = 50
 
-export const topicRankingPageData = reactive<Topic>({
-  page: 1,
-  limit: 50,
-  sort_field: 'view',
-  sort_order: 'desc'
+export const topicRankingPageData = reactive<{ sort: TopicRankingSort }>({
+  sort: 'views_desc'
 })
 
-export const galgameRankingPageData = reactive<Galgame>({
-  page: 1,
-  limit: 50,
-  sort_field: 'view',
-  sort_order: 'desc'
+export const galgameRankingPageData = reactive<{ sort: WorkRankingSort }>({
+  sort: 'views_desc'
 })
 
-export const userRankingPageData = reactive<User>({
-  page: 1,
-  limit: 50,
-  sort_field: 'moemoepoint',
-  sort_order: 'desc'
+export const userRankingPageData = reactive<{ sort: UserRankingSort }>({
+  sort: 'moemoepoint_desc'
 })
 
 export const getRankClasses = (index: number) => {
