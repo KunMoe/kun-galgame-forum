@@ -8,6 +8,7 @@ const {
   following,
   setFollowing,
   seeded,
+  loadFailed,
   groups,
   isEmpty,
   hasMore,
@@ -45,6 +46,8 @@ const target: CommunityCommentTarget = {
     <CommentCommunityComposer :target="target" @submitted="handleNewComment" />
 
     <KunLoading v-if="status === 'pending' && !seeded" />
+
+    <KunNull v-else-if="loadFailed" description="评论加载失败，请稍后刷新重试" />
 
     <KunNull v-else-if="isEmpty" />
 

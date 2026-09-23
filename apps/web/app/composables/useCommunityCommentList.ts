@@ -1,49 +1,45 @@
+import type { WallComment } from '#shared/utils/api/schemas'
+import { settle } from '#shared/utils/api/problem'
+
 export interface CommunityCommentGroup {
-  root: GalgameCommunityComment
-  replies: GalgameCommunityComment[]
+  root: WallComment
+  replies: WallComment[]
 }
 
 const PAGE_LIMIT = 30
 
 export const useCommunityCommentList = async (
-  target: CommunityCommentTarget
+  target: CommunityCommentTarget,
+  initialTotal = 0
 ) => {
   const surface = communityCommentSurface(target)
 
   const { id: viewerId } = usePersistUserStore()
   const config = useRuntimeConfig()
+  const api = useApiClient()
 
-  const posts = ref<GalgameCommunityComment[]>([])
-  const total = ref(0)
-  const threadId = ref(0)
-  const anchorKind = ref(0)
-  const anchorId = ref('')
+  const posts = ref<WallComment[]>([])
+  const total = ref(initialTotal)
   const following = ref(false)
-  const nextCursor = ref('')
+  const nextCursor = ref<string | undefined>()
   const seeded = ref(false)
   const loadingMore = ref(false)
   const locked = ref(false)
+  const loadFailed = ref(false)
 
-  const { data, status } = await useKunFetch<GalgameCommunityCommentPage>(
-    surface.listUrl,
-    {
-      lazy: true,
-      method: 'GET',
-      query: { ...surface.addressQuery, limit: PAGE_LIMIT }
-    }
+  const listQuery = (cursor?: string) => ({
+    subject_type: surface.subjectType,
+    subject_id: surface.subjectId,
+    limit: PAGE_LIMIT,
+    ...(cursor ? { cursor } : {})
+  })
+
+  const { data, problem, status } = await useApi(
+    `wall:${surface.subjectType}:${surface.subjectId}`,
+    (client, { signal }) =>
+      client.GET('/wall-comments', { params: { query: listQuery() }, signal }),
+    { lazy: true }
   )
-
-  const seedFrom = (page: GalgameCommunityCommentPage) => {
-    posts.value = [...page.posts]
-    total.value = page.total
-    threadId.value = page.thread_id
-    anchorKind.value = page.anchor_kind
-    anchorId.value = page.anchor_id
-    nextCursor.value = page.next_cursor
-    locked.value = page.locked
-    seeded.value = true
-    reportRead()
-  }
 
   // The read receipt is a POST the reader makes, never something inferred from
   // the GET above: the community service refuses to treat a read face as a
@@ -64,11 +60,7 @@ export const useCommunityCommentList = async (
         {
           method: 'POST',
           credentials: 'include',
-          body: {
-            anchor_kind: anchorKind.value,
-            anchor_id: anchorId.value,
-            thread_id: threadId.value
-          }
+          body: { ...surface.wallAnchor, thread_id: 0 }
         }
       )
       if (resp?.code === 0 && resp.data) {
@@ -86,108 +78,118 @@ export const useCommunityCommentList = async (
     }
     const state = await kunFetch<CommunityWallState>('/community/wall/follow', {
       method: 'POST',
-      body: {
-        anchor_kind: anchorKind.value,
-        anchor_id: anchorId.value,
-        following: next
-      }
+      body: { ...surface.wallAnchor, following: next }
     })
     if (state) {
       following.value = state.following
     }
   }
 
-  if (data.value && !seeded.value) {
-    seedFrom(data.value)
-  }
-  watch(data, (page) => {
-    if (page && !seeded.value) {
-      seedFrom(page)
+  const seed = () => {
+    if (seeded.value) {
+      return
     }
-  })
+    if (problem.value) {
+      locked.value = problem.value.code === 'QUIZ_ANSWER_REQUIRED'
+      loadFailed.value = !locked.value
+      seeded.value = true
+      return
+    }
+    if (!data.value) {
+      return
+    }
+    posts.value = [...data.value.items]
+    nextCursor.value = data.value.next_cursor
+    seeded.value = true
+    reportRead()
+  }
+  seed()
+  watch([data, problem], seed)
 
-  const hasMore = computed(() => nextCursor.value !== '')
+  const hasMore = computed(() => nextCursor.value !== undefined)
 
   const loadMore = async () => {
     if (!hasMore.value || loadingMore.value) {
       return
     }
     loadingMore.value = true
-    const page = await kunFetch<GalgameCommunityCommentPage>(surface.listUrl, {
-      method: 'GET',
-      query: {
-        ...surface.addressQuery,
-        cursor: nextCursor.value,
-        limit: PAGE_LIMIT
-      }
-    })
+    const result = await settle(
+      api.GET('/wall-comments', {
+        params: { query: listQuery(nextCursor.value) }
+      })
+    )
     loadingMore.value = false
-    if (page) {
-      const seen = new Set(posts.value.map((p) => p.id))
-      posts.value = [
-        ...posts.value,
-        ...page.posts.filter((p) => !seen.has(p.id))
-      ]
-      nextCursor.value = page.next_cursor
-      total.value = page.total
+    if (!result.ok) {
+      reportProblem(result.problem)
+      return
     }
+    const seen = new Set(posts.value.map((p) => p.id))
+    posts.value = [
+      ...posts.value,
+      ...result.data.items.filter((p) => !seen.has(p.id))
+    ]
+    nextCursor.value = result.data.next_cursor
   }
 
   const groups = computed<CommunityCommentGroup[]>(() => {
     const list: CommunityCommentGroup[] = []
-    const byRootId = new Map<number, CommunityCommentGroup>()
+    const byRootId = new Map<string, CommunityCommentGroup>()
     for (const p of posts.value) {
-      if (surface.isFlat || p.root_comment_id == null) {
-        const group: CommunityCommentGroup = { root: p, replies: [] }
-        byRootId.set(p.id, group)
-        list.push(group)
-      } else {
-        const owner = byRootId.get(p.root_comment_id)
-        if (owner) {
-          owner.replies.push(p)
-        } else {
-          list.push({ root: p, replies: [] })
-        }
+      const owner = p.root_comment_id ? byRootId.get(p.root_comment_id) : null
+      if (owner) {
+        owner.replies.push(p)
+        continue
       }
+      const group: CommunityCommentGroup = { root: p, replies: [] }
+      byRootId.set(p.id, group)
+      list.push(group)
     }
     return list
   })
 
   const isEmpty = computed(
-    () => seeded.value && !locked.value && total.value === 0
+    () =>
+      seeded.value &&
+      !locked.value &&
+      !loadFailed.value &&
+      !hasMore.value &&
+      posts.value.length === 0
   )
 
-  const handleNewComment = (post: GalgameCommunityComment) => {
+  const handleNewComment = (post: WallComment) => {
     if (posts.value.some((p) => p.id === post.id)) {
       return
     }
     posts.value = [...posts.value, post]
     total.value += 1
-    // Writing subscribes the author upstream, and on an empty wall this comment
-    // is also what created the thread — so the control only becomes real here.
-    if (!threadId.value && post.thread_id) {
-      threadId.value = post.thread_id
-    }
     reportRead()
   }
 
-  const handleUpdated = (updated: GalgameCommunityComment) => {
-    posts.value = posts.value.map((p) =>
-      p.id === updated.id
-        ? { ...updated, target_user: updated.target_user ?? p.target_user }
-        : p
-    )
+  const handleUpdated = (updated: WallComment) => {
+    posts.value = posts.value.map((p) => (p.id === updated.id ? updated : p))
   }
 
-  const handleTombstoned = (postId: number) => {
+  const handleTombstoned = (postId: string) => {
     posts.value = posts.value.map((p) =>
       p.id === postId
-        ? { ...p, deleted: true, held: false, content: '', content_html: '' }
+        ? {
+            ...p,
+            state: 'deleted',
+            content: { ...p.content, children: [] },
+            viewer: p.viewer && {
+              ...p.viewer,
+              can_edit: false,
+              can_delete: false,
+              can_like: false,
+              can_flag: false
+            }
+          }
         : p
     )
+    total.value = Math.max(total.value - 1, 0)
   }
 
-  const scrollToPost = (postId: number) => {
+  const scrollToPost = (postId: string) => {
     nextTick(() => {
       setTimeout(() => {
         const el = document.getElementById(`${surface.anchorPrefix}-${postId}`)
@@ -211,12 +213,12 @@ export const useCommunityCommentList = async (
     surface,
     posts,
     total,
-    threadId,
     following,
     setFollowing,
     status,
     seeded,
     locked,
+    loadFailed,
     hasMore,
     loadingMore,
     groups,

@@ -1,7 +1,6 @@
 <script setup lang="ts">
 const props = defineProps<{
   ratingId: number
-  ratingAuthor: KunUser
 }>()
 
 const {
@@ -9,6 +8,7 @@ const {
   following,
   setFollowing,
   seeded,
+  loadFailed,
   groups,
   isEmpty,
   hasMore,
@@ -41,13 +41,14 @@ const target: CommunityCommentTarget = {
     </KunHeader>
 
     <div class="space-y-5">
-      <CommentCommunityComposer
-        :target="target"
-        :target-user-id="ratingAuthor.id"
-        @submitted="handleNewComment"
-      />
+      <CommentCommunityComposer :target="target" @submitted="handleNewComment" />
 
       <KunLoading v-if="status === 'pending' && !seeded" />
+
+      <KunNull
+        v-else-if="loadFailed"
+        description="评论加载失败，请稍后刷新重试"
+      />
 
       <KunNull v-else-if="isEmpty" />
 
@@ -56,7 +57,9 @@ const target: CommunityCommentTarget = {
           v-for="group in groups"
           :key="group.root.id"
           :comment="group.root"
+          :replies="group.replies"
           :target="target"
+          :depth="0"
           @reply-added="handleNewComment"
           @updated="handleUpdated"
           @tombstoned="handleTombstoned"

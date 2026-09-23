@@ -1,52 +1,60 @@
 <script setup lang="ts">
+import type { WallComment } from '#shared/utils/api/schemas'
+import { settle } from '#shared/utils/api/problem'
+import ContentDocument from '~/components/content/Document.vue'
+
 const props = withDefaults(
   defineProps<{
-    comment: GalgameCommunityComment
+    comment: WallComment
     target: CommunityCommentTarget
     depth?: number
-    replies?: GalgameCommunityComment[]
+    replies?: WallComment[]
   }>(),
   { depth: 0, replies: () => [] }
 )
 
 const emit = defineEmits<{
-  replyAdded: [reply: GalgameCommunityComment]
-  updated: [post: GalgameCommunityComment]
-  tombstoned: [postId: number]
+  replyAdded: [reply: WallComment]
+  updated: [post: WallComment]
+  tombstoned: [postId: string]
 }>()
 
 const surface = communityCommentSurface(props.target)
 
 const { id } = usePersistUserStore()
-const canDeleteComment = useCan(surface.deletePermission)
+const api = useApiClient()
 const { open: openFlag } = useGalgameCommentFlag()
 
 const isShowReply = ref(false)
 const isEditing = ref(false)
 const editingContent = ref('')
+const originalContent = ref('')
 const isSavingEdit = ref(false)
 
-const isAuthor = computed(() => props.comment.user?.id === id)
+const isDeleted = computed(() => props.comment.state === 'deleted')
+const author = computed(() => toKunUser(props.comment.author))
 
-const isShowEdit = computed(() => isAuthor.value && !props.comment.deleted)
-const isShowDelete = computed(
-  () => (isAuthor.value || canDeleteComment.value) && !props.comment.deleted
+const isShowEdit = computed(() => props.comment.viewer?.can_edit ?? false)
+const isShowDelete = computed(() => props.comment.viewer?.can_delete ?? false)
+const isShowFlag = computed(() =>
+  props.comment.viewer ? props.comment.viewer.can_flag : !isDeleted.value
 )
-const isShowFlag = computed(() => !isAuthor.value && !props.comment.deleted)
 
 const isShowMenu = computed(
   () => isShowEdit.value || isShowFlag.value || isShowDelete.value
 )
 
 const replyTarget = computed(() =>
-  surface.showsReplyTarget ? props.comment.target_user : null
+  surface.showsReplyTarget && props.comment.addressee
+    ? toKunUser(props.comment.addressee)
+    : null
 )
 
 const editedLabel = computed(() => {
-  if (props.comment.edited == null && !props.comment.edited_by_moderator) {
+  if (props.comment.edited_at == null && !props.comment.is_edited_by_moderator) {
     return null
   }
-  return props.comment.edited_by_moderator ? '已编辑（管理）' : '已编辑'
+  return props.comment.is_edited_by_moderator ? '已编辑（管理）' : '已编辑'
 })
 
 const handleFlag = () => {
@@ -57,8 +65,21 @@ const handleFlag = () => {
   openFlag(props.comment.id)
 }
 
-const handleStartEdit = () => {
-  editingContent.value = props.comment.content
+// The editor gets the stored Markdown, not the rendered document: an
+// /image/<hash> token becomes an image node on read, so editing what the
+// document shows would drop the token.
+const handleStartEdit = async () => {
+  const result = await settle(
+    api.GET('/wall-comments/{wall_comment_id}/source', {
+      params: { path: { wall_comment_id: props.comment.id } }
+    })
+  )
+  if (!result.ok) {
+    reportProblem(result.problem)
+    return
+  }
+  editingContent.value = result.data.content_markdown
+  originalContent.value = result.data.content_markdown
   isEditing.value = true
 }
 
@@ -73,31 +94,31 @@ const handleSubmitEdit = async () => {
     useMessage(10540, 'warn')
     return
   }
-  if (text.length > surface.maxLength) {
+  if ([...text].length > surface.maxLength) {
     useMessage(`评论最大长度为 ${surface.maxLength} 个字符`, 'warn')
     return
   }
-  if (text === props.comment.content) {
+  if (text === originalContent.value) {
     handleCancelEdit()
     return
   }
 
   isSavingEdit.value = true
-  const updated = await kunFetch<GalgameCommunityComment>(
-    surface.editUrl(props.comment.id),
-    {
-      method: 'PUT',
-      query: surface.editQuery,
-      body: { content: text }
-    }
+  const result = await settle(
+    api.PATCH('/wall-comments/{wall_comment_id}', {
+      params: { path: { wall_comment_id: props.comment.id } },
+      body: { content_markdown: text }
+    })
   )
   isSavingEdit.value = false
 
-  if (updated) {
-    useMessage('评论已更新', 'success')
-    emit('updated', updated)
-    handleCancelEdit()
+  if (!result.ok) {
+    reportProblem(result.problem)
+    return
   }
+  useMessage('评论已更新', 'success')
+  emit('updated', result.data)
+  handleCancelEdit()
 }
 
 const handleDelete = async () => {
@@ -108,18 +129,20 @@ const handleDelete = async () => {
     return
   }
 
-  const result = await kunFetch(surface.deleteUrl(props.comment.id), {
-    method: 'DELETE',
-    query: surface.deleteQuery
-  })
-
-  if (result) {
-    useMessage(10538, 'success')
-    emit('tombstoned', props.comment.id)
+  const result = await settle(
+    api.DELETE('/wall-comments/{wall_comment_id}', {
+      params: { path: { wall_comment_id: props.comment.id } }
+    })
+  )
+  if (!result.ok) {
+    reportProblem(result.problem)
+    return
   }
+  useMessage(10538, 'success')
+  emit('tombstoned', props.comment.id)
 }
 
-const handleReplyAdded = (reply: GalgameCommunityComment) => {
+const handleReplyAdded = (reply: WallComment) => {
   isShowReply.value = false
   emit('replyAdded', reply)
 }
@@ -127,14 +150,14 @@ const handleReplyAdded = (reply: GalgameCommunityComment) => {
 
 <template>
   <div :id="`${surface.anchorPrefix}-${comment.id}`" class="flex gap-3">
-    <KunAvatar :user="comment.user" :size="depth === 0 ? 'md' : 'sm'" />
+    <KunAvatar :user="author" :size="depth === 0 ? 'md' : 'sm'" />
 
     <div class="min-w-0 flex-1">
       <div
         class="flex flex-wrap items-baseline gap-x-2 gap-y-1 text-xs leading-5"
       >
         <span class="text-default-800 text-sm font-medium">
-          {{ comment.user.name }}
+          {{ author.name }}
         </span>
         <template v-if="replyTarget">
           <KunIcon name="lucide:arrow-right" class="text-default-400" />
@@ -143,28 +166,28 @@ const handleReplyAdded = (reply: GalgameCommunityComment) => {
           </KunLink>
         </template>
         <span class="text-default-400">
-          <KunTime :time="comment.created" />
+          <KunTime :time="comment.created_at" />
         </span>
         <span v-if="editedLabel" class="text-default-400 italic">
           {{ editedLabel }}
         </span>
         <span
-          v-if="comment.held"
+          v-if="comment.state === 'held'"
           class="bg-warning-100 text-warning-600 rounded-full px-2 py-0.5"
         >
           审核中
         </span>
       </div>
 
-      <p v-if="comment.deleted" class="text-default-400 mt-2 text-sm italic">
+      <p v-if="isDeleted" class="text-default-400 mt-2 text-sm italic">
         [已删除]
       </p>
 
-      <KunContent
+      <ContentDocument
         v-else-if="!isEditing"
-        class="mt-2"
+        class-name="mt-2"
         compact
-        :content="renderKatex(comment.content_html)"
+        :document="comment.content"
       />
 
       <div v-else class="mt-2 space-y-2">
@@ -192,7 +215,7 @@ const handleReplyAdded = (reply: GalgameCommunityComment) => {
       </div>
 
       <div
-        v-if="!comment.deleted && !isEditing"
+        v-if="!isDeleted && !isEditing"
         class="mt-2.5 flex items-center gap-1"
       >
         <KunTooltip text="回复">
@@ -256,8 +279,7 @@ const handleReplyAdded = (reply: GalgameCommunityComment) => {
           v-if="isShowReply"
           class="mt-3"
           :target="target"
-          :reply-to-post-id="surface.isFlat ? null : comment.id"
-          :target-user-id="comment.user.id"
+          :parent-comment-id="comment.id"
           :is-reply="true"
           @close="isShowReply = false"
           @submitted="handleReplyAdded"
@@ -265,7 +287,7 @@ const handleReplyAdded = (reply: GalgameCommunityComment) => {
       </KunFadeCard>
 
       <div
-        v-if="!surface.isFlat && depth === 0 && replies.length"
+        v-if="depth === 0 && replies.length"
         class="mt-4 space-y-4"
       >
         <CommentCommunityRow

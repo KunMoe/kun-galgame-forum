@@ -1,15 +1,19 @@
 <script setup lang="ts">
-const { isOpen, targetPostId } = useGalgameCommentFlag()
+import type { WallFlagReason } from '#shared/utils/api/schemas'
+import { settle } from '#shared/utils/api/problem'
 
-const REASON_OPTIONS = [
-  { value: 0, label: '垃圾信息' },
-  { value: 1, label: '辱骂骚扰' },
-  { value: 2, label: '离题' },
-  { value: 3, label: '其他' },
-  { value: 4, label: '分级标注错误' }
+const { isOpen, targetPostId } = useGalgameCommentFlag()
+const api = useApiClient()
+
+const REASON_OPTIONS: { value: WallFlagReason; label: string }[] = [
+  { value: 'spam', label: '垃圾信息' },
+  { value: 'abuse', label: '辱骂骚扰' },
+  { value: 'off_topic', label: '离题' },
+  { value: 'other', label: '其他' },
+  { value: 'nsfw_mislabel', label: '分级标注错误' }
 ]
 
-const reason = ref<number | null>(null)
+const reason = ref<WallFlagReason | null>(null)
 const note = ref('')
 const isSubmitting = ref(false)
 
@@ -35,16 +39,20 @@ const submit = async () => {
   }
 
   isSubmitting.value = true
-  const result = await kunFetch(`/galgame/comments/${postId}/flag`, {
-    method: 'POST',
-    body: { reason: reason.value, note: note.value }
-  })
+  const result = await settle(
+    api.POST('/wall-comments/{wall_comment_id}/flags', {
+      params: { path: { wall_comment_id: postId } },
+      body: { flag_reason: reason.value, ...(note.value ? { note: note.value } : {}) }
+    })
+  )
   isSubmitting.value = false
 
-  if (result) {
-    useMessage('已举报，达到阈值将自动隐藏并进入人工审核', 'success')
-    isOpen.value = false
+  if (!result.ok) {
+    reportProblem(result.problem)
+    return
   }
+  useMessage('已举报，达到阈值将自动隐藏并进入人工审核', 'success')
+  isOpen.value = false
 }
 </script>
 

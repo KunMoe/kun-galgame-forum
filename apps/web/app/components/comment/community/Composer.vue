@@ -1,22 +1,27 @@
 <script setup lang="ts">
+import type { WallComment } from '#shared/utils/api/schemas'
+import { settle } from '#shared/utils/api/problem'
+import { useIdempotencyKey } from '~/composables/useIdempotencyKey'
+
 const props = withDefaults(
   defineProps<{
     target: CommunityCommentTarget
-    replyToPostId?: number | null
-    targetUserId?: number
+    parentCommentId?: string | null
     isReply?: boolean
   }>(),
-  { replyToPostId: null, targetUserId: undefined, isReply: false }
+  { parentCommentId: null, isReply: false }
 )
 
 const emits = defineEmits<{
   close: []
-  submitted: [post: GalgameCommunityComment]
+  submitted: [post: WallComment]
 }>()
 
 const surface = communityCommentSurface(props.target)
 
 const { id } = usePersistUserStore()
+const api = useApiClient()
+const createKey = useIdempotencyKey()
 
 const content = ref('')
 const isPublishing = ref(false)
@@ -31,25 +36,39 @@ const handlePublish = async () => {
     useMessage(10540, 'warn')
     return
   }
-  if (trimmed.length > surface.maxLength) {
+  if ([...trimmed].length > surface.maxLength) {
     useMessage(`评论最大长度为 ${surface.maxLength} 个字符`, 'warn')
     return
   }
 
+  const body = {
+    subject_type: surface.subjectType,
+    subject_id: surface.subjectId,
+    content_markdown: trimmed,
+    ...(props.parentCommentId
+      ? { parent_comment_id: props.parentCommentId }
+      : {})
+  }
   isPublishing.value = true
-  const result = await kunFetch<GalgameCommunityComment>(surface.listUrl, {
-    method: 'POST',
-    query: surface.addressQuery,
-    body: surface.createBody(trimmed, props.replyToPostId, props.targetUserId)
-  })
+  const result = await settle(
+    api.POST('/wall-comments', {
+      params: {
+        header: { 'Idempotency-Key': createKey.take('/wall-comments', body) }
+      },
+      body
+    })
+  )
   isPublishing.value = false
 
-  if (result) {
-    content.value = ''
-    useMessage(result.held ? '已提交，待审核' : 10542, 'success')
-    emits('submitted', result)
-    emits('close')
+  if (!result.ok) {
+    reportProblem(result.problem)
+    return
   }
+  createKey.clear()
+  content.value = ''
+  useMessage(result.data.state === 'held' ? '已提交，待审核' : 10542, 'success')
+  emits('submitted', result.data)
+  emits('close')
 }
 </script>
 

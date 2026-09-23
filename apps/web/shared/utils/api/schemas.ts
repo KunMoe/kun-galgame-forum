@@ -58,3 +58,9 @@ export type LinkNode = components['schemas']['LinkNode']
 export type MentionNode = components['schemas']['MentionNode']
 export type ReplyReferenceNode = components['schemas']['ReplyReferenceNode']
 export type VideoNode = components['schemas']['VideoNode']
+
+export type WallComment = components['schemas']['WallComment']
+export type WallCommentViewer = components['schemas']['WallCommentViewer']
+export type WallSubjectType =
+  operations['listWallComments']['parameters']['query']['subject_type']
+export type WallFlagReason = components['schemas']['WallCommentFlag']['flag_reason']

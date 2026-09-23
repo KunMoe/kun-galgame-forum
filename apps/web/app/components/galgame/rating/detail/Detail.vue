@@ -267,7 +267,6 @@ const handleDeleteRating = async () => {
     <GalgameRatingCommentCommunityContainer
       v-if="data"
       :rating-id="data.id"
-      :rating-author="data.user"
     />
 
     <GalgameRatingPublish

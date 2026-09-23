@@ -1,6 +1,9 @@
 <script setup lang="ts">
+import type { WallComment } from '#shared/utils/api/schemas'
+
 const props = defineProps<{
   quizId: number
+  commentCount: number
 }>()
 
 const {
@@ -9,6 +12,7 @@ const {
   setFollowing,
   seeded,
   locked,
+  loadFailed,
   groups,
   isEmpty,
   total,
@@ -19,11 +23,14 @@ const {
   handleUpdated,
   handleTombstoned,
   scrollToPost
-} = await useCommunityCommentList({ kind: 'quiz', quizId: props.quizId })
+} = await useCommunityCommentList(
+  { kind: 'quiz', quizId: props.quizId },
+  props.commentCount
+)
 
 const target: CommunityCommentTarget = { kind: 'quiz', quizId: props.quizId }
 
-const onPublished = (post: GalgameCommunityComment) => {
+const onPublished = (post: WallComment) => {
   handleNewComment(post)
   if (post.root_comment_id == null) {
     scrollToPost(post.id)
@@ -62,7 +69,12 @@ const onPublished = (post: GalgameCommunityComment) => {
     <div v-else class="space-y-5">
       <CommentCommunityComposer :target="target" @submitted="onPublished" />
 
-      <KunNull v-if="isEmpty" description="还没有人讨论这道题目" />
+      <KunNull
+        v-if="loadFailed"
+        description="讨论加载失败，请稍后刷新重试"
+      />
+
+      <KunNull v-else-if="isEmpty" description="还没有人讨论这道题目" />
 
       <div v-else-if="groups.length" class="space-y-8">
         <CommentCommunityRow

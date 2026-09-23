@@ -55,7 +55,10 @@ useKunSeoMeta({
   <div class="mx-auto max-w-3xl space-y-3">
     <template v-if="data">
       <GalgameQuizPlay :quiz="data" />
-      <GalgameQuizCommentCommunityContainer :quiz-id="data.id" />
+      <GalgameQuizCommentCommunityContainer
+        :quiz-id="data.id"
+        :comment-count="data.comment_count"
+      />
     </template>
     <KunNull v-else description="题目不存在或已被删除" />
   </div>

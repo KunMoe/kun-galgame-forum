@@ -1,10 +1,12 @@
 <script setup lang="ts">
+import { settle } from '#shared/utils/api/problem'
+
 const emit = defineEmits<{
   'update:loading': [boolean]
 }>()
 
 const route = useRoute()
-const config = useRuntimeConfig()
+const api = useApiClient()
 const gid = parseInt((route.params as { gid: string }).gid)
 
 const target: CommunityCommentTarget = { kind: 'galgame', galgameId: gid }
@@ -17,6 +19,7 @@ const {
   following,
   setFollowing,
   seeded,
+  loadFailed,
   groups,
   isEmpty,
   hasMore,
@@ -34,19 +37,19 @@ const showEmpty = computed(
   () => isEmpty.value && galgame?.is_on_forum !== false
 )
 
-const locateLegacy = async (legacyId: number): Promise<number | null> => {
-  try {
-    const resp = await $fetch<{ code: number; data?: { post_id: number } }>(
-      `${config.public.apiBaseUrl}/api/galgame/${gid}/comments/locate`,
-      { query: { legacy_id: legacyId }, credentials: 'include' }
-    )
-    return resp && resp.code === 0 && resp.data ? resp.data.post_id : null
-  } catch {
-    return null
+const ensureLoadedAndScroll = async (postId: string) => {
+  const found = await settle(
+    api.GET('/wall-comments/{wall_comment_id}', {
+      params: { path: { wall_comment_id: postId } }
+    })
+  )
+  if (
+    !found.ok ||
+    found.data.subject_type !== 'galgame' ||
+    found.data.subject_id !== String(gid)
+  ) {
+    return
   }
-}
-
-const ensureLoadedAndScroll = async (postId: number) => {
   let guard = 0
   while (
     !posts.value.some((p) => p.id === postId) &&
@@ -62,32 +65,11 @@ const ensureLoadedAndScroll = async (postId: number) => {
 }
 
 const resolveDeepLink = async () => {
-  const commentParam = Number(route.query.comment) || 0
-  const hasThreadParam = route.query.thread != null
+  const commentParam = String(route.query.comment ?? '')
   const hashMatch = (route.hash || '').match(/^#galgame-comment-(\d+)$/)
-
-  if (commentParam) {
-    if (hasThreadParam) {
-      const postId = await locateLegacy(commentParam)
-      if (postId) {
-        await ensureLoadedAndScroll(postId)
-      }
-      return
-    }
-    await ensureLoadedAndScroll(commentParam)
-    return
-  }
-
-  if (hashMatch) {
-    const raw = Number(hashMatch[1])
-    await ensureLoadedAndScroll(raw)
-    if (posts.value.some((p) => p.id === raw)) {
-      return
-    }
-    const mapped = await locateLegacy(raw)
-    if (mapped) {
-      await ensureLoadedAndScroll(mapped)
-    }
+  const postId = /^\d+$/.test(commentParam) ? commentParam : hashMatch?.[1]
+  if (postId) {
+    await ensureLoadedAndScroll(postId)
   }
 }
 
@@ -124,6 +106,8 @@ onMounted(() => {
     <CommentCommunityComposer :target="target" @submitted="handleNewComment" />
 
     <KunLoading v-if="status === 'pending'" />
+
+    <KunNull v-else-if="loadFailed" description="评论加载失败，请稍后刷新重试" />
 
     <KunNull
       v-else-if="showEmpty"

@@ -1,8 +1,8 @@
 const isOpen = ref(false)
-const targetPostId = ref<number | null>(null)
+const targetPostId = ref<string | null>(null)
 
 export const useGalgameCommentFlag = () => {
-  const open = (postId: number) => {
+  const open = (postId: string) => {
     targetPostId.value = postId
     isOpen.value = true
   }

@@ -1,15 +1,13 @@
 <script setup lang="ts">
+import type { WallComment } from '#shared/utils/api/schemas'
+
 const props = defineProps<{
   websiteId: number
 }>()
 
-const route = useRoute()
-const domain = (route.params as { domain: string }).domain
-
 const target: CommunityCommentTarget = {
   kind: 'website',
-  websiteId: props.websiteId,
-  domain
+  websiteId: props.websiteId
 }
 
 const {
@@ -17,6 +15,7 @@ const {
   following,
   setFollowing,
   seeded,
+  loadFailed,
   groups,
   isEmpty,
   hasMore,
@@ -28,7 +27,7 @@ const {
   scrollToPost
 } = await useCommunityCommentList(target)
 
-const onPublished = (post: GalgameCommunityComment) => {
+const onPublished = (post: WallComment) => {
   handleNewComment(post)
   if (post.root_comment_id == null) {
     scrollToPost(post.id)
@@ -55,6 +54,11 @@ const onPublished = (post: GalgameCommunityComment) => {
       <CommentCommunityComposer :target="target" @submitted="onPublished" />
 
       <KunLoading v-if="status === 'pending' && !seeded" />
+
+      <KunNull
+        v-else-if="loadFailed"
+        description="评论加载失败，请稍后刷新重试"
+      />
 
       <KunNull v-else-if="isEmpty" />
 

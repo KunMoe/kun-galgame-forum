@@ -1,12 +1,24 @@
 <script setup lang="ts">
+import type { WallComment } from '#shared/utils/api/schemas'
+import { settle } from '#shared/utils/api/problem'
+
 const props = defineProps<{
-  comment: GalgameCommunityComment
+  comment: WallComment
 }>()
 
 const { id } = usePersistUserStore()
-const isLiked = ref(props.comment.is_liked)
+const api = useApiClient()
+const isLiked = ref(props.comment.viewer?.has_liked ?? false)
 const likesCount = ref(props.comment.like_count)
 const pending = ref(false)
+
+watch(
+  () => [props.comment.viewer?.has_liked, props.comment.like_count] as const,
+  ([liked, count]) => {
+    isLiked.value = liked ?? false
+    likesCount.value = count
+  }
+)
 
 const revert = (next: boolean) => {
   isLiked.value = !next
@@ -19,25 +31,28 @@ const onChange = async (next: boolean) => {
     revert(next)
     return
   }
-  if (id === props.comment.user.id) {
+  if (!props.comment.viewer?.can_like) {
     useMessage(10533, 'warn')
     revert(next)
     return
   }
 
   pending.value = true
-  const result = await kunFetch<{ liked: boolean; like_count: number }>(
-    `/galgame/comments/${props.comment.id}/like`,
-    { method: 'PUT' }
+  const params = { params: { path: { wall_comment_id: props.comment.id } } }
+  const result = await settle(
+    next
+      ? api.PUT('/wall-comments/{wall_comment_id}/like', params)
+      : api.DELETE('/wall-comments/{wall_comment_id}/like', params)
   )
   pending.value = false
 
-  if (!result) {
+  if (!result.ok) {
+    reportProblem(result.problem)
     revert(next)
     return
   }
-  isLiked.value = result.liked
-  likesCount.value = result.like_count
+  isLiked.value = result.data.viewer?.has_liked ?? next
+  likesCount.value = result.data.like_count
 }
 </script>
 

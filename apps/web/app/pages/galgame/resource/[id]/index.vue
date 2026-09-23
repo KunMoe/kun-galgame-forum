@@ -62,7 +62,10 @@ if (data.value && data.value !== 'not found') {
         />
       </div>
 
-      <GalgameResourceCommentCommunityContainer :resource-id="resourceId" />
+      <GalgameResourceCommentCommunityContainer
+        :resource-id="resourceId"
+        :comment-count="data.resource.comment_count"
+      />
     </template>
 
     <KunNull
