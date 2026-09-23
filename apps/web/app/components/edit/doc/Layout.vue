@@ -1,68 +1,38 @@
 <script setup lang="ts">
+import { settle } from '#shared/utils/api/problem'
+import type { AdminDoc } from '#shared/utils/api/schemas'
 import { provideDocEditorContext } from './context'
 import type { DocEditorMode, DocEditorForm } from './type'
 import { computeReadingMinute } from '~/utils/doc'
+
 const props = withDefaults(
   defineProps<{
     mode: DocEditorMode
-    initialArticle?: DocArticleDetail | null
+    initialDoc?: AdminDoc | null
     redirectOnSuccess?: boolean
   }>(),
   {
-    initialArticle: null,
+    initialDoc: null,
     redirectOnSuccess: true
   }
 )
 
 const emit = defineEmits<{
-  saved: [article: DocArticleDetail]
+  saved: [doc: AdminDoc]
 }>()
 
+const api = useApiClient()
 const isRewriteMode = computed(() => props.mode === 'rewrite')
 
-const [
-  { data: categoryResponse },
-  { data: tagResponse, refresh: refreshTagResponse }
-] = await Promise.all([
-  useKunFetch<DocCategoryListResponse>('/doc/category', {
-    query: { page: 1, limit: 100, keyword: '' }
-  }),
-  useKunFetch<DocTagListResponse>('/doc/tag', {
-    query: { page: 1, limit: 100, keyword: '' }
-  })
-])
-
-const categories = ref<DocCategoryItem[]>([])
-const tags = ref<DocTagItem[]>([])
-
-watch(
-  categoryResponse,
-  (response) => {
-    categories.value = response?.items ?? []
-  },
-  { immediate: true }
-)
-
-watch(
-  tagResponse,
-  (response) => {
-    tags.value = response?.items ?? []
-  },
-  { immediate: true }
-)
-
 const createDefaultForm = (): DocEditorForm => ({
-  article_id: null,
+  doc_id: null,
   title: '',
   slug: '',
   description: '',
-  banner: '',
   banner_image_hash: '',
-  status: 1,
-  is_pin: false,
+  is_pinned: false,
   content_markdown: '',
-  category_id: 0,
-  tag_ids: []
+  doc_category: ''
 })
 
 const form = reactive<DocEditorForm>(createDefaultForm())
@@ -71,38 +41,34 @@ const readingMinute = computed(() =>
   form.content_markdown.trim() ? computeReadingMinute(form.content_markdown) : 0
 )
 
-const applyArticleToForm = (article: DocArticleDetail) => {
-  form.article_id = article.id
-  form.title = article.title
-  form.slug = article.slug
-  form.description = article.description
-  form.banner = article.banner || ''
-  form.banner_image_hash = article.banner_image_hash ?? ''
-  form.status = article.status
-  form.is_pin = article.is_pin
-  form.content_markdown = article.content_markdown
-  form.category_id = article.category_id
-  form.tag_ids = article.tag_ids ?? []
+const applyDocToForm = (doc: AdminDoc) => {
+  form.doc_id = doc.id
+  form.title = doc.title
+  form.slug = doc.slug
+  form.description = doc.description
+  form.banner_image_hash = doc.banner?.hash ?? ''
+  form.is_pinned = doc.is_pinned
+  form.content_markdown = doc.content_markdown
+  form.doc_category = doc.doc_category
 }
 
 const resetForm = () => {
-  if (isRewriteMode.value && props.initialArticle) {
-    applyArticleToForm(props.initialArticle)
+  if (isRewriteMode.value && props.initialDoc) {
+    applyDocToForm(props.initialDoc)
     return
   }
-
   Object.assign(form, createDefaultForm())
 }
 
-if (isRewriteMode.value && props.initialArticle) {
-  applyArticleToForm(props.initialArticle)
+if (isRewriteMode.value && props.initialDoc) {
+  applyDocToForm(props.initialDoc)
 }
 
 watch(
-  () => props.initialArticle,
-  (article) => {
-    if (isRewriteMode.value && article) {
-      applyArticleToForm(article)
+  () => props.initialDoc,
+  (doc) => {
+    if (isRewriteMode.value && doc) {
+      applyDocToForm(doc)
     }
   }
 )
@@ -120,7 +86,7 @@ const validateForm = () => {
   if (!form.content_markdown.trim()) {
     return '请输入正文内容'
   }
-  if (!form.category_id) {
+  if (!form.doc_category) {
     return '请选择文档分类'
   }
   return true
@@ -136,69 +102,54 @@ const handleSubmit = async () => {
     useMessage(validation, 'warn')
     return
   }
-
-  if (isRewriteMode.value && !form.article_id) {
-    useMessage('未找到文档 ID，无法更新', 'error')
+  if (!form.doc_category) {
     return
+  }
+
+  const body = {
+    title: form.title.trim(),
+    slug: form.slug.trim(),
+    description: form.description.trim(),
+    banner_image_hash: form.banner_image_hash,
+    is_pinned: form.is_pinned,
+    content_markdown: form.content_markdown,
+    doc_category: form.doc_category
   }
 
   isSubmitting.value = true
   try {
-    const normalizedSlug = form.slug.trim()
-    const body: Record<string, unknown> = {
-      title: form.title.trim(),
-      slug: normalizedSlug,
-      description: form.description.trim(),
-      banner: form.banner.trim(),
-      banner_image_hash: form.banner_image_hash,
-      status: form.status,
-      is_pin: form.is_pin,
-      content_markdown: form.content_markdown,
-      category_id: form.category_id as number,
-      tag_ids: Array.from(new Set(form.tag_ids))
+    const result = await settle(
+      isRewriteMode.value && form.doc_id
+        ? api.PATCH('/admin/docs/{doc_id}', {
+            params: { path: { doc_id: form.doc_id } },
+            body
+          })
+        : api.POST('/admin/docs', { body })
+    )
+    if (!result.ok) {
+      reportProblem(result.problem)
+      return
     }
-
-    if (isRewriteMode.value) {
-      body.article_id = form.article_id
-    }
-
-    const result = await kunFetch<DocArticleDetail>('/doc/article', {
-      method: isRewriteMode.value ? 'PUT' : 'POST',
-      body
-    })
-
-    if (result) {
-      useMessage(
-        isRewriteMode.value ? '更新文档成功' : '创建文档成功',
-        'success'
-      )
-      applyArticleToForm(result)
-      if (props.redirectOnSuccess) {
-        await navigateTo(result.path)
-      } else {
-        emit('saved', result)
-      }
+    useMessage(isRewriteMode.value ? '更新文档成功' : '创建文档成功', 'success')
+    applyDocToForm(result.data)
+    if (props.redirectOnSuccess) {
+      await navigateTo(`/doc/${result.data.slug}`)
+    } else {
+      emit('saved', result.data)
     }
   } finally {
     isSubmitting.value = false
   }
 }
 
-const refreshTags = async () => {
-  await refreshTagResponse()
-}
-
 provideDocEditorContext({
   form,
-  categories,
-  tags,
   mode: props.mode,
   isSubmitting,
   handleSubmit,
   resetForm,
-  refreshTags,
   readingMinute,
-  initialBannerUrl: props.initialArticle?.banner_url ?? ''
+  initialBannerUrl: props.initialDoc?.banner?.url ?? ''
 })
 </script>
 

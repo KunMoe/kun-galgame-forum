@@ -1,21 +1,33 @@
 <script setup lang="ts">
+import { contentHeadings } from '~/utils/contentPlainText'
+
 const route = useRoute()
 
-const docSlug = computed(() => (route.params.slug as string) || '')
+const docSlug = computed(() => {
+  const slug = route.params.slug
+  return Array.isArray(slug) ? slug.join('/') : slug || ''
+})
 
-const { data } = await useKunFetch<DocArticleDetail>(
-  `/doc/article/${docSlug.value}`
+const { data } = await useApi(
+  () => `doc:${docSlug.value}`,
+  (api, { signal }) =>
+    api.GET('/docs/{doc_slug}', {
+      params: { path: { doc_slug: docSlug.value } },
+      signal
+    })
 )
+
+const headings = computed(() => contentHeadings(data.value?.content))
 
 if (data.value) {
   useKunSeoMeta({
     title: data.value.title,
     description: data.value.description,
-    ogImage: data.value.banner_url,
+    ogImage: data.value.banner?.url,
     ogType: 'article',
-    articleAuthor: [`${kungal.domain.main}/user/${data.value.author_id}`],
-    articlePublishedTime: data.value.published_time?.toString(),
-    articleModifiedTime: data.value.edited_time?.toString()
+    articleAuthor: [`${kungal.domain.main}/user/${data.value.author.id}`],
+    articlePublishedTime: data.value.published_at,
+    articleModifiedTime: data.value.edited_at ?? undefined
   })
 } else {
   useKunDisableSeo('未找到该文档')
@@ -29,15 +41,16 @@ if (data.value) {
 
       <article class="min-w-0 flex-1 space-y-6 pl-0 lg:pr-67 xl:pl-67">
         <DocDetailHeader :metadata="data" />
-        <KunContent :content="renderKatex(data.content_html)" />
+        <ContentDocument :document="data.content" />
         <DocDetailFooter />
       </article>
 
-      <div v-if="data.toc?.length" class="hidden lg:block">
+      <div v-if="headings.length" class="hidden lg:block">
         <div class="fixed -translate-x-67">
-          <DocDetailTableOfContent :links="data.toc" />
+          <DocDetailTableOfContent :links="headings" />
         </div>
       </div>
     </div>
   </div>
+  <KunNull v-else description="未找到该文档" />
 </template>

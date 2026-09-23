@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { useSortable, moveArrayElement } from '@vueuse/integrations/useSortable'
-import type { KunUIColor } from '@kungal/ui-core'
+import { settle } from '#shared/utils/api/problem'
+import type { AdminDoc, DocSummary } from '#shared/utils/api/schemas'
 import type { DocEditorMode } from '~/components/edit/doc/type'
+import { KUN_DOC_CATEGORY_MAP } from '~/constants/doc'
 
 definePageMeta({
   middleware: 'permission',
@@ -10,31 +12,26 @@ definePageMeta({
 
 useKunDisableSeo('文档管理')
 
-const DOC_STATUS_CHIP: Record<number, { label: string; color: KunUIColor }> = {
-  0: { label: '草稿', color: 'default' },
-  1: { label: '已发布', color: 'success' },
-  2: { label: '已归档', color: 'warning' }
-}
+const api = useApiClient()
+const { docs, refresh: refetch } = await useAllDocs('position_asc')
 
-const { data, refresh: refetch } = await useKunFetch<DocArticleListResponse>(
-  '/admin/doc/article',
-  {
-    query: { page: 1, limit: 100, order_by: 'order', sort_order: 'asc' }
-  }
-)
-
-const list = ref<DocArticleSummary[]>([...(data.value?.items ?? [])])
+const list = ref<DocSummary[]>([...docs.value])
 
 const refresh = async () => {
   await refetch()
-  list.value = [...(data.value?.items ?? [])]
+  list.value = [...docs.value]
 }
 
 const persistOrder = async () => {
-  await kunFetch('/doc/article/reorder', {
-    method: 'PUT',
-    body: { ids: list.value.map((a) => a.id) }
-  })
+  const result = await settle(
+    api.PUT('/admin/doc-order', {
+      body: { doc_ids: list.value.map((doc) => doc.id) }
+    })
+  )
+  if (!result.ok) {
+    reportProblem(result.problem)
+    await refresh()
+  }
 }
 
 const listEl = ref<HTMLElement | null>(null)
@@ -50,19 +47,24 @@ useSortable(listEl, list, {
 
 const isModalOpen = ref(false)
 const modalMode = ref<DocEditorMode>('create')
-const editingArticle = ref<DocArticleDetail | null>(null)
+const editingDoc = ref<AdminDoc | null>(null)
 
 const openCreate = () => {
   modalMode.value = 'create'
-  editingArticle.value = null
+  editingDoc.value = null
   isModalOpen.value = true
 }
 
-const openEdit = async (row: DocArticleSummary) => {
-  const detail = await kunFetch<DocArticleDetail>(`/doc/article/${row.slug}`)
-  if (!detail) return
+const openEdit = async (row: DocSummary) => {
+  const result = await settle(
+    api.GET('/admin/docs/{doc_id}', { params: { path: { doc_id: row.id } } })
+  )
+  if (!result.ok) {
+    reportProblem(result.problem)
+    return
+  }
   modalMode.value = 'rewrite'
-  editingArticle.value = detail
+  editingDoc.value = result.data
   isModalOpen.value = true
 }
 
@@ -71,7 +73,7 @@ const onSaved = async () => {
   await refresh()
 }
 
-const handleDelete = async (row: DocArticleSummary) => {
+const handleDelete = async (row: DocSummary) => {
   const confirmed = await useComponentMessageStore().alert(
     `确认删除文档「${row.title}」吗？`,
     '删除操作不可恢复，请慎重。',
@@ -79,28 +81,32 @@ const handleDelete = async (row: DocArticleSummary) => {
   )
   if (!confirmed) return
 
-  const result = await kunFetch('/doc/article', {
-    method: 'DELETE',
-    query: { article_id: row.id }
-  })
-  if (result) {
-    useMessage('删除文档成功', 'success')
-    await refresh()
+  const result = await settle(
+    api.DELETE('/admin/docs/{doc_id}', { params: { path: { doc_id: row.id } } })
+  )
+  if (!result.ok) {
+    reportProblem(result.problem)
+    return
   }
+  useMessage('删除文档成功', 'success')
+  await refresh()
 }
 
-const handleTogglePin = async (row: DocArticleSummary, value: boolean) => {
-  const prev = row.is_pin
-  row.is_pin = value
-  const result = await kunFetch('/doc/article/pin', {
-    method: 'PUT',
-    body: { article_id: row.id, is_pin: value }
-  })
-  if (result) {
-    useMessage(value ? '已置顶' : '已取消置顶', 'success')
-  } else {
-    row.is_pin = prev
+const handleTogglePin = async (row: DocSummary, value: boolean) => {
+  const prev = row.is_pinned
+  row.is_pinned = value
+  const result = await settle(
+    api.PATCH('/admin/docs/{doc_id}', {
+      params: { path: { doc_id: row.id } },
+      body: { is_pinned: value }
+    })
+  )
+  if (!result.ok) {
+    row.is_pinned = prev
+    reportProblem(result.problem)
+    return
   }
+  useMessage(value ? '已置顶' : '已取消置顶', 'success')
 }
 </script>
 
@@ -135,20 +141,15 @@ const handleTogglePin = async (row: DocArticleSummary, value: boolean) => {
           <div class="min-w-0 flex-1">
             <div class="flex items-center gap-2">
               <span class="truncate font-medium">{{ article.title }}</span>
-              <KunChip
-                :color="DOC_STATUS_CHIP[article.status]?.color ?? 'default'"
-              >
-                {{ DOC_STATUS_CHIP[article.status]?.label ?? '未知' }}
-              </KunChip>
             </div>
             <span class="text-default-500 block truncate text-xs">
-              {{ article.category?.title || `分类 #${article.category_id}` }}
+              {{ KUN_DOC_CATEGORY_MAP[article.doc_category] }}
             </span>
           </div>
           <div class="flex shrink-0 items-center gap-1.5">
             <span class="text-default-500 text-sm">置顶</span>
             <KunSwitch
-              :model-value="article.is_pin"
+              :model-value="article.is_pinned"
               color="primary"
               @update:model-value="(v) => handleTogglePin(article, v)"
             />
@@ -184,7 +185,7 @@ const handleTogglePin = async (row: DocArticleSummary, value: boolean) => {
       <EditDocLayout
         v-if="isModalOpen"
         :mode="modalMode"
-        :initial-article="editingArticle"
+        :initial-doc="editingDoc"
         :redirect-on-success="false"
         @saved="onSaved"
       />

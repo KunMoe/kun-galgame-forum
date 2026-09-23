@@ -4,13 +4,10 @@ import type { DocEditorForm, DocEditorMode } from './type'
 
 export interface DocEditorContext {
   form: DocEditorForm
-  categories: Ref<DocCategoryItem[]>
-  tags: Ref<DocTagItem[]>
   mode: DocEditorMode
   isSubmitting: Ref<boolean>
   handleSubmit: () => Promise<void>
   resetForm: () => void
-  refreshTags: () => Promise<void>
   readingMinute: ComputedRef<number>
   initialBannerUrl: string
 }

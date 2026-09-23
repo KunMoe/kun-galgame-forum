@@ -1,6 +1,8 @@
 <script setup lang="ts">
+import type { DocumentHeading } from '#shared/utils/content/plainText'
+
 defineProps<{
-  links: DocTocLink[]
+  links: DocumentHeading[]
 }>()
 </script>
 

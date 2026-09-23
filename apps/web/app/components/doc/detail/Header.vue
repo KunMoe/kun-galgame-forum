@@ -1,9 +1,10 @@
 <script setup lang="ts">
-const props = defineProps<{
-  metadata: DocArticleDetail
-}>()
+import type { Doc } from '#shared/utils/api/schemas'
+import { KUN_DOC_CATEGORY_MAP } from '~/constants/doc'
 
-const metadata = computed(() => props.metadata)
+defineProps<{
+  metadata: Doc
+}>()
 </script>
 
 <template>
@@ -11,7 +12,7 @@ const metadata = computed(() => props.metadata)
     <div class="relative mb-6 aspect-video h-full w-full">
       <KunLightboxGallery>
         <KunLightboxGalleryItem
-          :src="metadata.banner_url || '/kungalgame.webp'"
+          :src="metadata.banner?.url || '/kungalgame.webp'"
           :alt="metadata.title"
           :wrap="false"
           v-slot="{ open }"
@@ -19,7 +20,7 @@ const metadata = computed(() => props.metadata)
           <KunImage
             :alt="metadata.title"
             class="size-full cursor-zoom-in rounded-lg object-cover"
-            :src="metadata.banner_url || '/kungalgame.webp'"
+            :src="metadata.banner?.url || '/kungalgame.webp'"
             loading="eager"
             fetchpriority="high"
             width="100%"
@@ -37,11 +38,11 @@ const metadata = computed(() => props.metadata)
 
       <div class="flex flex-wrap items-center gap-3 text-sm">
         <KunChip color="secondary">
-          {{ metadata.category?.title || `分类 #${metadata.category_id}` }}
+          {{ KUN_DOC_CATEGORY_MAP[metadata.doc_category] }}
         </KunChip>
         <div class="text-default-500 flex items-center gap-1">
           <KunIcon name="lucide:eye" class="h-4 w-4" />
-          <span>{{ metadata.view }} 次浏览</span>
+          <span>{{ metadata.view_count }} 次浏览</span>
         </div>
       </div>
 
@@ -51,7 +52,7 @@ const metadata = computed(() => props.metadata)
             <KunIcon name="lucide:calendar-days" />
             <p class="text-small text-inherit">
               <KunTime
-                :time="metadata.published_time"
+                :time="metadata.published_at"
                 type="datetime"
                 show-year
               />

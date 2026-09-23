@@ -4,6 +4,74 @@
  */
 
 export interface paths {
+    "/admin/doc-order": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set the doc display order
+         * @description Replaces the display order that listDocs sorts position_asc by. The list must name every doc exactly once, so a list made before someone else created or deleted a doc is refused rather than half applied. It needs the doc.edit permission.
+         */
+        put: operations["putDocOrder"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/docs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create a doc
+         * @description Publishes a doc at once, last in display order. Location points at its staff view. It needs the doc.create permission.
+         */
+        post: operations["createDoc"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/docs/{doc_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a doc's staff view
+         * @description The doc as its editor needs it, Markdown source included. It needs the doc.edit permission, which a Bearer request never carries.
+         */
+        get: operations["getAdminDoc"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete a doc
+         * @description Deletes the doc for good; its /doc/{slug} page stops resolving. It needs the doc.delete permission.
+         */
+        delete: operations["deleteDoc"];
+        options?: never;
+        head?: never;
+        /**
+         * Update a doc
+         * @description Changes the fields sent and leaves the rest. edited_at moves only when a field other than is_pinned takes a new value. It needs the doc.edit permission.
+         */
+        patch: operations["updateDoc"];
+        trace?: never;
+    };
     "/admin/hidden-topics": {
         parameters: {
             query?: never;
@@ -416,6 +484,46 @@ export interface paths {
          * @description Returns the stored plain text of the comment, to fill an edit form. It needs can_edit. NOT_FOUND under the same conditions as getComment.
          */
         get: operations["getCommentSource"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/docs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List docs
+         * @description Every help-center doc. There are no drafts: a doc exists publicly or not at all. A cursor collection; the cursor is bound to sort, doc_category and is_pinned.
+         */
+        get: operations["listDocs"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/docs/{doc_slug}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a doc
+         * @description A doc with its body, addressed by the slug of its /doc/{slug} page. Each successful read counts one view.
+         */
+        get: operations["getDoc"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2070,6 +2178,47 @@ export interface components {
             /** @description Granted users when access_scope is users, in grant order. The author is never listed. Banned and deleted users keep their entry with name null. Empty array otherwise. */
             users: components["schemas"]["UserRef"][];
         };
+        AdminDoc: {
+            /** @description Banner image. null when the doc has none. */
+            banner: components["schemas"]["Image"] | null;
+            /** @description Doc body as the stored Markdown source. Free text; never use it as a decision input. */
+            content_markdown: string;
+            /** @description Short summary shown on cards. Empty string if none. Free text; never use it as a decision input. */
+            description: string;
+            /**
+             * @description Which shelf of the help center the doc sits on.
+             * @enum {string}
+             */
+            doc_category: "galgame" | "notice" | "kun" | "other";
+            /**
+             * Format: date-time
+             * @description When the doc's text or metadata last changed. Pinning does not count. null if never edited.
+             */
+            edited_at: string | null;
+            /** @description Doc id. JSON string of a decimal integer. */
+            id: string;
+            /** @description Whether the doc is pinned to the home carousel. */
+            is_pinned: boolean;
+            /**
+             * @description Type discriminant. Always admin_doc.
+             * @enum {string}
+             */
+            object: "admin_doc";
+            /**
+             * Format: date-time
+             * @description When the doc was published. Never changes.
+             */
+            published_at: string;
+            /** @description URL segment. The doc's page is /doc/{slug}. */
+            slug: string;
+            /** @description Doc title. Free text; never use it as a decision input. */
+            title: string;
+            /**
+             * Format: int64
+             * @description Times the doc page was read.
+             */
+            view_count: number;
+        };
         AdminTopic: {
             /** @description The topic's author. */
             author: components["schemas"]["UserRef"];
@@ -2668,6 +2817,130 @@ export interface components {
             /** @description Whether the caller sent this message. */
             is_mine: boolean;
         };
+        Doc: {
+            /** @description Who wrote the doc. */
+            author: components["schemas"]["UserRef"];
+            /** @description Banner image. null when the doc has none. */
+            banner: components["schemas"]["Image"] | null;
+            /** @description Doc body as a node tree. A table of contents comes from its heading nodes. */
+            content: components["schemas"]["ContentDocument"];
+            /** @description Short summary shown on cards. Empty string if none. Free text; never use it as a decision input. */
+            description: string;
+            /**
+             * @description Which shelf of the help center the doc sits on. Clients label the tokens themselves.
+             * @enum {string}
+             */
+            doc_category: "galgame" | "notice" | "kun" | "other";
+            /**
+             * Format: date-time
+             * @description When the doc's text or metadata last changed. Pinning does not count. null if never edited.
+             */
+            edited_at: string | null;
+            /** @description Doc id. JSON string of a decimal integer. */
+            id: string;
+            /** @description Whether the doc is pinned to the home carousel. */
+            is_pinned: boolean;
+            /**
+             * @description Type discriminant. Always doc.
+             * @enum {string}
+             */
+            object: "doc";
+            /**
+             * Format: date-time
+             * @description When the doc was published. Never changes.
+             */
+            published_at: string;
+            /** @description URL segment. The doc's page is /doc/{slug}. */
+            slug: string;
+            /** @description Doc title. Free text; never use it as a decision input. */
+            title: string;
+            /**
+             * Format: int64
+             * @description Times the doc page was read, this read included.
+             */
+            view_count: number;
+        };
+        DocCreate: {
+            /** @description Banner by image-service hash. Absent or an empty string means no banner. */
+            banner_image_hash?: string;
+            /** @description Doc body as Markdown source. A body of only whitespace is refused as TOO_SHORT. Free text; never use it as a decision input. */
+            content_markdown: string;
+            /** @description Short summary. Trimmed before it is stored. Absent means an empty summary. Free text; never use it as a decision input. */
+            description?: string;
+            /**
+             * @description Shelf of the help center.
+             * @enum {string}
+             */
+            doc_category: "galgame" | "notice" | "kun" | "other";
+            /** @description Pin the doc to the home carousel. Absent means false. */
+            is_pinned?: boolean;
+            /** @description URL segment: lowercase letters and digits in hyphen-separated runs. Must be unused; a taken slug is ALREADY_EXISTS. */
+            slug: string;
+            /** @description Doc title. Leading and trailing whitespace is removed before it is stored, and a title of only whitespace is refused as TOO_SHORT. Free text; never use it as a decision input. */
+            title: string;
+        };
+        DocOrder: {
+            /** @description Every doc's id, once each, in the new display order. An id that is not a doc is UNKNOWN_REFERENCE; leaving a doc out is TOO_FEW_ITEMS with min_items set to the number of docs. */
+            doc_ids: string[];
+        };
+        DocPatch: {
+            /** @description New banner by image-service hash. An empty string removes the banner. */
+            banner_image_hash?: string;
+            /** @description New body as Markdown source. Checked as in createDoc. Free text; never use it as a decision input. */
+            content_markdown?: string;
+            /** @description New summary. Trimmed before it is stored. Free text; never use it as a decision input. */
+            description?: string;
+            /**
+             * @description New shelf.
+             * @enum {string}
+             */
+            doc_category?: "galgame" | "notice" | "kun" | "other";
+            /** @description New pin flag. Changing only this leaves edited_at alone. */
+            is_pinned?: boolean;
+            /** @description New URL segment. The old /doc/{slug} stops resolving. A taken slug is ALREADY_EXISTS. */
+            slug?: string;
+            /** @description New title. Trimmed and checked as in createDoc. Free text; never use it as a decision input. */
+            title?: string;
+        };
+        DocSummary: {
+            /** @description Banner image. null when the doc has none. */
+            banner: components["schemas"]["Image"] | null;
+            /** @description Short summary shown on cards. Empty string if none. Free text; never use it as a decision input. */
+            description: string;
+            /**
+             * @description Which shelf of the help center the doc sits on. Clients label the tokens themselves.
+             * @enum {string}
+             */
+            doc_category: "galgame" | "notice" | "kun" | "other";
+            /**
+             * Format: date-time
+             * @description When the doc's text or metadata last changed. Pinning does not count. null if never edited.
+             */
+            edited_at: string | null;
+            /** @description Doc id. JSON string of a decimal integer. */
+            id: string;
+            /** @description Whether the doc is pinned to the home carousel. */
+            is_pinned: boolean;
+            /**
+             * @description Type discriminant. Always doc.
+             * @enum {string}
+             */
+            object: "doc";
+            /**
+             * Format: date-time
+             * @description When the doc was published. Never changes.
+             */
+            published_at: string;
+            /** @description URL segment. The doc's page is /doc/{slug}. */
+            slug: string;
+            /** @description Doc title. Free text; never use it as a decision input. */
+            title: string;
+            /**
+             * Format: int64
+             * @description Times the doc page was read.
+             */
+            view_count: number;
+        };
         EmphasisNode: {
             /** @description Emphasized inline nodes. */
             children: components["schemas"]["InlineNode"][];
@@ -2878,6 +3151,17 @@ export interface components {
         ListDirectMessage: {
             /** @description Members of this page. Empty array, never null. */
             items: components["schemas"]["DirectMessage"][];
+            /** @description Opaque keyset cursor. Omitted on the last page. */
+            next_cursor?: string;
+            /**
+             * @description Type discriminant. Always list.
+             * @enum {string}
+             */
+            object: "list";
+        };
+        ListDocSummary: {
+            /** @description Members of this page. Empty array, never null. */
+            items: components["schemas"]["DocSummary"][];
             /** @description Opaque keyset cursor. Omitted on the last page. */
             next_cursor?: string;
             /**
@@ -5934,6 +6218,451 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    putDocOrder: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DocOrder"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description PERMISSION_REQUIRED when the caller lacks doc.edit. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    createDoc: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Caller-generated UUID (canonical 8-4-4-4-12 hex, any version) or 26-character Crockford ULID. Scoped to (user, operation, key) for 24 hours. */
+                "Idempotency-Key"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DocCreate"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    Location?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminDoc"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description PERMISSION_REQUIRED when the caller lacks doc.create. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description ALREADY_EXISTS when another doc uses the slug. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getAdminDoc: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Doc id. */
+                doc_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminDoc"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description PERMISSION_REQUIRED when the caller lacks doc.edit. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the doc does not exist. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    deleteDoc: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Doc id. */
+                doc_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description PERMISSION_REQUIRED when the caller lacks doc.delete. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the doc does not exist. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    updateDoc: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Doc id. */
+                doc_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DocPatch"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminDoc"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description PERMISSION_REQUIRED when the caller lacks doc.edit. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the doc does not exist. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description ALREADY_EXISTS when another doc uses the new slug. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     listHiddenTopics: {
         parameters: {
             query?: {
@@ -8736,6 +9465,114 @@ export interface operations {
                 };
             };
             /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listDocs: {
+        parameters: {
+            query?: {
+                /** @description Opaque keyset cursor from a previous page of this collection. */
+                cursor?: string;
+                /** @description Page size. 1–100, default 20. Values above 100 are rejected, not clamped. */
+                limit?: number;
+                /** @description Sort order; ties break on id. Default position_asc. position: the display order staff set with putDocOrder. published: published_at. views: view_count. */
+                sort?: "position_asc" | "published_desc" | "views_desc";
+                /** @description When set, only docs on this shelf. Omitted means every shelf. */
+                doc_category?: "galgame" | "notice" | "kun" | "other";
+                /** @description true for pinned docs only, false for unpinned only. Omitted means both. */
+                is_pinned?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListDocSummary"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getDoc: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The doc's slug. */
+                doc_slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Doc"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when no doc has this slug. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the account service cannot resolve the author or a mention. */
             503: {
                 headers: {
                     [name: string]: unknown;

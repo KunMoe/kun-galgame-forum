@@ -1,40 +1,21 @@
 <script setup lang="ts">
 const route = useRoute()
 
-const { data: articleResponse } = await useKunFetch<DocArticleListResponse>(
-  '/doc/article',
-  {
-    query: {
-      page: 1,
-      limit: 100,
-      order_by: 'publishedTime',
-      sort_order: 'desc'
-    }
-  }
+const { docs } = await useAllDocs('published_desc')
+
+const currentIndex = computed(() =>
+  docs.value.findIndex((doc) => `/doc/${doc.slug}` === route.path)
 )
 
-const articles = computed(() => articleResponse.value?.items || [])
+const prev = computed(() =>
+  currentIndex.value > 0 ? docs.value[currentIndex.value - 1] : null
+)
 
-const currentIndex = computed(() => {
-  return articles.value.findIndex((article) => article.path === route.path)
-})
-
-const prev = computed(() => {
-  if (currentIndex.value > 0) {
-    return articles.value[currentIndex.value - 1]
-  }
-  return null
-})
-
-const next = computed(() => {
-  if (
-    currentIndex.value !== -1 &&
-    currentIndex.value < articles.value.length - 1
-  ) {
-    return articles.value[currentIndex.value + 1]
-  }
-  return null
-})
+const next = computed(() =>
+  currentIndex.value !== -1 && currentIndex.value < docs.value.length - 1
+    ? docs.value[currentIndex.value + 1]
+    : null
+)
 </script>
 
 <template>
@@ -44,7 +25,7 @@ const next = computed(() => {
       v-if="prev"
       color="default"
       variant="light"
-      :href="prev.path"
+      :href="`/doc/${prev.slug}`"
     >
       <KunIcon name="lucide:chevron-left" />
       {{ prev.title }}
@@ -54,7 +35,7 @@ const next = computed(() => {
       color="default"
       v-if="next"
       variant="light"
-      :href="next.path"
+      :href="`/doc/${next.slug}`"
     >
       {{ next.title }}
       <KunIcon name="lucide:chevron-right" />

@@ -1,20 +1,7 @@
 <script setup lang="ts">
-import {
-  KUN_DOC_CATEGORY_COLOR_MAP,
-  KUN_DOC_CATEGORY_MAP
-} from '~/constants/doc'
+import { KUN_DOC_CATEGORY_MAP } from '~/constants/doc'
 
-const { data: articleResponse } = await useKunFetch<DocArticleListResponse>(
-  '/doc/article',
-  {
-    query: {
-      page: 1,
-      limit: 24
-    }
-  }
-)
-
-const articles = computed(() => articleResponse.value?.items || [])
+const { docs: articles } = await useAllDocs('position_asc')
 </script>
 
 <template>
@@ -32,19 +19,16 @@ const articles = computed(() => articleResponse.value?.items || [])
         :is-transparent="false"
         v-for="post in articles"
         :key="post.id"
-        :href="post.path"
+        :href="`/doc/${post.slug}`"
         content-class="space-y-3"
       >
         <div class="flex items-center gap-3 text-sm">
           <KunChip color="default">
-            {{ post.category?.title || `分类 #${post.category_id}` }}
+            {{ KUN_DOC_CATEGORY_MAP[post.doc_category] }}
           </KunChip>
 
-          <time
-            :datetime="post.published_time?.toString()"
-            class="text-default-500"
-          >
-            <KunTime :time="post.published_time" type="date" show-year />
+          <time :datetime="post.published_at" class="text-default-500">
+            <KunTime :time="post.published_at" type="date" show-year />
           </time>
         </div>
 
@@ -52,7 +36,7 @@ const articles = computed(() => articleResponse.value?.items || [])
           <img
             :alt="post.title"
             class="rounded-lg"
-            :src="post.banner_url || '/kungalgame.webp'"
+            :src="post.banner?.url || '/kungalgame.webp'"
             width="100%"
             height="100%"
           />

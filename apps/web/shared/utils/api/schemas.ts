@@ -134,3 +134,13 @@ export type WebsitePatch = components['schemas']['WebsitePatch']
 export type WebsiteCategoryCreate = components['schemas']['CategoryCreate']
 export type WebsiteTagCreate = components['schemas']['TagCreate']
 export type WebsiteTagGroupCreate = components['schemas']['TagGroupCreate']
+
+export type DocSummary = components['schemas']['DocSummary']
+export type Doc = components['schemas']['Doc']
+export type AdminDoc = components['schemas']['AdminDoc']
+export type DocCreate = components['schemas']['DocCreate']
+export type DocPatch = components['schemas']['DocPatch']
+export type DocCategory = DocSummary['doc_category']
+export type DocSort = NonNullable<
+  NonNullable<operations['listDocs']['parameters']['query']>['sort']
+>

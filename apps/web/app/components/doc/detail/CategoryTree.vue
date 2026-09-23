@@ -1,52 +1,28 @@
 <script setup lang="ts">
+import type { DocCategory, DocSummary } from '#shared/utils/api/schemas'
+import { KUN_DOC_CATEGORIES, KUN_DOC_CATEGORY_MAP } from '~/constants/doc'
+
 const route = useRoute()
 
-const [{ data: categoryResponse }, { data: articleResponse }] =
-  await Promise.all([
-    useKunFetch<DocCategoryListResponse>('/doc/category', {
-      query: { page: 1, limit: 100 }
-    }),
-    useKunFetch<DocArticleListResponse>('/doc/article', {
-      query: {
-        page: 1,
-        limit: 100,
-        order_by: 'publishedTime',
-        sort_order: 'desc'
-      }
-    })
-  ])
+const { docs } = await useAllDocs('published_desc')
 
-const expandedCategories = ref<Record<number, boolean>>({})
+const expandedCategories = ref<Record<DocCategory, boolean>>({
+  galgame: true,
+  notice: true,
+  kun: true,
+  other: true
+})
 
-const categories = computed(() => categoryResponse.value?.items || [])
-const articles = computed(() => articleResponse.value?.items || [])
-
-watch(
-  categories,
-  (list) => {
-    list.forEach((category) => {
-      if (typeof expandedCategories.value[category.id] === 'undefined') {
-        expandedCategories.value[category.id] = true
-      }
-    })
-  },
-  { immediate: true }
-)
-
-const articlesByCategory = computed<Record<number, DocArticleSummary[]>>(() => {
-  const grouped: Record<number, DocArticleSummary[]> = {}
-  articles.value.forEach((article) => {
-    const categoryId = article.category.id
-    if (!grouped[categoryId]) {
-      grouped[categoryId] = []
-    }
-    grouped[categoryId]!.push(article)
-  })
+const docsByCategory = computed(() => {
+  const grouped: Partial<Record<DocCategory, DocSummary[]>> = {}
+  for (const doc of docs.value) {
+    ;(grouped[doc.doc_category] ??= []).push(doc)
+  }
   return grouped
 })
 
-const toggleCategory = (categoryId: number) => {
-  expandedCategories.value[categoryId] = !expandedCategories.value[categoryId]
+const toggleCategory = (category: DocCategory) => {
+  expandedCategories.value[category] = !expandedCategories.value[category]
 }
 </script>
 
@@ -54,40 +30,48 @@ const toggleCategory = (categoryId: number) => {
   <div class="fixed hidden shrink-0 space-y-1 lg:w-64 xl:block">
     <h3 class="p-3 text-xl font-semibold">文档索引</h3>
     <div class="scrollbar-hide max-h-[calc(100dvh-10rem)] overflow-y-auto">
-      <div class="space-y-1" v-for="category in categories" :key="category.id">
+      <div
+        class="space-y-1"
+        v-for="category in KUN_DOC_CATEGORIES"
+        :key="category"
+      >
         <KunButton
           :full-width="true"
           variant="light"
           size="lg"
-          @click="toggleCategory(category.id)"
+          @click="toggleCategory(category)"
           class-name="justify-between mb-2"
         >
           <span class="text-foreground">
-            {{ category.title }}
+            {{ KUN_DOC_CATEGORY_MAP[category] }}
           </span>
           <KunIcon
             :name="
-              expandedCategories[category.id]
+              expandedCategories[category]
                 ? 'lucide:chevron-down'
                 : 'lucide:chevron-right'
             "
           />
         </KunButton>
 
-        <div v-if="expandedCategories[category.id]" class="ml-4 space-y-1">
+        <div v-if="expandedCategories[category]" class="ml-4 space-y-1">
           <KunButton
             :full-width="true"
-            :variant="route.fullPath === article.path ? 'flat' : 'light'"
-            v-for="article in articlesByCategory[category.id] || []"
+            :variant="
+              route.fullPath === `/doc/${article.slug}` ? 'flat' : 'light'
+            "
+            v-for="article in docsByCategory[category] || []"
             :key="article.id"
-            :href="article.path"
+            :href="`/doc/${article.slug}`"
             class-name="justify-start text-start"
           >
             <span
               :class="
                 cn(
                   'gap-2',
-                  route.fullPath === article.path ? '' : 'text-foreground'
+                  route.fullPath === `/doc/${article.slug}`
+                    ? ''
+                    : 'text-foreground'
                 )
               "
             >

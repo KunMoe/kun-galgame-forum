@@ -1,21 +1,23 @@
-import type { KunUIColor, KunUISize } from '@kungal/ui-core'
+import type { KunUIColor } from '@kungal/ui-core'
+import type { DocCategory } from '#shared/utils/api/schemas'
 
-export const KUN_DOC_CATEGORY_MAP: Record<string, string> = {
+export const KUN_DOC_CATEGORIES: DocCategory[] = [
+  'galgame',
+  'notice',
+  'kun',
+  'other'
+]
+
+export const KUN_DOC_CATEGORY_MAP: Record<DocCategory, string> = {
   galgame: 'Galgame',
-  kun: '关于鲲',
   notice: '网站公告',
+  kun: '关于鲲',
   other: '其它'
 }
 
-export const KUN_DOC_CATEGORY_COLOR_MAP: Record<string, KunUIColor> = {
+export const KUN_DOC_CATEGORY_COLOR_MAP: Record<DocCategory, KunUIColor> = {
   galgame: 'success',
-  kun: 'secondary',
   notice: 'primary',
+  kun: 'secondary',
   other: 'default'
 }
-
-export const KUN_DOC_STATUS_OPTIONS = [
-  { value: 0, label: '草稿' },
-  { value: 1, label: '已发布' },
-  { value: 2, label: '隐藏' }
-]

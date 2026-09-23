@@ -1,17 +1,13 @@
 <script setup lang="ts">
 import { useMouseInElement } from '@vueuse/core'
 
-const { data: pinnedResponse } = await useKunFetch<DocArticleListResponse>(
-  '/doc/article',
-  {
-    query: {
-      page: 1,
-      limit: 10,
-      is_pin: true,
-      order_by: 'view',
-      sort_order: 'desc'
-    }
-  }
+const { data: pinnedResponse } = await useApi(
+  'docs:pinned-carousel',
+  (api, { signal }) =>
+    api.GET('/docs', {
+      params: { query: { is_pinned: true, sort: 'views_desc', limit: 10 } },
+      signal
+    })
 )
 
 const pinnedPosts = computed(() => pinnedResponse.value?.items || [])
@@ -136,12 +132,12 @@ onBeforeUnmount(() => stopAutoplay())
         >
           <div
             v-for="(post, index) in pinnedPosts"
-            :key="post.path"
+            :key="post.id"
             class="w-full flex-shrink-0"
           >
             <div class="relative h-40 w-full select-none">
               <KunImageNative
-                :src="post.banner_url || '/kungalgame.webp'"
+                :src="post.banner?.url || '/kungalgame.webp'"
                 :alt="post.title"
                 :loading="index === 0 ? 'eager' : 'lazy'"
                 :fetchpriority="index === 0 ? 'high' : undefined"
@@ -153,7 +149,7 @@ onBeforeUnmount(() => stopAutoplay())
                 <KunLink
                   underline="none"
                   class-name="text-foreground hover:text-primary text-base font-bold transition-colors"
-                  :to="post.path"
+                  :to="`/doc/${post.slug}`"
                 >
                   <h2 class="line-clamp-1">{{ post.title }}</h2>
                 </KunLink>
