@@ -28,7 +28,7 @@
 | `link` 形状 | 全部落在 7 个前缀：`/galgame/N`（29.8 万）、`/topic/N[?reply=N\|?comment=N]`、`/galgame-quiz/N`、`/galgame/resource/N`、`/toolset/N`、`/website/<域名>`、`/galgame-rating/N`；无空、无截断 | v1 下发 `path`（§3.1、K-M3） |
 | `content` | 206 条空；7,140 条含 `<`（绝大多数是 Markdown 自动链接 `<https://…>`，535 条 `<br>`）；2,454 条含图片 token；1,250 条超过 233 字 | 这是 **Markdown 片段快照**，不是正文，也不是纯文本（K-M2） |
 | `chat_room` | 1,926 个，全是 `private`；**419 个没有任何消息**（旧 GET 的副作用造的） | v1 读面不建房（§4 C2）；空房不清理（§8） |
-| `chat_message` | 9,950 条；447 条已撤回；461 条含图片；最长 901 字；`edit_time` 非空 0 条 | 撤回的**正文仍在库里**（§4 C5）；没有编辑 |
+| `chat_message` | 9,950 条；447 条已撤回；461 条含图片；最长 901 字；`edit_time` 非空 0 条 | 撤回的**正文仍在库里**（§4 C5；2026-09-23 改为擦除，§13）；没有编辑 |
 | `chatroom_name` ≠ 所属房间名 | 5,367 条，但能被旧 `OR` 子句拉进别的房间的 **0 条** | v1 只按 `chat_room_id` 查；不修数据 |
 | `chat_room.last_message_content` 里的「xxx撤回了一条消息」 | 27 行 | v1 不读这一列（§4 C4） |
 | `chat_room_admin` / `chat_message_reaction` | 0 / 0 | 死表，本轨不碰（§8） |
@@ -142,6 +142,7 @@
 - 消息不在这个会话里（不存在、或属于别的房间）→ `404`。
 - 消息是对方发的 → `403 PERMISSION_REQUIRED`（它在调用者的会话里、调用者看得见它，所以不是 404）。
 - 已经撤回 → **200，无副作用**（重放安全，同 W5b §5.5 第 3 条的教训）。
+- 撤回在同一条 `UPDATE` 里把 `chat_message.content` 置为 `''`：库里不再留正文（§13）。`is_recall`、`recall_time` 与行本身保留，墓碑照旧。
 - 成功 → 200 + 更新后的 `DirectMessage`（`state: "recalled"`、`content: null`、`recalled_at` 非空）。
 - **不再**往 `chat_room.last_message_content` 写「xxx撤回了一条消息」（§4 C4、01 §7）。撤回的若是房间最后一条，`last_message_content` 置为 `''`。
 - 没有撤回时限：沿用现状，写进描述。
@@ -268,7 +269,7 @@
 | **C2** §2.9 GET 建房 + 写已读（S2） | C2/C3 纯读；已读走 C6；建房只在 C4 |
 | **C3** §2.9 建房竞态 500 | `ON CONFLICT (name) DO NOTHING` 再查回 |
 | **C4** §2.11 中文句子持久化进 `last_message_content`（S3、01 §7） | v1 读面从 `chat_message` 取最后一条，不读那一列；撤回不再写句子 |
-| **C5** 撤回后正文仍在库里（本轨实测：447 条） | v1 对 `recalled` 恒下发 `content: null`。**不擦库**：撤回的正文还是举报与处置的证据，是否物理擦除不是 API 层的决定（§8） |
+| **C5** 撤回后正文仍在库里（本轨实测：447 条） | v1 对 `recalled` 下发空文档。~~不擦库~~ **2026-09-23 改为擦库**：撤回即擦正文，迁移 131 擦掉历史行（§13） |
 | §2.9 `OR chatroom_name = ?`（S4） | 只按 `chat_room_id` |
 | §2.9 `read_by` 恒空、`edit_time` 恒空 | 不下发 |
 | §2.9 私信不过 `IsRenderable`（S3） | 对方不可渲染：C1 不列、C2/C3/C4/C6 回 404 |
@@ -308,7 +309,6 @@
 - `chat_room.last_message_content` / `last_message_sender_name` 的 drop（C4 仍写它们以防回滚，下一轮清理）。
 - 419 个空房间的清理（v1 读面已经看不见它们）。
 - `chat_room_admin` / `chat_message_reaction` 两张死表。
-- 撤回正文的物理擦除（需要产品决定：举报证据 vs 隐私）。
 - 通知写入方的六种去重写法与 4,593 组重复（写方分散在话题、galgame 各轨）。
 - `purge_repo.go` 按作者删 `system_message`（表是空的，无害）。
 - 私信的拉黑 / 频率限制（没有产品需求记录）。
@@ -381,3 +381,24 @@ CREATE INDEX IF NOT EXISTS idx_chat_room_participant_user ON chat_room_participa
 ## 12. 九条闸
 
 照 [05-session-sop.md](../05-session-sop.md) §5。本轨的临时库：`kungal_test_m_message`。
+
+## 13. 撤回擦除正文（2026-09-23 追加）
+
+§4 C5 当时的理由是「撤回的正文是举报与处置的证据」。这个理由背后没有流程：trust 没有私信这个举报类型，版主也从来看不到私信。撤回的意思就是发送者要它消失。用户 2026-09-23 裁决：**撤回的私信不留正文。**
+
+- **C5**：撤回的 `UPDATE` 同时写 `content = ''`，与 `is_recall`、`recall_time` 同一条语句。已撤回的重放仍是 200、不写库（§2.9）。响应形状不变：撤回的消息本来就下发空文档（§11.5 第 3 条）。
+- **迁移 131 `chat_message_recall_wipe`**：`UPDATE chat_message SET content = '' WHERE is_recall AND content <> ''`。生产 447 行，全部有正文，其中 26 行含图片 token。再跑一遍不动任何行。down 无可恢复，`SELECT 1`。
+- **不动的**：`chat_room.last_message_content` 里没有撤回的正文。生产实测 27 行是旧路由写的「xxx撤回了一条消息」；1 行和某条撤回消息同文，是因为同一段话后来又发了一次、没撤回，那是活消息的正文。
+- **图片**：被擦的正文里的图片 token 不再被引用探测（`cron/reference_ping.go` 扫全部文本列）看到，这些图按图床 TTL 自然过期。这是想要的结果。
+- 错误码、操作数、`legacy_route_baseline` 都不变。
+
+### 13.1 变异题
+
+| # | 改动 | 必须变红的断言 |
+|---|---|---|
+| R1 | C5 的 `UPDATE` 不写 `content` | 撤回后库里那一行 `content = ''` |
+| R2 | C5 擦正文的范围按房间而不按消息（`WHERE chat_room_id = ?`） | 同房间其他消息的正文不变 |
+| R3 | C5 去掉「已撤回则不写」的判断 | 重放撤回后那一行的 `xmin` 与 `recall_time` 都不变 |
+| R4 | 迁移 131 去掉 `is_recall` 条件 | 没撤回的消息正文不变 |
+| R5 | 迁移 131 改成删行 | 撤回的行仍在，`is_recall` 仍为真、`recall_time` 不变 |
+| R6 | 迁移 131 去掉 `content <> ''` 条件 | 第二次执行后所有行的 `xmin` 不变 |
