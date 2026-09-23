@@ -160,6 +160,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/overview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the site totals
+         * @description How much of each kind of content the site holds right now. It needs the admin.dashboard permission, which a Bearer request never carries.
+         */
+        get: operations["getAdminOverview"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/overview/daily": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List new content per day
+         * @description One bucket per Asia/Shanghai calendar day: today and the days − 1 days before it, oldest first. Every day is present, with zero counts when nothing was created. Today's bucket counts up to the moment of the request. It needs the admin.dashboard permission, which a Bearer request never carries.
+         */
+        get: operations["listAdminOverviewDays"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/permission-changes": {
         parameters: {
             query?: never;
@@ -3221,6 +3261,58 @@ export interface components {
              */
             view_count: number;
         };
+        AdminOverview: {
+            /**
+             * Format: int64
+             * @description Direct messages.
+             */
+            direct_message_count: number;
+            /**
+             * Format: int64
+             * @description Posts on galgame comment walls, as this forum mirrors them; hidden posts are not counted.
+             */
+            galgame_comment_count: number;
+            /**
+             * Format: int64
+             * @description Published galgames: the same predicate as the browse list. Unpublished local rows are not counted.
+             */
+            galgame_count: number;
+            /**
+             * Format: int64
+             * @description Galgame resources.
+             */
+            galgame_resource_count: number;
+            /**
+             * @description Type discriminant. Always admin_overview.
+             * @enum {string}
+             */
+            object: "admin_overview";
+            /**
+             * Format: int64
+             * @description Topic replies, hidden ones included.
+             */
+            reply_count: number;
+            /**
+             * Format: int64
+             * @description Comments on topic replies.
+             */
+            topic_comment_count: number;
+            /**
+             * Format: int64
+             * @description Topics, hidden ones included.
+             */
+            topic_count: number;
+            /**
+             * Format: int64
+             * @description Posts on website comment walls, as this forum mirrors them; hidden posts are not counted.
+             */
+            website_comment_count: number;
+            /**
+             * Format: int64
+             * @description Website directory entries.
+             */
+            website_count: number;
+        };
         AdminTopic: {
             /** @description The topic's author. */
             author: components["schemas"]["UserRef"];
@@ -4872,6 +4964,17 @@ export interface components {
              */
             object: "list";
         };
+        ListOverviewDay: {
+            /** @description Members of this page. Empty array, never null. */
+            items: components["schemas"]["OverviewDay"][];
+            /** @description Opaque keyset cursor. Omitted on the last page. */
+            next_cursor?: string;
+            /**
+             * @description Type discriminant. Always list.
+             * @enum {string}
+             */
+            object: "list";
+        };
         ListPoll: {
             /** @description Members of this page. Empty array, never null. */
             items: components["schemas"]["Poll"][];
@@ -5795,6 +5898,63 @@ export interface components {
              * @enum {string}
              */
             object: "nsfw_display";
+        };
+        OverviewDay: {
+            /**
+             * Format: date
+             * @description The Asia/Shanghai calendar day this bucket counts.
+             */
+            bucket_date: string;
+            /**
+             * Format: int64
+             * @description Direct messages.
+             */
+            direct_message_count: number;
+            /**
+             * Format: int64
+             * @description Posts on galgame comment walls, as this forum mirrors them; hidden posts are not counted.
+             */
+            galgame_comment_count: number;
+            /**
+             * Format: int64
+             * @description Published galgames: the same predicate as the browse list. Unpublished local rows are not counted.
+             */
+            galgame_count: number;
+            /**
+             * Format: int64
+             * @description Galgame resources.
+             */
+            galgame_resource_count: number;
+            /**
+             * @description Type discriminant. Always overview_day.
+             * @enum {string}
+             */
+            object: "overview_day";
+            /**
+             * Format: int64
+             * @description Topic replies, hidden ones included.
+             */
+            reply_count: number;
+            /**
+             * Format: int64
+             * @description Comments on topic replies.
+             */
+            topic_comment_count: number;
+            /**
+             * Format: int64
+             * @description Topics, hidden ones included.
+             */
+            topic_count: number;
+            /**
+             * Format: int64
+             * @description Posts on website comment walls, as this forum mirrors them; hidden posts are not counted.
+             */
+            website_comment_count: number;
+            /**
+             * Format: int64
+             * @description Website directory entries.
+             */
+            website_count: number;
         };
         PageListCharacterRef: {
             /** @description Members of this page. Empty array, never null. */
@@ -9905,6 +10065,130 @@ export interface operations {
                 };
             };
             /** @description PERMISSION_REQUIRED when the caller lacks topic.view_hidden. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getAdminOverview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminOverview"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description PERMISSION_REQUIRED when the caller lacks admin.dashboard. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listAdminOverviewDays: {
+        parameters: {
+            query?: {
+                /** @description How many Asia/Shanghai calendar days to return, today included. 1–365, default 30. */
+                days?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListOverviewDay"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description PERMISSION_REQUIRED when the caller lacks admin.dashboard. */
             403: {
                 headers: {
                     [name: string]: unknown;

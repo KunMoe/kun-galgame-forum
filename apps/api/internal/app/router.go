@@ -12,6 +12,7 @@ import (
 	messageapiv1 "kun-galgame-api/internal/message/apiv1"
 	"kun-galgame-api/internal/middleware"
 	newsapiv1 "kun-galgame-api/internal/news/apiv1"
+	overviewapiv1 "kun-galgame-api/internal/overview/apiv1"
 	permissionapiv1 "kun-galgame-api/internal/permission/apiv1"
 	sectionapiv1 "kun-galgame-api/internal/section/apiv1"
 	toolsetapiv1 "kun-galgame-api/internal/toolset/apiv1"
@@ -63,6 +64,7 @@ func (a *App) setupRoutes() {
 		docapiv1.Register(a.newDocV1()),
 		friendlinkapiv1.Register(a.newFriendLinkV1()),
 		appreleaseapiv1.Register(a.newAppReleaseV1()),
+		overviewapiv1.Register(a.OverviewV1),
 		sectionapiv1.Register(a.newSectionV1()),
 		authapiv1.Register(a.newAuthV1()),
 		newsapiv1.Register(a.NewsV1),
@@ -239,8 +241,6 @@ func (a *App) setupRoutes() {
 	// deciding which page opens; infra re-checks and owns the outcome. Never
 	// tighten one into a second answer that can disagree with the engine.
 	admin := authed.Group("")
-	admin.Get("/admin/overview/all", middleware.RequirePermission(perm.AdminDashboard), a.AdminOverviewHandler.GetOverview)
-	admin.Get("/admin/overview/stats", middleware.RequirePermission(perm.AdminDashboard), a.AdminOverviewHandler.GetStats)
 
 	admin.Get("/admin/user/:id/content-stats", middleware.RequirePermission(perm.UserPurgeContent), a.AdminPurgeHandler.GetUserContentStats)
 	admin.Delete("/admin/user/:id/content", middleware.RequirePermission(perm.UserPurgeContent), a.AdminPurgeHandler.PurgeUserContent)

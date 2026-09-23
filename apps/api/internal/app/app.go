@@ -38,6 +38,7 @@ import (
 	"kun-galgame-api/internal/middleware"
 	"kun-galgame-api/internal/moemoepoint"
 	newsapiv1 "kun-galgame-api/internal/news/apiv1"
+	overviewapiv1 "kun-galgame-api/internal/overview/apiv1"
 	rankingHandler "kun-galgame-api/internal/ranking/handler"
 	rankingRepo "kun-galgame-api/internal/ranking/repository"
 	rankingService "kun-galgame-api/internal/ranking/service"
@@ -104,13 +105,13 @@ type App struct {
 	GalgameV1       *galgameapiv1.Service
 	GalgameEntityV1 *galgameentityv1.Service
 	WallV1          *wallapiv1.Service
+	OverviewV1      *overviewapiv1.Service
 	TrustV1         *trustapiv1.Service
 
 	OAuthHandler              *handler.OAuthHandler
 	UserHandler               *handler.UserHandler
 	HomeHandler               *homeHandler.HomeHandler
 	LotteryService            *topicService.LotteryService
-	AdminOverviewHandler      *adminHandler.OverviewHandler
 	AdminPurgeHandler         *adminHandler.PurgeHandler
 	RankingHandler            *rankingHandler.RankingHandler
 	TrustHandler              *trustHandler.TrustHandler
@@ -441,7 +442,6 @@ func New(cfg *config.Config) *App {
 	galgameMergeSync := galgameService.NewGalgameMergeSync(gc, galgameMergeRepo, rdb)
 
 	adminOverviewRepo := adminRepo.NewOverviewRepository(db)
-	adminOverviewSvc := adminService.NewOverviewService(adminOverviewRepo)
 	adminPurgeSvc := adminService.NewPurgeService(adminRepo.NewPurgeRepository(db), uc, communityCli, catalogCli)
 	adminRolePermRepo := adminRepo.NewRolePermissionRepository(db)
 	adminUserPermRepo := adminRepo.NewUserPermissionRepository(db)
@@ -522,7 +522,7 @@ func New(cfg *config.Config) *App {
 		UserHandler:               handler.NewUserHandler(userService, userContentService),
 		HomeHandler:               homeHandler.NewHomeHandler(homeService.NewHomeService(homeRepo.NewHomeRepository(db), gc, uc, rdb)),
 		LotteryService:            lotterySvc,
-		AdminOverviewHandler:      adminHandler.NewOverviewHandler(adminOverviewSvc),
+		OverviewV1:                overviewapiv1.New(adminOverviewRepo, nil),
 		AdminPurgeHandler:         adminHandler.NewPurgeHandler(adminPurgeSvc),
 		RankingHandler:            rankingHandler.NewRankingHandler(rankingService.NewRankingService(rankingRepo.NewRankingRepository(db), gc, uc)),
 		TrustHandler:              trustHandler.NewTrustHandler(trustEnforce, cfg.Trust.CallbackSecret),

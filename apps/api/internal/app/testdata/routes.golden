@@ -41,8 +41,6 @@ GET    /api/activity                                  cors.New → middleware.Na
 GET    /api/activity/tab                              cors.New → middleware.NamePreference → ContentStance → ActivityHandler.GetTab
 GET    /api/activity/timeline                         cors.New → middleware.NamePreference → ContentStance → ActivityHandler.GetTimeline
 GET    /api/admin/galgame/submissions                 cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → RequirePermission → ClaimReviewHandler.PendingQueue
-GET    /api/admin/overview/all                        cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → RequirePermission → OverviewHandler.GetOverview
-GET    /api/admin/overview/stats                      cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → RequirePermission → OverviewHandler.GetStats
 GET    /api/admin/user/:id/content-stats              cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → RequirePermission → PurgeHandler.GetUserContentStats
 GET    /api/galgame                                   cors.New → middleware.NamePreference → ContentStance → GalgameHandler.GetList
 GET    /api/galgame-edit/mine                         cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → EditHandler.Mine
@@ -103,6 +101,8 @@ GET    /api/user/:id/topics                           cors.New → middleware.Na
 GET    /api/v1/admin/docs/:doc_id                     cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/admin/friend-links/:friend_link_id     cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/admin/hidden-topics                    cors.New → v1Headers → fiberAdapter.Handle
+GET    /api/v1/admin/overview                         cors.New → v1Headers → fiberAdapter.Handle
+GET    /api/v1/admin/overview/daily                   cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/admin/permission-changes               cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/admin/review-items                     cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/admin/review-items/:review_item_id     cors.New → v1Headers → fiberAdapter.Handle
