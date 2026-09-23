@@ -18,6 +18,17 @@
 
 G1 的 16 条加 G3 的 11 条就是 resources + toolsets 普查的 27 条。
 
+### 逐段路由清单（2026-09-23 从 master 的 `routes.golden` 核过，G1 之后 G 余 73 条）
+
+- **G2**（13）：`/galgame-quiz` 的 12 条（`GET all`、`GET :id`、`GET :id/answers`、`GET :id/edit`、`GET mine/answered`、`GET mine/favorites`、`POST`、`PUT :id`、`DELETE :id`、`POST :id/answer`、`PUT :id/favorite`、`PUT :id/quality`）＋ `GET /galgame/search/picker`
+- **G3**（12）：`POST` / `PUT` / `DELETE /galgame/:id/resource`、`GET /galgame/:id/resource/all`、`PUT /galgame/:id/resource/{expired,valid,like}`、`GET /galgame-resource`、`GET /galgame-resource/:id`、`GET /galgame-resource/:id/detail`、`PUT /admin/galgame/:id/resource-publish-ban`，外加 `GET /search`（#211 之后只剩 `type=resource`，由 G3 的资源集合接住）
+- **G4**（6）：`GET /galgame/:id`、`DELETE /galgame/:id`、`PUT /galgame/:id/like`、`GET /galgame/:id/link/all`、`GET /galgame/interactions/mine`、`GET /galgame/drafts`（删，无替代）
+- **G5**（10）：`GET /galgame`、`GET /galgame/calendar`、`GET /galgame/calendar/{pending,tba,today,upcoming}`、`GET /galgame/collected-calendar`、`GET /rss/galgame`，外加 `GET /search/entity` 与 `GET /search/entity/resolve`（#211 留下；站内搜索的实体 tab 与筛选栏的实体 chip，形状用 GE 的实体摘要）
+- **G6**（11）：`PUT` / `DELETE /galgame/:id/cover/:coverId/vote`、`PUT /galgame/:id/playtime`、`GET /galgame/playtime/mine`、`POST /galgame/collection`、`GET` / `PATCH` / `DELETE /galgame/collection/:cid`、`PUT /galgame/:id/collections`、`GET /galgame/:id/collections/mine`、`GET /user/:id/collections`
+- **G7**（21）：`POST /galgame/submit`、`GET /galgame/search/wizard`、`GET /galgame/mine`、`GET /galgame/audited`、`POST /galgame/:id/resubmit`、`DELETE /galgame/:id/draft`、`GET /galgame/:id/edit/{bootstrap,diff,revisions}`、`GET` / `POST /galgame/:id/edit/proposals`、`POST /galgame/:id/edit/revert`、`GET /galgame-edit/{mine,queue}`、`GET /galgame-edit/proposals/:id`、`POST /galgame-edit/proposals/:id/{amend,decline,merge,withdraw}`、`GET /admin/galgame/submissions`、`POST /admin/galgame/:id/review`
+
+不归 G：`GET /user/:id/galgames` 与 `GET /user/:id/galgame-comments`（U3b）；`POST /image/galgame`（X1d #216，四条 `/image` 一起删）；`GET /ranking/galgame`（#213）；`/galgame-rating*`（GR）。
+
 ## 跨轨约定（已与各轨对齐）
 
 - **`object: "work"` 的三种形状**，重叠字段同名同型（G8）：
