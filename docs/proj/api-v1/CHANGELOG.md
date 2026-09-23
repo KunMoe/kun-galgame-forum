@@ -1,5 +1,18 @@
 # API v1 changelog
 
+## 2026-09-23 (X2 wall follows and read receipts)
+
+Offered:
+
+- `GET /api/v1/me/walls` — the comment walls the caller follows (cursor; a page can be short while `next_cursor` is present). Items are `followed_wall` with `subject_type`, `subject_id`, and a `work` (galgame walls) or `website` (website walls) reference
+- `GET /api/v1/me/walls/{subject_type}/{subject_id}` — the caller's `wall_state` (`is_following`); reading marks nothing
+- `PUT` / `DELETE /api/v1/me/walls/{subject_type}/{subject_id}/follow` — follow / unfollow; unfollowing keeps replies and mentions notifying
+- `PUT /api/v1/me/walls/{subject_type}/{subject_id}/read-marker` — marks the wall read (only for a wall the caller wrote on or follows) and returns the state
+
+Walls are addressed by the same `subject_type` vocabulary as `/wall-comments`. A missing page is `404`, an unanswered spoiler quiz `403 QUIZ_ANSWER_REQUIRED`, an upstream failure `503`.
+
+Retired: `POST /api/community/wall/read`, `POST /api/community/wall/follow`, `GET /api/community/following`.
+
 ## 2026-09-23 (G0 galgame id is the catalog work id)
 
 Breaking for the one v1 galgame face.

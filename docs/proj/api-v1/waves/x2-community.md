@@ -117,3 +117,18 @@ TS 波次文档补一行：生产 64 条停在 `received` 的举报已由 infra 
 | 8 | 列表游标不绑定调用者 | A 的游标给 B 用 → `400 INVALID_CURSOR` |
 | 9 | 上游失败回假状态 | 假上游 502 → `503 SERVICE_UNAVAILABLE`（单墙 GET 与回执都是） |
 | 10 | galgame 墙的 `work` 不填 | 列表里 galgame 墙的 `work.id` 等于主体 id、`work.display_name` 是 catalog 的名字 |
+
+## 8. 实现时对本契约的修正（2026-09-23，只增不改）
+
+1. **`limit` 取 1–100、默认 20**（全轨统一的 `collect.Page`），上游一次最多要 50 条；一页本来就可能比 `limit` 短（过滤掉 normal 行与认不出的锚点），末页只看 `next_cursor` 是否缺席。
+2. **网站墙也带引用**：`FollowedWall.website`（WS 轨已有的 `WebsiteSummary`，含 `host`）。网站页按域名寻址，只有 `subject_id` 客户端拼不出链接；顺带列表里显示的是站点名而不是「网站」两个字。为此 WS 的服务加了一个导出方法 `SummariesByIDs`。
+3. 描述文字不点名 `QUIZ_ANSWER_REQUIRED` 于 404 的说明里（G4 按状态码核对点名的码）。
+4. 网页端名字渲染用 `utils/catalogName.ts`（与 X2-ranking 逐字节相同，谁先合并都干净）和包了一层原名偏好的 `useWorkName`。
+
+## 9. 验收记录
+
+**闸**：`make lint` 零输出；`KUN_REQUIRE_TEST_DB=1 go test -count=1 -p 1 ./...` 全绿（专属库 `kungal_test_x2_community`，RC 的墙测试照样全绿——假 community 只加不改）；`make openapi` / `gen:api` 无漂移；`pnpm lint`、`pnpm typecheck`、`pnpm -F web test`（430）全绿；`deadcode` 与 master 相比无新增。
+
+**变异**：10/10 变红（`internal/wall/apiv1/follow.go`，逐条改、跑、还原）。第 9 条「上游失败回假状态」只改一处会存活（后面的上游调用也会失败、照样 503），所以这条同时改了 `threadOf` 与 `standingOn` 的两处，与旧代码「每一步都吞错」一致。
+
+**浏览器实测**（本分支自起 API :2402 + 网页 :2401，打真的本地 community）：普通用户打开 `/website/www.touchgal.ink` → `PUT …/website/43/read-marker` 200；点「关注」→ `PUT …/follow` 200、按钮变「已关注」；刷新后回执返回的状态仍是「已关注」；「关注的评论区」列出「TouchGal」、链接 `/website/www.touchgal.ink`；「取消关注」→ `DELETE …/follow` 200、列表清空。测试在本地 community 留下的线程层行已删，会话已删，进程已按 PID 停止。
