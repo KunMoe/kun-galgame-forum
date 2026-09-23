@@ -13,6 +13,7 @@ import (
 	"kun-galgame-api/internal/galgame/client"
 	"kun-galgame-api/internal/galgame/model"
 	"kun-galgame-api/internal/galgame/repository"
+	"kun-galgame-api/internal/galgame/workrepr"
 	"kun-galgame-api/internal/infrastructure/storelink"
 	"kun-galgame-api/internal/middleware"
 	"kun-galgame-api/internal/moemoepoint"
@@ -362,7 +363,7 @@ func (s *Service) assemble(ctx context.Context, rows []model.GalgameResource, vi
 	return out, nil
 }
 
-func (s *Service) dlsiteFrom(ctx context.Context, rows map[int]client.CatalogWorkListItem, workID int) *DlsiteOffer {
+func (s *Service) dlsiteFrom(ctx context.Context, rows map[int]client.CatalogWorkListItem, workID int) *workrepr.DlsiteOffer {
 	if s.storeLinks == nil {
 		return nil
 	}

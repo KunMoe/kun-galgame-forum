@@ -7,7 +7,7 @@ import (
 	"kun-galgame-api/pkg/errors"
 )
 
-func CatalogDetailToFull(ctx context.Context, d *catWorkDetail, workID int) dto.NextMoeGalgameDetailFull {
+func CatalogDetailToFull(ctx context.Context, d *CatalogWorkDetail, workID int) dto.NextMoeGalgameDetailFull {
 	characters := catalogRosterToNextMoe(ctx, d.Characters)
 	f := dto.NextMoeGalgameDetailFull{
 		ID:               workID,
@@ -30,7 +30,7 @@ func CatalogDetailToFull(ctx context.Context, d *catWorkDetail, workID int) dto.
 	f.Name, f.NameOriginal = CatalogEntityNames(ctx, d.Localized, d.DisplayName, d.Latin)
 	f.Alias = catalogAliases(d, f.Name)
 
-	f.Intros = OrderIntros(d.introRows())
+	f.Intros = OrderIntros(d.IntroRows())
 
 	if d.Claim != nil {
 		f.Status = statusFromClaimState(d.Claim.State)
@@ -210,7 +210,7 @@ func catalogTagCategory(kind string, sexual bool) string {
 // catalogAliases lists every other title the work is known by. titles[] is the
 // full row set rather than the four slots the old election squeezed them into,
 // so a Korean or untagged title now reaches the reader instead of vanishing.
-func catalogAliases(d *catWorkDetail, rendered string) []dto.NextMoeAlias {
+func catalogAliases(d *CatalogWorkDetail, rendered string) []dto.NextMoeAlias {
 	out := []dto.NextMoeAlias{}
 	seen := map[string]bool{rendered: true, d.DisplayName: true, "": true}
 	for _, t := range d.Titles {
@@ -223,11 +223,34 @@ func catalogAliases(d *catWorkDetail, rendered string) []dto.NextMoeAlias {
 	return out
 }
 
-func (d *catWorkDetail) introRows() []CatalogIntro {
+func (d *CatalogWorkDetail) IntroRows() []CatalogIntro {
 	if len(d.Intros) > 0 {
 		return d.Intros
 	}
 	return d.Intro
+}
+
+func (d *CatalogWorkDetail) ListItem() CatalogWorkListItem {
+	if d == nil {
+		return CatalogWorkListItem{}
+	}
+	return CatalogWorkListItem{
+		ID:            d.ID,
+		DisplayName:   d.DisplayName,
+		ContentRating: d.ContentRating,
+		OLang:         d.OLang,
+		ReleaseDate:   d.ReleaseDate,
+		Claim:         d.Claim,
+		Updated:       d.Updated,
+		Localized:     d.Localized,
+		Latin:         d.Latin,
+		Intros:        catIntros(d.IntroRows()),
+		Labels:        d.Labels,
+		Ratings:       d.Ratings,
+		Covers:        d.CoverSlots,
+		CoverSlots:    d.CoverSlots,
+		Refs:          d.Refs,
+	}
 }
 
 func catalogRosterToNextMoe(ctx context.Context, chars []catWorkCharacter) []dto.NextMoeGalgameCharacter {
@@ -252,7 +275,7 @@ func catalogRosterToNextMoe(ctx context.Context, chars []catWorkCharacter) []dto
 	return out
 }
 
-func catalogCoversToNextMoe(d *catWorkDetail) []dto.NextMoeGalgameCover {
+func catalogCoversToNextMoe(d *CatalogWorkDetail) []dto.NextMoeGalgameCover {
 	out := make([]dto.NextMoeGalgameCover, 0, len(d.Covers))
 	for i, c := range d.Covers {
 		hash := c.Hash
@@ -261,7 +284,7 @@ func catalogCoversToNextMoe(d *catWorkDetail) []dto.NextMoeGalgameCover {
 		}
 		out = append(out, dto.NextMoeGalgameCover{
 			ID: c.ID, ImageHash: hash, SortOrder: i,
-			Sexual: c.Sexual, Violence: c.Violence, Kind: c.Kind, Source: c.Source,
+			Sexual: intOrZero(c.Sexual), Violence: c.Violence, Kind: c.Kind, Source: c.Source,
 			CDNURL: c.URL, Width: c.Width, Height: c.Height, Thumbhash: c.Thumbhash,
 			VoteCount: c.VoteCount,
 		})
@@ -269,16 +292,23 @@ func catalogCoversToNextMoe(d *catWorkDetail) []dto.NextMoeGalgameCover {
 	return out
 }
 
-func catalogScreenshotsToNextMoe(d *catWorkDetail) []dto.NextMoeGalgameScreenshot {
+func catalogScreenshotsToNextMoe(d *CatalogWorkDetail) []dto.NextMoeGalgameScreenshot {
 	out := make([]dto.NextMoeGalgameScreenshot, 0, len(d.Screenshots))
 	for i, s := range d.Screenshots {
 		out = append(out, dto.NextMoeGalgameScreenshot{
 			ImageHash: hashFromURL(s.URL), SortOrder: i, Caption: s.Caption,
-			Sexual: s.Sexual, Violence: s.Violence, Source: s.Source,
+			Sexual: intOrZero(s.Sexual), Violence: s.Violence, Source: s.Source,
 			CDNURL: s.URL, Width: s.Width, Height: s.Height, Thumbhash: s.Thumbhash,
 		})
 	}
 	return out
+}
+
+func intOrZero(v *int) int {
+	if v == nil {
+		return 0
+	}
+	return *v
 }
 
 type GalgameLink struct {
@@ -288,7 +318,7 @@ type GalgameLink struct {
 }
 
 func (c *GalgameClient) CatalogWorkLinks(ctx context.Context, workID int) ([]GalgameLink, *errors.AppError) {
-	d, found, appErr := c.CatalogWorkDetail(ctx, workID)
+	d, found, _, appErr := c.CatalogWorkDetail(ctx, workID)
 	if appErr != nil {
 		return nil, appErr
 	}

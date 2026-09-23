@@ -16,23 +16,62 @@ func Register(svc *Service) func(huma.API) {
 			Method:      http.MethodGet,
 			Path:        "/works/{work_id}",
 			Summary:     "Get a work",
-			Description: "Returns a WorkRef for the catalog work. Hidden or unknown works are NOT_FOUND. Local published is not required.",
+			Description: "Returns the work. Hidden or unknown works are NOT_FOUND; a merged work is ENTITY_MERGED with current_id. " +
+				"Local published is not required. include_nsfw=false strips adult tags. Each read adds one view without touching updated_at. " +
+				"viewer is null for an anonymous caller.",
 			Tags:        []string{"works"},
-			Responses: map[string]*huma.Response{
-				"404": {
-					Description: "NOT_FOUND when the work does not exist or is hidden.",
-					Content: map[string]*huma.MediaType{
-						problem.ContentType: {Schema: &huma.Schema{Ref: v1.ProblemRef}},
-					},
-				},
-				"503": {
-					Description: "SERVICE_UNAVAILABLE when the catalog cannot be reached.",
-					Content: map[string]*huma.MediaType{
-						problem.ContentType: {Schema: &huma.Schema{Ref: v1.ProblemRef}},
-					},
-				},
-			},
+			Middlewares: huma.Middlewares{withAccessToken},
+			Responses: problemResponses(map[int]string{
+				400: "INVALID_PARAMETER when include_nsfw is not a boolean.",
+				404: "NOT_FOUND when the work does not exist or is hidden; ENTITY_MERGED when it was merged, with current_id.",
+				503: "SERVICE_UNAVAILABLE when the catalog or the account service cannot be reached.",
+			}),
 		}), svc.getWork)
+
+		huma.Register(api, v1.Required(huma.Operation{
+			OperationID: "putWorkLike",
+			Method:      http.MethodPut,
+			Path:        "/works/{work_id}/like",
+			Summary:     "Like a work",
+			Description: "Sets the caller's like. Liking again changes nothing. Liking one's own work is SELF_LIKE_FORBIDDEN.",
+			Tags:        []string{"works"},
+			Responses: problemResponses(map[int]string{
+				403: "SELF_LIKE_FORBIDDEN or ACCOUNT_BANNED.",
+				404: "NOT_FOUND when the work does not exist or is hidden.",
+				503: "SERVICE_UNAVAILABLE when the catalog, the account service or moemoepoint cannot be reached.",
+			}),
+		}), svc.putWorkLike)
+
+		huma.Register(api, v1.Required(huma.Operation{
+			OperationID: "deleteWorkLike",
+			Method:      http.MethodDelete,
+			Path:        "/works/{work_id}/like",
+			Summary:     "Unlike a work",
+			Description: "Clears the caller's like. Unliking when not liked changes nothing.",
+			Tags:        []string{"works"},
+			Responses: problemResponses(map[int]string{
+				403: "ACCOUNT_BANNED.",
+				404: "NOT_FOUND when the work does not exist or is hidden.",
+				503: "SERVICE_UNAVAILABLE when the catalog, the account service or moemoepoint cannot be reached.",
+			}),
+		}), svc.deleteWorkLike)
+
+		huma.Register(api, v1.Required(huma.Operation{
+			OperationID: "listMyWorkStates",
+			Method:      http.MethodGet,
+			Path:        "/me/work-states",
+			Summary:     "Batch-read the caller's work like and favorite states",
+			Description: "Answers, for each work id named in work_ids, whether the caller liked it and whether they hold it in a folder. " +
+				"It is a batch read and is not paginated: work_ids is required, holds 1 to 100 ids. " +
+				"An id catalog does not know or has hidden is missing.",
+			Tags:        []string{"me"},
+			Middlewares: huma.Middlewares{withAccessToken},
+			Responses: problemResponses(map[int]string{
+				400: "INVALID_PARAMETER when work_ids is absent, empty, holds more than 100 ids, or holds something that is not a positive decimal integer.",
+				403: "ACCOUNT_BANNED.",
+				503: "SERVICE_UNAVAILABLE when the catalog cannot be reached.",
+			}),
+		}), svc.listMyWorkStates)
 
 		huma.Register(api, v1.Public(huma.Operation{
 			OperationID: "listWorkMoyuPatches",

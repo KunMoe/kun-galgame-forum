@@ -1802,6 +1802,42 @@
         ],
         "type": "object"
       },
+      "BatchListWorkState": {
+        "properties": {
+          "items": {
+            "description": "One member per requested id that the caller may see. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/WorkState"
+            },
+            "type": "array"
+          },
+          "missing": {
+            "description": "Requested ids that did not come back, in the order they were requested. Empty array, never null. The reason is deliberately not given.",
+            "items": {
+              "maxLength": 20,
+              "minLength": 1,
+              "pattern": "^[0-9]+$",
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "object": {
+            "description": "Type discriminant. Always list.",
+            "enum": [
+              "list"
+            ],
+            "maxLength": 4,
+            "type": "string",
+            "x-vocabulary-closed": true
+          }
+        },
+        "required": [
+          "object",
+          "items",
+          "missing"
+        ],
+        "type": "object"
+      },
       "BlockNode": {
         "description": "A block node. Switch on object; render an unknown type's children, or its value as text.",
         "discriminator": {
@@ -21085,6 +21121,921 @@
         ],
         "type": "object"
       },
+      "Work": {
+        "properties": {
+          "aliases": {
+            "description": "Other titles, never display_name. Empty array, never null.",
+            "items": {
+              "description": "One alias. Free text; never use it as a decision input.",
+              "maxLength": 512,
+              "type": "string"
+            },
+            "maxItems": 1000,
+            "type": "array"
+          },
+          "banner": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Image"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The landscape art at its original size, never the 16:9 crop. null when the work has none; clients fall back to cover."
+          },
+          "companies": {
+            "description": "Credited companies. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/WorkCompany"
+            },
+            "type": "array"
+          },
+          "content_rating": {
+            "description": "Age rating: all_ages or r18.",
+            "enum": [
+              "all_ages",
+              "r18"
+            ],
+            "maxLength": 8,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "contributors": {
+            "description": "People who contributed to the forum page, unrenderable accounts dropped. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/UserRef"
+            },
+            "maxItems": 50,
+            "type": "array"
+          },
+          "cover": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Image"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The portrait cover at its original size, never the 16:9 crop. null when the work has none."
+          },
+          "covers": {
+            "description": "Cover images. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/WorkCover"
+            },
+            "type": "array"
+          },
+          "created_at": {
+            "description": "When catalog created the work.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": "string"
+          },
+          "creator": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UserRef"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Who created the forum page. null when there is no creator_user_id or the account is not renderable."
+          },
+          "credits": {
+            "description": "Staff grouped by role. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/WorkCreditGroup"
+            },
+            "type": "array"
+          },
+          "display_name": {
+            "description": "The entity's own name. Never empty. Free text; never use it as a decision input.",
+            "maxLength": 512,
+            "type": "string"
+          },
+          "dlsite": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DlsiteOffer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "DLsite purchase offer for the work. null when there is no DLsite workno."
+          },
+          "engines": {
+            "description": "Engines the work runs on. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/Engine"
+            },
+            "type": "array"
+          },
+          "external_ratings": {
+            "description": "Ratings from other sites. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/WorkExternalRating"
+            },
+            "type": "array"
+          },
+          "external_refs": {
+            "description": "The work's entries on other sites, such as its VNDB or Bangumi id. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/WorkExternalRef"
+            },
+            "type": "array"
+          },
+          "favorite_count": {
+            "description": "Favorites from catalog popularity source=nextmoe metric=favorites.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "id": {
+            "description": "Work id: the catalog work id, which is also the id in the web's /galgame/{id}.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "intros": {
+            "description": "Descriptions in every language catalog has. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/CatalogIntro"
+            },
+            "type": "array"
+          },
+          "is_nsfw": {
+            "description": "Whether this forum displays the work as adult content: the editorial display axis (the claim's content limit), not the age rating.",
+            "type": "boolean"
+          },
+          "is_published": {
+            "description": "Whether the forum has a listable page for the work. A catalog work the forum has no row for is false, with every forum count 0.",
+            "type": "boolean"
+          },
+          "is_resource_publish_banned": {
+            "description": "Whether new download resources may not be published on this work. false when the forum has no row.",
+            "type": "boolean"
+          },
+          "latin": {
+            "description": "Romanization of the name. null when none is recorded. Free text; never use it as a decision input.",
+            "maxLength": 512,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "like_count": {
+            "description": "Likes on the forum page.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "links": {
+            "description": "Official site, database pages and other links, in catalog's order. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/CatalogLink"
+            },
+            "type": "array"
+          },
+          "localized": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/LocalizedName"
+            },
+            "description": "Names by BCP-47 tag, sparse. Empty object when there are none, never null.",
+            "type": "object"
+          },
+          "maker": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CompanyRef"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The credited company a card names as the maker: developer, then circle, then brand, then publisher. null when no credited company has a name."
+          },
+          "object": {
+            "description": "Type discriminant. Always work.",
+            "enum": [
+              "work"
+            ],
+            "maxLength": 4,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "original_language": {
+            "description": "The work's original language as a BCP-47 tag. null when catalog has none.",
+            "maxLength": 35,
+            "pattern": "^[A-Za-z]{1,8}(-[A-Za-z0-9]{1,8})*$",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "playtimes": {
+            "description": "Playtime aggregates from other sites. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/WorkPlaytimeAggregate"
+            },
+            "type": "array"
+          },
+          "rating_count": {
+            "description": "Forum ratings of the work.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "rating_score": {
+            "description": "Bayesian average of the forum's ratings, one decimal. null when rating_count is 0.",
+            "format": "double",
+            "maximum": 10,
+            "minimum": 0,
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "release_date": {
+            "description": "Release date. A month- or year-precise date is the first day of that month or year. null when catalog has none.",
+            "format": "date",
+            "maxLength": 10,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "release_date_precision": {
+            "description": "How much of release_date is known. null when release_date is null.",
+            "enum": [
+              "day",
+              "month",
+              "year",
+              null
+            ],
+            "maxLength": 5,
+            "type": [
+              "string",
+              "null"
+            ],
+            "x-vocabulary-closed": true
+          },
+          "resource_languages": {
+            "description": "Languages of the work's forum resources, each once, in vocabulary order. Empty array, never null.",
+            "items": {
+              "description": "A resource language key.",
+              "enum": [
+                "zh-cn",
+                "zh-tw",
+                "ja-jp",
+                "en-us",
+                "other"
+              ],
+              "maxLength": 5,
+              "type": "string",
+              "x-vocabulary-closed": true
+            },
+            "type": "array"
+          },
+          "resource_platforms": {
+            "description": "Platforms the work's forum resources run on, each once, in vocabulary order. Empty array, never null.",
+            "items": {
+              "description": "A resource platform key.",
+              "enum": [
+                "win",
+                "and",
+                "ios",
+                "mac",
+                "lin",
+                "web",
+                "mob",
+                "swi",
+                "sw2",
+                "n3d",
+                "nds",
+                "wii",
+                "wiu",
+                "gba",
+                "gbc",
+                "nes",
+                "sfc",
+                "ps1",
+                "ps2",
+                "ps3",
+                "ps4",
+                "ps5",
+                "psp",
+                "psv",
+                "xb1",
+                "xb3",
+                "xbo",
+                "xxs",
+                "sat",
+                "smd",
+                "scd",
+                "drc",
+                "pce",
+                "pcf",
+                "tdo",
+                "p88",
+                "p98",
+                "x1s",
+                "x68",
+                "fm7",
+                "fm8",
+                "fmt",
+                "msx",
+                "dos",
+                "dvd",
+                "bdp",
+                "vnd",
+                "oth"
+              ],
+              "maxLength": 3,
+              "type": "string",
+              "x-vocabulary-closed": true
+            },
+            "type": "array"
+          },
+          "resource_types": {
+            "description": "Kinds of download resources the work has on the forum, each once, in vocabulary order. Empty array, never null.",
+            "items": {
+              "description": "A resource type key.",
+              "enum": [
+                "game",
+                "patch",
+                "collection",
+                "crack_fix",
+                "mod",
+                "tool",
+                "walkthrough",
+                "ost",
+                "voice",
+                "cg",
+                "wallpaper",
+                "artbook",
+                "video",
+                "other"
+              ],
+              "maxLength": 11,
+              "type": "string",
+              "x-vocabulary-closed": true
+            },
+            "type": "array"
+          },
+          "resource_updated_at": {
+            "description": "When a resource of the work last changed. null when it has none.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "roster": {
+            "description": "The work's characters, main cast first. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/WorkCharacter"
+            },
+            "type": "array"
+          },
+          "screenshots": {
+            "description": "Screenshots. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/WorkScreenshot"
+            },
+            "type": "array"
+          },
+          "series": {
+            "description": "Series the work belongs to. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/SeriesSummary"
+            },
+            "type": "array"
+          },
+          "tags": {
+            "description": "Tags. Adult tags are left out unless include_nsfw=true. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/WorkTag"
+            },
+            "type": "array"
+          },
+          "updated_at": {
+            "description": "When catalog last updated the work.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": "string"
+          },
+          "view_count": {
+            "description": "Times the work's forum page was read. 0 for a work the forum has no page for.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "viewer": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WorkViewer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The caller's own state. null for an anonymous caller."
+          }
+        },
+        "required": [
+          "aliases",
+          "original_language",
+          "content_rating",
+          "intros",
+          "links",
+          "external_refs",
+          "covers",
+          "screenshots",
+          "companies",
+          "engines",
+          "series",
+          "tags",
+          "credits",
+          "roster",
+          "resource_types",
+          "favorite_count",
+          "is_resource_publish_banned",
+          "creator",
+          "contributors",
+          "external_ratings",
+          "playtimes",
+          "dlsite",
+          "created_at",
+          "updated_at",
+          "viewer",
+          "banner",
+          "release_date",
+          "release_date_precision",
+          "maker",
+          "view_count",
+          "like_count",
+          "rating_score",
+          "rating_count",
+          "resource_platforms",
+          "resource_languages",
+          "resource_updated_at",
+          "is_published",
+          "object",
+          "id",
+          "cover",
+          "is_nsfw",
+          "display_name",
+          "latin",
+          "localized"
+        ],
+        "type": "object"
+      },
+      "WorkCharacter": {
+        "properties": {
+          "character_kind": {
+            "description": "How large a part the character plays.",
+            "enum": [
+              "main",
+              "secondary",
+              "appears"
+            ],
+            "maxLength": 9,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "display_name": {
+            "description": "The entity's own name. Never empty. Free text; never use it as a decision input.",
+            "maxLength": 512,
+            "type": "string"
+          },
+          "figure": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Image"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "A full-body standing picture. null when catalog has none."
+          },
+          "id": {
+            "description": "Character id: the catalog character id, which is also the id in the web's /galgame/character/{id}.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "identity": {
+            "description": "Who the character is in the story. Empty string when none. Free text; never use it as a decision input.",
+            "maxLength": 512,
+            "type": "string"
+          },
+          "image": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Image"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The character's portrait. null when catalog has none."
+          },
+          "latin": {
+            "description": "Romanization of the name. null when none is recorded. Free text; never use it as a decision input.",
+            "maxLength": 512,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "localized": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/LocalizedName"
+            },
+            "description": "Names by BCP-47 tag, sparse. Empty object when there are none, never null.",
+            "type": "object"
+          },
+          "object": {
+            "description": "Type discriminant. Always character.",
+            "enum": [
+              "character"
+            ],
+            "maxLength": 9,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "spoiler": {
+            "description": "How much naming the character gives away.",
+            "enum": [
+              "none",
+              "minor",
+              "major"
+            ],
+            "maxLength": 5,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "voices": {
+            "description": "Who voices the character. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/CreditNameRef"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "image",
+          "figure",
+          "character_kind",
+          "spoiler",
+          "identity",
+          "voices",
+          "object",
+          "id",
+          "display_name",
+          "latin",
+          "localized"
+        ],
+        "type": "object"
+      },
+      "WorkCompany": {
+        "properties": {
+          "aliases": {
+            "description": "Other names it goes by, never its display_name. Empty array, never null.",
+            "items": {
+              "description": "One alias. Free text; never use it as a decision input.",
+              "maxLength": 512,
+              "type": "string"
+            },
+            "maxItems": 1000,
+            "type": "array"
+          },
+          "attribution_roles": {
+            "description": "What the company did on this work: developer, publisher, circle or brand. Unique, never null.",
+            "items": {
+              "description": "What a company did on a work.",
+              "enum": [
+                "developer",
+                "publisher",
+                "circle",
+                "brand"
+              ],
+              "maxLength": 9,
+              "type": "string",
+              "x-vocabulary-closed": true
+            },
+            "type": "array"
+          },
+          "catalog_work_count": {
+            "description": "Works catalog files under it, NSFW ones included. How many a reader can page through is the total of its works collection.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "company_kind": {
+            "description": "What sort of company it is.",
+            "enum": [
+              "game_brand",
+              "bunko",
+              "publisher",
+              "anime_studio",
+              "doujin_circle",
+              "group"
+            ],
+            "maxLength": 13,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "display_name": {
+            "description": "The entity's own name. Never empty. Free text; never use it as a decision input.",
+            "maxLength": 512,
+            "type": "string"
+          },
+          "id": {
+            "description": "Company id: the catalog company id, which is also the id in the web's /galgame/official/{id}.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "lang": {
+            "description": "The company's own language as a BCP-47 tag. null when unrecorded.",
+            "maxLength": 35,
+            "pattern": "^[A-Za-z]{1,8}(-[A-Za-z0-9]{1,8})*$",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "latin": {
+            "description": "Romanization of the name. null when none is recorded. Free text; never use it as a decision input.",
+            "maxLength": 512,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "links": {
+            "description": "Official site, social accounts and database pages. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/CatalogLink"
+            },
+            "type": "array"
+          },
+          "localized": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/LocalizedName"
+            },
+            "description": "Names by BCP-47 tag, sparse. Empty object when there are none, never null.",
+            "type": "object"
+          },
+          "logo": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Image"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The company's logo. null when catalog has none."
+          },
+          "object": {
+            "description": "Type discriminant. Always company.",
+            "enum": [
+              "company"
+            ],
+            "maxLength": 7,
+            "type": "string",
+            "x-vocabulary-closed": true
+          }
+        },
+        "required": [
+          "lang",
+          "links",
+          "attribution_roles",
+          "object",
+          "id",
+          "company_kind",
+          "logo",
+          "aliases",
+          "catalog_work_count",
+          "display_name",
+          "latin",
+          "localized"
+        ],
+        "type": "object"
+      },
+      "WorkCover": {
+        "properties": {
+          "cover_slot": {
+            "description": "Which face of the package this cover is.",
+            "enum": [
+              "main",
+              "pkgfront",
+              "dig",
+              "pkgback",
+              "pkgcontent",
+              "pkgside",
+              "pkgmed",
+              "other"
+            ],
+            "maxLength": 10,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "id": {
+            "description": "Catalog cover row id, which the cover vote path takes.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "image": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Image"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The cover at original size. Never null on a cover; the type is shared with images that can be absent."
+          },
+          "object": {
+            "description": "Type discriminant. Always work_cover.",
+            "enum": [
+              "work_cover"
+            ],
+            "maxLength": 10,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "site": {
+            "description": "Where the image came from, such as vndb or dlsite. An open vocabulary.",
+            "maxLength": 64,
+            "pattern": "^[a-z0-9][a-z0-9_-]*$",
+            "type": "string"
+          },
+          "sort_order": {
+            "description": "Catalog order among covers.",
+            "format": "int64",
+            "maximum": 9999,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "viewer": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WorkCoverViewer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The caller's vote on this cover. null for an anonymous caller."
+          },
+          "vote_count": {
+            "description": "Public votes for this cover. 0 when the vote store is unread.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "object",
+          "id",
+          "image",
+          "cover_slot",
+          "site",
+          "sort_order",
+          "vote_count",
+          "viewer"
+        ],
+        "type": "object"
+      },
+      "WorkCoverViewer": {
+        "properties": {
+          "has_voted": {
+            "description": "Whether the caller voted for this cover.",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "has_voted"
+        ],
+        "type": "object"
+      },
+      "WorkCreditGroup": {
+        "properties": {
+          "display_name": {
+            "description": "The role's name as catalog records it. Free text; never use it as a decision input.",
+            "maxLength": 128,
+            "type": "string"
+          },
+          "people": {
+            "description": "People credited in this role. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/WorkCreditPerson"
+            },
+            "type": "array"
+          },
+          "role_key": {
+            "description": "Catalog's role key, such as scenario, illustration, music or voice-actor. An open vocabulary.",
+            "maxLength": 64,
+            "pattern": "^\\S+$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "role_key",
+          "display_name",
+          "people"
+        ],
+        "type": "object"
+      },
+      "WorkCreditPerson": {
+        "properties": {
+          "display_name": {
+            "description": "The entity's own name. Never empty. Free text; never use it as a decision input.",
+            "maxLength": 512,
+            "type": "string"
+          },
+          "id": {
+            "description": "Credit name id: the catalog credit name id, which is also the id in the web's /galgame/staff/{id}.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "lang": {
+            "description": "The name's own language as a BCP-47 tag. null when unrecorded.",
+            "maxLength": 35,
+            "pattern": "^[A-Za-z]{1,8}(-[A-Za-z0-9]{1,8})*$",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "latin": {
+            "description": "Romanization of the name. null when none is recorded. Free text; never use it as a decision input.",
+            "maxLength": 512,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "localized": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/LocalizedName"
+            },
+            "description": "Names by BCP-47 tag, sparse. Empty object when there are none, never null.",
+            "type": "object"
+          },
+          "object": {
+            "description": "Type discriminant. Always credit_name.",
+            "enum": [
+              "credit_name"
+            ],
+            "maxLength": 11,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "voiced_characters": {
+            "description": "Character names this credit voices, as catalog wrote them. Empty array, never null.",
+            "items": {
+              "description": "A voiced character's name as the credit wrote it. Free text; never use it as a decision input.",
+              "maxLength": 512,
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "voiced_characters",
+          "object",
+          "id",
+          "lang",
+          "display_name",
+          "latin",
+          "localized"
+        ],
+        "type": "object"
+      },
       "WorkDigest": {
         "properties": {
           "developer_names": {
@@ -21119,6 +22070,246 @@
           "developer_names",
           "intro_excerpt",
           "release"
+        ],
+        "type": "object"
+      },
+      "WorkEngagement": {
+        "properties": {
+          "like_count": {
+            "description": "Likes on the forum page after this request.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "object": {
+            "description": "Type discriminant. Always work_engagement.",
+            "enum": [
+              "work_engagement"
+            ],
+            "maxLength": 15,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "viewer": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WorkEngagementViewer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The caller's like state after this request."
+          },
+          "work_id": {
+            "description": "Work id.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "object",
+          "work_id",
+          "like_count",
+          "viewer"
+        ],
+        "type": "object"
+      },
+      "WorkEngagementViewer": {
+        "properties": {
+          "has_liked": {
+            "description": "Whether the caller liked this work.",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "has_liked"
+        ],
+        "type": "object"
+      },
+      "WorkExternalRating": {
+        "properties": {
+          "buckets": {
+            "description": "That source's histogram. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/WorkExternalRatingBucket"
+            },
+            "type": "array"
+          },
+          "object": {
+            "description": "Type discriminant. Always work_external_rating.",
+            "enum": [
+              "work_external_rating"
+            ],
+            "maxLength": 20,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "rating_value": {
+            "description": "The source's own score, on the source's own scale.",
+            "format": "double",
+            "minimum": 0,
+            "type": "number"
+          },
+          "site": {
+            "description": "The rating source, such as vndb or erogamescape. An open vocabulary.",
+            "maxLength": 64,
+            "pattern": "^[a-z0-9][a-z0-9_-]*$",
+            "type": "string"
+          },
+          "source_rank": {
+            "description": "Rank on that source. null when unranked.",
+            "format": "int64",
+            "minimum": 1,
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "stats": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WorkExternalRatingStats"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "That source's summary statistics. null when none."
+          },
+          "vote_count": {
+            "description": "Votes that source counted.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "object",
+          "site",
+          "rating_value",
+          "vote_count",
+          "source_rank",
+          "buckets",
+          "stats"
+        ],
+        "type": "object"
+      },
+      "WorkExternalRatingBucket": {
+        "properties": {
+          "bucket": {
+            "description": "The source's own bucket label.",
+            "format": "double",
+            "minimum": 0,
+            "type": "number"
+          },
+          "vote_count": {
+            "description": "Votes in this bucket.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "bucket",
+          "vote_count"
+        ],
+        "type": "object"
+      },
+      "WorkExternalRatingStats": {
+        "properties": {
+          "highest": {
+            "description": "Highest score. null when unrecorded.",
+            "format": "double",
+            "minimum": 0,
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "lowest": {
+            "description": "Lowest score. null when unrecorded.",
+            "format": "double",
+            "minimum": 0,
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "mean": {
+            "description": "Mean score. null when unrecorded.",
+            "format": "double",
+            "minimum": 0,
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "stdev": {
+            "description": "Standard deviation of the scores. null when unrecorded.",
+            "format": "double",
+            "minimum": 0,
+            "type": [
+              "number",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "mean",
+          "stdev",
+          "lowest",
+          "highest"
+        ],
+        "type": "object"
+      },
+      "WorkExternalRef": {
+        "properties": {
+          "external_id": {
+            "description": "The work's id on that site. Free text; never use it as a decision input.",
+            "maxLength": 64,
+            "type": "string"
+          },
+          "site": {
+            "description": "The other site, such as vndb or bangumi. An open vocabulary.",
+            "maxLength": 64,
+            "pattern": "^[a-z0-9][a-z0-9_-]*$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "site",
+          "external_id"
+        ],
+        "type": "object"
+      },
+      "WorkPlaytimeAggregate": {
+        "properties": {
+          "minutes": {
+            "description": "Aggregate minutes.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "site": {
+            "description": "The playtime source. An open vocabulary.",
+            "maxLength": 64,
+            "pattern": "^[a-z0-9][a-z0-9_-]*$",
+            "type": "string"
+          },
+          "vote_count": {
+            "description": "Votes that source counted.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "site",
+          "minutes",
+          "vote_count"
         ],
         "type": "object"
       },
@@ -21298,6 +22489,91 @@
         "required": [
           "revision_number",
           "legacy_revision_id"
+        ],
+        "type": "object"
+      },
+      "WorkScreenshot": {
+        "properties": {
+          "caption": {
+            "description": "Caption. Empty string when none. Free text; never use it as a decision input.",
+            "maxLength": 512,
+            "type": "string"
+          },
+          "image": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Image"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The screenshot at original size. Never null on a screenshot; the type is shared with images that can be absent."
+          },
+          "object": {
+            "description": "Type discriminant. Always work_screenshot.",
+            "enum": [
+              "work_screenshot"
+            ],
+            "maxLength": 15,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "site": {
+            "description": "Where the image came from. An open vocabulary.",
+            "maxLength": 64,
+            "pattern": "^[a-z0-9][a-z0-9_-]*$",
+            "type": "string"
+          },
+          "sort_order": {
+            "description": "Catalog order among screenshots.",
+            "format": "int64",
+            "maximum": 9999,
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "object",
+          "image",
+          "caption",
+          "site",
+          "sort_order"
+        ],
+        "type": "object"
+      },
+      "WorkState": {
+        "properties": {
+          "has_favorited": {
+            "description": "Whether the caller holds this work in any folder.",
+            "type": "boolean"
+          },
+          "has_liked": {
+            "description": "Whether the caller liked this work.",
+            "type": "boolean"
+          },
+          "object": {
+            "description": "Type discriminant. Always work_state.",
+            "enum": [
+              "work_state"
+            ],
+            "maxLength": 10,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "work_id": {
+            "description": "Work id this state is about.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "object",
+          "work_id",
+          "has_liked",
+          "has_favorited"
         ],
         "type": "object"
       },
@@ -21569,6 +22845,158 @@
           "display_name",
           "latin",
           "localized"
+        ],
+        "type": "object"
+      },
+      "WorkTag": {
+        "properties": {
+          "catalog_work_count": {
+            "description": "Works catalog files under it, NSFW ones included. How many a reader can page through is the total of its works collection.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "display_name": {
+            "description": "The entity's own name. Never empty. Free text; never use it as a decision input.",
+            "maxLength": 512,
+            "type": "string"
+          },
+          "id": {
+            "description": "Tag id: the catalog tag id, which is also the id in the web's /galgame/tag/{id}.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "is_sexual": {
+            "description": "Whether the tag is adult content. Such tags are left out unless include_nsfw=true.",
+            "type": "boolean"
+          },
+          "latin": {
+            "description": "Romanization of the name. null when none is recorded. Free text; never use it as a decision input.",
+            "maxLength": 512,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "localized": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/LocalizedName"
+            },
+            "description": "Names by BCP-47 tag, sparse. Empty object when there are none, never null.",
+            "type": "object"
+          },
+          "object": {
+            "description": "Type discriminant. Always tag.",
+            "enum": [
+              "tag"
+            ],
+            "maxLength": 3,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "spoiler": {
+            "description": "How much the tag gives away.",
+            "enum": [
+              "none",
+              "minor",
+              "major"
+            ],
+            "maxLength": 5,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "tag_kind": {
+            "description": "What the tag describes: content is the story and characters, meta is the game as a product.",
+            "enum": [
+              "content",
+              "meta"
+            ],
+            "maxLength": 7,
+            "type": "string",
+            "x-vocabulary-closed": true
+          }
+        },
+        "required": [
+          "spoiler",
+          "object",
+          "id",
+          "tag_kind",
+          "is_sexual",
+          "catalog_work_count",
+          "display_name",
+          "latin",
+          "localized"
+        ],
+        "type": "object"
+      },
+      "WorkViewer": {
+        "properties": {
+          "can_ban_resource_publish": {
+            "description": "Whether the caller may ban publishing download resources on this work. Requests authenticated with a Bearer token never carry staff powers.",
+            "type": "boolean"
+          },
+          "has_favorited": {
+            "description": "Whether the caller holds this work in any folder.",
+            "type": "boolean"
+          },
+          "has_liked": {
+            "description": "Whether the caller liked this work.",
+            "type": "boolean"
+          },
+          "playtime": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WorkViewerPlaytime"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The caller's own playtime. null when they have none or the token cannot read it."
+          }
+        },
+        "required": [
+          "has_liked",
+          "has_favorited",
+          "playtime",
+          "can_ban_resource_publish"
+        ],
+        "type": "object"
+      },
+      "WorkViewerPlaytime": {
+        "properties": {
+          "minutes": {
+            "description": "Minutes the caller reported. 0 when they reported none or withdrew the report.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "play_state": {
+            "description": "The caller's play state as catalog records it: a rating's play_status, or done for a finished game with no completion recorded, which no write accepts. null when they have none.",
+            "enum": [
+              "wish",
+              "doing",
+              "done_one_route",
+              "done_main",
+              "done_all",
+              "on_hold",
+              "dropped",
+              "done",
+              null
+            ],
+            "maxLength": 14,
+            "type": [
+              "string",
+              "null"
+            ],
+            "x-vocabulary-closed": true
+          }
+        },
+        "required": [
+          "minutes",
+          "play_state"
         ],
         "type": "object"
       },
@@ -35693,6 +37121,106 @@
         "summary": "Mark a wall read",
         "tags": [
           "walls"
+        ]
+      }
+    },
+    "/me/work-states": {
+      "get": {
+        "description": "Answers, for each work id named in work_ids, whether the caller liked it and whether they hold it in a folder. It is a batch read and is not paginated: work_ids is required, holds 1 to 100 ids. An id catalog does not know or has hidden is missing.",
+        "operationId": "listMyWorkStates",
+        "parameters": [
+          {
+            "description": "Work ids to answer for, comma-separated. 1 to 100 of them.",
+            "explode": false,
+            "in": "query",
+            "name": "work_ids",
+            "required": true,
+            "schema": {
+              "description": "Work ids to answer for, comma-separated. 1 to 100 of them.",
+              "items": {
+                "maxLength": 20,
+                "minLength": 1,
+                "pattern": "^[0-9]+$",
+                "type": "string"
+              },
+              "maxItems": 100,
+              "type": "array"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BatchListWorkState"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "INVALID_PARAMETER when work_ids is absent, empty, holds more than 100 ids, or holds something that is not a positive decimal integer."
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "ACCOUNT_BANNED."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the catalog cannot be reached."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Batch-read the caller's work like and favorite states",
+        "tags": [
+          "me"
         ]
       }
     },
@@ -53515,7 +55043,7 @@
     },
     "/works/{work_id}": {
       "get": {
-        "description": "Returns a WorkRef for the catalog work. Hidden or unknown works are NOT_FOUND. Local published is not required.",
+        "description": "Returns the work. Hidden or unknown works are NOT_FOUND; a merged work is ENTITY_MERGED with current_id. Local published is not required. include_nsfw=false strips adult tags. Each read adds one view without touching updated_at. viewer is null for an anonymous caller.",
         "operationId": "getWork",
         "parameters": [
           {
@@ -53529,6 +55057,17 @@
               "pattern": "^[1-9][0-9]{0,18}$",
               "type": "string"
             }
+          },
+          {
+            "description": "When true, adult tags are included. Default false: adult tags are stripped.",
+            "explode": false,
+            "in": "query",
+            "name": "include_nsfw",
+            "schema": {
+              "default": false,
+              "description": "When true, adult tags are included. Default false: adult tags are stripped.",
+              "type": "boolean"
+            }
           }
         ],
         "responses": {
@@ -53536,7 +55075,112 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/WorkRef"
+                  "$ref": "#/components/schemas/Work"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "INVALID_PARAMETER when include_nsfw is not a boolean."
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when the work does not exist or is hidden; ENTITY_MERGED when it was merged, with current_id."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the catalog or the account service cannot be reached."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          },
+          {}
+        ],
+        "summary": "Get a work",
+        "tags": [
+          "works"
+        ]
+      }
+    },
+    "/works/{work_id}/like": {
+      "delete": {
+        "description": "Clears the caller's like. Unliking when not liked changes nothing.",
+        "operationId": "deleteWorkLike",
+        "parameters": [
+          {
+            "description": "Work id.",
+            "in": "path",
+            "name": "work_id",
+            "required": true,
+            "schema": {
+              "description": "Work id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkEngagement"
                 }
               }
             },
@@ -53570,7 +55214,7 @@
                 }
               }
             },
-            "description": "Forbidden"
+            "description": "ACCOUNT_BANNED."
           },
           "404": {
             "content": {
@@ -53600,7 +55244,7 @@
                 }
               }
             },
-            "description": "SERVICE_UNAVAILABLE when the catalog cannot be reached."
+            "description": "SERVICE_UNAVAILABLE when the catalog, the account service or moemoepoint cannot be reached."
           }
         },
         "security": [
@@ -53609,10 +55253,111 @@
           },
           {
             "bearer": []
-          },
-          {}
+          }
         ],
-        "summary": "Get a work",
+        "summary": "Unlike a work",
+        "tags": [
+          "works"
+        ]
+      },
+      "put": {
+        "description": "Sets the caller's like. Liking again changes nothing. Liking one's own work is SELF_LIKE_FORBIDDEN.",
+        "operationId": "putWorkLike",
+        "parameters": [
+          {
+            "description": "Work id.",
+            "in": "path",
+            "name": "work_id",
+            "required": true,
+            "schema": {
+              "description": "Work id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkEngagement"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SELF_LIKE_FORBIDDEN or ACCOUNT_BANNED."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when the work does not exist or is hidden."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the catalog, the account service or moemoepoint cannot be reached."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Like a work",
         "tags": [
           "works"
         ]

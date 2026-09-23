@@ -4,11 +4,17 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"net/url"
 	"strconv"
 	"time"
 
 	"kun-galgame-api/internal/apiv1/repr"
 	"kun-galgame-api/internal/galgame/client"
+	"kun-galgame-api/internal/galgame/repository"
+	"kun-galgame-api/internal/galgame/workrepr"
+	"kun-galgame-api/internal/infrastructure/storelink"
+	"kun-galgame-api/internal/moemoepoint"
+	"kun-galgame-api/pkg/catalogclient"
 	legacyErrors "kun-galgame-api/pkg/errors"
 	"kun-galgame-api/pkg/moyuclient"
 	"kun-galgame-api/pkg/problem"
@@ -16,6 +22,7 @@ import (
 
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/redis/go-redis/v9"
+	"gorm.io/gorm"
 )
 
 const (
@@ -31,20 +38,95 @@ type workCatalog interface {
 	CatalogRowsByWorkIDs(ctx context.Context, ids []int, include, contentLimit string) (map[int]client.CatalogWorkListItem, *legacyErrors.AppError)
 }
 
+type workDetailCatalog interface {
+	CatalogWorkDetail(ctx context.Context, workID int) (*client.CatalogWorkDetail, bool, int64, *legacyErrors.AppError)
+	CatalogLabel(ctx context.Context, id string) (*client.CatalogLabelDetail, bool, int64, *legacyErrors.AppError)
+	CatalogEngine(ctx context.Context, id string) (*client.CatalogEngineDetail, bool, *legacyErrors.AppError)
+	CatalogSeries(ctx context.Context, id string) (*client.CatalogSeriesDetail, bool, *legacyErrors.AppError)
+	CatalogWorksSearch(ctx context.Context, q url.Values) (*client.CatalogWorksPage, *legacyErrors.AppError)
+}
+
+type CatalogUser interface {
+	MyFoldersContaining(ctx context.Context, token string, workID int64) ([]catalogclient.Folder, error)
+	MyFolderHoldings(ctx context.Context, token string, workIDs []int64) ([]catalogclient.FolderHolding, error)
+	WorkCoversUser(ctx context.Context, token string, workID int64) ([]catalogclient.CoverTally, error)
+	WorkCoverVotes(ctx context.Context, workID int64) ([]catalogclient.CoverTally, error)
+	MyPlaytime(ctx context.Context, token string, workID int64) (*catalogclient.PlaytimeSelf, error)
+	MyWorkState(ctx context.Context, token string, workID int64) (*catalogclient.WorkStateRecord, error)
+}
+
 type userLookup interface {
 	Users(ctx context.Context, ids []int) (map[int]userclient.User, error)
 }
 
+type AwardFunc func(userID, delta int, reason, ref, idempotencyKey string)
+
+type pendingAward struct {
+	userID int
+	delta  int
+	reason string
+	ref    string
+	key    string
+}
+
 type Service struct {
-	works workCatalog
-	moyu  *moyuclient.Client
-	users userLookup
-	rdb   *redis.Client
-	cdn   string
+	works      workCatalog
+	moyu       *moyuclient.Client
+	users      userLookup
+	rdb        *redis.Client
+	cdn        string
+	store      *repository.WorkV1Store
+	hydrator   *workrepr.Hydrator
+	lists      *repository.GalgameListRepository
+	catalog    CatalogUser
+	storeLinks *storelink.Resolver
+	award      AwardFunc
 }
 
 func New(works workCatalog, moyu *moyuclient.Client, users userLookup, rdb *redis.Client, cdn string) *Service {
-	return &Service{works: works, moyu: moyu, users: users, rdb: rdb, cdn: cdn}
+	return &Service{works: works, moyu: moyu, users: users, rdb: rdb, cdn: cdn, award: moemoepoint.Award}
+}
+
+func (s *Service) WithWork(db *gorm.DB, catalog CatalogUser, storeLinks *storelink.Resolver, award AwardFunc) *Service {
+	if db != nil {
+		s.store = repository.NewWorkV1Store(db)
+		s.hydrator = workrepr.NewHydrator(s.works, db, s.cdn)
+		s.lists = repository.NewGalgameListRepository(db)
+	}
+	s.catalog = catalog
+	s.storeLinks = storeLinks
+	if award != nil {
+		s.award = award
+	}
+	return s
+}
+
+func (s *Service) detailCatalog() workDetailCatalog {
+	d, _ := s.works.(workDetailCatalog)
+	return d
+}
+
+func (s *Service) lookupUsers(ctx context.Context, ids []int) (map[int]userclient.User, *problem.Problem) {
+	if s.users == nil {
+		return nil, problem.Internal(errUnconfigured)
+	}
+	users, err := s.users.Users(ctx, ids)
+	if err != nil {
+		return nil, problem.Unavailable(err)
+	}
+	if users == nil {
+		users = map[int]userclient.User{}
+	}
+	return users, nil
+}
+
+func (s *Service) flushAwards(jobs []pendingAward) {
+	if s.award == nil {
+		return
+	}
+	for _, j := range jobs {
+		s.award(j.userID, j.delta, j.reason, j.ref, j.key)
+	}
 }
 
 type MoyuVocabulary string
@@ -203,8 +285,4 @@ func vocabulary(tokens []string) []MoyuVocabulary {
 		out[i] = MoyuVocabulary(t)
 	}
 	return out
-}
-
-func notFound() *problem.Problem {
-	return problem.New(problem.CodeNotFound, "Nothing visible exists at this URL.")
 }

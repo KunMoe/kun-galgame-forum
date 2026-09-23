@@ -740,6 +740,9 @@ func imageToSlot(v any, cdnBase string) map[string]any {
 	if th, ok := img["thumbhash"]; ok {
 		slot["thumbhash"] = th
 	}
+	if sexual, ok := img["sexual"].(string); ok {
+		slot["sexual"] = json.Number(strconv.Itoa(sexualLevel(sexual)))
+	}
 	return slot
 }
 

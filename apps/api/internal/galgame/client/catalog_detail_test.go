@@ -33,7 +33,7 @@ func fullOf(t *testing.T, body string) dto.NextMoeGalgameDetailFull {
 	srv, _ := detailStub(t, workID, body)
 	c := New(srv.URL, "nm_test_key", "")
 
-	d, found, appErr := c.CatalogWorkDetail(context.Background(), int(workID))
+	d, found, _, appErr := c.CatalogWorkDetail(context.Background(), int(workID))
 	if appErr != nil {
 		t.Fatalf("CatalogWorkDetail: %v", appErr)
 	}
@@ -202,7 +202,7 @@ func TestCatalogDetail_TagsArriveAtTheFullSpoilerCeiling(t *testing.T) {
 	srv, seen := detailStub(t, workID, body)
 	c := New(srv.URL, "nm_test_key", "")
 
-	d, found, appErr := c.CatalogWorkDetail(context.Background(), int(workID))
+	d, found, _, appErr := c.CatalogWorkDetail(context.Background(), int(workID))
 	if appErr != nil || !found {
 		t.Fatalf("CatalogWorkDetail = (%v, %v)", appErr, found)
 	}

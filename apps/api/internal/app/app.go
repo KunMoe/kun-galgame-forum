@@ -122,8 +122,6 @@ type App struct {
 	GalgameHandler            *galgameHandler.GalgameHandler
 	GalgameCollectionHandler  *galgameHandler.GalgameCollectionHandler
 	GalgameCalendarHandler    *galgameHandler.CalendarHandler
-	GalgameDraftsHandler      *galgameHandler.DraftsHandler
-	GalgameProxyHandler       *galgameHandler.GalgameProxyHandler
 	GalgameSubmissionHandler  *galgameHandler.SubmissionHandler
 	GalgameClaimReviewHandler *galgameHandler.ClaimReviewHandler
 	GalgameEditHandler        *galgameHandler.EditHandler
@@ -403,25 +401,21 @@ func New(cfg *config.Config) *App {
 
 	galgameCommunityPostRepo := galgameRepo.NewCommunityPostRepository(db)
 	creatorSvc := galgameService.NewCreatorService(galgameRepo.NewRatingStore(db), galgameUserStatsSvc, uc)
-	galgameInteractionRepo := galgameRepo.NewGalgameInteractionRepository(db)
 	galgameListRepo := galgameRepo.NewGalgameListRepository(db)
 	galgameResourceMetaRepo := galgameRepo.NewGalgameResourceMetaRepository(db)
-	galgameDetailRatingRepo := galgameRepo.NewGalgameDetailRatingRepository(db)
 	galgameContributorRepo := galgameRepo.NewGalgameContributorRepository(db)
 	galgameEnricher := galgameService.NewGalgameEnricher(
 		galgameLocalRepo, galgameResourceMetaRepo, galgameListRepo, uc,
 	)
 	galgameCoreSvc := galgameService.NewGalgameService(
-		galgameLocalRepo, galgameInteractionRepo, galgameListRepo,
-		galgameResourceMetaRepo, galgameDetailRatingRepo, galgameContributorRepo,
+		galgameLocalRepo, galgameListRepo,
+		galgameResourceMetaRepo, galgameContributorRepo,
 		userStateRepo, gc, uc, catalogCli, storeLinks,
 	)
 	galgameCollectionRepo := galgameRepo.NewGalgameCollectionRepository(db)
 	galgameCollectionSvc := galgameService.NewCollectionService(galgameCollectionRepo, galgameCoreSvc, gc, uc, catalogCli, trustCheck, trustScan, rdb)
 	galgameTagSvc := galgameService.NewTagService(gc, galgameEnricher, galgameCoreSvc)
 	galgameCalendarSvc := galgameService.NewCalendarService(gc, galgameEnricher)
-	galgameDraftsSvc := galgameService.NewDraftsService(gc, galgameEnricher)
-	galgameProxySvc := galgameService.NewGalgameProxyService(gc, galgameLocalRepo, uc)
 	galgameSubmissionSvc := galgameService.NewSubmissionService(gc, catalogCli, galgameLocalRepo)
 	galgameClaimReviewSvc := galgameService.NewClaimReviewService(gc, catalogCli)
 	galgamePlaytimeSvc := galgameService.NewPlaytimeService(galgameCoreSvc, gc, catalogCli, cfg.OAuth.ClientID)
@@ -497,7 +491,7 @@ func New(cfg *config.Config) *App {
 		Authn:           authn,
 		BearerStance:    bearerStance,
 		ImageMeta:       imageMetaResolve(imageMeta),
-		GalgameV1:       galgameapiv1.New(gc, moyuCli, uc, rdb, cfg.NextMoeAPI.ImageCDNBase),
+		GalgameV1:       galgameapiv1.New(gc, moyuCli, uc, rdb, cfg.NextMoeAPI.ImageCDNBase).WithWork(db, catalogCli, storeLinks, moemoepoint.Award),
 		GalgameEntityV1: galgameentityv1.New(gc, db, cfg.NextMoeAPI.ImageCDNBase),
 		GalgameRatingV1: newRatingV1(db, gc, uc, trustCheck, trustScan, galgamePlaytimeSvc, cfg.NextMoeAPI.ImageCDNBase),
 		QuizCatalog:     gc,
@@ -526,8 +520,6 @@ func New(cfg *config.Config) *App {
 		GalgameHandler:            galgameHandler.NewGalgameHandler(galgameCoreSvc),
 		GalgameCollectionHandler:  galgameHandler.NewGalgameCollectionHandler(galgameCollectionSvc),
 		GalgameCalendarHandler:    galgameHandler.NewCalendarHandler(galgameCalendarSvc),
-		GalgameDraftsHandler:      galgameHandler.NewDraftsHandler(galgameDraftsSvc),
-		GalgameProxyHandler:       galgameHandler.NewGalgameProxyHandler(galgameProxySvc),
 		GalgameSubmissionHandler:  galgameHandler.NewSubmissionHandler(galgameSubmissionSvc),
 		GalgameClaimReviewHandler: galgameHandler.NewClaimReviewHandler(galgameClaimReviewSvc),
 		GalgameEditHandler:        galgameHandler.NewEditHandler(catalogCli, gc, uc, notifier, galgameLocalRepo),

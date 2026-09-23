@@ -13,6 +13,7 @@ import (
 	"kun-galgame-api/internal/galgame/filesize"
 	"kun-galgame-api/internal/galgame/model"
 	"kun-galgame-api/internal/galgame/resourcevocab"
+	"kun-galgame-api/internal/galgame/workrepr"
 	"kun-galgame-api/internal/infrastructure/storelink"
 	"kun-galgame-api/internal/middleware"
 	"kun-galgame-api/pkg/perm"
@@ -409,20 +410,8 @@ func validateAxes(typ string, langs, plats, runs []string, title string, typeReq
 	return out, nil
 }
 
-func dlsiteOf(links storelink.Links) *DlsiteOffer {
-	if links.PurchaseURL == "" {
-		return nil
-	}
-	out := &DlsiteOffer{PurchaseURL: links.PurchaseURL}
-	if links.CouponURL != "" {
-		c := links.CouponURL
-		out.CouponURL = &c
-	}
-	if links.CampaignName != "" {
-		n := links.CampaignName
-		out.CampaignName = &n
-	}
-	return out
+func dlsiteOf(links storelink.Links) *workrepr.DlsiteOffer {
+	return workrepr.DlsiteOf(links)
 }
 
 func previewOf(links []string) string {
@@ -442,7 +431,7 @@ func fromRow(
 	work *repr.WorkRef,
 	providers []string,
 	doc content.ContentDocument,
-	dlsite *DlsiteOffer,
+	dlsite *workrepr.DlsiteOffer,
 	viewer *GalgameResourceViewer,
 	cdn string,
 ) GalgameResource {

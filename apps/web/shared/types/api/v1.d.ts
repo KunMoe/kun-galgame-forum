@@ -1848,6 +1848,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/me/work-states": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Batch-read the caller's work like and favorite states
+         * @description Answers, for each work id named in work_ids, whether the caller liked it and whether they hold it in a folder. It is a batch read and is not paginated: work_ids is required, holds 1 to 100 ids. An id catalog does not know or has hidden is missing.
+         */
+        get: operations["listMyWorkStates"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/news-archive": {
         parameters: {
             query?: never;
@@ -3950,12 +3970,36 @@ export interface paths {
         };
         /**
          * Get a work
-         * @description Returns a WorkRef for the catalog work. Hidden or unknown works are NOT_FOUND. Local published is not required.
+         * @description Returns the work. Hidden or unknown works are NOT_FOUND; a merged work is ENTITY_MERGED with current_id. Local published is not required. include_nsfw=false strips adult tags. Each read adds one view without touching updated_at. viewer is null for an anonymous caller.
          */
         get: operations["getWork"];
         put?: never;
         post?: never;
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/works/{work_id}/like": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Like a work
+         * @description Sets the caller's like. Liking again changes nothing. Liking one's own work is SELF_LIKE_FORBIDDEN.
+         */
+        put: operations["putWorkLike"];
+        post?: never;
+        /**
+         * Unlike a work
+         * @description Clears the caller's like. Unliking when not liked changes nothing.
+         */
+        delete: operations["deleteWorkLike"];
         options?: never;
         head?: never;
         patch?: never;
@@ -4649,6 +4693,17 @@ export interface components {
         BatchListUserRef: {
             /** @description One member per requested id that the caller may see. Empty array, never null. */
             items: components["schemas"]["UserRef"][];
+            /** @description Requested ids that did not come back, in the order they were requested. Empty array, never null. The reason is deliberately not given. */
+            missing: string[];
+            /**
+             * @description Type discriminant. Always list.
+             * @enum {string}
+             */
+            object: "list";
+        };
+        BatchListWorkState: {
+            /** @description One member per requested id that the caller may see. Empty array, never null. */
+            items: components["schemas"]["WorkState"][];
             /** @description Requested ids that did not come back, in the order they were requested. Empty array, never null. The reason is deliberately not given. */
             missing: string[];
             /**
@@ -11604,6 +11659,269 @@ export interface components {
             /** @description The company id the retired galgame wiki used. */
             wiki_company_id: string;
         };
+        Work: {
+            /** @description Other titles, never display_name. Empty array, never null. */
+            aliases: string[];
+            /** @description The landscape art at its original size, never the 16:9 crop. null when the work has none; clients fall back to cover. */
+            banner: components["schemas"]["Image"] | null;
+            /** @description Credited companies. Empty array, never null. */
+            companies: components["schemas"]["WorkCompany"][];
+            /**
+             * @description Age rating: all_ages or r18.
+             * @enum {string}
+             */
+            content_rating: "all_ages" | "r18";
+            /** @description People who contributed to the forum page, unrenderable accounts dropped. Empty array, never null. */
+            contributors: components["schemas"]["UserRef"][];
+            /** @description The portrait cover at its original size, never the 16:9 crop. null when the work has none. */
+            cover: components["schemas"]["Image"] | null;
+            /** @description Cover images. Empty array, never null. */
+            covers: components["schemas"]["WorkCover"][];
+            /**
+             * Format: date-time
+             * @description When catalog created the work.
+             */
+            created_at: string;
+            /** @description Who created the forum page. null when there is no creator_user_id or the account is not renderable. */
+            creator: components["schemas"]["UserRef"] | null;
+            /** @description Staff grouped by role. Empty array, never null. */
+            credits: components["schemas"]["WorkCreditGroup"][];
+            /** @description The entity's own name. Never empty. Free text; never use it as a decision input. */
+            display_name: string;
+            /** @description DLsite purchase offer for the work. null when there is no DLsite workno. */
+            dlsite: components["schemas"]["DlsiteOffer"] | null;
+            /** @description Engines the work runs on. Empty array, never null. */
+            engines: components["schemas"]["Engine"][];
+            /** @description Ratings from other sites. Empty array, never null. */
+            external_ratings: components["schemas"]["WorkExternalRating"][];
+            /** @description The work's entries on other sites, such as its VNDB or Bangumi id. Empty array, never null. */
+            external_refs: components["schemas"]["WorkExternalRef"][];
+            /**
+             * Format: int64
+             * @description Favorites from catalog popularity source=nextmoe metric=favorites.
+             */
+            favorite_count: number;
+            /** @description Work id: the catalog work id, which is also the id in the web's /galgame/{id}. */
+            id: string;
+            /** @description Descriptions in every language catalog has. Empty array, never null. */
+            intros: components["schemas"]["CatalogIntro"][];
+            /** @description Whether this forum displays the work as adult content: the editorial display axis (the claim's content limit), not the age rating. */
+            is_nsfw: boolean;
+            /** @description Whether the forum has a listable page for the work. A catalog work the forum has no row for is false, with every forum count 0. */
+            is_published: boolean;
+            /** @description Whether new download resources may not be published on this work. false when the forum has no row. */
+            is_resource_publish_banned: boolean;
+            /** @description Romanization of the name. null when none is recorded. Free text; never use it as a decision input. */
+            latin: string | null;
+            /**
+             * Format: int64
+             * @description Likes on the forum page.
+             */
+            like_count: number;
+            /** @description Official site, database pages and other links, in catalog's order. Empty array, never null. */
+            links: components["schemas"]["CatalogLink"][];
+            /** @description Names by BCP-47 tag, sparse. Empty object when there are none, never null. */
+            localized: {
+                [key: string]: components["schemas"]["LocalizedName"];
+            };
+            /** @description The credited company a card names as the maker: developer, then circle, then brand, then publisher. null when no credited company has a name. */
+            maker: components["schemas"]["CompanyRef"] | null;
+            /**
+             * @description Type discriminant. Always work.
+             * @enum {string}
+             */
+            object: "work";
+            /** @description The work's original language as a BCP-47 tag. null when catalog has none. */
+            original_language: string | null;
+            /** @description Playtime aggregates from other sites. Empty array, never null. */
+            playtimes: components["schemas"]["WorkPlaytimeAggregate"][];
+            /**
+             * Format: int64
+             * @description Forum ratings of the work.
+             */
+            rating_count: number;
+            /**
+             * Format: double
+             * @description Bayesian average of the forum's ratings, one decimal. null when rating_count is 0.
+             */
+            rating_score: number | null;
+            /**
+             * Format: date
+             * @description Release date. A month- or year-precise date is the first day of that month or year. null when catalog has none.
+             */
+            release_date: string | null;
+            /**
+             * @description How much of release_date is known. null when release_date is null.
+             * @enum {string|null}
+             */
+            release_date_precision: "day" | "month" | "year" | null;
+            /** @description Languages of the work's forum resources, each once, in vocabulary order. Empty array, never null. */
+            resource_languages: ("zh-cn" | "zh-tw" | "ja-jp" | "en-us" | "other")[];
+            /** @description Platforms the work's forum resources run on, each once, in vocabulary order. Empty array, never null. */
+            resource_platforms: ("win" | "and" | "ios" | "mac" | "lin" | "web" | "mob" | "swi" | "sw2" | "n3d" | "nds" | "wii" | "wiu" | "gba" | "gbc" | "nes" | "sfc" | "ps1" | "ps2" | "ps3" | "ps4" | "ps5" | "psp" | "psv" | "xb1" | "xb3" | "xbo" | "xxs" | "sat" | "smd" | "scd" | "drc" | "pce" | "pcf" | "tdo" | "p88" | "p98" | "x1s" | "x68" | "fm7" | "fm8" | "fmt" | "msx" | "dos" | "dvd" | "bdp" | "vnd" | "oth")[];
+            /** @description Kinds of download resources the work has on the forum, each once, in vocabulary order. Empty array, never null. */
+            resource_types: ("game" | "patch" | "collection" | "crack_fix" | "mod" | "tool" | "walkthrough" | "ost" | "voice" | "cg" | "wallpaper" | "artbook" | "video" | "other")[];
+            /**
+             * Format: date-time
+             * @description When a resource of the work last changed. null when it has none.
+             */
+            resource_updated_at: string | null;
+            /** @description The work's characters, main cast first. Empty array, never null. */
+            roster: components["schemas"]["WorkCharacter"][];
+            /** @description Screenshots. Empty array, never null. */
+            screenshots: components["schemas"]["WorkScreenshot"][];
+            /** @description Series the work belongs to. Empty array, never null. */
+            series: components["schemas"]["SeriesSummary"][];
+            /** @description Tags. Adult tags are left out unless include_nsfw=true. Empty array, never null. */
+            tags: components["schemas"]["WorkTag"][];
+            /**
+             * Format: date-time
+             * @description When catalog last updated the work.
+             */
+            updated_at: string;
+            /**
+             * Format: int64
+             * @description Times the work's forum page was read. 0 for a work the forum has no page for.
+             */
+            view_count: number;
+            /** @description The caller's own state. null for an anonymous caller. */
+            viewer: components["schemas"]["WorkViewer"] | null;
+        };
+        WorkCharacter: {
+            /**
+             * @description How large a part the character plays.
+             * @enum {string}
+             */
+            character_kind: "main" | "secondary" | "appears";
+            /** @description The entity's own name. Never empty. Free text; never use it as a decision input. */
+            display_name: string;
+            /** @description A full-body standing picture. null when catalog has none. */
+            figure: components["schemas"]["Image"] | null;
+            /** @description Character id: the catalog character id, which is also the id in the web's /galgame/character/{id}. */
+            id: string;
+            /** @description Who the character is in the story. Empty string when none. Free text; never use it as a decision input. */
+            identity: string;
+            /** @description The character's portrait. null when catalog has none. */
+            image: components["schemas"]["Image"] | null;
+            /** @description Romanization of the name. null when none is recorded. Free text; never use it as a decision input. */
+            latin: string | null;
+            /** @description Names by BCP-47 tag, sparse. Empty object when there are none, never null. */
+            localized: {
+                [key: string]: components["schemas"]["LocalizedName"];
+            };
+            /**
+             * @description Type discriminant. Always character.
+             * @enum {string}
+             */
+            object: "character";
+            /**
+             * @description How much naming the character gives away.
+             * @enum {string}
+             */
+            spoiler: "none" | "minor" | "major";
+            /** @description Who voices the character. Empty array, never null. */
+            voices: components["schemas"]["CreditNameRef"][];
+        };
+        WorkCompany: {
+            /** @description Other names it goes by, never its display_name. Empty array, never null. */
+            aliases: string[];
+            /** @description What the company did on this work: developer, publisher, circle or brand. Unique, never null. */
+            attribution_roles: ("developer" | "publisher" | "circle" | "brand")[];
+            /**
+             * Format: int64
+             * @description Works catalog files under it, NSFW ones included. How many a reader can page through is the total of its works collection.
+             */
+            catalog_work_count: number;
+            /**
+             * @description What sort of company it is.
+             * @enum {string}
+             */
+            company_kind: "game_brand" | "bunko" | "publisher" | "anime_studio" | "doujin_circle" | "group";
+            /** @description The entity's own name. Never empty. Free text; never use it as a decision input. */
+            display_name: string;
+            /** @description Company id: the catalog company id, which is also the id in the web's /galgame/official/{id}. */
+            id: string;
+            /** @description The company's own language as a BCP-47 tag. null when unrecorded. */
+            lang: string | null;
+            /** @description Romanization of the name. null when none is recorded. Free text; never use it as a decision input. */
+            latin: string | null;
+            /** @description Official site, social accounts and database pages. Empty array, never null. */
+            links: components["schemas"]["CatalogLink"][];
+            /** @description Names by BCP-47 tag, sparse. Empty object when there are none, never null. */
+            localized: {
+                [key: string]: components["schemas"]["LocalizedName"];
+            };
+            /** @description The company's logo. null when catalog has none. */
+            logo: components["schemas"]["Image"] | null;
+            /**
+             * @description Type discriminant. Always company.
+             * @enum {string}
+             */
+            object: "company";
+        };
+        WorkCover: {
+            /**
+             * @description Which face of the package this cover is.
+             * @enum {string}
+             */
+            cover_slot: "main" | "pkgfront" | "dig" | "pkgback" | "pkgcontent" | "pkgside" | "pkgmed" | "other";
+            /** @description Catalog cover row id, which the cover vote path takes. */
+            id: string;
+            /** @description The cover at original size. Never null on a cover; the type is shared with images that can be absent. */
+            image: components["schemas"]["Image"] | null;
+            /**
+             * @description Type discriminant. Always work_cover.
+             * @enum {string}
+             */
+            object: "work_cover";
+            /** @description Where the image came from, such as vndb or dlsite. An open vocabulary. */
+            site: string;
+            /**
+             * Format: int64
+             * @description Catalog order among covers.
+             */
+            sort_order: number;
+            /** @description The caller's vote on this cover. null for an anonymous caller. */
+            viewer: components["schemas"]["WorkCoverViewer"] | null;
+            /**
+             * Format: int64
+             * @description Public votes for this cover. 0 when the vote store is unread.
+             */
+            vote_count: number;
+        };
+        WorkCoverViewer: {
+            /** @description Whether the caller voted for this cover. */
+            has_voted: boolean;
+        };
+        WorkCreditGroup: {
+            /** @description The role's name as catalog records it. Free text; never use it as a decision input. */
+            display_name: string;
+            /** @description People credited in this role. Empty array, never null. */
+            people: components["schemas"]["WorkCreditPerson"][];
+            /** @description Catalog's role key, such as scenario, illustration, music or voice-actor. An open vocabulary. */
+            role_key: string;
+        };
+        WorkCreditPerson: {
+            /** @description The entity's own name. Never empty. Free text; never use it as a decision input. */
+            display_name: string;
+            /** @description Credit name id: the catalog credit name id, which is also the id in the web's /galgame/staff/{id}. */
+            id: string;
+            /** @description The name's own language as a BCP-47 tag. null when unrecorded. */
+            lang: string | null;
+            /** @description Romanization of the name. null when none is recorded. Free text; never use it as a decision input. */
+            latin: string | null;
+            /** @description Names by BCP-47 tag, sparse. Empty object when there are none, never null. */
+            localized: {
+                [key: string]: components["schemas"]["LocalizedName"];
+            };
+            /**
+             * @description Type discriminant. Always credit_name.
+             * @enum {string}
+             */
+            object: "credit_name";
+            /** @description Character names this credit voices, as catalog wrote them. Empty array, never null. */
+            voiced_characters: string[];
+        };
         WorkDigest: {
             /** @description Brand names from catalog, in catalog order. Empty array if none. */
             developer_names: string[];
@@ -11611,6 +11929,108 @@ export interface components {
             intro_excerpt: string | null;
             /** @description Release date at its recorded precision: YYYY, YYYY-MM or YYYY-MM-DD. null when not announced. */
             release: string | null;
+        };
+        WorkEngagement: {
+            /**
+             * Format: int64
+             * @description Likes on the forum page after this request.
+             */
+            like_count: number;
+            /**
+             * @description Type discriminant. Always work_engagement.
+             * @enum {string}
+             */
+            object: "work_engagement";
+            /** @description The caller's like state after this request. */
+            viewer: components["schemas"]["WorkEngagementViewer"] | null;
+            /** @description Work id. */
+            work_id: string;
+        };
+        WorkEngagementViewer: {
+            /** @description Whether the caller liked this work. */
+            has_liked: boolean;
+        };
+        WorkExternalRating: {
+            /** @description That source's histogram. Empty array, never null. */
+            buckets: components["schemas"]["WorkExternalRatingBucket"][];
+            /**
+             * @description Type discriminant. Always work_external_rating.
+             * @enum {string}
+             */
+            object: "work_external_rating";
+            /**
+             * Format: double
+             * @description The source's own score, on the source's own scale.
+             */
+            rating_value: number;
+            /** @description The rating source, such as vndb or erogamescape. An open vocabulary. */
+            site: string;
+            /**
+             * Format: int64
+             * @description Rank on that source. null when unranked.
+             */
+            source_rank: number | null;
+            /** @description That source's summary statistics. null when none. */
+            stats: components["schemas"]["WorkExternalRatingStats"] | null;
+            /**
+             * Format: int64
+             * @description Votes that source counted.
+             */
+            vote_count: number;
+        };
+        WorkExternalRatingBucket: {
+            /**
+             * Format: double
+             * @description The source's own bucket label.
+             */
+            bucket: number;
+            /**
+             * Format: int64
+             * @description Votes in this bucket.
+             */
+            vote_count: number;
+        };
+        WorkExternalRatingStats: {
+            /**
+             * Format: double
+             * @description Highest score. null when unrecorded.
+             */
+            highest: number | null;
+            /**
+             * Format: double
+             * @description Lowest score. null when unrecorded.
+             */
+            lowest: number | null;
+            /**
+             * Format: double
+             * @description Mean score. null when unrecorded.
+             */
+            mean: number | null;
+            /**
+             * Format: double
+             * @description Standard deviation of the scores. null when unrecorded.
+             */
+            stdev: number | null;
+        };
+        WorkExternalRef: {
+            /** @description The work's id on that site. Free text; never use it as a decision input. */
+            external_id: string;
+            /** @description The other site, such as vndb or bangumi. An open vocabulary. */
+            site: string;
+        };
+        WorkPlaytimeAggregate: {
+            /**
+             * Format: int64
+             * @description Aggregate minutes.
+             */
+            minutes: number;
+            /** @description The playtime source. An open vocabulary. */
+            site: string;
+            /**
+             * Format: int64
+             * @description Votes that source counted.
+             */
+            vote_count: number;
         };
         WorkRankingEntry: {
             /** @description Who created the work's page on this forum. null when none is recorded or the account cannot be shown. */
@@ -11673,6 +12093,37 @@ export interface components {
              * @description Sequence number of the revision on the work: what the diff between revisions takes. null for some edits from the retired wiki, which carry only legacy_revision_id.
              */
             revision_number: number | null;
+        };
+        WorkScreenshot: {
+            /** @description Caption. Empty string when none. Free text; never use it as a decision input. */
+            caption: string;
+            /** @description The screenshot at original size. Never null on a screenshot; the type is shared with images that can be absent. */
+            image: components["schemas"]["Image"] | null;
+            /**
+             * @description Type discriminant. Always work_screenshot.
+             * @enum {string}
+             */
+            object: "work_screenshot";
+            /** @description Where the image came from. An open vocabulary. */
+            site: string;
+            /**
+             * Format: int64
+             * @description Catalog order among screenshots.
+             */
+            sort_order: number;
+        };
+        WorkState: {
+            /** @description Whether the caller holds this work in any folder. */
+            has_favorited: boolean;
+            /** @description Whether the caller liked this work. */
+            has_liked: boolean;
+            /**
+             * @description Type discriminant. Always work_state.
+             * @enum {string}
+             */
+            object: "work_state";
+            /** @description Work id this state is about. */
+            work_id: string;
         };
         WorkStats: {
             /**
@@ -11756,6 +12207,62 @@ export interface components {
              * @description Times the work's forum page was read. 0 for a work the forum has no page for.
              */
             view_count: number;
+        };
+        WorkTag: {
+            /**
+             * Format: int64
+             * @description Works catalog files under it, NSFW ones included. How many a reader can page through is the total of its works collection.
+             */
+            catalog_work_count: number;
+            /** @description The entity's own name. Never empty. Free text; never use it as a decision input. */
+            display_name: string;
+            /** @description Tag id: the catalog tag id, which is also the id in the web's /galgame/tag/{id}. */
+            id: string;
+            /** @description Whether the tag is adult content. Such tags are left out unless include_nsfw=true. */
+            is_sexual: boolean;
+            /** @description Romanization of the name. null when none is recorded. Free text; never use it as a decision input. */
+            latin: string | null;
+            /** @description Names by BCP-47 tag, sparse. Empty object when there are none, never null. */
+            localized: {
+                [key: string]: components["schemas"]["LocalizedName"];
+            };
+            /**
+             * @description Type discriminant. Always tag.
+             * @enum {string}
+             */
+            object: "tag";
+            /**
+             * @description How much the tag gives away.
+             * @enum {string}
+             */
+            spoiler: "none" | "minor" | "major";
+            /**
+             * @description What the tag describes: content is the story and characters, meta is the game as a product.
+             * @enum {string}
+             */
+            tag_kind: "content" | "meta";
+        };
+        WorkViewer: {
+            /** @description Whether the caller may ban publishing download resources on this work. Requests authenticated with a Bearer token never carry staff powers. */
+            can_ban_resource_publish: boolean;
+            /** @description Whether the caller holds this work in any folder. */
+            has_favorited: boolean;
+            /** @description Whether the caller liked this work. */
+            has_liked: boolean;
+            /** @description The caller's own playtime. null when they have none or the token cannot read it. */
+            playtime: components["schemas"]["WorkViewerPlaytime"] | null;
+        };
+        WorkViewerPlaytime: {
+            /**
+             * Format: int64
+             * @description Minutes the caller reported. 0 when they reported none or withdrew the report.
+             */
+            minutes: number;
+            /**
+             * @description The caller's play state as catalog records it: a rating's play_status, or done for a finished game with no completion recorded, which no write accepts. null when they have none.
+             * @enum {string|null}
+             */
+            play_state: "wish" | "doing" | "done_one_route" | "done_main" | "done_all" | "on_hold" | "dropped" | "done" | null;
         };
         YearCount: {
             /**
@@ -21536,6 +22043,74 @@ export interface operations {
                 };
             };
             /** @description SERVICE_UNAVAILABLE when the community service is unreachable or unconfigured. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listMyWorkStates: {
+        parameters: {
+            query: {
+                /** @description Work ids to answer for, comma-separated. 1 to 100 of them. */
+                work_ids: string[];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BatchListWorkState"];
+                };
+            };
+            /** @description INVALID_PARAMETER when work_ids is absent, empty, holds more than 100 ids, or holds something that is not a positive decimal integer. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the catalog cannot be reached. */
             503: {
                 headers: {
                     [name: string]: unknown;
@@ -33085,7 +33660,10 @@ export interface operations {
     };
     getWork: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description When true, adult tags are included. Default false: adult tags are stripped. */
+                include_nsfw?: boolean;
+            };
             header?: never;
             path: {
                 /** @description Catalog work id, which is also the forum galgame page id. */
@@ -33101,10 +33679,10 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["WorkRef"];
+                    "application/json": components["schemas"]["Work"];
                 };
             };
-            /** @description Bad Request */
+            /** @description INVALID_PARAMETER when include_nsfw is not a boolean. */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -33131,6 +33709,83 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
+            /** @description NOT_FOUND when the work does not exist or is hidden; ENTITY_MERGED when it was merged, with current_id. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the catalog or the account service cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    putWorkLike: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Work id. */
+                work_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkEngagement"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SELF_LIKE_FORBIDDEN or ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
             /** @description NOT_FOUND when the work does not exist or is hidden. */
             404: {
                 headers: {
@@ -33149,7 +33804,84 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description SERVICE_UNAVAILABLE when the catalog cannot be reached. */
+            /** @description SERVICE_UNAVAILABLE when the catalog, the account service or moemoepoint cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    deleteWorkLike: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Work id. */
+                work_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkEngagement"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the work does not exist or is hidden. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the catalog, the account service or moemoepoint cannot be reached. */
             503: {
                 headers: {
                     [name: string]: unknown;

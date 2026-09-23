@@ -1,7 +1,6 @@
 package service
 
 import (
-	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -262,65 +261,9 @@ func charactersFromNextMoe(chars []dto.NextMoeGalgameCharacter) []dto.GalgameDet
 	return out
 }
 
-func withoutSexualTags(tags []dto.GalgameDetailTag) []dto.GalgameDetailTag {
-	out := make([]dto.GalgameDetailTag, 0, len(tags))
-	for _, t := range tags {
-		if t.Category == "sexual" {
-			continue
-		}
-		out = append(out, t)
-	}
-	return out
-}
-
-func detailRatingFromRow(
-	r repository.GalgameDetailRatingRow,
-	user userclient.User,
-	isLiked bool,
-	workID int,
-	g dto.NextMoeGalgameDetailFull,
-) dto.GalgameDetailRating {
-	return dto.GalgameDetailRating{
-		ID:           r.ID,
-		User:         userBriefToDTO(user),
-		Recommend:    r.Recommend,
-		Overall:      r.Overall,
-		View:         r.View,
-		GalgameType:  rawJSON(r.GalgameType),
-		PlayStatus:   r.PlayStatus,
-		ShortSummary: r.ShortSummary,
-		SpoilerLevel: r.SpoilerLevel,
-		Art:          r.Art,
-		Story:        r.Story,
-		Music:        r.Music,
-		Character:    r.Character,
-		Route:        r.Route,
-		System:       r.System,
-		Voice:        r.Voice,
-		ReplayValue:  r.ReplayValue,
-		LikeCount:    r.LikeCount,
-		IsLiked:      isLiked,
-		WorkID:       workID,
-		Created:      r.Created,
-		Updated:      r.Updated,
-		Galgame: dto.GalgameDetailRatingGalgame{
-			ID:           g.ID,
-			ContentLimit: g.ContentLimit,
-			Name:         g.Name,
-		},
-	}
-}
-
 func emptyStrSliceIfNil(s []string) []string {
 	if s == nil {
 		return []string{}
 	}
 	return s
-}
-
-func rawJSON(s string) json.RawMessage {
-	if s == "" {
-		return json.RawMessage("[]")
-	}
-	return json.RawMessage(s)
 }

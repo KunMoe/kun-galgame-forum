@@ -313,6 +313,26 @@ G8 要求全 spec 里同名属性同型（含可空与 format），G14 要求每
 
 `CatalogIntro` / `CatalogLink` 按 GE **代码**（`locale`+`data_source`，`site`+`url`），不是 GE 契约 §3.3 里已经过时的 `lang`/`source`。
 
+### 3.13 实现时 gate 逼出的改名与修正（2026-09-24，以此为准）
+
+实现后 G7 / G8 / G14 在全 spec 上又撞了几处。下表覆盖 §3.1–§3.12 的同名条目：
+
+| 契约前文 | 实际 | 撞了谁 / 为什么 |
+|---|---|---|
+| `external_ids: WorkExternalID[]` | `external_refs: WorkExternalRef[]`（`site` + `external_id`） | G7：以 `_ids` 结尾的属性必须是 id 字符串数组 |
+| `characters: WorkCharacter[]` | `roster: WorkCharacter[]` | G8：`Credit.characters` 是 `CreditCharacter[]` |
+| `WorkExternalRating.stats.minimum` / `maximum` | `lowest` / `highest` | G8：`FieldParams.minimum` / `maximum` 是非空 number |
+| 外部评分的数值无下限 | `rating_value` / `bucket` / `mean` / `stdev` / `lowest` / `highest` 都 `minimum: 0` | G14：number 必须有 minimum；四个源的刻度都 ≥ 0 |
+| `WorkCover.id: DecimalID \| null` | **非空** `DecimalID`：catalog 详情的封面行 id（`catalog_work_cover.id`，投票路径就收它），缺时退回票仓 id；两边都没有的行丢掉并打警告 | G8：`id` 全 spec 非空 |
+| `WorkCover.image` / `WorkScreenshot.image: Image` | `Image \| null`，文档写「在封面 / 截图上永不为 null」 | G8：`image` 全 spec 是 `Image \| null`（抽奖奖品图、角色图）。G1 `resource_updated_at` 同一处理 |
+| `viewer.playtime.play_status: PlayStatus \| null`，catalog 的只读 `done` 丢成 `null` | `viewer.playtime.play_state`：GR 的七个值 **加** `done`，`null` = 没有状态 | G8：`play_status` 在评分上非空。换名同时保住了旧页今天就在显示的「已通关（无完成度）」——丢成 `null` 是回退。`done` 只读，G6 写面仍不收（O6 改判） |
+
+另外三处实现事实，契约前文写错或没写：
+
+- **浏览计数也要进日桶。** 旧 `IncrementView` 在列上 +1 之后还调 `viewstats.BumpDaily(galgame_view_daily)`，`view_7d` / `view_30d` 排行靠它（迁移 050）。K-G26 只写了「列更新不碰 `updated`」，第一版实现照字面漏了日桶。现在：UPDATE 命中一行才进日桶（无本地行的作品不留孤儿桶）；两步任一出错 500。
+- **v2 的竖版 / 横幅槽位此前永远不带等级。** 论坛的 v2 改写（`client/catalog_v2.go` `imageToSlot`）从 v2 `cover` / `banner` 合成 `cover_slots` 时只抄了 url / 宽高 / thumbhash，`sexual` 丢了，所以 K-G27 的指针解码单做是空转：`WorkRef.cover.sexual` 在生产里恒 `null`。改写现在把 v2 的 `safe`/`suggestive`/`explicit` 映成 0/1/2 写进槽位，`null` 保持缺席。槽位的等级只有 `workrepr` 读，旧面不受影响。**影响面**：所有带 `WorkRef` 的 v1 面（资源、题目、排行、搜索、活动…）的 `cover.sexual` 从恒 `null` 变成真实等级；网页按 `sexual` 模糊的地方要在浏览器里看一遍。
+- **`resource_types` 读的是标量 `galgame_resource.type`**，不是 jsonb 轴（资源表只有平台 / 语言是 jsonb）。去重后过 `CompatType` + `TypeKeys`。
+
 ## 4. 逐条操作
 
 通用：401 `MISSING_CREDENTIAL` / `INVALID_CREDENTIAL`（required；optional 的坏 Bearer）、403 `ACCOUNT_BANNED`、500 `INTERNAL_ERROR`、503 `SERVICE_UNAVAILABLE`（会话存储 / userclient / catalog）。每个 401 带 `WWW-Authenticate`。v1 全部 `Cache-Control: no-store`。
@@ -442,7 +462,7 @@ Query：`work_ids` 必填，1–100，逗号形。`missing` 与 `/me/topic-state
 | O3 | `WorkSummary` 没有 `resource_types` / `favorite_count` / `viewer` | 只加在 `Work`。G5 列表不画这些 |
 | O4 | 嵌入完整 `SeriesSummary`（含最多 5 个 `sample_works`）比侧栏需要的多，可能 N+1 | 接受。一部作品通常 1–2 个系列；`sample_works` 可空数组。系列面板不再逐个 GET |
 | O5 | 截图的 `violence` 整数今天参与 Gallery 过滤 | **不下发**（01 图片 A5）。网页只按 `image.sexual` 与内容姿态模糊 |
-| O6 | catalog 只读 play state `"done"` 进不了 GR 的 `play_status` 枚举 | `viewer.playtime.play_status` 为 `null`，分钟仍发。G6 写面继续不收 `done` |
+| O6 | catalog 只读 play state `"done"` 进不了 GR 的 `play_status` 枚举 | **改判（§3.13）**：字段叫 `viewer.playtime.play_state`，枚举 = GR 七值 + `done`；分钟照发。G6 写面继续不收 `done` |
 | O7 | `Work.favorite_count`（catalog 指标）与活动 `WorkStats.favorite_count`（本地列）同名同 schema、不同计数 | 接受 G8。字段文档写清来源。本地列本面不下发 |
 | O8 | 封面 / 截图行的 `Sexual` 与槽位一样是 `int` | 与槽位同一指针修复（K-G27），不另开范围 |
 | O9 | 标签 `tag_kind` 只有 `content`/`meta`；旧 `technical` 若 catalog 仍发 | 按 `meta` 收下并打警告，不 500。实现时对生产 tag kind 再扫一眼 |

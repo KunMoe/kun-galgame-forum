@@ -31,7 +31,7 @@ func newWallV1(
 ) *wallapiv1.Service {
 	convert := &content.Converter{CDNBase: cdn, SiteBase: apiv1.SiteOrigin, Images: images, Users: users.Users}
 	resolve := func(ctx context.Context, workID int) (bool, error) {
-		_, found, appErr := galgame.CatalogWorkDetail(ctx, workID)
+		_, found, _, appErr := galgame.CatalogWorkDetail(ctx, workID)
 		if appErr != nil {
 			return false, appErr
 		}

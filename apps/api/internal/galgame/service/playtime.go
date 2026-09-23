@@ -38,42 +38,6 @@ func playStateFinished(status string) bool {
 	}
 }
 
-func (s *GalgameService) hydrateMyPlaytime(ctx context.Context, workID int, accessToken string) *dto.GalgameMyPlaytime {
-	if s.catalog == nil || accessToken == "" || s.galgameClient == nil {
-		return nil
-	}
-	got, err := s.catalog.MyPlaytime(ctx, accessToken, int64(workID))
-	if err != nil {
-		// A token minted before playtime joined the authorize scope is the
-		// ordinary case here, not a fault: the detail page just shows no
-		// personal row until the user signs in again. It used to log nothing at
-		// all, and that is how the 2026-09-08 folder-scope outage stayed
-		// invisible on the sibling call sites for an hour — so it is counted now
-		// rather than swallowed.
-		if errors.Is(err, catalogclient.ErrInsufficientScope) {
-			warnPlaytimeScope.warn("galgame detail: own playtime unavailable, token lacks playtime:read", "work_id", workID)
-		} else {
-			slog.Warn("galgame detail: own playtime unavailable", "work_id", workID, "error", err)
-		}
-		return nil
-	}
-	status := ""
-	ws, err := s.catalog.MyWorkState(ctx, accessToken, int64(workID))
-	if err != nil {
-		slog.Warn("galgame detail: own work-state unavailable", "work_id", workID, "error", err)
-	} else if ws != nil {
-		status = playstate.FromCatalog(ws.State, ws.Completion)
-	}
-	minutes := 0
-	if got != nil && !playtimeWithdrawn(got.Minutes) {
-		minutes = got.Minutes
-	}
-	if minutes == 0 && status == "" {
-		return nil
-	}
-	return &dto.GalgameMyPlaytime{Minutes: minutes, Status: status}
-}
-
 type PlaytimeService struct {
 	galgameService *GalgameService
 	galgameClient  *client.GalgameClient

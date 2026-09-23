@@ -30,6 +30,18 @@ var (
 	warnRatingWorkStateScope scopeWarn
 )
 
+func WarnFoldersUnreadable(userID int) {
+	warnFoldersScope.warn("galgame: my folders unreadable, token lacks folder:read", "user_id", userID)
+}
+
+func WarnFavoriteUnreadable(workID int) {
+	warnFavoriteScope.warn("galgame: favourite state unreadable, token lacks folder:read", "work_id", workID)
+}
+
+func WarnPlaytimeUnreadable(workID int) {
+	warnPlaytimeScope.warn("galgame detail: own playtime unavailable, token lacks playtime:read", "work_id", workID)
+}
+
 func (w *scopeWarn) warn(msg string, args ...any) {
 	now := time.Now().Unix()
 	last := w.last.Load()

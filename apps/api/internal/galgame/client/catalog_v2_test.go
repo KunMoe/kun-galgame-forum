@@ -47,6 +47,22 @@ func TestRewriteV2JSON_CoverAndBannerBecomeSlots(t *testing.T) {
 	}
 }
 
+func TestRewriteV2JSON_SlotsKeepTheSexualGrade(t *testing.T) {
+	raw := []byte(`{"object":"work","id":"1","display_name":"Kun","cover":{"url":"https://cdn.example/p.webp","sexual":"explicit"},"banner":{"url":"https://cdn.example/b.webp","sexual":null}}`)
+	var got struct {
+		CoverSlots catCoverSlots `json:"cover_slots"`
+	}
+	if err := json.Unmarshal(rewriteV2JSON(raw, ""), &got); err != nil {
+		t.Fatalf("slots did not decode: %v", err)
+	}
+	if p := got.CoverSlots.Portrait; p == nil || p.Sexual == nil || *p.Sexual != 2 {
+		t.Fatalf("portrait grade lost: %+v", p)
+	}
+	if b := got.CoverSlots.Banner; b == nil || b.Sexual != nil {
+		t.Fatalf("an unassessed banner must stay null, not safe: %+v", b)
+	}
+}
+
 func TestV2CatalogQuery_EmptySearchGetsFacets(t *testing.T) {
 	q := v2CatalogQuery("/catalog/works/search", url.Values{"limit": {"24"}})
 	if q.Get("facets") != "olang,tag_id" {
@@ -134,7 +150,7 @@ func TestLiveV2Works(t *testing.T) {
 		t.Fatalf("card fields missing: %+v", b)
 	}
 
-	d, found, appErr := c.CatalogWorkDetail(ctx, b.ID)
+	d, found, _, appErr := c.CatalogWorkDetail(ctx, b.ID)
 	if appErr != nil || !found || d == nil {
 		t.Fatalf("CatalogWorkDetail(%d) = (%v, %v)", b.ID, appErr, found)
 	}

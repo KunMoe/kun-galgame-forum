@@ -27,19 +27,19 @@ type catRelatedLink struct {
 	URL    string `json:"url"`
 }
 
-type catCoverSlot struct {
+type CoverSlot struct {
 	URL       string `json:"url"`
 	Width     int    `json:"width"`
 	Height    int    `json:"height"`
 	Thumbhash string `json:"thumbhash"`
-	Sexual    int    `json:"sexual"`
+	Sexual    *int   `json:"sexual"`
 	Violence  int    `json:"violence"`
 	Source    string `json:"source"`
 }
 
 type catCoverSlots struct {
-	Portrait *catCoverSlot `json:"portrait"`
-	Banner   *catCoverSlot `json:"banner"`
+	Portrait *CoverSlot `json:"portrait"`
+	Banner   *CoverSlot `json:"banner"`
 }
 
 // catIntros is the works-list brief's intro block, held in the [{lang, intro,
@@ -437,7 +437,7 @@ func portraitFields(covers *catCoverSlots) (hash, url string, w, h int, thumb st
 }
 
 func coverFields(covers *catCoverSlots, fallbackURL string) (hash, url string, w, h int, thumb string) {
-	slot := (*catCoverSlot)(nil)
+	slot := (*CoverSlot)(nil)
 	if covers != nil {
 		if covers.Banner != nil {
 			slot = covers.Banner

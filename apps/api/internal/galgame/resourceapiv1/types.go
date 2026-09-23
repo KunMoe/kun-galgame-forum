@@ -4,6 +4,7 @@ import (
 	"kun-galgame-api/internal/apiv1/content"
 	"kun-galgame-api/internal/apiv1/repr"
 	"kun-galgame-api/internal/galgame/resourcevocab"
+	"kun-galgame-api/internal/galgame/workrepr"
 
 	"github.com/danielgtaylor/huma/v2"
 )
@@ -101,7 +102,7 @@ type GalgameResource struct {
 	CreatedAt         repr.DateTime           `json:"created_at" doc:"Creation time."`
 	UpdatedAt         repr.DateTime           `json:"updated_at" doc:"Time of the latest write to the row."`
 	EditedAt          *repr.DateTime          `json:"edited_at" doc:"Time of the latest edit. null when never edited."`
-	Dlsite            *DlsiteOffer            `json:"dlsite" doc:"DLsite purchase offer for the work. null when there is no DLsite workno."`
+	Dlsite            *workrepr.DlsiteOffer   `json:"dlsite" doc:"DLsite purchase offer for the work. null when there is no DLsite workno."`
 	Viewer            *GalgameResourceViewer  `json:"viewer" doc:"The caller's own state. null for an anonymous caller."`
 }
 
@@ -109,12 +110,6 @@ type GalgameResourceViewer struct {
 	HasLiked  bool `json:"has_liked" doc:"Whether the caller liked this resource."`
 	CanEdit   bool `json:"can_edit" doc:"Whether the caller may edit this resource. Requests authenticated with a Bearer token never carry staff powers."`
 	CanDelete bool `json:"can_delete" doc:"Whether the caller may delete this resource. Requests authenticated with a Bearer token never carry staff powers."`
-}
-
-type DlsiteOffer struct {
-	PurchaseURL  string  `json:"purchase_url" format:"uri" maxLength:"4096" doc:"Short link or affiliate template for the DLsite product."`
-	CouponURL    *string `json:"coupon_url" format:"uri" maxLength:"4096" doc:"Coupon or campaign landing URL. null when none."`
-	CampaignName *string `json:"campaign_name" maxLength:"256" doc:"Name of a running campaign. null on the static coupon page. Free text; never use it as a decision input."`
 }
 
 type GalgameResourceDownload struct {

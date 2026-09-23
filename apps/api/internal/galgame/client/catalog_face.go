@@ -138,7 +138,7 @@ func mirrorOf(row *CatalogWorkListItem) CatalogMirror {
 	return m
 }
 
-type catWorkDetail struct {
+type CatalogWorkDetail struct {
 	ID            int64                       `json:"id"`
 	DisplayName   string                      `json:"display_name"`
 	Localized     map[string]catLocalizedName `json:"localized"`
@@ -167,7 +167,7 @@ type catWorkDetail struct {
 		Hash      string `json:"hash"`
 		URL       string `json:"url"`
 		Kind      string `json:"kind"`
-		Sexual    int    `json:"sexual"`
+		Sexual    *int   `json:"sexual"`
 		Violence  int    `json:"violence"`
 		Source    string `json:"source"`
 		Width     int    `json:"width"`
@@ -179,7 +179,7 @@ type catWorkDetail struct {
 	Screenshots []struct {
 		URL       string `json:"url"`
 		Caption   string `json:"caption"`
-		Sexual    int    `json:"sexual"`
+		Sexual    *int   `json:"sexual"`
 		Violence  int    `json:"violence"`
 		Source    string `json:"source"`
 		Width     int    `json:"width"`
@@ -281,13 +281,13 @@ func (s *catWorkSeries) Label(ctx context.Context) string {
 }
 
 func (c *GalgameClient) CatalogWorkExists(ctx context.Context, workID int) (bool, *errors.AppError) {
-	_, found, err := c.CatalogWorkDetail(ctx, workID)
+	_, found, _, err := c.CatalogWorkDetail(ctx, workID)
 	return found, err
 }
 
-func (c *GalgameClient) CatalogWorkDetail(ctx context.Context, workID int) (*catWorkDetail, bool, *errors.AppError) {
+func (c *GalgameClient) CatalogWorkDetail(ctx context.Context, workID int) (*CatalogWorkDetail, bool, int64, *errors.AppError) {
 	if workID <= 0 {
-		return nil, false, nil
+		return nil, false, 0, nil
 	}
 	// The tag panel's 剧透等级 filter defaults to level 0 and reveals the rest on
 	// demand, so it needs the rows to filter: asking for spoilers=0 here made
@@ -298,22 +298,25 @@ func (c *GalgameClient) CatalogWorkDetail(ctx context.Context, workID int) (*cat
 		"include":  {"credits"},
 	}
 	openPopulation(q)
-	data, appErr := c.CatalogGet(ctx, "/catalog/works/"+strconv.Itoa(workID), q)
+	data, found, movedTo, appErr := c.catalogGetRecord(ctx, "/catalog/works/"+strconv.Itoa(workID), q)
 	if appErr != nil {
-		if appErr.StatusCode == 404 {
-			return nil, false, nil
-		}
-		return nil, false, appErr
+		return nil, false, 0, appErr
 	}
-	var d catWorkDetail
+	if movedTo != 0 {
+		return nil, false, movedTo, nil
+	}
+	if !found {
+		return nil, false, 0, nil
+	}
+	var d CatalogWorkDetail
 	if err := json.Unmarshal(data, &d); err != nil {
-		return nil, false, errors.ErrInternal("解析 Catalog 作品详情响应失败")
+		return nil, false, 0, errors.ErrInternal("解析 Catalog 作品详情响应失败")
 	}
 	if d.Claim != nil && d.Claim.State == claimStateHidden {
-		return nil, false, nil
+		return nil, false, 0, nil
 	}
 	c.hydrateRosterArt(d.Characters)
-	return &d, true, nil
+	return &d, true, 0, nil
 }
 
 func (c *GalgameClient) hydrateRosterArt(chars []catWorkCharacter) {

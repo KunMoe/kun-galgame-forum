@@ -116,27 +116,29 @@ type geMember struct {
 // fakeCatalog answers entityapiv1.Catalog from in-memory fixtures decoded from
 // JSON, because the client's wire types carry unexported fields.
 type fakeCatalog struct {
-	mu        sync.Mutex
-	fail      atomic.Bool
-	calls     atomic.Int32
-	rows      map[int]client.CatalogWorkListItem
-	works     []geWork
-	taxonomy  map[string][]client.CatalogTaxonomyItem
-	hits      map[string][]client.CatalogEntityHit
-	tags      map[string]*client.CatalogTagDetail
-	labels    map[string]*client.CatalogLabelDetail
-	moved     map[string]int64
-	engines   map[string]*client.CatalogEngineDetail
-	series    map[string]*client.CatalogSeriesDetail
-	graphs    map[string]*client.CatalogLabelRelationGraph
-	wiki      map[int]int64
-	names     map[int64]*client.CatalogName
-	chars     map[int64]*client.CatalogCharacter
-	members   map[string][]int
-	rollup    map[string][]geMember
-	seriesMem map[int][]int
-	gotLimits []string
-	searched  []url.Values
+	mu         sync.Mutex
+	fail       atomic.Bool
+	calls      atomic.Int32
+	rows       map[int]client.CatalogWorkListItem
+	details    map[int]*client.CatalogWorkDetail
+	movedWorks map[int]int64
+	works      []geWork
+	taxonomy   map[string][]client.CatalogTaxonomyItem
+	hits       map[string][]client.CatalogEntityHit
+	tags       map[string]*client.CatalogTagDetail
+	labels     map[string]*client.CatalogLabelDetail
+	moved      map[string]int64
+	engines    map[string]*client.CatalogEngineDetail
+	series     map[string]*client.CatalogSeriesDetail
+	graphs     map[string]*client.CatalogLabelRelationGraph
+	wiki       map[int]int64
+	names      map[int64]*client.CatalogName
+	chars      map[int64]*client.CatalogCharacter
+	members    map[string][]int
+	rollup     map[string][]geMember
+	seriesMem  map[int][]int
+	gotLimits  []string
+	searched   []url.Values
 }
 
 func decodeInto(t *testing.T, raw string, out any) {
@@ -243,6 +245,31 @@ func (f *fakeCatalog) CatalogLabel(_ context.Context, id string) (*client.Catalo
 	}
 	o, ok := f.labels[id]
 	return o, ok, 0, nil
+}
+
+func (f *fakeCatalog) CatalogWorkDetail(_ context.Context, workID int) (*client.CatalogWorkDetail, bool, int64, *legacyErrors.AppError) {
+	if e := f.err(); e != nil {
+		return nil, false, 0, e
+	}
+	if to, ok := f.movedWorks[workID]; ok {
+		return nil, false, to, nil
+	}
+	if d, ok := f.details[workID]; ok {
+		return d, true, 0, nil
+	}
+	row, ok := f.rows[workID]
+	if !ok || !client.CatalogItemRenderable(&row) {
+		return nil, false, 0, nil
+	}
+	raw, err := json.Marshal(row)
+	if err != nil {
+		return nil, false, 0, legacyErrors.New(233, err.Error(), http.StatusInternalServerError)
+	}
+	var d client.CatalogWorkDetail
+	if err := json.Unmarshal(raw, &d); err != nil {
+		return nil, false, 0, legacyErrors.New(233, err.Error(), http.StatusInternalServerError)
+	}
+	return &d, true, 0, nil
 }
 
 func (f *fakeCatalog) CatalogEngine(_ context.Context, id string) (*client.CatalogEngineDetail, bool, *legacyErrors.AppError) {

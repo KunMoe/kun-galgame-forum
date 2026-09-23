@@ -53,19 +53,3 @@ func (r *GalgameContributorRepository) RefreshContributorCounts(workIDs []int64)
 			SELECT COUNT(*) FROM galgame_contributor c WHERE c.work_id = galgame.id
 		) WHERE id IN ?`, workIDs).Error
 }
-
-type ContributorBrief struct {
-	UserID        int64 `gorm:"column:user_id"`
-	RevisionCount int   `gorm:"column:revision_count"`
-}
-
-func (r *GalgameContributorRepository) FindContributors(workID, limit int) []ContributorBrief {
-	var rows []ContributorBrief
-	r.db.Table("galgame_contributor").
-		Select("user_id, revision_count").
-		Where("work_id = ?", workID).
-		Order("revision_count DESC, first_at ASC").
-		Limit(limit).
-		Scan(&rows)
-	return rows
-}

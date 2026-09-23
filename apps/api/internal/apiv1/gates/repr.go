@@ -42,6 +42,7 @@ var (
 	languageTagProperties = map[string]bool{
 		"language": true, "languages": true, "interface_language": true,
 		"resource_language": true, "resource_languages": true,
+		"original_language": true,
 	}
 	languageTagValue = regexp.MustCompile(`^[a-z]{2,3}(-[a-z0-9]{2,8})*$`)
 	// kebabCaseProperties hold lowercase kebab-case tokens with hyphens: the

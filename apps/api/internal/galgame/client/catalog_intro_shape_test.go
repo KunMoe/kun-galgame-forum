@@ -80,11 +80,11 @@ func TestCatalogIntros_DetailReadsBothKeys(t *testing.T) {
 		{"intro", `{"id":9,"intro":[` + row + `]}`},
 		{"intros", `{"id":9,"intros":[` + row + `]}`},
 	} {
-		var d catWorkDetail
+		var d CatalogWorkDetail
 		if err := json.Unmarshal([]byte(tc.body), &d); err != nil {
 			t.Fatalf("%s: unmarshal: %v", tc.key, err)
 		}
-		rows := OrderIntros(d.introRows())
+		rows := OrderIntros(d.IntroRows())
 		if len(rows) != 2 || rows[0].Lang != "zh-Hans" || rows[1].Lang != "ja" {
 			t.Fatalf("%s: rows = %+v, want zh-Hans then ja", tc.key, rows)
 		}
@@ -101,12 +101,12 @@ func TestCatalogIntros_DetailReadsBothKeys(t *testing.T) {
 // The rename ships as a dual-emit window, so a payload carrying both keys must
 // resolve to one answer rather than concatenating or picking by struct order.
 func TestCatalogIntros_DetailPrefersTheNewKeyWhenBothArrive(t *testing.T) {
-	var d catWorkDetail
+	var d CatalogWorkDetail
 	body := `{"intro":[{"lang":"zh-Hans","intro":"旧"}],"intros":[{"lang":"zh-Hans","intro":"新"}]}`
 	if err := json.Unmarshal([]byte(body), &d); err != nil {
 		t.Fatalf("unmarshal: %v", err)
 	}
-	rows := OrderIntros(d.introRows())
+	rows := OrderIntros(d.IntroRows())
 	if len(rows) != 1 || rows[0].Intro != "新" {
 		t.Errorf("rows = %+v, want 新 — during dual emit the renamed key is the live one", rows)
 	}

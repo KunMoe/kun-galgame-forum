@@ -83,7 +83,7 @@ func newResourceFix(t *testing.T, checker gate.Checker) *resourceFix {
 	f.ResourceCatalog = cat
 	f.ResourceClaim = claim.call
 	f.ResourceChecker = shares
-	f.GalgameV1 = galgameapiv1.New(cat, nil, f.UserClient, f.rdb, geCDN)
+	f.GalgameV1 = galgameapiv1.New(cat, nil, f.UserClient, f.rdb, geCDN).WithWork(f.db, nil, nil, f.recordAward)
 	f.Fiber = newFiber()
 	f.setupRoutes()
 	f.spec = newSpecConformance(t)

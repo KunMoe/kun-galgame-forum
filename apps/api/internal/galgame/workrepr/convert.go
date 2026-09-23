@@ -38,8 +38,12 @@ func firstLocalized(localized map[string]repr.LocalizedName, latin string) strin
 
 func Ref(ctx context.Context, it *client.CatalogWorkListItem, cdn string) repr.WorkRef {
 	brief := client.CatalogItemToBrief(ctx, it)
+	var sexual *int
+	if slot := portraitSlot(it); slot != nil {
+		sexual = slot.Sexual
+	}
 	cover := ImageFromURL(cdn, brief.EffectivePortraitURL, brief.EffectivePortraitWidth,
-		brief.EffectivePortraitHeight, brief.EffectivePortraitThumbhash)
+		brief.EffectivePortraitHeight, brief.EffectivePortraitThumbhash, sexual)
 	name := Name(it.DisplayName, it.Latin, client.LocalizedValues(it.Localized))
 	return repr.NewWorkRef(int(it.ID), name, cover, brief.ContentLimit == "nsfw")
 }
@@ -53,7 +57,18 @@ func Banner(it *client.CatalogWorkListItem, cdn string) *repr.Image {
 		return nil
 	}
 	b := slots.Banner
-	return ImageFromURL(cdn, b.URL, b.Width, b.Height, b.Thumbhash)
+	return ImageFromURL(cdn, b.URL, b.Width, b.Height, b.Thumbhash, b.Sexual)
+}
+
+func portraitSlot(it *client.CatalogWorkListItem) *client.CoverSlot {
+	slots := it.CoverSlots
+	if slots == nil {
+		slots = it.Covers
+	}
+	if slots == nil {
+		return nil
+	}
+	return slots.Portrait
 }
 
 func Maker(it *client.CatalogWorkListItem) *CompanyRef {
@@ -128,7 +143,7 @@ func AppendLink(out []CatalogLink, site, url string) []CatalogLink {
 	return append(out, CatalogLink{Site: site, URL: url})
 }
 
-func ImageFromURL(cdn, url string, width, height int, thumbhash string) *repr.Image {
+func ImageFromURL(cdn, url string, width, height int, thumbhash string, sexual *int) *repr.Image {
 	if url == "" {
 		return nil
 	}
@@ -137,7 +152,12 @@ func ImageFromURL(cdn, url string, width, height int, thumbhash string) *repr.Im
 		hash = hash[i+1:]
 	}
 	hash = strings.TrimSuffix(hash, ".webp")
-	return repr.NewImage(cdn, hash, &imageclient.ImageMeta{Width: width, Height: height, Thumbhash: thumbhash})
+	meta := &imageclient.ImageMeta{Width: width, Height: height, Thumbhash: thumbhash}
+	if sexual != nil {
+		g := int16(*sexual)
+		meta.Sexual = &g
+	}
+	return repr.NewImage(cdn, hash, meta)
 }
 
 func ImageFromHash(cdn, hash string) *repr.Image {

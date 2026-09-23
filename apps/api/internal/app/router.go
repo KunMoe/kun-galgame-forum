@@ -130,7 +130,6 @@ func (a *App) setupRoutes() {
 	api.Get("/galgame/calendar/pending", a.GalgameCalendarHandler.GetPending)
 	api.Get("/galgame/calendar/tba", a.GalgameCalendarHandler.GetTBA)
 	api.Get("/galgame/calendar/upcoming", a.GalgameCalendarHandler.GetUpcoming)
-	api.Get("/galgame/drafts", a.GalgameDraftsHandler.GetDrafts)
 	api.Get("/galgame/:id/edit/diff", a.GalgameEditHandler.Diff)
 	api.Get("/galgame/:id/edit/proposals", a.GalgameEditHandler.GameProposals)
 
@@ -142,9 +141,7 @@ func (a *App) setupRoutes() {
 
 	// Both comment READ halves must mount before the auth boundary below, or
 	// anonymous reads start demanding a session. Their writes mount after it.
-	optAuth.Get("/galgame/:id/link/all", a.GalgameProxyHandler.GetGalgameLinks)
 	optAuth.Get("/galgame/:id/edit/revisions", a.GalgameEditHandler.Revisions)
-	optAuth.Get("/galgame/:id", a.GalgameHandler.GetDetail)
 
 	optAuth.Get("/galgame/collection/:cid", a.GalgameCollectionHandler.GetDetail)
 	optAuth.Get("/user/:id/collections", a.GalgameCollectionHandler.GetUserCollections)
@@ -159,9 +156,7 @@ func (a *App) setupRoutes() {
 	authed.Delete("/galgame/:id", a.GalgameSubmissionHandler.Withdraw)
 	authed.Delete("/galgame/:id/draft", a.GalgameSubmissionHandler.DeleteDraft)
 
-	authed.Get("/galgame/interactions/mine", a.GalgameHandler.MyInteractions)
 	authed.Get("/galgame/playtime/mine", a.GalgamePlaytimeHandler.ListMine)
-	authed.Put("/galgame/:id/like", a.GalgameHandler.ToggleLike)
 	// Unlike every other catalog write here, this one travels as the USER: the
 	// session's OAuth token goes out as a Bearer and the registry derives the
 	// actor from it.
