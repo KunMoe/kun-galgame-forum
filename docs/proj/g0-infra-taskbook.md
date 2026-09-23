@@ -12,7 +12,9 @@ catalog 在 2026-07-06 按 gid 顺序、用自增序列铸 `catalog_work.id`，w
 
 论坛的改号命令在 `-apply` 的同一事务里，把改号表写进论坛库 `kungalgame` 的一张表（表名在 G0a 定稿时写进本节，暂定 `galgame_renumber_2026`），同时导出 TSV 到宿主机。列：`old_id int`、`new_id bigint`、`how text`（`curated` / `claim` / `already_catalog_id`）、`folded_into bigint`（10 组重复页里被合并掉的那一个，否则为 null）。
 
-- 共 15,990 行；`old_id = new_id` 的 2,493 行；10 组 `new_id` 相同（重复页）。
+- 改号表覆盖**所有旧号**，不只是论坛的 15,990 行本地作品：`curated` 锚点的全部 64,515 个 `external_id`、kungal claim 的全部 `product_work_id`、论坛本地全部行。原因是链接、评论串、举报里的 `/galgame/<n>` 大量指向论坛没有本地行、但今天靠锚点照样能打开的旧号（例如 community 的 site_game 串有 70,480 个，远多于本地行）。
+- 规则（与网站今天的路由一致，已在线上抽样 30/30 核对）：`n` 有 `curated` 锚点 → 锚点的作品；否则 `n` 恰好是一条 kungal claim 的 `product_work_id` → 那条 claim 的作品；否则 → `n` 本身。**改号表里查不到的号一律按原样保留**，不要猜。
+- 论坛本地 15,990 行中：`old_id = new_id` 的 2,493 行；10 组 `new_id` 相同（重复页）。全体旧号里多对一的组更多，都是正常的。
 - infra 的工具读这张表的方式，同现有 `jobs/forumratings`（同一 PG 实例、按库名连接）。**不得写论坛库**。
 
 ## 2. 要做的改写（全部在窗口里、论坛 `-apply` 提交之后、论坛 API 重新启动之前）
@@ -66,6 +68,12 @@ catalog_user_folder_item i  ⋈  快照 s  ON i.folder_id = 映射后的 folder_
 - 论坛 G0 会把该列改名为 `work_id`，并且改号后论坛的 id 就是 catalog id。所以同窗改为：读 `work_id`，**删掉 claim 映射**（直接当 catalog work id 用）。
 - 窗口期间不得运行。
 
+### 2.6 萌萌点流水的 `ref`
+
+- `kun_galgame_infra.moemoepoint_log` 里论坛写入（`source_app` 为 kungal）的 `ref = 'galgame:<旧号>'`，按改号表改写数字部分。流水页按 ref 渲染目标链接，不改的话这些链接会打开别的游戏。
+- **不要动 `idempotency_key`**：论坛的作品类奖励用的是带纳秒的 `KeyNonce` 或事件 id，改号不会造成撞键，改写键反而会破坏幂等。
+- 其它 kind 的 ref（`topic:` `resource:` 等）不是作品 id，不动。
+
 ## 3. 其它需要 infra 顺手确认的
 
 - `jobs/galgametouch`（`galgametouch.go:14` 仍查已退役的 `site='galgame_wiki'`）：是否还在运行；若在运行，G0 之后它收到的已经是 catalog id，按 `product_work_id` 查不到任何行，改成按 id 直查或退役。
@@ -76,7 +84,7 @@ catalog_user_folder_item i  ⋈  快照 s  ON i.folder_id = 映射后的 folder_
 
 1. G 会话宣布窗口、占部署档期，停 `kungal-api`（论坛所有 cron 在进程内，随之停止）。
 2. G 会话快照论坛库，跑论坛改号 `-apply`（一个事务），写出改号表。
-3. **infra 会话执行 §2.1–§2.5**（本任务书），逐项报计数。§2.4(b) 只查不改。
+3. **infra 会话执行 §2.1–§2.6**（本任务书），逐项报计数。§2.4(b) 只查不改。
 4. G 会话合并论坛 G0b（身份代码 + 列改名迁移），部署，实测。
 5. infra 部署 §2.2 的 `retire-merged-comments` 与 §2.5 的 `forumratings` 改动（若尚未随 §3 前部署）。
 
