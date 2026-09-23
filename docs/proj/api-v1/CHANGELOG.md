@@ -1,5 +1,20 @@
 # API v1 changelog
 
+## 2026-09-23 (GR galgame ratings)
+
+Breaking for the six `/api/galgame-rating*` faces; they are gone. No App build calls them.
+
+Offered:
+
+- `GET /api/v1/ratings` (page-number, optional identity): `sort` ∈ `created|view|overall` × `desc|asc` (default `created_desc`, ties on `id`), filters `work_id`, `author_id`, `spoiler_level`, `play_status`, `game_type`, and `include_nsfw`. Ratings by banned authors and of works catalog no longer shows are left out of `items` but counted in `total`.
+- `GET /api/v1/ratings/{rating_id}` (optional identity): a `Rating` with `work_summary` (the shared `WorkSummary`) and the 50 newest `likers`; every read counts one view.
+- `POST /api/v1/ratings` (required, `Idempotency-Key` required): `201` with `Location`. `work_id` catalog does not show is `422` / `UNKNOWN_REFERENCE`; a second rating of the same work is `409 ALREADY_EXISTS`.
+- `PATCH /api/v1/ratings/{rating_id}` (author only): changes the fields sent and returns the full `Rating`.
+- `DELETE /api/v1/ratings/{rating_id}`: `204`; the author, the work page's creator, or a session holding `rating.delete_any`.
+- `PUT` / `DELETE /api/v1/ratings/{rating_id}/like`: a K16 slot returning `rating_engagement`; replaying either changes nothing, liking one's own rating is `403 SELF_LIKE_FORBIDDEN`.
+
+Shape vs the retired faces: ids are strings; `user` → `author` (`UserRef`), `galgame` → `work` (`WorkRef | null`), `galgame_type` → `game_types`, `view` → `view_count`, `created` / `updated` → `created_at` / `updated_at`, `is_liked` / `liked_users` → `viewer.has_liked` / `likers`, and the eight flat aspect fields → `aspect_scores{}` where an unrated aspect is `null`, not `0` (a request sends all eight keys). Every vocabulary is a closed enum the schema checks. `SELF_LIKE_FORBIDDEN` now covers anything the caller wrote.
+
 ## 2026-09-23 (U3a user topic lists)
 
 Breaking for `GET /api/user/:id/topics`, `GET /api/user/:id/replies`, and `GET /api/user/:id/comments`.

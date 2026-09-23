@@ -161,3 +161,44 @@ Flutter App 零调用；`docs/proj/app-direct-api.md` 没有这些路由。
 | M12 | 编辑别人的评分放行 | D11 |
 | M13 | 分项 0 发成 `0` 而不是 `null` | D13 |
 | M14 | 删除不扣回发布奖励 | 旧语义 |
+
+## 8. 实现中改的（理由在这里，代码在实现提交里）
+
+| # | 改了什么 | 为什么 |
+|---|---|---|
+| I1 | `listRatings` 的档位是 `optional`，不是 §3.1 写的 `public` | `v1.Public` 根本不解析凭证，`viewer` 永远是 `null`；「带凭证时算 `viewer`」正是 `optional` 的定义 |
+| I2 | D5 的「作品已下架」按 catalog 是否还显示判，不按本地 `published` | `published` 是粘性 SEO 标志（首个资源置位、删资源不清，迁移 078），它把「从没人发过资源」和「被隐藏」混在一起——前者的评分会被误判 404。列表同理在渲染时丢，`total` 照数，与封禁作者一致 |
+| I3 | 请求里的 `aspect_scores` 与响应共用 `AspectScores`：八个键必须都在，`null` = 没打 | G8：同名属性只能有一个 schema。响应要「必带 + 可空」、请求要「可缺」，一个组件表达不了两种 `required`。§3.3 原写「缺的项 = 没打」，改严了；网页表单本来就总发八个 |
+| I4 | 编辑、点赞、取消点赞先按读面的可见性判（作者封禁 / 作品不显示 → 404）；删除只判存在 | 写面不能碰到 `getRating` 说不存在的东西——初稿里作者改一条作品已隐藏的评分，写成功后回读却是 404。删除不设这道闸，作者本人、作品页创建者和 staff 仍能清理封禁作者的评分 |
+| I5 | 点赞的萌萌点键 = `kungal:liked:galgame_rating_like_<赞行 id>` / `unliked:…`，确定性的；通知只在真的赞上时写 | 与话题 v1 的赞同一写法（旧面用每次随机的 nonce）。旧面取消点赞也会写一条 `liked` 消息 |
+| I6 | 点赞者与作者同一条规则：封禁的丢、账号已删的给已注销用户引用 | 初稿把 OAuth 查不到的点赞者丢掉，「最近 ≤50 个」会悄悄变短 |
+| I7 | `RatingRepository` 并进 `RatingStore`（最后一个活查询 `CountReviewsWithMinLength` 搬过去，创作者服务改用它）；旧 handler / service / mapper / DTO / 无人用的模型类型全删，`rawJSON` 挪进 `galgame_mapper.go` | 旧仓库删完只剩一个方法，留两个评分存储没有意义 |
+| I8 | 旧 service 的 trust 拒绝 + 后台扫描测试搬进 v1 测试（断言扫描的 kind / subject_id / text） | 删 service 时这条覆盖不能跟着消失 |
+| I9 | 网页评分详情的作品块：年龄限制与原始语言换成制作会社与发售日期；JSON-LD 的 `isFamilyFriendly` 取 `!is_nsfw`、`publisher` 取 `maker`、不再发 `inLanguage` | `WorkSummary` 两者都没有；`is_nsfw` 是显示轴，绝不能渲染成年龄轴 |
+| I10 | 网页列表保留旧 URL 参数名（`sort_field` / `sort_order` / `spoiler_level` / `play_status` / `galgame_type`），不认识的值丢掉而不是发出去吃 400 | 分享出去的链接要继续能用 |
+| I11 | 用户页（U）的评分卡片与作品页（G）仍吃旧形状，`ratingToCard` / `ratingToGalgamePageCard` 在边上翻译；点赞按钮（动态流也在用）只换内部实现，props 不变 | 这些组件归别的轨 |
+
+另记两件没改的事：
+
+- 「总分 1 或 10 时短评不少于 100 字」一直只在网页表单里校验，旧 DTO 从没在服务端拦过；v1 照旧。
+- 发布表单写着「短评超过 20 字 5 萌萌点、超过 100 字 10 萌萌点」，服务端按**字节**数、阈值 233 / 666 发（`constants.RatingLenThreshold*`）。旧就不一致，按字还是按字节是产品决定，本轨不动。
+
+## 9. 变异执行结果（14 条 + M11 拆两向，全部杀死）
+
+| # | 变异 | 变红的测试 |
+|---|---|---|
+| M1 | 列表 SQL 去掉 `id` 决胜 | `TestV1RatingsListWalk`、`TestV1RatingsListFilters` |
+| M2 | SFW 闸不生效 | `TestV1RatingsListWalk`、`TestV1RatingsListFilters` |
+| M3 | `total` 在内容闸之前数 | `TestV1RatingsListWalk`、`TestV1RatingsListFilters` |
+| M4 | 详情不查作品是否还显示 | `TestV1RatingsDetail`（隐藏作品的评分回 200） |
+| M5 | 发布不查 catalog 作品是否存在 | `TestV1RatingsCreate` |
+| M6 | 重复发布不回 409 | `TestV1RatingsCreate` |
+| M7 | 写面不判会话用户封禁 | `TestV1RatingsCreate`、`TestV1RatingsUpdate`、`TestV1RatingsLike` |
+| M8 | `PUT like` 已赞时再切换一次 | `TestV1RatingsLike` |
+| M9 | 自赞放行 | `TestV1RatingsLike` |
+| M10 | 点赞萌萌点记给点赞者 | `TestV1RatingsLike` |
+| M11a | 作品页创建者不能删别人的评分 | `TestV1RatingsViewer`、`TestV1RatingsDelete` |
+| M11b | 任何人都能删 | `TestV1RatingsViewer`、`TestV1RatingsDelete` |
+| M12 | 编辑别人的评分放行 | `TestV1RatingsUpdate` |
+| M13 | 分项 0 发成 `0` | `TestV1RatingsDetail`（及 spec 一致性：`minimum: 1`） |
+| M14 | 删除不扣回发布奖励 | `TestV1RatingsDelete` |
