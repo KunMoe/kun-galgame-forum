@@ -1,6 +1,6 @@
 # API v1 changelog
 
-## G0 window (galgame id is the catalog work id)
+## 2026-09-23 (G0 galgame id is the catalog work id)
 
 Breaking for the one v1 galgame face.
 

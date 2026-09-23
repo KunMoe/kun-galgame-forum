@@ -120,3 +120,14 @@ done
 - `docs/proj/api-v1/CHANGELOG.md` 顶部 “G0 window” 一节的标题补上窗口日期。
 - 删掉宿主机上的 `~/g0/`（含快照）要等 infra 全部完成并验证之后；本地演练库 `kun_ephem_20260922_g0_rehearsal` 与 dump 同时删除。
 - `galgame_renumber_2026` 在 infra 确认不再读取之后由后续迁移删除。
+
+## 10. 执行记录（2026-09-23）
+
+由 kun-galgame-forum-37 会话执行。时间均为 UTC。
+
+- 09:48:19 停 `kungal-api`。`-check-live` 报 21 处不一致，全部是「现行桥为 0、映射为恒等」：11 部已删作品、6 条非 live 的 claim、5628 / 211869 两个合并目标、3 部无 claim 作品。没有一处互相冲突。
+- 09:50:32 `-apply -include-dm` 提交。合并 10 组（与演练相同），`galgame` 改号 13,593 行，`message.link` 215,345，`chat_message` 33，`chat_room` 2。改号表 66,160 行，其中 63,595 行变号。`verified.tsv` 与线上改号表逐行一致（4,320 行）。
+- 窗口内完成 infra 改写，随后部署 #192（`203d73a37`）。09:57:56 migrate 执行 141，约 09:58 API 恢复健康。清了 §6 的四个 Redis 前缀。
+- 验证：§0 的 20 个样本全部回对的 `vndb_id`；`/api/v1/works/5234/moyu-patches` 200，旧路径 404；原来挂在 1970 的评论墙帖子出现在 1966；API 日志没有新的错误类型。G 会话事后复核了库：141 已记录，`galgame_redirect` 与序列已删，没有任何 `galgame_id` 列，`feed_activity` 76,260 条里链接与 `work_id` 不一致的为 0。
+- 备份（论坛全库 dump 与 infra 各表）在 `kungal-neo:~/g0/backup`，暂留。
+

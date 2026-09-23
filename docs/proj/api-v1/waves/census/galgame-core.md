@@ -740,4 +740,6 @@ G1 迁 v1 时应沿用这套：字符串 `{galgame_id}`、先译 catalog id、pr
 | `GET /api/galgame/:gid/collections/mine` | `GET /v1/me/collections?contains_galgame_id=` | GET 不再创建默认夹 |
 | `PUT /api/galgame/:gid/collections` | `PUT /v1/galgames/{galgame_id}/collection-memberships` | 整集替换已经是合法 PUT；body 里的 id 是 collection_id，work 必须先译 catalog id |
 
-已存在的 `GET /v1/galgames/{galgame_id}/moyu-patches` 保持不动，作为 gid→catalog 映射与字符串 id 的样板。
+已存在的 moyu 补丁面在 G0 里改成了 `GET /v1/works/{work_id}/moyu-patches`，不再翻译。
+
+**G0 之后（2026-09-23）本表的两处前提作废**：路径与字段里的 galgame id 一律叫 `work_id`（`/v1/works/{work_id}/…`），「work 必须先译 catalog id」不再存在，见 CLAUDE.md 铁律 3。「某用户的 X」采用 U3 定下的形状（契约 `waves/u3a-user-topic-lists.md` §2–§3）：`GET /api/v1/users/{user_id}/<x>`，多种关系用必填的封闭枚举 `relation`，页码集合 `collect.PageNumber` + `repr.PageList`，`created_at DESC, id DESC`，主人不可渲染回 404，别人的列表一律按公开可见性过滤，`include_nsfw` 默认 false。G 的 `/user/:id/toolsets` 与 `/user/:id/collections` 按这套形状迁到 `/users/{user_id}/toolsets` 与 `/users/{user_id}/collections`；collections 背后是 catalog 的收藏夹，上游若只给游标，届时再定是否例外。

@@ -91,7 +91,7 @@ git ls-remote --heads origin 'api-v1/*'
 | 轨 | 模块（含跨前缀的归属） | 路由 | 迁移号段 | 备注 |
 |---|---|---|---|---|
 | U | 用户 `/user/**`：~~**U1**「我」的面 12 条~~ ✅ → ~~**U2** 公开资料、名片、通知偏好 4 条~~ ✅ → **U3**「某用户的 X」9 条（等 G0 的 `work_id` 重编号） | 9 | 120–129 | 已认领（分支 `api-v1/u-user`） |
-| G | galgame 主域 + `-edit` + `-quiz` + `-resource` + `toolset` + 各自的 admin/user 面（**不含** `/galgame/:gid/comments*` 与 `/galgame/comments/*`，已归 RC） | 85 | 140–159 | 最大的一坨，**一个 owner**，内部自己切 3–4 个 PR 串行 |
+| G | galgame 主域 + `-edit` + `-quiz` + `-resource` + `toolset` + 各自的 admin/user 面，含 `/user/:id/toolsets` 与 `/user/:id/collections`（**不含** `/galgame/:id/comments*` 与 `/galgame/comments/*`，已归 RC） | 85 | 140–159 | 已认领（分支 `api-v1/g-galgame`）。~~**G0** 改号：论坛 galgame id ≡ catalog work id~~ ✅ 2026-09-23（G0a #188，G0b #192，迁移 140/141，[计划](../gid-is-work-id.md)、[操作单](../g0-window-runbook.md)）→ G1 起逐段迁 v1，一律用 `work_id` |
 | GE | galgame 实体六件套 `-character` `-engine` `-official` `-series` `-staff` `-tag` | 18 | 160–164 | 共用 `EntityHandler`，必须同一轨 |
 | GR | galgame 评分 `/galgame-rating` | 6 | 190–194 | |
 | X | 零散：`/search` 6、`/friend-link`(+admin) 5、`/news` 4、`/image` 4、`/ranking` 3、`/community` 3、`/auth` 3、`/activity` 3、`/rss` 2、`/category`+`/section` 2、`/admin` 总览 2、`/home` 1、`/app` 1 | 39 | 195–209 | 可拆成几个小 PR |
