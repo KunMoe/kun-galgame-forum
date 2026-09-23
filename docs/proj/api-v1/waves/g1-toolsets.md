@@ -348,7 +348,7 @@ G17。不发秘密，不加下载计数。资源不属于该工具 / 不存在 /
 
 ### 4.12 `createToolsetDownload` · `POST …/resources/{resource_id}/downloads` · optional · 200 `ToolsetDownload`
 
-空体。K12：支持 `Idempotency-Key`，不强制（不是用户内容）。匿名可省略。成功才 `download_count + 1`。预签名失败 503。可见性同 4.8。
+空体。**不收 `Idempotency-Key`**（实现时追加，偏离 K12「全部 POST 必须支持」）：幂等中间件只允许挂在 required 档的操作上（`internal/apiv1/idempotency.go` 对其它档 panic，而且要求有用户），这条是 optional 档、匿名可调。重放的后果只是多计一次下载，不值得为它改共享中间件。成功才 `download_count + 1`。预签名失败 503。可见性同 4.8。
 
 ### 4.13 `createToolsetUpload` · `POST /toolsets/{toolset_id}/uploads` · required · 201 `Location` + `ToolsetUpload`
 
