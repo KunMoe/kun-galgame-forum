@@ -75,6 +75,7 @@ git ls-remote --heads origin 'api-v1/*'
 | U1 | 用户「我」的面：状态、签到、萌萌点流水、云端偏好、成人向显示、@ 搜索、资料、头像、创作者（12 条旧路由 → 11 个 v1 操作，[契约](waves/u1-me.md)，无迁移，PR #183） | ✅ 2026-09-23 |
 | U2 | 公开资料、批量用户引用、通知偏好（4 条旧路由 → `/users/{user_id}`、`/users?ids=`、`/me/notification-preferences`，[契约](waves/u2-users.md)，无迁移，PR #189） | ✅ 2026-09-23 |
 | U3a | 某用户的话题、回复、评论（3 条旧路由 → `/users/{user_id}/{topics,replies,comments}`，页码集合 + `relation`，[契约](waves/u3a-user-topic-lists.md)，无迁移，PR #214） | ✅ 2026-09-23 |
+| U3b | 某用户的作品、资源、评论墙帖子；评分 tab 改走 `/ratings?author_id=`（4 条旧路由 → `/users/{user_id}/{works,galgame-resources,wall-comments}`，资源列表不再下发链接 / 提取码 / 解压码，[契约](waves/u3b-user-work-lists.md)，无迁移，PR #224） | ✅ 2026-09-23 |
 | M | 消息：通知 + 私信 11 条旧路由 → `/api/v1/me/notifications*`、`/api/v1/me/conversations*` 12 个操作；系统公告（0 行、无写入方）直接删除（[契约](waves/m-message.md)，迁移 130，PR #184） | ✅ 2026-09-23 |
 | T | 话题轨收尾：T1 旧评论/投票 10 条 → T2 草稿 + 互动 + 定位 7 条（迁移 110，PR #179）→ T3 抽奖 11 条，萌萌点奖池改由发起人出资（[契约](waves/t3-lottery.md)，迁移 111，PR #182）→ T4 管理面 3 条，第一个页码集合 `collect.PageNumber` + `repr.PageList`（[契约](waves/t4-admin-topics.md)，无迁移，PR #185） | ✅ 2026-09-23 |
 | UP | 更新日志与待办看板：11 条 `/api/update/**` → `/api/v1/update-logs*`、`/api/v1/todos*` 10 个操作；待办的认领/完成/废弃/放弃/重新启用收成一个 `PATCH {state}`（[契约](waves/up-update-log.md)，迁移 170） | ✅ 2026-09-23 |
@@ -94,7 +95,7 @@ git ls-remote --heads origin 'api-v1/*'
 
 | 轨 | 模块（含跨前缀的归属） | 路由 | 迁移号段 | 备注 |
 |---|---|---|---|---|
-| U | 用户 `/user/**` + 删号管理面：~~**U1**「我」的面 12 条~~ ✅ → ~~**U2** 公开资料、名片、通知偏好 4 条~~ ✅ → ~~**U3a** 话题 / 回复 / 评论 3 条~~ ✅ → **U3b** galgames / galgame-comments / resources / ratings 4 条 → **U3c** `PurgeHandler` 的 `/admin/user/:id/content(-stats)` 2 条（破坏性，单独一段）。`/user/:id/toolsets` 与 `/collections` 归 G 轨（同一子集合形状） | 6 | 120–129 | 已认领（分支 `api-v1/u-user`） |
+| U | 用户 `/user/**` + 删号管理面：~~**U1**「我」的面 12 条~~ ✅ → ~~**U2** 公开资料、名片、通知偏好 4 条~~ ✅ → ~~**U3a** 话题 / 回复 / 评论 3 条~~ ✅ → ~~**U3b** galgames / galgame-comments / resources / ratings 4 条~~ ✅ → **U3c** `PurgeHandler` 的 `/admin/user/:id/content(-stats)` 2 条（破坏性，单独一段）。`/user/:id/toolsets` 与 `/collections` 归 G 轨（同一子集合形状） | 6 | 120–129 | 已认领（分支 `api-v1/u-user`） |
 | G | galgame 主域 + `-edit` + `-quiz` + `-resource` + `toolset` + 各自的 admin/user 面，含 `/user/:id/toolsets` 与 `/user/:id/collections`（**不含** `/galgame/:id/comments*` 与 `/galgame/comments/*`，已归 RC） | 69 | 140–159 | 已认领（分支 `api-v1/g-galgame`）。~~**G0** 改号：论坛 galgame id ≡ catalog work id~~ ✅ 2026-09-23（G0a #188，G0b #192，迁移 140/141，[计划](../gid-is-work-id.md)、[操作单](../g0-window-runbook.md)）→ ~~**G1** 工具集 16 条~~ ✅ 2026-09-23（#215，[契约](waves/g1-toolsets.md)，迁移 142；G1.1 迁移 144）→ ~~**G2** 题库 13 条~~ ✅ 2026-09-24（#219，[契约](waves/g2-quizzes.md)，迁移 143）→ **G3** galgame 资源 12 条（[契约](waves/g3-resources.md)，迁移 145）→ G4 起见 [G 轨计划](waves/g-plan.md) |
 | X | 零散：~~**X2**：`/search` 3、`/ranking` 3、`/community` 3、`/auth/me` 1、`/activity` 3、`/admin` 总览 2、`/home` 1~~ ✅（`/search` 另 3 条资源 / 资料库车道等 G、GE 定形；`/auth` 另 2 条是 BFF 登录管道，永留 v1 外）；X1：`/friend-link`(+admin) 5、`/news` 4、`/image` 4、`/rss` 2、`/category`+`/section` 2、`/app` 1 | 39 | 195–209 | X2 完成；X1 分段进行中 |
 
