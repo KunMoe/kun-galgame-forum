@@ -2,6 +2,7 @@ package apiv1
 
 import (
 	"context"
+	"fmt"
 	"strconv"
 	"time"
 
@@ -71,7 +72,11 @@ func (s *Users) listMoemoepointEntries(ctx context.Context, in *listMoemoepointE
 
 	items := make([]MoemoepointEntry, 0, len(page.Items))
 	for _, row := range page.Items {
-		items = append(items, mapMoemoepointEntry(row))
+		entry, err := mapMoemoepointEntry(row)
+		if err != nil {
+			return nil, problem.Internal(err)
+		}
+		items = append(items, entry)
 	}
 	var next *string
 	if page.HasMore && len(page.Items) > 0 {
@@ -82,20 +87,31 @@ func (s *Users) listMoemoepointEntries(ctx context.Context, in *listMoemoepointE
 	return &listMoemoepointEntriesOutput{Body: repr.NewList(items, next)}, nil
 }
 
-func mapMoemoepointEntry(row userclient.MoemoepointLogEntry) MoemoepointEntry {
-	created := time.Time{}
-	if t, err := time.Parse(time.RFC3339, row.CreatedAt); err == nil {
-		created = t
-	} else if t, err := time.Parse(time.RFC3339Nano, row.CreatedAt); err == nil {
-		created = t
+const accountCenterSourceApp = "oauth"
+
+func moemoepointSource(row userclient.MoemoepointLogEntry) string {
+	switch {
+	case row.IsLocal:
+		return "this_site"
+	case row.SourceApp == accountCenterSourceApp:
+		return "account_center"
+	default:
+		return "other_site"
+	}
+}
+
+func mapMoemoepointEntry(row userclient.MoemoepointLogEntry) (MoemoepointEntry, error) {
+	created, err := time.Parse(time.RFC3339Nano, row.CreatedAt)
+	if err != nil {
+		return MoemoepointEntry{}, fmt.Errorf("moemoepoint entry %d created_at: %w", row.ID, err)
 	}
 	return MoemoepointEntry{
-		Object:         "moemoepoint_entry",
-		ID:             repr.DecimalID(strconv.FormatInt(row.ID, 10)),
-		Delta:          row.Delta,
-		Reason:         MoemoepointReason(row.Reason),
-		Ref:            row.Ref,
-		CreatedAt:      repr.Timestamp(created),
-		IsFromThisSite: row.IsLocal,
-	}
+		Object:    "moemoepoint_entry",
+		ID:        repr.DecimalID(strconv.FormatInt(row.ID, 10)),
+		Delta:     row.Delta,
+		Reason:    MoemoepointReason(row.Reason),
+		Ref:       row.Ref,
+		CreatedAt: repr.Timestamp(created),
+		Source:    moemoepointSource(row),
+	}, nil
 }

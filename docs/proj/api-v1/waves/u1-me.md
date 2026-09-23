@@ -114,7 +114,7 @@ CheckIn  object="check_in", check_in_date (YYYY-MM-DD, Asia/Shanghai),
 
 ```
 MoemoepointEntry  object="moemoepoint_entry", id, delta, reason, ref,
-                  created_at, is_from_this_site
+                  created_at, source
 ```
 
 - 参数：`cursor`、`limit`（1–50，默认 20）、`reason`（可选）。
@@ -122,7 +122,7 @@ MoemoepointEntry  object="moemoepoint_entry", id, delta, reason, ref,
   - `reason`：开放词表（OAuth 会加新 reason），`pattern ^[a-z][a-z0-9_]{0,39}$`。形状非法 → `400 INVALID_PARAMETER`（huma 对 query 参数的校验失败在本仓映射成 400，与 `page_test.go` 一致）；形状合法但上游不认 → 上游回 400 → 我们回 `400 INVALID_PARAMETER`（`parameter: reason`）。**不再**把上游 400 说成我们的 500。
 - 游标：内部是 OAuth 的 `before_id`，编码成 `cur_…`，指纹绑定 `(user_id, reason)`。换了 `reason` 用旧游标 → `400 INVALID_CURSOR`。末页（上游 `has_more = false`）省略 `next_cursor`。
 - `delta`：integer，**无 minimum**（扣分是负数）。`reason`：开放枚举字符串，maxLength 40。`ref`：maxLength 80，可为空串。
-- `is_from_this_site`：旧名 `is_local`（`SourceApp == 本站 OAuth client_id`）。`source_app` 不下发——它是一串 hex client id，客户端拿它什么都做不了。
+- `source`：封闭枚举 `this_site`（`source_app` 等于本站 OAuth client id，旧名 `is_local`）/ `account_center`（`source_app = "oauth"`：改名扣分、注册礼、管理员调整）/ `other_site`。原始 `source_app` 不下发——生产上它只有两个 hex client id 和 `oauth` 三种值，旧网页唯一真正显示过的标签就是 `oauth` →「账号中心」。初稿写成布尔 `is_from_this_site`，把这个标签弄丢了，网页验收时发现、改成枚举。
 - 上游不可达 → `503 SERVICE_UNAVAILABLE`。
 - 网页 `MoemoepointLog.vue` 把 `content_removed` 显示成「被移除」的改写逻辑保留（见 `kungal-moemoepoint-debit-reason`：这是 infra 唯一暴露的扣分理由）。
 
@@ -312,6 +312,8 @@ CreatorApplication  object="creator_application", id, state, statement,
 | `reason` 格式错 → 422 | → 400 `INVALID_PARAMETER` | 本仓 query 校验的既有映射 |
 | `PUT /me/avatar` 用 huma 的 `MultipartFormFiles` | 请求体是 `multipart.Form`，schema 手写在操作上 | `MultipartFormFiles` 会把 `huma.FormFile` 的 Go 字段（`IsSet`/`Size`…）发成组件，G2/G14/F1 全红 |
 | `/me` 的上游错误判定 | service 层哨兵错误（`service.ErrUpstream`、`CreatorService.ErrAccountUnavailable`） | 初版按错误信息里的 `"userclient:"` 前缀判断，改一句文案就会把 503 变成 500 |
+| `MoemoepointEntry.is_from_this_site`（布尔） | `source`（`this_site`/`account_center`/`other_site`） | 见 §3.3：布尔丢了「账号中心」这个来源 |
+| 上游 `created_at` 解析失败静默发 `0001-01-01` | `500` | 同一类「吞错发零值」的毛病 |
 | 成人向显示写回会话 | 仅 cookie 会话，**Bearer 请求不写回**，即使它碰巧带着 cookie | K2：带 `Authorization` 的请求只认 Bearer |
 
 ## 11. 迁移

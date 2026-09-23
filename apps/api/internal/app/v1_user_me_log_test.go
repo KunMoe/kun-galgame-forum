@@ -102,25 +102,26 @@ func TestV1MoemoepointOAuthDownIs503(t *testing.T) {
 	mustCode(t, resp, body, http.StatusServiceUnavailable, "SERVICE_UNAVAILABLE")
 }
 
-func TestV1MoemoepointFromThisSite(t *testing.T) {
+func TestV1MoemoepointSource(t *testing.T) {
 	f := newMeFix(t)
 	resp, body := f.call(t, http.MethodGet, mePath+"/moemoepoint-entries?limit=50", "/me/moemoepoint-entries", "sess-alice", "", nil, nil)
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("%d %+v", resp.StatusCode, body)
 	}
 	items, _ := body["items"].([]any)
-	foundLocal, foundRemote := false, false
+	want := map[string]string{"7": "this_site", "5": "account_center", "3": "other_site"}
 	for _, it := range items {
 		m, _ := it.(map[string]any)
-		if strID(m["id"]) == "3" && m["is_from_this_site"] == false {
-			foundRemote = true
-		}
-		if strID(m["id"]) == "7" && m["is_from_this_site"] == true {
-			foundLocal = true
+		id := strID(m["id"])
+		if w, ok := want[id]; ok {
+			if m["source"] != w {
+				t.Errorf("entry %s source %v, want %s", id, m["source"], w)
+			}
+			delete(want, id)
 		}
 	}
-	if !foundLocal || !foundRemote {
-		t.Fatalf("is_from_this_site not mapped: %+v", items)
+	if len(want) != 0 {
+		t.Fatalf("entries not seen: %v", want)
 	}
 }
 

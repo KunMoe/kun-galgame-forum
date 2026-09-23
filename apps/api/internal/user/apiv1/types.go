@@ -39,7 +39,7 @@ type MoemoepointEntry struct {
 	Reason         MoemoepointReason `json:"reason" doc:"Ledger reason token."`
 	Ref            string            `json:"ref" maxLength:"80" doc:"Triggering entity reference as stored upstream. Empty string when none. Free text; never use it as a decision input."`
 	CreatedAt      repr.DateTime     `json:"created_at" doc:"When the ledger entry was written."`
-	IsFromThisSite bool              `json:"is_from_this_site" doc:"Whether this entry was issued by this site's OAuth client."`
+	Source         string            `json:"source" enum:"this_site,account_center,other_site" maxLength:"14" doc:"Who issued the entry: this_site, account_center (the OAuth account service itself, e.g. a rename charge or an admin adjustment), or other_site. Closed."`
 }
 
 type Preferences struct {

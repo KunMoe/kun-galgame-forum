@@ -2815,10 +2815,6 @@
             "pattern": "^[0-9]+$",
             "type": "string"
           },
-          "is_from_this_site": {
-            "description": "Whether this entry was issued by this site's OAuth client.",
-            "type": "boolean"
-          },
           "object": {
             "description": "Type discriminant. Always moemoepoint_entry.",
             "enum": [
@@ -2840,6 +2836,17 @@
             "description": "Triggering entity reference as stored upstream. Empty string when none. Free text; never use it as a decision input.",
             "maxLength": 80,
             "type": "string"
+          },
+          "source": {
+            "description": "Who issued the entry: this_site, account_center (the OAuth account service itself, e.g. a rename charge or an admin adjustment), or other_site. Closed.",
+            "enum": [
+              "this_site",
+              "account_center",
+              "other_site"
+            ],
+            "maxLength": 14,
+            "type": "string",
+            "x-vocabulary-closed": true
           }
         },
         "required": [
@@ -2849,7 +2856,7 @@
           "reason",
           "ref",
           "created_at",
-          "is_from_this_site"
+          "source"
         ],
         "type": "object"
       },

@@ -242,8 +242,11 @@ func fakeMoeLog() []map[string]any {
 			reason = "daily_checkin"
 		}
 		src := "test-client"
-		if i == 3 {
+		switch i {
+		case 3:
 			src = "other-app"
+		case 5:
+			src = "oauth"
 		}
 		out = append(out, map[string]any{
 			"id": i, "delta": i, "reason": reason, "source_app": src,
