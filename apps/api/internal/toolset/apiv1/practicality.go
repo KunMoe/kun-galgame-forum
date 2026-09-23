@@ -33,7 +33,7 @@ func (s *Service) putToolsetPracticality(ctx context.Context, in *putPracticalit
 	}
 	return &practicalityOutput{Body: ToolsetPracticality{
 		Object: "toolset_practicality", ToolsetID: repr.ID(row.ID),
-		PracticalityAverage: agg.Average, PracticalityCount: agg.Count, PracticalityDistribution: dist,
-		Viewer: &PracticalityViewer{PracticalityRating: in.Body.Rating},
+		PracticalityAverage: agg.Average, PracticalityCount: agg.Count, PracticalityDistribution: starCounts(dist),
+		Viewer: &PracticalityViewer{PracticalityRating: &in.Body.Rating},
 	}}, nil
 }

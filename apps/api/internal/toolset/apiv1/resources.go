@@ -120,7 +120,7 @@ func (s *Service) createToolsetResource(ctx context.Context, in *createResourceI
 			if body.ResourceType == "file" {
 				return nil, alreadyExists("/artifact_id")
 			}
-			return nil, alreadyExists("/url")
+			return nil, alreadyExists("/link_url")
 		}
 		return nil, problem.Internal(err)
 	}
@@ -169,7 +169,7 @@ func (s *Service) updateToolsetResource(ctx context.Context, in *patchResourceIn
 	file := res.Type == "s3"
 	if file {
 		if patch.URL != nil {
-			errs = append(errs, immutable("/url"))
+			errs = append(errs, immutable("/link_url"))
 		}
 		if patch.ExtractionCode != nil {
 			errs = append(errs, immutable("/extraction_code"))
@@ -183,11 +183,11 @@ func (s *Service) updateToolsetResource(ctx context.Context, in *patchResourceIn
 	if !file && patch.URL != nil {
 		url := strings.TrimSpace(*patch.URL)
 		if url == "" {
-			errs = append(errs, tooShort("/url", 1))
+			errs = append(errs, tooShort("/link_url", 1))
 		} else if len(url) > maxURL {
-			errs = append(errs, tooLong("/url", maxURL))
+			errs = append(errs, tooLong("/link_url", maxURL))
 		} else if !validDownloadLink(url) {
-			errs = append(errs, invalidFormat("/url", "must be a download link"))
+			errs = append(errs, invalidFormat("/link_url", "must be a download link"))
 		} else {
 			fields["content"] = url
 			modParts = append(modParts, url)
@@ -237,7 +237,7 @@ func (s *Service) updateToolsetResource(ctx context.Context, in *patchResourceIn
 	fields["updated"] = now
 	if err := s.store.PatchResource(res.ID, fields); err != nil {
 		if repository.UniqueViolation(err) {
-			return nil, alreadyExists("/url")
+			return nil, alreadyExists("/link_url")
 		}
 		return nil, problem.Internal(err)
 	}
@@ -289,8 +289,8 @@ func (s *Service) createToolsetDownload(ctx context.Context, in *resourceIDInput
 		return nil, p
 	}
 	out := ToolsetDownload{
-		Object: "toolset_download",
-		ExtractionCode: res.Code,
+		Object:          "toolset_download",
+		ExtractionCode:  res.Code,
 		ArchivePassword: res.Password,
 	}
 	if res.Type == "s3" {
@@ -336,7 +336,7 @@ func resourceCreateErrors(body ToolsetResourceCreate) []problem.FieldError {
 	switch body.ResourceType {
 	case "file":
 		if body.URL != nil {
-			errs = append(errs, inconsistent("/url", "/resource_type"))
+			errs = append(errs, inconsistent("/link_url", "/resource_type"))
 		}
 		if body.SizeLabel != nil {
 			errs = append(errs, inconsistent("/size_label", "/resource_type"))
@@ -349,11 +349,11 @@ func resourceCreateErrors(body ToolsetResourceCreate) []problem.FieldError {
 			errs = append(errs, inconsistent("/artifact_id", "/resource_type"))
 		}
 		if body.URL == nil || strings.TrimSpace(*body.URL) == "" {
-			errs = append(errs, requiredField("/url"))
+			errs = append(errs, requiredField("/link_url"))
 		} else if len(*body.URL) > maxURL {
-			errs = append(errs, tooLong("/url", maxURL))
+			errs = append(errs, tooLong("/link_url", maxURL))
 		} else if !validDownloadLink(strings.TrimSpace(*body.URL)) {
-			errs = append(errs, invalidFormat("/url", "must be a download link"))
+			errs = append(errs, invalidFormat("/link_url", "must be a download link"))
 		}
 		if body.SizeLabel == nil {
 			errs = append(errs, requiredField("/size_label"))

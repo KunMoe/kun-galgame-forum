@@ -22,7 +22,7 @@ func TestV1CreateToolset(t *testing.T) {
 		t.Fatalf("create %d %+v", resp.StatusCode, got)
 	}
 	id := strID(got["id"])
-	if resp.Header.Get("Location") != "/api/v1/toolsets/"+id || got["name"] != "New Tool" {
+	if resp.Header.Get("Location") != "/api/v1/toolsets/"+id || got["title"] != "New Tool" {
 		t.Errorf("created %s %+v", resp.Header.Get("Location"), got)
 	}
 	aw := f.snapshotAwards()
@@ -55,7 +55,7 @@ func TestV1CreateToolset(t *testing.T) {
 
 	resp, got = f.ts(t, http.MethodPost, "/api/v1/toolsets", "/toolsets", "sess-alice", keyUUID(5), createToolsetBody("   ", nil))
 	wantCode(t, resp, got, http.StatusUnprocessableEntity, problem.CodeValidationFailed)
-	if e := errorAt(got, "/name"); e == nil || e["reason"] != "TOO_SHORT" {
+	if e := errorAt(got, "/title"); e == nil || e["reason"] != "TOO_SHORT" {
 		t.Errorf("blank name %+v", got["errors"])
 	}
 }
@@ -64,9 +64,9 @@ func TestV1CreateToolsetIdempotencyInProgress(t *testing.T) {
 	f := newToolsetFix(t, nil)
 	body := createToolsetBody("concurrent", nil)
 	var (
-		wg   sync.WaitGroup
-		mu   sync.Mutex
-		got  []string
+		wg  sync.WaitGroup
+		mu  sync.Mutex
+		got []string
 	)
 	wg.Add(2)
 	for i := 0; i < 2; i++ {
@@ -101,15 +101,15 @@ func TestV1CreateToolsetContentRejected(t *testing.T) {
 func TestV1UpdateToolsetTrustOnlyChangedText(t *testing.T) {
 	f := newToolsetFix(t, denyChecker{})
 	resp, got := f.ts(t, http.MethodPatch, "/api/v1/toolsets/"+idStr(g1TSMain), "/toolsets/{toolset_id}", "sess-alice", "",
-		map[string]any{"type": "launcher"})
-	if resp.StatusCode != http.StatusOK || got["type"] != "launcher" {
+		map[string]any{"toolset_type": "launcher"})
+	if resp.StatusCode != http.StatusOK || got["toolset_type"] != "launcher" {
 		t.Fatalf("type-only patch %d %+v", resp.StatusCode, got)
 	}
 	if n := f.scalar(t, `SELECT COUNT(*) FROM galgame_toolset WHERE id = ? AND type = 'launcher'`, g1TSMain); n != 1 {
 		t.Error("type was not written")
 	}
 	resp, got = f.ts(t, http.MethodPatch, "/api/v1/toolsets/"+idStr(g1TSMain), "/toolsets/{toolset_id}", "sess-alice", "",
-		map[string]any{"name": "blocked"})
+		map[string]any{"title": "blocked"})
 	wantCode(t, resp, got, http.StatusUnprocessableEntity, problem.CodeContentRejected)
 }
 
@@ -122,11 +122,11 @@ func TestV1UpdateToolsetPermissionAndSource(t *testing.T) {
 	resp, got = f.ts(t, http.MethodGet, "/api/v1/toolsets/"+idStr(g1TSMain)+"/source", "/toolsets/{toolset_id}/source", "sess-bob", "", nil)
 	wantCode(t, resp, got, http.StatusForbidden, problem.CodePermissionRequired)
 	resp, got = f.ts(t, http.MethodPatch, "/api/v1/toolsets/"+idStr(g1TSMain), "/toolsets/{toolset_id}", "sess-bob", "",
-		map[string]any{"name": "nope"})
+		map[string]any{"title": "nope"})
 	wantCode(t, resp, got, http.StatusForbidden, problem.CodePermissionRequired)
 	resp, got = f.ts(t, http.MethodPatch, "/api/v1/toolsets/"+idStr(g1TSMain), "/toolsets/{toolset_id}", "sess-staff", "",
-		map[string]any{"name": "Staff edit"})
-	if resp.StatusCode != http.StatusOK || got["name"] != "Staff edit" {
+		map[string]any{"title": "Staff edit"})
+	if resp.StatusCode != http.StatusOK || got["title"] != "Staff edit" {
 		t.Errorf("staff patch %d %+v", resp.StatusCode, got)
 	}
 }

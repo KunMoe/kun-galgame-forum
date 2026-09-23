@@ -110,6 +110,15 @@
     },
     {
       "object": "problem_type",
+      "code": "QUOTA_EXCEEDED",
+      "domain": "platform",
+      "status": 429,
+      "type": "https://developer.nextmoe.dev/problems/platform/quota-exceeded",
+      "title": "Quota exceeded",
+      "description": "A quota for this operation is exhausted. Retry-After, in seconds, is when it resets."
+    },
+    {
+      "object": "problem_type",
       "code": "RATE_LIMITED",
       "domain": "platform",
       "status": 429,

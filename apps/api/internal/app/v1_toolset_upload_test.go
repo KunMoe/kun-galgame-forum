@@ -1,6 +1,7 @@
 package app
 
 import (
+	toolsetrepo "kun-galgame-api/internal/toolset/repository"
 	"net/http"
 	"testing"
 
@@ -124,4 +125,24 @@ func TestV1GetToolsetUpload(t *testing.T) {
 	resp, got = f.ts(t, http.MethodGet, "/api/v1/toolsets/"+idStr(g1TSMain)+"/uploads/"+g1UpPend,
 		"/toolsets/{toolset_id}/uploads/{upload_id}", "sess-bob", "", nil)
 	wantCode(t, resp, got, http.StatusNotFound, problem.CodeNotFound)
+}
+
+// The handler returns early on an upload that is already completed, so two
+// concurrent completions are what reach the store; only its guard stops the
+// second one from adding the bytes again.
+func TestV1CompleteUploadStoreCountsQuotaOnce(t *testing.T) {
+	f := newToolsetFix(t, nil)
+	store := toolsetrepo.NewStore(f.db)
+	before := f.scalar(t, `SELECT daily_toolset_upload_bytes FROM kungal_user_state WHERE user_id = ?`, w3UserAlice)
+	first, err := store.CompleteUpload(g1UpPend, w3UserAlice, 1024)
+	if err != nil || !first {
+		t.Fatalf("first completion first=%v err=%v", first, err)
+	}
+	again, err := store.CompleteUpload(g1UpPend, w3UserAlice, 1024)
+	if err != nil || again {
+		t.Fatalf("second completion first=%v err=%v", again, err)
+	}
+	if n := f.scalar(t, `SELECT daily_toolset_upload_bytes FROM kungal_user_state WHERE user_id = ?`, w3UserAlice); n != before+1024 {
+		t.Errorf("quota %d, want %d", n, before+1024)
+	}
 }

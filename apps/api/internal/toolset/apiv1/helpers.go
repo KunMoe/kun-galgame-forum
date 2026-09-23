@@ -23,18 +23,18 @@ import (
 )
 
 const (
-	maxName       = 500
-	maxMarkdown   = 2000
-	maxAliases    = 17
-	maxHomepages  = 10
-	maxHomepage   = 500
-	maxURL        = 1007
-	maxSizeLabel  = 107
-	maxNote       = 1007
-	maxFileSize   = 2147483648
-	minFileSize   = 1
-	dailyBase     = 100 * 1024 * 1024
-	bytesPerMB    = 1024 * 1024
+	maxName      = 500
+	maxMarkdown  = 2000
+	maxAliases   = 17
+	maxHomepages = 10
+	maxHomepage  = 500
+	maxURL       = 1007
+	maxSizeLabel = 107
+	maxNote      = 1007
+	maxFileSize  = 2147483648
+	minFileSize  = 1
+	dailyBase    = 100 * 1024 * 1024
+	bytesPerMB   = 1024 * 1024
 )
 
 var archiveExts = map[string]bool{".7z": true, ".zip": true, ".rar": true}
@@ -52,8 +52,8 @@ var sortSpecs = map[string]repository.SortSpec{
 	"created_asc":           {Column: "created", Desc: false},
 	"view_desc":             {Column: "view", Desc: true},
 	"view_asc":              {Column: "view", Desc: false},
-	"name_asc":              {Column: "name", Desc: false},
-	"name_desc":             {Column: "name", Desc: true},
+	"title_asc":             {Column: "name", Desc: false},
+	"title_desc":            {Column: "name", Desc: true},
 }
 
 func notFound() *problem.Problem {
@@ -262,4 +262,28 @@ func secondsUntilDailyReset() int {
 		return 1
 	}
 	return sec
+}
+
+func strs[T ~string](in []T) []string {
+	out := make([]string, len(in))
+	for i, v := range in {
+		out[i] = string(v)
+	}
+	return out
+}
+
+func typed[T ~string](in []string) []T {
+	out := make([]T, len(in))
+	for i, v := range in {
+		out[i] = T(v)
+	}
+	return out
+}
+
+func starCounts(in []int) []StarCount {
+	out := make([]StarCount, len(in))
+	for i, v := range in {
+		out[i] = StarCount(v)
+	}
+	return out
 }

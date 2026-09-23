@@ -200,11 +200,11 @@ func (s *Service) summary(
 		author = userclient.User{ID: r.UserID}
 	}
 	return ToolsetSummary{
-		Object: "toolset", ID: repr.ID(r.ID), Name: r.Name, Aliases: aliases,
+		Object: "toolset", ID: repr.ID(r.ID), Name: r.Name, Aliases: typed[ToolsetAlias](aliases),
 		Type: r.Type, Language: r.Language, Platform: r.Platform, Version: r.Version,
-		HomepageURLs: homes, Author: repr.NewUserRef(s.cdn, author),
+		HomepageURLs: typed[HomepageURL](homes), Author: repr.NewUserRef(s.cdn, author),
 		ViewCount: r.View, DownloadCount: downloads, CommentCount: r.CommentCount,
-		PracticalityAverage: prac.Average, PracticalityCount: prac.Count, PracticalityDistribution: dist,
+		PracticalityAverage: prac.Average, PracticalityCount: prac.Count, PracticalityDistribution: starCounts(dist),
 		CreatedAt: repr.Timestamp(r.CreatedAt), UpdatedAt: repr.Timestamp(r.UpdatedAt),
 		EditedAt: repr.TimestampPtr(r.Edited), ResourceUpdatedAt: repr.Timestamp(r.ResourceUpdateTime),
 	}, nil
@@ -279,9 +279,9 @@ func (s *Service) detail(ctx context.Context, row *model.GalgameToolset, users m
 		ViewCount: item.ViewCount, DownloadCount: item.DownloadCount, CommentCount: item.CommentCount,
 		PracticalityAverage: item.PracticalityAverage, PracticalityCount: item.PracticalityCount,
 		PracticalityDistribution: item.PracticalityDistribution,
-		CreatedAt: item.CreatedAt, UpdatedAt: item.UpdatedAt, EditedAt: item.EditedAt,
+		CreatedAt:                item.CreatedAt, UpdatedAt: item.UpdatedAt, EditedAt: item.EditedAt,
 		ResourceUpdatedAt: item.ResourceUpdatedAt,
-		Content: doc, Contributors: contributors, Resources: resOut,
+		Content:           doc, Contributors: contributors, Resources: resOut,
 	}
 	if viewer != nil {
 		var rating *int
@@ -291,8 +291,8 @@ func (s *Service) detail(ctx context.Context, row *model.GalgameToolset, users m
 		}
 		rating = r
 		out.Viewer = &ToolsetViewer{
-			CanEdit: canEditToolset(row.UserID, viewer),
-			CanDelete: canDeleteToolset(row.UserID, viewer),
+			CanEdit:            canEditToolset(row.UserID, viewer),
+			CanDelete:          canDeleteToolset(row.UserID, viewer),
 			PracticalityRating: rating,
 		}
 	}
@@ -336,10 +336,19 @@ func (s *Service) resourceSummary(
 	}
 	item := ToolsetResourceSummary{
 		Object: "toolset_resource", ID: repr.ID(r.ID), ResourceType: kind,
-		FileSize: fileSizeOf(r, uploads), SizeLabel: sizeLabelOf(r),
-		Note: r.Note, DownloadCount: r.Download,
-		Poster: repr.NewUserRef(s.cdn, users[r.UserID]),
-		CreatedAt: repr.Timestamp(r.CreatedAt),
+		DownloadCount: r.Download,
+		Poster:        repr.NewUserRef(s.cdn, users[r.UserID]),
+		CreatedAt:     repr.Timestamp(r.CreatedAt),
+	}
+	if size := fileSizeOf(r, uploads); size != nil {
+		item.File = &ToolsetResourceFile{FileSize: *size}
+	}
+	if label := sizeLabelOf(r); label != nil {
+		item.Link = &ToolsetResourceLink{SizeLabel: *label}
+	}
+	if r.Note != "" {
+		note := r.Note
+		item.Note = &note
 	}
 	if viewer != nil {
 		item.Viewer = &ResourceViewer{

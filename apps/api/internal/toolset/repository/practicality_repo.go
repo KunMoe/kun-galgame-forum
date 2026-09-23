@@ -19,24 +19,6 @@ type RateCount struct {
 	Count int64 `json:"count"`
 }
 
-func (r *PracticalityRepository) CountsByToolset(toolsetID int) []RateCount {
-	var counts []RateCount
-	r.db.Model(&model.GalgameToolsetPracticality{}).
-		Where("toolset_id = ?", toolsetID).
-		Select("rate, COUNT(*) as count").
-		Group("rate").
-		Scan(&counts)
-	return counts
-}
-
-func (r *PracticalityRepository) AverageRate(toolsetID int) float64 {
-	var avg float64
-	r.db.Model(&model.GalgameToolsetPracticality{}).
-		Where("toolset_id = ?", toolsetID).
-		Select("COALESCE(AVG(rate), 0)").Scan(&avg)
-	return avg
-}
-
 func (r *PracticalityRepository) AveragesForToolsets(toolsetIDs []int) map[int]float64 {
 	if len(toolsetIDs) == 0 {
 		return map[int]float64{}
@@ -56,31 +38,4 @@ func (r *PracticalityRepository) AveragesForToolsets(toolsetIDs []int) map[int]f
 		out[r.ToolsetID] = r.Avg
 	}
 	return out
-}
-
-func (r *PracticalityRepository) FindUserRating(toolsetID, userID int) (*model.GalgameToolsetPracticality, error) {
-	var p model.GalgameToolsetPracticality
-	err := r.db.Where("toolset_id = ? AND user_id = ?", toolsetID, userID).First(&p).Error
-	if err == gorm.ErrRecordNotFound {
-		return nil, nil
-	}
-	if err != nil {
-		return nil, err
-	}
-	return &p, nil
-}
-
-func (r *PracticalityRepository) Upsert(toolsetID, userID, rate int) error {
-	existing, err := r.FindUserRating(toolsetID, userID)
-	if err != nil {
-		return err
-	}
-	if existing == nil {
-		return r.db.Create(&model.GalgameToolsetPracticality{
-			Rate:      rate,
-			UserID:    userID,
-			ToolsetID: toolsetID,
-		}).Error
-	}
-	return r.db.Model(existing).Update("rate", rate).Error
 }

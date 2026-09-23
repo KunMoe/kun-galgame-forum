@@ -240,6 +240,8 @@ var publicWrites = map[string]string{
 	"POST /api/auth/logout":         "destroys a session; nothing to protect",
 	"POST /api/v1/topics/:topic_id/views": "an anonymous view beacon; it moves only a counter the same reader " +
 		"could move by reloading the page",
+	"POST /api/v1/toolsets/:toolset_id/resources/:resource_id/downloads": "issues a toolset download link, which " +
+		"anonymous readers have always been given; it moves only that resource's download counter",
 }
 
 // Checked against the RESOLVED table, not against where the line happens to sit

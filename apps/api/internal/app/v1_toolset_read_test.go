@@ -56,7 +56,7 @@ func TestV1ToolsetsUnknownSortAndEnum(t *testing.T) {
 	f := newToolsetFix(t, nil)
 	resp, body := f.ts(t, http.MethodGet, "/api/v1/toolsets?sort=hot", "/toolsets", "", "", nil)
 	wantCode(t, resp, body, http.StatusBadRequest, problem.CodeUnknownSort)
-	resp, body = f.ts(t, http.MethodGet, "/api/v1/toolsets?type=engine", "/toolsets", "", "", nil)
+	resp, body = f.ts(t, http.MethodGet, "/api/v1/toolsets?toolset_type=engine", "/toolsets", "", "", nil)
 	wantCode(t, resp, body, http.StatusBadRequest, problem.CodeUnknownEnumValue)
 	resp, body = f.ts(t, http.MethodGet, "/api/v1/toolsets?limit=101", "/toolsets", "", "", nil)
 	wantCode(t, resp, body, http.StatusBadRequest, problem.CodeLimitTooLarge)
@@ -105,7 +105,7 @@ func TestV1GetToolsetDetail(t *testing.T) {
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("detail %d %+v", resp.StatusCode, body)
 	}
-	if body["object"] != "toolset" || body["name"] != "Main tool" || asInt(body["view_count"]) != 4 || body["viewer"] != nil {
+	if body["object"] != "toolset" || body["title"] != "Main tool" || asInt(body["view_count"]) != 4 || body["viewer"] != nil {
 		t.Errorf("detail %+v", body)
 	}
 	if body["content"] == nil {
@@ -163,8 +163,8 @@ func TestV1GetToolsetResource(t *testing.T) {
 	if resp.StatusCode != http.StatusOK || body["object"] != "toolset_resource" || body["resource_type"] != "link" {
 		t.Fatalf("resource %d %+v", resp.StatusCode, body)
 	}
-	if _, ok := body["url"]; ok {
-		t.Errorf("GET leaked url: %+v", body)
+	if _, ok := body["download_url"]; ok {
+		t.Errorf("GET leaked download_url: %+v", body)
 	}
 	if _, ok := body["extraction_code"]; ok {
 		t.Errorf("GET leaked extraction_code: %+v", body)

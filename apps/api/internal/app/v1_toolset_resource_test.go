@@ -13,7 +13,7 @@ func TestV1CreateToolsetResourceLink(t *testing.T) {
 	f := newToolsetFix(t, nil)
 	body := map[string]any{
 		"resource_type": "link",
-		"url":           "https://cdn.example/tool.7z",
+		"link_url":      "https://cdn.example/tool.7z",
 		"size_label":    "12mb",
 		"note":          "n",
 	}
@@ -78,7 +78,7 @@ func TestV1CreateToolsetResourceFileUnknownReference(t *testing.T) {
 
 	resp, got = f.ts(t, http.MethodPost, "/api/v1/toolsets/"+idStr(g1TSMain)+"/resources",
 		"/toolsets/{toolset_id}/resources", "sess-alice", keyUUID(22), map[string]any{
-			"resource_type": "file", "url": "https://x.example",
+			"resource_type": "file", "link_url": "https://x.example",
 		})
 	wantCode(t, resp, got, http.StatusUnprocessableEntity, problem.CodeValidationFailed)
 }
@@ -89,7 +89,7 @@ func TestV1CreateFileResourceFromCompletedUpload(t *testing.T) {
 		"/toolsets/{toolset_id}/resources", "sess-alice", keyUUID(23), map[string]any{
 			"resource_type": "file", "artifact_id": g1UpAliceB,
 		})
-	if resp.StatusCode != http.StatusCreated || got["resource_type"] != "file" || got["file_size"] == nil {
+	if resp.StatusCode != http.StatusCreated || got["resource_type"] != "file" || got["archive"] == nil {
 		t.Fatalf("file resource %d %+v", resp.StatusCode, got)
 	}
 }
@@ -104,9 +104,9 @@ func TestV1PatchAndDeleteResourcePath(t *testing.T) {
 	wantCode(t, resp, got, http.StatusNotFound, problem.CodeNotFound)
 
 	resp, got = f.ts(t, http.MethodPatch, "/api/v1/toolsets/"+idStr(g1TSMain)+"/resources/"+idStr(g1ResFile),
-		"/toolsets/{toolset_id}/resources/{resource_id}", "sess-alice", "", map[string]any{"url": "https://x.example"})
+		"/toolsets/{toolset_id}/resources/{resource_id}", "sess-alice", "", map[string]any{"link_url": "https://x.example"})
 	wantCode(t, resp, got, http.StatusUnprocessableEntity, problem.CodeValidationFailed)
-	if e := errorAt(got, "/url"); e == nil || e["reason"] != "IMMUTABLE" {
+	if e := errorAt(got, "/link_url"); e == nil || e["reason"] != "IMMUTABLE" {
 		t.Errorf("file url %+v", got["errors"])
 	}
 
@@ -132,7 +132,7 @@ func TestV1CreateToolsetDownload(t *testing.T) {
 	path := "/api/v1/toolsets/" + idStr(g1TSMain) + "/resources/" + idStr(g1ResLink) + "/downloads"
 	spec := "/toolsets/{toolset_id}/resources/{resource_id}/downloads"
 	resp, got := f.ts(t, http.MethodPost, path, spec, "", "", nil)
-	if resp.StatusCode != http.StatusOK || got["object"] != "toolset_download" || got["url"] != "https://files.example/a.zip" {
+	if resp.StatusCode != http.StatusOK || got["object"] != "toolset_download" || got["download_url"] != "https://files.example/a.zip" {
 		t.Fatalf("link download %d %+v", resp.StatusCode, got)
 	}
 	if got["extraction_code"] != "ex1" || got["archive_password"] != "pw1" {
@@ -144,7 +144,7 @@ func TestV1CreateToolsetDownload(t *testing.T) {
 	updated := f.sqlIDs(t, `SELECT updated::text FROM galgame_toolset_resource WHERE id = ?`, g1ResFile)
 	path = "/api/v1/toolsets/" + idStr(g1TSMain) + "/resources/" + idStr(g1ResFile) + "/downloads"
 	resp, got = f.ts(t, http.MethodPost, path, spec, "", "", nil)
-	if resp.StatusCode != http.StatusOK || got["url"] != "https://dl.test/"+g1UpAliceA || got["expires_at"] == nil {
+	if resp.StatusCode != http.StatusOK || got["download_url"] != "https://dl.test/"+g1UpAliceA || got["expires_at"] == nil {
 		t.Errorf("file download %d %+v", resp.StatusCode, got)
 	}
 	if got := f.sqlIDs(t, `SELECT updated::text FROM galgame_toolset_resource WHERE id = ?`, g1ResFile); fmt.Sprint(got) != fmt.Sprint(updated) {

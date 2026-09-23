@@ -61,7 +61,7 @@ func registerToolsets(api huma.API, svc *Service) {
 		Path:        "/users/{user_id}/toolsets",
 		Summary:     "List a user's toolsets",
 		Description: "Lists toolsets the user authored, newest first. An unrenderable user is NOT_FOUND. An empty list is 200 with total 0.",
-		Tags: []string{tagUsers},
+		Tags:        []string{tagUsers},
 		Responses: problemResponses(map[int]string{
 			400: "LIMIT_TOO_LARGE or INVALID_PARAMETER.",
 			404: "NOT_FOUND when the user does not exist or is not renderable.",

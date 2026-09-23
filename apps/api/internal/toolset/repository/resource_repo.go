@@ -13,37 +13,6 @@ type ResourceRepository struct {
 func NewResourceRepository(db *gorm.DB) *ResourceRepository {
 	return &ResourceRepository{db: db}
 }
-
-func (r *ResourceRepository) DB() *gorm.DB { return r.db }
-
-func (r *ResourceRepository) FindByID(id int) (*model.GalgameToolsetResource, error) {
-	var resource model.GalgameToolsetResource
-	if err := r.db.First(&resource, id).Error; err != nil {
-		return nil, err
-	}
-	return &resource, nil
-}
-
-func (r *ResourceRepository) FindByToolset(toolsetID int) []model.GalgameToolsetResource {
-	var resources []model.GalgameToolsetResource
-	r.db.Where("toolset_id = ?", toolsetID).Order("created DESC").Find(&resources)
-	return resources
-}
-
-func (r *ResourceRepository) FindS3ByToolsetTx(tx *gorm.DB, toolsetID int) []model.GalgameToolsetResource {
-	var resources []model.GalgameToolsetResource
-	tx.Where("toolset_id = ? AND type = 's3'", toolsetID).Find(&resources)
-	return resources
-}
-
-func (r *ResourceRepository) DownloadSum(toolsetID int) int64 {
-	var sum int64
-	r.db.Model(&model.GalgameToolsetResource{}).
-		Where("toolset_id = ?", toolsetID).
-		Select("COALESCE(SUM(download), 0)").Scan(&sum)
-	return sum
-}
-
 func (r *ResourceRepository) DownloadSumsForToolsets(toolsetIDs []int) map[int]int {
 	if len(toolsetIDs) == 0 {
 		return map[int]int{}
@@ -63,21 +32,4 @@ func (r *ResourceRepository) DownloadSumsForToolsets(toolsetIDs []int) map[int]i
 		out[r.ToolsetID] = r.Total
 	}
 	return out
-}
-
-func (r *ResourceRepository) Create(tx *gorm.DB, resource *model.GalgameToolsetResource) error {
-	return tx.Create(resource).Error
-}
-
-func (r *ResourceRepository) UpdateFields(resource *model.GalgameToolsetResource, updates map[string]any) error {
-	return r.db.Model(resource).Updates(updates).Error
-}
-
-func (r *ResourceRepository) IncrementDownload(id int) {
-	r.db.Model(&model.GalgameToolsetResource{}).Where("id = ?", id).
-		Update("download", gorm.Expr("download + 1"))
-}
-
-func (r *ResourceRepository) Delete(resource *model.GalgameToolsetResource) error {
-	return r.db.Delete(resource).Error
 }

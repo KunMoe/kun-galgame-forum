@@ -26,9 +26,6 @@ func NewStore(db *gorm.DB) *Store {
 func (s *Store) Ready() bool {
 	return s != nil && s.db != nil
 }
-
-func (s *Store) DB() *gorm.DB { return s.db }
-
 func notFound(err error) error {
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return ErrNotFound
@@ -364,11 +361,6 @@ func addContributor(tx *gorm.DB, toolsetID, userID int) error {
 		VALUES (?, ?, now(), now())
 		ON CONFLICT (toolset_id, user_id) DO NOTHING`, toolsetID, userID).Error
 }
-
-func (s *Store) AddContributor(toolsetID, userID int) error {
-	return addContributor(s.db, toolsetID, userID)
-}
-
 func (s *Store) CreateResource(row *model.GalgameToolsetResource) error {
 	return s.db.Transaction(func(tx *gorm.DB) error {
 		if err := tx.Create(row).Error; err != nil {

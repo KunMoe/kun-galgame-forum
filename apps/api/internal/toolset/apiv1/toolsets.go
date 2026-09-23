@@ -26,11 +26,7 @@ func (s *Service) listToolsets(ctx context.Context, in *listToolsetsInput) (*lis
 	if p := pg.CheckDepth(); p != nil {
 		return nil, p
 	}
-	sort, ok := sortSpecs[in.Sort]
-	if !ok {
-		return nil, problem.New(problem.CodeUnknownSort, "The sort token is not in this collection's vocabulary.",
-			problem.AtParameter("sort", problem.ReasonUnknownValue, "use a sort token declared by this operation", nil))
-	}
+	sort := sortSpecs[in.Sort]
 	filter := repository.ListFilter{
 		Type: in.Type, Language: in.Language, Platform: in.Platform, Version: in.Version, Q: in.Q,
 	}
@@ -149,7 +145,7 @@ func (s *Service) createToolset(ctx context.Context, in *createToolsetInput) (*c
 	if p != nil {
 		return nil, p
 	}
-	name, aliases, homes, markdownSrc, fields, p := validateToolsetWrite(in.Body.Name, in.Body.ContentMarkdown, in.Body.Aliases, in.Body.HomepageURLs, true)
+	name, aliases, homes, markdownSrc, fields, p := validateToolsetWrite(in.Body.Name, in.Body.ContentMarkdown, strs(in.Body.Aliases), strs(in.Body.HomepageURLs), true)
 	if p != nil {
 		return nil, p
 	}
@@ -223,11 +219,11 @@ func (s *Service) updateToolset(ctx context.Context, in *patchToolsetInput) (*to
 
 	if patch.Name != nil {
 		if len(*patch.Name) > maxName {
-			errs = append(errs, tooLong("/name", maxName))
+			errs = append(errs, tooLong("/title", maxName))
 		} else {
 			name := trimName(*patch.Name)
 			if name == "" {
-				errs = append(errs, tooShort("/name", 1))
+				errs = append(errs, tooShort("/title", 1))
 			} else {
 				fields["name"] = name
 				modParts = append(modParts, name)
@@ -256,13 +252,13 @@ func (s *Service) updateToolset(ctx context.Context, in *patchToolsetInput) (*to
 		fields["version"] = *patch.Version
 	}
 	if patch.Aliases != nil {
-		cleaned, ferrs := validateAliases(patch.Aliases)
+		cleaned, ferrs := validateAliases(strs(patch.Aliases))
 		errs = append(errs, ferrs...)
 		aliases = cleaned
 		modParts = append(modParts, cleaned...)
 	}
 	if patch.HomepageURLs != nil {
-		cleaned, ferrs := validateHomepages(patch.HomepageURLs)
+		cleaned, ferrs := validateHomepages(strs(patch.HomepageURLs))
 		errs = append(errs, ferrs...)
 		if len(ferrs) == 0 {
 			raw, err := json.Marshal(cleaned)
@@ -369,11 +365,11 @@ func validateToolsetWrite(name, body string, aliases, homes []string, creating b
 	var errs []problem.FieldError
 	if creating {
 		if len(name) > maxName {
-			errs = append(errs, tooLong("/name", maxName))
+			errs = append(errs, tooLong("/title", maxName))
 		}
 		trimmed := trimName(name)
 		if trimmed == "" {
-			errs = append(errs, tooShort("/name", 1))
+			errs = append(errs, tooShort("/title", 1))
 		}
 		name = trimmed
 	}

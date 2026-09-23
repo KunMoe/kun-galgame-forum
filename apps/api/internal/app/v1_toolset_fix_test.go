@@ -24,11 +24,11 @@ const (
 	g1TSBad  = 930002212
 	g1TSGone = 930002299
 
-	g1ResLink   = 930002301
-	g1ResFile   = 930002302
-	g1ResEmpty  = 930002303
-	g1ResBob    = 930002304
-	g1ResOther  = 930002305
+	g1ResLink  = 930002301
+	g1ResFile  = 930002302
+	g1ResEmpty = 930002303
+	g1ResBob   = 930002304
+	g1ResOther = 930002305
 
 	g1UpAliceA = "aaaaaaaa-bbbb-4ccc-8ddd-000000000001"
 	g1UpAliceB = "aaaaaaaa-bbbb-4ccc-8ddd-000000000002"
@@ -80,6 +80,7 @@ func (a *artifactFake) init(w http.ResponseWriter, r *http.Request) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	if a.quota {
+		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusForbidden)
 		a.write(w, 50012, nil)
 		return
@@ -271,7 +272,7 @@ func (f *writeFix) ts(t *testing.T, method, rawURL, spec, session, idem string, 
 
 func createToolsetBody(name string, extra map[string]any) map[string]any {
 	body := map[string]any{
-		"name": name, "type": "extractor", "interface_language": "zh-cn", "platform": "windows", "version": "stable",
+		"title": name, "toolset_type": "extractor", "interface_language": "zh-cn", "platform": "windows", "release_channel": "stable",
 	}
 	for k, v := range extra {
 		body[k] = v
