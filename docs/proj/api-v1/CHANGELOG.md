@@ -140,3 +140,27 @@ Removed legacy routes (22):
 | `GET /api/galgame/:gid/comments/locate` | not rebuilt; migration 135 rewrote the notification links that needed it |
 
 Following a wall and its read receipts stay on the legacy `/api/community/wall/*` routes for now; `thread_id` may be sent as `0` and the server finds the thread.
+
+## 2026-09-23 (M · messages)
+
+Twelve operations under `/api/v1/me/**` replace the eleven `/api/message/**` routes, which are deleted. The App never called the old routes, so nothing it shipped breaks.
+
+Notifications:
+
+- `GET /api/v1/me/notifications` (`listNotifications`) — cursor list, newest first. `is_muted` picks the partition (types the caller has not muted, or only the muted ones); `notification_type` narrows it. Rows whose actor is banned are left out.
+- `GET /api/v1/me/notifications/summary` (`getNotificationSummary`) — `unread_count`, `muted_unread_count`, `latest`. The counts are SQL counts and include rows the list leaves out.
+- `GET /api/v1/me/notifications/{notification_id}` (`getNotification`)
+- `PUT /api/v1/me/notifications/read-marker` (`markNotificationsRead`) — `{up_to_id, is_muted}` marks one partition read up to an id. It never touches the other partition or rows newer than `up_to_id`.
+- `DELETE /api/v1/me/notifications/{notification_id}` (`deleteNotification`) — `404` for a row that is not the caller's (the old route answered 200).
+- `Notification.notification_type` is a closed vocabulary of 18 tokens. Five differ in meaning from their old stored names: `favorited`, `followed_thread_activity` (new comments in a thread you follow, not "someone followed you"), `best_answer_chosen`, `reply_pinned`, `resource_link_reported` (someone reported your link, not "your thing expired"). The other renames are snake_case only: `quiz_answered`, `edit_requested`, `edit_merged`, `edit_declined`, `lottery_won`, `lottery_drawn`, `lottery_code_expired`, `poll_closed`. The table is in `waves/m-message.md` §3.3.
+- `path` is the in-site web path of the target. A structured target reference may be added later as an addition.
+
+Private messages, addressed by the other participant's user id:
+
+- `GET /api/v1/me/conversations` (`listConversations`), `GET /api/v1/me/conversations/{user_id}` (`getConversation`) — works before any message exists and creates nothing.
+- `GET /api/v1/me/conversations/{user_id}/messages` (`listDirectMessages`), `GET …/messages/{message_id}` (`getDirectMessage`) — reading never marks anything read.
+- `POST /api/v1/me/conversations/{user_id}/messages` (`sendDirectMessage`) — `Idempotency-Key` required. Returns `201` with the message.
+- `PATCH /api/v1/me/conversations/{user_id}/messages/{message_id}` (`updateDirectMessage`) — `{state: "recalled"}`. A recalled message carries an empty `content` document.
+- `PUT /api/v1/me/conversations/{user_id}/read-marker` (`markDirectMessagesRead`)
+
+System announcements (`/api/message/admin`) are gone with no replacement. The table was empty and nothing wrote to it.

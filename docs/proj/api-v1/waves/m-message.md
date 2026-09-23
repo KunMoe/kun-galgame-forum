@@ -368,6 +368,15 @@ CREATE INDEX IF NOT EXISTS idx_chat_room_participant_user ON chat_room_participa
 
 操作数因此是 **12 个**（N1–N5、C1–C7），取代 11 条旧路由。
 
+## 11.6 验收时抓到的（督查，2026-09-23）
+
+1. **M1 在第二轮活了，第一轮是被杀的，两轮之间代码没变。** 迁移 130 的 `(receiver_id, created DESC, id DESC)` 索引一旦被规划器选中，并列行就按索引顺序（即 `id DESC`）出来，于是「`ORDER BY` 去掉 `id`」在这个计划下恰好是对的；第一轮规划器走的是 seq scan + sort，所以杀得掉。区别只在统计信息（中间机器重启过）。这是一个**依赖执行计划的潜伏缺陷**：生产 35 万行会走索引而不暴露，任何让规划器改走排序的因素都会让翻页重复或漏行。M1 的测试现在在测试期间删掉这个索引、结束后重建，强制走排序；连跑三次都杀得掉。**教训：只要被测排序键有覆盖索引，「数据里有并列键」还不够，必须让计划走排序。**
+2. **M12b**：C6 回的剩余未读数用的是另一条 SQL，M12 只打在 C1 那条上。补题补测试后杀掉。
+3. **deadcode 漏报了 `MessageRepository` 上的 8 个旧方法**（`FindMessages`、`GetNavSummary` 等）：这个类型在别处被当成接口值传递，RTA 保守地把它的整个方法集都算作可达。它们是 grep 证明零调用方之后手工删的。**deadcode 的「干净」不等于没有死代码**，删 handler 之后仓储层要 grep 一遍。
+4. 删完之后变成零引用的模型类型：`SystemMessage`、`SystemMessageReadState`、六个 `Chat*`（私信全走裸 SQL 行类型）。表都留着（§8），只删 Go 类型。
+5. `markdown.RenderInline` 现在只有它自己的测试在调用（唯一的生产调用方是旧私信）。它所在的 `inline.go` 被 `image_ref.go` 与两个共享测试牵着，属于共享的 markdown 基础设施，**本轨不删**，留给后续清理。
+6. `legacy_route_baseline` 290 → 279。
+
 ## 12. 九条闸
 
 照 [05-session-sop.md](../05-session-sop.md) §5。本轨的临时库：`kungal_test_m_message`。
