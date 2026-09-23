@@ -272,6 +272,29 @@ Abort：artifact.Delete 失败 → `503`，行不删（修 E20）。已经 `comp
 
 `GET /toolsets/{toolset_id}` 照旧 `view + 1`（话题详情同样在 GET 里计数），改用**不带 `updated` 的列更新**。迁移 142 把 `trg_feed_galgame_toolset` 收窄到 `INSERT OR DELETE OR UPDATE OF name, user_id, status, created`（函数读的列），浏览不再写 `feed_activity`（修 E14）。`trg_feed_galgame_toolset_resource` 同理，不包含 `download`。
 
+### 3.12 实现时按 G8 / G14 改的名（2026-09-23，只增不改，以此为准）
+
+G8 要求全 spec 里同名属性同型（含可空与 format），G14 要求每个字符串带 enum / format / pattern / 自由文本标记。本契约前文的几个名字撞了既有的面，实现时改成下表：
+
+| 前文 | 实际 | 撞了谁 |
+|---|---|---|
+| `name` | `title` | 用户引用的 `name` 可空；站点、话题、文档的标题都叫 `title` |
+| `type` | `toolset_type` | 问题目录条目的 `type`（URI） |
+| `version` | `release_channel` | 偏好文档的 `version`（整数） |
+| `resources` | `toolset_resources` | 摸鱼补丁的 `resources` |
+| 资源摘要的 `file_size` / `size_label`（可空） | 嵌套 `archive: {file_size} \| null` 与 `link: {size_label} \| null` | 上传会话的 `file_size`、写面的 `size_label` 不可空 |
+| 资源摘要的 `note`（空串） | `note`：`null` 表示没有；写面 `null` 或缺席不动，空串清掉 | 审核项举报的 `note` 可空 |
+| 写面的 `url` | `link_url`，带 scheme pattern | 头像等 `url` 是 `format: uri` |
+| 下载的 `url` | `download_url`，带同一 pattern | 同上 |
+| 上传会话的 `parts` | `part_urls` | 完成请求的 `parts` 是 `{part_number, etag}` |
+| 已上传分片的 `size` | `byte_count` | 摸鱼资源的 `size` 是字符串 |
+| `multipart` | `is_multipart` | F1：布尔以 `is_` / `has_` / `can_` 开头 |
+| 上传会话 `id` 的 `format: uuid` | `pattern`（UUID 形） | 其它对象的 `id` 没有 format |
+| PUT 实用性回的 `viewer.practicality_rating` 不可空 | 可空（这条响应里恒有值） | 详情 `viewer.practicality_rating` 可空 |
+| 排序 `name_asc` / `name_desc` | `title_asc` / `title_desc` | 跟字段名走 |
+
+`file_size` 为 0 表示遗留文件从没记下大小。`archive` 不叫 `file`：头像上传的 multipart 字段叫 `file`（二进制）。
+
 ## 4. 逐条操作
 
 通用：401 `MISSING_CREDENTIAL` / `INVALID_CREDENTIAL`（required；optional 的坏 Bearer）、403 `ACCOUNT_BANNED`、500 `INTERNAL_ERROR`、503 `SERVICE_UNAVAILABLE`（会话存储 / userclient / artifact / 对象存储）。每个 401 带 `WWW-Authenticate`。v1 全部 `Cache-Control: no-store`。
