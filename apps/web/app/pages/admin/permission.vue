@@ -24,9 +24,8 @@ const activeTab = ref('matrix')
 
 const api = useApiClient()
 
-const { data, refresh } = await useApi(
-  'admin-role-permissions',
-  (client, { signal }) => client.GET('/admin/role-permissions', { signal })
+const { data } = await useApi('admin-role-permissions', (client, { signal }) =>
+  client.GET('/admin/role-permissions', { signal })
 )
 
 const matrix = ref<RolePermissionMatrix | null>(data.value ?? null)
@@ -157,10 +156,6 @@ const patchRoles = async (
   saving.value = false
   if (!result.ok) {
     reportProblem(result.problem)
-    await refresh()
-    if (data.value) {
-      applyMatrix(data.value)
-    }
     return false
   }
   applyMatrix(result.data)
