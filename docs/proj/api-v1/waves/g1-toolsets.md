@@ -108,6 +108,7 @@
 | `resource`（数组） | `resources` | 数组用复数 |
 | `homepage` | `homepage_urls` | 带 scheme 的 URL 数组 |
 | `query` | `q` | 与其它页码集合一致 |
+| `language` | `interface_language` | 工具界面的语言；WS 的 `language` 是开放词表，同名不同型会被 G8 拦下 |
 | `sort_field` + `sort_order` | `sort` 封闭 token `<键>_<asc\|desc>` | 01 §4 |
 | `type`（资源 `s3`/`user`） | `resource_type`：`file` / `link` | 存储值仍是 `s3` / `user`；v1 按用途命名 |
 | `content`（逗号拼接 URL 或预签名） | 链接：`url`（生产 26 条 link 资源每条恰好一个 URL，最长 130，A5 不做数组）；文件的秘密只在 download | GET 不再下发秘密 |
@@ -129,7 +130,7 @@
 
 **`ToolsetSummary`（`object: "toolset"`，列表条目）与 `Toolset`（同 object，详情）重叠字段同名同型（G8）。**
 
-公共字段：`id`、`name`、`aliases`、`type`、`language`、`platform`、`version`、`homepage_urls`、`author`（UserRef）、`view_count`、`download_count`（该工具下资源 `SUM(download)`，无资源为 0）、`comment_count`（本地列，RC 墙写入维护，D21）、`practicality_average`（两位小数的 number，无评分时 `null`）、`practicality_count`、`practicality_distribution`（恰好 5 个非负整数，下标 0 = 1 星）、`created_at`、`updated_at`、`edited_at`（可空）、`resource_updated_at`。
+公共字段：`id`、`name`、`aliases`、`type`、`interface_language`、`platform`、`version`、`homepage_urls`、`author`（UserRef）、`view_count`、`download_count`（该工具下资源 `SUM(download)`，无资源为 0）、`comment_count`（本地列，RC 墙写入维护，D21）、`practicality_average`（两位小数的 number，无评分时 `null`）、`practicality_count`、`practicality_distribution`（恰好 5 个非负整数，下标 0 = 1 星）、`created_at`、`updated_at`、`edited_at`（可空）、`resource_updated_at`。
 
 - `resource_updated_at` 列是 `NOT NULL DEFAULT CURRENT_TIMESTAMP`，v1 **从不发 null**（任务书写可空，见 §8 O2）。
 - `aliases` / `homepage_urls` 永不 `null`（空数组）。
@@ -172,12 +173,12 @@
 | `type` | `emulator` `translator` `extractor` `converter` `debug` `launcher` `script` `docs` `others` |
 | `platform` | `windows` `mac` `linux` `emulator` `others` |
 | `version` | `stable` `beta` `alpha` `rc` |
-| `language` | `zh-cn` `zh-tw` `ja-jp` `en-us` `others` |
+| `interface_language` | `zh-cn` `zh-tw` `ja-jp` `en-us` `others` |
 | `resource_type` | `file` `link` |
 | `sort`（仅 `GET /toolsets`） | `resource_updated_desc`（默认）`resource_updated_asc` `created_desc` `created_asc` `view_desc` `view_asc` `name_asc` `name_desc` |
 | 上传 `state` | `pending` `completed`（写面 PATCH 只收 `completed`） |
 
-**`language` 是 01 §3 snake_case 规则的具名例外**：四个取值是小写 BCP 47 标签，WS 已经按同样的标签下发；写成 `zh_cn` 就不再是语言标签。`others` 本身是 snake_case。本契约提交同时把这一行写进 01 §3 的例外表。
+**字段叫 `interface_language`，不叫 `language`**（2026-09-23 追加）：它是工具界面的语言。WS 的 `Website.language` 是开放词表（BCP 47 pattern，无 enum），同名的封闭枚举会被 G8 拦下；`others` 又不是 BCP 47 标签，所以也不能改成开放词表。四个取值是小写 BCP 47 标签，属于 01 §3 snake_case 规则的具名例外；例外表那一行与 F1 门的名单由 GE 的 #203 统一加（含 `interface_language`），本轨提交里原先那一行在 rebase 时删掉。
 
 未知过滤值 → `400 UNKNOWN_ENUM_VALUE`。缺席 = 不过滤（没有 `all` token）。未知 `sort` → `400 UNKNOWN_SORT`，不得静默回落（修 E5）。
 
@@ -185,7 +186,7 @@
 
 ### 3.4 列表
 
-**`GET /toolsets`**：页码（`collect.PageNumber` 的 `page`/`limit`，本集合把默认 `limit` 改成 **24**，最大 100；`CheckDepth` `page × limit ≤ 10000`，越界 `400 INVALID_PARAMETER` `OUT_OF_RANGE`）。响应 `repr.PageList[ToolsetSummary]`，必发 `total` + `total_relation`。过滤 `type` `language` `platform` `version`，以及 `q`（1–100；缺席或去空白后为空 = 不搜）。`q` 做转义 ILIKE，列是 **`galgame_toolset.name`**（现仓储 `buildListQuery` 只搜这一列，不搜别名或简介）。
+**`GET /toolsets`**：页码（`collect.PageNumber` 的 `page`/`limit`，本集合把默认 `limit` 改成 **24**，最大 100；`CheckDepth` `page × limit ≤ 10000`，越界 `400 INVALID_PARAMETER` `OUT_OF_RANGE`）。响应 `repr.PageList[ToolsetSummary]`，必发 `total` + `total_relation`。过滤 `type` `interface_language` `platform` `version`，以及 `q`（1–100；缺席或去空白后为空 = 不搜）。`q` 做转义 ILIKE，列是 **`galgame_toolset.name`**（现仓储 `buildListQuery` 只搜这一列，不搜别名或简介）。
 
 排序封闭，默认 `resource_updated_desc`（网页浏览页现在的默认，`useToolsetFilters.ts:34`）。每个排序带同方向的 `id` 决胜键：`created_desc` → `created DESC, id DESC`，`name_asc` → `name ASC, id ASC`，`resource_updated_desc` → `resource_update_time DESC, id DESC`，其余同理。
 
@@ -238,7 +239,7 @@ Abort：artifact.Delete 失败 → `503`，行不删（修 E20）。已经 `comp
 | `content_markdown` | ≤2000；创建可空（空文档）；去空白后仍可空 | DTO / 列 `varchar(2000)` |
 | `aliases` | 最多 **17**，每条 1–500，去空白，请求内唯一 | 网页 `KunTagInput max-tags=17` `max-tag-length=500`；唯一 `(toolset_id, name)`；生产单工具最多 6 个、最长 31 |
 | `homepage_urls` | 最多 **10**，每条 ≤500，`http`/`https` URL（zod `z.url().max(500)`；后端旧面不校验，v1 收进来） | 网页；条数旧面无上限，按 WS `urls` 的 10；生产单工具最多 2 条、最长 95、全部 http(s) |
-| `type` / `language` / `platform` / `version` | 创建必填封闭枚举 | 网页 zod `z.enum`；后端旧面无 `oneof` |
+| `type` / `interface_language` / `platform` / `version` | 创建必填封闭枚举 | 网页 zod `z.enum`；后端旧面无 `oneof` |
 | link `url` | 1–1007，`downloadlink` | 列 / DTO |
 | `size_label` | ≤107；link 创建必填 | 列 / DTO |
 | `extraction_code` / `archive_password` / `note` | ≤1007 | 列 / DTO |
@@ -277,7 +278,7 @@ Abort：artifact.Delete 失败 → `503`，行不删（修 E20）。已经 `comp
 
 ### 4.1 `listToolsets` · `GET /toolsets` · optional · 200 `PageList<ToolsetSummary>`
 
-Query：`page`、`limit`（默认 24）、`type`、`language`、`platform`、`version`、`sort`、`q`。
+Query：`page`、`limit`（默认 24）、`type`、`interface_language`、`platform`、`version`、`sort`、`q`。
 
 | 状态 | code |
 |---|---|
@@ -430,7 +431,7 @@ CREATE TRIGGER trg_feed_galgame_toolset_resource
 | 编号 | 决定 |
 |---|---|
 | **K-G1** | 没有生命周期。119/119 工具与全部资源 `status = 0`，无人写入别的值（K26 先例）。v1 的工具和资源都没有 `state`。列表不再 `status != 1` |
-| **K-G2** | 词表封闭，取自网页常量加生产取值。`language` 的四个 BCP 47 标签是 01 §3 snake_case 的具名例外。未知过滤 400；缺席不过滤。存储值不改 |
+| **K-G2** | 词表封闭，取自网页常量加生产取值。`interface_language`（库列 `language`）的四个 BCP 47 标签是 01 §3 snake_case 的具名例外；不叫 `language` 是为了避开 WS 开放词表的同名字段（G8）。未知过滤 400；缺席不过滤。存储值不改 |
 | **K-G3** | 下载秘密只从 POST 来，永不从 GET 来。详情不带秘密。`POST …/downloads` 下发秘密并 +1 下载计数。档位 optional。预签名失败 503 |
 | **K-G4** | `file` / `link`；link 是一个 `url`，走 downloadlink；file 的 `artifact_id` 必须是调用者在本工具上完成的上传。任何人可给别人的工具加资源。空 content 的唯一改为部分唯一 |
 | **K-G5** | 上传会话落本地表，所有权可查。完成与额度同一事务。Abort 失败 503。额度公式不变，读缓存萌萌点（C3）。超额度 `QUOTA_EXCEEDED` 429 |
