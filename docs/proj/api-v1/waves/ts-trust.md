@@ -255,3 +255,7 @@
 - 普通用户与管理员各在话题 4241 的「更多 → 举报」里选「垃圾信息」提交：`GET /report-reasons` 200、`POST /reports` 204、提示「举报已提交」；上游两行举报的 `reporter_id` 分别是 10 与 8，管理员的员工权重当场开出审核条目。
 - 管理员在收件箱点开该条目：举报人显示为用户卡片（头像 + 名字），理由显示「垃圾信息」；点「认领」→ `PATCH` 200，显示「处理中，认领人 xiaohuo」；处置动作选「不处置（仅记录）」、理由从下拉选「垃圾信息」→ `PATCH` 200；上游落下 `action = 0, reason_code = spam` 的处置。「全部」页签按优先级列出 30 条并带分页器，游戏资源 / 社区评论 / 游戏评价等新 kind 都有中文标签。
 - 清理：本地 kun_trust 的两行举报、审核条目与处置已删（审计表是哈希链，没动），两个会话已删，自起的两个进程已按 PID 停止。
+
+## 10. 上线后（2026-09-23，infra 侧）
+
+§1.3 第 11 条已由 infra 修复：kun_trust 给 `kungal` 加了站点策略，`aggregate_threshold = 0.5`（单条举报即开审核条目）；生产上 64 条停在 `received` 的举报被回填成 58 个待处理条目（user 20、forum_topic 18、galgame 17、forum_reply 3），优先级取严重度、`report_weight_sum` 取权重和，举报行已链接（status 1）。另外 G0 窗口把 galgame 举报的 `subject_id` / `subject_url` 改写到了新的 work id（§1.3 第 10 条）。
