@@ -62,14 +62,6 @@ type GalgameQuizGalgame struct {
 
 func (GalgameQuizGalgame) TableName() string { return "galgame_quiz_galgame" }
 
-type GalgameQuizFavorite struct {
-	ID     int64 `gorm:"column:id;<-:false"`
-	QuizID int   `gorm:"column:quiz_id;primaryKey"`
-	UserID int   `gorm:"column:user_id;primaryKey"`
-}
-
-func (GalgameQuizFavorite) TableName() string { return "galgame_quiz_favorite" }
-
 type GalgameQuizRow struct {
 	ID               int    `gorm:"column:id"`
 	UserID           int    `gorm:"column:user_id"`

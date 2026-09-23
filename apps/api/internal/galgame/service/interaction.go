@@ -41,32 +41,6 @@ func (InteractionHelpers) CreateGalgameMessageWithContent(
 	}).Error
 }
 
-func (InteractionHelpers) CreateQuizAnswerMessage(
-	tx *gorm.DB,
-	senderID, receiverID int,
-	content string,
-	quizID int,
-) error {
-	if senderID == receiverID || receiverID <= 0 {
-		return nil
-	}
-	link := fmt.Sprintf("/galgame-quiz/%d", quizID)
-
-	var count int64
-	tx.Model(&msgModel.Message{}).
-		Where("sender_id = ? AND receiver_id = ? AND type = ? AND link = ?",
-			senderID, receiverID, "quiz-answered", link).
-		Count(&count)
-	if count > 0 {
-		return nil
-	}
-
-	return tx.Create(&msgModel.Message{
-		SenderID: senderID, ReceiverID: receiverID,
-		Type: "quiz-answered", Content: content, Link: link, Status: "unread",
-	}).Error
-}
-
 func (InteractionHelpers) CreateGalgameCommentMention(
 	tx *gorm.DB,
 	senderID, receiverID int,

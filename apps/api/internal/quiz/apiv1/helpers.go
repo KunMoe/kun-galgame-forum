@@ -410,14 +410,6 @@ func typedChoices(in []string) []QuizChoice {
 	return out
 }
 
-func strs(in []QuizChoice) []string {
-	out := make([]string, len(in))
-	for i, v := range in {
-		out[i] = string(v)
-	}
-	return out
-}
-
 func workIDStrings(ids []int) []repr.DecimalID {
 	out := make([]repr.DecimalID, len(ids))
 	for i, id := range ids {

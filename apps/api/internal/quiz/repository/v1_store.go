@@ -242,21 +242,6 @@ func (s *Store) WorkIDs(quizID int) ([]int, error) {
 	return ids, err
 }
 
-func (s *Store) WorkIDsMany(quizIDs []int) (map[int][]int, error) {
-	out := map[int][]int{}
-	if len(quizIDs) == 0 {
-		return out, nil
-	}
-	var rows []model.GalgameQuizGalgame
-	if err := s.db.Where("quiz_id IN ?", quizIDs).Order("work_id").Find(&rows).Error; err != nil {
-		return nil, err
-	}
-	for _, r := range rows {
-		out[r.QuizID] = append(out[r.QuizID], r.WorkID)
-	}
-	return out, nil
-}
-
 func (s *Store) SetWorks(tx *gorm.DB, quizID int, workIDs []int) error {
 	if err := tx.Where("quiz_id = ?", quizID).Delete(&model.GalgameQuizGalgame{}).Error; err != nil {
 		return err
