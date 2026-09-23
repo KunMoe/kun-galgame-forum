@@ -10,9 +10,12 @@ import {
   characterViewOf,
   type CharacterView
 } from '~/utils/galgame/entityCards'
+import type { Image, WorkCharacter } from '#shared/utils/api/schemas'
+import type { GalgameArtMeta } from '~~/shared/types/galgame'
+import type { GalgameCharacterTrait } from '~~/shared/types/galgame-character'
 
 const props = defineProps<{
-  character: GalgameDetailCharacter | null
+  character: WorkCharacter | null
 }>()
 
 const isOpen = defineModel<boolean>({ required: true })
@@ -21,11 +24,11 @@ const api = useApiClient()
 const nameOf = useCatalogName()
 const { allowsNsfw } = useContentStance()
 
-const cache = new Map<number, CharacterView>()
+const cache = new Map<string, CharacterView>()
 const detail = ref<CharacterView | null>(null)
 const isLoading = ref(false)
 
-const load = async (id: number) => {
+const load = async (id: string) => {
   const cached = cache.get(id)
   if (cached) {
     detail.value = cached
@@ -36,7 +39,7 @@ const load = async (id: number) => {
   const res = await settle(
     api.GET('/characters/{character_id}', {
       params: {
-        path: { character_id: String(id) },
+        path: { character_id: id },
         query: { include_nsfw: allowsNsfw.value }
       }
     })
@@ -62,26 +65,35 @@ watch(
   { immediate: true }
 )
 
+const metaOf = (img: Image | null | undefined): GalgameArtMeta | undefined =>
+  img?.width && img.height
+    ? { width: img.width, height: img.height, thumbhash: img.thumbhash ?? '' }
+    : undefined
+
 const figureFrame = computed(() =>
-  artFrame(props.character?.figure_meta, detail.value?.figure_meta)
+  artFrame(metaOf(props.character?.figure), detail.value?.figure_meta)
 )
 const bustFrame = computed(() =>
-  artFrame(props.character?.image_meta, detail.value?.image_meta)
+  artFrame(metaOf(props.character?.image), detail.value?.image_meta)
 )
+
+const spoilerRank = (spoiler: WorkCharacter['spoiler'] | undefined) =>
+  spoiler === 'major' ? 2 : spoiler === 'minor' ? 1 : 0
 
 const kindText = computed(() =>
   props.character
-    ? KUN_GALGAME_CHARACTER_KIND_MAP[props.character.kind] || ''
+    ? KUN_GALGAME_CHARACTER_KIND_MAP[props.character.character_kind] || ''
     : ''
 )
 const kindColor = computed(() =>
   props.character
-    ? KUN_GALGAME_CHARACTER_KIND_COLOR[props.character.kind] || 'default'
+    ? KUN_GALGAME_CHARACTER_KIND_COLOR[props.character.character_kind] ||
+      'default'
     : 'default'
 )
 const spoilerText = computed(() =>
   props.character
-    ? KUN_GALGAME_CHARACTER_SPOILER_MAP[props.character.spoiler]
+    ? KUN_GALGAME_CHARACTER_SPOILER_MAP[spoilerRank(props.character.spoiler)]
     : ''
 )
 
@@ -115,11 +127,15 @@ const introCredit = computed(() =>
 )
 
 const heading = computed(
-  () => detail.value?.name || props.character?.name || ''
+  () =>
+    detail.value?.name ||
+    (props.character ? nameOf(props.character).name : '') ||
+    ''
 )
 const headingOriginal = computed(() => {
   const parts = [
-    detail.value?.name_original ?? props.character?.name_original,
+    detail.value?.name_original ??
+      (props.character ? nameOf(props.character).original : ''),
     props.character?.latin
   ].filter((part): part is string => !!part && part !== heading.value)
   return parts.join(' · ')
@@ -143,20 +159,20 @@ watch(
           >
             <KunLightboxGalleryItem
               v-if="character.figure"
-              :src="character.figure"
-              :alt="character.name"
+              :src="character.figure.url"
+              :alt="nameOf(character).name"
               :wrap="false"
               v-slot="{ open }"
             >
               <button
                 type="button"
                 class="bg-default-100 w-fit cursor-zoom-in overflow-hidden rounded-xl"
-                :aria-label="`查看 ${character.name} 的立绘`"
+                :aria-label="`查看 ${nameOf(character).name} 的立绘`"
                 @click="open"
               >
                 <KunImage
-                  :src="character.figure"
-                  :alt="character.name"
+                  :src="character.figure.url"
+                  :alt="nameOf(character).name"
                   loading="eager"
                   :aspect-ratio="figureFrame.aspectRatio"
                   :object-fit="figureFrame.objectFit"
@@ -168,20 +184,20 @@ watch(
 
             <KunLightboxGalleryItem
               v-if="character.image"
-              :src="character.image"
-              :alt="character.name"
+              :src="character.image.url"
+              :alt="nameOf(character).name"
               :wrap="false"
               v-slot="{ open }"
             >
               <button
                 type="button"
                 class="bg-default-100 w-fit cursor-zoom-in overflow-hidden rounded-xl"
-                :aria-label="`查看 ${character.name} 的头像`"
+                :aria-label="`查看 ${nameOf(character).name} 的头像`"
                 @click="open"
               >
                 <KunImage
-                  :src="character.image"
-                  :alt="character.name"
+                  :src="character.image.url"
+                  :alt="nameOf(character).name"
                   loading="eager"
                   :aspect-ratio="bustFrame.aspectRatio"
                   :object-fit="bustFrame.objectFit"
@@ -223,7 +239,7 @@ watch(
                 size="sm"
                 class-name="text-default-600 hover:text-primary"
               >
-                {{ v.name }}
+                {{ nameOf(v).name }}
               </KunLink>
             </template>
           </div>

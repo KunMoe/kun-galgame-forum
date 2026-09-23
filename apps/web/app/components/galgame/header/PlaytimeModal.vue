@@ -7,18 +7,20 @@ import {
   KUN_GALGAME_PLAY_STATE_OPTIONS,
   type KunGalgamePlayState
 } from '~/constants/galgame-playtime'
+import type { Work, WorkViewerPlaytime } from '#shared/utils/api/schemas'
 
 const props = defineProps<{
-  galgame: GalgameDetail
-  mine: GalgameMyPlaytime | null
+  galgame: Work
+  mine: WorkViewerPlaytime | null
 }>()
 
 const emits = defineEmits<{
-  saved: [GalgameMyPlaytime | null]
+  saved: [WorkViewerPlaytime | null]
   finished: [KunGalgamePlayState]
 }>()
 
 const open = defineModel<boolean>({ required: true })
+const workName = useWorkName()
 
 const hours = ref(0)
 const status = ref<KunGalgamePlayState | ''>('')
@@ -29,7 +31,7 @@ watch(open, (isOpen) => {
     props.mine && props.mine.minutes > 0
       ? Math.round((props.mine.minutes / 60) * 10) / 10
       : 0
-  const current = props.mine?.status ?? ''
+  const current = props.mine?.play_state ?? ''
   const allowed = KUN_GALGAME_PLAY_STATE_CONST as readonly string[]
   if (current === 'done') {
     status.value = 'done_one_route'
@@ -57,10 +59,23 @@ const canSave = computed(() => {
   return minutes.value > 0 && !tooShort.value && !tooLong.value
 })
 
+const toViewerPlaytime = (row: {
+  minutes: number
+  status: string
+}): WorkViewerPlaytime | null => {
+  const playState = row.status
+    ? (row.status as WorkViewerPlaytime['play_state'])
+    : null
+  if (row.minutes <= 0 && !playState) {
+    return null
+  }
+  return { minutes: row.minutes, play_state: playState }
+}
+
 const submit = async (body: { minutes?: number; status?: string }) => {
   pending.value = true
   let failed = false
-  const result = await kunFetch<GalgameMyPlaytime>(
+  const result = await kunFetch<{ minutes: number; status: string }>(
     `/galgame/${props.galgame.id}/playtime`,
     {
       method: 'PUT',
@@ -74,13 +89,10 @@ const submit = async (body: { minutes?: number; status?: string }) => {
   pending.value = false
   const isClear = body.minutes === 0 && body.status === ''
   if (failed || (result == null && !isClear)) return
-  const mine =
-    result && (result.minutes > 0 || result.status) ? result : null
+  const mine = result ? toViewerPlaytime(result) : null
   emits('saved', mine)
-  const marked = (mine?.status || body.status || '') as string
-  if (
-    (KUN_GALGAME_PLAY_STATE_DONE as readonly string[]).includes(marked)
-  ) {
+  const marked = (mine?.play_state || body.status || '') as string
+  if ((KUN_GALGAME_PLAY_STATE_DONE as readonly string[]).includes(marked)) {
     emits('finished', marked as KunGalgamePlayState)
   }
   open.value = false
@@ -120,7 +132,7 @@ const clear = async () => {
       <div>
         <h3 class="text-lg font-bold">记录游玩状态</h3>
         <p class="text-default-500 line-clamp-1 text-sm">
-          {{ galgame.name }}
+          {{ workName(galgame) }}
         </p>
       </div>
 

@@ -1,18 +1,23 @@
 <script setup lang="ts">
 import type { KunTabItem } from '@kungal/ui-vue'
 import { useElementSize, useWindowSize } from '@vueuse/core'
+import type { RatingPage, Work } from '#shared/utils/api/schemas'
+import { ratingSummaryToPageCard } from '~/utils/galgame/ratingCard'
+import { toKunUser } from '~/utils/userRef'
 
 const props = defineProps<{
-  galgame: GalgameDetail
+  galgame: Work
 }>()
 
-provide<GalgameDetail>('galgame', props.galgame)
+provide<Work>('galgame', props.galgame)
 
-const resourcePublishBanned = ref(props.galgame.resource_publish_banned)
+const resourcePublishBanned = ref(props.galgame.is_resource_publish_banned)
 provide<Ref<boolean>>('galgameResourcePublishBanned', resourcePublishBanned)
 
 const route = useRoute()
 const router = useRouter()
+const nameOf = useCatalogName()
+const { id: currentUserId } = usePersistUserStore()
 const DEEP_LINK_TABS = ['intro', 'resource', 'comment', 'quiz']
 const initialTab = () => {
   if (route.query.comment) {
@@ -69,32 +74,63 @@ const contentTabs = computed<KunTabItem[]>(() => [
   { value: 'quiz', textValue: '题库', icon: 'lucide:brain' }
 ])
 
-const ratings = ref([...props.galgame.ratings])
+const { data: ratingsPage, refresh: refreshRatings } = await useApi<RatingPage>(
+  () => `work-ratings:${props.galgame.id}`,
+  (api, { signal }) =>
+    api.GET('/ratings', {
+      params: {
+        query: {
+          work_id: props.galgame.id,
+          include_nsfw: true,
+          limit: 100,
+          sort: 'created_desc'
+        }
+      },
+      signal
+    })
+)
+
+const ratings = computed(() =>
+  (ratingsPage.value?.items ?? []).map((item) =>
+    ratingSummaryToPageCard(item, nameOf)
+  )
+)
 const sortedRatings = computed(() => {
   return [...ratings.value].sort(
     (a, b) => b.short_summary.length - a.short_summary.length
   )
 })
 
-const handleRatingCreated = (newRating: GalgameRatingCardOnGalgamePage) => {
-  ratings.value.unshift(newRating)
+const handleRatingsChanged = () => {
+  void refreshRatings()
 }
 
-const hasCreator = computed(() => props.galgame.user.id > 0)
-const hasContributorCard = computed(
-  () => hasCreator.value || !!props.galgame.contributor?.length
+const hasLocalRating = computed(() =>
+  ratings.value.some((rating) => rating.user.id === currentUserId)
 )
+
+const creator = computed(() =>
+  props.galgame.creator ? toKunUser(props.galgame.creator) : null
+)
+const hasCreator = computed(() => !!creator.value)
+const hasContributorCard = computed(
+  () => hasCreator.value || !!props.galgame.contributors.length
+)
+
+const workId = computed(() => Number(props.galgame.id))
 </script>
 
 <template>
   <div class="flex flex-col gap-3">
     <GalgameHeader
       :galgame="galgame"
-      @on-rating-created="handleRatingCreated"
+      :ratings="ratings"
+      :has-local-rating="hasLocalRating"
+      @on-rating-created="handleRatingsChanged"
     />
 
-    <div v-if="galgame.tag?.length" class="md:hidden">
-      <GalgameTag :tags="galgame.tag" variant="mobile" />
+    <div v-if="galgame.tags.length" class="md:hidden">
+      <GalgameTag :tags="galgame.tags" variant="mobile" />
     </div>
 
     <div
@@ -135,7 +171,7 @@ const hasContributorCard = computed(
           <KunTabPanels v-model="activeTab">
             <KunTabPanel value="intro" class-name="space-y-12">
               <div class="space-y-3">
-                <GalgameIntroduction :introduction="galgame.introduction" />
+                <GalgameIntroduction :intros="galgame.intros" />
 
                 <div
                   v-if="sortedRatings.length && sortedRatings.length < 3"
@@ -148,17 +184,20 @@ const hasContributorCard = computed(
                   />
                 </div>
 
-                <GalgameLink :refs="galgame.refs" />
+                <GalgameLink
+                  :links="galgame.links"
+                  :external-refs="galgame.external_refs"
+                />
               </div>
 
-              <GalgameStaff :staff="galgame.staff" />
+              <GalgameStaff :credits="galgame.credits" />
 
-              <GalgameCharacterPanel :characters="galgame.characters ?? []" />
+              <GalgameCharacterPanel :roster="galgame.roster" />
 
               <GalgameGallery :screenshots="galgame.screenshots" />
 
               <GalgameSeriesPanel
-                v-if="galgame.series?.length"
+                v-if="galgame.series.length"
                 :series="galgame.series"
               />
             </KunTabPanel>
@@ -169,7 +208,7 @@ const hasContributorCard = computed(
 
             <KunTabPanel value="patch" :loading="patchLoading">
               <GalgamePatchContainer
-                :work-id="galgame.id"
+                :work-id="workId"
                 @has-resource="hasPatchResource = $event"
                 @update:loading="patchLoading = $event"
               />
@@ -197,18 +236,18 @@ const hasContributorCard = computed(
           )
         "
       >
-        <div v-if="galgame.tag?.length" class="hidden md:block">
-          <GalgameTag :tags="galgame.tag" variant="desktop" />
+        <div v-if="galgame.tags.length" class="hidden md:block">
+          <GalgameTag :tags="galgame.tags" variant="desktop" />
         </div>
 
         <GalgameInfo
-          :official="galgame.official"
-          :engine="galgame.engine"
+          :companies="galgame.companies"
+          :engines="galgame.engines"
           :series="galgame.series"
-          :age-limit="galgame.age_limit"
+          :content-rating="galgame.content_rating"
           :original-language="galgame.original_language"
           :release-date="galgame.release_date"
-          :release-date-tba="galgame.release_date_tba"
+          :release-date-precision="galgame.release_date_precision"
         />
 
         <KunCard
@@ -224,12 +263,12 @@ const hasContributorCard = computed(
           />
 
           <div
-            v-if="hasCreator"
+            v-if="creator"
             class="text-default-500 flex cursor-default flex-wrap items-center gap-2"
           >
-            <KunUserChip :user="galgame.user" />
+            <KunUserChip :user="creator" />
             <span class="text-sm">
-              <KunTime :time="galgame.created" type="date" show-year />
+              <KunTime :time="galgame.created_at" type="date" show-year />
               创建本游戏
             </span>
           </div>

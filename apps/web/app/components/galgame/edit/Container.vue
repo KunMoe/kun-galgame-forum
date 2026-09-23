@@ -7,6 +7,8 @@ import {
   galgameEditLabel,
   type GalgameEditNames
 } from '~/constants/galgameEdit'
+import type { Work } from '#shared/utils/api/schemas'
+import { mapsFromWork } from '~/utils/galgame/workEditNames'
 
 const route = useRoute()
 const workId = computed(() => parseInt((route.params as { id: string }).id))
@@ -18,33 +20,21 @@ const { data: bootstrap, status } = await useKunFetch<GalgameEditBootstrap>(
   { method: 'GET', watch: false }
 )
 
-const { data: detail } = await useKunFetch<GalgameDetail>(
-  `/galgame/${workId.value}`,
-  { method: 'GET', watch: false }
+const nameOf = useCatalogName()
+const { data: detail } = await useApi<Work>(
+  () => `work-edit:${workId.value}`,
+  (api, { signal }) =>
+    api.GET('/works/{work_id}', {
+      params: {
+        path: { work_id: String(workId.value) },
+        query: { include_nsfw: true }
+      },
+      signal
+    })
 )
-const editNames = computed<GalgameEditNames>(() => {
-  const d = detail.value
-  const toMap = (arr?: { id: number; name: string }[]) =>
-    new Map((arr ?? []).map((x) => [x.id, x.name]))
-  const staff = new Map<number, string>()
-  for (const group of d?.staff ?? []) {
-    for (const person of group.people) {
-      if (!staff.has(person.id)) {
-        staff.set(person.id, person.name)
-      }
-    }
-  }
-  return {
-    tag: toMap(d?.tag),
-    official: toMap(d?.official),
-    engine: toMap(d?.engine),
-    series: toMap(d?.series),
-    character: toMap(d?.characters),
-    staff,
-    covers: d?.covers,
-    screenshots: d?.screenshots
-  }
-})
+const editNames = computed<GalgameEditNames>(() =>
+  mapsFromWork(detail.value, nameOf)
+)
 const editConfig = computed(() => createGalgameEditConfig(editNames.value))
 
 const { data: mine, refresh: refreshMine } =

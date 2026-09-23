@@ -23,8 +23,3 @@ export interface GalgameSeriesDetail {
   galgame: GalgameCard[]
   galgame_count: number
 }
-
-export interface GalgameDetailSeriesRef {
-  id: number
-  name: string
-}

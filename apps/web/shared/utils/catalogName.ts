@@ -42,6 +42,14 @@ type Intro = { locale: string; value: string; is_machine: boolean }
 
 const introLocales = ['zh-Hans', 'zh', 'zh-Hant', 'ja', 'en']
 
+const introRank = (locale: string) => {
+  const i = introLocales.indexOf(locale)
+  return i === -1 ? introLocales.length : i
+}
+
+export const orderCatalogIntros = <T extends Intro>(intros: T[]): T[] =>
+  [...intros].sort((a, b) => introRank(a.locale) - introRank(b.locale))
+
 // One intro for a page that shows one: the first language this site reads.
 export const pickCatalogIntro = <T extends Intro>(intros: T[]): T | undefined =>
   introLocales

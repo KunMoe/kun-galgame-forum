@@ -12,8 +12,8 @@ describe('externalRatingHistogram', () => {
   it('fills the buckets nobody voted for back in', () => {
     const buckets = externalRatingHistogram(
       [
-        { score: 3, count: 1 },
-        { score: 10, count: 4 }
+        { bucket: 3, vote_count: 1 },
+        { bucket: 10, vote_count: 4 }
       ],
       axisOf('bangumi').keys
     )
@@ -24,9 +24,9 @@ describe('externalRatingHistogram', () => {
     const axis = axisOf('erogamescape')
     const buckets = externalRatingHistogram(
       [
-        { score: 0, count: 2 },
-        { score: 70, count: 9 },
-        { score: 100, count: 1 }
+        { bucket: 0, vote_count: 2 },
+        { bucket: 70, vote_count: 9 },
+        { bucket: 100, vote_count: 1 }
       ],
       axis.keys
     )
@@ -51,12 +51,12 @@ describe('externalRatingHistogram', () => {
 
   it('reads a key as the key, never as an offset', () => {
     const [first] = externalRatingHistogram(
-      [{ score: 1, count: 7 }],
+      [{ bucket: 1, vote_count: 7 }],
       axisOf('dlsite').keys
     )
     expect(first).toBe(7)
     expect(
-      externalRatingHistogram([{ score: 0, count: 7 }], [1, 2, 3])
+      externalRatingHistogram([{ bucket: 0, vote_count: 7 }], [1, 2, 3])
     ).toEqual([0, 0, 0])
   })
 

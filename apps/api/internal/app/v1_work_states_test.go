@@ -8,7 +8,6 @@ import (
 	"testing"
 
 	"kun-galgame-api/pkg/catalogclient"
-	"kun-galgame-api/pkg/problem"
 )
 
 func TestV1ListMyWorkStatesMissingAndLiked(t *testing.T) {
@@ -71,11 +70,24 @@ func TestV1ListMyWorkStatesFolderScope(t *testing.T) {
 	}
 }
 
-func TestV1ListMyWorkStatesHoldingsErrorIsUnavailable(t *testing.T) {
+func TestV1ListMyWorkStatesHoldingsErrorKeepsLikes(t *testing.T) {
 	f := newWorkFix(t)
+	if _, body := f.wk(t, http.MethodPut, g4WorkPath(g4WorkLive)+"/like", "/works/{work_id}/like", "sess-bob", nil); body["code"] != nil {
+		t.Fatalf("like %+v", body)
+	}
 	f.user.holdingsErr = catalogclient.ErrUnauthorized
-	resp, body := f.wk(t, http.MethodGet, "/api/v1/me/work-states?work_ids="+idStr(g4WorkLive), "/me/work-states", "sess-alice", nil)
-	wantCode(t, resp, body, http.StatusServiceUnavailable, problem.CodeServiceUnavailable)
+	resp, body := f.wk(t, http.MethodGet, "/api/v1/me/work-states?work_ids="+idStr(g4WorkLive), "/me/work-states", "sess-bob", nil)
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("a folder-plane failure took the likes down with it: %d %+v", resp.StatusCode, body)
+	}
+	items, _ := body["items"].([]any)
+	if len(items) != 1 {
+		t.Fatalf("items %+v", body)
+	}
+	item, _ := items[0].(map[string]any)
+	if item["has_liked"] != true || item["has_favorited"] != false {
+		t.Errorf("item %+v", item)
+	}
 }
 
 func TestV1WorkRefJSONKeysAppearOnWork(t *testing.T) {

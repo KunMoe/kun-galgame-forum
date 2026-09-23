@@ -1,10 +1,8 @@
 import { createHmac } from 'node:crypto'
 import { kungal } from '../../app/config/kungal'
-import { KUN_GALGAME_RESOURCE_TYPE_MAP } from '../../app/constants/galgame'
 import { KUN_GALGAME_OFFICIAL_CATEGORY_MAP } from '../../app/constants/galgameOfficial'
 import { KUN_TOPIC_SECTION } from '../../app/constants/topic'
 import { deletedUserName } from '#shared/utils/deletedUser'
-import type { GalgameDetail } from '../../shared/types/galgame'
 import type { Topic } from '../../shared/utils/api/schemas'
 import { createApiClient } from '../../shared/utils/api/client'
 import {
@@ -14,10 +12,8 @@ import {
 import { settle } from '../../shared/utils/api/problem'
 import { documentPlainText } from '../../shared/utils/content/plainText'
 import { truncateRunes } from '../../shared/utils/format'
-import { getEffectivePortrait } from '../../shared/utils/getEffectiveBanner'
-import { markdownToText } from '../../shared/utils/markdownToText'
 import type { KunOgCardKind } from '../../shared/utils/ogCard'
-import { fetchKunApi } from './kunFeed'
+import { resourceTypeLabel } from '../../shared/utils/galgameResourceVocab'
 
 export interface KunOgCard {
   template: string
@@ -102,37 +98,40 @@ const buildTopic = async (id: number): Promise<KunOgCard | null> => {
 }
 
 const buildGalgame = async (id: number): Promise<KunOgCard | null> => {
-  const game = await fetchKunApi<GalgameDetail>(`/galgame/${id}`, {
-    galgame_id: id
+  const api = createApiClient({
+    origin: useRuntimeConfig().apiBaseUrl,
+    timeoutMs: 10000
   })
-  if (
-    !game ||
-    game.content_limit === 'nsfw' ||
-    game.indexed === false
-  ) {
+  const result = await settle(
+    api.GET('/works/{work_id}', {
+      params: { path: { work_id: String(id) } }
+    })
+  )
+  if (!result.ok) {
     return null
   }
-  const rated = !!game.rating_count && game.rating !== undefined
+  const game = result.data
+  if (game.is_nsfw || !game.is_published) {
+    return null
+  }
+  const rated = game.rating_count > 0 && game.rating_score != null
+  const { name, original } = catalogEntityName(game)
+  const company = game.companies[0]
   return {
     template: 'work',
     fields: {
-      title: text(game.name, 200),
-      originalName:
-        game.name_original === game.name
-          ? undefined
-          : text(game.name_original, 200),
-      cover: getEffectivePortrait(game) || undefined,
-      label: text(game.official[0]?.name, 80),
-      releaseDate: game.release_date_tba
-        ? undefined
-        : text(game.release_date, 40),
-      rating: rated ? game.rating : undefined,
+      title: text(name, 200),
+      originalName: original ? text(original, 200) : undefined,
+      cover: game.cover?.url || undefined,
+      label: company ? text(catalogEntityName(company).name, 80) : undefined,
+      releaseDate: text(game.release_date, 40),
+      rating: rated ? game.rating_score : undefined,
       ratingCount: rated ? game.rating_count : undefined,
       badges: [
-        ...game.type
+        ...game.resource_types
           .slice(0, 2)
-          .map((type) => KUN_GALGAME_RESOURCE_TYPE_MAP[type] || type),
-        ...(game.age_limit === 'r18' ? ['18+'] : [])
+          .map((type) => resourceTypeLabel(type)),
+        ...(game.content_rating === 'r18' ? ['18+'] : [])
       ]
         .map((badge) => truncateRunes(badge, 24))
         .slice(0, 4)

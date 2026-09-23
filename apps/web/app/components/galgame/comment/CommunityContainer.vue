@@ -11,7 +11,7 @@ const workId = parseInt((route.params as { id: string }).id)
 
 const target: CommunityCommentTarget = { kind: 'galgame', workId }
 
-const galgame = inject<GalgameDetail>('galgame')
+
 
 const {
   posts,
@@ -33,9 +33,7 @@ const {
 
 watchEffect(() => emit('update:loading', status.value === 'pending'))
 
-const showEmpty = computed(
-  () => isEmpty.value && galgame?.is_on_forum !== false
-)
+const showEmpty = computed(() => isEmpty.value)
 
 const ensureLoadedAndScroll = async (postId: string) => {
   const found = await settle(

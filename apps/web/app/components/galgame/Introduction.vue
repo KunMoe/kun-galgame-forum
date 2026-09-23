@@ -1,31 +1,39 @@
 <script setup lang="ts">
 import type { KunTabItem } from '@kungal/ui-vue'
 import { getGalgameIntroLanguageName } from '~/constants/galgame'
+import type { CatalogIntro } from '#shared/utils/api/schemas'
+import { orderCatalogIntros } from '#shared/utils/catalogName'
 
 const props = defineProps<{
-  introduction: GalgameIntro[]
+  intros: CatalogIntro[]
 }>()
 
+const ordered = computed(() => orderCatalogIntros(props.intros))
+
 const tabs = computed<KunTabItem[]>(() =>
-  props.introduction.map((intro) => ({
-    textValue: getGalgameIntroLanguageName(intro.lang),
-    value: intro.lang
+  ordered.value.map((intro) => ({
+    textValue: getGalgameIntroLanguageName(intro.locale),
+    value: intro.locale
   }))
 )
 
-const language = ref(props.introduction[0]?.lang ?? '')
+const language = ref(ordered.value[0]?.locale ?? '')
 
 watch(
-  () => props.introduction,
+  ordered,
   (rows) => {
-    if (!rows.some((row) => row.lang === language.value)) {
-      language.value = rows[0]?.lang ?? ''
+    if (!rows.some((row) => row.locale === language.value)) {
+      language.value = rows[0]?.locale ?? ''
     }
   }
 )
 
 const current = computed(() =>
-  props.introduction.find((intro) => intro.lang === language.value)
+  props.intros.find((intro) => intro.locale === language.value)
+)
+
+const currentText = computed(() =>
+  markdownToText(current.value?.value ?? '', { preserveNewlines: true })
 )
 </script>
 
@@ -52,11 +60,13 @@ const current = computed(() =>
     </div>
 
     <template v-else>
-      <div v-if="current.machine" class="text-default-500 text-sm">
+      <div v-if="current.is_machine" class="text-default-500 text-sm">
         本段简介由机器翻译生成, 与原文可能有出入
       </div>
 
-      <KunContent class="pt-3" :content="renderKatex(current.intro)" />
+      <p class="text-default-700 pt-3 whitespace-pre-line">
+        {{ currentText }}
+      </p>
     </template>
   </div>
 </template>

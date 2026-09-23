@@ -226,6 +226,10 @@ func (s *Service) workViewer(ctx context.Context, workID int, user *middleware.U
 	v.HasFavorited = s.favorited(ctx, token, workID)
 	if token != "" && s.catalog != nil {
 		got, err := s.catalog.MyPlaytime(ctx, token, int64(workID))
+		// A token minted before playtime joined the authorize scope is the
+		// ordinary case, not a fault. It used to log nothing at all, and that is
+		// how the 2026-09-08 folder-scope outage stayed invisible on the sibling
+		// call sites for an hour — so it is counted rather than swallowed.
 		if err != nil {
 			if errors.Is(err, catalogclient.ErrInsufficientScope) {
 				service.WarnPlaytimeUnreadable(workID)

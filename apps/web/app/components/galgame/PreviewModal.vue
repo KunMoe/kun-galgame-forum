@@ -1,4 +1,9 @@
 <script setup lang="ts">
+import { settle } from '#shared/utils/api/problem'
+import type { Work } from '#shared/utils/api/schemas'
+import { getGalgameOriginalLanguageName } from '~/constants/galgame'
+import { pickCatalogIntro } from '#shared/utils/catalogName'
+
 const props = defineProps<{
   workId: number
   claimState?: string
@@ -6,8 +11,10 @@ const props = defineProps<{
 }>()
 
 const isOpen = defineModel<boolean>({ required: true })
+const api = useApiClient()
+const namesOf = useCatalogName()
 
-const detail = ref<GalgameDetail | null>(null)
+const detail = ref<Work | null>(null)
 const isLoading = ref(false)
 const loadedWorkId = ref(0)
 
@@ -16,11 +23,21 @@ const load = async () => {
     return
   }
   isLoading.value = true
-  detail.value = await kunFetch<GalgameDetail>(`/galgame/${props.workId}`)
+  const result = await settle(
+    api.GET('/works/{work_id}', {
+      params: {
+        path: { work_id: String(props.workId) },
+        query: { include_nsfw: true }
+      }
+    })
+  )
   isLoading.value = false
-  if (detail.value) {
-    loadedWorkId.value = props.workId
+  if (!result.ok) {
+    reportProblem(result.problem)
+    return
   }
+  detail.value = result.data
+  loadedWorkId.value = props.workId
 }
 
 watch(
@@ -35,9 +52,13 @@ watch(
 
 const badge = computed(() => galgameClaimStateBadge(props.claimState))
 
-const title = computed(() => detail.value?.name ?? '')
+const names = computed(() =>
+  detail.value ? namesOf(detail.value) : { name: '', original: '' }
+)
 
-const originalName = computed(() => detail.value?.name_original ?? '')
+const intro = computed(
+  () => pickCatalogIntro(detail.value?.intros ?? []) ?? detail.value?.intros[0]
+)
 
 const metaRows = computed(() => {
   const d = detail.value
@@ -47,11 +68,19 @@ const metaRows = computed(() => {
   return [
     {
       label: '发售日期',
-      value: d.release_date || (d.release_date_tba ? '待定' : '')
+      value: d.release_date || '待定'
     },
-    { label: '原始语言', value: d.original_language },
-    { label: '分级', value: d.age_limit === 'r18' ? 'R18' : '全年龄' },
-    { label: '别名', value: d.alias.join('、') }
+    {
+      label: '原始语言',
+      value: d.original_language
+        ? getGalgameOriginalLanguageName(d.original_language)
+        : ''
+    },
+    {
+      label: '分级',
+      value: d.content_rating === 'r18' ? 'R18' : '全年龄'
+    },
+    { label: '别名', value: d.aliases.join('、') }
   ].filter((row) => row.value)
 })
 </script>
@@ -78,18 +107,18 @@ const metaRows = computed(() => {
 
       <div v-else class="space-y-4">
         <KunImage
-          :src="getEffectiveBanner(detail)"
-          :alt="title"
+          :src="detail.banner?.url || detail.cover?.url || ''"
+          :alt="names.name"
           placeholder="/placeholder.webp"
-          :thumbhash="detail.effective_banner_thumbhash"
+          :thumbhash="detail.banner?.thumbhash ?? detail.cover?.thumbhash ?? undefined"
           class="w-full rounded-lg object-cover"
           :style="{ aspectRatio: '16/9' }"
         />
 
         <div class="space-y-1">
-          <h4 class="text-lg font-medium">{{ title }}</h4>
-          <p v-if="originalName" class="text-default-500 text-sm">
-            {{ originalName }}
+          <h4 class="text-lg font-medium">{{ names.name }}</h4>
+          <p v-if="names.original" class="text-default-500 text-sm">
+            {{ names.original }}
           </p>
         </div>
 
@@ -112,7 +141,9 @@ const metaRows = computed(() => {
         </div>
 
         <KunScrollShadow class="max-h-80">
-          <KunContent :content="detail.introduction[0]?.intro ?? ''" />
+          <p class="text-default-700 whitespace-pre-line">
+            {{ markdownToText(intro?.value ?? '', { preserveNewlines: true }) }}
+          </p>
         </KunScrollShadow>
       </div>
     </div>

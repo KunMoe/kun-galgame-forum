@@ -82,7 +82,8 @@ App 用 AppAuth + PKCE 直接从 OP 换出 access token，然后 `Authorization:
 | `GET /api/v1/topics` | 匿名+ | 话题列表。旧 `GET /api/topic` 已于 2026-09-19 删除。参数与响应以 `apps/api/openapi/kungal-v1.json` 为准（`listTopics`）：`cursor` + `limit`（1–100），`sort` 取声明的 token（如 `bumped_desc`），`include_nsfw=true` 才含 NSFW；错误是 problem+json，见 `docs/proj/api-v1/` |
 | `GET /api/v1/topics/{topic_id}`、`GET /api/v1/topics/{topic_id}/replies` | 匿名+ | 话题详情与楼层。旧 `GET /api/topic/:tid`、`GET /api/topic/:tid/reply` 已于 2026-09-22 删除。响应以 `apps/api/openapi/kungal-v1.json` 为准；回复走游标分页（`cursor` + `limit`），不是页码 |
 | `GET /api/galgame` | 公开 | 列表 |
-| `GET /api/galgame/:gid` | 匿名+ | 详情 |
+| `GET /api/v1/works/{work_id}` | 匿名+ | 作品详情。旧 `GET /api/galgame/:gid` 已删除。`include_nsfw` 只控制成人标签是否出现；错误是 problem+json |
+| `PUT` / `DELETE /api/v1/works/{work_id}/like` | Bearer | 点赞槽。都 200 `WorkEngagement`。自赞 `403 SELF_LIKE_FORBIDDEN` |
 | `GET /api/v1/users/{user_id}` | 公开 | 公开资料。未知或封禁/注销用户 404 |
 | `POST /api/v1/topics`、`POST /api/v1/topics/{topic_id}/replies` | Bearer | **必须**带幂等键（§2）。旧 `POST /api/topic`、`POST /api/topic/:tid/reply` 已于 2026-09-22 删除；话题 id 在路径上，不再放进请求体 |
 | `GET /api/v1/me/account` | Bearer | 当前用户；Bearer 下 `roles` 已剥掉 staff 角色，`content_stance` 恒为 `null`（立场问账号中心） |
@@ -137,7 +138,7 @@ curl -s -X POST 'https://www.kungal.com/api/v1/topics/4230/replies' \
 
 ### galgame 供数
 
-Go api 自己就能供数，**不依赖 Nitro**。`/api/galgame` 和 `/api/galgame/:gid` 由 Go api 直接调 catalog 并合并本地数据。Nitro（`apps/web/server/`）只有 sitemap、OG 图、RSS 和几条重定向中间件，没有任何 galgame 数据聚合。所以 App 直连 Go api，拿到的 galgame 数据和网页一致，对应 infra 工单 01 任务 C 的 (b)。
+Go api 自己就能供数，**不依赖 Nitro**。`/api/galgame` 列表仍是旧面；作品详情是 `GET /api/v1/works/{work_id}`，由 Go api 直接调 catalog 并合并本地数据。Nitro（`apps/web/server/`）只有 sitemap、OG 图、RSS 和几条重定向中间件，没有任何 galgame 数据聚合。所以 App 直连 Go api，拿到的 galgame 数据和网页一致，对应 infra 工单 01 任务 C 的 (b)。
 
 ## 2. 幂等键：`Idempotency-Key`
 

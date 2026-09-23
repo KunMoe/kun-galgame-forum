@@ -27,7 +27,6 @@ onMounted(() => ensureLoaded([workId.value]))
       <div class="flex items-center gap-2">
         <GalgameLike
           :work-id="workId"
-          :target-user-id="targetUserId"
           :like-count="stats?.like_count ?? 0"
           :is-liked="isLiked(workId)"
         />

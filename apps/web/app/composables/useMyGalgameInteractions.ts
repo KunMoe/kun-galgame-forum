@@ -1,86 +1,83 @@
+import { settle } from '#shared/utils/api/problem'
+
+type WorkFlags = { has_liked: boolean; has_favorited: boolean }
+
 export const useMyGalgameInteractions = () => {
   const { id } = usePersistUserStore()
-  const liked = useState<number[]>('my-galgame-liked', () => [])
-  const favorited = useState<number[]>('my-galgame-favorited', () => [])
-  const likedLoaded = useState<boolean>(
-    'my-galgame-liked-loaded',
-    () => false
+  const api = useApiClient()
+  const states = useState<Record<string, WorkFlags>>(
+    'my-work-states',
+    () => ({})
   )
-  const pending = useState<number[]>('my-galgame-fav-pending', () => [])
+  const requested = useState<string[]>('my-work-states-requested', () => [])
+  const pending = useState<string[]>('my-work-states-pending', () => [])
   const flushScheduled = useState<boolean>(
-    'my-galgame-fav-flush-scheduled',
+    'my-work-states-flush-scheduled',
     () => false
   )
 
-  const mergeFavorited = (ids: number[]) => {
-    if (!ids.length) return
-    const set = new Set(favorited.value)
-    for (const workId of ids) {
-      set.add(workId)
+  const fetchChunk = async (chunk: string[]) => {
+    const res = await settle(
+      api.GET('/me/work-states', {
+        params: { query: { work_ids: chunk } }
+      })
+    )
+    if (!res.ok) {
+      const failed = new Set(chunk)
+      requested.value = requested.value.filter((wid) => !failed.has(wid))
+      return
     }
-    favorited.value = [...set]
-  }
-
-  const flushFavorited = async () => {
-    flushScheduled.value = false
-    const ids = [...new Set(pending.value)].filter((workId) => workId > 0)
-    pending.value = []
-    if (!id) return
-    if (!ids.length && likedLoaded.value) return
-
-    const chunks: number[][] = []
-    for (let i = 0; i < ids.length; i += 100) {
-      chunks.push(ids.slice(i, i + 100))
-    }
-    if (!chunks.length) {
-      chunks.push([])
-    }
-
-    for (const chunk of chunks) {
-      const query = chunk.length ? { work_ids: chunk.join(',') } : undefined
-      const res = await kunFetch<{ liked: number[]; favorited: number[] }>(
-        '/galgame/interactions/mine',
-        query ? { query } : undefined
-      )
-      if (!res) {
-        pending.value = [...new Set([...pending.value, ...ids])]
-        return
+    const next = { ...states.value }
+    for (const item of res.data.items) {
+      next[item.work_id] = {
+        has_liked: item.has_liked,
+        has_favorited: item.has_favorited
       }
-      likedLoaded.value = true
-      liked.value = res.liked ?? []
-      mergeFavorited(res.favorited ?? [])
+    }
+    states.value = next
+  }
+
+  const flush = async () => {
+    flushScheduled.value = false
+    const seen = new Set(requested.value)
+    const ids = [...new Set(pending.value)].filter(
+      (wid) => wid.length > 0 && !seen.has(wid)
+    )
+    pending.value = []
+    if (!id || !ids.length) return
+    requested.value = [...requested.value, ...ids]
+    for (let i = 0; i < ids.length; i += 100) {
+      await fetchChunk(ids.slice(i, i + 100))
     }
   }
 
-  const ensureLoaded = async (workIds?: number[]) => {
-    if (!id) return
-    if (workIds?.length) {
-      pending.value = [...pending.value, ...workIds]
-    }
-    if (likedLoaded.value && !pending.value.length) return
+  const ensureLoaded = (workIds?: Array<string | number>) => {
+    if (!id || !workIds?.length) return
+    pending.value = [...pending.value, ...workIds.map(String)]
     if (flushScheduled.value) return
     flushScheduled.value = true
     queueMicrotask(() => {
-      void flushFavorited()
+      void flush()
     })
   }
 
-  const likedSet = computed(() => new Set(liked.value))
-  const favoritedSet = computed(() => new Set(favorited.value))
-
-  const setFavorited = (workId: number, isFav: boolean) => {
-    const set = new Set(favorited.value)
-    if (isFav) {
-      set.add(workId)
-    } else {
-      set.delete(workId)
+  const setFavorited = (workId: string | number, isFav: boolean) => {
+    const key = String(workId)
+    const current = states.value[key]
+    states.value = {
+      ...states.value,
+      [key]: {
+        has_liked: current?.has_liked ?? false,
+        has_favorited: isFav
+      }
     }
-    favorited.value = [...set]
   }
 
   return {
-    isLiked: (workId: number) => likedSet.value.has(workId),
-    isFavorited: (workId: number) => favoritedSet.value.has(workId),
+    isLiked: (workId: string | number) =>
+      states.value[String(workId)]?.has_liked ?? false,
+    isFavorited: (workId: string | number) =>
+      states.value[String(workId)]?.has_favorited ?? false,
     setFavorited,
     ensureLoaded
   }

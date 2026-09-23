@@ -6,18 +6,21 @@ import {
   KUN_GALGAME_LOCAL_RATING_META,
   KUN_GALGAME_LOCAL_RATING_SOURCE
 } from '~/constants/galgame-rating'
+import type { Work } from '#shared/utils/api/schemas'
+import type { GalgameRatingCardOnGalgamePage } from '~~/shared/types/galgame-rating'
 
 const props = defineProps<{
-  galgame: GalgameDetail
+  galgame: Work
   ratings: GalgameRatingCardOnGalgamePage[]
   source: string
 }>()
 
 const open = defineModel<boolean>({ required: true })
+const workName = useWorkName()
 
 const externalSources = computed(() =>
   KUN_GALGAME_EXTERNAL_RATING_CONST.filter((source) =>
-    props.galgame.external_ratings?.some((row) => row.source === source)
+    props.galgame.external_ratings.some((row) => row.site === source)
   )
 )
 
@@ -58,7 +61,7 @@ watch([open, () => props.source], ([isOpen, next]) => {
       <div>
         <h3 class="text-lg font-bold">评分详情</h3>
         <p class="text-default-500 line-clamp-1 text-sm">
-          {{ galgame.name }}
+          {{ workName(galgame) }}
         </p>
       </div>
 

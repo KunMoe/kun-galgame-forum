@@ -3,35 +3,44 @@ import {
   galgameImageSourceLabel,
   galgameImageSourceRank
 } from '~/constants/galgameImageSource'
+import type { WorkScreenshot } from '#shared/utils/api/schemas'
 
 const props = defineProps<{
-  screenshots: GalgameScreenshot[]
+  screenshots: WorkScreenshot[]
 }>()
 
-const {
-  showKUNGalgameGallerySexualLevels: sexualLevels,
-  showKUNGalgameGalleryViolenceLevels: violenceLevels
-} = storeToRefs(usePersistSettingsStore())
+const { showKUNGalgameGallerySexualLevels: sexualLevels } = storeToRefs(
+  usePersistSettingsStore()
+)
 
 const { allowsNsfw: showNsfw, isBlurred } = useContentStance()
 
-const sexualOk = (s: GalgameScreenshot) =>
-  showNsfw.value || s.sexual === 0 || sexualLevels.value.includes(s.sexual)
-const violenceOk = (s: GalgameScreenshot) =>
-  s.violence === 0 || violenceLevels.value.includes(s.violence)
+const sexualLevel = (s: WorkScreenshot): number => {
+  const sexual = s.image?.sexual
+  if (sexual === 'suggestive') return 1
+  if (sexual === 'explicit') return 2
+  return 0
+}
+
+const sexualOk = (s: WorkScreenshot) =>
+  showNsfw.value ||
+  sexualLevel(s) === 0 ||
+  sexualLevels.value.includes(sexualLevel(s))
 
 // The two systems stack rather than replace each other: a level the reader
 // ticked in the filter is an explicit choice and stays sharp, while one that
 // is only here because the account allows NSFW at all is what 模糊 masks.
-const isMasked = (s: GalgameScreenshot) =>
-  isBlurred.value && s.sexual >= 1 && !sexualLevels.value.includes(s.sexual)
+const isMasked = (s: WorkScreenshot) =>
+  isBlurred.value &&
+  sexualLevel(s) >= 1 &&
+  !sexualLevels.value.includes(sexualLevel(s))
 
 const allShots = computed(() =>
-  [...(props.screenshots ?? [])].filter((s) => !!s.image_hash)
+  [...(props.screenshots ?? [])].filter((s) => !!s.image)
 )
 
 const sourceKeys = computed(() =>
-  [...new Set(allShots.value.map((s) => s.source ?? ''))].sort(
+  [...new Set(allShots.value.map((s) => s.site))].sort(
     (a, b) => galgameImageSourceRank(a) - galgameImageSourceRank(b)
   )
 )
@@ -45,15 +54,17 @@ watch(sourceKeys, (keys) => {
 
 const GROUP_PREVIEW = 8
 
+const shotKey = (s: WorkScreenshot) => s.image?.hash ?? s.image?.url ?? ''
+
 const groups = computed(() =>
   sourceKeys.value.map((key) => {
     const shots = allShots.value
-      .filter((s) => (s.source ?? '') === key)
+      .filter((s) => s.site === key)
       .sort((a, b) => {
         if (a.sort_order !== b.sort_order) return a.sort_order - b.sort_order
-        return a.image_hash.localeCompare(b.image_hash)
+        return shotKey(a).localeCompare(shotKey(b))
       })
-    const shown = shots.filter((s) => sexualOk(s) && violenceOk(s))
+    const shown = shots.filter((s) => sexualOk(s))
     const visible = expandedSources.value.includes(key)
       ? shown
       : shown.slice(0, GROUP_PREVIEW)
@@ -83,24 +94,18 @@ const shownCount = computed(() =>
 )
 const hiddenCount = computed(() => allShots.value.length - shownCount.value)
 
-// A single-source gallery gets no headers — including the pre-deploy state
-// where the API still sends every screenshot with an empty source.
 const showHeaders = computed(() => sourceKeys.value.length > 1)
 
-const countLevels = (axis: 'sexual' | 'violence'): Record<number, number> => {
+const sexualCounts = computed(() => {
   const counts: Record<number, number> = { 1: 0, 2: 0, 3: 0 }
   for (const s of allShots.value) {
-    const level = s[axis]
+    const level = sexualLevel(s)
     if (level >= 1 && level <= 3) counts[level] = (counts[level] ?? 0) + 1
   }
   return counts
-}
-const sexualCounts = computed(() => countLevels('sexual'))
-const violenceCounts = computed(() => countLevels('violence'))
+})
 
-const hasRated = computed(() =>
-  allShots.value.some((s) => s.sexual >= 1 || s.violence >= 1)
-)
+const hasRated = computed(() => allShots.value.some((s) => sexualLevel(s) >= 1))
 const canFilter = computed(() => hasRated.value || showHeaders.value)
 
 const sourceOptions = computed(() =>
@@ -118,24 +123,22 @@ const toggleSource = (key: string) => {
     : [...hiddenSources.value, key]
 }
 
-const thumbSrc = (s: GalgameScreenshot) =>
-  s.cdn_url ? withImageVariant(s.cdn_url, 'mini') : galgameImageSrc(s)
+const thumbSrc = (s: WorkScreenshot) =>
+  s.image?.url ? withImageVariant(s.image.url, 'mini') : ''
+
+const shotSrc = (s: WorkScreenshot) => s.image?.url ?? ''
 
 const RING_W = 2.5
 const RING_DEPTH: Record<number, number> = { 1: 60, 2: 80, 3: 100 }
-const ringColor = (token: 'warning' | 'danger', level: number) =>
+const ringColor = (token: 'warning', level: number) =>
   `color-mix(in oklab, var(--color-${token}) ${RING_DEPTH[level] ?? 100}%, transparent)`
 
-const ratingRing = (s: GalgameScreenshot) => {
-  const shadows: string[] = []
-  if (s.sexual >= 1) {
-    shadows.push(`inset 0 0 0 ${RING_W}px ${ringColor('warning', s.sexual)}`)
+const ratingRing = (s: WorkScreenshot) => {
+  const level = sexualLevel(s)
+  if (level < 1) return {}
+  return {
+    boxShadow: `inset 0 0 0 ${RING_W}px ${ringColor('warning', level)}`
   }
-  if (s.violence >= 1) {
-    const inset = s.sexual >= 1 ? RING_W * 2 : RING_W
-    shadows.push(`inset 0 0 0 ${inset}px ${ringColor('danger', s.violence)}`)
-  }
-  return { boxShadow: shadows.join(', ') }
 }
 </script>
 
@@ -152,7 +155,6 @@ const ratingRing = (s: GalgameScreenshot) => {
         :show-nsfw="showNsfw"
         :hidden-count="hiddenCount"
         :sexual-counts="sexualCounts"
-        :violence-counts="violenceCounts"
         :sources="sourceOptions"
         @toggle-source="toggleSource"
       />
@@ -184,8 +186,8 @@ const ratingRing = (s: GalgameScreenshot) => {
           >
             <KunLightboxGalleryItem
               v-for="(s, i) in g.visible"
-              :key="s.image_hash"
-              :src="galgameImageSrc(s)"
+              :key="shotKey(s)"
+              :src="shotSrc(s)"
               :alt="s.caption || ''"
               :wrap="false"
               v-slot="{ open }"
@@ -204,7 +206,7 @@ const ratingRing = (s: GalgameScreenshot) => {
                     :alt="s.caption || ''"
                     loading="lazy"
                     object-fit="cover"
-                    :thumbhash="s.thumbhash"
+                    :thumbhash="s.image?.thumbhash ?? undefined"
                     class="h-full w-full cursor-zoom-in object-cover transition-transform duration-200 group-hover:scale-105"
                     :style="{ aspectRatio: '16/9' }"
                   />
@@ -216,7 +218,7 @@ const ratingRing = (s: GalgameScreenshot) => {
                   {{ s.caption }}
                 </div>
                 <div
-                  v-if="s.sexual >= 1 || s.violence >= 1"
+                  v-if="sexualLevel(s) >= 1"
                   class="pointer-events-none absolute inset-0 rounded-lg"
                   :style="ratingRing(s)"
                 />

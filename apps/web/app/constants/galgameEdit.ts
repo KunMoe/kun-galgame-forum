@@ -12,6 +12,7 @@ import {
   KUN_GALGAME_OFFICIAL_KIND_DEVELOPER
 } from '~/constants/galgameOfficial'
 import { galgameImageSourceLabel } from '~/constants/galgameImageSource'
+import type { WorkCover, WorkScreenshot } from '#shared/utils/api/schemas'
 
 const K = (name: string) => `catalog.work.${name}`
 
@@ -35,8 +36,8 @@ export interface GalgameEditNames {
   series?: Map<number, string>
   character?: Map<number, string>
   staff?: Map<number, string>
-  covers?: GalgameCover[]
-  screenshots?: GalgameScreenshot[]
+  covers?: WorkCover[]
+  screenshots?: WorkScreenshot[]
 }
 
 // Only the curated lane is editable: an edge imported from VNDB / Bangumi /
@@ -74,15 +75,15 @@ const missingLabelsFrom = (
 }
 
 const upstreamImages = (
-  images: (GalgameCover | GalgameScreenshot)[] | undefined
+  images: (WorkCover | WorkScreenshot)[] | undefined
 ): EditContextItem[] =>
   (images ?? [])
-    .filter((image) => image.source !== CURATED_IMAGE_SOURCE)
+    .filter((image) => image.site !== CURATED_IMAGE_SOURCE)
     .map((image) => ({
-      label: galgameImageSourceLabel(image.source),
-      image: image.cdn_url
-        ? withImageVariant(image.cdn_url, 'mini')
-        : galgameImageSrc(image)
+      label: galgameImageSourceLabel(image.site),
+      image: image.image?.url
+        ? withImageVariant(image.image.url, 'mini')
+        : ''
     }))
 
 // An editor tags and credits adult works too, so these pickers reach every

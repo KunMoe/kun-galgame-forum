@@ -1,6 +1,11 @@
 <script setup lang="ts">
-const galgame = inject<GalgameDetail>('galgame')
-const contributors = computed(() => galgame?.contributor ?? [])
+import type { Work } from '#shared/utils/api/schemas'
+import { toKunUser } from '~/utils/userRef'
+
+const galgame = inject<Work>('galgame')
+const contributors = computed(() =>
+  (galgame?.contributors ?? []).map((user) => toKunUser(user))
+)
 </script>
 
 <template>

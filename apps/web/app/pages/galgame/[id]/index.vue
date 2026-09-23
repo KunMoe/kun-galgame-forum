@@ -1,27 +1,53 @@
 <script setup lang="ts">
 import type { VideoGame, WithContext, Person, BreadcrumbList } from 'schema-dts'
+import type { Work } from '#shared/utils/api/schemas'
+import { mergedInto } from '#shared/utils/api/merged'
+import { problemMessage } from '#shared/utils/api/message'
+import {
+  catalogVocabularyName,
+  pickCatalogIntro
+} from '#shared/utils/catalogName'
+import { deletedUserName } from '#shared/utils/deletedUser'
+import { resourcePlatformLabel } from '~~/shared/utils/galgameResourceVocab'
 
 definePageMeta({ key: (route) => route.path })
 
 const route = useRoute()
 
 const { allowsNsfw } = useContentStance()
+const nameOf = useWorkName()
+const namesOf = useCatalogName()
 
-const workId = computed(() => {
-  return parseInt((route.params as { id: string }).id)
-})
+const workId = computed(() => String((route.params as { id: string }).id))
 
-const { data } = await useKunFetch<GalgameDetail>(`/galgame/${workId.value}`, {
-  method: 'GET',
-  watch: false,
-  query: { galgame_id: workId.value }
-})
+let movedTo: number | null = null
+const { data, problem } = await useApi<Work>(
+  () => `work:${workId.value}:${allowsNsfw.value}`,
+  async (api, { signal }) => {
+    const res = await api.GET('/works/{work_id}', {
+      params: {
+        path: { work_id: workId.value },
+        query: { include_nsfw: allowsNsfw.value }
+      },
+      signal
+    })
+    movedTo = mergedInto(res.error)
+    return res
+  }
+)
+
+if (movedTo) {
+  await navigateTo(`/galgame/${movedTo}`, {
+    redirectCode: 301,
+    replace: true
+  })
+}
 
 const galgame = data.value
 const isShowGalgame = ref(true)
 
 if (galgame) {
-  const nsfw = galgame.content_limit === 'nsfw'
+  const nsfw = galgame.is_nsfw
   // Being signed in used to be enough on its own, which showed every NSFW
   // detail page to a reader who had never asked for one. The account's stance
   // decides now; 模糊 lets the page through and masks the imagery instead.
@@ -29,25 +55,29 @@ if (galgame) {
     isShowGalgame.value = false
   }
 
-  if (!galgame.indexed || nsfw) {
-    useKunDisableSeo(galgame.name)
+  if (!galgame.is_published || nsfw) {
+    useKunDisableSeo(nameOf(galgame))
   } else {
-    const titleBase = galgame.name
-    const original = galgame.name_original
+    const { name: titleBase, original } = namesOf(galgame)
     const title = original ? `${titleBase} | ${original}` : titleBase
     const pageUrl = `${kungal.domain.main}${route.path}`
 
-    const developer = galgame.official[0]?.name
+    const developer = galgame.companies[0]
+      ? namesOf(galgame.companies[0]).name
+      : ''
     const releaseYear = galgame.release_date
       ? new Date(galgame.release_date).getFullYear()
       : undefined
-    const platformText = galgame.platform.slice(0, 3).join('、')
+    const platformText = galgame.resource_platforms
+      .slice(0, 3)
+      .map((platform) => resourcePlatformLabel(platform))
+      .join('、')
     // The API hands over every spoiler level so the tag panel can filter on the
-    // client; anything a search engine indexes has to stay at level 0.
-    const safeTags = galgame.tag.filter((t) => t.spoiler_level === 0)
+    // client; anything a search engine indexes has to stay at none.
+    const safeTags = galgame.tags.filter((t) => t.spoiler === 'none')
     const contentGenres = safeTags
-      .filter((t) => t.category === 'content')
-      .map((t) => t.name)
+      .filter((t) => t.tag_kind === 'content')
+      .map((t) => catalogVocabularyName(t))
     const fallbackDescription =
       `《${titleBase}》是一款${developer ? `由 ${developer} 开发的 ` : ''}Galgame（视觉小说）` +
       `${releaseYear ? `，${releaseYear} 年发售` : ''}` +
@@ -55,38 +85,48 @@ if (galgame) {
       `${contentGenres.length ? `，题材包括${contentGenres.slice(0, 3).join('、')}` : ''}` +
       `。本页收录其基本资料、制作 Staff、登场角色与声优, 以及玩家评分与评价。`
 
-    const introText = truncateRunes(markdownToText(galgame.intro_text), 175)
+    const introText = truncateRunes(
+      markdownToText(pickCatalogIntro(galgame.intros)?.value ?? ''),
+      175
+    )
     const description = introText || fallbackDescription
 
     const jsonLd: WithContext<VideoGame> = {
       '@context': 'https://schema.org',
       '@type': 'VideoGame',
       name: titleBase,
-      alternateName: galgame.alias,
+      alternateName: [
+        ...(original ? [original] : []),
+        ...galgame.aliases
+      ],
       url: pageUrl,
-      image: getEffectiveBanner(galgame),
+      image: galgame.banner?.url || galgame.cover?.url,
       description: description,
-      inLanguage: galgame.original_language,
+      inLanguage: galgame.original_language ?? undefined,
       datePublished:
-        galgame.release_date || new Date(galgame.created).toISOString(),
-      dateModified: new Date(galgame.updated).toISOString(),
-      publisher: galgame.official.map((o) => ({
+        galgame.release_date || galgame.created_at,
+      dateModified: galgame.updated_at,
+      publisher: galgame.companies.map((company) => ({
         '@type': 'Organization',
-        name: o.name
+        name: namesOf(company).name
       })),
 
       genre: contentGenres,
       keywords: safeTags
-        .filter((t) => t.category === 'technical')
-        .map((t) => t.name)
+        .filter((t) => t.tag_kind === 'meta')
+        .map((t) => catalogVocabularyName(t))
         .join(', '),
 
-      ...(galgame.platform.length && { gamePlatform: galgame.platform }),
+      ...(galgame.resource_platforms.length && {
+        gamePlatform: galgame.resource_platforms.map((platform) =>
+          resourcePlatformLabel(platform)
+        )
+      }),
 
-      ...(galgame.rating_count && {
+      ...(galgame.rating_count && galgame.rating_score != null && {
         aggregateRating: {
           '@type': 'AggregateRating',
-          ratingValue: Number((galgame.rating ?? 0).toFixed(1)),
+          ratingValue: Number(galgame.rating_score.toFixed(1)),
           ratingCount: galgame.rating_count,
           bestRating: 10,
           worstRating: 1
@@ -106,17 +146,21 @@ if (galgame) {
           interactionType: {
             '@type': 'WatchAction'
           },
-          userInteractionCount: galgame.view
+          userInteractionCount: galgame.view_count
         }
       ],
 
-      author: {
+      ...(galgame.creator
+        ? {
+            author: {
+              '@type': 'Person',
+              name: galgame.creator.name ?? deletedUserName
+            } satisfies Person
+          }
+        : {}),
+      contributor: galgame.contributors.map((c) => ({
         '@type': 'Person',
-        name: galgame.user.name
-      } satisfies Person,
-      contributor: galgame.contributor.map((c) => ({
-        '@type': 'Person',
-        name: c.name
+        name: c.name ?? deletedUserName
       })) satisfies Person[]
     }
 
@@ -158,10 +202,16 @@ if (galgame) {
     useKunSeoMeta({
       title,
       description,
-      ogCard: { kind: 'galgame', id: galgame.id },
-      articleAuthor: [`${kungal.domain.main}/user/${galgame.user.id}`],
-      articlePublishedTime: galgame.created.toString(),
-      articleModifiedTime: galgame.updated.toString()
+      ogCard: { kind: 'galgame', id: Number(galgame.id) },
+      ...(galgame.creator
+        ? {
+            articleAuthor: [
+              `${kungal.domain.main}/user/${galgame.creator.id}`
+            ]
+          }
+        : {}),
+      articlePublishedTime: galgame.created_at,
+      articleModifiedTime: galgame.updated_at
     })
   }
 } else {
@@ -176,6 +226,11 @@ if (galgame) {
 
       <KunNsfwGate v-else noun="Galgame" @reveal="isShowGalgame = true" />
     </div>
+
+    <KunNull
+      v-else-if="problem && problem.status !== 404"
+      :description="problemMessage(problem)"
+    />
 
     <KunNull v-else description="未找到这个 Galgame" />
   </div>

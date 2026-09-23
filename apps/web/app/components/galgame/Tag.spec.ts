@@ -2,23 +2,32 @@
 import { describe, expect, it } from 'vitest'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import GalgameTag from './Tag.vue'
+import type { WorkTag } from '#shared/utils/api/schemas'
 
-const tags = [
+const tags: WorkTag[] = [
   {
-    id: 1,
-    name: '青梅竹马',
-    category: 'content',
-    spoiler_level: 0,
-    galgame_count: 3
+    object: 'tag',
+    id: '1',
+    display_name: '青梅竹马',
+    latin: null,
+    localized: {},
+    catalog_work_count: 3,
+    is_sexual: false,
+    spoiler: 'none',
+    tag_kind: 'content'
   },
   {
-    id: 2,
-    name: '成人标签',
-    category: 'sexual',
-    spoiler_level: 0,
-    galgame_count: 1
+    object: 'tag',
+    id: '2',
+    display_name: '成人标签',
+    latin: null,
+    localized: {},
+    catalog_work_count: 1,
+    is_sexual: true,
+    spoiler: 'none',
+    tag_kind: 'content'
   }
-] as unknown as GalgameDetailTag[]
+]
 
 // The category set is read once at setup, so the store has to carry the
 // reader's mode before the component mounts.

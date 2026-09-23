@@ -8,33 +8,48 @@ import {
   type KunGalgamePlayState
 } from '~/constants/galgame-playtime'
 import {
-  KUN_GALGAME_RESOURCE_TYPE_MAP,
-  KUN_GALGAME_RESOURCE_LANGUAGE_MAP,
-  KUN_GALGAME_RESOURCE_PLATFORM_MAP,
   KUN_GALGAME_CONTENT_LIMIT_MAP,
   KUN_USER_TEXT_CHIP_CLASS
 } from '~/constants/galgame'
 import { settle } from '#shared/utils/api/problem'
+import type { Work } from '#shared/utils/api/schemas'
+import type { GalgameRatingCardOnGalgamePage } from '~~/shared/types/galgame-rating'
+import {
+  resourceLanguageLabel,
+  resourcePlatformLabel,
+  resourceTypeLabel
+} from '~~/shared/utils/galgameResourceVocab'
 
 const props = defineProps<{
-  galgame: GalgameDetail
+  galgame: Work
+  ratings: GalgameRatingCardOnGalgamePage[]
+  hasLocalRating: boolean
 }>()
 
 const { isBlurred } = useContentStance()
+const namesOf = useCatalogName()
+const names = computed(() => namesOf(props.galgame))
 
 const emits = defineEmits<{
-  onRatingCreated: [GalgameRatingCardOnGalgamePage]
+  onRatingCreated: []
 }>()
 
 const { id } = usePersistUserStore()
 const api = useApiClient()
-const canBanResourcePublish = useCan('galgame.ban_resource_publish')
+const canBanResourcePublish = computed(
+  () => props.galgame.viewer?.can_ban_resource_publish ?? false
+)
 
 const resourcePublishBanned = inject<Ref<boolean>>(
   'galgameResourcePublishBanned',
   ref(false)
 )
 const banning = ref(false)
+const workId = computed(() => Number(props.galgame.id))
+const creatorId = computed(() =>
+  props.galgame.creator ? Number(props.galgame.creator.id) : 0
+)
+const isOwnWork = computed(() => !!id && creatorId.value === id)
 const toggleResourceBan = async () => {
   if (banning.value) {
     return
@@ -53,10 +68,10 @@ const toggleResourceBan = async () => {
   const result = await settle(
     willBan
       ? api.PUT('/works/{work_id}/resource-publish-ban', {
-          params: { path: { work_id: String(props.galgame.id) } }
+          params: { path: { work_id: props.galgame.id } }
         })
       : api.DELETE('/works/{work_id}/resource-publish-ban', {
-          params: { path: { work_id: String(props.galgame.id) } }
+          params: { path: { work_id: props.galgame.id } }
         })
   )
   banning.value = false
@@ -71,11 +86,11 @@ const toggleResourceBan = async () => {
   )
 }
 
-const galgameAliasArray = computed(() =>
-  props.galgame.name_original
-    ? [props.galgame.name_original, ...props.galgame.alias]
-    : props.galgame.alias
-)
+const galgameAliasArray = computed(() => {
+  const extra = names.value.original
+  const aliases = props.galgame.aliases
+  return extra && !aliases.includes(extra) ? [extra, ...aliases] : aliases
+})
 
 const isRatingOpen = ref(false)
 const ratingInvite = ref<KunGalgamePlayState | null>(null)
@@ -92,9 +107,9 @@ const openRatingFromInvite = () => {
   isRatingOpen.value = true
 }
 
-const onRatingPublished = (newRating: GalgameRatingCardOnGalgamePage) => {
+const onRatingPublished = () => {
   ratingInvite.value = null
-  emits('onRatingCreated', newRating)
+  emits('onRatingCreated')
 }
 
 const isRatingDetailOpen = ref(false)
@@ -105,18 +120,18 @@ const openRatingDetail = (source: string) => {
 }
 
 const coversOpen = ref(false)
-const hasMoreCovers = computed(() => (props.galgame.covers?.length ?? 0) > 1)
+const hasMoreCovers = computed(() => props.galgame.covers.length > 1)
 
 const favoriteCount = ref(props.galgame.favorite_count)
-const isFavorited = ref(props.galgame.is_favorited)
+const isFavorited = ref(props.galgame.viewer?.has_favorited ?? false)
 
 watch(
   () => props.galgame.favorite_count,
   (value) => (favoriteCount.value = value)
 )
 watch(
-  () => props.galgame.is_favorited,
-  (value) => (isFavorited.value = value)
+  () => props.galgame.viewer?.has_favorited,
+  (value) => (isFavorited.value = value ?? false)
 )
 
 const favoritePickerOpen = ref(false)
@@ -135,8 +150,14 @@ const onFavoriteSaved = (payload: { favorited: boolean }) => {
     favoriteCount.value += payload.favorited ? 1 : -1
   }
   isFavorited.value = payload.favorited
-  setFavorited(props.galgame.id, payload.favorited)
+  setFavorited(workId.value, payload.favorited)
 }
+
+const nsfwKey = computed(() => (props.galgame.is_nsfw ? 'nsfw' : 'sfw'))
+const coverUrl = computed(() => props.galgame.cover?.url ?? '')
+const coverThumbhash = computed(
+  () => props.galgame.cover?.thumbhash ?? undefined
+)
 </script>
 
 <template>
@@ -149,24 +170,24 @@ const onFavoriteSaved = (payload: { favorited: boolean }) => {
       class="relative col-start-1 row-start-1 aspect-[5/7] w-full self-start overflow-hidden rounded-lg md:row-end-3"
     >
       <KunNsfwMask
-        :active="isBlurred && galgame.content_limit !== 'sfw'"
+        :active="isBlurred && galgame.is_nsfw"
         class-name="h-full"
         label="成人向封面已模糊"
       >
         <KunLightboxGallery>
           <KunLightboxGalleryItem
-            :src="getEffectivePortrait(galgame)"
-            :alt="galgame.name"
+            :src="coverUrl"
+            :alt="names.name"
             :wrap="false"
             v-slot="{ open }"
           >
             <KunImage
               class="size-full cursor-zoom-in object-cover"
-              :src="getEffectivePortrait(galgame)"
+              :src="coverUrl"
               loading="eager"
               fetchpriority="high"
-              :thumbhash="resolvePortraitThumbhash(galgame)"
-              :alt="galgame.name"
+              :thumbhash="coverThumbhash"
+              :alt="names.name"
               @click="open"
             />
           </KunLightboxGalleryItem>
@@ -194,13 +215,13 @@ const onFavoriteSaved = (payload: { favorited: boolean }) => {
       <KunChip
         variant="solid"
         class="absolute top-2 left-2"
-        :color="galgame.content_limit === 'sfw' ? 'success' : 'danger'"
+        :color="galgame.is_nsfw ? 'danger' : 'success'"
       >
         <KunTooltip
           position="right"
-          :text="KUN_GALGAME_CONTENT_LIMIT_MAP[galgame.content_limit]"
+          :text="KUN_GALGAME_CONTENT_LIMIT_MAP[nsfwKey]"
         >
-          {{ galgame.content_limit.toLocaleUpperCase() }}
+          {{ nsfwKey.toLocaleUpperCase() }}
         </KunTooltip>
       </KunChip>
 
@@ -215,7 +236,7 @@ const onFavoriteSaved = (payload: { favorited: boolean }) => {
       </button>
       <GalgameCovers
         v-model="coversOpen"
-        :work-id="galgame.id"
+        :work-id="workId"
         :covers="galgame.covers"
       />
     </div>
@@ -223,7 +244,7 @@ const onFavoriteSaved = (payload: { favorited: boolean }) => {
     <div class="col-start-2 row-start-1 flex min-w-0 flex-col gap-3">
       <div class="flex flex-wrap items-center gap-2">
         <h1 class="text-2xl md:text-3xl">
-          {{ galgame.name }}
+          {{ names.name }}
         </h1>
       </div>
 
@@ -248,25 +269,25 @@ const onFavoriteSaved = (payload: { favorited: boolean }) => {
 
         <div class="space-y-1 space-x-1">
           <KunChip
-            v-for="(t, index) in galgame.type"
+            v-for="(t, index) in galgame.resource_types"
             :key="index"
             color="primary"
           >
             <KunIcon :name="GALGAME_RESOURCE_TYPE_ICON_MAP[t]" />
-            {{ KUN_GALGAME_RESOURCE_TYPE_MAP[t] }}
+            {{ resourceTypeLabel(t) }}
           </KunChip>
 
           <KunChip
-            v-for="(lang, index) in galgame.language"
+            v-for="(lang, index) in galgame.resource_languages"
             :key="index"
             color="secondary"
           >
             <KunIcon class="icon" name="lucide:globe" />
-            {{ KUN_GALGAME_RESOURCE_LANGUAGE_MAP[lang] }}
+            {{ resourceLanguageLabel(lang) }}
           </KunChip>
 
           <KunChip
-            v-for="(platform, index) in galgame.platform"
+            v-for="(platform, index) in galgame.resource_platforms"
             :key="index"
             color="success"
           >
@@ -274,7 +295,7 @@ const onFavoriteSaved = (payload: { favorited: boolean }) => {
               class="icon"
               :name="GALGAME_RESOURCE_PLATFORM_ICON_MAP[platform]"
             />
-            {{ KUN_GALGAME_RESOURCE_PLATFORM_MAP[platform] }}
+            {{ resourcePlatformLabel(platform) }}
           </KunChip>
         </div>
 
@@ -287,12 +308,13 @@ const onFavoriteSaved = (payload: { favorited: boolean }) => {
         <GalgameHeaderRatingModal
           v-model="isRatingDetailOpen"
           :galgame="galgame"
-          :ratings="galgame.ratings"
+          :ratings="ratings"
           :source="ratingDetailSource"
         />
 
         <GalgameHeaderPlaytime
           :galgame="galgame"
+          :has-local-rating="hasLocalRating"
           @wants-rating="onWantsRating"
         />
 
@@ -319,8 +341,7 @@ const onFavoriteSaved = (payload: { favorited: boolean }) => {
         <div class="flex flex-wrap items-center gap-2">
           <div class="flex items-center gap-1">
             <KunReaction
-              v-if="galgame.is_on_forum !== false"
-              :count="galgame.view"
+              :count="galgame.view_count"
               :toggle="false"
               icon="lucide:eye"
               label="浏览量"
@@ -329,15 +350,13 @@ const onFavoriteSaved = (payload: { favorited: boolean }) => {
             />
 
             <GalgameLike
-              :work-id="galgame.id"
-              :target-user-id="galgame.user.id"
+              :work-id="workId"
               :like-count="galgame.like_count"
-              :is-liked="galgame.is_liked"
+              :is-liked="galgame.viewer?.has_liked ?? false"
             />
 
             <GalgameFavorite
-              :work-id="galgame.id"
-              :target-user-id="galgame.user.id"
+              :work-id="workId"
               :favorite-count="favoriteCount"
               :is-favorited="isFavorited"
               @saved="onFavoriteSaved"
@@ -357,10 +376,10 @@ const onFavoriteSaved = (payload: { favorited: boolean }) => {
             </KunButton>
 
             <GalgameDlsitePurchase
-              v-if="galgame.dlsite_purchase_url"
-              :purchase-url="galgame.dlsite_purchase_url"
-              :coupon-url="galgame.dlsite_coupon_url"
-              :campaign-name="galgame.dlsite_campaign_name"
+              v-if="galgame.dlsite"
+              :purchase-url="galgame.dlsite.purchase_url"
+              :coupon-url="galgame.dlsite.coupon_url ?? undefined"
+              :campaign-name="galgame.dlsite.campaign_name ?? undefined"
             />
 
             <KunButton
@@ -375,7 +394,7 @@ const onFavoriteSaved = (payload: { favorited: boolean }) => {
             </KunButton>
 
             <KunPopover
-              v-if="galgame.user.id !== id || canBanResourcePublish"
+              v-if="!isOwnWork || canBanResourcePublish"
               position="bottom-end"
             >
               <template #trigger>
@@ -390,11 +409,11 @@ const onFavoriteSaved = (payload: { favorited: boolean }) => {
               </template>
               <div class="flex w-44 flex-col gap-1 p-2">
                 <ReportButton
-                  v-if="galgame.user.id !== id"
+                  v-if="!isOwnWork"
                   menu
                   subject-kind="galgame"
                   :subject-id="galgame.id"
-                  :snapshot="galgame.name"
+                  :snapshot="names.name"
                   :subject-url="`${kungal.domain.main}/galgame/${galgame.id}`"
                 />
                 <KunButton
@@ -422,9 +441,10 @@ const onFavoriteSaved = (payload: { favorited: boolean }) => {
 
             <GalgameRatingPublish
               v-model="isRatingOpen"
-              :work-id="galgame.id"
+              :work-id="workId"
               :preset-play-state="ratingInvite ?? undefined"
               @on-published="onRatingPublished"
+              @on-updated="onRatingPublished"
             />
           </div>
         </div>
@@ -434,7 +454,7 @@ const onFavoriteSaved = (payload: { favorited: boolean }) => {
 
   <GalgameCollectionPickerModal
     v-model="favoritePickerOpen"
-    :work-id="galgame.id"
+    :work-id="workId"
     @saved="onFavoriteSaved"
   />
 </template>

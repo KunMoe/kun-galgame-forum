@@ -1,18 +1,23 @@
 <script setup lang="ts">
+import { settle } from '#shared/utils/api/problem'
+
 const props = defineProps<{
   workId: number
-  targetUserId: number
   likeCount: number
   isLiked: boolean
 }>()
 
 const { id } = usePersistUserStore()
+const api = useApiClient()
 const isLiked = ref(props.isLiked)
 const likesCount = ref(props.likeCount)
 
 watch(
-  () => props.isLiked,
-  (value) => (isLiked.value = value)
+  () => [props.isLiked, props.likeCount] as const,
+  ([liked, count]) => {
+    isLiked.value = liked
+    likesCount.value = count
+  }
 )
 
 const pending = ref(false)
@@ -27,20 +32,21 @@ const onChange = async (next: boolean) => {
     revert(next)
     return
   }
-  if (id === props.targetUserId) {
-    useMessage(10533, 'warn')
-    revert(next)
-    return
-  }
   pending.value = true
-  const result = await kunFetch(`/galgame/${props.workId}/like`, {
-    method: 'PUT'
-  })
+  const params = { params: { path: { work_id: String(props.workId) } } }
+  const result = await settle(
+    next
+      ? api.PUT('/works/{work_id}/like', params)
+      : api.DELETE('/works/{work_id}/like', params)
+  )
   pending.value = false
-  if (!result) {
+  if (!result.ok) {
     revert(next)
+    reportProblem(result.problem)
     return
   }
+  isLiked.value = result.data.viewer?.has_liked ?? next
+  likesCount.value = result.data.like_count
   useMessage(next ? 10530 : 10531, 'success')
 }
 </script>

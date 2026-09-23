@@ -12,16 +12,14 @@ const props = defineProps<{
   showNsfw: boolean
   hiddenCount: number
   sexualCounts: Record<number, number>
-  violenceCounts: Record<number, number>
   sources: SourceOption[]
 }>()
 
 const emit = defineEmits<{ toggleSource: [key: string] }>()
 
-const {
-  showKUNGalgameGallerySexualLevels: sexualLevels,
-  showKUNGalgameGalleryViolenceLevels: violenceLevels
-} = storeToRefs(usePersistSettingsStore())
+const { showKUNGalgameGallerySexualLevels: sexualLevels } = storeToRefs(
+  usePersistSettingsStore()
+)
 
 const LEVELS = [
   { value: 1, label: '轻' },
@@ -31,9 +29,6 @@ const LEVELS = [
 
 const sexualShown = computed(() =>
   LEVELS.filter((lv) => (props.sexualCounts[lv.value] ?? 0) > 0)
-)
-const violenceShown = computed(() =>
-  LEVELS.filter((lv) => (props.violenceCounts[lv.value] ?? 0) > 0)
 )
 
 const showSources = computed(() => props.sources.length > 1)
@@ -45,25 +40,6 @@ const toggle = (arr: Ref<number[]>, level: number) => {
 }
 
 const toggleSexual = (level: number) => toggle(sexualLevels, level)
-
-const warnOpen = ref(false)
-const pendingLevel = ref<number | null>(null)
-
-const onViolence = (level: number) => {
-  const enabling = !violenceLevels.value.includes(level)
-  if (enabling && violenceLevels.value.length === 0) {
-    pendingLevel.value = level
-    warnOpen.value = true
-    return
-  }
-  toggle(violenceLevels, level)
-}
-
-const confirmViolence = () => {
-  if (pendingLevel.value !== null) toggle(violenceLevels, pendingLevel.value)
-  pendingLevel.value = null
-  warnOpen.value = false
-}
 </script>
 
 <template>
@@ -120,60 +96,10 @@ const confirmViolence = () => {
       </div>
 
       <KunDivider />
-
-      <div class="space-y-2">
-        <div class="flex items-center gap-1.5">
-          <KunIcon name="lucide:triangle-alert" class="text-danger-500" />
-          <p class="text-default-700 text-sm font-medium">暴力评级</p>
-        </div>
-        <p v-if="!violenceShown.length" class="text-default-400 text-xs">
-          无暴力评级图片
-        </p>
-        <template v-else>
-          <p class="text-danger-600 text-xs">
-            暴力 / 血腥内容可能引起不适,默认隐藏,确认后才显示。
-          </p>
-          <div class="flex flex-col gap-2">
-            <KunCheckBox
-              v-for="lv in violenceShown"
-              :id="`gal-violence-${lv.value}`"
-              :key="lv.value"
-              type="single"
-              :model-value="violenceLevels.includes(lv.value)"
-              :label="`${lv.label} · ${violenceCounts[lv.value]} 张`"
-              @update:model-value="() => onViolence(lv.value)"
-            />
-          </div>
-        </template>
-      </div>
-
-      <KunDivider />
       <p class="text-default-400 text-xs leading-relaxed">
-        缩略图描边:<span class="text-warning-500">外圈 = 色情</span> ·
-        <span class="text-danger-500">内圈 = 暴力</span>,颜色越深级别越高。
+        缩略图描边:<span class="text-warning-500">外圈 = 色情</span
+        >,颜色越深级别越高。
       </p>
     </div>
   </KunPopover>
-
-  <KunModal v-model="warnOpen" role="alertdialog" inner-class-name="max-w-sm">
-    <div class="space-y-4 text-center">
-      <KunIcon
-        name="lucide:triangle-alert"
-        class="text-danger-500 mx-auto text-4xl"
-      />
-      <div class="space-y-1">
-        <p class="text-lg font-semibold">显示暴力内容?</p>
-        <p class="text-default-600 text-sm">
-          画廊中存在带有暴力 /
-          血腥评级的图片,可能引起不适。确认要显示这类内容吗?
-        </p>
-      </div>
-      <div class="flex justify-center gap-2">
-        <KunButton variant="flat" color="default" @click="warnOpen = false">
-          取消
-        </KunButton>
-        <KunButton color="danger" @click="confirmViolence">确认显示</KunButton>
-      </div>
-    </div>
-  </KunModal>
 </template>

@@ -329,6 +329,11 @@ G8 要求全 spec 里同名属性同型（含可空与 format），G14 要求每
 
 另外三处实现事实，契约前文写错或没写：
 
+- **`/me/work-states` 的收藏读失败不再 503（改判 §3.10 / K-G25）。** 契约原写「holdings 非 scope 失败 → 503」。本地浏览器验收时 catalog 用户面回 401，整批 503，卡片上的赞也跟着全灭。catalog 用户面有过全站 401（封面票那次）和全站 429（`/v2/me` 配额）的先例，照原写法那两次会让所有列表页的赞一起消失，而旧面只是降级成「只有赞」。现在：任何 holdings 错误 → 每条 `has_favorited: false` + 一行警告（scope 走旧的 `scope_warn`），`has_liked` 照答；只有「catalog 认不认识这些作品」那一步失败才 503。与详情 `viewer.has_favorited` 的降级一致。变异 #18 钉住。
+- **详情调用方漏了一个**：`components/galgame/edit/Container.vue`（`/galgame/:id/edit` 编辑页）也读 `GET /galgame/:id` 拿 id→名字表与封面 / 截图。已随网页一起切。
+- **VNDB 锚点**：`external_refs` 原样给出 catalog 的全部 ref，一部作品常同时有 `v…`（作品）与 `r…`（发行）。旧 `refsMap` 曾修过「发行 id 排在前面就链到发行页」（`vndb_anchor_test.go`）；网页用 `shared/utils/workExternalRef.ts` 的 `workExternalId` 取作品锚点，别在别处 `.find` 第一条。
+- **简介顺序**：catalog 的顺序是 `en, ja, zh-Hans`，旧面在服务端排成中文优先。网页用 `orderCatalogIntros` / `pickCatalogIntro` 排；`value` 经 `markdownToText` 显示（约 0.4% 的简介带 Markdown 链接 / 粗体，旧面渲染成 HTML）。把 `CatalogIntro` 做成 ContentDocument 是 GE 与本轨共有的后续。
+
 - **浏览计数也要进日桶。** 旧 `IncrementView` 在列上 +1 之后还调 `viewstats.BumpDaily(galgame_view_daily)`，`view_7d` / `view_30d` 排行靠它（迁移 050）。K-G26 只写了「列更新不碰 `updated`」，第一版实现照字面漏了日桶。现在：UPDATE 命中一行才进日桶（无本地行的作品不留孤儿桶）；两步任一出错 500。
 - **v2 的竖版 / 横幅槽位此前永远不带等级。** 论坛的 v2 改写（`client/catalog_v2.go` `imageToSlot`）从 v2 `cover` / `banner` 合成 `cover_slots` 时只抄了 url / 宽高 / thumbhash，`sexual` 丢了，所以 K-G27 的指针解码单做是空转：`WorkRef.cover.sexual` 在生产里恒 `null`。改写现在把 v2 的 `safe`/`suggestive`/`explicit` 映成 0/1/2 写进槽位，`null` 保持缺席。槽位的等级只有 `workrepr` 读，旧面不受影响。**影响面**：所有带 `WorkRef` 的 v1 面（资源、题目、排行、搜索、活动…）的 `cover.sexual` 从恒 `null` 变成真实等级；网页按 `sexual` 模糊的地方要在浏览器里看一遍。
 - **`resource_types` 读的是标量 `galgame_resource.type`**，不是 jsonb 轴（资源表只有平台 / 语言是 jsonb）。去重后过 `CompatType` + `TypeKeys`。
@@ -393,7 +398,7 @@ Query：`work_ids` 必填，1–100，逗号形。`missing` 与 `/me/topic-state
 | **K-G22** | `Work` 是 `WorkRef` 的严格超集，且 `WorkRef` ⊂ `WorkSummary` ⊂ `Work`，重叠字段同名同型。G3 薄面 `getWork` 的 200 从 `WorkRef` 扩成 `Work`。WorkSummary 有而 WorkRef 没有的字段保持；WorkRef 的字段 WorkSummary 一个不缺 |
 | **K-G23** | `include_nsfw` 默认 `false` 只剥成人标签，不 404 作品。`is_nsfw` 给网页。hidden / 未知 404；不查本地 `published`。合并见 K-G28 |
 | **K-G24** | 赞槽见 §3.9。catalog 存在性、缺本地行按 id 插入不碰 `published`、自赞 `SELF_LIKE_FORBIDDEN`、无主不发分、稳定键、消息只在真赞、`like_count` ≥ 0 |
-| **K-G25** | `/me/work-states` 见 §3.10。`has_liked` 本地；`has_favorited` 一次 holdings；缺 scope → `false` + 旧日志；catalog 失败 503；不可读进 `missing` |
+| **K-G25** | `/me/work-states` 见 §3.10。`has_liked` 本地；`has_favorited` 一次 holdings；holdings 任何失败 → `false` + 日志（§3.13 改判，原写非 scope 失败 503）；catalog 可读性失败 503；不可读进 `missing` |
 | **K-G26** | 详情 GET 同步 `view + 1`，不写 `updated`，错误 500。无本地行 0 行 UPDATE 仍 200 |
 | **K-G27** | 封面槽与详情封面 / 截图行的 `sexual` 按指针解码；竖版等级进 `WorkRef.cover.sexual`。`WorkRefOf` 委托 `workrepr.Ref` |
 | **K-G28** | 合并作品 `404 ENTITY_MERGED` `object: "work"` + `current_id`。实现走 `catalogGetRecord`。用户裁决不重定向（由客户端 301） |

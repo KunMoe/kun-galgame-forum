@@ -4,10 +4,12 @@ import {
   KUN_GALGAME_TAG_SPOILER_MAP,
   type KunGalgameTagSpoiler
 } from '~/constants/galgameTag'
+import type { WorkTag } from '#shared/utils/api/schemas'
+import { catalogVocabularyName } from '#shared/utils/catalogName'
 
 const props = withDefaults(
   defineProps<{
-    tags: GalgameDetailTag[]
+    tags: WorkTag[]
     variant?: 'mobile' | 'desktop'
   }>(),
   { variant: 'desktop' }
@@ -47,11 +49,17 @@ const toggleSpoilerLevel = (spoiler: KunGalgameTagSpoiler) => {
   toggleItemInArray(selectedSpoilerLevels, spoiler)
 }
 
+const categoryOf = (tag: WorkTag) =>
+  tag.is_sexual ? 'sexual' : tag.tag_kind
+
+const spoilerOf = (tag: WorkTag): number =>
+  tag.spoiler === 'major' ? 2 : tag.spoiler === 'minor' ? 1 : 0
+
 const spoilerCounts = computed(() => {
   const counts: Record<number, number> = { 0: 0, 1: 0, 2: 0 }
   for (const tag of props.tags) {
-    if (selectedCategories.value.includes(tag.category)) {
-      counts[tag.spoiler_level] = (counts[tag.spoiler_level] ?? 0) + 1
+    if (selectedCategories.value.includes(categoryOf(tag))) {
+      counts[spoilerOf(tag)] = (counts[spoilerOf(tag)] ?? 0) + 1
     }
   }
   return counts
@@ -67,10 +75,10 @@ const filteredTags = computed(() => {
 
   const filtered = props.tags.filter(
     (tag) =>
-      selectedCategories.value.includes(tag.category) &&
-      selectedSpoilerLevels.value.includes(tag.spoiler_level as 0)
+      selectedCategories.value.includes(categoryOf(tag)) &&
+      selectedSpoilerLevels.value.includes(spoilerOf(tag) as 0)
   )
-  return filtered.sort((a, b) => a.id - b.id)
+  return filtered.sort((a, b) => Number(a.id) - Number(b.id))
 })
 
 const countColorByCategory = (category: string): string => {
@@ -136,15 +144,15 @@ const countColorByCategory = (category: string): string => {
             class-name="bg-default-500/10 cursor-pointer"
             :size="isMobile ? 'md' : 'sm'"
           >
-            {{ tag.name }}
+            {{ catalogVocabularyName(tag) }}
             <span
-              v-if="tag.galgame_count > 0"
-              :class="cn('text-xs', countColorByCategory(tag.category))"
+              v-if="tag.catalog_work_count > 0"
+              :class="cn('text-xs', countColorByCategory(categoryOf(tag)))"
             >
-              {{ `+${tag.galgame_count}` }}
+              {{ `+${tag.catalog_work_count}` }}
             </span>
-            <span v-if="tag.spoiler_level > 0" class="text-warning-600 text-xs">
-              {{ tag.spoiler_level > 1 ? '(严重剧透)' : '(剧透)' }}
+            <span v-if="spoilerOf(tag) > 0" class="text-warning-600 text-xs">
+              {{ spoilerOf(tag) > 1 ? '(严重剧透)' : '(剧透)' }}
             </span>
           </KunChip>
         </KunLink>

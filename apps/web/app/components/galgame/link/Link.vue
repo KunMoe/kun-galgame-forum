@@ -1,20 +1,13 @@
 <script setup lang="ts">
 import { KUN_GALGAME_EXTERNAL_RATING_MAP } from '~/constants/galgame-rating'
+import type { CatalogLink, WorkExternalRef } from '#shared/utils/api/schemas'
+import { catalogLinkLabel } from '#shared/utils/catalogLink'
+import { workExternalId } from '#shared/utils/workExternalRef'
 
-const props = defineProps<{ refs?: Record<string, string> }>()
-
-const route = useRoute()
-const workId = computed(() => parseInt((route.params as { id: string }).id))
-
-const { data } = await useKunFetch<GalgameLink[]>(
-  `/galgame/${workId.value}/link/all`,
-  {
-    lazy: true,
-    method: 'GET',
-    query: { galgame_id: workId.value },
-    watch: false
-  }
-)
+const props = defineProps<{
+  links: CatalogLink[]
+  externalRefs: WorkExternalRef[]
+}>()
 
 // The identity ids had exactly one route to the surface: the external rating
 // panel, which is only drawn for a source that actually returned a score. A
@@ -24,19 +17,26 @@ const { data } = await useKunFetch<GalgameLink[]>(
 // where a source's id points.
 const identityLinks = computed(() =>
   (['vndb', 'bangumi', 'erogamescape'] as const).flatMap((source) => {
-    const ref = props.refs?.[source]
+    const id = workExternalId(props.externalRefs, source)
     const meta = KUN_GALGAME_EXTERNAL_RATING_MAP[source]
-    if (!ref || !meta.link) {
+    if (!id || !meta.link) {
       return []
     }
-    return [{ label: `${meta.label} ${ref}`, link: meta.link(ref) }]
+    return [{ label: `${meta.label} ${id}`, link: meta.link(id) }]
   })
+)
+
+const catalogLinks = computed(() =>
+  props.links.map((link) => ({
+    label: catalogLinkLabel(link.site, link.url),
+    link: link.url
+  }))
 )
 </script>
 
 <template>
   <div
-    v-if="identityLinks.length || data?.length"
+    v-if="identityLinks.length || catalogLinks.length"
     class="flex flex-wrap gap-x-3 gap-y-1"
   >
     <KunLink
@@ -53,16 +53,16 @@ const identityLinks = computed(() =>
     </KunLink>
 
     <KunLink
-      v-for="(link, index) in data"
-      :key="index"
-      :to="link.link"
+      v-for="item in catalogLinks"
+      :key="item.link"
+      :to="item.link"
       target="_blank"
       rel="noopener noreferrer"
       size="sm"
       color="default"
       class-name="text-default-500 hover:text-default-700"
     >
-      {{ link.name }}
+      {{ item.label }}
     </KunLink>
   </div>
 </template>

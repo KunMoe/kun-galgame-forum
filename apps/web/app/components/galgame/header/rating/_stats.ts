@@ -2,6 +2,8 @@ import {
   KUN_GALGAME_DIMENSIONS,
   type KunGalgameDim
 } from '~/constants/galgame-rating'
+import type { WorkExternalRatingBucket } from '#shared/utils/api/schemas'
+import type { GalgameRatingCardOnGalgamePage } from '~~/shared/types/galgame-rating'
 
 export const ratingMean = (values: number[]) =>
   values.length ? values.reduce((sum, v) => sum + v, 0) / values.length : 0
@@ -25,15 +27,15 @@ export const ratingHistogram = (
 // in or the columns silently shift left. The keys are not one shared axis
 // either — 批评空间's are deciles (0, 10, … 100), everyone else's are points.
 export const externalRatingHistogram = (
-  distribution: GalgameRatingBucket[],
+  distribution: WorkExternalRatingBucket[],
   keys: number[]
 ) => {
   const slot = new Map(keys.map((key, index) => [key, index]))
   const buckets = Array.from({ length: keys.length }, () => 0)
   for (const bucket of distribution) {
-    const index = slot.get(bucket.score)
+    const index = slot.get(bucket.bucket)
     if (index !== undefined) {
-      buckets[index]! += bucket.count
+      buckets[index]! += bucket.vote_count
     }
   }
   return buckets

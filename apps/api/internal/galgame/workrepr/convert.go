@@ -36,6 +36,9 @@ func firstLocalized(localized map[string]repr.LocalizedName, latin string) strin
 	return ""
 }
 
+// Ref reads is_nsfw from the same derivation that fills the local
+// galgame.content_limit cache (migration 079), so a ref never disagrees with the
+// forum's own SFW filter; cover is the portrait slot's original, not _mini.
 func Ref(ctx context.Context, it *client.CatalogWorkListItem, cdn string) repr.WorkRef {
 	brief := client.CatalogItemToBrief(ctx, it)
 	var sexual *int

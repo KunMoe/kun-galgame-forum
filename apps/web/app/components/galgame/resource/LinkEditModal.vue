@@ -317,6 +317,7 @@ const typeOptions = computed(() => {
     v-model="open"
     inner-class-name="max-w-3xl w-[92vw]"
     :is-dismissable="false"
+    :aria-label="modalTitle"
   >
     <div class="space-y-5">
       <div class="space-y-1">

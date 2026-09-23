@@ -9,9 +9,10 @@ import {
   kunGalgameRatingTierBadge,
   type KunGalgameExternalRatingMeta
 } from '~/constants/galgame-rating'
+import type { Work } from '#shared/utils/api/schemas'
 
 const props = defineProps<{
-  galgame: GalgameDetail
+  galgame: Work
 }>()
 
 const emits = defineEmits<{
@@ -19,7 +20,7 @@ const emits = defineEmits<{
   openDetail: [string]
 }>()
 
-const forumCount = computed(() => props.galgame.rating_count ?? 0)
+const forumCount = computed(() => props.galgame.rating_count)
 
 const buildTile = (
   key: string,
@@ -51,20 +52,20 @@ const tiles = computed(() => {
         buildTile(
           KUN_GALGAME_LOCAL_RATING_SOURCE,
           KUN_GALGAME_LOCAL_RATING_META,
-          props.galgame.rating ?? 0,
+          props.galgame.rating_score ?? 0,
           forumCount.value
         )
       ]
     : []
 
   const external = KUN_GALGAME_EXTERNAL_RATING_CONST.flatMap((source) => {
-    const row = props.galgame.external_ratings?.find((r) => r.source === source)
+    const row = props.galgame.external_ratings.find((r) => r.site === source)
     if (!row) return []
     return [
       buildTile(
         source,
         KUN_GALGAME_EXTERNAL_RATING_MAP[source],
-        row.score,
+        row.rating_value,
         row.vote_count
       )
     ]

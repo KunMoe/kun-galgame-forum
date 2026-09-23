@@ -65,3 +65,11 @@ export const ratingToGalgamePageCard = (
   ...ratingToCard(r, nameOf),
   is_liked: r.viewer?.has_liked ?? false
 })
+
+export const ratingSummaryToPageCard = (
+  r: RatingSummary,
+  nameOf: NameOf
+): GalgameRatingCardOnGalgamePage => ({
+  ...ratingToCard(r, nameOf),
+  is_liked: r.viewer?.has_liked ?? false
+})

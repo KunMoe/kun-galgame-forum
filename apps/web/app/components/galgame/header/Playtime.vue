@@ -6,9 +6,11 @@ import {
   type KunGalgamePlayState,
   type KunGalgamePlayStateRead
 } from '~/constants/galgame-playtime'
+import type { Work, WorkViewerPlaytime } from '#shared/utils/api/schemas'
 
 const props = defineProps<{
-  galgame: GalgameDetail
+  galgame: Work
+  hasLocalRating: boolean
 }>()
 
 const emits = defineEmits<{
@@ -17,9 +19,11 @@ const emits = defineEmits<{
 
 const { id } = usePersistUserStore()
 
-const mine = ref<GalgameMyPlaytime | null>(props.galgame.my_playtime ?? null)
+const mine = ref<WorkViewerPlaytime | null>(
+  props.galgame.viewer?.playtime ?? null
+)
 watch(
-  () => props.galgame.my_playtime,
+  () => props.galgame.viewer?.playtime,
   (value) => (mine.value = value ?? null)
 )
 
@@ -27,7 +31,7 @@ const isOpen = ref(false)
 
 const chips = computed(() =>
   KUN_GALGAME_PLAYTIME_SOURCE_CONST.flatMap((source) => {
-    const row = props.galgame.playtimes?.find((p) => p.source === source)
+    const row = props.galgame.playtimes.find((p) => p.site === source)
     if (!row) return []
 
     const meta = KUN_GALGAME_PLAYTIME_SOURCE_MAP[source]
@@ -58,10 +62,11 @@ const myDuration = computed(() =>
 )
 
 const myStatusLabel = computed(() => {
-  if (!mine.value?.status) return ''
+  if (!mine.value?.play_state) return ''
   return (
-    KUN_GALGAME_PLAY_STATE_MAP[mine.value.status as KunGalgamePlayStateRead] ??
-    mine.value.status
+    KUN_GALGAME_PLAY_STATE_MAP[
+      mine.value.play_state as KunGalgamePlayStateRead
+    ] ?? mine.value.play_state
   )
 })
 
@@ -75,7 +80,7 @@ const myTooltip = computed(() => {
   } else if (myDuration.value) {
     parts.push(`你的记录: ${myDuration.value}`)
   }
-  const site = props.galgame.playtimes?.find((p) => p.source === 'nextmoe')
+  const site = props.galgame.playtimes.find((p) => p.site === 'nextmoe')
   if (site) {
     parts.push(`本站中位数 ${formatDurationMinutes(site.minutes)}`)
   }
@@ -92,7 +97,7 @@ const openEditor = () => {
 
 const onFinished = (state: KunGalgamePlayState) => {
   if (!id) return
-  if (props.galgame.ratings.some((r) => r.user.id === id)) return
+  if (props.hasLocalRating) return
   emits('wantsRating', state)
 }
 </script>

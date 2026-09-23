@@ -7,23 +7,27 @@ import {
   type KunGalgameExternalRatingSource
 } from '~/constants/galgame-rating'
 import { externalRatingHistogram } from './_stats'
+import type { Work, WorkExternalRatingStats } from '#shared/utils/api/schemas'
+import { workExternalId } from '#shared/utils/workExternalRef'
 
 const props = defineProps<{
-  galgame: GalgameDetail
+  galgame: Work
   source: KunGalgameExternalRatingSource
 }>()
 
 const STAT_LABELS = [
-  ['average', '平均分'],
+  ['mean', '平均分'],
   ['stdev', '标准差'],
-  ['min', '最低分'],
-  ['max', '最高分']
-] as const
+  ['lowest', '最低分'],
+  ['highest', '最高分']
+] as const satisfies ReadonlyArray<
+  [keyof WorkExternalRatingStats, string]
+>
 
 const meta = computed(() => KUN_GALGAME_EXTERNAL_RATING_MAP[props.source])
 
 const row = computed(() =>
-  props.galgame.external_ratings?.find((r) => r.source === props.source)
+  props.galgame.external_ratings.find((r) => r.site === props.source)
 )
 
 // Every source publishes something different, and what it publishes changes:
@@ -31,8 +35,8 @@ const row = computed(() =>
 // off the payload instead of hardcoding it per source, so a source that gains
 // data later just starts rendering.
 const buckets = computed(() =>
-  row.value?.distribution?.length
-    ? externalRatingHistogram(row.value.distribution, meta.value.histogram.keys)
+  row.value?.buckets.length
+    ? externalRatingHistogram(row.value.buckets, meta.value.histogram.keys)
     : null
 )
 
@@ -58,7 +62,11 @@ const barsNote = computed(() => {
 })
 
 const tier = computed(() =>
-  kunGalgameRatingTierBadge(meta.value, row.value?.score, row.value?.vote_count)
+  kunGalgameRatingTierBadge(
+    meta.value,
+    row.value?.rating_value,
+    row.value?.vote_count
+  )
 )
 
 const tierTooltip = computed(() =>
@@ -82,7 +90,7 @@ const statRows = computed(() => {
 // server-side so it carries the affiliate id. No URL means no link, not a
 // hand-built one that drops the affiliate.
 const purchaseUrl = computed(() =>
-  props.source === 'dlsite' ? (props.galgame.dlsite_purchase_url ?? '') : ''
+  props.source === 'dlsite' ? (props.galgame.dlsite?.purchase_url ?? '') : ''
 )
 
 // A space belongs between CJK and Latin, not between two CJK runs: "在 VNDB 查看"
@@ -97,7 +105,7 @@ const link = computed(() => {
   if (props.source === 'dlsite') {
     return ''
   }
-  const externalId = props.galgame.refs?.[props.source]
+  const externalId = workExternalId(props.galgame.external_refs, props.source)
   return externalId ? (meta.value.link?.(externalId) ?? '') : ''
 })
 </script>
@@ -109,7 +117,7 @@ const link = computed(() => {
         <div class="flex items-center gap-2">
           <div class="flex items-baseline gap-0.5">
             <span class="text-3xl leading-none font-semibold tabular-nums">
-              {{ meta.formatScore(row.score) }}
+              {{ meta.formatScore(row.rating_value) }}
             </span>
             <span class="text-default-500 text-xl leading-none font-medium">
               {{ meta.scoreSuffix }}
@@ -135,10 +143,10 @@ const link = computed(() => {
             {{ row.vote_count.toLocaleString('en-US') }}
           </span>
         </span>
-        <span v-if="row.rank">
+        <span v-if="row.source_rank">
           站内排名
           <span class="text-foreground font-medium tabular-nums">
-            #{{ row.rank }}
+            #{{ row.source_rank }}
           </span>
         </span>
       </div>
@@ -152,7 +160,7 @@ const link = computed(() => {
     <div v-if="buckets" class="space-y-1">
       <h4 class="font-medium">评分分布</h4>
       <GalgameHeaderRatingDistributionChart
-        :work-id="galgame.id"
+        :work-id="Number(galgame.id)"
         :source="source"
         :buckets="buckets"
         :categories="categories"
@@ -199,8 +207,8 @@ const link = computed(() => {
     <div v-if="purchaseUrl" class="flex flex-wrap items-center gap-3">
       <GalgameDlsitePurchase
         :purchase-url="purchaseUrl"
-        :coupon-url="galgame.dlsite_coupon_url"
-        :campaign-name="galgame.dlsite_campaign_name"
+        :coupon-url="galgame.dlsite?.coupon_url ?? undefined"
+        :campaign-name="galgame.dlsite?.campaign_name ?? undefined"
       />
       <span class="text-default-500 text-xs">
         本站与 DLsite 官方合作, 从这里购买正版, 分成会全部回馈给用户

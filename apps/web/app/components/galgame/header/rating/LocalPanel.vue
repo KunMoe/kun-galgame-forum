@@ -20,9 +20,11 @@ import {
   ratingMean,
   ratingTally
 } from './_stats'
+import type { Work } from '#shared/utils/api/schemas'
+import type { GalgameRatingCardOnGalgamePage } from '~~/shared/types/galgame-rating'
 
 const props = defineProps<{
-  galgame: GalgameDetail
+  galgame: Work
   ratings: GalgameRatingCardOnGalgamePage[]
 }>()
 
@@ -44,7 +46,7 @@ const mine = computed(
 const tier = computed(() =>
   kunGalgameRatingTierBadge(
     KUN_GALGAME_LOCAL_RATING_META,
-    props.galgame.rating,
+    props.galgame.rating_score,
     props.ratings.length
   )
 )
@@ -73,7 +75,9 @@ const playStatusTally = computed(() =>
             <span class="flex items-baseline gap-0.5">
               <span class="text-3xl leading-none font-semibold tabular-nums">
                 {{
-                  KUN_GALGAME_LOCAL_RATING_META.formatScore(galgame.rating ?? 0)
+                  KUN_GALGAME_LOCAL_RATING_META.formatScore(
+                    galgame.rating_score ?? 0
+                  )
                 }}
               </span>
               <span class="text-default-500 text-xl leading-none font-medium">
@@ -124,7 +128,7 @@ const playStatusTally = computed(() =>
     <div class="space-y-1">
       <h4 class="font-medium">评分分布</h4>
       <GalgameHeaderRatingDistributionChart
-        :work-id="galgame.id"
+        :work-id="Number(galgame.id)"
         :source="KUN_GALGAME_LOCAL_RATING_SOURCE"
         :buckets="buckets"
         :categories="categories"

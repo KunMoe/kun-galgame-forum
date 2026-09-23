@@ -7,9 +7,10 @@ import {
   kunGalgameRatingTierBadge
 } from '~/constants/galgame-rating'
 import { GALGAME_RATING_TIER_CONST } from '~~/shared/utils/galgameRatingTier'
+import type { Work } from '#shared/utils/api/schemas'
 
 const props = defineProps<{
-  galgame: GalgameDetail
+  galgame: Work
   highlight: string
 }>()
 
@@ -20,11 +21,11 @@ const rows = computed(() => {
           key: KUN_GALGAME_LOCAL_RATING_SOURCE,
           label: KUN_GALGAME_LOCAL_RATING_META.label,
           max: KUN_GALGAME_LOCAL_RATING_META.max,
-          score: props.galgame.rating ?? 0,
+          score: props.galgame.rating_score ?? 0,
           count: props.galgame.rating_count,
           tier: kunGalgameRatingTierBadge(
             KUN_GALGAME_LOCAL_RATING_META,
-            props.galgame.rating,
+            props.galgame.rating_score,
             props.galgame.rating_count
           )
         }
@@ -32,7 +33,7 @@ const rows = computed(() => {
     : []
 
   const external = KUN_GALGAME_EXTERNAL_RATING_CONST.flatMap((source) => {
-    const row = props.galgame.external_ratings?.find((r) => r.source === source)
+    const row = props.galgame.external_ratings.find((r) => r.site === source)
     if (!row) return []
     const meta = KUN_GALGAME_EXTERNAL_RATING_MAP[source]
     return [
@@ -40,9 +41,9 @@ const rows = computed(() => {
         key: source as string,
         label: meta.label,
         max: meta.max,
-        score: row.score,
+        score: row.rating_value,
         count: row.vote_count,
-        tier: kunGalgameRatingTierBadge(meta, row.score, row.vote_count)
+        tier: kunGalgameRatingTierBadge(meta, row.rating_value, row.vote_count)
       }
     ]
   })

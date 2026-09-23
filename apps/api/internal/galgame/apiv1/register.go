@@ -63,13 +63,14 @@ func Register(svc *Service) func(huma.API) {
 			Summary:     "Batch-read the caller's work like and favorite states",
 			Description: "Answers, for each work id named in work_ids, whether the caller liked it and whether they hold it in a folder. " +
 				"It is a batch read and is not paginated: work_ids is required, holds 1 to 100 ids. " +
-				"An id catalog does not know or has hidden is missing.",
+				"An id catalog does not know or has hidden is missing. " +
+				"has_favorited is false when the caller's folders cannot be read; has_liked is always answered.",
 			Tags:        []string{"me"},
 			Middlewares: huma.Middlewares{withAccessToken},
 			Responses: problemResponses(map[int]string{
 				400: "INVALID_PARAMETER when work_ids is absent, empty, holds more than 100 ids, or holds something that is not a positive decimal integer.",
 				403: "ACCOUNT_BANNED.",
-				503: "SERVICE_UNAVAILABLE when the catalog cannot be reached.",
+				503: "SERVICE_UNAVAILABLE when the catalog cannot say which works exist.",
 			}),
 		}), svc.listMyWorkStates)
 

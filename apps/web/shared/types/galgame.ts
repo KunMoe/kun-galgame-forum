@@ -1,14 +1,3 @@
-import type { KunGalgamePlayStateRead } from '~/constants/galgame-playtime'
-import type { GalgameEngineItem } from './galgame-engine'
-import type { GalgameOfficialItem } from './galgame-official'
-import type { GalgameDetailSeriesRef } from './galgame-series'
-import type { GalgameTagItem } from './galgame-tag'
-import type { GalgameRatingCardOnGalgamePage } from './galgame-rating'
-
-export interface GalgameDetailTag extends GalgameTagItem {
-  spoiler_level: number
-}
-
 export interface GalgameCover {
   image_hash: string
   sort_order: number
@@ -30,38 +19,10 @@ export interface GalgameScreenshot extends GalgameCover {
   caption: string
 }
 
-export interface GalgameDetailStaff {
-  role_key: string
-  role_name: string
-  people: GalgameDetailStaffName[]
-}
-
-export interface GalgameDetailStaffName {
-  id: number
-  name: string
-  latin?: string
-  characters?: string[]
-}
-
 export interface GalgameArtMeta {
   width: number
   height: number
   thumbhash?: string
-}
-
-export interface GalgameDetailCharacter {
-  id: number
-  name: string
-  name_original?: string
-  latin?: string
-  kind: string
-  spoiler: number
-  identity?: string
-  image?: string
-  figure?: string
-  image_meta?: GalgameArtMeta
-  figure_meta?: GalgameArtMeta
-  voices: GalgameDetailCharacterVoice[]
 }
 
 export interface GalgameDetailCharacterVoice {
@@ -69,106 +30,6 @@ export interface GalgameDetailCharacterVoice {
   name: string
   lang?: string
   latin?: string
-}
-
-export interface GalgameRatingBucket {
-  score: number
-  count: number
-}
-
-export interface GalgameRatingStats {
-  average?: number
-  stdev?: number
-  min?: number
-  max?: number
-}
-
-export interface GalgameExternalRating {
-  source: string
-  score: number
-  vote_count: number
-  rank?: number
-  distribution?: GalgameRatingBucket[]
-  stats?: GalgameRatingStats
-}
-
-export interface GalgamePlaytime {
-  source: string
-  minutes: number
-  vote_count: number
-}
-
-export interface GalgameMyPlaytime {
-  // minutes may be 0 while status is set — a state-only record, which is the
-  // normal case now, not a bug.
-  minutes: number
-  status: KunGalgamePlayStateRead | ''
-}
-
-export interface GalgameIntro {
-  lang: string
-  intro: string
-  machine: boolean
-}
-
-export interface GalgameDetail {
-  id: number
-  vndb_id: string
-  user: KunUser
-  name: string
-  name_original: string
-  introduction: GalgameIntro[]
-  content_limit: string
-  intro_text: string
-  resource_update_time: Date | string
-  release_date: string | null
-  release_date_tba: boolean
-  effective_banner_hash?: string
-  effective_banner_url?: string
-  effective_banner_width?: number
-  effective_banner_height?: number
-  effective_banner_thumbhash?: string
-  effective_portrait_hash?: string
-  effective_portrait_url?: string
-  effective_portrait_width?: number
-  effective_portrait_height?: number
-  effective_portrait_thumbhash?: string
-  covers: GalgameCover[]
-  screenshots: GalgameScreenshot[]
-  view: number
-  is_on_forum?: boolean
-  indexed?: boolean
-  status?: number
-  original_language: string
-  age_limit: 'all' | 'r18'
-  platform: string[]
-  language: string[]
-  type: string[]
-  contributor: KunUser[]
-  like_count: number
-  is_liked: boolean
-  favorite_count: number
-  is_favorited: boolean
-  resource_publish_banned: boolean
-  dlsite_purchase_url?: string
-  dlsite_coupon_url?: string
-  dlsite_campaign_name?: string
-  alias: string[]
-  engine: GalgameEngineItem[]
-  official: GalgameOfficialItem[]
-  series: GalgameDetailSeriesRef[]
-  tag: GalgameDetailTag[]
-  staff: GalgameDetailStaff[]
-  characters: GalgameDetailCharacter[]
-  ratings: GalgameRatingCardOnGalgamePage[]
-  rating?: number
-  rating_count?: number
-  external_ratings?: GalgameExternalRating[]
-  playtimes?: GalgamePlaytime[]
-  my_playtime?: GalgameMyPlaytime | null
-  refs?: Record<string, string>
-  created: Date | string
-  updated: Date | string
 }
 
 export interface GalgameCard {

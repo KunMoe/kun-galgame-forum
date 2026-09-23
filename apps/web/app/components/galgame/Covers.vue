@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { galgameImageSourceLabel } from '~/constants/galgameImageSource'
+import type { WorkCover } from '#shared/utils/api/schemas'
 
-const props = defineProps<{ workId: number; covers: GalgameCover[] }>()
+const props = defineProps<{ workId: number; covers: WorkCover[] }>()
 const open = defineModel<boolean>({ required: true })
 
 const KIND_LABEL: Record<string, string> = {
@@ -12,7 +13,7 @@ const KIND_LABEL: Record<string, string> = {
   pkgcontent: '内页',
   pkgside: '书脊',
   pkgmed: '碟面',
-  '': '其它'
+  other: '其它'
 }
 const KIND_ORDER = Object.keys(KIND_LABEL)
 
@@ -20,26 +21,27 @@ interface CoverBallot {
   count: number
   voted: boolean
 }
-const ballots = ref(new Map<number, CoverBallot>())
+const ballots = ref(new Map<string, CoverBallot>())
 
 const seedBallots = () => {
-  const seeded = new Map<number, CoverBallot>()
+  const seeded = new Map<string, CoverBallot>()
   for (const c of props.covers) {
-    if (c.id) {
-      seeded.set(c.id, { count: c.vote_count ?? 0, voted: !!c.voted })
-    }
+    seeded.set(c.id, {
+      count: c.vote_count,
+      voted: c.viewer?.has_voted ?? false
+    })
   }
   ballots.value = seeded
 }
 seedBallots()
 watch(() => props.covers, seedBallots)
 
-const ballotOf = (cover: GalgameCover): CoverBallot | undefined =>
-  cover.id ? ballots.value.get(cover.id) : undefined
+const ballotOf = (cover: WorkCover): CoverBallot | undefined =>
+  ballots.value.get(cover.id)
 
-const voting = ref(0)
+const voting = ref('')
 
-const applyVote = (coverId: number, count: number, voted: boolean) => {
+const applyVote = (coverId: string, count: number, voted: boolean) => {
   const next = new Map(ballots.value)
   for (const [id, ballot] of next) {
     if (id === coverId) continue
@@ -51,8 +53,8 @@ const applyVote = (coverId: number, count: number, voted: boolean) => {
   ballots.value = next
 }
 
-const toggleVote = async (cover: GalgameCover) => {
-  if (!cover.id || voting.value) return
+const toggleVote = async (cover: WorkCover) => {
+  if (voting.value) return
   if (!requireLogin()) return
   const willUnvote = !!ballotOf(cover)?.voted
   voting.value = cover.id
@@ -63,23 +65,25 @@ const toggleVote = async (cover: GalgameCover) => {
   }>(`/galgame/${props.workId}/cover/${cover.id}/vote`, {
     method: willUnvote ? 'DELETE' : 'PUT'
   })
-  voting.value = 0
+  voting.value = ''
   if (!result) {
     return
   }
-  applyVote(result.cover_id, result.vote_count, result.voted)
+  applyVote(String(result.cover_id), result.vote_count, result.voted)
 }
+
+const coverSrc = (cover: WorkCover) => cover.image?.url ?? ''
 
 const sorted = computed(() =>
   [...props.covers]
-    .filter((c) => !!c.image_hash)
+    .filter((c) => !!c.image)
     .sort((a, b) => a.sort_order - b.sort_order)
 )
 
 const groups = computed(() => {
-  const byKind = new Map<string, GalgameCover[]>()
+  const byKind = new Map<string, WorkCover[]>()
   for (const c of sorted.value) {
-    const k = KIND_LABEL[c.kind ?? ''] !== undefined ? (c.kind ?? '') : ''
+    const k = KIND_LABEL[c.cover_slot] ? c.cover_slot : 'other'
     if (!byKind.has(k)) byKind.set(k, [])
     byKind.get(k)!.push(c)
   }
@@ -91,10 +95,9 @@ const groups = computed(() => {
 })
 
 const showSource = computed(
-  () => new Set(sorted.value.map((c) => c.source ?? '')).size > 1
+  () => new Set(sorted.value.map((c) => c.site)).size > 1
 )
-const sourceLabel = (cover: GalgameCover) =>
-  galgameImageSourceLabel(cover.source)
+const sourceLabel = (cover: WorkCover) => galgameImageSourceLabel(cover.site)
 </script>
 
 <template>
@@ -117,21 +120,23 @@ const sourceLabel = (cover: GalgameCover) =>
             <div class="grid grid-cols-1 items-start gap-3 sm:grid-cols-2">
               <div
                 v-for="c in g.covers"
-                :key="c.image_hash"
+                :key="c.id"
                 class="space-y-1.5"
               >
                 <KunLightboxGalleryItem
-                  :src="galgameImageSrc(c)"
+                  :src="coverSrc(c)"
                   :alt="g.label"
                   as="figure"
                   class="border-default/20 bg-default-100 block overflow-hidden rounded-lg border"
                 >
                   <KunImage
-                    :src="galgameImageSrc(c)"
+                    :src="coverSrc(c)"
                     :alt="g.label"
                     loading="lazy"
-                    :aspect-ratio="imageAspectRatio(c.width, c.height)"
-                    :thumbhash="c.thumbhash"
+                    :aspect-ratio="
+                      imageAspectRatio(c.image?.width ?? undefined, c.image?.height ?? undefined)
+                    "
+                    :thumbhash="c.image?.thumbhash ?? undefined"
                     class-name="bg-default-100"
                   />
                 </KunLightboxGalleryItem>
@@ -146,7 +151,6 @@ const sourceLabel = (cover: GalgameCover) =>
                 </KunChip>
 
                 <KunButton
-                  v-if="c.id"
                   variant="flat"
                   size="sm"
                   :color="ballotOf(c)?.voted ? 'primary' : 'default'"

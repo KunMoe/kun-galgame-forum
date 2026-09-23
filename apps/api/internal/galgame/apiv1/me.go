@@ -3,6 +3,7 @@ package apiv1
 import (
 	"context"
 	"errors"
+	"log/slog"
 
 	v1 "kun-galgame-api/internal/apiv1"
 	"kun-galgame-api/internal/apiv1/repr"
@@ -98,6 +99,9 @@ func (s *Service) readableWorks(ctx context.Context, ids []int) (map[int]bool, *
 	return out, nil
 }
 
+// Walking every folder membership to paint hearts is what spent user 90769's
+// 10k/day quota on 2026-09-20 (3,560 items, 36 catalog pages per call).
+// Holdings answers the same question for the ids on screen, in one call.
 func (s *Service) favoritedSet(ctx context.Context, token string, ids []int, userID int) (map[int]bool, *problem.Problem) {
 	out := map[int]bool{}
 	if token == "" || s.catalog == nil || len(ids) == 0 {
@@ -113,9 +117,10 @@ func (s *Service) favoritedSet(ctx context.Context, token string, ids []int, use
 	if err != nil {
 		if errors.Is(err, catalogclient.ErrInsufficientScope) {
 			service.WarnFoldersUnreadable(userID)
-			return out, nil
+		} else {
+			slog.Warn("galgame: my folders unreadable", "user_id", userID, "err", err)
 		}
-		return nil, problem.Unavailable(err)
+		return out, nil
 	}
 	for _, h := range holdings {
 		if h.WorkID > 0 {

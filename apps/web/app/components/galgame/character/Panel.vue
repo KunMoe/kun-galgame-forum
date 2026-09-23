@@ -4,19 +4,26 @@ import {
   KUN_GALGAME_CHARACTER_KIND_COLOR,
   KUN_GALGAME_CHARACTER_SPOILER_MAP
 } from '~/constants/galgameCharacter'
+import type { Image, WorkCharacter } from '#shared/utils/api/schemas'
+import type { GalgameArtMeta } from '~~/shared/types/galgame'
 
 const props = defineProps<{
-  characters: GalgameDetailCharacter[]
+  roster: WorkCharacter[]
 }>()
+
+const nameOf = useCatalogName()
+
+const spoilerRank = (spoiler: WorkCharacter['spoiler']) =>
+  spoiler === 'major' ? 2 : spoiler === 'minor' ? 1 : 0
 
 const isSpoilerRevealed = ref(false)
 const visible = computed(() =>
   isSpoilerRevealed.value
-    ? props.characters
-    : props.characters.filter((c) => c.spoiler === 0)
+    ? props.roster
+    : props.roster.filter((c) => c.spoiler === 'none')
 )
 const spoilerCount = computed(
-  () => props.characters.filter((c) => c.spoiler > 0).length
+  () => props.roster.filter((c) => c.spoiler !== 'none').length
 )
 
 const featured = computed(() => visible.value.filter((c) => !!c.figure))
@@ -27,14 +34,21 @@ const nameOnly = computed(() =>
   visible.value.filter((c) => !c.figure && !c.image)
 )
 
-const secondaryName = (c: GalgameDetailCharacter) =>
-  [c.name_original, c.latin].find((part) => !!part && part !== c.name) ?? ''
+const secondaryName = (c: WorkCharacter) => {
+  const { name, original } = nameOf(c)
+  return [original, c.latin].find((part) => !!part && part !== name) ?? ''
+}
 
-const thumbOf = (url: string) => withImageVariant(url, 'mini')
+const thumbOf = (image: Image) => withImageVariant(image.url, 'mini')
+
+const metaOf = (img: Image | null): GalgameArtMeta | undefined =>
+  img?.width && img.height
+    ? { width: img.width, height: img.height, thumbhash: img.thumbhash ?? '' }
+    : undefined
 
 const figureRatio = computed(() =>
   artGridRatio(
-    featured.value.map((c) => c.figure_meta),
+    featured.value.map((c) => metaOf(c.figure)),
     '1/1'
   )
 )
@@ -54,16 +68,19 @@ const kindText = (kind: string) => KUN_GALGAME_CHARACTER_KIND_MAP[kind] || ''
 const kindColor = (kind: string) =>
   KUN_GALGAME_CHARACTER_KIND_COLOR[kind] || 'default'
 
-const activeCharacter = ref<GalgameDetailCharacter | null>(null)
+const activeCharacter = ref<WorkCharacter | null>(null)
 const isModalOpen = ref(false)
-const open = (character: GalgameDetailCharacter) => {
+const open = (character: WorkCharacter) => {
   activeCharacter.value = character
   isModalOpen.value = true
 }
+
+const voiceName = (voice: WorkCharacter['voices'][number]) =>
+  nameOf(voice).name
 </script>
 
 <template>
-  <div v-if="characters.length" class="space-y-4">
+  <div v-if="roster.length" class="space-y-4">
     <div class="flex flex-wrap items-end justify-between gap-2">
       <KunHeader
         name="登场角色"
@@ -96,44 +113,46 @@ const open = (character: GalgameDetailCharacter) => {
         :key="c.id"
         type="button"
         class="group bg-default-100 hover:ring-primary focus:ring-primary flex flex-col overflow-hidden rounded-xl text-left ring-1 ring-transparent transition-all focus:outline-none"
-        :aria-label="`查看角色 ${c.name}`"
+        :aria-label="`查看角色 ${nameOf(c).name}`"
         @click="open(c)"
       >
         <div class="relative w-full">
           <KunImage
             :src="thumbOf(c.figure!)"
-            :alt="c.name"
+            :alt="nameOf(c).name"
             loading="lazy"
             :aspect-ratio="figureRatio"
-            :thumbhash="c.figure_meta?.thumbhash"
+            :thumbhash="c.figure?.thumbhash ?? undefined"
             object-fit="contain"
             class-name="w-full"
             image-class-name="transition-transform duration-200 group-hover:scale-105"
           />
 
           <KunChip
-            v-if="kindText(c.kind)"
-            :color="kindColor(c.kind)"
+            v-if="kindText(c.character_kind)"
+            :color="kindColor(c.character_kind)"
             size="xs"
             class-name="absolute top-2 left-2"
           >
-            {{ kindText(c.kind) }}
+            {{ kindText(c.character_kind) }}
           </KunChip>
         </div>
 
         <div class="bg-default-50 w-full space-y-0.5 px-3 py-2">
-          <p class="text-default-800 truncate font-medium">{{ c.name }}</p>
+          <p class="text-default-800 truncate font-medium">
+            {{ nameOf(c).name }}
+          </p>
           <p v-if="secondaryName(c)" class="text-default-400 truncate text-xs">
             {{ secondaryName(c) }}
           </p>
           <p v-if="c.voices.length" class="text-default-500 truncate text-xs">
-            CV {{ c.voices.map((v) => v.name).join(' / ') }}
+            CV {{ c.voices.map(voiceName).join(' / ') }}
           </p>
           <p
-            v-if="KUN_GALGAME_CHARACTER_SPOILER_MAP[c.spoiler]"
+            v-if="KUN_GALGAME_CHARACTER_SPOILER_MAP[spoilerRank(c.spoiler)]"
             class="text-warning text-xs"
           >
-            {{ KUN_GALGAME_CHARACTER_SPOILER_MAP[c.spoiler] }}
+            {{ KUN_GALGAME_CHARACTER_SPOILER_MAP[spoilerRank(c.spoiler)] }}
           </p>
         </div>
       </button>
@@ -148,7 +167,7 @@ const open = (character: GalgameDetailCharacter) => {
         :key="c.id"
         type="button"
         class="group space-y-1.5 text-left"
-        :aria-label="`查看角色 ${c.name}`"
+        :aria-label="`查看角色 ${nameOf(c).name}`"
         @click="open(c)"
       >
         <div
@@ -156,41 +175,41 @@ const open = (character: GalgameDetailCharacter) => {
         >
           <KunImage
             :src="thumbOf(c.image!)"
-            :alt="c.name"
+            :alt="nameOf(c).name"
             loading="lazy"
             aspect-ratio="3/4"
-            :thumbhash="c.image_meta?.thumbhash"
+            :thumbhash="c.image?.thumbhash ?? undefined"
             object-fit="cover"
             class-name="w-full"
             image-class-name="transition-transform duration-200 group-hover:scale-105"
           />
 
           <KunChip
-            v-if="kindText(c.kind)"
-            :color="kindColor(c.kind)"
+            v-if="kindText(c.character_kind)"
+            :color="kindColor(c.character_kind)"
             size="xs"
             class-name="absolute top-1 left-1"
           >
-            {{ kindText(c.kind) }}
+            {{ kindText(c.character_kind) }}
           </KunChip>
         </div>
 
         <div class="space-y-0.5">
           <p class="text-default-800 truncate text-sm font-medium">
-            {{ c.name }}
+            {{ nameOf(c).name }}
           </p>
           <p
             v-if="c.voices.length"
             class="text-default-500 truncate text-xs"
-            :title="c.voices.map((v) => v.name).join(' / ')"
+            :title="c.voices.map(voiceName).join(' / ')"
           >
-            CV {{ c.voices.map((v) => v.name).join(' / ') }}
+            CV {{ c.voices.map(voiceName).join(' / ') }}
           </p>
           <p
-            v-if="KUN_GALGAME_CHARACTER_SPOILER_MAP[c.spoiler]"
+            v-if="KUN_GALGAME_CHARACTER_SPOILER_MAP[spoilerRank(c.spoiler)]"
             class="text-warning text-xs"
           >
-            {{ KUN_GALGAME_CHARACTER_SPOILER_MAP[c.spoiler] }}
+            {{ KUN_GALGAME_CHARACTER_SPOILER_MAP[spoilerRank(c.spoiler)] }}
           </p>
         </div>
       </button>
@@ -227,7 +246,7 @@ const open = (character: GalgameDetailCharacter) => {
             class="text-default-800 hover:text-primary cursor-pointer"
             @click="open(c)"
           >
-            {{ c.name }}
+            {{ nameOf(c).name }}
           </button>
           <span v-if="c.voices.length" class="text-default-400">
             （CV
@@ -239,7 +258,7 @@ const open = (character: GalgameDetailCharacter) => {
                 size="sm"
                 class-name="text-default-400 hover:text-primary"
               >
-                {{ v.name }}
+                {{ voiceName(v) }}
               </KunLink>
             </template>
             ）

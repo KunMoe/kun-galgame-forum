@@ -5,6 +5,9 @@ import {
   galgameEditLabel,
   type GalgameEditNames
 } from '~/constants/galgameEdit'
+import { settle } from '#shared/utils/api/problem'
+import type { Work } from '#shared/utils/api/schemas'
+import { mapsFromWork } from '~/utils/galgame/workEditNames'
 
 const route = useRoute()
 const proposalId = computed(() => parseInt((route.params as { id: string }).id))
@@ -33,6 +36,8 @@ const effective = computed(
 const fieldOf = (key: string) => data.value?.fields.find((f) => f.key === key)
 
 const names = ref<GalgameEditNames>({})
+const nameOf = useCatalogName()
+const api = useApiClient()
 const editConfig = computed(() => createGalgameEditConfig(names.value))
 const configOf = (key: string) => editConfig.value[key]
 
@@ -72,30 +77,16 @@ onMounted(async () => {
   if (!workId) {
     return
   }
-  const detail = await kunFetch<GalgameDetail>(`/galgame/${workId}`, {
-    method: 'GET'
-  })
-  const toMap = (arr?: { id: number; name: string }[]) =>
-    new Map((arr ?? []).map((x) => [x.id, x.name]))
-  const staff = new Map<number, string>()
-  for (const group of detail?.staff ?? []) {
-    for (const person of group.people) {
-      if (!staff.has(person.id)) {
-        staff.set(person.id, person.name)
+  const result = await settle(
+    api.GET('/works/{work_id}', {
+      params: {
+        path: { work_id: String(workId) },
+        query: { include_nsfw: true }
       }
-    }
-  }
-  const maps: Record<
-    'tag' | 'official' | 'engine' | 'series' | 'character' | 'staff',
-    Map<number, string>
-  > = {
-    tag: toMap(detail?.tag),
-    official: toMap(detail?.official),
-    engine: toMap(detail?.engine),
-    series: toMap(detail?.series),
-    character: toMap(detail?.characters),
-    staff
-  }
+    })
+  )
+  const detail: Work | undefined = result.ok ? result.data : undefined
+  const maps = mapsFromWork(detail, nameOf)
   const creditCharacterIds = (): number[] => {
     const out = new Set<number>()
     for (const pool of [
@@ -117,32 +108,32 @@ onMounted(async () => {
 
   const families = [
     {
-      map: maps.tag,
+      map: maps.tag ?? new Map(),
       ids: relationIds('catalog.work.tag_ids'),
       path: 'galgame-tag'
     },
     {
-      map: maps.official,
+      map: maps.official ?? new Map(),
       ids: relationIds('catalog.work.labels'),
       path: 'galgame-official'
     },
     {
-      map: maps.engine,
+      map: maps.engine ?? new Map(),
       ids: relationIds('catalog.work.engine_ids'),
       path: 'galgame-engine'
     },
     {
-      map: maps.series,
+      map: maps.series ?? new Map(),
       ids: relationIds('catalog.work.series_ids'),
       path: 'galgame-series'
     },
     {
-      map: maps.character,
+      map: maps.character ?? new Map(),
       ids: [...relationIds('catalog.work.roster'), ...creditCharacterIds()],
       path: 'galgame-character'
     },
     {
-      map: maps.staff,
+      map: maps.staff ?? new Map(),
       ids: relationIds('catalog.work.credits'),
       path: 'galgame-staff'
     }
