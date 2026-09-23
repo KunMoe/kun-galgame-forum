@@ -1,14 +1,4 @@
-interface MeResponse {
-  id: number
-  sub: string
-  name: string
-  avatar: string
-  roles: string[]
-  moemoepoint: number
-  bio: string
-  adult_confirmed: boolean
-  nsfw_display: string
-}
+import { settle } from '#shared/utils/api/problem'
 
 const STALE_MS = 60_000
 let lastFetchedAt = 0
@@ -23,22 +13,19 @@ export const useRefreshMe = () => {
     if (inFlight) return inFlight
     if (Date.now() - lastFetchedAt < STALE_MS) return Promise.resolve()
 
-    const config = useRuntimeConfig()
+    const api = useApiClient()
 
     inFlight = (async () => {
-      const resp = await $fetch<{ code: number; data?: MeResponse }>(
-        `${config.public.apiBaseUrl}/api/auth/me`,
-        { credentials: 'include' }
-      ).catch(() => null)
-      const me = resp?.code === 0 ? resp.data : null
+      const result = await settle(api.GET('/me/account'))
+      const me = result.ok ? result.data : null
 
-      if (me?.name && me.id === userStore.id) {
+      if (me?.name && Number(me.id) === userStore.id) {
         userStore.setProfileInfo({
           name: me.name,
-          avatar: me.avatar,
-          roles: me.roles ?? [],
-          adultConfirmed: me.adult_confirmed,
-          nsfwDisplay: me.nsfw_display
+          avatar: me.avatar?.url ?? '',
+          roles: me.roles,
+          adultConfirmed: me.content_stance?.is_adult_confirmed,
+          nsfwDisplay: me.content_stance?.nsfw_display
         })
       }
       lastFetchedAt = Date.now()
