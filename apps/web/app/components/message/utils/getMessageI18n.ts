@@ -25,7 +25,7 @@ export const getMessageI18n = (notification: Notification) => {
   if (
     notification.notification_type === 'mentioned' &&
     notification.excerpt_markdown.trim() &&
-    notification.source === 'local'
+    notification.origin === 'local'
   ) {
     return messageTemplates.replied
   }

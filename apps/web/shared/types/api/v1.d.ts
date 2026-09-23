@@ -2614,13 +2614,13 @@ export interface components {
              * @enum {string}
              */
             object: "notification";
-            /** @description In-site web path of the target, stored as the legacy link. Always starts with a slash. */
-            path: string;
             /**
              * @description local for rows written by this forum; community for rows mirrored from the infra community primitive.
              * @enum {string}
              */
-            source: "local" | "community";
+            origin: "local" | "community";
+            /** @description In-site web path of the target, stored as the legacy link. Always starts with a slash. */
+            path: string;
         };
         NotificationReadMarker: {
             /**

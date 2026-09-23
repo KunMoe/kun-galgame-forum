@@ -170,7 +170,7 @@
 | `item_count` | int ≥1 | 折叠的镜像行里有几条上游帖子。同上 |
 | `path` | string，`maxLength 100`，`^/` | 站内网页路径，旧 `link` 原样（K-M3） |
 | `excerpt_markdown` | string，`maxLength 1000` | 旧 `content`（K-M2）。可以是 `""` |
-| `source` | 封闭枚举 `local` \| `community` | 旧 `community: bool`。`community` = 从 infra 社区原语镜像来的行 |
+| `origin` | 封闭枚举 `local` \| `community` | 旧 `community: bool`。`community` = 从 infra 社区原语镜像来的行。原名 `source`，见 §11.6 第 7 条 |
 | `is_read` | bool | 旧 `status`（K-M1） |
 | `created_at` | DateTime | 旧 `created`。镜像行是上游的 `updated_at`，折叠时会前移 |
 
@@ -375,7 +375,8 @@ CREATE INDEX IF NOT EXISTS idx_chat_room_participant_user ON chat_room_participa
 3. **deadcode 漏报了 `MessageRepository` 上的 8 个旧方法**（`FindMessages`、`GetNavSummary` 等）：这个类型在别处被当成接口值传递，RTA 保守地把它的整个方法集都算作可达。它们是 grep 证明零调用方之后手工删的。**deadcode 的「干净」不等于没有死代码**，删 handler 之后仓储层要 grep 一遍。
 4. 删完之后变成零引用的模型类型：`SystemMessage`、`SystemMessageReadState`、六个 `Chat*`（私信全走裸 SQL 行类型）。表都留着（§8），只删 Go 类型。
 5. `markdown.RenderInline` 现在只有它自己的测试在调用（唯一的生产调用方是旧私信）。它所在的 `inline.go` 被 `image_ref.go` 与两个共享测试牵着，属于共享的 markdown 基础设施，**本轨不删**，留给后续清理。
-6. `legacy_route_baseline` 290 → 279。
+6. `legacy_route_baseline` 按合并时的计数重新生成（本轨删 11 条；rebase 到 U1 之后是 238 → 227）。
+7. **`Notification.source` → `origin`**。U1（#183）先合并，带来了 `MoemoepointEntry.source`（`account_center` / `other_site` / `this_site`），G8 判两者同名不同型。两条轨各自的门都是绿的，只有合在一起才红：**G8 是全文档范围的门，rebase 之后必须重跑，不能只信自己分支上的结果。**
 
 ## 12. 九条闸
 

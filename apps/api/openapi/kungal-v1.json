@@ -3488,13 +3488,7 @@
             "type": "string",
             "x-vocabulary-closed": true
           },
-          "path": {
-            "description": "In-site web path of the target, stored as the legacy link. Always starts with a slash.",
-            "maxLength": 100,
-            "pattern": "^/",
-            "type": "string"
-          },
-          "source": {
+          "origin": {
             "description": "local for rows written by this forum; community for rows mirrored from the infra community primitive.",
             "enum": [
               "local",
@@ -3503,6 +3497,12 @@
             "maxLength": 9,
             "type": "string",
             "x-vocabulary-closed": true
+          },
+          "path": {
+            "description": "In-site web path of the target, stored as the legacy link. Always starts with a slash.",
+            "maxLength": 100,
+            "pattern": "^/",
+            "type": "string"
           }
         },
         "required": [
@@ -3514,7 +3514,7 @@
           "item_count",
           "path",
           "excerpt_markdown",
-          "source",
+          "origin",
           "is_read",
           "created_at"
         ],

@@ -33,7 +33,7 @@ const notification = (over: Partial<Notification> = {}): Notification => ({
   item_count: 1,
   path: '/topic/1',
   excerpt_markdown: '',
-  source: 'local',
+  origin: 'local',
   is_read: false,
   created_at: '2026-01-01T00:00:00Z',
   ...over
@@ -52,7 +52,7 @@ describe('getMessageI18n', () => {
         notification({
           notification_type: 'mentioned',
           excerpt_markdown: 'hello',
-          source: 'local'
+          origin: 'local'
         })
       )
     ).toBe(' 回复了您!')
@@ -64,7 +64,7 @@ describe('getMessageI18n', () => {
         notification({
           notification_type: 'mentioned',
           excerpt_markdown: '',
-          source: 'local'
+          origin: 'local'
         })
       )
     ).toBe(' 提到了您！')
@@ -73,7 +73,7 @@ describe('getMessageI18n', () => {
         notification({
           notification_type: 'mentioned',
           excerpt_markdown: 'hello',
-          source: 'community'
+          origin: 'community'
         })
       )
     ).toBe(' 提到了您！')

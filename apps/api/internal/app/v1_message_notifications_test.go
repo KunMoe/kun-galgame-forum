@@ -447,7 +447,7 @@ func TestV1Notifications_N5_GetOwnMatchesList(t *testing.T) {
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("get own %d %+v", resp.StatusCode, got)
 	}
-	for _, k := range []string{"object", "id", "notification_type", "excerpt_markdown", "is_read", "source", "path", "created_at", "actor_count", "item_count"} {
+	for _, k := range []string{"object", "id", "notification_type", "excerpt_markdown", "is_read", "origin", "path", "created_at", "actor_count", "item_count"} {
 		if fmt.Sprint(got[k]) != fmt.Sprint(want[k]) {
 			t.Fatalf("%s: got %v want %v", k, got[k], want[k])
 		}

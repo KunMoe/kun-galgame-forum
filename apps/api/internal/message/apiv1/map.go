@@ -20,9 +20,9 @@ func (s *Service) mapNotification(row repository.V1NotificationRow, users map[in
 	if !keep {
 		return Notification{}, false
 	}
-	source := "local"
+	origin := "local"
 	if row.CommunityNotificationID != nil {
-		source = "community"
+		origin = "community"
 	}
 	return Notification{
 		Object:           "notification",
@@ -33,7 +33,7 @@ func (s *Service) mapNotification(row repository.V1NotificationRow, users map[in
 		ItemCount:        countAtLeastOne(row.ItemCount),
 		Path:             notificationPath(row.Link),
 		ExcerptMarkdown:  truncateRunes(row.Content, excerptRuneLimit),
-		Source:           source,
+		Origin:           origin,
 		IsRead:           row.Status == "read",
 		CreatedAt:        repr.Timestamp(row.Created),
 	}, true
