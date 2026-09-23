@@ -66,7 +66,10 @@ const REASON_ACTION: Record<string, { pos: string; neg: string }> = {
 const BEHAVIOR_LABEL: Record<string, string> = {
   'content_approved:galgame_quiz_answer': '答对了题目',
   'content_approved:topic_upvote': '话题被推荐',
-  'content_removed:topic_upvote': '推话题消耗'
+  'content_removed:topic_upvote': '推话题消耗',
+  'content_removed:topic_lottery_escrow': '抽奖奖池托管',
+  'content_approved:topic_lottery_escrow': '抽奖奖池退回',
+  'content_approved:topic_lottery': '抽奖中奖'
 }
 
 const refKindOf = (ref: string) => ref.split(':')[0] ?? ''

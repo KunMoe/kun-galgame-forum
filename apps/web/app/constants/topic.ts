@@ -314,12 +314,12 @@ export const KUN_LOTTERY_DRAW_MODE_OPTIONS = [
 
 export const KUN_LOTTERY_DELIVERY: Record<string, string> = {
   code: '系统托管兑换码',
-  manual: '楼主私聊发放',
+  offline: '楼主私聊发放',
   point: '自动发放萌萌点'
 }
 
 export const KUN_LOTTERY_DELIVERY_OPTIONS = [
-  { value: 'manual', label: '楼主私聊发放 (实物周边等)' },
+  { value: 'offline', label: '楼主私聊发放 (实物周边等)' },
   { value: 'code', label: '系统托管兑换码 (激活码等)' },
   { value: 'point', label: '自动发放萌萌点' }
 ] as const
@@ -341,6 +341,16 @@ export const KUN_LOTTERY_STATUS: Record<string, string> = {
   drawing: '开奖中',
   drawn: '已开奖',
   cancelled: '已取消'
+}
+
+export const KUN_LOTTERY_ENTER_BLOCKED: Record<string, string> = {
+  not_open: '抽奖已经结束',
+  past_closes_at: '抽奖已过截止时间',
+  no_signup: '楼层抽奖无需报名, 直接回帖即可',
+  own_lottery: '不能参加自己发起的抽奖',
+  reply_required: '本抽奖要求先在该话题下回复',
+  moemoepoint_below_minimum: '萌萌点未达到本抽奖的门槛',
+  account_too_new: '注册时间未达到本抽奖的门槛'
 }
 
 export const KUN_LOTTERY_FULFILLMENT: Record<string, string> = {

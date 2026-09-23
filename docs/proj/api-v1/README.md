@@ -80,7 +80,7 @@ git ls-remote --heads origin 'api-v1/*'
 
 | 轨 | 模块（含跨前缀的归属） | 路由 | 迁移号段 | 备注 |
 |---|---|---|---|---|
-| **T** | **话题**：`/topic/**` 11 + `/admin/topic*` 3 | **14** | 110–119 | 已认领（本轨）。~~**T1** 清理旧评论/投票 10 条~~ ✅ → ~~**T2** 草稿 4 + `interactions/mine` + `reply/locate` + 删 `/resource` 共 7 条~~ ✅（迁移 110）→ **T3** 抽奖 11 条 → **T4** 管理面 3 条（在 `internal/admin/**`，页码集合） |
+| **T** | **话题**：`/admin/topic*` 3 | **3** | 110–119 | 已认领（本轨）。~~**T1** 清理旧评论/投票 10 条~~ ✅ → ~~**T2** 草稿 4 + `interactions/mine` + `reply/locate` + 删 `/resource` 共 7 条~~ ✅（迁移 110）→ ~~**T3** 抽奖 11 条~~ ✅（迁移 111，萌萌点奖池改由发起人出资）→ **T4** 管理面 3 条（在 `internal/admin/**`，页码集合） |
 | U | 用户 `/user/**`（不含「某用户的 X」列表面，那些归各自的域） | 25 | 120–129 | 资料、签到、偏好、创作者、红点 |
 | M | 消息 `/message/**` | 11 | 130–134 | 私信 + 系统通知 |
 | RC | **评论墙**：`ResourceCommentHandler` 15 条（`galgame-quiz` `galgame-rating` `galgame-resource` `toolset` `website`）+ `CommunityCommentHandler` 7 条（galgame 评论墙与六面共用的编辑/赞/举报） | 22 | 135–139 | PR 中（迁移 135）。2026-09-22 用户拍板从 G 并入 `CommunityCommentHandler`：六面墙共用一套网页组件与逐帖操作，是一个连通分量（[契约](waves/rc-wall-comments.md)） |

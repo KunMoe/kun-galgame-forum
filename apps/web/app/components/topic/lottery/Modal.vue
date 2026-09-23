@@ -1,6 +1,11 @@
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue'
-import { useLottery } from '~/composables/topic/useLottery'
+import {
+  formToCreate,
+  formToPatch,
+  lotteryToForm,
+  useLottery
+} from '~/composables/topic/useLottery'
 import { lotterySchema } from '~/validations/topic-lottery'
 import {
   KUN_LOTTERY_DELIVERY_OPTIONS,
@@ -8,13 +13,13 @@ import {
   KUN_LOTTERY_ENTRY_MODE_OPTIONS,
   KUN_LOTTERY_POINT_MODE_OPTIONS
 } from '~/constants/topic'
-import { deadlineFromPicker, deadlineToPicker } from '../miniapp/deadline'
+import type { Lottery } from '#shared/utils/api/schemas'
 import type { LotteryFormData, LotteryPrizeFormData } from './types'
 
 const props = defineProps<{
   modelValue: boolean
-  topicId: number
-  initialData?: TopicLottery
+  topicId: string
+  initialData?: Lottery
 }>()
 
 const emits = defineEmits<{
@@ -28,7 +33,7 @@ const isModalOpen = computed({
 })
 
 const isEditing = computed(() => !!props.initialData)
-const { createLottery, updateLottery } = useLottery(props.topicId)
+const { createLottery, updateLottery } = useLottery(() => props.topicId)
 const isLoading = ref(false)
 
 const emptyPrize = (): LotteryPrizeFormData => ({
@@ -38,64 +43,29 @@ const emptyPrize = (): LotteryPrizeFormData => ({
   image_urls: [],
   nsfw_hashes: [],
   machine_nsfw_hashes: [],
-  delivery: 'manual',
+  delivery: 'offline',
   point_mode: 'fixed',
   point_amount: 0,
   slots: 1,
   codes: ''
 })
 
-const getInitialFormData = (): LotteryFormData => {
-  const initial = props.initialData
-  if (initial) {
-    return {
-      topic_id: props.topicId,
-      lottery_id: initial.id,
-      title: initial.title,
-      description: initial.description,
-      entry_mode: initial.entry_mode,
-      floor_rule: initial.floor_rule,
-      draw_mode: initial.draw_mode,
-      draw_threshold: initial.draw_threshold,
-      deadline: deadlineToPicker(initial.deadline),
-      min_account_age_days: initial.min_account_age_days,
-      min_moemoepoint: initial.min_moemoepoint,
-      show_entrants: initial.show_entrants,
-      // Codes are never sent back to the browser, so an edit that keeps the
-      // prizes must not resubmit them: an empty prize list tells the server to
-      // leave the prizes and their escrowed codes exactly as they are.
-      prizes: initial.prizes.map((p) => ({
-        name: p.name,
-        description: p.description,
-        image_hashes: [...p.image_hashes],
-        image_urls: [...p.image_urls],
-        nsfw_hashes: [...p.nsfw_hashes],
-        machine_nsfw_hashes: [...p.machine_nsfw_hashes],
-        delivery: p.delivery,
-        point_mode: p.point_mode,
-        point_amount: p.point_amount,
-        slots: p.slots,
-        codes: ''
-      }))
-    }
-  }
-
-  return {
-    topic_id: props.topicId,
-    lottery_id: 0,
-    title: '',
-    description: '',
-    entry_mode: 'signup',
-    floor_rule: '',
-    draw_mode: 'deadline',
-    draw_threshold: 0,
-    deadline: undefined,
-    min_account_age_days: 3,
-    min_moemoepoint: 20,
-    show_entrants: true,
-    prizes: [emptyPrize()]
-  }
-}
+const getInitialFormData = (): LotteryFormData =>
+  props.initialData
+    ? lotteryToForm(props.initialData)
+    : {
+        title: '',
+        description: '',
+        entry_mode: 'signup',
+        floor_rule: '',
+        draw_mode: 'deadline',
+        draw_threshold: 0,
+        deadline: undefined,
+        min_account_age_days: 3,
+        min_moemoepoint: 20,
+        show_entrants: true,
+        prizes: [emptyPrize()]
+      }
 
 const formData = reactive<LotteryFormData>(getInitialFormData())
 const rewritePrizes = ref(false)
@@ -109,6 +79,14 @@ watch(
     }
   }
 )
+
+watch(rewritePrizes, (rewrite) => {
+  // Codes are never sent back to the browser, so rewriting the prizes starts
+  // the code boxes empty rather than pretending to show what is held.
+  if (rewrite && props.initialData) {
+    formData.prizes = lotteryToForm(props.initialData).prizes
+  }
+})
 
 const totalSlots = computed(() =>
   formData.prizes.reduce((sum, p) => sum + Number(p.slots || 0), 0)
@@ -170,47 +148,61 @@ const pointHint = (prize: LotteryPrizeFormData) => {
   return `${slots} 个名额 × ${amount} 点 = 共 ${amount * slots} 萌萌点。`
 }
 
-const handleSubmit = async () => {
-  const payload = {
-    ...formData,
-    deadline: deadlineFromPicker(formData.deadline),
-    prizes: rewritePrizes.value ? formData.prizes : []
+const checkPrizes = () => {
+  for (const prize of formData.prizes) {
+    if (prize.delivery === 'code' && codeCount(prize) !== prize.slots) {
+      useMessage(
+        `奖项「${prize.name || '未命名'}」有 ${prize.slots} 个名额, 需要正好 ${prize.slots} 个兑换码`,
+        'warn'
+      )
+      return false
+    }
+    if (
+      prize.delivery === 'point' &&
+      isPointPool(prize) &&
+      prize.point_amount < prize.slots
+    ) {
+      useMessage(
+        `奖项「${prize.name || '未命名'}」的奖池至少需要 ${prize.slots} 萌萌点, 每个名额至少分到 1 点`,
+        'warn'
+      )
+      return false
+    }
   }
-  if (rewritePrizes.value) {
-    const result = lotterySchema.safeParse(payload)
-    if (!result.success) {
-      const message = JSON.parse(result.error.message)[0]
-      useMessage(formatKunZodIssue(message), 'warn')
-      return
-    }
-    for (const prize of formData.prizes) {
-      if (prize.delivery === 'code' && codeCount(prize) !== prize.slots) {
-        useMessage(
-          `奖项「${prize.name || '未命名'}」有 ${prize.slots} 个名额, 需要正好 ${prize.slots} 个兑换码`,
-          'warn'
-        )
-        return
-      }
-      if (
-        prize.delivery === 'point' &&
-        isPointPool(prize) &&
-        prize.point_amount < prize.slots
-      ) {
-        useMessage(
-          `奖项「${prize.name || '未命名'}」的奖池至少需要 ${prize.slots} 萌萌点, 每个名额至少分到 1 点`,
-          'warn'
-        )
-        return
-      }
-    }
+  return true
+}
+
+const handleSubmit = async () => {
+  const result = lotterySchema.safeParse(formData)
+  if (!result.success) {
+    const message = JSON.parse(result.error.message)[0]
+    useMessage(formatKunZodIssue(message), 'warn')
+    return
+  }
+  if (rewritePrizes.value && !checkPrizes()) {
+    return
   }
 
   isLoading.value = true
   try {
-    if (isEditing.value && props.initialData) {
-      await updateLottery(props.initialData.id, payload)
+    const initial = props.initialData
+    if (initial) {
+      const patch = formToPatch(formData, initial, rewritePrizes.value)
+      if (Object.keys(patch).length === 0) {
+        isModalOpen.value = false
+        return
+      }
+      const updated = await updateLottery(initial.id, patch)
+      if (!updated.ok) {
+        reportProblem(updated.problem)
+        return
+      }
     } else {
-      await createLottery(payload)
+      const created = await createLottery(formToCreate(formData))
+      if (!created.ok) {
+        reportProblem(created.problem)
+        return
+      }
     }
     emits('refresh')
     isModalOpen.value = false
@@ -405,7 +397,7 @@ const handleSubmit = async () => {
                 </p>
               </div>
 
-              <KunInfo v-if="prize.delivery === 'manual'" title="实物类奖品">
+              <KunInfo v-if="prize.delivery === 'offline'" title="实物类奖品">
                 <p class="text-sm">
                   开奖后请通过私聊与中奖者沟通。请不要要求对方在公开楼层留下地址,
                   本站也不会代为收集收货信息。
@@ -418,10 +410,11 @@ const handleSubmit = async () => {
               增加奖项
             </KunButton>
 
-            <KunInfo v-if="pointTotal > 0" title="萌萌点发放总量">
+            <KunInfo v-if="pointTotal > 0" title="萌萌点奖池由您出资">
               <p class="text-sm">
                 本次抽奖最多发放 {{ pointTotal }} 萌萌点,
-                由系统在开奖时直接发到中奖者账户, 不会从您的余额扣除。
+                发布时会从您的余额中扣除这部分作为奖池, 开奖时发到中奖者账户。
+                名额没有发满的部分会在开奖后退回; 取消或在开奖前删除抽奖会全额退回。
               </p>
             </KunInfo>
           </div>

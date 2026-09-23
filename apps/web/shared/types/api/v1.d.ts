@@ -96,6 +96,122 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/lotteries/{lottery_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a lottery
+         * @description Returns one lottery. seed is null until the draw. A redemption code is never part of this or any other read; a winner reveals it with revealLotteryCode. NOT_FOUND when the lottery does not exist, was created by a banned user, or belongs to a topic getTopic would not return to the caller.
+         */
+        get: operations["getLottery"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete a lottery
+         * @description Deletes the lottery with its prizes, entries and held codes, and refunds the author's escrow if it still holds any. The author may delete it before the draw; staff holding the manage permission may also delete a drawn one. Nobody may delete it while it is being drawn. NOT_FOUND when the lottery does not exist, was created by a banned user, or belongs to a topic getTopic would not return to the caller.
+         */
+        delete: operations["deleteLottery"];
+        options?: never;
+        head?: never;
+        /**
+         * Update, draw or cancel a lottery
+         * @description With state, draws the lottery now (drawn) or cancels it and refunds the author's escrow (cancelled); state is accepted only from open and never together with another field. Without state, changes the fields present in the body, checked against the lottery as it would be stored. Once anyone has entered, entry_mode, floor_rule and prizes are IMMUTABLE. Replacing the prizes charges or refunds the difference in point budget to the lottery's author. Only text this request submits is checked by trust and safety. It needs can_edit. NOT_FOUND when the lottery does not exist, was created by a banned user, or belongs to a topic getTopic would not return to the caller.
+         */
+        patch: operations["updateLottery"];
+        trace?: never;
+    };
+    "/lotteries/{lottery_id}/code-reveals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reveal the caller's redemption code
+         * @description Returns the redemption code the caller won and marks the prize received. It can be called again and returns the same code. **It is a POST so no page load can fetch it**, and it takes no Idempotency-Key, because a stored response would keep the code at rest. The winner reveals their code even when they can no longer read the topic. NOT_FOUND when the caller did not win a code in this lottery.
+         */
+        post: operations["revealLotteryCode"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/lotteries/{lottery_id}/entries": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List a lottery's entries
+         * @description Lists the entries oldest first, ties broken by ascending id. There is one sort and no sort parameter. Banned entrants are left out, so a page can hold fewer than limit items. NOT_FOUND when the lottery does not exist, was created by a banned user, or belongs to a topic getTopic would not return to the caller.
+         */
+        get: operations["listLotteryEntries"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/lotteries/{lottery_id}/entries/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Enter a lottery
+         * @description Enters the caller and returns the lottery. Entering again is a no-op that answers the same. The check is the one behind viewer.can_enter. NOT_FOUND when the lottery does not exist, was created by a banned user, or belongs to a topic getTopic would not return to the caller.
+         */
+        put: operations["enterLottery"];
+        post?: never;
+        /**
+         * Withdraw from a lottery
+         * @description Removes the caller's entry and returns the lottery. Withdrawing without an entry is a no-op that answers the same. NOT_FOUND when the lottery does not exist, was created by a banned user, or belongs to a topic getTopic would not return to the caller.
+         */
+        delete: operations["withdrawLottery"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/lotteries/{lottery_id}/winners/{winner_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a lottery winner
+         * @description Returns one winner, as in winners of getLottery. NOT_FOUND when the winner is banned, or under the same conditions as getLottery.
+         */
+        get: operations["getLotteryWinner"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Move a winner's fulfillment
+         * @description Moves an offline prize's fulfillment. The author or staff may move pending and shipped to any state; the winner may only confirm receipt or give the prize up. received and forfeited are final, and code and point prizes are moved by the site alone. Setting the current state again is a no-op. The winner acts on their own prize even when they can no longer read the topic.
+         */
+        patch: operations["updateLotteryWinner"];
+        trace?: never;
+    };
     "/me/topic-drafts": {
         parameters: {
             query?: never;
@@ -479,6 +595,30 @@ export interface paths {
          * @description Removes the topic from the caller's favorites and returns its engagement. Removing one not favorited changes nothing. It takes back the moemoepoint the favorite earned. NOT_FOUND when the topic is hidden or getTopic would not return it to the caller.
          */
         delete: operations["unfavoriteTopic"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/topics/{topic_id}/lotteries": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List a topic's lotteries
+         * @description Lists every lottery of the topic, newest first. It is not paginated: a topic holds at most 10 lotteries. Lotteries by banned authors are left out. NOT_FOUND under the same conditions as getTopic.
+         */
+        get: operations["listTopicLotteries"];
+        put?: never;
+        /**
+         * Create a lottery
+         * @description Creates a lottery on the topic and returns it. It needs the topic's author, or staff holding the create permission, and the topic must be one the caller can read. Anyone but staff also needs an account at least 30 days old or at least 100 moemoepoint. **The point prizes are paid for by the caller**: their budget is taken from the caller's balance now, and whatever is not paid out comes back when the lottery is cancelled, deleted before the draw, or drawn with slots left over. Codes of a code prize are sealed at rest and never returned by a read. Creating a lottery bumps the topic. NOT_FOUND under the same conditions as getTopic.
+         */
+        post: operations["createLottery"];
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -1082,6 +1222,28 @@ export interface components {
              */
             object: "list_item";
         };
+        ListLottery: {
+            /** @description Members of this page. Empty array, never null. */
+            items: components["schemas"]["Lottery"][];
+            /** @description Opaque keyset cursor. Omitted on the last page. */
+            next_cursor?: string;
+            /**
+             * @description Type discriminant. Always list.
+             * @enum {string}
+             */
+            object: "list";
+        };
+        ListLotteryEntry: {
+            /** @description Members of this page. Empty array, never null. */
+            items: components["schemas"]["LotteryEntry"][];
+            /** @description Opaque keyset cursor. Omitted on the last page. */
+            next_cursor?: string;
+            /**
+             * @description Type discriminant. Always list.
+             * @enum {string}
+             */
+            object: "list";
+        };
         ListMoyuPatch: {
             /** @description Members of this page. Empty array, never null. */
             items: components["schemas"]["MoyuPatch"][];
@@ -1220,6 +1382,403 @@ export interface components {
              * @enum {string}
              */
             object: "list";
+        };
+        Lottery: {
+            /** @description The user who created the lottery and paid for its point prizes. */
+            author: components["schemas"]["UserRef"];
+            /**
+             * Format: date-time
+             * @description When the lottery stops taking entries, and for a deadline draw when it is drawn. null when it has no deadline.
+             */
+            closes_at: string | null;
+            /**
+             * Format: date-time
+             * @description Creation time.
+             */
+            created_at: string;
+            /** @description Lottery description as stored. Empty string when there is none. Free text; never use it as a decision input. */
+            description: string;
+            /**
+             * @description deadline draws at closes_at, manual when the author draws it, threshold when entry_count reaches draw_threshold.
+             * @enum {string}
+             */
+            draw_mode: "deadline" | "manual" | "threshold";
+            /**
+             * Format: int64
+             * @description For a threshold draw: the entry count that triggers it. null otherwise.
+             */
+            draw_threshold: number | null;
+            /**
+             * Format: date-time
+             * @description When the lottery was drawn. null before that.
+             */
+            drawn_at: string | null;
+            /**
+             * Format: int64
+             * @description Number of entries.
+             */
+            entry_count: number;
+            /**
+             * @description signup takes anyone who enters, reply takes only those who have replied to the topic, floor takes no entries and awards the replies on the floors named by floor_rule.
+             * @enum {string}
+             */
+            entry_mode: "signup" | "reply" | "floor";
+            /** @description For a floor lottery: the winning floors, either comma-separated (8,18,28) or every:N. null otherwise. Free text; never use it as a decision input. */
+            floor_rule: string | null;
+            /** @description Lottery id. JSON string of a decimal integer. */
+            id: string;
+            /** @description Whether everyone may list the entries, or only the author and staff. */
+            is_entry_list_public: boolean;
+            /**
+             * Format: int64
+             * @description Account age an entrant needs, in days. 0 means no requirement.
+             */
+            min_account_age_days: number;
+            /**
+             * Format: int64
+             * @description Moemoepoint an entrant needs. 0 means no requirement.
+             */
+            min_moemoepoint: number;
+            /**
+             * @description Type discriminant. Always lottery.
+             * @enum {string}
+             */
+            object: "lottery";
+            /** @description The prizes, in the author's order. */
+            prizes: {
+                /**
+                 * Format: int64
+                 * @description For a code prize: how many codes the site holds for it. The codes themselves are never in any read. null for other prizes.
+                 */
+                code_count: number | null;
+                /**
+                 * @description How the prize reaches a winner: a redemption code held by the site, handed over by the author off the site, or moemoepoint paid at the draw.
+                 * @enum {string}
+                 */
+                delivery: "code" | "offline" | "point";
+                /** @description Prize description as stored. Empty string when there is none. Free text; never use it as a decision input. */
+                description: string;
+                /** @description Prize id. JSON string of a decimal integer. */
+                id: string;
+                /** @description Prize images in the author's order. Empty array if none. */
+                images: components["schemas"]["LotteryPrizeImage"][];
+                /**
+                 * @description Type discriminant. Always lottery_prize.
+                 * @enum {string}
+                 */
+                object: "lottery_prize";
+                /**
+                 * Format: int64
+                 * @description For a point prize: each winner's amount when point_mode is fixed, the whole pool otherwise. null for other prizes.
+                 */
+                point_amount: number | null;
+                /**
+                 * Format: int64
+                 * @description For a point prize: what it pays out when every slot is filled, which the lottery's author paid for it. null for other prizes.
+                 */
+                point_budget: number | null;
+                /**
+                 * @description For a point prize: fixed pays point_amount to every winner, split shares point_amount evenly, random shares it by the revealed seed. null for other prizes.
+                 * @enum {string|null}
+                 */
+                point_mode: "fixed" | "split" | "random" | null;
+                /**
+                 * Format: int64
+                 * @description How many winners this prize has.
+                 */
+                slot_count: number;
+                /** @description Prize name as stored. Free text; never use it as a decision input. */
+                title: string;
+            }[];
+            /** @description The secret behind seed_hash. null until the lottery is drawn, and always null for a floor lottery. */
+            seed: string | null;
+            /** @description SHA-256 of seed, published when the lottery was created so the author cannot re-roll after seeing the entrants. null for a floor lottery, which has no randomness to commit to. */
+            seed_hash: string | null;
+            /**
+             * Format: int64
+             * @description Number of winners across every prize.
+             */
+            slot_count: number;
+            /**
+             * @description Lifecycle state. drawing lasts while the winners are being fixed.
+             * @enum {string}
+             */
+            state: "open" | "drawing" | "drawn" | "cancelled";
+            /** @description Lottery title as stored. Free text; never use it as a decision input. */
+            title: string;
+            /** @description Id of the topic the lottery belongs to. */
+            topic_id: string;
+            /**
+             * Format: date-time
+             * @description Time of the latest change.
+             */
+            updated_at: string;
+            /** @description The caller's own state on this lottery. null for an anonymous caller. */
+            viewer: components["schemas"]["LotteryViewer"] | null;
+            /** @description Winners by prize, then by entry. Empty array before the draw. Banned winners are left out. */
+            winners: components["schemas"]["LotteryWinner"][];
+        };
+        LotteryCodeReveal: {
+            /** @description Id of the lottery the code was won in. */
+            lottery_id: string;
+            /**
+             * @description Type discriminant. Always lottery_code_reveal.
+             * @enum {string}
+             */
+            object: "lottery_code_reveal";
+            /** @description The redemption code in plain text. Never keep it anywhere a page load could read it back. Free text; never use it as a decision input. */
+            redemption_code: string;
+        };
+        LotteryCreate: {
+            /**
+             * Format: date-time
+             * @description Required for a deadline draw, and must be in the future.
+             */
+            closes_at?: string | null;
+            /** @description Lottery description. Absent means none. Free text; never use it as a decision input. */
+            description?: string;
+            /**
+             * @description When the draw happens. A floor lottery cannot use threshold.
+             * @enum {string}
+             */
+            draw_mode: "deadline" | "manual" | "threshold";
+            /**
+             * Format: int64
+             * @description Required for a threshold draw, ignored otherwise. It must be at least the total number of slots.
+             */
+            draw_threshold?: number | null;
+            /**
+             * @description Who is in the draw.
+             * @enum {string}
+             */
+            entry_mode: "signup" | "reply" | "floor";
+            /** @description Required for a floor lottery, ignored otherwise: 8,18,28 or every:N, naming exactly as many floors as there are slots. Free text; never use it as a decision input. */
+            floor_rule?: string | null;
+            /** @description Whether everyone may list the entries. Absent means true. */
+            is_entry_list_public?: boolean;
+            /**
+             * Format: int64
+             * @description Account age an entrant needs, in days. Absent means 0.
+             */
+            min_account_age_days?: number;
+            /**
+             * Format: int64
+             * @description Moemoepoint an entrant needs. Absent means 0.
+             */
+            min_moemoepoint?: number;
+            /** @description The prizes, in display order. At most 500 slots across all of them, and at most 100000 moemoepoint across the point prizes' budgets. */
+            prizes: {
+                /** @description Which of image_hashes the author marks adult. A hash not in image_hashes is refused as INCONSISTENT_WITH. */
+                adult_image_hashes?: string[];
+                /** @description For a code prize: exactly slot_count redemption codes, each 1 to 200 characters after trimming. Refused for other prizes. They are sealed at rest and never returned by any read. */
+                codes?: string[];
+                /**
+                 * @description How the prize reaches a winner.
+                 * @enum {string}
+                 */
+                delivery: "code" | "offline" | "point";
+                /** @description Prize description. Absent means none. Free text; never use it as a decision input. */
+                description?: string;
+                /** @description Prize images by image-service hash, in display order. */
+                image_hashes?: string[];
+                /**
+                 * Format: int64
+                 * @description Required for a point prize, refused for others. A pool (split or random) needs at least one point per slot.
+                 */
+                point_amount?: number | null;
+                /**
+                 * @description Required for a point prize, refused for others. A floor lottery cannot use random: it has no seed, so anyone could compute the shares in advance.
+                 * @enum {string|null}
+                 */
+                point_mode?: "fixed" | "split" | "random" | null;
+                /**
+                 * Format: int64
+                 * @description How many winners this prize has, 1 to 500. 0 is refused as OUT_OF_RANGE.
+                 */
+                slot_count: number;
+                /** @description Prize name. Only whitespace is refused as TOO_SHORT. Free text; never use it as a decision input. */
+                title: string;
+            }[];
+            /** @description Lottery title. Only whitespace is refused as TOO_SHORT. Free text; never use it as a decision input. */
+            title: string;
+        };
+        LotteryEntry: {
+            /**
+             * Format: date-time
+             * @description When they entered. For a floor lottery, when the draw recorded the winner.
+             */
+            created_at: string;
+            /** @description The user who entered. */
+            entrant: components["schemas"]["UserRef"];
+            /** @description Entry id. JSON string of a decimal integer. */
+            id: string;
+            /**
+             * @description Type discriminant. Always lottery_entry.
+             * @enum {string}
+             */
+            object: "lottery_entry";
+        };
+        LotteryPatch: {
+            /**
+             * Format: date-time
+             * @description New deadline. null clears it; leaving the field out keeps the stored one.
+             */
+            closes_at?: string | null;
+            /** @description New description. An empty string removes it. Free text; never use it as a decision input. */
+            description?: string;
+            /**
+             * @description New draw mode.
+             * @enum {string}
+             */
+            draw_mode?: "deadline" | "manual" | "threshold";
+            /**
+             * Format: int64
+             * @description New threshold. null or absent keeps the stored one.
+             */
+            draw_threshold?: number | null;
+            /**
+             * @description New entry mode. Refused as IMMUTABLE once anyone has entered.
+             * @enum {string}
+             */
+            entry_mode?: "signup" | "reply" | "floor";
+            /** @description New floor rule. null or absent keeps the stored one. Refused as IMMUTABLE once anyone has entered. Free text; never use it as a decision input. */
+            floor_rule?: string | null;
+            /** @description New is_entry_list_public. */
+            is_entry_list_public?: boolean;
+            /**
+             * Format: int64
+             * @description New account-age requirement.
+             */
+            min_account_age_days?: number;
+            /**
+             * Format: int64
+             * @description New moemoepoint requirement.
+             */
+            min_moemoepoint?: number;
+            /** @description Replaces every prize and every held code. Refused as IMMUTABLE once anyone has entered. The difference in point budget is charged to or refunded to the author. */
+            prizes?: {
+                /** @description Which of image_hashes the author marks adult. A hash not in image_hashes is refused as INCONSISTENT_WITH. */
+                adult_image_hashes?: string[];
+                /** @description For a code prize: exactly slot_count redemption codes, each 1 to 200 characters after trimming. Refused for other prizes. They are sealed at rest and never returned by any read. */
+                codes?: string[];
+                /**
+                 * @description How the prize reaches a winner.
+                 * @enum {string}
+                 */
+                delivery: "code" | "offline" | "point";
+                /** @description Prize description. Absent means none. Free text; never use it as a decision input. */
+                description?: string;
+                /** @description Prize images by image-service hash, in display order. */
+                image_hashes?: string[];
+                /**
+                 * Format: int64
+                 * @description Required for a point prize, refused for others. A pool (split or random) needs at least one point per slot.
+                 */
+                point_amount?: number | null;
+                /**
+                 * @description Required for a point prize, refused for others. A floor lottery cannot use random: it has no seed, so anyone could compute the shares in advance.
+                 * @enum {string|null}
+                 */
+                point_mode?: "fixed" | "split" | "random" | null;
+                /**
+                 * Format: int64
+                 * @description How many winners this prize has, 1 to 500. 0 is refused as OUT_OF_RANGE.
+                 */
+                slot_count: number;
+                /** @description Prize name. Only whitespace is refused as TOO_SHORT. Free text; never use it as a decision input. */
+                title: string;
+            }[];
+            /**
+             * @description drawn draws the lottery now; cancelled cancels it and refunds the author. Only from open, and never together with another field.
+             * @enum {string}
+             */
+            state?: "drawn" | "cancelled";
+            /** @description New title. Free text; never use it as a decision input. */
+            title?: string;
+        };
+        LotteryPrizeImage: {
+            /** @description Image-service content hash. Present even when image is withheld, so an edit form can write the whole gallery back. */
+            hash: string;
+            /** @description The image. null when it is marked adult or graded explicit and the request did not ask for include_nsfw=true: the URL is the gate, so nothing renders and the bytes are never fetched. */
+            image: components["schemas"]["Image"] | null;
+            /** @description Whether the image service graded it explicit. It adds to what the author marked and the author cannot take it off. */
+            is_graded_explicit: boolean;
+            /** @description Whether the lottery's author marked this image adult. */
+            is_marked_adult: boolean;
+        };
+        LotteryViewer: {
+            /** @description Whether the caller may cancel the lottery now. */
+            can_cancel: boolean;
+            /** @description Whether the caller may delete the lottery: its author before the draw, staff holding the manage permission unless it is being drawn. */
+            can_delete: boolean;
+            /** @description Whether the caller may draw the lottery now. */
+            can_draw: boolean;
+            /** @description Whether the caller may change the lottery: its author, or staff holding the manage permission, while it is open. Requests authenticated with a Bearer token never carry staff powers. */
+            can_edit: boolean;
+            /** @description Whether enterLottery would be accepted now. It is decided by the same check as the write. */
+            can_enter: boolean;
+            /** @description Whether the caller may move any winner's fulfillment: the author or staff holding the manage permission, after the draw. */
+            can_manage_fulfillment: boolean;
+            /** @description Whether the caller won a code prize that has not been forfeited, so revealLotteryCode would return it. */
+            can_reveal_code: boolean;
+            /** @description Whether listLotteryEntries would be accepted: is_entry_list_public, or the author, or staff holding the view permission. */
+            can_view_entries: boolean;
+            /**
+             * @description Why can_enter is false for a caller who has not entered. null when can_enter is true or the caller has entered. The thresholds are min_moemoepoint and min_account_age_days on the lottery.
+             * @enum {string|null}
+             */
+            enter_blocked_reason: "not_open" | "past_closes_at" | "no_signup" | "own_lottery" | "reply_required" | "moemoepoint_below_minimum" | "account_too_new" | null;
+            /** @description Whether the caller has entered. */
+            has_entered: boolean;
+            /** @description Id of the caller's own entry in winners when they won. null otherwise. */
+            winner_id: string | null;
+        };
+        LotteryWinner: {
+            /**
+             * Format: date-time
+             * @description For a code prize: when the code is forfeited if it has not been revealed. null for other prizes.
+             */
+            claim_expires_at: string | null;
+            /**
+             * @description Delivery progress. received and forfeited are final.
+             * @enum {string}
+             */
+            fulfillment: "pending" | "shipped" | "received" | "forfeited";
+            /** @description Winner id. JSON string of a decimal integer; the path parameter winner_id of updateLotteryWinner. */
+            id: string;
+            /**
+             * @description Type discriminant. Always lottery_winner.
+             * @enum {string}
+             */
+            object: "lottery_winner";
+            /**
+             * Format: int64
+             * @description Moemoepoint paid to this winner. 0 for other prizes.
+             */
+            point_awarded: number;
+            /** @description Id of the prize won. */
+            prize_id: string;
+            /** @description HMAC-SHA256(seed, "<lottery_id>:<user_id>") in hex. Lowest keys win, so anyone holding the revealed seed can check the order. null for a floor lottery. */
+            rank_key: string | null;
+            /** @description The user who won. */
+            winner: components["schemas"]["UserRef"];
+            /**
+             * Format: int64
+             * @description For a floor lottery: the floor that won. null otherwise.
+             */
+            winning_floor: number | null;
+            /**
+             * Format: date-time
+             * @description When the lottery was drawn.
+             */
+            won_at: string;
+        };
+        LotteryWinnerPatch: {
+            /**
+             * @description The new delivery state.
+             * @enum {string}
+             */
+            fulfillment: "pending" | "shipped" | "received" | "forfeited";
         };
         MathNode: {
             /**
@@ -2946,6 +3505,807 @@ export interface operations {
                 };
             };
             /** @description SERVICE_UNAVAILABLE: www.moyu.moe, the catalog or the account service cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getLottery: {
+        parameters: {
+            query?: {
+                /** @description When true, prize images marked adult or graded explicit carry their image. Default false, which withholds it. */
+                include_nsfw?: boolean;
+            };
+            header?: never;
+            path: {
+                /** @description Lottery id. */
+                lottery_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Lottery"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    deleteLottery: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Lottery id. */
+                lottery_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description PERMISSION_REQUIRED when the caller may read but not manage the lottery. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description LOTTERY_DRAWN when it is being drawn, or it is drawn and the caller is not staff. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    updateLottery: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Lottery id. */
+                lottery_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LotteryPatch"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Lottery"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description PERMISSION_REQUIRED when the caller may read but not manage the lottery; MOEMOEPOINT_INSUFFICIENT when a larger point budget is not covered. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description INVALID_STATE_TRANSITION when state is sent and the lottery is not open; LOTTERY_CLOSED when fields are sent and the lottery is not open. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description VALIDATION_FAILED, or CONTENT_REJECTED when the trust-and-safety check refuses the text. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    revealLotteryCode: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Lottery id. */
+                lottery_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LotteryCodeReveal"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description REDEMPTION_CODE_FORFEITED when the code was given up or not revealed before claim_expires_at. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listLotteryEntries: {
+        parameters: {
+            query?: {
+                /** @description Opaque keyset cursor from a previous page of this collection. */
+                cursor?: string;
+                /** @description Page size. 1–100, default 20. Values above 100 are rejected, not clamped. */
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                /** @description Lottery id. */
+                lottery_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListLotteryEntry"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description PERMISSION_REQUIRED when is_entry_list_public is false and the caller is neither the author nor staff holding the view permission. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    enterLottery: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Lottery id. */
+                lottery_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Lottery"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description LOTTERY_INELIGIBLE, with reason, when the caller does not meet the entry requirements. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description LOTTERY_CLOSED when the lottery is not open or is past closes_at. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    withdrawLottery: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Lottery id. */
+                lottery_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Lottery"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description LOTTERY_CLOSED when the lottery is not open, is past closes_at, or the caller has already won. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getLotteryWinner: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Lottery id. */
+                lottery_id: string;
+                /** @description Winner id, as in LotteryWinner.id. */
+                winner_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LotteryWinner"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    updateLotteryWinner: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Lottery id. */
+                lottery_id: string;
+                /** @description Winner id, as in LotteryWinner.id. */
+                winner_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LotteryWinnerPatch"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LotteryWinner"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description PERMISSION_REQUIRED when the caller may not make this move. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description INVALID_STATE_TRANSITION when the move is not allowed from the current state or for this kind of prize. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
             503: {
                 headers: {
                     [name: string]: unknown;
@@ -5284,6 +6644,198 @@ export interface operations {
             };
             /** @description Not Found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listTopicLotteries: {
+        parameters: {
+            query?: {
+                /** @description When true, prize images marked adult or graded explicit carry their image. Default false, which withholds it. */
+                include_nsfw?: boolean;
+            };
+            header?: never;
+            path: {
+                /** @description Topic id. */
+                topic_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListLottery"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    createLottery: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Caller-generated UUID (canonical 8-4-4-4-12 hex, any version) or 26-character Crockford ULID. Scoped to (user, operation, key) for 24 hours. */
+                "Idempotency-Key": string;
+            };
+            path: {
+                /** @description Topic id. */
+                topic_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LotteryCreate"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    Location?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Lottery"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description PERMISSION_REQUIRED when the caller is neither the topic's author nor staff; LOTTERY_CREATOR_INELIGIBLE when the account is too new and holds too little moemoepoint; MOEMOEPOINT_INSUFFICIENT when the balance does not cover the point prizes' budget; SCOPE_REQUIRED or ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description VALIDATION_FAILED when the lottery's shape is inconsistent or the topic already holds 10 lotteries; CONTENT_REJECTED when the trust-and-safety check refuses the text. */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };

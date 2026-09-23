@@ -188,6 +188,9 @@ func TestV1LotteryDrawSettlesTheEscrow(t *testing.T) {
 	if got := f.scalar(t, `SELECT point_escrow FROM topic_lottery WHERE id = ?`, id); got != 0 {
 		t.Errorf("escrow left after the draw: %d", got)
 	}
+	if got := f.scalar(t, `SELECT moemoepoint FROM kungal_user_state WHERE user_id = ?`, w3UserAlice); got != 990 {
+		t.Errorf("cached balance %d after paying 30 and getting 20 back, want 990", got)
+	}
 	var refunds []awardCall
 	for _, a := range f.lotteryAwards(id) {
 		if a.ref == "topic_lottery_escrow:"+id && a.delta > 0 {

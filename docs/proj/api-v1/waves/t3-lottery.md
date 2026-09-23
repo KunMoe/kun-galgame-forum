@@ -251,3 +251,20 @@
 - 迁移 111 随部署自动跑，**先迁移后启动**由 compose 的 `migrate` 服务保证。
 - **`KUN_LOTTERY_CODE_KEY` 要走一次 Dokploy 面板部署**才能进容器：手动 `docker compose pull && up` 用的是宿主机上冻结在 `2965dc8` 的旧 compose 文件。
 - 旧路由删掉后，`/api/topic/**` 只剩 0 条；话题轨余下 T4（`/admin/topic*` 3 条）。
+
+## 11. 实现时对本契约的修正（2026-09-23，只增不改）
+
+1. **`LOTTERY_LIMIT_REACHED` 不加。** W5b 的投票上限是 `422 VALIDATION_FAILED` + `topic_id` `TOO_MANY_ITEMS`，抽奖照同一条，新错误码从 7 个降到 6 个。
+2. **契约门逼出来的四处改名/加面**：
+   - `show_entrants` → **`is_entry_list_public`**（F1：布尔必须 `is_`/`has_`/`can_` 开头）；
+   - 奖项的 `name` → **`title`**（G8：`UserRef.name` 是可空的，同名不同型）；
+   - 中奖者的楼层 → **`winning_floor`**（G8：`Comment.reply_floor` 是非空整数）；参与名单条目不再带楼层——楼层抽奖的参与记录只在开奖时为中奖者生成，楼层就在中奖者上；
+   - `slot_count` 的 schema 下限是 0（F1：所有 `_count` 都是 `minimum: 0`），「至少 1 个名额」挪进 handler，`422` `OUT_OF_RANGE`；
+   - 新增 **`GET /lotteries/{lottery_id}/winners/{winner_id}`**（G17：被 PATCH 寻址的路径必须有同路径的 GET）。
+   - `LotteryPrizeImage` 不是 §3.2 写的 `url: string | null`，而是 **`image: Image | null`**：直接复用 `repr.Image`，宽高、thumbhash、`sexual` 一并下发，客户端不用再自己拼 URL。
+3. **`include_nsfw` 第一版没生效。** 参数放在一个未导出的内嵌 struct 里，huma 的反射把它整个跳过了，而 huma 又静默忽略未知 query——请求「成功」、参数被丢。是 §9 第 13 题的测试抓到的。
+4. **GORM 默认值吞掉了 `show_entrants=false`**：带 `default:true` 标签的字段，零值不进 INSERT。旧的建抽奖从上线起就有这个毛病（生产 2 个抽奖都是 `true`，可能就是它）。model 上去掉了 gorm default（列默认值还在）。
+5. **开奖退款同事务回写缓存余额**，与取消/删除一致；否则发起人要等 OAuth 下一次镜像才看得到退回的点数。
+6. 开发环境的 OAuth s2s 推送回 `code=10 操作失败`（浏览器实测时看到的），所以开发机上萌萌点只在本地缓存里动。生产的推话题走的是同一条推送，已知可用。
+
+浏览器实测（开发库，作者 user 2 / 参与者 user 180，独立无头 Chromium——共享的 Playwright 浏览器被另一轨占着）：界面建抽奖（线下奖 1 名 + 萌萌点 10×2）→ 201、托管提示出现、作者缓存余额 11561 → 11541、`point_escrow = 20`；参与者点「参与抽奖」→ 作者卡片上开奖 → 1 名中奖、`point_escrow` 清零；作者「标记已发出」→ 中奖者看到「您中奖了」并「确认已收到」→ `received`。匿名 SSR 生产同款的已开奖抽奖（话题 4211）：奖品与中奖名单直出、零管理按钮、控制台零错误。测试数据、会话已清理，user 2 缓存余额已恢复。

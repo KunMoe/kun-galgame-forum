@@ -311,6 +311,11 @@ func (s *LotteryService) draw(ctx context.Context, lottery *topicModel.TopicLott
 		if err := s.lotteryRepo.SyncEntryCount(tx, lottery.ID); err != nil {
 			return err
 		}
+		if refund > 0 {
+			if err := s.lotteryRepo.AdjustCachedMoemoepoint(tx, lottery.UserID, refund); err != nil {
+				return err
+			}
+		}
 		return s.lotteryRepo.UpdateFields(tx, lottery.ID, map[string]any{
 			"status": topicModel.LotteryStatusDrawn, "drawn_at": now, "updated": now,
 			"point_escrow": 0,

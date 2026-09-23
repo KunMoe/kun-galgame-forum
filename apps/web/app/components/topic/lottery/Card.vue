@@ -4,50 +4,68 @@ import { useLottery } from '~/composables/topic/useLottery'
 import {
   KUN_LOTTERY_DELIVERY,
   KUN_LOTTERY_DRAW_MODE,
+  KUN_LOTTERY_ENTER_BLOCKED,
   KUN_LOTTERY_ENTRY_MODE,
   KUN_LOTTERY_STATUS
 } from '~/constants/topic'
+import type {
+  Lottery,
+  LotteryEntry,
+  LotteryPrize
+} from '#shared/utils/api/schemas'
+import { toKunUser } from '~/utils/userRef'
+import type { ApiResult } from '#shared/utils/api/problem'
 
 const props = defineProps<{
-  lottery: TopicLottery
-  isTopicAdmin: boolean
+  lottery: Lottery
 }>()
 
 const emits = defineEmits<{
-  edit: [lottery: TopicLottery]
+  edit: [lottery: Lottery]
   refresh: []
 }>()
 
-const { id: currentUserId } = usePersistUserStore()
 const {
   enter,
   withdraw,
   drawNow,
   cancel,
   deleteLottery,
-  getEntrants,
-  claimCode
-} = useLottery(props.lottery.topic_id)
+  listEntries,
+  revealCode
+} = useLottery(() => props.lottery.topic_id)
 
 const isLoading = ref(false)
 const isEntrantsOpen = ref(false)
-const entrants = ref<TopicLotteryEntrant[]>([])
+const entrants = ref<LotteryEntry[]>([])
+const entrantsCursor = ref<string | undefined>(undefined)
 const revealedCode = ref('')
 const isFairnessOpen = ref(false)
+
+const isCodeOpen = computed({
+  get: () => revealedCode.value !== '',
+  set: (open) => {
+    if (!open) {
+      revealedCode.value = ''
+    }
+  }
+})
 
 const nowMs = useState(`kun-lottery-now-${useId()}`, () => Date.now())
 onMounted(() => {
   nowMs.value = Date.now()
 })
 
-const isAuthor = computed(() => props.lottery.user.id === currentUserId)
-const canManage = computed(() => isAuthor.value || props.isTopicAdmin)
-const isOpen = computed(() => props.lottery.status === 'open')
-const isDrawn = computed(() => props.lottery.status === 'drawn')
+const viewer = computed(() => props.lottery.viewer)
+const isOpen = computed(() => props.lottery.state === 'open')
+const isDrawn = computed(() => props.lottery.state === 'drawn')
 const isFloor = computed(() => props.lottery.entry_mode === 'floor')
+const canViewEntries = computed(
+  () => viewer.value?.can_view_entries ?? props.lottery.is_entry_list_public
+)
 
 const statusColor = computed(() => {
-  switch (props.lottery.status) {
+  switch (props.lottery.state) {
     case 'open':
       return 'success'
     case 'drawing':
@@ -60,10 +78,10 @@ const statusColor = computed(() => {
 })
 
 const countdown = computed(() => {
-  if (!props.lottery.deadline || !isOpen.value) {
+  if (!props.lottery.closes_at || !isOpen.value) {
     return ''
   }
-  const remain = new Date(props.lottery.deadline).getTime() - nowMs.value
+  const remain = new Date(props.lottery.closes_at).getTime() - nowMs.value
   if (remain <= 0) {
     return '即将开奖'
   }
@@ -93,24 +111,24 @@ const thresholdProgress = computed(() => {
 })
 
 const anyPrizeImage = computed(() =>
-  props.lottery.prizes.some((prize) => prize.image_hashes.length > 0)
+  props.lottery.prizes.some((prize) => prize.images.length > 0)
 )
 
-// image_urls is parallel to image_hashes and the server blanks the entries this
-// reader may not see, so a missing URL is the whole withholding signal.
-const visibleImages = (prize: TopicLotteryPrize) =>
-  prize.image_hashes
-    .map((hash, index) => ({
-      hash,
-      url: prize.image_urls[index] ?? '',
-      isNSFW:
-        prize.nsfw_hashes.includes(hash) ||
-        prize.machine_nsfw_hashes.includes(hash)
-    }))
-    .filter((image) => !!image.url)
+const visibleImages = (prize: LotteryPrize) =>
+  prize.images.flatMap((image) =>
+    image.image
+      ? [
+          {
+            hash: image.hash,
+            url: image.image.url,
+            isNSFW: image.is_marked_adult || image.is_graded_explicit
+          }
+        ]
+      : []
+  )
 
-const hiddenCount = (prize: TopicLotteryPrize) =>
-  prize.image_hashes.length - visibleImages(prize).length
+const hiddenCount = (prize: LotteryPrize) =>
+  prize.images.filter((image) => image.image === null).length
 
 const hiddenImageTotal = computed(() =>
   props.lottery.prizes.reduce((sum, prize) => sum + hiddenCount(prize), 0)
@@ -128,7 +146,7 @@ const enableNsfw = () => {
   location.reload()
 }
 
-const pointLine = (prize: TopicLotteryPrize) => {
+const pointLine = (prize: LotteryPrize) => {
   if (prize.delivery !== 'point') {
     return ''
   }
@@ -151,16 +169,17 @@ const isThresholdOpen = computed(
   () => props.lottery.draw_mode === 'threshold' && isOpen.value
 )
 
-const myWin = computed(() =>
-  props.lottery.my_prize_id > 0 ? props.lottery.my_prize_name : ''
-)
+const enterBlocked = computed(() => {
+  const reason = viewer.value?.enter_blocked_reason
+  return reason ? (KUN_LOTTERY_ENTER_BLOCKED[reason] ?? '') : ''
+})
 
 const metaLine = computed(() => [
   KUN_LOTTERY_ENTRY_MODE[props.lottery.entry_mode],
   KUN_LOTTERY_DRAW_MODE[props.lottery.draw_mode],
   isFloor.value
-    ? `中奖楼层 ${props.lottery.floor_rule}`
-    : `${props.lottery.entry_count} 人参与 / ${props.lottery.total_slots} 个名额`,
+    ? `中奖楼层 ${props.lottery.floor_rule ?? ''}`
+    : `${props.lottery.entry_count} 人参与 / ${props.lottery.slot_count} 个名额`,
   props.lottery.min_moemoepoint > 0
     ? `门槛 ${props.lottery.min_moemoepoint} 萌萌点`
     : '',
@@ -178,59 +197,61 @@ const run = async (task: () => Promise<unknown>) => {
   }
 }
 
+const settleThenRefresh = async (
+  task: () => Promise<ApiResult<unknown> | undefined>
+) => {
+  await run(async () => {
+    const result = await task()
+    if (!result) {
+      return
+    }
+    if (!result.ok) {
+      reportProblem(result.problem)
+      return
+    }
+    emits('refresh')
+  })
+}
+
 const handleEnter = async () => {
   if (!requireLogin()) return
-  await run(async () => {
-    await enter(props.lottery.id)
-    emits('refresh')
-  })
+  await settleThenRefresh(() => enter(props.lottery.id))
 }
 
-const handleWithdraw = async () => {
-  await run(async () => {
-    await withdraw(props.lottery.id)
-    emits('refresh')
-  })
-}
+const handleWithdraw = () => settleThenRefresh(() => withdraw(props.lottery.id))
 
-const handleDraw = async () => {
+const handleDraw = () => settleThenRefresh(() => drawNow(props.lottery.id))
+
+const handleCancel = () => settleThenRefresh(() => cancel(props.lottery.id))
+
+const handleDelete = () =>
+  settleThenRefresh(() => deleteLottery(props.lottery.id))
+
+const loadEntrants = async (cursor?: string) => {
   await run(async () => {
-    if (await drawNow(props.lottery.id)) {
-      emits('refresh')
+    const page = await listEntries(props.lottery.id, cursor)
+    if (!page.ok) {
+      reportProblem(page.problem)
+      return
     }
-  })
-}
-
-const handleCancel = async () => {
-  await run(async () => {
-    if (await cancel(props.lottery.id)) {
-      emits('refresh')
-    }
-  })
-}
-
-const handleDelete = async () => {
-  await run(async () => {
-    if (await deleteLottery(props.lottery.id)) {
-      emits('refresh')
-    }
-  })
-}
-
-const handleShowEntrants = async () => {
-  await run(async () => {
-    entrants.value = (await getEntrants(props.lottery.id)) ?? []
+    entrants.value = cursor
+      ? [...entrants.value, ...page.data.items]
+      : page.data.items
+    entrantsCursor.value = page.data.next_cursor
     isEntrantsOpen.value = true
   })
 }
 
+const handleShowEntrants = () => loadEntrants()
+
 const handleClaim = async () => {
   await run(async () => {
-    const res = await claimCode(props.lottery.id)
-    if (!res?.code) {
+    const result = await revealCode(props.lottery.id)
+    if (!result.ok) {
+      reportProblem(result.problem)
       return
     }
-    revealedCode.value = res.code
+    revealedCode.value = result.data.redemption_code
     emits('refresh')
   })
 }
@@ -246,7 +267,7 @@ const handleClaim = async () => {
       app-key="lottery"
       :title="lottery.title"
       :meta="metaLine"
-      :status="KUN_LOTTERY_STATUS[lottery.status] ?? '进行中'"
+      :status="KUN_LOTTERY_STATUS[lottery.state] ?? '进行中'"
       :status-color="statusColor"
     />
 
@@ -261,7 +282,7 @@ const handleClaim = async () => {
         class="border-default-200 flex items-start gap-3 rounded-lg border p-3"
       >
         <div
-          v-if="prize.image_hashes.length"
+          v-if="prize.images.length"
           class="flex shrink-0 items-start gap-1"
         >
           <KunLightboxGallery v-if="visibleImages(prize).length">
@@ -270,7 +291,7 @@ const handleClaim = async () => {
                 v-for="(image, imageIndex) in visibleImages(prize)"
                 :key="image.hash"
                 :src="image.url"
-                :alt="prize.name"
+                :alt="prize.title"
                 :wrap="false"
               >
                 <template #default="{ open }">
@@ -278,12 +299,12 @@ const handleClaim = async () => {
                     v-if="imageIndex < 2"
                     type="button"
                     class="relative size-14 shrink-0 cursor-zoom-in overflow-hidden rounded-md"
-                    :aria-label="`查看 ${prize.name} 的图片`"
+                    :aria-label="`查看 ${prize.title} 的图片`"
                     @click="open"
                   >
                     <KunImage
                       :src="image.url"
-                      :alt="prize.name"
+                      :alt="prize.title"
                       class="size-full object-cover"
                     />
                     <span
@@ -324,9 +345,9 @@ const handleClaim = async () => {
 
         <div class="min-w-0 flex-1">
           <div class="flex items-start justify-between gap-2">
-            <span class="min-w-0 font-medium">{{ prize.name }}</span>
+            <span class="min-w-0 font-medium">{{ prize.title }}</span>
             <KunChip size="sm" variant="flat" color="secondary">
-              {{ prize.slots }} 名
+              {{ prize.slot_count }} 名
             </KunChip>
           </div>
           <p class="text-default-500 text-xs">
@@ -430,7 +451,6 @@ const handleClaim = async () => {
     <TopicLotteryResult
       v-if="isDrawn"
       :lottery="lottery"
-      :can-manage="canManage"
       @refresh="emits('refresh')"
     />
 
@@ -439,7 +459,7 @@ const handleClaim = async () => {
     >
       <div class="flex flex-wrap items-center gap-2">
         <KunButton
-          v-if="lottery.can_enter"
+          v-if="viewer?.can_enter"
           color="primary"
           :loading="isLoading"
           @click="handleEnter"
@@ -448,7 +468,7 @@ const handleClaim = async () => {
         </KunButton>
 
         <KunButton
-          v-else-if="lottery.has_entered && isOpen"
+          v-else-if="viewer?.has_entered && isOpen"
           variant="bordered"
           :loading="isLoading"
           @click="handleWithdraw"
@@ -457,29 +477,24 @@ const handleClaim = async () => {
         </KunButton>
 
         <span
-          v-else-if="isOpen && lottery.enter_blocked"
+          v-else-if="isOpen && enterBlocked"
           class="text-default-500 text-sm"
         >
-          {{ lottery.enter_blocked }}
+          {{ enterBlocked }}
         </span>
 
         <KunButton
-          v-if="
-            myWin &&
-            lottery.my_code_ready &&
-            lottery.my_fulfillment !== 'forfeited' &&
-            !revealedCode
-          "
+          v-if="viewer?.can_reveal_code && !revealedCode"
           color="success"
           :loading="isLoading"
           @click="handleClaim"
         >
           <KunIcon name="lucide:key-round" class="mr-1" />
-          领取兑换码
+          查看兑换码
         </KunButton>
 
         <KunButton
-          v-if="lottery.show_entrants && !isFloor && lottery.entry_count > 0"
+          v-if="canViewEntries && !isFloor && lottery.entry_count > 0"
           variant="light"
           size="sm"
           :loading="isLoading"
@@ -489,8 +504,8 @@ const handleClaim = async () => {
         </KunButton>
       </div>
 
-      <div v-if="canManage" class="flex items-center gap-1">
-        <KunTooltip v-if="isOpen" text="立即开奖">
+      <div v-if="viewer" class="flex items-center gap-1">
+        <KunTooltip v-if="viewer.can_draw" text="立即开奖">
           <KunButton
             variant="light"
             color="default"
@@ -502,7 +517,7 @@ const handleClaim = async () => {
             <KunIcon name="lucide:dices" />
           </KunButton>
         </KunTooltip>
-        <KunTooltip v-if="isOpen" text="编辑抽奖">
+        <KunTooltip v-if="viewer.can_edit" text="编辑抽奖">
           <KunButton
             variant="light"
             color="default"
@@ -513,7 +528,7 @@ const handleClaim = async () => {
             <KunIcon name="lucide:pencil" />
           </KunButton>
         </KunTooltip>
-        <KunTooltip v-if="isOpen" text="取消抽奖">
+        <KunTooltip v-if="viewer.can_cancel" text="取消抽奖">
           <KunButton
             variant="light"
             color="warning"
@@ -524,7 +539,7 @@ const handleClaim = async () => {
             <KunIcon name="lucide:ban" />
           </KunButton>
         </KunTooltip>
-        <KunTooltip text="删除抽奖">
+        <KunTooltip v-if="viewer.can_delete" text="删除抽奖">
           <KunButton
             variant="light"
             color="danger"
@@ -538,30 +553,40 @@ const handleClaim = async () => {
       </div>
     </div>
 
-    <KunInfo v-if="revealedCode" title="您的兑换码">
+    <KunModal v-model="isCodeOpen" inner-class-name="max-w-lg">
+      <h3 class="mb-3 text-xl font-bold">您的兑换码</h3>
       <div class="flex flex-wrap items-center gap-3">
         <code class="text-base break-all">{{ revealedCode }}</code>
         <KunCopy :text="revealedCode" color="primary" size="sm" />
       </div>
       <p class="text-default-500 mt-2 text-sm">
-        请立即保存, 关闭后需要重新点击「领取兑换码」才能再次查看。
+        请立即保存, 关闭后需要重新点击「查看兑换码」才能再次查看。
       </p>
-    </KunInfo>
+    </KunModal>
 
     <KunModal v-model="isEntrantsOpen" inner-class-name="max-w-lg">
       <h3 class="mb-3 text-xl font-bold">参与名单</h3>
       <div class="max-h-96 space-y-2 overflow-y-auto">
         <div
           v-for="entrant in entrants"
-          :key="entrant.user.id"
+          :key="entrant.id"
           class="flex items-center gap-2"
         >
-          <KunAvatar :user="entrant.user" size="sm" />
-          <span class="text-sm">{{ entrant.user.name }}</span>
+          <KunAvatar :user="toKunUser(entrant.entrant)" size="sm" />
+          <span class="text-sm">{{ toKunUser(entrant.entrant).name }}</span>
         </div>
         <p v-if="!entrants.length" class="text-default-500 text-sm">
           还没有人参与
         </p>
+        <KunButton
+          v-if="entrantsCursor"
+          variant="light"
+          size="sm"
+          :loading="isLoading"
+          @click="loadEntrants(entrantsCursor)"
+        >
+          加载更多
+        </KunButton>
       </div>
     </KunModal>
   </KunCard>

@@ -1,3 +1,5 @@
+export type LotteryPointMode = 'fixed' | 'split' | 'random'
+
 export interface LotteryPrizeFormData {
   name: string
   description: string
@@ -5,16 +7,14 @@ export interface LotteryPrizeFormData {
   image_urls: string[]
   nsfw_hashes: string[]
   machine_nsfw_hashes: string[]
-  delivery: 'code' | 'manual' | 'point'
-  point_mode: TopicLotteryPointMode
+  delivery: 'code' | 'offline' | 'point'
+  point_mode: LotteryPointMode
   point_amount: number
   slots: number
   codes: string
 }
 
 export interface LotteryFormData {
-  topic_id: number
-  lottery_id: number
   title: string
   description: string
   entry_mode: 'signup' | 'reply' | 'floor'
