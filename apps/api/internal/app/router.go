@@ -8,6 +8,7 @@ import (
 	"kun-galgame-api/internal/middleware"
 	topicapiv1 "kun-galgame-api/internal/topic/apiv1"
 	topicRepo "kun-galgame-api/internal/topic/repository"
+	trustapiv1 "kun-galgame-api/internal/trust/apiv1"
 	updateapiv1 "kun-galgame-api/internal/update/apiv1"
 	userapiv1 "kun-galgame-api/internal/user/apiv1"
 	wallapiv1 "kun-galgame-api/internal/wall/apiv1"
@@ -44,6 +45,7 @@ func (a *App) setupRoutes() {
 		userapiv1.Register(a.newUserV1()),
 		messageapiv1.Register(a.newMessageV1()),
 		updateapiv1.Register(a.newUpdateV1()),
+		trustapiv1.Register(a.TrustV1),
 	)
 
 	// Deliberately touches neither DB nor Redis: the container HEALTHCHECK reads
@@ -219,9 +221,6 @@ func (a *App) setupRoutes() {
 	authed.Post("/image/message", a.ImageHandler.UploadMessageImage)
 	authed.Post("/image/galgame", a.ImageHandler.UploadGalgameImage)
 
-	authed.Get("/report/reasons", a.TrustHandler.GetReasons)
-	authed.Post("/report/submit", a.TrustHandler.SubmitReport)
-
 	authed.Put("/website/:domain/like", a.WebsiteHandler.ToggleLike)
 	authed.Put("/website/:domain/favorite", a.WebsiteHandler.ToggleFavorite)
 
@@ -310,12 +309,6 @@ func (a *App) setupRoutes() {
 	rolePermAdmin.Get("/admin/user-permissions/:uid", middleware.RequireAdmin(), a.AdminUserPermissionHandler.GetView)
 	rolePermAdmin.Put("/admin/user-permissions/:uid", middleware.RequireAdmin(), a.AdminUserPermissionHandler.Replace)
 	rolePermAdmin.Get("/admin/permission-audit", middleware.RequireAdmin(), a.AdminPermissionAuditHandler.List)
-
-	trustAdmin := authed.Group("")
-	trustAdmin.Get("/admin/trust/review-items", middleware.RequirePermission(perm.TrustReview), a.TrustHandler.ListReviewItems)
-	trustAdmin.Get("/admin/trust/review-items/:id", middleware.RequirePermission(perm.TrustReview), a.TrustHandler.GetReviewItem)
-	trustAdmin.Post("/admin/trust/review-items/:id/claim", middleware.RequirePermission(perm.TrustReview), a.TrustHandler.ClaimReviewItem)
-	trustAdmin.Post("/admin/trust/review-items/:id/decide", middleware.RequirePermission(perm.TrustReview), a.TrustHandler.DecideReviewItem)
 
 	galgameAdmin := authed.Group("")
 	galgameAdmin.Get("/admin/galgame/submissions", middleware.RequirePermission(perm.GalgameClaimReview), a.GalgameClaimReviewHandler.PendingQueue)

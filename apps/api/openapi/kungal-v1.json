@@ -2078,6 +2078,37 @@
         ],
         "type": "object"
       },
+      "ListReportReason": {
+        "properties": {
+          "items": {
+            "description": "Members of this page. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/ReportReason"
+            },
+            "type": "array"
+          },
+          "next_cursor": {
+            "description": "Opaque keyset cursor. Omitted on the last page.",
+            "maxLength": 512,
+            "pattern": "^cur_[A-Za-z0-9_-]+$",
+            "type": "string"
+          },
+          "object": {
+            "description": "Type discriminant. Always list.",
+            "enum": [
+              "list"
+            ],
+            "maxLength": 4,
+            "type": "string",
+            "x-vocabulary-closed": true
+          }
+        },
+        "required": [
+          "object",
+          "items"
+        ],
+        "type": "object"
+      },
       "ListTopicDraftSummary": {
         "properties": {
           "items": {
@@ -4009,6 +4040,49 @@
         ],
         "type": "object"
       },
+      "PageListReviewItemSummary": {
+        "properties": {
+          "items": {
+            "description": "Members of this page. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/ReviewItemSummary"
+            },
+            "type": "array"
+          },
+          "object": {
+            "description": "Type discriminant. Always list.",
+            "enum": [
+              "list"
+            ],
+            "maxLength": 4,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "total": {
+            "description": "Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "total_relation": {
+            "description": "eq when total is exact, gte when it stopped at the depth limit and there are at least that many.",
+            "enum": [
+              "eq",
+              "gte"
+            ],
+            "maxLength": 3,
+            "type": "string",
+            "x-vocabulary-closed": true
+          }
+        },
+        "required": [
+          "object",
+          "items",
+          "total",
+          "total_relation"
+        ],
+        "type": "object"
+      },
       "ParagraphNode": {
         "properties": {
           "children": {
@@ -5389,6 +5463,591 @@
           "can_edit",
           "can_delete",
           "can_like"
+        ],
+        "type": "object"
+      },
+      "ReportCreate": {
+        "properties": {
+          "note": {
+            "description": "What is wrong with the content, for the moderators. Absent or null for none. Free text; never use it as a decision input.",
+            "maxLength": 1000,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "reason_key": {
+            "description": "One of the keys listReportReasons returns.",
+            "maxLength": 64,
+            "pattern": "^[a-z][a-z0-9_]{0,63}$",
+            "type": "string",
+            "x-vocabulary": "report_reason",
+            "x-vocabulary-closed": false
+          },
+          "snapshot": {
+            "description": "The reporter's copy of the content as they saw it. Absent or null for none. Free text; never use it as a decision input.",
+            "maxLength": 2000,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "subject_id": {
+            "description": "Id of the reported content within its kind.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "subject_kind": {
+            "description": "Kind of the reported content. One of the kinds this forum registers with the trust service.",
+            "maxLength": 64,
+            "pattern": "^[a-z][a-z0-9_]{0,63}$",
+            "type": "string",
+            "x-vocabulary": "trust_subject_kind",
+            "x-vocabulary-closed": false
+          },
+          "subject_url": {
+            "description": "Link to the content on this forum. It must start with https://www.kungal.com/. Absent or null for none.",
+            "format": "uri",
+            "maxLength": 512,
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "subject_kind",
+          "subject_id",
+          "reason_key"
+        ],
+        "type": "object"
+      },
+      "ReportReason": {
+        "properties": {
+          "display_name": {
+            "description": "The label the trust service registered for this reason, in its original language. Free text; never use it as a decision input.",
+            "maxLength": 64,
+            "type": "string"
+          },
+          "key": {
+            "description": "The reason key a report is filed under.",
+            "maxLength": 64,
+            "pattern": "^[a-z][a-z0-9_]{0,63}$",
+            "type": "string",
+            "x-vocabulary": "report_reason",
+            "x-vocabulary-closed": false
+          },
+          "object": {
+            "description": "Type discriminant. Always report_reason.",
+            "enum": [
+              "report_reason"
+            ],
+            "maxLength": 13,
+            "type": "string",
+            "x-vocabulary-closed": true
+          }
+        },
+        "required": [
+          "object",
+          "key",
+          "display_name"
+        ],
+        "type": "object"
+      },
+      "ReviewItem": {
+        "properties": {
+          "claimant": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UserRef"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The moderator who claimed the item. null before anyone has."
+          },
+          "claimed_at": {
+            "description": "When the item was claimed. null before anyone has.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "classifier_score": {
+            "description": "The AI classifier's score. null when no classifier judged the content.",
+            "format": "float",
+            "maximum": 1,
+            "minimum": 0,
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "context_note": {
+            "description": "Evidence for an item that reports did not open, such as the flagged excerpt. Free text; never use it as a decision input.",
+            "maxLength": 4000,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "created_at": {
+            "description": "When the item opened.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": "string"
+          },
+          "decided_at": {
+            "description": "When the item was decided. null while it is open.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "decider": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UserRef"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The moderator who decided the item. null while it is open."
+          },
+          "id": {
+            "description": "Review item id.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "object": {
+            "description": "Type discriminant. Always review_item.",
+            "enum": [
+              "review_item"
+            ],
+            "maxLength": 11,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "opened_by": {
+            "description": "What opened the item.",
+            "maxLength": 32,
+            "pattern": "^[a-z][a-z0-9_]{0,31}$",
+            "type": "string",
+            "x-vocabulary": "review_item_origin",
+            "x-vocabulary-closed": false
+          },
+          "priority": {
+            "description": "Queue rank; the inbox lists the highest first.",
+            "format": "float",
+            "minimum": 0,
+            "type": "number"
+          },
+          "reach_count": {
+            "description": "How many people the content had reached when the item opened. null when the product does not report it.",
+            "format": "int64",
+            "minimum": 0,
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "report_weight_sum": {
+            "description": "Summed weight of the reports behind the item. null when reports did not open it.",
+            "format": "float",
+            "minimum": 0,
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "reports": {
+            "description": "The reports linked to the item, oldest first. Empty for an item that reports did not open.",
+            "items": {
+              "$ref": "#/components/schemas/ReviewReport"
+            },
+            "maxItems": 1000,
+            "type": "array"
+          },
+          "severity": {
+            "description": "Severity of the reason that opened the item. null when the item was not opened by reports.",
+            "format": "int64",
+            "minimum": 0,
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "state": {
+            "description": "pending until a moderator claims it; actioned or dismissed once decided.",
+            "enum": [
+              "pending",
+              "claimed",
+              "actioned",
+              "dismissed"
+            ],
+            "maxLength": 9,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "subject_id": {
+            "description": "Id of the content under review within its kind.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "subject_kind": {
+            "description": "Kind of the content under review.",
+            "maxLength": 64,
+            "pattern": "^[a-z][a-z0-9_]{0,63}$",
+            "type": "string",
+            "x-vocabulary": "trust_subject_kind",
+            "x-vocabulary-closed": false
+          }
+        },
+        "required": [
+          "reports",
+          "object",
+          "id",
+          "subject_kind",
+          "subject_id",
+          "opened_by",
+          "state",
+          "priority",
+          "severity",
+          "classifier_score",
+          "report_weight_sum",
+          "reach_count",
+          "context_note",
+          "claimant",
+          "claimed_at",
+          "decider",
+          "decided_at",
+          "created_at"
+        ],
+        "type": "object"
+      },
+      "ReviewItemPatch": {
+        "properties": {
+          "action": {
+            "description": "What to do to the content. Required with actioned and not allowed otherwise.",
+            "enum": [
+              "none",
+              "hide",
+              "remove",
+              "warn_user",
+              "restrict",
+              "escalate_idp"
+            ],
+            "maxLength": 12,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "reason_code": {
+            "description": "Why, as a code; a report reason key where one fits. Required with actioned and not allowed otherwise.",
+            "maxLength": 64,
+            "pattern": "^[a-z][a-z0-9_]{0,63}$",
+            "type": "string"
+          },
+          "state": {
+            "description": "claimed takes a pending item; actioned or dismissed decides a pending or claimed one.",
+            "enum": [
+              "claimed",
+              "actioned",
+              "dismissed"
+            ],
+            "maxLength": 9,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "statement": {
+            "description": "A statement of reasons for the author. Only with actioned. Free text; never use it as a decision input.",
+            "maxLength": 1000,
+            "type": "string"
+          }
+        },
+        "required": [
+          "state"
+        ],
+        "type": "object"
+      },
+      "ReviewItemSummary": {
+        "properties": {
+          "claimant": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UserRef"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The moderator who claimed the item. null before anyone has."
+          },
+          "claimed_at": {
+            "description": "When the item was claimed. null before anyone has.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "classifier_score": {
+            "description": "The AI classifier's score. null when no classifier judged the content.",
+            "format": "float",
+            "maximum": 1,
+            "minimum": 0,
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "context_note": {
+            "description": "Evidence for an item that reports did not open, such as the flagged excerpt. Free text; never use it as a decision input.",
+            "maxLength": 4000,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "created_at": {
+            "description": "When the item opened.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": "string"
+          },
+          "decided_at": {
+            "description": "When the item was decided. null while it is open.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "decider": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UserRef"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The moderator who decided the item. null while it is open."
+          },
+          "id": {
+            "description": "Review item id.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "object": {
+            "description": "Type discriminant. Always review_item.",
+            "enum": [
+              "review_item"
+            ],
+            "maxLength": 11,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "opened_by": {
+            "description": "What opened the item.",
+            "maxLength": 32,
+            "pattern": "^[a-z][a-z0-9_]{0,31}$",
+            "type": "string",
+            "x-vocabulary": "review_item_origin",
+            "x-vocabulary-closed": false
+          },
+          "priority": {
+            "description": "Queue rank; the inbox lists the highest first.",
+            "format": "float",
+            "minimum": 0,
+            "type": "number"
+          },
+          "reach_count": {
+            "description": "How many people the content had reached when the item opened. null when the product does not report it.",
+            "format": "int64",
+            "minimum": 0,
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "report_weight_sum": {
+            "description": "Summed weight of the reports behind the item. null when reports did not open it.",
+            "format": "float",
+            "minimum": 0,
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "severity": {
+            "description": "Severity of the reason that opened the item. null when the item was not opened by reports.",
+            "format": "int64",
+            "minimum": 0,
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "state": {
+            "description": "pending until a moderator claims it; actioned or dismissed once decided.",
+            "enum": [
+              "pending",
+              "claimed",
+              "actioned",
+              "dismissed"
+            ],
+            "maxLength": 9,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "subject_id": {
+            "description": "Id of the content under review within its kind.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "subject_kind": {
+            "description": "Kind of the content under review.",
+            "maxLength": 64,
+            "pattern": "^[a-z][a-z0-9_]{0,63}$",
+            "type": "string",
+            "x-vocabulary": "trust_subject_kind",
+            "x-vocabulary-closed": false
+          }
+        },
+        "required": [
+          "object",
+          "id",
+          "subject_kind",
+          "subject_id",
+          "opened_by",
+          "state",
+          "priority",
+          "severity",
+          "classifier_score",
+          "report_weight_sum",
+          "reach_count",
+          "context_note",
+          "claimant",
+          "claimed_at",
+          "decider",
+          "decided_at",
+          "created_at"
+        ],
+        "type": "object"
+      },
+      "ReviewReport": {
+        "properties": {
+          "created_at": {
+            "description": "When the report was filed.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": "string"
+          },
+          "id": {
+            "description": "Report id.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "note": {
+            "description": "The reporter's note. Free text; never use it as a decision input.",
+            "maxLength": 1000,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "object": {
+            "description": "Type discriminant. Always report.",
+            "enum": [
+              "report"
+            ],
+            "maxLength": 6,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "report_reason": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ReportReason"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The reason it was filed under. null when that reason has since been retired."
+          },
+          "reporter": {
+            "$ref": "#/components/schemas/UserRef",
+            "description": "Who filed the report."
+          },
+          "snapshot": {
+            "description": "The reporter's copy of the content. Free text; never use it as a decision input.",
+            "maxLength": 2000,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "subject_url": {
+            "description": "The reporter's link to the content. null unless it points at this forum.",
+            "format": "uri",
+            "maxLength": 512,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "weight": {
+            "description": "The weight the trust service gave this reporter.",
+            "format": "float",
+            "minimum": 0,
+            "type": "number"
+          }
+        },
+        "required": [
+          "object",
+          "id",
+          "reporter",
+          "report_reason",
+          "note",
+          "snapshot",
+          "subject_url",
+          "weight",
+          "created_at"
         ],
         "type": "object"
       },
@@ -8168,6 +8827,379 @@
         "summary": "List hidden topics",
         "tags": [
           "topics"
+        ]
+      }
+    },
+    "/admin/review-items": {
+      "get": {
+        "description": "This forum's items in the trust-and-safety review inbox, highest priority first with ties broken by descending id. A page-number collection: page × limit may not exceed 10000, and total counts under the same filter as items. It needs the trust.review permission, which a Bearer request never carries.",
+        "operationId": "listReviewItems",
+        "parameters": [
+          {
+            "description": "1-based page number. page × limit may not exceed 10000.",
+            "explode": false,
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "default": 1,
+              "description": "1-based page number. page × limit may not exceed 10000.",
+              "format": "int64",
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Page size. 1–100, default 20. Values above 100 are rejected, not clamped.",
+            "explode": false,
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 20,
+              "description": "Page size. 1–100, default 20. Values above 100 are rejected, not clamped.",
+              "format": "int64",
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Only items in this state. Absent means every state.",
+            "explode": false,
+            "in": "query",
+            "name": "state",
+            "schema": {
+              "description": "Only items in this state. Absent means every state.",
+              "enum": [
+                "pending",
+                "claimed",
+                "actioned",
+                "dismissed"
+              ],
+              "maxLength": 9,
+              "type": "string",
+              "x-vocabulary-closed": true
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageListReviewItemSummary"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "PERMISSION_REQUIRED when the caller lacks trust.review, or the trust service refuses the caller's moderation role."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the trust service or the account service is unreachable, unconfigured, or answers with anything this operation does not map."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List the review inbox",
+        "tags": [
+          "moderation"
+        ]
+      }
+    },
+    "/admin/review-items/{review_item_id}": {
+      "get": {
+        "description": "One review item with the reports behind it. It needs the trust.review permission, which a Bearer request never carries.",
+        "operationId": "getReviewItem",
+        "parameters": [
+          {
+            "description": "Review item id.",
+            "in": "path",
+            "name": "review_item_id",
+            "required": true,
+            "schema": {
+              "description": "Review item id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReviewItem"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "PERMISSION_REQUIRED when the caller lacks trust.review, or the trust service refuses the caller's moderation role."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when the item does not exist or belongs to another site."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the trust service or the account service is unreachable, unconfigured, or answers with anything this operation does not map."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get a review item",
+        "tags": [
+          "moderation"
+        ]
+      },
+      "patch": {
+        "description": "state claimed takes a pending item for the caller. state actioned or dismissed decides a pending or claimed item; actioned writes a disposition that the trust service delivers back to this forum to enforce. Answers with the item as it stands afterwards. It needs the trust.review permission, which a Bearer request never carries.",
+        "operationId": "updateReviewItem",
+        "parameters": [
+          {
+            "description": "Review item id.",
+            "in": "path",
+            "name": "review_item_id",
+            "required": true,
+            "schema": {
+              "description": "Review item id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReviewItemPatch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReviewItem"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "PERMISSION_REQUIRED when the caller lacks trust.review, or the trust service refuses the caller's moderation role."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when the item does not exist or belongs to another site."
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "INVALID_STATE_TRANSITION when the item is already claimed or decided; detail names its current state."
+          },
+          "415": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unsupported Media Type"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED when an actioned decision lacks action or reason_code, or when action, reason_code or statement come with any other state."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the trust service or the account service is unreachable, unconfigured, or answers with anything this operation does not map."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Claim or decide a review item",
+        "tags": [
+          "moderation"
         ]
       }
     },
@@ -15257,6 +16289,185 @@
         "summary": "Get a reply's editable source",
         "tags": [
           "topics"
+        ]
+      }
+    },
+    "/report-reasons": {
+      "get": {
+        "description": "The reasons a report can be filed under, as the trust service currently offers them to this forum. The list is data that the trust service's administrators maintain; this forum refreshes it every five minutes.",
+        "operationId": "listReportReasons",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListReportReason"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the trust service is unreachable or unconfigured."
+          }
+        },
+        "summary": "List report reasons",
+        "tags": [
+          "reports"
+        ]
+      }
+    },
+    "/reports": {
+      "post": {
+        "description": "Files a report with the trust-and-safety service on behalf of the caller. A report has no id the reporter can read back. Reporting the same content again is accepted and counts once.",
+        "operationId": "createReport",
+        "parameters": [
+          {
+            "description": "Caller-generated UUID (canonical 8-4-4-4-12 hex, any version) or 26-character Crockford ULID. Scoped to (user, operation, key) for 24 hours.",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "schema": {
+              "description": "Caller-generated UUID (canonical 8-4-4-4-12 hex, any version) or 26-character Crockford ULID. Scoped to (user, operation, key) for 24 hours.",
+              "maxLength": 36,
+              "minLength": 26,
+              "pattern": "^([0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}|[0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{26})$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReportCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "IDEMPOTENCY_KEY_REUSED or IDEMPOTENCY_REQUEST_IN_PROGRESS."
+          },
+          "415": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unsupported Media Type"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED when subject_kind is not a kind this forum registers, reason_key is not one the trust service offers, or subject_url is not on this forum."
+          },
+          "429": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "RATE_LIMITED when the caller has filed too many reports recently."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the trust service or the account service is unreachable, unconfigured, or answers with anything this operation does not map."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Report content",
+        "tags": [
+          "reports"
         ]
       }
     },

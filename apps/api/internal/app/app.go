@@ -62,10 +62,10 @@ import (
 	topicapiv1 "kun-galgame-api/internal/topic/apiv1"
 	topicRepo "kun-galgame-api/internal/topic/repository"
 	topicService "kun-galgame-api/internal/topic/service"
+	trustapiv1 "kun-galgame-api/internal/trust/apiv1"
 	"kun-galgame-api/internal/trust/enforce"
 	"kun-galgame-api/internal/trust/gate"
 	trustHandler "kun-galgame-api/internal/trust/handler"
-	trustService "kun-galgame-api/internal/trust/service"
 	"kun-galgame-api/internal/user/handler"
 	"kun-galgame-api/internal/user/oauth"
 	"kun-galgame-api/internal/user/repository"
@@ -117,6 +117,7 @@ type App struct {
 	ImageMeta      func(hashes []string) map[string]imageclient.ImageMeta
 	GalgameV1      *galgameapiv1.Service
 	WallV1         *wallapiv1.Service
+	TrustV1        *trustapiv1.Service
 
 	OAuthHandler                *handler.OAuthHandler
 	UserHandler                 *handler.UserHandler
@@ -575,6 +576,7 @@ func New(cfg *config.Config) *App {
 		BearerStance:                bearerStance,
 		ImageMeta:                   imageMetaResolve(imageMeta),
 		GalgameV1:                   galgameapiv1.New(gc, moyuCli, uc, rdb, cfg.NextMoeAPI.ImageCDNBase),
+		TrustV1:                     trustapiv1.New(trustCli, uc, cfg.Trust.Site, cfg.NextMoeAPI.ImageCDNBase),
 		WallV1:                      newWallV1(db, communityCli, uc, gc, imageMetaResolve(imageMeta), cfg.NextMoeAPI.ImageCDNBase),
 		OAuthHandler:                handler.NewOAuthHandler(authService, cfg.Server.Mode == "prod", communityBooster),
 		UserHandler:                 handler.NewUserHandler(userService, userContentService),
@@ -596,7 +598,7 @@ func New(cfg *config.Config) *App {
 		WebsiteTagGroupHandler:      websiteHandler.NewTagGroupHandler(websiteTagGroupSvc),
 		AppReleaseHandler:           appReleaseHandler.NewReleaseHandler(cfg.AppRelease),
 		FriendLinkHandler:           friendHandler.NewFriendLinkHandler(friendRepo.NewFriendLinkRepository(db), cfg.NextMoeAPI.ImageCDNBase),
-		TrustHandler:                trustHandler.NewTrustHandler(trustService.NewTrustService(trustCli, cfg.Trust.Site), trustEnforce, cfg.Trust.CallbackSecret),
+		TrustHandler:                trustHandler.NewTrustHandler(trustEnforce, cfg.Trust.CallbackSecret),
 		RSSHandler:                  rssHandler.NewRSSHandler(rssRepo.NewRSSRepository(db), gc, uc),
 		NewsHandler:                 newsHandler.NewNewsHandler(newsCli, uc),
 		GalgameHandler:              galgameHandler.NewGalgameHandler(galgameCoreSvc),
