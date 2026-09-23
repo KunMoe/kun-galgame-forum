@@ -312,3 +312,42 @@ catalog 有、本站没有行的成员：本地字段全部 `0` / `null` / `[]` 
 | M12 | 角色特征在 `include_nsfw=false` 时仍含成人特征 | D4 |
 | M13 | `via=imprint` 被忽略（回全部成员） | D11 |
 | M14 | 实体作品子集合的资源轴路径去掉 `id` 决胜（数据里有并列排序键） | §3.4 |
+
+## 8. 实现中改的（理由在这里，代码在实现提交里）
+
+| # | 改了什么 | 为什么 |
+|---|---|---|
+| I1 | 外链 `CatalogLink` = `{site, url}`，`url` 非空；只有来源没有地址的外链不发 | G8：`source` 已被 `MoemoepointEntry.source`（封闭枚举）占用，`url` 在 `Image` 里是非空字符串 |
+| I2 | 简介 `CatalogIntro` = `{locale, value, is_machine, data_source}` | G8：`lang` 在 `CodeNode` 里是可空字符串，`source` 同上 |
+| I3 | 包装条目（`company_work` / `credit` / `appearance`）里的作品字段叫 `work_summary` | X2 把 `work` 定成可空的 `WorkRef`，`works` 也归它；两个名字 GE 都不用 |
+| I4 | 特征分组字段叫 `trait_group`，形状是名字原语 | 同名 `group` 将来太容易撞 |
+| I5 | 署名的职务数组叫 `credit_roles` | G8：`roles` 是资料与 ACL 的封闭枚举 |
+| I6 | 别名数组的元素是具名类型 `AliasName`（带自由文本标记），`lang` / `locale` 带 BCP 47 形状的 pattern，引擎 `description` 空串而非 `null` | G14 要求每个字符串有词表、格式、pattern 或自由文本标记；`Doc.description` 是非空字符串 |
+| I7 | 资源语言轴的取值（`zh-cn` 等）过不了 F1 的 snake_case；按 01 §3 加具名例外，G 的工具集 `interface_language` 一并覆盖 | 单独的共享面 PR #203（已合并）。例外不是跳过：这几个属性改查小写 BCP 47 或 `other`/`others` |
+| I8 | catalog 客户端给 `CatalogTaxonomyItem` / `CatalogLabelDetail` 加解码字段 `latin` | 名字原语要发 `latin`，旧结构体没有这个键 |
+| I9 | 编辑表单的六个选择器总带 `include_nsfw=true` | 编辑者要能给成人作品挂成人标签、选到含成人作品的系列，这与他自己的浏览姿态无关。旧面按编辑者的 cookie 过滤，SFW 编辑者搜不到成人标签 |
+| I10 | `getCompanyGraph` 对已合并的会社回 `NOT_FOUND`，不回 `ENTITY_MERGED` | 客户端的关系图读法丢掉了上游的 moved 信号；详情页先 301 了，读不到图 |
+| I11 | 会社的自有/旗下计数：网页在主列表之后并行取 `via=own` / `via=imprint` 的 `limit=1` | 同 D11；成员遍历仍不缓存（E7），会社通常很小 |
+| I12 | 旧 `collectQuery` 辅助函数搬进 `handler/query.go` | 它在被删的 `entity_handler.go` 里，G 的日历、认领审核、投稿三个 handler 还在用 |
+
+网页侧：卡片组件（与 `/galgame` 共用）仍吃旧列表形状，实体页在边上用 `workSummaryToCard` 翻译；筛选栏加了 `axes` 开关，实体页用资源轴词表，旧分享链接里的旧标量（`windows` / `app` / `others` …）映射到轴键。合并实体的 301 从「`data.moved_to` 闸」改为「合并后 `data` 为 `null`、根节点与 SEO 以它为闸」，`tests/taxonomyRedirects.spec.ts` 同步改了断言。
+
+## 9. 变异执行结果（14 条 + M4 拆两处，全部杀死）
+
+| # | 变异 | 变红的测试 |
+|---|---|---|
+| M1 | 成人标签详情不看 `include_nsfw` | `TestV1EntityTagDetail`（200，应 404） |
+| M2 | 标签索引留下 hidden 层 | `TestV1EntityTagList`（5103 排第一） |
+| M3 | 标签列表的成人过滤恒关 | `TestV1EntityTagList` |
+| M4a | `q=` 搜索留下 hidden 标签 | `TestV1EntityTagList` |
+| M4b | `q=` 搜索留下成人标签 | `TestV1EntityTagList` |
+| M5 | `resource_platform` 改比旧标量列 | `TestV1EntityTagWorksLocalLane`（结果为空） |
+| M6 | `is_nsfw` 读 `content_rating` | `TestV1EntityWorkSummary` |
+| M7 | `rating_count=0` 也发分数 | `TestV1EntityWorkSummary` |
+| M8 | `ENTITY_MERGED` 缺 `current_id` | `TestV1EntityCompanies` |
+| M9 | 游标指纹丢 `include_nsfw`（编解码两处） | `TestV1EntityCreditNames`（200，应 400） |
+| M10 | `tag_ids` 超 10 个截断 | `TestV1EntityTaggedWorks`（200，应 400） |
+| M11 | catalog 失败映射成 404 | `TestV1EntityUpstreamDown`（404，应 503） |
+| M12 | 成人特征不过滤 | `TestV1EntityCharacters` |
+| M13 | `via=imprint` 被忽略 | `TestV1EntityCompanyWorks` |
+| M14 | 本地车道去掉 `id` 决胜 | `TestV1EntityTagWorksLocalLane`（并列行按插入顺序回来） |
