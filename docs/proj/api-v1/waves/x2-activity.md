@@ -238,6 +238,8 @@ K 编号用前缀：
 - 门：`go build` / `make lint` 干净；全量库测试（本轨临时库，`-count=1 -p 1`）全绿；`make openapi`、路由 golden（`-update-routes`）、`pnpm gen:api` 均无漂移；网页 `lint` / `typecheck` / `test` 全绿；`deadcode` 在 `internal/activity` 下无条目。
 - 基线（rebase 后重新生成）：`legacy_route_baseline` 153 → **150**；`legacy-fetch-baseline` 183 → **177**（X1a 先降了 6，本轨再降 6）。
 
+- **合并前复跑（2026-09-23，rebase 到 master `aba41ce0c`）**：先后落在 G1（#215）、G1.1（#218）、X1c（#212）、X2-overview/ranking/search 之上；rebase 冲突一律「取 master 的 `app.go`/`router.go`、再按本轨提交的增删重放」，其中一次 X1c 删 `/news`、本轨删 `/activity`，两块都丢而不是两边都留。重建临时库后全量闸通过；`legacy_route_baseline` 99 → 96、`legacy-fetch-baseline` 126 → 120；与 master、GR 的已提交 spec 合并跑 G8 通过；`deadcode` 与 master 相同（13 条）。
+
 ### 9.1 变异（§7 的 11 条 + §8 第 8 条补的 1 条 + §8 第 12、13、14 条各补的 2 条，18 条全杀）
 
 | # | 改动 | 红的测试 |
