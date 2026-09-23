@@ -20,9 +20,7 @@ import (
 	ratingapiv1 "kun-galgame-api/internal/galgame/ratingapiv1"
 	galgameRepo "kun-galgame-api/internal/galgame/repository"
 	galgameService "kun-galgame-api/internal/galgame/service"
-	imageHandler "kun-galgame-api/internal/image/handler"
-	imageRepo "kun-galgame-api/internal/image/repository"
-	imageService "kun-galgame-api/internal/image/service"
+	imageapiv1 "kun-galgame-api/internal/image/apiv1"
 	"kun-galgame-api/internal/infrastructure/cache"
 	cronPkg "kun-galgame-api/internal/infrastructure/cron"
 	"kun-galgame-api/internal/infrastructure/database"
@@ -126,7 +124,7 @@ type App struct {
 	GalgameEditHandler        *galgameHandler.EditHandler
 	GalgameCoverVoteHandler   *galgameHandler.CoverVoteHandler
 	GalgamePlaytimeHandler    *galgameHandler.PlaytimeHandler
-	ImageHandler              *imageHandler.ImageHandler
+	ImagesV1                  *imageapiv1.Service
 	SearchHandler             *searchHandler.SearchHandler
 	Artifact                  *artifactclient.Client
 	FileStorage               *storage.S3Client
@@ -524,7 +522,7 @@ func New(cfg *config.Config) *App {
 		GalgameEditHandler:        galgameHandler.NewEditHandler(catalogCli, gc, uc, notifier, galgameLocalRepo),
 		GalgameCoverVoteHandler:   galgameHandler.NewCoverVoteHandler(catalogCli, gc),
 		GalgamePlaytimeHandler:    galgameHandler.NewPlaytimeHandler(galgamePlaytimeSvc),
-		ImageHandler:              imageHandler.NewImageHandler(imageService.NewImageService(imageRepo.NewImageRepository(db), imgCli, catalogCli)),
+		ImagesV1:                  imageapiv1.New(imgCli, catalogCli, db, cfg.NextMoeAPI.ImageCDNBase),
 		SearchHandler: searchHandler.NewSearchHandler(searchService.NewSearchService(
 			galgameService.NewEntitySearchService(gc, galgameTagSvc), galgameResourceSvc,
 		)),
@@ -560,10 +558,14 @@ func New(cfg *config.Config) *App {
 	return app
 }
 
+// The image service caps one file at 10 MiB for this client. Without room for
+// the multipart framing, a 10 MiB image was refused as a 10 MiB body.
+const bodyLimit = 10*1024*1024 + 64*1024
+
 func newFiber() *fiber.App {
 	f := fiber.New(fiber.Config{
 		ErrorHandler:   globalErrorHandler,
-		BodyLimit:      10 * 1024 * 1024,
+		BodyLimit:      bodyLimit,
 		ReadBufferSize: 16 * 1024,
 	})
 	f.Use(recover.New())

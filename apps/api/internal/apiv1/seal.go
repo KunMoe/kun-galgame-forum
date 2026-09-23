@@ -68,7 +68,7 @@ func RequiredStatuses(path string, op *huma.Operation) []int {
 		need = append(need, http.StatusNotFound)
 	}
 	if op.RequestBody != nil {
-		need = append(need, http.StatusBadRequest, http.StatusUnsupportedMediaType, http.StatusUnprocessableEntity)
+		need = append(need, http.StatusBadRequest, http.StatusRequestEntityTooLarge, http.StatusUnsupportedMediaType, http.StatusUnprocessableEntity)
 	}
 	if idempotent {
 		need = append(need, http.StatusConflict)

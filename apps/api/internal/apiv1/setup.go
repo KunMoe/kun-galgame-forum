@@ -185,6 +185,10 @@ func WriteFiberError(c fiber.Ctx, err error) error {
 	if errors.As(err, &p) {
 		return problem.Write(c, p)
 	}
+	var fe *fiber.Error
+	if errors.As(err, &fe) && fe.Code == fiber.StatusRequestEntityTooLarge {
+		return problem.Write(c, problem.New(problem.CodePayloadTooLarge, "The request body is larger than the server accepts."))
+	}
 	return problem.Write(c, problem.Internal(err))
 }
 

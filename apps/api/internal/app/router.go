@@ -11,6 +11,7 @@ import (
 	galgameapiv1 "kun-galgame-api/internal/galgame/apiv1"
 	galgameentityv1 "kun-galgame-api/internal/galgame/entityapiv1"
 	ratingapiv1 "kun-galgame-api/internal/galgame/ratingapiv1"
+	imageapiv1 "kun-galgame-api/internal/image/apiv1"
 	messageapiv1 "kun-galgame-api/internal/message/apiv1"
 	"kun-galgame-api/internal/middleware"
 	newsapiv1 "kun-galgame-api/internal/news/apiv1"
@@ -78,6 +79,7 @@ func (a *App) setupRoutes() {
 		sectionapiv1.Register(a.newSectionV1()),
 		authapiv1.Register(a.newAuthV1()),
 		newsapiv1.Register(a.NewsV1),
+		imageapiv1.Register(a.ImagesV1),
 	)
 
 	// Deliberately touches neither DB nor Redis: the container HEALTHCHECK reads
@@ -144,7 +146,6 @@ func (a *App) setupRoutes() {
 	optAuth.Get("/galgame-resource/:id/detail", a.GalgameResourceHandler.GetResourceDownloadDetail)
 	optAuth.Get("/galgame-resource/:id", a.GalgameResourceHandler.GetResourceDetail)
 
-
 	optAuth.Get("/galgame/:id/resource/all", a.GalgameResourceHandler.GetGalgameResources)
 	// Both comment READ halves must mount before the auth boundary below, or
 	// anonymous reads start demanding a session. Their writes mount after it.
@@ -159,11 +160,6 @@ func (a *App) setupRoutes() {
 	// "/api", so it applies to EVERY route below this line. Nothing public or
 	// optAuth may be registered after this point.
 	authed := api.Group("", a.Authn.Auth())
-
-	authed.Post("/image/topic", a.ImageHandler.UploadTopicImage)
-	authed.Post("/image/cover", a.ImageHandler.UploadCoverImage)
-	authed.Post("/image/message", a.ImageHandler.UploadMessageImage)
-	authed.Post("/image/galgame", a.ImageHandler.UploadGalgameImage)
 
 	authed.Post("/galgame/submit", a.GalgameSubmissionHandler.Submit)
 	authed.Post("/galgame/:id/resubmit", a.GalgameSubmissionHandler.Resubmit)
@@ -191,7 +187,6 @@ func (a *App) setupRoutes() {
 	authed.Put("/galgame/:id/resource/like", a.GalgameResourceHandler.ToggleLike)
 	authed.Put("/galgame/:id/resource/valid", a.GalgameResourceHandler.MarkValid)
 	authed.Put("/galgame/:id/resource/expired", a.GalgameResourceHandler.MarkExpired)
-
 
 	authed.Get("/galgame/:id/edit/bootstrap", a.GalgameEditHandler.Bootstrap)
 	authed.Post("/galgame/:id/edit/proposals", a.GalgameEditHandler.Submit)

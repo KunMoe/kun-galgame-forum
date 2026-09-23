@@ -26,7 +26,7 @@ func TestRequiredStatuses(t *testing.T) {
 		{"a path parameter", "/x/{topic_id}", Public(huma.Operation{Parameters: []*huma.Param{path}}), []int{400, 404, 500}},
 		{"optional tier", "/x", Optional(huma.Operation{}), []int{401, 403, 500, 503}},
 		{"required tier", "/x", Required(huma.Operation{}), []int{401, 403, 500, 503}},
-		{"a body", "/x", Public(huma.Operation{RequestBody: body}), []int{400, 415, 422, 500}},
+		{"a body", "/x", Public(huma.Operation{RequestBody: body}), []int{400, 413, 415, 422, 500}},
 		{"an idempotency key", "/x", Public(huma.Operation{Parameters: []*huma.Param{idem}}), []int{409, 500}},
 	} {
 		got := RequiredStatuses(c.path, &c.op)
@@ -63,7 +63,7 @@ func TestDeclaredStatusesAreExactlyTheDerivedOnes(t *testing.T) {
 		"/plain": {"204", "500"},
 		"/query": {"204", "400", "500"},
 		"/opt":   {"204", "400", "401", "403", "500", "503"},
-		"/write": {"204", "400", "401", "403", "409", "415", "422", "500", "503"},
+		"/write": {"204", "400", "401", "403", "409", "413", "415", "422", "500", "503"},
 	} {
 		item := api.OpenAPI().Paths[path]
 		op := item.Get

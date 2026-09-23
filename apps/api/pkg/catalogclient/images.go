@@ -22,17 +22,6 @@ type EditImageResult struct {
 	Deduplicated bool              `json:"deduplicated"`
 }
 
-func mapEditImagePreset(preset string) string {
-	switch preset {
-	case "galgame_banner", "cover":
-		return "cover"
-	case "galgame_screenshot", "screenshot":
-		return "screenshot"
-	default:
-		return preset
-	}
-}
-
 func (c *Client) UploadEditImageUser(ctx context.Context, accessToken string, r io.Reader, filename, preset string) (*EditImageResult, error) {
 	if c.baseURL == "" {
 		return nil, ErrNotConfigured
@@ -50,7 +39,7 @@ func (c *Client) UploadEditImageUser(ctx context.Context, accessToken string, r 
 	if _, err := io.Copy(fw, r); err != nil {
 		return nil, fmt.Errorf("copy file: %w", err)
 	}
-	if err := mw.WriteField("preset", mapEditImagePreset(preset)); err != nil {
+	if err := mw.WriteField("preset", preset); err != nil {
 		return nil, err
 	}
 	if err := mw.Close(); err != nil {

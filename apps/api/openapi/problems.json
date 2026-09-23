@@ -101,6 +101,15 @@
     },
     {
       "object": "problem_type",
+      "code": "PAYLOAD_TOO_LARGE",
+      "domain": "platform",
+      "status": 413,
+      "type": "https://developer.nextmoe.dev/problems/platform/payload-too-large",
+      "title": "Payload too large",
+      "description": "The request body is larger than the operation accepts: 1 MiB for a JSON body, 10 MiB plus 64 KiB for any other."
+    },
+    {
+      "object": "problem_type",
       "code": "PRECONDITION_FAILED",
       "domain": "platform",
       "status": 412,
@@ -233,6 +242,24 @@
       "type": "https://developer.nextmoe.dev/problems/kungal/idempotency-request-in-progress",
       "title": "Idempotency request in progress",
       "description": "A request with the same Idempotency-Key is still being processed. Retry after it completes."
+    },
+    {
+      "object": "problem_type",
+      "code": "IMAGE_DAILY_LIMIT_REACHED",
+      "domain": "kungal",
+      "status": 429,
+      "type": "https://developer.nextmoe.dev/problems/kungal/image-daily-limit-reached",
+      "title": "Image daily limit reached",
+      "description": "The caller has uploaded as many images today, Asia/Shanghai, as one user may. limit is that number."
+    },
+    {
+      "object": "problem_type",
+      "code": "IMAGE_REJECTED",
+      "domain": "kungal",
+      "status": 422,
+      "type": "https://developer.nextmoe.dev/problems/kungal/image-rejected",
+      "title": "Image rejected",
+      "description": "The image service's moderation refused the image. Nothing was stored."
     },
     {
       "object": "problem_type",

@@ -57,12 +57,15 @@ const (
 	CodeIdempotencyKeyReused         = "IDEMPOTENCY_KEY_REUSED"
 	CodeIdempotencyRequestInProgress = "IDEMPOTENCY_REQUEST_IN_PROGRESS"
 	CodeUnsupportedMediaType         = "UNSUPPORTED_MEDIA_TYPE"
+	CodePayloadTooLarge              = "PAYLOAD_TOO_LARGE"
 	CodeValidationFailed             = "VALIDATION_FAILED"
 	CodeInternalError                = "INTERNAL_ERROR"
 	CodeServiceUnavailable           = "SERVICE_UNAVAILABLE"
 	CodePermissionRequired           = "PERMISSION_REQUIRED"
 	CodeContentRejected              = "CONTENT_REJECTED"
 	CodeTopicDailyLimitReached       = "TOPIC_DAILY_LIMIT_REACHED"
+	CodeImageDailyLimitReached       = "IMAGE_DAILY_LIMIT_REACHED"
+	CodeImageRejected                = "IMAGE_REJECTED"
 	CodeDraftLimitReached            = "DRAFT_LIMIT_REACHED"
 	CodeMoemoepointInsufficient      = "MOEMOEPOINT_INSUFFICIENT"
 	CodeSelfLikeForbidden            = "SELF_LIKE_FORBIDDEN"
@@ -131,12 +134,15 @@ var Codes = []Def{
 	{CodeIdempotencyKeyReused, DomainPlatform, http.StatusConflict, "Idempotency key reused", "The same Idempotency-Key was sent with a different request body.", nil},
 	{CodeIdempotencyRequestInProgress, DomainKungal, http.StatusConflict, "Idempotency request in progress", "A request with the same Idempotency-Key is still being processed. Retry after it completes.", nil},
 	{CodeUnsupportedMediaType, DomainPlatform, http.StatusUnsupportedMediaType, "Unsupported media type", "The request body media type is not supported.", nil},
+	{CodePayloadTooLarge, DomainPlatform, http.StatusRequestEntityTooLarge, "Payload too large", "The request body is larger than the operation accepts: 1 MiB for a JSON body, 10 MiB plus 64 KiB for any other.", nil},
 	{CodeValidationFailed, DomainPlatform, http.StatusUnprocessableEntity, "Validation failed", "The request is syntactically valid but semantically not. errors[] is present and non-empty.", nil},
 	{CodeInternalError, DomainPlatform, http.StatusInternalServerError, "Internal error", "A bug on our side, including the output of panic recovery.", nil},
 	{CodeServiceUnavailable, DomainPlatform, http.StatusServiceUnavailable, "Service unavailable", "A dependency is unavailable. The request may be retried.", nil},
 	{CodePermissionRequired, DomainModeration, http.StatusForbidden, "Permission required", "The token lacks the permission this decision needs.", nil},
 	{CodeContentRejected, DomainKungal, http.StatusUnprocessableEntity, "Content rejected", "The trust-and-safety check refused the submitted text. Nothing was written.", nil},
 	{CodeTopicDailyLimitReached, DomainKungal, http.StatusTooManyRequests, "Topic daily limit reached", "The caller has created as many topics in the last 24 hours as their moemoepoint balance allows. limit is that number.", []ExtDef{{Name: "limit", Type: "integer"}}},
+	{CodeImageDailyLimitReached, DomainKungal, http.StatusTooManyRequests, "Image daily limit reached", "The caller has uploaded as many images today, Asia/Shanghai, as one user may. limit is that number.", []ExtDef{{Name: "limit", Type: "integer"}}},
+	{CodeImageRejected, DomainKungal, http.StatusUnprocessableEntity, "Image rejected", "The image service's moderation refused the image. Nothing was stored.", nil},
 	{CodeDraftLimitReached, DomainKungal, http.StatusConflict, "Draft limit reached", "The caller already holds the maximum number of drafts. A draft is never overwritten, so the only way to make room is to delete one. limit is that number.", []ExtDef{{Name: "limit", Type: "integer"}}},
 	{CodeMoemoepointInsufficient, DomainKungal, http.StatusForbidden, "Moemoepoint insufficient", "The caller's moemoepoint balance, as this forum last cached it, is below what the operation costs. required is that cost.", []ExtDef{{Name: "required", Type: "integer"}}},
 	{CodeSelfLikeForbidden, DomainKungal, http.StatusForbidden, "Self like forbidden", "Users cannot like what they wrote themselves.", nil},
@@ -238,6 +244,8 @@ func StatusToCode(status int) string {
 		return CodeIdempotencyKeyReused
 	case http.StatusUnsupportedMediaType:
 		return CodeUnsupportedMediaType
+	case http.StatusRequestEntityTooLarge:
+		return CodePayloadTooLarge
 	case http.StatusUnprocessableEntity:
 		return CodeValidationFailed
 	case http.StatusServiceUnavailable:

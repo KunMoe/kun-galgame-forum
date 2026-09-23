@@ -190,7 +190,7 @@ func TestUploadEditImageUser_SendsNoActorUID(t *testing.T) {
 	t.Cleanup(srv.Close)
 
 	res, err := userClient(srv.URL).UploadEditImageUser(context.Background(), "user-jwt",
-		bytes.NewReader([]byte("PNG!")), "cover.png", "galgame_banner")
+		bytes.NewReader([]byte("PNG!")), "cover.png", "cover")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -222,7 +222,7 @@ func TestUploadEditImageUser_ScopeDenial(t *testing.T) {
 	t.Cleanup(srv.Close)
 
 	_, err := userClient(srv.URL).UploadEditImageUser(context.Background(), "old-jwt",
-		bytes.NewReader([]byte("x")), "cover.png", "galgame_banner")
+		bytes.NewReader([]byte("x")), "cover.png", "cover")
 	if !errors.Is(err, ErrInsufficientScope) {
 		t.Fatalf("upload scope denial = %v, want ErrInsufficientScope", err)
 	}
@@ -235,7 +235,7 @@ func TestUploadEditImageUser_RefusesAnEmptyToken(t *testing.T) {
 	t.Cleanup(srv.Close)
 
 	_, err := userClient(srv.URL).UploadEditImageUser(context.Background(), "",
-		bytes.NewReader([]byte("x")), "cover.png", "galgame_banner")
+		bytes.NewReader([]byte("x")), "cover.png", "cover")
 	if !errors.Is(err, ErrUnauthorized) {
 		t.Fatalf("empty token = %v, want ErrUnauthorized", err)
 	}
