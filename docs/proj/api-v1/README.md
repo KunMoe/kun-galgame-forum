@@ -73,18 +73,19 @@ git ls-remote --heads origin 'api-v1/*'
 | W5b | 投票（8 个 v1 端点取代 6 条旧路由，[契约](waves/w5b-polls.md)，迁移 103） | ✅ 2026-09-22 |
 | RC | 评论墙：六面墙的 22 条旧路由 → `/api/v1/wall-comments` 9 个操作（[契约](waves/rc-wall-comments.md)，迁移 135，PR #180） | ✅ 2026-09-23 |
 | U1 | 用户「我」的面：状态、签到、萌萌点流水、云端偏好、成人向显示、@ 搜索、资料、头像、创作者（12 条旧路由 → 11 个 v1 操作，[契约](waves/u1-me.md)，无迁移，PR #183） | ✅ 2026-09-23 |
+| U2 | 公开资料、批量用户引用、通知偏好（4 条旧路由 → `/users/{user_id}`、`/users?ids=`、`/me/notification-preferences`，[契约](waves/u2-users.md)，无迁移，PR #189） | ✅ 2026-09-23 |
 | M | 消息：通知 + 私信 11 条旧路由 → `/api/v1/me/notifications*`、`/api/v1/me/conversations*` 12 个操作；系统公告（0 行、无写入方）直接删除（[契约](waves/m-message.md)，迁移 130，PR #184） | ✅ 2026-09-23 |
 | T | 话题轨收尾：T1 旧评论/投票 10 条 → T2 草稿 + 互动 + 定位 7 条（迁移 110，PR #179）→ T3 抽奖 11 条，萌萌点奖池改由发起人出资（[契约](waves/t3-lottery.md)，迁移 111，PR #182）→ T4 管理面 3 条，第一个页码集合 `collect.PageNumber` + `repr.PageList`（[契约](waves/t4-admin-topics.md)，无迁移，PR #185） | ✅ 2026-09-23 |
 
 ### 待认领
 
-旧 `/api/*` 路由 **223 条**。`legacy_route_baseline` = 224，因为它数的是「所有非 `/api/v1` 的路由」，`/healthz` 也在里面——**基线的地板是 1，不是 0**。
+旧 `/api/*` 路由 **219 条**。`legacy_route_baseline` = 220，因为它数的是「所有非 `/api/v1` 的路由」，`/healthz` 也在里面——**基线的地板是 1，不是 0**。
 
 > **切分依据是「共用同一个老 handler」，不是 URL 前缀。** 这个仓库里老 handler 大量跨前缀：`ResourceCommentHandler` 一个人管 15 条 / 5 个前缀；`/api/admin/**` 的 24 条分属 11 个 handler、各归各的域；`/api/user/:id/toolsets` 是 toolset 的面；`GET /api/resource` 是 `TopicHandler.GetResourceList`，即话题列表的资源区分面。**按前缀分轨会让两个 session 撞在同一个 handler 上，而且谁也删不掉它**——共用 handler 要等它服务的**所有**前缀都迁完才能删。下表按连通分量切，每行对外零耦合。
 
 | 轨 | 模块（含跨前缀的归属） | 路由 | 迁移号段 | 备注 |
 |---|---|---|---|---|
-| U | 用户 `/user/**`：~~**U1**「我」的面 12 条~~ ✅ → **U2** 公开资料、名片、通知偏好 4 条（通知偏好用 M 轨的 `notifytype`）→ **U3**「某用户的 X」9 条（等 G0 的 `work_id` 重编号） | 13 | 120–129 | 已认领（分支 `api-v1/u-user`） |
+| U | 用户 `/user/**`：~~**U1**「我」的面 12 条~~ ✅ → ~~**U2** 公开资料、名片、通知偏好 4 条~~ ✅ → **U3**「某用户的 X」9 条（等 G0 的 `work_id` 重编号） | 9 | 120–129 | 已认领（分支 `api-v1/u-user`） |
 | G | galgame 主域 + `-edit` + `-quiz` + `-resource` + `toolset` + 各自的 admin/user 面（**不含** `/galgame/:gid/comments*` 与 `/galgame/comments/*`，已归 RC） | 85 | 140–159 | 最大的一坨，**一个 owner**，内部自己切 3–4 个 PR 串行 |
 | GE | galgame 实体六件套 `-character` `-engine` `-official` `-series` `-staff` `-tag` | 18 | 160–164 | 共用 `EntityHandler`，必须同一轨 |
 | D | 文档 `/doc` + `/website-tag` + `/website-category` | 26 | 165–169 | 共用 `TagHandler` / `CategoryHandler` |
