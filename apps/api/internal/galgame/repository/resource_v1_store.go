@@ -419,4 +419,15 @@ func (s *ResourceV1Store) ClearPublishBan(workID int) error {
 	return res.Error
 }
 
-
+func pgTextArrayLiteral(items []string) string {
+	if len(items) == 0 {
+		return "{}"
+	}
+	parts := make([]string, len(items))
+	for i, v := range items {
+		escaped := strings.ReplaceAll(v, `\`, `\\`)
+		escaped = strings.ReplaceAll(escaped, `"`, `\"`)
+		parts[i] = `"` + escaped + `"`
+	}
+	return "{" + strings.Join(parts, ",") + "}"
+}

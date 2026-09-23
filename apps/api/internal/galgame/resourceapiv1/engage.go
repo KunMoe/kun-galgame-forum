@@ -111,7 +111,7 @@ func (s *Service) engagementOut(resourceID, userID int) (*engagementOutput, erro
 	}
 	return &engagementOutput{Body: GalgameResourceEngagement{
 		Object: "galgame_resource_engagement", ResourceID: repr.ID(resourceID), LikeCount: n,
-		Viewer: &EngagementViewer{HasLiked: liked},
+		Viewer: &GalgameResourceEngagementViewer{HasLiked: liked},
 	}}, nil
 }
 

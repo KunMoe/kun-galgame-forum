@@ -375,5 +375,3 @@ func (s *Service) deleteGalgameResource(ctx context.Context, in *resourceIDInput
 		moemoepoint.Key("galgame_resource_delete", strconv.Itoa(row.ID)))
 	return &noContentOutput{}, nil
 }
-
-

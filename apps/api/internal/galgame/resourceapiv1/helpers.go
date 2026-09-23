@@ -450,12 +450,12 @@ func fromRow(
 	plats, runs := platformsOf(r)
 	out := GalgameResource{
 		Object: "galgame_resource", ID: repr.ID(r.ID), Work: work,
-		Author: repr.NewUserRef(cdn, author),
-		ResourceType: resourcevocab.CompatType(r.Type),
+		Author:            repr.NewUserRef(cdn, author),
+		ResourceType:      resourcevocab.CompatType(r.Type),
 		ResourceLanguages: typedLangs(langs),
 		ResourcePlatforms: typedPlats(plats),
 		ResourceRuntimes:  typedRuns(runs),
-		Title: r.Title, VersionLabel: versionToken(r.VersionLabel), Size: r.Size,
+		Title:             r.Title, VersionLabel: versionToken(r.VersionLabel), Size: r.Size,
 		ProviderNames: typedProviders(providers), Content: doc, State: stateOf(r.Status),
 		ViewCount: r.View, DownloadCount: r.Download, LikeCount: r.LikeCount, CommentCount: r.CommentCount,
 		CreatedAt: repr.Timestamp(r.CreatedAt), UpdatedAt: repr.Timestamp(r.UpdatedAt),

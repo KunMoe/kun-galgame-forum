@@ -47,17 +47,6 @@ type GalgameResourceLink struct {
 
 func (GalgameResourceLink) TableName() string { return "galgame_resource_link" }
 
-type GalgameResourceLike struct {
-	ID                int `gorm:"primaryKey;autoIncrement" json:"id"`
-	UserID            int `gorm:"column:user_id;not null;uniqueIndex:idx_resource_like" json:"user_id"`
-	GalgameResourceID int `gorm:"column:galgame_resource_id;not null;uniqueIndex:idx_resource_like" json:"galgame_resource_id"`
-
-	CreatedAt time.Time `gorm:"column:created" json:"created"`
-	UpdatedAt time.Time `gorm:"column:updated" json:"updated"`
-}
-
-func (GalgameResourceLike) TableName() string { return "galgame_resource_like" }
-
 type GalgameResourceRow struct {
 	ID           int                `gorm:"column:id"`
 	View         int                `gorm:"column:view"`

@@ -141,13 +141,13 @@ type GalgameResourceSource struct {
 }
 
 type GalgameResourceEngagement struct {
-	Object      string            `json:"object" enum:"galgame_resource_engagement" maxLength:"27" doc:"Type discriminant. Always galgame_resource_engagement."`
-	ResourceID  repr.DecimalID    `json:"resource_id" doc:"Id of the resource."`
-	LikeCount   int               `json:"like_count" minimum:"0" doc:"Number of likes after this request."`
-	Viewer      *EngagementViewer `json:"viewer" doc:"The caller's like state after this request."`
+	Object     string                           `json:"object" enum:"galgame_resource_engagement" maxLength:"27" doc:"Type discriminant. Always galgame_resource_engagement."`
+	ResourceID repr.DecimalID                   `json:"resource_id" doc:"Id of the resource."`
+	LikeCount  int                              `json:"like_count" minimum:"0" doc:"Number of likes after this request."`
+	Viewer     *GalgameResourceEngagementViewer `json:"viewer" doc:"The caller's like state after this request."`
 }
 
-type EngagementViewer struct {
+type GalgameResourceEngagementViewer struct {
 	HasLiked bool `json:"has_liked" doc:"Whether the caller liked the resource."`
 }
 

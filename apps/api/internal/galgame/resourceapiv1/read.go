@@ -52,8 +52,8 @@ func (s *Service) createGalgameResourceDownload(ctx context.Context, in *resourc
 		return nil, problem.Internal(err)
 	}
 	return &downloadOutput{Body: GalgameResourceDownload{
-		Object: "galgame_resource_download",
-		DownloadURLs: typedURLs(links),
+		Object:         "galgame_resource_download",
+		DownloadURLs:   typedURLs(links),
 		ExtractionCode: row.Code, ArchivePassword: row.Password,
 	}}, nil
 }

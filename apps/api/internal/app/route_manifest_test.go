@@ -242,6 +242,8 @@ var publicWrites = map[string]string{
 		"could move by reloading the page",
 	"POST /api/v1/toolsets/:toolset_id/resources/:resource_id/downloads": "issues a toolset download link, which " +
 		"anonymous readers have always been given; it moves only that resource's download counter",
+	"POST /api/v1/galgame-resources/:resource_id/downloads": "issues a galgame resource's links and codes, which " +
+		"anonymous readers have always been given; it moves only that resource's download counter",
 }
 
 // Checked against the RESOLVED table, not against where the line happens to sit

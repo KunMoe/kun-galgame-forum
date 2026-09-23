@@ -163,17 +163,6 @@ func (s *Service) keepAuthors(ctx context.Context, ids []int) ([]int, *problem.P
 	return keep, nil
 }
 
-func (s *Service) convertBody(ctx context.Context, source string) (content.ContentDocument, *problem.Problem) {
-	if s.convert == nil {
-		return content.ContentDocument{}, problem.Internal(errUnconfigured)
-	}
-	docs, err := s.convert.Convert(ctx, []string{source})
-	if err != nil {
-		return content.ContentDocument{}, problem.Unavailable(err)
-	}
-	return docs[0], nil
-}
-
 func (s *Service) rejectContent(ctx context.Context, text string, authorID int) (decision string, matched []string, p *problem.Problem) {
 	if trimSpace(text) == "" {
 		return gate.DecisionAllow, nil, nil

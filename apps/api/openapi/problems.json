@@ -335,6 +335,15 @@
     },
     {
       "object": "problem_type",
+      "code": "RESOURCE_PUBLISH_BANNED",
+      "domain": "kungal",
+      "status": 403,
+      "type": "https://developer.nextmoe.dev/problems/kungal/resource-publish-banned",
+      "title": "Resource publish banned",
+      "description": "This work is banned from publishing download resources."
+    },
+    {
+      "object": "problem_type",
       "code": "SELF_ANSWER_FORBIDDEN",
       "domain": "kungal",
       "status": 403,
