@@ -3,7 +3,9 @@ package apiv1
 import (
 	"context"
 	"errors"
+	"slices"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -16,6 +18,7 @@ import (
 	"kun-galgame-api/pkg/userclient"
 
 	"github.com/danielgtaylor/huma/v2"
+	"golang.org/x/sync/singleflight"
 )
 
 var errUnconfigured = errors.New("activity v1 is not configured")
@@ -35,8 +38,9 @@ type Service struct {
 	convert *content.Converter
 	cdn     string
 
-	mu    sync.Mutex
-	works map[workKey]workEntry
+	mu     sync.Mutex
+	works  map[workKey]workEntry
+	flight singleflight.Group
 }
 
 type workKey struct {
@@ -92,22 +96,34 @@ func (s *Service) catalogRows(ctx context.Context, ids []int, sfw bool) (map[int
 	if sfw {
 		limit = "sfw"
 	}
-	rows, appErr := s.catalog.CatalogRowsByWorkIDs(ctx, missing, catalogInclude, limit)
-	if appErr != nil {
-		return nil, problem.Unavailable(appErr)
-	}
-	s.mu.Lock()
-	if len(s.works) > workCacheMaxEntries {
-		clear(s.works)
-	}
+	slices.Sort(missing)
+	key := make([]string, 0, len(missing)+1)
+	key = append(key, limit)
 	for _, id := range missing {
-		row, ok := rows[id]
-		s.works[workKey{id, sfw}] = workEntry{row: row, found: ok, expires: now.Add(workCacheTTL)}
-		if ok {
-			out[id] = row
-		}
+		key = append(key, strconv.Itoa(id))
 	}
-	s.mu.Unlock()
+	shared, err, _ := s.flight.Do(strings.Join(key, ","), func() (any, error) {
+		rows, appErr := s.catalog.CatalogRowsByWorkIDs(context.WithoutCancel(ctx), missing, catalogInclude, limit)
+		if appErr != nil {
+			return nil, appErr
+		}
+		s.mu.Lock()
+		if len(s.works) > workCacheMaxEntries {
+			clear(s.works)
+		}
+		for _, id := range missing {
+			row, ok := rows[id]
+			s.works[workKey{id, sfw}] = workEntry{row: row, found: ok, expires: now.Add(workCacheTTL)}
+		}
+		s.mu.Unlock()
+		return rows, nil
+	})
+	if err != nil {
+		return nil, problem.Unavailable(err)
+	}
+	for id, row := range shared.(map[int]client.CatalogWorkListItem) {
+		out[id] = row
+	}
 	return out, nil
 }
 

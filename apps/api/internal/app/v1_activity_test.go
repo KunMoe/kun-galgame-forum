@@ -280,3 +280,26 @@ func TestV1ActivitiesUpstream(t *testing.T) {
 		t.Errorf("catalog down: %d %+v", resp.StatusCode, body)
 	}
 }
+
+func TestV1ActivitiesCacheKeepsStancesApart(t *testing.T) {
+	f := newActivityFix(t)
+	shows := func(items []map[string]any, work int) bool {
+		for _, it := range items {
+			if w, _ := it["work"].(map[string]any); w != nil && fmt.Sprint(w["id"]) == strconv.Itoa(work) {
+				return true
+			}
+		}
+		return false
+	}
+	adult := f.walk(t, url.Values{"include_nsfw": {"true"}}, 50)
+	if !shows(adult, acWorkAdult) || !shows(adult, acWorkShown) {
+		t.Fatal("the NSFW read misses a work")
+	}
+	plain := f.walk(t, url.Values{}, 50)
+	if shows(plain, acWorkAdult) {
+		t.Error("an adult work cached for an NSFW reader reached an SFW reader")
+	}
+	if !shows(plain, acWorkShown) {
+		t.Error("the cache filled by an NSFW reader blanked an SFW work for an SFW reader")
+	}
+}
