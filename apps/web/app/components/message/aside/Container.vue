@@ -1,17 +1,45 @@
 <script setup lang="ts">
+import type { Conversation, NotificationSummary } from '#shared/utils/api/schemas'
+import { useCursorList } from '~/composables/useCursorList'
+import MessageAsideNoticeItem from '~/components/message/aside/NoticeItem.vue'
+
 const routeName = computed(() => useRoute().name)
 
-const { data: systemNav } = useKunFetch<ChatMessageAsideItem[]>(
-  '/message/nav/system'
-)
-const { data: contactNav } = useKunFetch<ChatMessageAsideItem[]>(
-  '/message/nav/contact'
+const noticeEpoch = useState('message-notice-epoch', () => 0)
+const conversationEpoch = useState('message-conversation-epoch', () => 0)
+
+const { data: summary, refresh: refreshSummary } = await useApi<NotificationSummary>(
+  'me-notification-summary',
+  (api, { signal }) => api.GET('/me/notifications/summary', { signal })
 )
 
-const system = computed(() => systemNav.value as ChatMessageAsideItem[] | null)
-const contact = computed(
-  () => (contactNav.value as ChatMessageAsideItem[] | null) ?? []
+watch(noticeEpoch, () => {
+  void refreshSummary()
+})
+
+const {
+  items: conversations,
+  hasMore,
+  loadingMore,
+  loadMore,
+  refresh: refreshConversations
+} = await useCursorList<Conversation>(
+  'me-conversations',
+  (api, cursor, { signal }) =>
+    api.GET('/me/conversations', {
+      params: {
+        query: {
+          limit: 50,
+          ...(cursor ? { cursor } : {})
+        }
+      },
+      signal
+    })
 )
+
+watch(conversationEpoch, () => {
+  void refreshConversations()
+})
 </script>
 
 <template>
@@ -27,26 +55,28 @@ const contact = computed(
 
     <KunDivider />
 
-    <MessageAsideSystemItem v-if="system" title="通知" :data="system[0]!" />
+    <MessageAsideNoticeItem :summary="summary" />
 
     <MessageAsideFollowItem />
 
-    <MessageAsideMutedItem />
-
-    <MessageAsideSystemItem v-if="system" title="系统消息" :data="system[1]!">
-      <template #system>
-        <span v-if="!system[1]!.unread_count" class="zako">杂鱼~♡</span>
-        <span v-if="system[1]!.unread_count" class="new">
-          {{ `「 新消息 」` }}
-        </span>
-      </template>
-    </MessageAsideSystemItem>
+    <MessageAsideMutedItem :summary="summary" />
 
     <MessageAsideItem
-      v-for="room in contact"
-      :key="room.chatroom_name"
-      :room="room"
+      v-for="conversation in conversations"
+      :key="conversation.id"
+      :conversation="conversation"
     />
+
+    <div v-if="hasMore" class="flex justify-center">
+      <KunButton
+        variant="light"
+        size="sm"
+        :loading="loadingMore"
+        @click="loadMore"
+      >
+        加载更多
+      </KunButton>
+    </div>
 
     <div class="block p-2 sm:hidden">
       <h2 class="text-lg">提示</h2>

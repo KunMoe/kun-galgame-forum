@@ -1,6 +1,12 @@
 <script setup lang="ts">
 import { useRouteQuery } from '@vueuse/router'
-import { localNotificationCategories } from '~/constants/notification'
+import type { Notification, NotificationType } from '#shared/utils/api/schemas'
+import { problemMessage } from '#shared/utils/api/message'
+import {
+  legacyMuteKeyToNotificationType,
+  localNotificationCategories
+} from '~/constants/notification'
+import { useCursorList } from '~/composables/useCursorList'
 
 definePageMeta({
   middleware: 'auth'
@@ -19,32 +25,41 @@ const tabItems = computed(() => [
   { value: 'all', textValue: '全部' },
   ...mutedCategories.value.map((c) => ({ value: c.key, textValue: c.label }))
 ])
-// Tab and page both in the URL: a notice opens the topic it is about, so coming
-// back has to land on the tab and page it was opened from. The tab has to come
-// along — a page restored under a different filter is a list the reader never saw.
 const activeTab = useRouteQuery<string>('tab', 'all', { mode: 'replace' })
-const page = usePageQuery()
 
-const pageData = reactive({
-  page,
-  limit: 30,
-  sort_order: 'desc',
-  type: activeTab.value === 'all' ? '' : activeTab.value
+const notificationType = computed((): NotificationType | undefined => {
+  if (activeTab.value === 'all') {
+    return undefined
+  }
+  return legacyMuteKeyToNotificationType[activeTab.value]
 })
 
-watch(activeTab, (tab) => {
-  pageData.type = tab === 'all' ? '' : tab
-  page.value = 1
-})
+const { items, hasMore, problem, status, loadingMore, loadMore, refresh } =
+  await useCursorList<Notification>(
+    () => `me-notifications-muted:${activeTab.value}`,
+    (api, cursor, { signal }) =>
+      api.GET('/me/notifications', {
+        params: {
+          query: {
+            limit: 30,
+            is_muted: true,
+            ...(cursor ? { cursor } : {}),
+            ...(notificationType.value
+              ? { notification_type: notificationType.value }
+              : {})
+          }
+        },
+        signal
+      })
+  )
 
-const { data, status, refresh } = await useKunFetch<MessageList>(
-  '/message/muted',
-  { query: pageData }
-)
+const removeNotification = (id: string) => {
+  items.value = items.value.filter((notification) => notification.id !== id)
+}
 </script>
 
 <template>
-  <div class="flex w-full flex-col space-y-3" v-if="data">
+  <div class="flex w-full flex-col space-y-3">
     <header class="flex items-center gap-2">
       <KunButton size="lg" :is-icon-only="true" variant="light" href="/message">
         <KunIcon name="lucide:chevron-left" />
@@ -62,22 +77,46 @@ const { data, status, refresh } = await useKunFetch<MessageList>(
 
     <KunDivider />
 
-    <KunOverlayScroll v-if="data.messages.length" class="h-full">
-      <MessageAsideNotice
-        v-for="message in data.messages"
-        :key="message.id"
-        :message="message"
-        :refresh="refresh"
-      />
-    </KunOverlayScroll>
+    <div
+      v-if="status === 'pending' && !items.length"
+      class="flex justify-center py-8"
+    >
+      <KunLoading />
+    </div>
 
-    <KunNull v-if="!data.total" description="没有已静音的消息" />
+    <template v-else-if="problem">
+      <KunNull :description="problemMessage(problem)" />
+      <div class="flex justify-center">
+        <KunButton variant="flat" size="sm" @click="() => refresh()">
+          重试
+        </KunButton>
+      </div>
+    </template>
 
-    <KunPagination
-      v-if="data.total"
-      v-model:current-page="pageData.page"
-      :total-page="Math.ceil(data.total / pageData.limit)"
-      :is-loading="status === 'pending'"
+    <template v-else-if="items.length">
+      <KunOverlayScroll class="h-full">
+        <MessageAsideNotice
+          v-for="notification in items"
+          :key="notification.id"
+          :notification="notification"
+          @deleted="removeNotification(notification.id)"
+        />
+      </KunOverlayScroll>
+
+      <div v-if="hasMore" class="flex justify-center pt-2">
+        <KunButton
+          variant="light"
+          :loading="loadingMore"
+          @click="loadMore"
+        >
+          加载更多
+        </KunButton>
+      </div>
+    </template>
+
+    <KunNull
+      v-else-if="status !== 'pending'"
+      description="没有已静音的消息"
     />
   </div>
 </template>

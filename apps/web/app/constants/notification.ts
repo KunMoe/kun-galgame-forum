@@ -1,3 +1,5 @@
+import type { NotificationType } from '#shared/utils/api/schemas'
+
 export interface NotificationCategory {
   key: string
   label: string
@@ -75,3 +77,25 @@ export const localNotificationCategories: NotificationCategory[] =
   notificationCategoryGroups
     .filter((g) => g.stream === 'local')
     .flatMap((g) => g.items)
+
+export const legacyMuteKeyToNotificationType: Record<string, NotificationType> =
+  {
+    upvoted: 'upvoted',
+    liked: 'liked',
+    favorite: 'favorited',
+    replied: 'replied',
+    commented: 'commented',
+    mentioned: 'mentioned',
+    followed: 'followed_thread_activity',
+    solution: 'best_answer_chosen',
+    'pin-reply': 'reply_pinned',
+    'quiz-answered': 'quiz_answered',
+    expired: 'resource_link_reported',
+    requested: 'edit_requested',
+    merged: 'edit_merged',
+    declined: 'edit_declined',
+    'lottery-won': 'lottery_won',
+    'lottery-closed': 'lottery_drawn',
+    'lottery-expired': 'lottery_code_expired',
+    'poll-closed': 'poll_closed'
+  }

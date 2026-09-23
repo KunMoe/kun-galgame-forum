@@ -272,6 +272,114 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/me/conversations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the caller's direct-message conversations
+         * @description Lists conversations that have at least one message, newest last message first, ties broken by descending room id, which lives only inside the cursor. last_message and last_message_at come from the chat_message row with the greatest id, not from chat_room.last_message_*. A conversation whose peer is banned is dropped with the same page-refill rule as listNotifications. The cursor is bound to the caller.
+         */
+        get: operations["listConversations"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/conversations/{user_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a conversation with one user
+         * @description Returns the conversation with user_id. A conversation with no messages, including when no room exists, is 200 with message_count 0, unread_count 0, last_message null and last_message_at null. It does not create a room. A missing or banned peer is NOT_FOUND; user_id equal to the caller is NOT_FOUND; a failure of /users/batch is SERVICE_UNAVAILABLE.
+         */
+        get: operations["getConversation"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/conversations/{user_id}/messages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List direct messages with one user
+         * @description Lists messages in the conversation with user_id as a cursor page, greatest id first. A missing room is 200 with an empty list; it does not create a room and does not mark messages read. Rows are selected by chat_room_id only. A missing or banned peer is NOT_FOUND; user_id equal to the caller is NOT_FOUND; a failure of /users/batch is SERVICE_UNAVAILABLE. The cursor is bound to (caller, peer).
+         */
+        get: operations["listDirectMessages"];
+        put?: never;
+        /**
+         * Send a direct message
+         * @description Creates a message in the conversation with user_id and returns it. Idempotency-Key is required. content_markdown is length-checked on the raw value (max 1000). After NormalizeStoredContent, a value that is empty once whitespace is trimmed is VALIDATION_FAILED REQUIRED at /content_markdown. A missing or banned peer is NOT_FOUND; user_id equal to the caller is NOT_FOUND; a failure of /users/batch is SERVICE_UNAVAILABLE and nothing is written. A missing room is created by name <smaller id>-<larger id> with INSERT ON CONFLICT (name) DO NOTHING, then selected by name; both participants use ON CONFLICT (chat_room_id, user_id) DO NOTHING, so a concurrent first send is not 500. Location is the canonical path of the new message.
+         */
+        post: operations["sendDirectMessage"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/conversations/{user_id}/messages/{message_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a direct message
+         * @description Returns one message in the conversation with user_id. A missing room is NOT_FOUND. A message that is not in this conversation is NOT_FOUND. A missing or banned peer is NOT_FOUND; user_id equal to the caller is NOT_FOUND; a failure of /users/batch is SERVICE_UNAVAILABLE. A recalled message is a tombstone: state recalled, content an empty document, recalled_at set.
+         */
+        get: operations["getDirectMessage"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Recall a direct message
+         * @description Recalls the caller's message. state must be recalled; recall is irreversible, so sent is not a target. There is no time limit. A message that is not in this conversation is NOT_FOUND. A message the peer sent is PERMISSION_REQUIRED; the caller can see it, so it is not NOT_FOUND. Already recalled is 200 with no further write. A recalled message is still in both histories as a tombstone: state recalled, content an empty document, recalled_at set. If it was the latest message in the room, chat_room.last_message_content is set to the empty string; the server never writes a sentence there.
+         */
+        patch: operations["updateDirectMessage"];
+        trace?: never;
+    };
+    "/me/conversations/{user_id}/read-marker": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Mark direct messages read up to an id
+         * @description Marks the peer's messages in this conversation whose id is at most up_to_id as read by the caller, writing chat_message_read_by with ON CONFLICT DO NOTHING. A missing room is 200 with marked_count 0 and unread_count 0. A missing or banned peer is NOT_FOUND; user_id equal to the caller is NOT_FOUND; a failure of /users/batch is SERVICE_UNAVAILABLE. Replaying the same request is 200.
+         */
+        put: operations["markDirectMessagesRead"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/me/creator-applications": {
         parameters: {
             query?: never;
@@ -327,6 +435,90 @@ export interface paths {
         put?: never;
         post?: never;
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/notifications": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the caller's notifications
+         * @description Lists the caller's notifications as a cursor page, newest first, ties broken by descending id. There is one sort and no sort parameter. is_muted=false is the types the caller has not muted; is_muted=true is only the muted types. The partitions are disjoint and together are every row. An empty muted list makes the muted partition empty and the default partition everything. notification_type further intersects the chosen partition; is_muted=false with a muted notification_type is a legal empty list. The cursor is bound to (caller, is_muted, notification_type); reusing it with another combination is INVALID_CURSOR. Rows whose actor is banned are dropped; the server keeps fetching limit+1 batches until it has limit+1 renderable rows or the source is exhausted, scanning at most 10 times limit rows, and emits next_cursor at the last scanned row if that cap is hit. A missing actor is emitted as a user with name null. Unknown stored types are dropped. unread_count lives on the summary, not here: the SQL count includes banned actors that this list drops.
+         */
+        get: operations["listNotifications"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/notifications/read-marker": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Mark notifications read up to an id
+         * @description Marks unread notifications in one partition whose id is at most up_to_id as read. is_muted selects the partition; the other partition is untouched, as are rows with id greater than up_to_id. up_to_id need not name a row the caller owns. Banned actors' rows are marked, so a red dot that only those rows held can go out. Mirrored rows that were marked are forwarded to community by id. Replaying the same request returns marked_count 0 and is still 200.
+         */
+        put: operations["markNotificationsRead"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/notifications/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get notification unread counts
+         * @description Returns unread_count for the unmuted partition, muted_unread_count for the muted partition, and latest, the first renderable unmuted row in listNotifications order. The two counts are SQL counts and include rows whose actor is banned, which listNotifications drops, so they are not the length of that list. latest is null when the unmuted partition has no renderable row. Any query failure is INTERNAL_ERROR.
+         */
+        get: operations["getNotificationSummary"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/notifications/{notification_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a notification
+         * @description Returns one of the caller's notifications. A missing id, another user's notification, a stored type outside the vocabulary, or an actor that is not renderable is NOT_FOUND; they are indistinguishable.
+         */
+        get: operations["getNotification"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete a notification
+         * @description Deletes one of the caller's notifications. A missing id or another user's notification is NOT_FOUND; the two are indistinguishable. Deleting an unread mirrored row forwards a read to community.
+         */
+        delete: operations["deleteNotification"];
         options?: never;
         head?: never;
         patch?: never;
@@ -1279,6 +1471,34 @@ export interface components {
              */
             object: "document";
         };
+        Conversation: {
+            /** @description Equals peer.id and the user_id path segment. The conversation has no other identity. */
+            id: string;
+            /** @description The message with the greatest id in the conversation. null when there are no messages. */
+            last_message: components["schemas"]["DirectMessage"] | null;
+            /**
+             * Format: date-time
+             * @description created_at of last_message. null when there are no messages.
+             */
+            last_message_at: string | null;
+            /**
+             * Format: int64
+             * @description Messages in the conversation, including recalled ones.
+             */
+            message_count: number;
+            /**
+             * @description Type discriminant. Always conversation.
+             * @enum {string}
+             */
+            object: "conversation";
+            /** @description The other participant. */
+            peer: components["schemas"]["UserRef"];
+            /**
+             * Format: int64
+             * @description Messages the peer sent that the caller has not marked read.
+             */
+            unread_count: number;
+        };
         CreateCreatorApplicationBody: {
             /** @description Statement for the reviewers. Empty string is allowed. Free text; never use it as a decision input. */
             statement?: string;
@@ -1367,6 +1587,72 @@ export interface components {
              * @enum {string}
              */
             object: "creator_status";
+        };
+        DirectMessage: {
+            /** @description Message body as a node tree. An empty document (children is an empty array) when state is recalled; clients read state, not emptiness. */
+            content: components["schemas"]["ContentDocument"];
+            /**
+             * Format: date-time
+             * @description Creation time.
+             */
+            created_at: string;
+            /** @description Message id. JSON string of a decimal integer. */
+            id: string;
+            /**
+             * @description Type discriminant. Always direct_message.
+             * @enum {string}
+             */
+            object: "direct_message";
+            /**
+             * Format: date-time
+             * @description Time of the recall. null while state is sent.
+             */
+            recalled_at: string | null;
+            /** @description The user who sent the message. */
+            sender: components["schemas"]["UserRef"];
+            /**
+             * @description Lifecycle state. recalled is irreversible.
+             * @enum {string}
+             */
+            state: "sent" | "recalled";
+            /** @description The caller's own state on this message. */
+            viewer: components["schemas"]["DirectMessageViewer"];
+        };
+        DirectMessageCreate: {
+            /** @description Message body as Markdown source. Length is checked on the raw value. After NormalizeStoredContent, a value that is empty once leading and trailing whitespace is removed is refused as REQUIRED. Free text; never use it as a decision input. */
+            content_markdown: string;
+        };
+        DirectMessagePatch: {
+            /**
+             * @description Target state. The only legal value is recalled; recall is irreversible, so sent is not a target.
+             * @enum {string}
+             */
+            state: "recalled";
+        };
+        DirectMessageReadMarker: {
+            /**
+             * Format: int64
+             * @description How many of the peer's messages this request marked read. Zero on a replay.
+             */
+            marked_count: number;
+            /**
+             * @description Type discriminant. Always direct_message_read_marker.
+             * @enum {string}
+             */
+            object: "direct_message_read_marker";
+            /**
+             * Format: int64
+             * @description The peer's messages still unmarked after this request.
+             */
+            unread_count: number;
+        };
+        DirectMessageReadMarkerWrite: {
+            /** @description Inclusive upper bound. Only the peer's messages with id at most this are marked. Need not name a row that exists. */
+            up_to_id: string;
+        };
+        DirectMessageViewer: {
+            /** @description Whether the caller sent this message. */
+            is_mine: boolean;
         };
         EmphasisNode: {
             /** @description Emphasized inline nodes. */
@@ -1526,6 +1812,28 @@ export interface components {
              */
             url: string;
         };
+        ListConversation: {
+            /** @description Members of this page. Empty array, never null. */
+            items: components["schemas"]["Conversation"][];
+            /** @description Opaque keyset cursor. Omitted on the last page. */
+            next_cursor?: string;
+            /**
+             * @description Type discriminant. Always list.
+             * @enum {string}
+             */
+            object: "list";
+        };
+        ListDirectMessage: {
+            /** @description Members of this page. Empty array, never null. */
+            items: components["schemas"]["DirectMessage"][];
+            /** @description Opaque keyset cursor. Omitted on the last page. */
+            next_cursor?: string;
+            /**
+             * @description Type discriminant. Always list.
+             * @enum {string}
+             */
+            object: "list";
+        };
         ListItemNode: {
             /** @description Block nodes of the item. */
             children: components["schemas"]["BlockNode"][];
@@ -1598,6 +1906,17 @@ export interface components {
              * @description Number of the first item of an ordered list. null for an unordered list.
              */
             start: number | null;
+        };
+        ListNotification: {
+            /** @description Members of this page. Empty array, never null. */
+            items: components["schemas"]["Notification"][];
+            /** @description Opaque keyset cursor. Omitted on the last page. */
+            next_cursor?: string;
+            /**
+             * @description Type discriminant. Always list.
+             * @enum {string}
+             */
+            object: "list";
         };
         ListPoll: {
             /** @description Members of this page. Empty array, never null. */
@@ -2260,6 +2579,90 @@ export interface components {
              * @enum {string}
              */
             object: "user";
+        };
+        Notification: {
+            /** @description The user who triggered this notification. name is null when the account no longer exists. */
+            actor: components["schemas"]["UserRef"];
+            /**
+             * Format: int64
+             * @description How many people are folded into this mirrored row. Values stored below 1 are emitted as 1. Only followed_thread_activity is greater than 1 in production.
+             */
+            actor_count: number;
+            /**
+             * Format: date-time
+             * @description Creation time. For a mirrored row this is the upstream updated_at, and folding may move it forward.
+             */
+            created_at: string;
+            /** @description Markdown snapshot stored on the row, truncated to 1000 runes. May be empty. Free text; never use it as a decision input. */
+            excerpt_markdown: string;
+            /** @description Notification id. JSON string of a decimal integer. */
+            id: string;
+            /** @description Whether this notification has been marked read. */
+            is_read: boolean;
+            /**
+             * Format: int64
+             * @description How many upstream posts are folded into this mirrored row. Values stored below 1 are emitted as 1.
+             */
+            item_count: number;
+            /**
+             * @description Notification type. Closed vocabulary of v1 tokens.
+             * @enum {string}
+             */
+            notification_type: "upvoted" | "liked" | "favorited" | "replied" | "commented" | "mentioned" | "followed_thread_activity" | "best_answer_chosen" | "reply_pinned" | "quiz_answered" | "resource_link_reported" | "edit_requested" | "edit_merged" | "edit_declined" | "lottery_won" | "lottery_drawn" | "lottery_code_expired" | "poll_closed";
+            /**
+             * @description Type discriminant. Always notification.
+             * @enum {string}
+             */
+            object: "notification";
+            /** @description In-site web path of the target, stored as the legacy link. Always starts with a slash. */
+            path: string;
+            /**
+             * @description local for rows written by this forum; community for rows mirrored from the infra community primitive.
+             * @enum {string}
+             */
+            source: "local" | "community";
+        };
+        NotificationReadMarker: {
+            /**
+             * Format: int64
+             * @description How many unread rows this request marked. Zero on a replay.
+             */
+            marked_count: number;
+            /**
+             * @description Type discriminant. Always notification_read_marker.
+             * @enum {string}
+             */
+            object: "notification_read_marker";
+            /**
+             * Format: int64
+             * @description Unread rows remaining in this partition after the mark, counted in SQL.
+             */
+            unread_count: number;
+        };
+        NotificationReadMarkerWrite: {
+            /** @description When true, only the muted partition is marked. When false or omitted, only the unmuted partition is marked. Default false. */
+            is_muted?: boolean;
+            /** @description Inclusive upper bound. Rows with id greater than this are left unread. Need not name a row the caller owns. */
+            up_to_id: string;
+        };
+        NotificationSummary: {
+            /** @description The first renderable row of the unmuted partition in listNotifications order. null when that partition has none. */
+            latest: components["schemas"]["Notification"] | null;
+            /**
+             * Format: int64
+             * @description Unread rows in the muted partition, counted in SQL. Includes rows whose actor is banned.
+             */
+            muted_unread_count: number;
+            /**
+             * @description Type discriminant. Always notification_summary.
+             * @enum {string}
+             */
+            object: "notification_summary";
+            /**
+             * Format: int64
+             * @description Unread rows in the unmuted partition, counted in SQL. Includes rows whose actor is banned, which listNotifications drops, so this is not the length of that list.
+             */
+            unread_count: number;
         };
         NsfwDisplay: {
             /**
@@ -4990,6 +5393,626 @@ export interface operations {
             };
         };
     };
+    listConversations: {
+        parameters: {
+            query?: {
+                /** @description Opaque keyset cursor from a previous page of this collection. */
+                cursor?: string;
+                /** @description Page size. 1–100, default 20. Values above 100 are rejected, not clamped. */
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListConversation"];
+                };
+            };
+            /** @description INVALID_CURSOR or LIMIT_TOO_LARGE. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getConversation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The other participant's user id. Equal to the caller is NOT_FOUND. */
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Conversation"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the peer does not exist, is not renderable, or is the caller. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the account service cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listDirectMessages: {
+        parameters: {
+            query?: {
+                /** @description Opaque keyset cursor from a previous page of this collection. */
+                cursor?: string;
+                /** @description Page size. 1–100, default 20. Values above 100 are rejected, not clamped. */
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                /** @description The other participant's user id. Equal to the caller is NOT_FOUND. */
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListDirectMessage"];
+                };
+            };
+            /** @description INVALID_CURSOR or LIMIT_TOO_LARGE. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the peer does not exist, is not renderable, or is the caller. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the account service cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    sendDirectMessage: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Caller-generated UUID (canonical 8-4-4-4-12 hex, any version) or 26-character Crockford ULID. Scoped to (user, operation, key) for 24 hours. */
+                "Idempotency-Key": string;
+            };
+            path: {
+                /** @description The other participant's user id. Equal to the caller is NOT_FOUND. */
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DirectMessageCreate"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    Location?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DirectMessage"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the peer does not exist, is not renderable, or is the caller. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description VALIDATION_FAILED when content_markdown is blank after trimming or exceeds 1000 characters. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the account service cannot be reached. Nothing is written. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getDirectMessage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The other participant's user id. Equal to the caller is NOT_FOUND. */
+                user_id: string;
+                /** @description Message id. */
+                message_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DirectMessage"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the message is not in this conversation, the room is missing, the peer does not exist, is not renderable, or is the caller. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the account service cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    updateDirectMessage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The other participant's user id. Equal to the caller is NOT_FOUND. */
+                user_id: string;
+                /** @description Message id. */
+                message_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DirectMessagePatch"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DirectMessage"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description PERMISSION_REQUIRED when the message was sent by the peer. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the message is not in this conversation, or user_id is the caller. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    markDirectMessagesRead: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The other participant's user id. Equal to the caller is NOT_FOUND. */
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DirectMessageReadMarkerWrite"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DirectMessageReadMarker"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the peer does not exist, is not renderable, or is the caller. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the account service cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     createCreatorApplication: {
         parameters: {
             query?: never;
@@ -5208,6 +6231,375 @@ export interface operations {
                 };
             };
             /** @description SERVICE_UNAVAILABLE when the account service cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listNotifications: {
+        parameters: {
+            query?: {
+                /** @description Opaque keyset cursor from a previous page of this collection. */
+                cursor?: string;
+                /** @description Page size. 1–100, default 20. Values above 100 are rejected, not clamped. */
+                limit?: number;
+                /** @description When false, only types the caller has not muted. When true, only types the caller has muted. The two partitions are disjoint and together are every row. is_muted=false with notification_type set to a muted type is a legal empty list. */
+                is_muted?: boolean;
+                /** @description When set, restrict the chosen partition to this notification type. Omitted means every type in the partition. An unknown token is UNKNOWN_ENUM_VALUE. */
+                notification_type?: "upvoted" | "liked" | "favorited" | "replied" | "commented" | "mentioned" | "followed_thread_activity" | "best_answer_chosen" | "reply_pinned" | "quiz_answered" | "resource_link_reported" | "edit_requested" | "edit_merged" | "edit_declined" | "lottery_won" | "lottery_drawn" | "lottery_code_expired" | "poll_closed";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListNotification"];
+                };
+            };
+            /** @description INVALID_CURSOR, LIMIT_TOO_LARGE, or UNKNOWN_ENUM_VALUE. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    markNotificationsRead: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NotificationReadMarkerWrite"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationReadMarker"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getNotificationSummary: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationSummary"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getNotification: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Notification id. */
+                notification_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notification"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the notification does not exist, belongs to another user, has a type outside the vocabulary, or its actor is not renderable. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    deleteNotification: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Notification id. */
+                notification_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the notification does not exist or belongs to another user. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
             503: {
                 headers: {
                     [name: string]: unknown;

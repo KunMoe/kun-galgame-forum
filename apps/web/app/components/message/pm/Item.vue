@@ -1,25 +1,30 @@
 <script setup lang="ts">
 import { useMediaQuery } from '@vueuse/core'
+import ContentDocument from '~/components/content/Document.vue'
+import type { DirectMessage } from '#shared/utils/api/schemas'
+import { toKunUser, deletedUserName } from '~/utils/userRef'
 
 const props = defineProps<{
-  message: ChatMessage
-  isSent: boolean
+  message: DirectMessage
 }>()
 
 const emit = defineEmits<{
   (
     event: 'context-menu',
-    payload: { event: MouseEvent; message: ChatMessage }
+    payload: { event: MouseEvent; message: DirectMessage }
   ): void
 }>()
 
-const contentRef = ref<HTMLElement | null>(null)
-const { isLightboxOpen, images, currentImageIndex } =
-  useContentLightbox(contentRef)
-
+const isSent = computed(() => props.message.viewer.is_mine)
 const isMobile = useMediaQuery('(max-width: 640px)')
-const canRecall = computed(() => props.isSent && !props.message.is_recall)
-const recallText = computed(() => `${props.message.sender.name}撤回了一条消息`)
+const canRecall = computed(
+  () => props.message.viewer.is_mine && props.message.state === 'sent'
+)
+const senderName = computed(
+  () => props.message.sender.name ?? deletedUserName
+)
+const senderUser = computed(() => toKunUser(props.message.sender))
+const recallText = computed(() => `${senderName.value}撤回了一条消息`)
 const recallCursorClass = computed(() => {
   if (!canRecall.value) {
     return ''
@@ -49,13 +54,13 @@ const handleClick = (event: MouseEvent) => {
   <div
     class="flex w-full"
     :class="[
-      message.is_recall
+      message.state === 'recalled'
         ? 'items-center justify-center py-2'
         : 'items-end gap-2',
-      message.is_recall ? '' : isSent ? 'flex-row-reverse' : 'flex-row'
+      message.state === 'recalled' ? '' : isSent ? 'flex-row-reverse' : 'flex-row'
     ]"
   >
-    <template v-if="message.is_recall">
+    <template v-if="message.state === 'recalled'">
       <span
         class="bg-default-100 text-default-500 rounded-full px-3 py-1 text-xs sm:text-sm"
       >
@@ -66,7 +71,7 @@ const handleClick = (event: MouseEvent) => {
     <template v-else>
       <KunAvatar
         :disable-floating="true"
-        :user="message.sender"
+        :user="senderUser"
         class="mb-auto"
       />
 
@@ -86,27 +91,17 @@ const handleClick = (event: MouseEvent) => {
             class="text-sm font-medium"
             :class="isSent ? 'text-primary' : 'text-secondary'"
           >
-            {{ message.sender.name }}
+            {{ senderName }}
           </span>
         </div>
 
         <div class="mt-1 text-sm leading-relaxed">
-          <div
-            ref="contentRef"
-            class="kun-message-content [&_a]:text-primary [&_code]:bg-default-200/70 break-words [&_a]:underline [&_code]:rounded [&_code]:px-1 [&_code]:py-0.5 [&_code]:text-[0.85em] [&_img]:my-1 [&_img]:max-h-60 [&_img]:max-w-full [&_img]:cursor-zoom-in [&_img]:rounded-lg [&_p]:m-0 [&_strong]:font-semibold"
-            v-html="message.content_html"
-          />
+          <ContentDocument :document="message.content" compact />
           <div class="text-default-500 mt-0.5 text-right text-xs">
-            <KunTime :time="message.created" />
+            <KunTime :time="message.created_at" />
           </div>
         </div>
       </div>
     </template>
-
-    <KunLightbox
-      v-model:is-open="isLightboxOpen"
-      :images="images"
-      :initial-index="currentImageIndex"
-    />
   </div>
 </template>

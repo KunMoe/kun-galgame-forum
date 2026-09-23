@@ -1,10 +1,9 @@
 <script setup lang="ts">
-const { data } = useKunFetch<MessageList>('/message/muted', {
-  query: { page: 1, limit: 1, sort_order: 'desc' },
-  server: false,
-  lazy: true
-})
-const total = computed(() => data.value?.total ?? 0)
+import type { NotificationSummary } from '#shared/utils/api/schemas'
+
+defineProps<{
+  summary?: NotificationSummary
+}>()
 </script>
 
 <template>
@@ -23,8 +22,12 @@ const total = computed(() => data.value?.total ?? 0)
       <span class="font-bold">已静音的消息</span>
       <div class="flex items-center justify-between text-sm">
         <span class="text-default-500 line-clamp-1">已被你静音的通知</span>
-        <KunChip v-if="total" color="default" class-name="whitespace-nowrap">
-          {{ total }}
+        <KunChip
+          v-if="summary && summary.muted_unread_count > 0"
+          color="default"
+          class-name="whitespace-nowrap"
+        >
+          {{ summary.muted_unread_count }}
         </KunChip>
       </div>
     </div>

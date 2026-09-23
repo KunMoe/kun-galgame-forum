@@ -1,21 +1,25 @@
 <script setup lang="ts">
+import type { Conversation } from '#shared/utils/api/schemas'
+import { toKunUser, deletedUserName } from '~/utils/userRef'
+
 const props = defineProps<{
-  id: number
+  conversation?: Conversation
+  missing: boolean
 }>()
 
-const res = await kunFetch<{ name: string; avatar: string }>(
-  `/user/${props.id}`,
-  {
-    method: 'GET',
-    query: { user_id: props.id }
+const title = computed(() => {
+  if (props.missing) {
+    return '用户不存在'
   }
-)
+  if (!props.conversation) {
+    return ''
+  }
+  return props.conversation.peer.name ?? deletedUserName
+})
 
-const user = {
-  id: props.id,
-  name: res ? res.name : '',
-  avatar: res ? res.avatar : ''
-}
+const user = computed(() =>
+  props.conversation ? toKunUser(props.conversation.peer) : undefined
+)
 </script>
 
 <template>
@@ -24,10 +28,10 @@ const user = {
       <KunIcon name="lucide:chevron-left" />
     </KunButton>
 
-    <KunAvatar :disable-floating="true" :user="user" />
+    <KunAvatar v-if="user" :disable-floating="true" :user="user" />
 
     <h2 class="relative flex items-center gap-2">
-      <span>{{ user.name }}</span>
+      <span>{{ title }}</span>
     </h2>
   </header>
 </template>
