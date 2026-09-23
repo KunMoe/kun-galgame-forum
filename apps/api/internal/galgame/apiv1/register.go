@@ -11,6 +11,29 @@ import (
 
 func Register(svc *Service) func(huma.API) {
 	return func(api huma.API) {
+		huma.Register(api, v1.Optional(huma.Operation{
+			OperationID: "getWork",
+			Method:      http.MethodGet,
+			Path:        "/works/{work_id}",
+			Summary:     "Get a work",
+			Description: "Returns a WorkRef for the catalog work. Hidden or unknown works are NOT_FOUND. Local published is not required.",
+			Tags:        []string{"works"},
+			Responses: map[string]*huma.Response{
+				"404": {
+					Description: "NOT_FOUND when the work does not exist or is hidden.",
+					Content: map[string]*huma.MediaType{
+						problem.ContentType: {Schema: &huma.Schema{Ref: v1.ProblemRef}},
+					},
+				},
+				"503": {
+					Description: "SERVICE_UNAVAILABLE when the catalog cannot be reached.",
+					Content: map[string]*huma.MediaType{
+						problem.ContentType: {Schema: &huma.Schema{Ref: v1.ProblemRef}},
+					},
+				},
+			},
+		}), svc.getWork)
+
 		huma.Register(api, v1.Public(huma.Operation{
 			OperationID: "listWorkMoyuPatches",
 			Method:      http.MethodGet,

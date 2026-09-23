@@ -11,6 +11,7 @@ import (
 	galgameapiv1 "kun-galgame-api/internal/galgame/apiv1"
 	galgameentityv1 "kun-galgame-api/internal/galgame/entityapiv1"
 	ratingapiv1 "kun-galgame-api/internal/galgame/ratingapiv1"
+	resourceapiv1 "kun-galgame-api/internal/galgame/resourceapiv1"
 	imageapiv1 "kun-galgame-api/internal/image/apiv1"
 	messageapiv1 "kun-galgame-api/internal/message/apiv1"
 	"kun-galgame-api/internal/middleware"
@@ -58,6 +59,7 @@ func (a *App) setupRoutes() {
 		topicapiv1.RegisterLotteries(a.newTopicV1Lotteries(topicReads)),
 		topicapiv1.RegisterAdminTopics(a.newTopicV1Admin(topicReads)),
 		galgameapiv1.Register(a.GalgameV1),
+		resourceapiv1.Register(a.newGalgameResourceV1()),
 		galgameentityv1.Register(a.GalgameEntityV1),
 		ratingapiv1.Register(a.GalgameRatingV1),
 		wallapiv1.Register(a.WallV1),
@@ -105,7 +107,6 @@ func (a *App) setupRoutes() {
 	api.Get("/user/:id/resources", a.UserHandler.GetUserResources)
 	api.Get("/user/:id/ratings", a.UserHandler.GetUserRatings)
 
-	api.Get("/search", a.Authn.OptionalAuth(), a.SearchHandler.Search)
 	api.Get("/search/entity", a.Authn.OptionalAuth(), a.SearchHandler.SearchEntities)
 	api.Get("/search/entity/resolve", a.Authn.OptionalAuth(), a.SearchHandler.ResolveEntities)
 
@@ -142,11 +143,7 @@ func (a *App) setupRoutes() {
 	// leaving them there made optionalUID return 0 unconditionally and silently
 	// broke the FindLikedSet batch fix, so every row rendered as not-liked for
 	// logged-in viewers.
-	optAuth.Get("/galgame-resource", a.GalgameResourceHandler.GetResourceList)
-	optAuth.Get("/galgame-resource/:id/detail", a.GalgameResourceHandler.GetResourceDownloadDetail)
-	optAuth.Get("/galgame-resource/:id", a.GalgameResourceHandler.GetResourceDetail)
 
-	optAuth.Get("/galgame/:id/resource/all", a.GalgameResourceHandler.GetGalgameResources)
 	// Both comment READ halves must mount before the auth boundary below, or
 	// anonymous reads start demanding a session. Their writes mount after it.
 	optAuth.Get("/galgame/:id/link/all", a.GalgameProxyHandler.GetGalgameLinks)
@@ -181,13 +178,6 @@ func (a *App) setupRoutes() {
 	authed.Get("/galgame/:id/collections/mine", a.GalgameCollectionHandler.MyCollectionsForGalgame)
 	authed.Put("/galgame/:id/collections", a.GalgameCollectionHandler.SetMembership)
 
-	authed.Post("/galgame/:id/resource", a.GalgameResourceHandler.CreateResource)
-	authed.Put("/galgame/:id/resource", a.GalgameResourceHandler.UpdateResource)
-	authed.Delete("/galgame/:id/resource", a.GalgameResourceHandler.DeleteResource)
-	authed.Put("/galgame/:id/resource/like", a.GalgameResourceHandler.ToggleLike)
-	authed.Put("/galgame/:id/resource/valid", a.GalgameResourceHandler.MarkValid)
-	authed.Put("/galgame/:id/resource/expired", a.GalgameResourceHandler.MarkExpired)
-
 	authed.Get("/galgame/:id/edit/bootstrap", a.GalgameEditHandler.Bootstrap)
 	authed.Post("/galgame/:id/edit/proposals", a.GalgameEditHandler.Submit)
 	authed.Get("/galgame-edit/mine", a.GalgameEditHandler.Mine)
@@ -216,12 +206,6 @@ func (a *App) setupRoutes() {
 		middleware.RequirePermission(perm.GalgameClaimReview),
 		a.GalgameClaimReviewHandler.Review,
 	)
-	galgameAdmin.Put(
-		"/admin/galgame/:id/resource-publish-ban",
-		middleware.RequirePermission(perm.GalgameBanResourcePublish),
-		a.GalgameResourceHandler.SetResourcePublishBan,
-	)
-
 }
 
 func (a *App) newTopicV1() *topicapiv1.Service {

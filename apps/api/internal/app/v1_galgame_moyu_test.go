@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	galgameapiv1 "kun-galgame-api/internal/galgame/apiv1"
+	"kun-galgame-api/internal/galgame/client"
 	legacyErrors "kun-galgame-api/pkg/errors"
 	"kun-galgame-api/pkg/moyuclient"
 	"kun-galgame-api/pkg/userclient"
@@ -48,6 +49,19 @@ func (f fakeWorks) CatalogWorkExists(_ context.Context, workID int) (bool, *lega
 		return false, f.err
 	}
 	return workID == moyuWorkID, nil
+}
+
+func (f fakeWorks) CatalogRowsByWorkIDs(_ context.Context, ids []int, _, _ string) (map[int]client.CatalogWorkListItem, *legacyErrors.AppError) {
+	if f.err != nil {
+		return nil, f.err
+	}
+	out := map[int]client.CatalogWorkListItem{}
+	for _, id := range ids {
+		if id == moyuWorkID {
+			out[id] = client.CatalogWorkListItem{ID: int64(id), DisplayName: "moyu-work"}
+		}
+	}
+	return out, nil
 }
 
 type fakeUsers struct{}

@@ -107,6 +107,15 @@ func (s *SubmissionService) Submit(
 // claim error instead left a half-adopted work with no way to finish it — and
 // the wizard would keep offering it as unclaimed until the next daily reindex,
 // so every retry hit the same refused claim.
+func AdoptAndPublish(
+	ctx context.Context,
+	catalog *catalogclient.Client,
+	accessToken string,
+	workID int64,
+) (*catalogclient.ClaimActionResult, *errors.AppError) {
+	return adoptAndPublish(ctx, catalog, accessToken, workID)
+}
+
 func adoptAndPublish(
 	ctx context.Context,
 	catalog *catalogclient.Client,

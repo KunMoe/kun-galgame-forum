@@ -69,6 +69,7 @@ const (
 	CodeDraftLimitReached            = "DRAFT_LIMIT_REACHED"
 	CodeMoemoepointInsufficient      = "MOEMOEPOINT_INSUFFICIENT"
 	CodeSelfLikeForbidden            = "SELF_LIKE_FORBIDDEN"
+	CodeResourcePublishBanned        = "RESOURCE_PUBLISH_BANNED"
 	CodePollClosed                   = "POLL_CLOSED"
 	CodeVoteAlreadyCast              = "VOTE_ALREADY_CAST"
 	CodeSelfUpvoteForbidden          = "SELF_UPVOTE_FORBIDDEN"
@@ -146,6 +147,7 @@ var Codes = []Def{
 	{CodeDraftLimitReached, DomainKungal, http.StatusConflict, "Draft limit reached", "The caller already holds the maximum number of drafts. A draft is never overwritten, so the only way to make room is to delete one. limit is that number.", []ExtDef{{Name: "limit", Type: "integer"}}},
 	{CodeMoemoepointInsufficient, DomainKungal, http.StatusForbidden, "Moemoepoint insufficient", "The caller's moemoepoint balance, as this forum last cached it, is below what the operation costs. required is that cost.", []ExtDef{{Name: "required", Type: "integer"}}},
 	{CodeSelfLikeForbidden, DomainKungal, http.StatusForbidden, "Self like forbidden", "Users cannot like what they wrote themselves.", nil},
+	{CodeResourcePublishBanned, DomainKungal, http.StatusForbidden, "Resource publish banned", "This work is banned from publishing download resources.", nil},
 	{CodePollClosed, DomainKungal, http.StatusConflict, "Poll closed", "The poll no longer accepts votes: it is past closes_at. Nothing about the request is wrong.", nil},
 	{CodeVoteAlreadyCast, DomainKungal, http.StatusConflict, "Vote already cast", "The caller has already voted and this poll does not allow changing a vote.", nil},
 	{CodeSelfUpvoteForbidden, DomainKungal, http.StatusForbidden, "Self upvote forbidden", "Users cannot upvote their own topics.", nil},

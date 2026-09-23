@@ -4,8 +4,6 @@ import (
 	galgameDto "kun-galgame-api/internal/galgame/dto"
 )
 
-// Only the resource lane is left here: its items are the galgame domain's
-// resource cards, which have no /api/v1 shape yet.
 type SearchRequest struct {
 	Keywords string `query:"keywords" validate:"required,max=107"`
 	Type     string `query:"type" validate:"required,oneof=resource"`

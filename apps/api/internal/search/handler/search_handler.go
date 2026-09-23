@@ -51,16 +51,4 @@ func (h *SearchHandler) ResolveEntities(c fiber.Ctx) error {
 	return response.OK(c, dto.EntityResolveResult{Items: items})
 }
 
-func (h *SearchHandler) Search(c fiber.Ctx) error {
-	var req dto.SearchRequest
-	if appErr := utils.ParseQueryAndValidate(c, &req); appErr != nil {
-		return response.Error(c, appErr)
-	}
-	res, appErr := h.searchService.SearchResources(
-		c.Context(), req.Keywords, req.Page, req.Limit, utils.IsSFW(c),
-	)
-	if appErr != nil {
-		return response.Error(c, appErr)
-	}
-	return response.Paginated(c, res.Items, res.Total)
-}
+

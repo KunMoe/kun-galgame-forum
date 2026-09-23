@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"kun-galgame-api/internal/apiv1/repr"
+	"kun-galgame-api/internal/galgame/client"
 	legacyErrors "kun-galgame-api/pkg/errors"
 	"kun-galgame-api/pkg/moyuclient"
 	"kun-galgame-api/pkg/problem"
@@ -25,8 +26,9 @@ const (
 
 var errUnconfigured = errors.New("apiv1 galgames: service is not configured")
 
-type workExists interface {
+type workCatalog interface {
 	CatalogWorkExists(ctx context.Context, workID int) (bool, *legacyErrors.AppError)
+	CatalogRowsByWorkIDs(ctx context.Context, ids []int, include, contentLimit string) (map[int]client.CatalogWorkListItem, *legacyErrors.AppError)
 }
 
 type userLookup interface {
@@ -34,14 +36,14 @@ type userLookup interface {
 }
 
 type Service struct {
-	works workExists
+	works workCatalog
 	moyu  *moyuclient.Client
 	users userLookup
 	rdb   *redis.Client
 	cdn   string
 }
 
-func New(works workExists, moyu *moyuclient.Client, users userLookup, rdb *redis.Client, cdn string) *Service {
+func New(works workCatalog, moyu *moyuclient.Client, users userLookup, rdb *redis.Client, cdn string) *Service {
 	return &Service{works: works, moyu: moyu, users: users, rdb: rdb, cdn: cdn}
 }
 

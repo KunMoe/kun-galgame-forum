@@ -377,6 +377,22 @@ func TestF1AcceptsLanguageTags(t *testing.T) {
 	}
 }
 
+func TestF1AcceptsResourceRuntimes(t *testing.T) {
+	doc := spec(t, get[struct {
+		ResourceRuntimes []string `json:"resource_runtimes" enum:"native-win,tyranor-next,other" maxItems:"14" doc:"Runtimes."`
+	}]("/x"))
+	if errs := gates.CheckF1(doc); len(errs) > 0 {
+		t.Fatal(errs)
+	}
+}
+
+func TestF1RejectsInvalidResourceRuntime(t *testing.T) {
+	doc := spec(t, get[struct {
+		ResourceRuntimes []string `json:"resource_runtimes" enum:"native-win,NativeWin" maxItems:"14" doc:"Runtimes."`
+	}]("/x"))
+	expect(t, gates.CheckF1(doc), `enum value "NativeWin" is not lowercase kebab-case`)
+}
+
 func TestF1AcceptsAnIncludeFlag(t *testing.T) {
 	doc := spec(t, func(api huma.API) {
 		huma.Register(api, apiv1.Public(huma.Operation{OperationID: "q", Method: http.MethodGet, Path: "/q", Summary: "Q"}),

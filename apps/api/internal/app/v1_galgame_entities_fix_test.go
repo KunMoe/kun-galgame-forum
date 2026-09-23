@@ -165,6 +165,15 @@ func (f *fakeCatalog) visible(id int, contentLimit string) bool {
 	return client.CatalogItemToBrief(context.Background(), &row).ContentLimit == "sfw"
 }
 
+func (f *fakeCatalog) CatalogWorkExists(ctx context.Context, workID int) (bool, *legacyErrors.AppError) {
+	rows, err := f.CatalogRowsByWorkIDs(ctx, []int{workID}, "", "all")
+	if err != nil {
+		return false, err
+	}
+	_, ok := rows[workID]
+	return ok, nil
+}
+
 func (f *fakeCatalog) CatalogRowsByWorkIDs(_ context.Context, ids []int, _, contentLimit string) (map[int]client.CatalogWorkListItem, *legacyErrors.AppError) {
 	if e := f.err(); e != nil {
 		return nil, e
@@ -175,7 +184,11 @@ func (f *fakeCatalog) CatalogRowsByWorkIDs(_ context.Context, ids []int, _, cont
 	out := map[int]client.CatalogWorkListItem{}
 	for _, id := range ids {
 		if f.visible(id, contentLimit) {
-			out[id] = f.rows[id]
+			row := f.rows[id]
+			if !client.CatalogItemRenderable(&row) {
+				continue
+			}
+			out[id] = row
 		}
 	}
 	return out, nil

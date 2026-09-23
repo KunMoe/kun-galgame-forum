@@ -27,6 +27,7 @@
     "IMAGE_REJECTED": "图片未通过审核，无法上传",
     "MOEMOEPOINT_INSUFFICIENT": "萌萌点不足",
     "SELF_LIKE_FORBIDDEN": "不能给自己点赞",
+    "RESOURCE_PUBLISH_BANNED": "该作品已禁止发布下载资源",
     "SELF_UPVOTE_FORBIDDEN": "不能推自己的话题",
     "SELF_ANSWER_FORBIDDEN": "不能作答自己出的题",
     "POLL_CLOSED": "投票已截止，无法再投",

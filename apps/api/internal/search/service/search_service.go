@@ -9,14 +9,12 @@ import (
 
 type SearchService struct {
 	entityService *galgameService.EntitySearchService
-	resource      *galgameService.ResourceService
 }
 
 func NewSearchService(
 	entityService *galgameService.EntitySearchService,
-	resource *galgameService.ResourceService,
 ) *SearchService {
-	return &SearchService{entityService: entityService, resource: resource}
+	return &SearchService{entityService: entityService}
 }
 
 func tokenize(raw string) ([]string, *errors.AppError) {
