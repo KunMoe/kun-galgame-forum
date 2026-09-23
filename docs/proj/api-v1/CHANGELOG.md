@@ -1,5 +1,19 @@
 # API v1 changelog
 
+## 2026-09-23 (WS website directory)
+
+Offered:
+
+- `GET /api/v1/websites` — cursor-paged directory, newest listing first; `include_nsfw` (default false), `website_category_id`, `website_tag_id`, `include_total`
+- `GET /api/v1/websites/{website_host}` — detail by the page's host key; counts a view; `viewer` has `has_liked`, `has_favorited`, `can_edit`, `can_delete`
+- `PUT` / `DELETE /api/v1/websites/{website_host}/like` and `/favorite` — idempotent slots returning `website_engagement`
+- `GET /api/v1/website-categories`, `GET /api/v1/website-categories/{website_category_slug}`, `GET /api/v1/website-tags`, `GET /api/v1/website-tags/{website_tag_slug}`, `GET /api/v1/website-tag-groups`
+- Staff (`website.*`, never a Bearer request): `POST /api/v1/admin/websites` and `GET` / `PATCH` / `DELETE /api/v1/admin/websites/{website_id}` (edit source `admin_website`); the same four for `website-categories`, `website-tags`, `website-tag-groups`
+- New error code `WEBSITE_CATEGORY_NOT_EMPTY` (409, extension `website_count`)
+
+Field names vs the retired faces: `host` (was `url` / the card's `domain`), `title` (was `name`), `urls` (was the `domain` array; every element is an http(s) URL), `founded` (was `create_time`), `is_nsfw` (was `age_limit`), `state` (was `status`, same values), `score` (was `price` and `level`), `icon: Image | null` plus `external_icon_url` (were `icon` / `icon_image_hash` / `icon_url`), `view_count` (was `view`), `website_category` / `website_tags` (were `category` / `tags`), `slug` / `label` on categories, tags and groups (were `name` / `label`), `website_tag_group_id` (was `group_id`), `is_multi_select` (was `multi_select`). The detail no longer carries `comment`; read the wall through `/api/v1/wall-comments`.
+
+Retired: every `/api/website`, `/api/website-tag*`, `/api/website-category*` and `/api/website-tag-group` route (21).
 ## 2026-09-23 (P permissions)
 
 Offered:

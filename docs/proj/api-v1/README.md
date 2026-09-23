@@ -79,10 +79,11 @@ git ls-remote --heads origin 'api-v1/*'
 | UP | 更新日志与待办看板：11 条 `/api/update/**` → `/api/v1/update-logs*`、`/api/v1/todos*` 10 个操作；待办的认领/完成/废弃/放弃/重新启用收成一个 `PATCH {state}`（[契约](waves/up-update-log.md)，迁移 170） | ✅ 2026-09-23 |
 | TS | 举报与审核收件箱：6 条旧路由 → `/api/v1/report-reasons`、`/api/v1/reports`、`/api/v1/admin/review-items*` 5 个操作；认领 / 处置收成一个 `PATCH {state}`，举报人自带的外链只收本站；infra 的 HMAC 回调 `/api/trust/callback` 不属于 v1 面，保留（[契约](waves/ts-trust.md)，无迁移，PR #191） | ✅ 2026-09-23 |
 | P | 权限：7 条旧路由 → `/api/v1/me/permissions`、`/api/v1/admin/role-permissions`（一次原子 `PATCH` 改多个角色）、`/api/v1/admin/user-permissions/{user_id}`、`/api/v1/admin/permission-changes` 5 个面；匿名公开权限矩阵的 `/perm/bundles` 直接删除（[契约](waves/p-perm.md)，无迁移） | ✅ 2026-09-23 |
+| WS | 网站目录：`/website` + `/website-tag-group` + `/website-tag` + `/website-category` 21 条（后两组由 D 轨核实后移入）→ 27 个操作；公开读按 `host` / `slug`，写面按 id 挂 `/admin`；赞与收藏是 K16 槽位（[契约](waves/ws-website.md)，迁移 175） | ✅ 2026-09-23 |
 
 ### 待认领
 
-旧 `/api/*` 路由 **195 条**。`legacy_route_baseline` = 196，因为它数的是「所有非 `/api/v1` 的路由」，`/healthz` 也在里面。**基线的地板是 2，不是 0**：`/healthz` 与 infra 打进来的 HMAC 回调 `POST /api/trust/callback`（TS 轨 K-TS1，它不是终端用户的面）永远留在 v1 之外。
+旧 `/api/*` 路由 **174 条**。`legacy_route_baseline` = 175，因为它数的是「所有非 `/api/v1` 的路由」，`/healthz` 也在里面。**基线的地板是 2，不是 0**：`/healthz` 与 infra 打进来的 HMAC 回调 `POST /api/trust/callback`（TS 轨 K-TS1，它不是终端用户的面）永远留在 v1 之外。
 
 > **切分依据是「共用同一个老 handler」，不是 URL 前缀。** 这个仓库里老 handler 大量跨前缀：`ResourceCommentHandler` 一个人管 15 条 / 5 个前缀；`/api/admin/**` 的 24 条分属 11 个 handler、各归各的域；`/api/user/:id/toolsets` 是 toolset 的面；`GET /api/resource` 是 `TopicHandler.GetResourceList`，即话题列表的资源区分面。**按前缀分轨会让两个 session 撞在同一个 handler 上，而且谁也删不掉它**——共用 handler 要等它服务的**所有**前缀都迁完才能删。下表按连通分量切，每行对外零耦合。
 
@@ -92,7 +93,6 @@ git ls-remote --heads origin 'api-v1/*'
 | G | galgame 主域 + `-edit` + `-quiz` + `-resource` + `toolset` + 各自的 admin/user 面（**不含** `/galgame/:gid/comments*` 与 `/galgame/comments/*`，已归 RC） | 85 | 140–159 | 最大的一坨，**一个 owner**，内部自己切 3–4 个 PR 串行 |
 | GE | galgame 实体六件套 `-character` `-engine` `-official` `-series` `-staff` `-tag` | 18 | 160–164 | 共用 `EntityHandler`，必须同一轨 |
 | D | 文档 `/doc` + `/website-tag` + `/website-category` | 26 | 165–169 | 共用 `TagHandler` / `CategoryHandler` |
-| WS | 站点 `/website` + `/website-tag-group` | 11 | 175–179 | |
 | GR | galgame 评分 `/galgame-rating` | 6 | 190–194 | |
 | X | 零散：`/search` 6、`/friend-link`(+admin) 5、`/news` 4、`/image` 4、`/ranking` 3、`/community` 3、`/auth` 3、`/activity` 3、`/rss` 2、`/category`+`/section` 2、`/admin` 总览 2、`/home` 1、`/app` 1 | 39 | 195–209 | 可拆成几个小 PR |
 

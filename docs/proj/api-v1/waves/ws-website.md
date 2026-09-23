@@ -226,3 +226,43 @@
 | 13 | `PATCH` 缺席 `website_tag_ids` 时清空标签 | 只改 `title` 后标签原样 |
 | 14 | 改/删不存在的 id 回成功 | → 404 |
 | 15 | 写面不按 OAuth 当前记录判封禁 | 会话未封、OAuth 已封的用户点赞 → 403 `ACCOUNT_BANNED` |
+
+## 8. 实现与验收（2026-09-23，只增不改）
+
+实现时对契约的补充：
+
+1. **`TagCreate.website_tag_group_id` 也是可空的**：G8 要求它与 `TagPatch`（`null` 表示移出分组）同型，所以建标签时 `null` 与缺席都表示无分组。
+2. 管理面的 `POST` 都支持可选的 `Idempotency-Key`（K12「全部 POST 必须支持」）。
+3. `urls` 的元素是带 `format: uri`、`maxLength: 100` 的具名类型；网页表单要求每条都带 `http(s)://`。
+4. 删掉了已无引用的模型 `GalgameWebsiteLike` / `GalgameWebsiteFavorite` / `GalgameWebsiteTagRelation`（v1 用 SQL 直写这三张表）。连同旧 handler、service、dto、四个 repo 一起，`internal/website` 只剩模型、`repository/v1_*.go` 与 `apiv1/`。
+5. 网页的「价值精算值」上限按标签表现算：单选分组取组内最高 `level`，其余正 `level` 全加。开发库数据算出 **275**，与普查从生产推出的理论上限一致（旧界面写死 245）。
+6. `Website.updated_at` 的说明写明：2026-09-23 之前的值可能是浏览时间（E1 的历史值找不回来）。
+
+### 8.1 变异（15 条，4 拆成浏览与计数两处，17 次全杀）
+
+| # | 红的测试 |
+|---|---|
+| 1 | `TestV1WebsiteSlots`：第二次 `PUT` 后 `has_liked=false`、计数回 0 |
+| 2 | `TestV1WebsiteSlots`：重放 `PUT` 计数变 2 |
+| 3 | `TestV1WebsiteSlots`：没赞过的 `DELETE` 把计数减到 0 |
+| 4a / 4b | `TestV1WebsiteDetail` / `TestV1WebsiteSlots`：浏览、点赞之后 `updated` 被刷成现在 |
+| 5 | `TestV1WebsitesWalk`：去掉 `id` 后翻页重复 `…804`、漏掉 5 行 |
+| 6 | `TestV1WebsitesFilterAndTotal`：默认列表里出现 NSFW 站 |
+| 7 | `TestV1WebsitesFilterAndTotal`：分类 `total 6, want 3` |
+| 8 | `TestV1WebsiteAdminNeedsPermissions`：普通用户建站 201 |
+| 9 | `TestV1AdminWebsiteCreate`：单选分组两个标签建成 201 |
+| 10 | `TestV1AdminWebsiteCreate`：不存在的分类 → 500（外键）而不是 422 |
+| 11 | `TestV1AdminWebsiteCreate`：大写 host 让 201 响应不符合 spec 的 `pattern` |
+| 12 | `TestV1WebsiteCategories`：删有网站的分类 → 500（外键 RESTRICT） |
+| 13 | `TestV1AdminWebsitePatch`：只改标题后标签被清空 |
+| 14 | `TestV1AdminWebsiteDelete`：再删一次回 204 |
+| 15 | `TestV1WebsiteAdminNeedsPermissions`、`TestV1WebsiteSlots`：OAuth 里已封禁的会话照样能写 |
+
+### 8.2 浏览器（开发栈，本 worktree 的 API 打本轨临时库，开发库 84 个站的数据导进来并按迁移 175 修过）
+
+- 匿名：`/website` 65 张卡（SFW），四个分类加「已关站」分组，点卡进详情；详情页无编辑/删除；评论墙照常出现。
+- 普通用户：点赞 6→7、收藏 2→3，刷新后仍是已赞/已收藏，再点回 6 / 2；库里计数与行数一致，`updated` 没动。
+- 分类页 `/website-category/resource` 41 个站（与列表 `total` 一致），标签页 `/website-tag/performance2` 25 个站；详情页价值条显示 `156 / 275`。
+- admin：API 建一个站后在详情页点编辑，表单从 `GET /admin/websites/{id}` 预填；改标题并把主域名改成新的 → 保存后跳到新地址，标题已变；删除 → 回 `/website`，旧地址 404。
+- 后台 `/admin/website`：4 个非空分类的删除按钮是禁用的；建、改、删一个空分类；用已存在的标识建分类 → 界面显示「已存在」（`ALREADY_EXISTS` 的译文）；建分组、建标签。
+- 控制台只有与本轨无关的 `me/preferences` 503（假令牌）与顶栏头像水合不一致。
