@@ -1,17 +1,44 @@
 <script setup lang="ts">
+import { settle } from '#shared/utils/api/problem'
+import type { FollowedWall } from '#shared/utils/api/schemas'
+
 definePageMeta({
   middleware: 'auth'
 })
 
 useKunDisableSeo('关注的评论区')
 
-const items = ref<CommunityFollowItem[]>([])
-const nextCursor = ref('')
+const WALL_PAGE: Record<
+  FollowedWall['subject_type'],
+  { label: string; path: string }
+> = {
+  galgame: { label: 'Galgame', path: '/galgame/' },
+  galgame_rating: { label: '游戏评分', path: '/galgame-rating/' },
+  galgame_resource: { label: '下载资源', path: '/galgame/resource/' },
+  galgame_quiz: { label: '游戏答题', path: '/galgame-quiz/' },
+  toolset: { label: 'Gal 工具', path: '/toolset/' },
+  website: { label: '网站', path: '/website/' }
+}
+
+const api = useApiClient()
+const workName = useWorkName()
+
+const wallKey = (item: FollowedWall) =>
+  `${item.subject_type}:${item.subject_id}`
+const wallLink = (item: FollowedWall) =>
+  WALL_PAGE[item.subject_type].path +
+  (item.website ? item.website.host : item.subject_id)
+const wallTitle = (item: FollowedWall) =>
+  item.work
+    ? workName(item.work)
+    : (item.website?.title ?? WALL_PAGE[item.subject_type].label)
+
+const items = ref<FollowedWall[]>([])
+const nextCursor = ref<string | undefined>()
 const loadingMore = ref(false)
 
-const { data, status } = await useKunFetch<CommunityFollowList>(
-  '/community/following',
-  { query: { limit: 30 } }
+const { data, status } = await useApi('me-walls', (client, { signal }) =>
+  client.GET('/me/walls', { params: { query: { limit: 30 } }, signal })
 )
 
 watchEffect(() => {
@@ -26,44 +53,37 @@ const loadMore = async () => {
     return
   }
   loadingMore.value = true
-  const page = await kunFetch<CommunityFollowList>('/community/following', {
-    method: 'GET',
-    query: { cursor: nextCursor.value, limit: 30 }
-  })
+  const result = await settle(
+    api.GET('/me/walls', {
+      params: { query: { cursor: nextCursor.value, limit: 30 } }
+    })
+  )
   loadingMore.value = false
-  if (!page) {
+  if (!result.ok) {
+    reportProblem(result.problem)
     return
   }
-  const seen = new Set(
-    items.value.map((item) => `${item.anchor_kind}:${item.anchor_id}`)
-  )
+  const seen = new Set(items.value.map(wallKey))
   items.value = [
     ...items.value,
-    ...page.items.filter(
-      (item) => !seen.has(`${item.anchor_kind}:${item.anchor_id}`)
-    )
+    ...result.data.items.filter((item) => !seen.has(wallKey(item)))
   ]
-  nextCursor.value = page.next_cursor
+  nextCursor.value = result.data.next_cursor
 }
 
-const unfollow = async (item: CommunityFollowItem) => {
-  const state = await kunFetch<CommunityWallState>('/community/wall/follow', {
-    method: 'POST',
-    body: {
-      anchor_kind: item.anchor_kind,
-      anchor_id: item.anchor_id,
-      following: false
-    }
-  })
-  if (state) {
-    items.value = items.value.filter(
-      (row) =>
-        !(
-          row.anchor_kind === item.anchor_kind &&
-          row.anchor_id === item.anchor_id
-        )
-    )
+const unfollow = async (item: FollowedWall) => {
+  const result = await settle(
+    api.DELETE('/me/walls/{subject_type}/{subject_id}/follow', {
+      params: {
+        path: { subject_type: item.subject_type, subject_id: item.subject_id }
+      }
+    })
+  )
+  if (!result.ok) {
+    reportProblem(result.problem)
+    return
   }
+  items.value = items.value.filter((row) => wallKey(row) !== wallKey(item))
 }
 </script>
 
@@ -83,7 +103,7 @@ const unfollow = async (item: CommunityFollowItem) => {
     <div v-else-if="items.length" class="space-y-2">
       <KunCard
         v-for="item in items"
-        :key="`${item.anchor_kind}:${item.anchor_id}`"
+        :key="wallKey(item)"
         padding="sm"
         :is-hoverable="true"
       >
@@ -91,13 +111,13 @@ const unfollow = async (item: CommunityFollowItem) => {
           <KunLink
             color="default"
             underline="none"
-            :to="item.link"
+            :to="wallLink(item)"
             class-name="min-w-0 flex-1 truncate font-medium"
           >
-            {{ item.title }}
+            {{ wallTitle(item) }}
           </KunLink>
           <KunChip size="sm" color="default" class-name="shrink-0">
-            {{ item.label }}
+            {{ WALL_PAGE[item.subject_type].label }}
           </KunChip>
           <KunButton
             size="sm"

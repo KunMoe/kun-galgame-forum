@@ -1244,6 +1244,90 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/me/walls": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the walls the caller follows
+         * @description The comment walls the caller follows, in the community service's order. A page can be shorter than limit, even empty, while next_cursor is present: walls this forum no longer recognises are left out. The last page omits next_cursor.
+         */
+        get: operations["listFollowedWalls"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/walls/{subject_type}/{subject_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the caller's standing on a wall
+         * @description Whether the caller follows the wall. Reading it marks nothing.
+         */
+        get: operations["getWallState"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/walls/{subject_type}/{subject_id}/follow": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Follow a wall
+         * @description The caller is notified of every new comment on the wall. Following a followed wall changes nothing.
+         */
+        put: operations["followWall"];
+        post?: never;
+        /**
+         * Stop following a wall
+         * @description Back to the default: replies and mentions addressed to the caller still notify, other comments do not. Unfollowing a wall the caller does not follow changes nothing.
+         */
+        delete: operations["unfollowWall"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/walls/{subject_type}/{subject_id}/read-marker": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Mark a wall read
+         * @description Marks every comment on the wall read for the caller, along with this forum's notifications about them. It only acts on a wall the caller has written on or follows; on any other wall it just returns the standing.
+         */
+        put: operations["markWallRead"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/polls/{poll_id}": {
         parameters: {
             query?: never;
@@ -3143,6 +3227,24 @@ export interface components {
              */
             minimum?: number;
         };
+        FollowedWall: {
+            /**
+             * @description Type discriminant. Always followed_wall.
+             * @enum {string}
+             */
+            object: "followed_wall";
+            /** @description Id of the page whose wall this is. */
+            subject_id: string;
+            /**
+             * @description Kind of page whose comment wall this is.
+             * @enum {string}
+             */
+            subject_type: "galgame" | "galgame_rating" | "galgame_resource" | "galgame_quiz" | "toolset" | "website";
+            /** @description The site, for a website wall. null for every other kind of wall, and for a website that no longer exists. */
+            website: components["schemas"]["WebsiteSummary"] | null;
+            /** @description The work, for a galgame wall. null for every other kind of wall, and for a galgame wall whose work catalog no longer shows. */
+            work: components["schemas"]["WorkRef"] | null;
+        };
         FriendLink: {
             /** @description Banner image. null when the link has none. */
             banner: components["schemas"]["Image"] | null;
@@ -3392,6 +3494,17 @@ export interface components {
         ListDocSummary: {
             /** @description Members of this page. Empty array, never null. */
             items: components["schemas"]["DocSummary"][];
+            /** @description Opaque keyset cursor. Omitted on the last page. */
+            next_cursor?: string;
+            /**
+             * @description Type discriminant. Always list.
+             * @enum {string}
+             */
+            object: "list";
+        };
+        ListFollowedWall: {
+            /** @description Members of this page. Empty array, never null. */
+            items: components["schemas"]["FollowedWall"][];
             /** @description Opaque keyset cursor. Omitted on the last page. */
             next_cursor?: string;
             /**
@@ -3659,6 +3772,12 @@ export interface components {
              * @enum {string}
              */
             object: "list";
+        };
+        LocalizedName: {
+            /** @description Whether the name is a machine translation. */
+            is_machine: boolean;
+            /** @description The name in this locale. Free text; never use it as a decision input. */
+            value: string;
         };
         Lottery: {
             /** @description The user who created the lottery and paid for its point prizes. */
@@ -6165,6 +6284,24 @@ export interface components {
             /** @description Whether the caller liked the comment. */
             has_liked: boolean;
         };
+        WallState: {
+            /** @description The wall's subject id, the same value as subject_id. */
+            id: string;
+            /** @description Whether the caller gets notified of every new comment on this wall. */
+            is_following: boolean;
+            /**
+             * @description Type discriminant. Always wall_state.
+             * @enum {string}
+             */
+            object: "wall_state";
+            /** @description Id of the page whose wall this is. */
+            subject_id: string;
+            /**
+             * @description Kind of page whose comment wall this is.
+             * @enum {string}
+             */
+            subject_type: "galgame" | "galgame_rating" | "galgame_resource" | "galgame_quiz" | "toolset" | "website";
+        };
         Website: {
             /**
              * Format: int64
@@ -6449,6 +6586,27 @@ export interface components {
             has_favorited: boolean;
             /** @description Whether the caller liked the site. */
             has_liked: boolean;
+        };
+        WorkRef: {
+            /** @description The portrait cover at its original size, never the 16:9 crop. null when the work has none. */
+            cover: components["schemas"]["Image"] | null;
+            /** @description The entity's own name. Never empty. Free text; never use it as a decision input. */
+            display_name: string;
+            /** @description Work id: the catalog work id, which is also the id in the web's /galgame/{id}. */
+            id: string;
+            /** @description Whether this forum displays the work as adult content: the editorial display axis (the claim's content limit), not the age rating. */
+            is_nsfw: boolean;
+            /** @description Romanization of the name. null when none is recorded. Free text; never use it as a decision input. */
+            latin: string | null;
+            /** @description Names by BCP-47 tag, sparse. Empty object when there are none, never null. */
+            localized: {
+                [key: string]: components["schemas"]["LocalizedName"];
+            };
+            /**
+             * @description Type discriminant. Always work.
+             * @enum {string}
+             */
+            object: "work";
         };
     };
     responses: never;
@@ -13497,6 +13655,392 @@ export interface operations {
                 };
             };
             /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listFollowedWalls: {
+        parameters: {
+            query?: {
+                /** @description Opaque keyset cursor from a previous page of this collection. */
+                cursor?: string;
+                /** @description Page size. 1–100, default 20. Values above 100 are rejected, not clamped. */
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListFollowedWall"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the community service is unreachable or unconfigured. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getWallState: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Kind of page whose comment wall this is. */
+                subject_type: "galgame" | "galgame_rating" | "galgame_resource" | "galgame_quiz" | "toolset" | "website";
+                /** @description Id of the page whose wall this is. */
+                subject_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WallState"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SCOPE_REQUIRED or ACCOUNT_BANNED; QUIZ_ANSWER_REQUIRED when the wall belongs to a quiz that hides its game or carries spoilers and the caller is neither its author, nor one who answered it, nor staff holding that wall's edit or delete permission. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the page does not exist or its author is banned. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the community service is unreachable or unconfigured. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    followWall: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Kind of page whose comment wall this is. */
+                subject_type: "galgame" | "galgame_rating" | "galgame_resource" | "galgame_quiz" | "toolset" | "website";
+                /** @description Id of the page whose wall this is. */
+                subject_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WallState"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SCOPE_REQUIRED or ACCOUNT_BANNED; QUIZ_ANSWER_REQUIRED when the wall belongs to a quiz that hides its game or carries spoilers and the caller is neither its author, nor one who answered it, nor staff holding that wall's edit or delete permission. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the page does not exist or its author is banned. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the community service is unreachable or unconfigured. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    unfollowWall: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Kind of page whose comment wall this is. */
+                subject_type: "galgame" | "galgame_rating" | "galgame_resource" | "galgame_quiz" | "toolset" | "website";
+                /** @description Id of the page whose wall this is. */
+                subject_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WallState"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SCOPE_REQUIRED or ACCOUNT_BANNED; QUIZ_ANSWER_REQUIRED when the wall belongs to a quiz that hides its game or carries spoilers and the caller is neither its author, nor one who answered it, nor staff holding that wall's edit or delete permission. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the page does not exist or its author is banned. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the community service is unreachable or unconfigured. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    markWallRead: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Kind of page whose comment wall this is. */
+                subject_type: "galgame" | "galgame_rating" | "galgame_resource" | "galgame_quiz" | "toolset" | "website";
+                /** @description Id of the page whose wall this is. */
+                subject_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WallState"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SCOPE_REQUIRED or ACCOUNT_BANNED; QUIZ_ANSWER_REQUIRED when the wall belongs to a quiz that hides its game or carries spoilers and the caller is neither its author, nor one who answered it, nor staff holding that wall's edit or delete permission. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the page does not exist or its author is banned. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the community service is unreachable or unconfigured. */
             503: {
                 headers: {
                     [name: string]: unknown;

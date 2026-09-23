@@ -15,7 +15,6 @@ export const useCommunityCommentList = async (
   const surface = communityCommentSurface(target)
 
   const { id: viewerId } = usePersistUserStore()
-  const config = useRuntimeConfig()
   const api = useApiClient()
 
   const posts = ref<WallComment[]>([])
@@ -41,33 +40,27 @@ export const useCommunityCommentList = async (
     { lazy: true }
   )
 
-  // The read receipt is a POST the reader makes, never something inferred from
+  // The read receipt is a write the reader makes, never something inferred from
   // the GET above: the community service refuses to treat a read face as a
   // write, and it answers with the viewer's follow state so the toggle has a
   // state to render. It creates nothing for a wall the viewer neither wrote on
-  // nor follows.
-  //
-  // Raw $fetch, not kunFetch: nobody asked for this request, so a community
-  // service that blinks must not throw 「网络请求失败，请稍后重试」 at a reader
-  // who only opened a page.
+  // nor follows. Failures stay silent: nobody asked for this request.
+  const wallPath = {
+    subject_type: surface.subjectType,
+    subject_id: surface.subjectId
+  }
+
   const reportRead = async () => {
     if (!viewerId || import.meta.server || locked.value) {
       return
     }
-    try {
-      const resp = await $fetch<{ code: number; data?: CommunityWallState }>(
-        `${config.public.apiBaseUrl}/api/community/wall/read`,
-        {
-          method: 'POST',
-          credentials: 'include',
-          body: { ...surface.wallAnchor, thread_id: 0 }
-        }
-      )
-      if (resp?.code === 0 && resp.data) {
-        following.value = resp.data.following
-      }
-    } catch {
-      // A missing receipt costs the reader a stale follow state and an unread notification.
+    const result = await settle(
+      api.PUT('/me/walls/{subject_type}/{subject_id}/read-marker', {
+        params: { path: wallPath }
+      })
+    )
+    if (result.ok) {
+      following.value = result.data.is_following
     }
   }
 
@@ -76,13 +69,19 @@ export const useCommunityCommentList = async (
       useAuthModal().open()
       return
     }
-    const state = await kunFetch<CommunityWallState>('/community/wall/follow', {
-      method: 'POST',
-      body: { ...surface.wallAnchor, following: next }
-    })
-    if (state) {
-      following.value = state.following
+    const call = next
+      ? api.PUT('/me/walls/{subject_type}/{subject_id}/follow', {
+          params: { path: wallPath }
+        })
+      : api.DELETE('/me/walls/{subject_type}/{subject_id}/follow', {
+          params: { path: wallPath }
+        })
+    const result = await settle(call)
+    if (!result.ok) {
+      reportProblem(result.problem)
+      return
     }
+    following.value = result.data.is_following
   }
 
   const seed = () => {

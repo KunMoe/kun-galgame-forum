@@ -152,3 +152,7 @@ export type FriendLinkCategory = FriendLink['friend_link_category']
 export type FriendLinkState = FriendLink['state']
 export type AppVersion = components['schemas']['AppVersion']
 export type AppPlatform = keyof AppVersion['downloads']
+
+export type WorkRef = components['schemas']['WorkRef']
+export type WallState = components['schemas']['WallState']
+export type FollowedWall = components['schemas']['FollowedWall']
