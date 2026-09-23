@@ -217,3 +217,35 @@ K 编号用前缀：
 9. **变异 2 的读法**：`MESSAGE_UPVOTE` 在 v1 的类型词表里根本没有，排除是结构性的；变异改成「给它一个类型」，由 `TestV1ActivitiesNoUpvoteEcho` 杀。**变异 11**：正文转换器自己也调 OAuth，拿 `topic_reply_creation` 测会被转换器的 503 掩盖，测试改用不需要转换正文的 `topic_comment_creation`。
 10. **网页**：`card/EntityComment.vue` 删除（§1.3 第 8 条的死分支，两类评论本来就落到通用卡）；作品封面改用 `WorkRef.cover` 的竖版原图（3:4），不再是 16:9 的 `_mini` 裁切；作品名走共享的 `utils/catalogName.ts` + `useWorkName()`（与 x2-ranking / x2-community 逐字节相同）；首屏与翻页走现成的 `useCursorList`（自带「后退恢复已加载的页」），不另写分页。
 11. 数字（rebase 前）：`legacy_route_baseline` 159 → 156，`legacy-fetch-baseline` 189 → 183。
+
+## 9. 验收记录（2026-09-23，rebase 到 master `9e7c496f` 之后）
+
+- 门：`go build` / `make lint` 干净；全量库测试（本轨临时库，`-count=1 -p 1`）全绿；`make openapi`、路由 golden（`-update-routes`）、`pnpm gen:api` 均无漂移；网页 `lint` / `typecheck` / `test` 全绿；`deadcode` 在 `internal/activity` 下无条目。
+- 基线（rebase 后重新生成）：`legacy_route_baseline` 153 → **150**；`legacy-fetch-baseline` 183 → **177**（X1a 先降了 6，本轨再降 6）。
+
+### 9.1 变异（§7 的 11 条 + §8 第 8 条补的 1 条，12 条全杀）
+
+| # | 改动 | 红的测试 |
+|---|---|---|
+| 1 | 去掉 `(type, source_id)` 决胜键 | `TestV1ActivitiesWalk` |
+| 2 | 给 `MESSAGE_UPVOTE` 一个类型 | `TestV1ActivitiesNoUpvoteEcho` |
+| 3 | `include_nsfw` 不生效 | `TestV1ActivitiesFilters` |
+| 4 | `topic_sections` 恒 `all` | `TestV1ActivitiesWalk`、`TestV1ActivitiesFilters` |
+| 5 | `bumped_desc` 不校验类型 | `TestV1ActivitiesRejects`（两个子测试） |
+| 6 | 游标不绑过滤条件 | `TestV1ActivitiesRejects` |
+| 7 | 封禁的执行者不丢 | `TestV1ActivitiesWalk`、`TestV1ActivitiesShape` |
+| 8 | 置顶回复不看状态 | `TestV1ActivitiesShape` |
+| 9 | 回复条目也填 `topic` | `TestV1ActivitiesShape` |
+| 10 | 提及原样下发 token 文本 | `TestV1ActivitiesShape` |
+| 11 | OAuth 失败当作没有用户 | `TestV1ActivitiesUpstream` |
+| 12 | `work_revision` 要求两个 id 都在 | `TestV1ActivitiesShape` |
+
+### 9.2 浏览器（API :2372 打本轨临时库 + 种子数据，网页 :2371，真 OAuth / catalog）
+
+开发库还停在 G0 之前（`feed_activity.work_id` 不存在，迁移 141 要先跑 `align-galgame-ids`），所以 API 改指本轨临时库，种了 46 个话题、12 个 catalog 真实作品（id 1–12）、36 个资源、评分 / 编辑 / 待办 / 更新日志各几条；验收后种子行全部删掉，开发库没动过。
+
+- 首页六个动态页签（话题 / Galgame / 全站 / Gal 资源 / 资源和求助 / 其他）各自出正确的类型；「话题」按顶帖序；「全站」固定 `include_nsfw=false`；客户端切页签后滚到底自动续页 30 → 36 并显示「没有更多动态了」。
+- 卡片逐类核对：话题卡的最佳答案、最新评论（与最佳答案不重复）、表情与表情人头像、「有解答」徽章；回复卡的楼层引用与 `@提及` 节点；推话题、采纳最佳答案、评论、评分（剧透的那条只显示提示）、编辑卡的开发商 / 发售日 / 简介；作品名走中文本地化名，封面是竖版原图。
+- `/activity` 首屏 50 条，滚到底续到 100；进一条话题再后退，100 条原样恢复（`useCursorList` 的快照）。`/activity/category` 切「最佳答案 / Galgame 编辑 / Galgame 资源 / 待办」各出对应条目。
+- 「加载中后退」：页面数据还没到时后退 → 白屏、进度条卡住。`/galgame → /topic` 同样复现，与本轨无关（已知问题，未修）。
+- 控制台：只有 umami 400 与登录态头像的水合不一致（两者都与本轨无关）；种子里编辑卡的修订号是编的，所以 GE 轨旧路由 `/api/galgame/3/edit/diff` 回 404、弹了一次「条目或提案不存在」。真实数据下这个修订号来自编辑引擎。
