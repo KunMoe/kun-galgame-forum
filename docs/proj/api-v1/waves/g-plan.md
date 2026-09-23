@@ -48,5 +48,6 @@ G1 的 16 条加 G3 的 11 条就是 resources + toolsets 普查的 27 条。
 
 - `catCoverSlot.Sexual` 目前按 `int` 解码，分不清「判为安全的 0」和「没判」，所以 `WorkRef.cover.sexual` 与 GE 的 `banner.sexual` 恒为 `null`。要改成指针，再把竖版封面的等级传进 `ImageMeta.Sexual`。在 G4 之前做。
 - G3 的资源类型守卫用 `slices.Contains(resourcevocab.TypeKeys, t)`，**不要**用 `resourcevocab.IsType`：它的索引含 `LegacyTypeKeys`，`IsType("image")` 为真，而 `workrepr.ResourceType` 的 schema 枚举只有 `TypeKeys`，回出去的 200 违反自己的 spec（c8 在 #209 里撞上并用变异题钉住）。生产 0 行遗留类型，TypeKeys 之外的值按数据错 500。
+- G5 接 `/rss/galgame` 时要修的线上 bug（2026-09-23 37 在 prod 诊断）：handler 先取最新 10 条 `published` 行再按 SFW 水合丢行，那 10 条里 9 条是 `content_limit = nsfw`，feed 只剩 1 条且不留日志——**NSFW 过滤必须在 SQL 里、LIMIT 之前**（本地 `/works` 引擎的做法）。另：10 行的 `created` 全在 G0 窗口 09:34–11:16Z，懒建本地行的批量创建把「最新」冲掉了，排序键要重新定（首个资源发布时间？catalog 的创建时间？）；幸存的 236211 用户 / 横幅 / 简介全空，可能是系统懒建的无作者行。不急，不单独热修。
 - `galgame_renumber_2026` 已无读者（folder 改写已完成），可在 G 的某个迁移里删表。
 - 普查 galgame-core 第 34 条（U 转交）：`PublishedToday` 用进程时区算「今天」，应改用 `cron.ScheduleLocation()`；同一个 `Stats()` 把 catalog 错误吞成 0。
