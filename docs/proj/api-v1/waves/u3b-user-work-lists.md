@@ -95,6 +95,9 @@ func (s *Service) RenderAuthored(ctx context.Context, viewer *middleware.UserInf
 - **丢弃、不报错**：锚点不认识的行；墙 `resolveSubject` 回 `NOT_FOUND` 或 `QUIZ_ANSWER_REQUIRED` 的行；被扣留（held）且不是查看者本人的帖；作者不可渲染的帖（`render` 本来就跳过）。
 - 只有 `resolveSubject` / `render` 的 `Unavailable` 或 `Internal` 让整次调用失败（503 / 500）。
 - 名字叫 Authored，`liked` 的行（`/posts/resolve` 回的同一形状）也用它。
+- **先按锚点过滤、再渲染**（RC）：`subject_type` 的过滤用导出的 `SubjectTypeOfAnchor(kind, anchorID)`（建在 `subjectFromAnchor` 之上，一份映射），在调 `RenderAuthored` 之前做——要丢的墙永远不 resolve，被滤掉的行上的 catalog / OAuth 抖动不会把整页变成 503。
+- 测试（RC 要求）：某行的墙 `Unavailable`（如 galgame 锚点的假 catalog 挂掉）→ 整次调用 503——这是唯一**不能**丢的错误路径；同墙两行的批次只 resolve 一次（数假 store / catalog 的调用次数）。
+- **假上游照抄 infra**（`platform/community/handler/author.go` + `repository/author.go`；U1 的教训是假上游形状与真的不同）：只回可见帖（held、deleted 连作者本人的也不回——所以 `RenderAuthored` 的 held 规则只对 `/posts/resolve` 的行生效）；`post id DESC`；`after` 不含（`id < after`）；`limit` 缺省 20、夹到 100；`anchor_kind` 缺省 −1 = 全部（客户端 < 0 时不传）；`len(rows) == limit` 时 `next_cursor` = 末行 id，否则 `""`——**满的最后一页也带游标、下一次是空页**，补页循环把「空页且无游标」当结束，不是错误；条目 `{post, thread:{thread_id, title, anchor_kind, anchor_id}}`。
 
 游标：`cur_…`，**指纹绑定 `relation` + `subject_type` + 资料主人**；换了过滤条件复用旧游标 → `400 INVALID_CURSOR`（旧实现坏游标静默从头开始）。`limit` 1–100，默认 24。
 
