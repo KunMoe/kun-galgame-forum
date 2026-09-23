@@ -1,53 +1,99 @@
 <script setup lang="ts">
+import type {
+  PageListUserCommentItem,
+  PageListUserReplyItem,
+  PageListUserTopicItem
+} from '#shared/utils/api/schemas'
+
 const props = defineProps<{
   userId: number
 }>()
 
 const settings = usePersistSettingsStore()
+const { allowsNsfw: includeNsfw } = useContentStance()
 const uid = props.userId
+const ownerId = String(uid)
 const N = 4
 
-const [topics, galgames, ratings, resources, replies, comments] =
-  await Promise.all([
-    useKunFetch<{ topics: UserTopic[]; total: number }>(`/user/${uid}/topics`, {
-      query: { page: 1, limit: N, type: 'topic', user_id: uid }
-    }),
-    useKunFetch<{ items: GalgameCard[]; total: number }>(
-      `/user/${uid}/galgames`,
-      {
+const topics = useApi<PageListUserTopicItem>(
+  () =>
+    `user-topics:${ownerId}:authored:1:${N}:${includeNsfw.value ? 'nsfw' : 'sfw'}`,
+  (api, { signal }) =>
+    api.GET('/users/{user_id}/topics', {
+      params: {
+        path: { user_id: ownerId },
         query: {
+          relation: 'authored',
           page: 1,
           limit: N,
-          type: 'galgame_publish',
-          user_id: uid,
-          show_no_resource: settings.showKUNGalgameNoResource
+          include_nsfw: includeNsfw.value
         }
-      }
-    ),
-    useKunFetch<{ rating_data: GalgameRatingCard[]; total: number }>(
-      `/user/${uid}/ratings`,
-      { query: { page: 1, limit: N, user_id: uid } }
-    ),
-    useKunFetch<{ resources: UserGalgameResource[]; total: number }>(
-      `/user/${uid}/resources`,
-      { query: { page: 1, limit: N, type: 'valid', user_id: uid } }
-    ),
-    useKunFetch<{ replies: UserReply[]; total: number }>(
-      `/user/${uid}/replies`,
-      {
-        query: { page: 1, limit: N, type: 'reply_created', user_id: uid }
-      }
-    ),
-    useKunFetch<{ comments: UserComment[]; total: number }>(
-      `/user/${uid}/comments`,
-      { query: { page: 1, limit: N, type: 'comment_created', user_id: uid } }
-    )
-  ])
+      },
+      signal
+    })
+)
+const galgames = useKunFetch<{ items: GalgameCard[]; total: number }>(
+  `/user/${uid}/galgames`,
+  {
+    query: {
+      page: 1,
+      limit: N,
+      type: 'galgame_publish',
+      user_id: uid,
+      show_no_resource: settings.showKUNGalgameNoResource
+    }
+  }
+)
+const ratings = useKunFetch<{ rating_data: GalgameRatingCard[]; total: number }>(
+  `/user/${uid}/ratings`,
+  { query: { page: 1, limit: N, user_id: uid } }
+)
+const resources = useKunFetch<{
+  resources: UserGalgameResource[]
+  total: number
+}>(`/user/${uid}/resources`, {
+  query: { page: 1, limit: N, type: 'valid', user_id: uid }
+})
+const replies = useApi<PageListUserReplyItem>(
+  () =>
+    `user-replies:${ownerId}:authored:1:${N}:${includeNsfw.value ? 'nsfw' : 'sfw'}`,
+  (api, { signal }) =>
+    api.GET('/users/{user_id}/replies', {
+      params: {
+        path: { user_id: ownerId },
+        query: {
+          relation: 'authored',
+          page: 1,
+          limit: N,
+          include_nsfw: includeNsfw.value
+        }
+      },
+      signal
+    })
+)
+const comments = useApi<PageListUserCommentItem>(
+  () =>
+    `user-comments:${ownerId}:authored:1:${N}:${includeNsfw.value ? 'nsfw' : 'sfw'}`,
+  (api, { signal }) =>
+    api.GET('/users/{user_id}/comments', {
+      params: {
+        path: { user_id: ownerId },
+        query: {
+          relation: 'authored',
+          page: 1,
+          limit: N,
+          include_nsfw: includeNsfw.value
+        }
+      },
+      signal
+    })
+)
+await Promise.all([topics, galgames, ratings, resources, replies, comments])
 
 const topicItems = computed(() =>
-  (topics.data.value?.topics ?? []).map((t) => ({
+  (topics.data.value?.items ?? []).map((t) => ({
     text: t.title,
-    time: t.created,
+    time: t.created_at,
     href: `/topic/${t.id}`
   }))
 )
@@ -59,16 +105,16 @@ const resourceItems = computed(() =>
   }))
 )
 const replyItems = computed(() =>
-  (replies.data.value?.replies ?? []).map((r) => ({
-    text: markdownToText(r.content),
-    time: r.created,
+  (replies.data.value?.items ?? []).map((r) => ({
+    text: r.excerpt,
+    time: r.created_at,
     href: replyPermalink(`/topic/${r.topic_id}`, r.floor)
   }))
 )
 const commentItems = computed(() =>
-  (comments.data.value?.comments ?? []).map((c) => ({
-    text: markdownToText(c.content),
-    time: c.created,
+  (comments.data.value?.items ?? []).map((c) => ({
+    text: c.excerpt,
+    time: c.created_at,
     href: commentPermalink(`/topic/${c.topic_id}`, c.id)
   }))
 )

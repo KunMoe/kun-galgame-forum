@@ -3029,6 +3029,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/users/{user_id}/comments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List a user's comments
+         * @description Lists topic comments related to a user as a page-number collection, newest first with ties broken by descending id. relation is required and closed. Comments whose parent topic is hidden or restricted never appear. NOT_FOUND when the account does not exist or is not renderable.
+         */
+        get: operations["listUserComments"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/users/{user_id}/replies": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List a user's replies
+         * @description Lists replies related to a user as a page-number collection, newest first with ties broken by descending id. relation is required and closed. Replies whose parent topic is hidden or restricted never appear. NOT_FOUND when the account does not exist or is not renderable.
+         */
+        get: operations["listUserReplies"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/users/{user_id}/toolsets": {
         parameters: {
             query?: never;
@@ -3041,6 +3081,26 @@ export interface paths {
          * @description Lists toolsets the user authored, newest first. An unrenderable user is NOT_FOUND. An empty list is 200 with total 0.
          */
         get: operations["listUserToolsets"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/users/{user_id}/topics": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List a user's topics
+         * @description Lists topics related to a user as a page-number collection, newest first with ties broken by descending id. relation is required and closed. Hidden topics never appear except under relation=hidden, which is only the owner or a caller holding topic.view_hidden. Restricted topics never appear, including for a caller who can view them elsewhere. NOT_FOUND when the account does not exist or is not renderable.
+         */
+        get: operations["listUserTopics"];
         put?: never;
         post?: never;
         delete?: never;
@@ -6715,9 +6775,66 @@ export interface components {
              */
             total_relation: "eq" | "gte";
         };
+        PageListUserCommentItem: {
+            /** @description Members of this page. Empty array, never null. */
+            items: components["schemas"]["UserCommentItem"][];
+            /**
+             * @description Type discriminant. Always list.
+             * @enum {string}
+             */
+            object: "list";
+            /**
+             * Format: int64
+             * @description Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.
+             */
+            total: number;
+            /**
+             * @description eq when total is exact, gte when it stopped at the depth limit and there are at least that many.
+             * @enum {string}
+             */
+            total_relation: "eq" | "gte";
+        };
+        PageListUserReplyItem: {
+            /** @description Members of this page. Empty array, never null. */
+            items: components["schemas"]["UserReplyItem"][];
+            /**
+             * @description Type discriminant. Always list.
+             * @enum {string}
+             */
+            object: "list";
+            /**
+             * Format: int64
+             * @description Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.
+             */
+            total: number;
+            /**
+             * @description eq when total is exact, gte when it stopped at the depth limit and there are at least that many.
+             * @enum {string}
+             */
+            total_relation: "eq" | "gte";
+        };
         PageListUserSearchHit: {
             /** @description Members of this page. Empty array, never null. */
             items: components["schemas"]["UserSearchHit"][];
+            /**
+             * @description Type discriminant. Always list.
+             * @enum {string}
+             */
+            object: "list";
+            /**
+             * Format: int64
+             * @description Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.
+             */
+            total: number;
+            /**
+             * @description eq when total is exact, gte when it stopped at the depth limit and there are at least that many.
+             * @enum {string}
+             */
+            total_relation: "eq" | "gte";
+        };
+        PageListUserTopicItem: {
+            /** @description Members of this page. Empty array, never null. */
+            items: components["schemas"]["UserTopicItem"][];
             /**
              * @description Type discriminant. Always list.
              * @enum {string}
@@ -9131,6 +9248,24 @@ export interface components {
             /** @description Who upvoted. */
             upvoter: components["schemas"]["UserRef"];
         };
+        UserCommentItem: {
+            /**
+             * Format: date-time
+             * @description Creation time.
+             */
+            created_at: string;
+            /** @description Plain-text excerpt of the comment body, at most 200 characters. When longer, cut to 199 characters and terminated with an ellipsis. Free text; never use it as a decision input. */
+            excerpt: string;
+            /** @description Comment id. JSON string of a decimal integer. */
+            id: string;
+            /**
+             * @description Type discriminant. Always comment.
+             * @enum {string}
+             */
+            object: "comment";
+            /** @description Id of the topic the comment belongs to. */
+            topic_id: string;
+        };
         UserCounts: {
             /**
              * Format: int64
@@ -9310,6 +9445,29 @@ export interface components {
              */
             object: "user";
         };
+        UserReplyItem: {
+            /**
+             * Format: date-time
+             * @description Creation time.
+             */
+            created_at: string;
+            /** @description Plain-text excerpt of the reply body, at most 200 characters. When longer, cut to 199 characters and terminated with an ellipsis. Free text; never use it as a decision input. */
+            excerpt: string;
+            /**
+             * Format: int64
+             * @description Floor number, assigned when the reply was created and never renumbered. Deleted and hidden replies leave gaps; a floor is not a position.
+             */
+            floor: number;
+            /** @description Reply id. JSON string of a decimal integer. */
+            id: string;
+            /**
+             * @description Type discriminant. Always reply.
+             * @enum {string}
+             */
+            object: "reply";
+            /** @description Id of the topic the reply belongs to. */
+            topic_id: string;
+        };
         UserSearchHit: {
             /** @description Avatar image. null when the account has no image-service hash. */
             avatar: components["schemas"]["Image"] | null;
@@ -9341,6 +9499,22 @@ export interface components {
              * @description Topics by this user the caller can see in shared lists.
              */
             topic_count: number;
+        };
+        UserTopicItem: {
+            /**
+             * Format: date-time
+             * @description Creation time.
+             */
+            created_at: string;
+            /** @description Topic id. JSON string of a decimal integer. */
+            id: string;
+            /**
+             * @description Type discriminant. Always topic.
+             * @enum {string}
+             */
+            object: "topic";
+            /** @description Topic title as stored. Free text; never use it as a decision input. */
+            title: string;
         };
         VideoNode: {
             /**
@@ -25783,6 +25957,178 @@ export interface operations {
             };
         };
     };
+    listUserComments: {
+        parameters: {
+            query: {
+                /** @description 1-based page number. page × limit may not exceed 10000. */
+                page?: number;
+                /** @description Page size. 1–100, default 50. Values above 100 are rejected, not clamped. */
+                limit?: number;
+                /** @description When true, NSFW topics are included. Default false. */
+                include_nsfw?: boolean;
+                /** @description How the listed comments relate to the user: authored, received, or liked. */
+                relation: "authored" | "received" | "liked";
+            };
+            header?: never;
+            path: {
+                /** @description User id. */
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PageListUserCommentItem"];
+                };
+            };
+            /** @description UNKNOWN_ENUM_VALUE when relation is not in this collection's vocabulary. LIMIT_TOO_LARGE when limit is greater than 100. INVALID_PARAMETER when page × limit exceeds 10000. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the account service cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listUserReplies: {
+        parameters: {
+            query: {
+                /** @description 1-based page number. page × limit may not exceed 10000. */
+                page?: number;
+                /** @description Page size. 1–100, default 50. Values above 100 are rejected, not clamped. */
+                limit?: number;
+                /** @description When true, NSFW topics are included. Default false. */
+                include_nsfw?: boolean;
+                /** @description How the listed replies relate to the user: authored, received, or liked. */
+                relation: "authored" | "received" | "liked";
+            };
+            header?: never;
+            path: {
+                /** @description User id. */
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PageListUserReplyItem"];
+                };
+            };
+            /** @description UNKNOWN_ENUM_VALUE when relation is not in this collection's vocabulary. LIMIT_TOO_LARGE when limit is greater than 100. INVALID_PARAMETER when page × limit exceeds 10000. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the account service cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     listUserToolsets: {
         parameters: {
             query?: {
@@ -25855,6 +26201,92 @@ export interface operations {
                 };
             };
             /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listUserTopics: {
+        parameters: {
+            query: {
+                /** @description 1-based page number. page × limit may not exceed 10000. */
+                page?: number;
+                /** @description Page size. 1–100, default 50. Values above 100 are rejected, not clamped. */
+                limit?: number;
+                /** @description When true, NSFW topics are included. Default false. */
+                include_nsfw?: boolean;
+                /** @description How the listed topics relate to the user: authored, liked, upvoted, favorited, or hidden. */
+                relation: "authored" | "liked" | "upvoted" | "favorited" | "hidden";
+            };
+            header?: never;
+            path: {
+                /** @description User id. */
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PageListUserTopicItem"];
+                };
+            };
+            /** @description UNKNOWN_ENUM_VALUE when relation is not in this collection's vocabulary. LIMIT_TOO_LARGE when limit is greater than 100. INVALID_PARAMETER when page × limit exceeds 10000. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description PERMISSION_REQUIRED when relation is hidden and the caller is neither the owner nor holding topic.view_hidden. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the account service cannot be reached. */
             503: {
                 headers: {
                     [name: string]: unknown;

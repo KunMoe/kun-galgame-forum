@@ -4,6 +4,15 @@ import {
   type KUN_USER_PAGE_TOPIC_TYPE
 } from '~/constants/user'
 import { settle } from '#shared/utils/api/problem'
+import type { PageListUserTopicItem } from '#shared/utils/api/schemas'
+
+const TOPIC_RELATION = {
+  topic: 'authored',
+  topic_like: 'liked',
+  topic_upvote: 'upvoted',
+  topic_favorite: 'favorited',
+  topic_hide: 'hidden'
+} as const
 
 const props = defineProps<{
   userId: number
@@ -16,21 +25,34 @@ const canViewHiddenTopic = useCan('topic.view_hidden')
 const canSeeHidden = computed(
   () => currentUserId === props.userId || canViewHiddenTopic.value
 )
+const { allowsNsfw: includeNsfw } = useContentStance()
 
-const activeTab = ref(props.type)
+const activeTab = computed(() => props.type)
+const relation = computed(() => TOPIC_RELATION[props.type])
 const pageData = reactive({
   page: usePageQuery(),
-  limit: 50,
-  type: props.type,
-  userId: props.userId
+  limit: 50
 })
 
-const { data, status } = await useKunFetch<{
-  topics: UserTopic[]
-  total: number
-}>(`/user/${props.userId}/topics`, { query: pageData })
+const { data, status } = await useApi<PageListUserTopicItem>(
+  () =>
+    `user-topics:${props.userId}:${relation.value}:${pageData.page}:${pageData.limit}:${includeNsfw.value ? 'nsfw' : 'sfw'}`,
+  (client, { signal }) =>
+    client.GET('/users/{user_id}/topics', {
+      params: {
+        path: { user_id: String(props.userId) },
+        query: {
+          relation: relation.value,
+          page: pageData.page,
+          limit: pageData.limit,
+          include_nsfw: includeNsfw.value
+        }
+      },
+      signal
+    })
+)
 
-const handleUpdateTopicHideStatus = async (topicId: number) => {
+const handleUpdateTopicHideStatus = async (topicId: string) => {
   const res = await useComponentMessageStore().alert(
     '八嘎杂鱼笨蛋萝莉, 你要取消隐藏该话题吗, 取消隐藏后该话题将对所有人可见'
   )
@@ -40,7 +62,7 @@ const handleUpdateTopicHideStatus = async (topicId: number) => {
 
   const result = await settle(
     api.PATCH('/topics/{topic_id}', {
-      params: { path: { topic_id: String(topicId) } },
+      params: { path: { topic_id: topicId } },
       body: { state: 'published' }
     })
   )
@@ -63,10 +85,10 @@ const handleUpdateTopicHideStatus = async (topicId: number) => {
       scrollable
     />
 
-    <div class="flex flex-col space-y-3" v-if="data && data.topics.length">
-      <template v-if="pageData.type !== 'topic_hide'">
+    <div class="flex flex-col space-y-3" v-if="data && data.items.length">
+      <template v-if="relation !== 'hidden'">
         <KunCard
-          v-for="(topic, index) in data.topics"
+          v-for="(topic, index) in data.items"
           :key="index"
           :href="`/topic/${topic.id}`"
         >
@@ -74,7 +96,7 @@ const handleUpdateTopicHideStatus = async (topicId: number) => {
             {{ topic.title }}
           </div>
           <div class="text-default-500 text-sm">
-            <KunTime :time="topic.created" type="date" show-year />
+            <KunTime :time="topic.created_at" type="date" show-year />
           </div>
         </KunCard>
       </template>
@@ -83,7 +105,7 @@ const handleUpdateTopicHideStatus = async (topicId: number) => {
         <KunCard
           :is-hoverable="false"
           :is-transparent="true"
-          v-for="(topic, index) in data.topics"
+          v-for="(topic, index) in data.items"
           :key="index"
         >
           <KunLink :to="`/topic/${topic.id}`">
@@ -92,7 +114,7 @@ const handleUpdateTopicHideStatus = async (topicId: number) => {
           <div
             class="text-default-500 flex items-center justify-between text-sm"
           >
-            <KunTime :time="topic.created" type="date" show-year />
+            <KunTime :time="topic.created_at" type="date" show-year />
             <KunButton
               @click="handleUpdateTopicHideStatus(topic.id)"
               size="sm"
@@ -114,7 +136,7 @@ const handleUpdateTopicHideStatus = async (topicId: number) => {
     />
 
     <KunNull
-      v-if="data && !data.topics.length"
+      v-if="data && !data.items.length"
       description="这只笨蛋萝莉没有发布过任何话题"
     />
   </div>

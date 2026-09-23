@@ -3,24 +3,45 @@ import {
   kunUserCommentNavItem,
   type KUN_USER_PAGE_COMMENT_TYPE
 } from '~/constants/user'
+import type { PageListUserCommentItem } from '#shared/utils/api/schemas'
+
+const COMMENT_RELATION = {
+  comment_created: 'authored',
+  comment_target: 'received',
+  comment_like: 'liked'
+} as const
 
 const props = defineProps<{
   userId: number
   type: (typeof KUN_USER_PAGE_COMMENT_TYPE)[number]
 }>()
 
-const activeTab = ref(props.type)
+const { allowsNsfw: includeNsfw } = useContentStance()
+
+const activeTab = computed(() => props.type)
+const relation = computed(() => COMMENT_RELATION[props.type])
 const pageData = reactive({
   page: usePageQuery(),
-  limit: 50,
-  userId: props.userId,
-  type: props.type
+  limit: 50
 })
 
-const { data, status } = await useKunFetch<{
-  comments: UserComment[]
-  total: number
-}>(`/user/${props.userId}/comments`, { query: pageData })
+const { data, status } = await useApi<PageListUserCommentItem>(
+  () =>
+    `user-comments:${props.userId}:${relation.value}:${pageData.page}:${pageData.limit}:${includeNsfw.value ? 'nsfw' : 'sfw'}`,
+  (client, { signal }) =>
+    client.GET('/users/{user_id}/comments', {
+      params: {
+        path: { user_id: String(props.userId) },
+        query: {
+          relation: relation.value,
+          page: pageData.page,
+          limit: pageData.limit,
+          include_nsfw: includeNsfw.value
+        }
+      },
+      signal
+    })
+)
 </script>
 
 <template>
@@ -33,17 +54,17 @@ const { data, status } = await useKunFetch<{
       scrollable
     />
 
-    <div class="flex flex-col space-y-3" v-if="data && data.comments.length">
+    <div class="flex flex-col space-y-3" v-if="data && data.items.length">
       <KunCard
-        v-for="(comment, index) in data.comments"
+        v-for="(comment, index) in data.items"
         :key="index"
         :href="commentPermalink(`/topic/${comment.topic_id}`, comment.id)"
       >
         <div>
-          {{ comment.content }}
+          {{ comment.excerpt }}
         </div>
         <div class="text-default-500 text-sm">
-          <KunTime :time="comment.created" type="date" show-year />
+          <KunTime :time="comment.created_at" type="date" show-year />
         </div>
       </KunCard>
 
@@ -55,7 +76,7 @@ const { data, status } = await useKunFetch<{
     </div>
 
     <KunNull
-      v-if="data && !data.comments.length"
+      v-if="data && !data.items.length"
       description="这只笨蛋萝莉没有发布过任何评论"
     />
   </div>

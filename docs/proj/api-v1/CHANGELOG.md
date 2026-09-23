@@ -1,5 +1,21 @@
 # API v1 changelog
 
+## 2026-09-23 (U3a user topic lists)
+
+Breaking for `GET /api/user/:id/topics`, `GET /api/user/:id/replies`, and `GET /api/user/:id/comments`.
+
+Offered:
+
+- `GET /api/v1/users/{user_id}/topics?relation=` — page-number collection (`page`, `limit` 1–100 default 50, `include_nsfw` default false). `relation` is `authored` / `liked` / `upvoted` / `favorited` / `hidden` (were `topic` / `topic_like` / `topic_upvote` / `topic_favorite` / `topic_hide`). `hidden` is the owner or `topic.view_hidden` only; anyone else gets 403. Items are `{ object, id, title, created_at }`.
+- `GET /api/v1/users/{user_id}/replies?relation=` — same envelope. `relation` is `authored` / `received` / `liked` (were `reply_created` / `reply_target` / `reply_like`). Items carry `excerpt` (server-made plain text, at most 200 characters) instead of Markdown `content`.
+- `GET /api/v1/users/{user_id}/comments?relation=` — same envelope. `relation` is `authored` / `received` / `liked` (were `comment_created` / `comment_target` / `comment_like`). Items carry `excerpt` instead of `content`.
+
+Envelope is `{ items, total, total_relation }` (was `{ topics|replies|comments, total }`). `id` / `topic_id` are decimal strings; `created` is `created_at`. Hidden and restricted topics, and replies/comments on them, no longer appear on another user's profile. Unknown or banned profile owners answer 404.
+
+Retired: `GET /api/user/:id/topics`, `GET /api/user/:id/replies`, `GET /api/user/:id/comments`.
+
+## G0 window (galgame id is the catalog work id)
+
 ## 2026-09-23 (X1c news, topic RSS)
 
 Breaking for `GET /api/news`, `/api/news/sources`, `/api/news/archive`, `/api/news/month` and `GET /api/rss/topic`; all five are gone. `GET /api/rss/galgame` stays on the legacy route until the works browse collection lands.

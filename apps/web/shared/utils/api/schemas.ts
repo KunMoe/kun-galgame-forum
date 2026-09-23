@@ -55,6 +55,15 @@ export type UserRef = components['schemas']['UserRef']
 export type BatchListUserRef = components['schemas']['BatchListUserRef']
 export type UserProfile = components['schemas']['UserProfile']
 export type UserCounts = components['schemas']['UserCounts']
+export type UserTopicItem = components['schemas']['UserTopicItem']
+export type UserReplyItem = components['schemas']['UserReplyItem']
+export type UserCommentItem = components['schemas']['UserCommentItem']
+export type PageListUserTopicItem =
+  components['schemas']['PageListUserTopicItem']
+export type PageListUserReplyItem =
+  components['schemas']['PageListUserReplyItem']
+export type PageListUserCommentItem =
+  components['schemas']['PageListUserCommentItem']
 export type Me = components['schemas']['Me']
 export type CheckIn = components['schemas']['CheckIn']
 export type MoemoepointEntry = components['schemas']['MoemoepointEntry']
