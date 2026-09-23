@@ -55,7 +55,7 @@ type UserReplyItem struct {
 	ID        repr.DecimalID `json:"id" doc:"Reply id. JSON string of a decimal integer."`
 	TopicID   repr.DecimalID `json:"topic_id" doc:"Id of the topic the reply belongs to."`
 	Floor     int            `json:"floor" minimum:"1" doc:"Floor number, assigned when the reply was created and never renumbered. Deleted and hidden replies leave gaps; a floor is not a position."`
-	Excerpt   string         `json:"excerpt" maxLength:"800" doc:"Plain-text excerpt of the reply body, at most 200 characters. When longer, cut to 199 characters and terminated with an ellipsis. Free text; never use it as a decision input."`
+	Excerpt   string         `json:"excerpt" maxLength:"200" doc:"Plain-text excerpt of the reply body, at most 200 characters. When longer, cut to 199 characters and terminated with an ellipsis. Free text; never use it as a decision input."`
 	CreatedAt repr.DateTime  `json:"created_at" doc:"Creation time."`
 }
 
@@ -63,6 +63,6 @@ type UserCommentItem struct {
 	Object    string         `json:"object" enum:"comment" maxLength:"7" doc:"Type discriminant. Always comment."`
 	ID        repr.DecimalID `json:"id" doc:"Comment id. JSON string of a decimal integer."`
 	TopicID   repr.DecimalID `json:"topic_id" doc:"Id of the topic the comment belongs to."`
-	Excerpt   string         `json:"excerpt" maxLength:"800" doc:"Plain-text excerpt of the comment body, at most 200 characters. When longer, cut to 199 characters and terminated with an ellipsis. Free text; never use it as a decision input."`
+	Excerpt   string         `json:"excerpt" maxLength:"200" doc:"Plain-text excerpt of the comment body, at most 200 characters. When longer, cut to 199 characters and terminated with an ellipsis. Free text; never use it as a decision input."`
 	CreatedAt repr.DateTime  `json:"created_at" doc:"Creation time."`
 }

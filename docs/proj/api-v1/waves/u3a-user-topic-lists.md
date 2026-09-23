@@ -63,7 +63,7 @@
 
 条目 `UserReplyItem`：`object:"reply"`、`id`、`topic_id`、`floor`（integer ≥1）、`excerpt`、`created_at`。
 
-- **`excerpt`**：回复正文转成的**纯文本**，最多 200 个字符（rune），超出截断并以 `…` 结尾；`maxLength` 按字节上限声明（见实现）。旧实现下发整段 Markdown 源文、网页再转纯文本；v1 在服务端转，列表不再搬整段正文。
+- **`excerpt`**：回复正文转成的**纯文本**，最多 200 个字符（rune），超出截断并以 `…` 结尾；`maxLength: 200`——JSON Schema 的 `maxLength` 数的是字符不是字节（实现初版按「200 × 4 字节」声明成 800，合并前改正）。旧实现下发整段 Markdown 源文、网页再转纯文本；v1 在服务端转，列表不再搬整段正文。
 - `received` 排除他自己在自己话题下的回复？**不排除**——旧实现不排除，本段不改语义。
 
 ### 4.3 `GET /users/{user_id}/comments`

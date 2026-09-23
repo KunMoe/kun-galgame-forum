@@ -15925,7 +15925,7 @@
           },
           "excerpt": {
             "description": "Plain-text excerpt of the comment body, at most 200 characters. When longer, cut to 199 characters and terminated with an ellipsis. Free text; never use it as a decision input.",
-            "maxLength": 800,
+            "maxLength": 200,
             "type": "string"
           },
           "id": {
@@ -16406,7 +16406,7 @@
           },
           "excerpt": {
             "description": "Plain-text excerpt of the reply body, at most 200 characters. When longer, cut to 199 characters and terminated with an ellipsis. Free text; never use it as a decision input.",
-            "maxLength": 800,
+            "maxLength": 200,
             "type": "string"
           },
           "floor": {
