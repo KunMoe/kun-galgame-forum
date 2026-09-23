@@ -125,3 +125,17 @@ func TestV1PutWorkLikeUnknownWritesNothing(t *testing.T) {
 	resp, body = f.wk(t, http.MethodPut, g4WorkPath(g4WorkHidden)+"/like", "/works/{work_id}/like", "sess-alice", nil)
 	wantCode(t, resp, body, http.StatusNotFound, problem.CodeNotFound)
 }
+
+func TestV1PutWorkLikeCreatesTheMissingLocalRowUnpublished(t *testing.T) {
+	f := newWorkFix(t)
+	if n := f.scalar(t, `SELECT COUNT(*) FROM galgame WHERE id = ?`, g4WorkNoLocal); n != 0 {
+		t.Fatalf("seed has a local row for %d", g4WorkNoLocal)
+	}
+	resp, body := f.wk(t, http.MethodPut, g4WorkPath(g4WorkNoLocal)+"/like", "/works/{work_id}/like", "sess-alice", nil)
+	if resp.StatusCode != http.StatusOK || asInt(body["like_count"]) != 1 {
+		t.Fatalf("like %d %+v", resp.StatusCode, body)
+	}
+	if n := f.scalar(t, `SELECT COUNT(*) FROM galgame WHERE id = ? AND NOT published AND like_count = 1`, g4WorkNoLocal); n != 1 {
+		t.Error("the like must create the local row under the catalog id, unpublished, with the count")
+	}
+}
