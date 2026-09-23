@@ -136,3 +136,38 @@
 | 12 | 作品排行的 NSFW 在 `LIMIT` 之后才滤（去掉 SQL 里的 `content_limit` 谓词，靠 catalog 丢行） | 前几名有 NSFW 作品时，`limit=3` 的 SFW 结果仍有 3 条 |
 | 13 | 评分排序去掉 `id DESC` 决胜键 | 种子里两部作品的评分完全相同，顺序与 SQL 逐条相等 |
 | 14 | catalog 失败时回空列表 | catalog 500 → `503 SERVICE_UNAVAILABLE` |
+
+## 7. 实现时对本契约的修正（2026-09-23，只增不改）
+
+1. 用户排行的 `metric_value` 下限是 `-2147483648`，不是 0：萌萌点余额可以为负（生产最小值 −16）。其余两个排行的 `metric_value` 下限仍是 0。
+2. 作品名字的挑选规则搬到网页的 `utils/catalogName.ts`：`优先原名 ? display_name ?? 中文 ?? latin : 中文 ?? display_name ?? latin`，中文依次取 `zh-Hans`、`zh`、`zh-Hant`，与服务端旧的 `CatalogEntityName` 相同。X2 其它分支（搜索、动态）也要同一个函数，谁先合并谁留着，后来的复用。
+3. 作品排行请求 catalog 时带上 `content_limit`（`include_nsfw` 为假时 `sfw`），与本地 SQL 闸同向；catalog 不返回的行按「查无」跳过、名次重编。
+
+## 8. 验收记录
+
+**闸**：`make lint` 零输出；`KUN_REQUIRE_TEST_DB=1 go test -count=1 -p 1 ./...` 全绿（专属库 `kungal_test_x2_ranking`）；`make openapi` / `gen:api` 无漂移；`pnpm lint`、`pnpm typecheck`、`pnpm -F web test`（62 文件 427 条）全绿；`deadcode` 只剩 master 上原有的 6 条，与本轨无关。
+
+**变异**：14/14 变红。第 13 条（评分排序去掉 `id DESC`）第一轮**存活**：种子里只有两部并列作品，JOIN 碰巧按 id 降序吐出。补了「五部同分作品、按乱序写入评分」的用例后杀掉。
+
+| # | 改动 | 变红的测试 |
+|---|---|---|
+| 1 | 话题排行不排除隐藏话题 | `TestV1TopicRankingVisibility`、`TestV1TopicRankingTieWalk`、`TestV1UserRanking` |
+| 2 | 不查 `access_scope` | `TestV1TopicRankingVisibility`、`TestV1TopicRankingTieWalk` |
+| 3 | 忽略 `include_nsfw` | 同上 |
+| 4 | 话题去掉 `id DESC` | 同上 |
+| 5 | 不跳过封禁作者 | 同上 |
+| 6 | 名次取 SQL 位置 | `TestV1TopicRankingVisibility` |
+| 7 | 回复数不滤 `status` | `TestV1UserRanking` |
+| 8 | 回复数不看所在话题 | `TestV1UserRanking` |
+| 9 | OAuth 失败降级 | `TestV1RankingUpstreamDown` |
+| 10 | 不滤 `published` | `TestV1WorkRanking`、`TestV1WorkRankingFillsTheLimitWhenNSFWLeads` |
+| 11 | 忽略 `include_resourceless` | 同上 |
+| 12 | NSFW 在 `LIMIT` 之后才滤 | `TestV1WorkRankingFillsTheLimitWhenNSFWLeads` |
+| 13 | 评分去掉 `id DESC` | `TestV1WorkRankingRatingTie`（补强后） |
+| 14 | catalog 失败回空列表 | `TestV1RankingUpstreamDown` |
+
+**新旧对照**（同一个 dev 库，新 API 与 master 的旧 API 并排跑）：话题（浏览 / 回复 / 点赞）与用户（萌萌点 / 话题 / 回复 / 资源）前 50 名的集合重合 45–50 条，差异全部是契约里写明的改动——并列时按 id 决胜、用户计数只数匿名可见的内容。
+
+**浏览器实测**（本分支 API :2362 + 网页 :2361，无头 Chromium，匿名）：话题排行、用户排行直出 50 / 49 条，切换排序走 `GET /api/v1/rankings/topics?sort=replies_desc&limit=50&include_nsfw=false` 200，图标跟着排序走；首页（动态流）正常渲染、**没有**任何 `/api/home` 请求。
+
+**作品排行在 dev 库上跑不起来，与本轨无关**：dev 库没跑 master 上的迁移 141（`galgame_resource.galgame_id` → `work_id`），master 自己的旧 `/api/ranking/galgame` 在 dev 上同样报 `column gr.work_id does not exist`；dev 的 galgame id 也还是 G0 之前的 gid。所以作品页在本分支的临时库上实测：从 dev 复制 120 部已发布作品及其评分 → 页面显示竖版封面、中文名、建页人与浏览数，评分排序出两位小数的加权分；测完已清掉复制的数据。dev 上 50 条只出 41 条，是 dev 的本地 `content_limit` 缓存与 catalog 不一致（及未改号的 id）造成的，生产不会有。
