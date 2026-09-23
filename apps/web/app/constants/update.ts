@@ -84,7 +84,3 @@ export const KUN_TODO_STATE_TEXT_CLASS: Record<TodoState, string> = {
   done: 'text-success',
   discarded: 'text-danger'
 }
-
-export const kunTodoStateOfLegacyStatus = (
-  status: number
-): TodoState | undefined => KUN_TODO_STATES[status]

@@ -1,82 +1,111 @@
 <script setup lang="ts">
-defineProps<{ activity: ActivityItem }>()
+import type { Activity } from '#shared/utils/api/schemas'
+
+defineProps<{ activity: Activity }>()
 </script>
 
 <template>
   <ActivityCardTopic
-    v-if="activity.type === 'TOPIC_CREATION' && activity.data"
+    v-if="activity.activity_type === 'topic_creation' && activity.topic"
     :activity="activity"
+    :topic="activity.topic"
   />
   <ActivityCardTopicUpvote
-    v-else-if="activity.type === 'TOPIC_UPVOTE' && activity.data"
+    v-else-if="activity.activity_type === 'topic_upvote' && activity.topic"
     :activity="activity"
+    :topic="activity.topic"
   />
   <ActivityCardReply
-    v-else-if="activity.type === 'TOPIC_REPLY_CREATION'"
+    v-else-if="
+      activity.activity_type === 'topic_reply_creation' && activity.reply
+    "
     :activity="activity"
+    :reply="activity.reply"
   />
-  <ActivityCardGalgame
-    v-else-if="activity.type === 'GALGAME_CREATION' && activity.data"
+  <ActivityCardSolution
+    v-else-if="activity.activity_type === 'best_answer_set' && activity.reply"
     :activity="activity"
-  />
-  <ActivityCardGalgameEdit
-    v-else-if="activity.type === 'GALGAME_EDIT' && activity.data"
-    :activity="activity"
-  />
-  <ActivityCardGalgameRating
-    v-else-if="activity.type === 'GALGAME_RATING_CREATION' && activity.data"
-    :activity="activity"
-  />
-  <ActivityCardGalgameComment
-    v-else-if="activity.type === 'GALGAME_COMMENT_CREATION' && activity.data"
-    :activity="activity"
-  />
-  <ActivityCardGalgameResource
-    v-else-if="activity.type === 'GALGAME_RESOURCE_CREATION' && activity.data"
-    :activity="activity"
+    :reply="activity.reply"
   />
   <ActivityCardTopicComment
-    v-else-if="activity.type === 'TOPIC_COMMENT_CREATION' && activity.data"
+    v-else-if="
+      activity.activity_type === 'topic_comment_creation' && activity.comment
+    "
     :activity="activity"
+    :comment="activity.comment"
+  />
+  <ActivityCardGalgame
+    v-else-if="activity.activity_type === 'galgame_creation' && activity.work"
+    :activity="activity"
+    :work="activity.work"
+  />
+  <ActivityCardGalgameEdit
+    v-else-if="activity.activity_type === 'galgame_edit' && activity.work"
+    :activity="activity"
+    :work="activity.work"
   />
   <ActivityCardGalgamePr
-    v-else-if="activity.type === 'GALGAME_PR_CREATION' && activity.data"
+    v-else-if="
+      activity.activity_type === 'galgame_pr_creation' && activity.work
+    "
     :activity="activity"
+    :work="activity.work"
+  />
+  <ActivityCardGalgameRating
+    v-else-if="
+      activity.activity_type === 'galgame_rating_creation' &&
+      activity.work &&
+      activity.rating
+    "
+    :activity="activity"
+    :work="activity.work"
+    :rating="activity.rating"
+  />
+  <ActivityCardGalgameComment
+    v-else-if="
+      activity.activity_type === 'galgame_comment_creation' && activity.work
+    "
+    :activity="activity"
+    :work="activity.work"
+  />
+  <ActivityCardGalgameResource
+    v-else-if="
+      activity.activity_type === 'galgame_resource_creation' &&
+      activity.work &&
+      activity.resource
+    "
+    :activity="activity"
+    :work="activity.work"
+    :resource="activity.resource"
   />
   <ActivityCardNote
     v-else-if="
-      activity.type === 'TODO_CREATION' ||
-      activity.type === 'UPDATE_LOG_CREATION'
+      activity.activity_type === 'todo_creation' ||
+      activity.activity_type === 'update_log_creation'
     "
     :activity="activity"
   />
   <ActivityCardToolset
-    v-else-if="activity.type === 'TOOLSET_CREATION'"
+    v-else-if="activity.activity_type === 'toolset_creation'"
     :activity="activity"
   />
   <ActivityCardWebsite
-    v-else-if="activity.type === 'GALGAME_WEBSITE_CREATION'"
+    v-else-if="activity.activity_type === 'galgame_website_creation'"
     :activity="activity"
   />
   <ActivityCardToolsetResource
-    v-else-if="activity.type === 'TOOLSET_RESOURCE_CREATION' && activity.data"
-    :activity="activity"
-  />
-  <ActivityCardEntityComment
     v-else-if="
-      (activity.type === 'TOOLSET_COMMENT_CREATION' ||
-        activity.type === 'GALGAME_WEBSITE_COMMENT_CREATION') &&
-      activity.data
+      activity.activity_type === 'toolset_resource_creation' && activity.toolset
     "
     :activity="activity"
-  />
-  <ActivityCardSolution
-    v-else-if="activity.type === 'MESSAGE_SOLUTION'"
-    :activity="activity"
+    :toolset="activity.toolset"
   />
   <ActivityCardQuiz
-    v-else-if="activity.type === 'GALGAME_QUIZ_CREATION'"
+    v-else-if="
+      activity.activity_type === 'galgame_quiz_creation' && activity.quiz
+    "
     :activity="activity"
+    :quiz="activity.quiz"
   />
   <ActivityCardGeneric v-else :activity="activity" />
 </template>

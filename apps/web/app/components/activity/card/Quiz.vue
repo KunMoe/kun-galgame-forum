@@ -1,41 +1,43 @@
 <script setup lang="ts">
 import { kunQuizDifficultyLabel } from '~/constants/galgame-quiz'
 
-const props = defineProps<{ activity: ActivityItem }>()
+import type { Activity, ActivityQuiz } from '#shared/utils/api/schemas'
 
-const data = computed(() => props.activity.data as QuizActivityData | undefined)
-const quizId = computed(() => Number(props.activity.link.split('/').pop()) || 0)
+const props = defineProps<{ activity: Activity; quiz: ActivityQuiz }>()
 
-const summary = computed(() => {
-  const d = data.value
-  if (!d) return '出了一道题目。'
-  return `出了一道题目，${kunQuizDifficultyLabel(d.difficulty)}·难度${d.difficulty}，已经有 ${d.answer_count} 人作答。`
-})
+const quizId = computed(() => Number(props.quiz.quiz_id))
 
-const descriptionText = computed(() => {
-  const d = data.value?.description
-  return d ? markdownToText(d) : ''
-})
+const summary = computed(
+  () =>
+    `出了一道题目，${kunQuizDifficultyLabel(props.quiz.difficulty)}·难度${props.quiz.difficulty}，已经有 ${props.quiz.answer_count} 人作答。`
+)
+
+const descriptionText = computed(() =>
+  markdownToText(props.quiz.description_excerpt)
+)
 
 const { isFavorited, setFavorited, ensureLoaded } = useMyQuizInteractions()
 onMounted(ensureLoaded)
 </script>
 
 <template>
-  <ActivityCardShell :actor="activity.actor" :timestamp="activity.timestamp">
+  <ActivityCardShell
+    :performer="activity.performer"
+    :occurred-at="activity.occurred_at"
+  >
     <div class="space-y-2">
       <p class="text-default-600 text-sm">{{ summary }}</p>
 
       <KunLink
         underline="none"
         color="default"
-        :to="activity.link"
+        :to="activity.path"
         class-name="group block"
       >
         <p
           class="group-hover:text-primary line-clamp-3 text-base break-words transition-colors"
         >
-          {{ maskSpoilers(activity.content) }}
+          {{ maskSpoilers(activity.excerpt_markdown) }}
         </p>
       </KunLink>
 
@@ -49,7 +51,7 @@ onMounted(ensureLoaded)
       <div class="flex items-center gap-2">
         <FavoriteToggle
           :favorited="isFavorited(quizId)"
-          :count="data?.favorite_count ?? 0"
+          :count="quiz.favorite_count"
           :endpoint="`/galgame-quiz/${quizId}/favorite`"
           size="sm"
           @changed="(v: boolean) => setFavorited(quizId, v)"
@@ -57,7 +59,7 @@ onMounted(ensureLoaded)
         <KunLink
           underline="none"
           color="default"
-          :to="activity.link"
+          :to="activity.path"
           class-name="text-default-500 hover:text-primary ml-auto flex items-center gap-0.5 text-sm"
         >
           查看详情

@@ -1,18 +1,25 @@
 <script setup lang="ts">
-defineProps<{ activity: ActivityItem }>()
+import type { Activity } from '#shared/utils/api/schemas'
+
+defineProps<{ activity: Activity }>()
+
+const nameOf = useWorkName()
 </script>
 
 <template>
-  <ActivityCardShell :actor="activity.actor" :timestamp="activity.timestamp">
+  <ActivityCardShell
+    :performer="activity.performer"
+    :occurred-at="activity.occurred_at"
+  >
     <KunLink
       underline="none"
       color="default"
-      :to="activity.link"
+      :to="activity.path"
       class-name="hover:text-primary block break-all transition-colors"
     >
       <KunText
         class-name="whitespace-normal!"
-        :content="markdownToText(activity.content)"
+        :content="activitySummaryText(activity, nameOf)"
       />
     </KunLink>
   </ActivityCardShell>

@@ -1,44 +1,46 @@
 <script setup lang="ts">
-const props = defineProps<{ activity: ActivityItem }>()
+import type { Activity, WorkRef } from '#shared/utils/api/schemas'
 
-const data = computed(
-  () => props.activity.data as GalgameActivityData | undefined
-)
-const workId = computed(() => data.value?.galgame_id ?? 0)
-const detailLink = computed(() =>
-  workId.value ? `/galgame/${workId.value}` : props.activity.link
-)
+const props = defineProps<{ activity: Activity; work: WorkRef }>()
+
+const workId = computed(() => Number(props.work.id))
+const stats = computed(() => props.activity.work_stats)
+const targetUserId = computed(() => Number(props.activity.performer?.id ?? 0))
 
 const { isLiked, isFavorited, ensureLoaded } = useMyGalgameInteractions()
-onMounted(() => ensureLoaded(workId.value ? [workId.value] : []))
+onMounted(() => ensureLoaded([workId.value]))
 </script>
 
 <template>
-  <ActivityCardShell :actor="activity.actor" :timestamp="activity.timestamp">
+  <ActivityCardShell
+    :performer="activity.performer"
+    :occurred-at="activity.occurred_at"
+  >
     <div class="space-y-3">
       <p class="text-default-600 text-sm">
-        创建了一个新的 Galgame,已经有 {{ data?.resource_count ?? 0 }} 个下载资源
+        创建了一个新的 Galgame，已经有
+        {{ stats?.resource_count ?? 0 }} 个下载资源
       </p>
 
-      <ActivityCardGalgameInfo :activity="activity" />
+      <ActivityCardGalgameInfo :work="work" :digest="activity.work_digest" />
 
       <div class="flex items-center gap-2">
         <GalgameLike
           :work-id="workId"
-          :target-user-id="activity.actor?.id ?? 0"
-          :like-count="data?.like_count ?? 0"
+          :target-user-id="targetUserId"
+          :like-count="stats?.like_count ?? 0"
           :is-liked="isLiked(workId)"
         />
         <GalgameFavorite
           :work-id="workId"
-          :target-user-id="activity.actor?.id ?? 0"
-          :favorite-count="data?.favorite_count ?? 0"
+          :target-user-id="targetUserId"
+          :favorite-count="stats?.favorite_count ?? 0"
           :is-favorited="isFavorited(workId)"
         />
         <KunLink
           underline="none"
           color="default"
-          :to="detailLink"
+          :to="`/galgame/${work.id}`"
           class-name="text-default-500 hover:text-primary ml-auto flex items-center gap-0.5 text-sm"
         >
           查看详情

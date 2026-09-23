@@ -1,14 +1,10 @@
 <script setup lang="ts">
-import type { TodoState } from '#shared/utils/api/schemas'
-import {
-  KUN_TODO_STATE_LABEL,
-  kunTodoStateOfLegacyStatus
-} from '~/constants/update'
+import type { Activity, TodoState } from '#shared/utils/api/schemas'
+import { KUN_TODO_STATE_LABEL } from '~/constants/update'
 
-const props = defineProps<{ activity: ActivityItem }>()
+const props = defineProps<{ activity: Activity }>()
 
-const data = computed(() => props.activity.data as NoteActivityData | undefined)
-const isTodo = computed(() => props.activity.type === 'TODO_CREATION')
+const isTodo = computed(() => props.activity.activity_type === 'todo_creation')
 
 const meta = computed(() =>
   isTodo.value
@@ -28,24 +24,24 @@ const TODO_STATE_CLASS: Record<TodoState, string> = {
 }
 const badge = computed<{ text: string; class: string } | null>(() => {
   if (isTodo.value) {
-    const s = data.value?.status
-    const state =
-      s === undefined || s === null ? undefined : kunTodoStateOfLegacyStatus(s)
+    const state = props.activity.todo?.state
     if (!state) return null
     return { text: KUN_TODO_STATE_LABEL[state], class: TODO_STATE_CLASS[state] }
   }
-  return data.value?.version
-    ? { text: data.value.version, class: 'bg-primary/10 text-primary' }
-    : null
+  const version = props.activity.update_log?.release_version
+  return version ? { text: version, class: 'bg-primary/10 text-primary' } : null
 })
 </script>
 
 <template>
-  <ActivityCardShell :actor="activity.actor" :timestamp="activity.timestamp">
+  <ActivityCardShell
+    :performer="activity.performer"
+    :occurred-at="activity.occurred_at"
+  >
     <KunLink
       underline="none"
       color="default"
-      :to="activity.link"
+      :to="activity.path"
       class-name="group block space-y-1.5"
     >
       <span
@@ -65,7 +61,7 @@ const badge = computed<{ text: string; class: string } | null>(() => {
       <p
         class="group-hover:text-primary line-clamp-4 text-base break-all transition-colors"
       >
-        {{ markdownToText(activity.content) }}
+        {{ markdownToText(activity.excerpt_markdown) }}
       </p>
     </KunLink>
   </ActivityCardShell>

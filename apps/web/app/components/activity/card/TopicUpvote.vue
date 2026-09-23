@@ -1,30 +1,28 @@
 <script setup lang="ts">
 import { randomUpvoteDescription } from '~/constants/upvote'
+import type { Activity, TopicSummary } from '#shared/utils/api/schemas'
+import { toKunUser } from '~/utils/userRef'
 
-const props = defineProps<{ activity: ActivityItem }>()
+const props = defineProps<{ activity: Activity; topic: TopicSummary }>()
 
-const data = computed(
-  () => props.activity.data as TopicActivityData | undefined
-)
-const topicId = computed(() => data.value?.topic_id ?? 0)
-const covers = computed(() => (data.value?.cover_images ?? []).slice(0, 3))
+const digest = computed(() => props.activity.topic_digest)
+const topicId = computed(() => Number(props.topic.id))
+const topicLink = computed(() => `/topic/${props.topic.id}`)
+const covers = computed(() => props.topic.cover_images.slice(0, 3))
 
-const seed = computed(() => {
-  const n = Number(props.activity.unique_id.split(':').pop())
-  return Number.isFinite(n) ? n : topicId.value
-})
 const blurb = computed(
-  () => props.activity.content || randomUpvoteDescription(seed.value)
+  () =>
+    props.activity.excerpt_markdown || randomUpvoteDescription(topicId.value)
 )
 
 const { isFavorited, reactionKeysOf, ensureLoaded } = useMyTopicInteractions()
-onMounted(() => ensureLoaded(topicId.value ? [topicId.value] : []))
+onMounted(() => ensureLoaded([topicId.value]))
 
 const reactionList = computed<KunReaction[]>(() =>
-  (data.value?.reactions ?? []).map((r) => ({
+  (digest.value?.reactions ?? []).map((r) => ({
     reaction: r.reaction,
     count: r.count,
-    reactors: r.reactors,
+    reactors: r.reactors.map(toKunUser),
     mine: reactionKeysOf(topicId.value).includes(r.reaction)
   }))
 )
@@ -32,7 +30,7 @@ provide(
   reactionsKey,
   useReactions({
     topicId: topicId.value,
-    targetUserId: data.value?.author_id ?? 0,
+    targetUserId: Number(props.topic.author.id),
     reactions: reactionList.value,
     sync: () => reactionList.value,
     showReactors: true
@@ -41,7 +39,10 @@ provide(
 </script>
 
 <template>
-  <ActivityCardShell :actor="activity.actor" :timestamp="activity.timestamp">
+  <ActivityCardShell
+    :performer="activity.performer"
+    :occurred-at="activity.occurred_at"
+  >
     <div class="space-y-3">
       <p class="text-default-600 text-sm break-all">
         推了这个话题，<span class="text-secondary font-bold">{{ blurb }}</span>
@@ -50,25 +51,24 @@ provide(
       <KunLink
         underline="none"
         color="default"
-        :to="activity.link"
+        :to="topicLink"
         class-name="group block space-y-2.5"
       >
         <h3
           class="group-hover:text-primary line-clamp-2 text-lg font-medium break-all transition-colors"
         >
-          {{ data?.title }}
+          {{ topic.title }}
         </h3>
         <p
-          v-if="data?.excerpt"
+          v-if="digest?.excerpt_markdown"
           class="text-default-500 line-clamp-3 text-sm break-all"
         >
-          {{ markdownToText(data.excerpt) }}
+          {{ markdownToText(digest.excerpt_markdown) }}
         </p>
         <TopicCoverGrid
           v-if="covers.length"
           :images="covers"
-          :meta="data?.cover_image_meta"
-          :nsfw="data?.is_nsfw"
+          :nsfw="topic.is_nsfw"
         />
       </KunLink>
 
@@ -79,7 +79,7 @@ provide(
           <div class="flex min-w-0 items-center gap-1">
             <TopicFooterFavorite
               :topic-id="topicId"
-              :favorite-count="data?.favorite_count ?? 0"
+              :favorite-count="digest?.favorite_count ?? 0"
               :is-favorite="isFavorited(topicId)"
             />
             <TopicReactionTrigger />
@@ -90,12 +90,12 @@ provide(
           >
             <span class="flex items-center gap-1">
               <KunIcon name="lucide:eye" class="size-4" />
-              {{ formatNumber(data?.view ?? 0) }}
+              {{ formatNumber(topic.view_count) }}
             </span>
             <KunLink
               underline="none"
               color="default"
-              :to="activity.link"
+              :to="topicLink"
               class-name="text-default-500 hover:text-primary flex items-center gap-0.5 text-sm"
             >
               查看详情

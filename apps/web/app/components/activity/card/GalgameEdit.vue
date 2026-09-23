@@ -3,24 +3,24 @@ import {
   galgameEditFieldConfig,
   galgameEditLabel
 } from '~/constants/galgameEdit'
+import type { Activity, WorkRef } from '#shared/utils/api/schemas'
 
-const props = defineProps<{ activity: ActivityItem }>()
-const data = computed(
-  () => props.activity.data as GalgameActivityData | undefined
-)
+const props = defineProps<{ activity: Activity; work: WorkRef }>()
+
+const nameOf = useWorkName()
 
 const diff = ref<GalgameEditDiff | null>(null)
 const isLoading = ref(false)
 
 const loadDiff = async () => {
-  const workId = data.value?.galgame_id
-  if (!workId || diff.value || isLoading.value) return
+  const workId = props.work.id
+  const revision = props.activity.work_revision
+  if (!revision || diff.value || isLoading.value) return
   isLoading.value = true
   try {
-    let seq = data.value?.revision_number
+    let seq = revision.revision_number ?? undefined
     if (!seq) {
-      const rowId = data.value?.revision_id
-      if (!rowId) return
+      const rowId = Number(revision.legacy_revision_id)
       const history = await kunFetch<GalgameEditRevisionList>(
         `/galgame/${workId}/edit/revisions?limit=200`
       )
@@ -74,13 +74,16 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <ActivityCardShell :actor="activity.actor" :timestamp="activity.timestamp">
+  <ActivityCardShell
+    :performer="activity.performer"
+    :occurred-at="activity.occurred_at"
+  >
     <div class="space-y-3">
       <p class="text-default-600 text-sm break-all">
-        编辑了《{{ data?.name || activity.content }}》
+        编辑了《{{ nameOf(work) }}》
       </p>
 
-      <ActivityCardGalgameInfo :activity="activity" />
+      <ActivityCardGalgameInfo :work="work" :digest="activity.work_digest" />
 
       <div v-if="isLoading" class="text-default-400 text-sm">加载编辑内容…</div>
       <div
@@ -117,7 +120,7 @@ onBeforeUnmount(() => {
         <KunLink
           underline="none"
           color="default"
-          :to="activity.link"
+          :to="activity.path"
           class-name="text-default-500 hover:text-primary flex shrink-0 items-center gap-0.5 text-sm"
         >
           查看详情

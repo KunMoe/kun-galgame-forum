@@ -8,37 +8,33 @@ import {
   KUN_GALGAME_RATING_RECOMMEND_COLOR_MAP,
   KUN_GALGAME_RATING_SPOILER_WARNING
 } from '~/constants/galgame-rating'
+import type {
+  Activity,
+  ActivityRating,
+  WorkRef
+} from '#shared/utils/api/schemas'
 
-const props = defineProps<{ activity: ActivityItem }>()
+const props = defineProps<{
+  activity: Activity
+  work: WorkRef
+  rating: ActivityRating
+}>()
 
-const data = computed(
-  () => props.activity.data as GalgameActivityData | undefined
-)
-const rating = computed(() => data.value?.rating)
-const workId = computed(() => data.value?.galgame_id ?? 0)
-const galgameLink = computed(() =>
-  workId.value ? `/galgame/${workId.value}` : props.activity.link
-)
+const nameOf = useWorkName()
 
-const playStatusLabel = computed(() =>
-  rating.value
-    ? KUN_GALGAME_PLAY_STATE_MAP[
-        rating.value.play_status as KunGalgamePlayStateRead
-      ] ||
-      rating.value.play_status
-    : ''
+const playStatusLabel = computed(
+  () =>
+    KUN_GALGAME_PLAY_STATE_MAP[
+      props.rating.play_status as KunGalgamePlayStateRead
+    ] || props.rating.play_status
 )
-const recommendLabel = computed(() =>
-  rating.value
-    ? KUN_GALGAME_RATING_RECOMMEND_MAP[rating.value.recommend] ||
-      rating.value.recommend
-    : ''
+const recommendLabel = computed(
+  () =>
+    KUN_GALGAME_RATING_RECOMMEND_MAP[props.rating.recommend] ||
+    props.rating.recommend
 )
 const recommendColor = computed(() => {
-  const c = rating.value
-    ? KUN_GALGAME_RATING_RECOMMEND_COLOR_MAP[rating.value.recommend]
-    : ''
-  switch (c) {
+  switch (KUN_GALGAME_RATING_RECOMMEND_COLOR_MAP[props.rating.recommend]) {
     case 'danger':
       return 'text-danger'
     case 'success':
@@ -51,19 +47,19 @@ const recommendColor = computed(() => {
       return 'text-default-600'
   }
 })
-const overall = computed(() => rating.value?.overall.toFixed(1) ?? '')
-const hasSpoiler = computed(
-  () => !!rating.value && rating.value.spoiler_level !== 'none'
-)
+const overall = computed(() => props.rating.overall.toFixed(1))
+const hasSpoiler = computed(() => props.rating.spoiler_level !== 'none')
 </script>
 
 <template>
-  <ActivityCardShell :actor="activity.actor" :timestamp="activity.timestamp">
+  <ActivityCardShell
+    :performer="activity.performer"
+    :occurred-at="activity.occurred_at"
+  >
     <div class="space-y-3">
       <p class="text-default-600 flex items-center gap-1 text-sm">
         <span>评分了一个 Galgame，评分</span>
         <span
-          v-if="rating"
           class="text-default-800 inline-flex items-center gap-0.5 font-semibold"
         >
           <KunIcon name="lucide:star" class="text-warning size-4" />
@@ -72,34 +68,21 @@ const hasSpoiler = computed(
       </p>
 
       <div class="flex items-start gap-3">
-        <KunLink :to="galgameLink" class-name="shrink-0">
-          <div
-            class="bg-default-100 aspect-video w-32 overflow-hidden rounded-lg sm:w-44"
-          >
-            <img
-              v-if="data?.cover_hash"
-              :src="imageHashUrl(imageCdnBase(), data.cover_hash, 'mini')"
-              :alt="data?.name"
-              loading="lazy"
-              class="h-full w-full object-cover"
-            />
-          </div>
-        </KunLink>
+        <ActivityCardWorkCover :work="work" />
 
         <div class="min-w-0 flex-1 space-y-1.5">
           <KunLink
             underline="none"
             color="default"
-            :to="galgameLink"
+            :to="`/galgame/${work.id}`"
             class-name="hover:text-primary block"
           >
-            <h3 class="line-clamp-2 font-medium break-all">{{ data?.name }}</h3>
+            <h3 class="line-clamp-2 font-medium break-all">
+              {{ nameOf(work) }}
+            </h3>
           </KunLink>
 
-          <div
-            v-if="rating"
-            class="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm"
-          >
+          <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
             <span class="text-default-700">{{ playStatusLabel }}</span>
             <span :class="cn('font-medium', recommendColor)">
               {{ recommendLabel }}
@@ -114,7 +97,7 @@ const hasSpoiler = computed(
             {{ KUN_GALGAME_RATING_SPOILER_WARNING }}
           </p>
           <p
-            v-else-if="rating?.short_summary"
+            v-else-if="rating.short_summary"
             class="text-default-700 line-clamp-3 text-base break-all"
           >
             {{ rating.short_summary }}
@@ -124,15 +107,15 @@ const hasSpoiler = computed(
 
       <div class="flex items-center gap-2">
         <GalgameRatingDetailLike
-          :rating-id="rating?.rating_id"
-          :target-user-id="rating?.author_id ?? activity.actor?.id ?? 0"
-          :like-count="rating?.like_count ?? 0"
+          :rating-id="Number(rating.rating_id)"
+          :target-user-id="Number(activity.performer?.id ?? 0)"
+          :like-count="rating.like_count"
           :is-liked="false"
         />
         <KunLink
           underline="none"
           color="default"
-          :to="activity.link"
+          :to="activity.path"
           class-name="text-default-500 hover:text-primary ml-auto flex items-center gap-0.5 text-sm"
         >
           查看详情

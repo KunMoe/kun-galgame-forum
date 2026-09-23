@@ -3468,7 +3468,7 @@ export interface components {
             work: components["schemas"]["WorkRef"] | null;
             /** @description Developers, intro and release of the work. Set for galgame_creation, galgame_edit and galgame_pr_creation. */
             work_digest: components["schemas"]["WorkDigest"] | null;
-            /** @description The revision the edit made. Set for galgame_edit when the revision is known. */
+            /** @description The revision the edit made. Set for galgame_edit unless neither its number nor its wiki id is recorded. */
             work_revision: components["schemas"]["WorkRevision"] | null;
             /** @description Counters of the work on this forum. Set for galgame_creation. */
             work_stats: components["schemas"]["WorkStats"] | null;
@@ -9847,13 +9847,13 @@ export interface components {
             object: "work";
         };
         WorkRevision: {
-            /** @description Revision id in the editing engine. */
-            revision_id: string;
+            /** @description The retired wiki's id for the revision, which the editing engine's revision history lists as legacy_id. null for edits made in the editing engine. */
+            legacy_revision_id: string | null;
             /**
              * Format: int64
-             * @description Sequence number of the revision on the work.
+             * @description Sequence number of the revision on the work: what the diff between revisions takes. null for some edits from the retired wiki, which carry only legacy_revision_id.
              */
-            revision_number: number;
+            revision_number: number | null;
         };
         WorkStats: {
             /**

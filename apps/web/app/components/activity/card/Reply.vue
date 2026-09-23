@@ -1,36 +1,31 @@
 <script setup lang="ts">
-const props = defineProps<{ activity: ActivityItem }>()
+import type { Activity, ActivityReply } from '#shared/utils/api/schemas'
 
-const data = computed(
-  () => props.activity.data as ReplyActivityData | undefined
-)
-const quoted = computed(() => data.value?.quoted_reply)
+defineProps<{ activity: Activity; reply: ActivityReply }>()
 </script>
 
 <template>
-  <ActivityCardShell :actor="activity.actor" :timestamp="activity.timestamp">
+  <ActivityCardShell
+    :performer="activity.performer"
+    :occurred-at="activity.occurred_at"
+  >
     <div class="space-y-2">
-      <ActivityCardQuote
-        v-if="quoted"
-        :content="quoted.content"
-        :label="`#${quoted.floor}`"
-      />
+      <ActivityCardQuote v-if="reply.quoted" :quoted="reply.quoted" />
 
-      <KunContent
+      <ContentDocument
+        :document="reply.content"
         compact
-        class="text-base"
-        :content="renderKatex(activity.content)"
+        class-name="text-base"
       />
 
       <KunLink
-        v-if="data?.topic_title"
         underline="none"
         color="default"
-        :to="replyPermalink(activity.link, data?.floor)"
+        :to="replyPermalink(`/topic/${reply.topic_id}`, reply.floor)"
         class-name="text-default-500 hover:text-primary flex items-center gap-1 text-sm"
       >
         <KunIcon name="icon-park-outline:topic" class="size-4 shrink-0" />
-        <span class="line-clamp-1">{{ data.topic_title }}</span>
+        <span class="line-clamp-1">{{ reply.topic_title }}</span>
       </KunLink>
     </div>
   </ActivityCardShell>

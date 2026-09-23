@@ -1,18 +1,11 @@
 <script setup lang="ts">
 import { randomUpvoteDescription } from '~/constants/upvote'
-import type { TopicUpvote } from '#shared/utils/api/schemas'
+import type { TopicUpvote, UpvoteExcerpt } from '#shared/utils/api/schemas'
 import { toKunUser } from '~/utils/userRef'
-
-interface LegacyUpvoteRecord {
-  id: number
-  user: KunUser
-  description: string
-  created: string | Date
-}
 
 const props = defineProps<{
   topicId?: string | number
-  records?: LegacyUpvoteRecord[]
+  records?: UpvoteExcerpt[]
 }>()
 
 const { lastCreated } = useUpvoteModal()
@@ -61,11 +54,11 @@ type Row = {
 
 const rows = computed<Row[]>(() => {
   if (props.records) {
-    return props.records.map((record) => ({
-      id: String(record.id),
-      user: record.user,
-      text: record.description || randomUpvoteDescription(record.id),
-      created: record.created
+    return props.records.map((record, index) => ({
+      id: `record-${index}`,
+      user: toKunUser(record.upvoter),
+      text: record.note ?? randomUpvoteDescription(Number(props.topicId ?? 0)),
+      created: record.upvoted_at ?? ''
     }))
   }
   const items = [...extras.value, ...(fetched?.items.value ?? [])]

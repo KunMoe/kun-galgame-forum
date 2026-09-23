@@ -1,69 +1,41 @@
 <script setup lang="ts">
 import { useIntersectionObserver } from '@vueuse/core'
+import type { Activity, ActivityType } from '#shared/utils/api/schemas'
 import {
   KUN_ACTIVITY_TYPE_TYPE,
   KUN_ACTIVITY_GROUPS,
   KUN_ACTIVITY_ICON_MAP
 } from '~/constants/activity'
+import { activitySummaryText } from '~/utils/activity'
+import { toKunUser } from '~/utils/userRef'
 
-const selectedType = ref('TOPIC_CREATION')
-
-const items = ref<ActivityItem[]>([])
-const cursor = ref('')
-const hasMore = ref(true)
-const isLoadingMore = ref(false)
+const selectedType = ref<ActivityType>('topic_creation')
 
 const settings = usePersistSettingsStore()
+const { allowsNsfw } = useContentStance()
+const nameOf = useWorkName()
 
-const { data, status } = await useKunFetch<{
-  items: ActivityItem[]
-  next_cursor: string
-}>('/activity', {
-  method: 'GET',
-  query: computed(() => ({
-    limit: 50,
-    type: selectedType.value,
-    show_no_resource: settings.showKUNGalgameNoResource
-  }))
-})
+const query = computed(() => ({
+  activity_types: [selectedType.value],
+  include_nsfw: allowsNsfw.value,
+  include_galgames_without_resources: settings.showKUNGalgameNoResource,
+  limit: 50
+}))
 
-watch(
-  data,
-  (page) => {
-    if (!page) return
-    items.value = page.items
-    cursor.value = page.next_cursor
-    hasMore.value = !!page.next_cursor
-  },
-  { immediate: true }
-)
+const { items, status, hasMore, loadingMore, loadMore } =
+  await useCursorList<Activity>(
+    () => `activities:${JSON.stringify(query.value)}`,
+    (api, cursor, { signal }) =>
+      api.GET('/activities', {
+        params: { query: { ...query.value, ...(cursor ? { cursor } : {}) } },
+        signal
+      })
+  )
 
 const categoryPopover = ref<{ close: () => void } | null>(null)
-const selectCategory = (type: string) => {
+const selectCategory = (type: ActivityType) => {
   selectedType.value = type
   categoryPopover.value?.close()
-}
-
-const loadMore = async () => {
-  if (isLoadingMore.value || !hasMore.value || !cursor.value) return
-  isLoadingMore.value = true
-  const next = await kunFetch<{ items: ActivityItem[]; next_cursor: string }>(
-    '/activity',
-    {
-      method: 'GET',
-      query: {
-        limit: 50,
-        type: selectedType.value,
-        cursor: cursor.value,
-        show_no_resource: settings.showKUNGalgameNoResource
-      }
-    }
-  )
-  isLoadingMore.value = false
-  if (!next) return
-  items.value.push(...next.items)
-  cursor.value = next.next_cursor
-  hasMore.value = !!next.next_cursor
 }
 
 const sentinel = ref<HTMLElement | null>(null)
@@ -145,25 +117,29 @@ useIntersectionObserver(
 
     <div
       v-for="activity in items"
-      :key="activity.unique_id"
+      :key="activity.id"
       class="flex flex-col space-y-2"
     >
       <KunLink
         underline="none"
         color="default"
-        :to="activity.link"
+        :to="activity.path"
         class-name="hover:text-primary line-clamp-3 break-all transition-colors"
       >
-        {{ markdownToText(activity.content) }}
+        {{ activitySummaryText(activity, nameOf) }}
         <KunChip class-name="cursor-pointer" color="primary" size="xs">
-          {{ KUN_ACTIVITY_TYPE_TYPE[activity.type] }}
+          {{ KUN_ACTIVITY_TYPE_TYPE[activity.activity_type] }}
         </KunChip>
       </KunLink>
 
       <div class="flex items-center space-x-2">
-        <KunUserChip size="sm" v-if="activity.actor" :user="activity.actor" />
+        <KunUserChip
+          v-if="activity.performer"
+          size="sm"
+          :user="toKunUser(activity.performer)"
+        />
         <span class="text-default-500 text-sm">
-          <KunTime :time="activity.timestamp" />
+          <KunTime :time="activity.occurred_at" />
         </span>
       </div>
     </div>
@@ -172,7 +148,7 @@ useIntersectionObserver(
       <KunButton
         v-if="hasMore"
         variant="light"
-        :loading="isLoadingMore"
+        :loading="loadingMore"
         @click="loadMore"
       >
         加载更多

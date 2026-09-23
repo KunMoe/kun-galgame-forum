@@ -1,13 +1,18 @@
 <script setup lang="ts">
-const props = defineProps<{ activity: ActivityItem }>()
+import type { Activity, ActivityReply } from '#shared/utils/api/schemas'
 
-const data = computed(
-  () => props.activity.data as SolutionActivityData | undefined
+const props = defineProps<{ activity: Activity; reply: ActivityReply }>()
+
+const link = computed(() =>
+  replyPermalink(`/topic/${props.reply.topic_id}`, props.reply.floor)
 )
 </script>
 
 <template>
-  <ActivityCardShell :actor="activity.actor" :timestamp="activity.timestamp">
+  <ActivityCardShell
+    :performer="activity.performer"
+    :occurred-at="activity.occurred_at"
+  >
     <div
       class="text-success-600 dark:text-success-400 flex items-center gap-1.5 text-sm font-medium"
     >
@@ -16,31 +21,32 @@ const data = computed(
     </div>
 
     <div class="bg-success-500/10 mt-2 rounded-lg p-3">
-      <KunText
-        class-name="whitespace-normal! text-default-600 line-clamp-3 text-sm"
-        :content="markdownToText(activity.content)"
-      />
+      <ActivityCollapse :max-height="96">
+        <ContentDocument
+          :document="reply.content"
+          compact
+          class-name="text-default-600 text-sm"
+        />
+      </ActivityCollapse>
     </div>
 
     <div
       class="text-default-500 mt-2 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-sm"
     >
       <KunLink
-        v-if="data?.topic_title"
         underline="hover"
         color="default"
-        :to="replyPermalink(activity.link, data?.floor)"
+        :to="link"
         class-name="text-default-500 hover:text-primary inline-flex min-w-0 items-center gap-1.5"
       >
         <KunIcon name="icon-park-outline:topic" class-name="shrink-0" />
-        <span class="truncate">{{ data.topic_title }}</span>
+        <span class="truncate">{{ reply.topic_title }}</span>
       </KunLink>
-      <span v-else />
 
       <KunLink
         underline="none"
         color="default"
-        :to="replyPermalink(activity.link, data?.floor)"
+        :to="link"
         class-name="text-default-500 hover:text-primary flex shrink-0 items-center gap-0.5 text-sm"
       >
         查看详情

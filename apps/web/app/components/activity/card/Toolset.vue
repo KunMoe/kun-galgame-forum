@@ -1,13 +1,18 @@
 <script setup lang="ts">
-defineProps<{ activity: ActivityItem }>()
+import type { Activity } from '#shared/utils/api/schemas'
+
+defineProps<{ activity: Activity }>()
 </script>
 
 <template>
-  <ActivityCardShell :actor="activity.actor" :timestamp="activity.timestamp">
+  <ActivityCardShell
+    :performer="activity.performer"
+    :occurred-at="activity.occurred_at"
+  >
     <KunLink
       underline="none"
       color="default"
-      :to="activity.link"
+      :to="activity.path"
       class-name="group block space-y-1"
     >
       <span class="text-default-500 flex items-center gap-1.5 text-sm">
@@ -17,7 +22,7 @@ defineProps<{ activity: ActivityItem }>()
       <p
         class="group-hover:text-primary text-lg font-medium break-all transition-colors"
       >
-        {{ activity.content }}
+        {{ activity.excerpt_markdown }}
       </p>
     </KunLink>
   </ActivityCardShell>

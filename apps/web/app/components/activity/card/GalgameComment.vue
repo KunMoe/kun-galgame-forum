@@ -1,36 +1,30 @@
 <script setup lang="ts">
-const props = defineProps<{ activity: ActivityItem }>()
+import type { Activity, WorkRef } from '#shared/utils/api/schemas'
 
-const data = computed(
-  () => props.activity.data as GalgameActivityData | undefined
-)
-const workId = computed(() => data.value?.galgame_id ?? 0)
-const detailLink = computed(() =>
-  workId.value ? `/galgame/${workId.value}` : props.activity.link
-)
+defineProps<{ activity: Activity; work: WorkRef }>()
+
+const nameOf = useWorkName()
 </script>
 
 <template>
-  <ActivityCardShell :actor="activity.actor" :timestamp="activity.timestamp">
+  <ActivityCardShell
+    :performer="activity.performer"
+    :occurred-at="activity.occurred_at"
+  >
     <div class="space-y-1.5">
-      <ActivityCardQuote
-        v-if="data?.parent_comment"
-        :content="data.parent_comment.content"
-      />
-
-      <KunContent
-        compact
-        class="text-base"
-        :content="renderKatex(activity.content)"
-      />
+      <ActivityCollapse :max-height="300">
+        <p class="text-default-700 text-base break-all whitespace-pre-line">
+          {{ activity.excerpt_markdown }}
+        </p>
+      </ActivityCollapse>
       <KunLink
         underline="none"
         color="default"
-        :to="detailLink"
+        :to="activity.path"
         class-name="text-default-500 hover:text-primary inline-flex items-center gap-1 text-sm"
       >
         <KunIcon name="lucide:gamepad-2" class="size-3.5 shrink-0" />
-        {{ data?.name }}
+        {{ nameOf(work) }}
       </KunLink>
     </div>
   </ActivityCardShell>

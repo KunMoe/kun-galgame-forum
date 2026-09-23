@@ -1,17 +1,18 @@
 <script setup lang="ts">
-const props = defineProps<{ activity: ActivityItem }>()
+import type { Activity, ActivityToolset } from '#shared/utils/api/schemas'
 
-const data = computed(
-  () => props.activity.data as EntityRefActivityData | undefined
-)
+defineProps<{ activity: Activity; toolset: ActivityToolset }>()
 </script>
 
 <template>
-  <ActivityCardShell :actor="activity.actor" :timestamp="activity.timestamp">
+  <ActivityCardShell
+    :performer="activity.performer"
+    :occurred-at="activity.occurred_at"
+  >
     <KunLink
       underline="none"
       color="default"
-      :to="activity.link"
+      :to="activity.path"
       class-name="group block space-y-1.5"
     >
       <span class="text-default-500 flex items-center gap-1.5 text-sm">
@@ -19,12 +20,12 @@ const data = computed(
           name="lucide:package-plus"
           class="text-secondary size-4 shrink-0"
         />
-        在工具《{{ data?.parent_name }}》发布了资源
+        在工具《{{ toolset.title }}》发布了资源
       </span>
       <p
         class="group-hover:text-primary line-clamp-3 text-base break-all transition-colors"
       >
-        {{ markdownToText(activity.content) }}
+        {{ markdownToText(activity.excerpt_markdown) }}
       </p>
     </KunLink>
   </ActivityCardShell>

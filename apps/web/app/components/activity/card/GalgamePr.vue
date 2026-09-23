@@ -1,26 +1,29 @@
 <script setup lang="ts">
-const props = defineProps<{ activity: ActivityItem }>()
+import type { Activity, WorkRef } from '#shared/utils/api/schemas'
 
-const data = computed(
-  () => props.activity.data as GalgameActivityData | undefined
-)
+defineProps<{ activity: Activity; work: WorkRef }>()
+
+const nameOf = useWorkName()
 </script>
 
 <template>
-  <ActivityCardShell :actor="activity.actor" :timestamp="activity.timestamp">
+  <ActivityCardShell
+    :performer="activity.performer"
+    :occurred-at="activity.occurred_at"
+  >
     <div class="space-y-3">
       <p class="text-default-600 text-sm break-all">
-        提出了《{{ data?.name || activity.content }}》的更新请求
+        提出了《{{ nameOf(work) }}》的更新请求
       </p>
 
-      <ActivityCardGalgameInfo :activity="activity" />
+      <ActivityCardGalgameInfo :work="work" :digest="activity.work_digest" />
 
       <div class="flex items-center justify-between gap-2 text-sm">
         <span class="text-warning-600">该更新请求需要被审核</span>
         <KunLink
           underline="none"
           color="default"
-          :to="activity.link"
+          :to="activity.path"
           class-name="text-default-500 hover:text-primary flex shrink-0 items-center gap-0.5 text-sm"
         >
           查看详情

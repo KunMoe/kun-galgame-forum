@@ -1,96 +1,95 @@
-export const KUN_ACTIVITY_TYPE_TYPE: Record<string, string> = {
-  GALGAME_CREATION: 'Galgame',
-  GALGAME_RATING_CREATION: 'Galgame 评分',
-  GALGAME_RATING_COMMENT_CREATION: 'Galgame 评分评论',
-  TOPIC_CREATION: '新话题',
-  TOPIC_UPVOTE: '话题被推',
-  MESSAGE_UPVOTE: '话题被推',
-  MESSAGE_SOLUTION: '最佳答案',
-  TOPIC_REPLY_CREATION: '话题回复',
-  TOPIC_COMMENT_CREATION: '话题评论',
-  GALGAME_WEBSITE_CREATION: 'Galgame 网站',
-  GALGAME_RESOURCE_CREATION: 'Galgame 资源',
-  GALGAME_QUIZ_CREATION: 'Galgame 题目',
-  GALGAME_EDIT: 'Galgame 编辑',
-  GALGAME_PR_CREATION: '提出更新请求',
-  GALGAME_COMMENT_CREATION: 'Galgame 评论',
-  GALGAME_WEBSITE_COMMENT_CREATION: 'Galgame 网站评论',
-  TODO_CREATION: '待办',
-  UPDATE_LOG_CREATION: '更新日志',
-  TOOLSET_CREATION: 'Galgame 工具',
-  TOOLSET_RESOURCE_CREATION: '工具资源',
-  TOOLSET_COMMENT_CREATION: '工具评论',
-  GALGAME_RESOURCE_COMMENT_CREATION: 'Galgame 资源评论',
-  GALGAME_QUIZ_COMMENT_CREATION: 'Galgame 题目讨论'
+import type { ActivityType } from '#shared/utils/api/schemas'
+
+export const KUN_ACTIVITY_TYPE_TYPE: Record<ActivityType, string> = {
+  galgame_creation: 'Galgame',
+  galgame_rating_creation: 'Galgame 评分',
+  galgame_rating_comment_creation: 'Galgame 评分评论',
+  topic_creation: '新话题',
+  topic_upvote: '话题被推',
+  best_answer_set: '最佳答案',
+  topic_reply_creation: '话题回复',
+  topic_comment_creation: '话题评论',
+  galgame_website_creation: 'Galgame 网站',
+  galgame_resource_creation: 'Galgame 资源',
+  galgame_quiz_creation: 'Galgame 题目',
+  galgame_edit: 'Galgame 编辑',
+  galgame_pr_creation: '提出更新请求',
+  galgame_comment_creation: 'Galgame 评论',
+  galgame_website_comment_creation: 'Galgame 网站评论',
+  todo_creation: '待办',
+  update_log_creation: '更新日志',
+  toolset_creation: 'Galgame 工具',
+  toolset_resource_creation: '工具资源',
+  toolset_comment_creation: '工具评论',
+  galgame_resource_comment_creation: 'Galgame 资源评论',
+  galgame_quiz_comment_creation: 'Galgame 题目讨论'
 }
 
-export const KUN_ACTIVITY_GROUPS: { label: string; types: string[] }[] = [
+export const KUN_ACTIVITY_GROUPS: { label: string; types: ActivityType[] }[] = [
   {
     label: 'Galgame',
     types: [
-      'GALGAME_CREATION',
-      'GALGAME_EDIT',
-      'GALGAME_PR_CREATION',
-      'GALGAME_RESOURCE_CREATION',
-      'GALGAME_RESOURCE_COMMENT_CREATION',
-      'GALGAME_QUIZ_CREATION',
-      'GALGAME_QUIZ_COMMENT_CREATION',
-      'GALGAME_RATING_CREATION',
-      'GALGAME_RATING_COMMENT_CREATION',
-      'GALGAME_COMMENT_CREATION',
-      'GALGAME_WEBSITE_CREATION',
-      'GALGAME_WEBSITE_COMMENT_CREATION'
+      'galgame_creation',
+      'galgame_edit',
+      'galgame_pr_creation',
+      'galgame_resource_creation',
+      'galgame_resource_comment_creation',
+      'galgame_quiz_creation',
+      'galgame_quiz_comment_creation',
+      'galgame_rating_creation',
+      'galgame_rating_comment_creation',
+      'galgame_comment_creation',
+      'galgame_website_creation',
+      'galgame_website_comment_creation'
     ]
   },
   {
     label: '社区',
     types: [
-      'TOPIC_CREATION',
-      'TOPIC_REPLY_CREATION',
-      'TOPIC_COMMENT_CREATION',
-      'TOPIC_UPVOTE',
-      'MESSAGE_UPVOTE',
-      'MESSAGE_SOLUTION'
+      'topic_creation',
+      'topic_reply_creation',
+      'topic_comment_creation',
+      'topic_upvote',
+      'best_answer_set'
     ]
   },
   {
     label: '工具集',
     types: [
-      'TOOLSET_CREATION',
-      'TOOLSET_RESOURCE_CREATION',
-      'TOOLSET_COMMENT_CREATION'
+      'toolset_creation',
+      'toolset_resource_creation',
+      'toolset_comment_creation'
     ]
   },
   {
     label: '站务',
-    types: ['TODO_CREATION', 'UPDATE_LOG_CREATION']
+    types: ['todo_creation', 'update_log_creation']
   }
 ]
 
-export const KUN_ACTIVITY_ICON_MAP: Record<string, string> = {
-  GALGAME_CREATION: 'lucide:gamepad-2',
-  GALGAME_RATING_CREATION: 'lucide:star',
-  GALGAME_RATING_COMMENT_CREATION: 'lucide:message-square-text',
-  GALGAME_COMMENT_CREATION: 'lucide:message-square',
-  GALGAME_WEBSITE_CREATION: 'lucide:globe',
-  GALGAME_WEBSITE_COMMENT_CREATION: 'lucide:message-square-text',
-  GALGAME_RESOURCE_CREATION: 'lucide:box',
-  GALGAME_QUIZ_CREATION: 'lucide:brain',
-  GALGAME_RESOURCE_COMMENT_CREATION: 'lucide:message-square-text',
-  GALGAME_QUIZ_COMMENT_CREATION: 'lucide:message-square-text',
-  GALGAME_EDIT: 'lucide:file-pen-line',
-  GALGAME_PR_CREATION: 'lucide:git-pull-request',
-  TOOLSET_CREATION: 'lucide:wrench',
-  TOOLSET_RESOURCE_CREATION: 'lucide:package-plus',
-  TOOLSET_COMMENT_CREATION: 'lucide:wrench',
-  TOPIC_CREATION: 'icon-park-outline:topic',
-  TOPIC_UPVOTE: 'lucide:trending-up',
-  TOPIC_REPLY_CREATION: 'carbon:reply',
-  TOPIC_COMMENT_CREATION: 'lucide:message-circle-more',
-  TODO_CREATION: 'lucide:list-checks',
-  UPDATE_LOG_CREATION: 'lucide:file-clock',
-  MESSAGE_UPVOTE: 'lucide:sparkles',
-  MESSAGE_SOLUTION: 'lucide:bookmark-check'
+export const KUN_ACTIVITY_ICON_MAP: Record<ActivityType, string> = {
+  galgame_creation: 'lucide:gamepad-2',
+  galgame_rating_creation: 'lucide:star',
+  galgame_rating_comment_creation: 'lucide:message-square-text',
+  galgame_comment_creation: 'lucide:message-square',
+  galgame_website_creation: 'lucide:globe',
+  galgame_website_comment_creation: 'lucide:message-square-text',
+  galgame_resource_creation: 'lucide:box',
+  galgame_quiz_creation: 'lucide:brain',
+  galgame_resource_comment_creation: 'lucide:message-square-text',
+  galgame_quiz_comment_creation: 'lucide:message-square-text',
+  galgame_edit: 'lucide:file-pen-line',
+  galgame_pr_creation: 'lucide:git-pull-request',
+  toolset_creation: 'lucide:wrench',
+  toolset_resource_creation: 'lucide:package-plus',
+  toolset_comment_creation: 'lucide:wrench',
+  topic_creation: 'icon-park-outline:topic',
+  topic_upvote: 'lucide:trending-up',
+  topic_reply_creation: 'carbon:reply',
+  topic_comment_creation: 'lucide:message-circle-more',
+  todo_creation: 'lucide:list-checks',
+  update_log_creation: 'lucide:file-clock',
+  best_answer_set: 'lucide:bookmark-check'
 }
 
 export interface KunFeedKind {

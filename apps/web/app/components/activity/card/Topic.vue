@@ -1,62 +1,84 @@
 <script setup lang="ts">
 import { KUN_TOPIC_SECTION } from '~/constants/topic'
+import type {
+  Activity,
+  ReplyExcerpt,
+  TopicSummary
+} from '#shared/utils/api/schemas'
+import { toKunUser } from '~/utils/userRef'
 
-const props = defineProps<{ activity: ActivityItem }>()
+const props = defineProps<{ activity: Activity; topic: TopicSummary }>()
 
-const data = computed(
-  () => props.activity.data as TopicActivityData | undefined
-)
-const covers = computed(() => (data.value?.cover_images ?? []).slice(0, 3))
-const topicId = computed(() => data.value?.topic_id ?? 0)
-const hasBadge = computed(() => {
-  const d = data.value
-  return (
-    !!d &&
-    (d.has_best_answer || !!d.mini_apps?.length || d.is_nsfw || !!d.upvote_time)
-  )
-})
-
-const topReply = computed(() => data.value?.top_reply)
-const bestAnswer = computed(() => data.value?.best_answer)
-const upvotes = computed(() => {
-  const all = data.value?.upvotes ?? []
-  if (all.length <= 1) return all
-  return [...all]
-    .sort(
-      (a, b) => new Date(b.created).getTime() - new Date(a.created).getTime()
-    )
-    .slice(0, 1)
-})
-const sameReply = computed(
+const digest = computed(() => props.activity.topic_digest)
+const topicId = computed(() => Number(props.topic.id))
+const topicLink = computed(() => `/topic/${props.topic.id}`)
+const covers = computed(() => props.topic.cover_images.slice(0, 3))
+const hasBadge = computed(
   () =>
-    !!bestAnswer.value &&
-    !!topReply.value &&
-    bestAnswer.value.reply_id === topReply.value.reply_id
+    props.topic.has_best_answer ||
+    !!props.topic.mini_apps.length ||
+    props.topic.is_nsfw ||
+    !!props.topic.upvoted_at
 )
-const showTopReply = computed(() => !!topReply.value && !sameReply.value)
 
-const latest = computed(() => data.value?.latest_activity)
-const showLatest = computed(() => {
-  const l = latest.value
-  if (!l) return false
-  if (
-    l.kind === 'reply' &&
-    (l.reply_id === bestAnswer.value?.reply_id ||
-      l.reply_id === topReply.value?.reply_id)
-  ) {
-    return false
-  }
-  return true
+const topReply = computed(() => digest.value?.top_reply ?? null)
+const bestAnswer = computed(() => digest.value?.best_answer_excerpt ?? null)
+const upvotes = computed(() => {
+  const latest = digest.value?.latest_upvote
+  return latest?.upvoted_at ? [latest] : []
 })
+const showTopReply = computed(
+  () =>
+    !!topReply.value && topReply.value.reply_id !== bestAnswer.value?.reply_id
+)
+
+const latestReply = computed(() => {
+  const r = digest.value?.latest_reply
+  if (
+    !r ||
+    r.reply_id === bestAnswer.value?.reply_id ||
+    r.reply_id === topReply.value?.reply_id
+  ) {
+    return null
+  }
+  return r
+})
+const latestComment = computed(() => digest.value?.latest_comment ?? null)
+const latest = computed(() => {
+  if (latestReply.value) {
+    return {
+      label: '最新回复',
+      to: replyPermalink(topicLink.value, latestReply.value.floor),
+      user: toKunUser(latestReply.value.author),
+      excerpt: latestReply.value.excerpt_markdown,
+      created: latestReply.value.created_at
+    }
+  }
+  if (latestComment.value) {
+    return {
+      label: '最新评论',
+      to: commentPermalink(
+        topicLink.value,
+        Number(latestComment.value.comment_id)
+      ),
+      user: toKunUser(latestComment.value.author),
+      excerpt: latestComment.value.excerpt_markdown,
+      created: latestComment.value.created_at
+    }
+  }
+  return null
+})
+
+const replyUser = (r: ReplyExcerpt) => toKunUser(r.author)
 
 const { isFavorited, reactionKeysOf, ensureLoaded } = useMyTopicInteractions()
-onMounted(() => ensureLoaded(topicId.value ? [topicId.value] : []))
+onMounted(() => ensureLoaded([topicId.value]))
 
 const reactionList = computed<KunReaction[]>(() =>
-  (data.value?.reactions ?? []).map((r) => ({
+  (digest.value?.reactions ?? []).map((r) => ({
     reaction: r.reaction,
     count: r.count,
-    reactors: r.reactors,
+    reactors: r.reactors.map(toKunUser),
     mine: reactionKeysOf(topicId.value).includes(r.reaction)
   }))
 )
@@ -64,7 +86,7 @@ provide(
   reactionsKey,
   useReactions({
     topicId: topicId.value,
-    targetUserId: props.activity.actor?.id ?? 0,
+    targetUserId: Number(props.topic.author.id),
     reactions: reactionList.value,
     sync: () => reactionList.value,
     showReactors: true
@@ -73,11 +95,14 @@ provide(
 </script>
 
 <template>
-  <ActivityCardShell :actor="activity.actor" :timestamp="activity.timestamp">
-    <template v-if="data?.edited" #meta>
+  <ActivityCardShell
+    :performer="activity.performer"
+    :occurred-at="activity.occurred_at"
+  >
+    <template v-if="digest?.edited_at" #meta>
       <span class="text-default-400 ml-2 flex items-center gap-1 text-xs">
         <KunIcon name="lucide:pencil" class="size-3" />
-        {{ formatTimeDifference(data.edited) }}
+        {{ formatTimeDifference(digest.edited_at) }}
       </span>
     </template>
 
@@ -85,43 +110,42 @@ provide(
       <KunLink
         underline="none"
         color="default"
-        :to="activity.link"
+        :to="topicLink"
         class-name="group block space-y-2.5"
       >
         <h3
           class="group-hover:text-primary line-clamp-2 text-lg font-medium break-all transition-colors"
         >
-          {{ activity.content }}
+          {{ topic.title }}
         </h3>
         <p
-          v-if="data?.excerpt"
+          v-if="digest?.excerpt_markdown"
           class="text-default-500 line-clamp-3 text-sm break-all"
         >
-          {{ markdownToText(data.excerpt) }}
+          {{ markdownToText(digest.excerpt_markdown) }}
         </p>
         <TopicCoverGrid
           v-if="covers.length"
           :images="covers"
-          :meta="data?.cover_image_meta"
-          :nsfw="data?.is_nsfw"
+          :nsfw="topic.is_nsfw"
         />
       </KunLink>
 
       <div
-        v-if="hasBadge || data?.sections?.length"
+        v-if="hasBadge || topic.sections.length"
         class="flex flex-wrap items-center gap-1.5"
       >
         <TopicBadgeGroup
           v-if="hasBadge"
           :section="[]"
-          :upvote-time="data?.upvote_time"
-          :has-best-answer="data?.has_best_answer"
-          :mini-apps="data?.mini_apps"
-          :is-n-s-f-w-topic="data?.is_nsfw"
+          :upvote-time="topic.upvoted_at"
+          :has-best-answer="topic.has_best_answer"
+          :mini-apps="topic.mini_apps"
+          :is-n-s-f-w-topic="topic.is_nsfw"
         />
         <KunChip
-          v-for="(sec, index) in data?.sections ?? []"
-          :key="index"
+          v-for="sec in topic.sections"
+          :key="sec"
           size="sm"
           variant="flat"
           color="primary"
@@ -130,17 +154,17 @@ provide(
         </KunChip>
       </div>
 
-      <TopicUpvoteRecords v-if="upvotes.length" :records="upvotes" />
+      <TopicUpvoteRecords
+        v-if="upvotes.length"
+        :topic-id="topic.id"
+        :records="upvotes"
+      />
 
       <KunLink
-        v-if="showLatest && latest"
+        v-if="latest"
         underline="none"
         color="default"
-        :to="
-          latest?.kind === 'reply'
-            ? replyPermalink(activity.link, latest.floor)
-            : commentPermalink(activity.link, latest?.comment_id)
-        "
+        :to="latest.to"
         class-name="bg-default-100 flex gap-2 rounded-md p-1.5"
       >
         <div class="bg-default-300 w-1 shrink-0 rounded-full" />
@@ -152,7 +176,7 @@ provide(
                 {{ latest.user.name }}
               </span>
               <span class="text-default-400 shrink-0 text-xs">
-                {{ latest.kind === 'reply' ? '最新回复' : '最新评论' }}
+                {{ latest.label }}
               </span>
             </span>
             <span class="text-default-400 shrink-0 text-xs whitespace-nowrap">
@@ -160,7 +184,7 @@ provide(
             </span>
           </div>
           <p class="text-default-600 line-clamp-2 break-all">
-            {{ markdownToText(latest.content) }}
+            {{ markdownToText(latest.excerpt) }}
           </p>
         </div>
       </KunLink>
@@ -169,7 +193,7 @@ provide(
         v-if="showTopReply && topReply"
         underline="none"
         color="default"
-        :to="replyPermalink(activity.link, topReply?.floor)"
+        :to="replyPermalink(topicLink, topReply.floor)"
         class-name="bg-primary-500/10 flex gap-2 rounded-md p-1.5"
       >
         <div class="bg-primary w-1 shrink-0 rounded-full" />
@@ -177,12 +201,12 @@ provide(
           <div class="flex items-center justify-between gap-2">
             <span class="flex min-w-0 items-center gap-1.5">
               <KunAvatar
-                :user="topReply.user"
+                :user="replyUser(topReply)"
                 size="sm"
                 :is-navigation="false"
               />
               <span class="text-default-700 line-clamp-1 font-medium">
-                {{ topReply.user.name }}
+                {{ replyUser(topReply).name }}
               </span>
             </span>
             <span class="text-default-500 flex shrink-0 items-center gap-1">
@@ -191,7 +215,7 @@ provide(
             </span>
           </div>
           <p class="text-default-600 line-clamp-2 break-all">
-            {{ markdownToText(topReply.content) }}
+            {{ markdownToText(topReply.excerpt_markdown) }}
           </p>
         </div>
       </KunLink>
@@ -200,7 +224,7 @@ provide(
         v-if="bestAnswer"
         underline="none"
         color="default"
-        :to="replyPermalink(activity.link, bestAnswer?.floor)"
+        :to="replyPermalink(topicLink, bestAnswer.floor)"
         class-name="bg-success-500/10 relative flex gap-2 overflow-hidden rounded-md p-1.5"
       >
         <div class="bg-success-500 w-1 shrink-0 rounded-full" />
@@ -208,14 +232,14 @@ provide(
           <div class="flex items-center justify-between gap-2">
             <span class="flex min-w-0 items-center gap-1.5">
               <KunAvatar
-                :user="bestAnswer.user"
+                :user="replyUser(bestAnswer)"
                 size="sm"
                 :is-navigation="false"
               />
               <span
                 class="text-success-700 dark:text-success-300 line-clamp-1 font-medium"
               >
-                {{ bestAnswer.user.name }}
+                {{ replyUser(bestAnswer).name }}
               </span>
             </span>
             <span
@@ -226,7 +250,7 @@ provide(
             </span>
           </div>
           <p class="text-default-600 line-clamp-2 break-all">
-            {{ markdownToText(bestAnswer.content) }}
+            {{ markdownToText(bestAnswer.excerpt_markdown) }}
           </p>
         </div>
         <KunIcon
@@ -242,7 +266,7 @@ provide(
           <div class="flex min-w-0 items-center gap-1">
             <TopicFooterFavorite
               :topic-id="topicId"
-              :favorite-count="data?.favorite_count ?? 0"
+              :favorite-count="digest?.favorite_count ?? 0"
               :is-favorite="isFavorited(topicId)"
             />
             <TopicReactionTrigger />
@@ -253,20 +277,16 @@ provide(
           >
             <span class="flex items-center gap-1">
               <KunIcon name="lucide:message-square" class="size-4" />
-              {{
-                formatNumber(
-                  (data?.reply_count ?? 0) + (data?.comment_count ?? 0)
-                )
-              }}
+              {{ formatNumber(topic.reply_count + topic.comment_count) }}
             </span>
             <span class="flex items-center gap-1">
               <KunIcon name="lucide:eye" class="size-4" />
-              {{ formatNumber(data?.view ?? 0) }}
+              {{ formatNumber(topic.view_count) }}
             </span>
             <KunLink
               underline="none"
               color="default"
-              :to="activity.link"
+              :to="topicLink"
               class-name="text-default-500 hover:text-primary flex items-center gap-0.5 text-sm"
             >
               查看详情

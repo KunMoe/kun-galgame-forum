@@ -1,94 +1,61 @@
 <script setup lang="ts">
 import { useIntersectionObserver, useThrottleFn } from '@vueuse/core'
+import type { Activity } from '#shared/utils/api/schemas'
+import { feedTabQuery } from '~/utils/activity'
 
 const props = defineProps<{ tabId: string; types: string }>()
 
 const settings = usePersistSettingsStore()
-
-const items = ref<ActivityItem[]>([])
-const cursor = ref('')
-const hasMore = ref(true)
-const isLoadingMore = ref(false)
+const { allowsNsfw } = useContentStance()
 
 const MAX_AUTO_LOADS = 4
 const autoLoadCount = ref(0)
-let controller: AbortController | null = null
 
-const { data, status } = await useKunFetch<{
-  items: ActivityItem[]
-  next_cursor: string
-}>('/activity/tab', {
-  method: 'GET',
-  query: computed(() => ({
-    types: props.types,
-    limit: 30,
-    show_no_resource: settings.showKUNGalgameNoResource,
-    force_sfw: props.tabId === 'all'
-  }))
-})
+const query = computed(() => ({
+  ...feedTabQuery(props.types),
+  include_nsfw: props.tabId === 'all' ? false : allowsNsfw.value,
+  include_galgames_without_resources: settings.showKUNGalgameNoResource,
+  limit: 30
+}))
 
-watch(
-  data,
-  (page) => {
-    if (!page) return
-    items.value = page.items
-    cursor.value = page.next_cursor
-    hasMore.value = !!page.next_cursor
-  },
-  { immediate: true }
-)
+const { items, status, hasMore, loadingMore, loadMore } =
+  await useCursorList<Activity>(
+    () => `activities:${JSON.stringify(query.value)}`,
+    (api, cursor, { signal }) =>
+      api.GET('/activities', {
+        params: { query: { ...query.value, ...(cursor ? { cursor } : {}) } },
+        signal
+      })
+  )
 
 watch(
   () => props.tabId,
   () => {
-    cursor.value = ''
-    hasMore.value = true
     autoLoadCount.value = 0
-    controller?.abort()
   }
 )
 
-const loadMore = async (auto = false) => {
-  if (isLoadingMore.value || !hasMore.value || !cursor.value) return
+const loadNext = (auto: boolean) => {
   if (auto) {
-    if (autoLoadCount.value >= MAX_AUTO_LOADS) return
+    if (autoLoadCount.value >= MAX_AUTO_LOADS) {
+      return
+    }
     autoLoadCount.value++
   } else {
     autoLoadCount.value = 0
   }
-  const tab = props.tabId
-  const types = props.types
-  isLoadingMore.value = true
-  controller = new AbortController()
-  const next = await kunFetch<{ items: ActivityItem[]; next_cursor: string }>(
-    '/activity/tab',
-    {
-      method: 'GET',
-      query: {
-        types,
-        limit: 30,
-        cursor: cursor.value,
-        show_no_resource: settings.showKUNGalgameNoResource,
-        force_sfw: tab === 'all'
-      },
-      signal: controller.signal
-    }
-  )
-  isLoadingMore.value = false
-  if (!next || props.tabId !== tab) return
-  items.value.push(...next.items)
-  cursor.value = next.next_cursor
-  hasMore.value = !!next.next_cursor
+  return loadMore()
 }
 
-const autoLoad = useThrottleFn(() => loadMore(true), 600)
-onBeforeUnmount(() => controller?.abort())
+const autoLoad = useThrottleFn(() => loadNext(true), 600)
 
 const sentinel = ref<HTMLElement | null>(null)
 useIntersectionObserver(
   sentinel,
   ([entry]) => {
-    if (entry?.isIntersecting) autoLoad()
+    if (entry?.isIntersecting && hasMore.value && !loadingMore.value) {
+      autoLoad()
+    }
   },
   { rootMargin: '150px' }
 )
@@ -107,12 +74,12 @@ useIntersectionObserver(
     <div v-else class="divide-default-200/60 divide-y">
       <div
         v-for="activity in items"
-        :key="activity.unique_id"
+        :key="activity.id"
         class="py-5 first:pt-0 last:pb-0"
       >
         <ActivityCard :activity="activity" />
       </div>
-      <template v-if="isLoadingMore">
+      <template v-if="loadingMore">
         <div v-for="n in 3" :key="`skeleton-${n}`" class="py-5">
           <ActivityCardSkeleton />
         </div>
@@ -121,9 +88,9 @@ useIntersectionObserver(
 
     <div v-if="items.length" ref="sentinel" class="flex justify-center pt-4">
       <KunButton
-        v-if="hasMore && !isLoadingMore"
+        v-if="hasMore && !loadingMore"
         variant="light"
-        @click="loadMore(false)"
+        @click="loadNext(false)"
       >
         加载更多
       </KunButton>
