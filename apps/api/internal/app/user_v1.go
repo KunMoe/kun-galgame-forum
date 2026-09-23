@@ -3,6 +3,7 @@ package app
 import (
 	galgameRepo "kun-galgame-api/internal/galgame/repository"
 	galgameService "kun-galgame-api/internal/galgame/service"
+	"kun-galgame-api/internal/galgame/workrepr"
 	userapiv1 "kun-galgame-api/internal/user/apiv1"
 	"kun-galgame-api/internal/user/oauth"
 	"kun-galgame-api/internal/user/repository"
@@ -50,14 +51,23 @@ func (a *App) newUserV1() *userapiv1.Users {
 	if a.DB != nil {
 		content = repository.NewUserContentRepository(a.DB)
 	}
+	var works *workrepr.Hydrator
+	if a.DB != nil && a.ResourceCatalog != nil {
+		works = workrepr.NewHydrator(a.ResourceCatalog, a.DB, cdn)
+	}
 	return userapiv1.New(userapiv1.Deps{
-		Users:    users,
-		Creators: creators,
-		OAuth:    oauthClient,
-		Accounts: a.UserClient,
-		Content:  content,
-		Redis:    a.Redis,
-		State:    state,
-		CDN:      cdn,
+		Users:       users,
+		Creators:    creators,
+		OAuth:       oauthClient,
+		Accounts:    a.UserClient,
+		Content:     content,
+		Works:       works,
+		Resources:   a.newGalgameResourceV1(),
+		Community:   a.Community,
+		Wall:        a.WallV1,
+		Contributed: a.ContributedWorkIDs,
+		Redis:       a.Redis,
+		State:       state,
+		CDN:         cdn,
 	})
 }

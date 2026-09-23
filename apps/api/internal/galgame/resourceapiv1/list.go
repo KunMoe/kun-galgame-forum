@@ -110,3 +110,37 @@ func (s *Service) listWorkResources(ctx context.Context, in *listWorkResourcesIn
 	}
 	return &listGalgameResourcesOutput{Body: repr.NewPageList(items, n, rel)}, nil
 }
+
+func (s *Service) ListForUser(ctx context.Context, filter repository.ResourceListFilter, page, limit int) (repr.PageList[GalgameResource], *problem.Problem) {
+	var none repr.PageList[GalgameResource]
+	if p := s.ready(); p != nil {
+		return none, p
+	}
+	pg := pageOf(page, limit)
+	if p := pg.CheckDepth(); p != nil {
+		return none, p
+	}
+	authors, err := s.store.DistinctAuthors(filter)
+	if err != nil {
+		return none, problem.Internal(err)
+	}
+	keep, p := s.keepAuthors(ctx, authors)
+	if p != nil {
+		return none, p
+	}
+	filter.AuthorIDs = keep
+	total, err := s.store.Count(filter)
+	if err != nil {
+		return none, problem.Internal(err)
+	}
+	n, rel := collect.ClampTotal(total)
+	rows, err := s.store.List(filter, "created_desc", pg.Offset(), pg.Limit)
+	if err != nil {
+		return none, problem.Internal(err)
+	}
+	items, p := s.assemble(ctx, rows, v1.User(ctx))
+	if p != nil {
+		return none, p
+	}
+	return repr.NewPageList(items, n, rel), nil
+}

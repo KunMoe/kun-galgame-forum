@@ -1,16 +1,22 @@
 <script setup lang="ts">
 import type {
+  PageListGalgameResource,
   PageListUserCommentItem,
   PageListUserReplyItem,
-  PageListUserTopicItem
+  PageListUserTopicItem,
+  RatingPage,
+  WorkPage
 } from '#shared/utils/api/schemas'
+import { workSummaryToCard } from '~/utils/galgame/workCard'
+import { ratingToCard } from '~/utils/galgame/ratingCard'
 
 const props = defineProps<{
   userId: number
 }>()
 
-const settings = usePersistSettingsStore()
 const { allowsNsfw: includeNsfw } = useContentStance()
+const nameOf = useCatalogName()
+const workName = useWorkName()
 const uid = props.userId
 const ownerId = String(uid)
 const N = 4
@@ -32,28 +38,58 @@ const topics = useApi<PageListUserTopicItem>(
       signal
     })
 )
-const galgames = useKunFetch<{ items: GalgameCard[]; total: number }>(
-  `/user/${uid}/galgames`,
-  {
-    query: {
-      page: 1,
-      limit: N,
-      type: 'galgame_publish',
-      user_id: uid,
-      show_no_resource: settings.showKUNGalgameNoResource
-    }
-  }
+const works = useApi<WorkPage>(
+  () =>
+    `user-works:${ownerId}:published:1:${N}:${includeNsfw.value ? 'nsfw' : 'sfw'}`,
+  (api, { signal }) =>
+    api.GET('/users/{user_id}/works', {
+      params: {
+        path: { user_id: ownerId },
+        query: {
+          relation: 'published',
+          page: 1,
+          limit: N,
+          include_nsfw: includeNsfw.value
+        }
+      },
+      signal
+    })
 )
-const ratings = useKunFetch<{ rating_data: GalgameRatingCard[]; total: number }>(
-  `/user/${uid}/ratings`,
-  { query: { page: 1, limit: N, user_id: uid } }
+const ratings = useApi<RatingPage>(
+  () =>
+    `user-ratings:${ownerId}:1:${N}:${includeNsfw.value ? 'nsfw' : 'sfw'}`,
+  (api, { signal }) =>
+    api.GET('/ratings', {
+      params: {
+        query: {
+          author_id: ownerId,
+          sort: 'created_desc',
+          page: 1,
+          limit: N,
+          include_nsfw: includeNsfw.value
+        }
+      },
+      signal
+    })
 )
-const resources = useKunFetch<{
-  resources: UserGalgameResource[]
-  total: number
-}>(`/user/${uid}/resources`, {
-  query: { page: 1, limit: N, type: 'valid', user_id: uid }
-})
+const resources = useApi<PageListGalgameResource>(
+  () =>
+    `user-galgame-resources:${ownerId}:published:valid:1:${N}:${includeNsfw.value ? 'nsfw' : 'sfw'}`,
+  (api, { signal }) =>
+    api.GET('/users/{user_id}/galgame-resources', {
+      params: {
+        path: { user_id: ownerId },
+        query: {
+          relation: 'published',
+          state: 'valid',
+          page: 1,
+          limit: N,
+          include_nsfw: includeNsfw.value
+        }
+      },
+      signal
+    })
+)
 const replies = useApi<PageListUserReplyItem>(
   () =>
     `user-replies:${ownerId}:authored:1:${N}:${includeNsfw.value ? 'nsfw' : 'sfw'}`,
@@ -88,7 +124,7 @@ const comments = useApi<PageListUserCommentItem>(
       signal
     })
 )
-await Promise.all([topics, galgames, ratings, resources, replies, comments])
+await Promise.all([topics, works, ratings, resources, replies, comments])
 
 const topicItems = computed(() =>
   (topics.data.value?.items ?? []).map((t) => ({
@@ -98,10 +134,10 @@ const topicItems = computed(() =>
   }))
 )
 const resourceItems = computed(() =>
-  (resources.data.value?.resources ?? []).map((r) => ({
-    text: r.galgame_name,
-    time: r.created,
-    href: `/galgame/${r.galgame_id}`
+  (resources.data.value?.items ?? []).map((r) => ({
+    text: r.work ? workName(r.work) : '',
+    time: r.created_at,
+    href: r.work ? `/galgame/${r.work.id}` : ''
   }))
 )
 const replyItems = computed(() =>
@@ -118,8 +154,12 @@ const commentItems = computed(() =>
     href: commentPermalink(`/topic/${c.topic_id}`, c.id)
   }))
 )
-const galgameItems = computed(() => galgames.data.value?.items ?? [])
-const ratingItems = computed(() => ratings.data.value?.rating_data ?? [])
+const galgameItems = computed(() =>
+  (works.data.value?.items ?? []).map((w) => workSummaryToCard(w, nameOf))
+)
+const ratingItems = computed(() =>
+  (ratings.data.value?.items ?? []).map((r) => ratingToCard(r, nameOf))
+)
 
 const isEmpty = computed(
   () =>

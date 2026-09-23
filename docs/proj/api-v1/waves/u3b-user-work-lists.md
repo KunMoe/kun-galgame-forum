@@ -43,12 +43,12 @@
 |---|---|---|---|
 | `published` | `galgame_publish` | 本地 `galgame`：`creator_user_id = 他 AND published = true`（今天的 `PublishedIDsByCreator`，缺 `id` 决胜键） | `galgame.created DESC, galgame.id DESC` |
 | `liked` | `galgame_like` | `galgame_like JOIN galgame`：`published = true` | `galgame.created DESC, galgame.id DESC`——与旧实现同一排序对象（作品的时间，不是赞的时间；同 U3a 的 `liked`） |
-| `contributed` | `galgame_contributed` | catalog 已合并的编辑提案（`GalgameUserStatsService.ContributedWorkIDs`，上限 `contributedScan = 200` 条提案）——**只能在 Go 里分页**，旧实现每页都重拉一次；保留这一点但先按下面的 NSFW 谓词过滤、再算 `total`、再切页 | 提案列表给出的顺序，重复 work 去重保留首次出现 |
+| `contributed` | `galgame_contributed` | catalog 已合并的编辑提案（`GalgameUserStatsService.ContributedWorkIDs`，上限 `contributedScan = 200` 条提案）——**只能在 Go 里分页**，旧实现每页都重拉一次；保留这一点，但**整份 id 先交 catalog 水合**（`ByIDs`，按 `include_nsfw` 带 content limit），`total` = catalog 返回的条数，再切页。贡献过的作品常常没有本地行、没有 `content_limit` 镜像，本地谓词判不了（§9） | 提案列表给出的顺序，重复 work 去重保留首次出现 |
 
 - **`show_no_resource` 不迁。** 旧面只对 `liked` 生效（`EXISTS galgame_resource`）。`published` 本身就是「发过资源」的粘性标记（方案③），两者只在资源已全删的已发布作品上不同；v1 不做这层过滤，网页不再传。
 
-- NSFW：`include_nsfw=false` 排除本地 `galgame.content_limit = 'nsfw'` 的作品（NULL 放行，与 G3 K-G17 同一谓词）；**COUNT 与页共用**。`contributed` 的作品本地可能没有行——没有行就放行。
-- `ByIDs` 会丢掉 catalog 里已隐藏的作品：该行不出现在页上，`total` 仍按 SQL / 过滤后的 id 数算——与 G3 的开放问题 O3 同一种已知偏差，写进 description。catalog RPC 失败 → `503`（旧实现静默回空列表 + 原 `total`，普查 bug #9）。
+- NSFW（`published` / `liked`）：`include_nsfw=false` 排除本地 `galgame.content_limit = 'nsfw'` 的作品（NULL 放行，与 G3 K-G17 同一谓词）；**COUNT 与页共用**。
+- `ByIDs` 会丢掉 catalog 里已隐藏的作品：`published` / `liked` 下该行不出现在页上，`total` 仍按 SQL 算——与 G3 的开放问题 O3 同一种已知偏差，写进 description。`contributed` 没有这个偏差（`total` 就是水合后的条数）。catalog RPC 失败 → `503`（旧实现静默回空列表 + 原 `total`，普查 bug #9）。
 
 ### 4.2 `GET /users/{user_id}/galgame-resources` → `PageList<GalgameResource>`
 
@@ -99,7 +99,7 @@ func (s *Service) RenderAuthored(ctx context.Context, viewer *middleware.UserInf
 - 测试（RC 要求）：某行的墙 `Unavailable`（如 galgame 锚点的假 catalog 挂掉）→ 整次调用 503——这是唯一**不能**丢的错误路径；同墙两行的批次只 resolve 一次（数假 store / catalog 的调用次数）。
 - **假上游照抄 infra**（`platform/community/handler/author.go` + `repository/author.go`；U1 的教训是假上游形状与真的不同）：只回可见帖（held、deleted 连作者本人的也不回——所以 `RenderAuthored` 的 held 规则只对 `/posts/resolve` 的行生效）；`post id DESC`；`after` 不含（`id < after`）；`limit` 缺省 20、夹到 100；`anchor_kind` 缺省 −1 = 全部（客户端 < 0 时不传）；`len(rows) == limit` 时 `next_cursor` = 末行 id，否则 `""`——**满的最后一页也带游标、下一次是空页**，补页循环把「空页且无游标」当结束，不是错误；条目 `{post, thread:{thread_id, title, anchor_kind, anchor_id}}`。
 
-游标：`cur_…`，**指纹绑定 `relation` + `subject_type` + 资料主人**；换了过滤条件复用旧游标 → `400 INVALID_CURSOR`（旧实现坏游标静默从头开始）。`limit` 1–100，默认 24。
+游标：query 参数名 `cursor`（v1 标准），值 `cur_…`，**指纹绑定 `relation` + `subject_type` + 资料主人**；换了过滤条件复用旧游标 → `400 INVALID_CURSOR`（旧实现坏游标静默从头开始）。`limit` 1–100，默认 24。
 
 ## 5. 错误码
 
@@ -139,6 +139,21 @@ tab 的 URL 段不变（`/user/:id/galgame/galgame-like` 等），只在调用�
 
 4 条全删，连同 `UserHandler`（已无方法）、`UserContentService` 里只被它们用到的部分、`content_repo.go` / `galgame_comment_pagination.go` 里的死代码、`dto.UserGalgameComment` 等。`deadcode -test ./...` 到不动点。`routes.golden` 重生成，`legacy_route_baseline` 下调 4。
 
-## 9. 迁移
+## 9. 验收时对契约的更正（2026-09-23）
+
+实现、变异与浏览器实测抓出的，已改在上文对应位置，这里留底：
+
+| 原契约 | 改为 | 原因 |
+|---|---|---|
+| `contributed` 先用本地 `content_limit` 滤 NSFW，再算 `total`、切页、水合 | 整份 id 交 catalog 水合，`total` = 返回条数，再切页 | 浏览器实测（dev，用户 2）：`total` 43，SFW 三页合计只有 7 条——没有本地行的 NSFW 作品本地放行、catalog 拒绝水合，正是普查 bug #6「`total` 与 `items` 不同谓词」 |
+| 游标参数叫 `after` | `cursor` | v1 标准的 query 名；上游的 `after`（post id / like id）存在游标载荷里 |
+| `listGalgameResources` 可以改调 `ListForUser` | 不动；`ListForUser` 单独一份 | G 的条件：浏览面有 `q` / 相关度排序，零行为风险 |
+| 网页资源 tab：列表不再有链接，编辑走 `LinkEditModal` | 同上，另加：过期 tab 保存链接后再 `PATCH {state: valid}`；每行加「标记为有效」 | 旧 tab 是「改链接并标记有效」一步完成；`LinkEditModal` 只改链接，不带 `state` |
+| 评论 tab 首页为空即显示「没有评论」 | 有 `next_cursor` 就显示「加载更多」 | 短页是契约允许的（§4.4），首页可能整页被丢（dev：`limit=3` 不带 `subject_type` 回 0 条 + 游标） |
+| 未知枚举测试用旧值（`galgame_publish`） | 用长度在 `maxLength` 以内的值 | 超长值同时触发 TOO_LONG，平台映射成 `INVALID_PARAMETER` 而不是 `UNKNOWN_ENUM_VALUE`；这是 `internal/apiv1` 的既有行为 |
+| 变异 #4「先切页再过滤」 | 「只水合当前页、`total` 按全部 id」 | 实现改了，变异跟着指向同一个 bug |
+| — | 新增变异 #13（G）、RC-once、RC-503（RC） | 见 §4.2 / §4.4 的条件 |
+
+## 10. 迁移
 
 **无**。

@@ -24,24 +24,6 @@ type UserProfile struct {
 	NSFWDisplay    string   `json:"nsfw_display"`
 }
 
-type UserGalgamesRequest struct {
-	Type           string `query:"type" validate:"required"`
-	Page           int    `query:"page" validate:"min=1"`
-	Limit          int    `query:"limit" validate:"min=1,max=50"`
-	ShowNoResource bool   `query:"show_no_resource"`
-}
-
-type UserResourcesRequest struct {
-	Type  string `query:"type" validate:"required"`
-	Page  int    `query:"page" validate:"min=1"`
-	Limit int    `query:"limit" validate:"min=1,max=50"`
-}
-
-type UserRatingsRequest struct {
-	Page  int `query:"page" validate:"min=1"`
-	Limit int `query:"limit" validate:"min=1,max=50"`
-}
-
 type BanUserRequest struct {
 	Status int `json:"status" validate:"oneof=0 1"`
 }

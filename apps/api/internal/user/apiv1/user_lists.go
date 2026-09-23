@@ -67,6 +67,8 @@ func (s *Users) registerLists(api huma.API) {
 			503: "SERVICE_UNAVAILABLE when the account service cannot be reached.",
 		}),
 	}), s.listUserComments)
+
+	s.registerWorkLists(api)
 }
 
 func (s *Users) readyLists() *problem.Problem {

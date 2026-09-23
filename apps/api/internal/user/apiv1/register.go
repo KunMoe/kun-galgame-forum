@@ -1,13 +1,18 @@
 package apiv1
 
 import (
+	"context"
 	"net/http"
 
 	v1 "kun-galgame-api/internal/apiv1"
+	resourceapiv1 "kun-galgame-api/internal/galgame/resourceapiv1"
 	galgameService "kun-galgame-api/internal/galgame/service"
+	"kun-galgame-api/internal/galgame/workrepr"
 	"kun-galgame-api/internal/user/oauth"
 	"kun-galgame-api/internal/user/repository"
 	"kun-galgame-api/internal/user/service"
+	wallapiv1 "kun-galgame-api/internal/wall/apiv1"
+	"kun-galgame-api/pkg/communityclient"
 	"kun-galgame-api/pkg/problem"
 	"kun-galgame-api/pkg/userclient"
 
@@ -16,37 +21,52 @@ import (
 )
 
 type Users struct {
-	users    *service.UserService
-	creators *galgameService.CreatorService
-	oauth    *oauth.Client
-	accounts *userclient.Client
-	content  *repository.UserContentRepository
-	redis    *redis.Client
-	state    *repository.StateRepository
-	cdn      string
+	users       *service.UserService
+	creators    *galgameService.CreatorService
+	oauth       *oauth.Client
+	accounts    *userclient.Client
+	content     *repository.UserContentRepository
+	works       *workrepr.Hydrator
+	resources   *resourceapiv1.Service
+	community   *communityclient.Client
+	wall        *wallapiv1.Service
+	contributed func(context.Context, int64) ([]int, error)
+	redis       *redis.Client
+	state       *repository.StateRepository
+	cdn         string
 }
 
 type Deps struct {
-	Users    *service.UserService
-	Creators *galgameService.CreatorService
-	OAuth    *oauth.Client
-	Accounts *userclient.Client
-	Content  *repository.UserContentRepository
-	Redis    *redis.Client
-	State    *repository.StateRepository
-	CDN      string
+	Users       *service.UserService
+	Creators    *galgameService.CreatorService
+	OAuth       *oauth.Client
+	Accounts    *userclient.Client
+	Content     *repository.UserContentRepository
+	Works       *workrepr.Hydrator
+	Resources   *resourceapiv1.Service
+	Community   *communityclient.Client
+	Wall        *wallapiv1.Service
+	Contributed func(context.Context, int64) ([]int, error)
+	Redis       *redis.Client
+	State       *repository.StateRepository
+	CDN         string
 }
 
 func New(d Deps) *Users {
 	return &Users{
-		users:    d.Users,
-		creators: d.Creators,
-		oauth:    d.OAuth,
-		accounts: d.Accounts,
-		content:  d.Content,
-		redis:    d.Redis,
-		state:    d.State,
-		cdn:      d.CDN,
+		users:       d.Users,
+		creators:    d.Creators,
+		oauth:       d.OAuth,
+		accounts:    d.Accounts,
+		content:     d.Content,
+		works:       d.Works,
+		resources:   d.Resources,
+		community:   d.Community,
+		wall:        d.Wall,
+		contributed: d.Contributed,
+		redis:       d.Redis,
+		state:       d.State,
+		cdn:         d.CDN,
 	}
 }
 

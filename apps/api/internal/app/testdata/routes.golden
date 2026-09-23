@@ -71,10 +71,6 @@ GET    /api/rss/galgame                               cors.New → middleware.Na
 GET    /api/search/entity                             cors.New → middleware.NamePreference → ContentStance → OptionalAuth → SearchHandler.SearchEntities
 GET    /api/search/entity/resolve                     cors.New → middleware.NamePreference → ContentStance → OptionalAuth → SearchHandler.ResolveEntities
 GET    /api/user/:id/collections                      cors.New → middleware.NamePreference → ContentStance → OptionalAuth → GalgameCollectionHandler.GetUserCollections
-GET    /api/user/:id/galgame-comments                 cors.New → middleware.NamePreference → ContentStance → UserHandler.GetUserGalgameComments
-GET    /api/user/:id/galgames                         cors.New → middleware.NamePreference → ContentStance → UserHandler.GetUserGalgames
-GET    /api/user/:id/ratings                          cors.New → middleware.NamePreference → ContentStance → UserHandler.GetUserRatings
-GET    /api/user/:id/resources                        cors.New → middleware.NamePreference → ContentStance → UserHandler.GetUserResources
 GET    /api/v1/activities                             cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/admin/docs/:doc_id                     cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/admin/friend-links/:friend_link_id     cors.New → v1Headers → fiberAdapter.Handle
@@ -194,9 +190,12 @@ GET    /api/v1/update-logs/:update_log_id             cors.New → v1Headers →
 GET    /api/v1/users                                  cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/users/:user_id                         cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/users/:user_id/comments                cors.New → v1Headers → fiberAdapter.Handle
+GET    /api/v1/users/:user_id/galgame-resources       cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/users/:user_id/replies                 cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/users/:user_id/toolsets                cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/users/:user_id/topics                  cors.New → v1Headers → fiberAdapter.Handle
+GET    /api/v1/users/:user_id/wall-comments           cors.New → v1Headers → fiberAdapter.Handle
+GET    /api/v1/users/:user_id/works                   cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/wall-comments                          cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/wall-comments/:wall_comment_id         cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/wall-comments/:wall_comment_id/source  cors.New → v1Headers → fiberAdapter.Handle

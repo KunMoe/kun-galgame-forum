@@ -102,10 +102,6 @@ func (a *App) setupRoutes() {
 	auth.Post("/logout", a.OAuthHandler.Logout)
 
 	userAuth := a.Authn.Auth()
-	api.Get("/user/:id/galgames", a.UserHandler.GetUserGalgames)
-	api.Get("/user/:id/galgame-comments", a.UserHandler.GetUserGalgameComments)
-	api.Get("/user/:id/resources", a.UserHandler.GetUserResources)
-	api.Get("/user/:id/ratings", a.UserHandler.GetUserRatings)
 
 	api.Get("/search/entity", a.Authn.OptionalAuth(), a.SearchHandler.SearchEntities)
 	api.Get("/search/entity/resolve", a.Authn.OptionalAuth(), a.SearchHandler.ResolveEntities)

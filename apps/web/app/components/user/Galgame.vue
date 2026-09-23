@@ -3,68 +3,93 @@ import {
   kunUserGalgameNavItem,
   type KUN_USER_PAGE_GALGAME_TYPE
 } from '~/constants/user'
+import { settle } from '#shared/utils/api/problem'
+import type { WallComment, WorkPage } from '#shared/utils/api/schemas'
+import { workSummaryToCard } from '~/utils/galgame/workCard'
+import ContentDocument from '~/components/content/Document.vue'
+
+const COMMENT_TYPES = ['galgame_comment', 'galgame_comment_like'] as const
 
 const props = defineProps<{
   userId: number
   type: (typeof KUN_USER_PAGE_GALGAME_TYPE)[number]
 }>()
 
-const COMMENT_TYPES = ['galgame_comment', 'galgame_comment_like'] as const
-
 const isCommentMode = computed(() =>
   (COMMENT_TYPES as readonly string[]).includes(props.type)
 )
 
-const activeTab = ref(props.type)
+const { allowsNsfw: includeNsfw } = useContentStance()
+const nameOf = useCatalogName()
+const api = useApiClient()
+
+const activeTab = computed(() => props.type)
 const pageData = reactive({
   page: usePageQuery(),
-  limit: 24,
-  type: props.type,
-  userId: props.userId
+  limit: 24
 })
 
-interface UserGalgameCommentItem {
-  id: number
-  galgame_id: number
-  content: string
-  content_html: string
-  user: { id: number; name: string; avatar: string }
-  created: string
-  deleted: boolean
-}
-
-const settings = usePersistSettingsStore()
-const { data: galgameData, status: galgameStatus } = await useKunFetch<{
-  items: GalgameCard[]
-  total: number
-}>(() => `/user/${props.userId}/galgames`, {
-  query: computed(() => ({
-    ...pageData,
-    show_no_resource: settings.showKUNGalgameNoResource
-  })),
-  watch: [
-    () => pageData.page,
-    () => pageData.type,
-    () => settings.showKUNGalgameNoResource
-  ],
-  immediate: !isCommentMode.value,
-  server: !isCommentMode.value
+const workRelation = computed(() => {
+  if (props.type === 'galgame_contributed') {
+    return 'contributed' as const
+  }
+  if (props.type === 'galgame_like') {
+    return 'liked' as const
+  }
+  return 'published' as const
 })
 
-const comments = ref<UserGalgameCommentItem[]>([])
-const commentCursor = ref('')
-const commentHasMore = ref(true)
+const commentRelation = computed(() =>
+  props.type === 'galgame_comment_like'
+    ? ('liked' as const)
+    : ('authored' as const)
+)
+
+const { data: galgameData, status: galgameStatus } = await useApi<WorkPage>(
+  () =>
+    `user-works:${props.userId}:${workRelation.value}:${pageData.page}:${pageData.limit}:${includeNsfw.value ? 'nsfw' : 'sfw'}`,
+  (client, { signal }) =>
+    client.GET('/users/{user_id}/works', {
+      params: {
+        path: { user_id: String(props.userId) },
+        query: {
+          relation: workRelation.value,
+          page: pageData.page,
+          limit: pageData.limit,
+          include_nsfw: includeNsfw.value
+        }
+      },
+      signal
+    }),
+  { immediate: !isCommentMode.value, server: !isCommentMode.value }
+)
+
+const galgameCards = computed(() =>
+  (galgameData.value?.items ?? []).map((w) => workSummaryToCard(w, nameOf))
+)
+
+const { data: commentData } = await useApi(
+  () =>
+    `user-wall-comments:${props.userId}:${commentRelation.value}:galgame:${pageData.limit}`,
+  (client, { signal }) =>
+    client.GET('/users/{user_id}/wall-comments', {
+      params: {
+        path: { user_id: String(props.userId) },
+        query: {
+          relation: commentRelation.value,
+          subject_type: 'galgame',
+          limit: pageData.limit
+        }
+      },
+      signal
+    }),
+  { immediate: isCommentMode.value, server: isCommentMode.value }
+)
+
+const comments = ref<WallComment[]>([])
+const commentCursor = ref<string | undefined>()
+const commentHasMore = computed(() => Boolean(commentCursor.value))
 const isLoadingMoreComments = ref(false)
-
-const { data: commentData } = await useKunFetch<{
-  comments: UserGalgameCommentItem[]
-  next_cursor: string
-}>(() => `/user/${props.userId}/galgame-comments`, {
-  query: computed(() => ({ type: props.type, limit: pageData.limit })),
-  watch: [() => props.type],
-  immediate: isCommentMode.value,
-  server: isCommentMode.value
-})
 
 watch(
   commentData,
@@ -72,9 +97,8 @@ watch(
     if (!page) {
       return
     }
-    comments.value = page.comments
+    comments.value = page.items
     commentCursor.value = page.next_cursor
-    commentHasMore.value = !!page.next_cursor
   },
   { immediate: true }
 )
@@ -88,23 +112,27 @@ const loadMoreComments = async () => {
     return
   }
   isLoadingMoreComments.value = true
-  const next = await kunFetch<{
-    comments: UserGalgameCommentItem[]
-    next_cursor: string
-  }>(`/user/${props.userId}/galgame-comments`, {
-    query: {
-      type: props.type,
-      limit: pageData.limit,
-      after: commentCursor.value
-    }
-  })
+  const result = await settle(
+    api.GET('/users/{user_id}/wall-comments', {
+      params: {
+        path: { user_id: String(props.userId) },
+        query: {
+          relation: commentRelation.value,
+          subject_type: 'galgame',
+          cursor: commentCursor.value,
+          limit: pageData.limit
+        }
+      }
+    })
+  )
   isLoadingMoreComments.value = false
-  if (!next) {
+  if (!result.ok) {
+    reportProblem(result.problem)
     return
   }
-  comments.value.push(...next.comments)
-  commentCursor.value = next.next_cursor
-  commentHasMore.value = !!next.next_cursor
+  const seen = new Set(comments.value.map((c) => c.id))
+  comments.value.push(...result.data.items.filter((c) => !seen.has(c.id)))
+  commentCursor.value = result.data.next_cursor
 }
 </script>
 
@@ -123,7 +151,7 @@ const loadMoreComments = async () => {
         v-if="galgameData && galgameData.items.length"
         class="flex flex-col space-y-3"
       >
-        <GalgameCard :is-transparent="false" :galgames="galgameData.items" />
+        <GalgameCard :is-transparent="false" :galgames="galgameCards" />
 
         <KunPagination
           v-if="galgameData.total > pageData.limit"
@@ -140,26 +168,29 @@ const loadMoreComments = async () => {
     </template>
 
     <template v-else>
-      <div v-if="comments.length" class="flex flex-col space-y-3">
+      <div
+        v-if="comments.length || commentHasMore"
+        class="flex flex-col space-y-3"
+      >
         <KunCard
           v-for="c in comments"
           :key="c.id"
-          :href="c.galgame_id ? `/galgame/${c.galgame_id}?comment=${c.id}` : ''"
-          :is-hoverable="!!c.galgame_id"
+          :href="`/galgame/${c.subject_id}?comment=${c.id}`"
           content-class="space-y-2"
         >
-          <p v-if="c.deleted" class="text-default-400 text-sm italic">
+          <p
+            v-if="c.state === 'deleted'"
+            class="text-default-400 text-sm italic"
+          >
             [已删除]
           </p>
-          <KunContent v-else compact :content="renderKatex(c.content_html)" />
+          <ContentDocument v-else compact :document="c.content" />
 
           <div
             class="text-default-500 flex items-center justify-between text-sm"
           >
-            <span>
-              {{ c.galgame_id ? `评论于 Galgame #${c.galgame_id}` : '评论' }}
-            </span>
-            <KunTime :time="c.created" type="date" show-year />
+            <span>{{ `评论于 Galgame #${c.subject_id}` }}</span>
+            <KunTime :time="c.created_at" type="date" show-year />
           </div>
         </KunCard>
 
@@ -177,7 +208,7 @@ const loadMoreComments = async () => {
       </div>
 
       <KunNull
-        v-if="!comments.length"
+        v-else
         description="这只笨蛋萝莉在 Galgame 下没有相关的评论"
       />
     </template>

@@ -3457,6 +3457,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/users/{user_id}/galgame-resources": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List a user's galgame resources
+         * @description Lists download resources related to a user as a page-number collection, newest first with ties broken by descending id. Items never include download links, extraction codes or archive passwords. NOT_FOUND when the account does not exist or is not renderable.
+         */
+        get: operations["listUserGalgameResources"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/users/{user_id}/replies": {
         parameters: {
             query?: never;
@@ -3509,6 +3529,46 @@ export interface paths {
          * @description Lists topics related to a user as a page-number collection, newest first with ties broken by descending id. relation is required and closed. Hidden topics never appear except under relation=hidden, which is only the owner or a caller holding topic.view_hidden. Restricted topics never appear, including for a caller who can view them elsewhere. NOT_FOUND when the account does not exist or is not renderable.
          */
         get: operations["listUserTopics"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/users/{user_id}/wall-comments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List a user's wall comments
+         * @description Lists wall comments related to a user as a cursor collection. relation=authored is ordered by community post id, newest first; imported historical posts may have non-monotonic times. relation=liked is ordered by when the user liked the comment, newest first. A page may be shorter than limit while next_cursor is present. NOT_FOUND when the account does not exist or is not renderable.
+         */
+        get: operations["listUserWallComments"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/users/{user_id}/works": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List a user's works
+         * @description Lists works related to a user as a page-number collection. published and liked are newest first with ties broken by descending id. contributed keeps the catalog proposal order. A work catalog no longer renders is omitted from the page while total still counts it. NOT_FOUND when the account does not exist or is not renderable.
+         */
+        get: operations["listUserWorks"];
         put?: never;
         post?: never;
         delete?: never;
@@ -30740,6 +30800,94 @@ export interface operations {
             };
         };
     };
+    listUserGalgameResources: {
+        parameters: {
+            query: {
+                /** @description 1-based page number. page × limit may not exceed 10000. */
+                page?: number;
+                /** @description Page size. 1–100, default 50. Values above 100 are rejected, not clamped. */
+                limit?: number;
+                /** @description When true, resources of NSFW works are included. Default false. */
+                include_nsfw?: boolean;
+                /** @description How the listed resources relate to the user: published or liked. */
+                relation: "published" | "liked";
+                /** @description When set, only this state. Omitted means every state. */
+                state?: "valid" | "expired";
+            };
+            header?: never;
+            path: {
+                /** @description User id. */
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PageListGalgameResource"];
+                };
+            };
+            /** @description UNKNOWN_ENUM_VALUE when relation or state is not in this collection's vocabulary. LIMIT_TOO_LARGE when limit is greater than 100. INVALID_PARAMETER when page × limit exceeds 10000. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the account service or catalog cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     listUserReplies: {
         parameters: {
             query: {
@@ -30984,6 +31132,178 @@ export interface operations {
                 };
             };
             /** @description SERVICE_UNAVAILABLE when the account service cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listUserWallComments: {
+        parameters: {
+            query: {
+                /** @description How the listed wall comments relate to the user: authored or liked. */
+                relation: "authored" | "liked";
+                /** @description Kind of page whose wall the comments are on. Omitted means every wall. */
+                subject_type?: "galgame" | "galgame_rating" | "galgame_resource" | "galgame_quiz" | "toolset" | "website";
+                /** @description Opaque keyset cursor from a previous page of this collection. */
+                cursor?: string;
+                /** @description Page size. 1–100, default 24. Values above 100 are rejected, not clamped. */
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                /** @description User id. */
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListWallComment"];
+                };
+            };
+            /** @description UNKNOWN_ENUM_VALUE when relation or subject_type is not in this collection's vocabulary. LIMIT_TOO_LARGE when limit is greater than 100. INVALID_CURSOR when the cursor is malformed or was issued for different filters. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the account service or community service cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listUserWorks: {
+        parameters: {
+            query: {
+                /** @description 1-based page number. page × limit may not exceed 10000. */
+                page?: number;
+                /** @description Page size. 1–100, default 24. Values above 100 are rejected, not clamped. */
+                limit?: number;
+                /** @description When true, NSFW works are included. Default false. */
+                include_nsfw?: boolean;
+                /** @description How the listed works relate to the user: published, contributed, or liked. */
+                relation: "published" | "contributed" | "liked";
+            };
+            header?: never;
+            path: {
+                /** @description User id. */
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PageListWorkSummary"];
+                };
+            };
+            /** @description UNKNOWN_ENUM_VALUE when relation is not in this collection's vocabulary. LIMIT_TOO_LARGE when limit is greater than 100. INVALID_PARAMETER when page × limit exceeds 10000. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the account service or catalog cannot be reached. */
             503: {
                 headers: {
                     [name: string]: unknown;

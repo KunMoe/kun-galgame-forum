@@ -65,6 +65,19 @@ Offered:
 
 Shape vs the retired faces: ids are strings; `user` → `author` (`UserRef`), `galgame` → `work` (`WorkRef | null`), `galgame_type` → `game_types`, `view` → `view_count`, `created` / `updated` → `created_at` / `updated_at`, `is_liked` / `liked_users` → `viewer.has_liked` / `likers`, and the eight flat aspect fields → `aspect_scores{}` where an unrated aspect is `null`, not `0` (a request sends all eight keys). Every vocabulary is a closed enum the schema checks. `SELF_LIKE_FORBIDDEN` now covers anything the caller wrote.
 
+## 2026-09-23 (U3b user work lists)
+
+Breaking for `GET /api/user/:id/galgames`, `GET /api/user/:id/galgame-comments`, `GET /api/user/:id/resources`, and `GET /api/user/:id/ratings`.
+
+Offered:
+
+- `GET /api/v1/users/{user_id}/works?relation=` — page-number collection (`page`, `limit` 1–100 default 24, `include_nsfw` default false). `relation` is `published` / `contributed` / `liked` (were `galgame_publish` / `galgame_contributed` / `galgame_like`). Items are `WorkSummary`. `show_no_resource` is gone. `contributed`'s `total` counts only the works catalog returns for the requested `include_nsfw`, so pages add up to it.
+- `GET /api/v1/users/{user_id}/galgame-resources?relation=` — page-number collection (`limit` default 50). `relation` is `published` / `liked` (were `valid` / `expire` / `galgame_resource_like`); optional `state=valid|expired` is the old valid/expire split. Items are `GalgameResource` and never carry download links, extraction codes, or archive passwords.
+- `GET /api/v1/users/{user_id}/wall-comments?relation=` — cursor collection (`cursor` in, `next_cursor` out; a page may be shorter than `limit`, even empty, while `next_cursor` is present). `relation` is `authored` / `liked` (were `galgame_comment` / `galgame_comment_like`); the galgame tab sends `subject_type=galgame`. Items are `WallComment` (structured document, not server-rendered HTML).
+- Ratings move to the existing `GET /api/v1/ratings?author_id={user_id}&sort=created_desc`.
+
+Retired: `GET /api/user/:id/galgames`, `GET /api/user/:id/galgame-comments`, `GET /api/user/:id/resources`, `GET /api/user/:id/ratings`.
+
 ## 2026-09-23 (U3a user topic lists)
 
 Breaking for `GET /api/user/:id/topics`, `GET /api/user/:id/replies`, and `GET /api/user/:id/comments`.

@@ -82,21 +82,23 @@ type fakeFlag struct {
 // fakeCommunity is the community service as far as the walls use it: threads
 // keyed by anchor, posts numbered per thread, like reactions, flags.
 type fakeCommunity struct {
-	mu        sync.Mutex
-	threads   map[string]*fakeThread
-	posts     map[int64]*fakePost
-	reactions map[[2]int64]bool
-	flags     []fakeFlag
-	follows   map[int64]bool
-	nextPost  int64
-	nextThr   int64
-	comments  atomic.Int32
-	toggles   atomic.Int32
-	down      atomic.Bool
-	limited   atomic.Bool
-	closed    atomic.Bool
-	bogus     atomic.Bool
-	lastReq   communityclient.CommentRequest
+	mu          sync.Mutex
+	threads     map[string]*fakeThread
+	posts       map[int64]*fakePost
+	reactions   map[[2]int64]bool
+	flags       []fakeFlag
+	follows     map[int64]bool
+	nextPost    int64
+	nextThr     int64
+	comments    atomic.Int32
+	toggles     atomic.Int32
+	authorPosts atomic.Int32
+	resolves    atomic.Int32
+	down        atomic.Bool
+	limited     atomic.Bool
+	closed      atomic.Bool
+	bogus       atomic.Bool
+	lastReq     communityclient.CommentRequest
 
 	anchorSubs  map[int64]map[string]int32
 	threadSubs  map[[2]int64]int32
@@ -246,7 +248,48 @@ func (c *fakeCommunity) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		writeEnvelope(w, 200, 0, "", communityclient.ThreadWithPost{
 			Thread: c.threadView(c.threads[anchorKey(p.anchorKind, p.anchorID)]), Post: p.PostView,
 		})
+	case r.Method == http.MethodGet && strings.HasPrefix(path, "/authors/") && strings.HasSuffix(path, "/posts"):
+		c.authorPosts.Add(1)
+		idStr := strings.TrimSuffix(strings.TrimPrefix(path, "/authors/"), "/posts")
+		authorID, _ := strconv.ParseInt(idStr, 10, 64)
+		q := r.URL.Query()
+		after, _ := strconv.ParseInt(q.Get("after"), 10, 64)
+		limit, _ := strconv.Atoi(q.Get("limit"))
+		if limit <= 0 {
+			limit = 20
+		}
+		limit = min(limit, 100)
+		var kind *int32
+		if k, err := strconv.Atoi(q.Get("anchor_kind")); err == nil && k >= 0 {
+			v := int32(k)
+			kind = &v
+		}
+		rows := []communityclient.AuthorPostView{}
+		for _, p := range c.posts {
+			if p.AuthorID != authorID || p.Status != communityclient.PostVisible {
+				continue
+			}
+			if after > 0 && p.ID >= after {
+				continue
+			}
+			if kind != nil && p.anchorKind != *kind {
+				continue
+			}
+			rows = append(rows, communityclient.AuthorPostView{Post: p.PostView, Thread: communityclient.PostThreadContext{
+				ThreadID: p.ThreadID, AnchorKind: p.anchorKind, AnchorID: p.anchorID,
+			}})
+		}
+		sort.Slice(rows, func(i, j int) bool { return rows[i].Post.ID > rows[j].Post.ID })
+		if len(rows) > limit {
+			rows = rows[:limit]
+		}
+		next := ""
+		if len(rows) == limit {
+			next = strconv.FormatInt(rows[len(rows)-1].Post.ID, 10)
+		}
+		writeEnvelope(w, 200, 0, "", communityclient.AuthorPostsResponse{Posts: rows, NextCursor: next})
 	case r.Method == http.MethodPost && path == "/posts/resolve":
+		c.resolves.Add(1)
 		var req communityclient.PostsResolveRequest
 		_ = json.NewDecoder(r.Body).Decode(&req)
 		out := []communityclient.AuthorPostView{}
@@ -424,6 +467,8 @@ type wallFix struct {
 	mu     sync.Mutex
 	failOA atomic.Bool
 	failGC atomic.Bool
+
+	resolveCalls atomic.Int32
 }
 
 func (f *wallFix) workRefs(_ context.Context, ids []int) (map[int]repr.WorkRef, error) {
@@ -486,17 +531,20 @@ func newWallFix(t *testing.T) *wallFix {
 	community := communityclient.New(communityclient.Config{BaseURL: cmSrv.URL, ClientID: "c", ClientSecret: "s"})
 	convert := &content.Converter{CDNBase: "https://image.test.example", SiteBase: "https://www.kungal.com", Users: uc.Users}
 	resolve := func(_ context.Context, workID int) (bool, error) {
+		f.resolveCalls.Add(1)
 		if f.failGC.Load() {
 			return false, fmt.Errorf("catalog down")
 		}
 		return workID == rcGalgame, nil
 	}
 	f.app = &App{
-		Fiber:  newFiber(),
-		Config: testConfig(),
-		DB:     db,
-		Redis:  rdb,
-		Authn:  middleware.NewAuthenticator(rdb, nil, middleware.NewBearer(rcVerifier{}, rdb, nil)),
+		Fiber:      newFiber(),
+		Config:     testConfig(),
+		DB:         db,
+		Redis:      rdb,
+		UserClient: uc,
+		Community:  community,
+		Authn:      middleware.NewAuthenticator(rdb, nil, middleware.NewBearer(rcVerifier{}, rdb, nil)),
 		WallV1: wallapiv1.New(wallRepo.NewStore(db), community, uc, convert, resolve, f.recordAward, "https://image.test.example").
 			WithFollowing(msgRepo.NewMessageRepository(db).MarkCommunityThreadRead, f.workRefs,
 				websiteapiv1.New(websiteRepo.NewStore(db), uc, nil, "https://image.test.example").SummariesByIDs),

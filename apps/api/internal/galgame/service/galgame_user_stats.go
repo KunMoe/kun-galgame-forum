@@ -87,18 +87,6 @@ func distinctEntityIDs(items []catalogclient.EditProposal) []int64 {
 	return out
 }
 
-func (s *GalgameUserStatsService) PublishedWorkIDs(
-	_ context.Context, uid int64, page, limit int,
-) ([]int, int64, error) {
-	if page < 1 {
-		page = 1
-	}
-	if limit <= 0 {
-		limit = 20
-	}
-	return s.galgameRepo.PublishedIDsByCreator(int(uid), page, limit)
-}
-
 func (s *GalgameUserStatsService) ContributedWorkIDs(ctx context.Context, uid int64) ([]int, error) {
 	items, err := s.catalog.ListEditProposals(ctx, catalogclient.EditProposalFilter{
 		EntityType: catalogclient.EntityTypeWork, ProposerUID: uid,

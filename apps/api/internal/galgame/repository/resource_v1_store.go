@@ -47,6 +47,8 @@ type ResourceListFilter struct {
 	CatalogWorkIDs []int
 	AuthorIDs      []int
 	SkipNSFW       bool
+	UploaderID     int
+	LikedBy        int
 }
 
 func escapeLike(s string) string {
@@ -81,6 +83,12 @@ func (f ResourceListFilter) apply(q *gorm.DB) *gorm.DB {
 	}
 	if f.AuthorIDs != nil {
 		q = q.Where("r.user_id IN ?", f.AuthorIDs)
+	}
+	if f.UploaderID > 0 {
+		q = q.Where("r.user_id = ?", f.UploaderID)
+	}
+	if f.LikedBy > 0 {
+		q = q.Where("EXISTS (SELECT 1 FROM galgame_resource_like l WHERE l.galgame_resource_id = r.id AND l.user_id = ?)", f.LikedBy)
 	}
 	return q
 }

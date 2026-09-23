@@ -79,40 +79,41 @@ import (
 )
 
 type App struct {
-	Fiber           *fiber.App
-	DB              *gorm.DB
-	Redis           *redis.Client
-	Config          *config.Config
-	OAuthClient     *oauth.Client
-	UserState       *repository.StateRepository
-	TopicAward      topicapiv1.AwardFunc
-	TrustCheck      *gate.CheckService
-	TrustScan       *gate.ScanService
-	Notifier        msgService.Notifier
-	Messages        *msgService.MessageService
-	UserClient      *userclient.Client
-	UserService     *service.UserService
-	CreatorService  *galgameService.CreatorService
-	Authn           *middleware.Authenticator
-	BearerStance    *middleware.BearerStance
-	ImageMeta       func(hashes []string) map[string]imageclient.ImageMeta
-	GalgameV1       *galgameapiv1.Service
-	GalgameEntityV1 *galgameentityv1.Service
-	GalgameRatingV1 *ratingapiv1.Service
-	QuizCatalog     quizapiv1.Catalog
-	ResourceCatalog resourceapiv1.Catalog
-	ResourceClaim   resourceapiv1.ClaimFunc
-	ResourceChecker resourceapiv1.ShareChecker
-	StoreLinks      *storelink.Resolver
-	WallV1          *wallapiv1.Service
-	OverviewV1      *overviewapiv1.Service
-	RankingV1       *rankingapiv1.Service
-	SearchV1        *searchapiv1.Service
-	ActivityV1      *activityapiv1.Service
-	TrustV1         *trustapiv1.Service
+	Fiber              *fiber.App
+	DB                 *gorm.DB
+	Redis              *redis.Client
+	Config             *config.Config
+	OAuthClient        *oauth.Client
+	UserState          *repository.StateRepository
+	TopicAward         topicapiv1.AwardFunc
+	TrustCheck         *gate.CheckService
+	TrustScan          *gate.ScanService
+	Notifier           msgService.Notifier
+	Messages           *msgService.MessageService
+	UserClient         *userclient.Client
+	UserService        *service.UserService
+	CreatorService     *galgameService.CreatorService
+	Authn              *middleware.Authenticator
+	BearerStance       *middleware.BearerStance
+	ImageMeta          func(hashes []string) map[string]imageclient.ImageMeta
+	GalgameV1          *galgameapiv1.Service
+	GalgameEntityV1    *galgameentityv1.Service
+	GalgameRatingV1    *ratingapiv1.Service
+	QuizCatalog        quizapiv1.Catalog
+	ResourceCatalog    resourceapiv1.Catalog
+	ResourceClaim      resourceapiv1.ClaimFunc
+	ResourceChecker    resourceapiv1.ShareChecker
+	StoreLinks         *storelink.Resolver
+	WallV1             *wallapiv1.Service
+	Community          *communityclient.Client
+	ContributedWorkIDs func(context.Context, int64) ([]int, error)
+	OverviewV1         *overviewapiv1.Service
+	RankingV1          *rankingapiv1.Service
+	SearchV1           *searchapiv1.Service
+	ActivityV1         *activityapiv1.Service
+	TrustV1            *trustapiv1.Service
 
 	OAuthHandler              *handler.OAuthHandler
-	UserHandler               *handler.UserHandler
 	LotteryService            *topicService.LotteryService
 	AdminPurgeHandler         *adminHandler.PurgeHandler
 	TrustHandler              *trustHandler.TrustHandler
@@ -151,7 +152,6 @@ func New(cfg *config.Config) *App {
 
 	userStateRepo := repository.NewStateRepository(db)
 	userStatsRepo := repository.NewUserStatsRepository(db)
-	userContentRepo := repository.NewUserContentRepository(db)
 	messageRepository := msgRepo.NewMessageRepository(db)
 
 	gc := client.New(
@@ -381,7 +381,6 @@ func New(cfg *config.Config) *App {
 
 	authService := service.NewAuthService(userStateRepo, rdb, oauthClient, uc)
 	userService := service.NewUserService(userStateRepo, userStatsRepo, rdb, gc, galgameUserStatsSvc, uc, communityCli)
-	userContentService := service.NewUserContentService(userContentRepo, gc, galgameUserStatsSvc, uc, communityCli)
 	messageSvc := msgService.NewMessageService(communityCli)
 	notifier := msgService.NewNotifier(messageRepository)
 
@@ -514,9 +513,10 @@ func New(cfg *config.Config) *App {
 		StoreLinks:                storeLinks,
 		TrustV1:                   trustapiv1.New(trustCli, uc, cfg.Trust.Site, cfg.NextMoeAPI.ImageCDNBase),
 		WallV1:                    newWallV1(db, communityCli, uc, gc, imageMetaResolve(imageMeta), cfg.NextMoeAPI.ImageCDNBase),
+		Community:                 communityCli,
+		ContributedWorkIDs:        galgameUserStatsSvc.ContributedWorkIDs,
 		ActivityV1:                newActivityV1(db, gc, uc, imageMetaResolve(imageMeta), cfg.NextMoeAPI.ImageCDNBase),
 		OAuthHandler:              handler.NewOAuthHandler(authService, cfg.Server.Mode == "prod", communityBooster),
-		UserHandler:               handler.NewUserHandler(userService, userContentService),
 		LotteryService:            lotterySvc,
 		OverviewV1:                overviewapiv1.New(adminOverviewRepo, nil),
 		AdminPurgeHandler:         adminHandler.NewPurgeHandler(adminPurgeSvc),
