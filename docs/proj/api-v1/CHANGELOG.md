@@ -1,5 +1,37 @@
 # API v1 changelog
 
+## 2026-09-24 (G5 galgame browse, library, release calendar, entity search)
+
+Breaking for `GET /api/galgame` (both engines), `GET /api/galgame/calendar{,/today,/pending,/tba,/upcoming}`, `GET /api/galgame/collected-calendar`, `GET /api/rss/galgame`, `GET /api/search/entity` and `GET /api/search/entity/resolve`; all ten are gone. No App build calls them; `docs/proj/app-direct-api.md` names the replacements.
+
+Offered:
+
+- `GET /api/v1/works`: the forum's browse list, a page-number collection of `WorkSummary` (`limit` 1–100, default 24). It shows published works with at least one forum resource; `include_resourceless=true` lists every published work.
+  - Filters: `resource_type`, `resource_platforms`, `resource_languages`, `game_type`, `resource_providers`, `excluded_sole_providers`, `released_from` / `released_to` / `released_months`, `collected_from` / `collected_to` / `collected_months`, `min_rating`, `min_rating_count`, `include_nsfw`.
+  - `sort` tokens: `resource_updated_*` (default desc), `created_*`, `view_*`, `view_1d_*`, `view_7d_*`, `view_30d_*`, `release_date_*`, `rating_*`.
+- `GET /api/v1/library-works`: catalog's browse population, a page-number collection of `WorkSummary`.
+  - Params: `q`, `sort` (`popularity_desc` default, `released_desc`, `released_asc`, `updated_desc`, `relevance_desc`), `released_from` / `released_to`, `include_nsfw`.
+  - It takes none of the forum filters.
+- `GET /api/v1/release-calendar` (`month`), `…/today`, `…/pending` (`year`), `…/tba`, `…/upcoming`: `WorkSummary` items on Asia/Tokyo time.
+  - A window catalog could not finish is marked `is_truncated`.
+  - `upcoming` is `503` when a month fails.
+- `GET /api/v1/works/collected-months`: `{year, month}` pairs over the `/works` population.
+- `GET /api/v1/tags` and `GET /api/v1/companies` take `ids` (1–100, comma form, not with `q`): the same page, holding only those ids.
+- `GET /api/v1/characters` items are now `CharacterSummary`. This is a strict superset of the old `CharacterRef` item, adding `image` and `catalog_work_count`; only the generated schema name changed, from `PageListCharacterRef` to `PageListCharacterSummary`.
+
+Every v1 operation: an unknown enum token longer than the enum's keys (such as `resource_platforms=windows`) answers `400 UNKNOWN_ENUM_VALUE`. It used to be `400 INVALID_PARAMETER`, because the implied length error was counted too.
+
+Fixed:
+
+- **The galgame RSS showed about three of its ten items.** It took the newest ten works and then dropped the NSFW ones, and seven of those ten were NSFW. `/works` filters NSFW in SQL before the limit. The feed now lists works by their newest resource, dated by that same field. It carries no author or description.
+- **The sitemap listed 6,500 of 9,821 published works.** It stopped at 130 pages; it now pages until `total`.
+- **Busy calendar months were cut at 100 works**, and `upcoming` left out a month that failed to load.
+- **The collected-months strip answered `[]` on a database error.**
+- **The library silently ignored the browse page's filters.** It shared the route through a `library` flag and dropped every forum filter. The two collections are now separate.
+- **Unknown sort fields fell back to resource-update order,** and unknown resource keys matched nothing and returned an empty page. Both are `400` now.
+- **Ascending sorts broke ties on `id DESC`.** The tie-breaker now follows the sort's direction.
+- **The entity resolve silently dropped malformed ids and cut the list at 100.**
+
 ## 2026-09-24 (G4.1 work detail vocabularies)
 
 `GET /api/v1/works/{work_id}` narrowed catalog's vocabularies and limits and lost data without saying so. Checked against infra's definitions, these are fixed:
