@@ -24,6 +24,50 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/review-items": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the review inbox
+         * @description This forum's items in the trust-and-safety review inbox, highest priority first with ties broken by descending id. A page-number collection: page × limit may not exceed 10000, and total counts under the same filter as items. It needs the trust.review permission, which a Bearer request never carries.
+         */
+        get: operations["listReviewItems"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/review-items/{review_item_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a review item
+         * @description One review item with the reports behind it. It needs the trust.review permission, which a Bearer request never carries.
+         */
+        get: operations["getReviewItem"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Claim or decide a review item
+         * @description state claimed takes a pending item for the caller. state actioned or dismissed decides a pending or claimed item; actioned writes a disposition that the trust service delivers back to this forum to enforce. Answers with the item as it stands afterwards. It needs the trust.review permission, which a Bearer request never carries.
+         */
+        patch: operations["updateReviewItem"];
+        trace?: never;
+    };
     "/admin/topics/{topic_id}": {
         parameters: {
             query?: never;
@@ -942,6 +986,46 @@ export interface paths {
         get: operations["getReplySource"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/report-reasons": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List report reasons
+         * @description The reasons a report can be filed under, as the trust service currently offers them to this forum. The list is data that the trust service's administrators maintain; this forum refreshes it every five minutes.
+         */
+        get: operations["listReportReasons"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/reports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Report content
+         * @description Files a report with the trust-and-safety service on behalf of the caller. A report has no id the reporter can read back. Reporting the same content again is accepted and counts once.
+         */
+        post: operations["createReport"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2299,6 +2383,17 @@ export interface components {
              */
             object: "list";
         };
+        ListReportReason: {
+            /** @description Members of this page. Empty array, never null. */
+            items: components["schemas"]["ReportReason"][];
+            /** @description Opaque keyset cursor. Omitted on the last page. */
+            next_cursor?: string;
+            /**
+             * @description Type discriminant. Always list.
+             * @enum {string}
+             */
+            object: "list";
+        };
         ListTopicDraftSummary: {
             /** @description Members of this page. Empty array, never null. */
             items: components["schemas"]["TopicDraftSummary"][];
@@ -3019,6 +3114,25 @@ export interface components {
              */
             total_relation: "eq" | "gte";
         };
+        PageListReviewItemSummary: {
+            /** @description Members of this page. Empty array, never null. */
+            items: components["schemas"]["ReviewItemSummary"][];
+            /**
+             * @description Type discriminant. Always list.
+             * @enum {string}
+             */
+            object: "list";
+            /**
+             * Format: int64
+             * @description Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.
+             */
+            total: number;
+            /**
+             * @description eq when total is exact, gte when it stopped at the depth limit and there are at least that many.
+             * @enum {string}
+             */
+            total_relation: "eq" | "gte";
+        };
         ParagraphNode: {
             /** @description Inline nodes of the paragraph. Empty array for a blank line the author kept. */
             children: components["schemas"]["InlineNode"][];
@@ -3532,6 +3646,216 @@ export interface components {
             has_disliked: boolean;
             /** @description Whether the caller liked the reply. */
             has_liked: boolean;
+        };
+        ReportCreate: {
+            /** @description What is wrong with the content, for the moderators. Absent or null for none. Free text; never use it as a decision input. */
+            note?: string | null;
+            /** @description One of the keys listReportReasons returns. */
+            reason_key: string;
+            /** @description The reporter's copy of the content as they saw it. Absent or null for none. Free text; never use it as a decision input. */
+            snapshot?: string | null;
+            /** @description Id of the reported content within its kind. */
+            subject_id: string;
+            /** @description Kind of the reported content. One of the kinds this forum registers with the trust service. */
+            subject_kind: string;
+            /**
+             * Format: uri
+             * @description Link to the content on this forum. It must start with https://www.kungal.com/. Absent or null for none.
+             */
+            subject_url?: string | null;
+        };
+        ReportReason: {
+            /** @description The label the trust service registered for this reason, in its original language. Free text; never use it as a decision input. */
+            display_name: string;
+            /** @description The reason key a report is filed under. */
+            key: string;
+            /**
+             * @description Type discriminant. Always report_reason.
+             * @enum {string}
+             */
+            object: "report_reason";
+        };
+        ReviewItem: {
+            /** @description The moderator who claimed the item. null before anyone has. */
+            claimant: components["schemas"]["UserRef"] | null;
+            /**
+             * Format: date-time
+             * @description When the item was claimed. null before anyone has.
+             */
+            claimed_at: string | null;
+            /**
+             * Format: float
+             * @description The AI classifier's score. null when no classifier judged the content.
+             */
+            classifier_score: number | null;
+            /** @description Evidence for an item that reports did not open, such as the flagged excerpt. Free text; never use it as a decision input. */
+            context_note: string | null;
+            /**
+             * Format: date-time
+             * @description When the item opened.
+             */
+            created_at: string;
+            /**
+             * Format: date-time
+             * @description When the item was decided. null while it is open.
+             */
+            decided_at: string | null;
+            /** @description The moderator who decided the item. null while it is open. */
+            decider: components["schemas"]["UserRef"] | null;
+            /** @description Review item id. */
+            id: string;
+            /**
+             * @description Type discriminant. Always review_item.
+             * @enum {string}
+             */
+            object: "review_item";
+            /** @description What opened the item. */
+            opened_by: string;
+            /**
+             * Format: float
+             * @description Queue rank; the inbox lists the highest first.
+             */
+            priority: number;
+            /**
+             * Format: int64
+             * @description How many people the content had reached when the item opened. null when the product does not report it.
+             */
+            reach_count: number | null;
+            /**
+             * Format: float
+             * @description Summed weight of the reports behind the item. null when reports did not open it.
+             */
+            report_weight_sum: number | null;
+            /** @description The reports linked to the item, oldest first. Empty for an item that reports did not open. */
+            reports: components["schemas"]["ReviewReport"][];
+            /**
+             * Format: int64
+             * @description Severity of the reason that opened the item. null when the item was not opened by reports.
+             */
+            severity: number | null;
+            /**
+             * @description pending until a moderator claims it; actioned or dismissed once decided.
+             * @enum {string}
+             */
+            state: "pending" | "claimed" | "actioned" | "dismissed";
+            /** @description Id of the content under review within its kind. */
+            subject_id: string;
+            /** @description Kind of the content under review. */
+            subject_kind: string;
+        };
+        ReviewItemPatch: {
+            /**
+             * @description What to do to the content. Required with actioned and not allowed otherwise.
+             * @enum {string}
+             */
+            action?: "none" | "hide" | "remove" | "warn_user" | "restrict" | "escalate_idp";
+            /** @description Why, as a code; a report reason key where one fits. Required with actioned and not allowed otherwise. */
+            reason_code?: string;
+            /**
+             * @description claimed takes a pending item; actioned or dismissed decides a pending or claimed one.
+             * @enum {string}
+             */
+            state: "claimed" | "actioned" | "dismissed";
+            /** @description A statement of reasons for the author. Only with actioned. Free text; never use it as a decision input. */
+            statement?: string;
+        };
+        ReviewItemSummary: {
+            /** @description The moderator who claimed the item. null before anyone has. */
+            claimant: components["schemas"]["UserRef"] | null;
+            /**
+             * Format: date-time
+             * @description When the item was claimed. null before anyone has.
+             */
+            claimed_at: string | null;
+            /**
+             * Format: float
+             * @description The AI classifier's score. null when no classifier judged the content.
+             */
+            classifier_score: number | null;
+            /** @description Evidence for an item that reports did not open, such as the flagged excerpt. Free text; never use it as a decision input. */
+            context_note: string | null;
+            /**
+             * Format: date-time
+             * @description When the item opened.
+             */
+            created_at: string;
+            /**
+             * Format: date-time
+             * @description When the item was decided. null while it is open.
+             */
+            decided_at: string | null;
+            /** @description The moderator who decided the item. null while it is open. */
+            decider: components["schemas"]["UserRef"] | null;
+            /** @description Review item id. */
+            id: string;
+            /**
+             * @description Type discriminant. Always review_item.
+             * @enum {string}
+             */
+            object: "review_item";
+            /** @description What opened the item. */
+            opened_by: string;
+            /**
+             * Format: float
+             * @description Queue rank; the inbox lists the highest first.
+             */
+            priority: number;
+            /**
+             * Format: int64
+             * @description How many people the content had reached when the item opened. null when the product does not report it.
+             */
+            reach_count: number | null;
+            /**
+             * Format: float
+             * @description Summed weight of the reports behind the item. null when reports did not open it.
+             */
+            report_weight_sum: number | null;
+            /**
+             * Format: int64
+             * @description Severity of the reason that opened the item. null when the item was not opened by reports.
+             */
+            severity: number | null;
+            /**
+             * @description pending until a moderator claims it; actioned or dismissed once decided.
+             * @enum {string}
+             */
+            state: "pending" | "claimed" | "actioned" | "dismissed";
+            /** @description Id of the content under review within its kind. */
+            subject_id: string;
+            /** @description Kind of the content under review. */
+            subject_kind: string;
+        };
+        ReviewReport: {
+            /**
+             * Format: date-time
+             * @description When the report was filed.
+             */
+            created_at: string;
+            /** @description Report id. */
+            id: string;
+            /** @description The reporter's note. Free text; never use it as a decision input. */
+            note: string | null;
+            /**
+             * @description Type discriminant. Always report.
+             * @enum {string}
+             */
+            object: "report";
+            /** @description The reason it was filed under. null when that reason has since been retired. */
+            report_reason: components["schemas"]["ReportReason"] | null;
+            /** @description Who filed the report. */
+            reporter: components["schemas"]["UserRef"];
+            /** @description The reporter's copy of the content. Free text; never use it as a decision input. */
+            snapshot: string | null;
+            /**
+             * Format: uri
+             * @description The reporter's link to the content. null unless it points at this forum.
+             */
+            subject_url: string | null;
+            /**
+             * Format: float
+             * @description The weight the trust service gave this reporter.
+             */
+            weight: number;
         };
         SpoilerNode: {
             /** @description Block nodes hidden until the reader reveals them. */
@@ -4500,6 +4824,263 @@ export interface operations {
                 };
             };
             /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listReviewItems: {
+        parameters: {
+            query?: {
+                /** @description 1-based page number. page × limit may not exceed 10000. */
+                page?: number;
+                /** @description Page size. 1–100, default 20. Values above 100 are rejected, not clamped. */
+                limit?: number;
+                /** @description Only items in this state. Absent means every state. */
+                state?: "pending" | "claimed" | "actioned" | "dismissed";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PageListReviewItemSummary"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description PERMISSION_REQUIRED when the caller lacks trust.review, or the trust service refuses the caller's moderation role. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the trust service or the account service is unreachable, unconfigured, or answers with anything this operation does not map. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getReviewItem: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Review item id. */
+                review_item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReviewItem"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description PERMISSION_REQUIRED when the caller lacks trust.review, or the trust service refuses the caller's moderation role. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the item does not exist or belongs to another site. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the trust service or the account service is unreachable, unconfigured, or answers with anything this operation does not map. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    updateReviewItem: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Review item id. */
+                review_item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReviewItemPatch"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReviewItem"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description PERMISSION_REQUIRED when the caller lacks trust.review, or the trust service refuses the caller's moderation role. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the item does not exist or belongs to another site. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description INVALID_STATE_TRANSITION when the item is already claimed or decided; detail names its current state. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description VALIDATION_FAILED when an actioned decision lacks action or reason_code, or when action, reason_code or statement come with any other state. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the trust service or the account service is unreachable, unconfigured, or answers with anything this operation does not map. */
             503: {
                 headers: {
                     [name: string]: unknown;
@@ -9584,6 +10165,150 @@ export interface operations {
                 };
             };
             /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listReportReasons: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListReportReason"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the trust service is unreachable or unconfigured. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    createReport: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Caller-generated UUID (canonical 8-4-4-4-12 hex, any version) or 26-character Crockford ULID. Scoped to (user, operation, key) for 24 hours. */
+                "Idempotency-Key"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReportCreate"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description IDEMPOTENCY_KEY_REUSED or IDEMPOTENCY_REQUEST_IN_PROGRESS. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description VALIDATION_FAILED when subject_kind is not a kind this forum registers, reason_key is not one the trust service offers, or subject_url is not on this forum. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description RATE_LIMITED when the caller has filed too many reports recently. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the trust service or the account service is unreachable, unconfigured, or answers with anything this operation does not map. */
             503: {
                 headers: {
                     [name: string]: unknown;

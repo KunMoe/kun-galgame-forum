@@ -1,13 +1,16 @@
 <script setup lang="ts">
+import { settle } from '#shared/utils/api/problem'
+
 const { isOpen, target } = useReportModal()
 const { reasons, load } = useReportReasons()
+const api = useApiClient()
 
 const reasonKey = ref('')
 const note = ref('')
 const isSubmitting = ref(false)
 
 const reasonOptions = computed(() =>
-  reasons.value.map((r) => ({ value: r.key, label: r.label }))
+  reasons.value.map((r) => ({ value: r.key, label: r.display_name }))
 )
 
 watch(isOpen, (open) => {
@@ -27,22 +30,25 @@ const submit = async () => {
     return
   }
   isSubmitting.value = true
-  const result = await kunFetch('/report/submit', {
-    method: 'POST',
-    body: {
-      subject_kind: target.value.subjectKind,
-      subject_id: String(target.value.subjectId),
-      reason_key: reasonKey.value,
-      note: note.value,
-      snapshot: (target.value.snapshot ?? '').slice(0, 1000),
-      subject_url: target.value.subjectUrl ?? ''
-    }
-  })
+  const result = await settle(
+    api.POST('/reports', {
+      body: {
+        subject_kind: target.value.subjectKind,
+        subject_id: String(target.value.subjectId),
+        reason_key: reasonKey.value,
+        note: note.value.trim() || null,
+        snapshot: (target.value.snapshot ?? '').slice(0, 1000) || null,
+        subject_url: target.value.subjectUrl || null
+      }
+    })
+  )
   isSubmitting.value = false
-  if (result) {
-    useMessage('举报已提交，感谢你的反馈', 'success')
-    isOpen.value = false
+  if (!result.ok) {
+    reportProblem(result.problem)
+    return
   }
+  useMessage('举报已提交，感谢你的反馈', 'success')
+  isOpen.value = false
 }
 </script>
 

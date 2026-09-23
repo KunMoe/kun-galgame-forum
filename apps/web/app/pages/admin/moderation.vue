@@ -1,11 +1,16 @@
 <script setup lang="ts">
 import {
-  TRUST_REVIEW_STATUS,
-  TRUST_REVIEW_SOURCE,
+  TRUST_REVIEW_STATE,
+  TRUST_REVIEW_ORIGIN,
   TRUST_ACTIONS,
   TRUST_SUBJECT_KIND,
-  trustSubjectHref
+  trustSubjectHref,
+  type DispositionAction,
+  type ReviewState
 } from '~/constants/trust'
+import { settle } from '#shared/utils/api/problem'
+import type { ReviewItem, ReviewItemPatch } from '#shared/utils/api/schemas'
+import { toKunUser } from '~/utils/userRef'
 
 definePageMeta({
   middleware: 'permission',
@@ -15,54 +20,89 @@ definePageMeta({
 useKunDisableSeo('内容审核')
 
 const statusTabs = [
-  { value: '0', textValue: '待处理' },
-  { value: '1', textValue: '处理中' },
-  { value: '2', textValue: '已处置' },
-  { value: '3', textValue: '已驳回' },
-  { value: '-1', textValue: '全部' }
+  { value: 'pending', textValue: '待处理' },
+  { value: 'claimed', textValue: '处理中' },
+  { value: 'actioned', textValue: '已处置' },
+  { value: 'dismissed', textValue: '已驳回' },
+  { value: 'all', textValue: '全部' }
 ]
-const activeStatus = ref('0')
+const activeState = ref('pending')
 
-const pageData = reactive({ status: 0, page: 1, limit: 30 })
-watch(activeStatus, (v) => {
-  pageData.status = Number(v)
+const pageData = reactive({
+  state: 'pending' as ReviewState | '',
+  page: 1,
+  limit: 30
+})
+watch(activeState, (v) => {
+  pageData.state = v === 'all' ? '' : (v as ReviewState)
   pageData.page = 1
 })
 
-const { data, status, refresh } = await useKunFetch<ReviewItemPage>(
-  '/admin/trust/review-items',
-  { query: pageData }
+const api = useApiClient()
+
+const { data, status, refresh } = await useApi(
+  () =>
+    `admin-review-items:${pageData.state}:${pageData.page}:${pageData.limit}`,
+  (client, { signal }) =>
+    client.GET('/admin/review-items', {
+      params: {
+        query: {
+          page: pageData.page,
+          limit: pageData.limit,
+          ...(pageData.state ? { state: pageData.state } : {})
+        }
+      },
+      signal
+    })
 )
 
+const items = computed(() => data.value?.items ?? [])
+const total = computed(() => data.value?.total ?? 0)
+
 const kindLabel = (k: string) => TRUST_SUBJECT_KIND[k] ?? k
+const originLabel = (o: string) => TRUST_REVIEW_ORIGIN[o] ?? o
+
+const { reasons, load: loadReasons } = useReportReasons()
+const reasonOptions = computed(() =>
+  reasons.value.map((r) => ({ value: r.key, label: r.display_name }))
+)
 
 const isDetailOpen = ref(false)
-const detail = ref<ReviewItemDetail | null>(null)
+const detail = ref<ReviewItem | null>(null)
 const detailLoading = ref(false)
 
 const decision = ref<'actioned' | 'dismissed'>('actioned')
-const action = ref(1)
+const action = ref<DispositionAction>('hide')
 const reasonCode = ref('')
 const statement = ref('')
 const isWorking = ref(false)
 
-const openDetail = async (id: number) => {
+const openDetail = async (id: string) => {
   isDetailOpen.value = true
   detailLoading.value = true
   detail.value = null
   decision.value = 'actioned'
-  action.value = 1
+  action.value = 'hide'
   reasonCode.value = ''
   statement.value = ''
-  detail.value =
-    (await kunFetch<ReviewItemDetail>(`/admin/trust/review-items/${id}`)) ??
-    null
+  loadReasons()
+  const result = await settle(
+    api.GET('/admin/review-items/{review_item_id}', {
+      params: { path: { review_item_id: id } }
+    })
+  )
   detailLoading.value = false
+  if (!result.ok) {
+    reportProblem(result.problem)
+    isDetailOpen.value = false
+    return
+  }
+  detail.value = result.data
 }
 
 const isOpen = computed(() => {
-  const s = detail.value?.item.status
-  return s === 0 || s === 1
+  const s = detail.value?.state
+  return s === 'pending' || s === 'claimed'
 })
 
 const subjectHref = computed(() => {
@@ -74,55 +114,61 @@ const subjectHref = computed(() => {
   )?.subject_url
   return (
     fromReport ||
-    trustSubjectHref(
-      detail.value.item.subject_kind,
-      detail.value.item.subject_id
-    )
+    trustSubjectHref(detail.value.subject_kind, detail.value.subject_id)
   )
 })
 
-const claim = async () => {
-  if (!detail.value) return
+const patchItem = async (body: ReviewItemPatch) => {
+  if (!detail.value) {
+    return false
+  }
   isWorking.value = true
-  const ok = await kunFetch(
-    `/admin/trust/review-items/${detail.value.item.id}/claim`,
-    { method: 'POST' }
+  const result = await settle(
+    api.PATCH('/admin/review-items/{review_item_id}', {
+      params: { path: { review_item_id: detail.value.id } },
+      body
+    })
   )
   isWorking.value = false
-  if (ok) {
+  if (!result.ok) {
+    reportProblem(result.problem)
+    return false
+  }
+  detail.value = result.data
+  refresh()
+  return true
+}
+
+const claim = async () => {
+  if (await patchItem({ state: 'claimed' })) {
     useMessage('已认领', 'success')
-    await openDetail(detail.value.item.id)
-    refresh()
   }
 }
 
 const decide = async () => {
-  if (!detail.value) return
-  if (decision.value === 'actioned' && !reasonCode.value.trim()) {
-    useMessage('请填写处置理由代码（reason_code）', 'warn')
+  if (decision.value === 'actioned' && !reasonCode.value) {
+    useMessage('请选择处置理由', 'warn')
     return
   }
-  isWorking.value = true
-  const body: Record<string, unknown> = { decision: decision.value }
-  if (decision.value === 'actioned') {
-    body.action = action.value
-    body.reason_code = reasonCode.value.trim()
-    if (statement.value.trim()) body.statement = statement.value.trim()
-  }
-  const ok = await kunFetch(
-    `/admin/trust/review-items/${detail.value.item.id}/decide`,
-    { method: 'POST', body }
-  )
-  isWorking.value = false
-  if (ok) {
+  const body: ReviewItemPatch =
+    decision.value === 'actioned'
+      ? {
+          state: 'actioned',
+          action: action.value,
+          reason_code: reasonCode.value,
+          ...(statement.value.trim()
+            ? { statement: statement.value.trim() }
+            : {})
+        }
+      : { state: 'dismissed' }
+  if (await patchItem(body)) {
     useMessage('已处置', 'success')
     isDetailOpen.value = false
-    refresh()
   }
 }
 
 const actionOptions = TRUST_ACTIONS.map((a) => ({
-  value: a.value as number,
+  value: a.value,
   label: a.label
 }))
 </script>
@@ -137,7 +183,7 @@ const actionOptions = TRUST_ACTIONS.map((a) => ({
     </div>
 
     <KunTab
-      v-model="activeStatus"
+      v-model="activeState"
       :items="statusTabs"
       variant="underlined"
       color="primary"
@@ -146,11 +192,11 @@ const actionOptions = TRUST_ACTIONS.map((a) => ({
 
     <KunLoading v-if="status === 'pending'" />
 
-    <KunNull v-else-if="!data?.items.length" description="暂无审核条目" />
+    <KunNull v-else-if="!items.length" description="暂无审核条目" />
 
     <div v-else class="space-y-2">
       <button
-        v-for="item in data.items"
+        v-for="item in items"
         :key="item.id"
         class="hover:bg-default-100 border-default-200 w-full rounded-lg border p-3 text-left transition-colors"
         @click="openDetail(item.id)"
@@ -161,10 +207,8 @@ const actionOptions = TRUST_ACTIONS.map((a) => ({
               kindLabel(item.subject_kind)
             }}</KunChip>
             <span class="text-default-500 text-sm">#{{ item.subject_id }}</span>
-            <KunChip
-              :color="TRUST_REVIEW_STATUS[item.status]?.color ?? 'default'"
-            >
-              {{ TRUST_REVIEW_STATUS[item.status]?.label ?? item.status }}
+            <KunChip :color="TRUST_REVIEW_STATE[item.state].color">
+              {{ TRUST_REVIEW_STATE[item.state].label }}
             </KunChip>
           </div>
           <span class="text-default-400 shrink-0 text-xs">
@@ -174,9 +218,7 @@ const actionOptions = TRUST_ACTIONS.map((a) => ({
         <div
           class="text-default-400 mt-1 flex flex-wrap items-center gap-x-3 text-xs"
         >
-          <span
-            >来源：{{ TRUST_REVIEW_SOURCE[item.source] ?? item.source }}</span
-          >
+          <span>来源：{{ originLabel(item.opened_by) }}</span>
           <span v-if="item.report_weight_sum"
             >举报权重 {{ item.report_weight_sum.toFixed(1) }}</span
           >
@@ -186,9 +228,9 @@ const actionOptions = TRUST_ACTIONS.map((a) => ({
     </div>
 
     <KunPagination
-      v-if="data?.total"
+      v-if="total > pageData.limit"
       v-model:current-page="pageData.page"
-      :total-page="Math.ceil(data.total / pageData.limit)"
+      :total-page="Math.ceil(total / pageData.limit)"
       :is-loading="status === 'pending'"
     />
 
@@ -201,7 +243,7 @@ const actionOptions = TRUST_ACTIONS.map((a) => ({
         <div class="flex flex-wrap items-center gap-2">
           <span class="text-lg font-bold">审核详情</span>
           <KunChip color="secondary">{{
-            kindLabel(detail.item.subject_kind)
+            kindLabel(detail.subject_kind)
           }}</KunChip>
           <KunLink
             v-if="subjectHref"
@@ -209,10 +251,10 @@ const actionOptions = TRUST_ACTIONS.map((a) => ({
             target="_blank"
             class="text-primary text-sm"
           >
-            查看内容 #{{ detail.item.subject_id }}
+            查看内容 #{{ detail.subject_id }}
           </KunLink>
           <span v-else class="text-default-500 text-sm"
-            >#{{ detail.item.subject_id }}</span
+            >#{{ detail.subject_id }}</span
           >
         </div>
 
@@ -220,22 +262,18 @@ const actionOptions = TRUST_ACTIONS.map((a) => ({
           <div
             class="text-default-400 flex flex-wrap items-center gap-x-3 text-xs"
           >
-            <span>
-              来源：{{
-                TRUST_REVIEW_SOURCE[detail.item.source] ?? detail.item.source
-              }}
+            <span> 来源：{{ originLabel(detail.opened_by) }} </span>
+            <span v-if="detail.severity != null">
+              严重度 {{ detail.severity }}
             </span>
-            <span v-if="detail.item.severity != null">
-              严重度 {{ detail.item.severity }}
+            <span v-if="detail.classifier_score != null">
+              分类器 {{ detail.classifier_score.toFixed(2) }}
             </span>
-            <span v-if="detail.item.classifier_score != null">
-              分类器 {{ detail.item.classifier_score.toFixed(2) }}
+            <span v-if="detail.reach_count != null">
+              已触达 {{ detail.reach_count }}
             </span>
-            <span v-if="detail.item.subject_reach != null">
-              已触达 {{ detail.item.subject_reach }}
-            </span>
-            <span v-if="detail.item.report_weight_sum">
-              举报权重 {{ detail.item.report_weight_sum.toFixed(1) }}
+            <span v-if="detail.report_weight_sum">
+              举报权重 {{ detail.report_weight_sum.toFixed(1) }}
             </span>
           </div>
 
@@ -243,12 +281,12 @@ const actionOptions = TRUST_ACTIONS.map((a) => ({
                they carry no trust_report rows at all and put their evidence in
                context_note. Rendering only `reports` showed 「举报记录（0）」 and
                nothing else for 97.7% of the queue. -->
-          <div v-if="detail.item.context_note" class="space-y-1">
+          <div v-if="detail.context_note" class="space-y-1">
             <span class="text-default-600 text-sm font-medium">判定依据</span>
             <p
               class="bg-default-100 text-default-700 rounded-lg p-2 text-sm whitespace-pre-wrap"
             >
-              {{ detail.item.context_note }}
+              {{ detail.context_note }}
             </p>
           </div>
         </div>
@@ -259,9 +297,7 @@ const actionOptions = TRUST_ACTIONS.map((a) => ({
           </span>
           <p v-if="!detail.reports.length" class="text-default-400 text-sm">
             该条目不是由用户举报产生的{{
-              detail.item.context_note
-                ? '，依据见上方'
-                : '，且上游没有给出依据摘要'
+              detail.context_note ? '，依据见上方' : '，且上游没有给出依据摘要'
             }}
           </p>
           <div
@@ -270,16 +306,20 @@ const actionOptions = TRUST_ACTIONS.map((a) => ({
             class="bg-default-100 space-y-1 rounded-lg p-2 text-sm"
           >
             <div class="text-default-400 flex flex-wrap gap-x-3 text-xs">
-              <span>举报人 #{{ r.reporter_id }}</span>
-              <span>理由 #{{ r.reason_id }}</span>
+              <KunUserChip :user="toKunUser(r.reporter)" size="xs" />
+              <span
+                >理由：{{
+                  r.report_reason?.display_name ?? '已停用的理由'
+                }}</span
+              >
               <span>权重 {{ r.weight.toFixed(1) }}</span>
               <KunTime :time="r.created_at" type="datetime" show-year />
             </div>
             <p v-if="r.note" class="text-default-700">{{ r.note }}</p>
             <pre
-              v-if="r.subject_snapshot"
+              v-if="r.snapshot"
               class="text-default-500 border-default-200 max-h-32 overflow-y-auto rounded border p-2 text-xs whitespace-pre-wrap"
-              >{{ r.subject_snapshot }}</pre
+              >{{ r.snapshot }}</pre
             >
           </div>
         </div>
@@ -289,7 +329,7 @@ const actionOptions = TRUST_ACTIONS.map((a) => ({
           <div class="space-y-3">
             <div class="flex items-center gap-2">
               <KunButton
-                v-if="detail.item.status === 0"
+                v-if="detail.state === 'pending'"
                 variant="flat"
                 color="primary"
                 :loading="isWorking"
@@ -297,8 +337,12 @@ const actionOptions = TRUST_ACTIONS.map((a) => ({
               >
                 认领
               </KunButton>
-              <span v-else class="text-default-500 text-sm">
-                处理中（认领人 #{{ detail.item.claimed_by }}）
+              <span
+                v-else-if="detail.claimant"
+                class="text-default-500 flex items-center gap-1 text-sm"
+              >
+                处理中，认领人
+                <KunUserChip :user="toKunUser(detail.claimant)" size="xs" />
               </span>
             </div>
 
@@ -327,10 +371,11 @@ const actionOptions = TRUST_ACTIONS.map((a) => ({
                 :options="actionOptions"
                 label="处置动作"
               />
-              <KunInput
+              <KunSelect
                 v-model="reasonCode"
-                label="处置理由代码 (reason_code)"
-                placeholder="例如 spam / abuse"
+                :options="reasonOptions"
+                label="处置理由"
+                placeholder="请选择处置理由"
               />
               <KunTextarea
                 name="statement"
@@ -348,7 +393,7 @@ const actionOptions = TRUST_ACTIONS.map((a) => ({
           </div>
         </template>
         <p v-else class="text-default-500 text-sm">
-          该条目已终结（{{ TRUST_REVIEW_STATUS[detail.item.status]?.label }}）。
+          该条目已终结（{{ TRUST_REVIEW_STATE[detail.state].label }}）。
         </p>
       </div>
     </KunModal>
