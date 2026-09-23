@@ -87,14 +87,14 @@ Nitro `server/`：零调用。Flutter App（`../kungal-apps`）：零调用。
 | D7 · 删帖权限（修 B1、B2、B3） | 能删 ⇔ 作者本人；或持**这条帖子所在的墙**对应的删帖权限（`comment.{galgame,rating,website,toolset,resource,quiz}.delete`）；或是这堵墙的主人（资源发布者 / 工具主人 / 出题人 / **评分作者**）。帖子所在的墙由上游 `ResolvePosts` 的线程上下文判定，不由请求里的任何东西判定。galgame 墙与网站墙没有主人 |
 | D8 · 编辑权限 | 作者本人；或持这堵墙的编辑权限（`comment.*.edit`，版主编辑，上游记 `edited_by_moderator`）。与旧 `resolveModEdit` 相同，只是不再有「查不到就按任一编辑权限放行」的兜底 |
 | D9 · 长度（修 B6） | 每面自己的上限，**发表与编辑相同**：galgame 5000，galgame_rating 1314，其余四面 1007。schema 上的 `maxLength` 是 5000（一个请求体服务六面），面的上限在 handler 里判，超了是 `422 VALIDATION_FAILED` + `TOO_LONG` + `max_length`。K19 照旧：先判原始值长度，再去首尾空白 |
-| D10 · 回复与 `in_reply_to_user` | 六面都收 `parent_comment_id`（必须是同一堵墙上未删除的帖，否则 `422` + `UNKNOWN_REFERENCE` 指向它）。`in_reply_to_user` 读面原样下发上游存储的 target。写入时**不由客户端给**：有父帖由上游推导；**评分墙的顶层帖**由服务端填评分作者（保留旧网页「→ 评分作者」的显示，234 条历史数据全是这样）。评分墙从此也允许嵌套回复——旧数据 0 条回复，渲染不变 |
+| D10 · 回复与 `addressee` | 六面都收 `parent_comment_id`（必须是同一堵墙上未删除的帖，否则 `422` + `UNKNOWN_REFERENCE` 指向它）。`addressee`（这条帖是对谁说的）读面原样下发上游存储的 target。**不叫 `in_reply_to_user`**：话题评论的同名字段不可空，而墙上大多数顶层帖没有 target，同名异型会被 G8 拦下。写入时**不由客户端给**：有父帖由上游推导；**评分墙的顶层帖**由服务端填评分作者（保留旧网页「→ 评分作者」的显示，234 条历史数据全是这样）。评分墙从此也允许嵌套回复——旧数据 0 条回复，渲染不变 |
 | D11 · 提及 | 与现状一致：只有 galgame 墙把 `@` 提及交给上游发通知、编辑时补发新增提及。其余五面的 `@` 照样解析成 `mention` 节点、但不通知。**是否推广到六面是产品决定，不在本轨** |
 | D12 · 点赞（修 B7、B11） | K16 槽位：`PUT` 置位、`DELETE` 撤销，都幂等、都回 200 + `WallComment`。上游只有切换，所以以本地镜像 `galgame_post_like` 判当前态；切换结果与意图相反（镜像陈旧）时再切一次并修镜像。自赞 `403 SELF_LIKE_FORBIDDEN`。萌萌点照旧：他人点赞 +1，撤销 −1 |
 | D13 · 举报 | `POST /wall-comments/{id}/flags` → `204`。举报不可回读（没有自己的 id），所以不是 201。`reason` 封闭枚举 `spam` `abuse` `off_topic` `other` `nsfw_mislabel`（上游 0–4），`note` ≤ 500。不能举报自己的帖（`403 PERMISSION_REQUIRED`） |
-| D14 · 删除后的帖 | 列表里保留墓碑（`state: deleted`，`content: null`），回复不失根。`GET` 单条同样回墓碑。编辑、点赞、举报墓碑 → `409 INVALID_STATE_TRANSITION`。**删除墓碑 → `204`，无副作用**（不再减计数，不再删 feed）|
+| D14 · 删除后的帖 | 列表里保留墓碑（`state: deleted`，`content` 是**空文档**——不是 `null`：`content` 在话题、回复、评论上都不可空，G8 要求同名同型），回复不失根。`GET` 单条同样回墓碑。编辑、点赞、举报墓碑 → `409 INVALID_STATE_TRANSITION`。**删除墓碑 → `204`，无副作用**（不再减计数，不再删 feed）|
 | D15 · 待审帖 | 上游 `status=1`（上游叫 hidden，论坛界面叫「审核中」）：只有作者看得见，`state: held`。发表时上游直接判成 held 的，`201` 照回，`state: held` |
 | D16 · 封禁作者（B12） | 与话题一致：被封禁作者的帖在列表里略去、`GET` 单条 `404`。回复失根照旧由客户端当顶层画。不改 |
-| D17 · 上游错误（修 B8、B9） | 上游不可用 → `503 SERVICE_UNAVAILABLE`，**读面也是**（不再回空墙）。上游 429（新人限流）→ `429 RATE_LIMITED`（新增，复用 infra platform 码），透传 `Retry-After`。上游 422 "content blocked by word list" → `422 CONTENT_REJECTED`。上游 409 "thread is not open"（墙被关，生产 0 行）→ `409 INVALID_STATE_TRANSITION`。上游 404 → `404 NOT_FOUND`。其余上游 4xx 是我们的 bug → `500 INTERNAL_ERROR` 并记日志 |
+| D17 · 上游错误（修 B8、B9） | 上游不可用 → `503 SERVICE_UNAVAILABLE`，**读面也是**（不再回空墙）。上游 429（新人限流）→ `429 RATE_LIMITED`（新增，复用 infra platform 码）。上游不发 `Retry-After`（infra `handler/errors.go` 的沙箱分支只有状态码与原因），所以论坛也不发。上游 422 "content blocked by word list" → `422 CONTENT_REJECTED`。上游 409 "thread is not open"（墙被关，生产 0 行）→ `409 INVALID_STATE_TRANSITION`。上游 404 → `404 NOT_FOUND`。其余上游 4xx 是我们的 bug → `500 INTERNAL_ERROR` 并记日志 |
 | D18 · 没有 `total` | 列表不发 `total`：上游的 `posts_count` 含删除与待审帖，与 `items` 不是同一谓词（K11）。需要数字的页面用父资源自己的 `comment_count`（资源、题目详情已经在发） |
 | D19 · `locate` 不重建 | 旧 `GET /galgame/:gid/comments/locate` 只服务 64 条 `?comment=<旧id>&thread=` 的提及通知链接。迁移 135 把能映射的 36 条改写成 `?comment=<post_id>`，映射不到的 28 条去掉查询串只留页面链接。站外流传的旧链接从此只会打开页面、不再滚到那一楼，接受 |
 | D20 · 关注与已读 | 仍走 X 轨的 `/community/wall/*`。网页在本地从主体推出旧锚点（这段映射只为调旧路由而存在，X 轨迁完即删）。v1 不发 `thread_id`；`WallRead` 在 `thread_id` 缺席时自己向上游解析——这是对 X 轨旧服务的一处**只加不改**的回落，PR 里点名 |
@@ -132,9 +132,9 @@ Nitro `server/`：零调用。Flutter App（`../kungal-apps`）：零调用。
   "parent_comment_id": "10500",
   "root_comment_id": "10500",
   "author": { "object": "user", "id": "3", "name": "…", "avatar": null },
-  "in_reply_to_user": { "object": "user", "id": "7", "name": "…", "avatar": null },
+  "addressee": { "object": "user", "id": "7", "name": "…", "avatar": null },
   "state": "visible",
-  "content": { "…": "ContentDocument，state 为 deleted 时是 null" },
+  "content": { "…": "ContentDocument，state 为 deleted 时是空文档" },
   "like_count": 2,
   "created_at": "2026-09-22T10:00:00Z",
   "edited_at": null,
@@ -145,7 +145,7 @@ Nitro `server/`：零调用。Flutter App（`../kungal-apps`）：零调用。
 
 - `state`：封闭枚举 `visible` / `held` / `deleted`。
 - `parent_comment_id` / `root_comment_id`：顶层帖都是 `null`。
-- `in_reply_to_user`：`null` 或 `UserRef`；指向的人被封禁时照样发 `UserRef`，`name` 为 `null`（与 `author` 相同的规则）。
+- `addressee`：`null` 或 `UserRef`；指向的人被封禁时照样发 `UserRef`，`name` 为 `null`（与 `author` 相同的规则）。
 - `viewer`：匿名为 `null`。`can_like` = 已登录、非作者、未删除；`can_flag` 同；`can_edit` / `can_delete` 见 D8 / D7，墓碑上恒为 `false`。Bearer 请求的 `can_*` 不含任何 staff 能力（K2）。
 
 ### 3.3 请求体
@@ -210,6 +210,8 @@ Nitro `server/`：零调用。Flutter App（`../kungal-apps`）：零调用。
 
 ## 8. 变异题（实现之前提交；每条都必须让某个测试变红）
 
+> 2026-09-22 修订（仍在实现之前）：`in_reply_to_user` → `addressee`、墓碑的 `content` 由 `null` 改为空文档（两处都是 G8 同名同型）、`RATE_LIMITED` 不带 `Retry-After`（上游不发）。M11、M12 的断言随之改字。
+
 | # | 改动 | 应当杀死它的断言 |
 |---|---|---|
 | M1 | 删帖的版主权限改成「持任一面的删帖权限即可」（不按帖子所在的墙选权限） | 只持 `comment.galgame.delete` 的人删评分墙的帖 → `403` |
@@ -222,7 +224,7 @@ Nitro `server/`：零调用。Flutter App（`../kungal-apps`）：零调用。
 | M8 | 游标指纹不含 `subject_id` | 墙 A 的游标拿去翻墙 B → `400 INVALID_CURSOR` |
 | M9 | 别人的待审帖不略去 | 非作者的列表里没有它，作者的列表里有它且 `state: held` |
 | M10 | 面的长度上限统一成 5000 | 1008 字的工具墙评论 → `422 TOO_LONG`，`max_length: 1007`；编辑同样 |
-| M11 | 评分墙顶层帖不填评分作者 | 新建评分墙顶层帖的 `in_reply_to_user` 是评分作者 |
-| M12 | 上游 429 映射成 503 | 新人限流 → `429 RATE_LIMITED` + `Retry-After` |
+| M11 | 评分墙顶层帖不填评分作者 | 新建评分墙顶层帖的 `addressee` 是评分作者 |
+| M12 | 上游 429 映射成 503 | 新人限流 → `429 RATE_LIMITED` |
 | M13 | 写面在 `/users/batch` 失败时放行（K17 失效） | OAuth 不可用时发表 → `503`，上游没有收到帖子 |
 | M14 | 删除墓碑时照样减计数 | 删两次：`204` 两次，父资源 `comment_count` 只减 1 |
