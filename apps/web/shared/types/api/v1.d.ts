@@ -4,6 +4,26 @@
  */
 
 export interface paths {
+    "/activities": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List activities
+         * @description The site's activity stream, newest first: topics, replies, comments, upvotes, best answers, works and their resources, ratings, edits and quizzes, toolsets, websites, todos and update logs. occurred_desc sorts by occurred_at with ties broken on kind and subject; bumped_desc lists topics by bump time and is allowed only when activity_types is exactly topic_creation. An activity whose actor is banned, or whose work catalog does not show under include_nsfw, is left out, so a page can be short; only an absent next_cursor means the end. The cursor is bound to the sort and to every filter.
+         */
+        get: operations["listActivities"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/doc-order": {
         parameters: {
             query?: never;
@@ -3400,6 +3420,190 @@ export interface components {
             /** @description Ranked roles this credential carries, lowest rank first. A Bearer request never carries moderator, admin or ren. Other account roles are not listed. */
             roles: ("creator" | "moderator" | "admin" | "ren")[];
         };
+        Activity: {
+            /**
+             * @description What happened. It decides which of the detail blocks below is set: every block other than its own is null.
+             * @enum {string}
+             */
+            activity_type: "topic_creation" | "topic_reply_creation" | "topic_comment_creation" | "topic_upvote" | "best_answer_set" | "galgame_creation" | "galgame_edit" | "galgame_pr_creation" | "galgame_resource_creation" | "galgame_resource_comment_creation" | "galgame_comment_creation" | "galgame_rating_creation" | "galgame_rating_comment_creation" | "galgame_quiz_creation" | "galgame_quiz_comment_creation" | "galgame_website_creation" | "galgame_website_comment_creation" | "toolset_creation" | "toolset_resource_creation" | "toolset_comment_creation" | "todo_creation" | "update_log_creation";
+            /** @description The topic comment. Set for topic_comment_creation. */
+            comment: components["schemas"]["ActivityComment"] | null;
+            /** @description The text stored with the activity, cut to 1000 characters: the title of a topic, toolset or website, a quiz question, the body of a reply, comment, todo or update log, an upvote note. Empty for the work kinds. Replies are Markdown; comments are plain text. Free text; never use it as a decision input. */
+            excerpt_markdown: string;
+            /** @description Activity id. */
+            id: string;
+            /**
+             * @description Type discriminant. Always activity.
+             * @enum {string}
+             */
+            object: "activity";
+            /**
+             * Format: date-time
+             * @description When it happened. Under sort bumped_desc this is still the topic's creation time; the sort key is topic.bumped_at.
+             */
+            occurred_at: string;
+            /** @description In-site web path of the subject. Always starts with a slash. */
+            path: string;
+            /** @description Who did it. For galgame_creation the work's creator, or null when none is recorded. */
+            performer: components["schemas"]["UserRef"] | null;
+            /** @description The quiz. Set for galgame_quiz_creation. */
+            quiz: components["schemas"]["ActivityQuiz"] | null;
+            /** @description The rating. Set for galgame_rating_creation. */
+            rating: components["schemas"]["ActivityRating"] | null;
+            /** @description The reply. Set for topic_reply_creation and best_answer_set. */
+            reply: components["schemas"]["ActivityReply"] | null;
+            /** @description The download resource. Set for galgame_resource_creation. */
+            resource: components["schemas"]["ActivityResource"] | null;
+            /** @description The todo. Set for todo_creation. */
+            todo: components["schemas"]["ActivityTodo"] | null;
+            /** @description The toolset the resource belongs to. Set for toolset_resource_creation. */
+            toolset: components["schemas"]["ActivityToolset"] | null;
+            /** @description The topic. Set for topic_creation and topic_upvote. */
+            topic: components["schemas"]["TopicSummary"] | null;
+            /** @description What a feed card shows beyond the list card. Set for topic_creation and topic_upvote. */
+            topic_digest: components["schemas"]["TopicDigest"] | null;
+            /** @description The update log entry. Set for update_log_creation. */
+            update_log: components["schemas"]["ActivityUpdateLog"] | null;
+            /** @description The work. Set for the galgame kinds tied to a work. */
+            work: components["schemas"]["WorkRef"] | null;
+            /** @description Developers, intro and release of the work. Set for galgame_creation, galgame_edit and galgame_pr_creation. */
+            work_digest: components["schemas"]["WorkDigest"] | null;
+            /** @description The revision the edit made. Set for galgame_edit when the revision is known. */
+            work_revision: components["schemas"]["WorkRevision"] | null;
+            /** @description Counters of the work on this forum. Set for galgame_creation. */
+            work_stats: components["schemas"]["WorkStats"] | null;
+        };
+        ActivityComment: {
+            /** @description Comment id. */
+            comment_id: string;
+            /** @description The reply the comment is on. null when that reply is not visible. */
+            quoted: components["schemas"]["QuotedReply"] | null;
+            /** @description Topic the comment belongs to. */
+            topic_id: string;
+            /** @description Title of that topic. Free text; never use it as a decision input. */
+            topic_title: string;
+        };
+        ActivityQuiz: {
+            /**
+             * Format: int64
+             * @description Answers submitted.
+             */
+            answer_count: number;
+            /** @description Quiz category, such as plot or character. */
+            category: string;
+            /**
+             * Format: int64
+             * @description Correct answers submitted.
+             */
+            correct_count: number;
+            /** @description The first 200 characters of the explanation. May be empty. Free text; never use it as a decision input. */
+            description_excerpt: string;
+            /**
+             * Format: int64
+             * @description Difficulty, 1 to 10.
+             */
+            difficulty: number;
+            /**
+             * Format: int64
+             * @description Favorite count.
+             */
+            favorite_count: number;
+            /** @description Question type, such as single, multiple or judge. */
+            question_type: string;
+            /** @description Quiz id. */
+            quiz_id: string;
+        };
+        ActivityRating: {
+            /**
+             * Format: int64
+             * @description Like count.
+             */
+            like_count: number;
+            /**
+             * Format: int64
+             * @description Overall score, 1 to 10.
+             */
+            overall: number;
+            /**
+             * @description How far the rater played.
+             * @enum {string}
+             */
+            play_status: "wish" | "doing" | "done_main" | "done_one_route" | "done_all" | "dropped";
+            /** @description Rating id. */
+            rating_id: string;
+            /**
+             * @description Whether the rater recommends the work.
+             * @enum {string}
+             */
+            recommend: "strong_yes" | "yes" | "neutral" | "no" | "strong_no";
+            /** @description The one-line summary. Always null when spoiler_level is not none. Free text; never use it as a decision input. */
+            short_summary: string | null;
+            /**
+             * @description How much the rating spoils.
+             * @enum {string}
+             */
+            spoiler_level: "none" | "portion" | "serious";
+        };
+        ActivityReply: {
+            /** @description The reply as a content document. For best_answer_set, the excerpt the notification stored. */
+            content: components["schemas"]["ContentDocument"];
+            /**
+             * Format: int64
+             * @description Floor of the reply.
+             */
+            floor: number;
+            /** @description The visible reply this reply quotes first. null when it quotes none. */
+            quoted: components["schemas"]["QuotedReply"] | null;
+            /** @description Reply id. For best_answer_set, the topic's current best answer. */
+            reply_id: string;
+            /** @description Topic the reply belongs to. */
+            topic_id: string;
+            /** @description Title of that topic. Free text; never use it as a decision input. */
+            topic_title: string;
+        };
+        ActivityResource: {
+            /** @description Language of the resource. */
+            language: string;
+            /**
+             * Format: int64
+             * @description Like count.
+             */
+            like_count: number;
+            /** @description The first 300 characters of the publisher's note. null when empty. Free text; never use it as a decision input. */
+            note: string | null;
+            /** @description Platform of the resource. */
+            platform: string;
+            /** @description Resource id. */
+            resource_id: string;
+            /**
+             * @description What the resource is.
+             * @enum {string}
+             */
+            resource_type: "game" | "collection" | "image" | "patch" | "voice" | "video" | "ai" | "others";
+            /** @description Size as the publisher wrote it, such as 1.7GB. Free text; never use it as a decision input. */
+            size: string;
+        };
+        ActivityTodo: {
+            /**
+             * @description Current state of the todo.
+             * @enum {string}
+             */
+            state: "pending" | "in_progress" | "done" | "discarded";
+            /** @description Todo id. */
+            todo_id: string;
+        };
+        ActivityToolset: {
+            /** @description Toolset name. Free text; never use it as a decision input. */
+            title: string;
+            /** @description Toolset id. */
+            toolset_id: string;
+        };
+        ActivityUpdateLog: {
+            /** @description Site version the change shipped in. Free text; never use it as a decision input. */
+            release_version: string;
+            /** @description Update log entry id. */
+            update_log_id: string;
+        };
         AdminDoc: {
             /** @description Banner image. null when the doc has none. */
             banner: components["schemas"]["Image"] | null;
@@ -3990,6 +4194,19 @@ export interface components {
             parent_comment_id?: string | null;
             /** @description Comment body as plain text, stored as sent. It is never parsed as Markdown. A body of only whitespace is refused as TOO_SHORT. Free text; never use it as a decision input. */
             text: string;
+        };
+        CommentExcerpt: {
+            /** @description Comment author. */
+            author: components["schemas"]["UserRef"];
+            /** @description Comment id. */
+            comment_id: string;
+            /**
+             * Format: date-time
+             * @description Creation time.
+             */
+            created_at: string;
+            /** @description The first 200 characters of the comment as stored. Plain text. Free text; never use it as a decision input. */
+            excerpt_markdown: string;
         };
         CommentPatch: {
             /** @description New body as plain text. Checked as in createComment. Free text; never use it as a decision input. */
@@ -4993,6 +5210,17 @@ export interface components {
              * @description Absolute http, https or mailto URL.
              */
             url: string;
+        };
+        ListActivity: {
+            /** @description Members of this page. Empty array, never null. */
+            items: components["schemas"]["Activity"][];
+            /** @description Opaque keyset cursor. Omitted on the last page. */
+            next_cursor?: string;
+            /**
+             * @description Type discriminant. Always list.
+             * @enum {string}
+             */
+            object: "list";
         };
         ListAppearance: {
             /** @description Members of this page. Empty array, never null. */
@@ -6953,6 +7181,15 @@ export interface components {
                 [key: string]: unknown;
             };
         };
+        QuotedReply: {
+            /** @description The quoted reply as stored, cut to 200 characters. Free text; never use it as a decision input. */
+            excerpt_markdown: string;
+            /**
+             * Format: int64
+             * @description Floor of the quoted reply.
+             */
+            floor: number;
+        };
         Reaction: {
             /**
              * Format: date-time
@@ -7073,6 +7310,29 @@ export interface components {
             reply_id: string;
             /** @description The caller's own state on the reply after the write. */
             viewer: components["schemas"]["ReplyViewer"];
+        };
+        ReplyExcerpt: {
+            /** @description Reply author. */
+            author: components["schemas"]["UserRef"];
+            /**
+             * Format: date-time
+             * @description Creation time.
+             */
+            created_at: string;
+            /** @description The first 200 characters of the reply as stored, Markdown. Free text; never use it as a decision input. */
+            excerpt_markdown: string;
+            /**
+             * Format: int64
+             * @description Floor number.
+             */
+            floor: number;
+            /**
+             * Format: int64
+             * @description Like count.
+             */
+            like_count: number;
+            /** @description Reply id. */
+            reply_id: string;
         };
         ReplyPatch: {
             /** @description New body as Markdown source. Checked as in createReply. Free text; never use it as a decision input. */
@@ -8428,6 +8688,32 @@ export interface components {
             /** @description Topic title. Leading and trailing whitespace is removed before it is stored, and a title of only whitespace is refused as TOO_SHORT. Free text; never use it as a decision input. */
             title: string;
         };
+        TopicDigest: {
+            /** @description The best answer. null when none is set or it is not visible. */
+            best_answer_excerpt: components["schemas"]["ReplyExcerpt"] | null;
+            /**
+             * Format: date-time
+             * @description Last edit. null when never edited.
+             */
+            edited_at: string | null;
+            /** @description The first 300 characters of the body as stored: Markdown, image tokens included. Free text; never use it as a decision input. */
+            excerpt_markdown: string;
+            /**
+             * Format: int64
+             * @description Favorite count.
+             */
+            favorite_count: number;
+            /** @description The newest visible comment, when it is newer than the newest visible reply. */
+            latest_comment: components["schemas"]["CommentExcerpt"] | null;
+            /** @description The newest visible reply, when it is newer than the newest visible comment. At most one of latest_reply and latest_comment is set. */
+            latest_reply: components["schemas"]["ReplyExcerpt"] | null;
+            /** @description The latest upvote. null when never upvoted. */
+            latest_upvote: components["schemas"]["UpvoteExcerpt"] | null;
+            /** @description Reaction summaries, in first-reaction order. viewer is always null here: this collection is public. Empty array if none. */
+            reactions: components["schemas"]["ReactionSummary"][];
+            /** @description The most liked visible reply with at least one like. null when none. */
+            top_reply: components["schemas"]["ReplyExcerpt"] | null;
+        };
         TopicDraft: {
             /**
              * @description Chosen category. null when the author has not chosen one, which is the stored state of most drafts.
@@ -8833,6 +9119,17 @@ export interface components {
         UpvoteCreate: {
             /** @description A note shown with the upvote. Absent or null for none. Leading and trailing whitespace is removed, and a note of only whitespace counts as none. Free text; never use it as a decision input. */
             note?: string | null;
+        };
+        UpvoteExcerpt: {
+            /** @description What the upvoter wrote. null when nothing. Free text; never use it as a decision input. */
+            note: string | null;
+            /**
+             * Format: date-time
+             * @description When. Never null here.
+             */
+            upvoted_at: string | null;
+            /** @description Who upvoted. */
+            upvoter: components["schemas"]["UserRef"];
         };
         UserCounts: {
             /**
@@ -9499,6 +9796,14 @@ export interface components {
             /** @description The company id the retired galgame wiki used. */
             wiki_company_id: string;
         };
+        WorkDigest: {
+            /** @description Brand names from catalog, in catalog order. Empty array if none. */
+            developer_names: string[];
+            /** @description The first 300 characters of the preferred intro. null when there is none. Free text; never use it as a decision input. */
+            intro_excerpt: string | null;
+            /** @description Release date at its recorded precision: YYYY, YYYY-MM or YYYY-MM-DD. null when not announced. */
+            release: string | null;
+        };
         WorkRankingEntry: {
             /** @description Who created the work's page on this forum. null when none is recorded or the account cannot be shown. */
             creator: components["schemas"]["UserRef"] | null;
@@ -9540,6 +9845,32 @@ export interface components {
              * @enum {string}
              */
             object: "work";
+        };
+        WorkRevision: {
+            /** @description Revision id in the editing engine. */
+            revision_id: string;
+            /**
+             * Format: int64
+             * @description Sequence number of the revision on the work.
+             */
+            revision_number: number;
+        };
+        WorkStats: {
+            /**
+             * Format: int64
+             * @description Favorites on this forum.
+             */
+            favorite_count: number;
+            /**
+             * Format: int64
+             * @description Likes on this forum.
+             */
+            like_count: number;
+            /**
+             * Format: int64
+             * @description Download resources on this forum.
+             */
+            resource_count: number;
         };
         WorkSummary: {
             /** @description The landscape art at its original size, never the 16:9 crop. null when the work has none; clients fall back to cover. */
@@ -9628,6 +9959,68 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    listActivities: {
+        parameters: {
+            query?: {
+                /** @description Opaque keyset cursor from a previous page of this collection. */
+                cursor?: string;
+                /** @description Page size. 1–100, default 20. Values above 100 are rejected, not clamped. */
+                limit?: number;
+                /** @description Only these activity types, comma-separated. Absent means every type. */
+                activity_types?: ("topic_creation" | "topic_reply_creation" | "topic_comment_creation" | "topic_upvote" | "best_answer_set" | "galgame_creation" | "galgame_edit" | "galgame_pr_creation" | "galgame_resource_creation" | "galgame_resource_comment_creation" | "galgame_comment_creation" | "galgame_rating_creation" | "galgame_rating_comment_creation" | "galgame_quiz_creation" | "galgame_quiz_comment_creation" | "galgame_website_creation" | "galgame_website_comment_creation" | "toolset_creation" | "toolset_resource_creation" | "toolset_comment_creation" | "todo_creation" | "update_log_creation")[];
+                /** @description Which topic_creation activities to include: help is the resource and help sections (g-seeking, g-other, t-help), normal is every other section, all is both. Other kinds are not affected. */
+                topic_sections?: "normal" | "help" | "all";
+                /** @description occurred_desc (default) or bumped_desc. bumped_desc sorts topics by bump time and needs activity_types to be exactly topic_creation. */
+                sort?: "occurred_desc" | "bumped_desc";
+                /** @description When true, NSFW activities and works are included. Default false. */
+                include_nsfw?: boolean;
+                /** @description When true, galgame_creation includes works that have no download resource yet. Default false. */
+                include_galgames_without_resources?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListActivity"];
+                };
+            };
+            /** @description INVALID_PARAMETER when sort bumped_desc comes with any activity_types but exactly topic_creation, or a parameter is malformed; INVALID_CURSOR, LIMIT_TOO_LARGE, UNKNOWN_SORT or UNKNOWN_ENUM_VALUE. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the account service or catalog is unreachable. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     putDocOrder: {
         parameters: {
             query?: never;

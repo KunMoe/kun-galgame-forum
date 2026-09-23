@@ -37,9 +37,6 @@ DELETE /api/v1/wall-comments/:wall_comment_id         cors.New → v1Headers →
 DELETE /api/v1/wall-comments/:wall_comment_id/like    cors.New → v1Headers → fiberAdapter.Handle
 DELETE /api/v1/websites/:website_host/favorite        cors.New → v1Headers → fiberAdapter.Handle
 DELETE /api/v1/websites/:website_host/like            cors.New → v1Headers → fiberAdapter.Handle
-GET    /api/activity                                  cors.New → middleware.NamePreference → ContentStance → ActivityHandler.GetActivity
-GET    /api/activity/tab                              cors.New → middleware.NamePreference → ContentStance → ActivityHandler.GetTab
-GET    /api/activity/timeline                         cors.New → middleware.NamePreference → ContentStance → ActivityHandler.GetTimeline
 GET    /api/admin/galgame/submissions                 cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → RequirePermission → ClaimReviewHandler.PendingQueue
 GET    /api/admin/user/:id/content-stats              cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → RequirePermission → PurgeHandler.GetUserContentStats
 GET    /api/galgame                                   cors.New → middleware.NamePreference → ContentStance → GalgameHandler.GetList
@@ -91,6 +88,7 @@ GET    /api/user/:id/ratings                          cors.New → middleware.Na
 GET    /api/user/:id/replies                          cors.New → middleware.NamePreference → ContentStance → UserHandler.GetUserReplies
 GET    /api/user/:id/resources                        cors.New → middleware.NamePreference → ContentStance → UserHandler.GetUserResources
 GET    /api/user/:id/topics                           cors.New → middleware.NamePreference → ContentStance → OptionalAuth → UserHandler.GetUserTopics
+GET    /api/v1/activities                             cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/admin/docs/:doc_id                     cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/admin/friend-links/:friend_link_id     cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/admin/hidden-topics                    cors.New → v1Headers → fiberAdapter.Handle

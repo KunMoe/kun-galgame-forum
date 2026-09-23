@@ -125,6 +125,10 @@ func coverImagesWithMeta(cdn string, tokens model.ImageTokens, metaByHash map[st
 	return out
 }
 
+func MapSummary(cdn string, row repository.TopicKeysetRow, author repr.UserRef, sections, miniApps []string) (TopicSummary, error) {
+	return mapSummary(cdn, row, author, sections, miniApps)
+}
+
 func mapSummary(cdn string, row repository.TopicKeysetRow, author repr.UserRef, sections, miniApps []string) (TopicSummary, error) {
 	state, err := topicState(row.Status)
 	if err != nil {

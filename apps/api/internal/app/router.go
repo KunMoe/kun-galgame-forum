@@ -1,6 +1,7 @@
 package app
 
 import (
+	activityapiv1 "kun-galgame-api/internal/activity/apiv1"
 	"kun-galgame-api/internal/apiv1"
 	"kun-galgame-api/internal/apiv1/content"
 	appreleaseapiv1 "kun-galgame-api/internal/apprelease/apiv1"
@@ -68,6 +69,7 @@ func (a *App) setupRoutes() {
 		appreleaseapiv1.Register(a.newAppReleaseV1()),
 		rankingapiv1.Register(a.RankingV1),
 		searchapiv1.Register(a.SearchV1),
+		activityapiv1.Register(a.ActivityV1),
 		overviewapiv1.Register(a.OverviewV1),
 		sectionapiv1.Register(a.newSectionV1()),
 		authapiv1.Register(a.newAuthV1()),
@@ -99,10 +101,6 @@ func (a *App) setupRoutes() {
 	api.Get("/user/:id/comments", a.UserHandler.GetUserComments)
 	api.Get("/user/:id/resources", a.UserHandler.GetUserResources)
 	api.Get("/user/:id/ratings", a.UserHandler.GetUserRatings)
-
-	api.Get("/activity", a.ActivityHandler.GetActivity)
-	api.Get("/activity/tab", a.ActivityHandler.GetTab)
-	api.Get("/activity/timeline", a.ActivityHandler.GetTimeline)
 
 	api.Get("/search", a.Authn.OptionalAuth(), a.SearchHandler.Search)
 	api.Get("/search/entity", a.Authn.OptionalAuth(), a.SearchHandler.SearchEntities)

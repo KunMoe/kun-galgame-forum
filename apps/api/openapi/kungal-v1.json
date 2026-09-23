@@ -111,6 +111,648 @@
         ],
         "type": "object"
       },
+      "Activity": {
+        "properties": {
+          "activity_type": {
+            "description": "What happened. It decides which of the detail blocks below is set: every block other than its own is null.",
+            "enum": [
+              "topic_creation",
+              "topic_reply_creation",
+              "topic_comment_creation",
+              "topic_upvote",
+              "best_answer_set",
+              "galgame_creation",
+              "galgame_edit",
+              "galgame_pr_creation",
+              "galgame_resource_creation",
+              "galgame_resource_comment_creation",
+              "galgame_comment_creation",
+              "galgame_rating_creation",
+              "galgame_rating_comment_creation",
+              "galgame_quiz_creation",
+              "galgame_quiz_comment_creation",
+              "galgame_website_creation",
+              "galgame_website_comment_creation",
+              "toolset_creation",
+              "toolset_resource_creation",
+              "toolset_comment_creation",
+              "todo_creation",
+              "update_log_creation"
+            ],
+            "maxLength": 33,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "comment": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ActivityComment"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The topic comment. Set for topic_comment_creation."
+          },
+          "excerpt_markdown": {
+            "description": "The text stored with the activity, cut to 1000 characters: the title of a topic, toolset or website, a quiz question, the body of a reply, comment, todo or update log, an upvote note. Empty for the work kinds. Replies are Markdown; comments are plain text. Free text; never use it as a decision input.",
+            "maxLength": 1000,
+            "type": "string"
+          },
+          "id": {
+            "description": "Activity id.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "object": {
+            "description": "Type discriminant. Always activity.",
+            "enum": [
+              "activity"
+            ],
+            "maxLength": 8,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "occurred_at": {
+            "description": "When it happened. Under sort bumped_desc this is still the topic's creation time; the sort key is topic.bumped_at.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": "string"
+          },
+          "path": {
+            "description": "In-site web path of the subject. Always starts with a slash.",
+            "maxLength": 512,
+            "pattern": "^/",
+            "type": "string"
+          },
+          "performer": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UserRef"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Who did it. For galgame_creation the work's creator, or null when none is recorded."
+          },
+          "quiz": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ActivityQuiz"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The quiz. Set for galgame_quiz_creation."
+          },
+          "rating": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ActivityRating"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The rating. Set for galgame_rating_creation."
+          },
+          "reply": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ActivityReply"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The reply. Set for topic_reply_creation and best_answer_set."
+          },
+          "resource": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ActivityResource"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The download resource. Set for galgame_resource_creation."
+          },
+          "todo": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ActivityTodo"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The todo. Set for todo_creation."
+          },
+          "toolset": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ActivityToolset"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The toolset the resource belongs to. Set for toolset_resource_creation."
+          },
+          "topic": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TopicSummary"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The topic. Set for topic_creation and topic_upvote."
+          },
+          "topic_digest": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TopicDigest"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "What a feed card shows beyond the list card. Set for topic_creation and topic_upvote."
+          },
+          "update_log": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ActivityUpdateLog"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The update log entry. Set for update_log_creation."
+          },
+          "work": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WorkRef"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The work. Set for the galgame kinds tied to a work."
+          },
+          "work_digest": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WorkDigest"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Developers, intro and release of the work. Set for galgame_creation, galgame_edit and galgame_pr_creation."
+          },
+          "work_revision": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WorkRevision"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The revision the edit made. Set for galgame_edit when the revision is known."
+          },
+          "work_stats": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WorkStats"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Counters of the work on this forum. Set for galgame_creation."
+          }
+        },
+        "required": [
+          "object",
+          "id",
+          "activity_type",
+          "occurred_at",
+          "performer",
+          "path",
+          "excerpt_markdown",
+          "topic",
+          "topic_digest",
+          "reply",
+          "comment",
+          "work",
+          "work_digest",
+          "work_stats",
+          "work_revision",
+          "rating",
+          "resource",
+          "quiz",
+          "toolset",
+          "todo",
+          "update_log"
+        ],
+        "type": "object"
+      },
+      "ActivityComment": {
+        "properties": {
+          "comment_id": {
+            "description": "Comment id.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "quoted": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/QuotedReply"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The reply the comment is on. null when that reply is not visible."
+          },
+          "topic_id": {
+            "description": "Topic the comment belongs to.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "topic_title": {
+            "description": "Title of that topic. Free text; never use it as a decision input.",
+            "maxLength": 233,
+            "type": "string"
+          }
+        },
+        "required": [
+          "comment_id",
+          "topic_id",
+          "topic_title",
+          "quoted"
+        ],
+        "type": "object"
+      },
+      "ActivityQuiz": {
+        "properties": {
+          "answer_count": {
+            "description": "Answers submitted.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "category": {
+            "description": "Quiz category, such as plot or character.",
+            "maxLength": 32,
+            "pattern": "^[a-z][a-z0-9_-]{0,31}$",
+            "type": "string",
+            "x-vocabulary": "activity_detail_token",
+            "x-vocabulary-closed": false
+          },
+          "correct_count": {
+            "description": "Correct answers submitted.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "description_excerpt": {
+            "description": "The first 200 characters of the explanation. May be empty. Free text; never use it as a decision input.",
+            "maxLength": 256,
+            "type": "string"
+          },
+          "difficulty": {
+            "description": "Difficulty, 1 to 10.",
+            "format": "int64",
+            "maximum": 10,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "favorite_count": {
+            "description": "Favorite count.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "question_type": {
+            "description": "Question type, such as single, multiple or judge.",
+            "maxLength": 32,
+            "pattern": "^[a-z][a-z0-9_-]{0,31}$",
+            "type": "string",
+            "x-vocabulary": "activity_detail_token",
+            "x-vocabulary-closed": false
+          },
+          "quiz_id": {
+            "description": "Quiz id.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "quiz_id",
+          "category",
+          "question_type",
+          "difficulty",
+          "answer_count",
+          "correct_count",
+          "favorite_count",
+          "description_excerpt"
+        ],
+        "type": "object"
+      },
+      "ActivityRating": {
+        "properties": {
+          "like_count": {
+            "description": "Like count.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "overall": {
+            "description": "Overall score, 1 to 10.",
+            "format": "int64",
+            "maximum": 10,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "play_status": {
+            "description": "How far the rater played.",
+            "enum": [
+              "wish",
+              "doing",
+              "done_main",
+              "done_one_route",
+              "done_all",
+              "dropped"
+            ],
+            "maxLength": 14,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "rating_id": {
+            "description": "Rating id.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "recommend": {
+            "description": "Whether the rater recommends the work.",
+            "enum": [
+              "strong_yes",
+              "yes",
+              "neutral",
+              "no",
+              "strong_no"
+            ],
+            "maxLength": 10,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "short_summary": {
+            "description": "The one-line summary. Always null when spoiler_level is not none. Free text; never use it as a decision input.",
+            "maxLength": 1314,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "spoiler_level": {
+            "description": "How much the rating spoils.",
+            "enum": [
+              "none",
+              "portion",
+              "serious"
+            ],
+            "maxLength": 7,
+            "type": "string",
+            "x-vocabulary-closed": true
+          }
+        },
+        "required": [
+          "rating_id",
+          "overall",
+          "play_status",
+          "recommend",
+          "spoiler_level",
+          "short_summary",
+          "like_count"
+        ],
+        "type": "object"
+      },
+      "ActivityReply": {
+        "properties": {
+          "content": {
+            "$ref": "#/components/schemas/ContentDocument",
+            "description": "The reply as a content document. For best_answer_set, the excerpt the notification stored."
+          },
+          "floor": {
+            "description": "Floor of the reply.",
+            "format": "int64",
+            "minimum": 1,
+            "type": "integer"
+          },
+          "quoted": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/QuotedReply"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The visible reply this reply quotes first. null when it quotes none."
+          },
+          "reply_id": {
+            "description": "Reply id. For best_answer_set, the topic's current best answer.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "topic_id": {
+            "description": "Topic the reply belongs to.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "topic_title": {
+            "description": "Title of that topic. Free text; never use it as a decision input.",
+            "maxLength": 233,
+            "type": "string"
+          }
+        },
+        "required": [
+          "reply_id",
+          "topic_id",
+          "topic_title",
+          "floor",
+          "content",
+          "quoted"
+        ],
+        "type": "object"
+      },
+      "ActivityResource": {
+        "properties": {
+          "language": {
+            "description": "Language of the resource.",
+            "maxLength": 32,
+            "pattern": "^[a-z][a-z0-9_-]{0,31}$",
+            "type": "string",
+            "x-vocabulary": "activity_detail_token",
+            "x-vocabulary-closed": false
+          },
+          "like_count": {
+            "description": "Like count.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "note": {
+            "description": "The first 300 characters of the publisher's note. null when empty. Free text; never use it as a decision input.",
+            "maxLength": 300,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "platform": {
+            "description": "Platform of the resource.",
+            "maxLength": 32,
+            "pattern": "^[a-z][a-z0-9_-]{0,31}$",
+            "type": "string",
+            "x-vocabulary": "activity_detail_token",
+            "x-vocabulary-closed": false
+          },
+          "resource_id": {
+            "description": "Resource id.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "resource_type": {
+            "description": "What the resource is.",
+            "enum": [
+              "game",
+              "collection",
+              "image",
+              "patch",
+              "voice",
+              "video",
+              "ai",
+              "others"
+            ],
+            "maxLength": 10,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "size": {
+            "description": "Size as the publisher wrote it, such as 1.7GB. Free text; never use it as a decision input.",
+            "maxLength": 64,
+            "type": "string"
+          }
+        },
+        "required": [
+          "resource_id",
+          "resource_type",
+          "language",
+          "platform",
+          "size",
+          "note",
+          "like_count"
+        ],
+        "type": "object"
+      },
+      "ActivityTodo": {
+        "properties": {
+          "state": {
+            "description": "Current state of the todo.",
+            "enum": [
+              "pending",
+              "in_progress",
+              "done",
+              "discarded"
+            ],
+            "maxLength": 11,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "todo_id": {
+            "description": "Todo id.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "todo_id",
+          "state"
+        ],
+        "type": "object"
+      },
+      "ActivityToolset": {
+        "properties": {
+          "title": {
+            "description": "Toolset name. Free text; never use it as a decision input.",
+            "maxLength": 256,
+            "type": "string"
+          },
+          "toolset_id": {
+            "description": "Toolset id.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "toolset_id",
+          "title"
+        ],
+        "type": "object"
+      },
+      "ActivityUpdateLog": {
+        "properties": {
+          "release_version": {
+            "description": "Site version the change shipped in. Free text; never use it as a decision input.",
+            "maxLength": 20,
+            "type": "string"
+          },
+          "update_log_id": {
+            "description": "Update log entry id.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "update_log_id",
+          "release_version"
+        ],
+        "type": "object"
+      },
       "AdminDoc": {
         "properties": {
           "banner": {
@@ -1633,6 +2275,41 @@
         },
         "required": [
           "text"
+        ],
+        "type": "object"
+      },
+      "CommentExcerpt": {
+        "properties": {
+          "author": {
+            "$ref": "#/components/schemas/UserRef",
+            "description": "Comment author."
+          },
+          "comment_id": {
+            "description": "Comment id.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "created_at": {
+            "description": "Creation time.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": "string"
+          },
+          "excerpt_markdown": {
+            "description": "The first 200 characters of the comment as stored. Plain text. Free text; never use it as a decision input.",
+            "maxLength": 1000,
+            "type": "string"
+          }
+        },
+        "required": [
+          "comment_id",
+          "author",
+          "excerpt_markdown",
+          "created_at"
         ],
         "type": "object"
       },
@@ -4339,6 +5016,37 @@
           "object",
           "url",
           "children"
+        ],
+        "type": "object"
+      },
+      "ListActivity": {
+        "properties": {
+          "items": {
+            "description": "Members of this page. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/Activity"
+            },
+            "type": "array"
+          },
+          "next_cursor": {
+            "description": "Opaque keyset cursor. Omitted on the last page.",
+            "maxLength": 512,
+            "pattern": "^cur_[A-Za-z0-9_-]+$",
+            "type": "string"
+          },
+          "object": {
+            "description": "Type discriminant. Always list.",
+            "enum": [
+              "list"
+            ],
+            "maxLength": 4,
+            "type": "string",
+            "x-vocabulary-closed": true
+          }
+        },
+        "required": [
+          "object",
+          "items"
         ],
         "type": "object"
       },
@@ -9454,6 +10162,26 @@
         ],
         "type": "object"
       },
+      "QuotedReply": {
+        "properties": {
+          "excerpt_markdown": {
+            "description": "The quoted reply as stored, cut to 200 characters. Free text; never use it as a decision input.",
+            "maxLength": 1000,
+            "type": "string"
+          },
+          "floor": {
+            "description": "Floor of the quoted reply.",
+            "format": "int64",
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "floor",
+          "excerpt_markdown"
+        ],
+        "type": "object"
+      },
       "Reaction": {
         "properties": {
           "created_at": {
@@ -9769,6 +10497,55 @@
           "dislike_count",
           "reactions",
           "viewer"
+        ],
+        "type": "object"
+      },
+      "ReplyExcerpt": {
+        "properties": {
+          "author": {
+            "$ref": "#/components/schemas/UserRef",
+            "description": "Reply author."
+          },
+          "created_at": {
+            "description": "Creation time.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": "string"
+          },
+          "excerpt_markdown": {
+            "description": "The first 200 characters of the reply as stored, Markdown. Free text; never use it as a decision input.",
+            "maxLength": 1000,
+            "type": "string"
+          },
+          "floor": {
+            "description": "Floor number.",
+            "format": "int64",
+            "minimum": 1,
+            "type": "integer"
+          },
+          "like_count": {
+            "description": "Like count.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "reply_id": {
+            "description": "Reply id.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "reply_id",
+          "floor",
+          "author",
+          "excerpt_markdown",
+          "like_count",
+          "created_at"
         ],
         "type": "object"
       },
@@ -13559,6 +14336,107 @@
         ],
         "type": "object"
       },
+      "TopicDigest": {
+        "properties": {
+          "best_answer_excerpt": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ReplyExcerpt"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The best answer. null when none is set or it is not visible."
+          },
+          "edited_at": {
+            "description": "Last edit. null when never edited.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "excerpt_markdown": {
+            "description": "The first 300 characters of the body as stored: Markdown, image tokens included. Free text; never use it as a decision input.",
+            "maxLength": 1000,
+            "type": "string"
+          },
+          "favorite_count": {
+            "description": "Favorite count.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "latest_comment": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CommentExcerpt"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The newest visible comment, when it is newer than the newest visible reply."
+          },
+          "latest_reply": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ReplyExcerpt"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The newest visible reply, when it is newer than the newest visible comment. At most one of latest_reply and latest_comment is set."
+          },
+          "latest_upvote": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UpvoteExcerpt"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The latest upvote. null when never upvoted."
+          },
+          "reactions": {
+            "description": "Reaction summaries, in first-reaction order. viewer is always null here: this collection is public. Empty array if none.",
+            "items": {
+              "$ref": "#/components/schemas/ReactionSummary"
+            },
+            "maxItems": 64,
+            "type": "array"
+          },
+          "top_reply": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ReplyExcerpt"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The most liked visible reply with at least one like. null when none."
+          }
+        },
+        "required": [
+          "excerpt_markdown",
+          "favorite_count",
+          "edited_at",
+          "top_reply",
+          "best_answer_excerpt",
+          "latest_upvote",
+          "latest_reply",
+          "latest_comment",
+          "reactions"
+        ],
+        "type": "object"
+      },
       "TopicDraft": {
         "properties": {
           "category": {
@@ -14806,6 +15684,39 @@
             ]
           }
         },
+        "type": "object"
+      },
+      "UpvoteExcerpt": {
+        "properties": {
+          "note": {
+            "description": "What the upvoter wrote. null when nothing. Free text; never use it as a decision input.",
+            "maxLength": 30,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "upvoted_at": {
+            "description": "When. Never null here.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "upvoter": {
+            "$ref": "#/components/schemas/UserRef",
+            "description": "Who upvoted."
+          }
+        },
+        "required": [
+          "upvoter",
+          "note",
+          "upvoted_at"
+        ],
         "type": "object"
       },
       "UserCounts": {
@@ -16616,6 +17527,43 @@
         ],
         "type": "object"
       },
+      "WorkDigest": {
+        "properties": {
+          "developer_names": {
+            "description": "Brand names from catalog, in catalog order. Empty array if none.",
+            "items": {
+              "description": "A brand name as catalog records it. Free text; never use it as a decision input.",
+              "maxLength": 256,
+              "type": "string"
+            },
+            "maxItems": 10,
+            "type": "array"
+          },
+          "intro_excerpt": {
+            "description": "The first 300 characters of the preferred intro. null when there is none. Free text; never use it as a decision input.",
+            "maxLength": 300,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "release": {
+            "description": "Release date at its recorded precision: YYYY, YYYY-MM or YYYY-MM-DD. null when not announced.",
+            "maxLength": 10,
+            "pattern": "^[0-9]{4}(-[0-9]{2}(-[0-9]{2})?)?$",
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "developer_names",
+          "intro_excerpt",
+          "release"
+        ],
+        "type": "object"
+      },
       "WorkRankingEntry": {
         "properties": {
           "creator": {
@@ -16734,6 +17682,56 @@
           "display_name",
           "latin",
           "localized"
+        ],
+        "type": "object"
+      },
+      "WorkRevision": {
+        "properties": {
+          "revision_id": {
+            "description": "Revision id in the editing engine.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "revision_number": {
+            "description": "Sequence number of the revision on the work.",
+            "format": "int64",
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "revision_id",
+          "revision_number"
+        ],
+        "type": "object"
+      },
+      "WorkStats": {
+        "properties": {
+          "favorite_count": {
+            "description": "Favorites on this forum.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "like_count": {
+            "description": "Likes on this forum.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "resource_count": {
+            "description": "Download resources on this forum.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "resource_count",
+          "like_count",
+          "favorite_count"
         ],
         "type": "object"
       },
@@ -17026,6 +18024,184 @@
   },
   "openapi": "3.1.0",
   "paths": {
+    "/activities": {
+      "get": {
+        "description": "The site's activity stream, newest first: topics, replies, comments, upvotes, best answers, works and their resources, ratings, edits and quizzes, toolsets, websites, todos and update logs. occurred_desc sorts by occurred_at with ties broken on kind and subject; bumped_desc lists topics by bump time and is allowed only when activity_types is exactly topic_creation. An activity whose actor is banned, or whose work catalog does not show under include_nsfw, is left out, so a page can be short; only an absent next_cursor means the end. The cursor is bound to the sort and to every filter.",
+        "operationId": "listActivities",
+        "parameters": [
+          {
+            "description": "Opaque keyset cursor from a previous page of this collection.",
+            "explode": false,
+            "in": "query",
+            "name": "cursor",
+            "schema": {
+              "description": "Opaque keyset cursor from a previous page of this collection.",
+              "maxLength": 512,
+              "pattern": "^cur_[A-Za-z0-9_-]+$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Page size. 1–100, default 20. Values above 100 are rejected, not clamped.",
+            "explode": false,
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 20,
+              "description": "Page size. 1–100, default 20. Values above 100 are rejected, not clamped.",
+              "format": "int64",
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Only these activity types, comma-separated. Absent means every type.",
+            "explode": false,
+            "in": "query",
+            "name": "activity_types",
+            "schema": {
+              "description": "Only these activity types, comma-separated. Absent means every type.",
+              "items": {
+                "description": "Activity type: what happened. best_answer_set is a topic author choosing a best answer.",
+                "enum": [
+                  "topic_creation",
+                  "topic_reply_creation",
+                  "topic_comment_creation",
+                  "topic_upvote",
+                  "best_answer_set",
+                  "galgame_creation",
+                  "galgame_edit",
+                  "galgame_pr_creation",
+                  "galgame_resource_creation",
+                  "galgame_resource_comment_creation",
+                  "galgame_comment_creation",
+                  "galgame_rating_creation",
+                  "galgame_rating_comment_creation",
+                  "galgame_quiz_creation",
+                  "galgame_quiz_comment_creation",
+                  "galgame_website_creation",
+                  "galgame_website_comment_creation",
+                  "toolset_creation",
+                  "toolset_resource_creation",
+                  "toolset_comment_creation",
+                  "todo_creation",
+                  "update_log_creation"
+                ],
+                "maxLength": 33,
+                "type": "string",
+                "x-vocabulary-closed": true
+              },
+              "maxItems": 22,
+              "type": "array"
+            }
+          },
+          {
+            "description": "Which topic_creation activities to include: help is the resource and help sections (g-seeking, g-other, t-help), normal is every other section, all is both. Other kinds are not affected.",
+            "explode": false,
+            "in": "query",
+            "name": "topic_sections",
+            "schema": {
+              "default": "normal",
+              "description": "Which topic_creation activities to include: help is the resource and help sections (g-seeking, g-other, t-help), normal is every other section, all is both. Other kinds are not affected.",
+              "enum": [
+                "normal",
+                "help",
+                "all"
+              ],
+              "maxLength": 6,
+              "type": "string",
+              "x-vocabulary-closed": true
+            }
+          },
+          {
+            "description": "occurred_desc (default) or bumped_desc. bumped_desc sorts topics by bump time and needs activity_types to be exactly topic_creation.",
+            "explode": false,
+            "in": "query",
+            "name": "sort",
+            "schema": {
+              "default": "occurred_desc",
+              "description": "occurred_desc (default) or bumped_desc. bumped_desc sorts topics by bump time and needs activity_types to be exactly topic_creation.",
+              "enum": [
+                "occurred_desc",
+                "bumped_desc"
+              ],
+              "maxLength": 13,
+              "type": "string",
+              "x-vocabulary-closed": true
+            }
+          },
+          {
+            "description": "When true, NSFW activities and works are included. Default false.",
+            "explode": false,
+            "in": "query",
+            "name": "include_nsfw",
+            "schema": {
+              "default": false,
+              "description": "When true, NSFW activities and works are included. Default false.",
+              "type": "boolean"
+            }
+          },
+          {
+            "description": "When true, galgame_creation includes works that have no download resource yet. Default false.",
+            "explode": false,
+            "in": "query",
+            "name": "include_galgames_without_resources",
+            "schema": {
+              "default": false,
+              "description": "When true, galgame_creation includes works that have no download resource yet. Default false.",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListActivity"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "INVALID_PARAMETER when sort bumped_desc comes with any activity_types but exactly topic_creation, or a parameter is malformed; INVALID_CURSOR, LIMIT_TOO_LARGE, UNKNOWN_SORT or UNKNOWN_ENUM_VALUE."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the account service or catalog is unreachable."
+          }
+        },
+        "summary": "List activities",
+        "tags": [
+          "activities"
+        ]
+      }
+    },
     "/admin/doc-order": {
       "put": {
         "description": "Replaces the display order that listDocs sorts position_asc by. The list must name every doc exactly once, so a list made before someone else created or deleted a doc is refused rather than half applied. It needs the doc.edit permission.",

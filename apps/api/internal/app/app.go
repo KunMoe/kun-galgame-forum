@@ -5,9 +5,7 @@ import (
 	"log/slog"
 	"time"
 
-	activityHandler "kun-galgame-api/internal/activity/handler"
-	activityRepo "kun-galgame-api/internal/activity/repository"
-	activityService "kun-galgame-api/internal/activity/service"
+	activityapiv1 "kun-galgame-api/internal/activity/apiv1"
 	adminHandler "kun-galgame-api/internal/admin/handler"
 	adminRepo "kun-galgame-api/internal/admin/repository"
 	adminService "kun-galgame-api/internal/admin/service"
@@ -103,6 +101,7 @@ type App struct {
 	OverviewV1      *overviewapiv1.Service
 	RankingV1       *rankingapiv1.Service
 	SearchV1        *searchapiv1.Service
+	ActivityV1      *activityapiv1.Service
 	TrustV1         *trustapiv1.Service
 
 	OAuthHandler              *handler.OAuthHandler
@@ -125,7 +124,6 @@ type App struct {
 	GalgameEditHandler        *galgameHandler.EditHandler
 	GalgameCoverVoteHandler   *galgameHandler.CoverVoteHandler
 	GalgamePlaytimeHandler    *galgameHandler.PlaytimeHandler
-	ActivityHandler           *activityHandler.ActivityHandler
 	ImageHandler              *imageHandler.ImageHandler
 	SearchHandler             *searchHandler.SearchHandler
 	Artifact                  *artifactclient.Client
@@ -506,6 +504,7 @@ func New(cfg *config.Config) *App {
 		GalgameEntityV1:           galgameentityv1.New(gc, db, cfg.NextMoeAPI.ImageCDNBase),
 		TrustV1:                   trustapiv1.New(trustCli, uc, cfg.Trust.Site, cfg.NextMoeAPI.ImageCDNBase),
 		WallV1:                    newWallV1(db, communityCli, uc, gc, imageMetaResolve(imageMeta), cfg.NextMoeAPI.ImageCDNBase),
+		ActivityV1:                newActivityV1(db, gc, uc, imageMetaResolve(imageMeta), cfg.NextMoeAPI.ImageCDNBase),
 		OAuthHandler:              handler.NewOAuthHandler(authService, cfg.Server.Mode == "prod", communityBooster),
 		UserHandler:               handler.NewUserHandler(userService, userContentService),
 		LotteryService:            lotterySvc,
@@ -527,7 +526,6 @@ func New(cfg *config.Config) *App {
 		GalgameEditHandler:        galgameHandler.NewEditHandler(catalogCli, gc, uc, notifier, galgameLocalRepo),
 		GalgameCoverVoteHandler:   galgameHandler.NewCoverVoteHandler(catalogCli, gc),
 		GalgamePlaytimeHandler:    galgameHandler.NewPlaytimeHandler(galgamePlaytimeSvc),
-		ActivityHandler:           activityHandler.NewActivityHandler(activityService.NewActivityService(activityRepo.NewActivityRepository(db), gc, uc, rdb)),
 		ImageHandler:              imageHandler.NewImageHandler(imageService.NewImageService(imageRepo.NewImageRepository(db), imgCli, catalogCli)),
 		SearchHandler: searchHandler.NewSearchHandler(searchService.NewSearchService(
 			galgameService.NewEntitySearchService(gc, galgameTagSvc), galgameResourceSvc,
