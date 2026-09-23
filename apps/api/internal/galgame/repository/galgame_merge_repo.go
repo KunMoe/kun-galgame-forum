@@ -72,93 +72,104 @@ func (r *GalgameMergeRepository) LocalIDsIn(ids []int) []int {
 // database at all.
 func (r *GalgameMergeRepository) Fold(oldGID, newGID int) (MergeCounts, error) {
 	var counts MergeCounts
+	err := r.db.Transaction(func(tx *gorm.DB) error {
+		var err error
+		counts, err = r.FoldTx(tx, oldGID, newGID)
+		return err
+	})
+	if err != nil {
+		return MergeCounts{}, err
+	}
+	return counts, nil
+}
+
+func (r *GalgameMergeRepository) FoldTx(tx *gorm.DB, oldGID, newGID int) (MergeCounts, error) {
+	var counts MergeCounts
 	if oldGID == newGID || oldGID <= 0 || newGID <= 0 {
 		return counts, fmt.Errorf("拒绝合并 galgame %d -> %d", oldGID, newGID)
 	}
+	var dead model.GalgameLocal
+	if err := tx.Where("id = ?", oldGID).First(&dead).Error; err != nil {
+		return counts, err
+	}
+	counts.Comments = dead.CommentCount
 
-	err := r.db.Transaction(func(tx *gorm.DB) error {
-		var dead model.GalgameLocal
-		if err := tx.Where("id = ?", oldGID).First(&dead).Error; err != nil {
-			return err
+	// Seeded from the dead row, not from GORM's defaults. ResourceUpdateTime
+	// is autoCreateTime, so a survivor created here would be stamped now();
+	// the GREATEST below then keeps now() and a 2021 resource sorts to the
+	// top of 最新资源更新 as if it had just been posted. 11 of the first 30
+	// merges land on a gid with no local row, so this is the common path.
+	if err := tx.Clauses(clause.OnConflict{DoNothing: true}).Create(&model.GalgameLocal{
+		ID:                 newGID,
+		CreatedAt:          dead.CreatedAt,
+		ResourceUpdateTime: dead.ResourceUpdateTime,
+	}).Error; err != nil {
+		return counts, err
+	}
+
+	for _, table := range mergeMovableTables {
+		res := tx.Exec(fmt.Sprintf("UPDATE %s SET galgame_id = ? WHERE galgame_id = ?", table), newGID, oldGID)
+		if res.Error != nil {
+			return counts, res.Error
 		}
-		counts.Comments = dead.CommentCount
+		counts.Moved += res.RowsAffected
+	}
 
-		// Seeded from the dead row, not from GORM's defaults. ResourceUpdateTime
-		// is autoCreateTime, so a survivor created here would be stamped now();
-		// the GREATEST below then keeps now() and a 2021 resource sorts to the
-		// top of 最新资源更新 as if it had just been posted. 11 of the first 30
-		// merges land on a gid with no local row, so this is the common path.
-		if err := tx.Clauses(clause.OnConflict{DoNothing: true}).Create(&model.GalgameLocal{
-			ID:                 newGID,
-			CreatedAt:          dead.CreatedAt,
-			ResourceUpdateTime: dead.ResourceUpdateTime,
-		}).Error; err != nil {
-			return err
-		}
-
-		for _, table := range mergeMovableTables {
-			res := tx.Exec(fmt.Sprintf("UPDATE %s SET galgame_id = ? WHERE galgame_id = ?", table), newGID, oldGID)
-			if res.Error != nil {
-				return res.Error
-			}
-			counts.Moved += res.RowsAffected
-		}
-
-		// Two contributors of the same game are one contributor after the fold,
-		// and their edit counts add up: dropping the dead row instead would
-		// silently reduce someone's revision_count on the survivor.
-		if err := tx.Exec(`
+	// Two contributors of the same game are one contributor after the fold,
+	// and their edit counts add up: dropping the dead row instead would
+	// silently reduce someone's revision_count on the survivor.
+	if err := tx.Exec(`
 			UPDATE galgame_contributor t SET
 				revision_count = t.revision_count + s.revision_count,
 				first_at = LEAST(t.first_at, s.first_at),
 				last_at  = GREATEST(t.last_at, s.last_at)
 			FROM galgame_contributor s
 			WHERE s.galgame_id = ? AND t.galgame_id = ? AND t.user_id = s.user_id`,
-			oldGID, newGID).Error; err != nil {
-			return err
-		}
+		oldGID, newGID).Error; err != nil {
+		return counts, err
+	}
 
-		if err := preferEngagedRating(tx, oldGID, newGID); err != nil {
-			return err
-		}
+	if err := preferEngagedRating(tx, oldGID, newGID); err != nil {
+		return counts, err
+	}
 
-		for _, t := range mergeUniqueTables {
-			moved := tx.Exec(fmt.Sprintf(`
+	for _, t := range mergeUniqueTables {
+		moved := tx.Exec(fmt.Sprintf(`
 				UPDATE %[1]s SET galgame_id = ? WHERE galgame_id = ?
 				  AND NOT EXISTS (
 					SELECT 1 FROM %[1]s x WHERE x.galgame_id = ? AND x.%[2]s = %[1]s.%[2]s)`,
-				t.table, t.peer), newGID, oldGID, newGID)
-			if moved.Error != nil {
-				return moved.Error
-			}
-			counts.Moved += moved.RowsAffected
-
-			if err := archiveByGalgame(tx, t.table, oldGID, newGID); err != nil {
-				return err
-			}
-			dropped := tx.Exec(fmt.Sprintf("DELETE FROM %s WHERE galgame_id = ?", t.table), oldGID)
-			if dropped.Error != nil {
-				return dropped.Error
-			}
-			counts.Dropped += dropped.RowsAffected
+			t.table, t.peer), newGID, oldGID, newGID)
+		if moved.Error != nil {
+			return counts, moved.Error
 		}
+		counts.Moved += moved.RowsAffected
 
-		// entity_id, not galgame_id, which is why a column sweep does not find
-		// this one. Same-day buckets add rather than collide.
-		if err := tx.Exec(`
+		if err := archiveByGalgame(tx, t.table, oldGID, newGID); err != nil {
+			return counts, err
+		}
+		dropped := tx.Exec(fmt.Sprintf("DELETE FROM %s WHERE galgame_id = ?", t.table), oldGID)
+		if dropped.Error != nil {
+			return counts, dropped.Error
+		}
+		counts.Dropped += dropped.RowsAffected
+	}
+
+	// entity_id, not galgame_id, which is why a column sweep does not find
+	// this one. Same-day buckets add rather than collide.
+	if err := tx.Exec(`
 			INSERT INTO galgame_view_daily (entity_id, day, count)
 			SELECT ?, day, count FROM galgame_view_daily WHERE entity_id = ?
 			ON CONFLICT (entity_id, day) DO UPDATE SET count = galgame_view_daily.count + EXCLUDED.count`,
-			newGID, oldGID).Error; err != nil {
-			return err
-		}
-		if err := tx.Exec("DELETE FROM galgame_view_daily WHERE entity_id = ?", oldGID).Error; err != nil {
-			return err
-		}
+		newGID, oldGID).Error; err != nil {
+		return counts, err
+	}
+	if err := tx.Exec("DELETE FROM galgame_view_daily WHERE entity_id = ?", oldGID).Error; err != nil {
+		return counts, err
+	}
 
-		// published is sticky since 078 and a ban must not be shed by merging
-		// into an unbanned duplicate, so both fold as OR.
-		if err := tx.Exec(`
+	// published is sticky since 078 and a ban must not be shed by merging
+	// into an unbanned duplicate, so both fold as OR.
+	if err := tx.Exec(`
 			UPDATE galgame t SET
 				view = t.view + s.view,
 				published = t.published OR s.published,
@@ -167,46 +178,44 @@ func (r *GalgameMergeRepository) Fold(oldGID, newGID int) (MergeCounts, error) {
 				created = LEAST(t.created, s.created),
 				resource_update_time = GREATEST(t.resource_update_time, s.resource_update_time)
 			FROM galgame s WHERE t.id = ? AND s.id = ?`, newGID, oldGID).Error; err != nil {
-			return err
-		}
+		return counts, err
+	}
 
-		if err := tx.Exec("DELETE FROM galgame WHERE id = ?", oldGID).Error; err != nil {
-			return err
-		}
+	if err := tx.Exec("DELETE FROM galgame WHERE id = ?", oldGID).Error; err != nil {
+		return counts, err
+	}
 
-		// The galgame comment has no source table in this database: the comment
-		// itself lives in infra's community service and the forum writes this
-		// feed row by hand (feedParityUpsert), so no trigger re-points it. The
-		// feed read drops a row whose gid no longer resolves to a game, so on
-		// 2026-09-05 two comments left the home feed and their authors'
-		// timelines with nothing in the logs. Everything trigger-backed is
-		// already on the survivor by now; this only catches what was missed.
-		if err := tx.Exec(`
+	// The galgame comment has no source table in this database: the comment
+	// itself lives in infra's community service and the forum writes this
+	// feed row by hand (feedParityUpsert), so no trigger re-points it. The
+	// feed read drops a row whose gid no longer resolves to a game, so on
+	// 2026-09-05 two comments left the home feed and their authors'
+	// timelines with nothing in the logs. Everything trigger-backed is
+	// already on the survivor by now; this only catches what was missed.
+	if err := tx.Exec(`
 			UPDATE feed_activity SET galgame_id = ?,
 				link = CASE WHEN link = ? THEN ? ELSE link END
 			WHERE galgame_id = ?`,
-			newGID, "/galgame/"+strconv.Itoa(oldGID), "/galgame/"+strconv.Itoa(newGID), oldGID).Error; err != nil {
-			return err
-		}
+		newGID, "/galgame/"+strconv.Itoa(oldGID), "/galgame/"+strconv.Itoa(newGID), oldGID).Error; err != nil {
+		return counts, err
+	}
 
-		if err := recountAfterFold(tx, newGID); err != nil {
-			return err
-		}
+	if err := recountAfterFold(tx, newGID); err != nil {
+		return counts, err
+	}
 
-		if err := tx.Exec(`
+	if err := tx.Exec(`
 			INSERT INTO galgame_redirect (old_gid, new_gid) VALUES (?, ?)
 			ON CONFLICT (old_gid) DO UPDATE SET new_gid = EXCLUDED.new_gid`,
-			oldGID, newGID).Error; err != nil {
-			return err
-		}
-		// Catalog merges chain: a survivor can itself be merged later. Chase the
-		// ledger forward so an old link still lands on the game that exists,
-		// rather than on a gid that was deleted one merge ago.
-		return tx.Exec("UPDATE galgame_redirect SET new_gid = ? WHERE new_gid = ? AND old_gid <> ?",
-			newGID, oldGID, newGID).Error
-	})
-	if err != nil {
-		return MergeCounts{}, err
+		oldGID, newGID).Error; err != nil {
+		return counts, err
+	}
+	// Catalog merges chain: a survivor can itself be merged later. Chase the
+	// ledger forward so an old link still lands on the game that exists,
+	// rather than on a gid that was deleted one merge ago.
+	if err := tx.Exec("UPDATE galgame_redirect SET new_gid = ? WHERE new_gid = ? AND old_gid <> ?",
+		newGID, oldGID, newGID).Error; err != nil {
+		return counts, err
 	}
 	return counts, nil
 }

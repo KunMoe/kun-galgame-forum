@@ -1,0 +1,3 @@
+BEGIN;
+DROP TABLE IF EXISTS galgame_renumber_2026;
+COMMIT;
