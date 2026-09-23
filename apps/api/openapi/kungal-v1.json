@@ -16124,8 +16124,15 @@
             "type": "integer"
           },
           "work": {
-            "$ref": "#/components/schemas/WorkRef",
-            "description": "The ranked work."
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WorkRef"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The ranked work. Never null in this list."
           }
         },
         "required": [

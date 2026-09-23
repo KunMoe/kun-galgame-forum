@@ -190,11 +190,12 @@ func (s *Service) listWorkRanking(ctx context.Context, in *workRankingInput) (*w
 			ref := repr.NewUserRef(s.cdn, u)
 			creator = &ref
 		}
+		work := galgameapiv1.WorkRefOf(ctx, &it, s.cdn)
 		items = append(items, WorkRankingEntry{
 			Object:      "work_ranking_entry",
 			Rank:        len(items) + 1,
 			MetricValue: r.Value,
-			Work:        galgameapiv1.WorkRefOf(ctx, &it, s.cdn),
+			Work:        &work,
 			Creator:     creator,
 		})
 	}

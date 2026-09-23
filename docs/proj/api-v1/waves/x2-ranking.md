@@ -142,6 +142,7 @@
 1. 用户排行的 `metric_value` 下限是 `-2147483648`，不是 0：萌萌点余额可以为负（生产最小值 −16）。其余两个排行的 `metric_value` 下限仍是 0。
 2. 作品名字的挑选规则搬到网页的 `utils/catalogName.ts`：`优先原名 ? display_name ?? 中文 ?? latin : 中文 ?? display_name ?? latin`，中文依次取 `zh-Hans`、`zh`、`zh-Hant`，与服务端旧的 `CatalogEntityName` 相同。X2 其它分支（搜索、动态）也要同一个函数，谁先合并谁留着，后来的复用。
 3. 作品排行请求 catalog 时带上 `content_limit`（`include_nsfw` 为假时 `sfw`），与本地 SQL 闸同向；catalog 不返回的行按「查无」跳过、名次重编。
+4. `WorkRankingEntry.work` 是可空的 `*repr.WorkRef`（spec 里是 `anyOf[WorkRef, null]`）：G8 比较可空性，全轨嵌入的 `work` 统一可空（x2-community 的 `FollowedWall.work` 就是可空的）；本列表里它永不为 null，description 写明。
 
 ## 8. 验收记录
 

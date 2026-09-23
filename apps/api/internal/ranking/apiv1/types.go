@@ -28,6 +28,6 @@ type WorkRankingEntry struct {
 	Object      string        `json:"object" enum:"work_ranking_entry" maxLength:"18" doc:"Type discriminant. Always work_ranking_entry."`
 	Rank        int           `json:"rank" minimum:"1" maximum:"100" doc:"1-based place in this list, numbered after works the catalog did not return were dropped."`
 	MetricValue float64       `json:"metric_value" minimum:"0" doc:"The value the list is sorted by, such as the view count for views_desc or the weighted rating, two decimals, for rating_desc."`
-	Work        repr.WorkRef  `json:"work" doc:"The ranked work."`
+	Work        *repr.WorkRef `json:"work" doc:"The ranked work. Never null in this list."`
 	Creator     *repr.UserRef `json:"creator" doc:"Who created the work's page on this forum. null when none is recorded or the account cannot be shown."`
 }

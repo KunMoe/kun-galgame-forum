@@ -9194,8 +9194,8 @@ export interface components {
              * @description 1-based place in this list, numbered after works the catalog did not return were dropped.
              */
             rank: number;
-            /** @description The ranked work. */
-            work: components["schemas"]["WorkRef"];
+            /** @description The ranked work. Never null in this list. */
+            work: components["schemas"]["WorkRef"] | null;
         };
         WorkRef: {
             /** @description The portrait cover at its original size, never the 16:9 crop. null when the work has none. */

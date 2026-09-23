@@ -28,6 +28,12 @@ const { data } = await useApi(
     })
 )
 
+const entries = computed(() =>
+  (data.value?.items ?? []).flatMap((entry) =>
+    entry.work ? [{ ...entry, work: entry.work }] : []
+  )
+)
+
 const icon = computed(
   () =>
     galgameSortItem.find((i) => i.sort === galgameRankingPageData.sort)?.icon ??
@@ -37,7 +43,7 @@ const icon = computed(
 
 <template>
   <ul v-if="data" class="space-y-3">
-    <li v-for="(entry, index) in data.items" :key="entry.work.id">
+    <li v-for="(entry, index) in entries" :key="entry.work.id">
       <KunLink
         color="default"
         underline="none"
