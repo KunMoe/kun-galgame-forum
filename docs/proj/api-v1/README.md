@@ -85,7 +85,7 @@ git ls-remote --heads origin 'api-v1/*'
 
 ### 待认领
 
-旧 `/api/*` 路由 **128 条**。`legacy_route_baseline` = 130，因为它数的是「所有非 `/api/v1` 的路由」，`/healthz` 也在里面。**基线的地板是 2，不是 0**：`/healthz` 与 infra 打进来的 HMAC 回调 `POST /api/trust/callback`（TS 轨 K-TS1，它不是终端用户的面）永远留在 v1 之外。
+旧 `/api/*` 路由 **105 条**（X2-overview 合并后）。`legacy_route_baseline` = 106，因为它数的是「所有非 `/api/v1` 的路由」，`/healthz` 也在里面。**基线的地板是 4，不是 0**：这四条永远留在 v1 之外——`/healthz`；infra 打进来的 HMAC 回调 `POST /api/trust/callback`（TS 轨 K-TS1，它不是终端用户的面）；BFF 的凭证管道 `POST /api/auth/oauth/callback` 与 `POST /api/auth/logout`（X2-auth 的 [K-X2U1](waves/x2-auth.md)：前者把授权码换成浏览器的 cookie、后者销毁它，App 走环回 PKCE + Bearer 永远不调；账号中心登记的回调地址是网页 `/auth/callback`，不是这条 API 路径）。
 
 > **切分依据是「共用同一个老 handler」，不是 URL 前缀。** 这个仓库里老 handler 大量跨前缀：`ResourceCommentHandler` 一个人管 15 条 / 5 个前缀；`/api/admin/**` 的 24 条分属 11 个 handler、各归各的域；`/api/user/:id/toolsets` 是 toolset 的面；`GET /api/resource` 是 `TopicHandler.GetResourceList`，即话题列表的资源区分面。**按前缀分轨会让两个 session 撞在同一个 handler 上，而且谁也删不掉它**——共用 handler 要等它服务的**所有**前缀都迁完才能删。下表按连通分量切，每行对外零耦合。
 
