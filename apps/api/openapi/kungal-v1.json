@@ -35,6 +35,114 @@
         ],
         "type": "object"
       },
+      "AdminDoc": {
+        "properties": {
+          "banner": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Image"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Banner image. null when the doc has none."
+          },
+          "content_markdown": {
+            "description": "Doc body as the stored Markdown source. Free text; never use it as a decision input.",
+            "maxLength": 100007,
+            "type": "string"
+          },
+          "description": {
+            "description": "Short summary shown on cards. Empty string if none. Free text; never use it as a decision input.",
+            "maxLength": 777,
+            "type": "string"
+          },
+          "doc_category": {
+            "description": "Which shelf of the help center the doc sits on.",
+            "enum": [
+              "galgame",
+              "notice",
+              "kun",
+              "other"
+            ],
+            "maxLength": 7,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "edited_at": {
+            "description": "When the doc's text or metadata last changed. Pinning does not count. null if never edited.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "id": {
+            "description": "Doc id. JSON string of a decimal integer.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "is_pinned": {
+            "description": "Whether the doc is pinned to the home carousel.",
+            "type": "boolean"
+          },
+          "object": {
+            "description": "Type discriminant. Always admin_doc.",
+            "enum": [
+              "admin_doc"
+            ],
+            "maxLength": 9,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "published_at": {
+            "description": "When the doc was published. Never changes.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": "string"
+          },
+          "slug": {
+            "description": "URL segment. The doc's page is /doc/{slug}.",
+            "maxLength": 128,
+            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+            "type": "string"
+          },
+          "title": {
+            "description": "Doc title. Free text; never use it as a decision input.",
+            "maxLength": 233,
+            "type": "string"
+          },
+          "view_count": {
+            "description": "Times the doc page was read.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "object",
+          "id",
+          "slug",
+          "title",
+          "description",
+          "doc_category",
+          "banner",
+          "is_pinned",
+          "view_count",
+          "published_at",
+          "edited_at",
+          "content_markdown"
+        ],
+        "type": "object"
+      },
       "AdminTopic": {
         "properties": {
           "author": {
@@ -1545,6 +1653,349 @@
         ],
         "type": "object"
       },
+      "Doc": {
+        "properties": {
+          "author": {
+            "$ref": "#/components/schemas/UserRef",
+            "description": "Who wrote the doc."
+          },
+          "banner": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Image"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Banner image. null when the doc has none."
+          },
+          "content": {
+            "$ref": "#/components/schemas/ContentDocument",
+            "description": "Doc body as a node tree. A table of contents comes from its heading nodes."
+          },
+          "description": {
+            "description": "Short summary shown on cards. Empty string if none. Free text; never use it as a decision input.",
+            "maxLength": 777,
+            "type": "string"
+          },
+          "doc_category": {
+            "description": "Which shelf of the help center the doc sits on. Clients label the tokens themselves.",
+            "enum": [
+              "galgame",
+              "notice",
+              "kun",
+              "other"
+            ],
+            "maxLength": 7,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "edited_at": {
+            "description": "When the doc's text or metadata last changed. Pinning does not count. null if never edited.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "id": {
+            "description": "Doc id. JSON string of a decimal integer.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "is_pinned": {
+            "description": "Whether the doc is pinned to the home carousel.",
+            "type": "boolean"
+          },
+          "object": {
+            "description": "Type discriminant. Always doc.",
+            "enum": [
+              "doc"
+            ],
+            "maxLength": 3,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "published_at": {
+            "description": "When the doc was published. Never changes.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": "string"
+          },
+          "slug": {
+            "description": "URL segment. The doc's page is /doc/{slug}.",
+            "maxLength": 128,
+            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+            "type": "string"
+          },
+          "title": {
+            "description": "Doc title. Free text; never use it as a decision input.",
+            "maxLength": 233,
+            "type": "string"
+          },
+          "view_count": {
+            "description": "Times the doc page was read, this read included.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "object",
+          "id",
+          "slug",
+          "title",
+          "description",
+          "doc_category",
+          "banner",
+          "is_pinned",
+          "view_count",
+          "published_at",
+          "edited_at",
+          "author",
+          "content"
+        ],
+        "type": "object"
+      },
+      "DocCreate": {
+        "properties": {
+          "banner_image_hash": {
+            "description": "Banner by image-service hash. Absent or an empty string means no banner.",
+            "maxLength": 64,
+            "pattern": "^([0-9a-f]{64})?$",
+            "type": "string"
+          },
+          "content_markdown": {
+            "description": "Doc body as Markdown source. A body of only whitespace is refused as TOO_SHORT. Free text; never use it as a decision input.",
+            "maxLength": 100000,
+            "minLength": 1,
+            "type": "string"
+          },
+          "description": {
+            "description": "Short summary. Trimmed before it is stored. Absent means an empty summary. Free text; never use it as a decision input.",
+            "maxLength": 777,
+            "type": "string"
+          },
+          "doc_category": {
+            "description": "Shelf of the help center.",
+            "enum": [
+              "galgame",
+              "notice",
+              "kun",
+              "other"
+            ],
+            "maxLength": 7,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "is_pinned": {
+            "description": "Pin the doc to the home carousel. Absent means false.",
+            "type": "boolean"
+          },
+          "slug": {
+            "description": "URL segment: lowercase letters and digits in hyphen-separated runs. Must be unused; a taken slug is ALREADY_EXISTS.",
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+            "type": "string"
+          },
+          "title": {
+            "description": "Doc title. Leading and trailing whitespace is removed before it is stored, and a title of only whitespace is refused as TOO_SHORT. Free text; never use it as a decision input.",
+            "maxLength": 233,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "slug",
+          "title",
+          "doc_category",
+          "content_markdown"
+        ],
+        "type": "object"
+      },
+      "DocOrder": {
+        "properties": {
+          "doc_ids": {
+            "description": "Every doc's id, once each, in the new display order. An id that is not a doc is UNKNOWN_REFERENCE; leaving a doc out is TOO_FEW_ITEMS with min_items set to the number of docs.",
+            "items": {
+              "maxLength": 20,
+              "minLength": 1,
+              "pattern": "^[0-9]+$",
+              "type": "string"
+            },
+            "maxItems": 1000,
+            "minItems": 1,
+            "type": "array",
+            "uniqueItems": true
+          }
+        },
+        "required": [
+          "doc_ids"
+        ],
+        "type": "object"
+      },
+      "DocPatch": {
+        "properties": {
+          "banner_image_hash": {
+            "description": "New banner by image-service hash. An empty string removes the banner.",
+            "maxLength": 64,
+            "pattern": "^([0-9a-f]{64})?$",
+            "type": "string"
+          },
+          "content_markdown": {
+            "description": "New body as Markdown source. Checked as in createDoc. Free text; never use it as a decision input.",
+            "maxLength": 100000,
+            "minLength": 1,
+            "type": "string"
+          },
+          "description": {
+            "description": "New summary. Trimmed before it is stored. Free text; never use it as a decision input.",
+            "maxLength": 777,
+            "type": "string"
+          },
+          "doc_category": {
+            "description": "New shelf.",
+            "enum": [
+              "galgame",
+              "notice",
+              "kun",
+              "other"
+            ],
+            "maxLength": 7,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "is_pinned": {
+            "description": "New pin flag. Changing only this leaves edited_at alone.",
+            "type": "boolean"
+          },
+          "slug": {
+            "description": "New URL segment. The old /doc/{slug} stops resolving. A taken slug is ALREADY_EXISTS.",
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+            "type": "string"
+          },
+          "title": {
+            "description": "New title. Trimmed and checked as in createDoc. Free text; never use it as a decision input.",
+            "maxLength": 233,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "DocSummary": {
+        "properties": {
+          "banner": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Image"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Banner image. null when the doc has none."
+          },
+          "description": {
+            "description": "Short summary shown on cards. Empty string if none. Free text; never use it as a decision input.",
+            "maxLength": 777,
+            "type": "string"
+          },
+          "doc_category": {
+            "description": "Which shelf of the help center the doc sits on. Clients label the tokens themselves.",
+            "enum": [
+              "galgame",
+              "notice",
+              "kun",
+              "other"
+            ],
+            "maxLength": 7,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "edited_at": {
+            "description": "When the doc's text or metadata last changed. Pinning does not count. null if never edited.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "id": {
+            "description": "Doc id. JSON string of a decimal integer.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "is_pinned": {
+            "description": "Whether the doc is pinned to the home carousel.",
+            "type": "boolean"
+          },
+          "object": {
+            "description": "Type discriminant. Always doc.",
+            "enum": [
+              "doc"
+            ],
+            "maxLength": 3,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "published_at": {
+            "description": "When the doc was published. Never changes.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": "string"
+          },
+          "slug": {
+            "description": "URL segment. The doc's page is /doc/{slug}.",
+            "maxLength": 128,
+            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+            "type": "string"
+          },
+          "title": {
+            "description": "Doc title. Free text; never use it as a decision input.",
+            "maxLength": 233,
+            "type": "string"
+          },
+          "view_count": {
+            "description": "Times the doc page was read.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "object",
+          "id",
+          "slug",
+          "title",
+          "description",
+          "doc_category",
+          "banner",
+          "is_pinned",
+          "view_count",
+          "published_at",
+          "edited_at"
+        ],
+        "type": "object"
+      },
       "EmphasisNode": {
         "properties": {
           "children": {
@@ -2109,6 +2560,37 @@
             "description": "Members of this page. Empty array, never null.",
             "items": {
               "$ref": "#/components/schemas/DirectMessage"
+            },
+            "type": "array"
+          },
+          "next_cursor": {
+            "description": "Opaque keyset cursor. Omitted on the last page.",
+            "maxLength": 512,
+            "pattern": "^cur_[A-Za-z0-9_-]+$",
+            "type": "string"
+          },
+          "object": {
+            "description": "Type discriminant. Always list.",
+            "enum": [
+              "list"
+            ],
+            "maxLength": 4,
+            "type": "string",
+            "x-vocabulary-closed": true
+          }
+        },
+        "required": [
+          "object",
+          "items"
+        ],
+        "type": "object"
+      },
+      "ListDocSummary": {
+        "properties": {
+          "items": {
+            "description": "Members of this page. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/DocSummary"
             },
             "type": "array"
           },
@@ -10674,6 +11156,594 @@
   },
   "openapi": "3.1.0",
   "paths": {
+    "/admin/doc-order": {
+      "put": {
+        "description": "Replaces the display order that listDocs sorts position_asc by. The list must name every doc exactly once, so a list made before someone else created or deleted a doc is refused rather than half applied. It needs the doc.edit permission.",
+        "operationId": "putDocOrder",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DocOrder"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "PERMISSION_REQUIRED when the caller lacks doc.edit."
+          },
+          "415": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unsupported Media Type"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Set the doc display order",
+        "tags": [
+          "docs"
+        ]
+      }
+    },
+    "/admin/docs": {
+      "post": {
+        "description": "Publishes a doc at once, last in display order. Location points at its staff view. It needs the doc.create permission.",
+        "operationId": "createDoc",
+        "parameters": [
+          {
+            "description": "Caller-generated UUID (canonical 8-4-4-4-12 hex, any version) or 26-character Crockford ULID. Scoped to (user, operation, key) for 24 hours.",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "schema": {
+              "description": "Caller-generated UUID (canonical 8-4-4-4-12 hex, any version) or 26-character Crockford ULID. Scoped to (user, operation, key) for 24 hours.",
+              "maxLength": 36,
+              "minLength": 26,
+              "pattern": "^([0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}|[0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{26})$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DocCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminDoc"
+                }
+              }
+            },
+            "description": "Created",
+            "headers": {
+              "Location": {
+                "schema": {
+                  "description": "Absolute path of the new doc's staff view, /api/v1/admin/docs/{doc_id}.",
+                  "format": "uri-reference",
+                  "maxLength": 64,
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "PERMISSION_REQUIRED when the caller lacks doc.create."
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "ALREADY_EXISTS when another doc uses the slug."
+          },
+          "415": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unsupported Media Type"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create a doc",
+        "tags": [
+          "docs"
+        ]
+      }
+    },
+    "/admin/docs/{doc_id}": {
+      "delete": {
+        "description": "Deletes the doc for good; its /doc/{slug} page stops resolving. It needs the doc.delete permission.",
+        "operationId": "deleteDoc",
+        "parameters": [
+          {
+            "description": "Doc id.",
+            "in": "path",
+            "name": "doc_id",
+            "required": true,
+            "schema": {
+              "description": "Doc id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "PERMISSION_REQUIRED when the caller lacks doc.delete."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when the doc does not exist."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Delete a doc",
+        "tags": [
+          "docs"
+        ]
+      },
+      "get": {
+        "description": "The doc as its editor needs it, Markdown source included. It needs the doc.edit permission, which a Bearer request never carries.",
+        "operationId": "getAdminDoc",
+        "parameters": [
+          {
+            "description": "Doc id.",
+            "in": "path",
+            "name": "doc_id",
+            "required": true,
+            "schema": {
+              "description": "Doc id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminDoc"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "PERMISSION_REQUIRED when the caller lacks doc.edit."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when the doc does not exist."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get a doc's staff view",
+        "tags": [
+          "docs"
+        ]
+      },
+      "patch": {
+        "description": "Changes the fields sent and leaves the rest. edited_at moves only when a field other than is_pinned takes a new value. It needs the doc.edit permission.",
+        "operationId": "updateDoc",
+        "parameters": [
+          {
+            "description": "Doc id.",
+            "in": "path",
+            "name": "doc_id",
+            "required": true,
+            "schema": {
+              "description": "Doc id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DocPatch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminDoc"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "PERMISSION_REQUIRED when the caller lacks doc.edit."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when the doc does not exist."
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "ALREADY_EXISTS when another doc uses the new slug."
+          },
+          "415": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unsupported Media Type"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update a doc",
+        "tags": [
+          "docs"
+        ]
+      }
+    },
     "/admin/hidden-topics": {
       "get": {
         "description": "The staff table of every hidden topic, whoever hid it, newest bump first with ties broken by descending id. A page-number collection: page × limit may not exceed 10000, and total counts under the same filters as items. It needs the topic.view_hidden permission, which a Bearer request never carries.",
@@ -14505,6 +15575,198 @@
         "summary": "Get a comment's editable source",
         "tags": [
           "topics"
+        ]
+      }
+    },
+    "/docs": {
+      "get": {
+        "description": "Every help-center doc. There are no drafts: a doc exists publicly or not at all. A cursor collection; the cursor is bound to sort, doc_category and is_pinned.",
+        "operationId": "listDocs",
+        "parameters": [
+          {
+            "description": "Opaque keyset cursor from a previous page of this collection.",
+            "explode": false,
+            "in": "query",
+            "name": "cursor",
+            "schema": {
+              "description": "Opaque keyset cursor from a previous page of this collection.",
+              "maxLength": 512,
+              "pattern": "^cur_[A-Za-z0-9_-]+$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Page size. 1–100, default 20. Values above 100 are rejected, not clamped.",
+            "explode": false,
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 20,
+              "description": "Page size. 1–100, default 20. Values above 100 are rejected, not clamped.",
+              "format": "int64",
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Sort order; ties break on id. Default position_asc. position: the display order staff set with putDocOrder. published: published_at. views: view_count.",
+            "explode": false,
+            "in": "query",
+            "name": "sort",
+            "schema": {
+              "default": "position_asc",
+              "description": "Sort order; ties break on id. Default position_asc. position: the display order staff set with putDocOrder. published: published_at. views: view_count.",
+              "enum": [
+                "position_asc",
+                "published_desc",
+                "views_desc"
+              ],
+              "maxLength": 14,
+              "type": "string",
+              "x-vocabulary-closed": true
+            }
+          },
+          {
+            "description": "When set, only docs on this shelf. Omitted means every shelf.",
+            "explode": false,
+            "in": "query",
+            "name": "doc_category",
+            "schema": {
+              "description": "When set, only docs on this shelf. Omitted means every shelf.",
+              "enum": [
+                "galgame",
+                "notice",
+                "kun",
+                "other"
+              ],
+              "maxLength": 7,
+              "type": "string",
+              "x-vocabulary-closed": true
+            }
+          },
+          {
+            "description": "true for pinned docs only, false for unpinned only. Omitted means both.",
+            "explode": false,
+            "in": "query",
+            "name": "is_pinned",
+            "schema": {
+              "description": "true for pinned docs only, false for unpinned only. Omitted means both.",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListDocSummary"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "List docs",
+        "tags": [
+          "docs"
+        ]
+      }
+    },
+    "/docs/{doc_slug}": {
+      "get": {
+        "description": "A doc with its body, addressed by the slug of its /doc/{slug} page. Each successful read counts one view.",
+        "operationId": "getDoc",
+        "parameters": [
+          {
+            "description": "The doc's slug.",
+            "in": "path",
+            "name": "doc_slug",
+            "required": true,
+            "schema": {
+              "description": "The doc's slug.",
+              "maxLength": 128,
+              "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Doc"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when no doc has this slug."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the account service cannot resolve the author or a mention."
+          }
+        },
+        "summary": "Get a doc",
+        "tags": [
+          "docs"
         ]
       }
     },

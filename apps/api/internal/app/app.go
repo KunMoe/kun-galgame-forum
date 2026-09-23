@@ -18,9 +18,6 @@ import (
 	communityHandler "kun-galgame-api/internal/community/handler"
 	communitynotify "kun-galgame-api/internal/community/notify"
 	communitytrust "kun-galgame-api/internal/community/trust"
-	docHandler "kun-galgame-api/internal/doc/handler"
-	docRepo "kun-galgame-api/internal/doc/repository"
-	docService "kun-galgame-api/internal/doc/service"
 	friendHandler "kun-galgame-api/internal/friendlink/handler"
 	friendRepo "kun-galgame-api/internal/friendlink/repository"
 	galgameapiv1 "kun-galgame-api/internal/galgame/apiv1"
@@ -124,9 +121,6 @@ type App struct {
 	AdminPurgeHandler          *adminHandler.PurgeHandler
 	RankingHandler             *rankingHandler.RankingHandler
 	SectionHandler             *sectionHandler.SectionHandler
-	DocArticleHandler          *docHandler.ArticleHandler
-	DocCategoryHandler         *docHandler.CategoryHandler
-	DocTagHandler              *docHandler.TagHandler
 	AppReleaseHandler          *appReleaseHandler.ReleaseHandler
 	FriendLinkHandler          *friendHandler.FriendLinkHandler
 	TrustHandler               *trustHandler.TrustHandler
@@ -472,13 +466,6 @@ func New(cfg *config.Config) *App {
 	adminUserPermRepo := adminRepo.NewUserPermissionRepository(db)
 	adminPermSync := adminService.NewPermissionOverrideSync(adminRolePermRepo, adminUserPermRepo)
 
-	docArticleRepo := docRepo.NewArticleRepository(db)
-	docCategoryRepo := docRepo.NewCategoryRepository(db)
-	docTagRepo := docRepo.NewTagRepository(db)
-	docArticleSvc := docService.NewArticleService(docArticleRepo, docCategoryRepo, cfg.NextMoeAPI.ImageCDNBase)
-	docCategorySvc := docService.NewCategoryService(docCategoryRepo)
-	docTagSvc := docService.NewTagService(docTagRepo)
-
 	toolsetRepository := toolsetRepo.NewToolsetRepository(db)
 	toolsetResourceRepo := toolsetRepo.NewResourceRepository(db)
 	toolsetPracticalityRepo := toolsetRepo.NewPracticalityRepository(db)
@@ -563,9 +550,6 @@ func New(cfg *config.Config) *App {
 		AdminPurgeHandler:        adminHandler.NewPurgeHandler(adminPurgeSvc),
 		RankingHandler:           rankingHandler.NewRankingHandler(rankingService.NewRankingService(rankingRepo.NewRankingRepository(db), gc, uc)),
 		SectionHandler:           sectionHandler.NewSectionHandler(sectionService.NewSectionService(sectionRepo.NewSectionRepository(db), uc)),
-		DocArticleHandler:        docHandler.NewArticleHandler(docArticleSvc),
-		DocCategoryHandler:       docHandler.NewCategoryHandler(docCategorySvc),
-		DocTagHandler:            docHandler.NewTagHandler(docTagSvc),
 		AppReleaseHandler:        appReleaseHandler.NewReleaseHandler(cfg.AppRelease),
 		FriendLinkHandler:        friendHandler.NewFriendLinkHandler(friendRepo.NewFriendLinkRepository(db), cfg.NextMoeAPI.ImageCDNBase),
 		TrustHandler:             trustHandler.NewTrustHandler(trustEnforce, cfg.Trust.CallbackSecret),

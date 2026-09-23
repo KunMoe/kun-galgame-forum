@@ -3,6 +3,7 @@ package app
 import (
 	"kun-galgame-api/internal/apiv1"
 	"kun-galgame-api/internal/apiv1/content"
+	docapiv1 "kun-galgame-api/internal/doc/apiv1"
 	galgameapiv1 "kun-galgame-api/internal/galgame/apiv1"
 	messageapiv1 "kun-galgame-api/internal/message/apiv1"
 	"kun-galgame-api/internal/middleware"
@@ -50,6 +51,7 @@ func (a *App) setupRoutes() {
 		updateapiv1.Register(a.newUpdateV1()),
 		trustapiv1.Register(a.TrustV1),
 		permissionapiv1.Register(a.newPermissionV1()),
+		docapiv1.Register(a.newDocV1()),
 	)
 
 	// Deliberately touches neither DB nor Redis: the container HEALTHCHECK reads
@@ -87,11 +89,6 @@ func (a *App) setupRoutes() {
 
 	api.Get("/section", a.Authn.OptionalAuth(), a.SectionHandler.GetSectionTopics)
 	api.Get("/category", a.SectionHandler.GetCategories)
-
-	api.Get("/doc/article", a.DocArticleHandler.GetArticles)
-	api.Get("/doc/article/:slug", a.DocArticleHandler.GetArticleBySlug)
-	api.Get("/doc/category", a.DocCategoryHandler.GetCategories)
-	api.Get("/doc/tag", a.DocTagHandler.GetTags)
 
 	api.Get("/friend-link", a.FriendLinkHandler.List)
 
@@ -212,7 +209,6 @@ func (a *App) setupRoutes() {
 	authed.Post("/image/message", a.ImageHandler.UploadMessageImage)
 	authed.Post("/image/galgame", a.ImageHandler.UploadGalgameImage)
 
-
 	authed.Post("/galgame/submit", a.GalgameSubmissionHandler.Submit)
 	authed.Post("/galgame/:gid/resubmit", a.GalgameSubmissionHandler.Resubmit)
 	authed.Delete("/galgame/:gid", a.GalgameSubmissionHandler.Withdraw)
@@ -302,20 +298,6 @@ func (a *App) setupRoutes() {
 		middleware.RequirePermission(perm.GalgameBanResourcePublish),
 		a.GalgameResourceHandler.SetResourcePublishBan,
 	)
-
-	docAdmin := authed.Group("")
-	docAdmin.Get("/admin/doc/article", middleware.RequirePermission(perm.DocEdit), a.DocArticleHandler.GetAdminArticles)
-	docAdmin.Post("/doc/article", middleware.RequirePermission(perm.DocCreate), a.DocArticleHandler.CreateArticle)
-	docAdmin.Put("/doc/article", middleware.RequirePermission(perm.DocEdit), a.DocArticleHandler.UpdateArticle)
-	docAdmin.Put("/doc/article/reorder", middleware.RequirePermission(perm.DocEdit), a.DocArticleHandler.ReorderArticles)
-	docAdmin.Put("/doc/article/pin", middleware.RequirePermission(perm.DocEdit), a.DocArticleHandler.SetArticlePin)
-	docAdmin.Delete("/doc/article", middleware.RequirePermission(perm.DocDelete), a.DocArticleHandler.DeleteArticle)
-	docAdmin.Post("/doc/category", middleware.RequirePermission(perm.DocCreate), a.DocCategoryHandler.CreateCategory)
-	docAdmin.Put("/doc/category", middleware.RequirePermission(perm.DocEdit), a.DocCategoryHandler.UpdateCategory)
-	docAdmin.Delete("/doc/category", middleware.RequirePermission(perm.DocDelete), a.DocCategoryHandler.DeleteCategory)
-	docAdmin.Post("/doc/tag", middleware.RequirePermission(perm.DocCreate), a.DocTagHandler.CreateTag)
-	docAdmin.Put("/doc/tag", middleware.RequirePermission(perm.DocEdit), a.DocTagHandler.UpdateTag)
-	docAdmin.Delete("/doc/tag", middleware.RequirePermission(perm.DocDelete), a.DocTagHandler.DeleteTag)
 
 	friendAdmin := authed.Group("")
 	friendAdmin.Post("/admin/friend-link", middleware.RequirePermission(perm.FriendLinkCreate), a.FriendLinkHandler.Create)
