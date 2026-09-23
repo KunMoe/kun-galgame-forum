@@ -24,6 +24,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/permission-changes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List permission changes
+         * @description Every recorded replacement of a role's or a user's overrides, newest first with ties broken by descending id. A page-number collection: page × limit may not exceed 10000. Admins only.
+         */
+        get: operations["listPermissionChanges"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/review-items": {
         parameters: {
             query?: never;
@@ -68,6 +88,30 @@ export interface paths {
         patch: operations["updateReviewItem"];
         trace?: never;
     };
+    "/admin/role-permissions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the role permission matrix
+         * @description Each role's baseline, stored overrides and effective permissions, with the permission catalog. Admins only.
+         */
+        get: operations["getRolePermissionMatrix"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Replace the overrides of some roles
+         * @description Replaces the override set of every listed role in one transaction, and records one permission change per role. The caller may change only roles ranked below their own and only keys they hold themselves, ren cannot be changed, and the result must leave moderator holding nothing admin lacks. Other instances pick the change up within 60 seconds.
+         */
+        patch: operations["updateRolePermissionMatrix"];
+        trace?: never;
+    };
     "/admin/topics/{topic_id}": {
         parameters: {
             query?: never;
@@ -87,6 +131,30 @@ export interface paths {
          * @description Deletes the topic for good, with its replies, comments, polls, lotteries, favorites, view buckets and the notifications that link to it. An open lottery's escrowed moemoepoint goes back to its author first. Hiding is the reversible alternative. It needs the topic.delete_any permission.
          */
         delete: operations["purgeTopic"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/user-permissions/{user_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a user's permissions
+         * @description What the user's roles grant, the user's personal overrides, and the result. Roles come from the account service's current record. Admins only.
+         */
+        get: operations["getUserPermissions"];
+        /**
+         * Replace a user's personal overrides
+         * @description Replaces the user's personal override set and records a permission change. The caller may change only users ranked below them and only keys they hold themselves; a ren holder cannot be changed. The target's roles are read from the account service and nothing is written when it cannot be reached.
+         */
+        put: operations["replaceUserPermissions"];
+        post?: never;
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -649,6 +717,26 @@ export interface paths {
          * @description Sets how adult content is shown for the caller and writes the new stance into the cookie session when one is present.
          */
         put: operations["putNsfwDisplay"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/permissions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the caller's permissions
+         * @description Every permission key the caller holds right now: their roles, the role overrides, and their personal overrides. A Bearer request always gets an empty list. It only decides what to show; every write checks again.
+         */
+        get: operations["getMyPermissions"];
+        put?: never;
         post?: never;
         delete?: never;
         options?: never;
@@ -3114,6 +3202,25 @@ export interface components {
              */
             total_relation: "eq" | "gte";
         };
+        PageListPermissionChange: {
+            /** @description Members of this page. Empty array, never null. */
+            items: components["schemas"]["PermissionChange"][];
+            /**
+             * @description Type discriminant. Always list.
+             * @enum {string}
+             */
+            object: "list";
+            /**
+             * Format: int64
+             * @description Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.
+             */
+            total: number;
+            /**
+             * @description eq when total is exact, gte when it stopped at the depth limit and there are at least that many.
+             * @enum {string}
+             */
+            total_relation: "eq" | "gte";
+        };
         PageListReviewItemSummary: {
             /** @description Members of this page. Empty array, never null. */
             items: components["schemas"]["ReviewItemSummary"][];
@@ -3147,6 +3254,51 @@ export interface components {
             bio?: string | null;
             /** @description New display name. 1–17 characters. Absent or null leaves it unchanged. Free text; never use it as a decision input. */
             name?: string | null;
+        };
+        PermissionChange: {
+            /** @description Who made the change. */
+            actor: components["schemas"]["UserRef"];
+            /** @description The target's overrides after the change. Empty when the change reset the target to its baseline. */
+            after: components["schemas"]["PermissionOverride"][];
+            /** @description The target's overrides before the change. */
+            before: components["schemas"]["PermissionOverride"][];
+            /**
+             * Format: date-time
+             * @description When the change was made.
+             */
+            created_at: string;
+            /** @description Change id. JSON string of a decimal integer. */
+            id: string;
+            /**
+             * @description Type discriminant. Always permission_change.
+             * @enum {string}
+             */
+            object: "permission_change";
+            /**
+             * @description The role whose overrides changed. null when the change was to a user.
+             * @enum {string|null}
+             */
+            target_role: "creator" | "moderator" | "admin" | null;
+            /** @description The user whose overrides changed. null when the change was to a role. */
+            target_user: components["schemas"]["UserRef"] | null;
+        };
+        PermissionOverride: {
+            /**
+             * @description grant adds a permission the baseline lacks; revoke removes one the baseline has.
+             * @enum {string}
+             */
+            effect: "grant" | "revoke";
+            /** @description The permission the override is about. */
+            permission: string;
+        };
+        PermissionSet: {
+            /**
+             * @description Type discriminant. Always permission_set.
+             * @enum {string}
+             */
+            object: "permission_set";
+            /** @description Every permission the caller holds right now, in catalog order. Empty for a Bearer request: staff powers never reach the App channel. */
+            permissions: string[];
         };
         Poll: {
             /** @description The user who created the poll. */
@@ -3856,6 +4008,56 @@ export interface components {
              * @description The weight the trust service gave this reporter.
              */
             weight: number;
+        };
+        RoleOverrides: {
+            /** @description The role's new override set, replacing the stored one. An empty array resets the role to its baseline. */
+            overrides: components["schemas"]["PermissionOverride"][];
+            /**
+             * @description The role whose overrides are replaced. ren is refused.
+             * @enum {string}
+             */
+            role: "creator" | "moderator" | "admin" | "ren";
+        };
+        RolePermissionMatrix: {
+            /** @description Every permission key the forum knows, in catalog order. */
+            catalog: string[];
+            /**
+             * @description Type discriminant. Always role_permission_matrix.
+             * @enum {string}
+             */
+            object: "role_permission_matrix";
+            /** @description One layer per role: creator, moderator, admin, ren, in that order. */
+            role_permissions: components["schemas"]["RolePermissions"][];
+        };
+        RolePermissionMatrixPatch: {
+            /** @description The roles to replace. Roles not listed keep their overrides. All changes are judged together against the resulting state and written in one transaction, or none is. */
+            changes: components["schemas"]["RoleOverrides"][];
+        };
+        RolePermissions: {
+            /** @description Permissions the role holds by code, before overrides, in catalog order. */
+            baseline: string[];
+            /** @description Permissions the role holds after its overrides, in catalog order. */
+            effective: string[];
+            /** @description Whether the role cannot be changed at all. True only for ren, which always holds every permission. */
+            is_locked: boolean;
+            /**
+             * @description Type discriminant. Always role_permissions.
+             * @enum {string}
+             */
+            object: "role_permissions";
+            /** @description The role's stored deviations from its baseline, in catalog order. Always empty for ren. */
+            overrides: components["schemas"]["PermissionOverride"][];
+            /**
+             * @description The role this layer belongs to.
+             * @enum {string}
+             */
+            role: "creator" | "moderator" | "admin" | "ren";
+            /** @description The caller's own standing on this role. */
+            viewer: components["schemas"]["RolePermissionsViewer"];
+        };
+        RolePermissionsViewer: {
+            /** @description Whether the caller may replace this role's overrides: the role is not locked and ranks below the caller's highest role. Each key is still subject to the caller holding it. */
+            can_edit: boolean;
         };
         SpoilerNode: {
             /** @description Block nodes hidden until the reader reveals them. */
@@ -4598,6 +4800,35 @@ export interface components {
              */
             topic_today_count: number;
         };
+        UserPermissions: {
+            /** @description Permissions the user's roles grant, in catalog order. */
+            baseline: string[];
+            /** @description Permissions the user holds after personal overrides, in catalog order. Every permission when the user holds ren. */
+            effective: string[];
+            /** @description The user's id. JSON string of a decimal integer. */
+            id: string;
+            /** @description Whether the user's permissions cannot be changed: the user holds ren. */
+            is_locked: boolean;
+            /**
+             * @description Type discriminant. Always user_permissions.
+             * @enum {string}
+             */
+            object: "user_permissions";
+            /** @description The user's personal deviations from that baseline, in catalog order. */
+            overrides: components["schemas"]["PermissionOverride"][];
+            /** @description The user's roles that carry permissions, from the account service's current record, lowest rank first. */
+            roles: ("creator" | "moderator" | "admin" | "ren")[];
+            /** @description The caller's own standing on this user. */
+            viewer: components["schemas"]["UserPermissionsViewer"];
+        };
+        UserPermissionsReplace: {
+            /** @description The user's new override set, replacing the stored one. An empty array resets the user to their roles. */
+            overrides: components["schemas"]["PermissionOverride"][];
+        };
+        UserPermissionsViewer: {
+            /** @description Whether the caller may replace this user's overrides: the user is not locked and ranks below the caller. Each key is still subject to the caller holding it. */
+            can_edit: boolean;
+        };
         UserProfile: {
             /** @description Avatar image. null when the account has no image-service hash. */
             avatar: components["schemas"]["Image"] | null;
@@ -4824,6 +5055,76 @@ export interface operations {
                 };
             };
             /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listPermissionChanges: {
+        parameters: {
+            query?: {
+                /** @description 1-based page number. page × limit may not exceed 10000. */
+                page?: number;
+                /** @description Page size. 1–100, default 20. Values above 100 are rejected, not clamped. */
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PageListPermissionChange"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description PERMISSION_REQUIRED when the caller is not an admin. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the account service cannot be reached to name the people involved. */
             503: {
                 headers: {
                     [name: string]: unknown;
@@ -5091,6 +5392,149 @@ export interface operations {
             };
         };
     };
+    getRolePermissionMatrix: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RolePermissionMatrix"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description PERMISSION_REQUIRED when the caller is not an admin. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    updateRolePermissionMatrix: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RolePermissionMatrixPatch"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RolePermissionMatrix"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description PERMISSION_REQUIRED when the caller is not an admin. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description VALIDATION_FAILED, with one error per refused position: ren, a repeated role or key, a role at or above the caller, a key outside the catalog, an override that changes nothing against the baseline, a key the caller does not hold, and, at /changes, each key moderator would hold without admin. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     getAdminTopic: {
         parameters: {
             query?: never;
@@ -5242,6 +5686,182 @@ export interface operations {
                 };
             };
             /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getUserPermissions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description User id. */
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserPermissions"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description PERMISSION_REQUIRED when the caller is not an admin. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the account service has no such user. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the account service cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    replaceUserPermissions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description User id. */
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UserPermissionsReplace"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserPermissions"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description PERMISSION_REQUIRED when the caller is not an admin. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the account service has no such user. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description VALIDATION_FAILED, with one error per refused position: parameter user_id for a ren holder or a user at or above the caller, otherwise a repeated key, a key outside the catalog, an override that changes nothing against the user's roles, or a key the caller does not hold. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the account service cannot be reached. */
             503: {
                 headers: {
                     [name: string]: unknown;
@@ -8248,6 +8868,62 @@ export interface operations {
                 };
             };
             /** @description SERVICE_UNAVAILABLE when the account service cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getMyPermissions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PermissionSet"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
             503: {
                 headers: {
                     [name: string]: unknown;

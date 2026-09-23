@@ -5,6 +5,13 @@ import {
   KUN_PERM_EDITABLE_ROLES,
   KUN_PERM_ROLE_COLUMNS
 } from '~/constants/permission'
+import { settle } from '#shared/utils/api/problem'
+import type {
+  PermissionOverride,
+  RolePermissionMatrix
+} from '#shared/utils/api/schemas'
+
+type EditableRole = (typeof KUN_PERM_EDITABLE_ROLES)[number]
 
 definePageMeta({ middleware: 'admin' })
 useKunDisableSeo('权限管理')
@@ -15,17 +22,26 @@ const permTabs = [
 ]
 const activeTab = ref('matrix')
 
-const { data, refresh } = await useKunFetch<KunRolePermMatrix>(
-  '/admin/role-permissions'
+const api = useApiClient()
+
+const { data, refresh } = await useApi(
+  'admin-role-permissions',
+  (client, { signal }) => client.GET('/admin/role-permissions', { signal })
 )
 
-const matrix = ref<KunRolePermMatrix | null>(data.value ?? null)
+const matrix = ref<RolePermissionMatrix | null>(data.value ?? null)
 
-const buildWorking = (m: KunRolePermMatrix): Record<string, Set<string>> =>
+const layerOf = (m: RolePermissionMatrix | null, role: string) =>
+  m?.role_permissions.find((layer) => layer.role === role)
+
+const buildWorking = (m: RolePermissionMatrix): Record<string, Set<string>> =>
   Object.fromEntries(
     KUN_PERM_EDITABLE_ROLES.map(
       (role) =>
-        [role, new Set(m.roles[role]?.effective ?? [])] as [string, Set<string>]
+        [role, new Set(layerOf(m, role)?.effective ?? [])] as [
+          string,
+          Set<string>
+        ]
     )
   )
 
@@ -37,10 +53,10 @@ const baseline = computed<Record<string, Set<string>>>(() =>
   Object.fromEntries(
     KUN_PERM_ROLE_COLUMNS.map(
       (col) =>
-        [col.role, new Set(matrix.value?.roles[col.role]?.baseline ?? [])] as [
-          string,
-          Set<string>
-        ]
+        [
+          col.role,
+          new Set(layerOf(matrix.value, col.role)?.baseline ?? [])
+        ] as [string, Set<string>]
     )
   )
 )
@@ -48,11 +64,19 @@ const effective = computed<Record<string, Set<string>>>(() =>
   Object.fromEntries(
     KUN_PERM_ROLE_COLUMNS.map(
       (col) =>
-        [col.role, new Set(matrix.value?.roles[col.role]?.effective ?? [])] as [
-          string,
-          Set<string>
-        ]
+        [
+          col.role,
+          new Set(layerOf(matrix.value, col.role)?.effective ?? [])
+        ] as [string, Set<string>]
     )
+  )
+)
+const editable = computed<Record<string, boolean>>(() =>
+  Object.fromEntries(
+    KUN_PERM_ROLE_COLUMNS.map((col) => [
+      col.role,
+      layerOf(matrix.value, col.role)?.viewer.can_edit ?? false
+    ])
   )
 )
 
@@ -69,7 +93,7 @@ const toggle = (role: string, permission: string, value: boolean) => {
 const deltasFor = (role: string) => {
   const base = baseline.value[role] ?? new Set<string>()
   const work = working.value[role] ?? new Set<string>()
-  const out: { permission: string; effect: 'grant' | 'revoke' }[] = []
+  const out: PermissionOverride[] = []
   for (const key of KUN_PERMISSION_KEYS) {
     const inWork = work.has(key)
     const inBase = base.has(key)
@@ -110,7 +134,7 @@ const moderatorExceedsAdmin = computed(() => {
 const roleLabel = (role: string) =>
   KUN_PERM_ROLE_COLUMNS.find((col) => col.role === role)?.label ?? role
 
-const applyMatrix = (m: KunRolePermMatrix) => {
+const applyMatrix = (m: RolePermissionMatrix) => {
   matrix.value = m
   working.value = buildWorking(m)
 }
@@ -122,6 +146,27 @@ const handleDiscard = () => {
 }
 
 const saving = ref(false)
+
+const patchRoles = async (
+  changes: { role: EditableRole; overrides: PermissionOverride[] }[]
+) => {
+  saving.value = true
+  const result = await settle(
+    api.PATCH('/admin/role-permissions', { body: { changes } })
+  )
+  saving.value = false
+  if (!result.ok) {
+    reportProblem(result.problem)
+    await refresh()
+    if (data.value) {
+      applyMatrix(data.value)
+    }
+    return false
+  }
+  applyMatrix(result.data)
+  return true
+}
+
 const handleSave = async () => {
   if (!totalPending.value || saving.value) {
     return
@@ -133,31 +178,10 @@ const handleSave = async () => {
   if (!ok) {
     return
   }
-  saving.value = true
-  let latest: KunRolePermMatrix | null = null
-  let failed = false
-  for (const role of dirtyRoles.value) {
-    const res = await kunFetch<KunRolePermMatrix>(
-      `/admin/role-permissions/${role}`,
-      { method: 'PUT', body: { overrides: deltasFor(role) } }
-    )
-    if (res) {
-      latest = res
-    } else {
-      failed = true
-      break
-    }
-  }
-  saving.value = false
-  if (latest) {
-    applyMatrix(latest)
-  } else if (failed) {
-    await refresh()
-    if (data.value) {
-      applyMatrix(data.value)
-    }
-  }
-  if (!failed) {
+  const saved = await patchRoles(
+    dirtyRoles.value.map((role) => ({ role, overrides: deltasFor(role) }))
+  )
+  if (saved) {
     useMessage('已保存', 'success')
   }
 }
@@ -170,12 +194,10 @@ const handleReset = async (role: string) => {
   if (!ok) {
     return
   }
-  const res = await kunFetch<KunRolePermMatrix>(
-    `/admin/role-permissions/${role}`,
-    { method: 'PUT', body: { overrides: [] } }
-  )
-  if (res) {
-    applyMatrix(res)
+  const saved = await patchRoles([
+    { role: role as EditableRole, overrides: [] }
+  ])
+  if (saved) {
     useMessage('已重置为默认', 'success')
   }
 }
@@ -221,6 +243,7 @@ const handleReset = async (role: string) => {
             :working="working"
             :baseline="baseline"
             :effective="effective"
+            :editable="editable"
             :disabled="saving"
             @toggle="toggle"
             @reset="handleReset"

@@ -1,3 +1,5 @@
+import { settle } from '#shared/utils/api/problem'
+
 export default defineNuxtPlugin(async () => {
   const mine = useState<string[] | null>('kun-perm-mine', () => null)
 
@@ -6,8 +8,8 @@ export default defineNuxtPlugin(async () => {
   const { id } = usePersistUserStore()
   if (!id) return
 
-  const data = await kunFetch<KunPermMine>('/perm/mine')
-  if (data) {
-    mine.value = data.permissions
+  const result = await settle(useApiClient().GET('/me/permissions'))
+  if (result.ok) {
+    mine.value = result.data.permissions
   }
 })

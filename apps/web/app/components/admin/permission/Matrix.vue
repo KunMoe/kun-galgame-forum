@@ -1,11 +1,8 @@
 <script setup lang="ts">
-import { storeToRefs } from 'pinia'
 import {
   KUN_PERMISSION_GROUPS,
   KUN_PERMISSION_META,
   KUN_PERM_ROLE_COLUMNS,
-  KUN_ROLE_RANK,
-  kunRoleRank,
   type KunPermRoleColumn
 } from '~/constants/permission'
 
@@ -13,6 +10,7 @@ const props = defineProps<{
   working: Record<string, Set<string>>
   baseline: Record<string, Set<string>>
   effective: Record<string, Set<string>>
+  editable: Record<string, boolean>
   disabled?: boolean
 }>()
 
@@ -25,12 +23,10 @@ const columns = KUN_PERM_ROLE_COLUMNS
 
 const groups = KUN_PERMISSION_GROUPS
 
-const { roles } = storeToRefs(usePersistUserStore())
-const operatorRank = computed(() => kunRoleRank(roles.value))
 const myPerms = useMyPermissions()
 
 const columnLocked = (col: KunPermRoleColumn) =>
-  col.locked || (KUN_ROLE_RANK[col.role] ?? 0) >= operatorRank.value
+  col.locked || !props.editable[col.role]
 
 const possessionLocked = (col: KunPermRoleColumn, perm: string) =>
   col.editable && !columnLocked(col) && !myPerms.value(perm)

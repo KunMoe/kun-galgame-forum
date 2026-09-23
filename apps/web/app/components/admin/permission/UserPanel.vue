@@ -1,30 +1,33 @@
 <script setup lang="ts">
-import { storeToRefs } from 'pinia'
 import {
   KUN_PERMISSION_GROUPS,
   KUN_PERMISSION_KEYS,
-  KUN_PERMISSION_META,
-  kunRoleRank
+  KUN_PERMISSION_META
 } from '~/constants/permission'
 import { KUN_USER_ROLE_MAP } from '~/constants/user'
+import { settle } from '#shared/utils/api/problem'
+import type {
+  PermissionOverride,
+  UserPermissions
+} from '#shared/utils/api/schemas'
 
 const props = defineProps<{ user: SearchResultUser }>()
 const open = defineModel<boolean>({ required: true })
 
-const state = ref<KunUserPermState | null>(null)
+const api = useApiClient()
+
+const state = ref<UserPermissions | null>(null)
 const loading = ref(false)
 const saving = ref(false)
 
 const working = ref<Set<string>>(new Set())
 const initial = ref<Set<string>>(new Set())
 
-const isRen = computed(() => state.value?.roles.includes('ren') ?? false)
+const isRen = computed(() => state.value?.is_locked ?? false)
 
-const { roles: operatorRoles } = storeToRefs(usePersistUserStore())
 const myPerms = useMyPermissions()
-const targetRoles = computed(() => state.value?.roles ?? [])
 const rankLocked = computed(
-  () => kunRoleRank(operatorRoles.value) <= kunRoleRank(targetRoles.value)
+  () => !isRen.value && !(state.value?.viewer.can_edit ?? false)
 )
 const readOnly = computed(() => isRen.value || rankLocked.value)
 
@@ -33,25 +36,31 @@ const possessionLocked = (permission: string) =>
 const cellDisabled = (permission: string) =>
   readOnly.value || saving.value || possessionLocked(permission)
 
-const roleEffective = computed(() => new Set(state.value?.role_effective ?? []))
+const roleEffective = computed(() => new Set(state.value?.baseline ?? []))
 
 const groups = KUN_PERMISSION_GROUPS
 
-const applyState = (s: KunUserPermState) => {
+const applyState = (s: UserPermissions) => {
   state.value = s
   working.value = new Set(s.effective)
   initial.value = new Set(s.effective)
 }
 
+const userPath = () => ({
+  params: { path: { user_id: String(props.user.id) } }
+})
+
 const load = async () => {
   loading.value = true
-  const res = await kunFetch<KunUserPermState>(
-    `/admin/user-permissions/${props.user.id}`
+  const result = await settle(
+    api.GET('/admin/user-permissions/{user_id}', userPath())
   )
   loading.value = false
-  if (res) {
-    applyState(res)
+  if (!result.ok) {
+    reportProblem(result.problem)
+    return
   }
+  applyState(result.data)
 }
 
 watch(open, (isOpen) => {
@@ -84,7 +93,7 @@ const deviation = (permission: string): 'grant' | 'revoke' | null => {
 
 const deltas = computed(() => {
   const role = roleEffective.value
-  const out: { permission: string; effect: 'grant' | 'revoke' }[] = []
+  const out: PermissionOverride[] = []
   for (const key of KUN_PERMISSION_KEYS) {
     const inWork = working.value.has(key)
     const inRole = role.has(key)
@@ -107,6 +116,23 @@ const isDirty = computed(() => {
 
 const hasOverrides = computed(() => (state.value?.overrides.length ?? 0) > 0)
 
+const replaceOverrides = async (overrides: PermissionOverride[]) => {
+  saving.value = true
+  const result = await settle(
+    api.PUT('/admin/user-permissions/{user_id}', {
+      ...userPath(),
+      body: { overrides }
+    })
+  )
+  saving.value = false
+  if (!result.ok) {
+    reportProblem(result.problem)
+    return false
+  }
+  applyState(result.data)
+  return true
+}
+
 const roleChips = computed(() =>
   (state.value?.roles ?? []).map((role) => KUN_USER_ROLE_MAP[role] ?? role)
 )
@@ -123,17 +149,7 @@ const handleSave = async () => {
     `调整「${props.user.name}」的权限`,
     '此操作会立即改变该用户的实际权限，请确认无误后再保存。'
   )
-  if (!ok) {
-    return
-  }
-  saving.value = true
-  const res = await kunFetch<KunUserPermState>(
-    `/admin/user-permissions/${props.user.id}`,
-    { method: 'PUT', body: { overrides: deltas.value } }
-  )
-  saving.value = false
-  if (res) {
-    applyState(res)
+  if (ok && (await replaceOverrides(deltas.value))) {
     useMessage('已保存', 'success')
   }
 }
@@ -146,17 +162,7 @@ const handleReset = async () => {
     `重置「${props.user.name}」的权限为默认`,
     '将清除该用户的全部个人权限覆盖，恢复到其角色本身的权限。此操作会立即生效，请确认。'
   )
-  if (!ok) {
-    return
-  }
-  saving.value = true
-  const res = await kunFetch<KunUserPermState>(
-    `/admin/user-permissions/${props.user.id}`,
-    { method: 'PUT', body: { overrides: [] } }
-  )
-  saving.value = false
-  if (res) {
-    applyState(res)
+  if (ok && (await replaceOverrides([]))) {
     useMessage('已重置为默认', 'success')
   }
 }

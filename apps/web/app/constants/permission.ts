@@ -132,16 +132,6 @@ export const KUN_PERM_EDITABLE_ROLES = [
   'admin'
 ] as const
 
-export const KUN_ROLE_RANK: Record<string, number> = {
-  ren: 4,
-  admin: 3,
-  moderator: 2,
-  creator: 1
-}
-
-export const kunRoleRank = (roles: string[]): number =>
-  roles.reduce((max, role) => Math.max(max, KUN_ROLE_RANK[role] ?? 0), 0)
-
 export interface KunProxyPermission {
   key: string
   label: string

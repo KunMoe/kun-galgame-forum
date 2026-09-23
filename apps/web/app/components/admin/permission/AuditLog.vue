@@ -2,22 +2,31 @@
 import { KUN_PERMISSION_META } from '~/constants/permission'
 import { KUN_USER_ROLE_MAP } from '~/constants/user'
 import type { ForumPermission } from '~/composables/useCan'
+import { settle } from '#shared/utils/api/problem'
+import type { PermissionChange } from '#shared/utils/api/schemas'
+import { deletedUserName, toKunUser } from '~/utils/userRef'
 
+type ChangePage = { items: PermissionChange[]; total: number }
+
+const api = useApiClient()
 const page = ref(1)
 const limit = 20
-const data = ref<KunPermAuditPage | null>(null)
+const data = ref<ChangePage | null>(null)
 const loading = ref(false)
 
 const load = async () => {
   loading.value = true
-  const res = await kunFetch<KunPermAuditPage>('/admin/permission-audit', {
-    method: 'GET',
-    query: { page: page.value, limit }
-  })
+  const result = await settle(
+    api.GET('/admin/permission-changes', {
+      params: { query: { page: page.value, limit } }
+    })
+  )
   loading.value = false
-  if (res) {
-    data.value = res
+  if (!result.ok) {
+    reportProblem(result.problem)
+    return
   }
+  data.value = result.data
 }
 
 onMounted(load)
@@ -27,23 +36,21 @@ const totalPage = computed(() =>
   data.value ? Math.max(1, Math.ceil(data.value.total / limit)) : 1
 )
 
-const userChip = (id: number): KunUser | null =>
-  data.value?.users[String(id)] ?? null
-
 const permLabel = (permission: string) =>
   KUN_PERMISSION_META[permission as ForumPermission]?.label ?? permission
 
-const subjectLabel = (entry: KunPermAuditEntry): string => {
-  if (entry.subject_kind === 'role') {
-    return `角色 · ${KUN_USER_ROLE_MAP[entry.subject] ?? entry.subject}`
+const subjectLabel = (entry: PermissionChange): string => {
+  if (entry.target_role) {
+    return `角色 · ${KUN_USER_ROLE_MAP[entry.target_role] ?? entry.target_role}`
   }
-  const user = userChip(Number(entry.subject))
-  return user ? `用户 · ${user.name}` : `用户 · #${entry.subject}`
+  return `用户 · ${entry.target_user?.name ?? deletedUserName}`
 }
+
+const isReset = (entry: PermissionChange) => entry.after.length === 0
 
 type RowDelta = { permission: string; kind: 'grant' | 'revoke' | 'removed' }
 
-const rowDeltas = (entry: KunPermAuditEntry): RowDelta[] => {
+const rowDeltas = (entry: PermissionChange): RowDelta[] => {
   const before = new Map(entry.before.map((o) => [o.permission, o.effect]))
   const after = new Map(entry.after.map((o) => [o.permission, o.effect]))
   const keys = new Set([...before.keys(), ...after.keys()])
@@ -79,22 +86,12 @@ const DELTA_CHIP: Record<
         class="border-default-200 space-y-2 rounded-lg border p-3"
       >
         <div class="flex flex-wrap items-center gap-2">
-          <KunChip
-            size="sm"
-            :color="entry.action === 'reset' ? 'default' : 'primary'"
-          >
-            {{ entry.action === 'reset' ? '重置' : '调整' }}
+          <KunChip size="sm" :color="isReset(entry) ? 'default' : 'primary'">
+            {{ isReset(entry) ? '重置' : '调整' }}
           </KunChip>
           <span class="text-sm font-medium">{{ subjectLabel(entry) }}</span>
           <span class="text-default-400 text-xs">操作人</span>
-          <KunUserChip
-            v-if="userChip(entry.operator_id)"
-            :user="userChip(entry.operator_id)!"
-            size="sm"
-          />
-          <span v-else class="text-default-500 text-sm">
-            用户 #{{ entry.operator_id }}
-          </span>
+          <KunUserChip :user="toKunUser(entry.actor)" size="sm" />
           <KunTime
             :time="entry.created_at"
             type="datetime"
