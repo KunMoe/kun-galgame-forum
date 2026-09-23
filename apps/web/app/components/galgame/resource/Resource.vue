@@ -4,13 +4,12 @@ import {
   bucketizeResourceProvider,
   type GalgameResourceProviderBucketKey
 } from '~/constants/galgameResource'
+import type { GalgameResource } from '#shared/utils/api/schemas'
+import { problemMessage } from '#shared/utils/api/message'
 
 const route = useRoute()
-const workId = computed(() => {
-  return parseInt((route.params as { id: string }).id)
-})
+const workId = computed(() => String((route.params as { id: string }).id))
 
-const galgame = inject<GalgameDetail>('galgame')
 const resourcePublishBanned = inject<Ref<boolean>>(
   'galgameResourcePublishBanned',
   ref(false)
@@ -23,11 +22,40 @@ const emit = defineEmits<{
   'update:loading': [boolean]
 }>()
 
-const { data, status, refresh } = await useKunFetch<GalgameResource[]>(
-  `/galgame/${workId.value}/resource/all`,
-  {
-    method: 'GET',
-    query: { galgame_id: workId.value }
+const { data, status, refresh, problem } = await useApi<GalgameResource[]>(
+  () => `work-resources:${workId.value}`,
+  async (api, { signal }) => {
+    const limit = 100
+    const first = await api.GET('/works/{work_id}/resources', {
+      params: {
+        path: { work_id: workId.value },
+        query: { page: 1, limit }
+      },
+      signal
+    })
+    if (first.error || !first.data) {
+      return { error: first.error, response: first.response }
+    }
+    const items = [...first.data.items]
+    let page = 2
+    while (items.length < first.data.total) {
+      const next = await api.GET('/works/{work_id}/resources', {
+        params: {
+          path: { work_id: workId.value },
+          query: { page, limit }
+        },
+        signal
+      })
+      if (next.error || !next.data) {
+        return { error: next.error, response: next.response }
+      }
+      if (!next.data.items.length) {
+        break
+      }
+      items.push(...next.data.items)
+      page += 1
+    }
+    return { data: items, response: first.response }
   }
 )
 watchEffect(() => emit('update:loading', status.value === 'pending'))
@@ -148,8 +176,10 @@ const activeBucket = computed(() =>
 
     <KunAdAIFYBanner />
 
+    <KunNull v-if="problem" :description="problemMessage(problem)" />
+
     <KunNull
-      v-if="!data?.length"
+      v-else-if="status !== 'pending' && !data?.length"
       description="这个 Galgame 还没有资源链接, 快添加一个吧!"
     />
 

@@ -297,3 +297,29 @@ export type QuizSpoilerLevel = Quiz['spoiler_level']
 export type QuizSort = NonNullable<
   NonNullable<operations['listQuizzes']['parameters']['query']>['sort']
 >
+export type GalgameResource = components['schemas']['GalgameResource']
+export type GalgameResourceCreate =
+  components['schemas']['GalgameResourceCreate']
+export type GalgameResourcePatch = components['schemas']['GalgameResourcePatch']
+export type GalgameResourceSource =
+  components['schemas']['GalgameResourceSource']
+export type GalgameResourceDownload =
+  components['schemas']['GalgameResourceDownload']
+export type GalgameResourceEngagement =
+  components['schemas']['GalgameResourceEngagement']
+export type GalgameResourceExpiryReport =
+  components['schemas']['GalgameResourceExpiryReport']
+export type GalgameResourceViewer =
+  components['schemas']['GalgameResourceViewer']
+export type PageListGalgameResource =
+  components['schemas']['PageListGalgameResource']
+export type WorkResourcePublishBan =
+  components['schemas']['WorkResourcePublishBan']
+export type DlsiteOffer = components['schemas']['DlsiteOffer']
+export type GalgameResourceType = GalgameResource['resource_type']
+export type GalgameResourceState = GalgameResource['state']
+export type GalgameResourceSort = NonNullable<
+  NonNullable<
+    operations['listGalgameResources']['parameters']['query']
+  >['sort']
+>

@@ -1,24 +1,32 @@
 <script setup lang="ts">
 import { watchDebounced } from '@vueuse/core'
 import { useRouteQuery } from '@vueuse/router'
+import type { PageListGalgameResource } from '#shared/utils/api/schemas'
+import { problemMessage } from '#shared/utils/api/message'
 
 const LIMIT = 50
 
 const page = useRouteQuery('page', 1, { mode: 'replace', transform: Number })
 const keywords = useRouteQuery<string>('keywords', '', { mode: 'replace' })
 const input = ref(keywords.value)
+const { allowsNsfw } = useContentStance()
 
-const { data, status } = await useKunFetch<{
-  resources: GalgameResourceCard[]
-  total: number
-}>(`/galgame-resource`, {
-  method: 'GET',
-  query: computed(() => ({
-    page: page.value,
-    limit: LIMIT,
-    keywords: keywords.value
-  }))
-})
+const { data, status, problem } = await useApi<PageListGalgameResource>(
+  () =>
+    `galgame-resources:${page.value}:${keywords.value}:${allowsNsfw.value}`,
+  (api, { signal }) =>
+    api.GET('/galgame-resources', {
+      params: {
+        query: {
+          page: page.value,
+          limit: LIMIT,
+          include_nsfw: allowsNsfw.value,
+          ...(keywords.value ? { q: keywords.value } : {})
+        }
+      },
+      signal
+    })
+)
 
 watchDebounced(
   input,
@@ -37,7 +45,7 @@ watch(page, () => {
   window.scrollTo({ top: 0, behavior: 'smooth' })
 })
 
-const resources = computed(() => data.value?.resources ?? [])
+const resources = computed(() => data.value?.items ?? [])
 const total = computed(() => data.value?.total ?? 0)
 const isPending = computed(() => status.value === 'pending')
 
@@ -69,7 +77,9 @@ useKunSeoMeta({
       </template>
     </KunHeader>
 
-    <KunLoading :loading="isPending">
+    <KunNull v-if="problem" :description="problemMessage(problem)" />
+
+    <KunLoading v-else :loading="isPending">
       <div
         v-if="resources.length"
         class="grid grid-cols-1 gap-3 md:grid-cols-2"

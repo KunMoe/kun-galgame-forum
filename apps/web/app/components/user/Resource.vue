@@ -12,11 +12,14 @@ import {
   kunUserGalgameResourceNavItem,
   type KUN_USER_PAGE_GALGAME_RESOURCE_TYPE
 } from '~/constants/user'
+import { settle } from '#shared/utils/api/problem'
 
 const props = defineProps<{
   userId: number
   type: (typeof KUN_USER_PAGE_GALGAME_RESOURCE_TYPE)[number]
 }>()
+
+const api = useApiClient()
 
 const isCurrentUser = computed(() => usePersistUserStore().id === props.userId)
 const activeTab = ref(props.type)
@@ -58,29 +61,19 @@ const submitFix = async (index: number) => {
     .map((s) => s.trim())
     .filter(Boolean)
 
-  const payload = {
-    galgame_id: res.galgame_id,
-    galgame_resource_id: res.id,
-    type: res.type,
-    language: res.language,
-    platform: res.platform,
-    size: res.size,
-    link: linkArray,
-    code: res.code || '',
-    password: res.password || '',
-    note: res.note || ''
-  }
-
-  await Promise.all([
-    kunFetch(`/galgame/${res.galgame_id}/resource`, {
-      method: 'PUT',
-      body: payload
-    }),
-    kunFetch(`/galgame/${res.galgame_id}/resource/valid`, {
-      method: 'PUT',
-      body: { galgame_resource_id: res.id }
+  const result = await settle(
+    api.PATCH('/galgame-resources/{resource_id}', {
+      params: { path: { resource_id: String(res.id) } },
+      body: {
+        download_urls: linkArray,
+        state: 'valid'
+      }
     })
-  ])
+  )
+  if (!result.ok) {
+    reportProblem(result.problem)
+    return
+  }
 
   useMessage('更新资源链接成功', 'success')
   refresh()

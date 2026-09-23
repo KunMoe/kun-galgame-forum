@@ -98,10 +98,12 @@ export const fetchLanePage = async (
         report
       )
     case 'resource':
-      return kunFetch<LanePage>('/search', {
-        method: 'GET',
-        query: { keywords: q, type: 'resource', page, limit }
-      })
+      return unwrap(
+        await settle(
+          api.GET('/galgame-resources', { params: { query: shown } })
+        ),
+        report
+      )
     case 'toolset':
       return unwrap(
         await settle(api.GET('/toolsets', { params: { query: paged } })),

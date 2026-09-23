@@ -11,7 +11,8 @@ defineProps<{ status: ReportExpireStatus }>()
     :class="{
       'border-primary/20 bg-primary/5':
         status === 'checking' || status === 'alive',
-      'border-success/20 bg-success/5': status === 'expired',
+      'border-success/20 bg-success/5':
+        status === 'expired' || status === 'unchecked',
       'border-danger/20 bg-danger/5': status === 'error'
     }"
   >
@@ -40,6 +41,9 @@ defineProps<{ status: ReportExpireStatus }>()
           >
           <template v-else-if="status === 'alive'"
             >检测完成: 链接仍然有效</template
+          >
+          <template v-else-if="status === 'unchecked'"
+            >检测完成: 未能核验链接</template
           >
           <template v-else>检测完成: 链接已失效</template>
         </span>
@@ -73,6 +77,9 @@ defineProps<{ status: ReportExpireStatus }>()
           <template v-if="status === 'checking'">等待标记失效</template>
           <template v-else-if="status === 'alive'"
             >无需标记, 链接仍可访问</template
+          >
+          <template v-else-if="status === 'unchecked'"
+            >已按失效处理, 已通知发布者</template
           >
           <template v-else>已标记为失效, 已通知发布者</template>
         </span>

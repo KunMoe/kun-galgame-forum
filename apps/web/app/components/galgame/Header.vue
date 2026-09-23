@@ -14,6 +14,7 @@ import {
   KUN_GALGAME_CONTENT_LIMIT_MAP,
   KUN_USER_TEXT_CHIP_CLASS
 } from '~/constants/galgame'
+import { settle } from '#shared/utils/api/problem'
 
 const props = defineProps<{
   galgame: GalgameDetail
@@ -26,6 +27,7 @@ const emits = defineEmits<{
 }>()
 
 const { id } = usePersistUserStore()
+const api = useApiClient()
 const canBanResourcePublish = useCan('galgame.ban_resource_publish')
 
 const resourcePublishBanned = inject<Ref<boolean>>(
@@ -48,15 +50,25 @@ const toggleResourceBan = async () => {
     return
   }
   banning.value = true
-  const res = await kunFetch(
-    `/admin/galgame/${props.galgame.id}/resource-publish-ban`,
-    { method: 'PUT', body: { banned: willBan } }
+  const result = await settle(
+    willBan
+      ? api.PUT('/works/{work_id}/resource-publish-ban', {
+          params: { path: { work_id: String(props.galgame.id) } }
+        })
+      : api.DELETE('/works/{work_id}/resource-publish-ban', {
+          params: { path: { work_id: String(props.galgame.id) } }
+        })
   )
   banning.value = false
-  if (res) {
-    resourcePublishBanned.value = willBan
-    useMessage(willBan ? '已禁止发布资源' : '已解除禁止', 'success')
+  if (!result.ok) {
+    reportProblem(result.problem)
+    return
   }
+  resourcePublishBanned.value = result.data.is_resource_publish_banned
+  useMessage(
+    result.data.is_resource_publish_banned ? '已禁止发布资源' : '已解除禁止',
+    'success'
+  )
 }
 
 const galgameAliasArray = computed(() =>

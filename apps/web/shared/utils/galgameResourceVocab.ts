@@ -1,9 +1,11 @@
-export interface VocabOption {
-  value: string
+import type { GalgameResource } from './api/schemas'
+
+export interface VocabOption<T extends string = string> {
+  value: T
   label: string
 }
 
-export const RESOURCE_TYPE_OPTIONS: VocabOption[] = [
+export const RESOURCE_TYPE_OPTIONS: VocabOption<GalgameResource['resource_type']>[] = [
   { value: 'game', label: '游戏本体' },
   { value: 'collection', label: '合集' },
   { value: 'patch', label: '补丁' },
@@ -26,7 +28,9 @@ export const LEGACY_TYPE_LABELS: Record<string, string> = {
   others: '其它'
 }
 
-export const LANGUAGE_OPTIONS: VocabOption[] = [
+export const LANGUAGE_OPTIONS: VocabOption<
+  GalgameResource['resource_languages'][number]
+>[] = [
   { value: 'zh-cn', label: '简体中文' },
   { value: 'zh-tw', label: '繁体中文' },
   { value: 'ja-jp', label: '日语' },
@@ -34,7 +38,9 @@ export const LANGUAGE_OPTIONS: VocabOption[] = [
   { value: 'other', label: '其他语言' }
 ]
 
-export const PLATFORM_OPTIONS: VocabOption[] = [
+export const PLATFORM_OPTIONS: VocabOption<
+  GalgameResource['resource_platforms'][number]
+>[] = [
   { value: 'win', label: 'Windows 电脑版' },
   { value: 'and', label: '安卓手机版' },
   { value: 'ios', label: 'iOS' },
@@ -85,7 +91,9 @@ export const PLATFORM_OPTIONS: VocabOption[] = [
   { value: 'oth', label: '其它平台' }
 ]
 
-export const RUNTIME_OPTIONS: VocabOption[] = [
+export const RUNTIME_OPTIONS: VocabOption<
+  GalgameResource['resource_runtimes'][number]
+>[] = [
   { value: 'native-win', label: 'Windows 原生' },
   { value: 'native-and', label: '安卓直装' },
   { value: 'native-ios', label: 'iOS 原生' },
@@ -102,12 +110,14 @@ export const RUNTIME_OPTIONS: VocabOption[] = [
   { value: 'other', label: '其它运行环境' }
 ]
 
-export const VERSION_LABEL_OPTIONS: VocabOption[] = [
-  { value: '官方最新', label: '官方最新' },
-  { value: '稳定版', label: '稳定版' },
-  { value: '镜像版', label: '镜像版' },
-  { value: '汉化版', label: '汉化版' },
-  { value: '未知版本', label: '未知版本' }
+export const VERSION_LABEL_OPTIONS: VocabOption<
+  NonNullable<GalgameResource['version_label']>
+>[] = [
+  { value: 'official_latest', label: '官方最新' },
+  { value: 'stable', label: '稳定版' },
+  { value: 'mirror', label: '镜像版' },
+  { value: 'localized', label: '汉化版' },
+  { value: 'unknown', label: '未知版本' }
 ]
 
 const RUNTIME_RELEVANT = new Set([
@@ -146,6 +156,8 @@ export const PLATFORM_LABELS: Record<string, string> = {
 
 export const RUNTIME_LABELS = labelsOf(RUNTIME_OPTIONS)
 
+export const VERSION_LABELS = labelsOf(VERSION_LABEL_OPTIONS)
+
 export const resourceTypeLabel = (key: string) =>
   RESOURCE_TYPE_LABELS[key] || key
 
@@ -157,3 +169,6 @@ export const resourcePlatformLabel = (key: string) =>
 
 export const resourceRuntimeLabel = (key: string) =>
   RUNTIME_LABELS[key] || key
+
+export const resourceVersionLabel = (key: string) =>
+  VERSION_LABELS[key] || key

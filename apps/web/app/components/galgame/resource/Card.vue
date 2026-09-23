@@ -4,15 +4,23 @@ import {
   GALGAME_RESOURCE_PLATFORM_ICON_MAP
 } from '~/constants/galgameResource'
 import { KUN_USER_TEXT_CHIP_CLASS } from '~/constants/galgame'
+import type { GalgameResource } from '#shared/utils/api/schemas'
 import {
   resourceLanguageLabel,
   resourcePlatformLabel,
   resourceTypeLabel
 } from '~~/shared/utils/galgameResourceVocab'
 
-defineProps<{
-  resource: GalgameResourceCard
+const props = defineProps<{
+  resource: GalgameResource
 }>()
+
+const workName = useWorkName()
+const title = computed(() =>
+  props.resource.work ? workName(props.resource.work) : ''
+)
+const platform = computed(() => props.resource.resource_platforms[0])
+const language = computed(() => props.resource.resource_languages[0])
 </script>
 
 <template>
@@ -23,12 +31,12 @@ defineProps<{
     content-class="space-y-2"
   >
     <div class="flex flex-wrap items-center gap-2">
-      <KunChip size="sm" variant="flat" color="primary">
+      <KunChip v-if="platform" size="sm" variant="flat" color="primary">
         <KunIcon
-          :name="GALGAME_RESOURCE_PLATFORM_ICON_MAP[resource.platform]"
+          :name="GALGAME_RESOURCE_PLATFORM_ICON_MAP[platform]"
           class="text-primary h-4 w-4"
         />
-        {{ resourcePlatformLabel(resource.platform) }}
+        {{ resourcePlatformLabel(platform) }}
       </KunChip>
 
       <KunChip color="warning" :class-name="KUN_USER_TEXT_CHIP_CLASS">
@@ -37,13 +45,13 @@ defineProps<{
       </KunChip>
 
       <span class="text-default-500 text-sm">
-        <KunTime :time="resource.created" />
+        <KunTime :time="resource.created_at" />
       </span>
     </div>
 
     <div class="space-y-2">
       <h3 class="hover:text-primary line-clamp-3 break-all transition-colors">
-        {{ resource.galgame_name }}
+        {{ title }}
       </h3>
 
       <div class="flex flex-wrap items-center justify-between gap-2">
@@ -51,22 +59,22 @@ defineProps<{
           <span class="flex items-center gap-1">
             <KunIcon
               class="icon"
-              :name="GALGAME_RESOURCE_TYPE_ICON_MAP[resource.type]"
+              :name="GALGAME_RESOURCE_TYPE_ICON_MAP[resource.resource_type]"
             />
-            {{ resourceTypeLabel(resource.type) }}
+            {{ resourceTypeLabel(resource.resource_type) }}
           </span>
 
-          {{ resourceLanguageLabel(resource.language) }}
+          <span v-if="language">{{ resourceLanguageLabel(language) }}</span>
         </div>
 
         <div class="flex gap-2">
           <div class="text-default-500 flex items-center gap-1 text-sm">
             <KunIcon name="lucide:download" class="h-4 w-4" />
-            {{ resource.download }}
+            {{ resource.download_count }}
           </div>
           <div class="text-default-500 flex items-center gap-1 text-sm">
             <KunIcon name="lucide:eye" class="h-4 w-4" />
-            {{ resource.view }}
+            {{ resource.view_count }}
           </div>
           <div
             v-if="resource.comment_count"

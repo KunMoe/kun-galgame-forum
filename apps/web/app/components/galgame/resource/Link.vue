@@ -4,6 +4,10 @@ import {
   GALGAME_RESOURCE_PLATFORM_ICON_MAP
 } from '~/constants/galgameResource'
 import { KUN_USER_TEXT_CHIP_CLASS } from '~/constants/galgame'
+import { settle } from '#shared/utils/api/problem'
+import type { GalgameResource } from '#shared/utils/api/schemas'
+import { contentPlainText } from '~/utils/contentPlainText'
+import { toKunUser } from '~/utils/userRef'
 import {
   resourceLanguageLabel,
   resourcePlatformLabel,
@@ -18,18 +22,19 @@ const props = defineProps<{
 
 const isFetching = ref(false)
 const { id } = usePersistUserStore()
+const api = useApiClient()
 
-const nuxtApp = useNuxtApp()
-
-const isExpired = computed(() => props.resource.status === 1)
-const isOwner = computed(() => id === props.resource.user.id)
-const canEditAnyResource = useCan('resource.edit_any')
+const isExpired = computed(() => props.resource.state === 'expired')
+const isOwner = computed(() => Number(props.resource.author.id) === id)
+const canEdit = computed(() => props.resource.viewer?.can_edit ?? false)
+const author = computed(() => toKunUser(props.resource.author))
+const noteText = computed(() =>
+  contentPlainText(props.resource.content).trim()
+)
 
 const providerName = computed(() => {
   const names = props.resource.provider_names
-  return names && names.length > 0
-    ? names.join(' / ')
-    : props.resource.link_domain
+  return names.length > 0 ? names.join(' / ') : ''
 })
 
 const NOTE_COLLAPSED_MAX_HEIGHT = 100
@@ -68,7 +73,7 @@ onBeforeUnmount(() => {
 })
 
 watch(
-  () => props.resource.note,
+  () => props.resource.content,
   () => {
     isNoteExpanded.value = false
     nextTick(measureNoteOverflow)
@@ -83,7 +88,7 @@ const openDetail = async () => {
   if (isOpeningDetail.value) return
   isOpeningDetail.value = true
   try {
-    await nuxtApp.runWithContext(() => detailModalRef.value?.prefetch())
+    await detailModalRef.value?.prefetch()
     isDetailOpen.value = true
   } finally {
     isOpeningDetail.value = false
@@ -98,20 +103,20 @@ const handleMarkValid = async () => {
   if (!res) return
 
   isFetching.value = true
-  const result = await nuxtApp.runWithContext(() =>
-    kunFetch(`/galgame/${props.resource.galgame_id}/resource/valid`, {
-      method: 'PUT',
-      body: { galgame_resource_id: props.resource.id }
+  const result = await settle(
+    api.PATCH('/galgame-resources/{resource_id}', {
+      params: { path: { resource_id: props.resource.id } },
+      body: { state: 'valid' }
     })
   )
   isFetching.value = false
 
-  if (result) {
-    nuxtApp.runWithContext(() => {
-      useMessage(10548, 'success')
-      props.refresh()
-    })
+  if (!result.ok) {
+    reportProblem(result.problem)
+    return
   }
+  useMessage(10548, 'success')
+  props.refresh()
 }
 </script>
 
@@ -119,11 +124,11 @@ const handleMarkValid = async () => {
   <KunCard :color="isExpired ? 'warning' : 'success'" content-class="space-y-3">
     <div class="flex flex-wrap items-center justify-between gap-2">
       <div class="flex items-center gap-2">
-        <KunAvatar :user="resource.user" size="md" />
+        <KunAvatar :user="author" size="md" />
         <div class="flex flex-col leading-tight">
-          <span class="text-sm font-medium">{{ resource.user.name }}</span>
+          <span class="text-sm font-medium">{{ author.name }}</span>
           <span class="text-default-500 text-xs">
-            <KunTime :time="resource.created" />
+            <KunTime :time="resource.created_at" />
           </span>
         </div>
       </div>
@@ -147,8 +152,10 @@ const handleMarkValid = async () => {
 
     <div class="flex flex-wrap items-center gap-1.5">
       <KunChip color="primary" variant="flat">
-        <KunIcon :name="GALGAME_RESOURCE_TYPE_ICON_MAP[resource.type]" />
-        {{ resourceTypeLabel(resource.type) }}
+        <KunIcon
+          :name="GALGAME_RESOURCE_TYPE_ICON_MAP[resource.resource_type]"
+        />
+        {{ resourceTypeLabel(resource.resource_type) }}
       </KunChip>
       <KunChip
         v-if="resource.title"
@@ -158,12 +165,16 @@ const handleMarkValid = async () => {
       >
         {{ resource.title }}
       </KunChip>
-      <KunChip color="warning" variant="flat" :class-name="KUN_USER_TEXT_CHIP_CLASS">
+      <KunChip
+        color="warning"
+        variant="flat"
+        :class-name="KUN_USER_TEXT_CHIP_CLASS"
+      >
         <KunIcon name="lucide:database" />
         {{ resource.size }}
       </KunChip>
       <KunChip
-        v-for="p in resource.platforms?.length ? resource.platforms : [resource.platform]"
+        v-for="p in resource.resource_platforms"
         :key="'p-' + p"
         color="success"
         variant="flat"
@@ -172,9 +183,7 @@ const handleMarkValid = async () => {
         {{ resourcePlatformLabel(p) }}
       </KunChip>
       <KunChip
-        v-for="lang in resource.languages?.length
-          ? resource.languages
-          : [resource.language]"
+        v-for="lang in resource.resource_languages"
         :key="'l-' + lang"
         color="secondary"
         variant="flat"
@@ -183,7 +192,7 @@ const handleMarkValid = async () => {
         {{ resourceLanguageLabel(lang) }}
       </KunChip>
       <KunChip
-        v-for="rt in resource.runtimes ?? []"
+        v-for="rt in resource.resource_runtimes"
         :key="'r-' + rt"
         variant="flat"
       >
@@ -191,13 +200,13 @@ const handleMarkValid = async () => {
       </KunChip>
     </div>
 
-    <div v-if="resource.note" class="space-y-1.5">
+    <div v-if="noteText" class="space-y-1.5">
       <p
         ref="noteRef"
         :style="noteStyle"
         class="text-default-700 bg-default-100/60 overflow-hidden rounded-md px-3 py-2 text-sm break-words whitespace-pre-line"
       >
-        {{ markdownToText(resource.note, { preserveNewlines: true }) }}
+        {{ noteText }}
       </p>
 
       <button
@@ -223,21 +232,20 @@ const handleMarkValid = async () => {
         <KunTooltip text="资源下载数">
           <div class="text-default-500 flex items-center gap-1 px-2 text-sm">
             <KunIcon name="lucide:download" />
-            <span>{{ resource.download }}</span>
+            <span>{{ resource.download_count }}</span>
           </div>
         </KunTooltip>
 
         <GalgameResourceLike
           v-if="!isOwner"
-          :work-id="resource.galgame_id"
-          :galgame-resource-id="resource.id"
-          :target-user-id="resource.user.id"
-          :is-liked="resource.is_liked"
+          :resource-id="resource.id"
+          :target-user-id="Number(resource.author.id)"
+          :is-liked="resource.viewer?.has_liked ?? false"
           :like-count="resource.like_count"
         />
 
         <KunButton
-          v-if="isExpired && (isOwner || canEditAnyResource)"
+          v-if="isExpired && canEdit"
           size="sm"
           variant="flat"
           color="success"

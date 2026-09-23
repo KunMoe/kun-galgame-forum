@@ -3,12 +3,19 @@ import {
   GALGAME_RESOURCE_TYPE_ICON_MAP,
   GALGAME_RESOURCE_PLATFORM_ICON_MAP
 } from '~/constants/galgameResource'
+import { KUN_USER_TEXT_CHIP_CLASS } from '~/constants/galgame'
+import { settle } from '#shared/utils/api/problem'
+import type {
+  GalgameResource,
+  GalgameResourceDownload
+} from '#shared/utils/api/schemas'
+import { contentPlainText } from '~/utils/contentPlainText'
+import { toKunUser } from '~/utils/userRef'
 import {
-  KUN_GALGAME_RESOURCE_TYPE_MAP,
-  KUN_GALGAME_RESOURCE_LANGUAGE_MAP,
-  KUN_GALGAME_RESOURCE_PLATFORM_MAP,
-  KUN_USER_TEXT_CHIP_CLASS
-} from '~/constants/galgame'
+  resourceLanguageLabel,
+  resourcePlatformLabel,
+  resourceTypeLabel
+} from '~~/shared/utils/galgameResourceVocab'
 
 const props = defineProps<{
   resource: GalgameResource
@@ -62,84 +69,86 @@ watch(open, (isOpen) => {
 
 onBeforeUnmount(teardownNoteObserver)
 
-const nuxtApp = useNuxtApp()
-
 const { id: currentUserId } = usePersistUserStore()
-const canEditAnyResource = useCan('resource.edit_any')
-const canDeleteAnyResource = useCan('resource.delete_any')
+const api = useApiClient()
 
 const isEditOpen = ref(false)
 
-const detail = ref<null | GalgameResourceDetailLink>(null)
+const download = ref<GalgameResourceDownload | null>(null)
+const downloadsHere = ref(0)
 const isFetching = ref(false)
-const isExpired = computed(() => props.resource.status === 1)
-const isOwner = computed(() => currentUserId === props.resource.user.id)
-const canEdit = computed(() => isOwner.value || canEditAnyResource.value)
-const canDelete = computed(() => isOwner.value || canDeleteAnyResource.value)
+const isExpired = computed(() => props.resource.state === 'expired')
+const isOwner = computed(
+  () => currentUserId === Number(props.resource.author.id)
+)
+const canEdit = computed(() => props.resource.viewer?.can_edit ?? false)
+const canDelete = computed(() => props.resource.viewer?.can_delete ?? false)
+const author = computed(() => toKunUser(props.resource.author))
+const workId = computed(() => props.resource.work?.id ?? '')
+const hasNote = computed(
+  () => contentPlainText(props.resource.content).trim().length > 0
+)
 
 const providerName = computed(() => {
   const names = props.resource.provider_names
-  return names && names.length > 0
-    ? names.join(' / ')
-    : props.resource.link_domain
+  return names.length > 0 ? names.join(' / ') : ''
 })
 
-const fetchDetail = async () => {
-  if (detail.value || isFetching.value) return detail.value
+const fetchDownload = async () => {
+  if (download.value || isFetching.value) return download.value
   isFetching.value = true
-  const result = await kunFetch<GalgameResourceDetailLink>(
-    `/galgame-resource/${props.resource.id}/detail`,
-    {
-      method: 'GET',
-      query: { galgame_resource_id: props.resource.id }
-    }
+  const result = await settle(
+    api.POST('/galgame-resources/{resource_id}/downloads', {
+      params: { path: { resource_id: props.resource.id } }
+    })
   )
   isFetching.value = false
-  if (result) detail.value = result
-  return detail.value
+  if (!result.ok) {
+    reportProblem(result.problem)
+    return null
+  }
+  download.value = result.data
+  downloadsHere.value += 1
+  return download.value
 }
 
-defineExpose({ prefetch: fetchDetail })
+defineExpose({ prefetch: fetchDownload })
 
 const { status: reportStatus, report: reportExpire } =
   useReportResourceExpired()
 const handleReportExpire = () =>
-  reportExpire(props.resource.galgame_id, props.resource.id, () =>
-    props.refresh()
-  )
+  reportExpire(props.resource.id, () => props.refresh())
 
 const handleDelete = async () => {
   const res = await useComponentMessageStore().alert(
     '您确定删除 Galgame 资源链接吗？',
-    '这将扣除发布者获得的 5 萌萌点, 并扣除其它人对资源链接的点赞影响, 此操作不可撤销。'
+    '这将扣除发布者获得的 3 萌萌点, 此操作不可撤销。'
   )
   if (!res) return
 
   isFetching.value = true
-  const result = await nuxtApp.runWithContext(() =>
-    kunFetch(`/galgame/${props.resource.galgame_id}/resource`, {
-      method: 'DELETE',
-      query: { galgame_resource_id: props.resource.id }
+  const result = await settle(
+    api.DELETE('/galgame-resources/{resource_id}', {
+      params: { path: { resource_id: props.resource.id } }
     })
   )
   isFetching.value = false
 
-  if (result) {
-    nuxtApp.runWithContext(() => {
-      useMessage('删除资源成功', 'success')
-      props.refresh()
-      open.value = false
-    })
+  if (!result.ok) {
+    reportProblem(result.problem)
+    return
   }
+  useMessage('删除资源成功', 'success')
+  props.refresh()
+  open.value = false
 }
 
 const handleEdit = () => {
-  if (!detail.value) return
   isEditOpen.value = true
 }
 
 const handleEditDone = () => {
-  detail.value = null
+  download.value = null
   props.refresh()
   open.value = false
 }
@@ -168,6 +177,7 @@ const handleEditDone = () => {
           </span>
         </div>
         <KunChip
+          v-if="providerName"
           variant="flat"
           :color="isExpired ? 'warning' : 'success'"
           size="sm"
@@ -179,50 +189,64 @@ const handleEditDone = () => {
       <div class="space-y-5 p-5">
         <div class="flex flex-wrap items-center justify-between gap-2">
           <div class="flex items-center gap-3">
-            <KunAvatar :user="resource.user" size="lg" />
+            <KunAvatar :user="author" size="lg" />
             <div class="flex flex-col">
-              <span class="font-medium">{{ resource.user.name }}</span>
+              <span class="font-medium">{{ author.name }}</span>
               <span class="text-default-500 text-xs">
-                发布于 <KunTime :time="resource.created" />
+                发布于 <KunTime :time="resource.created_at" />
               </span>
             </div>
           </div>
           <KunChip variant="flat" color="default" size="sm">
             <KunIcon name="lucide:download" />
-            {{ resource.download }} 次下载
+            {{ resource.download_count + downloadsHere }} 次下载
           </KunChip>
         </div>
 
         <div class="flex flex-wrap items-center gap-2">
           <KunChip color="primary" variant="flat">
-            <KunIcon :name="GALGAME_RESOURCE_TYPE_ICON_MAP[resource.type]" />
-            {{ KUN_GALGAME_RESOURCE_TYPE_MAP[resource.type] }}
+            <KunIcon
+              :name="GALGAME_RESOURCE_TYPE_ICON_MAP[resource.resource_type]"
+            />
+            {{ resourceTypeLabel(resource.resource_type) }}
           </KunChip>
-          <KunChip color="warning" variant="flat" :class-name="KUN_USER_TEXT_CHIP_CLASS">
+          <KunChip
+            color="warning"
+            variant="flat"
+            :class-name="KUN_USER_TEXT_CHIP_CLASS"
+          >
             <KunIcon name="lucide:database" />
             {{ resource.size }}
           </KunChip>
-          <KunChip color="success" variant="flat">
-            <KunIcon
-              :name="GALGAME_RESOURCE_PLATFORM_ICON_MAP[resource.platform]"
-            />
-            {{ KUN_GALGAME_RESOURCE_PLATFORM_MAP[resource.platform] }}
+          <KunChip
+            v-for="p in resource.resource_platforms"
+            :key="'p-' + p"
+            color="success"
+            variant="flat"
+          >
+            <KunIcon :name="GALGAME_RESOURCE_PLATFORM_ICON_MAP[p]" />
+            {{ resourcePlatformLabel(p) }}
           </KunChip>
-          <KunChip color="secondary" variant="flat">
+          <KunChip
+            v-for="lang in resource.resource_languages"
+            :key="'l-' + lang"
+            color="secondary"
+            variant="flat"
+          >
             <KunIcon name="lucide:globe" />
-            {{ KUN_GALGAME_RESOURCE_LANGUAGE_MAP[resource.language] }}
+            {{ resourceLanguageLabel(lang) }}
           </KunChip>
         </div>
 
         <KunInfo
-          v-if="resource.note"
+          v-if="hasNote"
           color="info"
           variant="flat"
           title="发布者备注 — 请先阅读"
         >
           <div class="space-y-1.5">
             <div ref="noteRef" :style="noteStyle" class="overflow-hidden">
-              <KunContent compact :content="renderKatex(resource.note_html)" />
+              <ContentDocument compact :document="resource.content" />
             </div>
 
             <button
@@ -245,13 +269,19 @@ const handleEditDone = () => {
           <KunLoading />
         </div>
 
-        <template v-else-if="detail">
+        <template v-else-if="download">
           <KunAdAIFYBanner />
 
           <KunInfo color="primary" variant="flat" title="下载链接">
-            <div class="space-y-1.5">
+            <p
+              v-if="!download.download_urls.length"
+              class="text-default-500 text-sm"
+            >
+              这个资源没有登记下载链接，链接可能写在提取码或备注里
+            </p>
+            <div v-else class="space-y-1.5">
               <div
-                v-for="(kun, index) in detail.link"
+                v-for="(kun, index) in download.download_urls"
                 :key="index"
                 class="flex items-start gap-2"
               >
@@ -273,29 +303,29 @@ const handleEditDone = () => {
           </KunInfo>
 
           <div
-            v-if="detail.code || detail.password"
+            v-if="download.extraction_code || download.archive_password"
             class="flex flex-wrap items-center gap-2"
           >
             <KunCopy
-              v-if="detail.code"
+              v-if="download.extraction_code"
               variant="solid"
               :color="isExpired ? 'warning' : 'success'"
-              :name="`提取码 ${detail.code}`"
-              :text="detail.code"
+              :name="`提取码 ${download.extraction_code}`"
+              :text="download.extraction_code"
             />
             <KunCopy
-              v-if="detail.password"
+              v-if="download.archive_password"
               variant="solid"
               :color="isExpired ? 'warning' : 'success'"
-              :name="`解压码 ${detail.password}`"
-              :text="detail.password"
+              :name="`解压码 ${download.archive_password}`"
+              :text="download.archive_password"
             />
           </div>
 
           <KunInfo title="鲲的小请求">
             <p>
               在您下载这部 Galgame 并游玩之后, 可否请您在本网站的
-              <KunLink size="sm" :to="`/galgame/${resource.galgame_id}`">
+              <KunLink size="sm" :to="`/galgame/${workId}`">
                 Galgame 评分页面
               </KunLink>
               为这部 Galgame 提交一个评分, 这将有助于我们把优秀的 Galgame
@@ -304,10 +334,9 @@ const handleEditDone = () => {
           </KunInfo>
 
           <GalgameResourceBuyLegitNotice
-            :work-id="resource.galgame_id"
-            :purchase-url="resource.dlsite_purchase_url"
-            :coupon-url="resource.dlsite_coupon_url"
-            :campaign-name="resource.dlsite_campaign_name"
+            :work-id="workId"
+            :purchase-url="resource.dlsite?.purchase_url"
+            :coupon-url="resource.dlsite?.coupon_url ?? undefined"
           />
         </template>
 
@@ -365,10 +394,9 @@ const handleEditDone = () => {
     </div>
 
     <GalgameResourceLinkEditModal
-      v-if="detail"
       v-model="isEditOpen"
-      :work-id="resource.galgame_id"
-      :resource="detail"
+      :work-id="workId"
+      :resource-id="resource.id"
       :refresh="handleEditDone"
     />
   </KunModal>

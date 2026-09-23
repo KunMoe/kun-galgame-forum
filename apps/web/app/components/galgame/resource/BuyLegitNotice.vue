@@ -2,7 +2,7 @@
 import { KUN_DLSITE_ANNOUNCE_TOPIC_ID } from '~/constants/dlsite'
 
 const props = defineProps<{
-  workId: number
+  workId: string
   purchaseUrl?: string
   couponUrl?: string
 }>()

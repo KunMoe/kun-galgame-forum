@@ -1,16 +1,26 @@
 <script setup lang="ts">
+import { settle } from '#shared/utils/api/problem'
+
 const props = defineProps<{
-  workId: number
-  galgameResourceId: number
+  resourceId: string
   targetUserId: number
   isLiked: boolean
   likeCount: number
 }>()
 
 const { id } = usePersistUserStore()
+const api = useApiClient()
 const isLiked = ref(props.isLiked)
 const likeCount = ref(props.likeCount)
 const pending = ref(false)
+
+watch(
+  () => [props.isLiked, props.likeCount] as const,
+  ([liked, count]) => {
+    isLiked.value = liked
+    likeCount.value = count
+  }
+)
 
 const revert = (next: boolean) => {
   isLiked.value = !next
@@ -29,15 +39,20 @@ const onChange = async (next: boolean) => {
     return
   }
   pending.value = true
-  const result = await kunFetch(`/galgame/${props.workId}/resource/like`, {
-    method: 'PUT',
-    body: { galgame_resource_id: props.galgameResourceId }
-  })
+  const params = { params: { path: { resource_id: props.resourceId } } }
+  const result = await settle(
+    next
+      ? api.PUT('/galgame-resources/{resource_id}/like', params)
+      : api.DELETE('/galgame-resources/{resource_id}/like', params)
+  )
   pending.value = false
-  if (!result) {
+  if (!result.ok) {
     revert(next)
+    reportProblem(result.problem)
     return
   }
+  isLiked.value = result.data.viewer?.has_liked ?? next
+  likeCount.value = result.data.like_count
   useMessage(next ? '点赞资源成功' : '取消点赞成功', 'success')
 }
 </script>

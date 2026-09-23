@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import type { GalgameResource } from '#shared/utils/api/schemas'
+import { problemMessage } from '#shared/utils/api/message'
+import { contentPlainText } from '~/utils/contentPlainText'
 import {
   resourceLanguageLabel,
   resourcePlatformLabel,
@@ -6,34 +9,42 @@ import {
 } from '~~/shared/utils/galgameResourceVocab'
 
 const route = useRoute()
-const resourceId = computed(() => Number((route.params as { id: string }).id))
+const resourceId = computed(() => String((route.params as { id: string }).id))
+const workName = useWorkName()
 
-const { data, refresh } = await useKunFetch<
-  GalgameResourcePageData | 'not found'
->(`/galgame-resource/${resourceId.value}`, {
-  query: { resource_id: resourceId }
-})
+const { data, problem, refresh } = await useApi<GalgameResource>(
+  () => `galgame-resource:${resourceId.value}`,
+  (api, { signal }) =>
+    api.GET('/galgame-resources/{resource_id}', {
+      params: { path: { resource_id: resourceId.value } },
+      signal
+    })
+)
 
-if (data.value && data.value !== 'not found') {
-  const titleBase = data.value.galgame.name
+const resource = data.value
+const work = resource?.work
 
-  if (data.value.galgame.content_limit === 'nsfw') {
+if (resource && work) {
+  const titleBase = workName(work)
+
+  if (work.is_nsfw) {
     useKunDisableSeo(titleBase)
   } else {
-    const resource = data.value.resource
-
-    const typeLabel = resourceTypeLabel(resource.type)
-    const languageLabel = resourceLanguageLabel(resource.language)
-    const platformLabel = resourcePlatformLabel(resource.platform)
+    const typeLabel = resourceTypeLabel(resource.resource_type)
+    const languageLabel = resource.resource_languages
+      .map((lang) => resourceLanguageLabel(lang))
+      .join(' ')
+    const platformLabel = resource.resource_platforms
+      .map((platform) => resourcePlatformLabel(platform))
+      .join(' ')
 
     const description = `${typeLabel} · ${languageLabel} · ${platformLabel} · ${resource.size}`
+    const note = contentPlainText(resource.content).trim()
 
     useKunSeoMeta({
       title: `${titleBase} ${typeLabel}资源下载`,
-      description: data.value.resource.note
-        ? truncateRunes(markdownToText(data.value.resource.note).trim(), 233)
-        : description,
-      ogImage: getEffectiveBanner(data.value.galgame)
+      description: note ? truncateRunes(note, 233) : description,
+      ...(work.cover?.url ? { ogImage: work.cover.url } : {})
     })
   }
 } else {
@@ -42,31 +53,37 @@ if (data.value && data.value !== 'not found') {
 </script>
 
 <template>
-  <div v-if="data" class="space-y-3">
-    <template v-if="data !== 'not found'">
-      <GalgameResourceDetailHero :galgame="data.galgame" />
+  <div class="space-y-3">
+    <template v-if="data">
+      <GalgameResourceDetailHero v-if="data.work" :work="data.work" />
 
       <KunAdAIFYBanner class-name="hidden lg:block" />
 
       <div class="grid grid-cols-1 gap-3 lg:grid-cols-3">
         <GalgameResourceDetailPanel
           class="min-w-0 lg:col-span-2"
-          :galgame="data.galgame"
-          :resource="data.resource"
+          :resource="data"
           :refresh="refresh"
         />
 
         <GalgameResourceDetailRecommendations
+          v-if="data.work"
           class="min-w-0"
-          :recommendations="data.recommendations"
+          :work-id="data.work.id"
+          :current-id="data.id"
         />
       </div>
 
       <GalgameResourceCommentCommunityContainer
-        :resource-id="resourceId"
-        :comment-count="data.resource.comment_count"
+        :resource-id="Number(data.id)"
+        :comment-count="data.comment_count"
       />
     </template>
+
+    <KunNull
+      v-else-if="problem && problem.status !== 404"
+      :description="problemMessage(problem)"
+    />
 
     <KunNull
       v-else

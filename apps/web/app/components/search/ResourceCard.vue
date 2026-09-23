@@ -3,20 +3,25 @@ import {
   GALGAME_RESOURCE_TYPE_ICON_MAP,
   GALGAME_RESOURCE_PLATFORM_ICON_MAP
 } from '~/constants/galgameResource'
+import { contentPlainText } from '~/utils/contentPlainText'
 import {
-  KUN_GALGAME_RESOURCE_TYPE_MAP,
-  KUN_GALGAME_RESOURCE_LANGUAGE_MAP,
-  KUN_GALGAME_RESOURCE_PLATFORM_MAP
-} from '~/constants/galgame'
+  resourceLanguageLabel,
+  resourcePlatformLabel,
+  resourceTypeLabel
+} from '~~/shared/utils/galgameResourceVocab'
 
 const props = defineProps<{
   resource: SearchResultResource
   keywords?: string
 }>()
 
-// Uploaders write the note in markdown, so the raw string is full of ###, **
-// and bare links — three lines of syntax before the sentence that matched.
-const note = computed(() => markdownToText(props.resource.note))
+const workName = useWorkName()
+const title = computed(() =>
+  props.resource.work ? workName(props.resource.work) : ''
+)
+const note = computed(() => contentPlainText(props.resource.content).trim())
+const platform = computed(() => props.resource.resource_platforms[0])
+const language = computed(() => props.resource.resource_languages[0])
 </script>
 
 <template>
@@ -29,16 +34,16 @@ const note = computed(() => markdownToText(props.resource.note))
     <div class="flex w-full items-baseline gap-2">
       <KunIcon
         :name="
-          GALGAME_RESOURCE_PLATFORM_ICON_MAP[resource.platform] ||
+          (platform && GALGAME_RESOURCE_PLATFORM_ICON_MAP[platform]) ||
           'lucide:ellipsis'
         "
         class="text-primary size-3.5 shrink-0 self-center"
       />
       <h3 class="hover:text-primary min-w-0 flex-1 truncate font-medium">
-        <SearchHighlight :text="resource.galgame_name" :keywords="keywords" />
+        <SearchHighlight :text="title" :keywords="keywords" />
       </h3>
       <span class="text-default-400 shrink-0 text-xs">
-        <KunTime :time="resource.created" />
+        <KunTime :time="resource.created_at" />
       </span>
     </div>
 
@@ -51,13 +56,13 @@ const note = computed(() => markdownToText(props.resource.note))
     >
       <span class="flex items-center gap-1">
         <KunIcon
-          :name="GALGAME_RESOURCE_TYPE_ICON_MAP[resource.type]"
+          :name="GALGAME_RESOURCE_TYPE_ICON_MAP[resource.resource_type]"
           class="size-3.5"
         />
-        {{ KUN_GALGAME_RESOURCE_TYPE_MAP[resource.type] }}
+        {{ resourceTypeLabel(resource.resource_type) }}
       </span>
-      <span>{{ KUN_GALGAME_RESOURCE_LANGUAGE_MAP[resource.language] }}</span>
-      <span>{{ KUN_GALGAME_RESOURCE_PLATFORM_MAP[resource.platform] }}</span>
+      <span v-if="language">{{ resourceLanguageLabel(language) }}</span>
+      <span v-if="platform">{{ resourcePlatformLabel(platform) }}</span>
       <span v-if="resource.size" class="flex items-center gap-1">
         <KunIcon name="lucide:database" class="size-3.5" />
         {{ resource.size }}
@@ -66,11 +71,11 @@ const note = computed(() => markdownToText(props.resource.note))
       <span class="ml-auto flex shrink-0 items-center gap-3 tabular-nums">
         <span class="flex items-center gap-1">
           <KunIcon name="lucide:download" class="size-3.5" />
-          {{ resource.download }}
+          {{ resource.download_count }}
         </span>
         <span class="flex items-center gap-1">
           <KunIcon name="lucide:eye" class="size-3.5" />
-          {{ resource.view }}
+          {{ resource.view_count }}
         </span>
       </span>
     </div>

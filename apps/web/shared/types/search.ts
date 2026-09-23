@@ -1,15 +1,15 @@
 import type {
   CommentSearchHit,
+  GalgameResource,
   ReplySearchHit,
   TopicSummary,
   UserSearchHit,
   WorkRef
 } from '../utils/api/schemas'
 import type { ToolsetCard } from './toolset'
-import type { GalgameResourceCard } from './galgame-resource'
 
 export type SearchResultToolset = ToolsetCard
-export type SearchResultResource = GalgameResourceCard
+export type SearchResultResource = GalgameResource
 
 export type SearchEntityFamily =
   | 'character'
