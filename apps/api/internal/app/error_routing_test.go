@@ -1,21 +1,30 @@
 package app
 
 import (
+	"bytes"
+	"context"
 	"encoding/json"
 	"io"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
+	"kun-galgame-api/internal/middleware"
 	"kun-galgame-api/pkg/problem"
 
+	"github.com/alicebob/miniredis/v2"
 	"github.com/gofiber/fiber/v3"
+	"github.com/redis/go-redis/v9"
 )
 
 func serve(t *testing.T) *App {
 	t.Helper()
-	a := &App{Fiber: newFiber(), Config: testConfig()}
+	rdb := redis.NewClient(&redis.Options{Addr: miniredis.RunT(t).Addr(), MaxRetries: 0})
+	t.Cleanup(func() { _ = rdb.Close() })
+	a := &App{Fiber: newFiber(), Config: testConfig(), Redis: rdb, Authn: middleware.NewAuthenticator(rdb, nil, nil)}
 	a.Fiber.Get("/api/_test/panic", func(fiber.Ctx) error { panic("legacy boom") })
 	a.Fiber.Get("/api/v1/_test/panic", func(fiber.Ctx) error { panic("v1 boom") })
 	a.setupRoutes()
@@ -24,7 +33,12 @@ func serve(t *testing.T) *App {
 
 func get(t *testing.T, a *App, method, path string) (*http.Response, []byte) {
 	t.Helper()
-	resp, err := a.Fiber.Test(httptest.NewRequest(method, path, nil))
+	return send(t, a, httptest.NewRequest(method, path, nil))
+}
+
+func send(t *testing.T, a *App, req *http.Request) (*http.Response, []byte) {
+	t.Helper()
+	resp, err := a.Fiber.Test(req)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -83,16 +97,50 @@ func TestV1HeadAnswersLikeGet(t *testing.T) {
 	}
 }
 
-func TestLegacyErrorsAreUnchanged(t *testing.T) {
+func TestLegacyErrorsKeepTheEnvelope(t *testing.T) {
+	var logs bytes.Buffer
+	prev := slog.Default()
+	slog.SetDefault(slog.New(slog.NewTextHandler(&logs, nil)))
+	defer slog.SetDefault(prev)
+
 	a := serve(t)
-	const want = `{"code":233,"message":"服务器内部错误"}`
-	for _, path := range []string{"/api/nope", "/api/_test/panic"} {
-		resp, body := get(t, a, http.MethodGet, path)
-		if resp.StatusCode != http.StatusInternalServerError || string(body) != want {
-			t.Errorf("GET %s = %d %s, want 500 %s", path, resp.StatusCode, body, want)
+	session, err := json.Marshal(middleware.SessionData{
+		UserInfo:         middleware.UserInfo{ID: 1, Name: "n"},
+		OAuthAccessToken: "access",
+		OAuthExpiresAt:   time.Now().Add(time.Hour).Unix(),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := a.Redis.Set(context.Background(), middleware.SessionKey("sess"), session, middleware.SessionTTL).Err(); err != nil {
+		t.Fatal(err)
+	}
+
+	for _, tc := range []struct {
+		name, path string
+		signedIn   bool
+		status     int
+		want       string
+		logged     bool
+	}{
+		{"retired route, anonymous", "/api/nope", false, http.StatusUnauthorized, "", false},
+		{"retired route, signed in", "/api/nope", true, http.StatusNotFound, `{"code":233,"message":"页面版本已过期，请刷新页面后重试"}`, false},
+		{"panic", "/api/_test/panic", false, http.StatusInternalServerError, `{"code":233,"message":"服务器内部错误"}`, true},
+	} {
+		logs.Reset()
+		req := httptest.NewRequest(http.MethodGet, tc.path, nil)
+		if tc.signedIn {
+			req.AddCookie(&http.Cookie{Name: middleware.SessionCookieName, Value: "sess"})
+		}
+		resp, body := send(t, a, req)
+		if resp.StatusCode != tc.status || (tc.want != "" && string(body) != tc.want) {
+			t.Errorf("%s: %d %s, want %d %s", tc.name, resp.StatusCode, body, tc.status, tc.want)
 		}
 		if resp.Header.Get(problem.HeaderRequestID) != "" || resp.Header.Get("Cache-Control") != "" {
-			t.Errorf("GET %s gained v1 headers", path)
+			t.Errorf("%s: gained v1 headers", tc.name)
+		}
+		if got := strings.Contains(logs.String(), "level=ERROR"); got != tc.logged {
+			t.Errorf("%s: logged an ERROR = %v, want %v: %s", tc.name, got, tc.logged, logs.String())
 		}
 	}
 }

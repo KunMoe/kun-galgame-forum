@@ -615,6 +615,12 @@ func globalErrorHandler(c fiber.Ctx, err error) error {
 	if appErr, ok := err.(*errors.AppError); ok {
 		return response.Error(c, appErr)
 	}
+	// Every retired legacy route reached here as Fiber's 404 and went out as a
+	// 500 with an ERROR line: a browser tab still running an old bundle filled
+	// the log after each retirement, and its reader was told the server broke.
+	if fe, ok := err.(*fiber.Error); ok && fe.Code < fiber.StatusInternalServerError {
+		return response.Error(c, errors.New(errors.CodeBiz, "页面版本已过期，请刷新页面后重试", fe.Code))
+	}
 	slog.Error("未处理的错误", "error", err.Error(), "path", c.Path(), "method", c.Method())
 	return response.Error(c, errors.ErrInternal("服务器内部错误"))
 }
