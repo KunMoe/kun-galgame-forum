@@ -210,3 +210,37 @@ func TestV1CreateQuizCatalogDown(t *testing.T) {
 		createQuizBody(map[string]any{"work_ids": []string{idStr(g2WorkSFW)}}))
 	wantCode(t, resp, got, http.StatusServiceUnavailable, problem.CodeServiceUnavailable)
 }
+
+func TestV1LegacyEmptySubmissionIsNoChoice(t *testing.T) {
+	f := newQuizFix(t, nil)
+	const legacy = 930003411
+	if err := f.db.Exec(`INSERT INTO galgame_quiz_answer (id, quiz_id, user_id, role, submitted, is_correct, created, updated)
+		VALUES (?, ?, ?, 'answerer', '{}'::jsonb, false, now(), now())`, legacy, g2QRegrade, w3UserBob).Error; err != nil {
+		t.Fatal(err)
+	}
+	resp, got := f.qz(t, http.MethodPatch, "/api/v1/quizzes/"+idStr(g2QRegrade), "/quizzes/{quiz_id}", "sess-alice", "",
+		map[string]any{"correct_choice_indexes": []int{0}})
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("regrade to 0 %d %+v", resp.StatusCode, got)
+	}
+	if n := f.scalar(t, `SELECT COUNT(*) FROM galgame_quiz_answer WHERE id = ? AND is_correct`, legacy); n != 0 {
+		t.Error("an answer stored without a choice was regraded as choosing option 0")
+	}
+	resp, got = f.qz(t, http.MethodGet, "/api/v1/quizzes/"+idStr(g2QRegrade)+"/answers", "/quizzes/{quiz_id}/answers", "sess-alice", "", nil)
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("answers %d %+v", resp.StatusCode, got)
+	}
+	items, _ := got["items"].([]any)
+	for _, it := range items {
+		m, _ := it.(map[string]any)
+		if strID(m["id"]) != idStr(legacy) {
+			continue
+		}
+		sub, _ := m["submission"].(map[string]any)
+		if picks, _ := sub["choice_indexes"].([]any); sub == nil || len(picks) != 0 {
+			t.Errorf("legacy empty submission shown as %+v", m["submission"])
+		}
+		return
+	}
+	t.Error("legacy answer missing from the collection")
+}

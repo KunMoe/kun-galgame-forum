@@ -208,7 +208,7 @@ type storedJudge struct {
 }
 
 type submitSingle struct {
-	Value int `json:"value"`
+	Value *int `json:"value"`
 }
 
 type submitMultiple struct {
@@ -216,7 +216,7 @@ type submitMultiple struct {
 }
 
 type submitJudge struct {
-	Value bool `json:"value"`
+	Value *bool `json:"value"`
 }
 
 func parseChoices(qtype string, raw json.RawMessage) ([]string, error) {
@@ -304,7 +304,7 @@ func encodeSubmission(qtype string, sub QuizSubmission) (json.RawMessage, error)
 		if len(sub.ChoiceIndexes) > 0 {
 			v = int(sub.ChoiceIndexes[0])
 		}
-		return json.Marshal(submitSingle{Value: v})
+		return json.Marshal(submitSingle{Value: &v})
 	case quizTypeMultiple:
 		return json.Marshal(submitMultiple{Values: toInts(sub.ChoiceIndexes)})
 	case quizTypeJudge:
@@ -312,7 +312,7 @@ func encodeSubmission(qtype string, sub QuizSubmission) (json.RawMessage, error)
 		if sub.JudgeChoice != nil {
 			v = *sub.JudgeChoice
 		}
-		return json.Marshal(submitJudge{Value: v})
+		return json.Marshal(submitJudge{Value: &v})
 	default:
 		return json.RawMessage("{}"), nil
 	}
@@ -329,7 +329,9 @@ func decodeSubmission(qtype string, raw json.RawMessage) (QuizSubmission, error)
 		if err := json.Unmarshal(raw, &s); err != nil {
 			return out, err
 		}
-		out.ChoiceIndexes = []ChoiceIndex{ChoiceIndex(s.Value)}
+		if s.Value != nil {
+			out.ChoiceIndexes = []ChoiceIndex{ChoiceIndex(*s.Value)}
+		}
 	case quizTypeMultiple:
 		var s submitMultiple
 		if err := json.Unmarshal(raw, &s); err != nil {
@@ -341,8 +343,7 @@ func decodeSubmission(qtype string, raw json.RawMessage) (QuizSubmission, error)
 		if err := json.Unmarshal(raw, &s); err != nil {
 			return out, err
 		}
-		v := s.Value
-		out.JudgeChoice = &v
+		out.JudgeChoice = s.Value
 	}
 	return out, nil
 }
@@ -358,7 +359,7 @@ func grade(qtype string, content, submitted json.RawMessage) (bool, error) {
 		if err := json.Unmarshal(submitted, &s); err != nil {
 			return false, err
 		}
-		return s.Value == c.Answer, nil
+		return s.Value != nil && *s.Value == c.Answer, nil
 	case quizTypeMultiple:
 		var c storedMultiple
 		var s submitMultiple
@@ -378,7 +379,7 @@ func grade(qtype string, content, submitted json.RawMessage) (bool, error) {
 		if err := json.Unmarshal(submitted, &s); err != nil {
 			return false, err
 		}
-		return s.Value == c.Answer, nil
+		return s.Value != nil && *s.Value == c.Answer, nil
 	default:
 		return false, errors.New("unknown quiz type")
 	}
