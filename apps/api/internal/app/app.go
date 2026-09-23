@@ -37,7 +37,7 @@ import (
 	msgService "kun-galgame-api/internal/message/service"
 	"kun-galgame-api/internal/middleware"
 	"kun-galgame-api/internal/moemoepoint"
-	newsHandler "kun-galgame-api/internal/news/handler"
+	newsapiv1 "kun-galgame-api/internal/news/apiv1"
 	rankingHandler "kun-galgame-api/internal/ranking/handler"
 	rankingRepo "kun-galgame-api/internal/ranking/repository"
 	rankingService "kun-galgame-api/internal/ranking/service"
@@ -115,7 +115,7 @@ type App struct {
 	RankingHandler            *rankingHandler.RankingHandler
 	TrustHandler              *trustHandler.TrustHandler
 	RSSHandler                *rssHandler.RSSHandler
-	NewsHandler               *newsHandler.NewsHandler
+	NewsV1                    *newsapiv1.Service
 	GalgameHandler            *galgameHandler.GalgameHandler
 	GalgameCollectionHandler  *galgameHandler.GalgameCollectionHandler
 	GalgameResourceHandler    *galgameHandler.ResourceHandler
@@ -527,7 +527,7 @@ func New(cfg *config.Config) *App {
 		RankingHandler:            rankingHandler.NewRankingHandler(rankingService.NewRankingService(rankingRepo.NewRankingRepository(db), gc, uc)),
 		TrustHandler:              trustHandler.NewTrustHandler(trustEnforce, cfg.Trust.CallbackSecret),
 		RSSHandler:                rssHandler.NewRSSHandler(rssRepo.NewRSSRepository(db), gc, uc),
-		NewsHandler:               newsHandler.NewNewsHandler(newsCli, uc),
+		NewsV1:                    newsapiv1.New(newsCli, uc, cfg.NextMoeAPI.ImageCDNBase),
 		GalgameHandler:            galgameHandler.NewGalgameHandler(galgameCoreSvc),
 		GalgameCollectionHandler:  galgameHandler.NewGalgameCollectionHandler(galgameCollectionSvc),
 		GalgameResourceHandler:    galgameHandler.NewResourceHandler(galgameResourceSvc),

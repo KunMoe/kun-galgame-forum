@@ -11,6 +11,7 @@ import (
 	galgameentityv1 "kun-galgame-api/internal/galgame/entityapiv1"
 	messageapiv1 "kun-galgame-api/internal/message/apiv1"
 	"kun-galgame-api/internal/middleware"
+	newsapiv1 "kun-galgame-api/internal/news/apiv1"
 	permissionapiv1 "kun-galgame-api/internal/permission/apiv1"
 	sectionapiv1 "kun-galgame-api/internal/section/apiv1"
 	toolsetapiv1 "kun-galgame-api/internal/toolset/apiv1"
@@ -64,6 +65,7 @@ func (a *App) setupRoutes() {
 		appreleaseapiv1.Register(a.newAppReleaseV1()),
 		sectionapiv1.Register(a.newSectionV1()),
 		authapiv1.Register(a.newAuthV1()),
+		newsapiv1.Register(a.NewsV1),
 	)
 
 	// Deliberately touches neither DB nor Redis: the container HEALTHCHECK reads
@@ -102,11 +104,6 @@ func (a *App) setupRoutes() {
 	api.Get("/activity/tab", a.ActivityHandler.GetTab)
 	api.Get("/activity/timeline", a.ActivityHandler.GetTimeline)
 
-	api.Get("/news", a.NewsHandler.GetFeed)
-	api.Get("/news/sources", a.NewsHandler.GetSources)
-	api.Get("/news/archive", a.NewsHandler.GetArchive)
-	api.Get("/news/month", a.NewsHandler.GetMonth)
-
 	api.Get("/search", a.Authn.OptionalAuth(), a.SearchHandler.Search)
 	api.Get("/search/quick", a.Authn.OptionalAuth(), a.SearchHandler.QuickSearch)
 	api.Get("/search/overview", a.Authn.OptionalAuth(), a.SearchHandler.Overview)
@@ -114,7 +111,6 @@ func (a *App) setupRoutes() {
 	api.Get("/search/entity", a.Authn.OptionalAuth(), a.SearchHandler.SearchEntities)
 	api.Get("/search/entity/resolve", a.Authn.OptionalAuth(), a.SearchHandler.ResolveEntities)
 
-	api.Get("/rss/topic", a.RSSHandler.GetTopicRSS)
 	api.Get("/rss/galgame", a.RSSHandler.GetGalgameRSS)
 
 	api.Get("/galgame", a.GalgameHandler.GetList)

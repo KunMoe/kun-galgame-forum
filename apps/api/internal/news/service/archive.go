@@ -6,7 +6,6 @@ import (
 	"sync"
 	"time"
 
-	"kun-galgame-api/internal/news/dto"
 	"kun-galgame-api/pkg/newsclient"
 
 	"golang.org/x/sync/errgroup"
@@ -26,6 +25,16 @@ const (
 	yearSpan = 30
 )
 
+type YearCount struct {
+	Year  int
+	Count int64
+}
+
+type MonthCount struct {
+	Month int
+	Count int64
+}
+
 type ArchiveFilter struct {
 	Lane   string
 	Source string
@@ -43,15 +52,15 @@ func (f ArchiveFilter) query() newsclient.FeedQuery {
 // a single read.
 type ArchiveService struct {
 	news   *newsclient.Client
-	years  *ttlCache[[]dto.NewsArchiveYear]
-	months *ttlCache[[]dto.NewsArchiveMonth]
+	years  *ttlCache[[]YearCount]
+	months *ttlCache[[]MonthCount]
 }
 
 func NewArchiveService(news *newsclient.Client) *ArchiveService {
 	return &ArchiveService{
 		news:   news,
-		years:  newTTLCache[[]dto.NewsArchiveYear](archiveTTL),
-		months: newTTLCache[[]dto.NewsArchiveMonth](archiveTTL),
+		years:  newTTLCache[[]YearCount](archiveTTL),
+		months: newTTLCache[[]MonthCount](archiveTTL),
 	}
 }
 
@@ -59,7 +68,7 @@ func NewArchiveService(news *newsclient.Client) *ArchiveService {
 // how many items are older than 1 January of year N gives year N's own total by
 // subtraction, so the walk pays a single request per year and terminates the
 // moment nothing older is left.
-func (s *ArchiveService) Years(ctx context.Context, f ArchiveFilter) ([]dto.NewsArchiveYear, error) {
+func (s *ArchiveService) Years(ctx context.Context, f ArchiveFilter) ([]YearCount, error) {
 	key := f.key()
 	if cached, ok := s.years.get(key); ok {
 		return cached, nil
@@ -72,7 +81,7 @@ func (s *ArchiveService) Years(ctx context.Context, f ArchiveFilter) ([]dto.News
 		return nil, err
 	}
 
-	out := []dto.NewsArchiveYear{}
+	out := []YearCount{}
 	if len(head.Items) > 0 {
 		remaining := head.Count
 		newest := head.Items[0].PublishedAt.In(zone).Year()
@@ -81,7 +90,7 @@ func (s *ArchiveService) Years(ctx context.Context, f ArchiveFilter) ([]dto.News
 			if err != nil {
 				return nil, err
 			}
-			out = append(out, dto.NewsArchiveYear{Year: year, Count: remaining - older})
+			out = append(out, YearCount{Year: year, Count: remaining - older})
 			remaining = older
 		}
 	}
@@ -90,7 +99,7 @@ func (s *ArchiveService) Years(ctx context.Context, f ArchiveFilter) ([]dto.News
 	return out, nil
 }
 
-func (s *ArchiveService) Months(ctx context.Context, f ArchiveFilter, year int) ([]dto.NewsArchiveMonth, error) {
+func (s *ArchiveService) Months(ctx context.Context, f ArchiveFilter, year int) ([]MonthCount, error) {
 	key := f.key() + "|" + strconv.Itoa(year)
 	if cached, ok := s.months.get(key); ok {
 		return cached, nil
@@ -112,9 +121,9 @@ func (s *ArchiveService) Months(ctx context.Context, f ArchiveFilter, year int) 
 		return nil, err
 	}
 
-	out := make([]dto.NewsArchiveMonth, 0, 12)
+	out := make([]MonthCount, 0, 12)
 	for m := 1; m <= 12; m++ {
-		out = append(out, dto.NewsArchiveMonth{Month: m, Count: cum[m] - cum[m-1]})
+		out = append(out, MonthCount{Month: m, Count: cum[m] - cum[m-1]})
 	}
 
 	s.months.set(key, out)

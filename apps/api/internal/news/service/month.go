@@ -5,7 +5,6 @@ import (
 	"strconv"
 	"time"
 
-	"kun-galgame-api/internal/news/dto"
 	"kun-galgame-api/pkg/newsclient"
 )
 
@@ -57,11 +56,16 @@ func (s *MonthService) Items(ctx context.Context, f ArchiveFilter, year, month i
 	return out, nil
 }
 
+type DayCount struct {
+	Day   int
+	Count int
+}
+
 // DayCounts is one entry per calendar day of the month, zeros included: the day
 // strip has to show which days are empty, not omit them.
-func DayCounts(items []newsclient.Item, year, month int) []dto.NewsDay {
+func DayCounts(items []newsclient.Item, year, month int) []DayCount {
 	last := monthStart(year, month+1).AddDate(0, 0, -1).Day()
-	out := make([]dto.NewsDay, last)
+	out := make([]DayCount, last)
 	for i := range out {
 		out[i].Day = i + 1
 	}
