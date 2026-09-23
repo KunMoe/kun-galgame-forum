@@ -221,7 +221,7 @@ catalog 有、本站没有行的成员：本地字段全部 `0` / `null` / `[]` 
 
 **`Character`**（`object: "character"`）：`CharacterRef` 的字段 + `lang`、`figure`（`Image \| null`）、`intros`、`traits: [CharacterTrait]`、`links`。
 
-**`CharacterTrait`**（`object: "trait"`）：`id`、名字三件、`group`（`{display_name, localized}`：特征分组的名字）、`spoiler_level`（`none` \| `minor` \| `major`，上游 0/1/2）、`is_lie`、`is_sexual`。
+**`CharacterTrait`**（`object: "trait"`）：`id`、名字三件、`group`（`{display_name, localized}`：特征分组的名字）、`spoiler`（`none` \| `minor` \| `major`，上游 0/1/2）、`is_lie`、`is_sexual`。
 
 **`Appearance`**（`object: "appearance"`）：`{work: WorkSummary, voices: [CreditNameRef]}`。
 
@@ -320,7 +320,7 @@ catalog 有、本站没有行的成员：本地字段全部 `0` / `null` / `[]` 
 | I1 | 外链 `CatalogLink` = `{site, url}`，`url` 非空；只有来源没有地址的外链不发 | G8：`source` 已被 `MoemoepointEntry.source`（封闭枚举）占用，`url` 在 `Image` 里是非空字符串 |
 | I2 | 简介 `CatalogIntro` = `{locale, value, is_machine, data_source}` | G8：`lang` 在 `CodeNode` 里是可空字符串，`source` 同上 |
 | I3 | 包装条目（`company_work` / `credit` / `appearance`）里的作品字段叫 `work_summary` | X2 把 `work` 定成可空的 `WorkRef`，`works` 也归它；两个名字 GE 都不用 |
-| I4 | 特征分组字段叫 `trait_group`，形状是名字原语 | 同名 `group` 将来太容易撞 |
+| I4 | 特征分组字段叫 `trait_group`，形状是名字原语；剧透等级叫 `spoiler` | 同名 `group` 将来太容易撞；`spoiler_level` 留给评分（GR），它的词表是 `none/portion/serious`，G8 会拦两套词表同名 |
 | I5 | 署名的职务数组叫 `credit_roles` | G8：`roles` 是资料与 ACL 的封闭枚举 |
 | I6 | 别名数组的元素是具名类型 `AliasName`（带自由文本标记），`lang` / `locale` 带 BCP 47 形状的 pattern，引擎 `description` 空串而非 `null` | G14 要求每个字符串有词表、格式、pattern 或自由文本标记；`Doc.description` 是非空字符串 |
 | I7 | 资源语言轴的取值（`zh-cn` 等）过不了 F1 的 snake_case；按 01 §3 加具名例外，G 的工具集 `interface_language` 一并覆盖 | 单独的共享面 PR #203（已合并）。例外不是跳过：这几个属性改查小写 BCP 47 或 `other`/`others` |

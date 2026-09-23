@@ -87,7 +87,7 @@ export const characterViewOf = (c: Character, nameOf: NameOf) => {
       id: Number(t.id),
       name: catalogVocabularyName(t),
       group: catalogVocabularyName(t.trait_group),
-      spoiler: spoilerLevel[t.spoiler_level],
+      spoiler: spoilerLevel[t.spoiler],
       lie: t.is_lie
     })),
     links: c.links.map((l) => ({

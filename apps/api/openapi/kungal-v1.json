@@ -1246,7 +1246,7 @@
             "type": "string",
             "x-vocabulary-closed": true
           },
-          "spoiler_level": {
+          "spoiler": {
             "description": "How much the trait gives away.",
             "enum": [
               "none",
@@ -1266,7 +1266,7 @@
           "object",
           "id",
           "trait_group",
-          "spoiler_level",
+          "spoiler",
           "is_lie",
           "is_sexual",
           "display_name",

@@ -3250,7 +3250,7 @@ export interface components {
              * @description How much the trait gives away.
              * @enum {string}
              */
-            spoiler_level: "none" | "minor" | "major";
+            spoiler: "none" | "minor" | "major";
             /** @description The group the trait sits in, such as hair or personality. */
             trait_group: components["schemas"]["CatalogName"];
         };

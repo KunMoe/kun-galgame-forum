@@ -198,10 +198,10 @@ type CharacterTrait struct {
 	Object string         `json:"object" enum:"trait" maxLength:"5" doc:"Type discriminant. Always trait."`
 	ID     repr.DecimalID `json:"id" doc:"Catalog trait id."`
 	repr.CatalogName
-	TraitGroup   repr.CatalogName `json:"trait_group" doc:"The group the trait sits in, such as hair or personality."`
-	SpoilerLevel string           `json:"spoiler_level" enum:"none,minor,major" maxLength:"5" doc:"How much the trait gives away."`
-	IsLie        bool             `json:"is_lie" doc:"Whether the trait is one the story later reveals to be false."`
-	IsSexual     bool             `json:"is_sexual" doc:"Whether the trait is adult content."`
+	TraitGroup repr.CatalogName `json:"trait_group" doc:"The group the trait sits in, such as hair or personality."`
+	Spoiler    string           `json:"spoiler" enum:"none,minor,major" maxLength:"5" doc:"How much the trait gives away."`
+	IsLie      bool             `json:"is_lie" doc:"Whether the trait is one the story later reveals to be false."`
+	IsSexual   bool             `json:"is_sexual" doc:"Whether the trait is adult content."`
 }
 
 type Appearance struct {

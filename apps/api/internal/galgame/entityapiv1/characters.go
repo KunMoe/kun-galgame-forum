@@ -94,13 +94,13 @@ func (s *Service) getCharacter(ctx context.Context, in *characterPathInput) (*ge
 			level = spoilerLevels[t.Spoiler]
 		}
 		traits = append(traits, CharacterTrait{
-			Object:       "trait",
-			ID:           repr.ID(int(t.ID)),
-			CatalogName:  traitName(cmp.Or(t.DisplayName, t.Name), t.NameZh, client.LocalizedValues(t.Localized)),
-			TraitGroup:   traitName(t.Group, t.GroupZh, client.LocalizedValues(t.GroupLocalized)),
-			SpoilerLevel: level,
-			IsLie:        t.Lie,
-			IsSexual:     t.Sexual,
+			Object:      "trait",
+			ID:          repr.ID(int(t.ID)),
+			CatalogName: traitName(cmp.Or(t.DisplayName, t.Name), t.NameZh, client.LocalizedValues(t.Localized)),
+			TraitGroup:  traitName(t.Group, t.GroupZh, client.LocalizedValues(t.GroupLocalized)),
+			Spoiler:     level,
+			IsLie:       t.Lie,
+			IsSexual:    t.Sexual,
 		})
 	}
 	links := make([]workrepr.CatalogLink, 0, len(ch.Refs))

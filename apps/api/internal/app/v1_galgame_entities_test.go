@@ -415,7 +415,7 @@ func TestV1EntityCharacters(t *testing.T) {
 		blonde["trait_group"].(map[string]any)["localized"].(map[string]any)["zh-Hans"].(map[string]any)["value"] != "毛发" {
 		t.Fatalf("trait names %+v", blonde)
 	}
-	if liar := traits[1].(map[string]any); liar["spoiler_level"] != "minor" || liar["is_lie"] != true {
+	if liar := traits[1].(map[string]any); liar["spoiler"] != "minor" || liar["is_lie"] != true {
 		t.Fatalf("liar %+v", liar)
 	}
 	if body["image"].(map[string]any)["hash"] != geHash(9201) || body["figure"] != nil {
