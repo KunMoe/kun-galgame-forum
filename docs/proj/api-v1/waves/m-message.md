@@ -349,6 +349,25 @@ CREATE INDEX IF NOT EXISTS idx_chat_room_participant_user ON chat_room_participa
 | M12 | C1/C6 的 `unread_count` 把自己发的也算进去 | 只有自己发的消息的会话 `unread_count == 0` |
 | M13 | C4 首发建房去掉 `ON CONFLICT`（改回先插后查） | 房间名已存在（预先插一个无参与者的同名房）时首发必须 201 而不是 500 |
 
+## 11.5 首轮实现后对本契约的修正（督查，2026-09-22）
+
+首轮实现照契约写完，契约门（`TestV1Gates`）报了 9 条。都是契约本身的错，不是实现的错，逐条改契约：
+
+1. **`Notification.type` → `notification_type`**，查询参数 `type` 同改。G8：`Problem.type` 是 URI 字符串，同名不同型（W5b 的 `choice_type` 是同一个坑）。
+2. **`muted` → `is_muted`**（N1 查询参数、N3 请求体）。F1：布尔必须以 `is_` / `has_` / `can_` 开头。
+3. **`DirectMessage.content` 不可为 null。** G8：其它所有 `content` 都是非空 `ContentDocument`。撤回的消息下发**空文档**（`children: []`），客户端看 `state`。M10 的断言相应改成「撤回后 `content.children` 为空数组」。
+4. **`Conversation` 加 `id`**，值等于 `peer.id`（即路径段 `{user_id}`）。G17：写面地址里的每个 `{…_id}` 前缀都必须有一个回 200 且带 `id` 的 GET。§3.4「没有 `id` 字段」作废；身份仍是对方。
+5. **新增 N5 `GET /api/v1/me/notifications/{notification_id}`**（`getNotification`）。G17：N4 的 DELETE 需要同地址的 GET。不属于调用者 / 不存在 / 类型不在词表 / 发起人被封禁 → 404（与 N1 的可见性同一谓词）。
+6. **新增 C7 `GET /api/v1/me/conversations/{user_id}/messages/{message_id}`**（`getDirectMessage`）。G17，也让 C4 的 `Location` 有了读面——§2.8「`Location` 指向的路径没有 GET」作废。对方检查同 C3；消息不在这个会话 → 404。
+7. 一处响应描述里写了 reason 名 `TOO_LONG`，G4 把它当 code 查注册表。改措辞。
+
+另外两条：
+
+8. **变异补一题 M12b**：C6 回的 `unread_count` 把自己发的也算进去。首轮 13 题全杀，这一题活了（C6 的剩余未读用的是另一条 SQL，M12 只打在 C1 那条上）。
+9. **community 转发没接上**：`App` 上没有 `MessageService`，首轮实现只好传 `community=nil`，N3/N4 标掉镜像行时不会通知上游。督查在 `app.go` 加一个字段 `Messages *msgService.MessageService`（共享面，只加一行）。
+
+操作数因此是 **12 个**（N1–N5、C1–C7），取代 11 条旧路由。
+
 ## 12. 九条闸
 
 照 [05-session-sop.md](../05-session-sop.md) §5。本轨的临时库：`kungal_test_m_message`。
