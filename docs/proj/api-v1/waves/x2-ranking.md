@@ -149,7 +149,7 @@
 
 ## 8. 验收记录
 
-**闸**：`make lint` 零输出；`KUN_REQUIRE_TEST_DB=1 go test -count=1 -p 1 ./...` 全绿（专属库 `kungal_test_x2_ranking`）；`make openapi` / `gen:api` 无漂移；`pnpm lint`、`pnpm typecheck`、`pnpm -F web test`（62 文件 427 条）全绿；`deadcode` 只剩 master 上原有的 6 条，与本轨无关。
+**闸**：`make lint` 零输出；`KUN_REQUIRE_TEST_DB=1 go test -count=1 -p 1 ./...` 全绿（专属库 `kungal_test_x2_ranking`；rebase 到 `57479d2d3` 后在重建的库上复跑，`legacy_route_baseline` 106 → 102、`legacy-fetch-baseline` 132 → 129，并与 master、X2-search、X2-activity、GR 的已提交 spec 合并跑 G8 通过）；`make openapi` / `gen:api` 无漂移；`pnpm lint`、`pnpm typecheck`、`pnpm -F web test`（62 文件 427 条）全绿；`deadcode` 只剩 master 上原有的 6 条，与本轨无关。
 
 **变异**：14/14 变红。第 13 条（评分排序去掉 `id DESC`）第一轮**存活**：种子里只有两部并列作品，JOIN 碰巧按 id 降序吐出。补了「五部同分作品、按乱序写入评分」的用例后杀掉。
 
