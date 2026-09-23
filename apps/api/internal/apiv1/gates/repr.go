@@ -40,7 +40,8 @@ var closedEnumValue = regexp.MustCompile(`^[a-z][a-z0-9]*(_[a-z0-9]+)*$`)
 // named exception in 01 §3. Their values are checked for that shape instead.
 var (
 	languageTagProperties = map[string]bool{
-		"language": true, "languages": true, "resource_language": true, "resource_languages": true,
+		"language": true, "languages": true, "interface_language": true,
+		"resource_language": true, "resource_languages": true,
 	}
 	languageTagValue = regexp.MustCompile(`^[a-z]{2,3}(-[a-z0-9]{2,8})*$`)
 )
