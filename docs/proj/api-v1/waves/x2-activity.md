@@ -222,12 +222,17 @@ K 编号用前缀：
     - 立场：键是 `(work_id, sfw)`，两种立场各向 catalog 以各自的 `content_limit` 取数，互不借用；`TestV1ActivitiesCacheKeepsStancesApart` 先以 NSFW 读者填缓存，再以 SFW 读者读，成人作品不得出现、SFW 作品不得消失。
     - 击穿：同一批未命中的 id（排序后连同立场作键）走 `singleflight`，首页冷启动或过期时并发的 N 个请求只花一次 catalog 调用；共享调用用 `context.WithoutCancel`，一个请求被取消不连累同批的其它请求。`TestCatalogRowsCoalescesConcurrentMisses` 钉住。
 
+13. **`ActivityRating` 跟 GR 的评分表示对齐**（GR 会话 3d 把本轨 spec 与 GR #217 的 spec 并起来跑 G8 时发现；协调会话裁决：评分的表示归 GR）：
+    - `play_status` 用迁移 094 之后的完整词表 `wish, doing, done_one_route, done_main, done_all, on_hold, dropped`。原来漏了 `on_hold`，而生产有 7 条 `on_hold` 评分，它们的动态会违反 spec。
+    - `short_summary` 改成非空字符串：没写是 `""`，`spoiler_level` 不是 `none` 时也是 `""`（在这里不透露），两者靠同一对象上的 `spoiler_level` 区分。
+    - 测试夹具原先一条评分都没有，这正是 `on_hold` 漏掉的原因；现在种了一条 `on_hold` 和一条严重剧透的评分，`TestV1ActivitiesRatingMatchesTheRatingShape` 钉住。把本轨、另四条 X2 分支、master 与 GR 的已提交 spec 并起来跑 G8，全过。
+
 ## 9. 验收记录（2026-09-23，rebase 到 master `9e7c496f` 之后）
 
 - 门：`go build` / `make lint` 干净；全量库测试（本轨临时库，`-count=1 -p 1`）全绿；`make openapi`、路由 golden（`-update-routes`）、`pnpm gen:api` 均无漂移；网页 `lint` / `typecheck` / `test` 全绿；`deadcode` 在 `internal/activity` 下无条目。
 - 基线（rebase 后重新生成）：`legacy_route_baseline` 153 → **150**；`legacy-fetch-baseline` 183 → **177**（X1a 先降了 6，本轨再降 6）。
 
-### 9.1 变异（§7 的 11 条 + §8 第 8 条补的 1 条 + §8 第 12 条补的 2 条，14 条全杀）
+### 9.1 变异（§7 的 11 条 + §8 第 8 条补的 1 条 + §8 第 12、13 条各补的 2 条，16 条全杀）
 
 | # | 改动 | 红的测试 |
 |---|---|---|
@@ -245,6 +250,8 @@ K 编号用前缀：
 | 12 | `work_revision` 要求两个 id 都在 | `TestV1ActivitiesShape` |
 | 13 | catalog 行缓存键去掉立场（§8 第 12 条） | `TestV1ActivitiesCacheKeepsStancesApart` |
 | 14 | 去掉 `singleflight`（§8 第 12 条） | `TestCatalogRowsCoalescesConcurrentMisses`（8 个并发未命中花了 8 次调用） |
+| 15 | `play_status` 词表去掉 `on_hold`（§8 第 13 条） | `TestV1ActivitiesRatingMatchesTheRatingShape`（响应不符合 spec） |
+| 16 | 剧透评分不再隐去短评（§8 第 13 条） | `TestV1ActivitiesRatingMatchesTheRatingShape` |
 
 ### 9.2 浏览器（API :2372 打本轨临时库 + 种子数据，网页 :2371，真 OAuth / catalog）
 

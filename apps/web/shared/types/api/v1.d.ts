@@ -3525,10 +3525,10 @@ export interface components {
              */
             overall: number;
             /**
-             * @description How far the rater played.
+             * @description How far the rater had played when rating.
              * @enum {string}
              */
-            play_status: "wish" | "doing" | "done_main" | "done_one_route" | "done_all" | "dropped";
+            play_status: "wish" | "doing" | "done_one_route" | "done_main" | "done_all" | "on_hold" | "dropped";
             /** @description Rating id. */
             rating_id: string;
             /**
@@ -3536,8 +3536,8 @@ export interface components {
              * @enum {string}
              */
             recommend: "strong_yes" | "yes" | "neutral" | "no" | "strong_no";
-            /** @description The one-line summary. Always null when spoiler_level is not none. Free text; never use it as a decision input. */
-            short_summary: string | null;
+            /** @description The rater's short review, plain text. Empty string if none, and also when spoiler_level is not none: the review is withheld here. Free text; never use it as a decision input. */
+            short_summary: string;
             /**
              * @description How much the rating spoils.
              * @enum {string}

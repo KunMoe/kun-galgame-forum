@@ -494,13 +494,14 @@
             "type": "integer"
           },
           "play_status": {
-            "description": "How far the rater played.",
+            "description": "How far the rater had played when rating.",
             "enum": [
               "wish",
               "doing",
-              "done_main",
               "done_one_route",
+              "done_main",
               "done_all",
+              "on_hold",
               "dropped"
             ],
             "maxLength": 14,
@@ -528,12 +529,9 @@
             "x-vocabulary-closed": true
           },
           "short_summary": {
-            "description": "The one-line summary. Always null when spoiler_level is not none. Free text; never use it as a decision input.",
+            "description": "The rater's short review, plain text. Empty string if none, and also when spoiler_level is not none: the review is withheld here. Free text; never use it as a decision input.",
             "maxLength": 1314,
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": "string"
           },
           "spoiler_level": {
             "description": "How much the rating spoils.",

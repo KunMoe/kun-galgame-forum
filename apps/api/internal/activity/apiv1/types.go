@@ -177,10 +177,10 @@ type WorkRevision struct {
 type ActivityRating struct {
 	RatingID     repr.DecimalID `json:"rating_id" doc:"Rating id."`
 	Overall      int            `json:"overall" minimum:"1" maximum:"10" doc:"Overall score, 1 to 10."`
-	PlayStatus   string         `json:"play_status" enum:"wish,doing,done_main,done_one_route,done_all,dropped" maxLength:"14" doc:"How far the rater played."`
+	PlayStatus   string         `json:"play_status" enum:"wish,doing,done_one_route,done_main,done_all,on_hold,dropped" maxLength:"14" doc:"How far the rater had played when rating."`
 	Recommend    string         `json:"recommend" enum:"strong_yes,yes,neutral,no,strong_no" maxLength:"10" doc:"Whether the rater recommends the work."`
 	SpoilerLevel string         `json:"spoiler_level" enum:"none,portion,serious" maxLength:"7" doc:"How much the rating spoils."`
-	ShortSummary *string        `json:"short_summary" maxLength:"1314" doc:"The one-line summary. Always null when spoiler_level is not none. Free text; never use it as a decision input."`
+	ShortSummary string         `json:"short_summary" maxLength:"1314" doc:"The rater's short review, plain text. Empty string if none, and also when spoiler_level is not none: the review is withheld here. Free text; never use it as a decision input."`
 	LikeCount    int            `json:"like_count" minimum:"0" doc:"Like count."`
 }
 

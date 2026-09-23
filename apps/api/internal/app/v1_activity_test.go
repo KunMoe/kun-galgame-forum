@@ -23,6 +23,7 @@ var allowedBlocks = map[string][]string{
 	"galgame_creation":          {"work", "work_digest", "work_stats"},
 	"galgame_resource_creation": {"work", "resource"},
 	"galgame_edit":              {"work", "work_digest", "work_revision"},
+	"galgame_rating_creation":   {"work", "rating"},
 }
 
 func (f *activityFix) expected(t *testing.T, extra string, args ...any) []string {
@@ -301,5 +302,21 @@ func TestV1ActivitiesCacheKeepsStancesApart(t *testing.T) {
 	}
 	if !shows(plain, acWorkShown) {
 		t.Error("the cache filled by an NSFW reader blanked an SFW work for an SFW reader")
+	}
+}
+
+func TestV1ActivitiesRatingMatchesTheRatingShape(t *testing.T) {
+	f := newActivityFix(t)
+	ratings := map[string]map[string]any{}
+	for _, it := range f.walk(t, url.Values{"activity_types": {"galgame_rating_creation"}}, 50) {
+		if r, _ := it["rating"].(map[string]any); r != nil {
+			ratings[fmt.Sprint(r["rating_id"])] = r
+		}
+	}
+	if hold := ratings[strconv.Itoa(acRatingHold)]; hold == nil || hold["play_status"] != "on_hold" || hold["short_summary"] != "worth a second try" {
+		t.Errorf("on_hold rating: %+v", hold)
+	}
+	if spoiler := ratings[strconv.Itoa(acRatingSpoiler)]; spoiler == nil || spoiler["spoiler_level"] != "serious" || spoiler["short_summary"] != "" {
+		t.Errorf("a spoiler rating withholds its review as an empty string: %+v", spoiler)
 	}
 }
