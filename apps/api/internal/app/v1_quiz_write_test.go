@@ -69,7 +69,7 @@ func TestV1CreateQuiz(t *testing.T) {
 	wantCode(t, resp, got, http.StatusUnprocessableEntity, problem.CodeValidationFailed)
 
 	resp, got = f.qz(t, http.MethodPost, "/api/v1/quizzes", "/quizzes", "sess-alice", keyUUID(9),
-		createQuizBody(map[string]any{"quiz_type": "judge", "choices": []string{"a", "b"}, "judge_answer": true, "correct_choice_indexes": []int{}}))
+		createQuizBody(map[string]any{"quiz_type": "judge", "choices": []string{"a", "b"}, "is_statement_true": true, "correct_choice_indexes": []int{}}))
 	wantCode(t, resp, got, http.StatusUnprocessableEntity, problem.CodeValidationFailed)
 	if e := errorAt(got, "/choices"); e == nil || e["reason"] != "INCONSISTENT_WITH" {
 		t.Errorf("judge choices %+v", got["errors"])

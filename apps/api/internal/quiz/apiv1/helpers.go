@@ -302,15 +302,11 @@ func encodeSubmission(qtype string, sub QuizSubmission) (json.RawMessage, error)
 	case quizTypeSingle:
 		v := 0
 		if len(sub.ChoiceIndexes) > 0 {
-			v = sub.ChoiceIndexes[0]
+			v = int(sub.ChoiceIndexes[0])
 		}
 		return json.Marshal(submitSingle{Value: v})
 	case quizTypeMultiple:
-		vals := sub.ChoiceIndexes
-		if vals == nil {
-			vals = []int{}
-		}
-		return json.Marshal(submitMultiple{Values: vals})
+		return json.Marshal(submitMultiple{Values: toInts(sub.ChoiceIndexes)})
 	case quizTypeJudge:
 		v := false
 		if sub.JudgeChoice != nil {
@@ -323,7 +319,7 @@ func encodeSubmission(qtype string, sub QuizSubmission) (json.RawMessage, error)
 }
 
 func decodeSubmission(qtype string, raw json.RawMessage) (QuizSubmission, error) {
-	out := QuizSubmission{ChoiceIndexes: []int{}}
+	out := QuizSubmission{ChoiceIndexes: []ChoiceIndex{}}
 	if len(raw) == 0 {
 		return out, nil
 	}
@@ -333,16 +329,13 @@ func decodeSubmission(qtype string, raw json.RawMessage) (QuizSubmission, error)
 		if err := json.Unmarshal(raw, &s); err != nil {
 			return out, err
 		}
-		out.ChoiceIndexes = []int{s.Value}
+		out.ChoiceIndexes = []ChoiceIndex{ChoiceIndex(s.Value)}
 	case quizTypeMultiple:
 		var s submitMultiple
 		if err := json.Unmarshal(raw, &s); err != nil {
 			return out, err
 		}
-		if s.Values == nil {
-			s.Values = []int{}
-		}
-		out.ChoiceIndexes = s.Values
+		out.ChoiceIndexes = toIndexes(s.Values)
 	case quizTypeJudge:
 		var s submitJudge
 		if err := json.Unmarshal(raw, &s); err != nil {
@@ -430,15 +423,6 @@ func workIDStrings(ids []int) []repr.DecimalID {
 	for i, id := range ids {
 		out[i] = repr.ID(id)
 	}
-	return out
-}
-
-func copyInts(in []int) []int {
-	if in == nil {
-		return []int{}
-	}
-	out := make([]int, len(in))
-	copy(out, in)
 	return out
 }
 
@@ -552,12 +536,12 @@ func validateIndexes(qtype string, indexes []int, nChoices int, present bool) []
 func validateJudge(qtype string, judge *bool, required bool) []problem.FieldError {
 	if qtype == quizTypeJudge {
 		if judge == nil && required {
-			return []problem.FieldError{problem.AtPointer("/judge_answer", problem.ReasonRequired, "required", nil)}
+			return []problem.FieldError{problem.AtPointer("/is_statement_true", problem.ReasonRequired, "required", nil)}
 		}
 		return nil
 	}
 	if judge != nil {
-		return []problem.FieldError{inconsistent("/judge_answer", "/quiz_type")}
+		return []problem.FieldError{inconsistent("/is_statement_true", "/quiz_type")}
 	}
 	return nil
 }
@@ -566,15 +550,15 @@ func validateSubmission(qtype string, nChoices int, sub QuizSubmission) []proble
 	var errs []problem.FieldError
 	if qtype == quizTypeJudge {
 		if len(sub.ChoiceIndexes) > 0 {
-			errs = append(errs, inconsistent("/choice_indexes", "/judge_choice"))
+			errs = append(errs, inconsistent("/choice_indexes", "/is_statement_true"))
 		}
 		if sub.JudgeChoice == nil {
-			errs = append(errs, problem.AtPointer("/judge_choice", problem.ReasonRequired, "required", nil))
+			errs = append(errs, problem.AtPointer("/is_statement_true", problem.ReasonRequired, "required", nil))
 		}
 		return errs
 	}
 	if sub.JudgeChoice != nil {
-		errs = append(errs, inconsistent("/judge_choice", "/choice_indexes"))
+		errs = append(errs, inconsistent("/is_statement_true", "/choice_indexes"))
 	}
 	if qtype == quizTypeSingle && len(sub.ChoiceIndexes) != 1 {
 		if len(sub.ChoiceIndexes) == 0 {
@@ -590,7 +574,8 @@ func validateSubmission(qtype string, nChoices int, sub QuizSubmission) []proble
 	}
 	seen := map[int]int{}
 	maxIdx := float64(nChoices - 1)
-	for i, idx := range sub.ChoiceIndexes {
+	for i, raw := range sub.ChoiceIndexes {
+		idx := int(raw)
 		ptr := "/choice_indexes/" + strconv.Itoa(i)
 		if idx < 0 || idx >= nChoices {
 			errs = append(errs, outOfRange(ptr, 0, max(0, maxIdx)))
@@ -632,3 +617,19 @@ func bytesEqual(a, b json.RawMessage) bool {
 }
 
 func intPtr(n int) *int { return &n }
+
+func toInts(xs []ChoiceIndex) []int {
+	out := make([]int, len(xs))
+	for i, x := range xs {
+		out[i] = int(x)
+	}
+	return out
+}
+
+func toIndexes(xs []int) []ChoiceIndex {
+	out := make([]ChoiceIndex, len(xs))
+	for i, x := range xs {
+		out[i] = ChoiceIndex(x)
+	}
+	return out
+}

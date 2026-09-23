@@ -145,13 +145,13 @@
 - `works`：`WorkRef[]`。`is_work_hidden` 为真且调用者看不见答案键时是 `[]`；否则用 `WorkRefOf` 从一次 `client.CatalogRowsByWorkIDs` 的 catalog 行构建（K-G10）。catalog 失败 → 503。hidden claim 的行被 `CatalogItemRenderable` 丢掉，数组里不出现。NSFW 旗在 `WorkRef.is_nsfw` 上，详情不再按 SFW 藏作品。
 - `viewer`：`QuizViewer`；匿名为 `null`。
 
-**`QuizSolution`（`object: "quiz_solution"`）**：`correct_choice_indexes`（`integer[]`，0 起；`judge` 是 `[]`）、`judge_answer`（`bool | null`，非判断题为 `null`）、`explanation`（完整 Markdown 内容文档，空解析是空文档）。
+**`QuizSolution`（`object: "quiz_solution"`）**：`correct_choice_indexes`（`integer[]`，0 起；`judge` 是 `[]`）、`is_statement_true`（`bool | null`，非判断题为 `null`）、`explanation`（完整 Markdown 内容文档，空解析是空文档）。
 
 **`QuizSource`（`object: "quiz_source"`）**：`quiz_id`、`quiz_type`、`quiz_category`、`difficulty`、`spoiler_level`、`prompt_text`（maxLength 200）、`description_markdown`（maxLength 20000）、`explanation_markdown`（maxLength 2000）、`choices`、`correct_choice_indexes`、`judge_answer`、`work_ids`、`is_work_hidden`。要求 `viewer.can_edit`，否则 `403 PERMISSION_REQUIRED`。档位 required。故意带完整答案键。
 
 **`QuizAnswer`（`object: "quiz_answer"`，作答集合条目）**：`id`（作答行 id）、`quiz_id`、`answerer`（UserRef）、`submission`（`QuizSubmission | null`）、`is_correct`（`bool | null`）、`answered_at`（列 `created`）。不可渲染的作答者从集合里丢掉（K-G12）。`submission` 与 `is_correct` 只发给已经作答、或能看见答案键的调用者（作者、`can_edit`）；其余人（含匿名）这两项都是 `null`（K-G9，修 E10）。集合从不带 `solution`。
 
-**`QuizSubmission`**：`choice_indexes`（`integer[]`，0 起；判断题是 `[]`）、`judge_choice`（`bool | null`，非判断题为 `null`）。写面与读面同一形状。
+**`QuizSubmission`**：`choice_indexes`（`integer[]`，0 起；判断题是 `[]`）、`is_statement_true`（`bool | null`，非判断题为 `null`；作答体里可缺席）。写面与读面同一形状。
 
 **`QuizAnswerResult`（`object: "quiz_answer_result"`，POST answers 的 201）**：`answer`（刚写入的 `QuizAnswer`，`submission` / `is_correct` 非 null）+ `solution`（非 null）。不再发 `reward_delta`（恒 0，A5）。
 
@@ -309,6 +309,16 @@ G8 要求全 spec 里同名属性同型（含可空与 format），G14 要求每
 | `hide_galgame` | `is_work_hidden` | F1：布尔以 `is_` / `has_` / `can_` 开头 |
 | PUT 质量的 `quality_rating` | `rating`（1–10） | 详情 `viewer.quality_rating` 可空。G1 实用性 PUT 同一先例 |
 | 排序 `update_time` / `time` / `view` | `bumped_at_*` / `created_*` / `view_*` | 跟字段名走；`view_desc` 与话题列表同一短名 |
+
+实现时 G8 / F1 / G14 又逼出下面几条（2026-09-23，以此为准）：
+
+| 前文 | 实际 | 为什么 |
+|---|---|---|
+| 答案键 `judge_answer`、作答 `judge_choice` | 两处都叫 `is_statement_true`（`bool \| null`，非判断题为 `null`） | F1 布尔前缀；同名同型，判分就是两值相等 |
+| 详情 `viewer.answer` 是 `QuizViewerAnswer` | `QuizAnswer \| null`（与作答集合同一形状，`QuizViewerAnswer` 删除） | G8：`answer` 在 POST 201 里是 `QuizAnswer` |
+| POST 201 的 `answer` / `solution` 不可空 | 可空，这条响应里恒有值 | G8：详情的 `viewer.answer`、`solution` 可空（G1 实用性同一先例） |
+| 下标数组 `integer[]` | 元素是具名类型 `ChoiceIndex`（0–19） | G14：数组元素的数字要有 minimum |
+| 作答体缺 `is_statement_true` | 可缺席（`required: false`），缺席与 `null` 同义 | 单选 / 多选的客户端不必送判断题字段 |
 
 `prompt`、`solution`、`explanation`、`works`、`difficulty`、`spoiler_level` 现 spec 未占用，保持。`viewer` 子形状按父对象分 Go 类型（G8 例外表）。
 
@@ -497,7 +507,7 @@ CREATE TRIGGER trg_feed_galgame_quiz
 | `user/Quiz.vue` | 出题 tab `GET /quizzes?author_id=`；答题 tab `GET /me/answered-quizzes` |
 | `pages/galgame-quiz/[id].vue` | `GET /quizzes/{id}`；SEO 题干从 `prompt` 抽纯文本（`documentPlainText`）；关联名从 `works[].display_name` |
 | `quiz/Play.vue` | 作答 `POST …/answers`，必带幂等键，体是 `QuizSubmission`；编辑按钮读 `viewer.can_*`，打开时 `GET …/source`；删除 `DELETE …/{id}` → 204；收藏改 `PUT`/`DELETE …/favorite`；`hide_galgame` 揭晓读 `works`；不再读 `reward_delta` |
-| `play/AnswerInput.vue` | 只留 single / multiple / judge；提交 `choice_indexes` / `judge_choice` |
+| `play/AnswerInput.vue` | 只留 single / multiple / judge；提交 `choice_indexes` / `is_statement_true`（§3.12） |
 | `play/Result.vue` | 对错与解析读 `solution` + `viewer.answer`；质量 `PUT …/quality-rating` `{rating}`；删 fill / essay 分支 |
 | `quiz/DetailPanel.vue` | `GET …/answers` 游标；未作答时 `is_correct` / `submission` 为 null，正确/错误 chip 不画；作答后才画 |
 | `quiz/Form.vue` + `content/Editor.vue` | 创建 `POST /quizzes` 201 的 `id` 导航，幂等键；编辑 `PATCH` 只发改过的字段；题干 maxlength 200；选项 2–20、每条 200；关联 `work_ids` 最多 20；删 fill / essay UI 与「即将实装」 |

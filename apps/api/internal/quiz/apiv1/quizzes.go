@@ -150,7 +150,7 @@ func (s *Service) createQuiz(ctx context.Context, in *createQuizInput) (*createQ
 	}
 	choices, cerrs := validateChoices(body.QuizType, body.Choices, true)
 	errs = append(errs, cerrs...)
-	errs = append(errs, validateIndexes(body.QuizType, body.CorrectChoiceIndexes, len(choices), body.CorrectChoiceIndexes != nil || body.QuizType == quizTypeJudge)...)
+	errs = append(errs, validateIndexes(body.QuizType, toInts(body.CorrectChoiceIndexes), len(choices), body.CorrectChoiceIndexes != nil || body.QuizType == quizTypeJudge)...)
 	errs = append(errs, validateJudge(body.QuizType, body.JudgeAnswer, true)...)
 	workIDs, werrs := parseWorkIDs(body.WorkIDs, "/work_ids")
 	errs = append(errs, werrs...)
@@ -165,7 +165,7 @@ func (s *Service) createQuiz(ctx context.Context, in *createQuizInput) (*createQ
 	} else if len(werrs) > 0 {
 		return nil, validationFailed(werrs...)
 	}
-	raw, err := encodeContent(body.QuizType, choices, body.CorrectChoiceIndexes, body.JudgeAnswer)
+	raw, err := encodeContent(body.QuizType, choices, toInts(body.CorrectChoiceIndexes), body.JudgeAnswer)
 	if err != nil {
 		return nil, problem.Internal(err)
 	}
@@ -314,7 +314,7 @@ func (s *Service) updateQuiz(ctx context.Context, in *patchQuizInput) (*quizOutp
 	indexes := oldIndexes
 	indexesPresent := patch.CorrectChoiceIndexes != nil
 	if indexesPresent {
-		indexes = patch.CorrectChoiceIndexes
+		indexes = toInts(patch.CorrectChoiceIndexes)
 	}
 	judge := oldJudge
 	if patch.JudgeAnswer != nil {

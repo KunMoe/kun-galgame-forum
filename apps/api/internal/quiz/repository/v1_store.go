@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"strconv"
+	"strings"
 	"time"
 
 	"kun-galgame-api/internal/galgame/model"
@@ -341,6 +342,26 @@ func (s *Store) BumpAnswerStats(tx *gorm.DB, quizID int, correct bool) error {
 		delta = 1
 	}
 	return tx.Exec(sql, delta, cutoff, quizID).Error
+}
+
+func AnswerNotice(qtype string, choices []string, indexes []int, statementTrue *bool, correct bool) string {
+	var picked string
+	if qtype == "judge" {
+		picked = "错误"
+		if statementTrue != nil && *statementTrue {
+			picked = "正确"
+		}
+	} else {
+		labels := make([]string, 0, len(indexes))
+		for _, i := range indexes {
+			labels = append(labels, string(rune('A'+i))+". "+choices[i])
+		}
+		picked = strings.Join(labels, "、")
+	}
+	if correct {
+		return "选择「" + picked + "」，回答正确"
+	}
+	return "选择「" + picked + "」，回答错误"
 }
 
 func (s *Store) NotifyAnswered(tx *gorm.DB, senderID, receiverID, quizID int, content string) error {

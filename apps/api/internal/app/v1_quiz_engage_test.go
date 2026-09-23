@@ -14,7 +14,7 @@ func TestV1CreateQuizAnswerSelfForbidden(t *testing.T) {
 	f := newQuizFix(t, nil)
 	resp, got := f.qz(t, http.MethodPost, "/api/v1/quizzes/"+idStr(g2QJudge)+"/answers",
 		"/quizzes/{quiz_id}/answers", "sess-grant", keyUUID(20),
-		map[string]any{"choice_indexes": []int{}, "judge_choice": true})
+		map[string]any{"choice_indexes": []int{}, "is_statement_true": true})
 	wantCode(t, resp, got, http.StatusForbidden, problem.CodeSelfAnswerForbidden)
 	if n := f.scalar(t, `SELECT COUNT(*) FROM galgame_quiz_answer WHERE quiz_id = ? AND role = 'answerer'`, g2QJudge); n != 0 {
 		t.Error("author answerer row written")
@@ -25,7 +25,7 @@ func TestV1CreateQuizAnswerAlreadyExists(t *testing.T) {
 	f := newQuizFix(t, nil)
 	resp, got := f.qz(t, http.MethodPost, "/api/v1/quizzes/"+idStr(g2QMain)+"/answers",
 		"/quizzes/{quiz_id}/answers", "sess-bob", keyUUID(21),
-		map[string]any{"choice_indexes": []int{0}, "judge_choice": nil})
+		map[string]any{"choice_indexes": []int{0}, "is_statement_true": nil})
 	wantCode(t, resp, got, http.StatusConflict, problem.CodeAlreadyExists)
 	if n := f.scalar(t, `SELECT COUNT(*) FROM galgame_quiz_answer WHERE quiz_id = ? AND user_id = ? AND role = 'answerer'`,
 		g2QMain, w3UserBob); n != 1 {
@@ -35,7 +35,7 @@ func TestV1CreateQuizAnswerAlreadyExists(t *testing.T) {
 
 func TestV1CreateQuizAnswerConcurrentUnique(t *testing.T) {
 	f := newQuizFix(t, nil)
-	body := map[string]any{"choice_indexes": []int{}, "judge_choice": false}
+	body := map[string]any{"choice_indexes": []int{}, "is_statement_true": false}
 	var (
 		wg  sync.WaitGroup
 		mu  sync.Mutex
@@ -75,7 +75,7 @@ func TestV1CreateQuizAnswerOK(t *testing.T) {
 	f := newQuizFix(t, nil)
 	resp, got := f.qz(t, http.MethodPost, "/api/v1/quizzes/"+idStr(g2QJudge)+"/answers",
 		"/quizzes/{quiz_id}/answers", "sess-bob", keyUUID(22),
-		map[string]any{"choice_indexes": []int{}, "judge_choice": true})
+		map[string]any{"choice_indexes": []int{}, "is_statement_true": true})
 	if resp.StatusCode != http.StatusCreated {
 		t.Fatalf("answer %d %+v", resp.StatusCode, got)
 	}

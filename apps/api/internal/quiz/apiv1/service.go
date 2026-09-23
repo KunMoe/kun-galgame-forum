@@ -348,14 +348,15 @@ func (s *Service) detail(ctx context.Context, row *model.GalgameQuiz, users map[
 		}
 		if answer != nil && answer.Role == "answerer" {
 			qv.HasAnswered = true
-			sub, err := decodeSubmission(row.Type, answer.Submitted)
-			if err != nil {
-				return nil, problem.Internal(err)
+			self, p := s.lookupUsers(ctx, []int{viewer.ID})
+			if p != nil {
+				return nil, p
 			}
-			correct := answer.IsCorrect != nil && *answer.IsCorrect
-			qv.Answer = &QuizViewerAnswer{
-				Submission: sub, IsCorrect: correct, AnsweredAt: repr.Timestamp(answer.CreatedAt),
+			item, p := s.answerItem(row.Type, *answer, self, true)
+			if p != nil {
+				return nil, p
 			}
+			qv.Answer = &item
 			qv.QualityRating = answer.QualityRating
 		}
 		out.Viewer = qv
@@ -373,7 +374,7 @@ func (s *Service) solutionOf(ctx context.Context, row *model.GalgameQuiz) (*Quiz
 		return nil, p
 	}
 	return &QuizSolution{
-		Object: "quiz_solution", CorrectChoiceIndexes: copyInts(indexes),
+		Object: "quiz_solution", CorrectChoiceIndexes: toIndexes(indexes),
 		JudgeAnswer: judge, Explanation: expl,
 	}, nil
 }
@@ -391,7 +392,7 @@ func (s *Service) sourceOf(row *model.GalgameQuiz, workIDs []int) (QuizSource, *
 		Object: "quiz_source", QuizID: repr.ID(row.ID), QuizType: row.Type, QuizCategory: row.Category,
 		Difficulty: row.Difficulty, SpoilerLevel: row.SpoilerLevel, PromptText: row.Question,
 		DescriptionMarkdown: row.Description, ExplanationMarkdown: row.Explanation,
-		Choices: typedChoices(choices), CorrectChoiceIndexes: copyInts(indexes),
+		Choices: typedChoices(choices), CorrectChoiceIndexes: toIndexes(indexes),
 		JudgeAnswer: judge, WorkIDs: workIDStrings(workIDs), IsWorkHidden: row.HideGalgame,
 	}, nil
 }

@@ -137,6 +137,13 @@ func TestV1GetQuizUnansweredHidesKeyAndWorks(t *testing.T) {
 	if got := f.sqlIDs(t, `SELECT updated::text FROM galgame_quiz WHERE id = ?`, g2QMain); fmt.Sprint(got) != fmt.Sprint(updated) {
 		t.Errorf("a view moved updated: %v -> %v", updated, got)
 	}
+	resp, body = f.qz(t, http.MethodGet, "/api/v1/quizzes/"+idStr(g2QJudge), "/quizzes/{quiz_id}", "sess-bob", "", nil)
+	if resp.StatusCode != http.StatusOK || body["solution"] != nil {
+		t.Errorf("a signed-in caller who has not answered saw the key: %d %+v", resp.StatusCode, body["solution"])
+	}
+	if v, _ := body["viewer"].(map[string]any); v == nil || v["has_answered"] != false || v["answer"] != nil {
+		t.Errorf("non-answerer viewer %+v", body["viewer"])
+	}
 	resp, body = f.qz(t, http.MethodGet, "/api/v1/quizzes/"+idStr(g2QTied+5), "/quizzes/{quiz_id}", "", "", nil)
 	wantCode(t, resp, body, http.StatusNotFound, problem.CodeNotFound)
 	resp, body = f.qz(t, http.MethodGet, "/api/v1/quizzes/"+idStr(g2QGone), "/quizzes/{quiz_id}", "", "", nil)

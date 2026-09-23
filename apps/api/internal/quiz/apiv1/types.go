@@ -17,6 +17,13 @@ func (QuizChoice) Schema(huma.Registry) *huma.Schema {
 	return &huma.Schema{Type: huma.TypeString, MaxLength: &n, Description: "One option of a single or multiple choice quiz. Free text; never use it as a decision input."}
 }
 
+type ChoiceIndex int
+
+func (ChoiceIndex) Schema(huma.Registry) *huma.Schema {
+	lo, hi := 0.0, 19.0
+	return &huma.Schema{Type: huma.TypeInteger, Minimum: &lo, Maximum: &hi, Description: "0-based index into the quiz's choices."}
+}
+
 type QuizSummary struct {
 	Object         string                  `json:"object" enum:"quiz" maxLength:"4" doc:"Type discriminant. Always quiz."`
 	ID             repr.DecimalID          `json:"id" doc:"Quiz id."`
@@ -68,8 +75,8 @@ type Quiz struct {
 
 type QuizSolution struct {
 	Object               string                  `json:"object" enum:"quiz_solution" maxLength:"13" doc:"Type discriminant. Always quiz_solution."`
-	CorrectChoiceIndexes []int                   `json:"correct_choice_indexes" maxItems:"20" doc:"0-based indexes of the correct choices. Empty array for a judge quiz."`
-	JudgeAnswer          *bool                   `json:"judge_answer" doc:"The correct true/false for a judge quiz. null otherwise."`
+	CorrectChoiceIndexes []ChoiceIndex           `json:"correct_choice_indexes" maxItems:"20" doc:"0-based indexes of the correct choices. Empty array for a judge quiz."`
+	JudgeAnswer          *bool                   `json:"is_statement_true" doc:"Whether a judge quiz's statement is true. null on other quiz types."`
 	Explanation          content.ContentDocument `json:"explanation" doc:"Explanation as a Markdown document. An empty document when there is none."`
 }
 
@@ -84,8 +91,8 @@ type QuizSource struct {
 	DescriptionMarkdown  string           `json:"description_markdown" maxLength:"20000" doc:"Stored Markdown of the description. Free text; never use it as a decision input."`
 	ExplanationMarkdown  string           `json:"explanation_markdown" maxLength:"2000" doc:"Stored Markdown of the explanation. Free text; never use it as a decision input."`
 	Choices              []QuizChoice     `json:"choices" maxItems:"20" doc:"Option texts. Empty array for a judge quiz. Never null."`
-	CorrectChoiceIndexes []int            `json:"correct_choice_indexes" maxItems:"20" doc:"0-based indexes of the correct choices. Empty array for a judge quiz."`
-	JudgeAnswer          *bool            `json:"judge_answer" doc:"The correct true/false for a judge quiz. null otherwise."`
+	CorrectChoiceIndexes []ChoiceIndex    `json:"correct_choice_indexes" maxItems:"20" doc:"0-based indexes of the correct choices. Empty array for a judge quiz."`
+	JudgeAnswer          *bool            `json:"is_statement_true" doc:"Whether a judge quiz's statement is true. null on other quiz types."`
 	WorkIDs              []repr.DecimalID `json:"work_ids" maxItems:"20" doc:"Linked work ids. Empty array when there are none. Never null."`
 	IsWorkHidden         bool             `json:"is_work_hidden" doc:"Whether linked works stay hidden until the caller may see the answer key."`
 }
@@ -101,29 +108,23 @@ type QuizAnswer struct {
 }
 
 type QuizSubmission struct {
-	ChoiceIndexes []int `json:"choice_indexes" maxItems:"20" doc:"0-based indexes of the chosen options. Empty array for a judge quiz."`
-	JudgeChoice   *bool `json:"judge_choice" doc:"The true/false chosen on a judge quiz. null otherwise."`
+	ChoiceIndexes []ChoiceIndex `json:"choice_indexes" maxItems:"20" doc:"0-based indexes of the chosen options. Empty array for a judge quiz."`
+	JudgeChoice   *bool         `json:"is_statement_true" required:"false" doc:"The answerer's verdict on a judge quiz's statement. null or absent on other quiz types."`
 }
 
 type QuizAnswerResult struct {
-	Object   string       `json:"object" enum:"quiz_answer_result" maxLength:"18" doc:"Type discriminant. Always quiz_answer_result."`
-	Answer   QuizAnswer   `json:"answer" doc:"The row just written."`
-	Solution QuizSolution `json:"solution" doc:"The answer key and explanation."`
+	Object   string        `json:"object" enum:"quiz_answer_result" maxLength:"18" doc:"Type discriminant. Always quiz_answer_result."`
+	Answer   *QuizAnswer   `json:"answer" doc:"The row just written. Never null here; nullable because the detail's viewer.answer is."`
+	Solution *QuizSolution `json:"solution" doc:"The answer key and explanation. Never null here; nullable because the detail's solution is."`
 }
 
 type QuizViewer struct {
-	HasAnswered   bool              `json:"has_answered" doc:"Whether the caller has an answerer row. The author's author row does not count."`
-	Answer        *QuizViewerAnswer `json:"answer" doc:"The caller's own answer. null when they have not answered."`
-	CanEdit       bool              `json:"can_edit" doc:"Whether the caller may edit this quiz. Requests authenticated with a Bearer token never carry staff powers."`
-	CanDelete     bool              `json:"can_delete" doc:"Whether the caller may delete this quiz. Requests authenticated with a Bearer token never carry staff powers."`
-	HasFavorited  bool              `json:"has_favorited" doc:"Whether the caller favorited the quiz."`
-	QualityRating *int              `json:"quality_rating" minimum:"1" maximum:"10" doc:"The caller's rating, 1–10. null when they have not rated."`
-}
-
-type QuizViewerAnswer struct {
-	Submission QuizSubmission `json:"submission" doc:"What the caller submitted."`
-	IsCorrect  bool           `json:"is_correct" doc:"Whether the caller was correct."`
-	AnsweredAt repr.DateTime  `json:"answered_at" doc:"Time the caller answered."`
+	HasAnswered   bool        `json:"has_answered" doc:"Whether the caller has an answerer row. The author's author row does not count."`
+	Answer        *QuizAnswer `json:"answer" doc:"The caller's own answer. null when they have not answered."`
+	CanEdit       bool        `json:"can_edit" doc:"Whether the caller may edit this quiz. Requests authenticated with a Bearer token never carry staff powers."`
+	CanDelete     bool        `json:"can_delete" doc:"Whether the caller may delete this quiz. Requests authenticated with a Bearer token never carry staff powers."`
+	HasFavorited  bool        `json:"has_favorited" doc:"Whether the caller favorited the quiz."`
+	QualityRating *int        `json:"quality_rating" minimum:"1" maximum:"10" doc:"The caller's rating, 1–10. null when they have not rated."`
 }
 
 type QuizSummaryViewer struct {
@@ -169,8 +170,8 @@ type QuizCreate struct {
 	Difficulty           int              `json:"difficulty" minimum:"1" maximum:"10" doc:"Difficulty, 1–10."`
 	SpoilerLevel         string           `json:"spoiler_level" enum:"none,portion,serious" required:"false" maxLength:"7" doc:"How much of a work the prompt spoils. Omitted is none."`
 	Choices              []QuizChoice     `json:"choices" required:"false" maxItems:"20" doc:"Option texts. Required with 2–20 unique items for single and multiple; inconsistent on judge."`
-	CorrectChoiceIndexes []int            `json:"correct_choice_indexes" required:"false" maxItems:"20" doc:"0-based indexes of the correct choices. Exactly one for single, at least one unique in range for multiple, empty for judge."`
-	JudgeAnswer          *bool            `json:"judge_answer,omitempty" doc:"The correct true/false. Required for judge; must be null or absent otherwise."`
+	CorrectChoiceIndexes []ChoiceIndex    `json:"correct_choice_indexes" required:"false" maxItems:"20" doc:"0-based indexes of the correct choices. Exactly one for single, at least one unique in range for multiple, empty for judge."`
+	JudgeAnswer          *bool            `json:"is_statement_true" required:"false" doc:"Whether the judge statement is true. Required for judge; must be null or absent otherwise."`
 	WorkIDs              []repr.DecimalID `json:"work_ids" required:"false" maxItems:"20" doc:"Linked catalog work ids, unique, at most 20. Each must exist in catalog."`
 	IsWorkHidden         bool             `json:"is_work_hidden" required:"false" doc:"Whether linked works stay hidden until the caller may see the answer key."`
 }
@@ -184,8 +185,8 @@ type QuizPatch struct {
 	Difficulty           *int             `json:"difficulty,omitempty" minimum:"1" maximum:"10" doc:"New difficulty, 1–10."`
 	SpoilerLevel         *string          `json:"spoiler_level,omitempty" enum:"none,portion,serious" maxLength:"7" doc:"New spoiler level."`
 	Choices              []QuizChoice     `json:"choices" required:"false" maxItems:"20" doc:"When present, replaces every option."`
-	CorrectChoiceIndexes []int            `json:"correct_choice_indexes" required:"false" maxItems:"20" doc:"When present, replaces the answer key indexes."`
-	JudgeAnswer          *bool            `json:"judge_answer,omitempty" doc:"When present, replaces the judge answer."`
+	CorrectChoiceIndexes []ChoiceIndex    `json:"correct_choice_indexes" required:"false" maxItems:"20" doc:"When present, replaces the answer key indexes."`
+	JudgeAnswer          *bool            `json:"is_statement_true" required:"false" doc:"When present and not null, replaces whether the judge statement is true."`
 	WorkIDs              []repr.DecimalID `json:"work_ids" required:"false" maxItems:"20" doc:"When present, replaces every linked work."`
 	IsWorkHidden         *bool            `json:"is_work_hidden,omitempty" doc:"When present, replaces the hidden-works flag."`
 }

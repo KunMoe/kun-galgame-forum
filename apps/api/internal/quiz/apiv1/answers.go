@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"strconv"
-	"strings"
 	"time"
 
 	v1 "kun-galgame-api/internal/apiv1"
@@ -183,7 +182,7 @@ func (s *Service) createQuizAnswer(ctx context.Context, in *createAnswerInput) (
 		if err := s.store.BumpAnswerStats(tx, row.ID, correct); err != nil {
 			return err
 		}
-		return s.store.NotifyAnswered(tx, user.ID, row.UserID, row.ID, answerNotice(row.Type, choices, in.Body, correct))
+		return s.store.NotifyAnswered(tx, user.ID, row.UserID, row.ID, repository.AnswerNotice(row.Type, choices, toInts(in.Body.ChoiceIndexes), in.Body.JudgeChoice, correct))
 	})
 	if err != nil {
 		if errors.Is(err, repository.ErrAlreadyExists) {
@@ -205,28 +204,8 @@ func (s *Service) createQuizAnswer(ctx context.Context, in *createAnswerInput) (
 	}
 	return &createAnswerOutput{
 		Location: "/api/v1/quizzes/" + strconv.Itoa(row.ID),
-		Body:     QuizAnswerResult{Object: "quiz_answer_result", Answer: item, Solution: *sol},
+		Body:     QuizAnswerResult{Object: "quiz_answer_result", Answer: &item, Solution: sol},
 	}, nil
 }
 
 func boolPtr(b bool) *bool { return &b }
-
-func answerNotice(qtype string, choices []string, sub QuizSubmission, correct bool) string {
-	var picked string
-	if qtype == quizTypeJudge {
-		picked = "错误"
-		if sub.JudgeChoice != nil && *sub.JudgeChoice {
-			picked = "正确"
-		}
-	} else {
-		labels := make([]string, 0, len(sub.ChoiceIndexes))
-		for _, i := range sub.ChoiceIndexes {
-			labels = append(labels, string(rune('A'+i))+". "+choices[i])
-		}
-		picked = strings.Join(labels, "、")
-	}
-	if correct {
-		return "选择「" + picked + "」，回答正确"
-	}
-	return "选择「" + picked + "」，回答错误"
-}
