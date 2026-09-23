@@ -11,6 +11,11 @@ import {
   type ProviderKey
 } from '~/constants/galgameResource'
 import { KUN_GALGAME_RATING_GAME_TYPE_MAP } from '~/constants/galgame-rating'
+import {
+  LANGUAGE_OPTIONS,
+  PLATFORM_OPTIONS,
+  RESOURCE_TYPE_OPTIONS
+} from '#shared/utils/galgameResourceVocab'
 import type {
   KunGalgameResourceTypeOptions,
   KunGalgameResourceLanguageOptions,
@@ -22,8 +27,10 @@ const props = withDefaults(
     isShowAdvanced?: boolean
     total?: number | null
     pending?: boolean
+    // The entity pages read /api/v1, which filters on the resource axes.
+    axes?: boolean
   }>(),
-  { isShowAdvanced: false, total: null, pending: false }
+  { isShowAdvanced: false, total: null, pending: false, axes: false }
 )
 
 const {
@@ -74,17 +81,23 @@ watch(
 
 const csvToArray = (csv: string) => csv.split(',').filter(Boolean)
 
-const typeOptions = Object.entries(KUN_GALGAME_RESOURCE_TYPE_MAP)
-  .filter(([k]) => k !== 'name')
-  .map(([value, label]) => ({ value, label }))
+const typeOptions = props.axes
+  ? [{ value: 'all', label: '全部类型' }, ...RESOURCE_TYPE_OPTIONS]
+  : Object.entries(KUN_GALGAME_RESOURCE_TYPE_MAP)
+      .filter(([k]) => k !== 'name')
+      .map(([value, label]) => ({ value, label }))
 
-const langOptions = Object.entries(KUN_GALGAME_RESOURCE_LANGUAGE_MAP).map(
-  ([value, label]) => ({ value, label })
-)
+const langOptions = props.axes
+  ? [{ value: 'all', label: '全部语言' }, ...LANGUAGE_OPTIONS]
+  : Object.entries(KUN_GALGAME_RESOURCE_LANGUAGE_MAP).map(
+      ([value, label]) => ({ value, label })
+    )
 
-const platformOptions = Object.entries(KUN_GALGAME_RESOURCE_PLATFORM_MAP)
-  .filter(([k]) => k !== 'name')
-  .map(([value, label]) => ({ value, label }))
+const platformOptions = props.axes
+  ? [{ value: 'all', label: '全部平台' }, ...PLATFORM_OPTIONS]
+  : Object.entries(KUN_GALGAME_RESOURCE_PLATFORM_MAP)
+      .filter(([k]) => k !== 'name')
+      .map(([value, label]) => ({ value, label }))
 
 const gameTypeOptions = [
   { value: 'all', label: '全部作品' },

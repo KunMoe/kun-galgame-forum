@@ -3,6 +3,15 @@ import {
   getGalgameCharacterLangName,
   getGalgameCharacterIntroCredit
 } from '~/constants/galgameCharacter'
+import type {
+  Appearance,
+  AppearanceList,
+  Character
+} from '#shared/utils/api/schemas'
+import { mergedInto } from '#shared/utils/api/merged'
+import { settle } from '#shared/utils/api/problem'
+import { workSummaryToCard } from '~/utils/galgame/workCard'
+import { characterViewOf } from '~/utils/galgame/entityCards'
 
 const route = useRoute()
 const characterId = computed(() => Number((route.params as { id: string }).id))
@@ -16,21 +25,31 @@ if (!Number.isInteger(characterId.value) || characterId.value <= 0) {
 }
 
 const PAGE_SIZE = 50
+const api = useApiClient()
+const nameOf = useCatalogName()
+const { allowsNsfw } = useContentStance()
 
-const { data } = await useKunFetch<GalgameCharacterDetail>(
-  `/galgame-character/${characterId.value}`,
-  { method: 'GET', query: { limit: PAGE_SIZE }, watch: false }
+let movedTo: number | null = null
+const { data: character } = await useApi<Character>(
+  () => `character:${characterId.value}:${allowsNsfw.value}`,
+  async (client) => {
+    const res = await client.GET('/characters/{character_id}', {
+      params: {
+        path: { character_id: String(characterId.value) },
+        query: { include_nsfw: allowsNsfw.value }
+      }
+    })
+    movedTo = mergedInto(res.error)
+    return res
+  }
 )
 
-const moved = !!data.value?.moved_to
-if (data.value?.moved_to) {
-  await navigateTo(`/galgame/character/${data.value.moved_to}`, {
+if (movedTo) {
+  await navigateTo(`/galgame/character/${movedTo}`, {
     redirectCode: 301,
     replace: true
   })
-}
-
-if (!data.value) {
+} else if (!character.value) {
   throw createError({
     statusCode: 404,
     statusMessage: '未找到该角色',
@@ -38,26 +57,63 @@ if (!data.value) {
   })
 }
 
-const works = ref<GalgameCharacterWork[]>(moved ? [] : [...data.value.works])
-const nextOffset = ref<number | null>(moved ? null : data.value.next_offset)
+const appearancesQuery = (cursor?: string) => ({
+  limit: PAGE_SIZE,
+  include_nsfw: allowsNsfw.value,
+  ...(cursor ? { cursor } : {})
+})
+
+const { data: firstPage } = await useApi<AppearanceList>(
+  () => `character-appearances:${characterId.value}:${allowsNsfw.value}`,
+  (client) =>
+    client.GET('/characters/{character_id}/appearances', {
+      params: {
+        path: { character_id: String(characterId.value) },
+        query: appearancesQuery()
+      }
+    })
+)
+
+const appearances = ref<Appearance[]>([...(firstPage.value?.items ?? [])])
+const nextCursor = ref<string | null>(firstPage.value?.next_cursor ?? null)
 const loadingMore = ref(false)
 
 const loadMore = async () => {
-  if (nextOffset.value === null || loadingMore.value) {
+  if (!nextCursor.value || loadingMore.value) {
     return
   }
   loadingMore.value = true
-  const res = await kunFetch<GalgameCharacterDetail>(
-    `/galgame-character/${characterId.value}`,
-    { method: 'GET', query: { limit: PAGE_SIZE, offset: nextOffset.value } }
+  const res = await settle(
+    api.GET('/characters/{character_id}/appearances', {
+      params: {
+        path: { character_id: String(characterId.value) },
+        query: appearancesQuery(nextCursor.value)
+      }
+    })
   )
   loadingMore.value = false
-  if (!res) {
+  if (!res.ok) {
     return
   }
-  works.value.push(...res.works)
-  nextOffset.value = res.next_offset
+  appearances.value.push(...res.data.items)
+  nextCursor.value = res.data.next_cursor ?? null
 }
+
+const works = computed(() =>
+  appearances.value.map((a) => ({
+    ...workSummaryToCard(a.work_summary, nameOf),
+    voices: a.voices.map((v) => ({
+      id: Number(v.id),
+      name: nameOf(v).name,
+      lang: v.lang ?? '',
+      latin: v.latin ?? ''
+    }))
+  }))
+)
+
+const data = computed(() =>
+  character.value ? characterViewOf(character.value, nameOf) : null
+)
 
 const voiceLabel = (voice: GalgameDetailCharacterVoice) =>
   voice.lang && voice.lang.toLowerCase() !== 'ja'
@@ -109,19 +165,20 @@ const traitGroups = computed(() => {
   return groups
 })
 
-if (!moved) {
+const view = data.value
+if (view) {
   useKunSeoMeta({
-    title: `${data.value.name} 登场的 Galgame`,
+    title: `${view.name} 登场的 Galgame`,
     description:
-      data.value.intro ||
-      `角色 ${data.value.name} 在本站收录的 Galgame 中的登场作品与配音演员一览。`,
-    ogCard: { kind: 'character', id: data.value.id }
+      view.intro ||
+      `角色 ${view.name} 在本站收录的 Galgame 中的登场作品与配音演员一览。`,
+    ogCard: { kind: 'character', id: view.id }
   })
 }
 </script>
 
 <template>
-  <div v-if="data && !data.moved_to" class="space-y-6">
+  <div v-if="data" class="space-y-6">
     <KunHeader :name="data.name" :description="subtitle">
       <template v-if="data.figure || data.image" #headerEndContent>
         <KunLightboxGallery>
@@ -281,7 +338,7 @@ if (!moved) {
 
     <KunNull v-else description="暂无该角色登场的 Galgame" />
 
-    <div v-if="nextOffset !== null" class="flex justify-center">
+    <div v-if="nextCursor !== null" class="flex justify-center">
       <KunButton
         variant="flat"
         color="primary"

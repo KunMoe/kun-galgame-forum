@@ -1,19 +1,33 @@
 <script setup lang="ts">
 import { useRouteQuery } from '@vueuse/router'
+import type { SeriesPage } from '#shared/utils/api/schemas'
+import { seriesCardOf } from '~/utils/galgame/entityCards'
 
 const page = useRouteQuery('page', 1, { mode: 'replace', transform: Number })
 const limit = 12
 
-const { data, status } = await useKunFetch<{
-  series: GalgameSeriesCard[]
-  total: number
-}>('/galgame-series/cards', {
-  method: 'GET',
-  query: { page, limit }
-})
-
 const { allowsNsfw } = useContentStance()
 const isSfwMode = computed(() => !allowsNsfw.value)
+const nameOf = useCatalogName()
+
+const { data: seriesPage, status } = await useApi<SeriesPage>(
+  () => `series:${page.value}:${allowsNsfw.value}`,
+  (api) =>
+    api.GET('/series', {
+      params: {
+        query: { page: page.value, limit, include_nsfw: allowsNsfw.value }
+      }
+    })
+)
+
+const data = computed(() =>
+  seriesPage.value
+    ? {
+        series: seriesPage.value.items.map((s) => seriesCardOf(s, nameOf)),
+        total: seriesPage.value.total
+      }
+    : undefined
+)
 </script>
 
 <template>

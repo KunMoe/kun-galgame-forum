@@ -1,4 +1,5 @@
 import { defineAsyncComponent } from 'vue'
+import type { CatalogName } from '#shared/utils/catalogName'
 import type {
   EditContextItem,
   EditFieldConfig,
@@ -84,40 +85,70 @@ const upstreamImages = (
         : galgameImageSrc(image)
     }))
 
-const taxName = (name: unknown): string =>
-  typeof name === 'string' ? name : ''
+// An editor tags and credits adult works too, so these pickers reach every
+// vocabulary entry whatever the editor's own browsing stance.
+type Hit = { id: string } & CatalogName
 
-interface TaxonomyHit {
-  id: number
-  name: unknown
+const pickerOptions = (
+  items: Hit[] | undefined,
+  label: (n: CatalogName) => string
+): EditSelectOption[] =>
+  (items ?? []).map((o) => ({ value: Number(o.id), label: label(o) }))
+
+const pickerName = (n: CatalogName) => catalogEntityName(n).name
+
+const searchTags = async (keyword: string) => {
+  const q = keyword.trim()
+  if (!q) return []
+  const { data } = await useApiClient().GET('/tags', {
+    params: { query: { q, limit: 20, include_nsfw: true } }
+  })
+  return pickerOptions(data?.items, catalogVocabularyName)
 }
 
-const searchTaxonomy =
-  (path: string) =>
-  async (keyword: string): Promise<EditSelectOption[]> => {
-    const data = await kunFetch<TaxonomyHit[]>(path, {
-      method: 'GET',
-      query: { q: keyword }
-    })
-    return (data ?? []).map((o) => ({ value: o.id, label: taxName(o.name) }))
-  }
+const searchOfficials = async (keyword: string) => {
+  const q = keyword.trim()
+  if (!q) return []
+  const { data } = await useApiClient().GET('/companies', {
+    params: { query: { q, limit: 20 } }
+  })
+  return pickerOptions(data?.items, pickerName)
+}
 
-const browseTaxonomy =
-  (path: string) =>
-  async (keyword: string): Promise<EditSelectOption[]> => {
-    const data = await kunFetch<TaxonomyHit[]>(path, { method: 'GET' })
-    const q = keyword.trim().toLowerCase()
-    return (data ?? [])
-      .map((o) => ({ value: o.id, label: taxName(o.name) }))
-      .filter((o) => !q || o.label.toLowerCase().includes(q))
-  }
+const searchStaff = async (keyword: string) => {
+  const q = keyword.trim()
+  if (!q) return []
+  const { data } = await useApiClient().GET('/credit-names', {
+    params: { query: { q, limit: 20 } }
+  })
+  return pickerOptions(data?.items, pickerName)
+}
 
-const searchTags = searchTaxonomy('/galgame-tag/search')
-const searchOfficials = searchTaxonomy('/galgame-official/search')
-const searchStaff = searchTaxonomy('/galgame-staff/search')
-const searchCharacters = searchTaxonomy('/galgame-character/search')
-const searchEngines = browseTaxonomy('/galgame-engine')
-const searchSeries = browseTaxonomy('/galgame-series')
+const searchCharacters = async (keyword: string) => {
+  const q = keyword.trim()
+  if (!q) return []
+  const { data } = await useApiClient().GET('/characters', {
+    params: { query: { q, limit: 20 } }
+  })
+  return pickerOptions(data?.items, pickerName)
+}
+
+const searchEngines = async (keyword: string) => {
+  const q = keyword.trim()
+  const { data } = await useApiClient().GET('/engines', {
+    params: { query: { limit: 100, ...(q ? { q } : {}) } }
+  })
+  return pickerOptions(data?.items, pickerName)
+}
+
+const searchSeries = async (keyword: string) => {
+  const q = keyword.trim()
+  if (!q) return []
+  const { data } = await useApiClient().GET('/series', {
+    params: { query: { q, limit: 20, include_nsfw: true } }
+  })
+  return pickerOptions(data?.items, pickerName)
+}
 
 const resolveFrom =
   (map?: Map<number, string>) =>

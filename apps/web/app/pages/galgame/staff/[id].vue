@@ -1,5 +1,8 @@
 <script setup lang="ts">
-import { KUN_GALGAME_STAFF_GENDER_MAP } from '~/constants/galgameStaff'
+import type { CreditList, CreditName, Credit } from '#shared/utils/api/schemas'
+import { mergedInto } from '#shared/utils/api/merged'
+import { settle } from '#shared/utils/api/problem'
+import { workSummaryToCard } from '~/utils/galgame/workCard'
 
 const route = useRoute()
 const staffId = computed(() => Number((route.params as { id: string }).id))
@@ -13,21 +16,28 @@ if (!Number.isInteger(staffId.value) || staffId.value <= 0) {
 }
 
 const PAGE_SIZE = 50
+const api = useApiClient()
+const nameOf = useCatalogName()
+const { allowsNsfw } = useContentStance()
 
-const { data } = await useKunFetch<GalgameStaffDetail>(
-  `/galgame-staff/${staffId.value}`,
-  { method: 'GET', query: { limit: PAGE_SIZE }, watch: false }
+let movedTo: number | null = null
+const { data: person } = await useApi<CreditName>(
+  () => `credit-name:${staffId.value}`,
+  async (client) => {
+    const res = await client.GET('/credit-names/{credit_name_id}', {
+      params: { path: { credit_name_id: String(staffId.value) } }
+    })
+    movedTo = mergedInto(res.error)
+    return res
+  }
 )
 
-const moved = !!data.value?.moved_to
-if (data.value?.moved_to) {
-  await navigateTo(`/galgame/staff/${data.value.moved_to}`, {
+if (movedTo) {
+  await navigateTo(`/galgame/staff/${movedTo}`, {
     redirectCode: 301,
     replace: true
   })
-}
-
-if (!data.value) {
+} else if (!person.value) {
   throw createError({
     statusCode: 404,
     statusMessage: '未找到该制作人员',
@@ -35,33 +45,99 @@ if (!data.value) {
   })
 }
 
-const works = ref<GalgameStaffWork[]>(moved ? [] : [...data.value.works])
-const nextOffset = ref<number | null>(moved ? null : data.value.next_offset)
+const creditsQuery = (cursor?: string) => ({
+  limit: PAGE_SIZE,
+  include_nsfw: allowsNsfw.value,
+  ...(cursor ? { cursor } : {})
+})
+
+const { data: firstPage } = await useApi<CreditList>(
+  () => `credit-name-credits:${staffId.value}:${allowsNsfw.value}`,
+  (client) =>
+    client.GET('/credit-names/{credit_name_id}/credits', {
+      params: {
+        path: { credit_name_id: String(staffId.value) },
+        query: creditsQuery()
+      }
+    })
+)
+
+const credits = ref<Credit[]>([...(firstPage.value?.items ?? [])])
+const nextCursor = ref<string | null>(firstPage.value?.next_cursor ?? null)
 const loadingMore = ref(false)
 
 const loadMore = async () => {
-  if (nextOffset.value === null || loadingMore.value) {
+  if (!nextCursor.value || loadingMore.value) {
     return
   }
   loadingMore.value = true
-  const res = await kunFetch<GalgameStaffDetail>(
-    `/galgame-staff/${staffId.value}`,
-    { method: 'GET', query: { limit: PAGE_SIZE, offset: nextOffset.value } }
+  const res = await settle(
+    api.GET('/credit-names/{credit_name_id}/credits', {
+      params: {
+        path: { credit_name_id: String(staffId.value) },
+        query: creditsQuery(nextCursor.value)
+      }
+    })
   )
   loadingMore.value = false
-  if (!res) {
+  if (!res.ok) {
     return
   }
-  works.value.push(...res.works)
-  nextOffset.value = res.next_offset
+  credits.value.push(...res.data.items)
+  nextCursor.value = res.data.next_cursor ?? null
 }
 
+const works = computed(() =>
+  credits.value.map((c) => ({
+    ...workSummaryToCard(c.work_summary, nameOf),
+    roles: c.credit_roles.map((r) => r.display_name),
+    characters: c.characters.map((ch) => ch.display_name)
+  }))
+)
+
+const data = computed(() => {
+  const p = person.value
+  if (!p) {
+    return null
+  }
+  const { name, original } = nameOf(p)
+  const intro = pickCatalogIntro(p.intros)
+  return {
+    id: Number(p.id),
+    name,
+    name_original: original,
+    latin: p.latin ?? '',
+    photo: p.photo?.url ?? '',
+    intro: intro?.value ?? '',
+    intro_machine: intro?.is_machine ?? false,
+    siblings: p.siblings.map((s) => ({ id: Number(s.id), name: nameOf(s).name })),
+    links: p.links.map((l) => ({
+      source: l.site,
+      url: l.url,
+      name: catalogLinkLabel(l.site, l.url)
+    })),
+    roles: [
+      ...new Set(
+        credits.value.flatMap((c) => c.credit_roles.map((r) => r.display_name))
+      )
+    ]
+  }
+})
+
 const genderText = computed(() =>
-  data.value?.gender ? KUN_GALGAME_STAFF_GENDER_MAP[data.value.gender] : ''
+  person.value?.gender === 'female'
+    ? '女'
+    : person.value?.gender === 'male'
+      ? '男'
+      : ''
 )
 
 const birthdayText = computed(() =>
-  formatFuzzyDate(data.value?.birth_y, data.value?.birth_m, data.value?.birth_d)
+  formatFuzzyDate(
+    person.value?.birth_year,
+    person.value?.birth_month,
+    person.value?.birth_day
+  )
 )
 
 const subtitle = computed(() => {
@@ -71,19 +147,20 @@ const subtitle = computed(() => {
   return parts.join(' · ')
 })
 
-if (!moved) {
+const staff = data.value
+if (staff) {
   useKunSeoMeta({
-    title: `${data.value.name} 参与制作的 Galgame`,
+    title: `${staff.name} 参与制作的 Galgame`,
     description:
-      data.value.intro ||
-      `${data.value.name} 在本站收录的 Galgame 中担任 ${data.value.roles.join(' / ')} 等职位的作品一览。`,
-    ogCard: { kind: 'staff', id: data.value.id }
+      staff.intro ||
+      `${staff.name} 在本站收录的 Galgame 中担任 ${staff.roles.join(' / ')} 等职位的作品一览。`,
+    ogCard: { kind: 'staff', id: staff.id }
   })
 }
 </script>
 
 <template>
-  <div v-if="data && !data.moved_to" class="space-y-6">
+  <div v-if="data" class="space-y-6">
     <KunHeader :name="data.name" :description="subtitle">
       <template v-if="data.photo" #headerEndContent>
         <KunImage
@@ -186,7 +263,7 @@ if (!moved) {
 
     <KunNull v-else description="暂无该制作人员参与的 Galgame" />
 
-    <div v-if="nextOffset !== null" class="flex justify-center">
+    <div v-if="nextCursor !== null" class="flex justify-center">
       <KunButton
         variant="flat"
         color="primary"

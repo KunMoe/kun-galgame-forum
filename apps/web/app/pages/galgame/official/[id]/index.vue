@@ -20,13 +20,20 @@ if (Object.keys(carriedFilters).length) {
 
 const GALGAME_PREVIEW_LIMIT = 8
 
-const { officialId, data } = await useGalgameOfficialDetail({
-  page: 1,
-  limit: GALGAME_PREVIEW_LIMIT
-})
+const { officialId, data } = await useGalgameOfficialDetail()
 
 const { allowsNsfw } = useContentStance()
 const isSfwMode = computed(() => !allowsNsfw.value)
+
+const { galgames, total, own, imprint } = await useCompanyWorks(
+  officialId,
+  () => ({
+    page: 1,
+    limit: GALGAME_PREVIEW_LIMIT,
+    sort: 'resource_updated_desc',
+    include_nsfw: allowsNsfw.value
+  })
+)
 
 const gamePath = computed(
   () => `${taxonomyDetailPath('official', officialId)}/game`
@@ -39,16 +46,15 @@ const INTRO_CLAMP_CHARS = 100
 const isIntroExpanded = ref(false)
 
 const worksDescription = computed(() => {
-  const detail = data.value
-  if (!detail?.galgame_count) return ''
-  if (!detail.imprint_galgame_count) {
-    return `资料库中有 ${detail.galgame_count} 部, 下面是最近更新的几部。`
+  if (!total.value) return ''
+  if (!imprint.value) {
+    return `资料库中有 ${total.value} 部, 下面是最近更新的几部。`
   }
-  return `资料库中自有 ${detail.own_galgame_count} 部 · 经旗下厂牌 ${detail.imprint_galgame_count} 部, 下面是最近更新的几部。`
+  return `资料库中自有 ${own.value} 部 · 经旗下厂牌 ${imprint.value} 部, 下面是最近更新的几部。`
 })
 
 const official = data.value
-if (official && !official.moved_to) {
+if (official) {
   useKunSeoMeta({
     title: `${official.name} 会社`,
     description: `${official.name}${official.alias?.length ? `, 即 ${official.alias.join('| ')}` : ''}, 查看会社 ${official.name} 制作的所有 Galgame`,
@@ -58,7 +64,7 @@ if (official && !official.moved_to) {
 </script>
 
 <template>
-  <div v-if="data && !data.moved_to" class="space-y-6">
+  <div v-if="data" class="space-y-6">
     <KunHeader :name="data.name" :description="data.original">
       <template v-if="data.logo" #headerEndContent>
         <GalgameOfficialBrandMark :src="data.logo" :name="data.name" />
@@ -126,16 +132,16 @@ if (official && !official.moved_to) {
 
     <GalgameOfficialDetailNav
       :official-id="officialId"
-      :galgame-count="data.galgame_count"
+      :galgame-count="total"
     />
 
     <div class="space-y-3">
       <KunHeader name="作品" :description="worksDescription" scale="h3" />
 
       <GalgameCard
-        v-if="data.galgame.length"
+        v-if="galgames.length"
         :is-transparent="false"
-        :galgames="data.galgame"
+        :galgames="galgames"
         :hide-company="data.name"
       >
         <template #meta="{ galgame }">
@@ -147,18 +153,18 @@ if (official && !official.moved_to) {
       </GalgameCard>
 
       <KunButton
-        v-if="data.galgame_count > GALGAME_PREVIEW_LIMIT"
+        v-if="total > GALGAME_PREVIEW_LIMIT"
         variant="flat"
         color="primary"
         :full-width="true"
         :href="gamePath"
       >
         <KunIcon name="lucide:layout-grid" />
-        浏览全部 {{ data.galgame_count }} 部作品
+        浏览全部 {{ total }} 部作品
       </KunButton>
 
       <KunNull
-        v-if="!data.galgame_count"
+        v-if="!total"
         :description="`${data.name} 会社下暂无 Galgame`"
       />
     </div>

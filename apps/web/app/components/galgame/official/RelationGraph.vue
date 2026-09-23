@@ -1,13 +1,38 @@
 <script setup lang="ts">
 import type { KunTabItem } from '@kungal/ui-vue'
+import type { CompanyGraph } from '#shared/utils/api/schemas'
 
 const props = defineProps<{
   officialId: number
 }>()
 
-const { data } = await useKunFetch<GalgameOfficialRelationGraph>(
-  `/galgame-official/${props.officialId}/relation-graph`,
-  { lazy: true, method: 'GET', watch: false }
+const nameOf = useCatalogName()
+
+const { data: v1Graph } = useApi<CompanyGraph>(
+  () => `company-graph:${props.officialId}`,
+  (api) =>
+    api.GET('/companies/{company_id}/graph', {
+      params: { path: { company_id: String(props.officialId) } }
+    }),
+  { lazy: true }
+)
+
+const data = computed<GalgameOfficialRelationGraph | undefined>(() =>
+  v1Graph.value
+    ? {
+        nodes: v1Graph.value.nodes.map((n) => ({
+          id: Number(n.id),
+          name: nameOf(n).name,
+          logo: n.logo?.url ?? '',
+          work_count: n.catalog_work_count
+        })),
+        edges: v1Graph.value.edges.map((e) => ({
+          from: Number(e.from_company_id),
+          to: Number(e.to_company_id),
+          relation: e.relation
+        }))
+      }
+    : undefined
 )
 
 const graph = computed(() =>

@@ -2,12 +2,16 @@
 import { watchDebounced } from '@vueuse/core'
 import { useRouteQuery } from '@vueuse/router'
 import { TAG_FILTER_MAX } from '~/components/search/items'
+import type { TagPage, WorkSummary } from '#shared/utils/api/schemas'
+import { settle } from '#shared/utils/api/problem'
+import { tagItemOf } from '~/utils/galgame/entityCards'
 
 // One page for both lists below: they are mutually exclusive (tag grid while
 // nothing is picked, Galgame results once something is), and every selection
 // change resets it, so ?page= is never read by the list it was not set on.
 const page = usePageQuery()
 const tagsLimit = 100
+const api = useApiClient()
 
 // The picked tags live in the URL: a multi-tag result is the one thing on this
 // page worth sharing, and before this it was a local ref — the link a reader
@@ -27,44 +31,48 @@ const selectedIds = computed<number[]>({
 // Pinned to page 1 while tags are picked, because the tag grid is not on screen
 // then: paging the Galgame results would otherwise refetch 100 tags from catalog
 // per click, and catalog's limiter counts the whole site as one IP.
-const { data, status } = await useKunFetch<{
-  tags: GalgameTagItem[]
-  total: number
-}>(`/galgame-tag`, {
-  method: 'GET',
-  query: computed(() => ({
-    page: selectedIds.value.length ? 1 : page.value,
-    limit: tagsLimit
-  }))
-})
-
 const { allowsNsfw } = useContentStance()
 const isSfwMode = computed(() => !allowsNsfw.value)
 
-const searchResult = ref<GalgameTaxonomySearchItem[]>([])
+const { data, status } = await useApi<TagPage>(
+  () =>
+    `tags:${selectedIds.value.length ? 1 : page.value}:${allowsNsfw.value}`,
+  (api) =>
+    api.GET('/tags', {
+      params: {
+        query: {
+          page: selectedIds.value.length ? 1 : page.value,
+          limit: tagsLimit,
+          include_nsfw: allowsNsfw.value
+        }
+      }
+    })
+)
+
+const searchResult = ref<GalgameTagItem[]>([])
 const searchQuery = ref('')
 const isSearching = ref(false)
 
 const displayTags = computed(() =>
-  searchQuery.value.trim() ? searchResult.value : (data.value?.tags ?? [])
+  searchQuery.value.trim()
+    ? searchResult.value
+    : (data.value?.items ?? []).map(tagItemOf)
 )
 
 const handleSearch = async () => {
-  if (!searchQuery.value.trim()) {
+  const q = searchQuery.value.trim()
+  if (!q) {
     searchResult.value = []
     return
   }
   isSearching.value = true
-  const res = await kunFetch<GalgameTaxonomySearchItem[]>(
-    `/galgame-tag/search`,
-    {
-      method: 'GET',
-      query: { q: searchQuery.value }
-    }
+  const res = await settle(
+    api.GET('/tags', {
+      params: { query: { q, limit: 20, include_nsfw: allowsNsfw.value } }
+    })
   )
   isSearching.value = false
-
-  searchResult.value = res ?? []
+  searchResult.value = res.ok ? res.data.items.map(tagItemOf) : []
 }
 
 watchDebounced(
@@ -100,33 +108,35 @@ const chips = computed<FilterChip[]>(() =>
   }))
 )
 
-const resultGames = ref<GalgameCard[]>([])
+const resultWorks = ref<WorkSummary[]>([])
+const resultGames = useWorkCards(() => resultWorks.value)
 const totalGameCount = ref(0)
 const gamesLimit = 24
 const loadingGames = ref(false)
 
 const fetchGames = async () => {
   if (!selectedIds.value.length) {
-    resultGames.value = []
+    resultWorks.value = []
     totalGameCount.value = 0
     return
   }
   loadingGames.value = true
-  const res = await kunFetch<{ galgames: GalgameCard[]; total: number }>(
-    `/galgame-tag/multi`,
-    {
-      method: 'GET',
-      query: {
-        page: page.value,
-        limit: gamesLimit,
-        tag_ids: tagIdsQuery.value
+  const res = await settle(
+    api.GET('/tagged-works', {
+      params: {
+        query: {
+          tag_ids: selectedIds.value.map(String),
+          page: page.value,
+          limit: gamesLimit,
+          include_nsfw: allowsNsfw.value
+        }
       }
-    }
+    })
   )
   loadingGames.value = false
-  if (res) {
-    resultGames.value = res.galgames
-    totalGameCount.value = res.total
+  if (res.ok) {
+    resultWorks.value = res.data.items
+    totalGameCount.value = res.data.total
   }
 }
 

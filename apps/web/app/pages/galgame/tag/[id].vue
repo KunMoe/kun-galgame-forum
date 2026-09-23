@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { KUN_GALGAME_TAG_CATEGORY_MAP } from '~/constants/galgameTag'
+import type { GalgameTag, WorkPage } from '#shared/utils/api/schemas'
 
 const route = useRoute()
 const tag_id = computed(() => {
@@ -14,39 +15,21 @@ if (!Number.isInteger(tag_id.value) || tag_id.value <= 0) {
   })
 }
 
-const {
-  page,
-  limit,
-  type,
-  language,
-  platform,
-  gameType,
-  sortField,
-  sortOrder
-} = useGalgameFilters()
-
 const { allowsNsfw } = useContentStance()
 const isSfwMode = computed(() => !allowsNsfw.value)
 
-const { data, status } = await useKunFetch<GalgameTagDetail>(
-  `/galgame-tag/${tag_id.value}`,
-  {
-    method: 'GET',
-    query: {
-      page,
-      limit,
-      type,
-      language,
-      platform,
-      gameType,
-      sortField,
-      sortOrder,
-      tag_id
-    }
-  }
+const { data: tag } = await useApi<GalgameTag>(
+  () => `tag:${tag_id.value}:${allowsNsfw.value}`,
+  (api) =>
+    api.GET('/tags/{tag_id}', {
+      params: {
+        path: { tag_id: String(tag_id.value) },
+        query: { include_nsfw: allowsNsfw.value }
+      }
+    })
 )
 
-if (!data.value) {
+if (!tag.value) {
   throw createError({
     statusCode: 404,
     statusMessage: '未找到 Galgame 标签',
@@ -54,8 +37,29 @@ if (!data.value) {
   })
 }
 
+const { page, limit, query } = useEntityWorksQuery()
+const { data: works, status } = await useApi<WorkPage>(
+  () => `tag-works:${tag_id.value}:${JSON.stringify(query.value)}`,
+  (api) =>
+    api.GET('/tags/{tag_id}/works', {
+      params: { path: { tag_id: String(tag_id.value) }, query: query.value }
+    })
+)
+const galgames = useWorkCards(() => works.value?.items)
+const total = computed(() => works.value?.total ?? 0)
+
+const data = computed(() => {
+  const t = tag.value!
+  return {
+    name: catalogVocabularyName(t),
+    category: t.is_sexual ? 'sexual' : t.tag_kind,
+    hidden: t.is_hidden,
+    description: pickCatalogIntro(t.intros)?.value ?? ''
+  }
+})
+
 const isIndexable = computed(
-  () => data.value?.category !== 'sexual' && !data.value?.hidden
+  () => data.value.category !== 'sexual' && !data.value.hidden
 )
 
 if (isIndexable.value) {
@@ -63,12 +67,12 @@ if (isIndexable.value) {
     title: `标签 ${data.value.name} 的 Galgame`,
     description:
       data.value.description ||
-      `含有标签「${data.value.name}」的 Galgame 作品合集, 例如 ${data.value.galgame
+      `含有标签「${data.value.name}」的 Galgame 作品合集, 例如 ${galgames.value
         .slice(0, 5)
         .map((g) => g.name)
         .join('、')} 等。`,
-    ...(data.value.galgame[0]?.effective_banner_url
-      ? { ogImage: data.value.galgame[0].effective_banner_url }
+    ...(galgames.value[0]?.effective_banner_url
+      ? { ogImage: galgames.value[0].effective_banner_url }
       : {})
   })
 } else {
@@ -77,7 +81,7 @@ if (isIndexable.value) {
 </script>
 
 <template>
-  <div v-if="data" class="flex flex-col gap-6">
+  <div class="flex flex-col gap-6">
     <KunHeader
       :name="`含有标签 ${data.name} 的 Galgame`"
       :description="data.description"
@@ -109,7 +113,7 @@ if (isIndexable.value) {
       </template>
     </KunHeader>
 
-    <GalgameCardNav :is-show-advanced="false" />
+    <GalgameCardNav :is-show-advanced="false" axes />
 
     <KunInfo
       v-if="isSfwMode"
@@ -121,17 +125,17 @@ if (isIndexable.value) {
     <KunLoading :loading="status === 'pending'">
       <GalgameCard
         :is-transparent="false"
-        v-if="data.galgame.length"
-        :galgames="data.galgame"
+        v-if="galgames.length"
+        :galgames="galgames"
       />
 
       <KunNull v-else :description="`${data.name} 标签下暂无 Galgame`" />
     </KunLoading>
 
     <KunPagination
-      v-if="data.galgame_count > limit"
+      v-if="total > limit"
       v-model:current-page="page"
-      :total-page="Math.ceil(data.galgame_count / limit)"
+      :total-page="Math.ceil(total / limit)"
       :is-loading="status === 'pending'"
     />
   </div>

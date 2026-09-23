@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import type { Series, WorkPage } from '#shared/utils/api/schemas'
+
 const route = useRoute()
 const series_id = computed(() => {
   return Number((route.params as { id: string }).id)
@@ -12,45 +14,41 @@ if (!Number.isInteger(series_id.value) || series_id.value <= 0) {
   })
 }
 
-const {
-  page,
-  limit,
-  type,
-  language,
-  platform,
-  gameType,
-  sortField,
-  sortOrder
-} = useGalgameFilters()
-
 const { allowsNsfw } = useContentStance()
 const isSfwMode = computed(() => !allowsNsfw.value)
 
-const { data, status } = await useKunFetch<GalgameSeriesDetail>(
-  `/galgame-series/${series_id.value}`,
-  {
-    method: 'GET',
-    query: {
-      page,
-      limit,
-      type,
-      language,
-      platform,
-      gameType,
-      sortField,
-      sortOrder,
-      series_id
-    }
-  }
+const { data: series } = await useApi<Series>(
+  () => `series:${series_id.value}`,
+  (api) =>
+    api.GET('/series/{series_id}', {
+      params: { path: { series_id: String(series_id.value) } }
+    })
 )
 
-if (!data.value) {
+if (!series.value) {
   throw createError({
     statusCode: 404,
     statusMessage: '未找到 Galgame 系列',
     fatal: true
   })
 }
+
+const { page, limit, query } = useEntityWorksQuery()
+const { data: works, status } = await useApi<WorkPage>(
+  () => `series-works:${series_id.value}:${JSON.stringify(query.value)}`,
+  (api) =>
+    api.GET('/series/{series_id}/works', {
+      params: { path: { series_id: String(series_id.value) }, query: query.value }
+    })
+)
+const galgames = useWorkCards(() => works.value?.items)
+const total = computed(() => works.value?.total ?? 0)
+
+const nameOf = useCatalogName()
+const data = computed(() => ({
+  name: nameOf(series.value!).name,
+  description: pickCatalogIntro(series.value!.intros)?.value ?? ''
+}))
 
 useKunSeoMeta({
   title: `${data.value.name} 系列的 Galgame`,
@@ -75,7 +73,7 @@ useKunSeoMeta({
       </template>
     </KunHeader>
 
-    <GalgameCardNav :is-show-advanced="false" />
+    <GalgameCardNav :is-show-advanced="false" axes />
 
     <KunInfo
       v-if="isSfwMode"
@@ -87,17 +85,17 @@ useKunSeoMeta({
     <KunLoading :loading="status === 'pending'">
       <GalgameCard
         :is-transparent="false"
-        v-if="data.galgame.length"
-        :galgames="data.galgame"
+        v-if="galgames.length"
+        :galgames="galgames"
       />
 
       <KunNull v-else :description="`${data.name} 系列下暂无 Galgame`" />
     </KunLoading>
 
     <KunPagination
-      v-if="data.galgame_count > limit"
+      v-if="total > limit"
       v-model:current-page="page"
-      :total-page="Math.ceil(data.galgame_count / limit)"
+      :total-page="Math.ceil(total / limit)"
       :is-loading="status === 'pending'"
     />
   </div>

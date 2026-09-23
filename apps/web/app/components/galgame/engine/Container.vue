@@ -1,7 +1,29 @@
 <script setup lang="ts">
-const { data } = await useKunFetch<GalgameEngineItem[]>(`/galgame-engine`, {
-  method: 'GET'
+import type { Engine } from '#shared/utils/api/schemas'
+import { engineItemOf } from '~/utils/galgame/entityCards'
+
+const nameOf = useCatalogName()
+
+// Catalog records a couple of hundred engines; the page shows them all, which
+// takes more than one 100-row page.
+const { data: engines } = await useApi<Engine[]>('engines:all', async (api) => {
+  const all: Engine[] = []
+  for (let page = 1; page <= 10; page++) {
+    const res = await api.GET('/engines', {
+      params: { query: { page, limit: 100 } }
+    })
+    if (!res.data) {
+      return res
+    }
+    all.push(...res.data.items)
+    if (all.length >= res.data.total) {
+      break
+    }
+  }
+  return { data: all, response: new Response(null, { status: 200 }) }
 })
+
+const data = computed(() => engines.value?.map((e) => engineItemOf(e, nameOf)))
 </script>
 
 <template>

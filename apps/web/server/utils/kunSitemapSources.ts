@@ -48,6 +48,58 @@ export const collectTopicUrls = async (
   return urls
 }
 
+const ENTITY_PAGE_LIMIT = 100
+const ENTITY_MAX_PAGES = 100
+
+type EntityPage = { items: { id: string }[]; total: number }
+
+const collectPagedIds = async (
+  fetchPage: (page: number) => Promise<EntityPage | null>,
+  loc: (id: string) => string
+): Promise<SitemapUrl[]> => {
+  const urls: SitemapUrl[] = []
+  for (let page = 1; page <= ENTITY_MAX_PAGES; page++) {
+    const data = await fetchPage(page)
+    if (!data) {
+      break
+    }
+    for (const item of data.items) {
+      urls.push({ loc: loc(item.id), changefreq: 'daily', priority: 0.5 })
+    }
+    if (page * ENTITY_PAGE_LIMIT >= data.total) {
+      break
+    }
+  }
+  return urls
+}
+
+// Anonymous reads, so the adult tags stay out as they do for any SFW reader.
+export const collectEntityUrls = async (
+  api: ApiClient
+): Promise<SitemapUrl[]> => {
+  const query = (page: number) => ({ page, limit: ENTITY_PAGE_LIMIT })
+  const ok = <T>(r: { ok: true; data: T } | { ok: false }) =>
+    r.ok ? r.data : null
+  const groups = await Promise.all([
+    collectPagedIds(
+      async (page) =>
+        ok(await settle(api.GET('/companies', { params: { query: query(page) } }))),
+      (id) => `/galgame/official/${id}`
+    ),
+    collectPagedIds(
+      async (page) =>
+        ok(await settle(api.GET('/tags', { params: { query: query(page) } }))),
+      (id) => `/galgame/tag/${id}`
+    ),
+    collectPagedIds(
+      async (page) =>
+        ok(await settle(api.GET('/engines', { params: { query: query(page) } }))),
+      (id) => `/galgame/engine/${id}`
+    )
+  ])
+  return groups.flat()
+}
+
 const SFW_COOKIE = `KUNGalgameSettings=${encodeURIComponent(
   JSON.stringify({ showKUNGalgameContentLimit: 'sfw' })
 )}`
@@ -173,21 +225,6 @@ export const buildSitemapUrls = async (
     return urls
   }
 
-  const collectSingle = async (
-    path: string,
-    pick: (data: unknown) => Record<string, unknown>[],
-    loc: (row: Record<string, unknown>) => string,
-    priority: number
-  ): Promise<SitemapUrl[]> => {
-    const body = await apiGet(path)
-    if (!body) return []
-    return pick(unwrap(body)).map((row) => ({
-      loc: loc(row),
-      changefreq: 'daily',
-      priority
-    }))
-  }
-
   const num = (row: Record<string, unknown>, key: string) => row[key] as number
 
   const paged: PagedSource[] = [
@@ -226,37 +263,13 @@ export const buildSitemapUrls = async (
       loc: (r) => `/galgame-rating/${num(r, 'id')}`,
       lastmod: (r) => toIso(r.updated ?? r.created),
       priority: 0.6
-    },
-    {
-      path: '/galgame-official',
-      pick: (d) =>
-        ((d as { officials?: [] })?.officials ?? []) as Record<
-          string,
-          unknown
-        >[],
-      total: (d) => (d as { total?: number })?.total,
-      loc: (r) => `/galgame/official/${num(r, 'id')}`,
-      priority: 0.5
-    },
-    {
-      path: '/galgame-tag',
-      pick: (d) =>
-        ((d as { tags?: [] })?.tags ?? []) as Record<string, unknown>[],
-      total: (d) => (d as { total?: number })?.total,
-      loc: (r) => `/galgame/tag/${num(r, 'id')}`,
-      priority: 0.5
     }
   ]
 
   const groups = await Promise.all([
     collectTopicUrls(createApiClient({ origin: apiBase, timeoutMs: 15000 })),
     ...paged.map((src) => collect(src)),
-    collectSingle(
-      '/galgame-engine',
-      (d) => (Array.isArray(d) ? (d as Record<string, unknown>[]) : []),
-      (r) => `/galgame/engine/${num(r, 'id')}`,
-      0.5
-    )
+    collectEntityUrls(createApiClient({ origin: apiBase, timeoutMs: 15000 }))
   ])
 
   const seen = new Set<string>()

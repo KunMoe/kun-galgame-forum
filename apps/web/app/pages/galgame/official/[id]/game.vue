@@ -1,34 +1,18 @@
 <script setup lang="ts">
-const {
-  page,
-  limit,
-  type,
-  language,
-  platform,
-  gameType,
-  sortField,
-  sortOrder
-} = useGalgameFilters()
+const { page, limit, query } = useEntityWorksQuery()
 
-const { officialId, data, status } = await useGalgameOfficialDetail(
-  {
-    page,
-    limit,
-    type,
-    language,
-    platform,
-    gameType,
-    sortField,
-    sortOrder
-  },
-  '/game'
+const { officialId, data } = await useGalgameOfficialDetail('/game')
+
+const { galgames, total, status, own, imprint } = await useCompanyWorks(
+  officialId,
+  () => query.value
 )
 
 const { allowsNsfw } = useContentStance()
 const isSfwMode = computed(() => !allowsNsfw.value)
 
 const official = data.value
-if (official && !official.moved_to) {
+if (official) {
   useKunSeoMeta({
     title: `${official.name} 制作的 Galgame`,
     description: `浏览会社 ${official.name} 制作的全部 Galgame, 可按类型 / 语言 / 平台 / 作品类型筛选与排序。`
@@ -37,7 +21,7 @@ if (official && !official.moved_to) {
 </script>
 
 <template>
-  <div v-if="data && !data.moved_to" class="flex flex-col gap-6">
+  <div v-if="data" class="flex flex-col gap-6">
     <KunHeader :name="`${data.name} 制作的 Galgame`">
       <template v-if="data.logo" #headerEndContent>
         <GalgameOfficialBrandMark
@@ -47,11 +31,11 @@ if (official && !official.moved_to) {
         />
       </template>
 
-      <template v-if="data.imprint_galgame_count" #endContent>
+      <template v-if="imprint" #endContent>
         <div class="flex flex-wrap items-center gap-2">
-          <KunChip color="primary">自有 {{ data.own_galgame_count }}</KunChip>
+          <KunChip color="primary">自有 {{ own }}</KunChip>
           <KunChip color="secondary">
-            经旗下 {{ data.imprint_galgame_count }}
+            经旗下 {{ imprint }}
           </KunChip>
         </div>
       </template>
@@ -59,10 +43,10 @@ if (official && !official.moved_to) {
 
     <GalgameOfficialDetailNav
       :official-id="officialId"
-      :galgame-count="data.galgame_count"
+      :galgame-count="total"
     />
 
-    <GalgameCardNav :is-show-advanced="false" />
+    <GalgameCardNav :is-show-advanced="false" axes />
 
     <KunInfo
       v-if="isSfwMode"
@@ -74,8 +58,8 @@ if (official && !official.moved_to) {
     <KunLoading :loading="status === 'pending'">
       <GalgameCard
         :is-transparent="false"
-        v-if="data.galgame.length"
-        :galgames="data.galgame"
+        v-if="galgames.length"
+        :galgames="galgames"
         :hide-company="data.name"
       >
         <template #meta="{ galgame }">
@@ -90,9 +74,9 @@ if (official && !official.moved_to) {
     </KunLoading>
 
     <KunPagination
-      v-if="data.galgame_count > limit"
+      v-if="total > limit"
       v-model:current-page="page"
-      :total-page="Math.ceil(data.galgame_count / limit)"
+      :total-page="Math.ceil(total / limit)"
       :is-loading="status === 'pending'"
     />
   </div>

@@ -1,41 +1,44 @@
 <script setup lang="ts">
 import { watchDebounced } from '@vueuse/core'
 import { useRouteQuery } from '@vueuse/router'
+import type { CompanyPage } from '#shared/utils/api/schemas'
+import { settle } from '#shared/utils/api/problem'
+import { companyItemOf } from '~/utils/galgame/entityCards'
 
 const page = useRouteQuery('page', 1, { mode: 'replace', transform: Number })
 const limit = 100
+const api = useApiClient()
+const nameOf = useCatalogName()
 
-const { data, status } = await useKunFetch<{
-  officials: GalgameOfficialItem[]
-  total: number
-}>(`/galgame-official`, {
-  method: 'GET',
-  query: { page, limit }
-})
+const { data, status } = await useApi<CompanyPage>(
+  () => `companies:${page.value}`,
+  (client) =>
+    client.GET('/companies', { params: { query: { page: page.value, limit } } })
+)
 
-const searchResult = ref<GalgameTaxonomySearchItem[]>([])
+const searchResult = ref<GalgameOfficialItem[]>([])
 const searchQuery = ref('')
 const isSearching = ref(false)
 const displayOfficials = computed(() =>
-  searchQuery.value.trim() ? searchResult.value : (data.value?.officials ?? [])
+  searchQuery.value.trim()
+    ? searchResult.value
+    : (data.value?.items ?? []).map((c) => companyItemOf(c, nameOf))
 )
 
 const handleSearch = async () => {
-  if (!searchQuery.value.trim()) {
+  const q = searchQuery.value.trim()
+  if (!q) {
     searchResult.value = []
     return
   }
   isSearching.value = true
-  const res = await kunFetch<GalgameTaxonomySearchItem[]>(
-    `/galgame-official/search`,
-    {
-      method: 'GET',
-      query: { q: searchQuery.value.split(' ') }
-    }
+  const res = await settle(
+    api.GET('/companies', { params: { query: { q, limit: 100 } } })
   )
   isSearching.value = false
-
-  searchResult.value = res ?? []
+  searchResult.value = res.ok
+    ? res.data.items.map((c) => companyItemOf(c, nameOf))
+    : []
 }
 
 watchDebounced(

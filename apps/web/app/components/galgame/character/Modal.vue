@@ -5,6 +5,11 @@ import {
   KUN_GALGAME_CHARACTER_SPOILER_MAP,
   getGalgameCharacterIntroCredit
 } from '~/constants/galgameCharacter'
+import { settle } from '#shared/utils/api/problem'
+import {
+  characterViewOf,
+  type CharacterView
+} from '~/utils/galgame/entityCards'
 
 const props = defineProps<{
   character: GalgameDetailCharacter | null
@@ -12,8 +17,12 @@ const props = defineProps<{
 
 const isOpen = defineModel<boolean>({ required: true })
 
-const cache = new Map<number, GalgameCharacterDetail>()
-const detail = ref<GalgameCharacterDetail | null>(null)
+const api = useApiClient()
+const nameOf = useCatalogName()
+const { allowsNsfw } = useContentStance()
+
+const cache = new Map<number, CharacterView>()
+const detail = ref<CharacterView | null>(null)
 const isLoading = ref(false)
 
 const load = async (id: number) => {
@@ -24,20 +33,22 @@ const load = async (id: number) => {
   }
   detail.value = null
   isLoading.value = true
-  const res = await kunFetch<GalgameCharacterDetail>(
-    `/galgame-character/${id}`,
-    {
-      method: 'GET',
-      query: { works: 0 }
-    }
+  const res = await settle(
+    api.GET('/characters/{character_id}', {
+      params: {
+        path: { character_id: String(id) },
+        query: { include_nsfw: allowsNsfw.value }
+      }
+    })
   )
   isLoading.value = false
-  if (!res || res.moved_to) {
+  if (!res.ok) {
     return
   }
-  cache.set(id, res)
+  const view = characterViewOf(res.data, nameOf)
+  cache.set(id, view)
   if (props.character?.id === id) {
-    detail.value = res
+    detail.value = view
   }
 }
 

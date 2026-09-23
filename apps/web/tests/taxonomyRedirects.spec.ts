@@ -163,8 +163,10 @@ describe('merged-id pages stop rendering after the hop', () => {
       expect(source).not.toContain('moved_to')
       return
     }
+    // A merged id leaves data null after the hop, so the root gate on data
+    // is what keeps the page from rendering a half-empty body under the 301.
     const root = source.match(/<template>\s*\n\s*<div ([^>]*)>/)
-    expect(root?.[1]).toContain('!data.moved_to')
+    expect(root?.[1]).toContain('v-if="data"')
   })
 
   it('the shared 会社 hop is the one that parks the 301', () => {
@@ -178,7 +180,7 @@ describe('merged-id pages stop rendering after the hop', () => {
     '%s: the SEO block is inside the not-moved gate',
     (path) => {
       const source = read(path)
-      const gate = source.indexOf('!official.moved_to')
+      const gate = source.indexOf('if (official)')
       expect(gate).toBeGreaterThan(-1)
       expect(source.indexOf('useKunSeoMeta(')).toBeGreaterThan(gate)
     }

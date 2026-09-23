@@ -5,12 +5,10 @@ import {
 } from '~/constants/galgameOfficial'
 
 const props = defineProps<{
-  official: GalgameOfficialItem | GalgameTaxonomySearchItem
+  official: GalgameOfficialItem
 }>()
 
-const detail = computed(() =>
-  'category' in props.official ? props.official : undefined
-)
+const detail = computed(() => props.official)
 
 const categoryText = (category: string) =>
   KUN_GALGAME_OFFICIAL_CATEGORY_MAP[category] || category

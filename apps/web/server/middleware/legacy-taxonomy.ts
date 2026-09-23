@@ -5,6 +5,8 @@ import {
   resolveRenamedTaxonomyPath
 } from '../utils/kunTaxonomyRedirects'
 import { taxonomyDetailPath } from '../../shared/utils/kunTaxonomyPaths'
+import { createApiClient } from '../../shared/utils/api/client'
+import { settle } from '../../shared/utils/api/problem'
 
 const LEGACY_RE = /^\/galgame-(tag|official|engine)\/(\d+)$/
 
@@ -42,12 +44,20 @@ export default defineEventHandler(async (event) => {
     return
   }
 
-  const id = await $fetch<{ data?: { id?: number } }>(
-    `${useRuntimeConfig().apiBaseUrl}/api/galgame-official/legacy/${wikiId}`,
-    { headers: { accept: 'application/json' } }
+  const res = await settle(
+    createApiClient({
+      origin: useRuntimeConfig().apiBaseUrl,
+      timeoutMs: 5000
+    }).GET('/wiki-company-redirects/{wiki_company_id}', {
+      params: { path: { wiki_company_id: String(wikiId) } }
+    })
   )
-    .then((r) => r?.data?.id)
-    .catch(() => undefined)
 
-  if (id) return sendRedirect(event, taxonomyDetailPath('official', id), 301)
+  if (res.ok) {
+    return sendRedirect(
+      event,
+      taxonomyDetailPath('official', Number(res.data.company_id)),
+      301
+    )
+  }
 })

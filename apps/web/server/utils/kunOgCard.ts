@@ -4,12 +4,13 @@ import { KUN_GALGAME_RESOURCE_TYPE_MAP } from '../../app/constants/galgame'
 import { KUN_GALGAME_OFFICIAL_CATEGORY_MAP } from '../../app/constants/galgameOfficial'
 import { KUN_TOPIC_SECTION } from '../../app/constants/topic'
 import { deletedUserName } from '#shared/utils/deletedUser'
-import type { GalgameCharacterDetail } from '../../shared/types/galgame-character'
 import type { GalgameDetail } from '../../shared/types/galgame'
-import type { GalgameOfficialDetail } from '../../shared/types/galgame-official'
-import type { GalgameStaffDetail } from '../../shared/types/galgame-staff'
 import type { Topic } from '../../shared/utils/api/schemas'
 import { createApiClient } from '../../shared/utils/api/client'
+import {
+  catalogEntityName,
+  type CatalogName
+} from '../../shared/utils/catalogName'
 import { settle } from '../../shared/utils/api/problem'
 import { documentPlainText } from '../../shared/utils/content/plainText'
 import { truncateRunes } from '../../shared/utils/format'
@@ -139,72 +140,96 @@ const buildGalgame = async (id: number): Promise<KunOgCard | null> => {
   }
 }
 
+const catalogApi = () =>
+  createApiClient({ origin: useRuntimeConfig().apiBaseUrl, timeoutMs: 8000 })
+
+const originalOf = (n: CatalogName): string | undefined => {
+  const { name, original } = catalogEntityName(n)
+  const other = original || n.latin || ''
+  return other && other !== name ? text(other, 120) : undefined
+}
+
 const buildCharacter = async (id: number): Promise<KunOgCard | null> => {
-  const character = await fetchKunApi<GalgameCharacterDetail>(
-    `/galgame-character/${id}`,
-    { limit: 1 }
-  )
-  if (!character || character.moved_to) {
+  const api = catalogApi()
+  const path = { character_id: String(id) }
+  const [character, appearances] = await Promise.all([
+    settle(api.GET('/characters/{character_id}', { params: { path } })),
+    settle(
+      api.GET('/characters/{character_id}/appearances', {
+        params: { path, query: { limit: 1 } }
+      })
+    )
+  ])
+  if (!character.ok) {
     return null
   }
-  const work = character.works[0]
-  const original = character.name_original || character.latin
+  const c = character.data
+  const first = appearances.ok ? appearances.data.items[0] : undefined
+  const voice = first?.voices[0]
   return {
     template: 'character',
     fields: {
-      name: text(character.name, 120),
-      originalName:
-        original === character.name ? undefined : text(original, 120),
-      portrait: character.figure || character.image || undefined,
-      work: text(work?.name, 200),
-      voice: work?.voices[0]?.name
-        ? `CV. ${truncateRunes(work.voices[0].name, 74)}`
+      name: text(catalogEntityName(c).name, 120),
+      originalName: originalOf(c),
+      portrait: c.figure?.url || c.image?.url || undefined,
+      work: first ? text(catalogEntityName(first.work_summary).name, 200) : undefined,
+      voice: voice
+        ? `CV. ${truncateRunes(catalogEntityName(voice).name, 74)}`
         : undefined
     }
   }
 }
 
 const buildStaff = async (id: number): Promise<KunOgCard | null> => {
-  const staff = await fetchKunApi<GalgameStaffDetail>(`/galgame-staff/${id}`, {
-    limit: 3
-  })
-  if (!staff || staff.moved_to) {
+  const api = catalogApi()
+  const path = { credit_name_id: String(id) }
+  const [person, credits] = await Promise.all([
+    settle(api.GET('/credit-names/{credit_name_id}', { params: { path } })),
+    settle(
+      api.GET('/credit-names/{credit_name_id}/credits', {
+        params: { path, query: { limit: 3 } }
+      })
+    )
+  ])
+  if (!person.ok) {
     return null
   }
-  const original = staff.name_original || staff.latin
+  const items = credits.ok ? credits.data.items : []
+  const roles = [
+    ...new Set(items.flatMap((c) => c.credit_roles.map((r) => r.display_name)))
+  ]
   return {
     template: 'person',
     fields: {
-      name: text(staff.name, 120),
-      originalName: original === staff.name ? undefined : text(original, 120),
-      photo: staff.photo || undefined,
-      works: staff.works
-        .slice(0, 3)
-        .map((work) => truncateRunes(work.name, 120)),
-      badges: staff.roles.slice(0, 4).map((role) => truncateRunes(role, 24))
+      name: text(catalogEntityName(person.data).name, 120),
+      originalName: originalOf(person.data),
+      photo: person.data.photo?.url || undefined,
+      works: items.map((c) =>
+        truncateRunes(catalogEntityName(c.work_summary).name, 120)
+      ),
+      badges: roles.slice(0, 4).map((role) => truncateRunes(role, 24))
     }
   }
 }
 
 const buildOfficial = async (id: number): Promise<KunOgCard | null> => {
-  const official = await fetchKunApi<GalgameOfficialDetail>(
-    `/galgame-official/${id}`,
-    { limit: 1 }
+  const company = await settle(
+    catalogApi().GET('/companies/{company_id}', {
+      params: { path: { company_id: String(id) } }
+    })
   )
-  if (!official || official.moved_to) {
+  if (!company.ok) {
     return null
   }
-  const category = KUN_GALGAME_OFFICIAL_CATEGORY_MAP[official.category]
+  const c = company.data
+  const category = KUN_GALGAME_OFFICIAL_CATEGORY_MAP[c.company_kind]
   return {
     template: 'label',
     fields: {
-      name: text(official.name, 120),
-      originalName:
-        official.original === official.name
-          ? undefined
-          : text(official.original, 120),
-      logo: official.logo || undefined,
-      workCount: official.galgame_count || undefined,
+      name: text(catalogEntityName(c).name, 120),
+      originalName: originalOf(c),
+      logo: c.logo?.url || undefined,
+      workCount: c.catalog_work_count || undefined,
       badges: category ? [truncateRunes(category, 24)] : []
     }
   }

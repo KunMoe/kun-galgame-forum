@@ -1,19 +1,41 @@
 <script setup lang="ts">
+import type { Series } from '#shared/utils/api/schemas'
+import { seriesCardOf } from '~/utils/galgame/entityCards'
+
 const props = defineProps<{
   series: GalgameDetailSeriesRef[]
 }>()
 
-const ids = computed(() => props.series.map((s) => s.id).join(','))
+const nameOf = useCatalogName()
 
-const { data } = await useKunFetch<{
-  series: GalgameSeriesCard[]
-  total: number
-}>('/galgame-series/cards', {
-  lazy: true,
-  method: 'GET',
-  query: { ids },
-  watch: false
-})
+// A work sits in one or two series, so each card is its own read.
+const { data: cards } = useApi<Series[]>(
+  () => `series-panel:${props.series.map((s) => s.id).join(',')}`,
+  async (api) => {
+    const found = await Promise.all(
+      props.series.map((s) =>
+        api.GET('/series/{series_id}', {
+          params: { path: { series_id: String(s.id) } }
+        })
+      )
+    )
+    return {
+      data: found.flatMap((res) => (res.data ? [res.data] : [])),
+      response: new Response(null, { status: 200 })
+    }
+  },
+  { lazy: true }
+)
+
+const data = computed(() =>
+  cards.value
+    ? {
+        series: cards.value
+          .map((s) => seriesCardOf(s, nameOf))
+          .filter((s) => s.galgame_count > 0)
+      }
+    : undefined
+)
 </script>
 
 <template>
