@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import type { WallCommentSearchHit } from '#shared/utils/api/schemas'
-import { catalogNameText } from '~/utils/catalogName'
 import { toKunUser } from '~/utils/userRef'
 
 const props = defineProps<{
@@ -17,18 +16,11 @@ const WALL_LABEL: Record<WallCommentSearchHit['subject_type'], string> = {
   website: '网站'
 }
 
-const { showKUNGalgamePreferOriginalName } = storeToRefs(
-  usePersistSettingsStore()
-)
+const workName = useWorkName()
 
 const label = computed(() => WALL_LABEL[props.comment.subject_type])
 const title = computed(() =>
-  props.comment.work
-    ? catalogNameText(
-        props.comment.work,
-        showKUNGalgamePreferOriginalName.value
-      )
-    : label.value
+  props.comment.work ? workName(props.comment.work) : label.value
 )
 const author = computed(() => toKunUser(props.comment.author))
 </script>

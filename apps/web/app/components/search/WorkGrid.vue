@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import type { WorkRef } from '#shared/utils/api/schemas'
-import { catalogNameText } from '~/utils/catalogName'
 
 const props = defineProps<{
   works: WorkRef[]
@@ -8,15 +7,13 @@ const props = defineProps<{
 }>()
 
 const { isBlurred } = useContentStance()
-const { showKUNGalgamePreferOriginalName } = storeToRefs(
-  usePersistSettingsStore()
-)
+const workName = useWorkName()
 const { isOpenInNewTab } = storeToRefs(usePersistGalgameCardStore())
 
 const cards = computed(() =>
   props.works.map((work) => ({
     work,
-    name: catalogNameText(work, showKUNGalgamePreferOriginalName.value)
+    name: workName(work)
   }))
 )
 </script>

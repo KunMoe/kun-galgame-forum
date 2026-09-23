@@ -8,7 +8,6 @@ import type {
   UserSearchHit,
   WorkRef
 } from '#shared/utils/api/schemas'
-import { catalogNameText } from '~/utils/catalogName'
 
 // Mirrors the API's `max=107` on keywords: past it the request is a validation
 // error, and one per keystroke would be an error toast per keystroke.
@@ -29,9 +28,7 @@ const QUICK_LIMIT = 5
 const result = ref<QuickResult | null>(null)
 const api = useApiClient()
 const { allowsNsfw } = useContentStance()
-const { showKUNGalgamePreferOriginalName } = storeToRefs(
-  usePersistSettingsStore()
-)
+const workName = useWorkName()
 
 const { searchHistory } = storeToRefs(usePersistKUNGalgameSearchStore())
 
@@ -159,10 +156,7 @@ const groups = computed<KunCommandGroup[]>(() => {
     list.push({
       label: label('Galgame', totals.work),
       items: works.map((work) => {
-        const name = catalogNameText(
-          work,
-          showKUNGalgamePreferOriginalName.value
-        )
+        const name = workName(work)
         return {
           value: `/galgame/${work.id}`,
           label: name,
