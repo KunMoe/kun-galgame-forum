@@ -155,6 +155,7 @@ func Register(u *Users) func(huma.API) {
 			Tags:        []string{"users"},
 			Middlewares: huma.Middlewares{withUpstream},
 			Responses: problemResponses(map[int]string{
+				403: "SCOPE_REQUIRED when the account has not granted this site the preferences scope.",
 				503: "SERVICE_UNAVAILABLE when the account service cannot be reached.",
 			}),
 		}), u.putNsfwDisplay)

@@ -6,6 +6,7 @@ import (
 
 	v1 "kun-galgame-api/internal/apiv1"
 	"kun-galgame-api/internal/middleware"
+	"kun-galgame-api/internal/user/oauth"
 	"kun-galgame-api/pkg/problem"
 )
 
@@ -31,6 +32,9 @@ func (s *Users) putNsfwDisplay(ctx context.Context, in *putNsfwDisplayInput) (*p
 	}
 	state, err := s.oauth.PutAuthMeNSFW(accessToken(ctx), in.Body.NsfwDisplay)
 	if err != nil {
+		if oauthCode(err) == oauth.CodePreferencesScopeMissing {
+			return nil, problem.New(problem.CodeScopeRequired, "The credential is valid but lacks the scope this operation needs.")
+		}
 		return nil, unavailable(err)
 	}
 	if cookie := sessionCookie(ctx); cookie != "" && s.redis != nil && !user.ViaBearer() {

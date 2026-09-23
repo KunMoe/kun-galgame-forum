@@ -8977,7 +8977,7 @@
                 }
               }
             },
-            "description": "Forbidden"
+            "description": "SCOPE_REQUIRED when the account has not granted this site the preferences scope."
           },
           "415": {
             "content": {

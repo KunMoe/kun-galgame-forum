@@ -159,7 +159,7 @@ Preferences  object="preferences", doc: object, version (integer ≥0), written_
 
 - 成功后照旧：写回 Redis 会话的内容立场（`middleware.SetSessionContentStance`，只对 cookie 会话；Bearer 没有会话可写）、`userClient.Invalidate`。写回失败只 warn（旧行为，理由同旧注释：只是晚一次刷新生效）。
 - 不再下发 `adult_confirmed`（2026-09-23 退役，恒真）。写回会话时传 `true`。
-- 上游 18007 在我们这层 schema 已挡掉。其它上游失败 → `503`。
+- 上游 18001（令牌缺 `preferences` scope，这个 scope 同时覆盖这次账号级写）→ `403 SCOPE_REQUIRED`，网页据此静默降级，与云端偏好同一条规则（初稿漏了，验收时补上）；18007 在我们这层 schema 已挡掉；其它上游失败 → `503`。
 
 ### 3.7 `GET /api/v1/users?q=` → `List[UserRef]`（不分页）
 

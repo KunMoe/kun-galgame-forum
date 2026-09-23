@@ -128,3 +128,11 @@ func TestV1PutNsfwDisplayUpstreamFailureIs503(t *testing.T) {
 		map[string]any{"nsfw_display": "hide"})
 	mustCode(t, resp, body, http.StatusServiceUnavailable, "SERVICE_UNAVAILABLE")
 }
+
+func TestV1PutNsfwDisplayScopeMissing(t *testing.T) {
+	f := newMeFix(t)
+	f.nsfwNoScope.Store(true)
+	resp, body := f.call(t, http.MethodPut, mePath+"/nsfw-display", "/me/nsfw-display", "sess-alice", "", nil,
+		map[string]any{"nsfw_display": "show"})
+	mustCode(t, resp, body, http.StatusForbidden, "SCOPE_REQUIRED")
+}

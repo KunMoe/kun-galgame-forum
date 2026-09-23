@@ -32,6 +32,7 @@ type meFix struct {
 	prefCode     atomic.Int32
 	prefHTTP     atomic.Int32
 	nsfwFail     atomic.Bool
+	nsfwNoScope  atomic.Bool
 	creatorPost  atomic.Int32
 	creatorState atomic.Value
 	logReason400 atomic.Bool
@@ -170,6 +171,10 @@ func (f *meFix) installUpstream() {
 	f.mux.HandleFunc("PUT /auth/me/nsfw", func(w http.ResponseWriter, r *http.Request) {
 		if f.nsfwFail.Load() {
 			writeHouse(w, 500, 10, nil)
+			return
+		}
+		if f.nsfwNoScope.Load() {
+			writeHouse(w, 403, 18001, nil)
 			return
 		}
 		var body map[string]string

@@ -212,6 +212,190 @@ export interface paths {
         patch: operations["updateLotteryWinner"];
         trace?: never;
     };
+    "/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the caller's forum status
+         * @description Returns the caller's cached moemoepoint, today's check-in gate, unread-message flag, creator flag, and today's toolset upload bytes.
+         */
+        get: operations["getMe"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/avatar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Replace the caller's avatar
+         * @description Uploads a new avatar image as multipart field file. The image must be image/* and at most 4 MiB.
+         */
+        put: operations["putMyAvatar"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/check-ins": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Check in for today
+         * @description Records today's Asia/Shanghai check-in and credits a deterministic moemoepoint reward. Checking in again on the same Beijing day is ALREADY_EXISTS.
+         */
+        post: operations["createCheckIn"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/creator-applications": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Apply for the creator role
+         * @description Submits a creator-role application. Location points at the caller's creator-status resource.
+         */
+        post: operations["createCreatorApplication"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/creator-status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the caller's creator eligibility
+         * @description Returns whether the caller is a creator, the live eligibility snapshot, and their latest application if any.
+         */
+        get: operations["getCreatorStatus"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/moemoepoint-entries": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the caller's moemoepoint ledger
+         * @description Lists the caller's moemoepoint ledger as a cursor page, newest first. limit is 1–50 because that is the upstream page cap. The cursor is bound to the caller and the reason filter.
+         */
+        get: operations["listMoemoepointEntries"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/nsfw-display": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set the caller's adult-content display
+         * @description Sets how adult content is shown for the caller and writes the new stance into the cookie session when one is present.
+         */
+        put: operations["putNsfwDisplay"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/preferences": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the caller's cloud preferences
+         * @description Returns this site's cloud preference document. The namespace is this site's OAuth client id and cannot be chosen by the caller.
+         */
+        get: operations["getPreferences"];
+        /**
+         * Replace the caller's cloud preferences
+         * @description Replaces this site's cloud preference document. If-Match is forwarded as a version check.
+         */
+        put: operations["putPreferences"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/profile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Update the caller's name or bio
+         * @description Changes the fields present in the body. At least one of name or bio is required.
+         */
+        patch: operations["patchMyProfile"];
+        trace?: never;
+    };
     "/me/topic-drafts": {
         parameters: {
             query?: never;
@@ -804,6 +988,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/users": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Search users by name
+         * @description Returns users whose names match q. It is not paginated. Banned accounts are omitted. limit is 1–20.
+         */
+        get: operations["listUsers"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/wall-comments": {
         parameters: {
             query?: never;
@@ -959,6 +1163,28 @@ export interface components {
              */
             object: "break";
         };
+        CheckIn: {
+            /**
+             * Format: date
+             * @description Asia/Shanghai calendar day this check-in is for.
+             */
+            check_in_date: string;
+            /**
+             * Format: int64
+             * @description The caller's moemoepoint balance as this forum last cached it after the check-in. It can be negative.
+             */
+            moemoepoint: number;
+            /**
+             * Format: int64
+             * @description Moemoepoint credited for this check-in. Zero when the determined reward is zero.
+             */
+            moemoepoint_awarded: number;
+            /**
+             * @description Type discriminant. Always check_in.
+             * @enum {string}
+             */
+            object: "check_in";
+        };
         CodeNode: {
             /** @description Language named on the fence, lowercased. null when the fence names none or the block is indented. */
             lang: string | null;
@@ -1052,6 +1278,95 @@ export interface components {
              * @enum {string}
              */
             object: "document";
+        };
+        CreateCreatorApplicationBody: {
+            /** @description Statement for the reviewers. Empty string is allowed. Free text; never use it as a decision input. */
+            statement?: string;
+        };
+        CreatorApplication: {
+            /**
+             * Format: date-time
+             * @description When the application was submitted.
+             */
+            created_at: string;
+            /** @description Reason the application was declined. null when it was not declined. Free text; never use it as a decision input. */
+            decline_reason: string | null;
+            /** @description Application id. JSON string of a decimal integer. */
+            id: string;
+            /**
+             * @description Type discriminant. Always creator_application.
+             * @enum {string}
+             */
+            object: "creator_application";
+            /**
+             * Format: date-time
+             * @description When the application was reviewed. null while it is pending.
+             */
+            reviewed_at: string | null;
+            /**
+             * @description Application lifecycle state.
+             * @enum {string}
+             */
+            state: "pending" | "approved" | "declined";
+            /** @description Applicant statement as stored. Empty string when none. Free text; never use it as a decision input. */
+            statement: string;
+        };
+        CreatorEligibility: {
+            /** @description Whether the caller currently meets at least one creator-application threshold. */
+            is_eligible: boolean;
+            /**
+             * Format: int64
+             * @description Galgame ratings by the caller whose short summary is at least 100 characters.
+             */
+            long_review_count: number;
+            /**
+             * Format: int64
+             * @description Merged catalog edit proposals attributed to the caller.
+             */
+            merged_pr_count: number;
+            /**
+             * Format: int64
+             * @description Live OAuth moemoepoint balance used for eligibility. It can be negative.
+             */
+            moemoepoint: number;
+            /**
+             * Format: int64
+             * @description Galgames the caller owns that are published.
+             */
+            published_galgame_count: number;
+            /**
+             * Format: int64
+             * @description Long-review count that by itself makes the caller eligible.
+             */
+            required_long_review_count: number;
+            /**
+             * Format: int64
+             * @description Merged-proposal count that by itself makes the caller eligible.
+             */
+            required_merged_pr_count: number;
+            /**
+             * Format: int64
+             * @description Moemoepoint balance that by itself makes the caller eligible.
+             */
+            required_moemoepoint: number;
+            /**
+             * Format: int64
+             * @description Published-galgame count that by itself makes the caller eligible.
+             */
+            required_published_galgame_count: number;
+        };
+        CreatorStatus: {
+            /** @description The caller's latest creator application. null when they have never applied. */
+            application: components["schemas"]["CreatorApplication"] | null;
+            /** @description Current eligibility snapshot. */
+            eligibility: components["schemas"]["CreatorEligibility"];
+            /** @description Whether the caller already holds the creator role. */
+            is_creator: boolean;
+            /**
+             * @description Type discriminant. Always creator_status.
+             * @enum {string}
+             */
+            object: "creator_status";
         };
         EmphasisNode: {
             /** @description Emphasized inline nodes. */
@@ -1244,6 +1559,17 @@ export interface components {
              */
             object: "list";
         };
+        ListMoemoepointEntry: {
+            /** @description Members of this page. Empty array, never null. */
+            items: components["schemas"]["MoemoepointEntry"][];
+            /** @description Opaque keyset cursor. Omitted on the last page. */
+            next_cursor?: string;
+            /**
+             * @description Type discriminant. Always list.
+             * @enum {string}
+             */
+            object: "list";
+        };
         ListMoyuPatch: {
             /** @description Members of this page. Empty array, never null. */
             items: components["schemas"]["MoyuPatch"][];
@@ -1364,6 +1690,17 @@ export interface components {
         ListTopicUpvote: {
             /** @description Members of this page. Empty array, never null. */
             items: components["schemas"]["TopicUpvote"][];
+            /** @description Opaque keyset cursor. Omitted on the last page. */
+            next_cursor?: string;
+            /**
+             * @description Type discriminant. Always list.
+             * @enum {string}
+             */
+            object: "list";
+        };
+        ListUserRef: {
+            /** @description Members of this page. Empty array, never null. */
+            items: components["schemas"]["UserRef"][];
             /** @description Opaque keyset cursor. Omitted on the last page. */
             next_cursor?: string;
             /**
@@ -1789,6 +2126,31 @@ export interface components {
             /** @description TeX source of a display formula, without the delimiters. Free text; never use it as a decision input. */
             value: string;
         };
+        Me: {
+            /** @description Whether the caller has already checked in on the current Asia/Shanghai calendar day. */
+            has_checked_in_today: boolean;
+            /** @description Whether the caller has an unread notification of a type they have not muted, or an unread private message while private messages are not muted. */
+            has_unread_messages: boolean;
+            /** @description The caller's user id. JSON string of a decimal integer. */
+            id: string;
+            /** @description Whether the caller holds the creator role, including via a site role. */
+            is_creator: boolean;
+            /**
+             * Format: int64
+             * @description The caller's moemoepoint balance as this forum last cached it from OAuth. It can lag the live balance. It can be negative.
+             */
+            moemoepoint: number;
+            /**
+             * @description Type discriminant. Always me.
+             * @enum {string}
+             */
+            object: "me";
+            /**
+             * Format: int64
+             * @description Bytes of toolset uploads counted against the caller today.
+             */
+            toolset_upload_today_bytes: number;
+        };
         MentionNode: {
             /** @description The user mentioned, with the current display name. Render it as @name. */
             mentioned_user: components["schemas"]["UserRef"];
@@ -1797,6 +2159,31 @@ export interface components {
              * @enum {string}
              */
             object: "mention";
+        };
+        MoemoepointEntry: {
+            /**
+             * Format: date-time
+             * @description When the ledger entry was written.
+             */
+            created_at: string;
+            /**
+             * Format: int64
+             * @description Signed change. Negative when moemoepoint was deducted.
+             */
+            delta: number;
+            /** @description Ledger entry id. JSON string of a decimal integer. */
+            id: string;
+            /** @description Whether this entry was issued by this site's OAuth client. */
+            is_from_this_site: boolean;
+            /**
+             * @description Type discriminant. Always moemoepoint_entry.
+             * @enum {string}
+             */
+            object: "moemoepoint_entry";
+            /** @description Ledger reason token. */
+            reason: string;
+            /** @description Triggering entity reference as stored upstream. Empty string when none. Free text; never use it as a decision input. */
+            ref: string;
         };
         MoyuPatch: {
             /** @description The page's id on www.moyu.moe. Neither a galgame id nor a catalog work id. */
@@ -1856,6 +2243,33 @@ export interface components {
              */
             web_url: string;
         };
+        MyProfile: {
+            /** @description Avatar image. null when the account has no image-service hash. */
+            avatar: components["schemas"]["Image"] | null;
+            /** @description Profile bio as stored. Empty string when none. Free text; never use it as a decision input. */
+            bio: string | null;
+            /** @description The caller's user id. JSON string of a decimal integer. */
+            id: string;
+            /** @description Display name. null when the account no longer exists; show a localized label. Free text; never use it as a decision input. */
+            name: string | null;
+            /**
+             * @description Type discriminant. Always user.
+             * @enum {string}
+             */
+            object: "user";
+        };
+        NsfwDisplay: {
+            /**
+             * @description How adult content is shown: hide, blur, or show.
+             * @enum {string}
+             */
+            nsfw_display: "hide" | "blur" | "show";
+            /**
+             * @description Type discriminant. Always nsfw_display.
+             * @enum {string}
+             */
+            object: "nsfw_display";
+        };
         ParagraphNode: {
             /** @description Inline nodes of the paragraph. Empty array for a blank line the author kept. */
             children: components["schemas"]["InlineNode"][];
@@ -1864,6 +2278,12 @@ export interface components {
              * @enum {string}
              */
             object: "paragraph";
+        };
+        PatchMyProfileBody: {
+            /** @description New profile bio. Empty string clears it; absent or null leaves it unchanged. Free text; never use it as a decision input. */
+            bio?: string | null;
+            /** @description New display name. 1–17 characters. Absent or null leaves it unchanged. Free text; never use it as a decision input. */
+            name?: string | null;
         };
         Poll: {
             /** @description The user who created the poll. */
@@ -2095,6 +2515,27 @@ export interface components {
             /** @description The options the caller picks, replacing whatever they picked before. Every id must belong to this poll, and the same id twice is refused as DUPLICATE_ITEM. */
             option_ids: string[];
         };
+        Preferences: {
+            /** @description Cloud preference document. A JSON object. */
+            doc: {
+                [key: string]: unknown;
+            };
+            /**
+             * @description Type discriminant. Always preferences.
+             * @enum {string}
+             */
+            object: "preferences";
+            /**
+             * Format: int64
+             * @description Document version. Zero when the namespace has never been written.
+             */
+            version: number;
+            /**
+             * Format: date-time
+             * @description When the document was last written. null when it has never been written.
+             */
+            written_at: string | null;
+        };
         Problem: {
             /** @description Top-level error code. UPPER_SNAKE. */
             code: string;
@@ -2161,6 +2602,19 @@ export interface components {
              * @description Problem type URI. The last path segment is the kebab-case form of code.
              */
             type: string;
+        };
+        PutNsfwDisplayBody: {
+            /**
+             * @description How adult content is shown: hide, blur, or show.
+             * @enum {string}
+             */
+            nsfw_display: "hide" | "blur" | "show";
+        };
+        PutPreferencesBody: {
+            /** @description Cloud preference document. A JSON object. */
+            doc: {
+                [key: string]: unknown;
+            };
         };
         Reaction: {
             /**
@@ -4306,6 +4760,791 @@ export interface operations {
                 };
             };
             /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getMe: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Me"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    putMyAvatar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": {
+                    /**
+                     * Format: binary
+                     * @description Avatar image. Must be image/* and at most 4 MiB.
+                     */
+                    file?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Image"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description UNSUPPORTED_MEDIA_TYPE when file is not an image. */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description VALIDATION_FAILED when file is missing or larger than 4 MiB. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the account service cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    createCheckIn: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Caller-generated UUID (canonical 8-4-4-4-12 hex, any version) or 26-character Crockford ULID. Scoped to (user, operation, key) for 24 hours. */
+                "Idempotency-Key"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CheckIn"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description ALREADY_EXISTS when the caller has already checked in on the current Asia/Shanghai day. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the moemoepoint award cannot be written. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    createCreatorApplication: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Caller-generated UUID (canonical 8-4-4-4-12 hex, any version) or 26-character Crockford ULID. Scoped to (user, operation, key) for 24 hours. */
+                "Idempotency-Key"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateCreatorApplicationBody"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    Location?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreatorApplication"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description CREATOR_INELIGIBLE when the caller does not meet any eligibility threshold. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description ALREADY_EXISTS when a pending application already exists. INVALID_STATE_TRANSITION when the caller is already a creator. CREATOR_APPLICATION_COOLDOWN when a declined application is still cooling down. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the account service cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getCreatorStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreatorStatus"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the account service cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listMoemoepointEntries: {
+        parameters: {
+            query?: {
+                /** @description Opaque keyset cursor from a previous page of this collection. */
+                cursor?: string;
+                /** @description Page size. 1–50, default 20. Values above 50 are rejected, not clamped. */
+                limit?: number;
+                /** @description When set, only this ledger reason. Omitted means every reason. */
+                reason?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListMoemoepointEntry"];
+                };
+            };
+            /** @description LIMIT_TOO_LARGE when limit is greater than 50. INVALID_CURSOR when the cursor was issued for a different reason. INVALID_PARAMETER when reason is rejected upstream. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the account service cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    putNsfwDisplay: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PutNsfwDisplayBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NsfwDisplay"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SCOPE_REQUIRED when the account has not granted this site the preferences scope. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the account service cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getPreferences: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Preferences"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SCOPE_REQUIRED when the token lacks the preferences scope. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the account service cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    putPreferences: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Quoted document version to replace, such as "4". Absent means last-write-wins. */
+                "If-Match"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PutPreferencesBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Preferences"];
+                };
+            };
+            /** @description INVALID_PARAMETER when If-Match is not a document version. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SCOPE_REQUIRED when the token lacks the preferences scope. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description PRECONDITION_FAILED when If-Match does not match the current version. */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description VALIDATION_FAILED when the document exceeds 64 KiB after compaction. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the account service cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    patchMyProfile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PatchMyProfileBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyProfile"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description MOEMOEPOINT_INSUFFICIENT when a name change costs more than the live balance. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description USERNAME_TAKEN when the name is already in use. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description VALIDATION_FAILED when both fields are absent, or the name fails the upstream character whitelist. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the account service cannot be reached. */
             503: {
                 headers: {
                     [name: string]: unknown;
@@ -8001,6 +9240,85 @@ export interface operations {
                 };
             };
             /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listUsers: {
+        parameters: {
+            query: {
+                /** @description Name query. After trimming whitespace it must not be empty. Free text; never use it as a decision input. */
+                q: string;
+                /** @description Page size. 1–20, default 8. Values above 20 are rejected, not clamped. */
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListUserRef"];
+                };
+            };
+            /** @description LIMIT_TOO_LARGE when limit is greater than 20. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description VALIDATION_FAILED when q is only whitespace. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the account service cannot be reached. */
             503: {
                 headers: {
                     [name: string]: unknown;
