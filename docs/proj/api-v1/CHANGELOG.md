@@ -24,7 +24,7 @@ Every v1 operation: an unknown enum token longer than the enum's keys (such as `
 Fixed:
 
 - **The galgame RSS showed about three of its ten items.** It took the newest ten works and then dropped the NSFW ones, and seven of those ten were NSFW. `/works` filters NSFW in SQL before the limit. The feed now lists works by their newest resource, dated by that same field. It carries no author or description.
-- **The sitemap listed 6,500 of 9,821 published works.** It stopped at 130 pages; it now pages until `total`.
+- **The sitemap stopped at 130 pages of 50 (6,500 works).** It now pages until `total`. This was a latent cap, not an observed loss: the sitemap lists SFW works only, and that population is about 4,800. The earlier wording here, "listed 6,500 of 9,821", was wrong (corrected 2026-09-24).
 - **Busy calendar months were cut at 100 works**, and `upcoming` left out a month that failed to load.
 - **The collected-months strip answered `[]` on a database error.**
 - **The library silently ignored the browse page's filters.** It shared the route through a `library` flag and dropped every forum filter. The two collections are now separate.
