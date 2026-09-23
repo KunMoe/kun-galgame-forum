@@ -30,7 +30,7 @@ export const updateToolsetSchema = createToolsetSchema.merge(
 
 export const createToolsetResourceSchema = z
   .object({
-    resource_type: z.enum(['file', 'link']),
+    toolset_resource_type: z.enum(['file', 'link']),
     artifact_id: z.string().optional(),
     link_url: z.string().max(1007).optional(),
     size_label: z.string().max(107).optional(),
@@ -39,7 +39,7 @@ export const createToolsetResourceSchema = z
     note: z.string().max(1007).nullable().optional()
   })
   .superRefine((val, ctx) => {
-    if (val.resource_type === 'file') {
+    if (val.toolset_resource_type === 'file') {
       if (!val.artifact_id) {
         ctx.addIssue({
           code: 'custom',

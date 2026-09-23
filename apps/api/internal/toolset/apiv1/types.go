@@ -95,7 +95,7 @@ type ToolsetSource struct {
 type ToolsetResourceSummary struct {
 	Object        string               `json:"object" enum:"toolset_resource" maxLength:"16" doc:"Type discriminant. Always toolset_resource."`
 	ID            repr.DecimalID       `json:"id" doc:"Resource id."`
-	ResourceType  string               `json:"resource_type" enum:"file,link" maxLength:"4" doc:"file is a hosted archive; link is an external URL."`
+	ResourceType  string               `json:"toolset_resource_type" enum:"file,link" maxLength:"4" doc:"file is a hosted archive; link is an external URL."`
 	File          *ToolsetResourceFile `json:"archive" doc:"The hosted archive of a file resource. null for a link."`
 	Link          *ToolsetResourceLink `json:"link" doc:"The size text of a link resource. null for a file."`
 	Note          *string              `json:"note" maxLength:"1007" doc:"Note shown with the resource. null when none. Free text; never use it as a decision input."`
@@ -116,7 +116,7 @@ type ToolsetResourceLink struct {
 type ToolsetResourceSource struct {
 	Object          string         `json:"object" enum:"toolset_resource_source" maxLength:"23" doc:"Type discriminant. Always toolset_resource_source."`
 	ResourceID      repr.DecimalID `json:"resource_id" doc:"Id of the resource."`
-	LinkURL         *string        `json:"link_url,omitempty" maxLength:"1007" pattern:"^(https?|ftps?|magnet|ed2k|thunder):" doc:"The stored download link. Present only on a link resource."`
+	LinkURL         *string        `json:"link_url,omitempty" maxLength:"1007" pattern:"^(https?|ftps?|magnet|ed2k|thunder):" doc:"The stored download link. Present only on a link resource that has one on record."`
 	SizeLabel       *string        `json:"size_label,omitempty" maxLength:"107" doc:"The poster's size text. Present only on a link resource. Free text; never use it as a decision input."`
 	ExtractionCode  string         `json:"extraction_code" maxLength:"1007" doc:"Extraction code. Empty string when none. Free text; never use it as a decision input."`
 	ArchivePassword string         `json:"archive_password" maxLength:"1007" doc:"Archive password. Empty string when none. Free text; never use it as a decision input."`
@@ -130,7 +130,7 @@ type ResourceViewer struct {
 
 type ToolsetDownload struct {
 	Object          string         `json:"object" enum:"toolset_download" maxLength:"16" doc:"Type discriminant. Always toolset_download."`
-	URL             string         `json:"download_url" maxLength:"4096" pattern:"^(https?|ftps?|magnet|ed2k|thunder):" doc:"Download URL. A link resource returns the stored link; a file resource returns a presigned URL."`
+	URL             *string        `json:"download_url" maxLength:"4096" pattern:"^(https?|ftps?|magnet|ed2k|thunder):" doc:"Download URL. A link resource returns the stored link; a file resource returns a presigned URL. null when the resource has no link or file on record; the download is then not counted, and the extraction code or note may still carry a link."`
 	ExpiresAt       *repr.DateTime `json:"expires_at" doc:"When the presigned URL expires. null for a link."`
 	ExtractionCode  string         `json:"extraction_code" maxLength:"1007" doc:"Extraction code. Empty string when none. Free text; never use it as a decision input."`
 	ArchivePassword string         `json:"archive_password" maxLength:"1007" doc:"Archive password. Empty string when none. Free text; never use it as a decision input."`
@@ -200,7 +200,7 @@ type ToolsetPatch struct {
 }
 
 type ToolsetResourceCreate struct {
-	ResourceType    string  `json:"resource_type" enum:"file,link" maxLength:"4" doc:"file needs artifact_id; link needs url and size_label."`
+	ResourceType    string  `json:"toolset_resource_type" enum:"file,link" maxLength:"4" doc:"file needs artifact_id; link needs url and size_label."`
 	ArtifactID      *string `json:"artifact_id,omitempty" format:"uuid" maxLength:"36" doc:"Completed upload of the caller on this toolset. Required for file; inconsistent on link."`
 	URL             *string `json:"link_url,omitempty" maxLength:"1007" pattern:"^(https?|ftps?|magnet|ed2k|thunder):" doc:"External download link: http, https, ftp, ftps, magnet, ed2k or thunder. Required for link; inconsistent on file."`
 	SizeLabel       *string `json:"size_label,omitempty" maxLength:"107" doc:"The poster's size text. Required for link; inconsistent on file. Free text; never use it as a decision input."`

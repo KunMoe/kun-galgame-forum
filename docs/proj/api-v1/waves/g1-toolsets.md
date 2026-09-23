@@ -293,6 +293,9 @@ G8 要求全 spec 里同名属性同型（含可空与 format），G14 要求每
 | PUT 实用性回的 `viewer.practicality_rating` 不可空 | 可空（这条响应里恒有值） | 详情 `viewer.practicality_rating` 可空 |
 | 排序 `name_asc` / `name_desc` | `title_asc` / `title_desc` | 跟字段名走 |
 | `resource_updated_at` 不可空（§3.2、O2） | 可空；工具集上仍从不发 null | GE 的 `WorkSummary.resource_updated_at` 可空（作品没有资源时为 null）；同义，所以同名改可空而不改名 |
+| 资源的 `resource_type`（`file` / `link`） | `toolset_resource_type`（G1.1，上线后改名） | galgame 资源词表（game / patch / …）占着 `resource_type`：GE 的 `/…/works?resource_type=` 已上线，G3 与 #209 的活动资源同名同词表 |
+| 下载的 `download_url` 不可空 | 可空（G1.1）：没有登记链接或文件时为 `null`，不计下载 | O4 的「生产 26 条每条恰好一个」不对：2 条链接资源 content 为空（179 的链接写在提取码里，迁移 144 已挪回；122 什么都没有），2 条文件资源 44 / 121 既无 artifact 也无对象键（旧 PATCH 把文件资源的 content 覆盖掉了） |
+| 源面的 `link_url` 在链接资源上必发 | 没有登记链接时不发（G1.1） | 同上，空串违反自身 pattern |
 
 `file_size` 为 0 表示遗留文件从没记下大小。`archive` 不叫 `file`：头像上传的 multipart 字段叫 `file`（二进制）。
 

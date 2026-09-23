@@ -8,8 +8,8 @@
 
 | 段 | 范围 | 旧路由 | 状态 |
 |---|---|---|---|
-| G1 | 工具集：列表、用户列表、详情、写、资源、分片上传、实用性（[契约](g1-toolsets.md)，迁移 142） | 16 | 已实现，PR 待合 |
-| G2 | 题库 `/galgame-quiz`（`census/galgame-quiz.md`） | 13 | |
+| G1 | 工具集：列表、用户列表、详情、写、资源、分片上传、实用性（[契约](g1-toolsets.md)，迁移 142） | 16 | ✅ 2026-09-23 #215；G1.1（资源字段改名 `toolset_resource_type`、`download_url` 可空、迁移 144） |
+| G2 | 题库 `/quizzes`（[契约](g2-quizzes.md)，迁移 143） | 13 | 契约已定，实现中（分支 `api-v1/g2-quiz`） |
 | G3 | galgame 资源：浏览、详情、按作品列、写、赞、有效/失效、发布禁止 | 11 | |
 | G4 | 作品详情 `GET /works/{work_id}`、赞、外链、我的互动；删 `/galgame/drafts` | 6 | 等 GE 的实体摘要 |
 | G5 | 浏览 `/works`（本地引擎）+ 资料库集合（catalog 引擎）+ sitemap + 发售月历 + collected months；外加 `/rss/galgame`（2026-09-23 由 X1 移交：改读 `/works?sort=created_desc`，旧 handler 照常退役） | 9 + 1 | 等 GE 的 `WorkSummary` |
@@ -26,6 +26,7 @@ G1 的 16 条加 G3 的 11 条就是 resources + toolsets 普查的 27 条。
   - `Work`（G4，详情）：WorkSummary 加详情字段与 `viewer`。
 - **筛选词表**（GE 先落地，G5 原样复用）：`resource_type` / `resource_platform` / `resource_language` 取 `internal/galgame/resourcevocab` 的键；`game_type` 词表归 GR；排序 token `resource_updated_{desc,asc}` `created_{desc,asc}` `view_{desc,asc}` `view_{1d,7d,30d}_desc` `release_date_{desc,asc}` `rating_{desc,asc}`，默认 `resource_updated_desc`。GE 在 `list_repo.go` 里加的是一条新的轴谓词路径，旧的标量路径不动，直到 G5 删掉 `/api/galgame`。
 - **U3 的「某用户的 X」形状**：`/users/{user_id}/<x>`、页码集合、主人不可渲染 404。G 的 `/users/{user_id}/toolsets`（G1）与 `/users/{user_id}/collections`（G6）照此。
+- **galgame 资源的字段名**（2026-09-23 裁，#209 的活动资源是第一个用例）：类型叫 `resource_type`，取 `internal/galgame/resourcevocab` 的封闭词表（与 GE 的 `/…/works?resource_type=` 同名同词表）；平台 / 语言是数组 `resource_platforms` / `resource_languages`（`workrepr` 的元素类型，与 `WorkSummary` 同形），不用旧的单值 `platform`；活动里的评分对象叫 `galgame_rating`，标量 PUT 体仍叫 `rating`。工具集的 `file` / `link` 因此改名 `toolset_resource_type`（G1.1）。
 - **`ENTITY_MERGED`**（GE 注册）：G4 的合并作品复用，仍是 404（用户裁决不重定向），只是带 `current_id`。
 - **GE 独有的面**：多标签交集 `GET /api/v1/tagged-works?tag_ids=`；实体的作品子集合 `…/{entity_id}/works`。
 

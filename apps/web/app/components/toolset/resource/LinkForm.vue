@@ -23,7 +23,7 @@ const api = useApiClient()
 const createKey = useIdempotencyKey()
 
 const formData = reactive({
-  resource_type: props.type,
+  toolset_resource_type: props.type,
   link_url: '',
   artifact_id: props.type === 'file' ? props.uploadResult.id : '',
   size_label: '',
@@ -50,7 +50,7 @@ const onSizeInput = (value: string | number) => {
 watch(
   () => props.type,
   () => {
-    formData.resource_type = props.type
+    formData.toolset_resource_type = props.type
     if (props.type === 'file') {
       formData.artifact_id = props.uploadResult.id
       formData.link_url = ''
@@ -90,7 +90,7 @@ const submitLink = async () => {
   const payload: ToolsetResourceCreate =
     props.type === 'file'
       ? {
-          resource_type: 'file',
+          toolset_resource_type: 'file',
           artifact_id: formData.artifact_id,
           ...(formData.extraction_code
             ? { extraction_code: formData.extraction_code }
@@ -101,7 +101,7 @@ const submitLink = async () => {
           ...(formData.note ? { note: formData.note } : {})
         }
       : {
-          resource_type: 'link',
+          toolset_resource_type: 'link',
           link_url: formData.link_url,
           size_label: formData.size_label,
           ...(formData.extraction_code

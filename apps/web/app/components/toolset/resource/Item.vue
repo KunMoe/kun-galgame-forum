@@ -42,7 +42,7 @@ const isSaving = ref(false)
 
 const canEditResource = computed(() => base.value.viewer?.can_edit ?? false)
 const canDeleteResource = computed(() => base.value.viewer?.can_delete ?? false)
-const isFile = computed(() => base.value.resource_type === 'file')
+const isFile = computed(() => base.value.toolset_resource_type === 'file')
 const poster = computed(() => toKunUser(base.value.poster))
 
 const displaySize = computed(() => {
@@ -243,7 +243,7 @@ const handleSave = async () => {
     <div class="flex flex-wrap items-center justify-between gap-3">
       <div class="flex flex-wrap items-center gap-2">
         <KunChip size="sm" color="secondary">
-          {{ KUN_GALGAME_TOOLSET_STORAGE_MAP[base.resource_type] }}
+          {{ KUN_GALGAME_TOOLSET_STORAGE_MAP[base.toolset_resource_type] }}
         </KunChip>
         <KunChip size="sm" color="warning">
           <KunIcon name="lucide:database" />
@@ -316,7 +316,10 @@ const handleSave = async () => {
         </pre>
       </KunInfo>
 
-      <div class="space-y-2 space-x-2">
+      <p v-if="!download.download_url" class="text-default-500 text-sm">
+        这个资源没有登记下载链接，链接可能写在提取码或备注里
+      </p>
+      <div v-else class="space-y-2 space-x-2">
         <p class="text-default-500 text-sm">点击下面的链接以下载</p>
         <KunLink
           :to="download.download_url"

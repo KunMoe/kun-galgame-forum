@@ -88,8 +88,12 @@ func (s *Service) getToolsetResourceSource(ctx context.Context, in *resourceIDIn
 		ExtractionCode: res.Code, ArchivePassword: res.Password,
 	}
 	if res.Type != "s3" {
-		link, size := res.Content, res.Size
-		out.LinkURL, out.SizeLabel = &link, &size
+		size := res.Size
+		out.SizeLabel = &size
+		if res.Content != "" {
+			link := res.Content
+			out.LinkURL = &link
+		}
 	}
 	if res.Note != "" {
 		note := res.Note
@@ -324,20 +328,25 @@ func (s *Service) createToolsetDownload(ctx context.Context, in *resourceIDInput
 		ExtractionCode:  res.Code,
 		ArchivePassword: res.Password,
 	}
-	if res.Type == "s3" {
-		if res.ArtifactUUID == "" || nilIface(s.artifact) {
+	switch {
+	case res.Type == "s3" && res.ArtifactUUID != "":
+		if nilIface(s.artifact) {
 			return nil, problem.Unavailable(errUnconfigured)
 		}
 		dl, err := s.artifact.Download(ctx, res.ArtifactUUID)
 		if err != nil {
 			return nil, problem.Unavailable(err)
 		}
-		out.URL = dl.Url
+		out.URL = &dl.Url
 		if dl.ExpiresAt != nil {
 			out.ExpiresAt = parseInstant(*dl.ExpiresAt)
 		}
-	} else {
-		out.URL = res.Content
+	case res.Type != "s3" && res.Content != "":
+		link := res.Content
+		out.URL = &link
+	}
+	if out.URL == nil {
+		return &downloadOutput{Body: out}, nil
 	}
 	if err := s.store.IncrementDownload(res.ID); err != nil {
 		return nil, problem.Internal(err)
@@ -367,17 +376,17 @@ func resourceCreateErrors(body ToolsetResourceCreate) []problem.FieldError {
 	switch body.ResourceType {
 	case "file":
 		if body.URL != nil {
-			errs = append(errs, inconsistent("/link_url", "/resource_type"))
+			errs = append(errs, inconsistent("/link_url", "/toolset_resource_type"))
 		}
 		if body.SizeLabel != nil {
-			errs = append(errs, inconsistent("/size_label", "/resource_type"))
+			errs = append(errs, inconsistent("/size_label", "/toolset_resource_type"))
 		}
 		if body.ArtifactID == nil || strings.TrimSpace(*body.ArtifactID) == "" {
 			errs = append(errs, requiredField("/artifact_id"))
 		}
 	case "link":
 		if body.ArtifactID != nil {
-			errs = append(errs, inconsistent("/artifact_id", "/resource_type"))
+			errs = append(errs, inconsistent("/artifact_id", "/toolset_resource_type"))
 		}
 		if body.URL == nil || strings.TrimSpace(*body.URL) == "" {
 			errs = append(errs, requiredField("/link_url"))

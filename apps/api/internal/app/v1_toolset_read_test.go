@@ -160,7 +160,7 @@ func TestV1GetToolsetResource(t *testing.T) {
 	f := newToolsetFix(t, nil)
 	resp, body := f.ts(t, http.MethodGet, "/api/v1/toolsets/"+idStr(g1TSMain)+"/resources/"+idStr(g1ResLink),
 		"/toolsets/{toolset_id}/resources/{resource_id}", "", "", nil)
-	if resp.StatusCode != http.StatusOK || body["object"] != "toolset_resource" || body["resource_type"] != "link" {
+	if resp.StatusCode != http.StatusOK || body["object"] != "toolset_resource" || body["toolset_resource_type"] != "link" {
 		t.Fatalf("resource %d %+v", resp.StatusCode, body)
 	}
 	if _, ok := body["download_url"]; ok {

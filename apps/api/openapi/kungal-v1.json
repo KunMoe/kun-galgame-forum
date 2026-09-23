@@ -11150,10 +11150,13 @@
             "type": "string"
           },
           "download_url": {
-            "description": "Download URL. A link resource returns the stored link; a file resource returns a presigned URL.",
+            "description": "Download URL. A link resource returns the stored link; a file resource returns a presigned URL. null when the resource has no link or file on record; the download is then not counted, and the extraction code or note may still carry a link.",
             "maxLength": 4096,
             "pattern": "^(https?|ftps?|magnet|ed2k|thunder):",
-            "type": "string"
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "expires_at": {
             "description": "When the presigned URL expires. null for a link.",
@@ -11381,7 +11384,12 @@
               "null"
             ]
           },
-          "resource_type": {
+          "size_label": {
+            "description": "The poster's size text. Required for link; inconsistent on file. Free text; never use it as a decision input.",
+            "maxLength": 107,
+            "type": "string"
+          },
+          "toolset_resource_type": {
             "description": "file needs artifact_id; link needs url and size_label.",
             "enum": [
               "file",
@@ -11390,15 +11398,10 @@
             "maxLength": 4,
             "type": "string",
             "x-vocabulary-closed": true
-          },
-          "size_label": {
-            "description": "The poster's size text. Required for link; inconsistent on file. Free text; never use it as a decision input.",
-            "maxLength": 107,
-            "type": "string"
           }
         },
         "required": [
-          "resource_type"
+          "toolset_resource_type"
         ],
         "type": "object"
       },
@@ -11476,7 +11479,7 @@
             "type": "string"
           },
           "link_url": {
-            "description": "The stored download link. Present only on a link resource.",
+            "description": "The stored download link. Present only on a link resource that has one on record.",
             "maxLength": 1007,
             "pattern": "^(https?|ftps?|magnet|ed2k|thunder):",
             "type": "string"
@@ -11586,7 +11589,7 @@
             "$ref": "#/components/schemas/UserRef",
             "description": "User who added the resource."
           },
-          "resource_type": {
+          "toolset_resource_type": {
             "description": "file is a hosted archive; link is an external URL.",
             "enum": [
               "file",
@@ -11611,7 +11614,7 @@
         "required": [
           "object",
           "id",
-          "resource_type",
+          "toolset_resource_type",
           "archive",
           "link",
           "note",

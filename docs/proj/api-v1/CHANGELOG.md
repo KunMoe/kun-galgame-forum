@@ -1,5 +1,15 @@
 # API v1 changelog
 
+## 2026-09-23 (G1.1 toolset resources)
+
+Breaking for toolset resources, a few hours after G1 went live:
+
+- Renamed: a resource's `resource_type` (`file` / `link`) is now `toolset_resource_type`, both on the resource objects and in the `POST …/resources` body. `resource_type` is kept for the galgame resource vocabulary that the `/…/works?resource_type=` filters already use.
+- `POST …/resources/{resource_id}/downloads`: `download_url` is nullable. `null` means the resource has no link or file on record; the download is not counted, and the extraction code or note may still carry a link. A file resource without a file answered 503 before; it now answers 200 with `null`.
+- `GET …/resources/{resource_id}/source` leaves out `link_url` when a link resource has none on record, instead of sending an empty string.
+
+Migration 144 moves the one link that was pasted into an extraction code into the link field.
+
 ## 2026-09-23 (G1 toolsets)
 
 Breaking for every `/api/toolset*` route and `GET /api/user/:id/toolsets`. 16 legacy routes go.

@@ -7163,8 +7163,8 @@ export interface components {
         ToolsetDownload: {
             /** @description Archive password. Empty string when none. Free text; never use it as a decision input. */
             archive_password: string;
-            /** @description Download URL. A link resource returns the stored link; a file resource returns a presigned URL. */
-            download_url: string;
+            /** @description Download URL. A link resource returns the stored link; a file resource returns a presigned URL. null when the resource has no link or file on record; the download is then not counted, and the extraction code or note may still carry a link. */
+            download_url: string | null;
             /**
              * Format: date-time
              * @description When the presigned URL expires. null for a link.
@@ -7245,13 +7245,13 @@ export interface components {
             link_url?: string;
             /** @description Note. Absent, null or empty means none. Free text; never use it as a decision input. */
             note?: string | null;
+            /** @description The poster's size text. Required for link; inconsistent on file. Free text; never use it as a decision input. */
+            size_label?: string;
             /**
              * @description file needs artifact_id; link needs url and size_label.
              * @enum {string}
              */
-            resource_type: "file" | "link";
-            /** @description The poster's size text. Required for link; inconsistent on file. Free text; never use it as a decision input. */
-            size_label?: string;
+            toolset_resource_type: "file" | "link";
         };
         ToolsetResourceFile: {
             /**
@@ -7281,7 +7281,7 @@ export interface components {
             archive_password: string;
             /** @description Extraction code. Empty string when none. Free text; never use it as a decision input. */
             extraction_code: string;
-            /** @description The stored download link. Present only on a link resource. */
+            /** @description The stored download link. Present only on a link resource that has one on record. */
             link_url?: string;
             /** @description Note shown with the resource. null when none. Free text; never use it as a decision input. */
             note: string | null;
@@ -7325,7 +7325,7 @@ export interface components {
              * @description file is a hosted archive; link is an external URL.
              * @enum {string}
              */
-            resource_type: "file" | "link";
+            toolset_resource_type: "file" | "link";
             /** @description The caller's own state. null for an anonymous caller. */
             viewer: components["schemas"]["ResourceViewer"] | null;
         };

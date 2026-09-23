@@ -12,14 +12,14 @@ import (
 func TestV1CreateToolsetResourceLink(t *testing.T) {
 	f := newToolsetFix(t, nil)
 	body := map[string]any{
-		"resource_type": "link",
+		"toolset_resource_type": "link",
 		"link_url":      "https://cdn.example/tool.7z",
 		"size_label":    "12mb",
 		"note":          "n",
 	}
 	resp, got := f.ts(t, http.MethodPost, "/api/v1/toolsets/"+idStr(g1TSMain)+"/resources",
 		"/toolsets/{toolset_id}/resources", "sess-other", keyUUID(10), body)
-	if resp.StatusCode != http.StatusCreated || got["resource_type"] != "link" {
+	if resp.StatusCode != http.StatusCreated || got["toolset_resource_type"] != "link" {
 		t.Fatalf("create link %d %+v", resp.StatusCode, got)
 	}
 	id := strID(got["id"])
@@ -47,7 +47,7 @@ func TestV1CreateToolsetResourceFileUnknownReference(t *testing.T) {
 		t.Helper()
 		return f.ts(t, http.MethodPost, "/api/v1/toolsets/"+idStr(g1TSMain)+"/resources",
 			"/toolsets/{toolset_id}/resources", "sess-alice", keyUUID(int(artifact[len(artifact)-1])), map[string]any{
-				"resource_type": "file", "artifact_id": artifact,
+				"toolset_resource_type": "file", "artifact_id": artifact,
 			})
 	}
 	before := f.scalar(t, `SELECT COUNT(*) FROM galgame_toolset_resource WHERE toolset_id = ?`, g1TSMain)
@@ -72,13 +72,13 @@ func TestV1CreateToolsetResourceFileUnknownReference(t *testing.T) {
 
 	resp, got = f.ts(t, http.MethodPost, "/api/v1/toolsets/"+idStr(g1TSMain)+"/resources",
 		"/toolsets/{toolset_id}/resources", "sess-alice", keyUUID(21), map[string]any{
-			"resource_type": "file", "artifact_id": g1UpAliceA,
+			"toolset_resource_type": "file", "artifact_id": g1UpAliceA,
 		})
 	wantCode(t, resp, got, http.StatusConflict, problem.CodeAlreadyExists)
 
 	resp, got = f.ts(t, http.MethodPost, "/api/v1/toolsets/"+idStr(g1TSMain)+"/resources",
 		"/toolsets/{toolset_id}/resources", "sess-alice", keyUUID(22), map[string]any{
-			"resource_type": "file", "link_url": "https://x.example",
+			"toolset_resource_type": "file", "link_url": "https://x.example",
 		})
 	wantCode(t, resp, got, http.StatusUnprocessableEntity, problem.CodeValidationFailed)
 }
@@ -87,9 +87,9 @@ func TestV1CreateFileResourceFromCompletedUpload(t *testing.T) {
 	f := newToolsetFix(t, nil)
 	resp, got := f.ts(t, http.MethodPost, "/api/v1/toolsets/"+idStr(g1TSMain)+"/resources",
 		"/toolsets/{toolset_id}/resources", "sess-alice", keyUUID(23), map[string]any{
-			"resource_type": "file", "artifact_id": g1UpAliceB,
+			"toolset_resource_type": "file", "artifact_id": g1UpAliceB,
 		})
-	if resp.StatusCode != http.StatusCreated || got["resource_type"] != "file" || got["archive"] == nil {
+	if resp.StatusCode != http.StatusCreated || got["toolset_resource_type"] != "file" || got["archive"] == nil {
 		t.Fatalf("file resource %d %+v", resp.StatusCode, got)
 	}
 }
@@ -127,6 +127,8 @@ func TestV1PatchAndDeleteResourcePath(t *testing.T) {
 	}
 }
 
+const g1ResBareLink = 930002306
+
 func TestV1CreateToolsetDownload(t *testing.T) {
 	f := newToolsetFix(t, nil)
 	path := "/api/v1/toolsets/" + idStr(g1TSMain) + "/resources/" + idStr(g1ResLink) + "/downloads"
@@ -154,6 +156,23 @@ func TestV1CreateToolsetDownload(t *testing.T) {
 	resp, got = f.ts(t, http.MethodPost, path, spec, "", "", nil)
 	wantCode(t, resp, got, http.StatusServiceUnavailable, problem.CodeServiceUnavailable)
 
+	if err := f.db.Exec(`INSERT INTO galgame_toolset_resource (id, content, type, artifact_uuid, code, password, size, note, download, toolset_id, user_id, created, updated)
+		VALUES (?, '', 'user', '', 'link: https://pan.example/s/1', '', '1mb', '', 0, ?, ?, now(), now())`, g1ResBareLink, g1TSMain, w3UserAlice).Error; err != nil {
+		t.Fatal(err)
+	}
+	for _, id := range []int{g1ResEmpty, g1ResBareLink} {
+		resp, got = f.ts(t, http.MethodPost, "/api/v1/toolsets/"+idStr(g1TSMain)+"/resources/"+idStr(id)+"/downloads", spec, "", "", nil)
+		if v, ok := got["download_url"]; resp.StatusCode != http.StatusOK || !ok || v != nil {
+			t.Errorf("resource %d with nothing on record: %d %+v", id, resp.StatusCode, got)
+		}
+		if n := f.scalar(t, `SELECT download FROM galgame_toolset_resource WHERE id = ?`, id); n != 0 {
+			t.Errorf("resource %d with nothing on record counted a download: %d", id, n)
+		}
+	}
+	if got["extraction_code"] != "link: https://pan.example/s/1" {
+		t.Errorf("bare link lost its extraction code %+v", got)
+	}
+
 	resp, got = f.ts(t, http.MethodPost, "/api/v1/toolsets/"+idStr(g1TSBob)+"/resources/"+idStr(g1ResLink)+"/downloads",
 		spec, "", "", nil)
 	wantCode(t, resp, got, http.StatusNotFound, problem.CodeNotFound)
@@ -175,4 +194,13 @@ func TestV1GetToolsetResourceSource(t *testing.T) {
 	wantCode(t, resp, got, http.StatusForbidden, problem.CodePermissionRequired)
 	resp, got = f.ts(t, http.MethodGet, path, spec, "", "", nil)
 	wantCode(t, resp, got, http.StatusUnauthorized, problem.CodeMissingCredential)
+
+	if err := f.db.Exec(`INSERT INTO galgame_toolset_resource (id, content, type, artifact_uuid, code, password, size, note, download, toolset_id, user_id, created, updated)
+		VALUES (?, '', 'user', '', '', '', '1mb', '', 0, ?, ?, now(), now())`, g1ResBareLink, g1TSMain, w3UserAlice).Error; err != nil {
+		t.Fatal(err)
+	}
+	resp, got = f.ts(t, http.MethodGet, "/api/v1/toolsets/"+idStr(g1TSMain)+"/resources/"+idStr(g1ResBareLink)+"/source", spec, "sess-alice", "", nil)
+	if _, ok := got["link_url"]; resp.StatusCode != http.StatusOK || ok || got["size_label"] != "1mb" {
+		t.Errorf("bare link source %d %+v", resp.StatusCode, got)
+	}
 }
