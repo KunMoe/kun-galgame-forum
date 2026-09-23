@@ -20,6 +20,7 @@ const close = () => emits('update:modelValue', false)
 <template>
   <KunModal
     :model-value="modelValue"
+    :aria-label="source ? '编辑题目' : '出题'"
     inner-class-name="max-w-[720px] w-[90vw]"
     :is-dismissable="false"
     @update:model-value="(v) => emits('update:modelValue', v)"
