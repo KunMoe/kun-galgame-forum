@@ -76,6 +76,11 @@ const (
 	CodeLotteryCreatorIneligible     = "LOTTERY_CREATOR_INELIGIBLE"
 	CodeLotteryDrawn                 = "LOTTERY_DRAWN"
 	CodeRedemptionCodeForfeited      = "REDEMPTION_CODE_FORFEITED"
+	CodeAlreadyExists                = "ALREADY_EXISTS"
+	CodePreconditionFailed           = "PRECONDITION_FAILED"
+	CodeUsernameTaken                = "USERNAME_TAKEN"
+	CodeCreatorIneligible            = "CREATOR_INELIGIBLE"
+	CodeCreatorApplicationCooldown   = "CREATOR_APPLICATION_COOLDOWN"
 )
 
 const (
@@ -141,6 +146,11 @@ var Codes = []Def{
 	{CodeLotteryCreatorIneligible, DomainKungal, http.StatusForbidden, "Lottery creator ineligible", "Starting a lottery needs an account at least min_account_age_days old or at least min_moemoepoint moemoepoint. It is an anti-scam bar, not a permission.", []ExtDef{{Name: "min_account_age_days", Type: "integer"}, {Name: "min_moemoepoint", Type: "integer"}}},
 	{CodeLotteryDrawn, DomainKungal, http.StatusConflict, "Lottery drawn", "The lottery is being drawn, or has been drawn and only staff may delete it: its winners still need it to collect their prizes.", nil},
 	{CodeRedemptionCodeForfeited, DomainKungal, http.StatusConflict, "Redemption code forfeited", "The caller won this code, but it was given up or not revealed before claim_expires_at, and it can no longer be revealed.", nil},
+	{CodeAlreadyExists, DomainMe, http.StatusConflict, "Already exists", "The same subject already has a live record for this target.", nil},
+	{CodePreconditionFailed, DomainPlatform, http.StatusPreconditionFailed, "Precondition failed", "If-Match did not match the current representation.", nil},
+	{CodeUsernameTaken, DomainKungal, http.StatusConflict, "Username taken", "The requested name is already in use by another account.", nil},
+	{CodeCreatorIneligible, DomainKungal, http.StatusForbidden, "Creator ineligible", "The caller does not meet the conditions to apply for the creator role.", nil},
+	{CodeCreatorApplicationCooldown, DomainKungal, http.StatusConflict, "Creator application cooldown", "A declined creator application is still inside its cooldown window.", nil},
 }
 
 var Reasons = []ReasonDef{

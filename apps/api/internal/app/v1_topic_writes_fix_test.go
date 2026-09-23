@@ -112,6 +112,7 @@ type writeFix struct {
 	rdb    *redis.Client
 	spec   *specConformance
 	oauth  *httptest.Server
+	mux    *http.ServeMux
 	awards []awardCall
 	mu     sync.Mutex
 	nBatch atomic.Int32
@@ -127,6 +128,7 @@ func newWriteFix(t *testing.T, checker gate.Checker) *writeFix {
 
 	f := &writeFix{db: db, rdb: rdb}
 	mux := http.NewServeMux()
+	f.mux = mux
 	mux.HandleFunc("/users/batch", func(w http.ResponseWriter, _ *http.Request) {
 		f.nBatch.Add(1)
 		if f.failOA.Load() {
@@ -161,6 +163,8 @@ func newWriteFix(t *testing.T, checker gate.Checker) *writeFix {
 	})
 	cfg := testConfig()
 	cfg.NextMoeAPI.ImageCDNBase = "https://image.test.example"
+	cfg.OAuth.ServerURL = f.oauth.URL
+	cfg.OAuth.ClientID = "test-client"
 	sexual := int16(0)
 	var trust *gate.CheckService
 	if checker != nil {

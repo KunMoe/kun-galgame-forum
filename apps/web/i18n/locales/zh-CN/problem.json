@@ -34,7 +34,12 @@
     "LOTTERY_INELIGIBLE": "你不满足这个抽奖的参与条件",
     "LOTTERY_CREATOR_INELIGIBLE": "你的账号暂时不满足发起抽奖的条件（注册时间或萌萌点不足）",
     "LOTTERY_DRAWN": "抽奖正在开奖或已经开奖，中奖者还需要它来领取奖品，无法删除",
-    "REDEMPTION_CODE_FORFEITED": "兑换码已超过领取期限或已被放弃，无法再领取"
+    "REDEMPTION_CODE_FORFEITED": "兑换码已超过领取期限或已被放弃，无法再领取",
+    "ALREADY_EXISTS": "记录已存在",
+    "PRECONDITION_FAILED": "内容已被他人修改，请刷新后重试",
+    "USERNAME_TAKEN": "这个用户名已被使用",
+    "CREATOR_INELIGIBLE": "尚不满足创作者申请条件",
+    "CREATOR_APPLICATION_COOLDOWN": "申请被拒绝后需等待一段时间才能再次申请"
   },
   "reason": {
     "DUPLICATE_ITEM": {
@@ -95,6 +100,7 @@
     "404": "内容不存在或已被删除",
     "405": "不支持这个操作",
     "409": "操作冲突，请刷新页面后重试",
+    "412": "内容已被他人修改，请刷新后重试",
     "413": "提交的内容太大",
     "415": "请求内容的格式不受支持",
     "422": "填写的内容有误，请检查后重试",

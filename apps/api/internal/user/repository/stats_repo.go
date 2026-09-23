@@ -51,17 +51,6 @@ func (r *UserStatsRepository) CountUnreadMessages(userID int, mutedLocal []strin
 	return count, err
 }
 
-func (r *UserStatsRepository) CountUnreadSystemMessages(userID int) (int64, error) {
-	var count int64
-	err := r.db.Table("system_message").
-		Where(`id > COALESCE(
-			(SELECT last_read_message_id
-			 FROM system_message_read_state
-			 WHERE user_id = ?), 0)`, userID).
-		Count(&count).Error
-	return count, err
-}
-
 func (r *UserStatsRepository) CountUnreadChatMessages(userID int) (int64, error) {
 	var count int64
 	err := r.db.Table("chat_message").

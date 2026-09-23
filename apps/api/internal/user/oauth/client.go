@@ -23,6 +23,7 @@ const (
 	CodeInvalidClientSecret = 15008
 
 	CodePreferencesScopeMissing = 18001
+	CodePreferencesTooLarge     = 18005
 	CodePreferencesConflict     = 18006
 )
 

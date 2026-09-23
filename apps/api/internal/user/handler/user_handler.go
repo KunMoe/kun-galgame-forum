@@ -41,85 +41,6 @@ func (h *UserHandler) GetProfile(c fiber.Ctx) error {
 	return response.OK(c, profile)
 }
 
-func (h *UserHandler) CheckIn(c fiber.Ctx) error {
-	user, appErr := middleware.MustGetUser(c)
-	if appErr != nil {
-		return response.Error(c, appErr)
-	}
-	points, appErr := h.userService.CheckIn(c.Context(), user.ID)
-	if appErr != nil {
-		return response.Error(c, appErr)
-	}
-	return response.OK(c, points)
-}
-
-func (h *UserHandler) GetStatus(c fiber.Ctx) error {
-	user, appErr := middleware.MustGetUser(c)
-	if appErr != nil {
-		return response.Error(c, appErr)
-	}
-	status, appErr := h.userService.GetUserStatus(c.Context(), user.ID)
-	if appErr != nil {
-		return response.Error(c, appErr)
-	}
-	return response.OK(c, status)
-}
-
-func (h *UserHandler) GetNotificationPreferences(c fiber.Ctx) error {
-	user, appErr := middleware.MustGetUser(c)
-	if appErr != nil {
-		return response.Error(c, appErr)
-	}
-	prefs, appErr := h.userService.GetNotificationPreferences(user.ID)
-	if appErr != nil {
-		return response.Error(c, appErr)
-	}
-	return response.OK(c, prefs)
-}
-
-func (h *UserHandler) UpdateNotificationPreferences(c fiber.Ctx) error {
-	user, appErr := middleware.MustGetUser(c)
-	if appErr != nil {
-		return response.Error(c, appErr)
-	}
-	var req dto.UpdateNotificationPreferenceRequest
-	if appErr := utils.ParseAndValidate(c, &req); appErr != nil {
-		return response.Error(c, appErr)
-	}
-	prefs, appErr := h.userService.UpdateNotificationPreferences(user.ID, req.MutedTypes)
-	if appErr != nil {
-		return response.Error(c, appErr)
-	}
-	return response.OK(c, prefs)
-}
-
-func (h *UserHandler) GetMoemoepointLog(c fiber.Ctx) error {
-	user, appErr := middleware.MustGetUser(c)
-	if appErr != nil {
-		return response.Error(c, appErr)
-	}
-	limit := fiber.Query[int](c, "limit", 20)
-	if limit < 1 || limit > 50 {
-		limit = 20
-	}
-	beforeID := max(fiber.Query[int](c, "before_id", 0), 0)
-	page, appErr := h.userService.GetMoemoepointLog(
-		c.Context(), user.ID, limit, beforeID, c.Query("reason"))
-	if appErr != nil {
-		return response.Error(c, appErr)
-	}
-	return response.OK(c, page)
-}
-
-func (h *UserHandler) SearchMention(c fiber.Ctx) error {
-	users, appErr := h.userService.SearchMentionUsers(
-		c.Context(), c.Query("q"), fiber.Query[int](c, "limit", 8))
-	if appErr != nil {
-		return response.Error(c, appErr)
-	}
-	return response.OK(c, users)
-}
-
 func (h *UserHandler) GetFloatingCard(c fiber.Ctx) error {
 	var req dto.FloatingCardRequest
 	if appErr := utils.ParseQueryAndValidate(c, &req); appErr != nil {
@@ -250,4 +171,31 @@ func (h *UserHandler) GetUserRatings(c fiber.Ctx) error {
 		return response.Error(c, appErr)
 	}
 	return response.OK(c, page)
+}
+
+func (h *UserHandler) GetNotificationPreferences(c fiber.Ctx) error {
+	user, appErr := middleware.MustGetUser(c)
+	if appErr != nil {
+		return response.Error(c, appErr)
+	}
+	prefs, appErr := h.userService.GetNotificationPreferences(user.ID)
+	if appErr != nil {
+		return response.Error(c, appErr)
+	}
+	return response.OK(c, prefs)
+}
+func (h *UserHandler) UpdateNotificationPreferences(c fiber.Ctx) error {
+	user, appErr := middleware.MustGetUser(c)
+	if appErr != nil {
+		return response.Error(c, appErr)
+	}
+	var req dto.UpdateNotificationPreferenceRequest
+	if appErr := utils.ParseAndValidate(c, &req); appErr != nil {
+		return response.Error(c, appErr)
+	}
+	prefs, appErr := h.userService.UpdateNotificationPreferences(user.ID, req.MutedTypes)
+	if appErr != nil {
+		return response.Error(c, appErr)
+	}
+	return response.OK(c, prefs)
 }

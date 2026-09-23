@@ -1,7 +1,6 @@
 package dto
 
 import (
-	"encoding/json"
 	"time"
 )
 
@@ -58,44 +57,6 @@ type UserProfileDetail struct {
 
 	DailyTopicCount   int64 `json:"daily_topic_count"`
 	DailyGalgameCount int64 `json:"daily_galgame_count"`
-}
-
-type UpdateBioRequest struct {
-	Bio string `json:"bio" validate:"max=107"`
-}
-
-type UpdateUsernameRequest struct {
-	Username string `json:"username" validate:"required,min=1,max=17"`
-}
-
-type UpdateNSFWDisplayRequest struct {
-	NSFWDisplay string `json:"nsfw_display" validate:"required,oneof=hide blur show"`
-}
-
-type NSFWDisplayResponse struct {
-	NSFWDisplay    string `json:"nsfw_display"`
-	AdultConfirmed bool   `json:"adult_confirmed"`
-}
-
-type UpdatePreferencesRequest struct {
-	Doc json.RawMessage `json:"doc" validate:"required"`
-}
-
-// The namespace the document actually lives under is the OAuth client id and
-// stays server-side; a client that could name it would reach the cross-site
-// `global` document through this proxy.
-type PreferencesResponse struct {
-	Doc       json.RawMessage `json:"doc"`
-	Version   int             `json:"version"`
-	UpdatedAt *string         `json:"updated_at"`
-}
-
-type UserStatusResponse struct {
-	Moemoepoints            int   `json:"moemoepoints"`
-	IsCheckIn               bool  `json:"is_check_in"`
-	HasNewMessage           bool  `json:"has_new_message"`
-	DailyToolsetUploadBytes int64 `json:"daily_toolset_upload_bytes"`
-	IsCreator               bool  `json:"is_creator"`
 }
 
 type UserGalgamesRequest struct {

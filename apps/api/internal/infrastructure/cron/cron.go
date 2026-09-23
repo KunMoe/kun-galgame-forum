@@ -13,7 +13,15 @@ import (
 	"gorm.io/gorm"
 )
 
-const scheduleTZ = "Asia/Shanghai"
+const ScheduleTZ = "Asia/Shanghai"
+
+func ScheduleLocation() *time.Location {
+	loc, err := time.LoadLocation(ScheduleTZ)
+	if err != nil {
+		return time.Local
+	}
+	return loc
+}
 
 // Every field is a bare func(), so positional arguments would put a job on
 // another job's schedule with nothing to notice it.
@@ -34,9 +42,9 @@ func Start(
 	imgCli *imageclient.Client,
 	jobs Jobs,
 ) func() {
-	loc, err := time.LoadLocation(scheduleTZ)
+	loc, err := time.LoadLocation(ScheduleTZ)
 	if err != nil {
-		slog.Warn("加载定时任务时区失败, 回退到进程本地时区", "tz", scheduleTZ, "error", err)
+		slog.Warn("加载定时任务时区失败, 回退到进程本地时区", "tz", ScheduleTZ, "error", err)
 		loc = time.Local
 	}
 	c := cron.New(cron.WithLocation(loc))

@@ -199,12 +199,7 @@ func (c *Client) SearchUsers(ctx context.Context, q string, limit int) ([]User, 
 	for i := range sd.Users {
 		sd.Users[i].Avatar = c.resolveAvatarURL(sd.Users[i])
 	}
-	now := time.Now()
-	c.mu.Lock()
-	for _, u := range sd.Users {
-		c.hot[u.ID] = cacheEntry{user: u, expire: now.Add(c.hotTTL)}
-	}
-	c.mu.Unlock()
+	// Search results lack site_roles, so caching them stripped site roles from display for 10 minutes.
 	return sd.Users, nil
 }
 

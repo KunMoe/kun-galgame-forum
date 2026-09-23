@@ -101,27 +101,27 @@ import (
 )
 
 type App struct {
-	Fiber        *fiber.App
-	DB           *gorm.DB
-	Redis        *redis.Client
-	Config       *config.Config
-	OAuthClient  *oauth.Client
-	UserState    *repository.StateRepository
-	TopicAward   topicapiv1.AwardFunc
-	TrustCheck   *gate.CheckService
-	TrustScan    *gate.ScanService
-	Notifier     msgService.Notifier
-	UserClient   *userclient.Client
-	Authn        *middleware.Authenticator
-	BearerStance *middleware.BearerStance
-	ImageMeta    func(hashes []string) map[string]imageclient.ImageMeta
-	GalgameV1    *galgameapiv1.Service
-	WallV1       *wallapiv1.Service
+	Fiber          *fiber.App
+	DB             *gorm.DB
+	Redis          *redis.Client
+	Config         *config.Config
+	OAuthClient    *oauth.Client
+	UserState      *repository.StateRepository
+	TopicAward     topicapiv1.AwardFunc
+	TrustCheck     *gate.CheckService
+	TrustScan      *gate.ScanService
+	Notifier       msgService.Notifier
+	UserClient     *userclient.Client
+	UserService    *service.UserService
+	CreatorService *galgameService.CreatorService
+	Authn          *middleware.Authenticator
+	BearerStance   *middleware.BearerStance
+	ImageMeta      func(hashes []string) map[string]imageclient.ImageMeta
+	GalgameV1      *galgameapiv1.Service
+	WallV1         *wallapiv1.Service
 
 	OAuthHandler                *handler.OAuthHandler
 	UserHandler                 *handler.UserHandler
-	UserProfileHandler          *handler.ProfileHandler
-	ContentPrefsHandler         *handler.ContentPrefsHandler
 	HomeHandler                 *homeHandler.HomeHandler
 	LotteryService              *topicService.LotteryService
 	MessageHandler              *msgHandler.MessageHandler
@@ -152,7 +152,6 @@ type App struct {
 	GalgameResourceHandler      *galgameHandler.ResourceHandler
 	GalgameRatingHandler        *galgameHandler.RatingHandler
 	GalgameQuizHandler          *galgameHandler.QuizHandler
-	CreatorHandler              *galgameHandler.CreatorHandler
 	GalgameEntityHandler        *galgameHandler.EntityHandler
 	GalgameCalendarHandler      *galgameHandler.CalendarHandler
 	GalgameDraftsHandler        *galgameHandler.DraftsHandler
@@ -578,6 +577,8 @@ func New(cfg *config.Config) *App {
 		TrustScan:                   trustScan,
 		Notifier:                    notifier,
 		UserClient:                  uc,
+		UserService:                 userService,
+		CreatorService:              creatorSvc,
 		Authn:                       authn,
 		BearerStance:                bearerStance,
 		ImageMeta:                   imageMetaResolve(imageMeta),
@@ -585,8 +586,6 @@ func New(cfg *config.Config) *App {
 		WallV1:                      newWallV1(db, communityCli, uc, gc, imageMetaResolve(imageMeta), cfg.NextMoeAPI.ImageCDNBase),
 		OAuthHandler:                handler.NewOAuthHandler(authService, cfg.Server.Mode == "prod", communityBooster),
 		UserHandler:                 handler.NewUserHandler(userService, userContentService),
-		UserProfileHandler:          handler.NewProfileHandler(oauthClient, uc),
-		ContentPrefsHandler:         handler.NewContentPrefsHandler(oauthClient, uc, rdb),
 		HomeHandler:                 homeHandler.NewHomeHandler(homeService.NewHomeService(homeRepo.NewHomeRepository(db), gc, uc, rdb)),
 		LotteryService:              lotterySvc,
 		MessageHandler:              msgHandler.NewMessageHandler(messageSvc),
@@ -617,7 +616,6 @@ func New(cfg *config.Config) *App {
 		GalgameResourceHandler:      galgameHandler.NewResourceHandler(galgameResourceSvc),
 		GalgameRatingHandler:        galgameHandler.NewRatingHandler(galgameRatingSvc, galgamePlaytimeSvc),
 		GalgameQuizHandler:          galgameHandler.NewQuizHandler(galgameQuizSvc),
-		CreatorHandler:              galgameHandler.NewCreatorHandler(creatorSvc),
 		GalgameEntityHandler: galgameHandler.NewEntityHandler(
 			galgameOfficialSvc, galgameEngineSvc, galgameSeriesSvc, galgameTagSvc,
 			galgameStaffSvc, galgameCharacterSvc,

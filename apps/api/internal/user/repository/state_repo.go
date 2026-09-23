@@ -50,6 +50,19 @@ func (r *StateRepository) CheckIn(userID int) (bool, error) {
 	return res.RowsAffected > 0, nil
 }
 
+func (r *StateRepository) ResetDailyCheckIn(userID int) error {
+	return r.db.Model(&model.KungalUserState{}).
+		Where("user_id = ?", userID).
+		Update("daily_check_in", 0).Error
+}
+
+func (r *StateRepository) SetMoemoepoint(userID, balance int) error {
+	return r.db.Exec(
+		`UPDATE kungal_user_state SET moemoepoint = ? WHERE user_id = ?`,
+		balance, userID,
+	).Error
+}
+
 func (r *StateRepository) UpdateMutedTypes(userID int, keys []string) error {
 	if keys == nil {
 		keys = []string{}

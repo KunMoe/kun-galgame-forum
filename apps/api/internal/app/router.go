@@ -7,6 +7,7 @@ import (
 	"kun-galgame-api/internal/middleware"
 	topicapiv1 "kun-galgame-api/internal/topic/apiv1"
 	topicRepo "kun-galgame-api/internal/topic/repository"
+	userapiv1 "kun-galgame-api/internal/user/apiv1"
 	wallapiv1 "kun-galgame-api/internal/wall/apiv1"
 	"kun-galgame-api/pkg/perm"
 
@@ -37,6 +38,7 @@ func (a *App) setupRoutes() {
 		topicapiv1.RegisterLotteries(a.newTopicV1Lotteries(topicReads)),
 		galgameapiv1.Register(a.GalgameV1),
 		wallapiv1.Register(a.WallV1),
+		userapiv1.Register(a.newUserV1()),
 	)
 
 	// Deliberately touches neither DB nor Redis: the container HEALTHCHECK reads
@@ -59,31 +61,11 @@ func (a *App) setupRoutes() {
 	auth.Post("/logout", a.OAuthHandler.Logout)
 
 	userAuth := a.Authn.Auth()
-	// No rate limiter on purpose. The once-per-day gate is the `daily_check_in`
-	// flag reset at calendar midnight by the daily cron. A 24h-rolling limiter
-	// spilled past midnight, blocked legitimate next-day check-ins, and masked
-	// "已签到" with a generic "操作过于频繁" 400.
-	api.Post("/user/check-in", userAuth, a.UserHandler.CheckIn)
-	api.Get("/user/status", userAuth, a.UserHandler.GetStatus)
 	// Every fixed /user/* path must stay ahead of /user/:id, or the literal
 	// segment binds as :id.
+	api.Get("/user/:id/floating", a.UserHandler.GetFloatingCard)
 	api.Get("/user/notification-preferences", userAuth, a.UserHandler.GetNotificationPreferences)
 	api.Put("/user/notification-preferences", userAuth, a.UserHandler.UpdateNotificationPreferences)
-	api.Get("/user/moemoepoint/log", userAuth, a.UserHandler.GetMoemoepointLog)
-	api.Get("/user/search", userAuth, a.UserHandler.SearchMention)
-
-	api.Get("/user/creator/status", userAuth, a.CreatorHandler.Status)
-	api.Post("/user/creator/apply", userAuth, a.CreatorHandler.Apply)
-
-	api.Put("/user/bio", userAuth, a.UserProfileHandler.UpdateBio)
-	api.Put("/user/username", userAuth, a.UserProfileHandler.UpdateUsername)
-	api.Post("/user/avatar", userAuth, a.UserProfileHandler.UploadAvatar)
-
-	api.Put("/user/nsfw", userAuth, a.ContentPrefsHandler.UpdateNSFWDisplay)
-	api.Get("/user/preferences", userAuth, a.ContentPrefsHandler.GetPreferences)
-	api.Put("/user/preferences", userAuth, a.ContentPrefsHandler.UpdatePreferences)
-
-	api.Get("/user/:id/floating", a.UserHandler.GetFloatingCard)
 	api.Get("/user/:id", a.UserHandler.GetProfile)
 	api.Get("/user/:id/galgames", a.UserHandler.GetUserGalgames)
 	api.Get("/user/:id/galgame-comments", a.UserHandler.GetUserGalgameComments)

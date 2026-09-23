@@ -92,6 +92,15 @@
     },
     {
       "object": "problem_type",
+      "code": "PRECONDITION_FAILED",
+      "domain": "platform",
+      "status": 412,
+      "type": "https://developer.nextmoe.dev/problems/platform/precondition-failed",
+      "title": "Precondition failed",
+      "description": "If-Match did not match the current representation."
+    },
+    {
+      "object": "problem_type",
       "code": "RATE_LIMITED",
       "domain": "platform",
       "status": 429,
@@ -170,6 +179,24 @@
       "type": "https://developer.nextmoe.dev/problems/kungal/content-rejected",
       "title": "Content rejected",
       "description": "The trust-and-safety check refused the submitted text. Nothing was written."
+    },
+    {
+      "object": "problem_type",
+      "code": "CREATOR_APPLICATION_COOLDOWN",
+      "domain": "kungal",
+      "status": 409,
+      "type": "https://developer.nextmoe.dev/problems/kungal/creator-application-cooldown",
+      "title": "Creator application cooldown",
+      "description": "A declined creator application is still inside its cooldown window."
+    },
+    {
+      "object": "problem_type",
+      "code": "CREATOR_INELIGIBLE",
+      "domain": "kungal",
+      "status": 403,
+      "type": "https://developer.nextmoe.dev/problems/kungal/creator-ineligible",
+      "title": "Creator ineligible",
+      "description": "The caller does not meet the conditions to apply for the creator role."
     },
     {
       "object": "problem_type",
@@ -290,12 +317,30 @@
     },
     {
       "object": "problem_type",
+      "code": "USERNAME_TAKEN",
+      "domain": "kungal",
+      "status": 409,
+      "type": "https://developer.nextmoe.dev/problems/kungal/username-taken",
+      "title": "Username taken",
+      "description": "The requested name is already in use by another account."
+    },
+    {
+      "object": "problem_type",
       "code": "VOTE_ALREADY_CAST",
       "domain": "kungal",
       "status": 409,
       "type": "https://developer.nextmoe.dev/problems/kungal/vote-already-cast",
       "title": "Vote already cast",
       "description": "The caller has already voted and this poll does not allow changing a vote."
+    },
+    {
+      "object": "problem_type",
+      "code": "ALREADY_EXISTS",
+      "domain": "me",
+      "status": 409,
+      "type": "https://developer.nextmoe.dev/problems/me/already-exists",
+      "title": "Already exists",
+      "description": "The same subject already has a live record for this target."
     },
     {
       "object": "problem_type",

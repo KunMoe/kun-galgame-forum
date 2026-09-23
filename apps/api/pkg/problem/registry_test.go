@@ -45,6 +45,11 @@ var requiredCodes = []struct {
 	{CodeInvalidStateTransition, DomainMe, 409},
 	{CodePollClosed, DomainKungal, 409},
 	{CodeVoteAlreadyCast, DomainKungal, 409},
+	{CodeAlreadyExists, DomainMe, 409},
+	{CodePreconditionFailed, DomainPlatform, 412},
+	{CodeUsernameTaken, DomainKungal, 409},
+	{CodeCreatorIneligible, DomainKungal, 403},
+	{CodeCreatorApplicationCooldown, DomainKungal, 409},
 }
 
 func TestRegistryClosedAndExact(t *testing.T) {

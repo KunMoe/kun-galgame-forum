@@ -119,7 +119,7 @@ MoemoepointEntry  object="moemoepoint_entry", id, delta, reason, ref,
 
 - 参数：`cursor`、`limit`（1–50，默认 20）、`reason`（可选）。
   - `limit` 上限是 **50** 不是 100：OAuth `/users/{id}/moemoepoint/log` 的上限就是 50（旧代码 `limit > 50 → 20`）。`> 50` → `400 LIMIT_TOO_LARGE`。这是 K11「1–100」的具名偏离，理由是上游上限。
-  - `reason`：开放词表（OAuth 会加新 reason），`pattern ^[a-z][a-z0-9_]{0,39}$`。形状非法 → huma 422；形状合法但上游不认 → 上游回 400 → 我们回 `400 INVALID_PARAMETER`（`parameter: reason`）。**不再**把上游 400 说成我们的 500。
+  - `reason`：开放词表（OAuth 会加新 reason），`pattern ^[a-z][a-z0-9_]{0,39}$`。形状非法 → `400 INVALID_PARAMETER`（huma 对 query 参数的校验失败在本仓映射成 400，与 `page_test.go` 一致）；形状合法但上游不认 → 上游回 400 → 我们回 `400 INVALID_PARAMETER`（`parameter: reason`）。**不再**把上游 400 说成我们的 500。
 - 游标：内部是 OAuth 的 `before_id`，编码成 `cur_…`，指纹绑定 `(user_id, reason)`。换了 `reason` 用旧游标 → `400 INVALID_CURSOR`。末页（上游 `has_more = false`）省略 `next_cursor`。
 - `delta`：integer，**无 minimum**（扣分是负数）。`reason`：开放枚举字符串，maxLength 40。`ref`：maxLength 80，可为空串。
 - `is_from_this_site`：旧名 `is_local`（`SourceApp == 本站 OAuth client_id`）。`source_app` 不下发——它是一串 hex client id，客户端拿它什么都做不了。
@@ -135,7 +135,7 @@ MoemoepointEntry  object="moemoepoint_entry", id, delta, reason, ref,
 ### 3.5 云端偏好 `GET/PUT /api/v1/me/preferences`
 
 ```
-Preferences  object="preferences", doc: object, version (integer ≥0), updated_at (date-time | null)
+Preferences  object="preferences", doc: object, version (integer ≥0), written_at (date-time | null)
 ```
 
 - 命名空间由服务端定（本站 OAuth client id），客户端**不可**指定——否则能摸到跨站的 `global` 文档（旧 DTO 上那条注释的理由原样保留）。
@@ -174,11 +174,11 @@ Preferences  object="preferences", doc: object, version (integer ≥0), updated_
 ### 3.8 `PATCH /api/v1/me/profile` → `MyProfile`
 
 ```
-请求  { name?: string (1..17), bio?: string (0..107) }   至少一个字段
+请求  { name?: string|null (1..17), bio?: string|null (0..107) }   至少一个字段非 null
 响应  MyProfile  object="user", id, name, avatar: Image|null, bio
 ```
 
-- 两个字段都缺 → `422 VALIDATION_FAILED`（`pointer ""`，`REQUIRED`）。
+- 两个字段都缺（或都是 null）→ `422 VALIDATION_FAILED`（`pointer ""`，`REQUIRED`）。字段可为 null 是 G8 的要求：`name` 在 `UserRef` 里是 `string|null`，同名必须同型；null 与缺席同义，都是「不改」。
 - 响应是**本站定义的形状**，不再透传 OAuth 的 `UserResponse`（旧实现会把上游新加的任何字段——包括值为空串的 `email` 键——原样发给浏览器）。数据从上游 `PATCH /auth/me` 的返回里取 `id / name / avatar_image_hash / avatar / bio` 映射；头像按 `Image` 规则解析（hash 优先）。
 - 错误映射（上游码 → v1）：
   - 10007 名字重复 → **`409 USERNAME_TAKEN`**（新 kungal 码）；
@@ -203,18 +203,18 @@ Preferences  object="preferences", doc: object, version (integer ≥0), updated_
 ```
 CreatorStatus  object="creator_status", is_creator,
                eligibility: { is_eligible, merged_pr_count, published_galgame_count,
-                              full_score_review_count, moemoepoint,
+                              long_review_count, moemoepoint,
                               required_merged_pr_count, required_published_galgame_count,
-                              required_full_score_review_count, required_moemoepoint },
+                              required_long_review_count, required_moemoepoint },
                application: CreatorApplication | null
-CreatorApplication  object="creator_application", id, state, message,
+CreatorApplication  object="creator_application", id, state, statement,
                     decline_reason (string|null), created_at, reviewed_at (date-time|null)
 ```
 
 - `state`：封闭枚举 `pending` / `approved` / `declined`（上游 `status` 字段；取值以 `docs/oauth/08-creator-applications.md` 为准，实现时核对，出现第四个值就回 500 并在报告里写明——**不许**静默当成其中一个）。
-- `reviews_100` → `full_score_review_count`：它数的是 100 分的评分（实现前读 `creator_service.go` 确认，确认不了在报告里说）。
+- `reviews_100` → `long_review_count`：实现时核实，它数的是**简评不少于 100 字**的评分（`rating_repo.go` 的 `char_length(short_summary) >= 100`），不是满分评分。契约初稿按名字猜成了 `full_score_review_count`，验收时更正。
 - `moemoepoint`（资格里的）**回源 OAuth**，失败 → `503`（旧实现 `moe, _ :=` 吞成 0，够格的人被判不够格）。
-- `POST /me/creator-applications`：请求 `{ message: string (0..500) }`，`201 Created` + `Location: /api/v1/me/creator-status` + `CreatorApplication`。`Idempotency-Key` 可选。
+- `POST /me/creator-applications`：请求 `{ statement?: string (0..500) }`，`201 Created` + `Location: /api/v1/me/creator-status` + `CreatorApplication`。`Idempotency-Key` 可选。
   - 不够格 → **`403 CREATOR_INELIGIBLE`**（新 kungal 码）；
   - 上游 17001 已是创作者 → `409 INVALID_STATE_TRANSITION`（复用 infra `me` 域码）；
   - 17002 已有待审申请 → `409 ALREADY_EXISTS`；
@@ -299,6 +299,21 @@ CreatorApplication  object="creator_application", id, state, message,
 
 上游（OAuth）在测试里用 `httptest.Server` 假冒，不打真服务。
 
-## 10. 迁移
+## 10. 验收时对契约的更正（2026-09-23）
+
+契约门在实现后抓出的，全部改在上文对应位置，这里留底：
+
+| 原契约 | 改为 | 原因 |
+|---|---|---|
+| `Preferences.updated_at`（可空） | `written_at` | G8：全 spec 里 `updated_at` 都是非空时间戳，同名必须同型 |
+| `CreatorApplication.message` / 请求体 `message` | `statement` | G6：`message` 是成功响应里禁用的信封键 |
+| `PATCH /me/profile` 的 `name` / `bio` 是 `string` | `string\|null` | G8：见 §3.8 |
+| `full_score_review_count` | `long_review_count` | 见 §3.10，字段数的是长评，不是满分评 |
+| `reason` 格式错 → 422 | → 400 `INVALID_PARAMETER` | 本仓 query 校验的既有映射 |
+| `PUT /me/avatar` 用 huma 的 `MultipartFormFiles` | 请求体是 `multipart.Form`，schema 手写在操作上 | `MultipartFormFiles` 会把 `huma.FormFile` 的 Go 字段（`IsSet`/`Size`…）发成组件，G2/G14/F1 全红 |
+| `/me` 的上游错误判定 | service 层哨兵错误（`service.ErrUpstream`、`CreatorService.ErrAccountUnavailable`） | 初版按错误信息里的 `"userclient:"` 前缀判断，改一句文案就会把 503 变成 500 |
+| 成人向显示写回会话 | 仅 cookie 会话，**Bearer 请求不写回**，即使它碰巧带着 cookie | K2：带 `Authorization` 的请求只认 Bearer |
+
+## 11. 迁移
 
 **无**。本段不改表结构。

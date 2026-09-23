@@ -90,3 +90,8 @@ func enrichProfileFromSession(p *dto.UserProfile, u *middleware.UserInfo) {
 	p.AdultConfirmed = u.AdultConfirmed
 	p.NSFWDisplay = u.NSFWDisplay
 }
+
+// Cloudflare rewrites a downstream's own max-age into a much longer one, so a
+// cached preference response shows the reader a stance they already changed on
+// another device. The upstream contract sets no-store on the same faces.
+func noStore(c fiber.Ctx) { c.Set("Cache-Control", "no-store") }

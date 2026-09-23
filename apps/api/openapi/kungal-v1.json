@@ -159,6 +159,47 @@
         ],
         "type": "object"
       },
+      "CheckIn": {
+        "properties": {
+          "check_in_date": {
+            "description": "Asia/Shanghai calendar day this check-in is for.",
+            "format": "date",
+            "maxLength": 10,
+            "minLength": 10,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+            "type": "string"
+          },
+          "moemoepoint": {
+            "description": "The caller's moemoepoint balance as this forum last cached it after the check-in. It can be negative.",
+            "format": "int64",
+            "minimum": -2147483648,
+            "type": "integer"
+          },
+          "moemoepoint_awarded": {
+            "description": "Moemoepoint credited for this check-in. Zero when the determined reward is zero.",
+            "format": "int64",
+            "maximum": 7,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "object": {
+            "description": "Type discriminant. Always check_in.",
+            "enum": [
+              "check_in"
+            ],
+            "maxLength": 8,
+            "type": "string",
+            "x-vocabulary-closed": true
+          }
+        },
+        "required": [
+          "object",
+          "check_in_date",
+          "moemoepoint_awarded",
+          "moemoepoint"
+        ],
+        "type": "object"
+      },
       "CodeNode": {
         "properties": {
           "lang": {
@@ -422,6 +463,196 @@
         "required": [
           "object",
           "children"
+        ],
+        "type": "object"
+      },
+      "CreateCreatorApplicationBody": {
+        "properties": {
+          "statement": {
+            "description": "Statement for the reviewers. Empty string is allowed. Free text; never use it as a decision input.",
+            "maxLength": 500,
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "CreatorApplication": {
+        "properties": {
+          "created_at": {
+            "description": "When the application was submitted.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": "string"
+          },
+          "decline_reason": {
+            "description": "Reason the application was declined. null when it was not declined. Free text; never use it as a decision input.",
+            "maxLength": 500,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "id": {
+            "description": "Application id. JSON string of a decimal integer.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "object": {
+            "description": "Type discriminant. Always creator_application.",
+            "enum": [
+              "creator_application"
+            ],
+            "maxLength": 20,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "reviewed_at": {
+            "description": "When the application was reviewed. null while it is pending.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "state": {
+            "description": "Application lifecycle state.",
+            "enum": [
+              "pending",
+              "approved",
+              "declined"
+            ],
+            "maxLength": 8,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "statement": {
+            "description": "Applicant statement as stored. Empty string when none. Free text; never use it as a decision input.",
+            "maxLength": 1000,
+            "type": "string"
+          }
+        },
+        "required": [
+          "object",
+          "id",
+          "state",
+          "statement",
+          "decline_reason",
+          "created_at",
+          "reviewed_at"
+        ],
+        "type": "object"
+      },
+      "CreatorEligibility": {
+        "properties": {
+          "is_eligible": {
+            "description": "Whether the caller currently meets at least one creator-application threshold.",
+            "type": "boolean"
+          },
+          "long_review_count": {
+            "description": "Galgame ratings by the caller whose short summary is at least 100 characters.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "merged_pr_count": {
+            "description": "Merged catalog edit proposals attributed to the caller.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "moemoepoint": {
+            "description": "Live OAuth moemoepoint balance used for eligibility. It can be negative.",
+            "format": "int64",
+            "minimum": -2147483648,
+            "type": "integer"
+          },
+          "published_galgame_count": {
+            "description": "Galgames the caller owns that are published.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "required_long_review_count": {
+            "description": "Long-review count that by itself makes the caller eligible.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "required_merged_pr_count": {
+            "description": "Merged-proposal count that by itself makes the caller eligible.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "required_moemoepoint": {
+            "description": "Moemoepoint balance that by itself makes the caller eligible.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "required_published_galgame_count": {
+            "description": "Published-galgame count that by itself makes the caller eligible.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "is_eligible",
+          "merged_pr_count",
+          "published_galgame_count",
+          "long_review_count",
+          "moemoepoint",
+          "required_merged_pr_count",
+          "required_published_galgame_count",
+          "required_long_review_count",
+          "required_moemoepoint"
+        ],
+        "type": "object"
+      },
+      "CreatorStatus": {
+        "properties": {
+          "application": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CreatorApplication"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The caller's latest creator application. null when they have never applied."
+          },
+          "eligibility": {
+            "$ref": "#/components/schemas/CreatorEligibility",
+            "description": "Current eligibility snapshot."
+          },
+          "is_creator": {
+            "description": "Whether the caller already holds the creator role.",
+            "type": "boolean"
+          },
+          "object": {
+            "description": "Type discriminant. Always creator_status.",
+            "enum": [
+              "creator_status"
+            ],
+            "maxLength": 14,
+            "type": "string",
+            "x-vocabulary-closed": true
+          }
+        },
+        "required": [
+          "object",
+          "is_creator",
+          "eligibility",
+          "application"
         ],
         "type": "object"
       },
@@ -959,6 +1190,37 @@
         ],
         "type": "object"
       },
+      "ListMoemoepointEntry": {
+        "properties": {
+          "items": {
+            "description": "Members of this page. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/MoemoepointEntry"
+            },
+            "type": "array"
+          },
+          "next_cursor": {
+            "description": "Opaque keyset cursor. Omitted on the last page.",
+            "maxLength": 512,
+            "pattern": "^cur_[A-Za-z0-9_-]+$",
+            "type": "string"
+          },
+          "object": {
+            "description": "Type discriminant. Always list.",
+            "enum": [
+              "list"
+            ],
+            "maxLength": 4,
+            "type": "string",
+            "x-vocabulary-closed": true
+          }
+        },
+        "required": [
+          "object",
+          "items"
+        ],
+        "type": "object"
+      },
       "ListMoyuPatch": {
         "properties": {
           "items": {
@@ -1289,6 +1551,37 @@
             "description": "Members of this page. Empty array, never null.",
             "items": {
               "$ref": "#/components/schemas/TopicUpvote"
+            },
+            "type": "array"
+          },
+          "next_cursor": {
+            "description": "Opaque keyset cursor. Omitted on the last page.",
+            "maxLength": 512,
+            "pattern": "^cur_[A-Za-z0-9_-]+$",
+            "type": "string"
+          },
+          "object": {
+            "description": "Type discriminant. Always list.",
+            "enum": [
+              "list"
+            ],
+            "maxLength": 4,
+            "type": "string",
+            "x-vocabulary-closed": true
+          }
+        },
+        "required": [
+          "object",
+          "items"
+        ],
+        "type": "object"
+      },
+      "ListUserRef": {
+        "properties": {
+          "items": {
+            "description": "Members of this page. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/UserRef"
             },
             "type": "array"
           },
@@ -2423,6 +2716,60 @@
         ],
         "type": "object"
       },
+      "Me": {
+        "properties": {
+          "has_checked_in_today": {
+            "description": "Whether the caller has already checked in on the current Asia/Shanghai calendar day.",
+            "type": "boolean"
+          },
+          "has_unread_messages": {
+            "description": "Whether the caller has an unread notification of a type they have not muted, or an unread private message while private messages are not muted.",
+            "type": "boolean"
+          },
+          "id": {
+            "description": "The caller's user id. JSON string of a decimal integer.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "is_creator": {
+            "description": "Whether the caller holds the creator role, including via a site role.",
+            "type": "boolean"
+          },
+          "moemoepoint": {
+            "description": "The caller's moemoepoint balance as this forum last cached it from OAuth. It can lag the live balance. It can be negative.",
+            "format": "int64",
+            "minimum": -2147483648,
+            "type": "integer"
+          },
+          "object": {
+            "description": "Type discriminant. Always me.",
+            "enum": [
+              "me"
+            ],
+            "maxLength": 2,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "toolset_upload_today_bytes": {
+            "description": "Bytes of toolset uploads counted against the caller today.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "object",
+          "id",
+          "moemoepoint",
+          "has_checked_in_today",
+          "has_unread_messages",
+          "is_creator",
+          "toolset_upload_today_bytes"
+        ],
+        "type": "object"
+      },
       "MentionNode": {
         "properties": {
           "mentioned_user": {
@@ -2442,6 +2789,67 @@
         "required": [
           "object",
           "mentioned_user"
+        ],
+        "type": "object"
+      },
+      "MoemoepointEntry": {
+        "properties": {
+          "created_at": {
+            "description": "When the ledger entry was written.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": "string"
+          },
+          "delta": {
+            "description": "Signed change. Negative when moemoepoint was deducted.",
+            "format": "int64",
+            "minimum": -2147483648,
+            "type": "integer"
+          },
+          "id": {
+            "description": "Ledger entry id. JSON string of a decimal integer.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "is_from_this_site": {
+            "description": "Whether this entry was issued by this site's OAuth client.",
+            "type": "boolean"
+          },
+          "object": {
+            "description": "Type discriminant. Always moemoepoint_entry.",
+            "enum": [
+              "moemoepoint_entry"
+            ],
+            "maxLength": 17,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "reason": {
+            "description": "Ledger reason token.",
+            "maxLength": 40,
+            "pattern": "^[a-z][a-z0-9_]{0,39}$",
+            "type": "string",
+            "x-vocabulary": "moemoepoint_reason",
+            "x-vocabulary-closed": false
+          },
+          "ref": {
+            "description": "Triggering entity reference as stored upstream. Empty string when none. Free text; never use it as a decision input.",
+            "maxLength": 80,
+            "type": "string"
+          }
+        },
+        "required": [
+          "object",
+          "id",
+          "delta",
+          "reason",
+          "ref",
+          "created_at",
+          "is_from_this_site"
         ],
         "type": "object"
       },
@@ -2619,6 +3027,90 @@
         ],
         "type": "object"
       },
+      "MyProfile": {
+        "properties": {
+          "avatar": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Image"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Avatar image. null when the account has no image-service hash."
+          },
+          "bio": {
+            "description": "Profile bio as stored. Empty string when none. Free text; never use it as a decision input.",
+            "maxLength": 107,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "id": {
+            "description": "The caller's user id. JSON string of a decimal integer.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "name": {
+            "description": "Display name. null when the account no longer exists; show a localized label. Free text; never use it as a decision input.",
+            "maxLength": 64,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "object": {
+            "description": "Type discriminant. Always user.",
+            "enum": [
+              "user"
+            ],
+            "maxLength": 4,
+            "type": "string",
+            "x-vocabulary-closed": true
+          }
+        },
+        "required": [
+          "object",
+          "id",
+          "name",
+          "avatar",
+          "bio"
+        ],
+        "type": "object"
+      },
+      "NsfwDisplay": {
+        "properties": {
+          "nsfw_display": {
+            "description": "How adult content is shown: hide, blur, or show.",
+            "enum": [
+              "hide",
+              "blur",
+              "show"
+            ],
+            "maxLength": 4,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "object": {
+            "description": "Type discriminant. Always nsfw_display.",
+            "enum": [
+              "nsfw_display"
+            ],
+            "maxLength": 12,
+            "type": "string",
+            "x-vocabulary-closed": true
+          }
+        },
+        "required": [
+          "object",
+          "nsfw_display"
+        ],
+        "type": "object"
+      },
       "ParagraphNode": {
         "properties": {
           "children": {
@@ -2642,6 +3134,28 @@
           "object",
           "children"
         ],
+        "type": "object"
+      },
+      "PatchMyProfileBody": {
+        "properties": {
+          "bio": {
+            "description": "New profile bio. Empty string clears it; absent or null leaves it unchanged. Free text; never use it as a decision input.",
+            "maxLength": 107,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "name": {
+            "description": "New display name. 1–17 characters. Absent or null leaves it unchanged. Free text; never use it as a decision input.",
+            "maxLength": 17,
+            "minLength": 1,
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
         "type": "object"
       },
       "Poll": {
@@ -3251,6 +3765,48 @@
         ],
         "type": "object"
       },
+      "Preferences": {
+        "properties": {
+          "doc": {
+            "additionalProperties": {},
+            "description": "Cloud preference document. A JSON object.",
+            "type": "object"
+          },
+          "object": {
+            "description": "Type discriminant. Always preferences.",
+            "enum": [
+              "preferences"
+            ],
+            "maxLength": 11,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "version": {
+            "description": "Document version. Zero when the namespace has never been written.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "written_at": {
+            "description": "When the document was last written. null when it has never been written.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "object",
+          "doc",
+          "version",
+          "written_at"
+        ],
+        "type": "object"
+      },
       "Problem": {
         "properties": {
           "code": {
@@ -3429,6 +3985,38 @@
           "type",
           "title",
           "description"
+        ],
+        "type": "object"
+      },
+      "PutNsfwDisplayBody": {
+        "properties": {
+          "nsfw_display": {
+            "description": "How adult content is shown: hide, blur, or show.",
+            "enum": [
+              "hide",
+              "blur",
+              "show"
+            ],
+            "maxLength": 4,
+            "type": "string",
+            "x-vocabulary-closed": true
+          }
+        },
+        "required": [
+          "nsfw_display"
+        ],
+        "type": "object"
+      },
+      "PutPreferencesBody": {
+        "properties": {
+          "doc": {
+            "additionalProperties": {},
+            "description": "Cloud preference document. A JSON object.",
+            "type": "object"
+          }
+        },
+        "required": [
+          "doc"
         ],
         "type": "object"
       },
@@ -7711,6 +8299,1077 @@
         "summary": "Move a winner's fulfillment",
         "tags": [
           "topics"
+        ]
+      }
+    },
+    "/me": {
+      "get": {
+        "description": "Returns the caller's cached moemoepoint, today's check-in gate, unread-message flag, creator flag, and today's toolset upload bytes.",
+        "operationId": "getMe",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Me"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get the caller's forum status",
+        "tags": [
+          "users"
+        ]
+      }
+    },
+    "/me/avatar": {
+      "put": {
+        "description": "Uploads a new avatar image as multipart field file. The image must be image/* and at most 4 MiB.",
+        "operationId": "putMyAvatar",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "encoding": {
+                "file": {
+                  "contentType": "image/*"
+                }
+              },
+              "schema": {
+                "properties": {
+                  "file": {
+                    "contentMediaType": "application/octet-stream",
+                    "description": "Avatar image. Must be image/* and at most 4 MiB.",
+                    "format": "binary",
+                    "maxLength": 4194304,
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Image"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "415": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "UNSUPPORTED_MEDIA_TYPE when file is not an image."
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED when file is missing or larger than 4 MiB."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the account service cannot be reached."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Replace the caller's avatar",
+        "tags": [
+          "users"
+        ]
+      }
+    },
+    "/me/check-ins": {
+      "post": {
+        "description": "Records today's Asia/Shanghai check-in and credits a deterministic moemoepoint reward. Checking in again on the same Beijing day is ALREADY_EXISTS.",
+        "operationId": "createCheckIn",
+        "parameters": [
+          {
+            "description": "Caller-generated UUID (canonical 8-4-4-4-12 hex, any version) or 26-character Crockford ULID. Scoped to (user, operation, key) for 24 hours.",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "schema": {
+              "description": "Caller-generated UUID (canonical 8-4-4-4-12 hex, any version) or 26-character Crockford ULID. Scoped to (user, operation, key) for 24 hours.",
+              "maxLength": 36,
+              "minLength": 26,
+              "pattern": "^([0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}|[0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{26})$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckIn"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "ALREADY_EXISTS when the caller has already checked in on the current Asia/Shanghai day."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the moemoepoint award cannot be written."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Check in for today",
+        "tags": [
+          "users"
+        ]
+      }
+    },
+    "/me/creator-applications": {
+      "post": {
+        "description": "Submits a creator-role application. Location points at the caller's creator-status resource.",
+        "operationId": "createCreatorApplication",
+        "parameters": [
+          {
+            "description": "Caller-generated UUID (canonical 8-4-4-4-12 hex, any version) or 26-character Crockford ULID. Scoped to (user, operation, key) for 24 hours.",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "schema": {
+              "description": "Caller-generated UUID (canonical 8-4-4-4-12 hex, any version) or 26-character Crockford ULID. Scoped to (user, operation, key) for 24 hours.",
+              "maxLength": 36,
+              "minLength": 26,
+              "pattern": "^([0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}|[0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{26})$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCreatorApplicationBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreatorApplication"
+                }
+              }
+            },
+            "description": "Created",
+            "headers": {
+              "Location": {
+                "schema": {
+                  "description": "Absolute path of the caller's creator status, /api/v1/me/creator-status.",
+                  "format": "uri-reference",
+                  "maxLength": 64,
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "CREATOR_INELIGIBLE when the caller does not meet any eligibility threshold."
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "ALREADY_EXISTS when a pending application already exists. INVALID_STATE_TRANSITION when the caller is already a creator. CREATOR_APPLICATION_COOLDOWN when a declined application is still cooling down."
+          },
+          "415": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unsupported Media Type"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the account service cannot be reached."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Apply for the creator role",
+        "tags": [
+          "users"
+        ]
+      }
+    },
+    "/me/creator-status": {
+      "get": {
+        "description": "Returns whether the caller is a creator, the live eligibility snapshot, and their latest application if any.",
+        "operationId": "getCreatorStatus",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreatorStatus"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the account service cannot be reached."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get the caller's creator eligibility",
+        "tags": [
+          "users"
+        ]
+      }
+    },
+    "/me/moemoepoint-entries": {
+      "get": {
+        "description": "Lists the caller's moemoepoint ledger as a cursor page, newest first. limit is 1–50 because that is the upstream page cap. The cursor is bound to the caller and the reason filter.",
+        "operationId": "listMoemoepointEntries",
+        "parameters": [
+          {
+            "description": "Opaque keyset cursor from a previous page of this collection.",
+            "explode": false,
+            "in": "query",
+            "name": "cursor",
+            "schema": {
+              "description": "Opaque keyset cursor from a previous page of this collection.",
+              "maxLength": 512,
+              "pattern": "^cur_[A-Za-z0-9_-]+$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Page size. 1–50, default 20. Values above 50 are rejected, not clamped.",
+            "explode": false,
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 20,
+              "description": "Page size. 1–50, default 20. Values above 50 are rejected, not clamped.",
+              "format": "int64",
+              "maximum": 50,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "When set, only this ledger reason. Omitted means every reason.",
+            "explode": false,
+            "in": "query",
+            "name": "reason",
+            "schema": {
+              "description": "When set, only this ledger reason. Omitted means every reason.",
+              "maxLength": 40,
+              "pattern": "^[a-z][a-z0-9_]{0,39}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListMoemoepointEntry"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "LIMIT_TOO_LARGE when limit is greater than 50. INVALID_CURSOR when the cursor was issued for a different reason. INVALID_PARAMETER when reason is rejected upstream."
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the account service cannot be reached."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List the caller's moemoepoint ledger",
+        "tags": [
+          "users"
+        ]
+      }
+    },
+    "/me/nsfw-display": {
+      "put": {
+        "description": "Sets how adult content is shown for the caller and writes the new stance into the cookie session when one is present.",
+        "operationId": "putNsfwDisplay",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PutNsfwDisplayBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NsfwDisplay"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "415": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unsupported Media Type"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the account service cannot be reached."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Set the caller's adult-content display",
+        "tags": [
+          "users"
+        ]
+      }
+    },
+    "/me/preferences": {
+      "get": {
+        "description": "Returns this site's cloud preference document. The namespace is this site's OAuth client id and cannot be chosen by the caller.",
+        "operationId": "getPreferences",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Preferences"
+                }
+              }
+            },
+            "description": "OK",
+            "headers": {
+              "ETag": {
+                "schema": {
+                  "description": "Quoted document version, such as \"4\".",
+                  "maxLength": 32,
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SCOPE_REQUIRED when the token lacks the preferences scope."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the account service cannot be reached."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get the caller's cloud preferences",
+        "tags": [
+          "users"
+        ]
+      },
+      "put": {
+        "description": "Replaces this site's cloud preference document. If-Match is forwarded as a version check.",
+        "operationId": "putPreferences",
+        "parameters": [
+          {
+            "description": "Quoted document version to replace, such as \"4\". Absent means last-write-wins.",
+            "in": "header",
+            "name": "If-Match",
+            "schema": {
+              "description": "Quoted document version to replace, such as \"4\". Absent means last-write-wins.",
+              "maxLength": 21,
+              "pattern": "^\"[0-9]{1,19}\"$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PutPreferencesBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Preferences"
+                }
+              }
+            },
+            "description": "OK",
+            "headers": {
+              "ETag": {
+                "schema": {
+                  "description": "Quoted document version, such as \"4\".",
+                  "maxLength": 32,
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "INVALID_PARAMETER when If-Match is not a document version."
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SCOPE_REQUIRED when the token lacks the preferences scope."
+          },
+          "412": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "PRECONDITION_FAILED when If-Match does not match the current version."
+          },
+          "415": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unsupported Media Type"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED when the document exceeds 64 KiB after compaction."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the account service cannot be reached."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Replace the caller's cloud preferences",
+        "tags": [
+          "users"
+        ]
+      }
+    },
+    "/me/profile": {
+      "patch": {
+        "description": "Changes the fields present in the body. At least one of name or bio is required.",
+        "operationId": "patchMyProfile",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PatchMyProfileBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyProfile"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "MOEMOEPOINT_INSUFFICIENT when a name change costs more than the live balance."
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "USERNAME_TAKEN when the name is already in use."
+          },
+          "415": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unsupported Media Type"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED when both fields are absent, or the name fails the upstream character whitelist."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the account service cannot be reached."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update the caller's name or bio",
+        "tags": [
+          "users"
         ]
       }
     },
@@ -13121,6 +14780,125 @@
         "summary": "Record a topic view",
         "tags": [
           "topics"
+        ]
+      }
+    },
+    "/users": {
+      "get": {
+        "description": "Returns users whose names match q. It is not paginated. Banned accounts are omitted. limit is 1–20.",
+        "operationId": "listUsers",
+        "parameters": [
+          {
+            "description": "Name query. After trimming whitespace it must not be empty. Free text; never use it as a decision input.",
+            "explode": false,
+            "in": "query",
+            "name": "q",
+            "required": true,
+            "schema": {
+              "description": "Name query. After trimming whitespace it must not be empty. Free text; never use it as a decision input.",
+              "maxLength": 64,
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          {
+            "description": "Page size. 1–20, default 8. Values above 20 are rejected, not clamped.",
+            "explode": false,
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 8,
+              "description": "Page size. 1–20, default 8. Values above 20 are rejected, not clamped.",
+              "format": "int64",
+              "maximum": 20,
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListUserRef"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "LIMIT_TOO_LARGE when limit is greater than 20."
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED when q is only whitespace."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the account service cannot be reached."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Search users by name",
+        "tags": [
+          "users"
         ]
       }
     },

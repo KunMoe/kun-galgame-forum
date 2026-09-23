@@ -3,12 +3,20 @@ package service
 import (
 	"context"
 	"encoding/json"
+	"errors"
+	"fmt"
 
 	"kun-galgame-api/internal/galgame/repository"
-	"kun-galgame-api/pkg/errors"
 	"kun-galgame-api/pkg/role"
 	"kun-galgame-api/pkg/userclient"
 )
+
+var (
+	ErrCreatorIneligible  = errors.New("creator ineligible")
+	ErrAccountUnavailable = errors.New("account service unavailable")
+)
+
+func accountErr(err error) error { return fmt.Errorf("%w: %w", ErrAccountUnavailable, err) }
 
 const (
 	creatorMinMergedPRs   = 5
@@ -41,13 +49,16 @@ func NewCreatorService(ratingRepo *repository.RatingRepository, stats *GalgameUs
 	return &CreatorService{ratingRepo: ratingRepo, stats: stats, userClient: userClient}
 }
 
-func (s *CreatorService) eligibility(ctx context.Context, userID int) (*CreatorEligibility, *errors.AppError) {
+func (s *CreatorService) eligibility(ctx context.Context, userID int) (*CreatorEligibility, error) {
 	stats := s.stats.Stats(ctx, int64(userID))
 	reviews, rErr := s.ratingRepo.CountReviewsWithMinLength(userID, creatorReviewMinLen)
 	if rErr != nil {
-		return nil, errors.ErrInternal("统计简评失败")
+		return nil, rErr
 	}
-	moe, _ := s.userClient.GetMoemoepoint(ctx, userID)
+	moe, err := s.userClient.GetMoemoepoint(ctx, userID)
+	if err != nil {
+		return nil, accountErr(err)
+	}
 	e := &CreatorEligibility{
 		MergedPRs:         stats.MergedEdits,
 		GalgamesPublished: stats.Published,
@@ -65,29 +76,30 @@ func (s *CreatorService) eligibility(ctx context.Context, userID int) (*CreatorE
 	return e, nil
 }
 
-func (s *CreatorService) Status(ctx context.Context, userID int, token string) (*CreatorEligibility, *userclient.CreatorApplication, bool, *errors.AppError) {
-	e, appErr := s.eligibility(ctx, userID)
-	if appErr != nil {
-		return nil, nil, false, appErr
+func (s *CreatorService) Status(ctx context.Context, userID int, token string) (*CreatorEligibility, *userclient.CreatorApplication, bool, error) {
+	e, err := s.eligibility(ctx, userID)
+	if err != nil {
+		return nil, nil, false, err
 	}
 	app, err := s.userClient.GetMyCreatorApplication(ctx, token)
 	if err != nil {
-		return nil, nil, false, errors.ErrInternal("获取申请状态失败")
+		return nil, nil, false, accountErr(err)
 	}
-	isCreator := false
-	if u, ok, uErr := s.userClient.User(ctx, userID); ok && uErr == nil {
-		isCreator = role.IsCreator(u.Roles)
+	u, ok, uErr := s.userClient.User(ctx, userID)
+	if uErr != nil {
+		return nil, nil, false, accountErr(uErr)
 	}
+	isCreator := ok && role.IsCreator(u.Roles)
 	return e, app, isCreator, nil
 }
 
-func (s *CreatorService) Apply(ctx context.Context, userID int, token, message string) (*userclient.CreatorApplication, *errors.AppError) {
-	e, appErr := s.eligibility(ctx, userID)
-	if appErr != nil {
-		return nil, appErr
+func (s *CreatorService) Apply(ctx context.Context, userID int, token, message string) (*userclient.CreatorApplication, error) {
+	e, err := s.eligibility(ctx, userID)
+	if err != nil {
+		return nil, err
 	}
 	if !e.Eligible {
-		return nil, errors.ErrForbidden("尚不满足创作者申请条件")
+		return nil, ErrCreatorIneligible
 	}
 	evidence, _ := json.Marshal(map[string]any{
 		"merged_prs":         e.MergedPRs,
@@ -97,10 +109,7 @@ func (s *CreatorService) Apply(ctx context.Context, userID int, token, message s
 	})
 	app, err := s.userClient.CreateCreatorApplication(ctx, token, creatorSource, evidence, message)
 	if err != nil {
-		if oe, ok := err.(*userclient.OAuthError); ok {
-			return nil, errors.ErrBadRequest(oe.Message)
-		}
-		return nil, errors.ErrInternal("提交申请失败")
+		return nil, accountErr(err)
 	}
 	return app, nil
 }

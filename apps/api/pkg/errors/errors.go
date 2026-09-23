@@ -61,12 +61,9 @@ const (
 	// reuse the number: a browser still running the old bundle maps it to the
 	// account-centre dialog and would raise that dialog on an unrelated
 	// refusal.
-
-	// The account has not granted this site the `preferences` scope. Every
-	// cloud preference write will fail until it re-authorizes, so the client
-	// degrades to cookies silently rather than toasting on each keystroke.
-	CodeCloudPreferencesUnavailable = 240
-	CodeCloudPreferencesConflict    = 241
+	// 240 and 241 carried the cloud-preference scope and version-conflict
+	// refusals until those faces moved to /api/v1 (SCOPE_REQUIRED, 412). Do
+	// not reuse them: an old bundle degrades cloud sync silently on 240.
 )
 
 func ErrUnauthorized(msg string) *AppError {
@@ -107,12 +104,4 @@ func ErrValidation(msg string) *AppError {
 
 func ErrDuplicateSuspects(msg string) *AppError {
 	return New(CodeDuplicateSuspects, msg, 409)
-}
-
-func ErrCloudPreferencesUnavailable() *AppError {
-	return New(CodeCloudPreferencesUnavailable, "本站尚未获得云端偏好的写入授权", 403)
-}
-
-func ErrCloudPreferencesConflict() *AppError {
-	return New(CodeCloudPreferencesConflict, "云端偏好已在别处更新, 请重新读取后再写", 412)
 }
