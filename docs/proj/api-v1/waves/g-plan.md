@@ -47,5 +47,6 @@ G1 的 16 条加 G3 的 11 条就是 resources + toolsets 普查的 27 条。
 - GE 的 `WorkSummary` 与 intro / link 形状已随 #210 落地：intro 是 `{locale, value, is_machine, data_source}`，外链是 `{site, url}`，嵌入字段名是 `work_summary`（`work` / `works` 归 X2 的 `WorkRef`）。G4 的 `Work` 与 G5 的 `/works` 直接复用。
 
 - `catCoverSlot.Sexual` 目前按 `int` 解码，分不清「判为安全的 0」和「没判」，所以 `WorkRef.cover.sexual` 与 GE 的 `banner.sexual` 恒为 `null`。要改成指针，再把竖版封面的等级传进 `ImageMeta.Sexual`。在 G4 之前做。
+- G3 的资源类型守卫用 `slices.Contains(resourcevocab.TypeKeys, t)`，**不要**用 `resourcevocab.IsType`：它的索引含 `LegacyTypeKeys`，`IsType("image")` 为真，而 `workrepr.ResourceType` 的 schema 枚举只有 `TypeKeys`，回出去的 200 违反自己的 spec（c8 在 #209 里撞上并用变异题钉住）。生产 0 行遗留类型，TypeKeys 之外的值按数据错 500。
 - `galgame_renumber_2026` 已无读者（folder 改写已完成），可在 G 的某个迁移里删表。
 - 普查 galgame-core 第 34 条（U 转交）：`PublishedToday` 用进程时区算「今天」，应改用 `cron.ScheduleLocation()`；同一个 `Stats()` 把 catalog 错误吞成 0。
