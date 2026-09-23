@@ -201,3 +201,19 @@ K 编号用前缀：
 | 9 | 块与 kind 不对应（给 `topic_reply_creation` 也填 `topic`） | 每条只有它 kind 对应的块非空 |
 | 10 | 提及不转成节点（原样下发 token 文本） | `reply.content` 里提及是 `mention` 节点、带 `UserRef` |
 | 11 | OAuth 失败时悄悄当匿名作者 | 用户服务 500 → `503` |
+
+## 8. 实现时对本契约的修正（2026-09-23，只增不改）
+
+上面 §1–§7 保持提交时的原文；实现时改了下面这些，以本节为准。
+
+1. **`kind` → `activity_type`，参数 `kinds` → `activity_types`**：`kind` 在禁用名表里（契约门直接红）；照 `Notification.notification_type` 的先例改名。§3、§4、§7 里的 `kind` / `kinds` 一律读作新名。
+2. **`actor` → `performer`**：`Notification.actor` 是非空 `UserRef`，本集合的同名字段可空（`galgame_creation` 没有创建者时），G8 不许同名不同型。
+3. **`TopicDigest.best_answer` → `best_answer_excerpt`**：`Topic.best_answer` 已经是另一个形状（完整回复），G8 撞名。
+4. **`UpvoteExcerpt.upvoted_at` 类型标成可空**：`TopicEngagement.upvoted_at` 可空，G8 要求同型；本集合里它恒有值（取自推的创建时间），网页只在有值时显示。
+5. **`work_digest.developer_names` 的元素是 `DeveloperName`**（`maxLength` 256 + 自由文本标记），满足 G14；参数 `topic_sections` 补了 `maxLength`。
+6. **不做 Redis 页缓存**（§3 最后一条作废）：`reply.content` 是 `ContentDocument`，节点是按 `object` 分派的联合类型，缓存的 JSON 读不回 Go 值。换成服务内的 catalog 行缓存（2 分钟、至多 20000 条）：一页里真正贵的是 catalog `/v2` 的批量取行，而它的限流按出口 IP 算，整站共用一个桶。
+7. **复用而非另建**：`topic` 用 `listTopics` 的 `TopicSummary`（`topicapiv1` 新导出了 `MapSummary`），`reactions` 用话题详情的 `ReactionSummary`，作品用共享的 `repr.WorkRef`（`work` 可空指针，与其它 X2 分支一致；本轨不用 `works`）。
+8. **`work_revision` 改形**：原文 `{ revision_id, revision_number }` 两个都必填。生产 773 条 `GALGAME_EDIT`：667 条有修订号（其中 461 条是编辑引擎写入、没有 wiki 修订 id），106 条只有退役 wiki 的修订 id，没有两者皆无的。实现的第一版要求两者都有，只给出了 206 条，网页那 567 条卡片会看不到差异——Gate 前自查发现、改掉。现在是 `{ revision_number: int ≥ 1 | null, legacy_revision_id: DecimalID | null }`，任一有值就出块；只有 `legacy_revision_id` 时网页照旧去编辑引擎的修订历史里按 `legacy_id` 找修订号（这两次取数是 GE 轨的旧路由，本轨不动）。`TestV1ActivitiesShape` 钉住三种行。
+9. **变异 2 的读法**：`MESSAGE_UPVOTE` 在 v1 的类型词表里根本没有，排除是结构性的；变异改成「给它一个类型」，由 `TestV1ActivitiesNoUpvoteEcho` 杀。**变异 11**：正文转换器自己也调 OAuth，拿 `topic_reply_creation` 测会被转换器的 503 掩盖，测试改用不需要转换正文的 `topic_comment_creation`。
+10. **网页**：`card/EntityComment.vue` 删除（§1.3 第 8 条的死分支，两类评论本来就落到通用卡）；作品封面改用 `WorkRef.cover` 的竖版原图（3:4），不再是 16:9 的 `_mini` 裁切；作品名走共享的 `utils/catalogName.ts` + `useWorkName()`（与 x2-ranking / x2-community 逐字节相同）；首屏与翻页走现成的 `useCursorList`（自带「后退恢复已加载的页」），不另写分页。
+11. 数字（rebase 前）：`legacy_route_baseline` 159 → 156，`legacy-fetch-baseline` 189 → 183。
