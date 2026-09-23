@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import type { PageListToolsetSummary } from '#shared/utils/api/schemas'
+import { problemMessage } from '#shared/utils/api/message'
+
 const props = defineProps<{
   userId: number
 }>()
@@ -8,15 +11,23 @@ const pageData = reactive({
   limit: 24
 })
 
-const { data, status } = await useKunFetch<{
-  items: ToolsetCard[]
-  total: number
-}>(`/user/${props.userId}/toolsets`, { query: pageData })
+const { data, status, problem } = await useApi<PageListToolsetSummary>(
+  () => `user-toolsets:${props.userId}:${pageData.page}`,
+  (api, { signal }) =>
+    api.GET('/users/{user_id}/toolsets', {
+      params: {
+        path: { user_id: String(props.userId) },
+        query: { page: pageData.page, limit: pageData.limit }
+      },
+      signal
+    })
+)
 </script>
 
 <template>
   <div class="space-y-3">
-    <div v-if="data && data.items.length" class="space-y-3">
+    <KunNull v-if="problem" :description="problemMessage(problem)" />
+    <div v-else-if="data && data.items.length" class="space-y-3">
       <ToolsetCard :items="data.items" />
 
       <KunPagination
@@ -27,6 +38,6 @@ const { data, status } = await useKunFetch<{
       />
     </div>
 
-    <KunNull v-if="data && !data.items.length" description="暂无工具" />
+    <KunNull v-else-if="data && !data.items.length" description="暂无工具" />
   </div>
 </template>

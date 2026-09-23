@@ -2,18 +2,28 @@
 import { updateToolsetResourceSchema } from '~/validations/toolset'
 import { KUN_GALGAME_TOOLSET_STORAGE_MAP } from '~/constants/toolset'
 import { applyResourceLinkBlur } from '~~/shared/utils/resourceLink'
+import { settle } from '#shared/utils/api/problem'
+import type {
+  ToolsetDownload,
+  ToolsetResourceSource,
+  ToolsetResourcePatch,
+  ToolsetResourceSummary
+} from '#shared/utils/api/schemas'
+import { toKunUser } from '~/utils/userRef'
 
 const props = defineProps<{
-  toolsetId: number
-  resource: ToolsetResource
+  toolsetId: string
+  resource: ToolsetResourceSummary
 }>()
 
 const emits = defineEmits<{
-  deleted: [number]
-  updated: [ToolsetResource]
+  deleted: [string]
+  updated: [ToolsetResourceSummary]
 }>()
 
-const base = ref<ToolsetResource>(props.resource)
+const api = useApiClient()
+
+const base = ref<ToolsetResourceSummary>(props.resource)
 watch(
   () => props.resource,
   (v) => {
@@ -21,7 +31,8 @@ watch(
   }
 )
 
-const detail = ref<ToolsetResourceDetail | null>(null)
+const download = ref<ToolsetDownload | null>(null)
+const editSource = ref<ToolsetResourceSource | null>(null)
 const showing = ref(false)
 const fetching = ref(false)
 
@@ -29,87 +40,91 @@ const isEditing = ref(false)
 const isDeleting = ref(false)
 const isSaving = ref(false)
 
-const { id: userId } = usePersistUserStore()
-const canEditAnyResource = useCan('toolset.resource.edit_any')
-const canDeleteAnyResource = useCan('toolset.resource.delete_any')
-const isResourceOwner = computed(() =>
-  detail.value ? detail.value.user.id === userId : false
-)
-const canEditResource = computed(
-  () => canEditAnyResource.value || isResourceOwner.value
-)
-const canDeleteResource = computed(
-  () => canDeleteAnyResource.value || isResourceOwner.value
-)
+const canEditResource = computed(() => base.value.viewer?.can_edit ?? false)
+const canDeleteResource = computed(() => base.value.viewer?.can_delete ?? false)
+const isFile = computed(() => base.value.resource_type === 'file')
+const poster = computed(() => toKunUser(base.value.poster))
 
-const s3DisplaySize = computed(() => {
-  if (base.value.type !== 's3') {
-    return base.value.size
-  } else {
-    return formatFileSize(Number(base.value.size))
+const displaySize = computed(() => {
+  if (isFile.value) {
+    return formatFileSize(base.value.archive?.file_size ?? 0)
   }
-})
-
-const links = computed(() => {
-  if (!detail.value) {
-    return []
-  }
-
-  if (detail.value.type === 'user') {
-    return detail.value.content
-      .split(',')
-      .map((s) => s.trim())
-      .filter(Boolean)
-  }
-
-  const content = detail.value.content
-  if (/^https?:\/\//.test(content)) {
-    return [content]
-  }
-  return [`${kungal.domain.oss}/${content}`]
+  return base.value.link?.size_label ?? ''
 })
 
 const formData = reactive({
-  toolset_resource_id: base.value.id,
-  type: base.value.type,
-  size: base.value.size || '',
-  code: '',
-  password: '',
-  note: '',
-  content: ''
+  size_label: base.value.link?.size_label ?? '',
+  extraction_code: '',
+  archive_password: '',
+  note: base.value.note ?? '',
+  link_url: ''
 })
 
-const fetchResourceDetail = async () => {
-  if (detail.value) {
-    return
+const fetchDownload = async () => {
+  if (download.value) {
+    return true
   }
 
   fetching.value = true
-  const res = await kunFetch<ToolsetResourceDetail>(
-    `/toolset/${props.toolsetId}/resource/detail`,
-    {
-      method: 'GET',
-      query: { toolset_resource_id: base.value.id }
-    }
+  const result = await settle(
+    api.POST('/toolsets/{toolset_id}/resources/{resource_id}/downloads', {
+      params: {
+        path: {
+          toolset_id: props.toolsetId,
+          resource_id: base.value.id
+        }
+      }
+    })
   )
   fetching.value = false
-  if (res) {
-    detail.value = res
-    formData.toolset_resource_id = res.id
-    formData.type = base.value.type
-    formData.size = base.value.size || ''
-    formData.code = res.code || ''
-    formData.password = res.password || ''
-    formData.note = res.note || ''
-    formData.content = base.value.type === 'user' ? res.content || '' : ''
+  if (!result.ok) {
+    reportProblem(result.problem)
+    return false
   }
+  download.value = result.data
+  const next = {
+    ...base.value,
+    download_count: base.value.download_count + 1
+  }
+  base.value = next
+  emits('updated', next)
+  return true
 }
 
 const toggleShow = async () => {
   if (!showing.value) {
-    await fetchResourceDetail()
+    const ok = await fetchDownload()
+    if (!ok) {
+      return
+    }
   }
   showing.value = !showing.value
+}
+
+const startEdit = async () => {
+  fetching.value = true
+  const result = await settle(
+    api.GET('/toolsets/{toolset_id}/resources/{resource_id}/source', {
+      params: {
+        path: {
+          toolset_id: props.toolsetId,
+          resource_id: base.value.id
+        }
+      }
+    })
+  )
+  fetching.value = false
+  if (!result.ok) {
+    reportProblem(result.problem)
+    return
+  }
+  editSource.value = result.data
+  formData.size_label = result.data.size_label ?? ''
+  formData.note = result.data.note ?? ''
+  formData.extraction_code = result.data.extraction_code
+  formData.archive_password = result.data.archive_password
+  formData.link_url = result.data.link_url ?? ''
+  isEditing.value = true
 }
 
 const handleDelete = async () => {
@@ -126,68 +141,100 @@ const handleDelete = async () => {
   }
 
   isDeleting.value = true
-  const res = await kunFetch(`/toolset/${props.toolsetId}/resource`, {
-    method: 'DELETE',
-    query: { toolset_resource_id: base.value.id }
-  })
+  const result = await settle(
+    api.DELETE('/toolsets/{toolset_id}/resources/{resource_id}', {
+      params: {
+        path: {
+          toolset_id: props.toolsetId,
+          resource_id: base.value.id
+        }
+      }
+    })
+  )
   isDeleting.value = false
-  if (res) {
-    useMessage('删除成功', 'success')
-    emits('deleted', base.value.id)
+  if (!result.ok) {
+    reportProblem(result.problem)
+    return
   }
+  useMessage('删除成功', 'success')
+  emits('deleted', base.value.id)
 }
 
 const handleSave = async () => {
-  if (base.value.type === 'user') {
+  if (!isFile.value) {
     const recognized = applyResourceLinkBlur(
-      formData.content,
-      formData.code,
-      formData.password
+      formData.link_url,
+      formData.extraction_code,
+      formData.archive_password
     )
     if (recognized.applied) {
-      formData.content = recognized.links.join(', ')
-      formData.code = recognized.code
-      formData.password = recognized.password
+      formData.link_url = recognized.links[0] ?? formData.link_url
+      formData.extraction_code = recognized.code
+      formData.archive_password = recognized.password
     }
   }
-  const body = {
-    toolset_resource_id: base.value.id,
-    type: base.value.type,
-    size: formData.size,
-    code: formData.code,
-    password: formData.password,
-    note: formData.note,
-    content: base.value.type === 'user' ? formData.content : ''
+
+  const body: ToolsetResourcePatch = {}
+  if (formData.archive_password !== (editSource.value?.archive_password ?? '')) {
+    body.archive_password = formData.archive_password
   }
+  if (formData.note !== (base.value.note ?? '')) {
+    body.note = formData.note
+  }
+  if (!isFile.value) {
+    if (formData.extraction_code !== (editSource.value?.extraction_code ?? '')) {
+      body.extraction_code = formData.extraction_code
+    }
+    if (formData.size_label !== (base.value.link?.size_label ?? '')) {
+      body.size_label = formData.size_label
+    }
+    if (formData.link_url !== (editSource.value?.link_url ?? '')) {
+      body.link_url = formData.link_url
+    }
+  }
+
+  if (Object.keys(body).length === 0) {
+    isEditing.value = false
+    return
+  }
+
   const valid = useKunSchemaValidator(updateToolsetResourceSchema, body)
   if (!valid) {
     return
   }
 
   isSaving.value = true
-  const res = await kunFetch<ToolsetResource>(
-    `/toolset/${props.toolsetId}/resource`,
-    {
-      method: 'PUT',
+  const result = await settle(
+    api.PATCH('/toolsets/{toolset_id}/resources/{resource_id}', {
+      params: {
+        path: {
+          toolset_id: props.toolsetId,
+          resource_id: base.value.id
+        }
+      },
       body
-    }
+    })
   )
   isSaving.value = false
-  if (res) {
-    base.value = res
-    emits('updated', res)
-    if (detail.value) {
-      detail.value.size = body.size
-      detail.value.code = body.code
-      detail.value.password = body.password
-      detail.value.note = body.note
-      if (base.value.type === 'user') {
-        detail.value.content = body.content
-      }
-    }
-    useMessage('更新成功', 'success')
-    isEditing.value = false
+  if (!result.ok) {
+    reportProblem(result.problem)
+    return
   }
+  base.value = result.data
+  emits('updated', result.data)
+  if (download.value) {
+    if (body.archive_password !== undefined) {
+      download.value.archive_password = body.archive_password
+    }
+    if (body.extraction_code !== undefined) {
+      download.value.extraction_code = body.extraction_code
+    }
+    if (body.link_url !== undefined) {
+      download.value.download_url = body.link_url
+    }
+  }
+  useMessage('更新成功', 'success')
+  isEditing.value = false
 }
 </script>
 
@@ -196,32 +243,16 @@ const handleSave = async () => {
     <div class="flex flex-wrap items-center justify-between gap-3">
       <div class="flex flex-wrap items-center gap-2">
         <KunChip size="sm" color="secondary">
-          {{ KUN_GALGAME_TOOLSET_STORAGE_MAP[base.type] }}
+          {{ KUN_GALGAME_TOOLSET_STORAGE_MAP[base.resource_type] }}
         </KunChip>
         <KunChip size="sm" color="warning">
           <KunIcon name="lucide:database" />
-          <template v-if="base.type === 's3'">
-            {{ s3DisplaySize }}
-          </template>
-          <template v-else>
-            {{ base.size }}
-          </template>
+          {{ displaySize }}
         </KunChip>
         <KunChip size="sm" color="primary">
           <KunIcon name="lucide:download" />
-          <span>{{ `${base.download} 人下载` }}</span>
+          <span>{{ `${base.download_count} 人下载` }}</span>
         </KunChip>
-
-        <KunTooltip :text="base.status ? '资源已失效' : '资源有效'">
-          <div
-            :class="
-              cn(
-                'h-3 w-3 shrink-0 rounded-full',
-                base.status ? 'bg-danger' : 'bg-success'
-              )
-            "
-          />
-        </KunTooltip>
       </div>
 
       <div class="ml-auto flex items-center gap-1">
@@ -238,7 +269,7 @@ const handleSave = async () => {
           v-if="canEditResource"
           :is-icon-only="true"
           variant="light"
-          @click="isEditing = true"
+          @click="startEdit"
         >
           <KunIcon name="lucide:pencil" />
         </KunButton>
@@ -255,80 +286,85 @@ const handleSave = async () => {
       </div>
     </div>
 
-    <div v-if="showing && detail" class="space-y-2">
+    <div v-if="showing && download" class="space-y-2">
       <div class="flex items-center gap-2">
-        <KunAvatar :user="detail.user" />
-        <span>{{ detail.user.name }}</span>
+        <KunAvatar :user="poster" />
+        <span>{{ poster.name }}</span>
         <span class="text-default-500 text-sm">
-          <KunTime :time="detail.created" />
+          <KunTime :time="base.created_at" />
         </span>
       </div>
 
       <div class="flex items-center gap-2">
         <KunCopy
-          v-if="detail.code"
+          v-if="download.extraction_code"
           variant="flat"
-          :name="`提取码 ${detail.code}`"
-          :text="detail.code"
+          :name="`提取码 ${download.extraction_code}`"
+          :text="download.extraction_code"
         />
         <KunCopy
-          v-if="detail.password"
+          v-if="download.archive_password"
           variant="flat"
-          :name="`解压码 ${detail.password}`"
-          :text="detail.password"
+          :name="`解压码 ${download.archive_password}`"
+          :text="download.archive_password"
         />
       </div>
 
-      <KunInfo v-if="detail.note" color="info" title="下载备注信息">
+      <KunInfo v-if="base.note" color="info" title="下载备注信息">
         <pre class="font-sans break-all whitespace-pre-line">
-          {{ detail.note }}
+          {{ base.note }}
         </pre>
       </KunInfo>
 
-      <div v-if="links.length" class="space-y-2 space-x-2">
+      <div class="space-y-2 space-x-2">
         <p class="text-default-500 text-sm">点击下面的链接以下载</p>
         <KunLink
-          v-for="(link, i) in links"
-          :key="i"
-          :to="link"
+          :to="download.download_url"
           target="_blank"
           rel="noopener noreferrer"
           :is-show-anchor-icon="true"
         >
-          {{ link }}
+          {{ download.download_url }}
         </KunLink>
+        <p v-if="download.expires_at" class="text-default-500 text-sm">
+          链接有效至
+          <KunTime :time="download.expires_at" />
+        </p>
       </div>
     </div>
 
     <KunCard
       :is-hoverable="false"
       :is-transparent="true"
-      v-if="isEditing && detail"
+      v-if="isEditing"
       content-class="space-y-3 rounded-lg"
     >
       <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
         <KunInput
-          v-if="base.type === 'user'"
-          v-model="formData.size"
+          v-if="!isFile"
+          v-model="formData.size_label"
           placeholder="资源大小 (如 1007MB, 0721GB)"
         />
         <KunInput
-          v-if="base.type === 'user'"
-          v-model="formData.code"
+          v-if="!isFile"
+          v-model="formData.extraction_code"
           placeholder="资源提取码 (可选)"
         />
-        <KunInput v-model="formData.password" placeholder="资源解压码 (可选)" />
+        <KunInput
+          v-model="formData.archive_password"
+          placeholder="资源解压码 (可选)"
+        />
       </div>
       <KunTextarea
         v-model="formData.note"
         placeholder="资源备注 (可选, 建议您写明资源的使用方法和注意事项)"
       />
       <ResourceLinkInput
-        v-if="base.type === 'user'"
-        v-model="formData.content"
-        v-model:code="formData.code"
-        v-model:password="formData.password"
-        placeholder="资源链接 (可直接粘贴分享文本；多个链接用英文逗号分隔)"
+        v-if="!isFile"
+        v-model="formData.link_url"
+        v-model:code="formData.extraction_code"
+        v-model:password="formData.archive_password"
+        placeholder="资源链接 (可直接粘贴分享文本)"
       />
 
       <div class="flex justify-end gap-2">

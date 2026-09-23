@@ -6,25 +6,49 @@ import {
   KUN_GALGAME_TOOLSET_VERSION_MAP
 } from '~/constants/toolset'
 import { toolsetUpdateForm } from './rewriteStore'
+import { settle } from '#shared/utils/api/problem'
+import type {
+  Toolset,
+  ToolsetResourceSummary
+} from '#shared/utils/api/schemas'
+import { toKunUser } from '~/utils/userRef'
 
 const props = defineProps<{
-  id: number
-  toolset: ToolsetDetail
+  id: string
+  toolset: Toolset
 }>()
 
 const { id: userId } = usePersistUserStore()
-const canEditAnyToolset = useCan('toolset.edit_any')
-const canDeleteAnyToolset = useCan('toolset.delete_any')
+const api = useApiClient()
 
 const data = computed(() => props.toolset)
-const canEditToolset = computed(
-  () => data.value.user.id === userId || canEditAnyToolset.value
-)
-const canDeleteToolset = computed(
-  () => data.value.user.id === userId || canDeleteAnyToolset.value
+const canEditToolset = computed(() => data.value.viewer?.can_edit ?? false)
+const canDeleteToolset = computed(() => data.value.viewer?.can_delete ?? false)
+
+const resources = ref<ToolsetResourceSummary[]>([
+  ...props.toolset.toolset_resources
+])
+watch(
+  () => props.toolset.toolset_resources,
+  (next) => {
+    resources.value = [...next]
+  }
 )
 
-const resources = ref<ToolsetResource[]>([...props.toolset.resource])
+const practicalityAverage = ref(props.toolset.practicality_average)
+const practicalityDistribution = ref([
+  ...props.toolset.practicality_distribution
+])
+const practicalityRating = ref(props.toolset.viewer?.practicality_rating ?? null)
+
+watch(
+  () => props.toolset,
+  (next) => {
+    practicalityAverage.value = next.practicality_average
+    practicalityDistribution.value = [...next.practicality_distribution]
+    practicalityRating.value = next.viewer?.practicality_rating ?? null
+  }
+)
 
 const isDeleting = ref(false)
 const handleDeleteToolset = async () => {
@@ -33,89 +57,81 @@ const handleDeleteToolset = async () => {
     return
   }
 
-  const moemoePointToConsume = 3 + resources.value.length * 3
   const res = await useComponentMessageStore().alert(
     '确定删除该工具？',
-    `删除这个工具将会消耗 ${moemoePointToConsume} 萌萌点, 计算公式为 3 + 这个工具下所有的资源数 * 3, 删除是永久性的, 不可撤销`
+    '删除这个工具将会消耗 3 萌萌点, 删除是永久性的, 不可撤销'
   )
   if (!res) {
     return
   }
 
   isDeleting.value = true
-  const ok = await kunFetch(`/toolset/${data.value.id}`, {
-    method: 'DELETE',
-    query: { toolset_id: data.value.id }
-  })
+  const result = await settle(
+    api.DELETE('/toolsets/{toolset_id}', {
+      params: { path: { toolset_id: data.value.id } }
+    })
+  )
   isDeleting.value = false
 
-  if (ok) {
-    useMessage('已删除该工具', 'success')
-    navigateTo('/toolset')
+  if (!result.ok) {
+    reportProblem(result.problem)
+    return
   }
+  useMessage('已删除该工具', 'success')
+  navigateTo('/toolset')
 }
 
 const handleRewriteToolset = () => {
   toolsetUpdateForm.toolset_id = data.value.id
-  toolsetUpdateForm.name = data.value.name
-  toolsetUpdateForm.description = data.value.content_markdown
-  toolsetUpdateForm.language = data.value.language as 'zh-cn'
-  toolsetUpdateForm.platform = data.value.platform as 'windows'
-  toolsetUpdateForm.type = data.value.type as 'others'
-  toolsetUpdateForm.version = data.value.version as 'rc'
-  toolsetUpdateForm.homepage = data.value.homepage
-  toolsetUpdateForm.aliases = data.value.aliases
   navigateTo('/edit/toolset/rewrite')
 }
 
 const showResourceModal = ref(false)
 const handlePublishResource = () => {
+  if (!userId) {
+    useAuthModal().open()
+    return
+  }
   showResourceModal.value = true
 }
 
 const isSubmittingRate = ref(false)
-const practicalityData = ref<ToolsetRating | null>(null)
-
-const loadPracticalityMine = async () => {
-  const res = await kunFetch<ToolsetRating>(
-    `/toolset/${props.id}/practicality`,
-    {
-      method: 'GET',
-      query: { toolset_id: props.id }
-    }
-  )
-  if (res) {
-    practicalityData.value = res
-  }
-}
-
-onMounted(loadPracticalityMine)
 
 const handleSetStar = async (val: number) => {
   if (!userId) {
     useAuthModal().open()
     return
   }
+  if (isSubmittingRate.value) {
+    return
+  }
   isSubmittingRate.value = true
-  await kunFetch(`/toolset/${props.id}/practicality`, {
-    method: 'PUT',
-    body: { rate: val }
-  })
-
-  useMessage(`已评分: ${val} 星`, 'success')
+  const result = await settle(
+    api.PUT('/toolsets/{toolset_id}/practicality', {
+      params: { path: { toolset_id: props.id } },
+      body: { rating: val }
+    })
+  )
   isSubmittingRate.value = false
-  await loadPracticalityMine()
+  if (!result.ok) {
+    reportProblem(result.problem)
+    return
+  }
+  practicalityAverage.value = result.data.practicality_average
+  practicalityDistribution.value = [...result.data.practicality_distribution]
+  practicalityRating.value = result.data.viewer?.practicality_rating ?? val
+  useMessage(`已评分: ${val} 星`, 'success')
 }
 
-const handleResourceAdded = (res: ToolsetResource) => {
-  resources.value.push(res)
+const handleResourceAdded = (res: ToolsetResourceSummary) => {
+  resources.value = [res, ...resources.value]
 }
 
-const handleResourceDeleted = (toolsetResourceId: number) => {
+const handleResourceDeleted = (toolsetResourceId: string) => {
   resources.value = resources.value.filter((r) => r.id !== toolsetResourceId)
 }
 
-const handleResourceUpdated = (res: ToolsetResource) => {
+const handleResourceUpdated = (res: ToolsetResourceSummary) => {
   const idx = resources.value.findIndex((r) => r.id === res.id)
   if (idx !== -1) {
     resources.value[idx] = res
@@ -131,51 +147,48 @@ const handleResourceUpdated = (res: ToolsetResource) => {
       content-class="space-y-6"
     >
       <div class="space-y-3">
-        <h1 class="text-2xl leading-tight font-bold">{{ data.name }}</h1>
+        <h1 class="text-2xl leading-tight font-bold">{{ data.title }}</h1>
         <div class="mt-2 flex flex-wrap items-center gap-2">
           <KunChip color="secondary" size="sm">
-            {{ KUN_GALGAME_TOOLSET_VERSION_MAP[data.version] }}
+            {{ KUN_GALGAME_TOOLSET_VERSION_MAP[data.release_channel] }}
           </KunChip>
           <KunChip color="success" size="sm">
             {{ KUN_GALGAME_TOOLSET_PLATFORM_MAP[data.platform] }}
           </KunChip>
           <KunChip color="primary" size="sm">
-            {{ KUN_GALGAME_TOOLSET_LANGUAGE_MAP[data.language] }}
+            {{ KUN_GALGAME_TOOLSET_LANGUAGE_MAP[data.interface_language] }}
           </KunChip>
           <KunChip color="danger" size="sm">
-            {{ KUN_GALGAME_TOOLSET_TYPE_MAP[data.type] }}
+            {{ KUN_GALGAME_TOOLSET_TYPE_MAP[data.toolset_type] }}
           </KunChip>
         </div>
 
         <KunDivider class-name="my-6" />
 
-        <KunContent :content="renderKatex(data.content_html)" />
+        <ContentDocument :document="data.content" />
       </div>
 
       <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
         <div class="min-w-0 space-y-3 md:col-span-1">
-          <template v-if="practicalityData">
-            <ToolsetPracticalityChart
-              :practicality-data="practicalityData"
-              :id="data.id"
-            />
-          </template>
-          <div v-else class="h-[306px] w-full">
-            <KunLoading />
-          </div>
+          <ToolsetPracticalityChart
+            :id="data.id"
+            :distribution="practicalityDistribution"
+            :average="practicalityAverage"
+            :rating="practicalityRating"
+          />
         </div>
 
         <div class="min-w-0 space-y-6 md:col-span-1">
           <div class="space-y-2">
             <h3 class="font-semibold">发布者</h3>
-            <KunUserChip :user="data.user" />
+            <KunUserChip :user="toKunUser(data.author)" />
           </div>
 
-          <div v-if="data.homepage.length" class="space-y-2">
+          <div v-if="data.homepage_urls.length" class="space-y-2">
             <h3 class="font-semibold">主页 / 项目</h3>
             <div class="flex flex-col gap-2">
               <KunLink
-                v-for="(url, idx) in data.homepage"
+                v-for="(url, idx) in data.homepage_urls"
                 :key="idx"
                 :to="url"
                 target="_blank"
@@ -203,13 +216,13 @@ const handleResourceUpdated = (res: ToolsetResource) => {
           <div class="space-y-2">
             <h3 class="font-semibold">实用性评分</h3>
             <p class="text-default-500 text-sm">点击以评分</p>
-            <div v-if="practicalityData" class="flex items-center gap-2">
+            <div class="flex items-center gap-2">
               <KunRating
-                :model-value="practicalityData.mine ?? undefined"
+                :model-value="practicalityRating ?? undefined"
                 @set="handleSetStar"
               />
               <KunChip size="sm" variant="flat">
-                {{ practicalityData.mine }} / 5
+                {{ practicalityRating ?? '—' }} / 5
               </KunChip>
             </div>
           </div>
@@ -218,9 +231,9 @@ const handleResourceUpdated = (res: ToolsetResource) => {
 
       <div class="flex flex-wrap items-center justify-between gap-2">
         <div class="text-default-500 text-sm">
-          {{ `${formatNumber(data.view)} 浏览` }}
+          {{ `${formatNumber(data.view_count)} 浏览` }}
           ·
-          {{ `${formatNumber(data.download)} 下载` }}
+          {{ `${formatNumber(data.download_count)} 下载` }}
         </div>
         <div class="flex gap-1">
           <KunButton @click="handlePublishResource">上传 / 添加资源</KunButton>
@@ -262,7 +275,7 @@ const handleResourceUpdated = (res: ToolsetResource) => {
       :is-transparent="false"
       content-class="space-y-3"
     >
-      <ToolsetCommentCommunityContainer :toolset-id="data.id" />
+      <ToolsetCommentCommunityContainer :toolset-id="Number(data.id)" />
     </KunCard>
 
     <KunModal

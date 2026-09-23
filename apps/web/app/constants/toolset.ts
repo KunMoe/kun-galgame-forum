@@ -27,7 +27,6 @@ export const KUN_TOOLSET_TYPE_CONST = [
   'translator',
   'extractor',
   'converter',
-  'engine',
   'debug',
   'launcher',
   'script',
@@ -40,7 +39,6 @@ export const KUN_GALGAME_TOOLSET_TYPE_ICON_MAP: Record<string, string> = {
   translator: 'lucide:languages',
   extractor: 'lucide:package-open',
   converter: 'lucide:repeat',
-  engine: 'lucide:cog',
   debug: 'lucide:bug',
   launcher: 'lucide:rocket',
   script: 'lucide:terminal',
@@ -126,8 +124,8 @@ export const KUN_TOOLSET_VERSION_CONST = [
 ] as const
 
 export const KUN_GALGAME_TOOLSET_STORAGE_MAP: Record<string, string> = {
-  s3: '对象存储下载',
-  user: '自定义链接下载'
+  file: '对象存储下载',
+  link: '自定义链接下载'
 }
 
 export const KUN_GALGAME_TOOLSET_UPLOAD_STATUS_MAP: Record<string, string> = {

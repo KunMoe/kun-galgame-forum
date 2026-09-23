@@ -1,10 +1,10 @@
 import type { HomeTopic, HomeGalgame } from './home'
-import type { ToolsetCard } from './toolset'
+import type { ToolsetSummary } from '#shared/utils/api/schemas'
 import type { GalgameResourceCard } from './galgame-resource'
 
 export type SearchResultTopic = HomeTopic
 export type SearchResultGalgame = HomeGalgame
-export type SearchResultToolset = ToolsetCard
+export type SearchResultToolset = ToolsetSummary
 export type SearchResultResource = GalgameResourceCard
 
 export interface SearchResultUser extends KunUser {

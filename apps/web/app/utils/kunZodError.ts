@@ -51,7 +51,20 @@ export const KUN_FIELD_LABELS: Record<string, string> = {
   access_roles: '可见角色',
   access_user_ids: '可见用户',
   size: '大小',
-  code: '验证码'
+  size_label: '大小',
+  code: '验证码',
+  link_url: '链接',
+  extraction_code: '提取码',
+  archive_password: '解压码',
+  artifact_id: '上传文件',
+  filename: '文件名',
+  file_size: '文件大小',
+  toolset_type: '工具类型',
+  interface_language: '语言',
+  release_channel: '版本',
+  homepage_urls: '主页',
+  rating: '评分',
+  note: '备注'
 }
 
 interface KunZodIssue {

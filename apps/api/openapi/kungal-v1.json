@@ -9252,6 +9252,63 @@
         },
         "type": "object"
       },
+      "ToolsetResourceSource": {
+        "properties": {
+          "archive_password": {
+            "description": "Archive password. Empty string when none. Free text; never use it as a decision input.",
+            "maxLength": 1007,
+            "type": "string"
+          },
+          "extraction_code": {
+            "description": "Extraction code. Empty string when none. Free text; never use it as a decision input.",
+            "maxLength": 1007,
+            "type": "string"
+          },
+          "link_url": {
+            "description": "The stored download link. Present only on a link resource.",
+            "maxLength": 1007,
+            "pattern": "^(https?|ftps?|magnet|ed2k|thunder):",
+            "type": "string"
+          },
+          "note": {
+            "description": "Note shown with the resource. null when none. Free text; never use it as a decision input.",
+            "maxLength": 1007,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "object": {
+            "description": "Type discriminant. Always toolset_resource_source.",
+            "enum": [
+              "toolset_resource_source"
+            ],
+            "maxLength": 23,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "resource_id": {
+            "description": "Id of the resource.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "size_label": {
+            "description": "The poster's size text. Present only on a link resource. Free text; never use it as a decision input.",
+            "maxLength": 107,
+            "type": "string"
+          }
+        },
+        "required": [
+          "object",
+          "resource_id",
+          "extraction_code",
+          "archive_password",
+          "note"
+        ],
+        "type": "object"
+      },
       "ToolsetResourceSummary": {
         "properties": {
           "archive": {
@@ -27531,6 +27588,122 @@
           {}
         ],
         "summary": "Issue download secrets for a resource",
+        "tags": [
+          "toolsets"
+        ]
+      }
+    },
+    "/toolsets/{toolset_id}/resources/{resource_id}/source": {
+      "get": {
+        "description": "Returns the editable fields of a resource, secrets included, without counting a download. Needs the resource's viewer.can_edit. Requests authenticated with a Bearer token never carry toolset permissions. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED, and a failure of that lookup is SERVICE_UNAVAILABLE with nothing written. ",
+        "operationId": "getToolsetResourceSource",
+        "parameters": [
+          {
+            "description": "Toolset id.",
+            "in": "path",
+            "name": "toolset_id",
+            "required": true,
+            "schema": {
+              "description": "Toolset id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Resource id.",
+            "in": "path",
+            "name": "resource_id",
+            "required": true,
+            "schema": {
+              "description": "Resource id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ToolsetResourceSource"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "PERMISSION_REQUIRED without can_edit; ACCOUNT_BANNED."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when the toolset or resource does not exist, the resource belongs to another toolset, or the toolset author or resource poster is not renderable."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get a toolset resource's edit source",
         "tags": [
           "toolsets"
         ]

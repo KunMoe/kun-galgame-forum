@@ -113,6 +113,16 @@ type ToolsetResourceLink struct {
 	SizeLabel string `json:"size_label" maxLength:"107" doc:"The poster's own size text, such as 12 MB. Free text; never use it as a decision input."`
 }
 
+type ToolsetResourceSource struct {
+	Object          string         `json:"object" enum:"toolset_resource_source" maxLength:"23" doc:"Type discriminant. Always toolset_resource_source."`
+	ResourceID      repr.DecimalID `json:"resource_id" doc:"Id of the resource."`
+	LinkURL         *string        `json:"link_url,omitempty" maxLength:"1007" pattern:"^(https?|ftps?|magnet|ed2k|thunder):" doc:"The stored download link. Present only on a link resource."`
+	SizeLabel       *string        `json:"size_label,omitempty" maxLength:"107" doc:"The poster's size text. Present only on a link resource. Free text; never use it as a decision input."`
+	ExtractionCode  string         `json:"extraction_code" maxLength:"1007" doc:"Extraction code. Empty string when none. Free text; never use it as a decision input."`
+	ArchivePassword string         `json:"archive_password" maxLength:"1007" doc:"Archive password. Empty string when none. Free text; never use it as a decision input."`
+	Note            *string        `json:"note" maxLength:"1007" doc:"Note shown with the resource. null when none. Free text; never use it as a decision input."`
+}
+
 type ResourceViewer struct {
 	CanEdit   bool `json:"can_edit" doc:"Whether the caller may edit this resource. Requests authenticated with a Bearer token never carry staff powers."`
 	CanDelete bool `json:"can_delete" doc:"Whether the caller may delete this resource. Requests authenticated with a Bearer token never carry staff powers."`
@@ -297,6 +307,10 @@ type patchResourceInput struct {
 	ToolsetID  string `path:"toolset_id" pattern:"^[1-9][0-9]{0,18}$" maxLength:"19" doc:"Toolset id."`
 	ResourceID string `path:"resource_id" pattern:"^[1-9][0-9]{0,18}$" maxLength:"19" doc:"Resource id."`
 	Body       ToolsetResourcePatch
+}
+
+type resourceSourceOutput struct {
+	Body ToolsetResourceSource
 }
 
 type downloadOutput struct {

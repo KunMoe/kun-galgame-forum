@@ -7,21 +7,27 @@ import {
 } from '~/config/upload'
 import {
   initToolsetUploadSchema,
-  completeToolsetUploadSchema,
-  resumeToolsetUploadSchema,
-  abortToolsetUploadSchema
+  completeToolsetUploadSchema
 } from '~/validations/toolset'
 import {
   KUN_GALGAME_TOOLSET_UPLOAD_STATUS_MAP,
   type KUN_GALGAME_TOOLSET_UPLOAD_STATUS_CONST
 } from '~/constants/toolset'
+import { settle } from '#shared/utils/api/problem'
+import { useIdempotencyKey } from '~/composables/useIdempotencyKey'
+import type { ToolsetPendingUpload } from '~/composables/useToolsetResumeUploads'
+import type {
+  ToolsetUpload,
+  ToolsetUploadCreate,
+  ToolsetUploadPatch
+} from '#shared/utils/api/schemas'
 
 const props = defineProps<{
-  toolsetId: number
+  toolsetId: string
 }>()
 
 const emits = defineEmits<{
-  onUploadSuccess: [ToolsetUploadResult]
+  onUploadSuccess: [{ id: string; file_size: number }]
   onClose: []
 }>()
 
@@ -43,13 +49,15 @@ const { moemoepoint, dailyToolsetUploadBytes } = storeToRefs(
   usePersistUserStore()
 )
 const canUploadBypass = useCan('toolset.upload_bypass')
+const api = useApiClient()
+const uploadKey = useIdempotencyKey()
 const fileInput = ref<HTMLInputElement>()
 const selectedFile = ref<File | null>(null)
 
 const progress = ref(0)
 const isDragging = ref(false)
 const uploadStatus = ref<ToolsetUploadStatus>('idle')
-const resumeUuid = ref<string | null>(null)
+const resumeId = ref<string | null>(null)
 
 const isLarge = computed(() => {
   const f = selectedFile.value
@@ -100,7 +108,7 @@ const setSelectedUploadFile = (file: File) => {
   const match = resumeStore
     .list()
     .find((p) => p.size === file.size && p.last_modified === file.lastModified)
-  resumeUuid.value = match ? match.artifact_uuid : null
+  resumeId.value = match ? match.id : null
 }
 
 const throwIfUploadFailed = (response: Response) => {
@@ -119,19 +127,22 @@ const notifyUploadTransferError = (error: unknown) => {
   }
 }
 
-const abortUpload = async (artifactUuid: string) => {
-  const abortUploadData = { artifact_uuid: artifactUuid }
-  if (!useKunSchemaValidator(abortToolsetUploadSchema, abortUploadData)) {
+const abortUpload = async (uploadId: string) => {
+  const result = await settle(
+    api.DELETE('/toolsets/{toolset_id}/uploads/{upload_id}', {
+      params: {
+        path: {
+          toolset_id: props.toolsetId,
+          upload_id: uploadId
+        }
+      }
+    })
+  )
+  if (!result.ok) {
+    reportProblem(result.problem)
     return
   }
-  try {
-    await kunFetch(`/toolset/${props.toolsetId}/upload/abort`, {
-      method: 'POST',
-      body: abortUploadData
-    })
-  } catch (abortError) {
-    console.error('Failed to abort toolset upload:', abortError)
-  }
+  uploadKey.clear()
 }
 
 const checkFileValid = (file: File | null) => {
@@ -210,7 +221,7 @@ const clearSelected = () => {
     fileInput.value.value = ''
   }
   resetUploadState()
-  resumeUuid.value = null
+  resumeId.value = null
 }
 
 const resumeStore = useToolsetResumeUploads(props.toolsetId)
@@ -220,9 +231,9 @@ const refreshPending = () => {
   pending.value = resumeStore.list()
 }
 
-const rememberPending = (f: File, artifactUuid: string, prog: number) => {
+const rememberPending = (f: File, uploadId: string, prog: number) => {
   resumeStore.upsert({
-    artifact_uuid: artifactUuid,
+    id: uploadId,
     name: f.name,
     size: f.size,
     last_modified: f.lastModified,
@@ -231,16 +242,16 @@ const rememberPending = (f: File, artifactUuid: string, prog: number) => {
   })
 }
 
-const forgetPending = (artifactUuid: string) => {
-  resumeStore.remove(artifactUuid)
-  if (resumeUuid.value === artifactUuid) {
-    resumeUuid.value = null
+const forgetPending = (uploadId: string) => {
+  resumeStore.remove(uploadId)
+  if (resumeId.value === uploadId) {
+    resumeId.value = null
   }
   refreshPending()
 }
 
 const putParts = async (
-  artifactUuid: string,
+  uploadId: string,
   f: File,
   partList: { part_number: number; url: string }[],
   partSize: number,
@@ -268,79 +279,67 @@ const putParts = async (
     }
     out.push({ part_number: cur.part_number, etag })
     progress.value = Math.round(((doneCount + i + 1) / totalParts) * 100)
-    resumeStore.setProgress(artifactUuid, progress.value)
+    resumeStore.setProgress(uploadId, progress.value)
   }
   return out
 }
 
 const completeUpload = async (
-  artifactUuid: string,
+  uploadId: string,
   parts: ToolsetUploadPart[] | undefined
 ): Promise<boolean> => {
-  const completeData = {
-    artifact_uuid: artifactUuid,
-    parts: parts && parts.length ? parts : undefined
-  }
-  if (!useKunSchemaValidator(completeToolsetUploadSchema, completeData)) {
+  const body: ToolsetUploadPatch =
+    parts && parts.length
+      ? { state: 'completed', parts }
+      : { state: 'completed' }
+  if (!useKunSchemaValidator(completeToolsetUploadSchema, body)) {
     return false
   }
-  const done = await kunFetch<ToolsetUploadCompleteResponse>(
-    `/toolset/${props.toolsetId}/upload/complete`,
-    { method: 'POST', body: completeData }
+  const done = await settle(
+    api.PATCH('/toolsets/{toolset_id}/uploads/{upload_id}', {
+      params: {
+        path: {
+          toolset_id: props.toolsetId,
+          upload_id: uploadId
+        }
+      },
+      body
+    })
   )
-  if (!done) {
+  if (!done.ok) {
+    reportProblem(done.problem)
     return false
   }
   useMessage('上传成功', 'success')
   emits('onUploadSuccess', {
-    artifact_uuid: done.artifact_uuid,
-    size: done.size
+    id: done.data.id,
+    file_size: done.data.file_size
   })
   progress.value = 100
   uploadStatus.value = 'complete'
-  forgetPending(artifactUuid)
+  forgetPending(uploadId)
+  uploadKey.clear()
   return true
 }
 
-const registerResumable = (artifactUuid: string, f: File) => {
-  rememberPending(f, artifactUuid, progress.value)
-  resumeUuid.value = artifactUuid
+const registerResumable = (uploadId: string, f: File) => {
+  rememberPending(f, uploadId, progress.value)
+  resumeId.value = uploadId
   uploadStatus.value = 'idle'
   refreshPending()
 }
 
-const uploadToArtifact = async (f: File) => {
+const applySession = async (session: ToolsetUpload, f: File) => {
   const contentType = resolveContentType(f)
-  const initData = {
-    toolset_id: props.toolsetId,
-    filename: f.name,
-    filesize: f.size,
-    content_type: contentType
-  }
-  if (!useKunSchemaValidator(initToolsetUploadSchema, initData)) {
-    return
-  }
-
-  progress.value = 0
-  uploadStatus.value = isLarge.value ? 'largeInit' : 'smallInit'
-  const init = await kunFetch<ToolsetUploadInitResponse>(
-    `/toolset/${props.toolsetId}/upload/init`,
-    { method: 'POST', body: initData }
-  )
-  if (!init) {
-    uploadStatus.value = 'idle'
-    return
-  }
-
-  if (init.multipart) {
-    rememberPending(f, init.artifact_uuid, 0)
+  if (session.is_multipart) {
+    rememberPending(f, session.id, 0)
     refreshPending()
-    const partList = init.parts ?? []
-    const partSize = init.part_size || LARGE_CHUNK_SIZE
+    const partList = session.part_urls ?? []
+    const partSize = session.part_size || LARGE_CHUNK_SIZE
     try {
       uploadStatus.value = 'largeUploading'
       const parts = await putParts(
-        init.artifact_uuid,
+        session.id,
         f,
         partList,
         partSize,
@@ -349,11 +348,11 @@ const uploadToArtifact = async (f: File) => {
         0
       )
       uploadStatus.value = 'largeComplete'
-      if (!(await completeUpload(init.artifact_uuid, parts))) {
-        registerResumable(init.artifact_uuid, f)
+      if (!(await completeUpload(session.id, parts))) {
+        registerResumable(session.id, f)
       }
     } catch (error) {
-      registerResumable(init.artifact_uuid, f)
+      registerResumable(session.id, f)
       notifyUploadTransferError(error)
     }
     return
@@ -361,10 +360,10 @@ const uploadToArtifact = async (f: File) => {
 
   try {
     uploadStatus.value = 'smallUploading'
-    if (!init.upload_url) {
+    if (!session.upload_url) {
       throw new Error('Missing upload URL')
     }
-    const resp = await fetch(init.upload_url, {
+    const resp = await fetch(session.upload_url, {
       headers: { 'Content-Type': contentType },
       method: 'PUT',
       body: f
@@ -372,68 +371,109 @@ const uploadToArtifact = async (f: File) => {
     throwIfUploadFailed(resp)
     uploadStatus.value = 'smallComplete'
     progress.value = 100
-    if (!(await completeUpload(init.artifact_uuid, undefined))) {
+    if (!(await completeUpload(session.id, undefined))) {
       resetUploadState()
     }
   } catch (error) {
-    await abortUpload(init.artifact_uuid)
+    await abortUpload(session.id)
     notifyUploadTransferError(error)
     resetUploadState()
   }
 }
 
-const resumeUploadToArtifact = async (f: File, artifactUuid: string) => {
+const uploadToArtifact = async (f: File) => {
   const contentType = resolveContentType(f)
-  const resumeData = { artifact_uuid: artifactUuid }
-  if (!useKunSchemaValidator(resumeToolsetUploadSchema, resumeData)) {
+  const initData: ToolsetUploadCreate = {
+    filename: f.name,
+    file_size: f.size,
+    content_type: contentType
+  }
+  if (!useKunSchemaValidator(initToolsetUploadSchema, initData)) {
     return
   }
 
   progress.value = 0
-  uploadStatus.value = 'largeInit'
-  const resume = await kunFetch<ToolsetUploadResumeResponse>(
-    `/toolset/${props.toolsetId}/upload/resume`,
-    { method: 'POST', body: resumeData }
+  uploadStatus.value = isLarge.value ? 'largeInit' : 'smallInit'
+  const init = await settle(
+    api.POST('/toolsets/{toolset_id}/uploads', {
+      params: {
+        path: { toolset_id: props.toolsetId },
+        header: {
+          'Idempotency-Key': uploadKey.take(
+            `/toolsets/${props.toolsetId}/uploads`,
+            initData
+          )
+        }
+      },
+      body: initData
+    })
   )
-  if (!resume) {
-    forgetPending(artifactUuid)
+  if (!init.ok) {
+    reportProblem(init.problem)
+    uploadStatus.value = 'idle'
+    return
+  }
+
+  await applySession(init.data, f)
+}
+
+const resumeUploadToArtifact = async (f: File, uploadId: string) => {
+  const contentType = resolveContentType(f)
+
+  progress.value = 0
+  uploadStatus.value = 'largeInit'
+  const resume = await settle(
+    api.GET('/toolsets/{toolset_id}/uploads/{upload_id}', {
+      params: {
+        path: {
+          toolset_id: props.toolsetId,
+          upload_id: uploadId
+        }
+      }
+    })
+  )
+  if (!resume.ok) {
+    if (resume.problem.status !== 404) {
+      reportProblem(resume.problem)
+    }
+    forgetPending(uploadId)
     await uploadToArtifact(f)
     return
   }
 
-  if (!resume.multipart) {
+  if (!resume.data.is_multipart) {
     try {
       uploadStatus.value = 'smallUploading'
-      if (!resume.upload_url) {
+      if (!resume.data.upload_url) {
         throw new Error('Missing upload URL')
       }
-      const resp = await fetch(resume.upload_url, {
+      const resp = await fetch(resume.data.upload_url, {
         headers: { 'Content-Type': contentType },
         method: 'PUT',
         body: f
       })
       throwIfUploadFailed(resp)
       progress.value = 100
-      if (!(await completeUpload(artifactUuid, undefined))) {
-        registerResumable(artifactUuid, f)
+      if (!(await completeUpload(uploadId, undefined))) {
+        registerResumable(uploadId, f)
       }
     } catch (error) {
-      registerResumable(artifactUuid, f)
+      registerResumable(uploadId, f)
       notifyUploadTransferError(error)
     }
     return
   }
 
-  const partSize = resume.part_size || LARGE_CHUNK_SIZE
-  const uploaded = resume.uploaded_parts ?? []
-  const missing = resume.parts ?? []
+  const partSize = resume.data.part_size || LARGE_CHUNK_SIZE
+  const uploaded = resume.data.uploaded_parts ?? []
+  const missing = resume.data.part_urls ?? []
   const totalParts = uploaded.length + missing.length
   try {
     uploadStatus.value = 'largeUploading'
     progress.value =
       totalParts > 0 ? Math.round((uploaded.length / totalParts) * 100) : 0
     const fresh = await putParts(
-      artifactUuid,
+      uploadId,
       f,
       missing,
       partSize,
@@ -446,11 +486,11 @@ const resumeUploadToArtifact = async (f: File, artifactUuid: string) => {
       ...fresh
     ].sort((a, b) => a.part_number - b.part_number)
     uploadStatus.value = 'largeComplete'
-    if (!(await completeUpload(artifactUuid, parts))) {
-      registerResumable(artifactUuid, f)
+    if (!(await completeUpload(uploadId, parts))) {
+      registerResumable(uploadId, f)
     }
   } catch (error) {
-    registerResumable(artifactUuid, f)
+    registerResumable(uploadId, f)
     notifyUploadTransferError(error)
   }
 }
@@ -461,8 +501,8 @@ const submit = async () => {
     useMessage('请选择文件', 'warn')
     return
   }
-  if (resumeUuid.value) {
-    await resumeUploadToArtifact(f, resumeUuid.value)
+  if (resumeId.value) {
+    await resumeUploadToArtifact(f, resumeId.value)
   } else {
     await uploadToArtifact(f)
   }
@@ -470,12 +510,12 @@ const submit = async () => {
 
 const handleContinuePending = (record: ToolsetPendingUpload, file: File) => {
   setSelectedUploadFile(file)
-  resumeUploadToArtifact(file, record.artifact_uuid)
+  resumeUploadToArtifact(file, record.id)
 }
 
-const handleDeletePending = async (artifactUuid: string) => {
-  await abortUpload(artifactUuid)
-  forgetPending(artifactUuid)
+const handleDeletePending = async (uploadId: string) => {
+  await abortUpload(uploadId)
+  forgetPending(uploadId)
 }
 
 onMounted(refreshPending)
@@ -556,7 +596,7 @@ onMounted(refreshPending)
           <KunProgress :value="progress" />
 
           <div
-            v-if="resumeUuid && uploadStatus === 'idle'"
+            v-if="resumeId && uploadStatus === 'idle'"
             class="text-warning flex items-center justify-center gap-1.5 text-center text-xs"
           >
             <KunIcon name="lucide:history" />
@@ -596,7 +636,7 @@ onMounted(refreshPending)
         :disabled="!selectedFile || uploadStatus === 'complete'"
         @click="submit"
       >
-        {{ resumeUuid ? '继续上传' : '确认上传' }}
+        {{ resumeId ? '继续上传' : '确认上传' }}
       </KunButton>
     </div>
   </div>

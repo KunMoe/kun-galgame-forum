@@ -1,13 +1,19 @@
 <script setup lang="ts">
 import { USER_DAILY_UPLOAD_LIMIT } from '~/config/upload'
+import type { ToolsetResourceSummary } from '#shared/utils/api/schemas'
+
+type ToolsetUploadResult = {
+  id: string
+  file_size: number
+}
 
 const props = defineProps<{
-  toolsetId: number
+  toolsetId: string
 }>()
 
 const emits = defineEmits<{
   onClose: []
-  onSuccess: [ToolsetResource]
+  onSuccess: [ToolsetResourceSummary]
 }>()
 
 const { moemoepoint, dailyToolsetUploadBytes } = storeToRefs(
@@ -20,15 +26,15 @@ const dailyUploadBudget = computed(
   () => USER_DAILY_UPLOAD_LIMIT + moemoepoint.value * MB
 )
 
-const mode = ref<'s3' | 'user'>('s3')
+const mode = ref<'file' | 'link'>('file')
 const uploadResult = ref<ToolsetUploadResult>({
-  artifact_uuid: '',
-  size: 0
+  id: '',
+  file_size: 0
 })
 
 const handleUploadSuccess = (value: ToolsetUploadResult) => {
   uploadResult.value = value
-  dailyToolsetUploadBytes.value += value.size
+  dailyToolsetUploadBytes.value += value.file_size
 }
 </script>
 
@@ -82,20 +88,20 @@ const handleUploadSuccess = (value: ToolsetUploadResult) => {
       <div class="flex items-center gap-6">
         <KunCheckBox
           type="single"
-          :model-value="mode === 's3'"
+          :model-value="mode === 'file'"
           label="对象存储 (S3)"
-          @change="() => (mode = 's3')"
+          @change="() => (mode = 'file')"
         />
         <KunCheckBox
           type="single"
-          :model-value="mode === 'user'"
+          :model-value="mode === 'link'"
           label="自定义链接"
-          @change="() => (mode = 'user')"
+          @change="() => (mode = 'link')"
         />
       </div>
 
       <ToolsetResourceUpload
-        v-if="mode === 's3'"
+        v-if="mode === 'file'"
         :toolset-id="props.toolsetId"
         @on-close="emits('onClose')"
         @on-upload-success="handleUploadSuccess"

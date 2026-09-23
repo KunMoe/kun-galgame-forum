@@ -158,3 +158,21 @@ func TestV1CreateToolsetDownload(t *testing.T) {
 		spec, "", "", nil)
 	wantCode(t, resp, got, http.StatusNotFound, problem.CodeNotFound)
 }
+
+func TestV1GetToolsetResourceSource(t *testing.T) {
+	f := newToolsetFix(t, nil)
+	path := "/api/v1/toolsets/" + idStr(g1TSMain) + "/resources/" + idStr(g1ResLink) + "/source"
+	spec := "/toolsets/{toolset_id}/resources/{resource_id}/source"
+	before := f.scalar(t, `SELECT download FROM galgame_toolset_resource WHERE id = ?`, g1ResLink)
+	resp, got := f.ts(t, http.MethodGet, path, spec, "sess-alice", "", nil)
+	if resp.StatusCode != http.StatusOK || got["object"] != "toolset_resource_source" || got["link_url"] == nil {
+		t.Fatalf("source %d %+v", resp.StatusCode, got)
+	}
+	if n := f.scalar(t, `SELECT download FROM galgame_toolset_resource WHERE id = ?`, g1ResLink); n != before {
+		t.Errorf("reading the source counted a download: %d -> %d", before, n)
+	}
+	resp, got = f.ts(t, http.MethodGet, path, spec, "sess-bob", "", nil)
+	wantCode(t, resp, got, http.StatusForbidden, problem.CodePermissionRequired)
+	resp, got = f.ts(t, http.MethodGet, path, spec, "", "", nil)
+	wantCode(t, resp, got, http.StatusUnauthorized, problem.CodeMissingCredential)
+}

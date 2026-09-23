@@ -8,6 +8,7 @@ import (
 	"time"
 
 	v1 "kun-galgame-api/internal/apiv1"
+	"kun-galgame-api/internal/apiv1/repr"
 	"kun-galgame-api/internal/infrastructure/markdown"
 	"kun-galgame-api/internal/moemoepoint"
 	"kun-galgame-api/internal/toolset/model"
@@ -65,6 +66,36 @@ func (s *Service) getToolsetResource(ctx context.Context, in *resourceIDInput) (
 		return nil, notFound()
 	}
 	return &resourceOutput{Body: items[0]}, nil
+}
+
+func (s *Service) getToolsetResourceSource(ctx context.Context, in *resourceIDInput) (*resourceSourceOutput, error) {
+	if p := s.ready(); p != nil {
+		return nil, p
+	}
+	user, p := s.requireActive(ctx)
+	if p != nil {
+		return nil, p
+	}
+	_, res, _, p := s.visibleResource(ctx, in.ToolsetID, in.ResourceID)
+	if p != nil {
+		return nil, p
+	}
+	if !canEditResource(res.UserID, user) {
+		return nil, permissionRequired()
+	}
+	out := ToolsetResourceSource{
+		Object: "toolset_resource_source", ResourceID: repr.ID(res.ID),
+		ExtractionCode: res.Code, ArchivePassword: res.Password,
+	}
+	if res.Type != "s3" {
+		link, size := res.Content, res.Size
+		out.LinkURL, out.SizeLabel = &link, &size
+	}
+	if res.Note != "" {
+		note := res.Note
+		out.Note = &note
+	}
+	return &resourceSourceOutput{Body: out}, nil
 }
 
 func (s *Service) createToolsetResource(ctx context.Context, in *createResourceInput) (*createResourceOutput, error) {

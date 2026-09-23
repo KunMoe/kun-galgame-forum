@@ -7,18 +7,18 @@ import {
   kunGalgameToolsetVersionOptions
 } from '~/constants/toolset'
 import { createToolsetSchema } from '~/validations/toolset'
-import type { z } from 'zod'
+import { settle } from '#shared/utils/api/problem'
+import { useIdempotencyKey } from '~/composables/useIdempotencyKey'
+import type { ToolsetCreate } from '#shared/utils/api/schemas'
 
-type CreateFormType = z.infer<typeof createToolsetSchema>
-
-const form = reactive<CreateFormType>({
-  name: '',
-  description: '',
-  language: 'zh-cn',
+const form = reactive<Required<ToolsetCreate>>({
+  title: '',
+  content_markdown: '',
+  interface_language: 'zh-cn',
   platform: 'windows',
-  type: 'emulator',
-  version: 'stable',
-  homepage: [] as string[],
+  toolset_type: 'emulator',
+  release_channel: 'stable',
+  homepage_urls: [] as string[],
   aliases: [] as string[]
 })
 
@@ -28,6 +28,8 @@ const onAliasInvalid = (reason: KunTagInputInvalidReason) => {
 }
 
 const isSubmitting = ref(false)
+const api = useApiClient()
+const createKey = useIdempotencyKey()
 
 const handleSubmit = async () => {
   const result = createToolsetSchema.safeParse(form)
@@ -40,21 +42,31 @@ const handleSubmit = async () => {
     return
   }
 
+  const payload = result.data
   isSubmitting.value = true
-  const created = await kunFetch<{ id: number }>('/toolset', {
-    method: 'POST',
-    body: form
-  })
+  const created = await settle(
+    api.POST('/toolsets', {
+      params: {
+        header: {
+          'Idempotency-Key': createKey.take('/toolsets', payload)
+        }
+      },
+      body: payload
+    })
+  )
   isSubmitting.value = false
 
-  if (created) {
-    useMessage('创建工具成功', 'success')
-    navigateTo(`/toolset/${created.id}`)
+  if (!created.ok) {
+    reportProblem(created.problem)
+    return
   }
+  createKey.clear()
+  useMessage('创建工具成功', 'success')
+  navigateTo(`/toolset/${created.data.id}`)
 }
 
 const handleUpdatePageLink = (value: string | number) => {
-  form.homepage = value
+  form.homepage_urls = value
     .toString()
     .split(',')
     .map((l) => l.trim())
@@ -71,12 +83,12 @@ const handleUpdatePageLink = (value: string | number) => {
 
     <div class="space-y-2">
       <div class="text-xl font-medium">名称</div>
-      <KunInput v-model="form.name" placeholder="工具名称" />
+      <KunInput v-model="form.title" placeholder="工具名称" />
     </div>
 
     <div class="grid grid-cols-2 gap-3">
       <KunSelect
-        v-model="form.type"
+        v-model="form.toolset_type"
         label="工具类型"
         :options="
           kunGalgameToolsetTypeOptions.filter(
@@ -90,7 +102,7 @@ const handleUpdatePageLink = (value: string | number) => {
         "
       />
       <KunSelect
-        v-model="form.version"
+        v-model="form.release_channel"
         label="版本"
         :options="
           kunGalgameToolsetVersionOptions.filter(
@@ -118,7 +130,7 @@ const handleUpdatePageLink = (value: string | number) => {
         "
       />
       <KunSelect
-        v-model="form.language"
+        v-model="form.interface_language"
         label="语言"
         :options="
           kunGalgameToolsetLanguageOptions.filter(
@@ -139,8 +151,8 @@ const handleUpdatePageLink = (value: string | number) => {
         请在此处具体说明工具是什么, 以及如何使用该工具, 越详细越好
       </p>
       <KunMilkdownDualEditorProvider
-        :value-markdown="form.description"
-        @set-markdown="(value) => (form.description = value)"
+        :value-markdown="form.content_markdown"
+        @set-markdown="(value) => (form.content_markdown = value)"
         language="zh-cn"
       >
         <KunLink target="_blank" to="/doc/create-galgame-toolset">
@@ -152,7 +164,7 @@ const handleUpdatePageLink = (value: string | number) => {
     <div class="space-y-2">
       <div class="text-xl font-medium">主页</div>
       <KunTextarea
-        :model-value="form.homepage.toString()"
+        :model-value="form.homepage_urls.toString()"
         @update:model-value="handleUpdatePageLink"
         placeholder="工具的官网, GitHub 仓库等等, 如果有多个链接, 使用英语逗号分隔每个下载链接"
       />

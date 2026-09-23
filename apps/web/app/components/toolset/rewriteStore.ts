@@ -1,16 +1,15 @@
-import type { z } from 'zod'
-import type { updateToolsetSchema } from '~/validations/toolset'
+import type { ToolsetCreate } from '#shared/utils/api/schemas'
 
-export type UpdateFormType = z.infer<typeof updateToolsetSchema>
+export type UpdateFormType = Required<ToolsetCreate> & { toolset_id: string }
 
 export const toolsetUpdateForm = reactive<UpdateFormType>({
-  toolset_id: 0,
-  name: '',
-  description: '',
-  language: 'zh-cn',
+  toolset_id: '',
+  title: '',
+  content_markdown: '',
+  interface_language: 'zh-cn',
   platform: 'windows',
-  type: 'emulator',
-  version: 'stable',
-  homepage: [] as string[],
+  toolset_type: 'emulator',
+  release_channel: 'stable',
+  homepage_urls: [] as string[],
   aliases: [] as string[]
 })

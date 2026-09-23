@@ -117,7 +117,7 @@ App 用 AppAuth + PKCE 直接从 OP 换出 access token，然后 `Authorization:
 |---|---|---|
 | `GET /api/galgame/:gid/resource/all?galgame_id=:gid` | 匿名+ | 某作品的资源卡片列表 |
 | `GET /api/galgame-resource/:id/detail` | 匿名+ | galgame 资源的下载信息：`link[]` `code` `password`。这些是外部网盘或磁链，文件不在论坛托管 |
-| `GET /api/toolset/:id/resource/detail?toolset_resource_id=:rid` | 公开 | 工具资源。`type` 为 `"s3"` 时，`content` 是 artifact **预签名 URL**：有效期 24 小时，支持 `Range` 断点续传，过期后再调一次换新 URL |
+| `POST /api/v1/toolsets/{toolset_id}/resources/{resource_id}/downloads` | 公开 | 工具资源下载。返回 `download_url`、`extraction_code`、`archive_password`；文件资源另有 `expires_at`。文件的 `download_url` 是 artifact **预签名 URL**：有效期 24 小时，支持 `Range` 断点续传，过期后再调一次换新 URL |
 | `GET /api/v1/app/version` | 公开 | App 自身安装包的下载地址（§4） |
 
 #### curl 示例

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useRouteQuery } from '@vueuse/router'
 import { SEARCH_CATEGORY_MAP } from './items'
+import { settle } from '#shared/utils/api/problem'
 
 const props = defineProps<{
   keywords: string
@@ -24,6 +25,7 @@ const failed = ref(false)
 // keyword changes, SearchGalgameFilter when a filter does.
 const page = useRouteQuery('page', 1, { mode: 'replace', transform: Number })
 const top = useTemplateRef<HTMLElement>('top')
+const api = useApiClient()
 
 const meta = computed(() => SEARCH_CATEGORY_MAP[props.type])
 const totalPage = computed(() => Math.ceil(total.value / PAGE_SIZE))
@@ -55,22 +57,36 @@ const isFiltered = computed(() =>
 
 let latest = 0
 
-const fetchPage = (target: number) =>
-  props.type === 'toolset'
-    ? kunFetch<SearchPage>('/toolset', {
-        method: 'GET',
-        query: { query: props.keywords, page: target, limit: PAGE_SIZE }
-      })
-    : kunFetch<SearchPage>('/search', {
-        method: 'GET',
-        query: {
-          keywords: props.keywords,
-          type: props.type,
-          page: target,
-          limit: PAGE_SIZE,
-          ...galgameFilter.value
+const fetchPage = async (target: number): Promise<SearchPage | null> => {
+  if (props.type === 'toolset') {
+    const result = await settle(
+      api.GET('/toolsets', {
+        params: {
+          query: {
+            q: props.keywords,
+            page: target,
+            limit: PAGE_SIZE
+          }
         }
       })
+    )
+    if (!result.ok) {
+      reportProblem(result.problem)
+      return null
+    }
+    return { items: result.data.items, total: result.data.total }
+  }
+  return kunFetch<SearchPage>('/search', {
+    method: 'GET',
+    query: {
+      keywords: props.keywords,
+      type: props.type,
+      page: target,
+      limit: PAGE_SIZE,
+      ...galgameFilter.value
+    }
+  })
+}
 
 const load = async () => {
   const current = ++latest

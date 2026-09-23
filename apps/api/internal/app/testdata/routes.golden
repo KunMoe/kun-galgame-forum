@@ -179,6 +179,7 @@ GET    /api/v1/todos/:todo_id                         cors.New → v1Headers →
 GET    /api/v1/toolsets                               cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/toolsets/:toolset_id                   cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/toolsets/:toolset_id/resources/:resource_id cors.New → v1Headers → fiberAdapter.Handle
+GET    /api/v1/toolsets/:toolset_id/resources/:resource_id/source cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/toolsets/:toolset_id/source            cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/toolsets/:toolset_id/uploads/:upload_id cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/topics                                 cors.New → v1Headers → fiberAdapter.Handle

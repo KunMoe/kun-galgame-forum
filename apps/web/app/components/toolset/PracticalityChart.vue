@@ -3,8 +3,10 @@ import VueApexCharts from 'vue3-apexcharts'
 import type { ApexOptions } from 'apexcharts'
 
 const props = defineProps<{
-  id: number
-  practicalityData: ToolsetRating
+  id: string
+  distribution: number[]
+  average: number | null
+  rating: number | null
 }>()
 
 const colorMode = useColorMode()
@@ -14,13 +16,11 @@ const categories = computed(() =>
 )
 
 const countsArray = computed(() =>
-  categories.value.map((c) => props.practicalityData.counts[Number(c)] ?? 0)
+  categories.value.map((_, i) => props.distribution[i] ?? 0)
 )
 
 const mineIndex = computed(() =>
-  props.practicalityData.mine == null
-    ? -1
-    : categories.value.indexOf(String(props.practicalityData.mine))
+  props.rating == null ? -1 : props.rating - 1
 )
 
 const series = computed(() => [{ name: '评分人数', data: countsArray.value }])
@@ -80,14 +80,14 @@ const options = computed(
           <span class="text-default-500">
             平均
             <span class="text-warning text-lg font-bold">
-              {{ practicalityData.avg.toFixed(1) }}
+              {{ average == null ? '暂无' : average.toFixed(1) }}
             </span>
-            / 5.0
+            <template v-if="average != null"> / 5.0</template>
           </span>
         </div>
 
         <VueApexCharts
-          :key="practicalityData.mine ?? 0"
+          :key="rating ?? 0"
           type="bar"
           height="260"
           :options="options"

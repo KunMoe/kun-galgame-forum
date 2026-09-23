@@ -157,6 +157,20 @@ func registerResources(api huma.API, svc *Service) {
 		}),
 	}), svc.getToolsetResource)
 
+	huma.Register(api, v1.Required(huma.Operation{
+		OperationID: "getToolsetResourceSource",
+		Method:      http.MethodGet,
+		Path:        "/toolsets/{toolset_id}/resources/{resource_id}/source",
+		Summary:     "Get a toolset resource's edit source",
+		Description: "Returns the editable fields of a resource, secrets included, without counting a download. " +
+			"Needs the resource's viewer.can_edit. " + bearerNote + activeCheck,
+		Tags: []string{tagToolsets},
+		Responses: problemResponses(map[int]string{
+			403: "PERMISSION_REQUIRED without can_edit; ACCOUNT_BANNED.",
+			404: "NOT_FOUND when the toolset or resource does not exist, the resource belongs to another toolset, or the toolset author or resource poster is not renderable.",
+		}),
+	}), svc.getToolsetResourceSource)
+
 	huma.Register(api, v1.IdempotencyRequired(v1.Required(huma.Operation{
 		OperationID:   "createToolsetResource",
 		Method:        http.MethodPost,

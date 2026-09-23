@@ -1,12 +1,14 @@
 <script setup lang="ts">
+import type { ToolsetResourceSummary } from '#shared/utils/api/schemas'
+
 defineProps<{
-  toolsetId: number
-  resources: ToolsetResource[]
+  toolsetId: string
+  resources: ToolsetResourceSummary[]
 }>()
 
 const emits = defineEmits<{
-  deleted: [number]
-  updated: [ToolsetResource]
+  deleted: [string]
+  updated: [ToolsetResourceSummary]
 }>()
 </script>
 

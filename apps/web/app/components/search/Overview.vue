@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import type { PageListToolsetSummary } from '#shared/utils/api/schemas'
+
 const props = defineProps<{
   keywords: string
   overview: SearchOverviewResult | null
@@ -9,6 +11,23 @@ const props = defineProps<{
 const emit = defineEmits<{
   open: [value: SearchType]
 }>()
+
+const { data: toolsetPage } = await useApi<PageListToolsetSummary>(
+  () => `search-overview-toolsets:${props.keywords}`,
+  (api, { signal }) =>
+    api.GET('/toolsets', {
+      params: {
+        query: {
+          q: props.keywords,
+          page: 1,
+          limit: 4
+        }
+      },
+      signal
+    })
+)
+
+const toolsets = computed(() => toolsetPage.value?.items ?? [])
 
 const entityGroups = computed(
   () => props.overview?.entities.filter((group) => group.items.length) ?? []
@@ -22,7 +41,8 @@ const isEmpty = computed(() => {
     !props.pending &&
     !!totals &&
     Object.values(totals).every((value) => value === 0) &&
-    !props.overview?.gal_comments.length
+    !props.overview?.gal_comments.length &&
+    !toolsets.value.length
   )
 })
 </script>
@@ -165,13 +185,13 @@ const isEmpty = computed(() => {
     </SearchSection>
 
     <SearchSection
-      v-if="overview.toolsets.length"
+      v-if="toolsets.length"
       type="toolset"
       :total="overview.totals.toolset"
-      :shown="overview.toolsets.length"
+      :shown="toolsets.length"
       @open="emit('open', $event)"
     >
-      <ToolsetCard :items="overview.toolsets" :keywords="keywords" />
+      <ToolsetCard :items="toolsets" :keywords="keywords" />
     </SearchSection>
   </div>
 </template>

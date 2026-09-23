@@ -1784,6 +1784,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/toolsets/{toolset_id}/resources/{resource_id}/source": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a toolset resource's edit source
+         * @description Returns the editable fields of a resource, secrets included, without counting a download. Needs the resource's viewer.can_edit. Requests authenticated with a Bearer token never carry toolset permissions. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED, and a failure of that lookup is SERVICE_UNAVAILABLE with nothing written.
+         */
+        get: operations["getToolsetResourceSource"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/toolsets/{toolset_id}/source": {
         parameters: {
             query?: never;
@@ -6029,6 +6049,25 @@ export interface components {
             /** @description New note. Absent or null leaves it; an empty string clears it. Free text; never use it as a decision input. */
             note?: string | null;
             /** @description New size text. Immutable on a file resource. Free text; never use it as a decision input. */
+            size_label?: string;
+        };
+        ToolsetResourceSource: {
+            /** @description Archive password. Empty string when none. Free text; never use it as a decision input. */
+            archive_password: string;
+            /** @description Extraction code. Empty string when none. Free text; never use it as a decision input. */
+            extraction_code: string;
+            /** @description The stored download link. Present only on a link resource. */
+            link_url?: string;
+            /** @description Note shown with the resource. null when none. Free text; never use it as a decision input. */
+            note: string | null;
+            /**
+             * @description Type discriminant. Always toolset_resource_source.
+             * @enum {string}
+             */
+            object: "toolset_resource_source";
+            /** @description Id of the resource. */
+            resource_id: string;
+            /** @description The poster's size text. Present only on a link resource. Free text; never use it as a decision input. */
             size_label?: string;
         };
         ToolsetResourceSummary: {
@@ -17618,6 +17657,85 @@ export interface operations {
                 };
             };
             /** @description NOT_FOUND when the resource is not visible at this path. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getToolsetResourceSource: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Toolset id. */
+                toolset_id: string;
+                /** @description Resource id. */
+                resource_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ToolsetResourceSource"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description PERMISSION_REQUIRED without can_edit; ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the toolset or resource does not exist, the resource belongs to another toolset, or the toolset author or resource poster is not renderable. */
             404: {
                 headers: {
                     [name: string]: unknown;

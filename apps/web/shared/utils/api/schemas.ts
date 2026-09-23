@@ -195,3 +195,31 @@ export type CreditNamePage = components['schemas']['PageListCreditNameRef']
 export type CharacterPage = components['schemas']['PageListCharacterRef']
 export type CreditList = components['schemas']['ListCredit']
 export type AppearanceList = components['schemas']['ListAppearance']
+export type Toolset = components['schemas']['Toolset']
+export type ToolsetSummary = components['schemas']['ToolsetSummary']
+export type ToolsetCreate = components['schemas']['ToolsetCreate']
+export type ToolsetPatch = components['schemas']['ToolsetPatch']
+export type ToolsetViewer = components['schemas']['ToolsetViewer']
+export type ToolsetSource = components['schemas']['ToolsetSource']
+export type ToolsetResourceSummary =
+  components['schemas']['ToolsetResourceSummary']
+export type ToolsetResourceCreate =
+  components['schemas']['ToolsetResourceCreate']
+export type ToolsetResourcePatch = components['schemas']['ToolsetResourcePatch']
+export type ToolsetDownload = components['schemas']['ToolsetDownload']
+export type ToolsetResourceSource =
+  components['schemas']['ToolsetResourceSource']
+export type ToolsetUpload = components['schemas']['ToolsetUpload']
+export type ToolsetUploadCreate = components['schemas']['ToolsetUploadCreate']
+export type ToolsetUploadPatch = components['schemas']['ToolsetUploadPatch']
+export type ToolsetPracticality = components['schemas']['ToolsetPracticality']
+export type PageListToolsetSummary =
+  components['schemas']['PageListToolsetSummary']
+export type ToolsetSort = NonNullable<
+  NonNullable<operations['listToolsets']['parameters']['query']>['sort']
+>
+export type ToolsetType = Toolset['toolset_type']
+export type ToolsetInterfaceLanguage = Toolset['interface_language']
+export type ToolsetPlatform = Toolset['platform']
+export type ToolsetReleaseChannel = Toolset['release_channel']
+export type ToolsetResourceType = ToolsetResourceSummary['resource_type']

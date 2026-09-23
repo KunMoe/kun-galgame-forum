@@ -1,11 +1,13 @@
 <script setup lang="ts">
+import type { ToolsetPendingUpload } from '~/composables/useToolsetResumeUploads'
+
 defineProps<{
   pending: ToolsetPendingUpload[]
 }>()
 
 const emits = defineEmits<{
   continue: [record: ToolsetPendingUpload, file: File]
-  delete: [artifactUuid: string]
+  delete: [uploadId: string]
 }>()
 
 const fileInput = ref<HTMLInputElement>()
@@ -39,7 +41,7 @@ const onPicked = (e: Event) => {
 
     <div
       v-for="item in pending"
-      :key="item.artifact_uuid"
+      :key="item.id"
       class="border-default-200 flex flex-col gap-2 rounded-lg border p-3"
     >
       <div class="flex items-center gap-2">
@@ -66,7 +68,7 @@ const onPicked = (e: Event) => {
             size="sm"
             variant="light"
             color="danger"
-            @click="emits('delete', item.artifact_uuid)"
+            @click="emits('delete', item.id)"
           >
             彻底删除
           </KunButton>
