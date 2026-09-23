@@ -144,3 +144,34 @@ NewsMonth  object="news_month", year, month, total, days: [{day, count}]
 ## 9. 迁移
 
 **无。**
+
+## 10. 实现时对本契约的修正（2026-09-23，只增不改）
+
+1. **`NewsSource.publisher` 改名 `forum_account`**。G8：`publisher` 在别处是非空的 `UserRef`，这里可为 `null`，同名不同型。语义不变。
+2. **`NewsMonth.total` 改名 `item_count`**。F9：`total` 只能出现在带 `include_total` 的集合上，月概要是普通对象。
+3. **`homepage_url` / `column_url` 不用 `format: uri`，改用 `pattern: ^(https?://.*)?$`**。两个字段都可能是空串，`format: uri` 不接受空串；G14 要求每个字符串都有约束，就用 pattern 表达「空串或 http(s) 链接」。
+4. **变异 6 换了靶子**。第一版破坏的是 `ready()` 回的 503，变异存活：`newsclient.New` 永远返回非空客户端，没配置时是每次调用回 `ErrNotConfigured`，走的是 `upstreamProblem`，`ready()` 只拦没接线的空服务。改为破坏 `upstreamProblem` 的兜底映射（503 → 500），被杀。
+5. **`news-archive` 的 `months` 只列有条目的月份**（§5.4 本来就这么写）。旧面固定回 12 项、空月计 0，网页的筛选按钮原本就把空月置灰，现在直接不出现。
+
+### 变异执行结果
+
+11/11 杀。
+
+| # | 结果 |
+|---|---|
+| 1、4 | `TestV1NewsItemsCursorIsBoundToFilters` |
+| 2、3 | `TestV1NewsItemsMonthWindow` |
+| 5、6 | `TestV1NewsItemsUpstreamFailures` |
+| 7、8、9 | `TestV1NewsMonth` |
+| 10 | `TestV1NewsSourcesForumAccount` |
+| 11 | `TestV1NewsArchive` |
+
+### 浏览器实测（开发库 + 本机 infra 情报面，worktree 构建，无头 Chromium，20/20）
+
+- `/news`：首屏 SSR 20 条，`共 4599 条情报` 即 `include_total` 的 `total`；两个合作站点名都在。切到「Galgame 批评」后总数与 API 的 `total` 一致（4564），卡片全部来自该来源；「加载更多」追加到 40 条，带游标的续页全部 200。
+- 年 → 月 → 「查看该月详情」的链接带着来源：`/news/2025/8?source=galgame_hihyou`。
+- `/news/2026/8`：`共 164 条情报`，「整月」按钮读 `item_count`（164），每页 50 条，共 4 页；第 2 页的标题序列与 API 第 2 页一致；点「1 日」后只剩那天的 2 条，总数同步变成 2。
+- 首页 `/?tab=news`：20 张卡片，带来源名。
+- `/rss/topic.xml`：200，10 条，与旧 SQL 同一组话题（公开、非 NSFW、按创建时间倒序）；摘要是正文纯文本。
+- 全程没有请求旧的 `/api/news*`、没有 4xx/5xx、没有控制台错误。
+- **不要把「跨页同标题」当成翻页 bug**：合作站点的周报会把同一条标题再发一次（例如 8 月 16 日与 30 日的两期），上游是两条不同 id 的条目；同一期周报里的几十条还共用一个 `source_url`。比较翻页结果要比 id，不能比标题或链接。

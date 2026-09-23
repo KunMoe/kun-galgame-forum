@@ -1,5 +1,19 @@
 # API v1 changelog
 
+## 2026-09-23 (X1c news, topic RSS)
+
+Breaking for `GET /api/news`, `/api/news/sources`, `/api/news/archive`, `/api/news/month` and `GET /api/rss/topic`; all five are gone. `GET /api/rss/galgame` stays on the legacy route until the works browse collection lands.
+
+Offered:
+
+- `GET /api/v1/news-items`: cursor list of partner news, newest first (`limit` 1–50, the news service's own cap). Filters: `lane`, `news_source`, `year`, `month` (`month` needs `year`: 400 `INVALID_PARAMETER`, was silently ignored). The cursor is bound to every filter and to `limit`; `total` only with `include_total=true`.
+- `GET /api/v1/news-sources`: the whole partner directory, not paged.
+- `GET /api/v1/news-archive`: `years`, plus `months` for the one `year` asked about. `months` lists only months with items (was all twelve, empty ones at 0).
+- `GET /api/v1/news-archive/{year}/{month}`: `item_count` and `days` (every day of the month, empty days included).
+- `GET /api/v1/news-archive/{year}/{month}/items`: the month's items as a page-number collection, with an optional `day`.
+
+Field names vs the retired faces: an item's `source_key` is `news_source`, and there is no page-level `sources` map; resolve the key against `/news-sources`. A source's `name` is `display_name` and `publisher` is `forum_account` (`UserRef` or `null`). `count` is `total`. `banner_url` is not sent. The topic RSS feed at `/rss/topic.xml` keeps its URL; its summaries are now plain text instead of raw Markdown.
+
 ## 2026-09-23 (G1.1 toolset resources)
 
 Breaking for toolset resources, a few hours after G1 went live:
