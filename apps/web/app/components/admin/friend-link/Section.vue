@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useSortable, moveArrayElement } from '@vueuse/integrations/useSortable'
-import { FRIEND_LINK_STATUS_CHIP } from '~/constants/friendLink'
+import type { FriendLink, FriendLinkCategory } from '#shared/utils/api/schemas'
+import { FRIEND_LINK_STATE_CHIP } from '~/constants/friendLink'
 
 const props = defineProps<{
   category: FriendLinkCategory
@@ -12,7 +13,7 @@ const emits = defineEmits<{
   add: [category: FriendLinkCategory]
   edit: [link: FriendLink]
   remove: [link: FriendLink]
-  reorder: [category: FriendLinkCategory, ids: number[]]
+  reorder: [category: FriendLinkCategory, ids: string[]]
 }>()
 
 const items = ref<FriendLink[]>([...props.links])
@@ -68,27 +69,27 @@ useSortable(listEl, items, {
             class="friend-drag-handle text-default-400 shrink-0 cursor-grab active:cursor-grabbing"
           />
           <KunImage
-            v-if="friend.banner_url"
-            :src="friend.banner_url"
+            v-if="friend.banner"
+            :src="friend.banner.url"
             class="border-default-200 h-10 w-16 shrink-0 rounded border object-cover"
           />
           <div class="min-w-0 flex-1">
             <div class="flex items-center gap-2">
-              <span class="truncate font-medium">{{ friend.name }}</span>
+              <span class="truncate font-medium">{{ friend.title }}</span>
               <KunChip
-                v-if="FRIEND_LINK_STATUS_CHIP[friend.status]"
-                :color="FRIEND_LINK_STATUS_CHIP[friend.status]!.color"
+                v-if="FRIEND_LINK_STATE_CHIP[friend.state]"
+                :color="FRIEND_LINK_STATE_CHIP[friend.state]!.color"
               >
-                {{ FRIEND_LINK_STATUS_CHIP[friend.status]!.label }}
+                {{ FRIEND_LINK_STATE_CHIP[friend.state]!.label }}
               </KunChip>
             </div>
             <a
-              :href="friend.link"
+              :href="friend.url"
               target="_blank"
               rel="noopener noreferrer"
               class="text-default-500 block truncate text-xs hover:underline"
             >
-              {{ friend.link }}
+              {{ friend.url }}
             </a>
           </div>
           <KunButton

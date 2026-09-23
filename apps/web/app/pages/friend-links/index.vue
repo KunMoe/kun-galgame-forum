@@ -1,16 +1,14 @@
 <script setup lang="ts">
-import { friendArray } from '~/config/friend'
+const { links } = await useFriendLinks()
 
-const description = `${kungal.titleShort} 的友情链接, 收录 ${friendArray
-  .flatMap((group) => group.value.map((friend) => friend.name))
+const description = `${kungal.titleShort} 的友情链接, 收录 ${links.value
+  .map((link) => link.title)
   .join('、')} 等 Galgame 相关的优质网站与社区。`
 
 useKunSeoMeta({
   title: '友情链接网站',
   description,
-  articleAuthor: friendArray.flatMap((group) =>
-    group.value.map((friend) => friend.link)
-  )
+  articleAuthor: links.value.map((link) => link.url)
 })
 </script>
 

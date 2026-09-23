@@ -144,3 +144,11 @@ export type DocCategory = DocSummary['doc_category']
 export type DocSort = NonNullable<
   NonNullable<operations['listDocs']['parameters']['query']>['sort']
 >
+
+export type FriendLink = components['schemas']['FriendLink']
+export type FriendLinkCreate = components['schemas']['FriendLinkCreate']
+export type FriendLinkPatch = components['schemas']['FriendLinkPatch']
+export type FriendLinkCategory = FriendLink['friend_link_category']
+export type FriendLinkState = FriendLink['state']
+export type AppVersion = components['schemas']['AppVersion']
+export type AppPlatform = keyof AppVersion['downloads']

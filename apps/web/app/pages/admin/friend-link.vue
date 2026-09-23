@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import { settle } from '#shared/utils/api/problem'
+import type { FriendLink, FriendLinkCategory } from '#shared/utils/api/schemas'
+import type { FriendLinkSubmit } from '~/components/admin/friend-link/type'
 import { FRIEND_LINK_CATEGORIES } from '~/constants/friendLink'
 
 definePageMeta({
@@ -8,7 +11,11 @@ definePageMeta({
 
 useKunDisableSeo('友链管理')
 
-const { data, refresh } = await useKunFetch<GroupedFriendLinks>('/friend-link')
+const api = useApiClient()
+const { links, refresh } = await useFriendLinks()
+
+const shelf = (category: FriendLinkCategory) =>
+  links.value.filter((link) => link.friend_link_category === category)
 
 const isModalOpen = ref(false)
 const editing = ref<FriendLink | null>(null)
@@ -25,38 +32,52 @@ const openEdit = (link: FriendLink) => {
   isModalOpen.value = true
 }
 
-const handleSubmit = async (form: FriendLinkInput) => {
-  const result = await kunFetch('/admin/friend-link', {
-    method: form.id ? 'PUT' : 'POST',
-    body: form
-  })
-  if (result) {
-    useMessage(form.id ? '友链已更新' : '友链已添加', 'success')
-    await refresh()
+const handleSubmit = async (submit: FriendLinkSubmit) => {
+  const result = await settle(
+    submit.id === null
+      ? api.POST('/admin/friend-links', { body: submit.body })
+      : api.PATCH('/admin/friend-links/{friend_link_id}', {
+          params: { path: { friend_link_id: submit.id } },
+          body: submit.body
+        })
+  )
+  if (!result.ok) {
+    reportProblem(result.problem)
+    return
   }
+  useMessage(submit.id ? '友链已更新' : '友链已添加', 'success')
+  await refresh()
 }
 
 const handleRemove = async (link: FriendLink) => {
   const confirmed = await useComponentMessageStore().alert(
-    `确定删除友链「${link.name}」吗？`
+    `确定删除友链「${link.title}」吗？`
   )
   if (!confirmed) return
 
-  const result = await kunFetch('/admin/friend-link', {
-    method: 'DELETE',
-    query: { id: link.id }
-  })
-  if (result) {
-    useMessage('友链已删除', 'success')
-    await refresh()
+  const result = await settle(
+    api.DELETE('/admin/friend-links/{friend_link_id}', {
+      params: { path: { friend_link_id: link.id } }
+    })
+  )
+  if (!result.ok) {
+    reportProblem(result.problem)
+    return
   }
+  useMessage('友链已删除', 'success')
+  await refresh()
 }
 
-const handleReorder = async (category: FriendLinkCategory, ids: number[]) => {
-  await kunFetch('/admin/friend-link/reorder', {
-    method: 'PUT',
-    body: { category, ids }
-  })
+const handleReorder = async (category: FriendLinkCategory, ids: string[]) => {
+  const result = await settle(
+    api.PUT('/admin/friend-link-order', {
+      body: { friend_link_category: category, friend_link_ids: ids }
+    })
+  )
+  if (!result.ok) {
+    reportProblem(result.problem)
+    await refresh()
+  }
 }
 </script>
 
@@ -72,7 +93,7 @@ const handleReorder = async (category: FriendLinkCategory, ids: number[]) => {
       :key="category.key"
       :category="category.key"
       :label="category.label"
-      :links="data?.[category.key] ?? []"
+      :links="shelf(category.key)"
       @add="openAdd"
       @edit="openEdit"
       @remove="handleRemove"

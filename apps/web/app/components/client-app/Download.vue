@@ -4,9 +4,10 @@ import {
   KUN_APP_PLATFORMS
 } from '~/constants/app-release'
 
-const { data, error } = await useKunFetch<KunAppRelease>('/app/version', {
-  method: 'GET'
-})
+const { data, problem: error } = await useApi(
+  'app-version',
+  (api, { signal }) => api.GET('/app/version', { signal })
+)
 
 const platforms = computed(() =>
   KUN_APP_PLATFORMS.map((platform) => {

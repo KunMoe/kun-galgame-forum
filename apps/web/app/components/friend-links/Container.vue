@@ -1,17 +1,19 @@
 <script setup lang="ts">
 import {
   FRIEND_LINK_CATEGORIES,
-  FRIEND_LINK_STATUS_CHIP
+  FRIEND_LINK_STATE_CHIP
 } from '~/constants/friendLink'
 
-const { data } = await useKunFetch<GroupedFriendLinks>('/friend-link')
+const { links } = await useFriendLinks()
 
 const utmLink = useUtmLink()
 
 const groups = computed(() =>
   FRIEND_LINK_CATEGORIES.map((category) => ({
     label: category.label,
-    links: data.value?.[category.key] ?? []
+    links: links.value.filter(
+      (link) => link.friend_link_category === category.key
+    )
   })).filter((group) => group.links.length > 0)
 )
 </script>
@@ -39,19 +41,19 @@ const groups = computed(() =>
           :is-transparent="false"
           v-for="friend in group.links"
           :key="friend.id"
-          :href="utmLink(friend.link)"
+          :href="utmLink(friend.url)"
           target="_blank"
           rel="noopener noreferrer"
         >
           <div class="mb-2 flex items-center gap-2">
             <span class="text-lg font-bold">
-              {{ friend.name }}
+              {{ friend.title }}
             </span>
             <KunChip
-              v-if="FRIEND_LINK_STATUS_CHIP[friend.status]"
-              :color="FRIEND_LINK_STATUS_CHIP[friend.status]!.color"
+              v-if="FRIEND_LINK_STATE_CHIP[friend.state]"
+              :color="FRIEND_LINK_STATE_CHIP[friend.state]!.color"
             >
-              {{ FRIEND_LINK_STATUS_CHIP[friend.status]!.label }}
+              {{ FRIEND_LINK_STATE_CHIP[friend.state]!.label }}
             </KunChip>
           </div>
           <div class="text-default-600 mb-3 text-sm">
@@ -62,8 +64,8 @@ const groups = computed(() =>
             }}
           </div>
           <KunImage
-            v-if="friend.banner_url"
-            :src="friend.banner_url"
+            v-if="friend.banner"
+            :src="friend.banner.url"
             class="h-auto w-full rounded-md"
           />
         </KunCard>

@@ -72,6 +72,74 @@ export interface paths {
         patch: operations["updateDoc"];
         trace?: never;
     };
+    "/admin/friend-link-order": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set a shelf's friend-link order
+         * @description Replaces the display order of one shelf. The list must name every link on that shelf exactly once, so a list made before someone else changed the shelf is refused rather than half applied. It needs the friend_link.edit permission.
+         */
+        put: operations["putFriendLinkOrder"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/friend-links": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create a friend link
+         * @description Adds a link at the end of its shelf. It needs the friend_link.create permission.
+         */
+        post: operations["createFriendLink"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/friend-links/{friend_link_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a friend link
+         * @description One friend link, as the editor loads it. It needs the friend_link.edit permission, which a Bearer request never carries.
+         */
+        get: operations["getFriendLink"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete a friend link
+         * @description Deletes the link for good. It needs the friend_link.delete permission.
+         */
+        delete: operations["deleteFriendLink"];
+        options?: never;
+        head?: never;
+        /**
+         * Update a friend link
+         * @description Changes the fields sent. A link that changes shelf goes to the end of the new one. It needs the friend_link.edit permission.
+         */
+        patch: operations["updateFriendLink"];
+        trace?: never;
+    };
     "/admin/hidden-topics": {
         parameters: {
             query?: never;
@@ -420,6 +488,26 @@ export interface paths {
         patch: operations["updateAdminWebsite"];
         trace?: never;
     };
+    "/app/version": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the app version gate
+         * @description The app's version gate: an install older than min_version must update before it runs. Read from configuration that is validated at startup, so the versions are always well formed and ordered.
+         */
+        get: operations["getAppVersion"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/comments/{comment_id}": {
         parameters: {
             query?: never;
@@ -524,6 +612,26 @@ export interface paths {
          * @description A doc with its body, addressed by the slug of its /doc/{slug} page. Each successful read counts one view.
          */
         get: operations["getDoc"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/friend-links": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List friend links
+         * @description Every friend link, shelf by shelf (official, galgame, others), each shelf in the order staff set with putFriendLinkOrder. A cursor collection; the cursor is bound to friend_link_category.
+         */
+        get: operations["listFriendLinks"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2420,6 +2528,43 @@ export interface components {
              */
             updated_at: string;
         };
+        AppDownloads: {
+            /**
+             * Format: uri
+             * @description Android package, or the download page while none is published.
+             */
+            android: string;
+            /**
+             * Format: uri
+             * @description iOS package, or the download page while none is published.
+             */
+            ios: string;
+            /**
+             * Format: uri
+             * @description Linux package, or the download page while none is published.
+             */
+            linux: string;
+            /**
+             * Format: uri
+             * @description Windows installer, or the download page while none is published.
+             */
+            windows: string;
+        };
+        AppVersion: {
+            /** @description Where each platform downloads the latest version. */
+            downloads: components["schemas"]["AppDownloads"];
+            /** @description Newest published app version. MAJOR.MINOR.PATCH, never below min_version. */
+            latest_version: string;
+            /** @description Oldest app version still allowed to run; older installs must update. MAJOR.MINOR.PATCH. */
+            min_version: string;
+            /** @description Release notes of the latest version. Empty string if none. Free text; never use it as a decision input. */
+            notes: string;
+            /**
+             * @description Type discriminant. Always app_version.
+             * @enum {string}
+             */
+            object: "app_version";
+        };
         BatchListTopicState: {
             /** @description One member per requested id that the caller may see. Empty array, never null. */
             items: components["schemas"]["TopicState"][];
@@ -2998,6 +3143,91 @@ export interface components {
              */
             minimum?: number;
         };
+        FriendLink: {
+            /** @description Banner image. null when the link has none. */
+            banner: components["schemas"]["Image"] | null;
+            /** @description Short blurb. Empty string if none. Free text; never use it as a decision input. */
+            description: string;
+            /**
+             * @description Shelf of the friend-link page, displayed in the order official, galgame, others. Clients label the tokens themselves.
+             * @enum {string}
+             */
+            friend_link_category: "official" | "galgame" | "others";
+            /** @description Friend link id. JSON string of a decimal integer. */
+            id: string;
+            /**
+             * @description Type discriminant. Always friend_link.
+             * @enum {string}
+             */
+            object: "friend_link";
+            /**
+             * @description normal, or down when the linked site is offline.
+             * @enum {string}
+             */
+            state: "normal" | "down";
+            /** @description Site name. Free text; never use it as a decision input. */
+            title: string;
+            /**
+             * Format: uri
+             * @description The linked site. Always http or https.
+             */
+            url: string;
+        };
+        FriendLinkCreate: {
+            /** @description Banner by image-service hash. Absent or an empty string means no banner. */
+            banner_image_hash?: string;
+            /** @description Short blurb. Trimmed. Absent means empty. Free text; never use it as a decision input. */
+            description?: string;
+            /**
+             * @description Shelf. The new link goes last on it.
+             * @enum {string}
+             */
+            friend_link_category: "official" | "galgame" | "others";
+            /**
+             * @description Absent means normal.
+             * @enum {string}
+             */
+            state?: "normal" | "down";
+            /** @description Site name. Trimmed; only whitespace is refused as TOO_SHORT. Free text; never use it as a decision input. */
+            title: string;
+            /**
+             * Format: uri
+             * @description The linked site. Only http and https are accepted.
+             */
+            url: string;
+        };
+        FriendLinkOrder: {
+            /**
+             * @description The shelf being reordered.
+             * @enum {string}
+             */
+            friend_link_category: "official" | "galgame" | "others";
+            /** @description Every link on the shelf, once each, in the new order. An id that is not on this shelf is UNKNOWN_REFERENCE; leaving one out is TOO_FEW_ITEMS with min_items set to the shelf's size. */
+            friend_link_ids: string[];
+        };
+        FriendLinkPatch: {
+            /** @description New banner by image-service hash. An empty string removes the banner. */
+            banner_image_hash?: string;
+            /** @description New blurb. Trimmed. Free text; never use it as a decision input. */
+            description?: string;
+            /**
+             * @description New shelf. The link moves to the end of it.
+             * @enum {string}
+             */
+            friend_link_category?: "official" | "galgame" | "others";
+            /**
+             * @description New state.
+             * @enum {string}
+             */
+            state?: "normal" | "down";
+            /** @description New site name, checked as in createFriendLink. Free text; never use it as a decision input. */
+            title?: string;
+            /**
+             * Format: uri
+             * @description New link. Only http and https are accepted.
+             */
+            url?: string;
+        };
         HeadingNode: {
             /** @description Fragment identifier of this heading, unique within the document. Links in the same body point at it as #anchor. */
             anchor: string;
@@ -3162,6 +3392,17 @@ export interface components {
         ListDocSummary: {
             /** @description Members of this page. Empty array, never null. */
             items: components["schemas"]["DocSummary"][];
+            /** @description Opaque keyset cursor. Omitted on the last page. */
+            next_cursor?: string;
+            /**
+             * @description Type discriminant. Always list.
+             * @enum {string}
+             */
+            object: "list";
+        };
+        ListFriendLink: {
+            /** @description Members of this page. Empty array, never null. */
+            items: components["schemas"]["FriendLink"][];
             /** @description Opaque keyset cursor. Omitted on the last page. */
             next_cursor?: string;
             /**
@@ -6663,6 +6904,442 @@ export interface operations {
             };
         };
     };
+    putFriendLinkOrder: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FriendLinkOrder"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description PERMISSION_REQUIRED when the caller lacks friend_link.edit. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    createFriendLink: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Caller-generated UUID (canonical 8-4-4-4-12 hex, any version) or 26-character Crockford ULID. Scoped to (user, operation, key) for 24 hours. */
+                "Idempotency-Key"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FriendLinkCreate"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    Location?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FriendLink"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description PERMISSION_REQUIRED when the caller lacks friend_link.create. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getFriendLink: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Friend link id. */
+                friend_link_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FriendLink"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description PERMISSION_REQUIRED when the caller lacks friend_link.edit. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the link does not exist. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    deleteFriendLink: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Friend link id. */
+                friend_link_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description PERMISSION_REQUIRED when the caller lacks friend_link.delete. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the link does not exist. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    updateFriendLink: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Friend link id. */
+                friend_link_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FriendLinkPatch"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FriendLink"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description PERMISSION_REQUIRED when the caller lacks friend_link.edit. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the link does not exist. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     listHiddenTopics: {
         parameters: {
             query?: {
@@ -8993,6 +9670,35 @@ export interface operations {
             };
         };
     };
+    getAppVersion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AppVersion"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     getComment: {
         parameters: {
             query?: never;
@@ -9574,6 +10280,51 @@ export interface operations {
             };
             /** @description SERVICE_UNAVAILABLE when the account service cannot resolve the author or a mention. */
             503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listFriendLinks: {
+        parameters: {
+            query?: {
+                /** @description Opaque keyset cursor from a previous page of this collection. */
+                cursor?: string;
+                /** @description Page size. 1–100, default 20. Values above 100 are rejected, not clamped. */
+                limit?: number;
+                /** @description When set, only this shelf. Omitted means every shelf. */
+                friend_link_category?: "official" | "galgame" | "others";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListFriendLink"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
                 headers: {
                     [name: string]: unknown;
                 };

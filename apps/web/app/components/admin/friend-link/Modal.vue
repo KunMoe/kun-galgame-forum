@@ -1,8 +1,15 @@
 <script setup lang="ts">
+import type {
+  FriendLink,
+  FriendLinkCategory,
+  FriendLinkCreate,
+  FriendLinkPatch
+} from '#shared/utils/api/schemas'
 import {
   FRIEND_LINK_CATEGORY_OPTIONS,
-  FRIEND_LINK_STATUS_OPTIONS
+  FRIEND_LINK_STATE_OPTIONS
 } from '~/constants/friendLink'
+import type { FriendLinkSubmit } from './type'
 
 const props = defineProps<{
   modelValue: boolean
@@ -12,7 +19,7 @@ const props = defineProps<{
 
 const emits = defineEmits<{
   'update:modelValue': [value: boolean]
-  submit: [data: FriendLinkInput]
+  submit: [data: FriendLinkSubmit]
 }>()
 
 const isOpen = computed({
@@ -21,21 +28,28 @@ const isOpen = computed({
 })
 const isEditing = computed(() => !!props.initialData?.id)
 
-const getInitial = (): FriendLinkInput => {
-  const d = props.initialData
-  const base: FriendLinkInput = {
-    category: d?.category ?? props.defaultCategory ?? 'galgame',
-    name: d?.name ?? '',
-    link: d?.link ?? '',
-    description: d?.description ?? '',
-    banner: d?.banner ?? '',
-    banner_image_hash: d?.banner_image_hash ?? '',
-    status: d?.status ?? 'normal'
-  }
-  return d?.id ? { ...base, id: d.id } : base
+type FriendLinkForm = Required<
+  Omit<FriendLinkCreate, 'banner_image_hash' | 'description' | 'state'>
+> & {
+  description: string
+  banner_image_hash: string
+  state: NonNullable<FriendLinkCreate['state']>
 }
 
-const form = reactive<FriendLinkInput>(getInitial())
+const getInitial = (): FriendLinkForm => {
+  const d = props.initialData
+  return {
+    friend_link_category:
+      d?.friend_link_category ?? props.defaultCategory ?? 'galgame',
+    title: d?.title ?? '',
+    url: d?.url ?? '',
+    description: d?.description ?? '',
+    banner_image_hash: d?.banner?.hash ?? '',
+    state: d?.state ?? 'normal'
+  }
+}
+
+const form = reactive<FriendLinkForm>(getInitial())
 watch(
   () => props.modelValue,
   (open) => {
@@ -43,18 +57,37 @@ watch(
   }
 )
 
-const initialBannerUrl = computed(() => props.initialData?.banner_url ?? '')
+const initialBannerUrl = computed(() => props.initialData?.banner?.url ?? '')
+
+const changedFields = (): FriendLinkPatch => {
+  const initial = getInitial()
+  const patch: FriendLinkPatch = {}
+  for (const key of Object.keys(form) as (keyof FriendLinkForm)[]) {
+    if (form[key] !== initial[key]) {
+      Object.assign(patch, { [key]: form[key] })
+    }
+  }
+  return patch
+}
 
 const handleSubmit = () => {
-  if (!form.name.trim()) {
+  if (!form.title.trim()) {
     useMessage('请填写友链名称', 'warn')
     return
   }
-  if (!form.link.trim()) {
-    useMessage('请填写友链地址', 'warn')
+  if (!/^https?:\/\//.test(form.url.trim())) {
+    useMessage('友链地址必须以 http:// 或 https:// 开头', 'warn')
     return
   }
-  emits('submit', { ...form })
+  const id = props.initialData?.id
+  if (id) {
+    const body = changedFields()
+    if (Object.keys(body).length) {
+      emits('submit', { id, body })
+    }
+  } else {
+    emits('submit', { id: null, body: { ...form, url: form.url.trim() } })
+  }
   isOpen.value = false
 }
 </script>
@@ -71,22 +104,22 @@ const handleSubmit = () => {
       </h2>
 
       <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <KunInput v-model="form.name" label="名称" required />
+        <KunInput v-model="form.title" label="名称" required />
         <KunInput
-          v-model="form.link"
+          v-model="form.url"
           label="链接 (URL)"
           required
           placeholder="https://..."
         />
         <KunSelect
-          v-model="form.category"
+          v-model="form.friend_link_category"
           label="分类"
           :options="FRIEND_LINK_CATEGORY_OPTIONS"
         />
         <KunSelect
-          v-model="form.status"
+          v-model="form.state"
           label="状态"
-          :options="FRIEND_LINK_STATUS_OPTIONS"
+          :options="FRIEND_LINK_STATE_OPTIONS"
         />
         <KunTextarea
           v-model="form.description"

@@ -1,10 +1,10 @@
-import type { KunAppPlatform } from '../../shared/types/app-release'
+import type { AppPlatform } from '#shared/utils/api/schemas'
 import { kungal } from '~/config/kungal'
 
 export const KUN_APP_DOWNLOAD_PAGE = `${kungal.domain.main}/app`
 
 export const KUN_APP_PLATFORMS: {
-  key: KunAppPlatform
+  key: AppPlatform
   label: string
   icon: string
   hint: string

@@ -1,7 +1,7 @@
 import type {
   FriendLinkCategory,
-  FriendLinkStatus
-} from '../../shared/types/friend-link'
+  FriendLinkState
+} from '#shared/utils/api/schemas'
 
 export const FRIEND_LINK_CATEGORIES: {
   key: FriendLinkCategory
@@ -17,17 +17,18 @@ export const FRIEND_LINK_CATEGORY_OPTIONS = FRIEND_LINK_CATEGORIES.map((c) => ({
   label: c.label
 }))
 
-export const FRIEND_LINK_STATUS_OPTIONS = [
+export const FRIEND_LINK_STATE_OPTIONS: {
+  value: FriendLinkState
+  label: string
+}[] = [
   { value: 'normal', label: '正常' },
-  { value: 'essential', label: '精选' },
   { value: 'down', label: '已下线' }
-] as const
+]
 
-export const FRIEND_LINK_STATUS_CHIP: Record<
-  FriendLinkStatus,
-  { label: string; color: 'primary' | 'danger' } | null
+export const FRIEND_LINK_STATE_CHIP: Record<
+  FriendLinkState,
+  { label: string; color: 'danger' } | null
 > = {
   normal: null,
-  essential: { label: '精选', color: 'primary' },
   down: { label: '已下线', color: 'danger' }
 }
