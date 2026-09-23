@@ -1,5 +1,10 @@
 # API v1 changelog
 
+## 2026-09-24 (user name search limit)
+
+- `GET /api/v1/search/users` and `GET /api/v1/users?q=`: `q` is now at most 50 characters (was 107 and 64). The account service refuses longer name queries, and the forum used to pass them on and answer `503`. A longer `q` is now `400 INVALID_PARAMETER` at the edge.
+- If the account service refuses a name query for any other reason, the answer is also `400 INVALID_PARAMETER` on `q`, not `503`.
+
 ## 2026-09-23 (G2 quizzes)
 
 Breaking for every `/api/galgame-quiz*` route and `GET /api/galgame/search/picker`. 13 legacy routes go; no App build calls them.
