@@ -31,6 +31,9 @@ G1 的 16 条加 G3 的 11 条就是 resources + toolsets 普查的 27 条。
 
 ## 欠着的活
 
+- `internal/galgame/apiv1.WorkRefOf`（c8）与 GE 的 `workrepr.Ref` 重复（GE 为避开 import 环复制了一份）。G4 碰 `internal/galgame/apiv1` 时让 `WorkRefOf` 委托给 `workrepr.Ref`。
+- GE 的 `WorkSummary` 与 intro / link 形状已随 #210 落地：intro 是 `{locale, value, is_machine, data_source}`，外链是 `{site, url}`，嵌入字段名是 `work_summary`（`work` / `works` 归 X2 的 `WorkRef`）。G4 的 `Work` 与 G5 的 `/works` 直接复用。
+
 - `catCoverSlot.Sexual` 目前按 `int` 解码，分不清「判为安全的 0」和「没判」，所以 `WorkRef.cover.sexual` 与 GE 的 `banner.sexual` 恒为 `null`。要改成指针，再把竖版封面的等级传进 `ImageMeta.Sexual`。在 G4 之前做。
 - `galgame_renumber_2026` 已无读者（folder 改写已完成），可在 G 的某个迁移里删表。
 - 普查 galgame-core 第 34 条（U 转交）：`PublishedToday` 用进程时区算「今天」，应改用 `cron.ScheduleLocation()`；同一个 `Stats()` 把 catalog 错误吞成 0。
