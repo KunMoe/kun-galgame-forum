@@ -528,3 +528,38 @@ CREATE TRIGGER trg_feed_galgame_toolset_resource
 ---
 
 删旧路由时：16 条、`ToolsetHandler` / `ResourceHandler` / `UploadHandler` / `PracticalityHandler`、旧 DTO、`CommentService.GetLatestForDetail`（详情不再嵌预览）。`legacy_route_baseline` −16。`rg` 证明零调用方，含 `apps/web/server/` 与 `../kungal-apps`。
+
+## 9. 实现与验收（2026-09-23，只增不改）
+
+### 9.1 变异（12 条，全杀）
+
+逐条改一行、只跑点名的测试、再还原。两条第一次没杀掉，各自暴露了一个真问题：
+
+| # | 改动 | 杀手 |
+|---|---|---|
+| 1 | 上传 PATCH 不查 `user_id` | `TestV1CompleteUploadOwnershipAndQuotaOnce` |
+| 2 | 列表 COUNT 不带「作者可渲染」 | `TestV1ToolsetsTotalExcludesUnrenderableAuthors` |
+| 3 | `userclient` 出错时按占位用户放行 | `TestV1ToolsetsUserclientFailure` |
+| 4 | 排序去掉 `id` 决胜 | `TestV1ToolsetsWalkTiedSort` |
+| 5 | 去掉 `sort` 参数的 enum | `TestV1ToolsetsUnknownSortAndEnum`。第一版变异是「handler 里未知 sort 回落 created_desc」，**没杀掉**：huma 的 enum 在进 handler 之前就拒了，handler 那段是死代码。删掉那段，enum 是唯一的执行点，变异改打 enum |
+| 6 | 改任何字段都按合并后的全文跑 trust | `TestV1UpdateToolsetTrustOnlyChangedText` |
+| 7 | 完成上传时额度不看 `completed_at` 是否第一次写入 | `TestV1CompleteUploadStoreCountsQuotaOnce`（新加）。第一次**没杀掉**：handler 对已完成的会话提前返回，顺序的两次 PATCH 碰不到仓储那道闸；它只在两次并发完成时起作用，所以直接对仓储调两次 |
+| 8 | Abort 时忽略 artifact 删除失败 | `TestV1AbortUpload` |
+| 9 | PUT 实用性不查工具 | `TestV1PutToolsetPracticality` |
+| 10 | 资源路径不核对 `{toolset_id}` | `TestV1GetToolsetResource` 等三条 |
+| 11 | `POST /toolsets` 幂等键改成可选 | `TestV1CreateToolset` |
+| 12 | 建 file 资源不核对上传会话的主人 / 工具 / 完成 | `TestV1CreateToolsetResourceFileUnknownReference` |
+
+### 9.2 浏览器（开发栈：本分支的 API + 网页，打开发库的临时拷贝，迁移到本分支 142，116 个工具）
+
+- 匿名：`/toolset` 24 张卡带分页；详情渲染简介（结构化文档）、实用性图、资源；「获取链接」走 `POST …/downloads`，下载计数 +1；看不到修改 / 删除。
+- 普通用户（非作者）：同上，没有工具的修改 / 删除，也没有资源行的编辑 / 删除按钮。
+- 作者：
+  - 从 `/edit/toolset/create` 发布一个工具：`POST 201`，带幂等键，跳到详情，简介按结构化文档渲染。
+  - 编辑资源：表单从 `GET …/source` 回填链接与大小，改备注 `PATCH 200`，**下载计数不变**（第一版从 downloads 回填，每编辑一次多算一次下载，见 §3.11b）。
+  - 加一个自定义链接资源：`POST 201`，带幂等键。
+  - 打 4 星：`PUT 200`，图与「4 / 5」即时更新。
+  - 删资源、删工具：确认框写「3 萌萌点」，都是 `204`，删完回到 `/toolset`。
+- 用户页 `/user/{id}/toolset` 与搜索的工具 tab（`GET /toolsets?q=`）正常。
+- 文件上传只验到 init（`201`）与失败后的 abort（`204`）：浏览器往预签名地址直传被存储桶的 CORS 拦下（开发 origin `127.0.0.1:12333` 不在允许列表里），是环境限制。完成路径由 DB 测试（artifact 替身）覆盖。
+- 控制台只有与本轨无关的 `me/preferences` 503（假令牌）、顶栏头像水合不一致、以及加资源弹窗在 master 上就有的无标题 `KunModal` 警告。
