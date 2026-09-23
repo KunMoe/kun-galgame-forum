@@ -70,6 +70,7 @@ const (
 	CodeVoteAlreadyCast              = "VOTE_ALREADY_CAST"
 	CodeSelfUpvoteForbidden          = "SELF_UPVOTE_FORBIDDEN"
 	CodeRateLimited                  = "RATE_LIMITED"
+	CodeQuotaExceeded                = "QUOTA_EXCEEDED"
 	CodeQuizAnswerRequired           = "QUIZ_ANSWER_REQUIRED"
 	CodeInvalidStateTransition       = "INVALID_STATE_TRANSITION"
 	CodeLotteryClosed                = "LOTTERY_CLOSED"
@@ -142,6 +143,7 @@ var Codes = []Def{
 	{CodeVoteAlreadyCast, DomainKungal, http.StatusConflict, "Vote already cast", "The caller has already voted and this poll does not allow changing a vote.", nil},
 	{CodeSelfUpvoteForbidden, DomainKungal, http.StatusForbidden, "Self upvote forbidden", "Users cannot upvote their own topics.", nil},
 	{CodeRateLimited, DomainPlatform, http.StatusTooManyRequests, "Rate limited", "A rate limit was exceeded. Retry-After, in seconds, is present only when the limiter says when to retry.", nil},
+	{CodeQuotaExceeded, DomainPlatform, http.StatusTooManyRequests, "Quota exceeded", "A quota for this operation is exhausted. Retry-After, in seconds, is when it resets.", nil},
 	{CodeQuizAnswerRequired, DomainKungal, http.StatusForbidden, "Quiz answer required", "The quiz hides its game or carries spoilers, so its comment wall is open only to its author and to users who have answered it.", nil},
 	{CodeInvalidStateTransition, DomainMe, http.StatusConflict, "Invalid state transition", "The current state does not allow this transition. detail names the current state.", nil},
 	{CodeLotteryClosed, DomainKungal, http.StatusConflict, "Lottery closed", "The operation needs an open lottery, and this one has been drawn, cancelled, is being drawn, or is past closes_at. Nothing about the request is wrong.", nil},

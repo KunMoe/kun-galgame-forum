@@ -46,7 +46,6 @@ import (
 	searchHandler "kun-galgame-api/internal/search/handler"
 	searchRepo "kun-galgame-api/internal/search/repository"
 	searchService "kun-galgame-api/internal/search/service"
-	toolsetHandler "kun-galgame-api/internal/toolset/handler"
 	toolsetRepo "kun-galgame-api/internal/toolset/repository"
 	toolsetService "kun-galgame-api/internal/toolset/service"
 	topicapiv1 "kun-galgame-api/internal/topic/apiv1"
@@ -107,41 +106,39 @@ type App struct {
 	WallV1          *wallapiv1.Service
 	TrustV1         *trustapiv1.Service
 
-	OAuthHandler               *handler.OAuthHandler
-	UserHandler                *handler.UserHandler
-	HomeHandler                *homeHandler.HomeHandler
-	LotteryService             *topicService.LotteryService
-	AdminOverviewHandler       *adminHandler.OverviewHandler
-	AdminPurgeHandler          *adminHandler.PurgeHandler
-	RankingHandler             *rankingHandler.RankingHandler
-	TrustHandler               *trustHandler.TrustHandler
-	RSSHandler                 *rssHandler.RSSHandler
-	NewsHandler                *newsHandler.NewsHandler
-	GalgameHandler             *galgameHandler.GalgameHandler
-	GalgameCollectionHandler   *galgameHandler.GalgameCollectionHandler
-	GalgameResourceHandler     *galgameHandler.ResourceHandler
-	GalgameRatingHandler       *galgameHandler.RatingHandler
-	GalgameQuizHandler         *galgameHandler.QuizHandler
-	GalgameCalendarHandler     *galgameHandler.CalendarHandler
-	GalgameDraftsHandler       *galgameHandler.DraftsHandler
-	GalgameProxyHandler        *galgameHandler.GalgameProxyHandler
-	GalgameSubmissionHandler   *galgameHandler.SubmissionHandler
-	GalgameClaimReviewHandler  *galgameHandler.ClaimReviewHandler
-	GalgameEditHandler         *galgameHandler.EditHandler
-	GalgameCoverVoteHandler    *galgameHandler.CoverVoteHandler
-	GalgamePlaytimeHandler     *galgameHandler.PlaytimeHandler
-	ActivityHandler            *activityHandler.ActivityHandler
-	ImageHandler               *imageHandler.ImageHandler
-	SearchHandler              *searchHandler.SearchHandler
-	ToolsetHandler             *toolsetHandler.ToolsetHandler
-	ToolsetPracticalityHandler *toolsetHandler.PracticalityHandler
-	ToolsetResourceHandler     *toolsetHandler.ResourceHandler
-	ToolsetUploadHandler       *toolsetHandler.UploadHandler
-	CronStop                   func()
-	RolePermStop               func()
-	StoreLinkStop              func()
-	CommunityNotifyStop        func()
-	APIv1                      huma.API
+	OAuthHandler              *handler.OAuthHandler
+	UserHandler               *handler.UserHandler
+	HomeHandler               *homeHandler.HomeHandler
+	LotteryService            *topicService.LotteryService
+	AdminOverviewHandler      *adminHandler.OverviewHandler
+	AdminPurgeHandler         *adminHandler.PurgeHandler
+	RankingHandler            *rankingHandler.RankingHandler
+	TrustHandler              *trustHandler.TrustHandler
+	RSSHandler                *rssHandler.RSSHandler
+	NewsHandler               *newsHandler.NewsHandler
+	GalgameHandler            *galgameHandler.GalgameHandler
+	GalgameCollectionHandler  *galgameHandler.GalgameCollectionHandler
+	GalgameResourceHandler    *galgameHandler.ResourceHandler
+	GalgameRatingHandler      *galgameHandler.RatingHandler
+	GalgameQuizHandler        *galgameHandler.QuizHandler
+	GalgameCalendarHandler    *galgameHandler.CalendarHandler
+	GalgameDraftsHandler      *galgameHandler.DraftsHandler
+	GalgameProxyHandler       *galgameHandler.GalgameProxyHandler
+	GalgameSubmissionHandler  *galgameHandler.SubmissionHandler
+	GalgameClaimReviewHandler *galgameHandler.ClaimReviewHandler
+	GalgameEditHandler        *galgameHandler.EditHandler
+	GalgameCoverVoteHandler   *galgameHandler.CoverVoteHandler
+	GalgamePlaytimeHandler    *galgameHandler.PlaytimeHandler
+	ActivityHandler           *activityHandler.ActivityHandler
+	ImageHandler              *imageHandler.ImageHandler
+	SearchHandler             *searchHandler.SearchHandler
+	Artifact                  *artifactclient.Client
+	FileStorage               *storage.S3Client
+	CronStop                  func()
+	RolePermStop              func()
+	StoreLinkStop             func()
+	CommunityNotifyStop       func()
+	APIv1                     huma.API
 }
 
 func New(cfg *config.Config) *App {
@@ -453,14 +450,8 @@ func New(cfg *config.Config) *App {
 	toolsetRepository := toolsetRepo.NewToolsetRepository(db)
 	toolsetResourceRepo := toolsetRepo.NewResourceRepository(db)
 	toolsetPracticalityRepo := toolsetRepo.NewPracticalityRepository(db)
-	toolsetPracticalitySvc := toolsetService.NewPracticalityService(toolsetPracticalityRepo)
-	toolsetCommentSvc := toolsetService.NewCommentService(uc, communityCli)
-	toolsetResourceSvc := toolsetService.NewResourceService(toolsetResourceRepo, toolsetRepository, fileStorageClient, artCli, uc, trustCheck, trustScan)
-	toolsetUploadSvc := toolsetService.NewUploadService(artCli, rdb, db)
 	toolsetCoreSvc := toolsetService.NewToolsetService(
-		toolsetRepository, toolsetResourceRepo, toolsetPracticalityRepo,
-		fileStorageClient, uc, toolsetPracticalitySvc, toolsetCommentSvc,
-		trustCheck, trustScan,
+		toolsetRepository, toolsetResourceRepo, toolsetPracticalityRepo, uc,
 	)
 
 	galgameCommentEnforcer := galgameService.NewGalgameCommentEnforcer(communityCli, galgameCommunityPostRepo)
@@ -557,10 +548,8 @@ func New(cfg *config.Config) *App {
 			galgameService.NewEntitySearchService(gc, galgameTagSvc), toolsetCoreSvc,
 			galgameResourceSvc, communityCli, anchorResolver,
 		)),
-		ToolsetHandler:             toolsetHandler.NewToolsetHandler(toolsetCoreSvc),
-		ToolsetPracticalityHandler: toolsetHandler.NewPracticalityHandler(toolsetPracticalitySvc),
-		ToolsetResourceHandler:     toolsetHandler.NewResourceHandler(toolsetResourceSvc),
-		ToolsetUploadHandler:       toolsetHandler.NewUploadHandler(toolsetUploadSvc),
+		Artifact:    artCli,
+		FileStorage: fileStorageClient,
 		CronStop: cronPkg.Start(db, rdb, imgCli, cronPkg.Jobs{
 			GalgameClaimSync:         galgameClaimSync.Run,
 			GalgameRevisionSync:      galgameRevisionSync.Run,

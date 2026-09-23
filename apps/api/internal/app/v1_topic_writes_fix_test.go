@@ -24,6 +24,7 @@ import (
 	"kun-galgame-api/internal/trust/gate"
 	"kun-galgame-api/internal/user/oauth"
 	userRepo "kun-galgame-api/internal/user/repository"
+	"kun-galgame-api/pkg/artifactclient"
 	"kun-galgame-api/pkg/imageclient"
 	"kun-galgame-api/pkg/secretbox"
 	"kun-galgame-api/pkg/trustclient"
@@ -118,6 +119,7 @@ type writeFix struct {
 	nBatch     atomic.Int32
 	failOA     atomic.Bool
 	oauthExtra []map[string]any
+	art        *artifactFake
 }
 
 func newWriteFix(t *testing.T, checker gate.Checker) *writeFix {
@@ -175,6 +177,13 @@ func newWriteFix(t *testing.T, checker gate.Checker) *writeFix {
 		trust = gate.NewCheckService(checker)
 	}
 	state := userRepo.NewStateRepository(db)
+	f.art = newArtifactFake()
+	artSrv := httptest.NewServer(f.art.handler())
+	t.Cleanup(artSrv.Close)
+	artCli := artifactclient.New(artifactclient.Config{
+		BaseURL: artSrv.URL, ClientID: "test-client", ClientSecret: "test-secret",
+		HTTPClient: &http.Client{Timeout: 2 * time.Second},
+	})
 	f.App = &App{
 		Fiber:      newFiber(),
 		Config:     cfg,
@@ -184,6 +193,7 @@ func newWriteFix(t *testing.T, checker gate.Checker) *writeFix {
 		UserState:  state,
 		TopicAward: f.recordAward,
 		TrustCheck: trust,
+		Artifact:   artCli,
 		Authn:      middleware.NewAuthenticator(rdb, nil, middleware.NewBearer(w3Verifier{}, rdb, nil)),
 		ImageMeta: func(hashes []string) map[string]imageclient.ImageMeta {
 			out := map[string]imageclient.ImageMeta{}

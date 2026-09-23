@@ -29,6 +29,7 @@
     "VOTE_ALREADY_CAST": "这个投票不允许改投，你已经投过了",
     "DRAFT_LIMIT_REACHED": "草稿数量已达上限，请先删除一些草稿再保存",
     "RATE_LIMITED": "操作太频繁，请稍等一会儿再试",
+    "QUOTA_EXCEEDED": "今日额度已用完，请明天再试",
     "QUIZ_ANSWER_REQUIRED": "作答后才能参与这道题目的讨论",
     "INVALID_STATE_TRANSITION": "内容的状态已经变化，请刷新页面后重试",
     "LOTTERY_CLOSED": "抽奖已经结束或正在开奖，无法进行这个操作",

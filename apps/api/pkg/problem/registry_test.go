@@ -42,6 +42,7 @@ var requiredCodes = []struct {
 	{CodeSelfLikeForbidden, DomainKungal, 403},
 	{CodeSelfUpvoteForbidden, DomainKungal, 403},
 	{CodeRateLimited, DomainPlatform, 429},
+	{CodeQuotaExceeded, DomainPlatform, 429},
 	{CodeQuizAnswerRequired, DomainKungal, 403},
 	{CodeInvalidStateTransition, DomainMe, 409},
 	{CodePollClosed, DomainKungal, 409},

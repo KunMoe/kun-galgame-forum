@@ -105,3 +105,15 @@ type GalgameToolsetCategoryRelation struct {
 }
 
 func (GalgameToolsetCategoryRelation) TableName() string { return "galgame_toolset_category_relation" }
+
+type ToolsetUpload struct {
+	ArtifactUUID string     `gorm:"column:artifact_uuid;primaryKey;type:varchar(36)" json:"artifact_uuid"`
+	ToolsetID    int        `gorm:"column:toolset_id;not null" json:"toolset_id"`
+	UserID       int        `gorm:"column:user_id;not null" json:"user_id"`
+	Filename     string     `gorm:"type:varchar(1007);not null" json:"filename"`
+	FileSize     int64      `gorm:"column:file_size;not null" json:"file_size"`
+	CreatedAt    time.Time  `gorm:"column:created" json:"created"`
+	CompletedAt  *time.Time `gorm:"column:completed_at" json:"completed_at"`
+}
+
+func (ToolsetUpload) TableName() string { return "toolset_upload" }

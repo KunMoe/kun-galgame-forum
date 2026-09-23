@@ -16,6 +16,7 @@ import (
 	topicRepo "kun-galgame-api/internal/topic/repository"
 	trustapiv1 "kun-galgame-api/internal/trust/apiv1"
 	updateapiv1 "kun-galgame-api/internal/update/apiv1"
+	toolsetapiv1 "kun-galgame-api/internal/toolset/apiv1"
 	userapiv1 "kun-galgame-api/internal/user/apiv1"
 	wallapiv1 "kun-galgame-api/internal/wall/apiv1"
 	websiteapiv1 "kun-galgame-api/internal/website/apiv1"
@@ -53,6 +54,7 @@ func (a *App) setupRoutes() {
 		userapiv1.Register(a.newUserV1()),
 		messageapiv1.Register(a.newMessageV1()),
 		websiteapiv1.Register(a.newWebsiteV1()),
+		toolsetapiv1.Register(a.newToolsetV1()),
 		updateapiv1.Register(a.newUpdateV1()),
 		trustapiv1.Register(a.TrustV1),
 		permissionapiv1.Register(a.newPermissionV1()),
@@ -89,7 +91,7 @@ func (a *App) setupRoutes() {
 	api.Get("/user/:id/comments", a.UserHandler.GetUserComments)
 	api.Get("/user/:id/resources", a.UserHandler.GetUserResources)
 	api.Get("/user/:id/ratings", a.UserHandler.GetUserRatings)
-	api.Get("/user/:id/toolsets", a.ToolsetHandler.GetUserToolsets)
+
 
 	api.Get("/ranking/galgame", a.RankingHandler.GetGalgameRanking)
 	api.Get("/ranking/topic", a.RankingHandler.GetTopicRanking)
@@ -113,8 +115,6 @@ func (a *App) setupRoutes() {
 
 	api.Get("/rss/topic", a.RSSHandler.GetTopicRSS)
 	api.Get("/rss/galgame", a.RSSHandler.GetGalgameRSS)
-
-	api.Get("/toolset/:id/resource/detail", a.ToolsetResourceHandler.GetResourceDetail)
 
 	api.Get("/galgame", a.GalgameHandler.GetList)
 	// Every literal /galgame/<segment> route must precede /galgame/:id: the
@@ -173,9 +173,7 @@ func (a *App) setupRoutes() {
 	optAuth.Get("/galgame/collection/:cid", a.GalgameCollectionHandler.GetDetail)
 	optAuth.Get("/user/:id/collections", a.GalgameCollectionHandler.GetUserCollections)
 
-	optAuth.Get("/toolset", a.ToolsetHandler.GetList)
-	optAuth.Get("/toolset/:id", a.ToolsetHandler.GetDetail)
-	optAuth.Get("/toolset/:id/practicality", a.ToolsetPracticalityHandler.GetPracticality)
+
 
 	// THE AUTH BOUNDARY. This empty-prefix group registers Auth as Use() on
 	// "/api", so it applies to EVERY route below this line. Nothing public or
@@ -241,18 +239,6 @@ func (a *App) setupRoutes() {
 	authed.Post("/galgame-edit/proposals/:id/merge", a.GalgameEditHandler.Merge)
 	authed.Post("/galgame-edit/proposals/:id/decline", a.GalgameEditHandler.Decline)
 	authed.Post("/galgame/:id/edit/revert", a.GalgameEditHandler.Revert)
-
-	authed.Post("/toolset", a.ToolsetHandler.Create)
-	authed.Put("/toolset/:id", a.ToolsetHandler.Update)
-	authed.Delete("/toolset/:id", a.ToolsetHandler.Delete)
-	authed.Put("/toolset/:id/practicality", a.ToolsetPracticalityHandler.UpsertPracticality)
-	authed.Post("/toolset/:id/resource", a.ToolsetResourceHandler.CreateResource)
-	authed.Put("/toolset/:id/resource", a.ToolsetResourceHandler.UpdateResource)
-	authed.Delete("/toolset/:id/resource", a.ToolsetResourceHandler.DeleteResource)
-	authed.Post("/toolset/:id/upload/init", a.ToolsetUploadHandler.UploadInit)
-	authed.Post("/toolset/:id/upload/complete", a.ToolsetUploadHandler.UploadComplete)
-	authed.Post("/toolset/:id/upload/resume", a.ToolsetUploadHandler.UploadResume)
-	authed.Post("/toolset/:id/upload/abort", a.ToolsetUploadHandler.UploadAbort)
 
 	// Every admin gate below is PER-ROUTE, never Group("", middleware.X()) — see
 	// router_gate_test.go for the 2026-07-21..2026-08-07 outage that rule
