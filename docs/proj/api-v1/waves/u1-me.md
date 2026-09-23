@@ -4,11 +4,11 @@
 >
 > | 段 | 范围 | 旧路由 |
 > |---|---|---|
-> | **U1**（本文） | 只属于「我」的面：状态、签到、萌萌点流水、通知偏好、云端偏好、成人向显示、@ 搜索、资料三写、创作者两条 | **14** |
-> | U2 | 公开资料 `/user/:id` + 名片 `/user/:id/floating` → `/users/{user_id}` + 批量引用 | 2 |
+> | **U1**（本文） | 只属于「我」的面：状态、签到、萌萌点流水、云端偏好、成人向显示、@ 搜索、资料三写、创作者两条 | **12** |
+> | U2 | 公开资料 `/user/:id` + 名片 `/user/:id/floating` → `/users/{user_id}` + 批量引用；**通知偏好两条**（见 §3.4） | 4 |
 > | U3 | 「某用户的 X」：topics / replies / comments / galgames / galgame-comments / resources / ratings（`UserHandler`）+ 寄挂的 toolsets / collections | 9 |
 >
-> 14 + 2 + 9 = 25，与 `routes.golden` 里 `/api/user/**` 的行数相等。§2 的逐条表是权威。
+> 12 + 4 + 9 = 25，与 `routes.golden` 里 `/api/user/**` 的行数相等。§2 的逐条表是权威。
 >
 > **本段没有迁移**。契约先于实现提交，变异清单见 §9。普查在 [census/user.md](census/user.md)；那份普查写于 45127518，之后新加的 `ContentPrefsHandler` 三条（preferences ×2、nsfw）由本文 §1.3 补查。
 
@@ -35,7 +35,7 @@
 | 本地缓存余额范围 | **−16 … 38,150**。余额可以是负数，所以 `moemoepoint` 字段**不能**声明 `minimum: 0` |
 | 有静音偏好的人 | 55 人，单人最多 19 项 |
 | `role_permission_override` | 27 行（`/perm/bundles` 泄露的是真配置——但那条属 P 轨，不在本段） |
-| 调用方（Flutter App `../kungal-apps`） | 本段 14 条零命中；`docs/proj/app-direct-api.md` 列了 `/user/status` 与 `/user/notification-preferences` 两条 |
+| 调用方（Flutter App `../kungal-apps`） | 本段 12 条零命中；`docs/proj/app-direct-api.md` 列了 `/user/status` 与 `/user/notification-preferences` 两条 |
 
 ### 1.3 `ContentPrefsHandler` 三条（普查之后才有）
 
@@ -54,8 +54,8 @@
 | 1 | `GET /user/status` | `GET /api/v1/me` | required |
 | 2 | `POST /user/check-in` | `POST /api/v1/me/check-ins` | required |
 | 3 | `GET /user/moemoepoint/log` | `GET /api/v1/me/moemoepoint-entries`（游标） | required |
-| 4 | `GET /user/notification-preferences` | `GET /api/v1/me/notification-preferences` | required |
-| 5 | `PUT /user/notification-preferences` | `PUT /api/v1/me/notification-preferences` | required |
+| ~~4~~ | `GET /user/notification-preferences` | **移到 U2**（§3.4） | — |
+| ~~5~~ | `PUT /user/notification-preferences` | **移到 U2**（§3.4） | — |
 | 6 | `GET /user/preferences` | `GET /api/v1/me/preferences` | required |
 | 7 | `PUT /user/preferences` | `PUT /api/v1/me/preferences` | required |
 | 8 | `PUT /user/nsfw` | `PUT /api/v1/me/nsfw-display` | required |
@@ -66,7 +66,7 @@
 | 13 | `GET /user/creator/status` | `GET /api/v1/me/creator-status` | required |
 | 14 | `POST /user/creator/apply` | `POST /api/v1/me/creator-applications` | required |
 
-14 条旧路由对应 13 个 v1 操作（bio 与 username 并成一个 `PATCH`）。`legacy_route_baseline` 在本段下调 **14**。
+本段 12 条旧路由对应 11 个 v1 操作（bio 与 username 并成一个 `PATCH`）。`legacy_route_baseline` 在本段下调 **12**。
 
 全部 v1 操作挂 `internal/user/apiv1/`，tag `users`。
 
@@ -84,13 +84,13 @@ Me  object="me", id, moemoepoint, has_checked_in_today, has_unread_messages,
 | `id` | id 字符串 | 会话里的用户 id |
 | `moemoepoint` | integer，**无 minimum**（生产有 −16） | `kungal_user_state.moemoepoint`，**是 OAuth 余额的缓存**（C3），description 里写明会滞后 |
 | `has_checked_in_today` | bool | `daily_check_in = 1`；闸门按 Asia/Shanghai 日重置 |
-| `has_unread_messages` | bool | 通知（按静音偏好过滤）+ 系统公告 + 私信（私信类未静音时）任一未读 |
+| `has_unread_messages` | bool | 通知（`receiver_id = 我 AND status = 'unread' AND type NOT IN 已静音的库值`）或私信（对方发的、没有我的 `chat_message_read_by` 行；已静音 `chat` 时不计）任一未读。**不含系统公告**：`system_message` 生产 0 行、没有写入方，M 轨删掉它的管理面且不重建（M 契约 §7，2026-09-22 协调） |
 | `is_creator` | bool | `role.IsCreator(userclient.User(id).Roles)`（含 site roles） |
 | `toolset_upload_today_bytes` | integer ≥0 | `daily_toolset_upload_bytes` |
 
 旧名对照：`moemoepoints` → `moemoepoint`（一义两名）、`is_check_in` → `has_checked_in_today`、`has_new_message` → `has_unread_messages`、`daily_toolset_upload_bytes` → `toolset_upload_today_bytes`。
 
-**吞错全部取消**：`kungal_user_state` 查询失败、三个未读计数任一失败 → `500 INTERNAL_ERROR`（旧实现静默当 0，红点消失）。`userclient.User` 失败 → `503 SERVICE_UNAVAILABLE`。**没有 state 行**（从未在论坛出现过）不是错误：先 `Ensure`，再读。
+**吞错全部取消**：`kungal_user_state` 查询失败、两个未读计数任一失败 → `500 INTERNAL_ERROR`（旧实现静默当 0，红点消失）。`userclient.User` 失败 → `503 SERVICE_UNAVAILABLE`。**没有 state 行**（从未在论坛出现过）不是错误：先 `Ensure`，再读。
 
 ### 3.2 `POST /api/v1/me/check-ins` → `CheckIn`
 
@@ -126,16 +126,11 @@ MoemoepointEntry  object="moemoepoint_entry", id, delta, reason, ref,
 - 上游不可达 → `503 SERVICE_UNAVAILABLE`。
 - 网页 `MoemoepointLog.vue` 把 `content_removed` 显示成「被移除」的改写逻辑保留（见 `kungal-moemoepoint-debit-reason`：这是 infra 唯一暴露的扣分理由）。
 
-### 3.4 通知偏好 `GET/PUT /api/v1/me/notification-preferences`
+### 3.4 通知偏好——移到 U2
 
-```
-NotificationPreferences  object="notification_preferences", muted_types: [string]
-```
+2026-09-22 与 M 轨协调：v1 的通知类型 token 由 M 轨新建的 `internal/message/notifytype` 定义（18 个 token + 伪静音键 `chat`，其中 13 个与库值不同名，如 `favorite` → `favorited`、`solution` → `best_answer_chosen`；全表在 M 的 `docs/proj/api-v1/waves/m-message.md` §3.3）。线上的静音键必须是这些 v1 token，存储仍是库值、经 `notifytype` 互译。
 
-- `muted_types` 的词表归消息域（`message/service` 的 `SanitizeMutedKeys` 认得的那一组），**本段不把它写成 schema 枚举**——M 轨正在迁那个词表，写死会让两条轨在同一个常量上冲突。schema：`maxItems 64`、每项 `maxLength 64`、`uniqueItems`。
-- PUT 整体替换（幂等）。**未知键 → `422 VALIDATION_FAILED`**，`errors[].pointer = /muted_types/<i>`、`reason = UNKNOWN_VALUE`、`params.allowed` = 当前词表。旧实现静默丢弃，客户端以为存上了。
-- GET：库里的历史脏键照旧清洗掉再下发（那是存量数据，不是本次输入）。`FindByID` 失败 → 500，不再当作「一个都没静音」。
-- 没有 state 行：GET 回空数组；PUT 先 `Ensure`。
+`notifytype` 在 M 合并之前不在 master 上，所以 `GET/PUT /api/v1/me/notification-preferences` 从 U1 移出，**在 U2 里基于 `notifytype` 实现**。U2 契约沿用这里原先定下的规则：未知 token → `422 VALIDATION_FAILED` / `UNKNOWN_VALUE`（`pointer /muted_types/<i>`，`params.allowed`）；GET 读失败 → 500；PUT 先 `Ensure`；`maxItems 64`、`uniqueItems`。
 
 ### 3.5 云端偏好 `GET/PUT /api/v1/me/preferences`
 
@@ -264,7 +259,6 @@ CreatorApplication  object="creator_application", id, state, message,
 | **`utils/kunFetch.ts` 的会话探针** | 它自己 raw `$fetch` 打 `/api/user/status` 并判 `code !== 0`。改打 `/api/v1/me`：**2xx = 会话活着、401 = 死了**，其它（网络错、5xx）= 不下结论（维持现有「不确定就别登出」的语义）。**必须与删旧路由同一个 PR**，否则探针打到 401 的旧路由上会把所有人判成已登出（普查 bug #11） |
 | `components/kun/top-bar/UserInfo.vue` | 签到 → `POST /me/check-ins`；「今天已签」按 `code === 'ALREADY_EXISTS'` 处理 |
 | `components/kun/top-bar/MoemoepointLog.vue` | 翻页从 `before_id` / `has_more` 改成 `cursor` / `next_cursor`；`is_local` → `is_from_this_site` |
-| `components/message/NotificationPreference.vue`、`pages/message/muted.vue` | 路径换 v1 |
 | `composables/useCloudPreferences.ts` | 路径换 v1；冲突改判 412、不可用改判 `SCOPE_REQUIRED`；`If-Match` 照发 |
 | `composables/useContentStance.ts` | `/user/nsfw` → `PUT /me/nsfw-display`，不再读 `adult_confirmed` |
 | `composables/useKunEditorAdapters.ts`、`components/edit/topic/AccessUserPicker.vue` | `/user/search` → `GET /users?q=`，读 `items`；id 是字符串 |
@@ -276,9 +270,9 @@ CreatorApplication  object="creator_application", id, state, message,
 
 ## 8. 删旧路由
 
-14 条全删，连同 handler 方法、只被它们用到的 DTO、手写 TS 类型。`UserHandler` 的 struct 本身**留着**（U2/U3 的 9+2 条还挂在它上面）；`ProfileHandler`、`ContentPrefsHandler` 整个删；`CreatorHandler` 整个删（`CreatorService` 留，v1 共用）。`rg` 证明零调用方（含 `apps/web/server/`、`../kungal-apps`）。`deadcode -test ./...` 跑到不动点。`routes.golden` 重生成，`legacy_route_baseline` 下调 14。
+12 条全删，连同 handler 方法、只被它们用到的 DTO、手写 TS 类型。`UserHandler` 的 struct 本身**留着**（U2/U3 的 9+2 条还挂在它上面）；`ProfileHandler`、`ContentPrefsHandler` 整个删；`CreatorHandler` 整个删（`CreatorService` 留，v1 共用）。`rg` 证明零调用方（含 `apps/web/server/`、`../kungal-apps`）。`deadcode -test ./...` 跑到不动点。`routes.golden` 重生成，`legacy_route_baseline` 下调 12。
 
-`docs/proj/app-direct-api.md` 里 `/api/user/status` 与 `/api/user/notification-preferences` 两行改成 v1 路径，`CHANGELOG.md` 记一条（App 可见）。
+`docs/proj/app-direct-api.md` 里 `/api/user/status` 一行改成 v1 路径（通知偏好那行随 U2 改），`CHANGELOG.md` 记一条（App 可见）。
 
 ## 9. 变异清单（先于实现提交）
 
@@ -291,10 +285,11 @@ CreatorApplication  object="creator_application", id, state, message,
 | 3 | `AwardSync` 失败时不还原闸门 | 上游失败 → 503 之后 `has_checked_in_today` 仍为 false，且能立刻重签成功 |
 | 4 | 闸门 `WHERE daily_check_in = 0` 去掉 | 第二次签到 → `409 ALREADY_EXISTS` |
 | 5 | `GET /me` 的未读计数失败改回当 0 | 计数查询失败 → 500 |
+| 5b | `GET /me` 的未读通知不排除已静音类型 | 只有已静音类型的未读通知时 `has_unread_messages = false` |
 | 6 | 萌萌点流水游标指纹去掉 `reason` | 换 `reason` 复用游标 → `INVALID_CURSOR` |
 | 7 | 上游 `has_more = false` 时仍然下发 `next_cursor` | 末页省略 `next_cursor` |
 | 8 | 流水 `limit` 上限从 50 改成 100 | `limit=51` → `LIMIT_TOO_LARGE` |
-| 9 | 通知偏好未知键改回静默丢弃 | 未知键 → 422 `UNKNOWN_VALUE`，`pointer /muted_types/<i>` |
+| ~~9~~ | ~~通知偏好未知键改回静默丢弃~~ | 随通知偏好移到 U2 |
 | 10 | `SearchUsers` 恢复写 `c.hot` | 一次 `/users?q=` 之后 `userClient.User(id)` 仍会回源（热缓存里没有这个人） |
 | 11 | `/users?q=` 空白 `q` 回空列表而不是 422 | `q="  "` → 422 |
 | 12 | 上游 10007 映射成 `503` | 撞名 → `409 USERNAME_TAKEN` |
