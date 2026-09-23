@@ -178,6 +178,7 @@ App（`../kungal-apps`）不调这四条。
 5. **上传不查封禁**。v1 的内容写操作都先向账号服务确认调用者没被封禁；上传没有照做：旧面不查，查了会让账号服务故障连带上传失败，而引用这张图的那次写（话题、回复、私信）本来就会拦下被封禁的账号。
 6. **`catalogclient` 的旧预设映射删了**。`mapEditImagePreset` 只为把 `galgame_banner` / `galgame_screenshot` 翻成 catalog 的 `cover` / `screenshot`；旧路由删掉之后它是恒等函数，客户端直接透传 `preset`。
 7. **变异 3 按旧面的真实语义重写**：「先数、上传、成功后再加一」，窗口是整个上传过程，而不是两条 SQL 之间的几微秒。测试里假图床每次上传睡 30 ms。
+8. **`PAYLOAD_TOO_LARGE` 最终进 platform 域**（取代第 2 条）。infra#294（9605ffae，2026-09-23 13:08Z 部署）把它加成平台码，论坛逐字照抄 infra 注册表：`platform`、413、`https://developer.nextmoe.dev/problems/platform/payload-too-large`、title「Payload too large」、描述「The request body is larger than this operation accepts. Retrying the same body cannot succeed.」。kungal 域的那条删了。
 
 ### 变异执行结果
 

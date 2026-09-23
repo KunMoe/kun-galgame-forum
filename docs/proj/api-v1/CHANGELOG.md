@@ -11,7 +11,7 @@ Offered:
 
 Shape vs the retired routes: every upload returns an `Image` (`url`, `hash`, `width`, `height`, `thumbhash`, `sexual`). The topic and message routes used to return a bare `/image/<hash>` string. The client now builds that string from `hash`, and should keep persisting the token or the hash, never `url`. `sexual` is a string (`safe` | `suggestive` | `explicit`) or `null` for an image not graded yet; it used to be an integer.
 
-New codes: `IMAGE_DAILY_LIMIT_REACHED` (429, with `limit`), `IMAGE_REJECTED` (422, the image host's moderation) and `PAYLOAD_TOO_LARGE` (413).
+New codes: `IMAGE_DAILY_LIMIT_REACHED` (429, with `limit`) and `IMAGE_REJECTED` (422, the image host's moderation), both kungal; and `PAYLOAD_TOO_LARGE` (413), a platform code shared verbatim with infra.
 
 **Every v1 operation:** a request body over the limit used to answer `500 INTERNAL_ERROR`. The limit is 1 MiB for a JSON body and 10 MiB + 64 KiB for anything else. It now answers `413 PAYLOAD_TOO_LARGE`, and every operation with a request body declares 413.
 

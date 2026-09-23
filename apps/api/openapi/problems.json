@@ -101,6 +101,15 @@
     },
     {
       "object": "problem_type",
+      "code": "PAYLOAD_TOO_LARGE",
+      "domain": "platform",
+      "status": 413,
+      "type": "https://developer.nextmoe.dev/problems/platform/payload-too-large",
+      "title": "Payload too large",
+      "description": "The request body is larger than this operation accepts. Retrying the same body cannot succeed."
+    },
+    {
+      "object": "problem_type",
       "code": "PRECONDITION_FAILED",
       "domain": "platform",
       "status": 412,
@@ -296,15 +305,6 @@
       "type": "https://developer.nextmoe.dev/problems/kungal/moemoepoint-insufficient",
       "title": "Moemoepoint insufficient",
       "description": "The caller's moemoepoint balance, as this forum last cached it, is below what the operation costs. required is that cost."
-    },
-    {
-      "object": "problem_type",
-      "code": "PAYLOAD_TOO_LARGE",
-      "domain": "kungal",
-      "status": 413,
-      "type": "https://developer.nextmoe.dev/problems/kungal/payload-too-large",
-      "title": "Payload too large",
-      "description": "The request body is larger than the operation accepts: 1 MiB for a JSON body, 10 MiB plus 64 KiB for any other."
     },
     {
       "object": "problem_type",
