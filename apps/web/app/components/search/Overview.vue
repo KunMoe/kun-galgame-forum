@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { SearchOverviewData } from './overview'
+import type { SearchOverviewData } from '~/utils/search/overview'
 
 const props = defineProps<{
   keywords: string

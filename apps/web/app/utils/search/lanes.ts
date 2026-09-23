@@ -4,6 +4,7 @@ import { settle, type ApiResult } from '#shared/utils/api/problem'
 export interface LanePage {
   items: SearchResult[]
   total: number
+  atLeast?: boolean
 }
 
 export type GalgameFilterQuery = Partial<
@@ -35,7 +36,9 @@ const worksFilter = (filter: GalgameFilterQuery) => {
   }
 }
 
-const unwrap = <T extends { items: unknown[]; total: number }>(
+const unwrap = <
+  T extends { items: unknown[]; total: number; total_relation: 'eq' | 'gte' }
+>(
   result: ApiResult<T>,
   report: boolean
 ): LanePage | null => {
@@ -47,7 +50,8 @@ const unwrap = <T extends { items: unknown[]; total: number }>(
   }
   return {
     items: result.data.items as SearchResult[],
-    total: result.data.total
+    total: result.data.total,
+    atLeast: result.data.total_relation === 'gte'
   }
 }
 

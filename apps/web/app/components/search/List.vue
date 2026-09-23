@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useRouteQuery } from '@vueuse/router'
 import { SEARCH_CATEGORY_MAP } from './items'
-import { fetchLanePage, type GalgameFilterQuery } from './lanes'
+import { fetchLanePage, type GalgameFilterQuery } from '~/utils/search/lanes'
 
 const props = defineProps<{
   keywords: string
@@ -12,6 +12,7 @@ const PAGE_SIZE = 24
 
 const results = ref<SearchResult[]>([])
 const total = ref(0)
+const atLeast = ref(false)
 const pending = ref(!!props.keywords)
 const failed = ref(false)
 // In the URL, so a reload and a shared link both land on the page the reader
@@ -82,6 +83,7 @@ const load = async () => {
   // the request never came back is the one thing this must not do.
   failed.value = !data
   total.value = data?.total ?? 0
+  atLeast.value = data?.atLeast ?? false
 
   // A link outlives the result set it was copied from. ?page=16 against a lane
   // that has since shrunk to 10 pages rendered "杂鱼杂鱼杂鱼~什么也没有搜索到"
@@ -122,7 +124,10 @@ watch(
     <p v-else class="text-default-500 text-sm">
       <template v-if="pending && !results.length">正在搜索…</template>
       <template v-else-if="total">
-        共 <span class="text-default-700 tabular-nums">{{ total }}</span>
+        共
+        <span class="text-default-700 tabular-nums">
+          {{ atLeast ? `${total}+` : total }}
+        </span>
         {{ meta.countUnit }}
       </template>
     </p>

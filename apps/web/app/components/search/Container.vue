@@ -1,5 +1,8 @@
 <script setup lang="ts">
-import { loadSearchOverview, type SearchOverviewData } from './overview'
+import {
+  loadSearchOverview,
+  type SearchOverviewData
+} from '~/utils/search/overview'
 
 const route = useRoute()
 const router = useRouter()
