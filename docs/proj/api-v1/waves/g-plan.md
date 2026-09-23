@@ -12,7 +12,7 @@
 | G2 | 题库 `/galgame-quiz`（`census/galgame-quiz.md`） | 13 | |
 | G3 | galgame 资源：浏览、详情、按作品列、写、赞、有效/失效、发布禁止 | 11 | |
 | G4 | 作品详情 `GET /works/{work_id}`、赞、外链、我的互动；删 `/galgame/drafts` | 6 | 等 GE 的实体摘要 |
-| G5 | 浏览 `/works`（本地引擎）+ 资料库集合（catalog 引擎）+ sitemap + 发售月历 + collected months | 9 | 等 GE 的 `WorkSummary` |
+| G5 | 浏览 `/works`（本地引擎）+ 资料库集合（catalog 引擎）+ sitemap + 发售月历 + collected months；外加 `/rss/galgame`（2026-09-23 由 X1 移交：改读 `/works?sort=created_desc`，旧 handler 照常退役） | 9 + 1 | 等 GE 的 `WorkSummary` |
 | G6 | catalog 用户面：封面投票、游玩时长、收藏夹（含 `/users/{user_id}/collections`） | 11 | |
 | G7 | 投稿、认领审核、资料编辑引擎（`census/galgame-contribution.md`） | 22 | |
 
