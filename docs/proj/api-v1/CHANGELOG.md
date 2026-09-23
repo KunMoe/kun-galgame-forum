@@ -16,6 +16,73 @@ Retired: `GET /api/user/:id/topics`, `GET /api/user/:id/replies`, `GET /api/user
 
 ## G0 window (galgame id is the catalog work id)
 
+## 2026-09-23 (X2 activity stream)
+
+Breaking for `GET /api/activity`, `/api/activity/tab` and `/api/activity/timeline`; all three are gone.
+
+Offered:
+
+- `GET /api/v1/activities`: one cursor collection for the home tabs, `/activity` and `/activity/category` (`limit` 1–100, default 20).
+  - Filters: `activity_types` (closed enum, comma form; absent means every type), `topic_sections` (`normal` / `help` / `all`, only affects `topic_creation`), `include_nsfw` and `include_galgames_without_resources`.
+  - Sort: `occurred_desc` (default) or `bumped_desc`. `bumped_desc` is allowed only when `activity_types` is exactly `topic_creation`; otherwise it is `400 INVALID_PARAMETER`.
+  - The cursor is bound to the sort and every filter, so a changed filter with an old cursor is `400 INVALID_CURSOR` instead of a silent restart.
+  - A page can be short, because activities by banned users or on works catalog does not show are dropped. Only an absent `next_cursor` means the end.
+
+Shape vs the retired faces:
+
+- Each item is `activity` with `activity_type`, `performer` (`UserRef` or `null`) and `occurred_at`, plus one type-specific block: `topic` (`TopicSummary`), `topic_digest`, `reply`, `comment`, `work` (`WorkRef`), `work_digest`, `work_stats`, `work_revision` (`revision_number` and `legacy_revision_id`, either may be `null`), `galgame_rating`, `resource`, `quiz`, `toolset`, `todo` or `update_log`.
+- `galgame_rating`:
+  - `play_status` is the full vocabulary, including `on_hold`.
+  - `short_summary` is a non-null string: `""` when there is none, and also when `spoiler_level` is not `none`.
+- `resource`:
+  - `resource_type` is the resource vocabulary key, as on the `/…/works?resource_type=` filters.
+  - `resource_platforms` and `resource_languages` are arrays of vocabulary keys, replacing the single `platform` / `language` strings.
+- The upvote notification echo (`MESSAGE_UPVOTE`) is no longer in the stream.
+
+## 2026-09-23 (X2 search)
+
+Breaking for `GET /api/search/overview`, `/api/search/quick` and `/api/search/gal-comment`; all three are gone. The legacy `GET /api/search` now answers only `type=resource`. `/api/search/entity` and `/api/search/entity/resolve` are unchanged until G/GE define those shapes.
+
+Offered, one collection per lane:
+
+- `GET /api/v1/search/topics`, `/replies`, `/comments`: page-number, optional auth, `include_nsfw` defaults to false. NSFW topics, and the replies and comments in them, were returned to anonymous searchers before.
+- `GET /api/v1/search/users`: page-number. OAuth caps the search at 50, so `total_relation` is `gte` when the cap is hit (was an exact-looking 50).
+- `GET /api/v1/search/works`: page-number, public. It honours `include_nsfw` (the old galgame lane hard-wired its SFW gate off).
+- `GET /api/v1/search/wall-comments`: cursor, public, `q` 2–100 characters.
+
+Every lane breaks ties on id, and reply and comment excerpts are plain text instead of Markdown slices. The old overview and quick search each came back as one response. Clients now call each lane themselves, so a lane that fails is its own failed request, not an empty section with a count of 0. The toolset lane is `GET /api/v1/toolsets?q=` (G1).
+
+## 2026-09-23 (X2 rankings)
+
+Breaking for `GET /api/ranking/topic`, `/api/ranking/user`, `/api/ranking/galgame`, and the uncalled `GET /api/home`; all four are gone.
+
+Offered:
+
+- `GET /api/v1/rankings/topics`, `/rankings/users`, `/rankings/works`: top-N lists (`limit` 1–100, default 50) with no pages and no total, each with its own `sort` vocabulary (`views_desc` …).
+  - Every sort breaks ties on id.
+  - Items are `topic_ranking_entry` / `user_ranking_entry` / `work_ranking_entry`, with `rank` numbered after dropped rows and the sorted `metric_value`.
+  - Each entry embeds `topic` (the topic list's `TopicSummary`), `member` (`UserRef`) or `work` (`WorkRef`).
+- `include_nsfw` (topics and works) is applied before `LIMIT`, so an SFW top 50 has 50 rows (it had about 25).
+- User counts include only what an anonymous visitor can see.
+- OAuth or catalog being down is `503`. It used to be 「已注销用户」 authors or an empty list.
+
+## 2026-09-23 (X2 admin overview)
+
+Breaking for `GET /api/admin/overview/all` and `/api/admin/overview/stats`; both are gone.
+
+Offered (both need `admin.dashboard`; a Bearer request is always `403`):
+
+- `GET /api/v1/admin/overview`: nine totals since the site opened, as named `_count` fields.
+- `GET /api/v1/admin/overview/daily?days=`: exactly `days` buckets (1–365, default 30), oldest first, one per Beijing calendar day. Days without activity are included, with zeros.
+
+Vs the retired faces:
+
+- `work_count` counts only published works; it included about 6,400 unpublished stub rows.
+- The window is `days` buckets, not `days + 1`.
+- The series is dense, not sparse.
+- Buckets no longer depend on the connection's time zone.
+- The server no longer sends Chinese labels.
+
 ## 2026-09-23 (X1c news, topic RSS)
 
 Breaking for `GET /api/news`, `/api/news/sources`, `/api/news/archive`, `/api/news/month` and `GET /api/rss/topic`; all five are gone. `GET /api/rss/galgame` stays on the legacy route until the works browse collection lands.
@@ -85,6 +152,7 @@ Offered:
 Walls are addressed by the same `subject_type` vocabulary as `/wall-comments`. A missing page is `404`, an unanswered spoiler quiz `403 QUIZ_ANSWER_REQUIRED`, an upstream failure `503`.
 
 Retired: `POST /api/community/wall/read`, `POST /api/community/wall/follow`, `GET /api/community/following`.
+
 ## 2026-09-23 (X2-auth account)
 
 Offered:

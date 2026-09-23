@@ -83,6 +83,7 @@ git ls-remote --heads origin 'api-v1/*'
 | WS | 网站目录：`/website` + `/website-tag-group` + `/website-tag` + `/website-category` 21 条（后两组由 D 轨核实后移入）→ 27 个操作；公开读按 `host` / `slug`，写面按 id 挂 `/admin`；赞与收藏是 K16 槽位（[契约](waves/ws-website.md)，迁移 175） | ✅ 2026-09-23 |
 | D | 文档：16 条旧路由 → `/api/v1/docs`、`/api/v1/docs/{doc_slug}`、`/api/v1/admin/docs*`、`/api/v1/admin/doc-order` 7 个操作；文档分类升格为封闭枚举 `doc_category`（K25），从未用过的草稿状态与文档标签不建模（K26）；29 张 AVIF 横幅合并前回填进图床（[契约](waves/d-doc.md)，迁移 165 deploy-then-drop 已跑、166，PR #193） | ✅ 2026-09-23 |
 | GE | galgame 实体六件套：18 条旧路由 → 标签、会社、引擎、系列、署名名义、角色 21 个操作；共享作品卡片 `WorkSummary`（`internal/galgame/workrepr`）；合并实体 `404 ENTITY_MERGED`（[契约](waves/ge-entities.md)，无迁移） | ✅ 2026-09-23 |
+| X2 | X 轨的后半，六段各一个 PR，全部无迁移：评论墙的关注与已读 3 条 → `/api/v1/me/walls*`（[契约](waves/x2-community.md)，#204）；`/api/auth/me` → `/api/v1/me/account`，登录回调与登出永留 v1 外（K-X2U1，[契约](waves/x2-auth.md)，#206）；管理后台总览 2 条 → `/api/v1/admin/overview*`，北京日、稠密、只计已发布作品（[契约](waves/x2-overview.md)，#208）；排行 3 条 + 无人调用的 `/api/home` → `/api/v1/rankings/*` 前 N 名列表（[契约](waves/x2-ranking.md)，#213）；搜索 3 条 → `/api/v1/search/*` 一车道一集合（[契约](waves/x2-search.md)，#211）；动态 3 条 → `/api/v1/activities`（[契约](waves/x2-activity.md)，#209）。全轨规则：嵌入的 `work` 是可空 `WorkRef`、`topic` 是可空 `TopicSummary`，评分块叫 `galgame_rating`、形状归 GR | ✅ 2026-09-23 |
 
 ### 待认领
 
@@ -95,7 +96,7 @@ git ls-remote --heads origin 'api-v1/*'
 | U | 用户 `/user/**` + 删号管理面：~~**U1**「我」的面 12 条~~ ✅ → ~~**U2** 公开资料、名片、通知偏好 4 条~~ ✅ → ~~**U3a** 话题 / 回复 / 评论 3 条~~ ✅ → **U3b** galgames / galgame-comments / resources / ratings 4 条 → **U3c** `PurgeHandler` 的 `/admin/user/:id/content(-stats)` 2 条（破坏性，单独一段）。`/user/:id/toolsets` 与 `/collections` 归 G 轨（同一子集合形状） | 6 | 120–129 | 已认领（分支 `api-v1/u-user`） |
 | G | galgame 主域 + `-edit` + `-quiz` + `-resource` + `toolset` + 各自的 admin/user 面，含 `/user/:id/toolsets` 与 `/user/:id/collections`（**不含** `/galgame/:id/comments*` 与 `/galgame/comments/*`，已归 RC） | 69 | 140–159 | 已认领（分支 `api-v1/g-galgame`）。~~**G0** 改号：论坛 galgame id ≡ catalog work id~~ ✅ 2026-09-23（G0a #188，G0b #192，迁移 140/141，[计划](../gid-is-work-id.md)、[操作单](../g0-window-runbook.md)）→ ~~**G1** 工具集 16 条~~ ✅ 2026-09-23（#215，[契约](waves/g1-toolsets.md)，迁移 142；G1.1 迁移 144）→ G2 起见 [G 轨计划](waves/g-plan.md) |
 | GR | galgame 评分 `/galgame-rating` | 6 | 190–194 | |
-| X | 零散：`/search` 6、`/friend-link`(+admin) 5、`/news` 4、`/image` 4、`/ranking` 3、`/community` 3、`/auth` 3、`/activity` 3、`/rss` 2、`/category`+`/section` 2、`/admin` 总览 2、`/home` 1、`/app` 1 | 39 | 195–209 | 可拆成几个小 PR |
+| X | 零散：~~**X2**：`/search` 3、`/ranking` 3、`/community` 3、`/auth/me` 1、`/activity` 3、`/admin` 总览 2、`/home` 1~~ ✅（`/search` 另 3 条资源 / 资料库车道等 G、GE 定形；`/auth` 另 2 条是 BFF 登录管道，永留 v1 外）；X1：`/friend-link`(+admin) 5、`/news` 4、`/image` 4、`/rss` 2、`/category`+`/section` 2、`/app` 1 | 39 | 195–209 | X2 完成；X1 分段进行中 |
 
 **不存在「admin 轨」**：`/api/admin/**` 是 11 个 handler 各自域的管理面（`TopicAdminHandler`→话题、`PurgeHandler`→用户、`ArticleHandler`→文档、`TrustHandler`→信任…），各域迁自己的。
 
