@@ -1,8 +1,9 @@
 <script setup lang="ts">
+import type { UserProfile } from '#shared/utils/api/schemas'
 import { settle } from '#shared/utils/api/problem'
 
 const props = defineProps<{
-  user: UserInfo
+  user: UserProfile
 }>()
 
 const api = useApiClient()
@@ -35,7 +36,7 @@ const handleChangeBio = async () => {
 }
 
 onMounted(() => {
-  bioValue.value = user.value.bio
+  bioValue.value = user.value.bio ?? ''
 })
 </script>
 

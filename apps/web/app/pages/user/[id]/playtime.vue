@@ -1,14 +1,16 @@
 <script setup lang="ts">
+import type { UserProfile } from '#shared/utils/api/schemas'
+
 definePageMeta({
   middleware: 'auth'
 })
 
 const props = defineProps<{
-  user: UserInfo
+  user: UserProfile
 }>()
 
 const { id } = usePersistUserStore()
-const isOwner = computed(() => id === props.user.id)
+const isOwner = computed(() => id === Number(props.user.id))
 
 useKunDisableSeo('游玩时长')
 </script>

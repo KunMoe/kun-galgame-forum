@@ -1,21 +1,25 @@
 <script setup lang="ts">
 import { useIntersectionObserver } from '@vueuse/core'
-import { managementRoleLabel, KUN_USER_STATUS_MAP } from '~/constants/user'
+import type { UserProfile } from '#shared/utils/api/schemas'
+import { managementRoleLabel } from '~/constants/user'
+import { toKunUser } from '~/utils/userRef'
 
 const props = defineProps<{
-  user: UserInfo
+  user: UserProfile
 }>()
 
 const currentUserId = usePersistUserStore().id
-const isSelf = computed(() => currentUserId === props.user.id)
+const isSelf = computed(() => currentUserId === Number(props.user.id))
+const kunUser = computed(() => toKunUser(props.user))
+const displayName = computed(() => props.user.name ?? '')
 
 const metrics = computed(() => [
   { label: '萌萌点', value: props.user.moemoepoint, accent: true },
-  { label: '话题', value: props.user.topic },
-  { label: 'Galgame', value: props.user.galgame },
-  { label: '评分', value: props.user.galgame_rating },
-  { label: '被赞', value: props.user.like },
-  { label: '被推', value: props.user.upvote }
+  { label: '话题', value: props.user.counts.topic_count },
+  { label: 'Galgame', value: props.user.counts.published_galgame_count },
+  { label: '评分', value: props.user.counts.galgame_rating_count },
+  { label: '被赞', value: props.user.counts.received_like_count },
+  { label: '被推', value: props.user.counts.received_upvote_count }
 ])
 
 const bannerRef = ref<HTMLElement | null>(null)
@@ -37,13 +41,13 @@ useIntersectionObserver(
           class-name="cursor-default shrink-0 relative"
           :is-navigation="false"
           size="original-sm"
-          :user="{ id: user.id, name: user.name, avatar: user.avatar }"
+          :user="kunUser"
           :disable-floating="true"
         />
 
         <div class="min-w-0 flex-1">
           <h1 class="flex flex-wrap items-center gap-2 text-2xl font-bold">
-            <span class="truncate">{{ user.name }}</span>
+            <span class="truncate">{{ displayName }}</span>
             <KunButton
               v-if="!isSelf"
               variant="flat"
@@ -59,7 +63,7 @@ useIntersectionObserver(
               v-if="!isSelf"
               subject-kind="user"
               :subject-id="user.id"
-              :snapshot="user.name"
+              :snapshot="displayName"
               :subject-url="`${kungal.domain.main}/user/${user.id}`"
             />
           </h1>
@@ -75,9 +79,6 @@ useIntersectionObserver(
             >
               创作者
             </KunChip>
-            <KunChip size="sm" color="success">
-              {{ KUN_USER_STATUS_MAP[user.status] }}
-            </KunChip>
           </div>
 
           <p
@@ -88,7 +89,7 @@ useIntersectionObserver(
           </p>
 
           <div class="text-default-500 mt-2 text-sm">
-            注册于 <KunTime :time="user.created" type="date" show-year />
+            注册于 <KunTime :time="user.created_at" type="date" show-year />
           </div>
         </div>
       </div>
@@ -123,10 +124,10 @@ useIntersectionObserver(
                 class-name="cursor-default shrink-0"
                 :is-navigation="false"
                 size="sm"
-                :user="{ id: user.id, name: user.name, avatar: user.avatar }"
+                :user="kunUser"
                 :disable-floating="true"
               />
-              <span class="truncate font-semibold">{{ user.name }}</span>
+              <span class="truncate font-semibold">{{ displayName }}</span>
               <KunChip
                 size="sm"
                 color="primary"
@@ -138,8 +139,12 @@ useIntersectionObserver(
               <div
                 class="text-default-600 ml-auto flex items-center gap-4 text-sm"
               >
-                <span class="hidden sm:inline">话题 {{ user.topic }}</span>
-                <span class="hidden sm:inline">Galgame {{ user.galgame }}</span>
+                <span class="hidden sm:inline">
+                  话题 {{ user.counts.topic_count }}
+                </span>
+                <span class="hidden sm:inline">
+                  Galgame {{ user.counts.published_galgame_count }}
+                </span>
                 <span>
                   萌萌点 <b class="text-secondary">{{ user.moemoepoint }}</b>
                 </span>

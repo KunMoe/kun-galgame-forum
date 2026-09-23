@@ -18,29 +18,28 @@ const selected = defineModel<number[]>({ required: true })
 
 const api = useApiClient()
 const { id: currentUserId } = usePersistUserStore()
-const config = useRuntimeConfig()
 
 const known = ref<Record<number, TopicAccessUser>>({})
 const keyword = ref('')
 const results = ref<TopicAccessUser[]>([])
 const searching = ref(false)
 
-// access_grants.user_ids carries bare ids and user name search only matches names,
-// so the floating card is the only id -> name face there is. Raw $fetch on purpose:
-// it 404s on a banned or deleted grantee, and kunFetch would pop one error toast
-// per unresolvable id the moment the author opens the editor.
-const resolve = async (id: number) => {
-  const resp = await $fetch<{ code: number; data?: TopicAccessUser }>(
-    `${config.public.apiBaseUrl}/api/user/${id}/floating`,
-    { credentials: 'include', query: { user_id: id } }
-  ).catch(() => null)
-  if (resp?.code === 0 && resp.data) {
-    known.value[id] = resp.data
-  }
-}
-
 const resolveMissing = async (ids: number[]) => {
-  await Promise.all(ids.filter((id) => !known.value[id]).map(resolve))
+  const unknown = ids.filter((id) => !known.value[id])
+  if (!unknown.length) {
+    return
+  }
+  const page = await settle(
+    api.GET('/users', {
+      params: { query: { ids: unknown.map(String) } }
+    })
+  )
+  if (!page.ok) {
+    return
+  }
+  for (const item of page.data.items) {
+    known.value[Number(item.id)] = toKunUser(item)
+  }
 }
 
 onMounted(() =>

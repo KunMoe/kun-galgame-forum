@@ -1,11 +1,12 @@
 <script setup lang="ts">
+import type { UserProfile } from '#shared/utils/api/schemas'
 import {
   GALGAME_NAV_CONFIG,
   type KUN_USER_PAGE_GALGAME_TYPE
 } from '~/constants/user'
 
 const props = defineProps<{
-  user: UserInfo
+  user: UserProfile
 }>()
 
 const route = useRoute()
@@ -16,10 +17,12 @@ const galgameType = computed(() => {
 })
 
 useKunDisableSeo(
-  `${props.user.name}${GALGAME_NAV_CONFIG[galgameType.value]?.text ?? 'Galgame'}的 Galgame`
+  `${props.user.name ?? ''}${
+    GALGAME_NAV_CONFIG[galgameType.value]?.text ?? 'Galgame'
+  }的 Galgame`
 )
 </script>
 
 <template>
-  <UserGalgame :user-id="user.id" :type="galgameType" />
+  <UserGalgame :user-id="Number(user.id)" :type="galgameType" />
 </template>

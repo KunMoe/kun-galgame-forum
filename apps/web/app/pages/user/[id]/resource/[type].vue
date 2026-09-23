@@ -1,11 +1,12 @@
 <script setup lang="ts">
+import type { UserProfile } from '#shared/utils/api/schemas'
 import {
   GALGAME_RESOURCE_NAV_CONFIG,
   type KUN_USER_PAGE_GALGAME_RESOURCE_TYPE
 } from '~/constants/user'
 
 const props = defineProps<{
-  user: UserInfo
+  user: UserProfile
 }>()
 
 const route = useRoute()
@@ -16,10 +17,12 @@ const resourceType = computed(() => {
 })
 
 useKunDisableSeo(
-  `${props.user.name} 的${GALGAME_RESOURCE_NAV_CONFIG[resourceType.value].text}`
+  `${props.user.name ?? ''} 的${
+    GALGAME_RESOURCE_NAV_CONFIG[resourceType.value].text
+  }`
 )
 </script>
 
 <template>
-  <UserResource :user-id="user.id" :type="resourceType" />
+  <UserResource :user-id="Number(user.id)" :type="resourceType" />
 </template>

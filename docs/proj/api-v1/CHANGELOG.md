@@ -1,5 +1,19 @@
 # API v1 changelog
 
+## 2026-09-23 (U2 users)
+
+Breaking for `GET /api/user/:id`, `GET /api/user/:id/floating`, and `GET`/`PUT /api/user/notification-preferences`.
+
+Offered:
+
+- `GET /api/v1/users/{user_id}` — public profile; unknown and banned/deleted users answer 404
+- `GET /api/v1/users?ids=` — batch `UserRef` lookup (comma-separated ids, 1–100); requested ids that are unknown or not renderable sit in `missing`
+- `GET` / `PUT /api/v1/me/notification-preferences` — `{ muted_types }` using v1 notification type tokens (`favorited`, `best_answer_chosen`, `reply_pinned`, `followed_thread_activity`, `lottery_drawn`, …; `chat` stays `chat`)
+
+`UserProfile` counts sit under `counts` and are renamed (`topic` → `topic_count`, `reply_created` → `reply_count`, `galgame` → `published_galgame_count`, `galgame_toolset` → `toolset_count`, `upvote` → `received_upvote_count`, `daily_topic_count` → `topic_today_count`, …). `status` is gone.
+
+Retired: `GET /api/user/:id`, `GET /api/user/:id/floating`, `GET`/`PUT /api/user/notification-preferences`.
+
 ## 2026-09-23 (U1 me)
 
 Breaking for `/api/user/status` and the other U1 `/api/user/*` faces in this segment.

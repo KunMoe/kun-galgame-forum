@@ -279,8 +279,3 @@ export const managementRoleLabel = (roles: string[]): string =>
       : roles.includes('moderator')
         ? KUN_USER_ROLE_MAP.moderator!
         : '普通用户'
-
-export const KUN_USER_STATUS_MAP: Record<number, string> = {
-  0: '正常',
-  1: '封禁'
-}

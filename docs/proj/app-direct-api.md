@@ -83,7 +83,7 @@ App 用 AppAuth + PKCE 直接从 OP 换出 access token，然后 `Authorization:
 | `GET /api/v1/topics/{topic_id}`、`GET /api/v1/topics/{topic_id}/replies` | 匿名+ | 话题详情与楼层。旧 `GET /api/topic/:tid`、`GET /api/topic/:tid/reply` 已于 2026-09-22 删除。响应以 `apps/api/openapi/kungal-v1.json` 为准；回复走游标分页（`cursor` + `limit`），不是页码 |
 | `GET /api/galgame` | 公开 | 列表 |
 | `GET /api/galgame/:gid` | 匿名+ | 详情 |
-| `GET /api/user/:id` | 公开 | 公开资料 |
+| `GET /api/v1/users/{user_id}` | 公开 | 公开资料。未知或封禁/注销用户 404 |
 | `POST /api/v1/topics`、`POST /api/v1/topics/{topic_id}/replies` | Bearer | **必须**带幂等键（§2）。旧 `POST /api/topic`、`POST /api/topic/:tid/reply` 已于 2026-09-22 删除；话题 id 在路径上，不再放进请求体 |
 | `GET /api/auth/me` | Bearer | 当前用户；Bearer 下 `roles` 已剥掉 staff 角色 |
 
@@ -100,7 +100,7 @@ App 用 AppAuth + PKCE 直接从 OP 换出 access token，然后 `Authorization:
 | `DELETE /api/message/:id` | Bearer | 删除一条通知 |
 | `GET /api/message/admin`、`PUT /api/message/admin/read` | Bearer | 系统公告 `[{id, is_read, content, admin, created}]` 与全部已读 |
 | `GET /api/message/muted` | Bearer | 被静音类型的通知，参数同 `/api/message`，可加 `type` |
-| `GET/PUT /api/user/notification-preferences` | Bearer | `{muted_types: string[]}` |
+| `GET/PUT /api/v1/me/notification-preferences` | Bearer | `{muted_types}`，token 为 v1 通知类型 |
 | `GET /api/message/nav/contact` | Bearer | 私信会话列表，每项带 `unread_count` |
 | `GET /api/message/chat/history` | Bearer | `receiver_id`、`page`、`limit`（≤50） |
 | `POST /api/message/chat/send` | Bearer | `{receiver_id, content}`（≤1000 字），**没有**幂等键 |

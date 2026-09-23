@@ -1,11 +1,12 @@
 <script setup lang="ts">
+import type { UserProfile } from '#shared/utils/api/schemas'
 import {
   COMMENT_NAV_CONFIG,
   type KUN_USER_PAGE_COMMENT_TYPE
 } from '~/constants/user'
 
 const props = defineProps<{
-  user: UserInfo
+  user: UserProfile
 }>()
 
 const route = useRoute()
@@ -16,10 +17,10 @@ const commentType = computed(() => {
 })
 
 useKunDisableSeo(
-  `${props.user.name}${COMMENT_NAV_CONFIG[commentType.value].text}`
+  `${props.user.name ?? ''}${COMMENT_NAV_CONFIG[commentType.value].text}`
 )
 </script>
 
 <template>
-  <UserComment :user-id="user.id" :type="commentType" />
+  <UserComment :user-id="Number(user.id)" :type="commentType" />
 </template>

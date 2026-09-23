@@ -1,9 +1,11 @@
 <script setup lang="ts">
+import type { UserProfile } from '#shared/utils/api/schemas'
+
 const props = defineProps<{
-  user: UserInfo
+  user: UserProfile
 }>()
 
-useKunDisableSeo(`${props.user.name} 的评分`)
+useKunDisableSeo(`${props.user.name ?? ''} 的评分`)
 
 useHead({
   link: [
@@ -16,5 +18,5 @@ useHead({
 </script>
 
 <template>
-  <UserRating :user-id="user.id" />
+  <UserRating :user-id="Number(user.id)" />
 </template>

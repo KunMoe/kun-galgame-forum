@@ -1,6 +1,8 @@
 <script setup lang="ts">
+import type { UserProfile } from '#shared/utils/api/schemas'
+
 defineProps<{
-  user: UserInfo
+  user: UserProfile
 }>()
 </script>
 

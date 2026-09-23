@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import type { NotificationPreferences } from '#shared/utils/api/schemas'
+import { settle } from '#shared/utils/api/problem'
 import { notificationCategoryGroups } from '~/constants/notification'
 
 const tabs = notificationCategoryGroups
@@ -21,22 +23,25 @@ const enabled = reactive<Record<string, boolean>>(
 )
 const isLoading = ref(true)
 
-const applyMuted = (muted: string[]) => {
+const api = useApiClient()
+
+const applyMuted = (muted: NotificationPreferences['muted_types']) => {
   const mutedSet = new Set(muted)
   for (const key of allKeys) {
     enabled[key] = !mutedSet.has(key)
   }
 }
 
-const collectMuted = () => allKeys.filter((key) => !enabled[key])
+const collectMuted = (): NotificationPreferences['muted_types'] =>
+  allKeys.filter((key) => !enabled[key])
 
 const load = async () => {
-  const result = await kunFetch<NotificationPreference>(
-    '/user/notification-preferences'
-  )
-  if (result?.muted_types) {
-    applyMuted(result.muted_types)
+  const result = await settle(api.GET('/me/notification-preferences'))
+  if (!result.ok) {
+    reportProblem(result.problem)
+    return
   }
+  applyMuted(result.data.muted_types)
 }
 
 const isSaving = ref(false)
@@ -51,17 +56,17 @@ const persist = async () => {
   try {
     do {
       queued = false
-      const result = await kunFetch<NotificationPreference>(
-        '/user/notification-preferences',
-        { method: 'PUT', body: { muted_types: collectMuted() } }
+      const result = await settle(
+        api.PUT('/me/notification-preferences', {
+          body: { muted_types: collectMuted() }
+        })
       )
-      if (!result) {
-        throw new Error('save failed')
+      if (!result.ok) {
+        reportProblem(result.problem)
+        await load()
+        return
       }
     } while (queued)
-  } catch {
-    useMessage('保存失败，请稍后重试', 'error')
-    await load()
   } finally {
     isSaving.value = false
   }

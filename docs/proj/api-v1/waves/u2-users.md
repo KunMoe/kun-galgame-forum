@@ -69,7 +69,7 @@ UserProfile  object="user", id, name, avatar: Image|null, bio, roles: [string],
 - G 域那三个计数由 `GalgameUserStatsService.Stats` 给出，它自己把 catalog 错误吞成 0，而且「今日发布」按**进程本地时区**算（`galgame_user_stats.go` 的 `time.Now()`，容器是 UTC）。G0 正在重写 galgame 域，**本段不改它**，description 写明；已告知 G 轨。
 - 本地 SQL 计数失败 → `500`（旧实现 500，不变）。
 
-### 3.2 `GET /api/v1/users?ids=` → `ListUserRef`
+### 3.2 `GET /api/v1/users?ids=` → `BatchListUserRef`
 
 U1 已有 `GET /users?q=`。本段加 `ids`：
 

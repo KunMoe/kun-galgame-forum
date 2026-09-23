@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { useRouteQuery } from '@vueuse/router'
-import type { Notification, NotificationType } from '#shared/utils/api/schemas'
+import type {
+  Notification,
+  NotificationPreferences,
+  NotificationType
+} from '#shared/utils/api/schemas'
 import { problemMessage } from '#shared/utils/api/message'
-import {
-  legacyMuteKeyToNotificationType,
-  localNotificationCategories
-} from '~/constants/notification'
+import { localNotificationCategories } from '~/constants/notification'
 import { useCursorList } from '~/composables/useCursorList'
 
 definePageMeta({
@@ -14,8 +15,10 @@ definePageMeta({
 
 useKunDisableSeo('已静音的消息')
 
-const { data: prefs } = await useKunFetch<NotificationPreference>(
-  '/user/notification-preferences'
+const { data: prefs } = await useApi<NotificationPreferences>(
+  'me-notification-preferences',
+  (api, { signal }) =>
+    api.GET('/me/notification-preferences', { signal })
 )
 const mutedCategories = computed(() => {
   const muted = new Set(prefs.value?.muted_types ?? [])
@@ -31,7 +34,7 @@ const notificationType = computed((): NotificationType | undefined => {
   if (activeTab.value === 'all') {
     return undefined
   }
-  return legacyMuteKeyToNotificationType[activeTab.value]
+  return activeTab.value as NotificationType
 })
 
 const { items, hasMore, problem, status, loadingMore, loadMore, refresh } =

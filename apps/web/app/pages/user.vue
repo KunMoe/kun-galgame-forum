@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { UserProfile } from '#shared/utils/api/schemas'
 import {
   kunUserMainNav,
   userSegmentGroup,
@@ -11,11 +12,16 @@ definePageMeta({ key: (route) => (route.params as { id: string }).id })
 
 const route = useRoute()
 
-const userId = computed(() => {
-  return parseInt((route.params as { id: string }).id)
-})
+const userId = computed(() => (route.params as { id: string }).id)
 
-const { data } = await useKunFetch<UserInfo>(`/user/${userId.value}`)
+const { data } = await useApi<UserProfile>(
+  () => `user:${userId.value}`,
+  (api, { signal }) =>
+    api.GET('/users/{user_id}', {
+      params: { path: { user_id: userId.value } },
+      signal
+    })
+)
 
 const isNavLoading = ref(false)
 const nuxtApp = useNuxtApp()
@@ -47,7 +53,7 @@ onScopeDispose(() => {
 
 const { id: storeUid } = storeToRefs(usePersistUserStore())
 const isOwner = computed(
-  () => !!storeUid.value && userId.value === storeUid.value
+  () => !!storeUid.value && Number(userId.value) === storeUid.value
 )
 
 const activeSegment = computed(() => {
@@ -56,16 +62,12 @@ const activeSegment = computed(() => {
 })
 const activeGroup = computed(() => userSegmentGroup(activeSegment.value))
 const goToSegment = (seg: string) =>
-  navigateTo(userSegmentHref(userId.value, seg))
+  navigateTo(userSegmentHref(Number(userId.value), seg))
 
-const isBanned = computed(() => data.value && data.value.status !== 0)
-
-if (isBanned.value) {
-  useKunDisableSeo('该用户已被封禁')
-} else if (data.value) {
+if (data.value) {
   useKunSeoMeta({
-    title: data.value.name,
-    description: data.value.bio
+    title: data.value.name ?? '',
+    description: data.value.bio ?? ''
   })
 } else {
   useKunDisableSeo('未找到该用户')
@@ -74,64 +76,60 @@ if (isBanned.value) {
 
 <template>
   <div class="space-y-4">
-    <template v-if="!isBanned">
-      <template v-if="data">
-        <UserProfileHeader :user="data" />
+    <template v-if="data">
+      <UserProfileHeader :user="data" />
 
-        <div
-          class="grid grid-cols-1 items-start gap-4 sm:grid-cols-[auto_minmax(0,1fr)]"
-        >
-          <div class="sm:hidden">
-            <KunTab
-              :items="kunUserMainNav(data.id, isOwner)"
-              :model-value="activeGroup"
-              variant="solid"
+      <div
+        class="grid grid-cols-1 items-start gap-4 sm:grid-cols-[auto_minmax(0,1fr)]"
+      >
+        <div class="sm:hidden">
+          <KunTab
+            :items="kunUserMainNav(Number(data.id), isOwner)"
+            :model-value="activeGroup"
+            variant="solid"
+            color="primary"
+            size="sm"
+            scrollable
+          />
+        </div>
+
+        <div class="hidden self-start sm:sticky sm:top-36 sm:block">
+          <KunTab
+            :items="kunUserMainNav(Number(data.id), isOwner)"
+            :model-value="activeGroup"
+            orientation="vertical"
+            variant="underlined"
+            color="primary"
+          />
+        </div>
+
+        <div class="min-w-0 sm:min-h-[calc(100dvh-9rem)]">
+          <div
+            v-if="activeGroup === 'topic' || activeGroup === 'galgame'"
+            class="mb-4"
+          >
+            <KunRadioGroup
+              :model-value="activeSegment"
+              :options="
+                activeGroup === 'topic'
+                  ? userTopicGroupOptions
+                  : userGalgameGroupOptions(isOwner)
+              "
+              variant="pill"
+              orientation="horizontal"
               color="primary"
               size="sm"
-              scrollable
+              @change="goToSegment"
             />
           </div>
 
-          <div class="hidden self-start sm:sticky sm:top-36 sm:block">
-            <KunTab
-              :items="kunUserMainNav(data.id, isOwner)"
-              :model-value="activeGroup"
-              orientation="vertical"
-              variant="underlined"
-              color="primary"
-            />
-          </div>
-
-          <div class="min-w-0 sm:min-h-[calc(100dvh-9rem)]">
-            <div
-              v-if="activeGroup === 'topic' || activeGroup === 'galgame'"
-              class="mb-4"
-            >
-              <KunRadioGroup
-                :model-value="activeSegment"
-                :options="
-                  activeGroup === 'topic'
-                    ? userTopicGroupOptions
-                    : userGalgameGroupOptions(isOwner)
-                "
-                variant="pill"
-                orientation="horizontal"
-                color="primary"
-                size="sm"
-                @change="goToSegment"
-              />
-            </div>
-
-            <KunLoadingDim :loading="isNavLoading" :delay="0">
-              <NuxtPage :user="data" />
-            </KunLoadingDim>
-          </div>
+          <KunLoadingDim :loading="isNavLoading" :delay="0">
+            <NuxtPage :user="data" />
+          </KunLoadingDim>
         </div>
-      </template>
-
-      <KunNull v-else description="未找到该用户" />
+      </div>
     </template>
 
-    <KunNull v-else description="此用户已被封禁" />
+    <KunNull v-else description="未找到该用户" />
   </div>
 </template>

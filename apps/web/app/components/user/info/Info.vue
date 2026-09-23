@@ -1,49 +1,64 @@
 <script setup lang="ts">
+import type { UserCounts, UserProfile } from '#shared/utils/api/schemas'
+
 const props = defineProps<{
-  user: UserInfo
+  user: UserProfile
 }>()
 const user = computed(() => props.user)
 
-const statsBlocks = [
-  { key: 'topic', label: '话题' },
-  { key: 'topic_poll', label: '话题投票' },
-  { key: 'topic_lottery', label: '话题抽奖' },
-  { key: 'reply_created', label: '回复' },
-  { key: 'comment_created', label: '话题评论' },
-  { key: 'galgame', label: 'Galgame' },
-  { key: 'contribute_galgame', label: 'Galgame 贡献' },
-  { key: 'galgame_comment', label: '评论' },
-  { key: 'galgame_rating', label: 'Galgame 评分' },
-  { key: 'galgame_resource', label: 'Galgame 资源' },
-  { key: 'galgame_toolset', label: 'Galgame 工具' },
-  { key: 'galgame_toolset_resource', label: 'Galgame 工具资源' }
+const statsBlocks: { key: keyof UserCounts; label: string }[] = [
+  { key: 'topic_count', label: '话题' },
+  { key: 'poll_count', label: '话题投票' },
+  { key: 'lottery_count', label: '话题抽奖' },
+  { key: 'reply_count', label: '回复' },
+  { key: 'topic_comment_count', label: '话题评论' },
+  { key: 'published_galgame_count', label: 'Galgame' },
+  { key: 'contributed_galgame_count', label: 'Galgame 贡献' },
+  { key: 'community_comment_count', label: '评论' },
+  { key: 'galgame_rating_count', label: 'Galgame 评分' },
+  { key: 'galgame_resource_count', label: 'Galgame 资源' },
+  { key: 'toolset_count', label: 'Galgame 工具' },
+  { key: 'toolset_resource_count', label: 'Galgame 工具资源' }
 ]
 
-const interactionBlocks = [
+const interactionBlocks: {
+  key: keyof UserCounts
+  label: string
+  icon: string
+  color: string
+}[] = [
   {
-    key: 'upvote',
+    key: 'received_upvote_count',
     label: '被推',
     icon: 'lucide:sparkles',
     color: 'text-secondary'
   },
   {
-    key: 'like',
+    key: 'received_like_count',
     label: '被赞',
     icon: 'lucide:thumbs-up',
     color: 'text-primary'
   },
   {
-    key: 'dislike',
+    key: 'received_dislike_count',
     label: '被踩',
     icon: 'lucide:thumbs-down',
     color: 'text-default'
   }
 ]
 
+const displayCount = (value: number | null) => (value === null ? '—' : value)
+
 const infoList = [
-  { label: '注册序号', value: (u: UserInfo) => u.id },
-  { label: '今日发布话题', value: (u: UserInfo) => u.daily_topic_count },
-  { label: '今日发布 Galgame', value: (u: UserInfo) => u.daily_galgame_count }
+  { label: '注册序号', value: (u: UserProfile) => u.id },
+  {
+    label: '今日发布话题',
+    value: (u: UserProfile) => u.counts.topic_today_count
+  },
+  {
+    label: '今日发布 Galgame',
+    value: (u: UserProfile) => u.counts.published_galgame_today_count
+  }
 ]
 </script>
 
@@ -56,7 +71,7 @@ const infoList = [
       >
         <div v-for="block in statsBlocks" :key="block.key">
           <div class="text-primary text-xl font-bold">
-            {{ user[block.key as 'topic'] }}
+            {{ displayCount(user.counts[block.key]) }}
           </div>
           <div class="text-default-500 text-xs">{{ block.label }}</div>
         </div>
@@ -79,7 +94,7 @@ const infoList = [
             />
             <div class="min-w-0">
               <div class="text-lg font-semibold">
-                {{ user[block.key as 'topic'] }}
+                {{ displayCount(user.counts[block.key]) }}
               </div>
               <div class="text-default-500 text-xs">{{ block.label }}</div>
             </div>
@@ -101,7 +116,7 @@ const infoList = [
           <div class="flex items-center justify-between py-2 text-sm">
             <span class="text-default-600">注册时间</span>
             <span class="font-medium">
-              <KunTime :time="user.created" type="datetime" show-year />
+              <KunTime :time="user.created_at" type="datetime" show-year />
             </span>
           </div>
         </div>

@@ -484,6 +484,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/me/notification-preferences": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the caller's muted notification types
+         * @description Returns the notification types the caller has muted. Unknown stored values are dropped. An account with no forum state returns an empty list.
+         */
+        get: operations["getNotificationPreferences"];
+        /**
+         * Replace the caller's muted notification types
+         * @description Replaces the notification types the caller has muted. Unknown tokens are refused. The stored values are the forum's database keys; the response uses the same v1 tokens as the request.
+         */
+        put: operations["putNotificationPreferences"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/me/notifications": {
         parameters: {
             query?: never;
@@ -1232,10 +1256,30 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Search users by name
-         * @description Returns users whose names match q. It is not paginated. Banned accounts are omitted. limit is 1–20.
+         * Search or resolve users
+         * @description Returns users whose names match q, or the users named in ids. Exactly one of q or ids is required. It is not paginated. Banned accounts are omitted from q results and listed in missing for ids. limit is 1–20 and applies to q.
          */
         get: operations["listUsers"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/users/{user_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a user's public profile
+         * @description Returns one user's public profile and activity counts. NOT_FOUND when the account does not exist or is not renderable. topic_count excludes hidden topics. topic_today_count uses the Asia/Shanghai calendar day. community_comment_count is null when the community service is unavailable and there is no cached value.
+         */
+        get: operations["getUser"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1431,6 +1475,17 @@ export interface components {
         BatchListTopicState: {
             /** @description One member per requested id that the caller may see. Empty array, never null. */
             items: components["schemas"]["TopicState"][];
+            /** @description Requested ids that did not come back, in the order they were requested. Empty array, never null. The reason is deliberately not given. */
+            missing: string[];
+            /**
+             * @description Type discriminant. Always list.
+             * @enum {string}
+             */
+            object: "list";
+        };
+        BatchListUserRef: {
+            /** @description One member per requested id that the caller may see. Empty array, never null. */
+            items: components["schemas"]["UserRef"][];
             /** @description Requested ids that did not come back, in the order they were requested. Empty array, never null. The reason is deliberately not given. */
             missing: string[];
             /**
@@ -2157,17 +2212,6 @@ export interface components {
              */
             object: "list";
         };
-        ListUserRef: {
-            /** @description Members of this page. Empty array, never null. */
-            items: components["schemas"]["UserRef"][];
-            /** @description Opaque keyset cursor. Omitted on the last page. */
-            next_cursor?: string;
-            /**
-             * @description Type discriminant. Always list.
-             * @enum {string}
-             */
-            object: "list";
-        };
         ListWallComment: {
             /** @description Members of this page. Empty array, never null. */
             items: components["schemas"]["WallComment"][];
@@ -2762,6 +2806,15 @@ export interface components {
             /** @description In-site web path of the target, stored as the legacy link. Always starts with a slash. */
             path: string;
         };
+        NotificationPreferences: {
+            /** @description Notification types the caller has muted. Empty array if none. */
+            muted_types: ("upvoted" | "liked" | "favorited" | "replied" | "commented" | "mentioned" | "followed_thread_activity" | "best_answer_chosen" | "reply_pinned" | "quiz_answered" | "resource_link_reported" | "edit_requested" | "edit_merged" | "edit_declined" | "lottery_won" | "lottery_drawn" | "lottery_code_expired" | "poll_closed" | "chat")[];
+            /**
+             * @description Type discriminant. Always notification_preferences.
+             * @enum {string}
+             */
+            object: "notification_preferences";
+        };
         NotificationReadMarker: {
             /**
              * Format: int64
@@ -3167,6 +3220,10 @@ export interface components {
              * @description Problem type URI. The last path segment is the kebab-case form of code.
              */
             type: string;
+        };
+        PutNotificationPreferencesBody: {
+            /** @description Notification types to mute, replacing the stored set. Empty array mutes nothing. */
+            muted_types: ("upvoted" | "liked" | "favorited" | "replied" | "commented" | "mentioned" | "followed_thread_activity" | "best_answer_chosen" | "reply_pinned" | "quiz_answered" | "resource_link_reported" | "edit_requested" | "edit_merged" | "edit_declined" | "lottery_won" | "lottery_drawn" | "lottery_code_expired" | "poll_closed" | "chat")[];
         };
         PutNsfwDisplayBody: {
             /**
@@ -3859,6 +3916,122 @@ export interface components {
         UpvoteCreate: {
             /** @description A note shown with the upvote. Absent or null for none. Leading and trailing whitespace is removed, and a note of only whitespace counts as none. Free text; never use it as a decision input. */
             note?: string | null;
+        };
+        UserCounts: {
+            /**
+             * Format: int64
+             * @description Visible posts on community comment walls. null when the community service is unavailable and there is no cached value.
+             */
+            community_comment_count: number | null;
+            /**
+             * Format: int64
+             * @description Galgames the user has contributed an edit to. May be 0 when the catalog is unavailable.
+             */
+            contributed_galgame_count: number;
+            /**
+             * Format: int64
+             * @description Galgame ratings the user authored.
+             */
+            galgame_rating_count: number;
+            /**
+             * Format: int64
+             * @description Galgame resources the user authored.
+             */
+            galgame_resource_count: number;
+            /**
+             * Format: int64
+             * @description Lotteries the user created.
+             */
+            lottery_count: number;
+            /**
+             * Format: int64
+             * @description Polls the user created.
+             */
+            poll_count: number;
+            /**
+             * Format: int64
+             * @description Galgames the user has published. May be 0 when the catalog is unavailable.
+             */
+            published_galgame_count: number;
+            /**
+             * Format: int64
+             * @description Galgames the user published today by the galgame-domain clock. May be 0 when the catalog is unavailable.
+             */
+            published_galgame_today_count: number;
+            /**
+             * Format: int64
+             * @description Dislikes on topics the user authored.
+             */
+            received_dislike_count: number;
+            /**
+             * Format: int64
+             * @description Likes on topics the user authored.
+             */
+            received_like_count: number;
+            /**
+             * Format: int64
+             * @description Upvotes on topics the user authored.
+             */
+            received_upvote_count: number;
+            /**
+             * Format: int64
+             * @description Replies the user authored that are not hidden.
+             */
+            reply_count: number;
+            /**
+             * Format: int64
+             * @description Toolsets the user authored.
+             */
+            toolset_count: number;
+            /**
+             * Format: int64
+             * @description Toolset resources the user authored.
+             */
+            toolset_resource_count: number;
+            /**
+             * Format: int64
+             * @description Topic comments the user authored that are not hidden.
+             */
+            topic_comment_count: number;
+            /**
+             * Format: int64
+             * @description Topics the user authored that are not hidden.
+             */
+            topic_count: number;
+            /**
+             * Format: int64
+             * @description Topics the user authored on the current Asia/Shanghai calendar day.
+             */
+            topic_today_count: number;
+        };
+        UserProfile: {
+            /** @description Avatar image. null when the account has no image-service hash. */
+            avatar: components["schemas"]["Image"] | null;
+            /** @description Profile bio as stored. Empty string when none. Free text; never use it as a decision input. */
+            bio: string | null;
+            /** @description Public activity counts for this user. */
+            counts: components["schemas"]["UserCounts"];
+            /**
+             * Format: date-time
+             * @description When the account was registered. Taken from the account service; falls back to when the user first appeared on this forum if that timestamp cannot be parsed.
+             */
+            created_at: string;
+            /** @description User id. JSON string of a decimal integer. */
+            id: string;
+            /**
+             * Format: int64
+             * @description The user's moemoepoint balance as this forum last cached it from OAuth. It can lag the live balance. It can be negative. Public on this face.
+             */
+            moemoepoint: number;
+            /** @description Display name. null when the account no longer exists; show a localized label. Free text; never use it as a decision input. */
+            name: string | null;
+            /**
+             * @description Type discriminant. Always user.
+             * @enum {string}
+             */
+            object: "user";
+            /** @description Badge roles among creator, moderator, admin and ren, including site roles. Other account roles are not listed. Display only; never a permission check. Empty array if none. */
+            roles: ("creator" | "moderator" | "admin" | "ren")[];
         };
         UserRef: {
             /** @description Avatar image. null when the account has no image-service hash. */
@@ -6625,6 +6798,149 @@ export interface operations {
                 };
             };
             /** @description SERVICE_UNAVAILABLE when the account service cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getNotificationPreferences: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationPreferences"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    putNotificationPreferences: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PutNotificationPreferencesBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationPreferences"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description VALIDATION_FAILED when muted_types holds an unknown token or a duplicate. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
             503: {
                 headers: {
                     [name: string]: unknown;
@@ -11041,10 +11357,12 @@ export interface operations {
     };
     listUsers: {
         parameters: {
-            query: {
-                /** @description Name query. After trimming whitespace it must not be empty. Free text; never use it as a decision input. */
-                q: string;
-                /** @description Page size. 1–20, default 8. Values above 20 are rejected, not clamped. */
+            query?: {
+                /** @description Name query. After trimming whitespace it must not be empty. Exactly one of q or ids is required. Free text; never use it as a decision input. */
+                q?: string;
+                /** @description User ids to resolve, comma-separated. 1 to 100 of them. Exactly one of q or ids is required. */
+                ids?: string[];
+                /** @description Page size for q. 1–20, default 8. Values above 20 are rejected, not clamped. Ignored when ids is set. */
                 limit?: number;
             };
             header?: never;
@@ -11059,10 +11377,10 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ListUserRef"];
+                    "application/json": components["schemas"]["BatchListUserRef"];
                 };
             };
-            /** @description LIMIT_TOO_LARGE when limit is greater than 20. */
+            /** @description LIMIT_TOO_LARGE when limit is greater than 20. INVALID_PARAMETER when ids holds more than 100 values. */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -11089,8 +11407,67 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description VALIDATION_FAILED when q is only whitespace. */
+            /** @description VALIDATION_FAILED when neither q nor ids is given, both are given, q is only whitespace, or an id is not a positive integer. */
             422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the account service cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getUser: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description User id. */
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserProfile"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

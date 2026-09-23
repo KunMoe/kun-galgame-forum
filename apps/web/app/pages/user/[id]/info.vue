@@ -1,14 +1,18 @@
 <script setup lang="ts">
+import type { UserProfile } from '#shared/utils/api/schemas'
+
 const props = defineProps<{
-  user: UserInfo
+  user: UserProfile
 }>()
 
+const displayName = props.user.name ?? ''
+
 useKunSeoMeta({
-  title: `${props.user.name} 的主页`,
+  title: `${displayName} 的主页`,
   description: props.user.bio
-    ? `${props.user.name} 的个人主页 —— ${props.user.bio}`
-    : `${props.user.name} 在 ${kungal.titleShort} 的个人主页, 查看 TA 发布的话题、评论、收藏与 Galgame 评分。`,
-  ...(props.user.avatar ? { ogImage: props.user.avatar } : {})
+    ? `${displayName} 的个人主页 —— ${props.user.bio}`
+    : `${displayName} 在 ${kungal.titleShort} 的个人主页, 查看 TA 发布的话题、评论、收藏与 Galgame 评分。`,
+  ...(props.user.avatar?.url ? { ogImage: props.user.avatar.url } : {})
 })
 
 useHead({

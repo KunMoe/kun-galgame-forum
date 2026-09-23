@@ -1,11 +1,12 @@
 <script setup lang="ts">
+import type { UserProfile } from '#shared/utils/api/schemas'
 import {
   TOPIC_NAV_CONFIG,
   type KUN_USER_PAGE_TOPIC_TYPE
 } from '~/constants/user'
 
 const props = defineProps<{
-  user: UserInfo
+  user: UserProfile
 }>()
 
 const route = useRoute()
@@ -16,10 +17,10 @@ const topicType = computed(() => {
 })
 
 useKunDisableSeo(
-  `${props.user.name}${TOPIC_NAV_CONFIG[topicType.value].text}的话题`
+  `${props.user.name ?? ''}${TOPIC_NAV_CONFIG[topicType.value].text}的话题`
 )
 </script>
 
 <template>
-  <UserTopic :user-id="user.id" :type="topicType" />
+  <UserTopic :user-id="Number(user.id)" :type="topicType" />
 </template>

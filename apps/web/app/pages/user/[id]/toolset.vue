@@ -1,9 +1,11 @@
 <script setup lang="ts">
+import type { UserProfile } from '#shared/utils/api/schemas'
+
 const props = defineProps<{
-  user: UserInfo
+  user: UserProfile
 }>()
 
-useKunDisableSeo(`${props.user.name} 的工具`)
+useKunDisableSeo(`${props.user.name ?? ''} 的工具`)
 
 useHead({
   link: [
@@ -16,5 +18,5 @@ useHead({
 </script>
 
 <template>
-  <UserToolset :user-id="user.id" />
+  <UserToolset :user-id="Number(user.id)" />
 </template>
