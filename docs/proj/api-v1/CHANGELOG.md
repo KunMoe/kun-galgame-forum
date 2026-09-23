@@ -1,5 +1,21 @@
 # API v1 changelog
 
+## 2026-09-23 (G1 toolsets)
+
+Breaking for every `/api/toolset*` route and `GET /api/user/:id/toolsets`. 16 legacy routes go.
+
+Offered:
+
+- `GET /api/v1/toolsets`: page-number (`limit` 1–100, default 24); filters `toolset_type`, `interface_language`, `platform`, `release_channel`, `q`; `sort` defaults to `resource_updated_desc`. Toolsets whose author is not renderable are excluded from both `items` and `total`.
+- `GET /api/v1/users/{user_id}/toolsets`: page-number, newest first; an unrenderable user is 404.
+- `GET` / `PATCH` / `DELETE /api/v1/toolsets/{toolset_id}`, `POST /api/v1/toolsets` (Idempotency-Key required, 201), and `GET …/source` (the Markdown, for editors).
+- Resources: `GET` / `PATCH` / `DELETE …/resources/{resource_id}`, `POST …/resources` (Idempotency-Key required), and `GET …/resources/{resource_id}/source` (secrets, for editors, no download counted).
+- `POST …/resources/{resource_id}/downloads`: the only way to get a download link, extraction code or archive password, and it counts the download. Anonymous callers may use it.
+- Uploads: `POST …/uploads` (init), `GET …/uploads/{upload_id}` (resume), `PATCH …/uploads/{upload_id}` `{state: "completed"}`, `DELETE …/uploads/{upload_id}` (abort). Only the caller who started an upload can see or change it. Over the daily quota → `429 QUOTA_EXCEEDED` with `Retry-After`.
+- `PUT …/practicality` `{rating}`. The legacy GET is gone: the detail carries the average, count, five-bucket distribution and `viewer.practicality_rating`.
+
+Names: `title`, `toolset_type`, `release_channel`, `interface_language`, `toolset_resources`; a resource has `resource_type` `file`/`link` and a nested `archive` or `link`. The detail sends `content` (a document), not HTML, and no comment preview (read `/wall-comments?subject_type=toolset`).
+
 ## 2026-09-23 (GE galgame entities)
 
 Breaking for all eighteen `/api/galgame-{tag,official,engine,series,staff,character}*` faces; they are gone. No App build calls them.
