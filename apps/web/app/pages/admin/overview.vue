@@ -1,23 +1,11 @@
 <script setup lang="ts">
 import { watchDebounced } from '@vueuse/core'
 import {
-  type StatsModelType,
   KUN_ADMIN_OVERVIEW_STATS_MODEL_ITEM,
   KUN_ADMIN_OVERVIEW_STATS_MODEL_MAP
 } from '~/constants/admin'
 
 definePageMeta({ middleware: 'permission', permissions: ['admin.dashboard'] })
-
-interface AdminOverviewAll {
-  name: string
-  label: string
-  count: number
-}
-
-interface StatDay {
-  date: string
-  [key: string]: number | string
-}
 
 const selectedDays = ref(7)
 const debouncedDays = ref(selectedDays.value)
@@ -30,37 +18,39 @@ watchDebounced(
   { debounce: 300, maxWait: 1000 }
 )
 
-const [{ data: allStats }, { data }] = await Promise.all([
-  useKunFetch<AdminOverviewAll[]>('/admin/overview/all'),
-  useKunFetch<StatDay[]>('/admin/overview/stats', {
-    query: { days: debouncedDays }
-  })
+const [{ data: overview }, { data: daily }] = await Promise.all([
+  useApi('admin-overview', (client, { signal }) =>
+    client.GET('/admin/overview', { signal })
+  ),
+  useApi(
+    () => `admin-overview-daily:${debouncedDays.value}`,
+    (client, { signal }) =>
+      client.GET('/admin/overview/daily', {
+        params: { query: { days: debouncedDays.value } },
+        signal
+      })
+  )
 ])
 
-const totalStats = computed(() => {
-  if (!data.value) return []
+const days = computed(() => daily.value?.items ?? [])
 
-  const totals = Object.fromEntries(
-    KUN_ADMIN_OVERVIEW_STATS_MODEL_ITEM.map((key) => [key, 0])
-  ) as Record<StatsModelType, number>
-
-  for (const day of data.value) {
-    for (const modelKey in totals) {
-      const count = day[modelKey]
-      if (typeof count === 'number') {
-        totals[modelKey as StatsModelType] += count
-      }
-    }
-  }
-
-  return (
-    Object.keys(KUN_ADMIN_OVERVIEW_STATS_MODEL_MAP) as StatsModelType[]
-  ).map((name) => ({
-    name,
-    label: KUN_ADMIN_OVERVIEW_STATS_MODEL_MAP[name].label,
-    total: totals[name]
+const allStats = computed(() => {
+  const totals = overview.value
+  if (!totals) return []
+  return KUN_ADMIN_OVERVIEW_STATS_MODEL_ITEM.map((key) => ({
+    name: key,
+    label: KUN_ADMIN_OVERVIEW_STATS_MODEL_MAP[key].label,
+    count: totals[key]
   }))
 })
+
+const totalStats = computed(() =>
+  KUN_ADMIN_OVERVIEW_STATS_MODEL_ITEM.map((key) => ({
+    name: key,
+    label: KUN_ADMIN_OVERVIEW_STATS_MODEL_MAP[key].label,
+    total: days.value.reduce((sum, day) => sum + day[key], 0)
+  }))
+)
 
 useKunDisableSeo('数据总览')
 </script>
@@ -76,7 +66,7 @@ useKunDisableSeo('数据总览')
       <h2 class="text-2xl">加和数据</h2>
       <p class="text-default-500 text-sm">网站在建立以来, 各项指标的总和数据</p>
       <div
-        v-if="allStats"
+        v-if="allStats.length"
         class="grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-5"
       >
         <KunCard
@@ -138,7 +128,7 @@ useKunDisableSeo('数据总览')
         如果要用一张可视化的图表来表示网站的增量数据状态, 那就是下面这张图
       </p>
       <KunCard :is-transparent="true" :is-hoverable="false">
-        <AdminOverviewChart v-if="data" :data="data" />
+        <AdminOverviewChart v-if="days.length" :data="days" />
       </KunCard>
     </div>
   </div>

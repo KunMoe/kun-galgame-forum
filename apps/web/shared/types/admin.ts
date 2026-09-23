@@ -1,8 +1,3 @@
-export interface AdminOverStats {
-  date: string
-  [key: string]: number | string
-}
-
 export interface AdminUserContentStats {
   topics: number
   replies: number

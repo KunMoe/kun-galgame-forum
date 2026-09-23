@@ -2,25 +2,26 @@
 import VueApexCharts from 'vue3-apexcharts'
 import type { ApexOptions } from 'apexcharts'
 import {
-  type StatsModelType,
+  KUN_ADMIN_OVERVIEW_STATS_MODEL_ITEM,
   KUN_ADMIN_OVERVIEW_STATS_MODEL_MAP
 } from '~/constants/admin'
+import type { OverviewDay } from '#shared/utils/api/schemas'
 
 const props = defineProps<{
-  data: AdminOverStats[]
+  data: OverviewDay[]
 }>()
 
 const colorMode = useColorMode()
 
-const chartSeries = computed(() => {
-  return Object.keys(KUN_ADMIN_OVERVIEW_STATS_MODEL_MAP).map((key) => ({
-    name: KUN_ADMIN_OVERVIEW_STATS_MODEL_MAP[key as StatsModelType].label,
-    data: props.data.map((d) => (d[key] as number) || 0)
+const chartSeries = computed(() =>
+  KUN_ADMIN_OVERVIEW_STATS_MODEL_ITEM.map((key) => ({
+    name: KUN_ADMIN_OVERVIEW_STATS_MODEL_MAP[key].label,
+    data: props.data.map((d) => d[key])
   }))
-})
+)
 
 const chartOptions = computed<ApexOptions>(() => {
-  const categories = props.data.map((d) => d.date) || []
+  const categories = props.data.map((d) => d.bucket_date)
   const colors = Object.values(KUN_ADMIN_OVERVIEW_STATS_MODEL_MAP).map(
     (m) => m.color
   )
