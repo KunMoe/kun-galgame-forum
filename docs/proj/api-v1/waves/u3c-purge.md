@@ -268,3 +268,30 @@ ROLLBACK;   -- 报告无误后把这一行换成 COMMIT 再跑一遍
 **性能（协调会话条件 1，临时库，5 万行 `UPDATE … SET n = n + 1`，各 5 次）**：不挂触发器 74–105 ms（中位 93）；挂触发器、会话从未设过 81–91 ms（中位 84）；挂触发器、设过又结束 82–91 ms（中位 89）；0 行进存档。噪声大于差异，`WHEN` 为假时事件不入队，plpgsql 不进入。清空事务内：每行 `UPDATE` 捕获约 19 µs、`DELETE` 约 13 µs；生产最重的一次清空（约 8 万行）多 1–2 秒。
 
 **测试**：`internal/admin/repository/purge_archive_db_test.go`（往返：全库快照 → 清空 → 每一条被删 / 被改 / 新写的行都在存档里 → 恢复 → 全库快照逐行相等；失败不留痕；设置随事务结束；恢复保留之后的计数变化；缺父行时整体中止；只能恢复一次；保留期；开奖中；覆盖闸）与 `internal/app/v1_user_purge_test.go`（经真实服务路径清空后存档里有行、操作者 id 正确，权限、受保护目标、新鲜读、上游失败与重试、开奖中）。
+
+## 14. U3c.1 · 一条命令撤销整次清空（2026-09-24，契约先于实现）
+
+infra #298（2026-09-24 上线）让 community 的作者清空也在同一事务里留 30 天存档（`kun_community.community_purge_archive`）。撤销是 `POST /authors/{id}/purge/restore`，S2S 凭证与站点绑定同清空，回各项恢复计数。没有可恢复的就回 `404`：本站没清空过他、已经撤销过、或超过 30 天（infra `docs/community/01-service-and-contract.md` §4）。于是**完整撤销 = 论坛库 + community 两步**，§6 改成用这个工具。
+
+### 14.1 工具 `cmd/purge-restore`
+
+- **运行**：`docker compose -f docker-compose.prod.yml -p kun-visual-novel-forum-iunwa9 run --rm tools purge-restore [-commit] <purge_id>`。`tools` 服务与 API 用同一份环境（`kungal-api-env`：数据库、S2S 凭证），命令行上只有清空 id。API 镜像是 distroless 单二进制，放不进第二个命令；`tools` 镜像每次合并随 API 一起构建，含全部 `cmd/*`。
+- **默认演练**：论坛库的 `user_purge_restore` 在一个会回滚的事务里跑，打印报告；**不调 community**（它没有演练模式）。
+- **`-commit`**：论坛库恢复提交，再用存档里的 `target_user_id` 调 community 恢复，打印两份报告。
+- **论坛库那半已恢复过**（该清空 id 的存档行全有 `restored_at`）：打印「论坛库已恢复」，继续 community 那半。这是 community 失败后重跑的路径。
+- **存档里没有这个清空 id**（不存在或已过期）：报错退出，不去猜目标用户。
+- **community `404`** → 打印「community 没有可恢复的内容」及上游原话，**不算失败**；其它错误 → 非零退出。此时论坛库那半已提交，重跑安全。
+- 数据库连接用 API 自己的 `KUN_DATABASE_URL`；生产是 `postgres` 超级用户，`session_replication_role` 需要它。
+- 客户端加 `communityclient.RestoreAuthorPurge(ctx, authorID)`，回 infra `RestoreResponse` 的五个计数。
+
+无新路由、无迁移、无网页改动。
+
+### 14.2 变异清单（先于实现提交）
+
+| # | 破坏 | 应当变红的性质 |
+|---|---|---|
+| 1 | 演练也提交 | 演练之后目标的内容仍然不在，存档的 `restored_at` 仍为空 |
+| 2 | 演练也调 community | 演练时假 community 的恢复调用次数为 0 |
+| 3 | community `404` 当成失败 | `404` 时恢复成功，报告「没有可恢复的」 |
+| 4 | 论坛库已恢复时报错、不继续 community | 第二次 `-commit` 成功，并且调了 community |
+| 5 | 用操作者 id 而不是存档里的 `target_user_id` 调 community | 假 community 收到的作者 id 是清空目标 |
