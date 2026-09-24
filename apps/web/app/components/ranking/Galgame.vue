@@ -9,11 +9,11 @@ import {
 } from './pageData'
 
 const settings = usePersistSettingsStore()
-const { allowsNsfw } = useContentStance()
+const { allowsNsfw, stanceKey } = useContentStance()
 
 const { data } = await useApi(
   () =>
-    `ranking-works:${galgameRankingPageData.sort}:${allowsNsfw.value ? 'nsfw' : 'sfw'}:${settings.showKUNGalgameNoResource ? 'all' : 'resourced'}`,
+    `ranking-works:${galgameRankingPageData.sort}:${stanceKey.value}:${settings.showKUNGalgameNoResource ? 'all' : 'resourced'}`,
   (client, { signal }) =>
     client.GET('/rankings/works', {
       params: {

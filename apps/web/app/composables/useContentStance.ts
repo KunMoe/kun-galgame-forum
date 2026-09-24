@@ -9,9 +9,9 @@ export const useContentStance = () => {
 
   const isSignedIn = computed(() => !!userStore.id)
 
-  // Signed in, the account decides and the cookie is ignored — the API applies
-  // the same fold server-side, so a stale cookie cannot widen what comes back.
-  // Signed out, the cookie is the whole preference, exactly as before.
+  // Signed in, the account decides; signed out, the cookie is the whole
+  // preference. v1 does not fold either one server-side: include_nsfw is taken
+  // literally, so whatever this computes is what the API filters by.
   const stance = computed<KunContentStance>(() => {
     if (isSignedIn.value) {
       return foldContentStance(userStore.adultConfirmed, userStore.nsfwDisplay)
@@ -22,6 +22,14 @@ export const useContentStance = () => {
 
   const allowsNsfw = computed(() => stance.value !== 'hide')
   const isBlurred = computed(() => stance.value === 'blur')
+
+  // For useApi keys. A signed-in stance can change after hydration (refreshMe),
+  // and a key that moves then misses the SSR payload: setup ran with no data and
+  // an NSFW work rendered ungated for a hide-stance account (2026-09-24).
+  // useRefreshMe refetches on a narrowing flip instead.
+  const stanceKey = computed(() =>
+    isSignedIn.value ? `me:${userStore.id}` : allowsNsfw.value ? 'nsfw' : 'sfw'
+  )
 
   const setStance = async (
     next: KunContentStance
@@ -55,6 +63,7 @@ export const useContentStance = () => {
     stance,
     allowsNsfw,
     isBlurred,
+    stanceKey,
     setStance,
     setAnonymousNsfw
   }

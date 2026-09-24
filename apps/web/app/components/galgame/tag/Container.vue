@@ -31,12 +31,12 @@ const selectedIds = computed<number[]>({
 // Pinned to page 1 while tags are picked, because the tag grid is not on screen
 // then: paging the Galgame results would otherwise refetch 100 tags from catalog
 // per click, and catalog's limiter counts the whole site as one IP.
-const { allowsNsfw } = useContentStance()
+const { allowsNsfw, stanceKey } = useContentStance()
 const isSfwMode = computed(() => !allowsNsfw.value)
 
 const { data, status } = await useApi<TagPage>(
   () =>
-    `tags:${selectedIds.value.length ? 1 : page.value}:${allowsNsfw.value}`,
+    `tags:${selectedIds.value.length ? 1 : page.value}:${stanceKey.value}`,
   (api) =>
     api.GET('/tags', {
       params: {

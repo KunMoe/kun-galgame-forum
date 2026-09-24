@@ -27,11 +27,11 @@ if (!Number.isInteger(characterId.value) || characterId.value <= 0) {
 const PAGE_SIZE = 50
 const api = useApiClient()
 const nameOf = useCatalogName()
-const { allowsNsfw } = useContentStance()
+const { allowsNsfw, stanceKey } = useContentStance()
 
 let movedTo: number | null = null
 const { data: character } = await useApi<Character>(
-  () => `character:${characterId.value}:${allowsNsfw.value}`,
+  () => `character:${characterId.value}:${stanceKey.value}`,
   async (client) => {
     const res = await client.GET('/characters/{character_id}', {
       params: {
@@ -64,7 +64,7 @@ const appearancesQuery = (cursor?: string) => ({
 })
 
 const { data: firstPage } = await useApi<AppearanceList>(
-  () => `character-appearances:${characterId.value}:${allowsNsfw.value}`,
+  () => `character-appearances:${characterId.value}:${stanceKey.value}`,
   (client) =>
     client.GET('/characters/{character_id}/appearances', {
       params: {

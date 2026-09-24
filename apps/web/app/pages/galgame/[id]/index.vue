@@ -14,7 +14,7 @@ definePageMeta({ key: (route) => route.path })
 
 const route = useRoute()
 
-const { allowsNsfw } = useContentStance()
+const { allowsNsfw, stanceKey } = useContentStance()
 const nameOf = useWorkName()
 const namesOf = useCatalogName()
 
@@ -22,7 +22,7 @@ const workId = computed(() => String((route.params as { id: string }).id))
 
 let movedTo: number | null = null
 const { data, problem } = await useApi<Work>(
-  () => `work:${workId.value}:${allowsNsfw.value}`,
+  () => `work:${workId.value}:${stanceKey.value}`,
   async (api, { signal }) => {
     const res = await api.GET('/works/{work_id}', {
       params: {
@@ -49,17 +49,21 @@ if (movedTo) {
   })
 }
 
+// Being signed in used to be enough on its own, which showed every NSFW
+// detail page to a reader who had never asked for one. The account's stance
+// decides now; 模糊 lets the page through and masks the imagery instead.
+// It was also decided once at setup, and setup can run before the data lands
+// (a hydration key miss): the gate never closed and an NSFW work rendered for a
+// hide-stance account (2026-09-24). So it follows data and stance.
+const revealed = ref(false)
+const isShowGalgame = computed(
+  () => !data.value?.is_nsfw || allowsNsfw.value || revealed.value
+)
+
 const galgame = data.value
-const isShowGalgame = ref(true)
 
 if (galgame) {
   const nsfw = galgame.is_nsfw
-  // Being signed in used to be enough on its own, which showed every NSFW
-  // detail page to a reader who had never asked for one. The account's stance
-  // decides now; 模糊 lets the page through and masks the imagery instead.
-  if (nsfw && !allowsNsfw.value) {
-    isShowGalgame.value = false
-  }
 
   if (!galgame.is_published || nsfw) {
     useKunDisableSeo(nameOf(galgame))
@@ -101,16 +105,12 @@ if (galgame) {
       '@context': 'https://schema.org',
       '@type': 'VideoGame',
       name: titleBase,
-      alternateName: [
-        ...(original ? [original] : []),
-        ...galgame.aliases
-      ],
+      alternateName: [...(original ? [original] : []), ...galgame.aliases],
       url: pageUrl,
       image: galgame.banner?.url || galgame.cover?.url,
       description: description,
       inLanguage: galgame.original_language ?? undefined,
-      datePublished:
-        galgame.release_date || galgame.created_at,
+      datePublished: galgame.release_date || galgame.created_at,
       dateModified: galgame.updated_at,
       publisher: galgame.companies.map((company) => ({
         '@type': 'Organization',
@@ -129,15 +129,16 @@ if (galgame) {
         )
       }),
 
-      ...(galgame.rating_count && galgame.rating_score != null && {
-        aggregateRating: {
-          '@type': 'AggregateRating',
-          ratingValue: Number(galgame.rating_score.toFixed(1)),
-          ratingCount: galgame.rating_count,
-          bestRating: 10,
-          worstRating: 1
-        }
-      }),
+      ...(galgame.rating_count &&
+        galgame.rating_score != null && {
+          aggregateRating: {
+            '@type': 'AggregateRating',
+            ratingValue: Number(galgame.rating_score.toFixed(1)),
+            ratingCount: galgame.rating_count,
+            bestRating: 10,
+            worstRating: 1
+          }
+        }),
 
       interactionStatistic: [
         {
@@ -211,9 +212,7 @@ if (galgame) {
       ogCard: { kind: 'galgame', id: Number(galgame.id) },
       ...(galgame.creator
         ? {
-            articleAuthor: [
-              `${kungal.domain.main}/user/${galgame.creator.id}`
-            ]
+            articleAuthor: [`${kungal.domain.main}/user/${galgame.creator.id}`]
           }
         : {}),
       articlePublishedTime: galgame.created_at,
@@ -230,7 +229,7 @@ if (galgame) {
     <div v-if="data">
       <Galgame v-if="isShowGalgame" :galgame="data" />
 
-      <KunNsfwGate v-else noun="Galgame" @reveal="isShowGalgame = true" />
+      <KunNsfwGate v-else noun="Galgame" @reveal="revealed = true" />
     </div>
 
     <KunNull v-else-if="problem" :description="problemMessage(problem)" />

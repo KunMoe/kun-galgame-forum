@@ -15,11 +15,11 @@ if (!Number.isInteger(tag_id.value) || tag_id.value <= 0) {
   })
 }
 
-const { allowsNsfw } = useContentStance()
+const { allowsNsfw, stanceKey } = useContentStance()
 const isSfwMode = computed(() => !allowsNsfw.value)
 
 const { data: tag } = await useApi<GalgameTag>(
-  () => `tag:${tag_id.value}:${allowsNsfw.value}`,
+  () => `tag:${tag_id.value}:${stanceKey.value}`,
   (api) =>
     api.GET('/tags/{tag_id}', {
       params: {

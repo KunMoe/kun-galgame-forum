@@ -19,8 +19,6 @@ const route = useRoute()
 
 const { allowsNsfw } = useContentStance()
 
-const isShowTopic = ref(true)
-
 const { isReplyRewriting } = storeToRefs(useTempReplyStore())
 const { isEdit } = storeToRefs(useTempReplyStore())
 
@@ -42,6 +40,12 @@ watch(data, (next) => {
     topic.value = next
   }
 })
+// Decided once at setup, the gate stayed open when the account's stance
+// narrowed after hydration (2026-09-24), so it follows topic and stance.
+const revealed = ref(false)
+const isShowTopic = computed(
+  () => !topic.value?.is_nsfw || allowsNsfw.value || revealed.value
+)
 provide('refreshTopic', refresh)
 provide('replaceTopic', (next: Topic) => {
   topic.value = next
@@ -167,9 +171,6 @@ if (data.value) {
     // Being signed in used to be enough on its own. The account's stance
     // decides now; 模糊 lets the topic through and masks its covers instead.
     useKunDisableSeo(allowsNsfw.value ? topic.title : '')
-    if (!allowsNsfw.value) {
-      isShowTopic.value = false
-    }
   } else {
     useKunSeoMeta({
       title: topic.title,
@@ -191,7 +192,7 @@ if (data.value) {
     <template v-if="topic">
       <TopicDetail v-if="isShowTopic" :topic="topic" />
 
-      <KunNsfwGate v-else noun="话题" @reveal="isShowTopic = true" />
+      <KunNsfwGate v-else noun="话题" @reveal="revealed = true" />
     </template>
 
     <template v-else-if="problem && problem.status !== 404">

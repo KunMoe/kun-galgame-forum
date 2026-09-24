@@ -14,7 +14,7 @@ const opts = { mode: 'replace' as const }
 const view = useRouteQuery<string>('view', 'month', opts)
 const month = useRouteQuery<string>('month', '', opts)
 const year = useRouteQuery<string>('year', '', opts)
-const { allowsNsfw } = useContentStance()
+const { allowsNsfw, stanceKey } = useContentStance()
 const nameOf = useCatalogName()
 
 const tabs: KunTabItem[] = [
@@ -40,7 +40,7 @@ const {
   refresh: refreshMonth,
   problem: monthProblem
 } = await useApi<ReleaseCalendarMonth>(
-  () => `release-calendar:${month.value}:${allowsNsfw.value}`,
+  () => `release-calendar:${month.value}:${stanceKey.value}`,
   (api, { signal }) =>
     api.GET('/release-calendar', {
       params: {
@@ -60,7 +60,7 @@ const {
   refresh: refreshUpcoming,
   problem: upcomingProblem
 } = await useApi<ReleaseCalendarUpcoming>(
-  () => `release-calendar-upcoming:${allowsNsfw.value}`,
+  () => `release-calendar-upcoming:${stanceKey.value}`,
   (api, { signal }) =>
     api.GET('/release-calendar/upcoming', {
       params: { query: { include_nsfw: allowsNsfw.value } },
@@ -75,7 +75,7 @@ const {
   refresh: refreshPending,
   problem: pendingProblem
 } = await useApi<ReleaseCalendarPending>(
-  () => `release-calendar-pending:${year.value}:${allowsNsfw.value}`,
+  () => `release-calendar-pending:${year.value}:${stanceKey.value}`,
   (api, { signal }) =>
     api.GET('/release-calendar/pending', {
       params: {
@@ -95,7 +95,7 @@ const {
   refresh: refreshTba,
   problem: tbaProblem
 } = await useApi<ReleaseCalendarTBA>(
-  () => `release-calendar-tba:${allowsNsfw.value}`,
+  () => `release-calendar-tba:${stanceKey.value}`,
   (api, { signal }) =>
     api.GET('/release-calendar/tba', {
       params: { query: { include_nsfw: allowsNsfw.value } },

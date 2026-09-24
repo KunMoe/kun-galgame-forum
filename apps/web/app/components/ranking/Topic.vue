@@ -3,11 +3,11 @@ import { topicSortItem } from '~/constants/ranking'
 import { toKunUser } from '~/utils/userRef'
 import { RANKING_LIMIT, topicRankingPageData, getRankClasses } from './pageData'
 
-const { allowsNsfw } = useContentStance()
+const { allowsNsfw, stanceKey } = useContentStance()
 
 const { data } = await useApi(
   () =>
-    `ranking-topics:${topicRankingPageData.sort}:${allowsNsfw.value ? 'nsfw' : 'sfw'}`,
+    `ranking-topics:${topicRankingPageData.sort}:${stanceKey.value}`,
   (client, { signal }) =>
     client.GET('/rankings/topics', {
       params: {

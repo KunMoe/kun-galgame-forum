@@ -197,10 +197,14 @@ export default defineNuxtConfig({
     storesDirs: ['./store/**']
   },
 
+  // Strict kept these cookies off every arrival from another site while the
+  // Lax session cookie still went: SSR fetched as signed in with a signed-out
+  // store, and the client refetched under a different key. Neither is a
+  // credential.
   piniaPluginPersistedstate: {
     cookieOptions: {
       maxAge: 60 * 60 * 24 * 7,
-      sameSite: 'strict'
+      sameSite: 'lax'
     }
   },
 

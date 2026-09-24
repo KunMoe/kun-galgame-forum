@@ -9,7 +9,7 @@ import type {
 
 const route = useRoute()
 const collectionId = computed(() => String((route.params as { id: string }).id))
-const { allowsNsfw } = useContentStance()
+const { allowsNsfw, stanceKey } = useContentStance()
 const api = useApiClient()
 const page = usePageQuery()
 const limit = 24
@@ -19,7 +19,7 @@ const {
   status: detailStatus,
   refresh
 } = await useApi<Collection>(
-  () => `collection:${collectionId.value}:${allowsNsfw.value ? 'nsfw' : 'sfw'}`,
+  () => `collection:${collectionId.value}:${stanceKey.value}`,
   (client, { signal }) =>
     client.GET('/collections/{collection_id}', {
       params: {
@@ -32,7 +32,7 @@ const {
 
 const { data: works, status: worksStatus } = await useApi<WorkPage>(
   () =>
-    `collection-works:${collectionId.value}:${page.value}:${limit}:${allowsNsfw.value ? 'nsfw' : 'sfw'}`,
+    `collection-works:${collectionId.value}:${page.value}:${limit}:${stanceKey.value}`,
   (client, { signal }) =>
     client.GET('/collections/{collection_id}/works', {
       params: {

@@ -10,7 +10,7 @@ const props = defineProps<{
 
 const { id } = storeToRefs(usePersistUserStore())
 const isOwner = computed(() => !!id.value && id.value === props.userId)
-const { allowsNsfw } = useContentStance()
+const { allowsNsfw, stanceKey } = useContentStance()
 
 const tabQuery = useRouteQuery<string>('tab', 'publish', { mode: 'replace' })
 const tab = computed(() =>
@@ -34,7 +34,7 @@ const { data, status, problem } = await useApi<PageListQuizSummary>(
   () =>
     tab.value === 'answered'
       ? `me-answered-quizzes:${page.value}:${limit}`
-      : `quizzes-author:${authorId.value}:${page.value}:${limit}:${allowsNsfw.value}`,
+      : `quizzes-author:${authorId.value}:${page.value}:${limit}:${stanceKey.value}`,
   (api, { signal }) => {
     if (tab.value === 'answered') {
       return api.GET('/me/answered-quizzes', {

@@ -7,13 +7,13 @@ const props = defineProps<{
   ownerName: string | null
 }>()
 
-const { allowsNsfw } = useContentStance()
+const { allowsNsfw, stanceKey } = useContentStance()
 const page = usePageQuery()
 const limit = 24
 
 const { data, status } = await useApi<PageListCollectionSummary>(
   () =>
-    `user-collections:${props.userId}:${page.value}:${limit}:${allowsNsfw.value ? 'nsfw' : 'sfw'}`,
+    `user-collections:${props.userId}:${page.value}:${limit}:${stanceKey.value}`,
   (api, { signal }) =>
     api.GET('/users/{user_id}/collections', {
       params: {

@@ -11,10 +11,10 @@ export const byScore = (a: WebsiteSummary, b: WebsiteSummary) =>
 export const useWebsiteList = (
   filter: MaybeRefOrGetter<WebsiteFilter> = {}
 ) => {
-  const { allowsNsfw } = useContentStance()
+  const { allowsNsfw, stanceKey } = useContentStance()
   return useApi<WebsiteSummary[]>(
     () =>
-      `websites:${JSON.stringify(toValue(filter))}:${allowsNsfw.value ? 'nsfw' : 'sfw'}`,
+      `websites:${JSON.stringify(toValue(filter))}:${stanceKey.value}`,
     (api) =>
       collectPages((cursor) =>
         api.GET('/websites', {

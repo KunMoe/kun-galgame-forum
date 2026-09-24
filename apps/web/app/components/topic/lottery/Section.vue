@@ -10,12 +10,12 @@ const props = defineProps<{
 const isCreateOpen = defineModel<boolean>('isCreateOpen', { default: false })
 
 const topicId = computed(() => String(props.topicId))
-const { allowsNsfw } = useContentStance()
+const { allowsNsfw, stanceKey } = useContentStance()
 const isModalOpen = ref(false)
 const lotteryToEdit = ref<Lottery | undefined>(undefined)
 
 const { data, refresh } = await useApi(
-  () => `topic-lotteries:${topicId.value}:${allowsNsfw.value ? 'nsfw' : 'sfw'}`,
+  () => `topic-lotteries:${topicId.value}:${stanceKey.value}`,
   (api, { signal }) =>
     api.GET('/topics/{topic_id}/lotteries', {
       params: {

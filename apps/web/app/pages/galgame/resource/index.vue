@@ -9,11 +9,11 @@ const LIMIT = 50
 const page = useRouteQuery('page', 1, { mode: 'replace', transform: Number })
 const keywords = useRouteQuery<string>('keywords', '', { mode: 'replace' })
 const input = ref(keywords.value)
-const { allowsNsfw } = useContentStance()
+const { allowsNsfw, stanceKey } = useContentStance()
 
 const { data, status, problem } = await useApi<PageListGalgameResource>(
   () =>
-    `galgame-resources:${page.value}:${keywords.value}:${allowsNsfw.value}`,
+    `galgame-resources:${page.value}:${keywords.value}:${stanceKey.value}`,
   (api, { signal }) =>
     api.GET('/galgame-resources', {
       params: {

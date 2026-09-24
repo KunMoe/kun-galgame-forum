@@ -18,7 +18,7 @@ if (!Number.isInteger(staffId.value) || staffId.value <= 0) {
 const PAGE_SIZE = 50
 const api = useApiClient()
 const nameOf = useCatalogName()
-const { allowsNsfw } = useContentStance()
+const { allowsNsfw, stanceKey } = useContentStance()
 
 let movedTo: number | null = null
 const { data: person } = await useApi<CreditName>(
@@ -52,7 +52,7 @@ const creditsQuery = (cursor?: string) => ({
 })
 
 const { data: firstPage } = await useApi<CreditList>(
-  () => `credit-name-credits:${staffId.value}:${allowsNsfw.value}`,
+  () => `credit-name-credits:${staffId.value}:${stanceKey.value}`,
   (client) =>
     client.GET('/credit-names/{credit_name_id}/credits', {
       params: {

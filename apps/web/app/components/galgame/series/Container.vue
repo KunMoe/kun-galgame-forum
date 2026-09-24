@@ -6,12 +6,12 @@ import { seriesCardOf } from '~/utils/galgame/entityCards'
 const page = useRouteQuery('page', 1, { mode: 'replace', transform: Number })
 const limit = 12
 
-const { allowsNsfw } = useContentStance()
+const { allowsNsfw, stanceKey } = useContentStance()
 const isSfwMode = computed(() => !allowsNsfw.value)
 const nameOf = useCatalogName()
 
 const { data: seriesPage, status } = await useApi<SeriesPage>(
-  () => `series:${page.value}:${allowsNsfw.value}`,
+  () => `series:${page.value}:${stanceKey.value}`,
   (api) =>
     api.GET('/series', {
       params: {

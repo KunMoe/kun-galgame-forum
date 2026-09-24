@@ -14,12 +14,17 @@ export const useRefreshMe = () => {
     if (Date.now() - lastFetchedAt < STALE_MS) return Promise.resolve()
 
     const api = useApiClient()
+    const nuxtApp = useNuxtApp()
+    const allowsNsfw = () =>
+      foldContentStance(userStore.adultConfirmed, userStore.nsfwDisplay) !==
+      'hide'
 
     inFlight = (async () => {
       const result = await settle(api.GET('/me/account'))
       const me = result.ok ? result.data : null
 
       if (me?.name && Number(me.id) === userStore.id) {
+        const allowedBefore = allowsNsfw()
         userStore.setProfileInfo({
           name: me.name,
           avatar: me.avatar?.url ?? '',
@@ -27,6 +32,14 @@ export const useRefreshMe = () => {
           adultConfirmed: me.content_stance?.is_adult_confirmed,
           nsfwDisplay: me.content_stance?.nsfw_display
         })
+        // Stance keys no longer move when the account's stance does, so data
+        // fetched under a wider stance than the account now allows would stay
+        // on screen until the next navigation.
+        if (allowedBefore && !allowsNsfw()) {
+          nuxtApp.runWithContext(() =>
+            onNuxtReady(() => nuxtApp.runWithContext(() => refreshNuxtData()))
+          )
+        }
       }
       lastFetchedAt = Date.now()
     })().finally(() => {

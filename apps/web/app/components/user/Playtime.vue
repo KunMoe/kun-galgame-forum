@@ -6,13 +6,13 @@ import {
 } from '~/constants/galgame-playtime'
 import type { WorkPlaytimeList } from '#shared/utils/api/schemas'
 
-const { allowsNsfw } = useContentStance()
+const { allowsNsfw, stanceKey } = useContentStance()
 const nameOf = useCatalogName()
 const pageData = reactive({ page: usePageQuery(), limit: 24 })
 
 const { data, status, problem } = await useApi<WorkPlaytimeList>(
   () =>
-    `me-playtimes:${pageData.page}:${pageData.limit}:${allowsNsfw.value ? 'nsfw' : 'sfw'}`,
+    `me-playtimes:${pageData.page}:${pageData.limit}:${stanceKey.value}`,
   (api, { signal }) =>
     api.GET('/me/playtimes', {
       params: {

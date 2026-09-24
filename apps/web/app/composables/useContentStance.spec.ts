@@ -80,3 +80,39 @@ describe('useContentStance, signed in', () => {
     expect(shown.isBlurred.value).toBe(false)
   })
 })
+
+describe('useContentStance, stanceKey', () => {
+  const signIn = (nsfwDisplay: string) => {
+    usePersistUserStore().setUserInfo({
+      id: 7,
+      sub: 'u-7',
+      name: 'kun',
+      avatar: '',
+      avatarMin: '',
+      moemoepoint: 0,
+      roles: ['user'],
+      isCheckIn: false,
+      dailyToolsetUploadBytes: 0,
+      adultConfirmed: true,
+      nsfwDisplay
+    })
+  }
+
+  // A key that moves after hydration misses the SSR payload: setup then ran
+  // with no data and an NSFW work rendered past its gate.
+  it('does not move when a signed-in stance flips', () => {
+    signIn('show')
+    const { stanceKey } = useContentStance()
+    expect(stanceKey.value).toBe('me:7')
+
+    usePersistUserStore().setContentStance(true, 'hide')
+    expect(stanceKey.value).toBe('me:7')
+  })
+
+  it('follows the cookie for an anonymous reader', () => {
+    const { stanceKey, setAnonymousNsfw } = useContentStance()
+    expect(stanceKey.value).toBe('sfw')
+    setAnonymousNsfw(true)
+    expect(stanceKey.value).toBe('nsfw')
+  })
+})
