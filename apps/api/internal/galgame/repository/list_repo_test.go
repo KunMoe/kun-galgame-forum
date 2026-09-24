@@ -40,9 +40,9 @@ func TestListIDsSFWFilter(t *testing.T) {
 		filter model.GalgameListFilter
 		want   []int
 	}{
-		"sfw reader keeps unsynced and sfw": {
+		"sfw reader keeps only sfw; unsynced fails closed": {
 			model.GalgameListFilter{SFWOnly: true},
-			[]int{unsynced, safe},
+			[]int{safe},
 		},
 		"nsfw reader keeps every rendered row": {
 			model.GalgameListFilter{},
@@ -50,7 +50,7 @@ func TestListIDsSFWFilter(t *testing.T) {
 		},
 		"the resource-filter lane gates too": {
 			model.GalgameListFilter{SFWOnly: true, Type: "game"},
-			[]int{unsynced, safe},
+			[]int{safe},
 		},
 	} {
 		t.Run(name, func(t *testing.T) {

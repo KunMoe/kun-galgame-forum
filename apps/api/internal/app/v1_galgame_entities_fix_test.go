@@ -102,11 +102,23 @@ func geRowJSON(w geWork) string {
 	}
 	return fmt.Sprintf(`{"id":%d,"display_name":%q,"latin":%q,
 		"localized":{"zh-Hans":{"value":%q,"machine":true}},
-		"content_rating":%q,"release_date":%s,"claim":%s,
+		"content_rating":%q,"content_limit":%q,"release_date":%s,"claim":%s,
 		"cover_slots":{"portrait":{"url":%q,"width":256,"height":361,"thumbhash":"pUgK"},"banner":{"url":%q,"width":800,"height":450,"thumbhash":"sigO"}},
 		"labels":[{"id":%d,"display_name":"Publisher Co","role":"publisher","kind":"publisher"},{"id":%d,"display_name":"Maker Brand","localized":{"zh-Hans":{"value":"制作品牌"}},"role":"developer","kind":"game_brand"}]}`,
-		w.id, w.name, strings.ToLower(w.name), w.name+"（中）", w.rating, release, claim,
+		w.id, w.name, strings.ToLower(w.name), w.name+"（中）", w.rating, geShelf(w), release, claim,
 		geImageURL(w.id), geImageURL(w.id+1000), geImprint, geCompany)
+}
+
+// geShelf is catalog's verdict for a fixture work: the claim's limit, else what
+// an unclaimed work with ordinary cover art gets.
+func geShelf(w geWork) string {
+	if w.limit != "" {
+		return w.limit
+	}
+	if w.rating == "r18" {
+		return "nsfw"
+	}
+	return "sfw"
 }
 
 type geMember struct {

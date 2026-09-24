@@ -14,7 +14,7 @@ func TestV1UserResourcesPublishedWalk(t *testing.T) {
 		JOIN galgame g ON g.id = r.work_id
 		WHERE r.user_id = ? AND r.id BETWEEN ? AND ?
 		  AND g.published = true
-		  AND (g.content_limit IS NULL OR g.content_limit <> 'nsfw')
+		  AND g.content_limit = 'sfw'
 		ORDER BY r.created DESC, r.id DESC`, u3bOwner, u3bResMin, u3bResMax)
 	if len(want) < 5 {
 		t.Fatalf("published resources too thin: %v", want)

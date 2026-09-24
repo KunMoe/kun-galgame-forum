@@ -62,7 +62,7 @@ func escapeLike(s string) string {
 func (f ResourceListFilter) apply(q *gorm.DB) *gorm.DB {
 	q = q.Joins("JOIN galgame g ON g.id = r.work_id").Where("g.published = ? AND g.catalog_rendered", true)
 	if !f.SkipNSFW && !f.IncludeNSFW {
-		q = q.Where("g.content_limit IS NULL OR g.content_limit <> ?", "nsfw")
+		q = q.Where("g.content_limit = ?", "sfw")
 	}
 	switch f.State {
 	case "valid":

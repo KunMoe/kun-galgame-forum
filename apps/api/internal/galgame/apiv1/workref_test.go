@@ -33,7 +33,7 @@ func item(t *testing.T, raw string) *client.CatalogWorkListItem {
 
 func TestWorkRefOf(t *testing.T) {
 	it := item(t, `{
-		"id": 19658, "display_name": "紅殻のパンドラ", "latin": "Koukaku no Pandora", "content_rating": "all",
+		"id": 19658, "display_name": "紅殻のパンドラ", "latin": "Koukaku no Pandora", "content_rating": "all", "content_limit": "nsfw",
 		"localized": {"zh-Hans": {"value": "红壳的潘多拉", "machine": false}, "en": {"value": "Pandora", "is_machine": true}, "ko": {"value": ""}},
 		"claim": {"site": "kungal", "state": "live", "content_limit": "nsfw"},
 		"cover_slots": {
@@ -59,10 +59,10 @@ func TestWorkRefOf(t *testing.T) {
 		t.Errorf("cover must be the portrait original: %+v", ref.Cover)
 	}
 	if !ref.IsNSFW {
-		t.Error("is_nsfw follows the claim's content limit")
+		t.Error("is_nsfw follows catalog's content_limit")
 	}
 
-	sfwClaimOnAdultRating := item(t, `{"id": 7, "display_name": "x", "content_rating": "r18",
+	sfwClaimOnAdultRating := item(t, `{"id": 7, "display_name": "x", "content_rating": "r18", "content_limit": "sfw",
 		"claim": {"site": "kungal", "state": "live", "content_limit": "sfw"}}`)
 	if ref := galgameapiv1.WorkRefOf(context.Background(), sfwClaimOnAdultRating, "https://image.test.example"); ref.IsNSFW || ref.Cover != nil {
 		t.Errorf("the editorial axis wins over the age rating, and no portrait means no cover: %+v", ref)

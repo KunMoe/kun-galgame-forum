@@ -1,5 +1,14 @@
 # API v1 changelog
 
+## 2026-09-24 (CL: the adult verdict comes from catalog)
+
+Not breaking. Needs catalog spec 2.26.0, which puts `content_limit` on every /v2 work.
+
+Fixed:
+
+- A work's `is_nsfw`, and every SFW gate built on it, is catalog's own `content_limit`. For an unclaimed work the forum used to judge by `content_rating == r18` alone. Catalog also shelves a work as adult when all its cover art is explicit, so 18 unclaimed works (229831 among them) showed explicit covers with `is_nsfw: false` to SFW readers, on `/works/{id}` and eight other surfaces. A missing or unknown verdict now counts as adult.
+- The SFW filters on the forum's own lists (resources, ratings, rankings, a user's works, the /galgame lists, quizzes) treat a work whose verdict has not synced yet as adult. They used to let it through.
+
 ## 2026-09-24 (G6.3 collection preview covers fall back to the cover)
 
 Fixed: a collection's `preview_covers` took only each work's `banner`. Catalog leaves `banner` null when none of a work's covers is landscape, so those works never appeared in a preview, and each one logged `collection: preview cover missing url, skipped`. The preview now uses the banner, else the portrait `cover`, which is what the legacy preview did. A work with neither is skipped without logging. Without `include_nsfw`, an image graded `explicit` is also skipped: for an unclaimed work the forum judges `is_nsfw` by the r18 rating alone, while catalog also treats a work as adult when all its cover art is explicit, and then serves that art to this read.

@@ -150,14 +150,14 @@ func (s *GalgameCatalogMirror) RunMirror() {
 			break
 		}
 		matched += int64(len(rows))
-		n, d, err := s.apply(rows)
+		n, d, err := s.apply(rows, hidden)
 		if err != nil {
 			slog.Warn("catalog 镜像入库失败, 游标保持不动", "pages", pages, "error", err)
 			break
 		}
 		limits += n
 		dates += d
-		u, err := s.settle(ctx, hidden, goneIDs, len(page.Items), "信道")
+		u, err := s.settle(ctx, slices.Collect(maps.Keys(hidden)), goneIDs, len(page.Items), "信道")
 		if err != nil {
 			slog.Warn("catalog 镜像入库失败, 游标保持不动", "pages", pages, "error", err)
 			break
@@ -214,7 +214,7 @@ func (s *GalgameCatalogMirror) verify(ctx context.Context, ids []int) {
 		slog.Warn("catalog 镜像核对拉取失败, 本轮不改任何行", "requested", len(ids), "error", appErr.Message)
 		return
 	}
-	limits, dates, err := s.apply(rows)
+	limits, dates, err := s.apply(rows, hidden)
 	if err != nil {
 		slog.Warn("catalog 镜像核对入库失败", "error", err)
 		return
@@ -223,7 +223,7 @@ func (s *GalgameCatalogMirror) verify(ctx context.Context, ids []int) {
 	for id := range rows {
 		answered[id] = true
 	}
-	for _, id := range hidden {
+	for id := range hidden {
 		answered[id] = true
 	}
 	var absent []int
@@ -232,7 +232,7 @@ func (s *GalgameCatalogMirror) verify(ctx context.Context, ids []int) {
 			absent = append(absent, id)
 		}
 	}
-	unlisted, err := s.settle(ctx, hidden, absent, len(ids), "核对")
+	unlisted, err := s.settle(ctx, slices.Collect(maps.Keys(hidden)), absent, len(ids), "核对")
 	if err != nil {
 		slog.Warn("catalog 镜像核对入库失败", "error", err)
 		return
@@ -298,10 +298,13 @@ func (s *GalgameCatalogMirror) settle(ctx context.Context, hidden, absent []int,
 // apply writes one hydrated batch. The two columns are written separately
 // because they disagree about what an unusable answer is: a verdict outside
 // sfw/nsfw is dropped, while "no date" is a date the row has to record.
-func (s *GalgameCatalogMirror) apply(rows map[int]client.CatalogMirror) (int64, int64, error) {
-	if s.galgameRepo == nil || len(rows) == 0 {
+func (s *GalgameCatalogMirror) apply(rendered, hidden map[int]client.CatalogMirror) (int64, int64, error) {
+	if s.galgameRepo == nil || len(rendered)+len(hidden) == 0 {
 		return 0, 0, nil
 	}
+	rows := make(map[int]client.CatalogMirror, len(rendered)+len(hidden))
+	maps.Copy(rows, hidden)
+	maps.Copy(rows, rendered)
 	limits := make(map[int]string, len(rows))
 	dates := make(map[int]string, len(rows))
 	for workID, row := range rows {
@@ -324,7 +327,7 @@ func (s *GalgameCatalogMirror) apply(rows map[int]client.CatalogMirror) (int64, 
 	if err != nil {
 		return limitCount, dateCount, err
 	}
-	return limitCount, dateCount, s.galgameRepo.MarkCatalogChecked(slices.Collect(maps.Keys(rows)), true)
+	return limitCount, dateCount, s.galgameRepo.MarkCatalogChecked(slices.Collect(maps.Keys(rendered)), true)
 }
 
 func groupByContentLimit(limits map[int]string) map[string][]int {
@@ -333,6 +336,8 @@ func groupByContentLimit(limits map[int]string) map[string][]int {
 		switch limit {
 		case "sfw", "nsfw":
 			out[limit] = append(out[limit], workID)
+		default:
+			slog.Warn("catalog work carries no usable content_limit, local verdict kept", "work_id", workID, "content_limit", limit)
 		}
 	}
 	return out

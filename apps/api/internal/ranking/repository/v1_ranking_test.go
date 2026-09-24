@@ -30,3 +30,28 @@ func TestTopWorksSkipsWorksCatalogWillNotRender(t *testing.T) {
 		t.Errorf("rows = %v, want %d first", rows, listed)
 	}
 }
+
+func TestTopWorksSFWFailsClosedOnUnsyncedVerdict(t *testing.T) {
+	db := testdb.Open(t)
+	const safe, unsynced = 2_000_331_000, 2_000_331_001
+	cleanup := func() { db.Exec("DELETE FROM galgame WHERE id IN (?, ?)", safe, unsynced) }
+	cleanup()
+	t.Cleanup(cleanup)
+	if err := db.Exec(`INSERT INTO galgame (id, published, content_limit, view, catalog_rendered, created, updated)
+		VALUES (?, true, 'sfw', 2000000000, true, now(), now()), (?, true, NULL, 2000000002, true, now(), now())`, safe, unsynced).Error; err != nil {
+		t.Fatal(err)
+	}
+
+	rows, err := NewRankingRepository(db).TopWorks("views", false, true, 2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, r := range rows {
+		if r.ID == unsynced {
+			t.Fatalf("an SFW ranking holds a work without a verdict: %v", rows)
+		}
+	}
+	if len(rows) == 0 || rows[0].ID != safe {
+		t.Errorf("rows = %v, want %d first", rows, safe)
+	}
+}

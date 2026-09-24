@@ -70,28 +70,28 @@ func (c *GalgameClient) CatalogChanges(ctx context.Context, cursor string, limit
 	return page, nil
 }
 
-func (c *GalgameClient) MirrorByCatalogIDs(ctx context.Context, ids []int64) (map[int]CatalogMirror, []int, *errors.AppError) {
-	out := make(map[int]CatalogMirror, len(ids))
+func (c *GalgameClient) MirrorByCatalogIDs(ctx context.Context, ids []int64) (rendered, hidden map[int]CatalogMirror, appErr *errors.AppError) {
+	rendered = make(map[int]CatalogMirror, len(ids))
+	hidden = map[int]CatalogMirror{}
 	if len(ids) == 0 {
-		return out, nil, nil
+		return rendered, hidden, nil
 	}
 	rows, appErr := c.worksByCatalogIDs(ctx, ids, "", "all")
 	if appErr != nil {
 		return nil, nil, appErr
 	}
-	var hidden []int
 	for i := range rows {
 		row := &rows[i]
 		if row.ID <= 0 {
 			continue
 		}
 		if !row.isRenderable() {
-			hidden = append(hidden, int(row.ID))
+			hidden[int(row.ID)] = mirrorOf(row)
 			continue
 		}
-		out[int(row.ID)] = mirrorOf(row)
+		rendered[int(row.ID)] = mirrorOf(row)
 	}
-	return out, hidden, nil
+	return rendered, hidden, nil
 }
 
 // WorkFate asks the detail face about a work the batch face did not return.

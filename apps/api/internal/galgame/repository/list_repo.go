@@ -365,13 +365,15 @@ func applyPublished(q *gorm.DB, f model.GalgameListFilter) *gorm.DB {
 // The gates that actually hide a work are catalog's, applied when the page is
 // hydrated — these only decide which ids get that far, so a page is not cut
 // short by rows catalog then drops. NULL is "the sync has not seen this row
-// yet" and must pass, or a fresh column empties every list.
+// yet". It passed until 2026-09-24, so a fresh column would not empty every
+// list; it fails closed now that the column is full, and the verify lane asks
+// never-checked rows first, so a new row waits one tick.
 func applyCatalogGates(q *gorm.DB, f model.GalgameListFilter) *gorm.DB {
 	q = q.Where("g.catalog_rendered")
 	if !f.SFWOnly {
 		return q
 	}
-	return q.Where("g.content_limit IS NULL OR g.content_limit = 'sfw'")
+	return q.Where("g.content_limit = 'sfw'")
 }
 
 func providerArrayLit(providers []string) string {

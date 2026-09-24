@@ -46,20 +46,19 @@ type fakeSurvivors struct {
 	down     bool
 }
 
-func (f fakeSurvivors) MirrorByCatalogIDs(_ context.Context, ids []int64) (map[int]client.CatalogMirror, []int, *errors.AppError) {
+func (f fakeSurvivors) MirrorByCatalogIDs(_ context.Context, ids []int64) (rendered, hidden map[int]client.CatalogMirror, appErr *errors.AppError) {
 	if f.down {
 		return nil, nil, errors.ErrInternal("catalog down")
 	}
-	out := map[int]client.CatalogMirror{}
-	var hidden []int
+	rendered, hidden = map[int]client.CatalogMirror{}, map[int]client.CatalogMirror{}
 	for _, id := range ids {
 		if f.rendered[int(id)] {
-			out[int(id)] = client.CatalogMirror{}
+			rendered[int(id)] = client.CatalogMirror{}
 		} else {
-			hidden = append(hidden, int(id))
+			hidden[int(id)] = client.CatalogMirror{}
 		}
 	}
-	return out, hidden, nil
+	return rendered, hidden, nil
 }
 
 func TestFold_LocalRetiredIDMovesOntoSurvivor(t *testing.T) {

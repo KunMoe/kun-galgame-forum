@@ -16,7 +16,7 @@ func TestV1ListGalgameResourcesWalkTiedCreated(t *testing.T) {
 		JOIN galgame g ON g.id = r.work_id
 		WHERE r.id BETWEEN 930004201 AND 930004299
 		  AND g.published = true
-		  AND (g.content_limit IS NULL OR g.content_limit <> 'nsfw')
+		  AND g.content_limit = 'sfw'
 		  AND r.user_id IN (`+renderableResourceAuthorsSQL()+`)
 		ORDER BY r.created DESC, r.id DESC`)
 	if len(want) < 7 {
@@ -39,7 +39,7 @@ func TestV1ListGalgameResourcesTotalExcludesUnrenderableAndNSFW(t *testing.T) {
 		JOIN galgame g ON g.id = r.work_id
 		WHERE r.id BETWEEN 930004201 AND 930004299
 		  AND g.published = true
-		  AND (g.content_limit IS NULL OR g.content_limit <> 'nsfw')
+		  AND g.content_limit = 'sfw'
 		  AND r.user_id IN (`+renderableResourceAuthorsSQL()+`)`)
 	if asInt(body["total"]) != want || body["total_relation"] != "eq" {
 		t.Errorf("total %v %v, want %d eq", body["total"], body["total_relation"], want)

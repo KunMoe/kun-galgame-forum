@@ -26,7 +26,7 @@ func (r *UserContentRepository) ListUserWorkIDs(q UserWorkQuery) ([]int, int, er
 	}
 	db = db.Where("galgame.catalog_rendered")
 	if !q.IncludeNSFW {
-		db = db.Where("galgame.content_limit IS NULL OR galgame.content_limit <> ?", "nsfw")
+		db = db.Where("galgame.content_limit = ?", "sfw")
 	}
 	rows, total, err := pageScan[workIDRow](db, "galgame.id", "galgame.created DESC, galgame.id DESC", q.Offset, q.Limit)
 	if err != nil {

@@ -11,7 +11,7 @@ func CatalogDetailToFull(ctx context.Context, d *CatalogWorkDetail, workID int) 
 	characters := catalogRosterToNextMoe(ctx, d.Characters)
 	f := dto.NextMoeGalgameDetailFull{
 		ID:               workID,
-		ContentLimit:     contentLimitOf(d.Claim, d.ContentRating),
+		ContentLimit:     contentLimitOf(d.ID, d.ContentLimit),
 		AgeLimit:         ageLimitFromRating(d.ContentRating),
 		OriginalLanguage: productLocale(d.OLang),
 		ReleaseDate:      d.ReleaseDate,
@@ -238,6 +238,7 @@ func (d *CatalogWorkDetail) ListItem() CatalogWorkListItem {
 		ID:            d.ID,
 		DisplayName:   d.DisplayName,
 		ContentRating: d.ContentRating,
+		ContentLimit:  d.ContentLimit,
 		OLang:         d.OLang,
 		ReleaseDate:   d.ReleaseDate,
 		Claim:         d.Claim,

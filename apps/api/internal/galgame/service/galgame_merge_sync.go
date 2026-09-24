@@ -40,7 +40,7 @@ type galgameMerger interface {
 }
 
 type survivorHydrator interface {
-	MirrorByCatalogIDs(ctx context.Context, ids []int64) (map[int]client.CatalogMirror, []int, *errors.AppError)
+	MirrorByCatalogIDs(ctx context.Context, ids []int64) (rendered, hidden map[int]client.CatalogMirror, appErr *errors.AppError)
 }
 
 type GalgameMergeSync struct {

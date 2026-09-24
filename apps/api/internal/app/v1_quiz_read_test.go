@@ -16,7 +16,7 @@ func TestV1QuizzesWalkTiedSort(t *testing.T) {
 		AND NOT EXISTS (
 			SELECT 1 FROM galgame_quiz_galgame gg
 			JOIN galgame g ON g.id = gg.work_id
-			WHERE gg.quiz_id = q.id AND g.content_limit = 'nsfw')
+			WHERE gg.quiz_id = q.id AND g.content_limit IS DISTINCT FROM 'sfw')
 		ORDER BY q.status_update_time DESC, q.id DESC`)
 	if len(want) < 7 {
 		t.Fatalf("seed too thin: %v", want)
@@ -39,7 +39,7 @@ func TestV1QuizzesTotalExcludesUnrenderableAuthors(t *testing.T) {
 		AND NOT EXISTS (
 			SELECT 1 FROM galgame_quiz_galgame gg
 			JOIN galgame g ON g.id = gg.work_id
-			WHERE gg.quiz_id = q.id AND g.content_limit = 'nsfw')`)
+			WHERE gg.quiz_id = q.id AND g.content_limit IS DISTINCT FROM 'sfw')`)
 	if asInt(body["total"]) != want || body["total_relation"] != "eq" {
 		t.Errorf("total %v %v, want %d eq", body["total"], body["total_relation"], want)
 	}

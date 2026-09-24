@@ -106,7 +106,7 @@ func atoi64(s string) int64 {
 
 func liveRow(id int64, name string) string {
 	return `{"id":` + itoa(id) + `,"medium":"galgame","display_name":"` + name +
-		`","content_rating":"all_ages","olang":"ja","release_date":"2024-06-14",` +
+		`","content_rating":"all_ages","content_limit":"sfw","olang":"ja","release_date":"2024-06-14",` +
 		`"claim":{"site":"kungal","site_work_id":` + itoa(id) + `,"state":"live"},` +
 		`"updated":"2026-01-01T00:00:00Z","latin":"` + name + `Latin",` +
 		`"localized":{"zh-Hans":{"value":"` + name + `CN","kind":"official","machine":true}},` +
@@ -242,9 +242,7 @@ func TestCatalogBatch_GatesAreParametersNotPostFilters(t *testing.T) {
 }
 
 func TestCatalogDisplayLimit_ReadsTheEditorialAxis(t *testing.T) {
-	r18SfwEntry := strings.Replace(
-		strings.Replace(liveRow(4242, "Kun"), `"content_rating":"all_ages"`, `"content_rating":"r18"`, 1),
-		`"state":"live"`, `"state":"live","content_limit":"sfw"`, 1)
+	r18SfwEntry := strings.Replace(liveRow(4242, "Kun"), `"content_rating":"all_ages"`, `"content_rating":"r18"`, 1)
 
 	rec := &catalogRecorder{}
 	srv := catalogStub(t, rec, map[int64]string{4242: r18SfwEntry})
@@ -266,15 +264,20 @@ func TestCatalogDisplayLimit_ReadsTheEditorialAxis(t *testing.T) {
 	}
 }
 
-func TestCatalogDisplayLimit_FallsBackToTheAgeAxis(t *testing.T) {
-	for name, claim := range map[string]string{
-		"claim without the key":      `"state":"live"`,
-		"claim with a garbage value": `"state":"live","content_limit":"ssfw"`,
+func TestCatalogDisplayLimit_FailsClosed(t *testing.T) {
+	sfwRow := liveRow(4242, "Kun")
+	for name, body := range map[string]string{
+		"verdict missing": strings.Replace(sfwRow, `"content_limit":"sfw",`, ``, 1),
+		"verdict empty":   strings.Replace(sfwRow, `"content_limit":"sfw"`, `"content_limit":""`, 1),
+		"verdict garbage": strings.Replace(sfwRow, `"content_limit":"sfw"`, `"content_limit":"ssfw"`, 1),
+		"unclaimed, all cover art explicit": strings.Replace(
+			strings.Replace(sfwRow, `"content_limit":"sfw"`, `"content_limit":"nsfw"`, 1),
+			`"claim":{"site":"kungal","site_work_id":4242,"state":"live"},`, ``, 1),
 	} {
 		t.Run(name, func(t *testing.T) {
-			body := strings.Replace(
-				strings.Replace(liveRow(4242, "Kun"), `"content_rating":"all_ages"`, `"content_rating":"r18"`, 1),
-				`"state":"live"`, claim, 1)
+			if body == sfwRow {
+				t.Fatal("fixture did not change")
+			}
 			rec := &catalogRecorder{}
 			srv := catalogStub(t, rec, map[int64]string{4242: body})
 			c := New(srv.URL, "nm_test_key", "")
@@ -283,8 +286,8 @@ func TestCatalogDisplayLimit_FallsBackToTheAgeAxis(t *testing.T) {
 			if err != nil {
 				t.Fatalf("GetBatch: %v", err)
 			}
-			if b := got[4242]; b.ContentLimit != "nsfw" {
-				t.Errorf("content_limit = %q, want nsfw — with no verdict the age axis is the only signal", b.ContentLimit)
+			if b := got[4242]; b.ContentLimit != "nsfw" || b.AgeLimit != "all" {
+				t.Errorf("content_limit = %q on an all_ages row, want nsfw: only catalog's verdict can make a work sfw", b.ContentLimit)
 			}
 		})
 	}
@@ -597,5 +600,19 @@ func TestCatalogLabelRollupMembers_AsksForTheHopAndKeepsTheAttribution(t *testin
 	}
 	if members[1].Via.ID != 24 || members[1].Via.Name(context.Background()) != "键社" {
 		t.Errorf("via = %+v, want id 24 rendered as 键社", *members[1].Via)
+	}
+}
+
+func TestCatalogWorkDetailCarriesTheVerdict(t *testing.T) {
+	for _, limit := range []string{"sfw", "nsfw"} {
+		var d CatalogWorkDetail
+		raw := `{"id":4242,"display_name":"Kun","content_rating":"all_ages","content_limit":"` + limit + `"}`
+		if err := json.Unmarshal([]byte(raw), &d); err != nil {
+			t.Fatal(err)
+		}
+		item := d.ListItem()
+		if got := CatalogItemToBrief(context.Background(), &item).ContentLimit; got != limit {
+			t.Errorf("detail content_limit %q became %q on the list item", limit, got)
+		}
 	}
 }

@@ -93,11 +93,11 @@ func (c *fakeActivityCatalog) CatalogRowsByWorkIDs(_ context.Context, ids []int,
 func catalogItem(t *testing.T, id int, limit string) client.CatalogWorkListItem {
 	t.Helper()
 	raw := fmt.Sprintf(`{"id":%d,"display_name":"Work %d","latin":"Waaku","localized":{"zh-Hans":{"value":"作品%d","machine":false}},
-		"release_date":"2024-05","claim":{"site":"kungal","site_work_id":%d,"state":"live","content_limit":%q},
+		"release_date":"2024-05","content_limit":%q,"claim":{"site":"kungal","site_work_id":%d,"state":"live","content_limit":%q},
 		"cover_slots":{"portrait":{"url":"https://image.test.example/ab/cd/%s.webp","width":600,"height":800,"thumbhash":"AbC+"}},
 		"labels":[{"id":7,"display_name":"Brand","label_kind":"brand","kind":"brand","role":"developer"}],
 		"intros":[{"lang":"zh-Hans","intro":"简介","source":"vndb","machine":false}]}`,
-		id, id, id, id, limit, strings.Repeat("ab", 32))
+		id, id, id, limit, id, limit, strings.Repeat("ab", 32))
 	var it client.CatalogWorkListItem
 	if err := json.Unmarshal([]byte(raw), &it); err != nil {
 		t.Fatal(err)

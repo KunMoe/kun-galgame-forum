@@ -212,9 +212,9 @@ func TestV1SearchUserLane(t *testing.T) {
 const srWorksBody = `{"total":12345,"items":[
   {"id":61311,"display_name":"紅殻のパンドラ","latin":"Koukaku no Pandora",
    "localized":{"zh-Hans":{"value":"红壳的潘多拉","machine":false}},
-   "claim":{"site":"kungal","state":"live","content_limit":"nsfw"},
+   "content_limit":"nsfw","claim":{"site":"kungal","state":"live","content_limit":"nsfw"},
    "cover_slots":{"portrait":{"url":"https://img.example/aa/aa/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.webp","width":600,"height":850}}},
-  {"id":61312,"display_name":"withdrawn","claim":{"site":"kungal","state":"hidden"}}
+  {"id":61312,"display_name":"withdrawn","content_limit":"sfw","claim":{"site":"kungal","state":"hidden"}}
 ]}`
 
 func TestV1SearchWorks(t *testing.T) {

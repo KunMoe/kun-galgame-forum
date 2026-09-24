@@ -11,7 +11,7 @@ func TestV1UserWorksPublishedWalk(t *testing.T) {
 	want := f.sqlIDs(t, `SELECT galgame.id::text FROM galgame
 		WHERE galgame.creator_user_id = ? AND galgame.published
 		  AND galgame.id BETWEEN ? AND ?
-		  AND (galgame.content_limit IS NULL OR galgame.content_limit <> 'nsfw')
+		  AND galgame.content_limit = 'sfw'
 		ORDER BY galgame.created DESC, galgame.id DESC`, u3bOwner, u3bWorkMin, u3bWorkMax)
 	if len(want) < 5 {
 		t.Fatalf("published seed too thin: %v", want)
@@ -28,7 +28,7 @@ func TestV1UserWorksLikedWalk(t *testing.T) {
 		JOIN galgame_like ON galgame_like.work_id = galgame.id
 		WHERE galgame_like.user_id = ? AND galgame.published
 		  AND galgame.id BETWEEN ? AND ?
-		  AND (galgame.content_limit IS NULL OR galgame.content_limit <> 'nsfw')
+		  AND galgame.content_limit = 'sfw'
 		ORDER BY galgame.created DESC, galgame.id DESC`, u3bOwner, u3bWorkMin, u3bWorkMax)
 	if len(want) < 4 {
 		t.Fatalf("liked seed too thin: %v", want)

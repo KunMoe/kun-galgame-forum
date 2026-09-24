@@ -79,22 +79,24 @@ func TestMirrorByCatalogIDsKeysByCatalogID(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		asked = r.URL.Query()
 		_, _ = w.Write([]byte(`{"object":"list","items":[
-			{"id":"923","content_rating":"r18","claim":{"site":"kungal","site_work_id":"923","state":"live","content_limit":"sfw"}},
-			{"id":"924","content_rating":"all_ages","claim":{"site":"kungal","site_work_id":"924","state":"live","content_limit":"nsfw"}},
-			{"id":"925","content_rating":"r18"},
-			{"id":"926","content_rating":"r18","claim":{"site":"moyu","site_work_id":"77","state":"live","content_limit":"sfw"}},
-			{"id":"927","content_rating":"r18","claim":{"site":"kungal","site_work_id":"927","state":"hidden","content_limit":"sfw"}}
+			{"id":"923","content_rating":"r18","content_limit":"sfw","claim":{"site":"kungal","site_work_id":"923","state":"live","content_limit":"sfw"}},
+			{"id":"924","content_rating":"all_ages","content_limit":"nsfw","claim":{"site":"kungal","site_work_id":"924","state":"live","content_limit":"nsfw"}},
+			{"id":"925","content_rating":"r18","content_limit":"nsfw"},
+			{"id":"926","content_rating":"r18","content_limit":"sfw","claim":{"site":"moyu","site_work_id":"77","state":"live","content_limit":"sfw"}},
+			{"id":"927","content_rating":"r18","content_limit":"nsfw","claim":{"site":"kungal","site_work_id":"927","state":"hidden","content_limit":"nsfw"}},
+			{"id":"928","content_rating":"all_ages","content_limit":"nsfw"},
+			{"id":"929","content_rating":"all_ages"}
 		]}`))
 	}))
 	defer srv.Close()
 
 	got, hidden, appErr := New(srv.URL, "nmk_test", "").
-		MirrorByCatalogIDs(t.Context(), []int64{923, 924, 925, 926, 927})
+		MirrorByCatalogIDs(t.Context(), []int64{923, 924, 925, 926, 927, 928, 929})
 	if appErr != nil {
 		t.Fatalf("MirrorByCatalogIDs: %v", appErr.Message)
 	}
 
-	want := map[int]string{923: "sfw", 924: "nsfw", 925: "nsfw", 926: "sfw"}
+	want := map[int]string{923: "sfw", 924: "nsfw", 925: "nsfw", 926: "sfw", 928: "nsfw", 929: ""}
 	if len(got) != len(want) {
 		t.Fatalf("got %v, want %v", got, want)
 	}
@@ -106,8 +108,8 @@ func TestMirrorByCatalogIDsKeysByCatalogID(t *testing.T) {
 	if _, ok := got[927]; ok {
 		t.Errorf("hidden claim leaked: %v", got)
 	}
-	if len(hidden) != 1 || hidden[0] != 927 {
-		t.Errorf("hidden = %v, want [927]", hidden)
+	if len(hidden) != 1 || hidden[927].ContentLimit != "nsfw" {
+		t.Errorf("hidden = %v, want 927 with its verdict, so a row hidden before its first verdict still gets one", hidden)
 	}
 
 	if got[923].ContentLimit == "nsfw" || got[924].ContentLimit == "sfw" {

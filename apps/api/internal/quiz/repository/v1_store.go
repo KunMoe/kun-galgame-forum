@@ -87,7 +87,7 @@ func (f ListFilter) apply(q *gorm.DB) *gorm.DB {
 		q = q.Where(`NOT EXISTS (
 			SELECT 1 FROM galgame_quiz_galgame gg
 			JOIN galgame g ON g.id = gg.work_id
-			WHERE gg.quiz_id = q.id AND g.content_limit = 'nsfw')`)
+			WHERE gg.quiz_id = q.id AND g.content_limit IS DISTINCT FROM 'sfw')`)
 	}
 	if f.AuthorIDs != nil {
 		q = q.Where("q.user_id IN ?", f.AuthorIDs)

@@ -25,6 +25,7 @@ const verifyBase = 2_000_500_000
 type catalogFake struct {
 	mu          sync.Mutex
 	rated       map[int]string
+	limits      map[int]string
 	hidden      map[int]bool
 	fates       map[int]string
 	listStatus  int
@@ -54,9 +55,13 @@ func (c *catalogFake) handler(w http.ResponseWriter, r *http.Request) {
 			id, _ := strconv.Atoi(raw)
 			switch {
 			case c.hidden[id]:
-				items = append(items, fmt.Sprintf(`{"id":"%d","content_rating":"r18","claim":{"site":"kungal","site_work_id":"%d","state":"hidden","content_limit":"sfw"}}`, id, id))
+				items = append(items, fmt.Sprintf(`{"id":"%d","content_rating":"r18","content_limit":"nsfw","claim":{"site":"kungal","site_work_id":"%d","state":"hidden","content_limit":"nsfw"}}`, id, id))
 			case c.rated[id] != "":
-				items = append(items, fmt.Sprintf(`{"id":"%d","content_rating":%q}`, id, c.rated[id]))
+				limit := ""
+				if l, ok := c.limits[id]; ok {
+					limit = fmt.Sprintf(`,"content_limit":%q`, l)
+				}
+				items = append(items, fmt.Sprintf(`{"id":"%d","content_rating":%q%s}`, id, c.rated[id], limit))
 			}
 		}
 		_, _ = w.Write([]byte(`{"object":"list","items":[` + strings.Join(items, ",") + `]}`))
@@ -108,7 +113,7 @@ func newVerifyFix(t *testing.T) *verifyFix {
 	cleanup()
 	t.Cleanup(cleanup)
 
-	fake := &catalogFake{rated: map[int]string{}, hidden: map[int]bool{}, fates: map[int]string{}, pages: map[string]string{}}
+	fake := &catalogFake{rated: map[int]string{}, limits: map[int]string{}, hidden: map[int]bool{}, fates: map[int]string{}, pages: map[string]string{}}
 	srv := httptest.NewServer(http.HandlerFunc(fake.handler))
 	t.Cleanup(srv.Close)
 	merges := &mergeQueueFake{got: map[int]int64{}}
@@ -161,8 +166,11 @@ func TestMirrorVerifySettlesEveryKindOfAnswer(t *testing.T) {
 	f := newVerifyFix(t)
 	stale, hidden, gone, merged, survivor, mergedHidden, hiddenSurvivor, disagree :=
 		verifyBase+1, verifyBase+2, verifyBase+3, verifyBase+4, verifyBase+5, verifyBase+6, verifyBase+7, verifyBase+8
-	f.seed(t, "sfw", true, stale, hidden, gone, merged, mergedHidden, disagree)
-	f.fake.rated[stale] = "r18"
+	allExplicit, unanswered := verifyBase+9, verifyBase+10
+	f.seed(t, "sfw", true, stale, hidden, gone, merged, mergedHidden, disagree, allExplicit, unanswered)
+	f.fake.rated[stale], f.fake.limits[stale] = "r18", "nsfw"
+	f.fake.rated[allExplicit], f.fake.limits[allExplicit] = "all_ages", "nsfw"
+	f.fake.rated[unanswered] = "all_ages"
 	f.fake.hidden[hidden] = true
 	f.fake.fates[merged] = fmt.Sprintf("merged:%d", survivor)
 	f.fake.rated[survivor] = "all_ages"
@@ -170,10 +178,19 @@ func TestMirrorVerifySettlesEveryKindOfAnswer(t *testing.T) {
 	f.fake.hidden[hiddenSurvivor] = true
 	f.fake.fates[disagree] = "down"
 
-	f.mirror.verify(t.Context(), []int{stale, hidden, gone, merged, mergedHidden, disagree})
+	f.mirror.verify(t.Context(), []int{stale, hidden, gone, merged, mergedHidden, disagree, allExplicit, unanswered})
 
 	if s := f.state(t, stale); !s.Rendered || !s.Checked || s.Limit == nil || *s.Limit != "nsfw" {
 		t.Errorf("an unclaimed r18 row the mirror wrote sfw must now read nsfw: %+v", s)
+	}
+	if s := f.state(t, allExplicit); s.Limit == nil || *s.Limit != "nsfw" {
+		t.Errorf("catalog's verdict, not the rating, decides an unclaimed all_ages row: %+v", s)
+	}
+	if s := f.state(t, unanswered); !s.Checked || s.Limit == nil || *s.Limit != "sfw" {
+		t.Errorf("a row without a verdict keeps the one it had: %+v", s)
+	}
+	if s := f.state(t, hidden); s.Limit == nil || *s.Limit != "nsfw" {
+		t.Errorf("a hidden row still takes catalog's verdict: %+v", s)
 	}
 	for name, id := range map[string]int{"hidden claim": hidden, "not found": gone, "merged": merged, "merged into a hidden survivor": mergedHidden} {
 		if s := f.state(t, id); s.Rendered || !s.Checked {

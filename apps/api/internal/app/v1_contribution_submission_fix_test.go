@@ -201,10 +201,11 @@ func g7aRowJSON(id int, name, state, limit, rating string) string {
 	if state != "" {
 		claim = fmt.Sprintf(`{"site":"kungal","site_work_id":%d,"state":%q,"content_limit":%q}`, id, state, limit)
 	}
+	shelf := geShelf(geWork{limit: limit, rating: rating})
 	return fmt.Sprintf(`{"id":%d,"display_name":%q,"latin":%q,"localized":{},
-		"content_rating":%q,"release_date":null,"claim":%s,
+		"content_rating":%q,"content_limit":%q,"release_date":null,"claim":%s,
 		"cover_slots":{"portrait":{"url":%q,"width":256,"height":361,"thumbhash":"pUgK"}}}`,
-		id, name, strings.ToLower(name), rating, claim, geImageURL(id))
+		id, name, strings.ToLower(name), rating, shelf, claim, geImageURL(id))
 }
 
 func g7aRating(code int) string {

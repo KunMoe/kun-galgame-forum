@@ -58,7 +58,7 @@ func (f fakeWorks) CatalogRowsByWorkIDs(_ context.Context, ids []int, _, _ strin
 	out := map[int]client.CatalogWorkListItem{}
 	for _, id := range ids {
 		if id == moyuWorkID {
-			out[id] = client.CatalogWorkListItem{ID: int64(id), DisplayName: "moyu-work"}
+			out[id] = client.CatalogWorkListItem{ID: int64(id), DisplayName: "moyu-work", ContentLimit: "sfw"}
 		}
 	}
 	return out, nil

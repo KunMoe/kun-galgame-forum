@@ -220,7 +220,7 @@ func g4LiveDetail(t *testing.T) *client.CatalogWorkDetail {
 		"id": %d, "display_name": "LiveWork", "latin": "livework", "olang": "ja",
 		"content_rating": "all_ages", "created": "2026-01-01T00:00:00Z", "updated": "2026-01-02T00:00:00Z",
 		"localized": {"zh-Hans": {"value": "现场作", "machine": false}},
-		"claim": {"site": "kungal", "site_work_id": %d, "state": "live", "content_limit": "sfw"},
+		"content_limit": "sfw", "claim": {"site": "kungal", "site_work_id": %d, "state": "live", "content_limit": "sfw"},
 		"titles": [{"lang": "zh-Hans", "title": "别名一"}, {"lang": "ja", "title": %q}],
 		"characters": [
 			{"id": 7001, "display_name": "Lead", "kind": "main", "spoiler": 0},

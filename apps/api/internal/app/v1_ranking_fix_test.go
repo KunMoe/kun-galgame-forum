@@ -76,8 +76,8 @@ func (w *rkWorks) CatalogRowsByWorkIDs(_ context.Context, ids []int, _, contentL
 			limit = "nsfw"
 		}
 		raw := fmt.Sprintf(`{"id": %d, "display_name": "作品%d", "latin": "Work %d",
-			"localized": {"zh-Hans": {"value": "作品 %d", "machine": false}},
-			"claim": {"site": "kungal", "state": "live", "content_limit": %q}}`, id, id, id, id, limit)
+			"localized": {"zh-Hans": {"value": "作品 %d", "machine": false}}, "content_limit": %q,
+			"claim": {"site": "kungal", "state": "live", "content_limit": %q}}`, id, id, id, id, limit, limit)
 		var it client.CatalogWorkListItem
 		if err := json.Unmarshal([]byte(raw), &it); err != nil {
 			panic(err)

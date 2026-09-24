@@ -133,7 +133,7 @@ type CatalogMirror struct {
 }
 
 func mirrorOf(row *CatalogWorkListItem) CatalogMirror {
-	m := CatalogMirror{ContentLimit: contentLimitOf(row.Claim, row.ContentRating)}
+	m := CatalogMirror{ContentLimit: row.ContentLimit}
 	if row.ReleaseDate != nil {
 		m.ReleaseDate = *row.ReleaseDate
 	}
@@ -147,6 +147,7 @@ type CatalogWorkDetail struct {
 	Latin         string                      `json:"latin"`
 	OLang         string                      `json:"olang"`
 	ContentRating string                      `json:"content_rating"`
+	ContentLimit  string                      `json:"content_limit"`
 	ReleaseDate   *string                     `json:"release_date"`
 	Updated       string                      `json:"updated"`
 	Created       string                      `json:"created"`

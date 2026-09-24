@@ -165,7 +165,7 @@ func g6LiveDetail(t *testing.T) *client.CatalogWorkDetail {
 	raw := fmt.Sprintf(`{
 		"id": %d, "display_name": "LiveG6", "latin": "liveg6", "olang": "ja",
 		"content_rating": "all_ages", "created": "2026-01-01T00:00:00Z", "updated": "2026-01-02T00:00:00Z",
-		"claim": {"site": "kungal", "site_work_id": %d, "state": "live", "content_limit": "sfw"},
+		"content_limit": "sfw", "claim": {"site": "kungal", "site_work_id": %d, "state": "live", "content_limit": "sfw"},
 		"covers": [
 			{"id": %d, "url": %q, "kind": "main", "source": "vndb", "width": 600, "height": 850, "thumbhash": "AbC+"},
 			{"id": %d, "url": %q, "kind": "dig", "source": "vndb", "width": 800, "height": 450, "sexual": 0, "thumbhash": "sigO"}

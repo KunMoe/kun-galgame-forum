@@ -97,7 +97,7 @@ func newResourceFix(t *testing.T, checker gate.Checker) *resourceFix {
 func resourceHiddenJSON(id int, name string) string {
 	return fmt.Sprintf(`{"id":%d,"display_name":%q,"latin":%q,
 		"localized":{"zh-Hans":{"value":%q,"machine":true}},
-		"content_rating":"all_ages","release_date":"2026-01-01",
+		"content_rating":"all_ages","content_limit":"sfw","release_date":"2026-01-01",
 		"claim":{"site":"kungal","site_work_id":%d,"state":"hidden","content_limit":"sfw"},
 		"cover_slots":{"portrait":{"url":%q,"width":256,"height":361,"thumbhash":"pUgK"}}}`,
 		id, name, name, name+"（中）", id, geImageURL(id))

@@ -88,7 +88,7 @@ func (s *RatingStore) filtered(q RatingQuery) *gorm.DB {
 		tx = tx.Where("r.galgame_type @> ?::jsonb", string(raw))
 	}
 	if q.SFWOnly {
-		tx = tx.Where("(g.content_limit IS NULL OR g.content_limit = 'sfw')")
+		tx = tx.Where("g.content_limit = 'sfw'")
 	}
 	return tx
 }

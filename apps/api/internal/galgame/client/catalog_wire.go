@@ -5,6 +5,7 @@ import (
 	"cmp"
 	"context"
 	"encoding/json"
+	"log/slog"
 	"strings"
 
 	"kun-galgame-api/internal/galgame/dto"
@@ -217,6 +218,7 @@ type CatalogWorkListItem struct {
 	Medium        string    `json:"medium"`
 	DisplayName   string    `json:"display_name"`
 	ContentRating string    `json:"content_rating"`
+	ContentLimit  string    `json:"content_limit"`
 	OLang         string    `json:"olang"`
 	ReleaseDate   *string   `json:"release_date"`
 	Claim         *catClaim `json:"claim"`
@@ -289,21 +291,18 @@ func hashFromURL(u string) string {
 	return strings.TrimSuffix(base, ".webp")
 }
 
-func contentLimitOf(claimed *catClaim, rating string) string {
-	if claimed != nil {
-		switch claimed.ContentLimit {
-		case "sfw", "nsfw":
-			return claimed.ContentLimit
-		}
+// Catalog's shelf verdict, read as sent. The forum used to derive it from the
+// claim, falling back to rating == r18 for an unclaimed work; catalog's shelf
+// also counts a work whose cover art is all explicit, so 18 unclaimed works
+// showed explicit covers to SFW readers (2026-09-24). An unusable verdict fails
+// closed.
+func contentLimitOf(workID int64, limit string) string {
+	switch limit {
+	case "sfw", "nsfw":
+		return limit
 	}
-	return contentLimitFromRating(rating)
-}
-
-func contentLimitFromRating(rating string) string {
-	if rating == "r18" {
-		return "nsfw"
-	}
-	return "sfw"
+	slog.Warn("catalog work carries no usable content_limit, shown as nsfw", "work_id", workID, "content_limit", limit)
+	return "nsfw"
 }
 
 func ageLimitFromRating(rating string) string {
@@ -458,7 +457,7 @@ func CatalogItemToBrief(ctx context.Context, it *CatalogWorkListItem) GalgameBri
 		Name:             name,
 		NameOriginal:     original,
 		AgeLimit:         ageLimitFromRating(it.ContentRating),
-		ContentLimit:     contentLimitOf(it.Claim, it.ContentRating),
+		ContentLimit:     contentLimitOf(it.ID, it.ContentLimit),
 		OriginalLanguage: productLocale(it.OLang),
 		ReleaseDate:      it.ReleaseDate,
 		Refs:             refsMap(it.Refs),
@@ -509,7 +508,7 @@ func CatalogItemToNextMoeItem(ctx context.Context, it *CatalogWorkListItem) dto.
 		Name:             name,
 		NameOriginal:     original,
 		ReleaseDate:      it.ReleaseDate,
-		ContentLimit:     contentLimitOf(it.Claim, it.ContentRating),
+		ContentLimit:     contentLimitOf(it.ID, it.ContentLimit),
 		ReleasePrecision: releasePrecisionOf(it.ReleaseDate),
 		Company:          makerName(ctx, it.Labels),
 	}
