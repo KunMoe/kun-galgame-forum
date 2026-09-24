@@ -14,8 +14,8 @@
 -- local list that pages ids before hydrating them.
 --
 -- Existing rows: catalog_rendered = true and catalog_checked_at = NULL, so the
--- verify lane re-asks about every row once after deploy (about 5.5 hours at
--- 500 rows per ten-minute tick) and marks the 19 unrenderable ones then. No
--- row is deleted here.
+-- verify lane re-asks about every row once after deploy (about 5.4 hours at
+-- 100 rows every two minutes) and marks the 19 unrenderable ones then. No row
+-- is deleted here.
 ALTER TABLE galgame ADD COLUMN IF NOT EXISTS catalog_checked_at timestamptz;
 ALTER TABLE galgame ADD COLUMN IF NOT EXISTS catalog_rendered boolean NOT NULL DEFAULT true;
