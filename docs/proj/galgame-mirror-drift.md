@@ -100,3 +100,17 @@
 | 11 排行 | `TestTopWorksSkipsWorksCatalogWillNotRender` |
 | 11 用户作品 | `TestUserWorksSkipWorksCatalogWillNotRender` |
 | 12 | `TestMirrorVerifySettlesEveryKindOfAnswer` 等 3 题 |
+
+## 8. 后续 (a)：合并折叠自己的车道也先验证幸存条目（2026-09-24）
+
+#228 只在镜像交接那一路先验证幸存条目可渲染；合并折叠读 redirect 游标的那一路没有这道判断，会把内容并进一个 hidden 认领——那个页面谁也打不开（206987 → 226964 就是这种，靠 G0 之前的旧代码才一直暂存着）。
+
+改法：`fold` 在折叠之前用批量面（`nsfw=true`、不带 `content_limit`）一次水合这一批的全部幸存条目；没返回、返回了但是 hidden、或者这次水合失败，都**暂存**（进 `catalog:redirects:merge:deferred:v2`，下一轮重试），不折叠也不丢。幸存条目将来可渲染了，重试时自然折过去。
+
+变异题（先于实现提交）：
+
+| # | 破坏 | 必须变红的断言 |
+|---|---|---|
+| 1 | 不验证幸存条目 | 幸存条目 hidden → 不折叠，计为暂存 |
+| 2 | 水合失败当作可渲染 | 水合出错 → 不折叠，计为暂存 |
+| 3 | 可渲染的也暂存 | 幸存条目可渲染 → 照常折叠 |
