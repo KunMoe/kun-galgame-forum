@@ -3,7 +3,8 @@ const props = defineProps<{
   workId: number
   targetUserId?: number
   favoriteCount: number
-  isFavorited: boolean
+  // null is unknown: still loading, or catalog could not be read
+  isFavorited: boolean | null
 }>()
 
 const emits = defineEmits<{
@@ -35,12 +36,12 @@ const onClick = () => {
 }
 
 const onSaved = (payload: { favorited: boolean }) => {
-  if (isFavorited.value !== payload.favorited) {
+  if (isFavorited.value !== null && isFavorited.value !== payload.favorited) {
     favoriteCount.value += payload.favorited ? 1 : -1
   }
   isFavorited.value = payload.favorited
-  useMyGalgameInteractions().setFavorited(props.workId, payload.favorited)
   emits('saved', payload)
+  useMyGalgameInteractions().setFavorited(props.workId, payload.favorited)
 }
 </script>
 
@@ -48,7 +49,8 @@ const onSaved = (payload: { favorited: boolean }) => {
   <KunTooltip text="收藏">
     <span class="flex">
       <KunReaction
-        :model-value="isFavorited"
+        :model-value="!!isFavorited"
+        :disabled="isFavorited === null"
         :count="favoriteCount"
         :toggle="false"
         icon="lucide:heart"

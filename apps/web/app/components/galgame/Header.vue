@@ -123,19 +123,20 @@ const coversOpen = ref(false)
 const hasMoreCovers = computed(() => props.galgame.covers.length > 1)
 
 const favoriteCount = ref(props.galgame.favorite_count)
-const isFavorited = ref(props.galgame.viewer?.has_favorited ?? false)
 
 watch(
   () => props.galgame.favorite_count,
   (value) => (favoriteCount.value = value)
 )
-watch(
-  () => props.galgame.viewer?.has_favorited,
-  (value) => (isFavorited.value = value ?? false)
-)
 
 const favoritePickerOpen = ref(false)
-const { setFavorited } = useMyGalgameInteractions()
+const {
+  isFavorited: favoritedOf,
+  setFavorited,
+  ensureLoaded
+} = useMyGalgameInteractions()
+const isFavorited = computed(() => favoritedOf(workId.value))
+onMounted(() => ensureLoaded([workId.value]))
 
 const openFavoritePicker = () => {
   if (!id) {
@@ -146,10 +147,9 @@ const openFavoritePicker = () => {
 }
 
 const onFavoriteSaved = (payload: { favorited: boolean }) => {
-  if (isFavorited.value !== payload.favorited) {
+  if (isFavorited.value !== null && isFavorited.value !== payload.favorited) {
     favoriteCount.value += payload.favorited ? 1 : -1
   }
-  isFavorited.value = payload.favorited
   setFavorited(workId.value, payload.favorited)
 }
 
@@ -198,7 +198,8 @@ const coverThumbhash = computed(
         <KunTooltip text="收藏">
           <span class="flex">
             <KunReaction
-              :model-value="isFavorited"
+              :model-value="!!isFavorited"
+              :disabled="isFavorited === null"
               :toggle="false"
               size="sm"
               icon="lucide:heart"

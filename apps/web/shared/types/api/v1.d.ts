@@ -1668,6 +1668,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/me/cover-votes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Batch-read the caller's cover votes
+         * @description Answers, for each work id named in work_ids, which of its covers the caller voted for. It is a batch read and is not paginated: work_ids is required, holds 1 to 100 ids. An id catalog does not know or has hidden is missing. A vote cast in another application can take up to 10 minutes to appear.
+         */
+        get: operations["listMyCoverVotes"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/me/creator-applications": {
         parameters: {
             query?: never;
@@ -2132,26 +2152,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/me/work-states": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Batch-read the caller's work like and favorite states
-         * @description Answers, for each work id named in work_ids, whether the caller liked it and whether they hold it in a folder. It is a batch read and is not paginated: work_ids is required, holds 1 to 100 ids. An id catalog does not know or has hidden is missing. has_favorited is false when the caller's folders cannot be read; has_liked is always answered.
-         */
-        get: operations["listMyWorkStates"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/me/work-submission-reviews": {
         parameters: {
             query?: never;
@@ -2184,6 +2184,26 @@ export interface paths {
          * @description Claims the caller submitted, newest activity first. state filters; absent lists every state.
          */
         get: operations["listMyWorkSubmissions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/works": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Batch-read the caller's own state on works
+         * @description Answers, for each work id named in work_ids, whether the caller liked it, and from catalog which of their collections hold it and their playtime and play state. It is a batch read and is not paginated: work_ids is required, holds 1 to 100 ids. An id catalog does not know or has hidden is missing, and is never sent to catalog's user plane. library is null when catalog cannot be read for this caller (a quota, an outage, or a token without folder:read); has_liked is always answered.
+         */
+        get: operations["listMyWorks"];
         put?: never;
         post?: never;
         delete?: never;
@@ -5416,6 +5436,28 @@ export interface components {
              */
             voice: number | null;
         };
+        BatchListMyCoverVote: {
+            /** @description One member per requested id that the caller may see. Empty array, never null. */
+            items: components["schemas"]["MyCoverVote"][];
+            /** @description Requested ids that did not come back, in the order they were requested. Empty array, never null. The reason is deliberately not given. */
+            missing: string[];
+            /**
+             * @description Type discriminant. Always list.
+             * @enum {string}
+             */
+            object: "list";
+        };
+        BatchListMyWork: {
+            /** @description One member per requested id that the caller may see. Empty array, never null. */
+            items: components["schemas"]["MyWork"][];
+            /** @description Requested ids that did not come back, in the order they were requested. Empty array, never null. The reason is deliberately not given. */
+            missing: string[];
+            /**
+             * @description Type discriminant. Always list.
+             * @enum {string}
+             */
+            object: "list";
+        };
         BatchListQuizState: {
             /** @description One member per requested id that the caller may see. Empty array, never null. */
             items: components["schemas"]["QuizState"][];
@@ -5441,17 +5483,6 @@ export interface components {
         BatchListUserRef: {
             /** @description One member per requested id that the caller may see. Empty array, never null. */
             items: components["schemas"]["UserRef"][];
-            /** @description Requested ids that did not come back, in the order they were requested. Empty array, never null. The reason is deliberately not given. */
-            missing: string[];
-            /**
-             * @description Type discriminant. Always list.
-             * @enum {string}
-             */
-            object: "list";
-        };
-        BatchListWorkState: {
-            /** @description One member per requested id that the caller may see. Empty array, never null. */
-            items: components["schemas"]["WorkState"][];
             /** @description Requested ids that did not come back, in the order they were requested. Empty array, never null. The reason is deliberately not given. */
             missing: string[];
             /**
@@ -8546,6 +8577,17 @@ export interface components {
              */
             web_url: string;
         };
+        MyCoverVote: {
+            /**
+             * @description Type discriminant. Always my_cover_vote.
+             * @enum {string}
+             */
+            object: "my_cover_vote";
+            /** @description The cover of this work the caller voted for. null when they have not voted on this work. */
+            voted_cover_id: string | null;
+            /** @description Work id this entry is about. */
+            work_id: string;
+        };
         MyProfile: {
             /** @description Avatar image. null when the account has no image-service hash. */
             avatar: components["schemas"]["Image"] | null;
@@ -8560,6 +8602,25 @@ export interface components {
              * @enum {string}
              */
             object: "user";
+        };
+        MyWork: {
+            /** @description Whether the caller liked this work. */
+            has_liked: boolean;
+            /** @description The caller's collections and playtime for this work, read from catalog. null when catalog could not be read for this caller (a quota, an outage, or a token without folder:read): the state is unknown, not empty. Render the collect button and playtime as unknown, never as not collected. */
+            library: components["schemas"]["MyWorkLibrary"] | null;
+            /**
+             * @description Type discriminant. Always my_work.
+             * @enum {string}
+             */
+            object: "my_work";
+            /** @description Work id this entry is about. */
+            work_id: string;
+        };
+        MyWorkLibrary: {
+            /** @description The caller's collections holding this work, ascending. Empty array, never null: the work is collected when this is not empty. */
+            collection_ids: string[];
+            /** @description The caller's own playtime and play state. null when they have neither. */
+            playtime: components["schemas"]["WorkViewerPlaytime"] | null;
         };
         NewsArchive: {
             /** @description Months of the requested year that have items. Empty unless year was sent and is one of years. */
@@ -13552,11 +13613,9 @@ export interface components {
              * @description Catalog order among covers.
              */
             sort_order: number;
-            /** @description The caller's vote on this cover. null for an anonymous caller. */
-            viewer: components["schemas"]["WorkCoverViewer"] | null;
             /**
              * Format: int64
-             * @description Public votes for this cover. 0 when the vote store is unread.
+             * @description Public votes for this cover. 0 when the vote store is unread. The caller's own vote is on GET /me/cover-votes.
              */
             vote_count: number;
         };
@@ -13579,10 +13638,6 @@ export interface components {
             work_id: string;
         };
         WorkCoverEngagementViewer: {
-            /** @description Whether the caller voted for this cover. */
-            has_voted: boolean;
-        };
-        WorkCoverViewer: {
             /** @description Whether the caller voted for this cover. */
             has_voted: boolean;
         };
@@ -13918,19 +13973,6 @@ export interface components {
              */
             sort_order: number;
         };
-        WorkState: {
-            /** @description Whether the caller holds this work in any folder. */
-            has_favorited: boolean;
-            /** @description Whether the caller liked this work. */
-            has_liked: boolean;
-            /**
-             * @description Type discriminant. Always work_state.
-             * @enum {string}
-             */
-            object: "work_state";
-            /** @description Work id this state is about. */
-            work_id: string;
-        };
         WorkStats: {
             /**
              * Format: int64
@@ -14230,12 +14272,8 @@ export interface components {
         WorkViewer: {
             /** @description Whether the caller may ban publishing download resources on this work. Requests authenticated with a Bearer token never carry staff powers. */
             can_ban_resource_publish: boolean;
-            /** @description Whether the caller holds this work in any folder. */
-            has_favorited: boolean;
-            /** @description Whether the caller liked this work. */
+            /** @description Whether the caller liked this work. The caller's collections and playtime for it are on GET /me/works. */
             has_liked: boolean;
-            /** @description The caller's own playtime. null when they have none or the token cannot read it. */
-            playtime: components["schemas"]["WorkViewerPlaytime"] | null;
         };
         WorkViewerPlaytime: {
             /**
@@ -23489,6 +23527,74 @@ export interface operations {
             };
         };
     };
+    listMyCoverVotes: {
+        parameters: {
+            query: {
+                /** @description Work ids to answer for, comma-separated. 1 to 100 of them. */
+                work_ids: string[];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BatchListMyCoverVote"];
+                };
+            };
+            /** @description INVALID_PARAMETER when work_ids is absent, empty, holds more than 100 ids, or holds something that is not a positive decimal integer. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SCOPE_REQUIRED when the token lacks catalog:edit; ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the catalog cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     createCreatorApplication: {
         parameters: {
             query?: never;
@@ -25696,74 +25802,6 @@ export interface operations {
             };
         };
     };
-    listMyWorkStates: {
-        parameters: {
-            query: {
-                /** @description Work ids to answer for, comma-separated. 1 to 100 of them. */
-                work_ids: string[];
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["BatchListWorkState"];
-                };
-            };
-            /** @description INVALID_PARAMETER when work_ids is absent, empty, holds more than 100 ids, or holds something that is not a positive decimal integer. */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["Problem"];
-                };
-            };
-            /** @description Unauthorized */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["Problem"];
-                };
-            };
-            /** @description ACCOUNT_BANNED. */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["Problem"];
-                };
-            };
-            /** @description Internal Server Error */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["Problem"];
-                };
-            };
-            /** @description SERVICE_UNAVAILABLE when the catalog cannot say which works exist. */
-            503: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["Problem"];
-                };
-            };
-        };
-    };
     listMyWorkSubmissionReviews: {
         parameters: {
             query?: {
@@ -25902,6 +25940,74 @@ export interface operations {
                 };
             };
             /** @description SERVICE_UNAVAILABLE when the catalog cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listMyWorks: {
+        parameters: {
+            query: {
+                /** @description Work ids to answer for, comma-separated. 1 to 100 of them. */
+                work_ids: string[];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BatchListMyWork"];
+                };
+            };
+            /** @description INVALID_PARAMETER when work_ids is absent, empty, holds more than 100 ids, or holds something that is not a positive decimal integer. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the catalog cannot say which works exist. */
             503: {
                 headers: {
                     [name: string]: unknown;

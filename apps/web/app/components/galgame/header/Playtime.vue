@@ -19,13 +19,15 @@ const emits = defineEmits<{
 
 const { id } = usePersistUserStore()
 
-const mine = ref<WorkViewerPlaytime | null>(
-  props.galgame.viewer?.playtime ?? null
+const { playtimeOf, ensureLoaded } = useMyGalgameInteractions()
+onMounted(() => ensureLoaded([props.galgame.id]))
+const saved = ref<WorkViewerPlaytime | null | undefined>(undefined)
+// undefined is unknown — still loading, or catalog could not be read — and is
+// never drawn as "no record".
+const mine = computed(() =>
+  saved.value !== undefined ? saved.value : playtimeOf(props.galgame.id)
 )
-watch(
-  () => props.galgame.viewer?.playtime,
-  (value) => (mine.value = value ?? null)
-)
+const unknown = computed(() => !!id && mine.value === undefined)
 
 const isOpen = ref(false)
 
@@ -71,6 +73,7 @@ const myStatusLabel = computed(() => {
 })
 
 const myTooltip = computed(() => {
+  if (unknown.value) return '暂时读不到你的游玩记录'
   if (!mine.value) return '标记你在这部作品上的游玩状态, 也可以记下用时'
   const parts: string[] = []
   if (myStatusLabel.value && myDuration.value) {
@@ -129,6 +132,7 @@ const onFinished = (state: KunGalgamePlayState) => {
         size="sm"
         :variant="mine ? 'flat' : 'light'"
         color="primary"
+        :disabled="unknown"
         @click="openEditor"
       >
         <KunIcon :name="mine ? 'lucide:user-round' : 'lucide:gamepad-2'" />
@@ -136,6 +140,7 @@ const onFinished = (state: KunGalgamePlayState) => {
           <span v-if="myStatusLabel">{{ myStatusLabel }}</span>
           <span v-if="myDuration" class="tabular-nums">{{ myDuration }}</span>
         </template>
+        <template v-else-if="unknown">我的游玩状态</template>
         <template v-else>标记游玩状态</template>
       </KunButton>
     </KunTooltip>
@@ -144,8 +149,8 @@ const onFinished = (state: KunGalgamePlayState) => {
       v-if="id"
       v-model="isOpen"
       :galgame="galgame"
-      :mine="mine"
-      @saved="(value) => (mine = value)"
+      :mine="mine ?? null"
+      @saved="(value) => (saved = value)"
       @finished="onFinished"
     />
   </div>

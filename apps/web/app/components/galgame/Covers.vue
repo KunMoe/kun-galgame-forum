@@ -23,13 +23,17 @@ interface CoverBallot {
   voted: boolean
 }
 const ballots = ref(new Map<string, CoverBallot>())
+const { id: userId } = usePersistUserStore()
+// undefined until the reader's own ballot is read; it stays undefined when the
+// read fails, and voting waits rather than drawing "not voted".
+const votedCoverId = ref<string | null | undefined>(userId ? undefined : null)
 
 const seedBallots = () => {
   const seeded = new Map<string, CoverBallot>()
   for (const c of props.covers) {
     seeded.set(c.id, {
       count: c.vote_count,
-      voted: c.viewer?.has_voted ?? false
+      voted: votedCoverId.value === c.id
     })
   }
   ballots.value = seeded
@@ -37,10 +41,27 @@ const seedBallots = () => {
 seedBallots()
 watch(() => props.covers, seedBallots)
 
+const api = useApiClient()
+
+const loadMyVote = async () => {
+  if (!userId || votedCoverId.value !== undefined) return
+  const result = await settle(
+    api.GET('/me/cover-votes', {
+      params: { query: { work_ids: [String(props.workId)] } }
+    })
+  )
+  if (!result.ok) return
+  votedCoverId.value = result.data.items[0]?.voted_cover_id ?? null
+  seedBallots()
+}
+watch(open, (isOpen) => {
+  if (isOpen) void loadMyVote()
+})
+const ballotUnknown = computed(() => votedCoverId.value === undefined)
+
 const ballotOf = (cover: WorkCover): CoverBallot | undefined =>
   ballots.value.get(cover.id)
 
-const api = useApiClient()
 const voting = ref('')
 
 const applyVote = (coverId: string, count: number, voted: boolean) => {
@@ -53,6 +74,7 @@ const applyVote = (coverId: string, count: number, voted: boolean) => {
   }
   next.set(coverId, { count, voted })
   ballots.value = next
+  votedCoverId.value = voted ? coverId : null
 }
 
 const toggleVote = async (cover: WorkCover) => {
@@ -169,6 +191,7 @@ const sourceLabel = (cover: WorkCover) => galgameImageSourceLabel(cover.site)
                   size="sm"
                   :color="ballotOf(c)?.voted ? 'primary' : 'default'"
                   :loading="voting === c.id"
+                  :disabled="ballotUnknown"
                   full-width
                   @click="toggleVote(c)"
                 >

@@ -121,15 +121,12 @@ const cards = computed(() =>
       :class="
         cn(
           'grid grid-cols-2 gap-2 @lg:grid-cols-3 @lg:gap-3 @2xl:grid-cols-4 @4xl:grid-cols-5 @5xl:grid-cols-6',
-          showKUNGalgamePhoneColumns === 3 && 'max-sm:grid-cols-3 max-sm:gap-1.5'
+          showKUNGalgamePhoneColumns === 3 &&
+            'max-sm:grid-cols-3 max-sm:gap-1.5'
         )
       "
     >
-      <div
-        v-for="card in cards"
-        :key="card.galgame.id"
-        class="relative"
-      >
+      <div v-for="card in cards" :key="card.galgame.id" class="relative">
         <KunCard
           :is-transparent="isTransparent"
           :href="card.href"
@@ -175,85 +172,85 @@ const cards = computed(() =>
               </span>
             </div>
 
-          <div
-            v-if="showNsfwBadge"
-            class="absolute top-0 right-0 size-5 [clip-path:polygon(100%_0,100%_100%,0_0)]"
-            :class="card.isSfw ? 'bg-success' : 'bg-danger'"
-            :title="card.galgame.content_limit.toLocaleUpperCase()"
-          />
+            <div
+              v-if="showNsfwBadge"
+              class="absolute top-0 right-0 size-5 [clip-path:polygon(100%_0,100%_100%,0_0)]"
+              :class="card.isSfw ? 'bg-success' : 'bg-danger'"
+              :title="card.galgame.content_limit.toLocaleUpperCase()"
+            />
 
-          <!-- SANCTIONED EXCEPTION to 铁律 #1 (no gradients): a bottom-to-top
+            <!-- SANCTIONED EXCEPTION to 铁律 #1 (no gradients): a bottom-to-top
              black scrim so the caption stays legible over an arbitrary cover.
              Listed in CLAUDE.md; do NOT remove it in a no-gradient sweep. -->
-          <div
-            v-if="
-              (showViewLike || card.updateTime) &&
-              card.galgame.is_on_forum !== false
-            "
-            class="absolute right-0 bottom-0 left-0 flex items-center gap-2 bg-gradient-to-t from-black/60 to-transparent p-2 text-xs transition-opacity duration-300"
-          >
-            <div v-if="showViewLike" class="flex shrink-0 gap-3">
-              <span class="flex items-center gap-1">
-                <KunIcon class="text-white" name="lucide:eye" />
-                <span class="text-white">{{ card.galgame.view }}</span>
-              </span>
+            <div
+              v-if="
+                (showViewLike || card.updateTime) &&
+                card.galgame.is_on_forum !== false
+              "
+              class="absolute right-0 bottom-0 left-0 flex items-center gap-2 bg-gradient-to-t from-black/60 to-transparent p-2 text-xs transition-opacity duration-300"
+            >
+              <div v-if="showViewLike" class="flex shrink-0 gap-3">
+                <span class="flex items-center gap-1">
+                  <KunIcon class="text-white" name="lucide:eye" />
+                  <span class="text-white">{{ card.galgame.view }}</span>
+                </span>
 
-              <span class="flex items-center gap-1">
-                <KunIcon class="text-white" name="lucide:thumbs-up" />
-                <span class="text-white">{{ card.galgame.like_count }}</span>
-              </span>
+                <span class="flex items-center gap-1">
+                  <KunIcon class="text-white" name="lucide:thumbs-up" />
+                  <span class="text-white">{{ card.galgame.like_count }}</span>
+                </span>
+              </div>
+
+              <KunTime
+                v-if="card.updateTime"
+                class="ml-auto shrink-0 text-white!"
+                :time="card.updateTime"
+              />
             </div>
-
-            <KunTime
-              v-if="card.updateTime"
-              class="ml-auto shrink-0 text-white!"
-              :time="card.updateTime"
-            />
           </div>
-        </div>
 
-        <div class="flex flex-auto flex-col p-2">
-          <h2
-            class="hover:text-primary line-clamp-2 text-sm font-medium transition-colors"
-          >
-            {{ card.galgame.name }}
-          </h2>
-
-          <p
-            v-if="showJapaneseName && card.galgame.name_original"
-            class="text-default-500 mt-1 line-clamp-1 text-xs"
-          >
-            {{ card.galgame.name_original }}
-          </p>
-
-          <slot name="meta" :galgame="card.galgame" />
-
-          <div
-            v-if="card.hasFooter"
-            class="mt-auto flex min-w-0 items-center gap-1.5 pt-2"
-          >
-            <span
-              v-if="card.company"
-              class="text-default-500 truncate text-xs"
-              :title="card.company"
+          <div class="flex flex-auto flex-col p-2">
+            <h2
+              class="hover:text-primary line-clamp-2 text-sm font-medium transition-colors"
             >
-              {{ card.company }}
-            </span>
+              {{ card.galgame.name }}
+            </h2>
 
-            <KunChip
-              v-if="card.rating"
-              class-name="ml-auto shrink-0 tabular-nums"
-              size="xs"
-              variant="flat"
-              :color="card.rating.color"
+            <p
+              v-if="showJapaneseName && card.galgame.name_original"
+              class="text-default-500 mt-1 line-clamp-1 text-xs"
             >
-              <template #start>
-                <KunIcon name="lucide:star" class="size-3" />
-              </template>
-              {{ card.rating.score }}
-            </KunChip>
+              {{ card.galgame.name_original }}
+            </p>
+
+            <slot name="meta" :galgame="card.galgame" />
+
+            <div
+              v-if="card.hasFooter"
+              class="mt-auto flex min-w-0 items-center gap-1.5 pt-2"
+            >
+              <span
+                v-if="card.company"
+                class="text-default-500 truncate text-xs"
+                :title="card.company"
+              >
+                {{ card.company }}
+              </span>
+
+              <KunChip
+                v-if="card.rating"
+                class-name="ml-auto shrink-0 tabular-nums"
+                size="xs"
+                variant="flat"
+                :color="card.rating.color"
+              >
+                <template #start>
+                  <KunIcon name="lucide:star" class="size-3" />
+                </template>
+                {{ card.rating.score }}
+              </KunChip>
+            </div>
           </div>
-        </div>
         </KunCard>
 
         <div
@@ -265,7 +262,8 @@ const cards = computed(() =>
           <KunTooltip text="收藏">
             <span class="flex">
               <KunReaction
-                :model-value="card.favorited"
+                :model-value="!!card.favorited"
+                :disabled="card.favorited === null"
                 :toggle="false"
                 size="sm"
                 icon="lucide:heart"
