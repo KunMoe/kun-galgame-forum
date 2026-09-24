@@ -339,7 +339,11 @@ catalog 用户面一次调用的失败，按下表进 v1。**不得**落到无 c
 - **旧路径两种到达方式都要通**：整页加载 `/galgame/collection/{cid}` → Nitro server route 调别名查询 → **301** 到 `/collection/{collection_id}`（不可见 / 未知 → 404 页）；站内客户端导航（旧 markdown 里的链接）→ 保留一个薄页 `pages/galgame/collection/[id].vue`，只调别名查询后 `router.replace`，查询完成前不渲染任何夹内容（不闪别人的夹）。
 - **库里存着的旧链接：0 条。** 普查（2026-09-24，生产只读）：G0 列出的全部带链接列——`message.link` / `message.content`、`feed_activity.link` / `.content`、`chat_message.content`、`chat_room.last_message_content`、`topic.content`、`topic_reply.content`、`topic_comment.content`、`todo.content`、`doc_article.content_markdown`、`galgame_resource_link.url`——以及 infra `kun_community.community_post.content_raw`，`/galgame/collection/<n>` 出现 **0 次**，distinct cid **0** 个（收藏通知链的是 `/galgame/<work_id>`）。所以**没有**链接改写迁移；重定向只承载站外分享与书签。
 
-**游玩时长撤回仍写 0（编排者复核后改判，2026-09-24）。** catalog 的时长是**每 client 一行**：`UNIQUE (actor_uid, work_id, client_id)`（生产索引 `uq_catalog_user_playtime`；infra `model/playtime.go:13-15`；PUT 按这三列 upsert，`user_playtime.go:57-58`）。而 `DELETE /v2/me/playtimes/{work_id}` 是 `DELETE … WHERE actor_uid AND work_id`，**不带 client**（`user_playtime.go:146-155`），也没有按 client 删的端点。用它撤回会把该用户在 moyu / App 等其它 client 报的时长一起抹掉。所以 `DELETE /works/{work_id}/playtime` = 用论坛自己的 token `PUT {minutes: 0}`（只动论坛这一行，低于 floor 不进公开中位数）+ 删 work-state。重复撤回是 200、`{minutes:0, play_state:null}`。生产 367 行目前都是论坛的 client，改判前没有数据受损。
+**游玩时长撤回仍写 0（编排者复核后改判，2026-09-24）。** catalog 的时长是**每 client 一行**：`UNIQUE (actor_uid, work_id, client_id)`（生产索引 `uq_catalog_user_playtime`；infra `model/playtime.go:13-15`；PUT 按这三列 upsert，`user_playtime.go:57-58`）。而 `DELETE /v2/me/playtimes/{work_id}` 是 `DELETE … WHERE actor_uid AND work_id`，**不带 client**（`user_playtime.go:146-155`），也没有按 client 删的端点。用它撤回会把该用户在 moyu / App 等其它 client 报的时长一起抹掉。所以 `DELETE /works/{work_id}/playtime` = 用论坛自己的 token `PUT {minutes: 0}`（只动论坛这一行，低于 floor 不进公开中位数）+ 删 work-state。重复撤回是 200。生产 367 行目前都是论坛的 client，改判前没有数据受损。
+
+**撤回的回执不写死 `{minutes: 0}`。** catalog 的「我的时长」是**跨 client 取最大值**（infra#296 之后仍然如此），论坛这一行归零或删掉之后，该用户在别的 app 报的分钟仍在。DELETE 与 PUT 一样：写完**重读**（`MyPlaytime` + `MyWorkState` 折叠），回的就是此刻 `GET /works/{work_id}` 的 `viewer.playtime` 会给的值；两轴都空才是 `null`。变异 #21 钉住。
+
+**以后换成 DELETE。** infra#296（spec 2.24.1）把 `DeleteMine` 收窄到调用方的 `client_id` 并拒绝空 client。本轨不做运行时版本判断，仍写 0；#296 在生产部署并验证之后，另开一个小 PR 把撤回换成 DELETE（不留 0 行），回执语义不变。
 
 **上游 429 一律 `503 SERVICE_UNAVAILABLE`，转发 `Retry-After`，不嗅正文。** 打一行 WARN，带上游状态码。前文 `QUOTA_EXCEEDED` 的拆分作废：日配额与共享 IP 限流都不是调用者这一次请求的错，正文子串也不是可靠判据。
 
@@ -495,7 +499,7 @@ U3：主人不可渲染 404；非主人只有公开夹。
 |---|---|
 | **K-G41** | 本轨是 BFF：用户 token 打 catalog `/v2/me/*` 与 `/v2/folders`。论坛库不存票、时长、夹内容 |
 | **K-G42** | 封面投票是 K16 槽，见 §3.4。G17 的读面是 `GET /works/{work_id}/covers/{cover_id}` → `WorkCover` |
-| **K-G43** | 游玩时长槽见 §3.5 / §3.15。DELETE = 论坛 token `PUT {minutes:0}`（每 client 一行，catalog 的 DELETE 会删掉其它 client）+ 清状态。`play_state` 与 G4 同 schema，handler 拒 `done` |
+| **K-G43** | 游玩时长槽见 §3.5 / §3.15。DELETE = 论坛 token `PUT {minutes:0}`（每 client 一行；infra#296 部署前 catalog 的 DELETE 会删掉其它 client）+ 清状态；回执重读（跨 client 最大值），不写死 0。`play_state` 与 G4 同 schema，handler 拒 `done` |
 | **K-G44** | `/me/playtimes` 页码；合计与 `items` 同一谓词；生产每用户 ≤81 |
 | **K-G45** | `collection_id` = catalog folder id；页面 `/collection/{collection_id}`；别名表冻结为重定向表，`GET /collection-aliases/{alias_id}` 只读、可见性同详情；旧路径 Nitro 301 + 薄页 `router.replace`（§3.15） |
 | **K-G46** | 别人的私密夹 404。封禁主人的公开夹对路人 404 |
@@ -560,6 +564,7 @@ U3：主人不可渲染 404；非主人只有公开夹。
 | 18 | 选择器保存把「读到的含有」写成空差集却仍 DELETE 每一个夹 | 只有用户勾掉的那些夹收到 DELETE；未打开过的夹 0 次 DELETE |
 | 19 | 别名查询对别人的私密夹回 200（披露存在） | 404；对主人本人 200 |
 | 20 | 别名查询对未知 cid 铸一行 / 回 200 | 404；`galgame_collection` 行数不变 |
+| 21 | 撤回回执写死 `{minutes:0, play_state:null}` | 夹具里另一 client 有 300 分钟：DELETE 后回执 `minutes: 300`，与随后 `GET /works/{id}` 的 `viewer.playtime` 相同 |
 
 ## 8. 开放问题
 
