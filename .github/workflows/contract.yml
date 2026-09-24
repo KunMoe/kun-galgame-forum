@@ -1,0 +1,53 @@
+# G12 (refs/docs/proj/api-v1/02-governance.md): diff the /api/v1 spec against
+# the PR's base branch with oasdiff.
+#
+# The spec is `info.x-stability: preview`, so this job only REPORTS: breaking
+# changes show up as annotations on the PR and as a changelog in the job
+# summary, and the job stays green. Preview still owes the App a CHANGELOG
+# entry for every change this lists. When the user declares the spec stable,
+# add `--fail-on ERR` to the breaking step; from then on only additions pass.
+#
+# oasdiff is a pinned release binary checked against its published sha256, not
+# `go install @latest`: a new rule in an unpinned version would change what the
+# gate reports without anyone changing the spec.
+
+on:
+  pull_request:
+    paths:
+      - "apps/api/openapi/kungal-v1.json"
+      - ".github/workflows/contract.yml"
+
+permissions:
+  contents: read
+
+env:
+  OASDIFF_VERSION: 1.32.1
+  OASDIFF_SHA256: 7c8939fc49b75ee11fec66a5b83b37a2fca6aee109fed85013b1ba2ac2a1ee7f
+
+jobs:
+  g12:
+    name: G12 (oasdiff vs base, report only)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - name: Install oasdiff
+        run: |
+          tarball="oasdiff_${OASDIFF_VERSION}_linux_amd64.tar.gz"
+          curl -fsSLo "$RUNNER_TEMP/$tarball" \
+            "https://github.com/oasdiff/oasdiff/releases/download/v${OASDIFF_VERSION}/$tarball"
+          echo "${OASDIFF_SHA256}  $RUNNER_TEMP/$tarball" | sha256sum -c -
+          tar -xzf "$RUNNER_TEMP/$tarball" -C "$RUNNER_TEMP" oasdiff
+      - name: Base spec
+        run: git show "origin/${GITHUB_BASE_REF}:apps/api/openapi/kungal-v1.json" > "$RUNNER_TEMP/base.json"
+      - name: Breaking changes
+        run: |
+          "$RUNNER_TEMP/oasdiff" breaking "$RUNNER_TEMP/base.json" apps/api/openapi/kungal-v1.json \
+            --format githubactions
+          "$RUNNER_TEMP/oasdiff" breaking "$RUNNER_TEMP/base.json" apps/api/openapi/kungal-v1.json \
+            --format markdown >> "$GITHUB_STEP_SUMMARY"
+      - name: Changelog
+        run: |
+          "$RUNNER_TEMP/oasdiff" changelog "$RUNNER_TEMP/base.json" apps/api/openapi/kungal-v1.json \
+            --format markdown >> "$GITHUB_STEP_SUMMARY"
