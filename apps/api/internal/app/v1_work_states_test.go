@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"kun-galgame-api/pkg/catalogclient"
+	"kun-galgame-api/pkg/problem"
 )
 
 func TestV1ListMyWorkStatesMissingAndLiked(t *testing.T) {
@@ -115,5 +116,41 @@ func TestV1WorkRefJSONKeysAppearOnWork(t *testing.T) {
 		if asJSONType(body[k]) != asJSONType(v) {
 			t.Errorf("%s type %s", k, asJSONType(body[k]))
 		}
+	}
+}
+
+func TestV1AppPlaneThrottleLogsWarnNotError(t *testing.T) {
+	f := newWorkFix(t)
+	f.cat.throttle.Store(true)
+	var buf bytes.Buffer
+	prev := slog.Default()
+	slog.SetDefault(slog.New(slog.NewTextHandler(&buf, nil)))
+	t.Cleanup(func() { slog.SetDefault(prev) })
+	resp, body := f.wk(t, http.MethodGet, "/api/v1/me/work-states?work_ids="+idStr(g4WorkLive), "/me/work-states", "sess-bob", nil)
+	wantCode(t, resp, body, http.StatusServiceUnavailable, problem.CodeServiceUnavailable)
+	wantThrottleLoggedOnce(t, buf.String(), resp.Header.Get("X-Request-ID"))
+}
+
+// g-plan ②: an upstream 429 is a quota state. It logs one WARN that carries
+// the request id, and no ERROR.
+func wantThrottleLoggedOnce(t *testing.T, logs, requestID string) {
+	t.Helper()
+	if requestID == "" {
+		t.Fatal("no X-Request-ID on the response")
+	}
+	var warns int
+	for _, line := range strings.Split(strings.TrimSpace(logs), "\n") {
+		if strings.Contains(line, "level=ERROR") {
+			t.Errorf("a throttled upstream logged ERROR: %s", line)
+		}
+		if strings.Contains(line, "level=WARN") && strings.Contains(line, `msg="problem cause"`) {
+			warns++
+			if !strings.Contains(line, requestID) {
+				t.Errorf("the WARN lacks request_id %s: %s", requestID, line)
+			}
+		}
+	}
+	if warns != 1 {
+		t.Errorf("want exactly one WARN for the 429, got %d in %q", warns, logs)
 	}
 }

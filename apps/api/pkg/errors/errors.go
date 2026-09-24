@@ -1,6 +1,9 @@
 package errors
 
-import "fmt"
+import (
+	"fmt"
+	"net/http"
+)
 
 // One field the upstream named when it refused a write, carried through in the
 // RFC 7807 shape the editing engine emits. Only the edit lane fills it; every
@@ -34,6 +37,9 @@ func (e *AppError) WithFieldErrors(errs []FieldError) *AppError {
 func (e *AppError) Error() string {
 	return fmt.Sprintf("[%d] %s", e.Code, e.Message)
 }
+
+// The catalog app plane reports an upstream 429 as StatusCode 429.
+func (e *AppError) Throttled() bool { return e.StatusCode == http.StatusTooManyRequests }
 
 func New(code int, message string, statusCode int) *AppError {
 	return &AppError{

@@ -122,6 +122,7 @@ type fakeCatalog struct {
 	rowsIn     chan struct{}
 	mu         sync.Mutex
 	fail       atomic.Bool
+	throttle   atomic.Bool
 	calls      atomic.Int32
 	rows       map[int]client.CatalogWorkListItem
 	details    map[int]*client.CatalogWorkDetail
@@ -165,6 +166,9 @@ func (f *fakeCatalog) err() *legacyErrors.AppError {
 	f.calls.Add(1)
 	if f.fail.Load() {
 		return legacyErrors.New(233, "catalog down", http.StatusServiceUnavailable)
+	}
+	if f.throttle.Load() {
+		return legacyErrors.New(233, "Short-window rate limit exceeded.", http.StatusTooManyRequests)
 	}
 	return nil
 }

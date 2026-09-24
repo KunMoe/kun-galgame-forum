@@ -128,9 +128,7 @@ func TestV1CoverVote429(t *testing.T) {
 	if resp.Header.Get("Retry-After") != "30" {
 		t.Errorf("Retry-After %q", resp.Header.Get("Retry-After"))
 	}
-	if !strings.Contains(buf.String(), "upstream 429") {
-		t.Errorf("log %q", buf.String())
-	}
+	wantThrottleLoggedOnce(t, buf.String(), resp.Header.Get("X-Request-ID"))
 
 	resp, body = f.call(t, http.MethodPut, path, spec, "sess-429q", "", nil)
 	wantCode(t, resp, body, http.StatusServiceUnavailable, problem.CodeServiceUnavailable)

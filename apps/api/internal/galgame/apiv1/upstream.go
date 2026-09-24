@@ -74,7 +74,6 @@ func mapUserPlaneAt(err error, own bool, pointer pointerOf) error {
 		// 429 used to fall through to 500 + the caller's fallback sentence, so
 		// user 90769's blown daily quota on 2026-09-20 rendered as
 		// 「读取收藏夹列表失败」 — a data-corruption story for a rate limit.
-		slog.Warn("catalog user plane: upstream 429 mapped to 503", "upstream_status", api.Status, "err", err)
 		p := problem.Unavailable(err)
 		if api.RetryAfter != "" {
 			h := http.Header{}

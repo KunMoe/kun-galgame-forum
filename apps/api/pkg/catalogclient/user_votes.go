@@ -44,6 +44,8 @@ func (e *UserAPIError) Error() string {
 	return fmt.Sprintf("catalog user plane: status=%d code=%d %s", e.Status, e.Code, e.Message)
 }
 
+func (e *UserAPIError) Throttled() bool { return e.Status == http.StatusTooManyRequests }
+
 type CoverVoteResult struct {
 	CoverID   int64 `json:"cover_id"`
 	VoteCount int64 `json:"vote_count"`

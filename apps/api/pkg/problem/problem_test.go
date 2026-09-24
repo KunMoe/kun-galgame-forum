@@ -3,6 +3,7 @@ package problem
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
@@ -297,5 +298,30 @@ func TestWriteLogsTheInternalCauseUnderTheRequestID(t *testing.T) {
 	id := resp.Header.Get(HeaderRequestID)
 	if !strings.Contains(logs.String(), "topic_secret") || !strings.Contains(logs.String(), id) {
 		t.Fatalf("log %q lacks the cause or request id %s", logs.String(), id)
+	}
+}
+
+type throttledErr struct{ throttled bool }
+
+func (e throttledErr) Error() string   { return "upstream said 429" }
+func (e throttledErr) Throttled() bool { return e.throttled }
+
+func TestLogCauseLevelFollowsThrottled(t *testing.T) {
+	var logs strings.Builder
+	prev := slog.Default()
+	slog.SetDefault(slog.New(slog.NewTextHandler(&logs, nil)))
+	defer slog.SetDefault(prev)
+
+	p := Unavailable(fmt.Errorf("wrapped: %w", throttledErr{throttled: true}))
+	p.RequestID = "req_throttled"
+	LogCause(p)
+	if !strings.Contains(logs.String(), "level=WARN") || strings.Contains(logs.String(), "level=ERROR") || !strings.Contains(logs.String(), "req_throttled") {
+		t.Fatalf("a throttled cause must log one WARN with the request id: %q", logs.String())
+	}
+
+	logs.Reset()
+	LogCause(Unavailable(throttledErr{throttled: false}))
+	if !strings.Contains(logs.String(), "level=ERROR") {
+		t.Fatalf("an unthrottled cause must still log ERROR: %q", logs.String())
 	}
 }

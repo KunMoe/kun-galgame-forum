@@ -2,6 +2,7 @@ package problem
 
 import (
 	"encoding/json"
+	"errors"
 	"log/slog"
 	"net/http"
 
@@ -112,10 +113,19 @@ func Unavailable(err error) *Problem {
 	return p
 }
 
+// An upstream 429 is an expected quota state (g-plan ②), but it logged ERROR
+// until 2026-09-24. A cause marks itself with Throttled, so this package does
+// not import the clients.
 func LogCause(p *Problem) {
-	if p != nil && p.cause != nil {
-		slog.Error("problem cause", "code", p.Code, "request_id", p.RequestID, "err", p.cause)
+	if p == nil || p.cause == nil {
+		return
 	}
+	var t interface{ Throttled() bool }
+	if errors.As(p.cause, &t) && t.Throttled() {
+		slog.Warn("problem cause", "code", p.Code, "request_id", p.RequestID, "err", p.cause)
+		return
+	}
+	slog.Error("problem cause", "code", p.Code, "request_id", p.RequestID, "err", p.cause)
 }
 
 func AtPointer(pointer, reason, detail string, params *FieldParams) FieldError {
