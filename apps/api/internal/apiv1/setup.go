@@ -77,8 +77,8 @@ func Setup(app *fiber.App, deps Deps, registrars ...func(huma.API)) huma.API {
 	sealDocument(api.OpenAPI())
 	mirrorHead(app)
 	// Fiber matches in registration order and the legacy /api group spreads
-	// OptionalAuth and Auth over every path below it: without this, an unmatched
-	// /api/v1 request fell through into them and answered a legacy envelope.
+	// Auth over every path below it: without this, an unmatched
+	// /api/v1 request fell through into it and answered a legacy envelope.
 	app.Use(Prefix, unmatched(api.OpenAPI()))
 	return api
 }

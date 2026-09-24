@@ -3,15 +3,10 @@ package middleware
 import (
 	"context"
 	"encoding/json"
-	"net/http"
-	"net/http/httptest"
 	"testing"
 	"time"
 
-	"kun-galgame-api/pkg/content"
-
 	"github.com/alicebob/miniredis/v2"
-	"github.com/gofiber/fiber/v3"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -29,68 +24,6 @@ func storeSession(t *testing.T, rdb *redis.Client, token string, session Session
 	}
 	if err := rdb.Set(context.Background(), SessionKey(token), data, SessionTTL).Err(); err != nil {
 		t.Fatalf("seed session: %v", err)
-	}
-}
-
-func TestContentStanceMiddleware(t *testing.T) {
-	for _, tc := range []struct {
-		why        string
-		session    *SessionData
-		cookie     string
-		authHeader string
-		wantOK     bool
-		want       content.Stance
-	}{
-		{
-			why:     "an attested reader who picked show",
-			session: &SessionData{UserInfo: UserInfo{ID: 1, AdultConfirmed: true, NSFWDisplay: "show"}},
-			cookie:  "tok", wantOK: true, want: content.StanceShow,
-		},
-		{
-			why:     "the backfilled default folds to hide, not blur",
-			session: &SessionData{UserInfo: UserInfo{ID: 1, NSFWDisplay: "blur"}},
-			cookie:  "tok", wantOK: true, want: content.StanceHide,
-		},
-		{
-			why:     "a session written before this wave carries no claims",
-			session: &SessionData{UserInfo: UserInfo{ID: 1}},
-			cookie:  "tok", wantOK: true, want: content.StanceHide,
-		},
-		{why: "anonymous", cookie: "", wantOK: false},
-		{why: "a cookie with no session behind it", cookie: "ghost", wantOK: false},
-		{
-			why:     "a Bearer request skips the session lane even with a cookie",
-			session: &SessionData{UserInfo: UserInfo{ID: 1, AdultConfirmed: true, NSFWDisplay: "show"}},
-			cookie:  "tok", authHeader: "Bearer whatever", wantOK: false,
-		},
-	} {
-		_, rdb := stanceHarness(t)
-		if tc.session != nil {
-			storeSession(t, rdb, "tok", *tc.session)
-		}
-
-		app := fiber.New()
-		app.Use(ContentStance(rdb, nil))
-		var got content.Stance
-		var ok bool
-		app.Get("/", func(c fiber.Ctx) error {
-			got, ok = content.FromCtx(c)
-			return nil
-		})
-
-		req := httptest.NewRequest(http.MethodGet, "/", nil)
-		if tc.cookie != "" {
-			req.AddCookie(&http.Cookie{Name: SessionCookieName, Value: tc.cookie})
-		}
-		if tc.authHeader != "" {
-			req.Header.Set(fiber.HeaderAuthorization, tc.authHeader)
-		}
-		if _, err := app.Test(req); err != nil {
-			t.Fatalf("%s: %v", tc.why, err)
-		}
-		if ok != tc.wantOK || (tc.wantOK && got != tc.want) {
-			t.Errorf("%s: stance=%q ok=%v, want %q/%v", tc.why, got, ok, tc.want, tc.wantOK)
-		}
 	}
 }
 

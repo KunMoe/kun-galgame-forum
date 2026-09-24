@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"kun-galgame-api/internal/user/oauth"
-	"kun-galgame-api/pkg/content"
 	"kun-galgame-api/pkg/errors"
 	"kun-galgame-api/pkg/perm"
 	"kun-galgame-api/pkg/response"
@@ -46,10 +45,6 @@ type UserInfo struct {
 	NSFWDisplay    string `json:"nsfw_display"`
 
 	viaBearer bool
-}
-
-func (u *UserInfo) ContentStance() content.Stance {
-	return content.Fold(u.AdultConfirmed, u.NSFWDisplay)
 }
 
 // Staff powers are never reachable through the Bearer channel, whatever the
@@ -96,23 +91,6 @@ func (a *Authenticator) Auth() fiber.Handler {
 			return c.Next()
 		}
 		return response.Error(c, id.legacyError())
-	}
-}
-
-// A Bearer that fails verification is refused even here: dropping to anonymous
-// would hide the expiry from the App, which only refreshes on a 401.
-func (a *Authenticator) OptionalAuth() fiber.Handler {
-	return func(c fiber.Ctx) error {
-		id := a.ResolveIdentity(c)
-		switch id.Outcome {
-		case IdentitySessionOK, IdentityBearerOK:
-			AttachIdentity(c, id)
-			return c.Next()
-		case IdentityBearerInvalid, IdentityBearerKeysUnavailable, IdentityBearerProvisioningFailed:
-			return response.Error(c, id.legacyError())
-		default:
-			return c.Next()
-		}
 	}
 }
 

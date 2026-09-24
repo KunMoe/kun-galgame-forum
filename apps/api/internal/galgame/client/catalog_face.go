@@ -1,7 +1,6 @@
 package client
 
 import (
-	"cmp"
 	"context"
 	"encoding/json"
 	"net/url"
@@ -20,8 +19,7 @@ const catalogSpoilerCeiling = 2
 // because nothing reads that block any more leaves every list row with only
 // display_name, so every Chinese title on the site reverts to the original.
 const (
-	catalogBriefInclude       = "names,covers,refs,labels"
-	catalogDetailBriefInclude = "names,intros,labels,covers,refs"
+	catalogBriefInclude = "names,covers,refs,labels"
 )
 
 func openPopulation(q url.Values) url.Values {
@@ -259,19 +257,11 @@ type catWorkTag struct {
 	WorkCount   int                         `json:"work_count"`
 }
 
-func (t *catWorkTag) Label() string {
-	return CatalogVocabularyName(t.Localized, cmp.Or(t.DisplayName, t.Name))
-}
-
 type catWorkSeries struct {
 	ID          int64                       `json:"id"`
 	Name        string                      `json:"name"`
 	DisplayName string                      `json:"display_name"`
 	Localized   map[string]catLocalizedName `json:"localized"`
-}
-
-func (s *catWorkSeries) Label(ctx context.Context) string {
-	return CatalogEntityName(ctx, s.Localized, cmp.Or(s.DisplayName, s.Name), "")
 }
 
 func (c *GalgameClient) CatalogWorkExists(ctx context.Context, workID int) (bool, *errors.AppError) {

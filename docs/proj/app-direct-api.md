@@ -174,13 +174,13 @@ Go api 自己就能供数，**不依赖 Nitro**。`/api/galgame` 列表仍是旧
 - 落进这个范围（含 4xx）的结果会被记下并在 24 小时内原样重放，所以**一次 `422` 会把这个键堵死一整天**，重试必须换新键；
 - 5xx、409、429 不保存，键当场释放，可以用同一个键安全重试。
 
-## 3. NSFW 偏好：~~`X-Kungal-Nsfw`~~ → 账号分级（2026-09-23 起）
+## 3. NSFW 偏好：~~`X-Kungal-Nsfw`~~ → 显式 `include_nsfw`
 
 **`X-Kungal-Nsfw` 已删除**，论坛不再读取它。这个头在 2026-09-17 规定过，但**从未有任何客户端发送过**（kungal-apps 仓零引用，`git log -S 'X-Kungal-Nsfw'` 只有论坛侧提交），2026-09-18 方向变更又把 App 迁到 v1 的显式 `nsfw=` 查询参数上，所以删除它不影响任何已发布版本。
 
-现在：**Bearer 请求的分级取账号本身**。`middleware.BearerStance` 用请求自带的 Bearer token 调上游 `GET /oauth/userinfo`，按 `content.Fold` 折成 `hide` / `blur` / `show`，以 token 的 `sub` 为键缓存在 Redis（`kungal:bearer-stance:<sub>`，TTL 5 分钟）。`hide` ⇒ SFW 过滤，`blur` / `show` ⇒ 放行（打码是 Web 展示侧的事）。**上游报错、超时、token 校验不过 ⇒ 一律 SFW**（安全方向），且失败不写缓存。
+现在：**Bearer 请求不带任何内容偏好**。`/api/v1` 的每个结果集都由显式查询参数 `include_nsfw` 决定（01-standard §3），不读偏好 cookie、请求头，也不读账号分级；App 按账号设置自己传 `include_nsfw`。
 
-- `/api/v1` 不受影响：它本来就不读偏好 cookie 和请求头，用显式查询参数。
+- 2026-09-23 到 2026-09-24 之间，服务端曾用 Bearer token 回源 `/oauth/userinfo` 解析账号分级（`middleware.BearerStance`，Redis 键 `kungal:bearer-stance:<sub>`，TTL 5 分钟），但只有旧路由读它；旧路由退役后它随死代码清理（γ）删除，残留缓存键靠 TTL 自然过期。
 - 「优先显示原名」偏好仍只认 `KUNGalgameSettings` cookie。
 
 ## 4. 版本闸：`GET /api/v1/app/version`

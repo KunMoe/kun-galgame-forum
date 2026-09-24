@@ -89,7 +89,6 @@ type App struct {
 	UserService        *service.UserService
 	CreatorService     *galgameService.CreatorService
 	Authn              *middleware.Authenticator
-	BearerStance       *middleware.BearerStance
 	ImageMeta          func(hashes []string) map[string]imageclient.ImageMeta
 	GalgameV1          *galgameapiv1.Service
 	GalgameEntityV1    *galgameentityv1.Service
@@ -324,13 +323,11 @@ func New(cfg *config.Config) *App {
 	communityBooster := communitytrust.New(communityCli, rdb, db)
 
 	var bearerVerifier middleware.AccessTokenVerifier
-	var bearerStance *middleware.BearerStance
 	if cfg.Bearer.Enabled() {
 		verifier := oauth.NewAccessTokenVerifier(
 			oauth.NewJWKS(cfg.Bearer.JWKSURL), cfg.Bearer.Issuer, cfg.Bearer.ClientIDs,
 		)
 		bearerVerifier = verifier
-		bearerStance = middleware.NewBearerStance(verifier, oauthClient, rdb)
 		slog.Info("Bearer 直连已开启", "issuer", cfg.Bearer.Issuer, "clients", cfg.Bearer.ClientIDs)
 	}
 	authn := middleware.NewAuthenticator(rdb, oauthClient, middleware.NewBearer(
@@ -461,7 +458,6 @@ func New(cfg *config.Config) *App {
 		UserService:       userService,
 		CreatorService:    creatorSvc,
 		Authn:             authn,
-		BearerStance:      bearerStance,
 		ImageMeta:         imageMetaResolve(imageMeta),
 		GalgameV1:         galgameapiv1.New(gc, moyuCli, uc, rdb, cfg.NextMoeAPI.ImageCDNBase).WithWork(db, catalogCli, storeLinks, moemoepoint.Award).WithUserPlane(trustCheck, trustScan, galgameCollectionRepo).WithEditing(notifier),
 		GalgameEntityV1:   galgameentityv1.New(gc, db, cfg.NextMoeAPI.ImageCDNBase),

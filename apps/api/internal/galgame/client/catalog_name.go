@@ -321,18 +321,6 @@ func CatalogEntityNames(ctx context.Context, localized map[string]catLocalizedNa
 	return name, original
 }
 
-// CatalogVocabularyName renders a translated controlled vocabulary — tags,
-// character traits. It deliberately ignores the 原名 preference: a tag's
-// non-Chinese form is the English vocabulary token it was imported under, so
-// honouring the preference here answers 金发 with Blonde, which is neither a
-// name nor Japanese.
-func CatalogVocabularyName(localized map[string]catLocalizedName, vocabulary string) string {
-	if zh := pickLocalized(localized, catalogZhLocales); zh != "" {
-		return zh
-	}
-	return vocabulary
-}
-
 func pickLocalized(localized map[string]catLocalizedName, locales []string) string {
 	for _, locale := range locales {
 		if entry, ok := localized[locale]; ok && entry.Value != "" {

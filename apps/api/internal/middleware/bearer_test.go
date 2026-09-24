@@ -11,6 +11,7 @@ import (
 	"testing"
 
 	"kun-galgame-api/internal/user/oauth"
+	"kun-galgame-api/pkg/errors"
 	"kun-galgame-api/pkg/perm"
 
 	"github.com/alicebob/miniredis/v2"
@@ -68,8 +69,7 @@ func newAuthApp(t *testing.T, verifier AccessTokenVerifier, firstSeen FirstSeen)
 		})
 	}
 	app := fiber.New()
-	app.Get("/optional", authn.OptionalAuth(), echo)
-	app.Get("/required", authn.OptionalAuth(), authn.Auth(), echo)
+	app.Get("/required", authn.Auth(), echo)
 	return app
 }
 
@@ -144,12 +144,12 @@ func TestBearerFailures(t *testing.T) {
 		wantStatus int
 		wantCode   int
 	}{
-		{"a bad token is refused even where login is optional", stubVerifier{}, nil,
-			"/optional", "Bearer expired", 401, 205},
+		{"a bad token is refused", stubVerifier{}, nil,
+			"/required", "Bearer expired", 401, 205},
 		{"an empty bearer is still a bearer", stubVerifier{}, nil,
-			"/optional", "Bearer ", 401, 205},
+			"/required", "Bearer ", 401, 205},
 		{"closed channel", nil, nil,
-			"/optional", "Bearer " + goodToken, 401, 205},
+			"/required", "Bearer " + goodToken, 401, 205},
 		{"an unreachable OP is not a logout", stubVerifier{err: oauth.ErrKeysUnavailable}, nil,
 			"/required", "Bearer " + goodToken, 500, 233},
 		{"first-seen provisioning failed", stubVerifier{}, func(int, []string) error { return stderrors.New("db down") },
@@ -183,9 +183,10 @@ func TestFailedFirstSeenIsRetried(t *testing.T) {
 
 func TestNonBearerAuthorizationStaysOnTheCookiePath(t *testing.T) {
 	app := newAuthApp(t, stubVerifier{}, nil)
+	expired := errors.ErrAuthExpired()
 	for _, auth := range []string{"", "Basic Zm9vOmJhcg=="} {
-		if status, got := call(t, app, "/optional", auth); status != http.StatusOK || !got.Anon {
-			t.Errorf("Authorization %q: status %d, %+v", auth, status, got)
+		if status, got := call(t, app, "/required", auth); status != expired.StatusCode || got.Code != expired.Code {
+			t.Errorf("Authorization %q: status %d, %+v; want the cookie path's %d/%d", auth, status, got, expired.StatusCode, expired.Code)
 		}
 	}
 }

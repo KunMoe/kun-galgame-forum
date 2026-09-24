@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
-	"strings"
 )
 
 const (
@@ -62,31 +61,6 @@ func (c *Client) PutWorkState(ctx context.Context, accessToken string, workID in
 	}
 	rec := workStateRecord(out)
 	return &rec, nil
-}
-
-func (c *Client) MyWorkStates(ctx context.Context, accessToken string, workIDs []int64) (map[int64]WorkStateRecord, error) {
-	out := make(map[int64]WorkStateRecord, len(workIDs))
-	if len(workIDs) == 0 {
-		return out, nil
-	}
-	ids := make([]string, len(workIDs))
-	for i, id := range workIDs {
-		ids[i] = strconv.FormatInt(id, 10)
-	}
-	q := url.Values{}
-	q.Set("work_ids", strings.Join(ids, ","))
-	var page v2List[v2WorkState]
-	if err := c.userV2JSON(ctx, http.MethodGet, accessToken, "/v2/me/work-states?"+q.Encode(), nil, &page, nil); err != nil {
-		return nil, err
-	}
-	for _, it := range page.rows() {
-		rec := workStateRecord(it)
-		if rec.WorkID == 0 {
-			continue
-		}
-		out[rec.WorkID] = rec
-	}
-	return out, nil
 }
 
 func (c *Client) DeleteWorkState(ctx context.Context, accessToken string, workID int64) error {

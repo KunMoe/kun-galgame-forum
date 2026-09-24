@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	"net/url"
 
-	"kun-galgame-api/pkg/content"
-
 	"github.com/gofiber/fiber/v3"
 )
 
@@ -13,8 +11,7 @@ import (
 // KUNGalgameSettings cookie rather than an API field — camelCase here is the
 // store's own naming, not this API's.
 type kunSettings struct {
-	ShowKUNGalgameContentLimit       string `json:"showKUNGalgameContentLimit"`
-	ShowKUNGalgamePreferOriginalName bool   `json:"showKUNGalgamePreferOriginalName"`
+	ShowKUNGalgamePreferOriginalName bool `json:"showKUNGalgamePreferOriginalName"`
 }
 
 func readSettings(c fiber.Ctx) kunSettings {
@@ -33,18 +30,6 @@ func readSettings(c fiber.Ctx) kunSettings {
 		return kunSettings{}
 	}
 	return settings
-}
-
-// Two lanes: an identified reader — a web session or the App's Bearer token —
-// is decided by the account stance the middleware attached, and an anonymous
-// reader still gets the cookie. The cookie branch is not dead code, it is the
-// whole of the logged-out lane.
-func IsSFW(c fiber.Ctx) bool {
-	if stance, ok := content.FromCtx(c); ok {
-		return !stance.AllowsNSFW()
-	}
-	limit := readSettings(c).ShowKUNGalgameContentLimit
-	return limit != "nsfw" && limit != "all"
 }
 
 // PrefersOriginalName reports whether this reader asked to see each record's

@@ -2,6 +2,7 @@ package client
 
 import (
 	"context"
+	"encoding/json"
 	"testing"
 
 	"kun-galgame-api/pkg/namepref"
@@ -46,25 +47,10 @@ func TestNamePreference_ReachesEveryProjection(t *testing.T) {
 			mustDecode(t, wire, &v)
 			return v.Name(ctx)
 		},
-		"work series": func(ctx context.Context) string {
-			var v catWorkSeries
-			mustDecode(t, wire, &v)
-			return v.Label(ctx)
-		},
-		"taxonomy row": func(ctx context.Context) string {
-			var v CatalogTaxonomyItem
-			mustDecode(t, wire, &v)
-			return v.Label(ctx)
-		},
 		"search hit": func(ctx context.Context) string {
 			var v CatalogEntityHit
 			mustDecode(t, wire, &v)
 			return v.Name(ctx)
-		},
-		"relation node": func(ctx context.Context) string {
-			var v CatalogLabelRelationNode
-			mustDecode(t, wire, &v)
-			return v.LocalName(ctx)
 		},
 	}
 
@@ -108,50 +94,9 @@ func TestNamePreference_FallsBackWhenTheOtherNameIsMissing(t *testing.T) {
 	}
 }
 
-// Tags and traits are a translated controlled vocabulary, not names: their
-// non-Chinese form is the English term they were imported under. Rendering the
-// stub work under 原名 turned 金发 into Blonde, which is neither a name nor
-// Japanese — and left the tag row in English beside a trait row in Chinese.
-func TestNamePreference_LeavesTheVocabularyChinese(t *testing.T) {
-	const wire = `{"name":"Blonde","display_name":"Blonde","group":"Hair",` +
-		`"localized":{"zh-Hans":{"value":"金发"}},` +
-		`"group_localized":{"zh-Hans":{"value":"毛发"}}}`
-
-	var trait CatalogCharacterTrait
-	mustDecode(t, wire, &trait)
-	if got := trait.LocalName(); got != "金发" {
-		t.Errorf("trait name = %q, want 金发", got)
-	}
-	if got := trait.LocalGroup(); got != "毛发" {
-		t.Errorf("trait group = %q, want 毛发", got)
-	}
-
-	var workTag catWorkTag
-	mustDecode(t, wire, &workTag)
-	if got := workTag.Label(); got != "金发" {
-		t.Errorf("work tag = %q, want 金发", got)
-	}
-
-	var tagDetail CatalogTagDetail
-	mustDecode(t, wire, &tagDetail)
-	if got := tagDetail.Label(); got != "金发" {
-		t.Errorf("tag detail = %q, want 金发", got)
-	}
-
-	var row CatalogTaxonomyItem
-	mustDecode(t, wire, &row)
-	if got := row.VocabularyLabel(); got != "金发" {
-		t.Errorf("tag list row = %q, want 金发", got)
-	}
-	// The same struct is a 会社 / 系列 / 引擎 on the next list, where the
-	// preference does apply.
-	if got := row.Label(originalNames()); got != "Blonde" {
-		t.Errorf("label list row under 原名 = %q, want Blonde", got)
-	}
-
-	var hit CatalogEntityHit
-	mustDecode(t, wire, &hit)
-	if got := hit.VocabularyName(); got != "金发" {
-		t.Errorf("tag search hit = %q, want 金发", got)
+func mustDecode(t *testing.T, raw string, into any) {
+	t.Helper()
+	if err := json.Unmarshal([]byte(raw), into); err != nil {
+		t.Fatalf("decode %s: %v", raw, err)
 	}
 }

@@ -309,7 +309,7 @@ func TestFolderWriteMapsScopeRefusalToItsOwnError(t *testing.T) {
 	c := New(Config{BaseURL: srv.URL, AppKey: "k"})
 
 	name := "x"
-	_, err := c.CreateFolder(context.Background(), "user-jwt", FolderWrite{Name: &name})
+	_, err := c.CreateFolderKeyed(context.Background(), "user-jwt", FolderWrite{Name: &name}, "")
 	if err == nil {
 		t.Fatal("a scope refusal returned no error")
 	}
@@ -346,8 +346,8 @@ func TestFolderWritesAddressTheRightRoutes(t *testing.T) {
 	ctx := context.Background()
 	name := "n"
 
-	if _, err := c.CreateFolder(ctx, "tok", FolderWrite{Name: &name}); err != nil {
-		t.Fatalf("CreateFolder: %v", err)
+	if _, err := c.CreateFolderKeyed(ctx, "tok", FolderWrite{Name: &name}, ""); err != nil {
+		t.Fatalf("CreateFolderKeyed: %v", err)
 	}
 	if _, err := c.PatchFolder(ctx, "tok", 5, FolderWrite{Name: &name}); err != nil {
 		t.Fatalf("PatchFolder: %v", err)
@@ -398,8 +398,8 @@ func TestFolderCreateSendsOnlyWhatWasSet(t *testing.T) {
 	c := New(Config{BaseURL: srv.URL, AppKey: "k"})
 
 	name := "n"
-	if _, err := c.CreateFolder(context.Background(), "tok", FolderWrite{Name: &name}); err != nil {
-		t.Fatalf("CreateFolder: %v", err)
+	if _, err := c.CreateFolderKeyed(context.Background(), "tok", FolderWrite{Name: &name}, ""); err != nil {
+		t.Fatalf("CreateFolderKeyed: %v", err)
 	}
 	if _, ok := got["visibility"]; ok {
 		t.Errorf("an unset field was sent anyway: %+v", got)

@@ -262,10 +262,6 @@ type FolderWrite struct {
 	IsDefault   *bool   `json:"is_default,omitempty"`
 }
 
-func (c *Client) CreateFolder(ctx context.Context, token string, in FolderWrite) (*Folder, error) {
-	return c.CreateFolderKeyed(ctx, token, in, "")
-}
-
 func (c *Client) CreateFolderKeyed(ctx context.Context, token string, in FolderWrite, idempotencyKey string) (*Folder, error) {
 	var headers map[string]string
 	if idempotencyKey != "" {

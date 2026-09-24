@@ -1,7 +1,6 @@
 package client
 
 import (
-	"cmp"
 	"context"
 	"encoding/json"
 	"net/url"
@@ -21,10 +20,6 @@ type CatalogLabelRelationNode struct {
 	Localized   map[string]catLocalizedName `json:"localized"`
 	LogoHash    string                      `json:"logo_hash"`
 	WorkCount   int                         `json:"work_count"`
-}
-
-func (n *CatalogLabelRelationNode) LocalName(ctx context.Context) string {
-	return CatalogEntityName(ctx, n.Localized, cmp.Or(n.DisplayName, n.Name), "")
 }
 
 type CatalogLabelRelationEdge struct {

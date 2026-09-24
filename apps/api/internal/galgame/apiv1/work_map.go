@@ -14,7 +14,6 @@ import (
 	"kun-galgame-api/internal/galgame/client"
 	"kun-galgame-api/internal/galgame/entityapiv1"
 	"kun-galgame-api/internal/galgame/model"
-	"kun-galgame-api/internal/galgame/playstate"
 	"kun-galgame-api/internal/galgame/resourcevocab"
 	"kun-galgame-api/internal/galgame/workrepr"
 	"kun-galgame-api/pkg/catalogclient"
@@ -307,23 +306,6 @@ func resourceTypesOf(keys []string) []workrepr.ResourceType {
 		}
 	}
 	return out
-}
-
-func viewerPlaytime(got *catalogclient.PlaytimeSelf, ws *catalogclient.WorkStateRecord) *WorkViewerPlaytime {
-	minutes := 0
-	if got != nil && got.Minutes >= catalogclient.PlaytimeMinutesFloor {
-		minutes = got.Minutes
-	}
-	var state *string
-	if ws != nil {
-		if flat := playstate.FromCatalog(ws.State, ws.Completion); flat != "" {
-			state = &flat
-		}
-	}
-	if minutes == 0 && state == nil {
-		return nil
-	}
-	return &WorkViewerPlaytime{Minutes: minutes, PlayState: state}
 }
 
 func (s *Service) companiesOf(ctx context.Context, d *client.CatalogWorkDetail) []WorkCompany {

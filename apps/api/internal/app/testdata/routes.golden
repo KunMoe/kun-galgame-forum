@@ -244,9 +244,9 @@ PATCH  /api/v1/topics/:topic_id                       cors.New → v1Headers →
 PATCH  /api/v1/update-logs/:update_log_id             cors.New → v1Headers → fiberAdapter.Handle
 PATCH  /api/v1/wall-comments/:wall_comment_id         cors.New → v1Headers → fiberAdapter.Handle
 PATCH  /api/v1/work-submissions/:work_id              cors.New → v1Headers → fiberAdapter.Handle
-POST   /api/auth/logout                               cors.New → middleware.NamePreference → ContentStance → OAuthHandler.Logout
-POST   /api/auth/oauth/callback                       cors.New → middleware.NamePreference → ContentStance → OAuthHandler.Callback
-POST   /api/trust/callback                            cors.New → middleware.NamePreference → ContentStance → TrustHandler.Callback
+POST   /api/auth/logout                               cors.New → middleware.NamePreference → OAuthHandler.Logout
+POST   /api/auth/oauth/callback                       cors.New → middleware.NamePreference → OAuthHandler.Callback
+POST   /api/trust/callback                            cors.New → middleware.NamePreference → TrustHandler.Callback
 POST   /api/v1/admin/docs                             cors.New → v1Headers → fiberAdapter.Handle
 POST   /api/v1/admin/friend-links                     cors.New → v1Headers → fiberAdapter.Handle
 POST   /api/v1/admin/website-categories               cors.New → v1Headers → fiberAdapter.Handle

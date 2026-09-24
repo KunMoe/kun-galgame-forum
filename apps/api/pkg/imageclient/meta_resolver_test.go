@@ -10,8 +10,6 @@ import (
 	"time"
 )
 
-func level(v int16) *int16 { return &v }
-
 // An absent sexual field means the nightly grader has not reached the image
 // yet. Folding that into 0 would render an unreviewed image as a clean one.
 func TestMetaBatchTellsUngradedApartFromSafe(t *testing.T) {

@@ -140,14 +140,14 @@ func TestCatalogWorkListItem_NameComesFromTheLocalizedPrimitive(t *testing.T) {
 	}
 }
 
-func TestGetBatch_KeysByWorkID(t *testing.T) {
+func TestCatalogRows_KeysByWorkID(t *testing.T) {
 	rec := &catalogRecorder{}
 	srv := catalogStub(t, rec, map[int64]string{4242: liveRow(4242, "Kun")})
 	c := New(srv.URL, "nm_test_key", "")
 
-	got, err := c.GetBatch(context.Background(), []int{4242})
+	got, err := briefsOf(c, []int{4242}, "all")
 	if err != nil {
-		t.Fatalf("GetBatch: %v", err)
+		t.Fatalf("rows: %v", err)
 	}
 	if rec.queryAt(0).Get("ids") != "4242" {
 		t.Errorf("works ids = %q, want 4242", rec.queryAt(0).Get("ids"))
@@ -188,9 +188,9 @@ func TestCatalogBatch_HiddenClaimNeverRenders(t *testing.T) {
 	srv := catalogStub(t, rec, map[int64]string{4242: hidden})
 	c := New(srv.URL, "nm_test_key", "")
 
-	got, err := c.GetBatch(context.Background(), []int{4242})
+	got, err := briefsOf(c, []int{4242}, "all")
 	if err != nil {
-		t.Fatalf("GetBatch: %v", err)
+		t.Fatalf("rows: %v", err)
 	}
 	if len(got) != 0 {
 		t.Fatalf("a withdrawn (state=hidden) claim reached the caller: %#v — this republishes banned entries", got)
@@ -202,7 +202,7 @@ func TestCatalogBatch_UnknownWorkIDIsAbsentNotAnError(t *testing.T) {
 	srv := catalogStub(t, rec, map[int64]string{})
 	c := New(srv.URL, "nm_test_key", "")
 
-	got, err := c.GetBatch(context.Background(), []int{999})
+	got, err := briefsOf(c, []int{999}, "all")
 	if err != nil {
 		t.Fatalf("an unknown work id must not be an error: %v", err)
 	}
@@ -219,8 +219,8 @@ func TestCatalogBatch_GatesAreParametersNotPostFilters(t *testing.T) {
 	srv := catalogStub(t, rec, map[int64]string{4242: liveRow(4242, "Kun")})
 	c := New(srv.URL, "nm_test_key", "")
 
-	if _, err := c.GetBatchPublic(context.Background(), []int{4242}, true); err != nil {
-		t.Fatalf("GetBatchPublic sfw: %v", err)
+	if _, err := briefsOf(c, []int{4242}, contentLimitFor(true)); err != nil {
+		t.Fatalf("rows sfw: %v", err)
 	}
 	if v := rec.queryAt(0).Get("nsfw"); v != "true" {
 		t.Errorf("sfw caller sent nsfw=%q, want true — closing the age gate drops 94.5%% of the registry", v)
@@ -230,8 +230,8 @@ func TestCatalogBatch_GatesAreParametersNotPostFilters(t *testing.T) {
 	}
 
 	before := rec.count()
-	if _, err := c.GetBatchPublic(context.Background(), []int{4242}, false); err != nil {
-		t.Fatalf("GetBatchPublic nsfw: %v", err)
+	if _, err := briefsOf(c, []int{4242}, contentLimitFor(false)); err != nil {
+		t.Fatalf("rows nsfw: %v", err)
 	}
 	if v := rec.queryAt(before).Get("nsfw"); v != "true" {
 		t.Errorf("nsfw caller's works fetch sent nsfw=%q, want true", v)
@@ -248,9 +248,9 @@ func TestCatalogDisplayLimit_ReadsTheEditorialAxis(t *testing.T) {
 	srv := catalogStub(t, rec, map[int64]string{4242: r18SfwEntry})
 	c := New(srv.URL, "nm_test_key", "")
 
-	got, err := c.GetBatch(context.Background(), []int{4242})
+	got, err := briefsOf(c, []int{4242}, "all")
 	if err != nil {
-		t.Fatalf("GetBatch: %v", err)
+		t.Fatalf("rows: %v", err)
 	}
 	b, ok := got[4242]
 	if !ok {
@@ -282,9 +282,9 @@ func TestCatalogDisplayLimit_FailsClosed(t *testing.T) {
 			srv := catalogStub(t, rec, map[int64]string{4242: body})
 			c := New(srv.URL, "nm_test_key", "")
 
-			got, err := c.GetBatch(context.Background(), []int{4242})
+			got, err := briefsOf(c, []int{4242}, "all")
 			if err != nil {
-				t.Fatalf("GetBatch: %v", err)
+				t.Fatalf("rows: %v", err)
 			}
 			if b := got[4242]; b.ContentLimit != "nsfw" || b.AgeLimit != "all" {
 				t.Errorf("content_limit = %q on an all_ages row, want nsfw: only catalog's verdict can make a work sfw", b.ContentLimit)
@@ -470,9 +470,9 @@ func TestCoverSlots_PortraitRidesSeparately(t *testing.T) {
 			srv := catalogStub(t, rec, map[int64]string{4242: row})
 			c := New(srv.URL, "nm_test_key", "")
 
-			got, err := c.GetBatch(context.Background(), []int{4242})
+			got, err := briefsOf(c, []int{4242}, "all")
 			if err != nil {
-				t.Fatalf("GetBatch: %v", err)
+				t.Fatalf("rows: %v", err)
 			}
 			b := got[4242]
 			if b.EffectivePortraitURL != tc.wantPortrait {
@@ -514,9 +514,9 @@ func TestCoverSlots_BannerWinsPortraitFallsBack(t *testing.T) {
 			srv := catalogStub(t, rec, map[int64]string{4242: row})
 			c := New(srv.URL, "nm_test_key", "")
 
-			got, err := c.GetBatch(context.Background(), []int{4242})
+			got, err := briefsOf(c, []int{4242}, "all")
 			if err != nil {
-				t.Fatalf("GetBatch: %v", err)
+				t.Fatalf("rows: %v", err)
 			}
 			b := got[4242]
 			if b.EffectiveBannerURL != tc.wantURL {
@@ -604,4 +604,17 @@ func TestCatalogWorkDetailCarriesTheVerdict(t *testing.T) {
 			t.Errorf("detail content_limit %q became %q on the list item", limit, got)
 		}
 	}
+}
+
+// briefsOf reads rows the way the v1 hydrators do and renders each as a brief.
+func briefsOf(c *GalgameClient, ids []int, contentLimit string) (map[int]GalgameBrief, error) {
+	rows, appErr := c.CatalogRowsByWorkIDs(context.Background(), ids, catalogBriefInclude, contentLimit)
+	if appErr != nil {
+		return nil, appErr
+	}
+	out := make(map[int]GalgameBrief, len(rows))
+	for id, row := range rows {
+		out[id] = CatalogItemToBrief(context.Background(), &row)
+	}
+	return out, nil
 }

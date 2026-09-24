@@ -1,6 +1,7 @@
 package client
 
 import (
+	"cmp"
 	"context"
 	"net/http"
 	"net/http/httptest"
@@ -115,17 +116,13 @@ func TestCatalogCharacter_BothArtsSurviveInTheirOwnFields(t *testing.T) {
 	if len(ch.Traits) != 2 || ch.Traits[1].Spoiler != 2 || !ch.Traits[1].Lie {
 		t.Errorf("Traits = %+v, want the spoiler+lie row intact", ch.Traits)
 	}
-	// Read through the accessors, not name_zh: wave 212 superseded that field and
-	// the live catalog already answers the localized primitive on both versions,
-	// so asserting the raw column passes on a hand-written fixture and tells you
-	// nothing about the wire.
-	if got, want := ch.Traits[0].LocalName(), "金发"; got != want {
+	if got, want := ch.Traits[0].Localized["zh-Hans"].Value, "金发"; got != want {
 		t.Errorf("zh trait name = %q, want %q", got, want)
 	}
-	if got, want := ch.Traits[0].LocalGroup(), "发型"; got != want {
+	if got, want := ch.Traits[0].GroupLocalized["zh-Hans"].Value, "发型"; got != want {
 		t.Errorf("zh trait group = %q, want %q", got, want)
 	}
-	if got, want := ch.Traits[1].LocalName(), "Dead"; got != want {
+	if got, want := cmp.Or(ch.Traits[1].DisplayName, ch.Traits[1].Name), "Dead"; got != want {
 		t.Errorf("untranslated trait = %q, want the vocabulary name %q", got, want)
 	}
 	if len(ch.Intros) != 1 || !ch.Intros[0].Machine {

@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"time"
 
-	"kun-galgame-api/pkg/content"
 	"kun-galgame-api/pkg/errors"
 
 	"github.com/gofiber/fiber/v3"
@@ -74,9 +73,6 @@ func (id Identity) OK() bool {
 func AttachIdentity(c fiber.Ctx, id Identity) {
 	c.Locals(string(UserInfoKey), id.User)
 	c.Locals(string(OAuthAccessTokenKey), id.AccessToken)
-	if id.User != nil && !id.User.viaBearer {
-		content.Attach(c, id.User.ContentStance())
-	}
 }
 
 func (id Identity) legacyError() *errors.AppError {

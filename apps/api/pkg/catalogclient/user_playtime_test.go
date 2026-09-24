@@ -233,31 +233,6 @@ func TestPutWorkState_SendsCompletionWhenSet(t *testing.T) {
 	}
 }
 
-func TestMyWorkStates_ParsesItemsAndIgnoresMissing(t *testing.T) {
-	var gotIDs string
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		gotIDs = r.URL.Query().Get("work_ids")
-		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{"object":"list","items":[{"object":"work_state","work_id":"7","state":"done","completion":null}],"missing":["9"]}`))
-	}))
-	defer srv.Close()
-
-	got, err := New(Config{BaseURL: srv.URL}).MyWorkStates(
-		context.Background(), "user-jwt", []int64{7, 9})
-	if err != nil {
-		t.Fatalf("MyWorkStates: %v", err)
-	}
-	if gotIDs != "7,9" {
-		t.Errorf("work_ids = %q, want 7,9", gotIDs)
-	}
-	if rec, ok := got[7]; !ok || rec.State != WorkStateDone {
-		t.Errorf("got[7] = %+v", got[7])
-	}
-	if _, ok := got[9]; ok {
-		t.Errorf("missing id 9 must not appear, got %+v", got)
-	}
-}
-
 func TestListMyPlaytime_ForbiddenKeepsProblemCode(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/problem+json")

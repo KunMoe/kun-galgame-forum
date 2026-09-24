@@ -94,7 +94,6 @@ func (a *App) setupRoutes() {
 	api := a.Fiber.Group("/api")
 
 	api.Use(middleware.NamePreference)
-	api.Use(middleware.ContentStance(a.Redis, a.BearerStance))
 
 	api.Post("/trust/callback", a.TrustHandler.Callback)
 

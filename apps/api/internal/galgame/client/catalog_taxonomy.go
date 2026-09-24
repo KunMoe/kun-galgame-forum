@@ -1,12 +1,10 @@
 package client
 
 import (
-	"cmp"
 	"context"
 	"encoding/json"
 	"net/url"
 	"strconv"
-	"strings"
 	"sync"
 
 	"kun-galgame-api/pkg/errors"
@@ -29,16 +27,6 @@ type CatalogTaxonomyItem struct {
 }
 
 const TagTierHidden = "hidden"
-
-func (t CatalogTaxonomyItem) Label(ctx context.Context) string {
-	return CatalogEntityName(ctx, t.Localized, cmp.Or(t.DisplayName, t.Name), "")
-}
-
-// The same row is a tag on one list and a 会社 / 系列 / 引擎 on the next, and
-// only the caller knows which.
-func (t CatalogTaxonomyItem) VocabularyLabel() string {
-	return CatalogVocabularyName(t.Localized, cmp.Or(t.DisplayName, t.Name))
-}
 
 type CatalogTaxonomyPage struct {
 	Items      []CatalogTaxonomyItem `json:"items"`
@@ -77,10 +65,6 @@ type CatalogTagDetail struct {
 	Intros      []CatalogIntro              `json:"intros"`
 }
 
-func (t *CatalogTagDetail) Label() string {
-	return CatalogVocabularyName(t.Localized, cmp.Or(t.DisplayName, t.Name))
-}
-
 type CatalogEngineDetail struct {
 	ID          int64                       `json:"id"`
 	Name        string                      `json:"name"`
@@ -91,10 +75,6 @@ type CatalogEngineDetail struct {
 	WorkCount   int                         `json:"work_count"`
 }
 
-func (e *CatalogEngineDetail) Label(ctx context.Context) string {
-	return CatalogEntityName(ctx, e.Localized, cmp.Or(e.DisplayName, e.Name), "")
-}
-
 type CatalogSeriesDetail struct {
 	ID          int64                       `json:"id"`
 	HasNSFW     *bool                       `json:"has_nsfw"`
@@ -103,10 +83,6 @@ type CatalogSeriesDetail struct {
 	WorkCount   int                         `json:"work_count"`
 	Localized   map[string]catLocalizedName `json:"localized"`
 	Intros      []CatalogIntro              `json:"intros"`
-}
-
-func (s *CatalogSeriesDetail) Label(ctx context.Context) string {
-	return CatalogEntityName(ctx, s.Localized, cmp.Or(s.DisplayName, s.Name), "")
 }
 
 func (c *GalgameClient) CatalogTaxonomyList(ctx context.Context, entity string, q url.Values) (*CatalogTaxonomyPage, *errors.AppError) {
@@ -125,49 +101,6 @@ func (c *GalgameClient) CatalogTaxonomyList(ctx context.Context, entity string, 
 		return nil, errors.ErrInternal("解析 Catalog 词表响应失败")
 	}
 	return &page, nil
-}
-
-func (c *GalgameClient) CatalogTaxonomyPageAt(ctx context.Context, entity string, base url.Values, page, limit int) ([]CatalogTaxonomyItem, int64, *errors.AppError) {
-	if page < 1 {
-		page = 1
-	}
-	if limit < 1 {
-		limit = 20
-	}
-	skip := (page - 1) * limit
-	cursor := ""
-	var total int64
-	collected := make([]CatalogTaxonomyItem, 0, limit)
-
-	for {
-		q := url.Values{}
-		for k, v := range base {
-			q[k] = v
-		}
-		q.Set("limit", strconv.Itoa(catalogIDsChunk))
-		if cursor != "" {
-			q.Set("cursor", cursor)
-		}
-		res, appErr := c.CatalogTaxonomyList(ctx, entity, q)
-		if appErr != nil {
-			return nil, 0, appErr
-		}
-		total = res.Total
-		for i := range res.Items {
-			if skip > 0 {
-				skip--
-				continue
-			}
-			if len(collected) < limit {
-				collected = append(collected, res.Items[i])
-			}
-		}
-		if len(collected) >= limit || res.NextCursor == nil || *res.NextCursor == "" {
-			break
-		}
-		cursor = *res.NextCursor
-	}
-	return collected, total, nil
 }
 
 func (c *GalgameClient) CatalogLabel(ctx context.Context, id string) (*CatalogLabelDetail, bool, int64, *errors.AppError) {
@@ -218,10 +151,6 @@ type CatalogEntityHit struct {
 
 func (h *CatalogEntityHit) Name(ctx context.Context) string {
 	return CatalogEntityName(ctx, h.Localized, h.DisplayName, h.Latin)
-}
-
-func (h *CatalogEntityHit) VocabularyName() string {
-	return CatalogVocabularyName(h.Localized, h.DisplayName)
 }
 
 func (c *GalgameClient) CatalogEntitySearch(ctx context.Context, searchType, keywords string, page, limit int) ([]CatalogEntityHit, int64, *errors.AppError) {
@@ -323,34 +252,4 @@ func (c *GalgameClient) lookupLabelBySource(ctx context.Context, source string, 
 		return 0, false, nil
 	}
 	return parsed.Items[0].ID, true, nil
-}
-
-const catalogTaxonomyIDsCap = 20
-
-// CatalogTaxonomyByIDs resolves a handful of ids to their rows in one request —
-// what a filter chip needs when a shared link arrives carrying ids and no names.
-func (c *GalgameClient) CatalogTaxonomyByIDs(
-	ctx context.Context, entity string, ids []int,
-) ([]CatalogTaxonomyItem, *errors.AppError) {
-	if len(ids) == 0 {
-		return []CatalogTaxonomyItem{}, nil
-	}
-	if len(ids) > catalogTaxonomyIDsCap {
-		ids = ids[:catalogTaxonomyIDsCap]
-	}
-	raw := make([]string, len(ids))
-	for i, id := range ids {
-		raw[i] = strconv.Itoa(id)
-	}
-	q := url.Values{
-		"ids":   {strings.Join(raw, ",")},
-		"limit": {strconv.Itoa(len(ids))},
-	}
-	openPopulation(q)
-
-	page, appErr := c.CatalogTaxonomyList(ctx, entity, q)
-	if appErr != nil {
-		return nil, appErr
-	}
-	return page.Items, nil
 }

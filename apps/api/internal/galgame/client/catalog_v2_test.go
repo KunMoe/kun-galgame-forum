@@ -1,6 +1,7 @@
 package client
 
 import (
+	"cmp"
 	"context"
 	"encoding/json"
 	"net/url"
@@ -198,8 +199,8 @@ func TestLiveV2DetailFaces(t *testing.T) {
 		t.Fatalf("tag list: err=%v items=%d total=%d", appErr, len(tags.Items), tags.Total)
 	}
 	tag, found, appErr := c.CatalogTag(ctx, strconv.FormatInt(tags.Items[0].ID, 10))
-	if appErr != nil || !found || tag.Label() == "" {
-		t.Fatalf("CatalogTag = (%v, %v, %q)", appErr, found, tag.Label())
+	if appErr != nil || !found || cmp.Or(tag.DisplayName, tag.Name) == "" {
+		t.Fatalf("CatalogTag = (%v, %v, %+v)", appErr, found, tag)
 	}
 
 	series, appErr := c.CatalogTaxonomyList(ctx, "series", OpenPopulation(url.Values{"limit": {"3"}}))
@@ -245,7 +246,7 @@ func TestLiveV2DetailFaces(t *testing.T) {
 		t.Errorf("character %d has neither art — the image objects did not fold to URLs", chars[0].ID)
 	}
 	for i := range ch.Traits {
-		if ch.Traits[i].LocalName() == "" {
+		if cmp.Or(ch.Traits[i].DisplayName, ch.Traits[i].Name) == "" {
 			t.Errorf("trait %d renders as an empty chip: %+v", i, ch.Traits[i])
 			break
 		}

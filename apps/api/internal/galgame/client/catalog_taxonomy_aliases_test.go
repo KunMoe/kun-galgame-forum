@@ -1,6 +1,7 @@
 package client
 
 import (
+	"cmp"
 	"context"
 	"net/http"
 	"net/http/httptest"
@@ -44,7 +45,7 @@ func TestCatalogTaxonomyList_DecodesBothAliasShapes(t *testing.T) {
 	if !label.Aliases[0].Machine || label.Aliases[0].Lang != "zh-Hans" {
 		t.Errorf("alias row = %+v, want the language and machine flag kept", label.Aliases[0])
 	}
-	if got := label.Aliases.Values(label.Label(ctx)); !slices.Equal(got, []string{"NekoNeko-soft"}) {
+	if got := label.Aliases.Values(CatalogEntityName(ctx, label.Localized, label.DisplayName, "")); !slices.Equal(got, []string{"NekoNeko-soft"}) {
 		t.Errorf("label aliases = %v, want the rendered 猫猫社 dropped from its own alias list", got)
 	}
 
@@ -53,7 +54,7 @@ func TestCatalogTaxonomyList_DecodesBothAliasShapes(t *testing.T) {
 		t.Fatalf("engines: %v", appErr)
 	}
 	engine := engines.Items[0]
-	if got := engine.Aliases.Values(engine.Label(ctx)); !slices.Equal(got, []string{"KRKR"}) {
+	if got := engine.Aliases.Values(cmp.Or(engine.DisplayName, engine.Name)); !slices.Equal(got, []string{"KRKR"}) {
 		t.Errorf("engine aliases = %v, want the bare strings decoded and the blank dropped", got)
 	}
 }

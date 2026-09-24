@@ -74,13 +74,13 @@ func TestCatalogLabelCarriesLogoHash(t *testing.T) {
 }
 
 func TestCatalogLabelListCarriesLogoHash(t *testing.T) {
-	rows, total, appErr := logoCatalog(t).CatalogTaxonomyPageAt(
-		context.Background(), "labels", url.Values{}, 1, 20)
+	page, appErr := logoCatalog(t).CatalogTaxonomyList(context.Background(), "labels", url.Values{})
 	if appErr != nil {
-		t.Fatalf("browse lane: %v", appErr)
+		t.Fatalf("list lane: %v", appErr)
 	}
-	if total != 2 || len(rows) != 2 {
-		t.Fatalf("browse lane returned %d rows (total %d), want 2/2", len(rows), total)
+	rows := page.Items
+	if len(rows) != 2 {
+		t.Fatalf("list lane returned %d rows, want 2", len(rows))
 	}
 	if rows[0].LogoHash != "abcd1234ef" {
 		t.Fatalf("row 0 logo_hash = %q, want abcd1234ef", rows[0].LogoHash)

@@ -1,7 +1,6 @@
 package client
 
 import (
-	"cmp"
 	"context"
 	"encoding/json"
 	"net/url"
@@ -52,21 +51,6 @@ type CatalogCharacterTrait struct {
 	Spoiler        int                         `json:"spoiler"`
 	Sexual         bool                        `json:"sexual"`
 	Lie            bool                        `json:"lie"`
-}
-
-func (t *CatalogCharacterTrait) LocalName() string {
-	return catalogTraitName(t.Localized, t.NameZh, cmp.Or(t.DisplayName, t.Name))
-}
-
-func (t *CatalogCharacterTrait) LocalGroup() string {
-	return catalogTraitName(t.GroupLocalized, t.GroupZh, t.Group)
-}
-
-func catalogTraitName(localized map[string]catLocalizedName, zh, vocabulary string) string {
-	if v := CatalogVocabularyName(localized, zh); v != "" {
-		return v
-	}
-	return vocabulary
 }
 
 func (c *GalgameClient) CatalogCharacterDetail(

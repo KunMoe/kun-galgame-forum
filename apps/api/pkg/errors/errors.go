@@ -23,17 +23,6 @@ type AppError struct {
 	Errors     []FieldError `json:"errors,omitempty"`
 }
 
-// WithFieldErrors returns a copy carrying the upstream's per-field messages, so
-// a shared sentinel error value cannot be mutated by one request's rejection.
-func (e *AppError) WithFieldErrors(errs []FieldError) *AppError {
-	if len(errs) == 0 {
-		return e
-	}
-	out := *e
-	out.Errors = errs
-	return &out
-}
-
 func (e *AppError) Error() string {
 	return fmt.Sprintf("[%d] %s", e.Code, e.Message)
 }

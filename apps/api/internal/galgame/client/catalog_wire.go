@@ -2,7 +2,6 @@ package client
 
 import (
 	"bytes"
-	"cmp"
 	"context"
 	"encoding/json"
 	"log/slog"
@@ -167,10 +166,6 @@ type catWorkEngine struct {
 	DisplayName string                      `json:"display_name"`
 	Localized   map[string]catLocalizedName `json:"localized"`
 	WorkCount   int                         `json:"work_count"`
-}
-
-func (e *catWorkEngine) Label(ctx context.Context) string {
-	return CatalogEntityName(ctx, e.Localized, cmp.Or(e.DisplayName, e.Name), "")
 }
 
 type catWorkLink struct {
