@@ -925,3 +925,31 @@ func TestV1WorkSubmissionWritesSurviveAFailedReadBack(t *testing.T) {
 		t.Errorf("retry %d minted %d and proposed %d more", resp.StatusCode, len(f.user.mints)-mints, len(f.user.proposals)-proposals)
 	}
 }
+
+func TestV1WorkSubmissionDeleteSurvivesALocalCleanupFailure(t *testing.T) {
+	f := newG7aFix(t)
+	run := func(q string) {
+		t.Helper()
+		if err := f.db.Exec(q).Error; err != nil {
+			t.Fatal(err)
+		}
+	}
+	run(`CREATE OR REPLACE FUNCTION g7a_block_delete() RETURNS trigger LANGUAGE plpgsql AS $$
+		BEGIN RAISE EXCEPTION 'g7a: local cleanup refused'; END $$`)
+	run(`CREATE TRIGGER g7a_block_delete BEFORE DELETE ON galgame FOR EACH ROW
+		WHEN (OLD.id = 948000001) EXECUTE FUNCTION g7a_block_delete()`)
+	t.Cleanup(func() {
+		_ = f.db.Exec(`DROP TRIGGER IF EXISTS g7a_block_delete ON galgame`).Error
+		_ = f.db.Exec(`DROP FUNCTION IF EXISTS g7a_block_delete()`).Error
+	})
+
+	resp, got := f.call(t, http.MethodDelete, g7aSub(g7aDraft), g7aSpecOne, "sess-alice", "", nil)
+	if resp.StatusCode != http.StatusNoContent {
+		t.Fatalf("delete %d %+v: catalog already deleted the draft, so the answer is 204", resp.StatusCode, got)
+	}
+	var n int64
+	f.db.Raw(`SELECT count(*) FROM galgame WHERE id = ?`, g7aDraft).Scan(&n)
+	if g7aState(t, f, g7aDraft) != "" || n != 1 {
+		t.Errorf("claim state %q, local rows %d: want the claim gone and the row left for ops", g7aState(t, f, g7aDraft), n)
+	}
+}

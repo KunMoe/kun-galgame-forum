@@ -358,10 +358,12 @@ func (s *Service) deleteWorkSubmission(ctx context.Context, in *workSubmissionWr
 	if err := c.cat.DeleteMyClaim(ctx, c.token, int64(workID), ifMatchOrAny(in.IfMatch)); err != nil {
 		return nil, mapUserPlane(err, true)
 	}
+	// The draft is gone once catalog agreed, so a failed local cleanup is
+	// logged for ops, not answered: a 500 sent the user into a retry that
+	// could only 404.
 	if s.store.Ready() {
 		if err := s.store.DeleteLocalDraft(workID); err != nil {
 			slog.Error("delete draft: catalog draft gone, local row not cleaned", "work_id", workID, "err", err)
-			return nil, problem.Internal(err)
 		}
 	}
 	return &noContentOutput{}, nil
