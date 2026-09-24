@@ -19,32 +19,6 @@ func permissionRequired() *problem.Problem {
 	return problem.New(problem.CodePermissionRequired, "The caller cannot perform this operation.")
 }
 
-func unknownEnum(param string) *problem.Problem {
-	return problem.New(problem.CodeUnknownEnumValue, param+" is not in this collection's vocabulary.",
-		problem.AtParameter(param, problem.ReasonUnknownValue, "use a declared "+param, nil))
-}
-
-func parseCSVStates(raw, param string, allowed map[string]bool) ([]string, *problem.Problem) {
-	raw = strings.TrimSpace(raw)
-	if raw == "" {
-		return nil, nil
-	}
-	parts := strings.Split(raw, ",")
-	out := make([]string, 0, len(parts))
-	seen := map[string]bool{}
-	for _, p := range parts {
-		p = strings.TrimSpace(p)
-		if !allowed[p] {
-			return nil, unknownEnum(param)
-		}
-		if !seen[p] {
-			seen[p] = true
-			out = append(out, p)
-		}
-	}
-	return out, nil
-}
-
 // A bare catalog cursor passed through is not bound to the v1 filter it was
 // minted under; wrapped, a cursor reused across filters is INVALID_CURSOR.
 func wrapUpstreamCursor(scope, fingerprint, upstream string) *string {
