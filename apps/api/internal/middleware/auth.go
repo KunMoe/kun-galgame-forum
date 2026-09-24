@@ -219,30 +219,36 @@ func waitForRefresh(
 	rdb *redis.Client,
 	lockKey, token string,
 	session *SessionData,
-) *errors.AppError {
+) (IdentityOutcome, error) {
 	deadline := time.Now().Add(12 * time.Second)
 	for {
 		time.Sleep(150 * time.Millisecond)
 
 		val, err := rdb.Get(ctx, SessionKey(token)).Result()
+		// The refresher deletes the session when the refresh token is dead or the
+		// account is banned. Reported as transient, every waiter on a dead session
+		// answered 503 and logged ERROR (prod, 2026-09-24).
+		if err == redis.Nil {
+			return IdentitySessionMissing, err
+		}
 		if err != nil {
-			return errors.ErrAuthExpired()
+			return IdentitySessionStoreError, err
 		}
 		if uErr := json.Unmarshal([]byte(val), session); uErr != nil {
-			return errors.ErrAuthExpired()
+			return IdentitySessionMissing, uErr
 		}
 
 		if session.OAuthExpiresAt > time.Now().Unix() {
-			return nil
+			return IdentitySessionOK, nil
 		}
 
 		exists, _ := rdb.Exists(ctx, lockKey).Result()
 		if exists == 0 {
-			return errors.ErrAuthExpired()
+			return IdentitySessionRefreshTransient, errors.ErrAuthExpired()
 		}
 
 		if time.Now().After(deadline) {
-			return errors.ErrAuthExpired()
+			return IdentitySessionRefreshTransient, errors.ErrAuthExpired()
 		}
 	}
 }

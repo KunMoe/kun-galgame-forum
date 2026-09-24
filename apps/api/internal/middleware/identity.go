@@ -135,10 +135,8 @@ func (a *Authenticator) resolveSession(c fiber.Ctx) Identity {
 			if outcome != IdentitySessionOK {
 				return Identity{Outcome: outcome, Err: rerr}
 			}
-		} else {
-			if err := waitForRefresh(ctx, rdb, lockKey, token, &session); err != nil {
-				return Identity{Outcome: IdentitySessionRefreshTransient, Err: err}
-			}
+		} else if outcome, werr := waitForRefresh(ctx, rdb, lockKey, token, &session); outcome != IdentitySessionOK {
+			return Identity{Outcome: outcome, Err: werr}
 		}
 	}
 

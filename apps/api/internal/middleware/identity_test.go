@@ -272,7 +272,7 @@ func TestResolveIdentity(t *testing.T) {
 		}
 	})
 
-	t.Run("session refresh transient waitForRefresh", func(t *testing.T) {
+	t.Run("waiter sees the refresher delete a dead session", func(t *testing.T) {
 		h := newIdentHarness(t)
 		putSession(t, h.rdb, sessToken, sampleSession(true))
 		if err := h.rdb.Set(context.Background(), "refresh_lock:"+sessToken, "1", 15*time.Second).Err(); err != nil {
@@ -281,10 +281,33 @@ func TestResolveIdentity(t *testing.T) {
 		go func() {
 			time.Sleep(20 * time.Millisecond)
 			h.rdb.Del(context.Background(), SessionKey(sessToken))
+			h.rdb.Del(context.Background(), "refresh_lock:"+sessToken)
+		}()
+		got := h.resolve(t, cookieReq(sessToken, ""))
+		if got.id.Outcome != IdentitySessionMissing {
+			t.Fatalf("outcome = %s, want %s", got.id.Outcome, IdentitySessionMissing)
+		}
+		if got.userAfter != nil {
+			t.Error("resolver attached Locals")
+		}
+	})
+
+	t.Run("session refresh transient waitForRefresh", func(t *testing.T) {
+		h := newIdentHarness(t)
+		putSession(t, h.rdb, sessToken, sampleSession(true))
+		if err := h.rdb.Set(context.Background(), "refresh_lock:"+sessToken, "1", 15*time.Second).Err(); err != nil {
+			t.Fatal(err)
+		}
+		go func() {
+			time.Sleep(20 * time.Millisecond)
+			h.rdb.Del(context.Background(), "refresh_lock:"+sessToken)
 		}()
 		got := h.resolve(t, cookieReq(sessToken, ""))
 		if got.id.Outcome != IdentitySessionRefreshTransient {
 			t.Fatalf("outcome = %s, want %s", got.id.Outcome, IdentitySessionRefreshTransient)
+		}
+		if !h.mr.Exists(SessionKey(sessToken)) {
+			t.Error("a waiter must not delete the session")
 		}
 	})
 
