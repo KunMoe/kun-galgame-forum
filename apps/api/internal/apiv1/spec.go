@@ -20,7 +20,11 @@ func MarshalOpenAPI(api huma.API) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	return indentJSON(raw)
+	published, err := publishSpec(raw)
+	if err != nil {
+		return nil, err
+	}
+	return indentJSON(published)
 }
 
 func MarshalProblems() ([]byte, error) {

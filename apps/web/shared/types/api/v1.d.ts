@@ -4847,10 +4847,12 @@ export interface components {
     schemas: {
         AccessGrants: {
             /** @description Granted roles when access_scope is role. Empty array otherwise. */
-            roles: ("creator" | "moderator" | "admin" | "ren")[];
+            roles: components["schemas"]["SiteRole"][];
             /** @description Granted users when access_scope is users, in grant order. The author is never listed. Banned and deleted users keep their entry with name null. Empty array otherwise. */
             users: components["schemas"]["UserRef"][];
         };
+        /** @enum {string} */
+        AccessScope: "public" | "login" | "role" | "users";
         Account: {
             /** @description Avatar from the account center's current record. null when the account has no image-service hash. */
             avatar: components["schemas"]["Image"] | null;
@@ -4862,18 +4864,15 @@ export interface components {
             name: string | null;
             /**
              * @description Type discriminant. Always account.
-             * @enum {string}
+             * @constant
              */
             object: "account";
             /** @description Ranked roles this credential carries, lowest rank first. A Bearer request never carries moderator, admin or ren. Other account roles are not listed. */
-            roles: ("creator" | "moderator" | "admin" | "ren")[];
+            roles: components["schemas"]["SiteRole"][];
         };
         Activity: {
-            /**
-             * @description What happened. It decides which of the detail blocks below is set: every block other than its own is null.
-             * @enum {string}
-             */
-            activity_type: "topic_creation" | "topic_reply_creation" | "topic_comment_creation" | "topic_upvote" | "best_answer_set" | "galgame_creation" | "galgame_edit" | "galgame_pr_creation" | "galgame_resource_creation" | "galgame_resource_comment_creation" | "galgame_comment_creation" | "galgame_rating_creation" | "galgame_rating_comment_creation" | "galgame_quiz_creation" | "galgame_quiz_comment_creation" | "galgame_website_creation" | "galgame_website_comment_creation" | "toolset_creation" | "toolset_resource_creation" | "toolset_comment_creation" | "todo_creation" | "update_log_creation";
+            /** @description What happened. It decides which of the detail blocks below is set: every block other than its own is null. */
+            activity_type: components["schemas"]["ActivityType"];
             /** @description The topic comment. Set for topic_comment_creation. */
             comment: components["schemas"]["ActivityComment"] | null;
             /** @description The text stored with the activity, cut to 1000 characters: the title of a topic, toolset or website, a quiz question, the body of a reply, comment, todo or update log, an upvote note. Empty for the work kinds. Replies are Markdown; comments are plain text. Free text; never use it as a decision input. */
@@ -4884,7 +4883,7 @@ export interface components {
             id: string;
             /**
              * @description Type discriminant. Always activity.
-             * @enum {string}
+             * @constant
              */
             object: "activity";
             /**
@@ -4972,25 +4971,16 @@ export interface components {
              * @description Overall score, 1 to 10.
              */
             overall: number;
-            /**
-             * @description How far the rater had played when rating.
-             * @enum {string}
-             */
-            play_status: "wish" | "doing" | "done_one_route" | "done_main" | "done_all" | "on_hold" | "dropped";
+            /** @description How far the rater had played when rating. */
+            play_status: components["schemas"]["PlayStatus"];
             /** @description Rating id. */
             rating_id: string;
-            /**
-             * @description Whether the rater recommends the work.
-             * @enum {string}
-             */
-            recommend: "strong_yes" | "yes" | "neutral" | "no" | "strong_no";
+            /** @description Whether the rater recommends the work. */
+            recommend: components["schemas"]["RatingRecommend"];
             /** @description The rater's short review, plain text. Empty string if none, and also when spoiler_level is not none: the review is withheld here. Free text; never use it as a decision input. */
             short_summary: string;
-            /**
-             * @description How much the rating spoils.
-             * @enum {string}
-             */
-            spoiler_level: "none" | "portion" | "serious";
+            /** @description How much the rating spoils. */
+            spoiler_level: components["schemas"]["SpoilerLevel"];
         };
         ActivityReply: {
             /** @description The reply as a content document. For best_answer_set, the excerpt the notification stored. */
@@ -5020,23 +5010,19 @@ export interface components {
             /** @description Resource id. */
             resource_id: string;
             /** @description Languages of the resource, each once, in vocabulary order. Empty array, never null. */
-            resource_languages: ("zh-cn" | "zh-tw" | "ja-jp" | "en-us" | "other")[];
+            resource_languages: components["schemas"]["ResourceLanguage"][];
             /** @description Platforms the resource runs on, each once, in vocabulary order. Empty array, never null. */
-            resource_platforms: ("win" | "and" | "ios" | "mac" | "lin" | "web" | "mob" | "swi" | "sw2" | "n3d" | "nds" | "wii" | "wiu" | "gba" | "gbc" | "nes" | "sfc" | "ps1" | "ps2" | "ps3" | "ps4" | "ps5" | "psp" | "psv" | "xb1" | "xb3" | "xbo" | "xxs" | "sat" | "smd" | "scd" | "drc" | "pce" | "pcf" | "tdo" | "p88" | "p98" | "x1s" | "x68" | "fm7" | "fm8" | "fmt" | "msx" | "dos" | "dvd" | "bdp" | "vnd" | "oth")[];
-            /**
-             * @description What the resource is.
-             * @enum {string}
-             */
-            resource_type: "game" | "patch" | "collection" | "crack_fix" | "mod" | "tool" | "walkthrough" | "ost" | "voice" | "cg" | "wallpaper" | "artbook" | "video" | "other";
+            resource_platforms: components["schemas"]["ResourcePlatform"][];
+            /** @description What the resource is. */
+            resource_type: components["schemas"]["ResourceType"];
             /** @description Size as the publisher wrote it, such as 1.7GB. Free text; never use it as a decision input. */
             size: string;
         };
+        /** @enum {string} */
+        ActivitySort: "occurred_desc" | "bumped_desc";
         ActivityTodo: {
-            /**
-             * @description Current state of the todo.
-             * @enum {string}
-             */
-            state: "pending" | "in_progress" | "done" | "discarded";
+            /** @description Current state of the todo. */
+            state: components["schemas"]["TodoState"];
             /** @description Todo id. */
             todo_id: string;
         };
@@ -5046,6 +5032,10 @@ export interface components {
             /** @description Toolset id. */
             toolset_id: string;
         };
+        /** @enum {string} */
+        ActivityTopicSection: "normal" | "help" | "all";
+        /** @enum {string} */
+        ActivityType: "topic_creation" | "topic_reply_creation" | "topic_comment_creation" | "topic_upvote" | "best_answer_set" | "galgame_creation" | "galgame_edit" | "galgame_pr_creation" | "galgame_resource_creation" | "galgame_resource_comment_creation" | "galgame_comment_creation" | "galgame_rating_creation" | "galgame_rating_comment_creation" | "galgame_quiz_creation" | "galgame_quiz_comment_creation" | "galgame_website_creation" | "galgame_website_comment_creation" | "toolset_creation" | "toolset_resource_creation" | "toolset_comment_creation" | "todo_creation" | "update_log_creation";
         ActivityUpdateLog: {
             /** @description Site version the change shipped in. Free text; never use it as a decision input. */
             release_version: string;
@@ -5059,11 +5049,8 @@ export interface components {
             content_markdown: string;
             /** @description Short summary shown on cards. Empty string if none. Free text; never use it as a decision input. */
             description: string;
-            /**
-             * @description Which shelf of the help center the doc sits on.
-             * @enum {string}
-             */
-            doc_category: "galgame" | "notice" | "kun" | "other";
+            /** @description Which shelf of the help center the doc sits on. */
+            doc_category: components["schemas"]["DocCategory"];
             /**
              * Format: date-time
              * @description When the doc's text or metadata last changed. Pinning does not count. null if never edited.
@@ -5075,7 +5062,7 @@ export interface components {
             is_pinned: boolean;
             /**
              * @description Type discriminant. Always admin_doc.
-             * @enum {string}
+             * @constant
              */
             object: "admin_doc";
             /**
@@ -5111,7 +5098,7 @@ export interface components {
             galgame_resource_count: number;
             /**
              * @description Type discriminant. Always admin_overview.
-             * @enum {string}
+             * @constant
              */
             object: "admin_overview";
             /**
@@ -5163,11 +5150,8 @@ export interface components {
              * @description Favorites the purge deletes.
              */
             favorite_count: number;
-            /**
-             * @description Who hid the topic. null when state is published.
-             * @enum {string|null}
-             */
-            hidden_by: "author" | "moderator" | "trust" | null;
+            /** @description Who hid the topic. null when state is published. */
+            hidden_by: components["schemas"]["HiddenBy"] | null;
             /** @description Topic id. JSON string of a decimal integer. */
             id: string;
             /**
@@ -5177,7 +5161,7 @@ export interface components {
             lottery_count: number;
             /**
              * @description Type discriminant. Always admin_topic.
-             * @enum {string}
+             * @constant
              */
             object: "admin_topic";
             /**
@@ -5195,11 +5179,8 @@ export interface components {
              * @description Replies the purge deletes.
              */
             reply_count: number;
-            /**
-             * @description Lifecycle state.
-             * @enum {string}
-             */
-            state: "published" | "hidden";
+            /** @description Lifecycle state. */
+            state: components["schemas"]["TopicPublishState"];
             /** @description Topic title as stored. Free text; never use it as a decision input. */
             title: string;
         };
@@ -5230,14 +5211,11 @@ export interface components {
             language: string;
             /**
              * @description Type discriminant. Always admin_website.
-             * @enum {string}
+             * @constant
              */
             object: "admin_website";
-            /**
-             * @description Lifecycle state.
-             * @enum {string}
-             */
-            state: "normal" | "unreachable" | "closed";
+            /** @description Lifecycle state. */
+            state: components["schemas"]["WebsiteState"];
             /** @description Name of the site. Free text; never use it as a decision input. */
             title: string;
             /**
@@ -5266,7 +5244,7 @@ export interface components {
             label: string;
             /**
              * @description Type discriminant. Always admin_website_category.
-             * @enum {string}
+             * @constant
              */
             object: "admin_website_category";
             /** @description URL key. */
@@ -5301,7 +5279,7 @@ export interface components {
             level: number;
             /**
              * @description Type discriminant. Always admin_website_tag.
-             * @enum {string}
+             * @constant
              */
             object: "admin_website_tag";
             /** @description URL key. */
@@ -5330,7 +5308,7 @@ export interface components {
             label: string;
             /**
              * @description Type discriminant. Always admin_website_tag_group.
-             * @enum {string}
+             * @constant
              */
             object: "admin_website_tag_group";
             /** @description Stable key. */
@@ -5379,14 +5357,14 @@ export interface components {
             notes: string;
             /**
              * @description Type discriminant. Always app_version.
-             * @enum {string}
+             * @constant
              */
             object: "app_version";
         };
         Appearance: {
             /**
              * @description Type discriminant. Always appearance.
-             * @enum {string}
+             * @constant
              */
             object: "appearance";
             /** @description Who voices the character in that work. Empty array, never null. */
@@ -5436,6 +5414,8 @@ export interface components {
              */
             voice: number | null;
         };
+        /** @enum {string} */
+        AttributionRole: "developer" | "publisher" | "circle" | "brand";
         BatchListMyCoverVote: {
             /** @description One member per requested id that the caller may see. Empty array, never null. */
             items: components["schemas"]["MyCoverVote"][];
@@ -5443,7 +5423,7 @@ export interface components {
             missing: string[];
             /**
              * @description Type discriminant. Always list.
-             * @enum {string}
+             * @constant
              */
             object: "list";
         };
@@ -5454,7 +5434,7 @@ export interface components {
             missing: string[];
             /**
              * @description Type discriminant. Always list.
-             * @enum {string}
+             * @constant
              */
             object: "list";
         };
@@ -5465,7 +5445,7 @@ export interface components {
             missing: string[];
             /**
              * @description Type discriminant. Always list.
-             * @enum {string}
+             * @constant
              */
             object: "list";
         };
@@ -5476,7 +5456,7 @@ export interface components {
             missing: string[];
             /**
              * @description Type discriminant. Always list.
-             * @enum {string}
+             * @constant
              */
             object: "list";
         };
@@ -5487,7 +5467,7 @@ export interface components {
             missing: string[];
             /**
              * @description Type discriminant. Always list.
-             * @enum {string}
+             * @constant
              */
             object: "list";
         };
@@ -5509,6 +5489,8 @@ export interface components {
              */
             object: "break";
         };
+        /** @enum {string} */
+        CandidateClaimState: "none" | "live" | "draft" | "pending";
         CatalogIntro: {
             /** @description Where catalog took the text from, such as vndb or erogamescape. null when unrecorded. */
             data_source: string | null;
@@ -5538,6 +5520,8 @@ export interface components {
                 [key: string]: components["schemas"]["LocalizedName"];
             };
         };
+        /** @enum {string} */
+        CatalogSpoiler: "none" | "minor" | "major";
         CategoryCreate: {
             /** @description Plain-text description. Absent means empty. Free text; never use it as a decision input. */
             description?: string;
@@ -5587,12 +5571,14 @@ export interface components {
             };
             /**
              * @description Type discriminant. Always character.
-             * @enum {string}
+             * @constant
              */
             object: "character";
             /** @description Traits in catalog's order. Adult traits are left out unless include_nsfw=true. Empty array, never null. */
             traits: components["schemas"]["CharacterTrait"][];
         };
+        /** @enum {string} */
+        CharacterKind: "main" | "secondary" | "appears" | "unknown";
         CharacterSummary: {
             /**
              * Format: int64
@@ -5613,7 +5599,7 @@ export interface components {
             };
             /**
              * @description Type discriminant. Always character.
-             * @enum {string}
+             * @constant
              */
             object: "character";
         };
@@ -5634,14 +5620,11 @@ export interface components {
             };
             /**
              * @description Type discriminant. Always trait.
-             * @enum {string}
+             * @constant
              */
             object: "trait";
-            /**
-             * @description How much the trait gives away.
-             * @enum {string}
-             */
-            spoiler: "none" | "minor" | "major";
+            /** @description How much the trait gives away. */
+            spoiler: components["schemas"]["CatalogSpoiler"];
             /** @description The group the trait sits in, such as hair or personality. */
             trait_group: components["schemas"]["CatalogName"];
         };
@@ -5663,7 +5646,7 @@ export interface components {
             moemoepoint_awarded: number;
             /**
              * @description Type discriminant. Always check_in.
-             * @enum {string}
+             * @constant
              */
             object: "check_in";
         };
@@ -5675,26 +5658,22 @@ export interface components {
              * @description When the transition happened.
              */
             created_at: string;
-            /**
-             * @description State before the event. null on the event that created the claim.
-             * @enum {string|null}
-             */
-            from_state: "live" | "draft" | "pending" | "declined" | "hidden" | null;
+            /** @description State before the event. null on the event that created the claim. */
+            from_state: components["schemas"]["ClaimState"] | null;
             /** @description Claim event id. */
             id: string;
             /** @description The note given with the transition, such as a decline reason. null when none was given. Free text; never use it as a decision input. */
             note: string | null;
             /**
              * @description Type discriminant. Always claim_event.
-             * @enum {string}
+             * @constant
              */
             object: "claim_event";
-            /**
-             * @description State after the event.
-             * @enum {string}
-             */
-            to_state: "live" | "draft" | "pending" | "declined" | "hidden";
+            /** @description State after the event. */
+            to_state: components["schemas"]["ClaimState"];
         };
+        /** @enum {string} */
+        ClaimState: "live" | "draft" | "pending" | "declined" | "hidden";
         CodeNode: {
             /** @description Language named on the fence, lowercased. null when the fence names none or the block is indented. */
             lang: string | null;
@@ -5725,7 +5704,7 @@ export interface components {
             item_count: number;
             /**
              * @description Type discriminant. Always collection.
-             * @enum {string}
+             * @constant
              */
             object: "collection";
             /** @description The account that owns this collection. */
@@ -5741,11 +5720,8 @@ export interface components {
             updated_at: string;
             /** @description The caller's own state. null for an anonymous caller. */
             viewer: components["schemas"]["CollectionViewer"] | null;
-            /**
-             * @description private folders are visible only to their owner; public folders are readable by anyone.
-             * @enum {string}
-             */
-            visibility: "private" | "public";
+            /** @description private folders are visible only to their owner; public folders are readable by anyone. */
+            visibility: components["schemas"]["CollectionVisibility"];
         };
         CollectionAlias: {
             /** @description The frozen forum collection id from galgame_collection. */
@@ -5754,7 +5730,7 @@ export interface components {
             collection_id: string;
             /**
              * @description Type discriminant. Always collection_alias.
-             * @enum {string}
+             * @constant
              */
             object: "collection_alias";
         };
@@ -5770,7 +5746,7 @@ export interface components {
             item_count: number;
             /**
              * @description Type discriminant. Always collection.
-             * @enum {string}
+             * @constant
              */
             object: "collection";
             /** @description Display name. Empty string for an unnamed imported default. Free text; never use it as a decision input. */
@@ -5782,11 +5758,8 @@ export interface components {
             updated_at: string;
             /** @description The caller's own state. Never null on this operation, which requires a signed-in caller. */
             viewer: components["schemas"]["CollectionViewer"] | null;
-            /**
-             * @description private folders are visible only to their owner; public folders are readable by anyone.
-             * @enum {string}
-             */
-            visibility: "private" | "public";
+            /** @description private folders are visible only to their owner; public folders are readable by anyone. */
+            visibility: components["schemas"]["CollectionVisibility"];
         };
         CollectionCreate: {
             /** @description Owner's note. Omitted is an empty string. Free text; never use it as a decision input. */
@@ -5795,11 +5768,8 @@ export interface components {
             is_default?: boolean;
             /** @description Display name. 1–100 characters after trimming. Free text; never use it as a decision input. */
             title: string;
-            /**
-             * @description Must be sent. There is no default.
-             * @enum {string}
-             */
-            visibility: "private" | "public";
+            /** @description Must be sent. There is no default. */
+            visibility: components["schemas"]["CollectionVisibility"];
         };
         CollectionPatch: {
             /** @description New note; an empty string clears it. Free text; never use it as a decision input. */
@@ -5808,11 +5778,8 @@ export interface components {
             is_default?: boolean;
             /** @description New display name. Free text; never use it as a decision input. */
             title?: string;
-            /**
-             * @description New visibility.
-             * @enum {string}
-             */
-            visibility?: "private" | "public";
+            /** @description New visibility. */
+            visibility?: components["schemas"]["CollectionVisibility"];
         };
         CollectionSummary: {
             /**
@@ -5833,7 +5800,7 @@ export interface components {
             item_count: number;
             /**
              * @description Type discriminant. Always collection.
-             * @enum {string}
+             * @constant
              */
             object: "collection";
             /** @description The account that owns this collection. */
@@ -5849,11 +5816,8 @@ export interface components {
             updated_at: string;
             /** @description The caller's own state. null for an anonymous caller. */
             viewer: components["schemas"]["CollectionViewer"] | null;
-            /**
-             * @description private folders are visible only to their owner; public folders are readable by anyone.
-             * @enum {string}
-             */
-            visibility: "private" | "public";
+            /** @description private folders are visible only to their owner; public folders are readable by anyone. */
+            visibility: components["schemas"]["CollectionVisibility"];
         };
         CollectionViewer: {
             /** @description Whether the caller may delete this collection. Requests authenticated with a Bearer token never carry staff powers. */
@@ -5865,12 +5829,14 @@ export interface components {
             /** @description Whether the caller owns this collection. */
             is_owner: boolean;
         };
+        /** @enum {string} */
+        CollectionVisibility: "private" | "public";
         CollectionWorkEngagement: {
             /** @description Catalog folder id. */
             collection_id: string;
             /**
              * @description Type discriminant. Always collection_work_engagement.
-             * @enum {string}
+             * @constant
              */
             object: "collection_work_engagement";
             /** @description The caller's membership after this request. */
@@ -5908,7 +5874,7 @@ export interface components {
             like_count: number;
             /**
              * @description Type discriminant. Always comment.
-             * @enum {string}
+             * @constant
              */
             object: "comment";
             /** @description Id of the comment this one answers. null for a comment on the reply itself. The parent may be absent from comments. */
@@ -5960,7 +5926,7 @@ export interface components {
             id: string;
             /**
              * @description Type discriminant. Always comment.
-             * @enum {string}
+             * @constant
              */
             object: "comment";
             /** @description The topic the comment belongs to. */
@@ -5973,7 +5939,7 @@ export interface components {
             comment_id: string;
             /**
              * @description Type discriminant. Always comment_source.
-             * @enum {string}
+             * @constant
              */
             object: "comment_source";
             /** @description Id of the reply the comment is under. */
@@ -5999,11 +5965,8 @@ export interface components {
              * @description Works catalog files under it, NSFW ones included. How many a reader can page through is the total of its works collection.
              */
             catalog_work_count: number;
-            /**
-             * @description What sort of company it is.
-             * @enum {string}
-             */
-            company_kind: "game_brand" | "bunko" | "publisher" | "anime_studio" | "doujin_circle" | "group";
+            /** @description What sort of company it is. */
+            company_kind: components["schemas"]["CompanyKind"];
             /** @description The entity's own name. Never empty. Free text; never use it as a decision input. */
             display_name: string;
             /** @description Company id: the catalog company id, which is also the id in the web's /galgame/official/{id}. */
@@ -6024,7 +5987,7 @@ export interface components {
             logo: components["schemas"]["Image"] | null;
             /**
              * @description Type discriminant. Always company.
-             * @enum {string}
+             * @constant
              */
             object: "company";
         };
@@ -6037,18 +6000,15 @@ export interface components {
             nodes: components["schemas"]["CompanyGraphNode"][];
             /**
              * @description Type discriminant. Always company_graph.
-             * @enum {string}
+             * @constant
              */
             object: "company_graph";
         };
         CompanyGraphEdge: {
             /** @description The company the relation is stated from. */
             from_company_id: string;
-            /**
-             * @description What to_company is to from_company. Every relation also appears reversed: parent with subsidiary, imprint with imprint_of, succeeded_by with formerly, spawned with origin.
-             * @enum {string}
-             */
-            relation: "parent" | "subsidiary" | "imprint" | "imprint_of" | "succeeded_by" | "formerly" | "spawned" | "origin";
+            /** @description What to_company is to from_company. Every relation also appears reversed: parent with subsidiary, imprint with imprint_of, succeeded_by with formerly, spawned with origin. */
+            relation: components["schemas"]["CompanyRelation"];
             /** @description The company it points at. */
             to_company_id: string;
         };
@@ -6072,10 +6032,12 @@ export interface components {
             logo: components["schemas"]["Image"] | null;
             /**
              * @description Type discriminant. Always company.
-             * @enum {string}
+             * @constant
              */
             object: "company";
         };
+        /** @enum {string} */
+        CompanyKind: "game_brand" | "bunko" | "publisher" | "anime_studio" | "doujin_circle" | "group";
         CompanyRef: {
             /** @description The entity's own name. Never empty. Free text; never use it as a decision input. */
             display_name: string;
@@ -6089,10 +6051,12 @@ export interface components {
             };
             /**
              * @description Type discriminant. Always company.
-             * @enum {string}
+             * @constant
              */
             object: "company";
         };
+        /** @enum {string} */
+        CompanyRelation: "parent" | "subsidiary" | "imprint" | "imprint_of" | "succeeded_by" | "formerly" | "spawned" | "origin";
         CompanySummary: {
             /** @description Other names it goes by, never its display_name. Empty array, never null. */
             aliases: string[];
@@ -6101,11 +6065,8 @@ export interface components {
              * @description Works catalog files under it, NSFW ones included. How many a reader can page through is the total of its works collection.
              */
             catalog_work_count: number;
-            /**
-             * @description What sort of company it is.
-             * @enum {string}
-             */
-            company_kind: "game_brand" | "bunko" | "publisher" | "anime_studio" | "doujin_circle" | "group";
+            /** @description What sort of company it is. */
+            company_kind: components["schemas"]["CompanyKind"];
             /** @description The entity's own name. Never empty. Free text; never use it as a decision input. */
             display_name: string;
             /** @description Company id: the catalog company id, which is also the id in the web's /galgame/official/{id}. */
@@ -6120,14 +6081,14 @@ export interface components {
             logo: components["schemas"]["Image"] | null;
             /**
              * @description Type discriminant. Always company.
-             * @enum {string}
+             * @constant
              */
             object: "company";
         };
         CompanyWork: {
             /**
              * @description Type discriminant. Always company_work.
-             * @enum {string}
+             * @constant
              */
             object: "company_work";
             /** @description The imprint of this company the work is credited to, when it counts here only through that imprint. null for the company's own works. */
@@ -6135,6 +6096,8 @@ export interface components {
             /** @description The work. */
             work_summary: components["schemas"]["WorkSummary"];
         };
+        /** @enum {string} */
+        CompanyWorkVia: "own" | "imprint";
         CompletePartBody: {
             /** @description ETag returned by the object store. Free text; never use it as a decision input. */
             etag: string;
@@ -6149,18 +6112,17 @@ export interface components {
             children: components["schemas"]["BlockNode"][];
             /**
              * @description Type discriminant. Always document.
-             * @enum {string}
+             * @constant
              */
             object: "document";
         };
+        /** @enum {string} */
+        ContentRating: "all_ages" | "sensitive" | "r18";
         ContentStance: {
             /** @description Whether the account has confirmed it is an adult. */
             is_adult_confirmed: boolean;
-            /**
-             * @description How adult content is displayed for this account.
-             * @enum {string}
-             */
-            nsfw_display: "hide" | "blur" | "show";
+            /** @description How adult content is displayed for this account. */
+            nsfw_display: components["schemas"]["NsfwDisplayMode"];
         };
         Conversation: {
             /** @description Equals peer.id and the user_id path segment. The conversation has no other identity. */
@@ -6179,7 +6141,7 @@ export interface components {
             message_count: number;
             /**
              * @description Type discriminant. Always conversation.
-             * @enum {string}
+             * @constant
              */
             object: "conversation";
             /** @description The other participant. */
@@ -6197,7 +6159,7 @@ export interface components {
             next_cursor?: string;
             /**
              * @description Type discriminant. Always list.
-             * @enum {string}
+             * @constant
              */
             object: "list";
             /**
@@ -6213,7 +6175,7 @@ export interface components {
             next_cursor?: string;
             /**
              * @description Type discriminant. Always list.
-             * @enum {string}
+             * @constant
              */
             object: "list";
             /**
@@ -6229,7 +6191,7 @@ export interface components {
             next_cursor?: string;
             /**
              * @description Type discriminant. Always list.
-             * @enum {string}
+             * @constant
              */
             object: "list";
             /**
@@ -6245,7 +6207,7 @@ export interface components {
             next_cursor?: string;
             /**
              * @description Type discriminant. Always list.
-             * @enum {string}
+             * @constant
              */
             object: "list";
             /**
@@ -6261,7 +6223,7 @@ export interface components {
             next_cursor?: string;
             /**
              * @description Type discriminant. Always list.
-             * @enum {string}
+             * @constant
              */
             object: "list";
             /**
@@ -6270,6 +6232,8 @@ export interface components {
              */
             total?: number;
         };
+        /** @enum {string} */
+        CoverSlot: "main" | "pkgfront" | "dig" | "pkgback" | "pkgcontent" | "pkgside" | "pkgmed" | "other";
         CreateCreatorApplicationBody: {
             /** @description Statement for the reviewers. Empty string is allowed. Free text; never use it as a decision input. */
             statement?: string;
@@ -6286,7 +6250,7 @@ export interface components {
             id: string;
             /**
              * @description Type discriminant. Always creator_application.
-             * @enum {string}
+             * @constant
              */
             object: "creator_application";
             /**
@@ -6294,14 +6258,13 @@ export interface components {
              * @description When the application was reviewed. null while it is pending.
              */
             reviewed_at: string | null;
-            /**
-             * @description Application lifecycle state.
-             * @enum {string}
-             */
-            state: "pending" | "approved" | "declined";
+            /** @description Application lifecycle state. */
+            state: components["schemas"]["CreatorApplicationState"];
             /** @description Applicant statement as stored. Empty string when none. Free text; never use it as a decision input. */
             statement: string;
         };
+        /** @enum {string} */
+        CreatorApplicationState: "pending" | "approved" | "declined";
         CreatorEligibility: {
             /** @description Whether the caller currently meets at least one creator-application threshold. */
             is_eligible: boolean;
@@ -6355,7 +6318,7 @@ export interface components {
             is_creator: boolean;
             /**
              * @description Type discriminant. Always creator_status.
-             * @enum {string}
+             * @constant
              */
             object: "creator_status";
         };
@@ -6366,7 +6329,7 @@ export interface components {
             credit_roles: components["schemas"]["CreditRole"][];
             /**
              * @description Type discriminant. Always credit.
-             * @enum {string}
+             * @constant
              */
             object: "credit";
             /** @description The credited work. */
@@ -6396,11 +6359,8 @@ export interface components {
             birth_year: number | null;
             /** @description The entity's own name. Never empty. Free text; never use it as a decision input. */
             display_name: string;
-            /**
-             * @description null when unrecorded.
-             * @enum {string|null}
-             */
-            gender: "male" | "female" | null;
+            /** @description null when unrecorded. */
+            gender: components["schemas"]["Gender"] | null;
             /** @description Credit name id: the catalog credit name id, which is also the id in the web's /galgame/staff/{id}. */
             id: string;
             /** @description Profiles in every language catalog has, unordered. Empty array, never null. */
@@ -6417,7 +6377,7 @@ export interface components {
             };
             /**
              * @description Type discriminant. Always credit_name.
-             * @enum {string}
+             * @constant
              */
             object: "credit_name";
             /** @description A photo of the person. null when catalog has none. */
@@ -6440,7 +6400,7 @@ export interface components {
             };
             /**
              * @description Type discriminant. Always credit_name.
-             * @enum {string}
+             * @constant
              */
             object: "credit_name";
         };
@@ -6474,7 +6434,7 @@ export interface components {
             id: string;
             /**
              * @description Type discriminant. Always direct_message.
-             * @enum {string}
+             * @constant
              */
             object: "direct_message";
             /**
@@ -6484,11 +6444,8 @@ export interface components {
             recalled_at: string | null;
             /** @description The user who sent the message. */
             sender: components["schemas"]["UserRef"];
-            /**
-             * @description Lifecycle state. recalled is irreversible.
-             * @enum {string}
-             */
-            state: "sent" | "recalled";
+            /** @description Lifecycle state. recalled is irreversible. */
+            state: components["schemas"]["DirectMessageState"];
             /** @description The caller's own state on this message. */
             viewer: components["schemas"]["DirectMessageViewer"];
         };
@@ -6499,7 +6456,7 @@ export interface components {
         DirectMessagePatch: {
             /**
              * @description Target state. The only legal value is recalled; recall is irreversible, so sent is not a target.
-             * @enum {string}
+             * @constant
              */
             state: "recalled";
         };
@@ -6511,7 +6468,7 @@ export interface components {
             marked_count: number;
             /**
              * @description Type discriminant. Always direct_message_read_marker.
-             * @enum {string}
+             * @constant
              */
             object: "direct_message_read_marker";
             /**
@@ -6524,6 +6481,8 @@ export interface components {
             /** @description Inclusive upper bound. Only the peer's messages with id at most this are marked. Need not name a row that exists. */
             up_to_id: string;
         };
+        /** @enum {string} */
+        DirectMessageState: "sent" | "recalled";
         DirectMessageViewer: {
             /** @description Whether the caller sent this message. */
             is_mine: boolean;
@@ -6551,11 +6510,8 @@ export interface components {
             content: components["schemas"]["ContentDocument"];
             /** @description Short summary shown on cards. Empty string if none. Free text; never use it as a decision input. */
             description: string;
-            /**
-             * @description Which shelf of the help center the doc sits on. Clients label the tokens themselves.
-             * @enum {string}
-             */
-            doc_category: "galgame" | "notice" | "kun" | "other";
+            /** @description Which shelf of the help center the doc sits on. Clients label the tokens themselves. */
+            doc_category: components["schemas"]["DocCategory"];
             /**
              * Format: date-time
              * @description When the doc's text or metadata last changed. Pinning does not count. null if never edited.
@@ -6567,7 +6523,7 @@ export interface components {
             is_pinned: boolean;
             /**
              * @description Type discriminant. Always doc.
-             * @enum {string}
+             * @constant
              */
             object: "doc";
             /**
@@ -6585,6 +6541,8 @@ export interface components {
              */
             view_count: number;
         };
+        /** @enum {string} */
+        DocCategory: "galgame" | "notice" | "kun" | "other";
         DocCreate: {
             /** @description Banner by image-service hash. Absent or an empty string means no banner. */
             banner_image_hash?: string;
@@ -6592,11 +6550,8 @@ export interface components {
             content_markdown: string;
             /** @description Short summary. Trimmed before it is stored. Absent means an empty summary. Free text; never use it as a decision input. */
             description?: string;
-            /**
-             * @description Shelf of the help center.
-             * @enum {string}
-             */
-            doc_category: "galgame" | "notice" | "kun" | "other";
+            /** @description Shelf of the help center. */
+            doc_category: components["schemas"]["DocCategory"];
             /** @description Pin the doc to the home carousel. Absent means false. */
             is_pinned?: boolean;
             /** @description URL segment: lowercase letters and digits in hyphen-separated runs. Must be unused; a taken slug is ALREADY_EXISTS. */
@@ -6615,11 +6570,8 @@ export interface components {
             content_markdown?: string;
             /** @description New summary. Trimmed before it is stored. Free text; never use it as a decision input. */
             description?: string;
-            /**
-             * @description New shelf.
-             * @enum {string}
-             */
-            doc_category?: "galgame" | "notice" | "kun" | "other";
+            /** @description New shelf. */
+            doc_category?: components["schemas"]["DocCategory"];
             /** @description New pin flag. Changing only this leaves edited_at alone. */
             is_pinned?: boolean;
             /** @description New URL segment. The old /doc/{slug} stops resolving. A taken slug is ALREADY_EXISTS. */
@@ -6627,16 +6579,15 @@ export interface components {
             /** @description New title. Trimmed and checked as in createDoc. Free text; never use it as a decision input. */
             title?: string;
         };
+        /** @enum {string} */
+        DocSort: "position_asc" | "published_desc" | "views_desc";
         DocSummary: {
             /** @description Banner image. null when the doc has none. */
             banner: components["schemas"]["Image"] | null;
             /** @description Short summary shown on cards. Empty string if none. Free text; never use it as a decision input. */
             description: string;
-            /**
-             * @description Which shelf of the help center the doc sits on. Clients label the tokens themselves.
-             * @enum {string}
-             */
-            doc_category: "galgame" | "notice" | "kun" | "other";
+            /** @description Which shelf of the help center the doc sits on. Clients label the tokens themselves. */
+            doc_category: components["schemas"]["DocCategory"];
             /**
              * Format: date-time
              * @description When the doc's text or metadata last changed. Pinning does not count. null if never edited.
@@ -6648,7 +6599,7 @@ export interface components {
             is_pinned: boolean;
             /**
              * @description Type discriminant. Always doc.
-             * @enum {string}
+             * @constant
              */
             object: "doc";
             /**
@@ -6680,7 +6631,7 @@ export interface components {
             note: string | null;
             /**
              * @description Type discriminant. Always edit_amendment.
-             * @enum {string}
+             * @constant
              */
             object: "edit_amendment";
             /**
@@ -6699,29 +6650,24 @@ export interface components {
             /** @description Keys to drop from the proposal. */
             unset?: string[];
         };
+        /** @enum {string} */
+        EditDiffHint: "inline" | "lines" | "items" | "image";
+        /** @enum {string} */
+        EditElementType: "object" | "text" | "ref";
         EditField: {
             /**
              * Format: int64
              * @description Wire code of the vocabulary's first token on an int-encoded field.
              */
             base: number;
-            /**
-             * @description How a diff of this field should be rendered.
-             * @enum {string}
-             */
-            diff_hint: "inline" | "lines" | "items" | "image";
+            /** @description How a diff of this field should be rendered. */
+            diff_hint: components["schemas"]["EditDiffHint"];
             /** @description Shape of one list element. null on scalar fields and on lists whose shape catalog does not declare. */
             element: components["schemas"]["EditFieldElement"] | null;
-            /**
-             * @description How a write carries the vocabulary value: token is the token itself, int is base plus the token's index in the vocabulary's order. null when vocabulary is empty.
-             * @enum {string|null}
-             */
-            encoding: "token" | "int" | null;
-            /**
-             * @description Control type. Not a domain vocabulary.
-             * @enum {string}
-             */
-            field_type: "text" | "i18nmap" | "enum" | "int" | "date" | "list" | "ref" | "imagehash";
+            /** @description How a write carries the vocabulary value: token is the token itself, int is base plus the token's index in the vocabulary's order. null when vocabulary is empty. */
+            encoding: components["schemas"]["EditFieldEncoding"] | null;
+            /** @description Control type. Not a domain vocabulary. */
+            field_type: components["schemas"]["EditFieldType"];
             /** @description Whether catalog rejects writes of this key. */
             is_deprecated: boolean;
             /** @description Whether null is accepted and clears the stored value. */
@@ -6750,11 +6696,8 @@ export interface components {
             to: unknown;
         };
         EditFieldElement: {
-            /**
-             * @description text elements are strings, ref elements are decimal ids of another entity, object elements have members.
-             * @enum {string}
-             */
-            element_type: "object" | "text" | "ref";
+            /** @description text elements are strings, ref elements are decimal ids of another entity, object elements have members. */
+            element_type: components["schemas"]["EditElementType"];
             /** @description Members of an object element, in validation order. Empty array for scalar elements, never null. */
             members: components["schemas"]["EditFieldElementMember"][];
         };
@@ -6768,14 +6711,15 @@ export interface components {
             is_nullable: boolean;
             /** @description Member key inside the element object. */
             key: string;
-            /**
-             * @description Member value type. ref is the decimal id of another entity.
-             * @enum {string}
-             */
-            member_type: "text" | "int" | "enum" | "bool" | "ref" | "imagehash";
+            /** @description Member value type. ref is the decimal id of another entity. */
+            member_type: components["schemas"]["EditMemberType"];
             /** @description Name of the vocabulary whose tokens this member accepts. Empty when it has none. */
             vocabulary: string;
         };
+        /** @enum {string} */
+        EditFieldEncoding: "token" | "int";
+        /** @enum {string} */
+        EditFieldType: "text" | "i18nmap" | "enum" | "int" | "date" | "list" | "ref" | "imagehash";
         EditForm: {
             /** @description Current value of every editable field, keyed by catalog.work.*. Empty object, never null. */
             field_values: {
@@ -6785,7 +6729,7 @@ export interface components {
             fields: components["schemas"]["EditField"][];
             /**
              * @description Type discriminant. Always edit_form.
-             * @enum {string}
+             * @constant
              */
             object: "edit_form";
             /** @description Closed vocabularies the fields name. Empty array when catalog could not be read; render those fields read-only. */
@@ -6793,6 +6737,8 @@ export interface components {
             /** @description Work id. */
             work_id: string;
         };
+        /** @enum {string} */
+        EditMemberType: "text" | "int" | "enum" | "bool" | "ref" | "imagehash";
         EditProposal: {
             /** @description Amendments in seq order. Empty array, never null. */
             amendments: components["schemas"]["EditAmendment"][];
@@ -6823,7 +6769,7 @@ export interface components {
             note: string | null;
             /**
              * @description Type discriminant. Always edit_proposal.
-             * @enum {string}
+             * @constant
              */
             object: "edit_proposal";
             /** @description Proposed values keyed by catalog.work.*. Empty object, never null. */
@@ -6832,11 +6778,8 @@ export interface components {
             };
             /** @description Who filed it. A deleted or banned account is a deleted user ref. */
             proposer: components["schemas"]["UserRef"];
-            /**
-             * @description Lifecycle state, read back from catalog.
-             * @enum {string}
-             */
-            state: "open" | "merged" | "declined" | "withdrawn";
+            /** @description Lifecycle state, read back from catalog. */
+            state: components["schemas"]["EditProposalState"];
             /**
              * Format: date-time
              * @description When it last changed.
@@ -6860,12 +6803,11 @@ export interface components {
         EditProposalPatch: {
             /** @description Decision note. Required and not blank when declining; the proposer is told it. Free text; never use it as a decision input. */
             note?: string | null;
-            /**
-             * @description Target state. merged and declined are reviewer decisions; withdrawn is the proposer's.
-             * @enum {string}
-             */
-            state: "merged" | "declined" | "withdrawn";
+            /** @description Target state. merged and declined are reviewer decisions; withdrawn is the proposer's. */
+            state: components["schemas"]["EditProposalTargetState"];
         };
+        /** @enum {string} */
+        EditProposalState: "open" | "merged" | "declined" | "withdrawn";
         EditProposalSummary: {
             /**
              * Format: int64
@@ -6890,16 +6832,13 @@ export interface components {
             note: string | null;
             /**
              * @description Type discriminant. Always edit_proposal.
-             * @enum {string}
+             * @constant
              */
             object: "edit_proposal";
             /** @description Who filed it. A deleted or banned account is a deleted user ref. */
             proposer: components["schemas"]["UserRef"];
-            /**
-             * @description Lifecycle state.
-             * @enum {string}
-             */
-            state: "open" | "merged" | "declined" | "withdrawn";
+            /** @description Lifecycle state. */
+            state: components["schemas"]["EditProposalState"];
             /**
              * Format: date-time
              * @description When it last changed.
@@ -6912,6 +6851,8 @@ export interface components {
             /** @description The work. display_name is empty when catalog did not render it. */
             work_summary: components["schemas"]["WorkSummary"];
         };
+        /** @enum {string} */
+        EditProposalTargetState: "merged" | "declined" | "withdrawn";
         EditProposalViewer: {
             /** @description Whether the caller may amend it: the proposer, or a reviewer, while open. */
             can_amend: boolean;
@@ -6925,7 +6866,7 @@ export interface components {
         EditRevert: {
             /**
              * @description Type discriminant. Always edit_revert.
-             * @enum {string}
+             * @constant
              */
             object: "edit_revert";
             /** @description The proposal the revert filed. */
@@ -6958,16 +6899,13 @@ export interface components {
             last_amender: components["schemas"]["UserRef"] | null;
             /**
              * @description Type discriminant. Always edit_revision.
-             * @enum {string}
+             * @constant
              */
             object: "edit_revision";
             /** @description The proposal it merged. null for direct edits and imports. */
             proposal_id: string | null;
-            /**
-             * @description How the revision came about.
-             * @enum {string}
-             */
-            revision_action: "created" | "merged" | "direct" | "reverted";
+            /** @description How the revision came about. */
+            revision_action: components["schemas"]["RevisionAction"];
             /**
              * Format: int64
              * @description Position in the work's revision chain, 1-based and contiguous.
@@ -6984,7 +6922,7 @@ export interface components {
             from_seq: number;
             /**
              * @description Type discriminant. Always edit_revision_diff.
-             * @enum {string}
+             * @constant
              */
             object: "edit_revision_diff";
             /**
@@ -6998,7 +6936,7 @@ export interface components {
             is_closed: boolean;
             /**
              * @description Type discriminant. Always vocabulary.
-             * @enum {string}
+             * @constant
              */
             object: "vocabulary";
             /** @description Tokens in the vocabulary's published order. Empty array, never null. */
@@ -7049,10 +6987,14 @@ export interface components {
             };
             /**
              * @description Type discriminant. Always engine.
-             * @enum {string}
+             * @constant
              */
             object: "engine";
         };
+        /** @enum {string} */
+        EnterBlockedReason: "not_open" | "past_closes_at" | "no_signup" | "own_lottery" | "reply_required" | "moemoepoint_below_minimum" | "account_too_new";
+        /** @enum {string} */
+        ExpiryVerdict: "alive" | "dead" | "unchecked";
         FieldError: {
             /** @description English diagnostic for this location. Free text; never use it as a decision input. */
             detail: string;
@@ -7101,19 +7043,18 @@ export interface components {
              */
             minimum?: number;
         };
+        /** @enum {string} */
+        FlagReason: "spam" | "abuse" | "off_topic" | "other" | "nsfw_mislabel";
         FollowedWall: {
             /**
              * @description Type discriminant. Always followed_wall.
-             * @enum {string}
+             * @constant
              */
             object: "followed_wall";
             /** @description Id of the page whose wall this is. */
             subject_id: string;
-            /**
-             * @description Kind of page whose comment wall this is.
-             * @enum {string}
-             */
-            subject_type: "galgame" | "galgame_rating" | "galgame_resource" | "galgame_quiz" | "toolset" | "website";
+            /** @description Kind of page whose comment wall this is. */
+            subject_type: components["schemas"]["WallSubjectType"];
             /** @description The site, for a website wall. null for every other kind of wall, and for a website that no longer exists. */
             website: components["schemas"]["WebsiteSummary"] | null;
             /** @description The work, for a galgame wall. null for every other kind of wall, and for a galgame wall whose work catalog no longer shows. */
@@ -7124,23 +7065,17 @@ export interface components {
             banner: components["schemas"]["Image"] | null;
             /** @description Short blurb. Empty string if none. Free text; never use it as a decision input. */
             description: string;
-            /**
-             * @description Shelf of the friend-link page, displayed in the order official, galgame, others. Clients label the tokens themselves.
-             * @enum {string}
-             */
-            friend_link_category: "official" | "galgame" | "others";
+            /** @description Shelf of the friend-link page, displayed in the order official, galgame, others. Clients label the tokens themselves. */
+            friend_link_category: components["schemas"]["FriendLinkCategory"];
             /** @description Friend link id. JSON string of a decimal integer. */
             id: string;
             /**
              * @description Type discriminant. Always friend_link.
-             * @enum {string}
+             * @constant
              */
             object: "friend_link";
-            /**
-             * @description normal, or down when the linked site is offline.
-             * @enum {string}
-             */
-            state: "normal" | "down";
+            /** @description normal, or down when the linked site is offline. */
+            state: components["schemas"]["FriendLinkState"];
             /** @description Site name. Free text; never use it as a decision input. */
             title: string;
             /**
@@ -7149,21 +7084,17 @@ export interface components {
              */
             url: string;
         };
+        /** @enum {string} */
+        FriendLinkCategory: "official" | "galgame" | "others";
         FriendLinkCreate: {
             /** @description Banner by image-service hash. Absent or an empty string means no banner. */
             banner_image_hash?: string;
             /** @description Short blurb. Trimmed. Absent means empty. Free text; never use it as a decision input. */
             description?: string;
-            /**
-             * @description Shelf. The new link goes last on it.
-             * @enum {string}
-             */
-            friend_link_category: "official" | "galgame" | "others";
-            /**
-             * @description Absent means normal.
-             * @enum {string}
-             */
-            state?: "normal" | "down";
+            /** @description Shelf. The new link goes last on it. */
+            friend_link_category: components["schemas"]["FriendLinkCategory"];
+            /** @description Absent means normal. */
+            state?: components["schemas"]["FriendLinkState"];
             /** @description Site name. Trimmed; only whitespace is refused as TOO_SHORT. Free text; never use it as a decision input. */
             title: string;
             /**
@@ -7173,11 +7104,8 @@ export interface components {
             url: string;
         };
         FriendLinkOrder: {
-            /**
-             * @description The shelf being reordered.
-             * @enum {string}
-             */
-            friend_link_category: "official" | "galgame" | "others";
+            /** @description The shelf being reordered. */
+            friend_link_category: components["schemas"]["FriendLinkCategory"];
             /** @description Every link on the shelf, once each, in the new order. An id that is not on this shelf is UNKNOWN_REFERENCE; leaving one out is TOO_FEW_ITEMS with min_items set to the shelf's size. */
             friend_link_ids: string[];
         };
@@ -7186,16 +7114,10 @@ export interface components {
             banner_image_hash?: string;
             /** @description New blurb. Trimmed. Free text; never use it as a decision input. */
             description?: string;
-            /**
-             * @description New shelf. The link moves to the end of it.
-             * @enum {string}
-             */
-            friend_link_category?: "official" | "galgame" | "others";
-            /**
-             * @description New state.
-             * @enum {string}
-             */
-            state?: "normal" | "down";
+            /** @description New shelf. The link moves to the end of it. */
+            friend_link_category?: components["schemas"]["FriendLinkCategory"];
+            /** @description New state. */
+            state?: components["schemas"]["FriendLinkState"];
             /** @description New site name, checked as in createFriendLink. Free text; never use it as a decision input. */
             title?: string;
             /**
@@ -7204,6 +7126,8 @@ export interface components {
              */
             url?: string;
         };
+        /** @enum {string} */
+        FriendLinkState: "normal" | "down";
         GalgameResource: {
             /** @description Uploader of the resource. */
             author: components["schemas"]["UserRef"];
@@ -7240,29 +7164,23 @@ export interface components {
             like_count: number;
             /**
              * @description Type discriminant. Always galgame_resource.
-             * @enum {string}
+             * @constant
              */
             object: "galgame_resource";
             /** @description Host names derived from the download URLs. Empty array, never null. */
             provider_names: string[];
             /** @description Languages of the resource. Never empty, never null. */
-            resource_languages: ("zh-cn" | "zh-tw" | "ja-jp" | "en-us" | "other")[];
+            resource_languages: components["schemas"]["ResourceLanguage"][];
             /** @description Platforms of the resource. Empty array when only runtimes apply. Never null. */
-            resource_platforms: ("win" | "and" | "ios" | "mac" | "lin" | "web" | "mob" | "swi" | "sw2" | "n3d" | "nds" | "wii" | "wiu" | "gba" | "gbc" | "nes" | "sfc" | "ps1" | "ps2" | "ps3" | "ps4" | "ps5" | "psp" | "psv" | "xb1" | "xb3" | "xbo" | "xxs" | "sat" | "smd" | "scd" | "drc" | "pce" | "pcf" | "tdo" | "p88" | "p98" | "x1s" | "x68" | "fm7" | "fm8" | "fmt" | "msx" | "dos" | "dvd" | "bdp" | "vnd" | "oth")[];
+            resource_platforms: components["schemas"]["ResourcePlatform"][];
             /** @description Runtimes of the resource. Empty array when none. Never null. */
-            resource_runtimes: ("native-win" | "native-and" | "native-ios" | "winlator" | "gamehub" | "kirikiroid2" | "krkrsdl2" | "onscripter" | "joiplay" | "easyrpg" | "renpy-android" | "tyranor" | "tyranor-next" | "other")[];
-            /**
-             * @description Kind of download.
-             * @enum {string}
-             */
-            resource_type: "game" | "patch" | "collection" | "crack_fix" | "mod" | "tool" | "walkthrough" | "ost" | "voice" | "cg" | "wallpaper" | "artbook" | "video" | "other";
+            resource_runtimes: components["schemas"]["ResourceRuntime"][];
+            /** @description Kind of download. */
+            resource_type: components["schemas"]["ResourceType"];
             /** @description Size as the uploader wrote it, such as 1.5 GB. Free text; never use it as a decision input. */
             size: string;
-            /**
-             * @description Whether the links are currently treated as working.
-             * @enum {string}
-             */
-            state: "valid" | "expired";
+            /** @description Whether the links are currently treated as working. */
+            state: components["schemas"]["GalgameResourceState"];
             /** @description Optional title. Empty string when none. Free text; never use it as a decision input. */
             title: string;
             /**
@@ -7270,11 +7188,8 @@ export interface components {
              * @description Time of the latest write to the row.
              */
             updated_at: string;
-            /**
-             * @description Version token. null when none.
-             * @enum {string|null}
-             */
-            version_label: "official_latest" | "stable" | "mirror" | "localized" | "unknown" | null;
+            /** @description Version token. null when none. */
+            version_label: components["schemas"]["VersionLabel"] | null;
             /**
              * Format: int64
              * @description Lifetime view count.
@@ -7295,25 +7210,19 @@ export interface components {
             /** @description Extraction code. Empty string when none. Free text; never use it as a decision input. */
             extraction_code?: string;
             /** @description Languages, at least one, unique in the request. */
-            resource_languages: ("zh-cn" | "zh-tw" | "ja-jp" | "en-us" | "other")[];
+            resource_languages: components["schemas"]["ResourceLanguage"][];
             /** @description Platforms, unique in the request. Must not be empty together with resource_runtimes. */
-            resource_platforms?: ("win" | "and" | "ios" | "mac" | "lin" | "web" | "mob" | "swi" | "sw2" | "n3d" | "nds" | "wii" | "wiu" | "gba" | "gbc" | "nes" | "sfc" | "ps1" | "ps2" | "ps3" | "ps4" | "ps5" | "psp" | "psv" | "xb1" | "xb3" | "xbo" | "xxs" | "sat" | "smd" | "scd" | "drc" | "pce" | "pcf" | "tdo" | "p88" | "p98" | "x1s" | "x68" | "fm7" | "fm8" | "fmt" | "msx" | "dos" | "dvd" | "bdp" | "vnd" | "oth")[];
+            resource_platforms?: components["schemas"]["ResourcePlatform"][];
             /** @description Runtimes, unique in the request. Required when resource_type has a runtime axis. */
-            resource_runtimes?: ("native-win" | "native-and" | "native-ios" | "winlator" | "gamehub" | "kirikiroid2" | "krkrsdl2" | "onscripter" | "joiplay" | "easyrpg" | "renpy-android" | "tyranor" | "tyranor-next" | "other")[];
-            /**
-             * @description Kind of download.
-             * @enum {string}
-             */
-            resource_type: "game" | "patch" | "collection" | "crack_fix" | "mod" | "tool" | "walkthrough" | "ost" | "voice" | "cg" | "wallpaper" | "artbook" | "video" | "other";
+            resource_runtimes?: components["schemas"]["ResourceRuntime"][];
+            /** @description Kind of download. */
+            resource_type: components["schemas"]["ResourceType"];
             /** @description Size as N[.NN] MB or GB. Free text; never use it as a decision input. */
             size: string;
             /** @description Optional title, a single line. Empty string when none. Free text; never use it as a decision input. */
             title?: string;
-            /**
-             * @description Version token. Absent or null means none.
-             * @enum {string|null}
-             */
-            version_label?: "official_latest" | "stable" | "mirror" | "localized" | "unknown" | null;
+            /** @description Version token. Absent or null means none. */
+            version_label?: components["schemas"]["VersionLabel"] | null;
         };
         GalgameResourceDownload: {
             /** @description Archive password. Empty string when none. Free text; never use it as a decision input. */
@@ -7324,7 +7233,7 @@ export interface components {
             extraction_code: string;
             /**
              * @description Type discriminant. Always galgame_resource_download.
-             * @enum {string}
+             * @constant
              */
             object: "galgame_resource_download";
         };
@@ -7336,7 +7245,7 @@ export interface components {
             like_count: number;
             /**
              * @description Type discriminant. Always galgame_resource_engagement.
-             * @enum {string}
+             * @constant
              */
             object: "galgame_resource_engagement";
             /** @description Id of the resource. */
@@ -7351,21 +7260,15 @@ export interface components {
         GalgameResourceExpiryReport: {
             /**
              * @description Type discriminant. Always galgame_resource_expiry_report.
-             * @enum {string}
+             * @constant
              */
             object: "galgame_resource_expiry_report";
             /** @description Id of the resource. */
             resource_id: string;
-            /**
-             * @description The resource's state after this request.
-             * @enum {string}
-             */
-            state: "valid" | "expired";
-            /**
-             * @description Link-check outcome.
-             * @enum {string}
-             */
-            verdict: "alive" | "dead" | "unchecked";
+            /** @description The resource's state after this request. */
+            state: components["schemas"]["GalgameResourceState"];
+            /** @description Link-check outcome. */
+            verdict: components["schemas"]["ExpiryVerdict"];
         };
         GalgameResourcePatch: {
             /** @description New archive password. Free text; never use it as a decision input. */
@@ -7377,31 +7280,24 @@ export interface components {
             /** @description New extraction code. Free text; never use it as a decision input. */
             extraction_code?: string;
             /** @description When present, replaces every language. */
-            resource_languages?: ("zh-cn" | "zh-tw" | "ja-jp" | "en-us" | "other")[];
+            resource_languages?: components["schemas"]["ResourceLanguage"][];
             /** @description When present, replaces every platform. */
-            resource_platforms?: ("win" | "and" | "ios" | "mac" | "lin" | "web" | "mob" | "swi" | "sw2" | "n3d" | "nds" | "wii" | "wiu" | "gba" | "gbc" | "nes" | "sfc" | "ps1" | "ps2" | "ps3" | "ps4" | "ps5" | "psp" | "psv" | "xb1" | "xb3" | "xbo" | "xxs" | "sat" | "smd" | "scd" | "drc" | "pce" | "pcf" | "tdo" | "p88" | "p98" | "x1s" | "x68" | "fm7" | "fm8" | "fmt" | "msx" | "dos" | "dvd" | "bdp" | "vnd" | "oth")[];
+            resource_platforms?: components["schemas"]["ResourcePlatform"][];
             /** @description When present, replaces every runtime. */
-            resource_runtimes?: ("native-win" | "native-and" | "native-ios" | "winlator" | "gamehub" | "kirikiroid2" | "krkrsdl2" | "onscripter" | "joiplay" | "easyrpg" | "renpy-android" | "tyranor" | "tyranor-next" | "other")[];
-            /**
-             * @description New kind of download.
-             * @enum {string}
-             */
-            resource_type?: "game" | "patch" | "collection" | "crack_fix" | "mod" | "tool" | "walkthrough" | "ost" | "voice" | "cg" | "wallpaper" | "artbook" | "video" | "other";
+            resource_runtimes?: components["schemas"]["ResourceRuntime"][];
+            /** @description New kind of download. */
+            resource_type?: components["schemas"]["ResourceType"];
             /** @description New size as N[.NN] MB or GB. Free text; never use it as a decision input. */
             size?: string;
-            /**
-             * @description Only valid is accepted. expired is NOT_ALLOWED_VALUE.
-             * @enum {string}
-             */
-            state?: "valid" | "expired";
+            /** @description Only valid is accepted. expired is NOT_ALLOWED_VALUE. */
+            state?: components["schemas"]["GalgameResourceState"];
             /** @description New title, a single line. Free text; never use it as a decision input. */
             title?: string;
-            /**
-             * @description New version token. null clears it.
-             * @enum {string|null}
-             */
-            version_label?: "official_latest" | "stable" | "mirror" | "localized" | "unknown" | null;
+            /** @description New version token. null clears it. */
+            version_label?: components["schemas"]["VersionLabel"] | null;
         };
+        /** @enum {string} */
+        GalgameResourceSort: "created_desc" | "created_asc";
         GalgameResourceSource: {
             /** @description Archive password. Empty string when none. Free text; never use it as a decision input. */
             archive_password: string;
@@ -7413,32 +7309,28 @@ export interface components {
             extraction_code: string;
             /**
              * @description Type discriminant. Always galgame_resource_source.
-             * @enum {string}
+             * @constant
              */
             object: "galgame_resource_source";
             /** @description Id of the resource. */
             resource_id: string;
             /** @description Languages of the resource. Never empty, never null. */
-            resource_languages: ("zh-cn" | "zh-tw" | "ja-jp" | "en-us" | "other")[];
+            resource_languages: components["schemas"]["ResourceLanguage"][];
             /** @description Platforms of the resource. Empty array when only runtimes apply. Never null. */
-            resource_platforms: ("win" | "and" | "ios" | "mac" | "lin" | "web" | "mob" | "swi" | "sw2" | "n3d" | "nds" | "wii" | "wiu" | "gba" | "gbc" | "nes" | "sfc" | "ps1" | "ps2" | "ps3" | "ps4" | "ps5" | "psp" | "psv" | "xb1" | "xb3" | "xbo" | "xxs" | "sat" | "smd" | "scd" | "drc" | "pce" | "pcf" | "tdo" | "p88" | "p98" | "x1s" | "x68" | "fm7" | "fm8" | "fmt" | "msx" | "dos" | "dvd" | "bdp" | "vnd" | "oth")[];
+            resource_platforms: components["schemas"]["ResourcePlatform"][];
             /** @description Runtimes of the resource. Empty array when none. Never null. */
-            resource_runtimes: ("native-win" | "native-and" | "native-ios" | "winlator" | "gamehub" | "kirikiroid2" | "krkrsdl2" | "onscripter" | "joiplay" | "easyrpg" | "renpy-android" | "tyranor" | "tyranor-next" | "other")[];
-            /**
-             * @description Kind of download.
-             * @enum {string}
-             */
-            resource_type: "game" | "patch" | "collection" | "crack_fix" | "mod" | "tool" | "walkthrough" | "ost" | "voice" | "cg" | "wallpaper" | "artbook" | "video" | "other";
+            resource_runtimes: components["schemas"]["ResourceRuntime"][];
+            /** @description Kind of download. */
+            resource_type: components["schemas"]["ResourceType"];
             /** @description Size as the uploader wrote it. Free text; never use it as a decision input. */
             size: string;
             /** @description Stored title. Empty string when none. Free text; never use it as a decision input. */
             title: string;
-            /**
-             * @description Version token. null when none.
-             * @enum {string|null}
-             */
-            version_label: "official_latest" | "stable" | "mirror" | "localized" | "unknown" | null;
+            /** @description Version token. null when none. */
+            version_label: components["schemas"]["VersionLabel"] | null;
         };
+        /** @enum {string} */
+        GalgameResourceState: "valid" | "expired";
         GalgameResourceViewer: {
             /** @description Whether the caller may delete this resource. Requests authenticated with a Bearer token never carry staff powers. */
             can_delete: boolean;
@@ -7447,6 +7339,12 @@ export interface components {
             /** @description Whether the caller liked this resource. */
             has_liked: boolean;
         };
+        /** @enum {string} */
+        GameType: "ba_saku" | "plot" | "moe" | "daily";
+        /** @enum {string} */
+        GameTypeFilter: "ba_saku" | "plot" | "moe" | "daily" | "uncategorized";
+        /** @enum {string} */
+        Gender: "male" | "female";
         HeadingNode: {
             /** @description Fragment identifier of this heading, unique within the document. Links in the same body point at it as #anchor. */
             anchor: string;
@@ -7463,6 +7361,8 @@ export interface components {
              */
             object: "heading";
         };
+        /** @enum {string} */
+        HiddenBy: "author" | "moderator" | "trust";
         HiddenTopicSummary: {
             /** @description The topic's author. Banned authors are listed too: this is a staff table. */
             author: components["schemas"]["UserRef"];
@@ -7476,16 +7376,13 @@ export interface components {
              * @description Creation time.
              */
             created_at: string;
-            /**
-             * @description Who hid the topic: its author, a moderator, or the trust-and-safety service.
-             * @enum {string|null}
-             */
-            hidden_by: "author" | "moderator" | "trust" | null;
+            /** @description Who hid the topic: its author, a moderator, or the trust-and-safety service. */
+            hidden_by: components["schemas"]["HiddenBy"] | null;
             /** @description Topic id. JSON string of a decimal integer. */
             id: string;
             /**
              * @description Type discriminant. Always topic.
-             * @enum {string}
+             * @constant
              */
             object: "topic";
             /**
@@ -7493,11 +7390,8 @@ export interface components {
              * @description Number of replies.
              */
             reply_count: number;
-            /**
-             * @description Lifecycle state. Always hidden in this collection.
-             * @enum {string}
-             */
-            state: "published" | "hidden";
+            /** @description Lifecycle state. Always hidden in this collection. */
+            state: components["schemas"]["TopicPublishState"];
             /** @description Topic title as stored. Free text; never use it as a decision input. */
             title: string;
         };
@@ -7509,11 +7403,8 @@ export interface components {
              * @description Pixel height. null if unknown.
              */
             height: number | null;
-            /**
-             * @description Sexual depiction: safe, suggestive, or explicit. null means not assessed.
-             * @enum {string|null}
-             */
-            sexual: "safe" | "suggestive" | "explicit" | null;
+            /** @description Sexual depiction: safe, suggestive, or explicit. null means not assessed. */
+            sexual: components["schemas"]["SexualGrade"] | null;
             /** @description Thumbhash. null if unknown. */
             thumbhash: string | null;
             /**
@@ -7572,6 +7463,8 @@ export interface components {
              */
             object: "inline_spoiler";
         };
+        /** @enum {string} */
+        LibraryWorkSort: "popularity_desc" | "released_desc" | "released_asc" | "updated_desc" | "relevance_desc";
         LinkNode: {
             /** @description Inline nodes of the link text. */
             children: components["schemas"]["InlineNode"][];
@@ -7593,7 +7486,7 @@ export interface components {
             next_cursor?: string;
             /**
              * @description Type discriminant. Always list.
-             * @enum {string}
+             * @constant
              */
             object: "list";
         };
@@ -7604,7 +7497,7 @@ export interface components {
             next_cursor?: string;
             /**
              * @description Type discriminant. Always list.
-             * @enum {string}
+             * @constant
              */
             object: "list";
         };
@@ -7615,7 +7508,7 @@ export interface components {
             next_cursor?: string;
             /**
              * @description Type discriminant. Always list.
-             * @enum {string}
+             * @constant
              */
             object: "list";
         };
@@ -7626,7 +7519,7 @@ export interface components {
             next_cursor?: string;
             /**
              * @description Type discriminant. Always list.
-             * @enum {string}
+             * @constant
              */
             object: "list";
         };
@@ -7637,7 +7530,7 @@ export interface components {
             next_cursor?: string;
             /**
              * @description Type discriminant. Always list.
-             * @enum {string}
+             * @constant
              */
             object: "list";
         };
@@ -7648,7 +7541,7 @@ export interface components {
             next_cursor?: string;
             /**
              * @description Type discriminant. Always list.
-             * @enum {string}
+             * @constant
              */
             object: "list";
         };
@@ -7659,7 +7552,7 @@ export interface components {
             next_cursor?: string;
             /**
              * @description Type discriminant. Always list.
-             * @enum {string}
+             * @constant
              */
             object: "list";
         };
@@ -7670,7 +7563,7 @@ export interface components {
             next_cursor?: string;
             /**
              * @description Type discriminant. Always list.
-             * @enum {string}
+             * @constant
              */
             object: "list";
         };
@@ -7681,7 +7574,7 @@ export interface components {
             next_cursor?: string;
             /**
              * @description Type discriminant. Always list.
-             * @enum {string}
+             * @constant
              */
             object: "list";
         };
@@ -7692,7 +7585,7 @@ export interface components {
             is_checked: boolean | null;
             /**
              * @description Type discriminant. Always list_item.
-             * @enum {string}
+             * @constant
              */
             object: "list_item";
         };
@@ -7703,7 +7596,7 @@ export interface components {
             next_cursor?: string;
             /**
              * @description Type discriminant. Always list.
-             * @enum {string}
+             * @constant
              */
             object: "list";
         };
@@ -7714,7 +7607,7 @@ export interface components {
             next_cursor?: string;
             /**
              * @description Type discriminant. Always list.
-             * @enum {string}
+             * @constant
              */
             object: "list";
         };
@@ -7725,7 +7618,7 @@ export interface components {
             next_cursor?: string;
             /**
              * @description Type discriminant. Always list.
-             * @enum {string}
+             * @constant
              */
             object: "list";
         };
@@ -7736,7 +7629,7 @@ export interface components {
             next_cursor?: string;
             /**
              * @description Type discriminant. Always list.
-             * @enum {string}
+             * @constant
              */
             object: "list";
         };
@@ -7747,7 +7640,7 @@ export interface components {
             next_cursor?: string;
             /**
              * @description Type discriminant. Always list.
-             * @enum {string}
+             * @constant
              */
             object: "list";
         };
@@ -7776,7 +7669,7 @@ export interface components {
             next_cursor?: string;
             /**
              * @description Type discriminant. Always list.
-             * @enum {string}
+             * @constant
              */
             object: "list";
         };
@@ -7787,7 +7680,7 @@ export interface components {
             next_cursor?: string;
             /**
              * @description Type discriminant. Always list.
-             * @enum {string}
+             * @constant
              */
             object: "list";
         };
@@ -7798,7 +7691,7 @@ export interface components {
             next_cursor?: string;
             /**
              * @description Type discriminant. Always list.
-             * @enum {string}
+             * @constant
              */
             object: "list";
         };
@@ -7809,7 +7702,7 @@ export interface components {
             next_cursor?: string;
             /**
              * @description Type discriminant. Always list.
-             * @enum {string}
+             * @constant
              */
             object: "list";
         };
@@ -7820,7 +7713,7 @@ export interface components {
             next_cursor?: string;
             /**
              * @description Type discriminant. Always list.
-             * @enum {string}
+             * @constant
              */
             object: "list";
         };
@@ -7831,7 +7724,7 @@ export interface components {
             next_cursor?: string;
             /**
              * @description Type discriminant. Always list.
-             * @enum {string}
+             * @constant
              */
             object: "list";
         };
@@ -7842,7 +7735,7 @@ export interface components {
             next_cursor?: string;
             /**
              * @description Type discriminant. Always list.
-             * @enum {string}
+             * @constant
              */
             object: "list";
         };
@@ -7853,7 +7746,7 @@ export interface components {
             next_cursor?: string;
             /**
              * @description Type discriminant. Always list.
-             * @enum {string}
+             * @constant
              */
             object: "list";
         };
@@ -7864,7 +7757,7 @@ export interface components {
             next_cursor?: string;
             /**
              * @description Type discriminant. Always list.
-             * @enum {string}
+             * @constant
              */
             object: "list";
         };
@@ -7875,7 +7768,7 @@ export interface components {
             next_cursor?: string;
             /**
              * @description Type discriminant. Always list.
-             * @enum {string}
+             * @constant
              */
             object: "list";
         };
@@ -7886,7 +7779,7 @@ export interface components {
             next_cursor?: string;
             /**
              * @description Type discriminant. Always list.
-             * @enum {string}
+             * @constant
              */
             object: "list";
         };
@@ -7897,7 +7790,7 @@ export interface components {
             next_cursor?: string;
             /**
              * @description Type discriminant. Always list.
-             * @enum {string}
+             * @constant
              */
             object: "list";
         };
@@ -7908,7 +7801,7 @@ export interface components {
             next_cursor?: string;
             /**
              * @description Type discriminant. Always list.
-             * @enum {string}
+             * @constant
              */
             object: "list";
         };
@@ -7919,7 +7812,7 @@ export interface components {
             next_cursor?: string;
             /**
              * @description Type discriminant. Always list.
-             * @enum {string}
+             * @constant
              */
             object: "list";
         };
@@ -7930,7 +7823,7 @@ export interface components {
             next_cursor?: string;
             /**
              * @description Type discriminant. Always list.
-             * @enum {string}
+             * @constant
              */
             object: "list";
         };
@@ -7941,7 +7834,7 @@ export interface components {
             next_cursor?: string;
             /**
              * @description Type discriminant. Always list.
-             * @enum {string}
+             * @constant
              */
             object: "list";
         };
@@ -7952,7 +7845,7 @@ export interface components {
             next_cursor?: string;
             /**
              * @description Type discriminant. Always list.
-             * @enum {string}
+             * @constant
              */
             object: "list";
         };
@@ -7963,7 +7856,7 @@ export interface components {
             next_cursor?: string;
             /**
              * @description Type discriminant. Always list.
-             * @enum {string}
+             * @constant
              */
             object: "list";
         };
@@ -7974,7 +7867,7 @@ export interface components {
             next_cursor?: string;
             /**
              * @description Type discriminant. Always list.
-             * @enum {string}
+             * @constant
              */
             object: "list";
         };
@@ -7985,7 +7878,7 @@ export interface components {
             next_cursor?: string;
             /**
              * @description Type discriminant. Always list.
-             * @enum {string}
+             * @constant
              */
             object: "list";
         };
@@ -7996,7 +7889,7 @@ export interface components {
             next_cursor?: string;
             /**
              * @description Type discriminant. Always list.
-             * @enum {string}
+             * @constant
              */
             object: "list";
         };
@@ -8007,7 +7900,7 @@ export interface components {
             next_cursor?: string;
             /**
              * @description Type discriminant. Always list.
-             * @enum {string}
+             * @constant
              */
             object: "list";
         };
@@ -8018,7 +7911,7 @@ export interface components {
             next_cursor?: string;
             /**
              * @description Type discriminant. Always list.
-             * @enum {string}
+             * @constant
              */
             object: "list";
         };
@@ -8029,7 +7922,7 @@ export interface components {
             next_cursor?: string;
             /**
              * @description Type discriminant. Always list.
-             * @enum {string}
+             * @constant
              */
             object: "list";
         };
@@ -8054,11 +7947,8 @@ export interface components {
             created_at: string;
             /** @description Lottery description as stored. Empty string when there is none. Free text; never use it as a decision input. */
             description: string;
-            /**
-             * @description deadline draws at closes_at, manual when the author draws it, threshold when entry_count reaches draw_threshold.
-             * @enum {string}
-             */
-            draw_mode: "deadline" | "manual" | "threshold";
+            /** @description deadline draws at closes_at, manual when the author draws it, threshold when entry_count reaches draw_threshold. */
+            draw_mode: components["schemas"]["LotteryDrawMode"];
             /**
              * Format: int64
              * @description For a threshold draw: the entry count that triggers it. null otherwise.
@@ -8074,11 +7964,8 @@ export interface components {
              * @description Number of entries.
              */
             entry_count: number;
-            /**
-             * @description signup takes anyone who enters, reply takes only those who have replied to the topic, floor takes no entries and awards the replies on the floors named by floor_rule.
-             * @enum {string}
-             */
-            entry_mode: "signup" | "reply" | "floor";
+            /** @description signup takes anyone who enters, reply takes only those who have replied to the topic, floor takes no entries and awards the replies on the floors named by floor_rule. */
+            entry_mode: components["schemas"]["LotteryEntryMode"];
             /** @description For a floor lottery: the winning floors, either comma-separated (8,18,28) or every:N. null otherwise. Free text; never use it as a decision input. */
             floor_rule: string | null;
             /** @description Lottery id. JSON string of a decimal integer. */
@@ -8097,7 +7984,7 @@ export interface components {
             min_moemoepoint: number;
             /**
              * @description Type discriminant. Always lottery.
-             * @enum {string}
+             * @constant
              */
             object: "lottery";
             /** @description The prizes, in the author's order. */
@@ -8107,11 +7994,8 @@ export interface components {
                  * @description For a code prize: how many codes the site holds for it. The codes themselves are never in any read. null for other prizes.
                  */
                 code_count: number | null;
-                /**
-                 * @description How the prize reaches a winner: a redemption code held by the site, handed over by the author off the site, or moemoepoint paid at the draw.
-                 * @enum {string}
-                 */
-                delivery: "code" | "offline" | "point";
+                /** @description How the prize reaches a winner: a redemption code held by the site, handed over by the author off the site, or moemoepoint paid at the draw. */
+                delivery: components["schemas"]["LotteryDelivery"];
                 /** @description Prize description as stored. Empty string when there is none. Free text; never use it as a decision input. */
                 description: string;
                 /** @description Prize id. JSON string of a decimal integer. */
@@ -8120,7 +8004,7 @@ export interface components {
                 images: components["schemas"]["LotteryPrizeImage"][];
                 /**
                  * @description Type discriminant. Always lottery_prize.
-                 * @enum {string}
+                 * @constant
                  */
                 object: "lottery_prize";
                 /**
@@ -8133,11 +8017,8 @@ export interface components {
                  * @description For a point prize: what it pays out when every slot is filled, which the lottery's author paid for it. null for other prizes.
                  */
                 point_budget: number | null;
-                /**
-                 * @description For a point prize: fixed pays point_amount to every winner, split shares point_amount evenly, random shares it by the revealed seed. null for other prizes.
-                 * @enum {string|null}
-                 */
-                point_mode: "fixed" | "split" | "random" | null;
+                /** @description For a point prize: fixed pays point_amount to every winner, split shares point_amount evenly, random shares it by the revealed seed. null for other prizes. */
+                point_mode: components["schemas"]["LotteryPointMode"] | null;
                 /**
                  * Format: int64
                  * @description How many winners this prize has.
@@ -8155,11 +8036,8 @@ export interface components {
              * @description Number of winners across every prize.
              */
             slot_count: number;
-            /**
-             * @description Lifecycle state. drawing lasts while the winners are being fixed.
-             * @enum {string}
-             */
-            state: "open" | "drawing" | "drawn" | "cancelled";
+            /** @description Lifecycle state. drawing lasts while the winners are being fixed. */
+            state: components["schemas"]["LotteryState"];
             /** @description Lottery title as stored. Free text; never use it as a decision input. */
             title: string;
             /** @description Id of the topic the lottery belongs to. */
@@ -8179,7 +8057,7 @@ export interface components {
             lottery_id: string;
             /**
              * @description Type discriminant. Always lottery_code_reveal.
-             * @enum {string}
+             * @constant
              */
             object: "lottery_code_reveal";
             /** @description The redemption code in plain text. Never keep it anywhere a page load could read it back. Free text; never use it as a decision input. */
@@ -8193,21 +8071,15 @@ export interface components {
             closes_at?: string | null;
             /** @description Lottery description. Absent means none. Free text; never use it as a decision input. */
             description?: string;
-            /**
-             * @description When the draw happens. A floor lottery cannot use threshold.
-             * @enum {string}
-             */
-            draw_mode: "deadline" | "manual" | "threshold";
+            /** @description When the draw happens. A floor lottery cannot use threshold. */
+            draw_mode: components["schemas"]["LotteryDrawMode"];
             /**
              * Format: int64
              * @description Required for a threshold draw, ignored otherwise. It must be at least the total number of slots.
              */
             draw_threshold?: number | null;
-            /**
-             * @description Who is in the draw.
-             * @enum {string}
-             */
-            entry_mode: "signup" | "reply" | "floor";
+            /** @description Who is in the draw. */
+            entry_mode: components["schemas"]["LotteryEntryMode"];
             /** @description Required for a floor lottery, ignored otherwise: 8,18,28 or every:N, naming exactly as many floors as there are slots. Free text; never use it as a decision input. */
             floor_rule?: string | null;
             /** @description Whether everyone may list the entries. Absent means true. */
@@ -8228,11 +8100,8 @@ export interface components {
                 adult_image_hashes?: string[];
                 /** @description For a code prize: exactly slot_count redemption codes, each 1 to 200 characters after trimming. Refused for other prizes. They are sealed at rest and never returned by any read. */
                 codes?: string[];
-                /**
-                 * @description How the prize reaches a winner.
-                 * @enum {string}
-                 */
-                delivery: "code" | "offline" | "point";
+                /** @description How the prize reaches a winner. */
+                delivery: components["schemas"]["LotteryDelivery"];
                 /** @description Prize description. Absent means none. Free text; never use it as a decision input. */
                 description?: string;
                 /** @description Prize images by image-service hash, in display order. */
@@ -8242,11 +8111,8 @@ export interface components {
                  * @description Required for a point prize, refused for others. A pool (split or random) needs at least one point per slot.
                  */
                 point_amount?: number | null;
-                /**
-                 * @description Required for a point prize, refused for others. A floor lottery cannot use random: it has no seed, so anyone could compute the shares in advance.
-                 * @enum {string|null}
-                 */
-                point_mode?: "fixed" | "split" | "random" | null;
+                /** @description Required for a point prize, refused for others. A floor lottery cannot use random: it has no seed, so anyone could compute the shares in advance. */
+                point_mode?: components["schemas"]["LotteryPointMode"] | null;
                 /**
                  * Format: int64
                  * @description How many winners this prize has, 1 to 500. 0 is refused as OUT_OF_RANGE.
@@ -8258,6 +8124,10 @@ export interface components {
             /** @description Lottery title. Only whitespace is refused as TOO_SHORT. Free text; never use it as a decision input. */
             title: string;
         };
+        /** @enum {string} */
+        LotteryDelivery: "code" | "offline" | "point";
+        /** @enum {string} */
+        LotteryDrawMode: "deadline" | "manual" | "threshold";
         LotteryEntry: {
             /**
              * Format: date-time
@@ -8270,10 +8140,14 @@ export interface components {
             id: string;
             /**
              * @description Type discriminant. Always lottery_entry.
-             * @enum {string}
+             * @constant
              */
             object: "lottery_entry";
         };
+        /** @enum {string} */
+        LotteryEntryMode: "signup" | "reply" | "floor";
+        /** @enum {string} */
+        LotteryFulfillment: "pending" | "shipped" | "received" | "forfeited";
         LotteryPatch: {
             /**
              * Format: date-time
@@ -8282,21 +8156,15 @@ export interface components {
             closes_at?: string | null;
             /** @description New description. An empty string removes it. Free text; never use it as a decision input. */
             description?: string;
-            /**
-             * @description New draw mode.
-             * @enum {string}
-             */
-            draw_mode?: "deadline" | "manual" | "threshold";
+            /** @description New draw mode. */
+            draw_mode?: components["schemas"]["LotteryDrawMode"];
             /**
              * Format: int64
              * @description New threshold. null or absent keeps the stored one.
              */
             draw_threshold?: number | null;
-            /**
-             * @description New entry mode. Refused as IMMUTABLE once anyone has entered.
-             * @enum {string}
-             */
-            entry_mode?: "signup" | "reply" | "floor";
+            /** @description New entry mode. Refused as IMMUTABLE once anyone has entered. */
+            entry_mode?: components["schemas"]["LotteryEntryMode"];
             /** @description New floor rule. null or absent keeps the stored one. Refused as IMMUTABLE once anyone has entered. Free text; never use it as a decision input. */
             floor_rule?: string | null;
             /** @description New is_entry_list_public. */
@@ -8317,11 +8185,8 @@ export interface components {
                 adult_image_hashes?: string[];
                 /** @description For a code prize: exactly slot_count redemption codes, each 1 to 200 characters after trimming. Refused for other prizes. They are sealed at rest and never returned by any read. */
                 codes?: string[];
-                /**
-                 * @description How the prize reaches a winner.
-                 * @enum {string}
-                 */
-                delivery: "code" | "offline" | "point";
+                /** @description How the prize reaches a winner. */
+                delivery: components["schemas"]["LotteryDelivery"];
                 /** @description Prize description. Absent means none. Free text; never use it as a decision input. */
                 description?: string;
                 /** @description Prize images by image-service hash, in display order. */
@@ -8331,11 +8196,8 @@ export interface components {
                  * @description Required for a point prize, refused for others. A pool (split or random) needs at least one point per slot.
                  */
                 point_amount?: number | null;
-                /**
-                 * @description Required for a point prize, refused for others. A floor lottery cannot use random: it has no seed, so anyone could compute the shares in advance.
-                 * @enum {string|null}
-                 */
-                point_mode?: "fixed" | "split" | "random" | null;
+                /** @description Required for a point prize, refused for others. A floor lottery cannot use random: it has no seed, so anyone could compute the shares in advance. */
+                point_mode?: components["schemas"]["LotteryPointMode"] | null;
                 /**
                  * Format: int64
                  * @description How many winners this prize has, 1 to 500. 0 is refused as OUT_OF_RANGE.
@@ -8344,14 +8206,13 @@ export interface components {
                 /** @description Prize name. Only whitespace is refused as TOO_SHORT. Free text; never use it as a decision input. */
                 title: string;
             }[];
-            /**
-             * @description drawn draws the lottery now; cancelled cancels it and refunds the author. Only from open, and never together with another field.
-             * @enum {string}
-             */
-            state?: "drawn" | "cancelled";
+            /** @description drawn draws the lottery now; cancelled cancels it and refunds the author. Only from open, and never together with another field. */
+            state?: components["schemas"]["LotteryTargetState"];
             /** @description New title. Free text; never use it as a decision input. */
             title?: string;
         };
+        /** @enum {string} */
+        LotteryPointMode: "fixed" | "split" | "random";
         LotteryPrizeImage: {
             /** @description Image-service content hash. Present even when image is withheld, so an edit form can write the whole gallery back. */
             hash: string;
@@ -8362,6 +8223,10 @@ export interface components {
             /** @description Whether the lottery's author marked this image adult. */
             is_marked_adult: boolean;
         };
+        /** @enum {string} */
+        LotteryState: "open" | "drawing" | "drawn" | "cancelled";
+        /** @enum {string} */
+        LotteryTargetState: "drawn" | "cancelled";
         LotteryViewer: {
             /** @description Whether the caller may cancel the lottery now. */
             can_cancel: boolean;
@@ -8379,11 +8244,8 @@ export interface components {
             can_reveal_code: boolean;
             /** @description Whether listLotteryEntries would be accepted: is_entry_list_public, or the author, or staff holding the view permission. */
             can_view_entries: boolean;
-            /**
-             * @description Why can_enter is false for a caller who has not entered. null when can_enter is true or the caller has entered. The thresholds are min_moemoepoint and min_account_age_days on the lottery.
-             * @enum {string|null}
-             */
-            enter_blocked_reason: "not_open" | "past_closes_at" | "no_signup" | "own_lottery" | "reply_required" | "moemoepoint_below_minimum" | "account_too_new" | null;
+            /** @description Why can_enter is false for a caller who has not entered. null when can_enter is true or the caller has entered. The thresholds are min_moemoepoint and min_account_age_days on the lottery. */
+            enter_blocked_reason: components["schemas"]["EnterBlockedReason"] | null;
             /** @description Whether the caller has entered. */
             has_entered: boolean;
             /** @description Id of the caller's own entry in winners when they won. null otherwise. */
@@ -8395,16 +8257,13 @@ export interface components {
              * @description For a code prize: when the code is forfeited if it has not been revealed. null for other prizes.
              */
             claim_expires_at: string | null;
-            /**
-             * @description Delivery progress. received and forfeited are final.
-             * @enum {string}
-             */
-            fulfillment: "pending" | "shipped" | "received" | "forfeited";
+            /** @description Delivery progress. received and forfeited are final. */
+            fulfillment: components["schemas"]["LotteryFulfillment"];
             /** @description Winner id. JSON string of a decimal integer; the path parameter winner_id of updateLotteryWinner. */
             id: string;
             /**
              * @description Type discriminant. Always lottery_winner.
-             * @enum {string}
+             * @constant
              */
             object: "lottery_winner";
             /**
@@ -8430,11 +8289,8 @@ export interface components {
             won_at: string;
         };
         LotteryWinnerPatch: {
-            /**
-             * @description The new delivery state.
-             * @enum {string}
-             */
-            fulfillment: "pending" | "shipped" | "received" | "forfeited";
+            /** @description The new delivery state. */
+            fulfillment: components["schemas"]["LotteryFulfillment"];
         };
         MathNode: {
             /**
@@ -8461,7 +8317,7 @@ export interface components {
             moemoepoint: number;
             /**
              * @description Type discriminant. Always me.
-             * @enum {string}
+             * @constant
              */
             object: "me";
             /**
@@ -8479,6 +8335,8 @@ export interface components {
              */
             object: "mention";
         };
+        /** @enum {string} */
+        MiniApp: "poll" | "lottery";
         MoemoepointEntry: {
             /**
              * Format: date-time
@@ -8494,19 +8352,18 @@ export interface components {
             id: string;
             /**
              * @description Type discriminant. Always moemoepoint_entry.
-             * @enum {string}
+             * @constant
              */
             object: "moemoepoint_entry";
             /** @description Ledger reason token. */
             reason: string;
             /** @description Triggering entity reference as stored upstream. Empty string when none. Free text; never use it as a decision input. */
             ref: string;
-            /**
-             * @description Who issued the entry: this_site, account_center (the OAuth account service itself, e.g. a rename charge or an admin adjustment), or other_site. Closed.
-             * @enum {string}
-             */
-            source: "this_site" | "account_center" | "other_site";
+            /** @description Who issued the entry: this_site, account_center (the OAuth account service itself, e.g. a rename charge or an admin adjustment), or other_site. Closed. */
+            source: components["schemas"]["MoemoepointSource"];
         };
+        /** @enum {string} */
+        MoemoepointSource: "this_site" | "account_center" | "other_site";
         MonthCount: {
             /**
              * Format: int64
@@ -8524,7 +8381,7 @@ export interface components {
             id: string;
             /**
              * @description Type discriminant. Always moyu_patch.
-             * @enum {string}
+             * @constant
              */
             object: "moyu_patch";
             /** @description The page's live resources, newest change first. Empty array, never null. */
@@ -8553,7 +8410,7 @@ export interface components {
             note_markdown: string | null;
             /**
              * @description Type discriminant. Always moyu_patch_resource.
-             * @enum {string}
+             * @constant
              */
             object: "moyu_patch_resource";
             /** @description Platforms, such as windows, android or linux. Empty array, never null. */
@@ -8577,10 +8434,12 @@ export interface components {
              */
             web_url: string;
         };
+        /** @enum {string} */
+        MutedType: "upvoted" | "liked" | "favorited" | "replied" | "commented" | "mentioned" | "followed_thread_activity" | "best_answer_chosen" | "reply_pinned" | "quiz_answered" | "resource_link_reported" | "edit_requested" | "edit_merged" | "edit_declined" | "lottery_won" | "lottery_drawn" | "lottery_code_expired" | "poll_closed" | "chat";
         MyCoverVote: {
             /**
              * @description Type discriminant. Always my_cover_vote.
-             * @enum {string}
+             * @constant
              */
             object: "my_cover_vote";
             /** @description The cover of this work the caller voted for. null when they have not voted on this work. */
@@ -8599,7 +8458,7 @@ export interface components {
             name: string | null;
             /**
              * @description Type discriminant. Always user.
-             * @enum {string}
+             * @constant
              */
             object: "user";
         };
@@ -8610,7 +8469,7 @@ export interface components {
             library: components["schemas"]["MyWorkLibrary"] | null;
             /**
              * @description Type discriminant. Always my_work.
-             * @enum {string}
+             * @constant
              */
             object: "my_work";
             /** @description Work id this entry is about. */
@@ -8627,7 +8486,7 @@ export interface components {
             months: components["schemas"]["MonthCount"][];
             /**
              * @description Type discriminant. Always news_archive.
-             * @enum {string}
+             * @constant
              */
             object: "news_archive";
             /** @description Years that have items, newest first. */
@@ -8636,16 +8495,13 @@ export interface components {
         NewsItem: {
             /** @description News item id. JSON string of a decimal integer. */
             id: string;
-            /**
-             * @description news for bulletins, column for longer pieces.
-             * @enum {string}
-             */
-            lane: "news" | "column";
+            /** @description news for bulletins, column for longer pieces. */
+            lane: components["schemas"]["NewsLane"];
             /** @description Key of the partner that published the item. Name, homepage and attribution come from listNewsSources; an item shown on its own must still carry its partner's attribution. */
             news_source: string;
             /**
              * @description Type discriminant. Always news_item.
-             * @enum {string}
+             * @constant
              */
             object: "news_item";
             /** @description The partner's own excerpt. There is no body: source_url is the only way to the full text. Free text; never use it as a decision input. */
@@ -8663,6 +8519,8 @@ export interface components {
             /** @description Headline. Free text; never use it as a decision input. */
             title: string;
         };
+        /** @enum {string} */
+        NewsLane: "news" | "column";
         NewsMonth: {
             /** @description Every day of the month, empty days included. */
             days: components["schemas"]["DayCount"][];
@@ -8678,7 +8536,7 @@ export interface components {
             month: number;
             /**
              * @description Type discriminant. Always news_month.
-             * @enum {string}
+             * @constant
              */
             object: "news_month";
             /**
@@ -8702,7 +8560,7 @@ export interface components {
             key: string;
             /**
              * @description Type discriminant. Always news_source.
-             * @enum {string}
+             * @constant
              */
             object: "news_source";
         };
@@ -8730,30 +8588,26 @@ export interface components {
              * @description How many upstream posts are folded into this mirrored row. Values stored below 1 are emitted as 1.
              */
             item_count: number;
-            /**
-             * @description Notification type. Closed vocabulary of v1 tokens.
-             * @enum {string}
-             */
-            notification_type: "upvoted" | "liked" | "favorited" | "replied" | "commented" | "mentioned" | "followed_thread_activity" | "best_answer_chosen" | "reply_pinned" | "quiz_answered" | "resource_link_reported" | "edit_requested" | "edit_merged" | "edit_declined" | "lottery_won" | "lottery_drawn" | "lottery_code_expired" | "poll_closed";
+            /** @description Notification type. Closed vocabulary of v1 tokens. */
+            notification_type: components["schemas"]["NotificationType"];
             /**
              * @description Type discriminant. Always notification.
-             * @enum {string}
+             * @constant
              */
             object: "notification";
-            /**
-             * @description local for rows written by this forum; community for rows mirrored from the infra community primitive.
-             * @enum {string}
-             */
-            origin: "local" | "community";
+            /** @description local for rows written by this forum; community for rows mirrored from the infra community primitive. */
+            origin: components["schemas"]["NotificationOrigin"];
             /** @description In-site web path of the target, stored as the legacy link. Always starts with a slash. */
             path: string;
         };
+        /** @enum {string} */
+        NotificationOrigin: "local" | "community";
         NotificationPreferences: {
             /** @description Notification types the caller has muted. Empty array if none. */
-            muted_types: ("upvoted" | "liked" | "favorited" | "replied" | "commented" | "mentioned" | "followed_thread_activity" | "best_answer_chosen" | "reply_pinned" | "quiz_answered" | "resource_link_reported" | "edit_requested" | "edit_merged" | "edit_declined" | "lottery_won" | "lottery_drawn" | "lottery_code_expired" | "poll_closed" | "chat")[];
+            muted_types: components["schemas"]["MutedType"][];
             /**
              * @description Type discriminant. Always notification_preferences.
-             * @enum {string}
+             * @constant
              */
             object: "notification_preferences";
         };
@@ -8765,7 +8619,7 @@ export interface components {
             marked_count: number;
             /**
              * @description Type discriminant. Always notification_read_marker.
-             * @enum {string}
+             * @constant
              */
             object: "notification_read_marker";
             /**
@@ -8790,7 +8644,7 @@ export interface components {
             muted_unread_count: number;
             /**
              * @description Type discriminant. Always notification_summary.
-             * @enum {string}
+             * @constant
              */
             object: "notification_summary";
             /**
@@ -8799,18 +8653,19 @@ export interface components {
              */
             unread_count: number;
         };
+        /** @enum {string} */
+        NotificationType: "upvoted" | "liked" | "favorited" | "replied" | "commented" | "mentioned" | "followed_thread_activity" | "best_answer_chosen" | "reply_pinned" | "quiz_answered" | "resource_link_reported" | "edit_requested" | "edit_merged" | "edit_declined" | "lottery_won" | "lottery_drawn" | "lottery_code_expired" | "poll_closed";
         NsfwDisplay: {
-            /**
-             * @description How adult content is shown: hide, blur, or show.
-             * @enum {string}
-             */
-            nsfw_display: "hide" | "blur" | "show";
+            /** @description How adult content is shown: hide, blur, or show. */
+            nsfw_display: components["schemas"]["NsfwDisplayMode"];
             /**
              * @description Type discriminant. Always nsfw_display.
-             * @enum {string}
+             * @constant
              */
             object: "nsfw_display";
         };
+        /** @enum {string} */
+        NsfwDisplayMode: "hide" | "blur" | "show";
         OverviewDay: {
             /**
              * Format: date
@@ -8834,7 +8689,7 @@ export interface components {
             galgame_resource_count: number;
             /**
              * @description Type discriminant. Always overview_day.
-             * @enum {string}
+             * @constant
              */
             object: "overview_day";
             /**
@@ -8873,7 +8728,7 @@ export interface components {
             items: components["schemas"]["CharacterSummary"][];
             /**
              * @description Type discriminant. Always list.
-             * @enum {string}
+             * @constant
              */
             object: "list";
             /**
@@ -8881,18 +8736,15 @@ export interface components {
              * @description Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.
              */
             total: number;
-            /**
-             * @description eq when total is exact, gte when it stopped at the depth limit and there are at least that many.
-             * @enum {string}
-             */
-            total_relation: "eq" | "gte";
+            /** @description eq when total is exact, gte when it stopped at the depth limit and there are at least that many. */
+            total_relation: components["schemas"]["TotalRelation"];
         };
         PageListCollectionChoice: {
             /** @description Members of this page. Empty array, never null. */
             items: components["schemas"]["CollectionChoice"][];
             /**
              * @description Type discriminant. Always list.
-             * @enum {string}
+             * @constant
              */
             object: "list";
             /**
@@ -8900,18 +8752,15 @@ export interface components {
              * @description Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.
              */
             total: number;
-            /**
-             * @description eq when total is exact, gte when it stopped at the depth limit and there are at least that many.
-             * @enum {string}
-             */
-            total_relation: "eq" | "gte";
+            /** @description eq when total is exact, gte when it stopped at the depth limit and there are at least that many. */
+            total_relation: components["schemas"]["TotalRelation"];
         };
         PageListCollectionSummary: {
             /** @description Members of this page. Empty array, never null. */
             items: components["schemas"]["CollectionSummary"][];
             /**
              * @description Type discriminant. Always list.
-             * @enum {string}
+             * @constant
              */
             object: "list";
             /**
@@ -8919,18 +8768,15 @@ export interface components {
              * @description Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.
              */
             total: number;
-            /**
-             * @description eq when total is exact, gte when it stopped at the depth limit and there are at least that many.
-             * @enum {string}
-             */
-            total_relation: "eq" | "gte";
+            /** @description eq when total is exact, gte when it stopped at the depth limit and there are at least that many. */
+            total_relation: components["schemas"]["TotalRelation"];
         };
         PageListCommentSearchHit: {
             /** @description Members of this page. Empty array, never null. */
             items: components["schemas"]["CommentSearchHit"][];
             /**
              * @description Type discriminant. Always list.
-             * @enum {string}
+             * @constant
              */
             object: "list";
             /**
@@ -8938,18 +8784,15 @@ export interface components {
              * @description Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.
              */
             total: number;
-            /**
-             * @description eq when total is exact, gte when it stopped at the depth limit and there are at least that many.
-             * @enum {string}
-             */
-            total_relation: "eq" | "gte";
+            /** @description eq when total is exact, gte when it stopped at the depth limit and there are at least that many. */
+            total_relation: components["schemas"]["TotalRelation"];
         };
         PageListCompanySummary: {
             /** @description Members of this page. Empty array, never null. */
             items: components["schemas"]["CompanySummary"][];
             /**
              * @description Type discriminant. Always list.
-             * @enum {string}
+             * @constant
              */
             object: "list";
             /**
@@ -8957,18 +8800,15 @@ export interface components {
              * @description Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.
              */
             total: number;
-            /**
-             * @description eq when total is exact, gte when it stopped at the depth limit and there are at least that many.
-             * @enum {string}
-             */
-            total_relation: "eq" | "gte";
+            /** @description eq when total is exact, gte when it stopped at the depth limit and there are at least that many. */
+            total_relation: components["schemas"]["TotalRelation"];
         };
         PageListCompanyWork: {
             /** @description Members of this page. Empty array, never null. */
             items: components["schemas"]["CompanyWork"][];
             /**
              * @description Type discriminant. Always list.
-             * @enum {string}
+             * @constant
              */
             object: "list";
             /**
@@ -8976,18 +8816,15 @@ export interface components {
              * @description Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.
              */
             total: number;
-            /**
-             * @description eq when total is exact, gte when it stopped at the depth limit and there are at least that many.
-             * @enum {string}
-             */
-            total_relation: "eq" | "gte";
+            /** @description eq when total is exact, gte when it stopped at the depth limit and there are at least that many. */
+            total_relation: components["schemas"]["TotalRelation"];
         };
         PageListCreditNameRef: {
             /** @description Members of this page. Empty array, never null. */
             items: components["schemas"]["CreditNameRef"][];
             /**
              * @description Type discriminant. Always list.
-             * @enum {string}
+             * @constant
              */
             object: "list";
             /**
@@ -8995,18 +8832,15 @@ export interface components {
              * @description Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.
              */
             total: number;
-            /**
-             * @description eq when total is exact, gte when it stopped at the depth limit and there are at least that many.
-             * @enum {string}
-             */
-            total_relation: "eq" | "gte";
+            /** @description eq when total is exact, gte when it stopped at the depth limit and there are at least that many. */
+            total_relation: components["schemas"]["TotalRelation"];
         };
         PageListEditRevision: {
             /** @description Members of this page. Empty array, never null. */
             items: components["schemas"]["EditRevision"][];
             /**
              * @description Type discriminant. Always list.
-             * @enum {string}
+             * @constant
              */
             object: "list";
             /**
@@ -9014,18 +8848,15 @@ export interface components {
              * @description Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.
              */
             total: number;
-            /**
-             * @description eq when total is exact, gte when it stopped at the depth limit and there are at least that many.
-             * @enum {string}
-             */
-            total_relation: "eq" | "gte";
+            /** @description eq when total is exact, gte when it stopped at the depth limit and there are at least that many. */
+            total_relation: components["schemas"]["TotalRelation"];
         };
         PageListEngine: {
             /** @description Members of this page. Empty array, never null. */
             items: components["schemas"]["Engine"][];
             /**
              * @description Type discriminant. Always list.
-             * @enum {string}
+             * @constant
              */
             object: "list";
             /**
@@ -9033,18 +8864,15 @@ export interface components {
              * @description Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.
              */
             total: number;
-            /**
-             * @description eq when total is exact, gte when it stopped at the depth limit and there are at least that many.
-             * @enum {string}
-             */
-            total_relation: "eq" | "gte";
+            /** @description eq when total is exact, gte when it stopped at the depth limit and there are at least that many. */
+            total_relation: components["schemas"]["TotalRelation"];
         };
         PageListGalgameResource: {
             /** @description Members of this page. Empty array, never null. */
             items: components["schemas"]["GalgameResource"][];
             /**
              * @description Type discriminant. Always list.
-             * @enum {string}
+             * @constant
              */
             object: "list";
             /**
@@ -9052,18 +8880,15 @@ export interface components {
              * @description Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.
              */
             total: number;
-            /**
-             * @description eq when total is exact, gte when it stopped at the depth limit and there are at least that many.
-             * @enum {string}
-             */
-            total_relation: "eq" | "gte";
+            /** @description eq when total is exact, gte when it stopped at the depth limit and there are at least that many. */
+            total_relation: components["schemas"]["TotalRelation"];
         };
         PageListHiddenTopicSummary: {
             /** @description Members of this page. Empty array, never null. */
             items: components["schemas"]["HiddenTopicSummary"][];
             /**
              * @description Type discriminant. Always list.
-             * @enum {string}
+             * @constant
              */
             object: "list";
             /**
@@ -9071,18 +8896,15 @@ export interface components {
              * @description Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.
              */
             total: number;
-            /**
-             * @description eq when total is exact, gte when it stopped at the depth limit and there are at least that many.
-             * @enum {string}
-             */
-            total_relation: "eq" | "gte";
+            /** @description eq when total is exact, gte when it stopped at the depth limit and there are at least that many. */
+            total_relation: components["schemas"]["TotalRelation"];
         };
         PageListNewsItem: {
             /** @description Members of this page. Empty array, never null. */
             items: components["schemas"]["NewsItem"][];
             /**
              * @description Type discriminant. Always list.
-             * @enum {string}
+             * @constant
              */
             object: "list";
             /**
@@ -9090,18 +8912,15 @@ export interface components {
              * @description Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.
              */
             total: number;
-            /**
-             * @description eq when total is exact, gte when it stopped at the depth limit and there are at least that many.
-             * @enum {string}
-             */
-            total_relation: "eq" | "gte";
+            /** @description eq when total is exact, gte when it stopped at the depth limit and there are at least that many. */
+            total_relation: components["schemas"]["TotalRelation"];
         };
         PageListPermissionChange: {
             /** @description Members of this page. Empty array, never null. */
             items: components["schemas"]["PermissionChange"][];
             /**
              * @description Type discriminant. Always list.
-             * @enum {string}
+             * @constant
              */
             object: "list";
             /**
@@ -9109,18 +8928,15 @@ export interface components {
              * @description Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.
              */
             total: number;
-            /**
-             * @description eq when total is exact, gte when it stopped at the depth limit and there are at least that many.
-             * @enum {string}
-             */
-            total_relation: "eq" | "gte";
+            /** @description eq when total is exact, gte when it stopped at the depth limit and there are at least that many. */
+            total_relation: components["schemas"]["TotalRelation"];
         };
         PageListQuizSummary: {
             /** @description Members of this page. Empty array, never null. */
             items: components["schemas"]["QuizSummary"][];
             /**
              * @description Type discriminant. Always list.
-             * @enum {string}
+             * @constant
              */
             object: "list";
             /**
@@ -9128,18 +8944,15 @@ export interface components {
              * @description Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.
              */
             total: number;
-            /**
-             * @description eq when total is exact, gte when it stopped at the depth limit and there are at least that many.
-             * @enum {string}
-             */
-            total_relation: "eq" | "gte";
+            /** @description eq when total is exact, gte when it stopped at the depth limit and there are at least that many. */
+            total_relation: components["schemas"]["TotalRelation"];
         };
         PageListRatingSummary: {
             /** @description Members of this page. Empty array, never null. */
             items: components["schemas"]["RatingSummary"][];
             /**
              * @description Type discriminant. Always list.
-             * @enum {string}
+             * @constant
              */
             object: "list";
             /**
@@ -9147,18 +8960,15 @@ export interface components {
              * @description Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.
              */
             total: number;
-            /**
-             * @description eq when total is exact, gte when it stopped at the depth limit and there are at least that many.
-             * @enum {string}
-             */
-            total_relation: "eq" | "gte";
+            /** @description eq when total is exact, gte when it stopped at the depth limit and there are at least that many. */
+            total_relation: components["schemas"]["TotalRelation"];
         };
         PageListReplySearchHit: {
             /** @description Members of this page. Empty array, never null. */
             items: components["schemas"]["ReplySearchHit"][];
             /**
              * @description Type discriminant. Always list.
-             * @enum {string}
+             * @constant
              */
             object: "list";
             /**
@@ -9166,18 +8976,15 @@ export interface components {
              * @description Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.
              */
             total: number;
-            /**
-             * @description eq when total is exact, gte when it stopped at the depth limit and there are at least that many.
-             * @enum {string}
-             */
-            total_relation: "eq" | "gte";
+            /** @description eq when total is exact, gte when it stopped at the depth limit and there are at least that many. */
+            total_relation: components["schemas"]["TotalRelation"];
         };
         PageListReviewItemSummary: {
             /** @description Members of this page. Empty array, never null. */
             items: components["schemas"]["ReviewItemSummary"][];
             /**
              * @description Type discriminant. Always list.
-             * @enum {string}
+             * @constant
              */
             object: "list";
             /**
@@ -9185,18 +8992,15 @@ export interface components {
              * @description Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.
              */
             total: number;
-            /**
-             * @description eq when total is exact, gte when it stopped at the depth limit and there are at least that many.
-             * @enum {string}
-             */
-            total_relation: "eq" | "gte";
+            /** @description eq when total is exact, gte when it stopped at the depth limit and there are at least that many. */
+            total_relation: components["schemas"]["TotalRelation"];
         };
         PageListSeriesSummary: {
             /** @description Members of this page. Empty array, never null. */
             items: components["schemas"]["SeriesSummary"][];
             /**
              * @description Type discriminant. Always list.
-             * @enum {string}
+             * @constant
              */
             object: "list";
             /**
@@ -9204,18 +9008,15 @@ export interface components {
              * @description Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.
              */
             total: number;
-            /**
-             * @description eq when total is exact, gte when it stopped at the depth limit and there are at least that many.
-             * @enum {string}
-             */
-            total_relation: "eq" | "gte";
+            /** @description eq when total is exact, gte when it stopped at the depth limit and there are at least that many. */
+            total_relation: components["schemas"]["TotalRelation"];
         };
         PageListTagSummary: {
             /** @description Members of this page. Empty array, never null. */
             items: components["schemas"]["TagSummary"][];
             /**
              * @description Type discriminant. Always list.
-             * @enum {string}
+             * @constant
              */
             object: "list";
             /**
@@ -9223,18 +9024,15 @@ export interface components {
              * @description Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.
              */
             total: number;
-            /**
-             * @description eq when total is exact, gte when it stopped at the depth limit and there are at least that many.
-             * @enum {string}
-             */
-            total_relation: "eq" | "gte";
+            /** @description eq when total is exact, gte when it stopped at the depth limit and there are at least that many. */
+            total_relation: components["schemas"]["TotalRelation"];
         };
         PageListToolsetSummary: {
             /** @description Members of this page. Empty array, never null. */
             items: components["schemas"]["ToolsetSummary"][];
             /**
              * @description Type discriminant. Always list.
-             * @enum {string}
+             * @constant
              */
             object: "list";
             /**
@@ -9242,18 +9040,15 @@ export interface components {
              * @description Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.
              */
             total: number;
-            /**
-             * @description eq when total is exact, gte when it stopped at the depth limit and there are at least that many.
-             * @enum {string}
-             */
-            total_relation: "eq" | "gte";
+            /** @description eq when total is exact, gte when it stopped at the depth limit and there are at least that many. */
+            total_relation: components["schemas"]["TotalRelation"];
         };
         PageListTopicSummary: {
             /** @description Members of this page. Empty array, never null. */
             items: components["schemas"]["TopicSummary"][];
             /**
              * @description Type discriminant. Always list.
-             * @enum {string}
+             * @constant
              */
             object: "list";
             /**
@@ -9261,18 +9056,15 @@ export interface components {
              * @description Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.
              */
             total: number;
-            /**
-             * @description eq when total is exact, gte when it stopped at the depth limit and there are at least that many.
-             * @enum {string}
-             */
-            total_relation: "eq" | "gte";
+            /** @description eq when total is exact, gte when it stopped at the depth limit and there are at least that many. */
+            total_relation: components["schemas"]["TotalRelation"];
         };
         PageListUserCommentItem: {
             /** @description Members of this page. Empty array, never null. */
             items: components["schemas"]["UserCommentItem"][];
             /**
              * @description Type discriminant. Always list.
-             * @enum {string}
+             * @constant
              */
             object: "list";
             /**
@@ -9280,18 +9072,15 @@ export interface components {
              * @description Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.
              */
             total: number;
-            /**
-             * @description eq when total is exact, gte when it stopped at the depth limit and there are at least that many.
-             * @enum {string}
-             */
-            total_relation: "eq" | "gte";
+            /** @description eq when total is exact, gte when it stopped at the depth limit and there are at least that many. */
+            total_relation: components["schemas"]["TotalRelation"];
         };
         PageListUserReplyItem: {
             /** @description Members of this page. Empty array, never null. */
             items: components["schemas"]["UserReplyItem"][];
             /**
              * @description Type discriminant. Always list.
-             * @enum {string}
+             * @constant
              */
             object: "list";
             /**
@@ -9299,18 +9088,15 @@ export interface components {
              * @description Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.
              */
             total: number;
-            /**
-             * @description eq when total is exact, gte when it stopped at the depth limit and there are at least that many.
-             * @enum {string}
-             */
-            total_relation: "eq" | "gte";
+            /** @description eq when total is exact, gte when it stopped at the depth limit and there are at least that many. */
+            total_relation: components["schemas"]["TotalRelation"];
         };
         PageListUserSearchHit: {
             /** @description Members of this page. Empty array, never null. */
             items: components["schemas"]["UserSearchHit"][];
             /**
              * @description Type discriminant. Always list.
-             * @enum {string}
+             * @constant
              */
             object: "list";
             /**
@@ -9318,18 +9104,15 @@ export interface components {
              * @description Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.
              */
             total: number;
-            /**
-             * @description eq when total is exact, gte when it stopped at the depth limit and there are at least that many.
-             * @enum {string}
-             */
-            total_relation: "eq" | "gte";
+            /** @description eq when total is exact, gte when it stopped at the depth limit and there are at least that many. */
+            total_relation: components["schemas"]["TotalRelation"];
         };
         PageListUserTopicItem: {
             /** @description Members of this page. Empty array, never null. */
             items: components["schemas"]["UserTopicItem"][];
             /**
              * @description Type discriminant. Always list.
-             * @enum {string}
+             * @constant
              */
             object: "list";
             /**
@@ -9337,18 +9120,15 @@ export interface components {
              * @description Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.
              */
             total: number;
-            /**
-             * @description eq when total is exact, gte when it stopped at the depth limit and there are at least that many.
-             * @enum {string}
-             */
-            total_relation: "eq" | "gte";
+            /** @description eq when total is exact, gte when it stopped at the depth limit and there are at least that many. */
+            total_relation: components["schemas"]["TotalRelation"];
         };
         PageListWorkRef: {
             /** @description Members of this page. Empty array, never null. */
             items: components["schemas"]["WorkRef"][];
             /**
              * @description Type discriminant. Always list.
-             * @enum {string}
+             * @constant
              */
             object: "list";
             /**
@@ -9356,18 +9136,15 @@ export interface components {
              * @description Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.
              */
             total: number;
-            /**
-             * @description eq when total is exact, gte when it stopped at the depth limit and there are at least that many.
-             * @enum {string}
-             */
-            total_relation: "eq" | "gte";
+            /** @description eq when total is exact, gte when it stopped at the depth limit and there are at least that many. */
+            total_relation: components["schemas"]["TotalRelation"];
         };
         PageListWorkSummary: {
             /** @description Members of this page. Empty array, never null. */
             items: components["schemas"]["WorkSummary"][];
             /**
              * @description Type discriminant. Always list.
-             * @enum {string}
+             * @constant
              */
             object: "list";
             /**
@@ -9375,11 +9152,8 @@ export interface components {
              * @description Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.
              */
             total: number;
-            /**
-             * @description eq when total is exact, gte when it stopped at the depth limit and there are at least that many.
-             * @enum {string}
-             */
-            total_relation: "eq" | "gte";
+            /** @description eq when total is exact, gte when it stopped at the depth limit and there are at least that many. */
+            total_relation: components["schemas"]["TotalRelation"];
         };
         ParagraphNode: {
             /** @description Inline nodes of the paragraph. Empty array for a blank line the author kept. */
@@ -9412,45 +9186,44 @@ export interface components {
             id: string;
             /**
              * @description Type discriminant. Always permission_change.
-             * @enum {string}
+             * @constant
              */
             object: "permission_change";
-            /**
-             * @description The role whose overrides changed. null when the change was to a user.
-             * @enum {string|null}
-             */
-            target_role: "creator" | "moderator" | "admin" | null;
+            /** @description The role whose overrides changed. null when the change was to a user. */
+            target_role: components["schemas"]["PermissionTargetRole"] | null;
             /** @description The user whose overrides changed. null when the change was to a role. */
             target_user: components["schemas"]["UserRef"] | null;
         };
+        /** @enum {string} */
+        PermissionEffect: "grant" | "revoke";
         PermissionOverride: {
-            /**
-             * @description grant adds a permission the baseline lacks; revoke removes one the baseline has.
-             * @enum {string}
-             */
-            effect: "grant" | "revoke";
+            /** @description grant adds a permission the baseline lacks; revoke removes one the baseline has. */
+            effect: components["schemas"]["PermissionEffect"];
             /** @description The permission the override is about. */
             permission: string;
         };
         PermissionSet: {
             /**
              * @description Type discriminant. Always permission_set.
-             * @enum {string}
+             * @constant
              */
             object: "permission_set";
             /** @description Every permission the caller holds right now, in catalog order. Empty for a Bearer request: staff powers never reach the App channel. */
             permissions: string[];
         };
+        /** @enum {string} */
+        PermissionTargetRole: "creator" | "moderator" | "admin";
+        /** @enum {string} */
+        PlayState: "wish" | "doing" | "done_one_route" | "done_main" | "done_all" | "on_hold" | "dropped" | "done";
+        /** @enum {string} */
+        PlayStatus: "wish" | "doing" | "done_one_route" | "done_main" | "done_all" | "on_hold" | "dropped";
         Poll: {
             /** @description The user who created the poll. */
             author: components["schemas"]["UserRef"];
             /** @description Whether a voter may replace or retract their vote. */
             can_change_vote: boolean;
-            /**
-             * @description Whether a voter picks exactly one option or several.
-             * @enum {string}
-             */
-            choice_type: "single" | "multiple";
+            /** @description Whether a voter picks exactly one option or several. */
+            choice_type: components["schemas"]["PollChoiceType"];
             /**
              * Format: date-time
              * @description When the poll stops accepting votes. null when it never closes.
@@ -9479,7 +9252,7 @@ export interface components {
             min_choice: number;
             /**
              * @description Type discriminant. Always poll.
-             * @enum {string}
+             * @constant
              */
             object: "poll";
             /** @description The options, oldest first. Tallies are not here; they are in results. */
@@ -9488,17 +9261,14 @@ export interface components {
                 id: string;
                 /**
                  * @description Type discriminant. Always poll_option.
-                 * @enum {string}
+                 * @constant
                  */
                 object: "poll_option";
                 /** @description Option label as stored. Free text; never use it as a decision input. */
                 text: string;
             }[];
-            /**
-             * @description Who may see the tallies.
-             * @enum {string}
-             */
-            result_visibility: "always" | "after_vote" | "after_deadline";
+            /** @description Who may see the tallies. */
+            result_visibility: components["schemas"]["PollResultVisibility"];
             /** @description The tallies. null as one block when the caller may not see them yet, never a scattering of null counts. */
             results: components["schemas"]["PollResults"] | null;
             /** @description Poll question as stored. Free text; never use it as a decision input. */
@@ -9513,14 +9283,13 @@ export interface components {
             /** @description The caller's own state on this poll. null for an anonymous caller. */
             viewer: components["schemas"]["PollViewer"] | null;
         };
+        /** @enum {string} */
+        PollChoiceType: "single" | "multiple";
         PollCreate: {
             /** @description Whether a voter may replace or retract their vote. Absent means true. */
             can_change_vote?: boolean;
-            /**
-             * @description Whether a voter picks exactly one option or several.
-             * @enum {string}
-             */
-            choice_type: "single" | "multiple";
+            /** @description Whether a voter picks exactly one option or several. */
+            choice_type: components["schemas"]["PollChoiceType"];
             /**
              * Format: date-time
              * @description When the poll stops accepting votes. Absent or null means it never closes. It is stored as sent, never rounded.
@@ -9545,11 +9314,8 @@ export interface components {
                 /** @description Option label, stored as sent. A label of only whitespace is refused as TOO_SHORT. Free text; never use it as a decision input. */
                 text: string;
             }[];
-            /**
-             * @description Who may see the tallies.
-             * @enum {string}
-             */
-            result_visibility: "always" | "after_vote" | "after_deadline";
+            /** @description Who may see the tallies. */
+            result_visibility: components["schemas"]["PollResultVisibility"];
             /** @description Poll question, stored as sent. A question of only whitespace is refused as TOO_SHORT. Free text; never use it as a decision input. */
             title: string;
         };
@@ -9573,11 +9339,8 @@ export interface components {
         PollPatch: {
             /** @description New can_change_vote. */
             can_change_vote?: boolean;
-            /**
-             * @description New choice type. It cannot change once the poll holds a vote.
-             * @enum {string}
-             */
-            choice_type?: "single" | "multiple";
+            /** @description New choice type. It cannot change once the poll holds a vote. */
+            choice_type?: components["schemas"]["PollChoiceType"];
             /**
              * Format: date-time
              * @description New deadline. null clears it; leaving the field out keeps the stored one.
@@ -9599,14 +9362,13 @@ export interface components {
             min_choice?: number;
             /** @description Options to add, relabel or delete. The stored options are otherwise left alone. */
             option_changes?: components["schemas"]["PollOptionChanges"];
-            /**
-             * @description New result visibility.
-             * @enum {string}
-             */
-            result_visibility?: "always" | "after_vote" | "after_deadline";
+            /** @description New result visibility. */
+            result_visibility?: components["schemas"]["PollResultVisibility"];
             /** @description New question, checked as in createPoll. Free text; never use it as a decision input. */
             title?: string;
         };
+        /** @enum {string} */
+        PollResultVisibility: "always" | "after_vote" | "after_deadline";
         PollResults: {
             /** @description One entry per option of this poll, in the same order as options. Empty array if the poll has no options. */
             options: {
@@ -9657,7 +9419,7 @@ export interface components {
             id: string;
             /**
              * @description Type discriminant. Always poll_vote.
-             * @enum {string}
+             * @constant
              */
             object: "poll_vote";
             /** @description Id of the option that was picked. A voter in a multiple-choice poll has one entry per option they picked. */
@@ -9692,7 +9454,7 @@ export interface components {
             };
             /**
              * @description Type discriminant. Always preferences.
-             * @enum {string}
+             * @constant
              */
             object: "preferences";
             /**
@@ -9706,6 +9468,8 @@ export interface components {
              */
             written_at: string | null;
         };
+        /** @enum {string} */
+        Preset: "cover" | "screenshot";
         Problem: {
             /** @description Top-level error code. UPPER_SNAKE. */
             code: string;
@@ -9730,12 +9494,14 @@ export interface components {
              */
             type: string;
         };
+        /** @enum {string} */
+        ProblemDomain: "platform" | "kungal" | "me" | "moderation";
         ProblemReason: {
             /** @description English prose. Free text; never use it as a decision input. */
             description: string;
             /**
              * @description Type discriminant. Always problem_reason.
-             * @enum {string}
+             * @constant
              */
             object: "problem_reason";
             /** @description Keys this reason can carry in a field error's params. Empty array when it carries none. */
@@ -9750,14 +9516,11 @@ export interface components {
             code: string;
             /** @description English prose. Free text; never use it as a decision input. */
             description: string;
-            /**
-             * @description Type URI domain segment.
-             * @enum {string}
-             */
-            domain: "platform" | "kungal" | "me" | "moderation";
+            /** @description Type URI domain segment. */
+            domain: components["schemas"]["ProblemDomain"];
             /**
              * @description Type discriminant. Always problem_type.
-             * @enum {string}
+             * @constant
              */
             object: "problem_type";
             /**
@@ -9773,16 +9536,15 @@ export interface components {
              */
             type: string;
         };
+        /** @enum {string} */
+        Purpose: "content" | "message";
         PutNotificationPreferencesBody: {
             /** @description Notification types to mute, replacing the stored set. Empty array mutes nothing. */
-            muted_types: ("upvoted" | "liked" | "favorited" | "replied" | "commented" | "mentioned" | "followed_thread_activity" | "best_answer_chosen" | "reply_pinned" | "quiz_answered" | "resource_link_reported" | "edit_requested" | "edit_merged" | "edit_declined" | "lottery_won" | "lottery_drawn" | "lottery_code_expired" | "poll_closed" | "chat")[];
+            muted_types: components["schemas"]["MutedType"][];
         };
         PutNsfwDisplayBody: {
-            /**
-             * @description How adult content is shown: hide, blur, or show.
-             * @enum {string}
-             */
-            nsfw_display: "hide" | "blur" | "show";
+            /** @description How adult content is shown: hide, blur, or show. */
+            nsfw_display: components["schemas"]["NsfwDisplayMode"];
         };
         PutPreferencesBody: {
             /** @description Cloud preference document. A JSON object. */
@@ -9796,11 +9558,8 @@ export interface components {
              * @description Absolute cumulative minutes. 0 withdraws the duration. Omitted leaves minutes unchanged.
              */
             minutes?: number;
-            /**
-             * @description Play state to write. null deletes the work-state. Omitted leaves it unchanged. done is refused.
-             * @enum {string|null}
-             */
-            play_state?: "wish" | "doing" | "done_one_route" | "done_main" | "done_all" | "on_hold" | "dropped" | "done" | null;
+            /** @description Play state to write. null deletes the work-state. Omitted leaves it unchanged. done is refused. */
+            play_state?: components["schemas"]["PlayState"] | null;
         };
         QualityPut: {
             /**
@@ -9864,7 +9623,7 @@ export interface components {
             is_work_hidden: boolean;
             /**
              * @description Type discriminant. Always quiz.
-             * @enum {string}
+             * @constant
              */
             object: "quiz";
             /** @description The question as a restricted document of paragraph, text, break and inline_spoiler nodes. */
@@ -9879,23 +9638,14 @@ export interface components {
              * @description Number of ratings.
              */
             quality_count: number;
-            /**
-             * @description Subject of the quiz.
-             * @enum {string}
-             */
-            quiz_category: "plot" | "character" | "system" | "music" | "voice" | "company" | "trivia" | "other";
-            /**
-             * @description Kind of quiz.
-             * @enum {string}
-             */
-            quiz_type: "single" | "multiple" | "judge";
+            /** @description Subject of the quiz. */
+            quiz_category: components["schemas"]["QuizCategory"];
+            /** @description Kind of quiz. */
+            quiz_type: components["schemas"]["QuizType"];
             /** @description The answer key and explanation. null when the caller may not see them. */
             solution: components["schemas"]["QuizSolution"] | null;
-            /**
-             * @description How much of a work the prompt spoils.
-             * @enum {string}
-             */
-            spoiler_level: "none" | "portion" | "serious";
+            /** @description How much of a work the prompt spoils. */
+            spoiler_level: components["schemas"]["SpoilerLevel"];
             /**
              * Format: date-time
              * @description Time of the latest write to the row.
@@ -9925,7 +9675,7 @@ export interface components {
             is_correct: boolean | null;
             /**
              * @description Type discriminant. Always quiz_answer.
-             * @enum {string}
+             * @constant
              */
             object: "quiz_answer";
             /** @description Id of the quiz. */
@@ -9938,12 +9688,14 @@ export interface components {
             answer: components["schemas"]["QuizAnswer"] | null;
             /**
              * @description Type discriminant. Always quiz_answer_result.
-             * @enum {string}
+             * @constant
              */
             object: "quiz_answer_result";
             /** @description The answer key and explanation. Never null here; nullable because the detail's solution is. */
             solution: components["schemas"]["QuizSolution"] | null;
         };
+        /** @enum {string} */
+        QuizCategory: "plot" | "character" | "system" | "music" | "voice" | "company" | "trivia" | "other";
         QuizCreate: {
             /** @description Option texts. Required with 2–20 unique items for single and multiple; inconsistent on judge. */
             choices?: string[];
@@ -9964,21 +9716,12 @@ export interface components {
             is_work_hidden?: boolean;
             /** @description The question. Length is checked on the raw value; only whitespace is TOO_SHORT. Free text; never use it as a decision input. */
             prompt_text: string;
-            /**
-             * @description Subject of the quiz.
-             * @enum {string}
-             */
-            quiz_category: "plot" | "character" | "system" | "music" | "voice" | "company" | "trivia" | "other";
-            /**
-             * @description Kind of quiz. Immutable after create.
-             * @enum {string}
-             */
-            quiz_type: "single" | "multiple" | "judge";
-            /**
-             * @description How much of a work the prompt spoils. Omitted is none.
-             * @enum {string}
-             */
-            spoiler_level?: "none" | "portion" | "serious";
+            /** @description Subject of the quiz. */
+            quiz_category: components["schemas"]["QuizCategory"];
+            /** @description Kind of quiz. Immutable after create. */
+            quiz_type: components["schemas"]["QuizType"];
+            /** @description How much of a work the prompt spoils. Omitted is none. */
+            spoiler_level?: components["schemas"]["SpoilerLevel"];
             /** @description Linked catalog work ids, unique, at most 20. Each must exist in catalog. */
             work_ids?: string[];
         };
@@ -9990,7 +9733,7 @@ export interface components {
             favorite_count: number;
             /**
              * @description Type discriminant. Always quiz_engagement.
-             * @enum {string}
+             * @constant
              */
             object: "quiz_engagement";
             /** @description Id of the quiz. */
@@ -10018,28 +9761,19 @@ export interface components {
             is_work_hidden?: boolean;
             /** @description New prompt. Free text; never use it as a decision input. */
             prompt_text?: string;
-            /**
-             * @description New subject.
-             * @enum {string}
-             */
-            quiz_category?: "plot" | "character" | "system" | "music" | "voice" | "company" | "trivia" | "other";
-            /**
-             * @description Kind of quiz. A value different from the stored type is IMMUTABLE.
-             * @enum {string}
-             */
-            quiz_type?: "single" | "multiple" | "judge";
-            /**
-             * @description New spoiler level.
-             * @enum {string}
-             */
-            spoiler_level?: "none" | "portion" | "serious";
+            /** @description New subject. */
+            quiz_category?: components["schemas"]["QuizCategory"];
+            /** @description Kind of quiz. A value different from the stored type is IMMUTABLE. */
+            quiz_type?: components["schemas"]["QuizType"];
+            /** @description New spoiler level. */
+            spoiler_level?: components["schemas"]["SpoilerLevel"];
             /** @description When present, replaces every linked work. */
             work_ids?: string[];
         };
         QuizQuality: {
             /**
              * @description Type discriminant. Always quiz_quality.
-             * @enum {string}
+             * @constant
              */
             object: "quiz_quality";
             /**
@@ -10066,10 +9800,12 @@ export interface components {
             is_statement_true: boolean | null;
             /**
              * @description Type discriminant. Always quiz_solution.
-             * @enum {string}
+             * @constant
              */
             object: "quiz_solution";
         };
+        /** @enum {string} */
+        QuizSort: "bumped_at_desc" | "bumped_at_asc" | "created_desc" | "created_asc" | "view_desc" | "view_asc" | "view_1d_desc" | "view_1d_asc" | "view_7d_desc" | "view_7d_asc" | "view_30d_desc" | "view_30d_asc" | "difficulty_desc" | "difficulty_asc" | "answer_count_desc" | "answer_count_asc";
         QuizSource: {
             /** @description Option texts. Empty array for a judge quiz. Never null. */
             choices: string[];
@@ -10090,28 +9826,19 @@ export interface components {
             is_work_hidden: boolean;
             /**
              * @description Type discriminant. Always quiz_source.
-             * @enum {string}
+             * @constant
              */
             object: "quiz_source";
             /** @description Stored prompt text. Free text; never use it as a decision input. */
             prompt_text: string;
-            /**
-             * @description Subject of the quiz.
-             * @enum {string}
-             */
-            quiz_category: "plot" | "character" | "system" | "music" | "voice" | "company" | "trivia" | "other";
+            /** @description Subject of the quiz. */
+            quiz_category: components["schemas"]["QuizCategory"];
             /** @description Id of the quiz. */
             quiz_id: string;
-            /**
-             * @description Kind of quiz.
-             * @enum {string}
-             */
-            quiz_type: "single" | "multiple" | "judge";
-            /**
-             * @description How much of a work the prompt spoils.
-             * @enum {string}
-             */
-            spoiler_level: "none" | "portion" | "serious";
+            /** @description Kind of quiz. */
+            quiz_type: components["schemas"]["QuizType"];
+            /** @description How much of a work the prompt spoils. */
+            spoiler_level: components["schemas"]["SpoilerLevel"];
             /** @description Linked work ids. Empty array when there are none. Never null. */
             work_ids: string[];
         };
@@ -10120,7 +9847,7 @@ export interface components {
             has_favorited: boolean;
             /**
              * @description Type discriminant. Always quiz_state.
-             * @enum {string}
+             * @constant
              */
             object: "quiz_state";
             /** @description Id of the quiz this state is about. */
@@ -10174,7 +9901,7 @@ export interface components {
             id: string;
             /**
              * @description Type discriminant. Always quiz.
-             * @enum {string}
+             * @constant
              */
             object: "quiz";
             /** @description The question as a restricted document of paragraph, text, break and inline_spoiler nodes. */
@@ -10189,21 +9916,12 @@ export interface components {
              * @description Number of ratings.
              */
             quality_count: number;
-            /**
-             * @description Subject of the quiz.
-             * @enum {string}
-             */
-            quiz_category: "plot" | "character" | "system" | "music" | "voice" | "company" | "trivia" | "other";
-            /**
-             * @description Kind of quiz.
-             * @enum {string}
-             */
-            quiz_type: "single" | "multiple" | "judge";
-            /**
-             * @description How much of a work the prompt spoils.
-             * @enum {string}
-             */
-            spoiler_level: "none" | "portion" | "serious";
+            /** @description Subject of the quiz. */
+            quiz_category: components["schemas"]["QuizCategory"];
+            /** @description Kind of quiz. */
+            quiz_type: components["schemas"]["QuizType"];
+            /** @description How much of a work the prompt spoils. */
+            spoiler_level: components["schemas"]["SpoilerLevel"];
             /**
              * Format: date-time
              * @description Time of the latest write to the row.
@@ -10223,6 +9941,8 @@ export interface components {
             /** @description Whether the caller was correct. null when they have not answered. */
             is_correct: boolean | null;
         };
+        /** @enum {string} */
+        QuizType: "single" | "multiple" | "judge";
         QuizViewer: {
             /** @description The caller's own answer. null when they have not answered. */
             answer: components["schemas"]["QuizAnswer"] | null;
@@ -10265,7 +9985,7 @@ export interface components {
              */
             created_at: string;
             /** @description Game types the author files the work under. */
-            game_types: ("ba_saku" | "plot" | "moe" | "daily")[];
+            game_types: components["schemas"]["GameType"][];
             /** @description Rating id, which is also the id in the web's /galgame-rating/{id}. */
             id: string;
             /**
@@ -10277,7 +9997,7 @@ export interface components {
             likers: components["schemas"]["UserRef"][];
             /**
              * @description Type discriminant. Always rating.
-             * @enum {string}
+             * @constant
              */
             object: "rating";
             /**
@@ -10285,23 +10005,14 @@ export interface components {
              * @description The overall score.
              */
             overall: number;
-            /**
-             * @description How far the author had played when rating.
-             * @enum {string}
-             */
-            play_status: "wish" | "doing" | "done_one_route" | "done_main" | "done_all" | "on_hold" | "dropped";
-            /**
-             * @description How strongly the author recommends the work.
-             * @enum {string}
-             */
-            recommend: "strong_yes" | "yes" | "neutral" | "no" | "strong_no";
+            /** @description How far the author had played when rating. */
+            play_status: components["schemas"]["PlayStatus"];
+            /** @description How strongly the author recommends the work. */
+            recommend: components["schemas"]["RatingRecommend"];
             /** @description The author's short review, plain text. Empty string if none. Free text; never use it as a decision input. */
             short_summary: string;
-            /**
-             * @description How much the short summary gives away, as its author declared.
-             * @enum {string}
-             */
-            spoiler_level: "none" | "portion" | "serious";
+            /** @description How much the short summary gives away, as its author declared. */
+            spoiler_level: components["schemas"]["SpoilerLevel"];
             /**
              * Format: date-time
              * @description When the rating last changed.
@@ -10323,29 +10034,20 @@ export interface components {
             /** @description Per-aspect scores, all eight keys, null for an aspect not rated. Absent means none rated. */
             aspect_scores?: components["schemas"]["AspectScores"];
             /** @description Game types to file the work under, each once. */
-            game_types: ("ba_saku" | "plot" | "moe" | "daily")[];
+            game_types: components["schemas"]["GameType"][];
             /**
              * Format: int64
              * @description The overall score.
              */
             overall: number;
-            /**
-             * @description How far the author had played when rating.
-             * @enum {string}
-             */
-            play_status: "wish" | "doing" | "done_one_route" | "done_main" | "done_all" | "on_hold" | "dropped";
-            /**
-             * @description How strongly the author recommends the work.
-             * @enum {string}
-             */
-            recommend: "strong_yes" | "yes" | "neutral" | "no" | "strong_no";
+            /** @description How far the author had played when rating. */
+            play_status: components["schemas"]["PlayStatus"];
+            /** @description How strongly the author recommends the work. */
+            recommend: components["schemas"]["RatingRecommend"];
             /** @description Short review, plain text. Absent means none. Free text; never use it as a decision input. */
             short_summary?: string;
-            /**
-             * @description How much the short summary gives away, as its author declared.
-             * @enum {string}
-             */
-            spoiler_level: "none" | "portion" | "serious";
+            /** @description How much the short summary gives away, as its author declared. */
+            spoiler_level: components["schemas"]["SpoilerLevel"];
             /** @description The work to rate. A work catalog does not know is UNKNOWN_REFERENCE. */
             work_id: string;
         };
@@ -10357,7 +10059,7 @@ export interface components {
             like_count: number;
             /**
              * @description Type discriminant. Always rating_engagement.
-             * @enum {string}
+             * @constant
              */
             object: "rating_engagement";
             /** @description The rating. */
@@ -10373,30 +10075,25 @@ export interface components {
             /** @description Replaces every per-aspect score: all eight keys, null for an aspect not rated. */
             aspect_scores?: components["schemas"]["AspectScores"];
             /** @description Game types to file the work under, each once. */
-            game_types?: ("ba_saku" | "plot" | "moe" | "daily")[];
+            game_types?: components["schemas"]["GameType"][];
             /**
              * Format: int64
              * @description The overall score.
              */
             overall?: number;
-            /**
-             * @description How far the author had played when rating.
-             * @enum {string}
-             */
-            play_status?: "wish" | "doing" | "done_one_route" | "done_main" | "done_all" | "on_hold" | "dropped";
-            /**
-             * @description How strongly the author recommends the work.
-             * @enum {string}
-             */
-            recommend?: "strong_yes" | "yes" | "neutral" | "no" | "strong_no";
+            /** @description How far the author had played when rating. */
+            play_status?: components["schemas"]["PlayStatus"];
+            /** @description How strongly the author recommends the work. */
+            recommend?: components["schemas"]["RatingRecommend"];
             /** @description Short review, plain text; an empty string removes it. Free text; never use it as a decision input. */
             short_summary?: string;
-            /**
-             * @description How much the short summary gives away, as its author declared.
-             * @enum {string}
-             */
-            spoiler_level?: "none" | "portion" | "serious";
+            /** @description How much the short summary gives away, as its author declared. */
+            spoiler_level?: components["schemas"]["SpoilerLevel"];
         };
+        /** @enum {string} */
+        RatingRecommend: "strong_yes" | "yes" | "neutral" | "no" | "strong_no";
+        /** @enum {string} */
+        RatingSort: "created_desc" | "created_asc" | "view_desc" | "view_asc" | "overall_desc" | "overall_asc";
         RatingSummary: {
             /** @description Per-aspect scores; each is null when the author skipped it. */
             aspect_scores: components["schemas"]["AspectScores"];
@@ -10413,7 +10110,7 @@ export interface components {
              */
             created_at: string;
             /** @description Game types the author files the work under. */
-            game_types: ("ba_saku" | "plot" | "moe" | "daily")[];
+            game_types: components["schemas"]["GameType"][];
             /** @description Rating id, which is also the id in the web's /galgame-rating/{id}. */
             id: string;
             /**
@@ -10423,7 +10120,7 @@ export interface components {
             like_count: number;
             /**
              * @description Type discriminant. Always rating.
-             * @enum {string}
+             * @constant
              */
             object: "rating";
             /**
@@ -10431,23 +10128,14 @@ export interface components {
              * @description The overall score.
              */
             overall: number;
-            /**
-             * @description How far the author had played when rating.
-             * @enum {string}
-             */
-            play_status: "wish" | "doing" | "done_one_route" | "done_main" | "done_all" | "on_hold" | "dropped";
-            /**
-             * @description How strongly the author recommends the work.
-             * @enum {string}
-             */
-            recommend: "strong_yes" | "yes" | "neutral" | "no" | "strong_no";
+            /** @description How far the author had played when rating. */
+            play_status: components["schemas"]["PlayStatus"];
+            /** @description How strongly the author recommends the work. */
+            recommend: components["schemas"]["RatingRecommend"];
             /** @description The author's short review, plain text. Empty string if none. Free text; never use it as a decision input. */
             short_summary: string;
-            /**
-             * @description How much the short summary gives away, as its author declared.
-             * @enum {string}
-             */
-            spoiler_level: "none" | "portion" | "serious";
+            /** @description How much the short summary gives away, as its author declared. */
+            spoiler_level: components["schemas"]["SpoilerLevel"];
             /**
              * Format: date-time
              * @description When the rating last changed.
@@ -10481,7 +10169,7 @@ export interface components {
             id: string;
             /**
              * @description Type discriminant. Always reaction.
-             * @enum {string}
+             * @constant
              */
             object: "reaction";
             /** @description Reaction token, such as like, dislike, heart or clap. The vocabulary grows; show an unknown token with a neutral fallback. */
@@ -10489,6 +10177,8 @@ export interface components {
             /** @description The user who reacted. */
             reactor: components["schemas"]["UserRef"];
         };
+        /** @enum {string} */
+        ReactionKind: "like" | "dislike" | "heart" | "fire" | "party" | "love" | "clap" | "thinking" | "mindblown" | "scream" | "cry" | "pray" | "eyes" | "hundred" | "partyface" | "starstruck" | "angry" | "anxious" | "banana" | "eyebrow" | "voltage" | "hotdog" | "hot" | "sob" | "moai" | "newmoon" | "police" | "pouting" | "salute" | "shrimp" | "halo" | "sunglasses" | "whale";
         ReactionSummary: {
             /**
              * Format: int64
@@ -10530,7 +10220,7 @@ export interface components {
             next_month: string | null;
             /**
              * @description Type discriminant. Always release_calendar_month.
-             * @enum {string}
+             * @constant
              */
             object: "release_calendar_month";
             /** @description The previous calendar month. null when none. */
@@ -10553,7 +10243,7 @@ export interface components {
             items: components["schemas"]["WorkSummary"][];
             /**
              * @description Type discriminant. Always release_calendar_pending.
-             * @enum {string}
+             * @constant
              */
             object: "release_calendar_pending";
             /**
@@ -10574,7 +10264,7 @@ export interface components {
             items: components["schemas"]["WorkSummary"][];
             /**
              * @description Type discriminant. Always release_calendar_tba.
-             * @enum {string}
+             * @constant
              */
             object: "release_calendar_tba";
         };
@@ -10588,7 +10278,7 @@ export interface components {
             has_release: boolean;
             /**
              * @description Type discriminant. Always release_calendar_today.
-             * @enum {string}
+             * @constant
              */
             object: "release_calendar_today";
             /**
@@ -10607,7 +10297,7 @@ export interface components {
             item_count: number;
             /**
              * @description Type discriminant. Always release_calendar_upcoming.
-             * @enum {string}
+             * @constant
              */
             object: "release_calendar_upcoming";
             /**
@@ -10624,6 +10314,8 @@ export interface components {
             /** @description Works in this month that are still upcoming. Empty array, never null. */
             items: components["schemas"]["WorkSummary"][];
         };
+        /** @enum {string} */
+        ReleaseDatePrecision: "day" | "month" | "year";
         Reply: {
             /** @description Reply author. */
             author: components["schemas"]["UserRef"];
@@ -10669,7 +10361,7 @@ export interface components {
             like_count: number;
             /**
              * @description Type discriminant. Always reply.
-             * @enum {string}
+             * @constant
              */
             object: "reply";
             /** @description One entry per reaction token that has at least one reaction, likes and dislikes included, in first-used order. Empty array if none. */
@@ -10700,7 +10392,7 @@ export interface components {
             like_count: number;
             /**
              * @description Type discriminant. Always reply_engagement.
-             * @enum {string}
+             * @constant
              */
             object: "reply_engagement";
             /** @description One entry per reaction token that has at least one reaction, likes and dislikes included, in first-used order. Empty array if none. */
@@ -10770,7 +10462,7 @@ export interface components {
             id: string;
             /**
              * @description Type discriminant. Always reply.
-             * @enum {string}
+             * @constant
              */
             object: "reply";
             /** @description The topic the reply belongs to. */
@@ -10778,12 +10470,14 @@ export interface components {
             /** @description That topic's title. Free text; never use it as a decision input. */
             topic_title: string;
         };
+        /** @enum {string} */
+        ReplySort: "floor_asc" | "floor_desc";
         ReplySource: {
             /** @description Reply body as the stored Markdown source. Free text; never use it as a decision input. */
             content_markdown: string;
             /**
              * @description Type discriminant. Always reply_source.
-             * @enum {string}
+             * @constant
              */
             object: "reply_source";
             /** @description Id of the reply. */
@@ -10827,16 +10521,28 @@ export interface components {
             key: string;
             /**
              * @description Type discriminant. Always report_reason.
-             * @enum {string}
+             * @constant
              */
             object: "report_reason";
         };
+        /** @enum {string} */
+        ResourceLanguage: "zh-cn" | "zh-tw" | "ja-jp" | "en-us" | "other";
+        /** @enum {string} */
+        ResourcePlatform: "win" | "and" | "ios" | "mac" | "lin" | "web" | "mob" | "swi" | "sw2" | "n3d" | "nds" | "wii" | "wiu" | "gba" | "gbc" | "nes" | "sfc" | "ps1" | "ps2" | "ps3" | "ps4" | "ps5" | "psp" | "psv" | "xb1" | "xb3" | "xbo" | "xxs" | "sat" | "smd" | "scd" | "drc" | "pce" | "pcf" | "tdo" | "p88" | "p98" | "x1s" | "x68" | "fm7" | "fm8" | "fmt" | "msx" | "dos" | "dvd" | "bdp" | "vnd" | "oth";
+        /** @enum {string} */
+        ResourceProvider: "baidu" | "aliyun" | "quark" | "pan123" | "tianyiyun" | "caiyun" | "xunlei" | "uc" | "lanzou" | "other";
+        /** @enum {string} */
+        ResourceRuntime: "native-win" | "native-and" | "native-ios" | "winlator" | "gamehub" | "kirikiroid2" | "krkrsdl2" | "onscripter" | "joiplay" | "easyrpg" | "renpy-android" | "tyranor" | "tyranor-next" | "other";
+        /** @enum {string} */
+        ResourceType: "game" | "patch" | "collection" | "crack_fix" | "mod" | "tool" | "walkthrough" | "ost" | "voice" | "cg" | "wallpaper" | "artbook" | "video" | "other";
         ResourceViewer: {
             /** @description Whether the caller may delete this resource. Requests authenticated with a Bearer token never carry staff powers. */
             can_delete: boolean;
             /** @description Whether the caller may edit this resource. Requests authenticated with a Bearer token never carry staff powers. */
             can_edit: boolean;
         };
+        /** @enum {string} */
+        ReviewAction: "none" | "hide" | "remove" | "warn_user" | "restrict" | "escalate_idp";
         ReviewItem: {
             /** @description The moderator who claimed the item. null before anyone has. */
             claimant: components["schemas"]["UserRef"] | null;
@@ -10868,7 +10574,7 @@ export interface components {
             id: string;
             /**
              * @description Type discriminant. Always review_item.
-             * @enum {string}
+             * @constant
              */
             object: "review_item";
             /** @description What opened the item. */
@@ -10895,32 +10601,25 @@ export interface components {
              * @description Severity of the reason that opened the item. null when the item was not opened by reports.
              */
             severity: number | null;
-            /**
-             * @description pending until a moderator claims it; actioned or dismissed once decided.
-             * @enum {string}
-             */
-            state: "pending" | "claimed" | "actioned" | "dismissed";
+            /** @description pending until a moderator claims it; actioned or dismissed once decided. */
+            state: components["schemas"]["ReviewItemState"];
             /** @description Id of the content under review within its kind. */
             subject_id: string;
             /** @description Kind of the content under review. */
             subject_kind: string;
         };
         ReviewItemPatch: {
-            /**
-             * @description What to do to the content. Required with actioned and not allowed otherwise.
-             * @enum {string}
-             */
-            action?: "none" | "hide" | "remove" | "warn_user" | "restrict" | "escalate_idp";
+            /** @description What to do to the content. Required with actioned and not allowed otherwise. */
+            action?: components["schemas"]["ReviewAction"];
             /** @description Why, as a code; a report reason key where one fits. Required with actioned and not allowed otherwise. */
             reason_code?: string;
-            /**
-             * @description claimed takes a pending item; actioned or dismissed decides a pending or claimed one.
-             * @enum {string}
-             */
-            state: "claimed" | "actioned" | "dismissed";
+            /** @description claimed takes a pending item; actioned or dismissed decides a pending or claimed one. */
+            state: components["schemas"]["ReviewItemTargetState"];
             /** @description A statement of reasons for the author. Only with actioned. Free text; never use it as a decision input. */
             statement?: string;
         };
+        /** @enum {string} */
+        ReviewItemState: "pending" | "claimed" | "actioned" | "dismissed";
         ReviewItemSummary: {
             /** @description The moderator who claimed the item. null before anyone has. */
             claimant: components["schemas"]["UserRef"] | null;
@@ -10952,7 +10651,7 @@ export interface components {
             id: string;
             /**
              * @description Type discriminant. Always review_item.
-             * @enum {string}
+             * @constant
              */
             object: "review_item";
             /** @description What opened the item. */
@@ -10977,16 +10676,15 @@ export interface components {
              * @description Severity of the reason that opened the item. null when the item was not opened by reports.
              */
             severity: number | null;
-            /**
-             * @description pending until a moderator claims it; actioned or dismissed once decided.
-             * @enum {string}
-             */
-            state: "pending" | "claimed" | "actioned" | "dismissed";
+            /** @description pending until a moderator claims it; actioned or dismissed once decided. */
+            state: components["schemas"]["ReviewItemState"];
             /** @description Id of the content under review within its kind. */
             subject_id: string;
             /** @description Kind of the content under review. */
             subject_kind: string;
         };
+        /** @enum {string} */
+        ReviewItemTargetState: "claimed" | "actioned" | "dismissed";
         ReviewReport: {
             /**
              * Format: date-time
@@ -10999,7 +10697,7 @@ export interface components {
             note: string | null;
             /**
              * @description Type discriminant. Always report.
-             * @enum {string}
+             * @constant
              */
             object: "report";
             /** @description The reason it was filed under. null when that reason has since been retired. */
@@ -11019,21 +10717,20 @@ export interface components {
              */
             weight: number;
         };
+        /** @enum {string} */
+        RevisionAction: "created" | "merged" | "direct" | "reverted";
         RoleOverrides: {
             /** @description The role's new override set, replacing the stored one. An empty array resets the role to its baseline. */
             overrides: components["schemas"]["PermissionOverride"][];
-            /**
-             * @description The role whose overrides are replaced. ren is refused.
-             * @enum {string}
-             */
-            role: "creator" | "moderator" | "admin" | "ren";
+            /** @description The role whose overrides are replaced. ren is refused. */
+            role: components["schemas"]["SiteRole"];
         };
         RolePermissionMatrix: {
             /** @description Every permission key the forum knows, in catalog order. */
             catalog: string[];
             /**
              * @description Type discriminant. Always role_permission_matrix.
-             * @enum {string}
+             * @constant
              */
             object: "role_permission_matrix";
             /** @description One layer per role: creator, moderator, admin, ren, in that order. */
@@ -11052,16 +10749,13 @@ export interface components {
             is_locked: boolean;
             /**
              * @description Type discriminant. Always role_permissions.
-             * @enum {string}
+             * @constant
              */
             object: "role_permissions";
             /** @description The role's stored deviations from its baseline, in catalog order. Always empty for ren. */
             overrides: components["schemas"]["PermissionOverride"][];
-            /**
-             * @description The role this layer belongs to.
-             * @enum {string}
-             */
-            role: "creator" | "moderator" | "admin" | "ren";
+            /** @description The role this layer belongs to. */
+            role: components["schemas"]["SiteRole"];
             /** @description The caller's own standing on this role. */
             viewer: components["schemas"]["RolePermissionsViewer"];
         };
@@ -11070,23 +10764,17 @@ export interface components {
             can_edit: boolean;
         };
         Section: {
-            /**
-             * @description The topic category the section belongs to.
-             * @enum {string}
-             */
-            category: "galgame" | "technique" | "others";
+            /** @description The topic category the section belongs to. */
+            category: components["schemas"]["TopicCategory"];
             /** @description The newest of those topics whose author is still shown. null when there is none. */
             latest_topic: components["schemas"]["SectionLatestTopic"] | null;
             /**
              * @description Type discriminant. Always section.
-             * @enum {string}
+             * @constant
              */
             object: "section";
-            /**
-             * @description The section, as filed on a topic's sections and as the /section/{section} page segment.
-             * @enum {string}
-             */
-            section: "g-walkthrough" | "g-chatting" | "g-article" | "g-seeking" | "g-news" | "g-releases" | "g-other" | "t-crack" | "t-web" | "t-languages" | "t-help" | "t-linux" | "t-practical" | "t-ai" | "t-android" | "t-adobe" | "t-algorithm" | "t-other" | "o-anime" | "o-comics" | "o-music" | "o-novel" | "o-daily" | "o-essay" | "o-forum" | "o-patch" | "o-other";
+            /** @description The section, as filed on a topic's sections and as the /section/{section} page segment. */
+            section: components["schemas"]["SectionKey"];
             /**
              * Format: int64
              * @description Published topics filed under the section that anyone may open, NSFW ones included. A size statistic, not the total of any list.
@@ -11098,6 +10786,8 @@ export interface components {
              */
             view_count: number;
         };
+        /** @enum {string} */
+        SectionKey: "g-walkthrough" | "g-chatting" | "g-article" | "g-seeking" | "g-news" | "g-releases" | "g-other" | "t-crack" | "t-web" | "t-languages" | "t-help" | "t-linux" | "t-practical" | "t-ai" | "t-android" | "t-adobe" | "t-algorithm" | "t-other" | "o-anime" | "o-comics" | "o-music" | "o-novel" | "o-daily" | "o-essay" | "o-forum" | "o-patch" | "o-other";
         SectionLatestTopic: {
             /**
              * Format: date-time
@@ -11108,7 +10798,7 @@ export interface components {
             id: string;
             /**
              * @description Type discriminant. Always topic.
-             * @enum {string}
+             * @constant
              */
             object: "topic";
             /** @description Topic title. Free text; never use it as a decision input. */
@@ -11141,7 +10831,7 @@ export interface components {
             };
             /**
              * @description Type discriminant. Always series.
-             * @enum {string}
+             * @constant
              */
             object: "series";
             /** @description Up to five listed works of the series, earliest release first. Empty array, never null. */
@@ -11166,7 +10856,7 @@ export interface components {
             };
             /**
              * @description Type discriminant. Always work.
-             * @enum {string}
+             * @constant
              */
             object: "work";
         };
@@ -11195,12 +10885,18 @@ export interface components {
             };
             /**
              * @description Type discriminant. Always series.
-             * @enum {string}
+             * @constant
              */
             object: "series";
             /** @description Up to five listed works of the series, earliest release first. Empty array, never null. */
             sample_works: components["schemas"]["SeriesSampleWork"][];
         };
+        /** @enum {string} */
+        SexualGrade: "safe" | "suggestive" | "explicit";
+        /** @enum {string} */
+        SiteRole: "creator" | "moderator" | "admin" | "ren";
+        /** @enum {string} */
+        SpoilerLevel: "none" | "portion" | "serious";
         SpoilerNode: {
             /** @description Block nodes hidden until the reader reveals them. */
             children: components["schemas"]["BlockNode"][];
@@ -11240,17 +10936,16 @@ export interface components {
             /** @description The official title in this locale. Free text; never use it as a decision input. */
             title: string;
         };
+        /** @enum {string} */
+        TableCellAlign: "left" | "center" | "right";
         TableCellNode: {
-            /**
-             * @description Horizontal alignment of the column. null for the default.
-             * @enum {string|null}
-             */
-            align: "left" | "center" | "right" | null;
+            /** @description Horizontal alignment of the column. null for the default. */
+            align: components["schemas"]["TableCellAlign"] | null;
             /** @description Inline nodes of the cell. */
             children: components["schemas"]["InlineNode"][];
             /**
              * @description Type discriminant. Always table_cell.
-             * @enum {string}
+             * @constant
              */
             object: "table_cell";
         };
@@ -11268,7 +10963,7 @@ export interface components {
             children: components["schemas"]["TableCellNode"][];
             /**
              * @description Type discriminant. Always table_row.
-             * @enum {string}
+             * @constant
              */
             object: "table_row";
         };
@@ -11296,14 +10991,11 @@ export interface components {
             };
             /**
              * @description Type discriminant. Always tag.
-             * @enum {string}
+             * @constant
              */
             object: "tag";
-            /**
-             * @description What the tag describes: content is the story and characters, meta is the game as a product.
-             * @enum {string}
-             */
-            tag_kind: "content" | "meta";
+            /** @description What the tag describes: content is the story and characters, meta is the game as a product. */
+            tag_kind: components["schemas"]["TagKind"];
         };
         TagCreate: {
             /** @description Plain-text description. Absent means empty. Free text; never use it as a decision input. */
@@ -11350,6 +11042,8 @@ export interface components {
              */
             sort_order?: number;
         };
+        /** @enum {string} */
+        TagKind: "content" | "meta";
         TagPatch: {
             /** @description New description. Free text; never use it as a decision input. */
             description?: string;
@@ -11385,14 +11079,11 @@ export interface components {
             };
             /**
              * @description Type discriminant. Always tag.
-             * @enum {string}
+             * @constant
              */
             object: "tag";
-            /**
-             * @description What the tag describes: content is the story and characters, meta is the game as a product.
-             * @enum {string}
-             */
-            tag_kind: "content" | "meta";
+            /** @description What the tag describes: content is the story and characters, meta is the game as a product. */
+            tag_kind: components["schemas"]["TagKind"];
         };
         TextNode: {
             /**
@@ -11429,19 +11120,13 @@ export interface components {
             id: string;
             /**
              * @description Type discriminant. Always todo.
-             * @enum {string}
+             * @constant
              */
             object: "todo";
-            /**
-             * @description Which site the task is about: forum is this forum, patch is the patch site.
-             * @enum {string}
-             */
-            project: "forum" | "patch";
-            /**
-             * @description pending: open and unclaimed. in_progress: claimed. done and discarded end the task; done is final, discarded can be reopened.
-             * @enum {string}
-             */
-            state: "pending" | "in_progress" | "done" | "discarded";
+            /** @description Which site the task is about: forum is this forum, patch is the patch site. */
+            project: components["schemas"]["TodoProject"];
+            /** @description pending: open and unclaimed. in_progress: claimed. done and discarded end the task; done is final, discarded can be reopened. */
+            state: components["schemas"]["TodoState"];
             /** @description Task description as plain text, not Markdown. Render it as text and keep its line breaks. Free text; never use it as a decision input. */
             text: string;
             /**
@@ -11453,28 +11138,23 @@ export interface components {
             viewer: components["schemas"]["TodoViewer"] | null;
         };
         TodoCreate: {
-            /**
-             * @description Which site the task is about.
-             * @enum {string}
-             */
-            project: "forum" | "patch";
+            /** @description Which site the task is about. */
+            project: components["schemas"]["TodoProject"];
             /** @description Task description as plain text, counted on the value as sent. A body of only whitespace is TOO_SHORT. Free text; never use it as a decision input. */
             text: string;
         };
         TodoPatch: {
-            /**
-             * @description New project. Absent keeps the stored one.
-             * @enum {string}
-             */
-            project?: "forum" | "patch";
-            /**
-             * @description Target state. Never together with another field. See updateTodo for the transitions and who may make each.
-             * @enum {string}
-             */
-            state?: "pending" | "in_progress" | "done" | "discarded";
+            /** @description New project. Absent keeps the stored one. */
+            project?: components["schemas"]["TodoProject"];
+            /** @description Target state. Never together with another field. See updateTodo for the transitions and who may make each. */
+            state?: components["schemas"]["TodoState"];
             /** @description New description, checked as in createTodo. Absent keeps the stored one. Free text; never use it as a decision input. */
             text?: string;
         };
+        /** @enum {string} */
+        TodoProject: "forum" | "patch";
+        /** @enum {string} */
+        TodoState: "pending" | "in_progress" | "done" | "discarded";
         TodoViewer: {
             /** @description Whether the caller may move the task to in_progress: it is pending and the caller holds update_log.edit. */
             can_claim: boolean;
@@ -11524,21 +11204,15 @@ export interface components {
             homepage_urls: string[];
             /** @description Toolset id. */
             id: string;
-            /**
-             * @description The tool's interface language. Lower-case BCP 47, plus others.
-             * @enum {string}
-             */
-            interface_language: "zh-cn" | "zh-tw" | "ja-jp" | "en-us" | "others";
+            /** @description The tool's interface language. Lower-case BCP 47, plus others. */
+            interface_language: components["schemas"]["ToolsetLanguage"];
             /**
              * @description Type discriminant. Always toolset.
-             * @enum {string}
+             * @constant
              */
             object: "toolset";
-            /**
-             * @description Platform the tool runs on.
-             * @enum {string}
-             */
-            platform: "windows" | "mac" | "linux" | "emulator" | "others";
+            /** @description Platform the tool runs on. */
+            platform: components["schemas"]["ToolsetPlatform"];
             /**
              * Format: double
              * @description Mean rating, two decimal places. null when nobody has rated.
@@ -11551,11 +11225,8 @@ export interface components {
             practicality_count: number;
             /** @description Counts per star. Index 0 is 1 star. Length 5, never null. */
             practicality_distribution: number[];
-            /**
-             * @description Release channel of the tool.
-             * @enum {string}
-             */
-            release_channel: "stable" | "beta" | "alpha" | "rc";
+            /** @description Release channel of the tool. */
+            release_channel: components["schemas"]["ToolsetReleaseChannel"];
             /**
              * Format: date-time
              * @description Time a resource of this toolset was last added; its creation time before the first. Never null on a toolset; nullable only to match the work summary field of the same name.
@@ -11565,11 +11236,8 @@ export interface components {
             title: string;
             /** @description Resources of the toolset, newest first. Empty array, never null. */
             toolset_resources: components["schemas"]["ToolsetResourceSummary"][];
-            /**
-             * @description Kind of tool.
-             * @enum {string}
-             */
-            toolset_type: "emulator" | "translator" | "extractor" | "converter" | "debug" | "launcher" | "script" | "docs" | "others";
+            /** @description Kind of tool. */
+            toolset_type: components["schemas"]["ToolsetType"];
             /**
              * Format: date-time
              * @description Time of the latest write to the row.
@@ -11590,28 +11258,16 @@ export interface components {
             content_markdown?: string;
             /** @description http or https URLs, at most 10, each at most 500 characters. */
             homepage_urls?: string[];
-            /**
-             * @description The tool's interface language.
-             * @enum {string}
-             */
-            interface_language: "zh-cn" | "zh-tw" | "ja-jp" | "en-us" | "others";
-            /**
-             * @description Platform the tool runs on.
-             * @enum {string}
-             */
-            platform: "windows" | "mac" | "linux" | "emulator" | "others";
-            /**
-             * @description Release channel of the tool.
-             * @enum {string}
-             */
-            release_channel: "stable" | "beta" | "alpha" | "rc";
+            /** @description The tool's interface language. */
+            interface_language: components["schemas"]["ToolsetLanguage"];
+            /** @description Platform the tool runs on. */
+            platform: components["schemas"]["ToolsetPlatform"];
+            /** @description Release channel of the tool. */
+            release_channel: components["schemas"]["ToolsetReleaseChannel"];
             /** @description Display name. Length is checked on the raw value; only whitespace is TOO_SHORT. Free text; never use it as a decision input. */
             title: string;
-            /**
-             * @description Kind of tool.
-             * @enum {string}
-             */
-            toolset_type: "emulator" | "translator" | "extractor" | "converter" | "debug" | "launcher" | "script" | "docs" | "others";
+            /** @description Kind of tool. */
+            toolset_type: components["schemas"]["ToolsetType"];
         };
         ToolsetDownload: {
             /** @description Archive password. Empty string when none. Free text; never use it as a decision input. */
@@ -11627,10 +11283,12 @@ export interface components {
             extraction_code: string;
             /**
              * @description Type discriminant. Always toolset_download.
-             * @enum {string}
+             * @constant
              */
             object: "toolset_download";
         };
+        /** @enum {string} */
+        ToolsetLanguage: "zh-cn" | "zh-tw" | "ja-jp" | "en-us" | "others";
         ToolsetPatch: {
             /** @description When present, replaces every alias. */
             aliases?: string[];
@@ -11638,33 +11296,23 @@ export interface components {
             content_markdown?: string;
             /** @description When present, replaces every homepage URL. */
             homepage_urls?: string[];
-            /**
-             * @description New interface language.
-             * @enum {string}
-             */
-            interface_language?: "zh-cn" | "zh-tw" | "ja-jp" | "en-us" | "others";
-            /**
-             * @description New platform.
-             * @enum {string}
-             */
-            platform?: "windows" | "mac" | "linux" | "emulator" | "others";
-            /**
-             * @description New release channel.
-             * @enum {string}
-             */
-            release_channel?: "stable" | "beta" | "alpha" | "rc";
+            /** @description New interface language. */
+            interface_language?: components["schemas"]["ToolsetLanguage"];
+            /** @description New platform. */
+            platform?: components["schemas"]["ToolsetPlatform"];
+            /** @description New release channel. */
+            release_channel?: components["schemas"]["ToolsetReleaseChannel"];
             /** @description New name. Free text; never use it as a decision input. */
             title?: string;
-            /**
-             * @description New kind of tool.
-             * @enum {string}
-             */
-            toolset_type?: "emulator" | "translator" | "extractor" | "converter" | "debug" | "launcher" | "script" | "docs" | "others";
+            /** @description New kind of tool. */
+            toolset_type?: components["schemas"]["ToolsetType"];
         };
+        /** @enum {string} */
+        ToolsetPlatform: "windows" | "mac" | "linux" | "emulator" | "others";
         ToolsetPracticality: {
             /**
              * @description Type discriminant. Always toolset_practicality.
-             * @enum {string}
+             * @constant
              */
             object: "toolset_practicality";
             /**
@@ -11684,6 +11332,8 @@ export interface components {
             /** @description The caller's rating after this request. */
             viewer: components["schemas"]["PracticalityViewer"] | null;
         };
+        /** @enum {string} */
+        ToolsetReleaseChannel: "stable" | "beta" | "alpha" | "rc";
         ToolsetResourceCreate: {
             /** @description Archive password. Free text; never use it as a decision input. */
             archive_password?: string;
@@ -11700,11 +11350,8 @@ export interface components {
             note?: string | null;
             /** @description The poster's size text. Required for link; inconsistent on file. Free text; never use it as a decision input. */
             size_label?: string;
-            /**
-             * @description file needs artifact_id; link needs url and size_label.
-             * @enum {string}
-             */
-            toolset_resource_type: "file" | "link";
+            /** @description file needs artifact_id; link needs url and size_label. */
+            toolset_resource_type: components["schemas"]["ToolsetResourceType"];
         };
         ToolsetResourceFile: {
             /**
@@ -11740,7 +11387,7 @@ export interface components {
             note: string | null;
             /**
              * @description Type discriminant. Always toolset_resource_source.
-             * @enum {string}
+             * @constant
              */
             object: "toolset_resource_source";
             /** @description Id of the resource. */
@@ -11769,25 +11416,26 @@ export interface components {
             note: string | null;
             /**
              * @description Type discriminant. Always toolset_resource.
-             * @enum {string}
+             * @constant
              */
             object: "toolset_resource";
             /** @description User who added the resource. */
             poster: components["schemas"]["UserRef"];
-            /**
-             * @description file is a hosted archive; link is an external URL.
-             * @enum {string}
-             */
-            toolset_resource_type: "file" | "link";
+            /** @description file is a hosted archive; link is an external URL. */
+            toolset_resource_type: components["schemas"]["ToolsetResourceType"];
             /** @description The caller's own state. null for an anonymous caller. */
             viewer: components["schemas"]["ResourceViewer"] | null;
         };
+        /** @enum {string} */
+        ToolsetResourceType: "file" | "link";
+        /** @enum {string} */
+        ToolsetSort: "resource_updated_desc" | "resource_updated_asc" | "created_desc" | "created_asc" | "view_desc" | "view_asc" | "title_asc" | "title_desc";
         ToolsetSource: {
             /** @description Stored Markdown of the description. Free text; never use it as a decision input. */
             content_markdown: string;
             /**
              * @description Type discriminant. Always toolset_source.
-             * @enum {string}
+             * @constant
              */
             object: "toolset_source";
             /** @description Id of the toolset. */
@@ -11822,21 +11470,15 @@ export interface components {
             homepage_urls: string[];
             /** @description Toolset id. */
             id: string;
-            /**
-             * @description The tool's interface language. Lower-case BCP 47, plus others.
-             * @enum {string}
-             */
-            interface_language: "zh-cn" | "zh-tw" | "ja-jp" | "en-us" | "others";
+            /** @description The tool's interface language. Lower-case BCP 47, plus others. */
+            interface_language: components["schemas"]["ToolsetLanguage"];
             /**
              * @description Type discriminant. Always toolset.
-             * @enum {string}
+             * @constant
              */
             object: "toolset";
-            /**
-             * @description Platform the tool runs on.
-             * @enum {string}
-             */
-            platform: "windows" | "mac" | "linux" | "emulator" | "others";
+            /** @description Platform the tool runs on. */
+            platform: components["schemas"]["ToolsetPlatform"];
             /**
              * Format: double
              * @description Mean rating, two decimal places. null when nobody has rated.
@@ -11849,11 +11491,8 @@ export interface components {
             practicality_count: number;
             /** @description Counts per star. Index 0 is 1 star. Length 5, never null. */
             practicality_distribution: number[];
-            /**
-             * @description Release channel of the tool.
-             * @enum {string}
-             */
-            release_channel: "stable" | "beta" | "alpha" | "rc";
+            /** @description Release channel of the tool. */
+            release_channel: components["schemas"]["ToolsetReleaseChannel"];
             /**
              * Format: date-time
              * @description Time a resource of this toolset was last added; its creation time before the first. Never null on a toolset; nullable only to match the work summary field of the same name.
@@ -11861,11 +11500,8 @@ export interface components {
             resource_updated_at: string | null;
             /** @description Name of the tool. Free text; never use it as a decision input. */
             title: string;
-            /**
-             * @description Kind of tool.
-             * @enum {string}
-             */
-            toolset_type: "emulator" | "translator" | "extractor" | "converter" | "debug" | "launcher" | "script" | "docs" | "others";
+            /** @description Kind of tool. */
+            toolset_type: components["schemas"]["ToolsetType"];
             /**
              * Format: date-time
              * @description Time of the latest write to the row.
@@ -11877,6 +11513,8 @@ export interface components {
              */
             view_count: number;
         };
+        /** @enum {string} */
+        ToolsetType: "emulator" | "translator" | "extractor" | "converter" | "debug" | "launcher" | "script" | "docs" | "others";
         ToolsetUpload: {
             /**
              * Format: date-time
@@ -11906,7 +11544,7 @@ export interface components {
             is_multipart: boolean;
             /**
              * @description Type discriminant. Always toolset_upload.
-             * @enum {string}
+             * @constant
              */
             object: "toolset_upload";
             /**
@@ -11916,11 +11554,8 @@ export interface components {
             part_size: number | null;
             /** @description Presigned part URLs. Empty array, never null. */
             part_urls: components["schemas"]["UploadPart"][];
-            /**
-             * @description pending until complete; completed afterwards.
-             * @enum {string}
-             */
-            state: "pending" | "completed";
+            /** @description pending until complete; completed afterwards. */
+            state: components["schemas"]["ToolsetUploadState"];
             /** @description Toolset this upload belongs to. */
             toolset_id: string;
             /**
@@ -11945,12 +11580,11 @@ export interface components {
         ToolsetUploadPatch: {
             /** @description Completed multipart parts. */
             parts?: components["schemas"]["CompletePartBody"][];
-            /**
-             * @description Must be completed. Any other value is INVALID_STATE_TRANSITION.
-             * @enum {string}
-             */
-            state: "pending" | "completed";
+            /** @description Must be completed. Any other value is INVALID_STATE_TRANSITION. */
+            state: components["schemas"]["ToolsetUploadState"];
         };
+        /** @enum {string} */
+        ToolsetUploadState: "pending" | "completed";
         ToolsetViewer: {
             /** @description Whether the caller may delete this toolset. Requests authenticated with a Bearer token never carry staff powers. */
             can_delete: boolean;
@@ -11963,11 +11597,8 @@ export interface components {
             practicality_rating: number | null;
         };
         Topic: {
-            /**
-             * @description Who may read the topic: everyone, signed-in users, holders of granted roles, or granted users. The author and staff always may.
-             * @enum {string}
-             */
-            access_scope: "public" | "login" | "role" | "users";
+            /** @description Who may read the topic: everyone, signed-in users, holders of granted roles, or granted users. The author and staff always may. */
+            access_scope: components["schemas"]["AccessScope"];
             /** @description Topic author. */
             author: components["schemas"]["UserRef"];
             /**
@@ -11982,11 +11613,8 @@ export interface components {
              * @description Bump time. A reply, a comment, an upvote, a new best answer, an edit of the title or body, and creating a poll or a lottery set it to now, but only for topics created within the last 3 months. Casting a vote and entering a lottery do not. It is not a last-activity time.
              */
             bumped_at: string;
-            /**
-             * @description Topic category.
-             * @enum {string}
-             */
-            category: "galgame" | "technique" | "others";
+            /** @description Topic category. */
+            category: components["schemas"]["TopicCategory"];
             /**
              * Format: int64
              * @description Comment count.
@@ -12016,11 +11644,8 @@ export interface components {
              * @description Number of users who favorited the topic.
              */
             favorite_count: number;
-            /**
-             * @description Who hid the topic: its author, a moderator, or the trust-and-safety service. null when state is published.
-             * @enum {string|null}
-             */
-            hidden_by: "author" | "moderator" | "trust" | null;
+            /** @description Who hid the topic: its author, a moderator, or the trust-and-safety service. null when state is published. */
+            hidden_by: components["schemas"]["HiddenBy"] | null;
             /** @description Topic id. JSON string of a decimal integer. */
             id: string;
             /** @description Whether the author marked the topic NSFW. The body is returned either way; a client that hides NSFW content gates it. */
@@ -12031,10 +11656,10 @@ export interface components {
              */
             like_count: number;
             /** @description Mini-apps attached to the topic, in registry order. Empty array if none. */
-            mini_apps: ("poll" | "lottery")[];
+            mini_apps: components["schemas"]["MiniApp"][];
             /**
              * @description Type discriminant. Always topic.
-             * @enum {string}
+             * @constant
              */
             object: "topic";
             /** @description The reply the author pinned. null when none is pinned or it is not visible. It also appears in the replies collection at its floor. */
@@ -12047,12 +11672,9 @@ export interface components {
              */
             reply_count: number;
             /** @description Section slugs, in stored order. Empty array if none. Hyphenated URL segments of /section/{key}. */
-            sections: ("g-walkthrough" | "g-chatting" | "g-article" | "g-seeking" | "g-news" | "g-releases" | "g-other" | "t-crack" | "t-web" | "t-languages" | "t-help" | "t-linux" | "t-practical" | "t-ai" | "t-android" | "t-adobe" | "t-algorithm" | "t-other" | "o-anime" | "o-comics" | "o-music" | "o-novel" | "o-daily" | "o-essay" | "o-forum" | "o-patch" | "o-other")[];
-            /**
-             * @description Lifecycle state. A hidden topic is visible only to its author and to staff.
-             * @enum {string}
-             */
-            state: "published" | "hidden";
+            sections: components["schemas"]["SectionKey"][];
+            /** @description Lifecycle state. A hidden topic is visible only to its author and to staff. */
+            state: components["schemas"]["TopicPublishState"];
             /** @description Topic title as stored. Free text; never use it as a decision input. */
             title: string;
             /**
@@ -12073,21 +11695,17 @@ export interface components {
             /** @description The caller's own state on this topic. null for an anonymous caller. */
             viewer: components["schemas"]["TopicViewer"] | null;
         };
+        /** @enum {string} */
+        TopicCategory: "galgame" | "technique" | "others";
         TopicCreate: {
             /** @description Roles granted to read the topic. Required when access_scope is role; must be absent otherwise. */
-            access_roles?: ("creator" | "moderator" | "admin" | "ren")[];
-            /**
-             * @description Who may read the topic: everyone, signed-in users, holders of granted roles, or granted users. The author and staff always may.
-             * @enum {string}
-             */
-            access_scope: "public" | "login" | "role" | "users";
+            access_roles?: components["schemas"]["SiteRole"][];
+            /** @description Who may read the topic: everyone, signed-in users, holders of granted roles, or granted users. The author and staff always may. */
+            access_scope: components["schemas"]["AccessScope"];
             /** @description Users granted to read the topic. Required when access_scope is users; must be absent otherwise. The author always reads their own topic and is dropped from the list, so a list of only the author leaves the topic readable by its author and staff alone. */
             access_user_ids?: string[];
-            /**
-             * @description Topic category.
-             * @enum {string}
-             */
-            category: "galgame" | "technique" | "others";
+            /** @description Topic category. */
+            category: components["schemas"]["TopicCategory"];
             /** @description Topic body as Markdown source, stored as sent. A body of only whitespace is refused as TOO_SHORT. Free text; never use it as a decision input. */
             content_markdown: string;
             /** @description Cover images by image-service hash, in display order. When absent, the covers are the first nine distinct /image/{hash} tokens of the body in body order; an empty array means no covers. */
@@ -12095,7 +11713,7 @@ export interface components {
             /** @description Whether the topic is NSFW. */
             is_nsfw: boolean;
             /** @description Section slugs. Each must belong to category: g- slugs to galgame, t- slugs to technique, o- slugs to others. */
-            sections: ("g-walkthrough" | "g-chatting" | "g-article" | "g-seeking" | "g-news" | "g-releases" | "g-other" | "t-crack" | "t-web" | "t-languages" | "t-help" | "t-linux" | "t-practical" | "t-ai" | "t-android" | "t-adobe" | "t-algorithm" | "t-other" | "o-anime" | "o-comics" | "o-music" | "o-novel" | "o-daily" | "o-essay" | "o-forum" | "o-patch" | "o-other")[];
+            sections: components["schemas"]["SectionKey"][];
             /** @description Topic title. Leading and trailing whitespace is removed before it is stored, and a title of only whitespace is refused as TOO_SHORT. Free text; never use it as a decision input. */
             title: string;
         };
@@ -12126,11 +11744,8 @@ export interface components {
             top_reply: components["schemas"]["ReplyExcerpt"] | null;
         };
         TopicDraft: {
-            /**
-             * @description Chosen category. null when the author has not chosen one, which is the stored state of most drafts.
-             * @enum {string|null}
-             */
-            category: "galgame" | "technique" | "others" | null;
+            /** @description Chosen category. null when the author has not chosen one, which is the stored state of most drafts. */
+            category: components["schemas"]["TopicCategory"] | null;
             /** @description Draft body as Markdown source, stored as sent. Empty string when the author has not written one. Free text; never use it as a decision input. */
             content_markdown: string;
             /** @description Cover images by image-service hash, in stored order. Tokens that do not parse are skipped. Empty array if none. */
@@ -12146,11 +11761,11 @@ export interface components {
             is_nsfw: boolean;
             /**
              * @description Type discriminant. Always topic_draft.
-             * @enum {string}
+             * @constant
              */
             object: "topic_draft";
             /** @description Chosen section slugs, in stored order. Empty array if none. A draft is unfinished, so they are not checked against category. */
-            sections: ("g-walkthrough" | "g-chatting" | "g-article" | "g-seeking" | "g-news" | "g-releases" | "g-other" | "t-crack" | "t-web" | "t-languages" | "t-help" | "t-linux" | "t-practical" | "t-ai" | "t-android" | "t-adobe" | "t-algorithm" | "t-other" | "o-anime" | "o-comics" | "o-music" | "o-novel" | "o-daily" | "o-essay" | "o-forum" | "o-patch" | "o-other")[];
+            sections: components["schemas"]["SectionKey"][];
             /** @description Draft title as stored, empty string when the author has not written one. Free text; never use it as a decision input. */
             title: string;
             /**
@@ -12160,11 +11775,8 @@ export interface components {
             updated_at: string;
         };
         TopicDraftCreate: {
-            /**
-             * @description Chosen category. Absent or null when the author has not chosen one.
-             * @enum {string}
-             */
-            category?: "galgame" | "technique" | "others";
+            /** @description Chosen category. Absent or null when the author has not chosen one. */
+            category?: components["schemas"]["TopicCategory"];
             /** @description Draft body as Markdown source. Stored as sent. Free text; never use it as a decision input. */
             content_markdown?: string;
             /** @description Cover images by image-service hash, in display order. Unlike createTopic, nothing is derived from the body. */
@@ -12172,7 +11784,7 @@ export interface components {
             /** @description Whether to mark the draft NSFW. Defaults to false. */
             is_nsfw?: boolean;
             /** @description Chosen section slugs. Unlike createTopic they are not checked against category, and an empty list is allowed: a draft is unfinished by definition. */
-            sections?: ("g-walkthrough" | "g-chatting" | "g-article" | "g-seeking" | "g-news" | "g-releases" | "g-other" | "t-crack" | "t-web" | "t-languages" | "t-help" | "t-linux" | "t-practical" | "t-ai" | "t-android" | "t-adobe" | "t-algorithm" | "t-other" | "o-anime" | "o-comics" | "o-music" | "o-novel" | "o-daily" | "o-essay" | "o-forum" | "o-patch" | "o-other")[];
+            sections?: components["schemas"]["SectionKey"][];
             /** @description Draft title. Stored as sent. Free text; never use it as a decision input. */
             title?: string;
         };
@@ -12186,7 +11798,7 @@ export interface components {
             id: string;
             /**
              * @description Type discriminant. Always topic_draft_summary.
-             * @enum {string}
+             * @constant
              */
             object: "topic_draft_summary";
             /** @description First 120 characters of the body as stored: raw Markdown, image tokens included, cut without regard for word or token boundaries. Free text; never use it as a decision input. */
@@ -12217,7 +11829,7 @@ export interface components {
             like_count: number;
             /**
              * @description Type discriminant. Always topic_engagement.
-             * @enum {string}
+             * @constant
              */
             object: "topic_engagement";
             /** @description One entry per reaction token that has at least one reaction, likes and dislikes included, in first-used order. Empty array if none. */
@@ -12239,19 +11851,13 @@ export interface components {
         };
         TopicPatch: {
             /** @description New granted roles, replacing the stored ones. Only with a resulting access_scope of role. */
-            access_roles?: ("creator" | "moderator" | "admin" | "ren")[];
-            /**
-             * @description New access scope. The resulting scope and grants are checked together as in createTopic. When the scope changes, the stored grants are dropped and access_roles or access_user_ids supplies the new ones.
-             * @enum {string}
-             */
-            access_scope?: "public" | "login" | "role" | "users";
+            access_roles?: components["schemas"]["SiteRole"][];
+            /** @description New access scope. The resulting scope and grants are checked together as in createTopic. When the scope changes, the stored grants are dropped and access_roles or access_user_ids supplies the new ones. */
+            access_scope?: components["schemas"]["AccessScope"];
             /** @description New granted users, replacing the stored ones. Only with a resulting access_scope of users. The author is dropped as in createTopic. */
             access_user_ids?: string[];
-            /**
-             * @description New category. The resulting sections must belong to the resulting category.
-             * @enum {string}
-             */
-            category?: "galgame" | "technique" | "others";
+            /** @description New category. The resulting sections must belong to the resulting category. */
+            category?: components["schemas"]["TopicCategory"];
             /** @description New body as Markdown source. Checked as in createTopic. Free text; never use it as a decision input. */
             content_markdown?: string;
             /** @description New cover images, replacing the stored ones. An empty array removes every cover. Unlike createTopic, nothing is derived from the body. */
@@ -12259,15 +11865,14 @@ export interface components {
             /** @description New NSFW flag. */
             is_nsfw?: boolean;
             /** @description New section slugs, replacing the stored ones. */
-            sections?: ("g-walkthrough" | "g-chatting" | "g-article" | "g-seeking" | "g-news" | "g-releases" | "g-other" | "t-crack" | "t-web" | "t-languages" | "t-help" | "t-linux" | "t-practical" | "t-ai" | "t-android" | "t-adobe" | "t-algorithm" | "t-other" | "o-anime" | "o-comics" | "o-music" | "o-novel" | "o-daily" | "o-essay" | "o-forum" | "o-patch" | "o-other")[];
-            /**
-             * @description hidden hides the topic; published shows it again. Hiding needs can_hide and showing needs can_unhide. Sending the current state changes nothing.
-             * @enum {string}
-             */
-            state?: "published" | "hidden";
+            sections?: components["schemas"]["SectionKey"][];
+            /** @description hidden hides the topic; published shows it again. Hiding needs can_hide and showing needs can_unhide. Sending the current state changes nothing. */
+            state?: components["schemas"]["TopicPublishState"];
             /** @description New title. Trimmed and checked as in createTopic. Free text; never use it as a decision input. */
             title?: string;
         };
+        /** @enum {string} */
+        TopicPublishState: "published" | "hidden";
         TopicRankingEntry: {
             /**
              * Format: double
@@ -12276,7 +11881,7 @@ export interface components {
             metric_value: number;
             /**
              * @description Type discriminant. Always topic_ranking_entry.
-             * @enum {string}
+             * @constant
              */
             object: "topic_ranking_entry";
             /**
@@ -12287,19 +11892,17 @@ export interface components {
             /** @description The ranked topic, as the topic list renders it. Never null in this list. */
             topic: components["schemas"]["TopicSummary"] | null;
         };
+        /** @enum {string} */
+        TopicRankingSort: "views_desc" | "replies_desc" | "comments_desc" | "likes_desc" | "upvotes_desc" | "favorites_desc";
+        /** @enum {string} */
+        TopicSort: "bumped_asc" | "bumped_desc" | "created_asc" | "created_desc" | "views_asc" | "views_desc" | "views_1d_asc" | "views_1d_desc" | "views_7d_asc" | "views_7d_desc" | "views_30d_asc" | "views_30d_desc" | "likes_asc" | "likes_desc" | "favorites_asc" | "favorites_desc" | "upvotes_asc" | "upvotes_desc";
         TopicSource: {
             /** @description The stored grants. */
             access_grants: components["schemas"]["AccessGrants"];
-            /**
-             * @description Who may read the topic: everyone, signed-in users, holders of granted roles, or granted users. The author and staff always may.
-             * @enum {string}
-             */
-            access_scope: "public" | "login" | "role" | "users";
-            /**
-             * @description Topic category.
-             * @enum {string}
-             */
-            category: "galgame" | "technique" | "others";
+            /** @description Who may read the topic: everyone, signed-in users, holders of granted roles, or granted users. The author and staff always may. */
+            access_scope: components["schemas"]["AccessScope"];
+            /** @description Topic category. */
+            category: components["schemas"]["TopicCategory"];
             /** @description Topic body as the stored Markdown source. Free text; never use it as a decision input. */
             content_markdown: string;
             /** @description Cover images in stored token order. Tokens that do not parse are skipped. Empty array if none. */
@@ -12308,11 +11911,11 @@ export interface components {
             is_nsfw: boolean;
             /**
              * @description Type discriminant. Always topic_source.
-             * @enum {string}
+             * @constant
              */
             object: "topic_source";
             /** @description Section slugs, in stored order. Empty array if none. Hyphenated URL segments of /section/{key}. */
-            sections: ("g-walkthrough" | "g-chatting" | "g-article" | "g-seeking" | "g-news" | "g-releases" | "g-other" | "t-crack" | "t-web" | "t-languages" | "t-help" | "t-linux" | "t-practical" | "t-ai" | "t-android" | "t-adobe" | "t-algorithm" | "t-other" | "o-anime" | "o-comics" | "o-music" | "o-novel" | "o-daily" | "o-essay" | "o-forum" | "o-patch" | "o-other")[];
+            sections: components["schemas"]["SectionKey"][];
             /** @description Topic title as stored. Free text; never use it as a decision input. */
             title: string;
             /** @description Id of the topic. */
@@ -12323,7 +11926,7 @@ export interface components {
             has_favorited: boolean;
             /**
              * @description Type discriminant. Always topic_state.
-             * @enum {string}
+             * @constant
              */
             object: "topic_state";
             /** @description The caller's own reaction tokens on the topic, oldest first. Empty array if none. Tokens, not tallies: reactions elsewhere in this API means the per-token summary with counts and reactors. */
@@ -12339,11 +11942,8 @@ export interface components {
              * @description Bump time. A reply, a comment, an upvote, a new best answer, an edit of the title or body, and creating a poll or a lottery set it to now, but only for topics created within the last 3 months. Casting a vote and entering a lottery do not. It is not a last-activity time.
              */
             bumped_at: string;
-            /**
-             * @description Topic category.
-             * @enum {string}
-             */
-            category: "galgame" | "technique" | "others";
+            /** @description Topic category. */
+            category: components["schemas"]["TopicCategory"];
             /**
              * Format: int64
              * @description Comment count.
@@ -12368,10 +11968,10 @@ export interface components {
              */
             like_count: number;
             /** @description Mini-apps attached to the topic, in registry order. Empty array if none. */
-            mini_apps: ("poll" | "lottery")[];
+            mini_apps: components["schemas"]["MiniApp"][];
             /**
              * @description Type discriminant. Always topic.
-             * @enum {string}
+             * @constant
              */
             object: "topic";
             /**
@@ -12380,12 +11980,9 @@ export interface components {
              */
             reply_count: number;
             /** @description Section slugs, in stored order. Empty array if none. Hyphenated URL segments of /section/{key}. */
-            sections: ("g-walkthrough" | "g-chatting" | "g-article" | "g-seeking" | "g-news" | "g-releases" | "g-other" | "t-crack" | "t-web" | "t-languages" | "t-help" | "t-linux" | "t-practical" | "t-ai" | "t-android" | "t-adobe" | "t-algorithm" | "t-other" | "o-anime" | "o-comics" | "o-music" | "o-novel" | "o-daily" | "o-essay" | "o-forum" | "o-patch" | "o-other")[];
-            /**
-             * @description Lifecycle state. A hidden topic is visible only to its author and to staff.
-             * @enum {string}
-             */
-            state: "published" | "hidden";
+            sections: components["schemas"]["SectionKey"][];
+            /** @description Lifecycle state. A hidden topic is visible only to its author and to staff. */
+            state: components["schemas"]["TopicPublishState"];
             /** @description Topic title as stored. Free text; never use it as a decision input. */
             title: string;
             /**
@@ -12411,7 +12008,7 @@ export interface components {
             note: string | null;
             /**
              * @description Type discriminant. Always topic_upvote.
-             * @enum {string}
+             * @constant
              */
             object: "topic_upvote";
             /** @description Id of the upvoted topic. */
@@ -12443,12 +12040,11 @@ export interface components {
             /** @description Whether the caller has upvoted the topic. */
             has_upvoted: boolean;
         };
+        /** @enum {string} */
+        TotalRelation: "eq" | "gte";
         UpdateLog: {
-            /**
-             * @description What kind of change the entry records. Clients map the token to a localized label.
-             * @enum {string}
-             */
-            change_type: "feat" | "perf" | "fix" | "style" | "mod" | "chore" | "sec" | "refactor" | "docs" | "test";
+            /** @description What kind of change the entry records. Clients map the token to a localized label. */
+            change_type: components["schemas"]["UpdateLogChangeType"];
             /**
              * Format: date-time
              * @description Creation time.
@@ -12458,7 +12054,7 @@ export interface components {
             id: string;
             /**
              * @description Type discriminant. Always update_log.
-             * @enum {string}
+             * @constant
              */
             object: "update_log";
             /** @description Site version the change shipped in, such as 4.4.93. Free text; never use it as a decision input. */
@@ -12473,23 +12069,19 @@ export interface components {
             /** @description The caller's own capabilities on this entry. null for an anonymous caller. */
             viewer: components["schemas"]["UpdateLogViewer"] | null;
         };
+        /** @enum {string} */
+        UpdateLogChangeType: "feat" | "perf" | "fix" | "style" | "mod" | "chore" | "sec" | "refactor" | "docs" | "test";
         UpdateLogCreate: {
-            /**
-             * @description What kind of change the entry records.
-             * @enum {string}
-             */
-            change_type: "feat" | "perf" | "fix" | "style" | "mod" | "chore" | "sec" | "refactor" | "docs" | "test";
+            /** @description What kind of change the entry records. */
+            change_type: components["schemas"]["UpdateLogChangeType"];
             /** @description Site version the change shipped in. Leading and trailing whitespace is removed after the length check; a value that is then empty is TOO_SHORT. Free text; never use it as a decision input. */
             release_version: string;
             /** @description Entry body as plain text, counted on the value as sent. A body of only whitespace is TOO_SHORT. Free text; never use it as a decision input. */
             text: string;
         };
         UpdateLogPatch: {
-            /**
-             * @description New change type. Absent keeps the stored one.
-             * @enum {string}
-             */
-            change_type?: "feat" | "perf" | "fix" | "style" | "mod" | "chore" | "sec" | "refactor" | "docs" | "test";
+            /** @description New change type. Absent keeps the stored one. */
+            change_type?: components["schemas"]["UpdateLogChangeType"];
             /** @description New version, checked as in createUpdateLog. Absent keeps the stored one. Free text; never use it as a decision input. */
             release_version?: string;
             /** @description New body, checked as in createUpdateLog. Absent keeps the stored one. Free text; never use it as a decision input. */
@@ -12554,7 +12146,7 @@ export interface components {
             id: string;
             /**
              * @description Type discriminant. Always comment.
-             * @enum {string}
+             * @constant
              */
             object: "comment";
             /** @description Id of the topic the comment belongs to. */
@@ -12604,7 +12196,7 @@ export interface components {
             message_count: number;
             /**
              * @description Type discriminant. Always user_content.
-             * @enum {string}
+             * @constant
              */
             object: "user_content";
             /**
@@ -12766,13 +12358,13 @@ export interface components {
             is_locked: boolean;
             /**
              * @description Type discriminant. Always user_permissions.
-             * @enum {string}
+             * @constant
              */
             object: "user_permissions";
             /** @description The user's personal deviations from that baseline, in catalog order. */
             overrides: components["schemas"]["PermissionOverride"][];
             /** @description The user's roles that carry permissions, from the account service's current record, lowest rank first. */
-            roles: ("creator" | "moderator" | "admin" | "ren")[];
+            roles: components["schemas"]["SiteRole"][];
             /** @description The caller's own standing on this user. */
             viewer: components["schemas"]["UserPermissionsViewer"];
         };
@@ -12784,6 +12376,8 @@ export interface components {
             /** @description Whether the caller may replace this user's overrides: the user is not locked and ranks below the caller. Each key is still subject to the caller holding it. */
             can_edit: boolean;
         };
+        /** @enum {string} */
+        UserPostRelation: "authored" | "received" | "liked";
         UserProfile: {
             /** @description Avatar image. null when the account has no image-service hash. */
             avatar: components["schemas"]["Image"] | null;
@@ -12807,11 +12401,11 @@ export interface components {
             name: string | null;
             /**
              * @description Type discriminant. Always user.
-             * @enum {string}
+             * @constant
              */
             object: "user";
             /** @description Badge roles among creator, moderator, admin and ren, including site roles. Other account roles are not listed. Display only; never a permission check. Empty array if none. */
-            roles: ("creator" | "moderator" | "admin" | "ren")[];
+            roles: components["schemas"]["SiteRole"][];
         };
         UserRankingEntry: {
             /** @description The user's profile bio. Empty string when none. Free text; never use it as a decision input. */
@@ -12825,7 +12419,7 @@ export interface components {
             metric_value: number;
             /**
              * @description Type discriminant. Always user_ranking_entry.
-             * @enum {string}
+             * @constant
              */
             object: "user_ranking_entry";
             /**
@@ -12834,6 +12428,8 @@ export interface components {
              */
             rank: number;
         };
+        /** @enum {string} */
+        UserRankingSort: "moemoepoint_desc" | "topics_desc" | "replies_desc" | "comments_desc" | "resources_desc";
         UserRef: {
             /** @description Avatar image. null when the account has no image-service hash. */
             avatar: components["schemas"]["Image"] | null;
@@ -12843,7 +12439,7 @@ export interface components {
             name: string | null;
             /**
              * @description Type discriminant. Always user.
-             * @enum {string}
+             * @constant
              */
             object: "user";
         };
@@ -12864,12 +12460,14 @@ export interface components {
             id: string;
             /**
              * @description Type discriminant. Always reply.
-             * @enum {string}
+             * @constant
              */
             object: "reply";
             /** @description Id of the topic the reply belongs to. */
             topic_id: string;
         };
+        /** @enum {string} */
+        UserResourceRelation: "published" | "liked";
         UserSearchHit: {
             /** @description Avatar image. null when the account has no image-service hash. */
             avatar: components["schemas"]["Image"] | null;
@@ -12881,7 +12479,7 @@ export interface components {
             name: string | null;
             /**
              * @description Type discriminant. Always user.
-             * @enum {string}
+             * @constant
              */
             object: "user";
             /**
@@ -12895,7 +12493,7 @@ export interface components {
              */
             reply_count: number;
             /** @description Badge roles among creator, moderator, admin and ren, including site roles. Display only; never a permission check. Empty array if none. */
-            roles: ("creator" | "moderator" | "admin" | "ren")[];
+            roles: components["schemas"]["SiteRole"][];
             /**
              * Format: int64
              * @description Topics by this user the caller can see in shared lists.
@@ -12912,12 +12510,20 @@ export interface components {
             id: string;
             /**
              * @description Type discriminant. Always topic.
-             * @enum {string}
+             * @constant
              */
             object: "topic";
             /** @description Topic title as stored. Free text; never use it as a decision input. */
             title: string;
         };
+        /** @enum {string} */
+        UserTopicRelation: "authored" | "liked" | "upvoted" | "favorited" | "hidden";
+        /** @enum {string} */
+        UserWallCommentRelation: "authored" | "liked";
+        /** @enum {string} */
+        UserWorkRelation: "published" | "contributed" | "liked";
+        /** @enum {string} */
+        VersionLabel: "official_latest" | "stable" | "mirror" | "localized" | "unknown";
         VideoNode: {
             /**
              * @description Type discriminant. Always video. (enum property replaced by openapi-typescript)
@@ -12958,25 +12564,19 @@ export interface components {
             like_count: number;
             /**
              * @description Type discriminant. Always wall_comment.
-             * @enum {string}
+             * @constant
              */
             object: "wall_comment";
             /** @description Id of the wall comment this one answers. null for a top-level comment. The parent may be absent from a list. */
             parent_comment_id: string | null;
             /** @description Id of the top-level comment this one's reply chain starts from. null for a top-level comment. Clients that draw two levels group by it. */
             root_comment_id: string | null;
-            /**
-             * @description visible: shown to everyone. held: waiting for review, shown only to its author. deleted: a tombstone kept so replies keep their parent; content is an empty document.
-             * @enum {string}
-             */
-            state: "visible" | "held" | "deleted";
+            /** @description visible: shown to everyone. held: waiting for review, shown only to its author. deleted: a tombstone kept so replies keep their parent; content is an empty document. */
+            state: components["schemas"]["WallCommentState"];
             /** @description Id of that page: a galgame, rating, resource, quiz, toolset or website id, by subject_type. */
             subject_id: string;
-            /**
-             * @description Kind of page whose wall the comment is on.
-             * @enum {string}
-             */
-            subject_type: "galgame" | "galgame_rating" | "galgame_resource" | "galgame_quiz" | "toolset" | "website";
+            /** @description Kind of page whose wall the comment is on. */
+            subject_type: components["schemas"]["WallSubjectType"];
             /** @description The caller's own state on this comment. null for an anonymous caller. */
             viewer: components["schemas"]["WallCommentViewer"] | null;
         };
@@ -12987,18 +12587,12 @@ export interface components {
             parent_comment_id?: string | null;
             /** @description Id of that page. */
             subject_id: string;
-            /**
-             * @description Kind of page whose wall to comment on.
-             * @enum {string}
-             */
-            subject_type: "galgame" | "galgame_rating" | "galgame_resource" | "galgame_quiz" | "toolset" | "website";
+            /** @description Kind of page whose wall to comment on. */
+            subject_type: components["schemas"]["WallSubjectType"];
         };
         WallCommentFlag: {
-            /**
-             * @description Why the comment is flagged.
-             * @enum {string}
-             */
-            flag_reason: "spam" | "abuse" | "off_topic" | "other" | "nsfw_mislabel";
+            /** @description Why the comment is flagged. */
+            flag_reason: components["schemas"]["FlagReason"];
             /** @description Free-text note for the moderators. Absent or null for none. Free text; never use it as a decision input. */
             note?: string | null;
         };
@@ -13020,18 +12614,15 @@ export interface components {
             id: string;
             /**
              * @description Type discriminant. Always wall_comment.
-             * @enum {string}
+             * @constant
              */
             object: "wall_comment";
             /** @description Id of that page: a work, rating, resource, quiz, toolset or website id, by subject_type. */
             subject_id: string;
             /** @description The page's path on the web, such as /galgame/4121 or /website/example.com. */
             subject_path: string;
-            /**
-             * @description Kind of page whose comment wall this is.
-             * @enum {string}
-             */
-            subject_type: "galgame" | "galgame_rating" | "galgame_resource" | "galgame_quiz" | "toolset" | "website";
+            /** @description Kind of page whose comment wall this is. */
+            subject_type: components["schemas"]["WallSubjectType"];
             /** @description The work when subject_type is galgame. null otherwise, and when catalog does not answer for it. */
             work: components["schemas"]["WorkRef"] | null;
         };
@@ -13040,12 +12631,14 @@ export interface components {
             content_markdown: string;
             /**
              * @description Type discriminant. Always wall_comment_source.
-             * @enum {string}
+             * @constant
              */
             object: "wall_comment_source";
             /** @description Id of the wall comment. */
             wall_comment_id: string;
         };
+        /** @enum {string} */
+        WallCommentState: "visible" | "held" | "deleted";
         WallCommentViewer: {
             /** @description Whether the caller may delete the comment: its author, staff holding this wall's delete permission, or the owner of the page the wall belongs to (a resource's publisher, a toolset's owner, a quiz's author, a rating's author). Always false on a tombstone. */
             can_delete: boolean;
@@ -13065,17 +12658,16 @@ export interface components {
             is_following: boolean;
             /**
              * @description Type discriminant. Always wall_state.
-             * @enum {string}
+             * @constant
              */
             object: "wall_state";
             /** @description Id of the page whose wall this is. */
             subject_id: string;
-            /**
-             * @description Kind of page whose comment wall this is.
-             * @enum {string}
-             */
-            subject_type: "galgame" | "galgame_rating" | "galgame_resource" | "galgame_quiz" | "toolset" | "website";
+            /** @description Kind of page whose comment wall this is. */
+            subject_type: components["schemas"]["WallSubjectType"];
         };
+        /** @enum {string} */
+        WallSubjectType: "galgame" | "galgame_rating" | "galgame_resource" | "galgame_quiz" | "toolset" | "website";
         Website: {
             /**
              * Format: int64
@@ -13118,7 +12710,7 @@ export interface components {
             like_count: number;
             /**
              * @description Type discriminant. Always website.
-             * @enum {string}
+             * @constant
              */
             object: "website";
             /**
@@ -13126,11 +12718,8 @@ export interface components {
              * @description Sum of the levels of the site's tags. May be negative.
              */
             score: number;
-            /**
-             * @description normal: the site is up. unreachable: temporarily down. closed: shut down for good.
-             * @enum {string}
-             */
-            state: "normal" | "unreachable" | "closed";
+            /** @description normal: the site is up. unreachable: temporarily down. closed: shut down for good. */
+            state: components["schemas"]["WebsiteState"];
             /** @description Name of the site. Free text; never use it as a decision input. */
             title: string;
             /**
@@ -13161,7 +12750,7 @@ export interface components {
             label: string;
             /**
              * @description Type discriminant. Always website_category.
-             * @enum {string}
+             * @constant
              */
             object: "website_category";
             /** @description URL key of the category page /website-category/{slug}. */
@@ -13184,7 +12773,7 @@ export interface components {
             label: string;
             /**
              * @description Type discriminant. Always website_category.
-             * @enum {string}
+             * @constant
              */
             object: "website_category";
             /** @description URL key of the category page /website-category/{slug}. */
@@ -13203,11 +12792,8 @@ export interface components {
             is_nsfw: boolean;
             /** @description BCP 47 language tag. Stored lower case. */
             language: string;
-            /**
-             * @description Lifecycle state. Absent means normal.
-             * @enum {string}
-             */
-            state?: "normal" | "unreachable" | "closed";
+            /** @description Lifecycle state. Absent means normal. */
+            state?: components["schemas"]["WebsiteState"];
             /** @description Name of the site. Only whitespace is TOO_SHORT. Free text; never use it as a decision input. */
             title: string;
             /** @description Every known address of the site, each an http or https URL of at most 100 characters. Absent means none. */
@@ -13230,7 +12816,7 @@ export interface components {
             like_count: number;
             /**
              * @description Type discriminant. Always website_engagement.
-             * @enum {string}
+             * @constant
              */
             object: "website_engagement";
             /** @description The caller's state after this request. */
@@ -13257,11 +12843,8 @@ export interface components {
             is_nsfw?: boolean;
             /** @description New BCP 47 language tag. */
             language?: string;
-            /**
-             * @description New lifecycle state.
-             * @enum {string}
-             */
-            state?: "normal" | "unreachable" | "closed";
+            /** @description New lifecycle state. */
+            state?: components["schemas"]["WebsiteState"];
             /** @description New name. Free text; never use it as a decision input. */
             title?: string;
             /** @description When present, replaces every address. Same rules as createAdminWebsite. */
@@ -13271,6 +12854,8 @@ export interface components {
             /** @description When present, replaces every tag of the site; absent keeps them. Same rules as createAdminWebsite. */
             website_tag_ids?: string[];
         };
+        /** @enum {string} */
+        WebsiteState: "normal" | "unreachable" | "closed";
         WebsiteSummary: {
             /** @description Plain-text description; keep its line breaks. Free text; never use it as a decision input. */
             description: string;
@@ -13289,7 +12874,7 @@ export interface components {
             is_nsfw: boolean;
             /**
              * @description Type discriminant. Always website.
-             * @enum {string}
+             * @constant
              */
             object: "website";
             /**
@@ -13297,11 +12882,8 @@ export interface components {
              * @description Sum of the levels of the site's tags. May be negative.
              */
             score: number;
-            /**
-             * @description normal: the site is up. unreachable: temporarily down. closed: shut down for good.
-             * @enum {string}
-             */
-            state: "normal" | "unreachable" | "closed";
+            /** @description normal: the site is up. unreachable: temporarily down. closed: shut down for good. */
+            state: components["schemas"]["WebsiteState"];
             /** @description Name of the site. Free text; never use it as a decision input. */
             title: string;
             /** @description Category the site is listed under. */
@@ -13321,7 +12903,7 @@ export interface components {
             level: number;
             /**
              * @description Type discriminant. Always website_tag.
-             * @enum {string}
+             * @constant
              */
             object: "website_tag";
             /** @description URL key of the tag page /website-tag/{slug}. */
@@ -13340,7 +12922,7 @@ export interface components {
             label: string;
             /**
              * @description Type discriminant. Always website_tag_group.
-             * @enum {string}
+             * @constant
              */
             object: "website_tag_group";
             /** @description Stable key of the group. */
@@ -13366,7 +12948,7 @@ export interface components {
             company_id: string;
             /**
              * @description Type discriminant. Always wiki_company_redirect.
-             * @enum {string}
+             * @constant
              */
             object: "wiki_company_redirect";
             /** @description The company id the retired galgame wiki used. */
@@ -13379,11 +12961,8 @@ export interface components {
             banner: components["schemas"]["Image"] | null;
             /** @description Credited companies. Empty array, never null. */
             companies: components["schemas"]["WorkCompany"][];
-            /**
-             * @description Age rating, catalog's age axis: all_ages, sensitive or r18. Not the forum's SFW gate, which is is_nsfw.
-             * @enum {string}
-             */
-            content_rating: "all_ages" | "sensitive" | "r18";
+            /** @description Age rating, catalog's age axis: all_ages, sensitive or r18. Not the forum's SFW gate, which is is_nsfw. */
+            content_rating: components["schemas"]["ContentRating"];
             /** @description People who contributed to the forum page, unrenderable accounts dropped. Empty array, never null. */
             contributors: components["schemas"]["UserRef"][];
             /** @description The portrait cover at its original size, never the 16:9 crop. null when the work has none. */
@@ -13441,7 +13020,7 @@ export interface components {
             maker: components["schemas"]["CompanyRef"] | null;
             /**
              * @description Type discriminant. Always work.
-             * @enum {string}
+             * @constant
              */
             object: "work";
             /** @description The work's original language as a BCP-47 tag. null when catalog has none. */
@@ -13463,17 +13042,14 @@ export interface components {
              * @description Release date. A month- or year-precise date is the first day of that month or year. null when catalog has none.
              */
             release_date: string | null;
-            /**
-             * @description How much of release_date is known. null when release_date is null.
-             * @enum {string|null}
-             */
-            release_date_precision: "day" | "month" | "year" | null;
+            /** @description How much of release_date is known. null when release_date is null. */
+            release_date_precision: components["schemas"]["ReleaseDatePrecision"] | null;
             /** @description Languages of the work's forum resources, each once, in vocabulary order. Empty array, never null. */
-            resource_languages: ("zh-cn" | "zh-tw" | "ja-jp" | "en-us" | "other")[];
+            resource_languages: components["schemas"]["ResourceLanguage"][];
             /** @description Platforms the work's forum resources run on, each once, in vocabulary order. Empty array, never null. */
-            resource_platforms: ("win" | "and" | "ios" | "mac" | "lin" | "web" | "mob" | "swi" | "sw2" | "n3d" | "nds" | "wii" | "wiu" | "gba" | "gbc" | "nes" | "sfc" | "ps1" | "ps2" | "ps3" | "ps4" | "ps5" | "psp" | "psv" | "xb1" | "xb3" | "xbo" | "xxs" | "sat" | "smd" | "scd" | "drc" | "pce" | "pcf" | "tdo" | "p88" | "p98" | "x1s" | "x68" | "fm7" | "fm8" | "fmt" | "msx" | "dos" | "dvd" | "bdp" | "vnd" | "oth")[];
+            resource_platforms: components["schemas"]["ResourcePlatform"][];
             /** @description Kinds of download resources the work has on the forum, each once, in vocabulary order. Empty array, never null. */
-            resource_types: ("game" | "patch" | "collection" | "crack_fix" | "mod" | "tool" | "walkthrough" | "ost" | "voice" | "cg" | "wallpaper" | "artbook" | "video" | "other")[];
+            resource_types: components["schemas"]["ResourceType"][];
             /**
              * Format: date-time
              * @description When a resource of the work last changed. null when it has none.
@@ -13501,11 +13077,8 @@ export interface components {
             viewer: components["schemas"]["WorkViewer"] | null;
         };
         WorkCharacter: {
-            /**
-             * @description How large a part the character plays. unknown when catalog has no role recorded, as for a character reached only through a voice credit.
-             * @enum {string}
-             */
-            character_kind: "main" | "secondary" | "appears" | "unknown";
+            /** @description How large a part the character plays. unknown when catalog has no role recorded, as for a character reached only through a voice credit. */
+            character_kind: components["schemas"]["CharacterKind"];
             /** @description The entity's own name. Never empty. Free text; never use it as a decision input. */
             display_name: string;
             /** @description A full-body standing picture. null when catalog has none. */
@@ -13522,14 +13095,11 @@ export interface components {
             };
             /**
              * @description Type discriminant. Always character.
-             * @enum {string}
+             * @constant
              */
             object: "character";
-            /**
-             * @description How much naming the character gives away.
-             * @enum {string}
-             */
-            spoiler: "none" | "minor" | "major";
+            /** @description How much naming the character gives away. */
+            spoiler: components["schemas"]["CatalogSpoiler"];
             /** @description Who voices the character. Empty array, never null. */
             voices: components["schemas"]["CreditNameRef"][];
         };
@@ -13550,7 +13120,7 @@ export interface components {
             items: components["schemas"]["WorkCollectedMonth"][];
             /**
              * @description Type discriminant. Always work_collected_months.
-             * @enum {string}
+             * @constant
              */
             object: "work_collected_months";
         };
@@ -13558,17 +13128,14 @@ export interface components {
             /** @description Other names it goes by, never its display_name. Empty array, never null. */
             aliases: string[];
             /** @description What the company did on this work: developer, publisher, circle or brand. Unique, never null. */
-            attribution_roles: ("developer" | "publisher" | "circle" | "brand")[];
+            attribution_roles: components["schemas"]["AttributionRole"][];
             /**
              * Format: int64
              * @description Works catalog files under it, NSFW ones included. How many a reader can page through is the total of its works collection.
              */
             catalog_work_count: number;
-            /**
-             * @description What sort of company it is.
-             * @enum {string}
-             */
-            company_kind: "game_brand" | "bunko" | "publisher" | "anime_studio" | "doujin_circle" | "group";
+            /** @description What sort of company it is. */
+            company_kind: components["schemas"]["CompanyKind"];
             /** @description The entity's own name. Never empty. Free text; never use it as a decision input. */
             display_name: string;
             /** @description Company id: the catalog company id, which is also the id in the web's /galgame/official/{id}. */
@@ -13587,23 +13154,20 @@ export interface components {
             logo: components["schemas"]["Image"] | null;
             /**
              * @description Type discriminant. Always company.
-             * @enum {string}
+             * @constant
              */
             object: "company";
         };
         WorkCover: {
-            /**
-             * @description Which face of the package this cover is.
-             * @enum {string}
-             */
-            cover_slot: "main" | "pkgfront" | "dig" | "pkgback" | "pkgcontent" | "pkgside" | "pkgmed" | "other";
+            /** @description Which face of the package this cover is. */
+            cover_slot: components["schemas"]["CoverSlot"];
             /** @description Catalog cover row id, which the cover vote path takes. */
             id: string;
             /** @description The cover at original size. Never null on a cover; the type is shared with images that can be absent. */
             image: components["schemas"]["Image"] | null;
             /**
              * @description Type discriminant. Always work_cover.
-             * @enum {string}
+             * @constant
              */
             object: "work_cover";
             /** @description Where the image came from, such as vndb or dlsite. An open vocabulary. */
@@ -13624,7 +13188,7 @@ export interface components {
             cover_id: string;
             /**
              * @description Type discriminant. Always work_cover_engagement.
-             * @enum {string}
+             * @constant
              */
             object: "work_cover_engagement";
             /** @description The caller's vote on this cover after this request. */
@@ -13664,7 +13228,7 @@ export interface components {
             };
             /**
              * @description Type discriminant. Always credit_name.
-             * @enum {string}
+             * @constant
              */
             object: "credit_name";
             /** @description Character names this credit voices, as catalog wrote them. Empty array, never null. */
@@ -13708,7 +13272,7 @@ export interface components {
             note: string | null;
             /**
              * @description Type discriminant. Always edit_proposal.
-             * @enum {string}
+             * @constant
              */
             object: "edit_proposal";
             /** @description Proposed values keyed by catalog.work.*. Empty object, never null. */
@@ -13719,11 +13283,8 @@ export interface components {
             proposer: components["schemas"]["UserRef"];
             /** @description The revision written when catalog merged the proposal at once. null otherwise, or when it could not be read back. */
             revision: components["schemas"]["EditRevision"] | null;
-            /**
-             * @description Lifecycle state, read back from catalog.
-             * @enum {string}
-             */
-            state: "open" | "merged" | "declined" | "withdrawn";
+            /** @description Lifecycle state, read back from catalog. */
+            state: components["schemas"]["EditProposalState"];
             /**
              * Format: date-time
              * @description When it last changed.
@@ -13744,7 +13305,7 @@ export interface components {
             like_count: number;
             /**
              * @description Type discriminant. Always work_engagement.
-             * @enum {string}
+             * @constant
              */
             object: "work_engagement";
             /** @description The caller's like state after this request. */
@@ -13761,7 +13322,7 @@ export interface components {
             buckets: components["schemas"]["WorkExternalRatingBucket"][];
             /**
              * @description Type discriminant. Always work_external_rating.
-             * @enum {string}
+             * @constant
              */
             object: "work_external_rating";
             /**
@@ -13837,14 +13398,11 @@ export interface components {
             minutes: number;
             /**
              * @description Type discriminant. Always work_playtime.
-             * @enum {string}
+             * @constant
              */
             object: "work_playtime";
-            /**
-             * @description The caller's play state as catalog records it. null when they have none.
-             * @enum {string|null}
-             */
-            play_state: "wish" | "doing" | "done_one_route" | "done_main" | "done_all" | "on_hold" | "dropped" | "done" | null;
+            /** @description The caller's play state as catalog records it. null when they have none. */
+            play_state: components["schemas"]["PlayState"] | null;
             /** @description The work this playtime is about. */
             work_summary: components["schemas"]["WorkSummary"];
         };
@@ -13874,7 +13432,7 @@ export interface components {
             items: components["schemas"]["WorkPlaytime"][];
             /**
              * @description Type discriminant. Always list.
-             * @enum {string}
+             * @constant
              */
             object: "list";
             /**
@@ -13887,11 +13445,8 @@ export interface components {
              * @description Sum of minutes on the same predicate as items.
              */
             total_minutes: number;
-            /**
-             * @description eq when total is exact, gte when it stopped at the depth limit and there are at least that many.
-             * @enum {string}
-             */
-            total_relation: "eq" | "gte";
+            /** @description eq when total is exact, gte when it stopped at the depth limit and there are at least that many. */
+            total_relation: components["schemas"]["TotalRelation"];
         };
         WorkRankingEntry: {
             /** @description Who created the work's page on this forum. null when none is recorded or the account cannot be shown. */
@@ -13903,7 +13458,7 @@ export interface components {
             metric_value: number;
             /**
              * @description Type discriminant. Always work_ranking_entry.
-             * @enum {string}
+             * @constant
              */
             object: "work_ranking_entry";
             /**
@@ -13914,6 +13469,8 @@ export interface components {
             /** @description The ranked work. Never null in this list. */
             work: components["schemas"]["WorkRef"] | null;
         };
+        /** @enum {string} */
+        WorkRankingSort: "views_desc" | "likes_desc" | "favorites_desc" | "resources_desc" | "rating_desc";
         WorkRef: {
             /** @description The portrait cover at its original size, never the 16:9 crop. null when the work has none. */
             cover: components["schemas"]["Image"] | null;
@@ -13931,7 +13488,7 @@ export interface components {
             };
             /**
              * @description Type discriminant. Always work.
-             * @enum {string}
+             * @constant
              */
             object: "work";
         };
@@ -13940,7 +13497,7 @@ export interface components {
             is_resource_publish_banned: boolean;
             /**
              * @description Type discriminant. Always work_resource_publish_ban.
-             * @enum {string}
+             * @constant
              */
             object: "work_resource_publish_ban";
             /** @description Work id. */
@@ -13962,7 +13519,7 @@ export interface components {
             image: components["schemas"]["Image"] | null;
             /**
              * @description Type discriminant. Always work_screenshot.
-             * @enum {string}
+             * @constant
              */
             object: "work_screenshot";
             /** @description Where the image came from. An open vocabulary. */
@@ -13973,6 +13530,8 @@ export interface components {
              */
             sort_order: number;
         };
+        /** @enum {string} */
+        WorkSort: "resource_updated_desc" | "resource_updated_asc" | "created_desc" | "created_asc" | "view_desc" | "view_asc" | "view_1d_desc" | "view_1d_asc" | "view_7d_desc" | "view_7d_asc" | "view_30d_desc" | "view_30d_asc" | "release_date_desc" | "release_date_asc" | "rating_desc" | "rating_asc";
         WorkStats: {
             /**
              * Format: int64
@@ -13996,11 +13555,8 @@ export interface components {
              * @description How many times the caller acted on this claim.
              */
             acted_count: number;
-            /**
-             * @description Age axis, the same field as Work.content_rating. Independent of is_nsfw.
-             * @enum {string}
-             */
-            content_rating: "all_ages" | "sensitive" | "r18";
+            /** @description Age axis, the same field as Work.content_rating. Independent of is_nsfw. */
+            content_rating: components["schemas"]["ContentRating"];
             /** @description Catalog display name. Free text; never use it as a decision input. */
             display_name: string;
             /**
@@ -14016,14 +13572,11 @@ export interface components {
             last_event: components["schemas"]["ClaimEventRef"] | null;
             /**
              * @description Type discriminant. Always work_submission.
-             * @enum {string}
+             * @constant
              */
             object: "work_submission";
-            /**
-             * @description Claim state, read back from catalog.
-             * @enum {string}
-             */
-            state: "live" | "draft" | "pending" | "declined" | "hidden";
+            /** @description Claim state, read back from catalog. */
+            state: components["schemas"]["ClaimState"];
             /** @description The forum account recorded as the submitter. A deleted account is a deleted user ref. null when none is recorded. */
             submitter: components["schemas"]["UserRef"] | null;
             /** @description The caller's capabilities on this submission. */
@@ -14034,14 +13587,11 @@ export interface components {
         WorkSubmissionCandidate: {
             /**
              * @description Type discriminant. Always work_submission_candidate.
-             * @enum {string}
+             * @constant
              */
             object: "work_submission_candidate";
-            /**
-             * @description none when no site has claimed the work; otherwise this forum's claim state.
-             * @enum {string}
-             */
-            state: "none" | "live" | "draft" | "pending";
+            /** @description none when no site has claimed the work; otherwise this forum's claim state. */
+            state: components["schemas"]["CandidateClaimState"];
             /** @description A catalog work matching the query. */
             work_summary: components["schemas"]["WorkSummary"];
         };
@@ -14050,11 +13600,8 @@ export interface components {
             aliases?: string[];
             /** @description Image-service hash of a banner uploaded for this work. */
             banner_hash?: string;
-            /**
-             * @description Age rating. Never derived from is_nsfw.
-             * @enum {string}
-             */
-            content_rating: "all_ages" | "sensitive" | "r18";
+            /** @description Age rating. Never derived from is_nsfw. */
+            content_rating: components["schemas"]["ContentRating"];
             /** @description Display name. When omitted, the first non-blank title in ja, zh-Hans, zh-Hant, en is used. Free text; never use it as a decision input. */
             display_name?: string;
             /** @description At most one introduction per language. Blank ones are ignored. */
@@ -14070,11 +13617,8 @@ export interface components {
              * @description Release date. Omitted or null is TBA. A month- or year-precise date is written as that month or year.
              */
             release_date?: string | null;
-            /**
-             * @description How much of release_date is known. Default day when release_date is sent; refused without it.
-             * @enum {string|null}
-             */
-            release_date_precision?: "day" | "month" | "year" | null;
+            /** @description How much of release_date is known. Default day when release_date is sent; refused without it. */
+            release_date_precision?: components["schemas"]["ReleaseDatePrecision"] | null;
             /** @description Official titles. Titles and aliases together hold at most 100. */
             titles: components["schemas"]["SubmissionTitle"][];
         };
@@ -14084,11 +13628,8 @@ export interface components {
              * @description How many times the caller acted on this claim.
              */
             acted_count: number;
-            /**
-             * @description Age axis, the same field as Work.content_rating. Independent of is_nsfw.
-             * @enum {string}
-             */
-            content_rating: "all_ages" | "sensitive" | "r18";
+            /** @description Age axis, the same field as Work.content_rating. Independent of is_nsfw. */
+            content_rating: components["schemas"]["ContentRating"];
             /** @description Catalog display name. Free text; never use it as a decision input. */
             display_name: string;
             /**
@@ -14106,14 +13647,11 @@ export interface components {
             last_event: components["schemas"]["ClaimEventRef"] | null;
             /**
              * @description Type discriminant. Always work_submission.
-             * @enum {string}
+             * @constant
              */
             object: "work_submission";
-            /**
-             * @description Claim state, read back from catalog.
-             * @enum {string}
-             */
-            state: "live" | "draft" | "pending" | "declined" | "hidden";
+            /** @description Claim state, read back from catalog. */
+            state: components["schemas"]["ClaimState"];
             /** @description The forum account recorded as the submitter. A deleted account is a deleted user ref. null when none is recorded. */
             submitter: components["schemas"]["UserRef"] | null;
             /** @description The caller's capabilities on this submission. */
@@ -14124,11 +13662,8 @@ export interface components {
         WorkSubmissionPatch: {
             /** @description Required, and not blank, with declined. Free text; never use it as a decision input. */
             note?: string | null;
-            /**
-             * @description Target. The submitter sends pending or draft; a reviewer sends live, declined, hidden or unban. unban restores the state the claim was hidden from, which the response reports.
-             * @enum {string}
-             */
-            state: "pending" | "draft" | "live" | "declined" | "hidden" | "unban";
+            /** @description Target. The submitter sends pending or draft; a reviewer sends live, declined, hidden or unban. unban restores the state the claim was hidden from, which the response reports. */
+            state: components["schemas"]["WorkSubmissionTargetState"];
         };
         WorkSubmissionSummary: {
             /** @description Catalog display name. Free text; never use it as a decision input. */
@@ -14144,14 +13679,11 @@ export interface components {
             last_event: components["schemas"]["ClaimEventRef"] | null;
             /**
              * @description Type discriminant. Always work_submission.
-             * @enum {string}
+             * @constant
              */
             object: "work_submission";
-            /**
-             * @description Claim state.
-             * @enum {string}
-             */
-            state: "live" | "draft" | "pending" | "declined" | "hidden";
+            /** @description Claim state. */
+            state: components["schemas"]["ClaimState"];
             /** @description The caller's capabilities on this submission. */
             viewer: components["schemas"]["WorkSubmissionViewer"] | null;
             /** @description Catalog work id. */
@@ -14159,6 +13691,8 @@ export interface components {
             /** @description The work. When catalog does not render it (a hidden work), only id and display name are filled. */
             work_summary: components["schemas"]["WorkSummary"];
         };
+        /** @enum {string} */
+        WorkSubmissionTargetState: "pending" | "draft" | "live" | "declined" | "hidden" | "unban";
         WorkSubmissionViewer: {
             /** @description Whether the caller may delete this claim: the caller submitted it and it is draft. */
             can_delete: boolean;
@@ -14197,7 +13731,7 @@ export interface components {
             maker: components["schemas"]["CompanyRef"] | null;
             /**
              * @description Type discriminant. Always work.
-             * @enum {string}
+             * @constant
              */
             object: "work";
             /**
@@ -14215,15 +13749,12 @@ export interface components {
              * @description Release date. A month- or year-precise date is the first day of that month or year. null when catalog has none.
              */
             release_date: string | null;
-            /**
-             * @description How much of release_date is known. null when release_date is null.
-             * @enum {string|null}
-             */
-            release_date_precision: "day" | "month" | "year" | null;
+            /** @description How much of release_date is known. null when release_date is null. */
+            release_date_precision: components["schemas"]["ReleaseDatePrecision"] | null;
             /** @description Languages of the work's forum resources, each once, in vocabulary order. Empty array, never null. */
-            resource_languages: ("zh-cn" | "zh-tw" | "ja-jp" | "en-us" | "other")[];
+            resource_languages: components["schemas"]["ResourceLanguage"][];
             /** @description Platforms the work's forum resources run on, each once, in vocabulary order. Empty array, never null. */
-            resource_platforms: ("win" | "and" | "ios" | "mac" | "lin" | "web" | "mob" | "swi" | "sw2" | "n3d" | "nds" | "wii" | "wiu" | "gba" | "gbc" | "nes" | "sfc" | "ps1" | "ps2" | "ps3" | "ps4" | "ps5" | "psp" | "psv" | "xb1" | "xb3" | "xbo" | "xxs" | "sat" | "smd" | "scd" | "drc" | "pce" | "pcf" | "tdo" | "p88" | "p98" | "x1s" | "x68" | "fm7" | "fm8" | "fmt" | "msx" | "dos" | "dvd" | "bdp" | "vnd" | "oth")[];
+            resource_platforms: components["schemas"]["ResourcePlatform"][];
             /**
              * Format: date-time
              * @description When a resource of the work last changed. null when it has none.
@@ -14255,19 +13786,13 @@ export interface components {
             };
             /**
              * @description Type discriminant. Always tag.
-             * @enum {string}
+             * @constant
              */
             object: "tag";
-            /**
-             * @description How much the tag gives away.
-             * @enum {string}
-             */
-            spoiler: "none" | "minor" | "major";
-            /**
-             * @description What the tag describes: content is the story and characters, meta is the game as a product.
-             * @enum {string}
-             */
-            tag_kind: "content" | "meta";
+            /** @description How much the tag gives away. */
+            spoiler: components["schemas"]["CatalogSpoiler"];
+            /** @description What the tag describes: content is the story and characters, meta is the game as a product. */
+            tag_kind: components["schemas"]["TagKind"];
         };
         WorkViewer: {
             /** @description Whether the caller may ban publishing download resources on this work. Requests authenticated with a Bearer token never carry staff powers. */
@@ -14281,11 +13806,8 @@ export interface components {
              * @description Minutes the caller reported. 0 when they reported none or withdrew the report.
              */
             minutes: number;
-            /**
-             * @description The caller's play state as catalog records it: a rating's play_status, or done for a finished game with no completion recorded, which no write accepts. null when they have none.
-             * @enum {string|null}
-             */
-            play_state: "wish" | "doing" | "done_one_route" | "done_main" | "done_all" | "on_hold" | "dropped" | "done" | null;
+            /** @description The caller's play state as catalog records it: a rating's play_status, or done for a finished game with no completion recorded, which no write accepts. null when they have none. */
+            play_state: components["schemas"]["PlayState"] | null;
         };
         YearCount: {
             /**
@@ -14316,11 +13838,11 @@ export interface operations {
                 /** @description Page size. 1–100, default 20. Values above 100 are rejected, not clamped. */
                 limit?: number;
                 /** @description Only these activity types, comma-separated. Absent means every type. */
-                activity_types?: ("topic_creation" | "topic_reply_creation" | "topic_comment_creation" | "topic_upvote" | "best_answer_set" | "galgame_creation" | "galgame_edit" | "galgame_pr_creation" | "galgame_resource_creation" | "galgame_resource_comment_creation" | "galgame_comment_creation" | "galgame_rating_creation" | "galgame_rating_comment_creation" | "galgame_quiz_creation" | "galgame_quiz_comment_creation" | "galgame_website_creation" | "galgame_website_comment_creation" | "toolset_creation" | "toolset_resource_creation" | "toolset_comment_creation" | "todo_creation" | "update_log_creation")[];
+                activity_types?: components["schemas"]["ActivityType"][];
                 /** @description Which topic_creation activities to include: help is the resource and help sections (g-seeking, g-other, t-help), normal is every other section, all is both. Other kinds are not affected. */
-                topic_sections?: "normal" | "help" | "all";
+                topic_sections?: components["schemas"]["ActivityTopicSection"];
                 /** @description occurred_desc (default) or bumped_desc. bumped_desc sorts topics by bump time and needs activity_types to be exactly topic_creation. */
-                sort?: "occurred_desc" | "bumped_desc";
+                sort?: components["schemas"]["ActivitySort"];
                 /** @description When true, NSFW activities and works are included. Default false. */
                 include_nsfw?: boolean;
                 /** @description When true, galgame_creation includes works that have no download resource yet. Default false. */
@@ -15313,7 +14835,7 @@ export interface operations {
                 /** @description Page size. 1–100, default 20. Values above 100 are rejected, not clamped. */
                 limit?: number;
                 /** @description Only topics hidden this way. Absent means every hidden topic. */
-                hidden_by?: "author" | "moderator" | "trust";
+                hidden_by?: components["schemas"]["HiddenBy"];
                 /** @description Case-insensitive substring of the title. Free text; never use it as a decision input. */
                 q?: string;
             };
@@ -15581,7 +15103,7 @@ export interface operations {
                 /** @description Page size. 1–100, default 20. Values above 100 are rejected, not clamped. */
                 limit?: number;
                 /** @description Only items in this state. Absent means every state. */
-                state?: "pending" | "claimed" | "actioned" | "dismissed";
+                state?: components["schemas"]["ReviewItemState"];
             };
             header?: never;
             path?: never;
@@ -19529,7 +19051,7 @@ export interface operations {
                 /** @description Company ids to resolve, comma-separated. 1 to 100 of them. Mutually exclusive with q. Absent ids are omitted. */
                 ids?: string[];
                 /** @description Only companies of this kind. Omitted means every kind. */
-                company_kind?: "game_brand" | "bunko" | "publisher" | "anime_studio" | "doujin_circle" | "group";
+                company_kind?: components["schemas"]["CompanyKind"];
                 /** @description 1-based page number. page × limit may not exceed 10000, or 100 when q is set. */
                 page?: number;
                 /** @description Page size. 1–100, default 50. Values above 100 are rejected, not clamped. */
@@ -19701,21 +19223,21 @@ export interface operations {
         parameters: {
             query?: {
                 /** @description own: only the company's own works. imprint: only works credited to one of its imprints. Omitted means both. */
-                via?: "own" | "imprint";
+                via?: components["schemas"]["CompanyWorkVia"];
                 /** @description 1-based page number. page × limit may not exceed 10000. */
                 page?: number;
                 /** @description Page size. 1–100, default 24. Values above 100 are rejected, not clamped. */
                 limit?: number;
                 /** @description Sort order. resource_updated: when a resource last changed. created: when the forum page was made. view / view_1d / view_7d / view_30d: page reads, all time or over the last day, 7 or 30 days. release_date: the release date. rating: the bayesian forum rating. Works the forum has no page for rank after every work it has. */
-                sort?: "resource_updated_desc" | "resource_updated_asc" | "created_desc" | "created_asc" | "view_desc" | "view_asc" | "view_1d_desc" | "view_1d_asc" | "view_7d_desc" | "view_7d_asc" | "view_30d_desc" | "view_30d_asc" | "release_date_desc" | "release_date_asc" | "rating_desc" | "rating_asc";
+                sort?: components["schemas"]["WorkSort"];
                 /** @description Only works with at least one forum resource of this type. Omitted means no filter. */
-                resource_type?: "game" | "patch" | "collection" | "crack_fix" | "mod" | "tool" | "walkthrough" | "ost" | "voice" | "cg" | "wallpaper" | "artbook" | "video" | "other";
+                resource_type?: components["schemas"]["ResourceType"];
                 /** @description Only works with at least one forum resource for this platform. Omitted means no filter. */
-                resource_platform?: "win" | "and" | "ios" | "mac" | "lin" | "web" | "mob" | "swi" | "sw2" | "n3d" | "nds" | "wii" | "wiu" | "gba" | "gbc" | "nes" | "sfc" | "ps1" | "ps2" | "ps3" | "ps4" | "ps5" | "psp" | "psv" | "xb1" | "xb3" | "xbo" | "xxs" | "sat" | "smd" | "scd" | "drc" | "pce" | "pcf" | "tdo" | "p88" | "p98" | "x1s" | "x68" | "fm7" | "fm8" | "fmt" | "msx" | "dos" | "dvd" | "bdp" | "vnd" | "oth";
+                resource_platform?: components["schemas"]["ResourcePlatform"];
                 /** @description Only works with at least one forum resource in this language. Omitted means no filter. */
-                resource_language?: "zh-cn" | "zh-tw" | "ja-jp" | "en-us" | "other";
+                resource_language?: components["schemas"]["ResourceLanguage"];
                 /** @description Only works a forum rating labels with this game type; uncategorized is works no rating labels at all. Omitted means no filter. */
-                game_type?: "ba_saku" | "plot" | "moe" | "daily" | "uncategorized";
+                game_type?: components["schemas"]["GameTypeFilter"];
                 /** @description When true, adult works are included. Default false. */
                 include_nsfw?: boolean;
             };
@@ -19962,9 +19484,9 @@ export interface operations {
                 /** @description Page size. 1–100, default 20. Values above 100 are rejected, not clamped. */
                 limit?: number;
                 /** @description Sort order; ties break on id. Default position_asc. position: the display order staff set with putDocOrder. published: published_at. views: view_count. */
-                sort?: "position_asc" | "published_desc" | "views_desc";
+                sort?: components["schemas"]["DocSort"];
                 /** @description When set, only docs on this shelf. Omitted means every shelf. */
-                doc_category?: "galgame" | "notice" | "kun" | "other";
+                doc_category?: components["schemas"]["DocCategory"];
                 /** @description true for pinned docs only, false for unpinned only. Omitted means both. */
                 is_pinned?: boolean;
             };
@@ -20066,7 +19588,7 @@ export interface operations {
         parameters: {
             query?: {
                 /** @description Proposal state. Default open. */
-                state?: "open" | "merged" | "declined" | "withdrawn";
+                state?: components["schemas"]["EditProposalState"];
                 /** @description Opaque keyset cursor from a previous page of this collection. */
                 cursor?: string;
                 /** @description Page size. 1–100, default 20. Values above 100 are rejected, not clamped. */
@@ -20596,15 +20118,15 @@ export interface operations {
                 /** @description Page size. 1–100, default 24. Values above 100 are rejected, not clamped. */
                 limit?: number;
                 /** @description Sort order. resource_updated: when a resource last changed. created: when the forum page was made. view / view_1d / view_7d / view_30d: page reads, all time or over the last day, 7 or 30 days. release_date: the release date. rating: the bayesian forum rating. Works the forum has no page for rank after every work it has. */
-                sort?: "resource_updated_desc" | "resource_updated_asc" | "created_desc" | "created_asc" | "view_desc" | "view_asc" | "view_1d_desc" | "view_1d_asc" | "view_7d_desc" | "view_7d_asc" | "view_30d_desc" | "view_30d_asc" | "release_date_desc" | "release_date_asc" | "rating_desc" | "rating_asc";
+                sort?: components["schemas"]["WorkSort"];
                 /** @description Only works with at least one forum resource of this type. Omitted means no filter. */
-                resource_type?: "game" | "patch" | "collection" | "crack_fix" | "mod" | "tool" | "walkthrough" | "ost" | "voice" | "cg" | "wallpaper" | "artbook" | "video" | "other";
+                resource_type?: components["schemas"]["ResourceType"];
                 /** @description Only works with at least one forum resource for this platform. Omitted means no filter. */
-                resource_platform?: "win" | "and" | "ios" | "mac" | "lin" | "web" | "mob" | "swi" | "sw2" | "n3d" | "nds" | "wii" | "wiu" | "gba" | "gbc" | "nes" | "sfc" | "ps1" | "ps2" | "ps3" | "ps4" | "ps5" | "psp" | "psv" | "xb1" | "xb3" | "xbo" | "xxs" | "sat" | "smd" | "scd" | "drc" | "pce" | "pcf" | "tdo" | "p88" | "p98" | "x1s" | "x68" | "fm7" | "fm8" | "fmt" | "msx" | "dos" | "dvd" | "bdp" | "vnd" | "oth";
+                resource_platform?: components["schemas"]["ResourcePlatform"];
                 /** @description Only works with at least one forum resource in this language. Omitted means no filter. */
-                resource_language?: "zh-cn" | "zh-tw" | "ja-jp" | "en-us" | "other";
+                resource_language?: components["schemas"]["ResourceLanguage"];
                 /** @description Only works a forum rating labels with this game type; uncategorized is works no rating labels at all. Omitted means no filter. */
-                game_type?: "ba_saku" | "plot" | "moe" | "daily" | "uncategorized";
+                game_type?: components["schemas"]["GameTypeFilter"];
                 /** @description When true, adult works are included. Default false. */
                 include_nsfw?: boolean;
             };
@@ -20672,7 +20194,7 @@ export interface operations {
                 /** @description Page size. 1–100, default 20. Values above 100 are rejected, not clamped. */
                 limit?: number;
                 /** @description When set, only this shelf. Omitted means every shelf. */
-                friend_link_category?: "official" | "galgame" | "others";
+                friend_link_category?: components["schemas"]["FriendLinkCategory"];
             };
             header?: never;
             path?: never;
@@ -20721,9 +20243,9 @@ export interface operations {
                 /** @description When true, resources on an NSFW work are included. Default false. */
                 include_nsfw?: boolean;
                 /** @description When set, only this state. Omitted means every state. */
-                state?: "valid" | "expired";
+                state?: components["schemas"]["GalgameResourceState"];
                 /** @description Sort token. Default created_desc. */
-                sort?: "created_desc" | "created_asc";
+                sort?: components["schemas"]["GalgameResourceSort"];
             };
             header?: never;
             path?: never;
@@ -21462,11 +20984,8 @@ export interface operations {
                      * @description The image. Its part must be image/* and at most 10 MiB.
                      */
                     file: string;
-                    /**
-                     * @description What the image is for: content or message.
-                     * @enum {string}
-                     */
-                    purpose: "content" | "message";
+                    /** @description What the image is for: content or message. */
+                    purpose: components["schemas"]["Purpose"];
                 };
             };
         };
@@ -21583,7 +21102,7 @@ export interface operations {
                 /** @description Search keywords. Omitted means the catalog browse population. Free text; never use it as a decision input. */
                 q?: string;
                 /** @description Order. popularity: catalog popularity. released: release date. updated: last catalog edit. relevance: the search index's ranking. */
-                sort?: "popularity_desc" | "released_desc" | "released_asc" | "updated_desc" | "relevance_desc";
+                sort?: components["schemas"]["LibraryWorkSort"];
                 /** @description Released in or after this year (YYYY) or month (YYYY-MM). */
                 released_from?: string;
                 /** @description Released in or before this year (YYYY) or month (YYYY-MM). */
@@ -23766,7 +23285,7 @@ export interface operations {
                 /** @description Narrow to one work. */
                 work_id?: string;
                 /** @description Narrow to one state. Absent means every state. */
-                state?: "open" | "merged" | "declined" | "withdrawn";
+                state?: components["schemas"]["EditProposalState"];
                 /** @description Opaque keyset cursor from a previous page of this collection. */
                 cursor?: string;
                 /** @description Page size. 1–100, default 20. Values above 100 are rejected, not clamped. */
@@ -24068,7 +23587,7 @@ export interface operations {
                 /** @description When false, only types the caller has not muted. When true, only types the caller has muted. The two partitions are disjoint and together are every row. is_muted=false with notification_type set to a muted type is a legal empty list. */
                 is_muted?: boolean;
                 /** @description When set, restrict the chosen partition to this notification type. Omitted means every type in the partition. An unknown token is UNKNOWN_ENUM_VALUE. */
-                notification_type?: "upvoted" | "liked" | "favorited" | "replied" | "commented" | "mentioned" | "followed_thread_activity" | "best_answer_chosen" | "reply_pinned" | "quiz_answered" | "resource_link_reported" | "edit_requested" | "edit_merged" | "edit_declined" | "lottery_won" | "lottery_drawn" | "lottery_code_expired" | "poll_closed";
+                notification_type?: components["schemas"]["NotificationType"];
             };
             header?: never;
             path?: never;
@@ -25492,7 +25011,7 @@ export interface operations {
             header?: never;
             path: {
                 /** @description Kind of page whose comment wall this is. */
-                subject_type: "galgame" | "galgame_rating" | "galgame_resource" | "galgame_quiz" | "toolset" | "website";
+                subject_type: components["schemas"]["WallSubjectType"];
                 /** @description Id of the page whose wall this is. */
                 subject_id: string;
             };
@@ -25571,7 +25090,7 @@ export interface operations {
             header?: never;
             path: {
                 /** @description Kind of page whose comment wall this is. */
-                subject_type: "galgame" | "galgame_rating" | "galgame_resource" | "galgame_quiz" | "toolset" | "website";
+                subject_type: components["schemas"]["WallSubjectType"];
                 /** @description Id of the page whose wall this is. */
                 subject_id: string;
             };
@@ -25650,7 +25169,7 @@ export interface operations {
             header?: never;
             path: {
                 /** @description Kind of page whose comment wall this is. */
-                subject_type: "galgame" | "galgame_rating" | "galgame_resource" | "galgame_quiz" | "toolset" | "website";
+                subject_type: components["schemas"]["WallSubjectType"];
                 /** @description Id of the page whose wall this is. */
                 subject_id: string;
             };
@@ -25729,7 +25248,7 @@ export interface operations {
             header?: never;
             path: {
                 /** @description Kind of page whose comment wall this is. */
-                subject_type: "galgame" | "galgame_rating" | "galgame_resource" | "galgame_quiz" | "toolset" | "website";
+                subject_type: components["schemas"]["WallSubjectType"];
                 /** @description Id of the page whose wall this is. */
                 subject_id: string;
             };
@@ -25812,7 +25331,7 @@ export interface operations {
                 /** @description When true, the response includes total counted under the same predicate as items. */
                 include_total?: boolean;
                 /** @description Only claims in these states, comma-separated. */
-                state?: ("live" | "draft" | "pending" | "declined" | "hidden")[];
+                state?: components["schemas"]["ClaimState"][];
             };
             header?: never;
             path?: never;
@@ -25886,7 +25405,7 @@ export interface operations {
                 /** @description When true, the response includes total counted under the same predicate as items. */
                 include_total?: boolean;
                 /** @description Only claims in these states, comma-separated. */
-                state?: ("live" | "draft" | "pending" | "declined" | "hidden")[];
+                state?: components["schemas"]["ClaimState"][];
             };
             header?: never;
             path?: never;
@@ -26104,7 +25623,7 @@ export interface operations {
         parameters: {
             query?: {
                 /** @description Only this lane. Omitted means both. */
-                lane?: "news" | "column";
+                lane?: components["schemas"]["NewsLane"];
                 /** @description Only this partner. Omitted means every partner. */
                 news_source?: string;
                 /** @description Also break this year down by month. */
@@ -26158,7 +25677,7 @@ export interface operations {
         parameters: {
             query?: {
                 /** @description Only this lane. Omitted means both. */
-                lane?: "news" | "column";
+                lane?: components["schemas"]["NewsLane"];
                 /** @description Only this partner. Omitted means every partner. */
                 news_source?: string;
             };
@@ -26228,7 +25747,7 @@ export interface operations {
                 /** @description Page size. 1–100, default 20. Values above 100 are rejected, not clamped. */
                 limit?: number;
                 /** @description Only this lane. Omitted means both. */
-                lane?: "news" | "column";
+                lane?: components["schemas"]["NewsLane"];
                 /** @description Only this partner. Omitted means every partner. */
                 news_source?: string;
                 /** @description Only this day of the month. 0 or omitted means the whole month. */
@@ -26302,7 +25821,7 @@ export interface operations {
                 /** @description When true, total counts every item under the same filters. */
                 include_total?: boolean;
                 /** @description Only this lane. Omitted means both. */
-                lane?: "news" | "column";
+                lane?: components["schemas"]["NewsLane"];
                 /** @description Only this partner. Omitted means every partner. */
                 news_source?: string;
                 /** @description Only items published in this year, Asia/Shanghai. 0 or omitted means any year. */
@@ -27007,17 +26526,17 @@ export interface operations {
                 /** @description When set, only quizzes this user authored. */
                 author_id?: string;
                 /** @description When set, only this type. Omitted means every type. */
-                quiz_type?: "single" | "multiple" | "judge";
+                quiz_type?: components["schemas"]["QuizType"];
                 /** @description When set, only this category. Omitted means every category. */
-                quiz_category?: "plot" | "character" | "system" | "music" | "voice" | "company" | "trivia" | "other";
+                quiz_category?: components["schemas"]["QuizCategory"];
                 /** @description When set, only this difficulty. Omitted means every difficulty; 0 is out of range. */
                 difficulty?: number;
                 /** @description When set, only this spoiler level. Omitted means every level. */
-                spoiler_level?: "none" | "portion" | "serious";
+                spoiler_level?: components["schemas"]["SpoilerLevel"];
                 /** @description When true, quizzes linked to an NSFW work are included. Default false. */
                 include_nsfw?: boolean;
                 /** @description Sort token. Default bumped_at_desc. */
-                sort?: "bumped_at_desc" | "bumped_at_asc" | "created_desc" | "created_asc" | "view_desc" | "view_asc" | "view_1d_desc" | "view_1d_asc" | "view_7d_desc" | "view_7d_asc" | "view_30d_desc" | "view_30d_asc" | "difficulty_desc" | "difficulty_asc" | "answer_count_desc" | "answer_count_asc";
+                sort?: components["schemas"]["QuizSort"];
             };
             header?: never;
             path?: never;
@@ -27998,7 +27517,7 @@ export interface operations {
         parameters: {
             query?: {
                 /** @description What the list ranks by, highest first; ties break on descending id. views: view count. replies, comments, likes, upvotes, favorites: those counts. */
-                sort?: "views_desc" | "replies_desc" | "comments_desc" | "likes_desc" | "upvotes_desc" | "favorites_desc";
+                sort?: components["schemas"]["TopicRankingSort"];
                 /** @description How many places. 1–100, default 50. Values above 100 are rejected, not clamped. */
                 limit?: number;
                 /** @description When true, NSFW topics are ranked too. Default false. */
@@ -28052,7 +27571,7 @@ export interface operations {
         parameters: {
             query?: {
                 /** @description What the list ranks by, highest first; ties break on descending user id. moemoepoint: the balance this forum caches. topics, replies, comments: what the user has posted where anonymous visitors can read it. resources: the user's galgame resources that are not taken down. */
-                sort?: "moemoepoint_desc" | "topics_desc" | "replies_desc" | "comments_desc" | "resources_desc";
+                sort?: components["schemas"]["UserRankingSort"];
                 /** @description How many places. 1–100, default 50. Values above 100 are rejected, not clamped. */
                 limit?: number;
             };
@@ -28104,7 +27623,7 @@ export interface operations {
         parameters: {
             query?: {
                 /** @description What the list ranks by, highest first; ties break on descending work id. views, likes, favorites, resources: those counts on this forum. rating: this forum's ratings, weighted toward the site-wide mean for works with few of them. */
-                sort?: "views_desc" | "likes_desc" | "favorites_desc" | "resources_desc" | "rating_desc";
+                sort?: components["schemas"]["WorkRankingSort"];
                 /** @description How many places. 1–100, default 50. Values above 100 are rejected, not clamped. */
                 limit?: number;
                 /** @description When true, works this forum displays as adult content are ranked too. Default false. */
@@ -28164,17 +27683,17 @@ export interface operations {
                 /** @description Page size. 1–100, default 24. Values above 100 are rejected, not clamped. */
                 limit?: number;
                 /** @description Sort order; ties break on id in the same direction. created: when the rating was written. view: page reads. overall: the overall score. */
-                sort?: "created_desc" | "created_asc" | "view_desc" | "view_asc" | "overall_desc" | "overall_asc";
+                sort?: components["schemas"]["RatingSort"];
                 /** @description Only ratings of this work. Omitted means every work. */
                 work_id?: string;
                 /** @description Only ratings by this user. Omitted means everyone. */
                 author_id?: string;
                 /** @description Only ratings declaring this spoiler level. Omitted means any. */
-                spoiler_level?: "none" | "portion" | "serious";
+                spoiler_level?: components["schemas"]["SpoilerLevel"];
                 /** @description Only ratings with this play status. Omitted means any. */
-                play_status?: "wish" | "doing" | "done_one_route" | "done_main" | "done_all" | "on_hold" | "dropped";
+                play_status?: components["schemas"]["PlayStatus"];
                 /** @description Only ratings filing the work under this game type. Omitted means any. */
-                game_type?: "ba_saku" | "plot" | "moe" | "daily";
+                game_type?: components["schemas"]["GameType"];
                 /** @description When true, ratings of adult works are included. Default false. */
                 include_nsfw?: boolean;
             };
@@ -29488,7 +29007,7 @@ export interface operations {
                 /** @description Reply id. */
                 reply_id: string;
                 /** @description Reaction token the server currently accepts. like and dislike exclude each other: setting one removes the other. */
-                reaction: "like" | "dislike" | "heart" | "fire" | "party" | "love" | "clap" | "thinking" | "mindblown" | "scream" | "cry" | "pray" | "eyes" | "hundred" | "partyface" | "starstruck" | "angry" | "anxious" | "banana" | "eyebrow" | "voltage" | "hotdog" | "hot" | "sob" | "moai" | "newmoon" | "police" | "pouting" | "salute" | "shrimp" | "halo" | "sunglasses" | "whale";
+                reaction: components["schemas"]["ReactionKind"];
             };
             cookie?: never;
         };
@@ -29567,7 +29086,7 @@ export interface operations {
                 /** @description Reply id. */
                 reply_id: string;
                 /** @description Reaction token the server currently accepts. like and dislike exclude each other: setting one removes the other. */
-                reaction: "like" | "dislike" | "heart" | "fire" | "party" | "love" | "clap" | "thinking" | "mindblown" | "scream" | "cry" | "pray" | "eyes" | "hundred" | "partyface" | "starstruck" | "angry" | "anxious" | "banana" | "eyebrow" | "voltage" | "hotdog" | "hot" | "sob" | "moai" | "newmoon" | "police" | "pouting" | "salute" | "shrimp" | "halo" | "sunglasses" | "whale";
+                reaction: components["schemas"]["ReactionKind"];
             };
             cookie?: never;
         };
@@ -30236,7 +29755,7 @@ export interface operations {
                 /** @description Released in or before this year (YYYY) or month (YYYY-MM). */
                 released_to?: string;
                 /** @description Order. relevance: the search index's ranking. popularity: catalog popularity. updated: last catalog edit. released: release date. */
-                sort?: "relevance_desc" | "popularity_desc" | "updated_desc" | "released_desc" | "released_asc";
+                sort?: components["schemas"]["LibraryWorkSort"];
             };
             header?: never;
             path?: never;
@@ -30286,7 +29805,7 @@ export interface operations {
         parameters: {
             query?: {
                 /** @description When set, only this category's sections. Omitted means all of them. */
-                category?: "galgame" | "technique" | "others";
+                category?: components["schemas"]["TopicCategory"];
             };
             header?: never;
             path?: never;
@@ -30455,15 +29974,15 @@ export interface operations {
                 /** @description Page size. 1–100, default 24. Values above 100 are rejected, not clamped. */
                 limit?: number;
                 /** @description Sort order. resource_updated: when a resource last changed. created: when the forum page was made. view / view_1d / view_7d / view_30d: page reads, all time or over the last day, 7 or 30 days. release_date: the release date. rating: the bayesian forum rating. Works the forum has no page for rank after every work it has. */
-                sort?: "resource_updated_desc" | "resource_updated_asc" | "created_desc" | "created_asc" | "view_desc" | "view_asc" | "view_1d_desc" | "view_1d_asc" | "view_7d_desc" | "view_7d_asc" | "view_30d_desc" | "view_30d_asc" | "release_date_desc" | "release_date_asc" | "rating_desc" | "rating_asc";
+                sort?: components["schemas"]["WorkSort"];
                 /** @description Only works with at least one forum resource of this type. Omitted means no filter. */
-                resource_type?: "game" | "patch" | "collection" | "crack_fix" | "mod" | "tool" | "walkthrough" | "ost" | "voice" | "cg" | "wallpaper" | "artbook" | "video" | "other";
+                resource_type?: components["schemas"]["ResourceType"];
                 /** @description Only works with at least one forum resource for this platform. Omitted means no filter. */
-                resource_platform?: "win" | "and" | "ios" | "mac" | "lin" | "web" | "mob" | "swi" | "sw2" | "n3d" | "nds" | "wii" | "wiu" | "gba" | "gbc" | "nes" | "sfc" | "ps1" | "ps2" | "ps3" | "ps4" | "ps5" | "psp" | "psv" | "xb1" | "xb3" | "xbo" | "xxs" | "sat" | "smd" | "scd" | "drc" | "pce" | "pcf" | "tdo" | "p88" | "p98" | "x1s" | "x68" | "fm7" | "fm8" | "fmt" | "msx" | "dos" | "dvd" | "bdp" | "vnd" | "oth";
+                resource_platform?: components["schemas"]["ResourcePlatform"];
                 /** @description Only works with at least one forum resource in this language. Omitted means no filter. */
-                resource_language?: "zh-cn" | "zh-tw" | "ja-jp" | "en-us" | "other";
+                resource_language?: components["schemas"]["ResourceLanguage"];
                 /** @description Only works a forum rating labels with this game type; uncategorized is works no rating labels at all. Omitted means no filter. */
-                game_type?: "ba_saku" | "plot" | "moe" | "daily" | "uncategorized";
+                game_type?: components["schemas"]["GameTypeFilter"];
                 /** @description When true, adult works are included. Default false. */
                 include_nsfw?: boolean;
             };
@@ -30707,15 +30226,15 @@ export interface operations {
                 /** @description Page size. 1–100, default 24. Values above 100 are rejected, not clamped. */
                 limit?: number;
                 /** @description Sort order. resource_updated: when a resource last changed. created: when the forum page was made. view / view_1d / view_7d / view_30d: page reads, all time or over the last day, 7 or 30 days. release_date: the release date. rating: the bayesian forum rating. Works the forum has no page for rank after every work it has. */
-                sort?: "resource_updated_desc" | "resource_updated_asc" | "created_desc" | "created_asc" | "view_desc" | "view_asc" | "view_1d_desc" | "view_1d_asc" | "view_7d_desc" | "view_7d_asc" | "view_30d_desc" | "view_30d_asc" | "release_date_desc" | "release_date_asc" | "rating_desc" | "rating_asc";
+                sort?: components["schemas"]["WorkSort"];
                 /** @description Only works with at least one forum resource of this type. Omitted means no filter. */
-                resource_type?: "game" | "patch" | "collection" | "crack_fix" | "mod" | "tool" | "walkthrough" | "ost" | "voice" | "cg" | "wallpaper" | "artbook" | "video" | "other";
+                resource_type?: components["schemas"]["ResourceType"];
                 /** @description Only works with at least one forum resource for this platform. Omitted means no filter. */
-                resource_platform?: "win" | "and" | "ios" | "mac" | "lin" | "web" | "mob" | "swi" | "sw2" | "n3d" | "nds" | "wii" | "wiu" | "gba" | "gbc" | "nes" | "sfc" | "ps1" | "ps2" | "ps3" | "ps4" | "ps5" | "psp" | "psv" | "xb1" | "xb3" | "xbo" | "xxs" | "sat" | "smd" | "scd" | "drc" | "pce" | "pcf" | "tdo" | "p88" | "p98" | "x1s" | "x68" | "fm7" | "fm8" | "fmt" | "msx" | "dos" | "dvd" | "bdp" | "vnd" | "oth";
+                resource_platform?: components["schemas"]["ResourcePlatform"];
                 /** @description Only works with at least one forum resource in this language. Omitted means no filter. */
-                resource_language?: "zh-cn" | "zh-tw" | "ja-jp" | "en-us" | "other";
+                resource_language?: components["schemas"]["ResourceLanguage"];
                 /** @description Only works a forum rating labels with this game type; uncategorized is works no rating labels at all. Omitted means no filter. */
-                game_type?: "ba_saku" | "plot" | "moe" | "daily" | "uncategorized";
+                game_type?: components["schemas"]["GameTypeFilter"];
                 /** @description When true, adult works are included. Default false. */
                 include_nsfw?: boolean;
             };
@@ -30785,7 +30304,7 @@ export interface operations {
                 /** @description When true, the response includes total counted under the same predicate as items. */
                 include_total?: boolean;
                 /** @description Only tasks in this state. Absent lists every state. */
-                state?: "pending" | "in_progress" | "done" | "discarded";
+                state?: components["schemas"]["TodoState"];
             };
             header?: never;
             path?: never;
@@ -31235,15 +30754,15 @@ export interface operations {
                 /** @description Page size. 1–100, default 24. Values above 100 are rejected, not clamped. */
                 limit?: number;
                 /** @description When set, only this type. Omitted means every type. */
-                toolset_type?: "emulator" | "translator" | "extractor" | "converter" | "debug" | "launcher" | "script" | "docs" | "others";
+                toolset_type?: components["schemas"]["ToolsetType"];
                 /** @description When set, only tools with this interface language. Omitted means every language. */
-                interface_language?: "zh-cn" | "zh-tw" | "ja-jp" | "en-us" | "others";
+                interface_language?: components["schemas"]["ToolsetLanguage"];
                 /** @description When set, only this platform. Omitted means every platform. */
-                platform?: "windows" | "mac" | "linux" | "emulator" | "others";
+                platform?: components["schemas"]["ToolsetPlatform"];
                 /** @description When set, only this channel. Omitted means every channel. */
-                release_channel?: "stable" | "beta" | "alpha" | "rc";
+                release_channel?: components["schemas"]["ToolsetReleaseChannel"];
                 /** @description Sort token. Default resource_updated_desc. */
-                sort?: "resource_updated_desc" | "resource_updated_asc" | "created_desc" | "created_asc" | "view_desc" | "view_asc" | "title_asc" | "title_desc";
+                sort?: components["schemas"]["ToolsetSort"];
                 /** @description Case-insensitive search over the toolset title. Omitted or blank means no search. Free text; never use it as a decision input. */
                 q?: string;
             };
@@ -32848,13 +32367,13 @@ export interface operations {
                 /** @description Page size. 1–100, default 20. Values above 100 are rejected, not clamped. */
                 limit?: number;
                 /** @description Sort order; ties break on id in the same direction. Default bumped_desc. bumped: bumped_at. created: created_at. views: view_count. views_1d: views today. views_7d and views_30d: views in the last 7 or 30 days, recomputed daily. likes: like_count. favorites: times favorited. upvotes: times upvoted. */
-                sort?: "bumped_asc" | "bumped_desc" | "created_asc" | "created_desc" | "views_asc" | "views_desc" | "views_1d_asc" | "views_1d_desc" | "views_7d_asc" | "views_7d_desc" | "views_30d_asc" | "views_30d_desc" | "likes_asc" | "likes_desc" | "favorites_asc" | "favorites_desc" | "upvotes_asc" | "upvotes_desc";
+                sort?: components["schemas"]["TopicSort"];
                 /** @description When set, only this category. Omitted means every category. There is no all token. */
-                category?: "galgame" | "technique" | "others";
+                category?: components["schemas"]["TopicCategory"];
                 /** @description When true, NSFW topics are included. Default false. */
                 include_nsfw?: boolean;
                 /** @description When set, only topics filed under this section. Omitted means every section. */
-                section?: "g-walkthrough" | "g-chatting" | "g-article" | "g-seeking" | "g-news" | "g-releases" | "g-other" | "t-crack" | "t-web" | "t-languages" | "t-help" | "t-linux" | "t-practical" | "t-ai" | "t-android" | "t-adobe" | "t-algorithm" | "t-other" | "o-anime" | "o-comics" | "o-music" | "o-novel" | "o-daily" | "o-essay" | "o-forum" | "o-patch" | "o-other";
+                section?: components["schemas"]["SectionKey"];
             };
             header?: never;
             path?: never;
@@ -34234,7 +33753,7 @@ export interface operations {
                 /** @description Topic id. */
                 topic_id: string;
                 /** @description Reaction token the server currently accepts. like and dislike exclude each other: setting one removes the other. */
-                reaction: "like" | "dislike" | "heart" | "fire" | "party" | "love" | "clap" | "thinking" | "mindblown" | "scream" | "cry" | "pray" | "eyes" | "hundred" | "partyface" | "starstruck" | "angry" | "anxious" | "banana" | "eyebrow" | "voltage" | "hotdog" | "hot" | "sob" | "moai" | "newmoon" | "police" | "pouting" | "salute" | "shrimp" | "halo" | "sunglasses" | "whale";
+                reaction: components["schemas"]["ReactionKind"];
             };
             cookie?: never;
         };
@@ -34313,7 +33832,7 @@ export interface operations {
                 /** @description Topic id. */
                 topic_id: string;
                 /** @description Reaction token the server currently accepts. like and dislike exclude each other: setting one removes the other. */
-                reaction: "like" | "dislike" | "heart" | "fire" | "party" | "love" | "clap" | "thinking" | "mindblown" | "scream" | "cry" | "pray" | "eyes" | "hundred" | "partyface" | "starstruck" | "angry" | "anxious" | "banana" | "eyebrow" | "voltage" | "hotdog" | "hot" | "sob" | "moai" | "newmoon" | "police" | "pouting" | "salute" | "shrimp" | "halo" | "sunglasses" | "whale";
+                reaction: components["schemas"]["ReactionKind"];
             };
             cookie?: never;
         };
@@ -34392,7 +33911,7 @@ export interface operations {
                 /** @description Page size. 1–100, default 20. Values above 100 are rejected, not clamped. */
                 limit?: number;
                 /** @description Sort order. floor_asc (default) reads from the first floor; floor_desc from the last. */
-                sort?: "floor_asc" | "floor_desc";
+                sort?: components["schemas"]["ReplySort"];
                 /** @description Start at this floor instead of the first one in sort order, inclusive: floor_asc reads floors greater than or equal to it, floor_desc floors less than or equal to it. The floor need not exist. */
                 from_floor?: number;
             };
@@ -35618,7 +35137,7 @@ export interface operations {
                 /** @description When true, NSFW topics are included. Default false. */
                 include_nsfw?: boolean;
                 /** @description How the listed comments relate to the user: authored, received, or liked. */
-                relation: "authored" | "received" | "liked";
+                relation: components["schemas"]["UserPostRelation"];
             };
             header?: never;
             path: {
@@ -35704,9 +35223,9 @@ export interface operations {
                 /** @description When true, resources of NSFW works are included. Default false. */
                 include_nsfw?: boolean;
                 /** @description How the listed resources relate to the user: published or liked. */
-                relation: "published" | "liked";
+                relation: components["schemas"]["UserResourceRelation"];
                 /** @description When set, only this state. Omitted means every state. */
-                state?: "valid" | "expired";
+                state?: components["schemas"]["GalgameResourceState"];
             };
             header?: never;
             path: {
@@ -35792,7 +35311,7 @@ export interface operations {
                 /** @description When true, NSFW topics are included. Default false. */
                 include_nsfw?: boolean;
                 /** @description How the listed replies relate to the user: authored, received, or liked. */
-                relation: "authored" | "received" | "liked";
+                relation: components["schemas"]["UserPostRelation"];
             };
             header?: never;
             path: {
@@ -35960,7 +35479,7 @@ export interface operations {
                 /** @description When true, NSFW topics are included. Default false. */
                 include_nsfw?: boolean;
                 /** @description How the listed topics relate to the user: authored, liked, upvoted, favorited, or hidden. */
-                relation: "authored" | "liked" | "upvoted" | "favorited" | "hidden";
+                relation: components["schemas"]["UserTopicRelation"];
             };
             header?: never;
             path: {
@@ -36040,9 +35559,9 @@ export interface operations {
         parameters: {
             query: {
                 /** @description How the listed wall comments relate to the user: authored or liked. */
-                relation: "authored" | "liked";
+                relation: components["schemas"]["UserWallCommentRelation"];
                 /** @description Kind of page whose wall the comments are on. Omitted means every wall. */
-                subject_type?: "galgame" | "galgame_rating" | "galgame_resource" | "galgame_quiz" | "toolset" | "website";
+                subject_type?: components["schemas"]["WallSubjectType"];
                 /** @description Opaque keyset cursor from a previous page of this collection. */
                 cursor?: string;
                 /** @description Page size. 1–100, default 24. Values above 100 are rejected, not clamped. */
@@ -36132,7 +35651,7 @@ export interface operations {
                 /** @description When true, NSFW works are included. Default false. */
                 include_nsfw?: boolean;
                 /** @description How the listed works relate to the user: published, contributed, or liked. */
-                relation: "published" | "contributed" | "liked";
+                relation: components["schemas"]["UserWorkRelation"];
             };
             header?: never;
             path: {
@@ -36216,7 +35735,7 @@ export interface operations {
                 /** @description Page size. 1–100, default 20. Values above 100 are rejected, not clamped. */
                 limit?: number;
                 /** @description Kind of page whose wall to list. */
-                subject_type: "galgame" | "galgame_rating" | "galgame_resource" | "galgame_quiz" | "toolset" | "website";
+                subject_type: components["schemas"]["WallSubjectType"];
                 /** @description Id of that page. */
                 subject_id: string;
             };
@@ -37805,11 +37324,8 @@ export interface operations {
                      * @description The image. Its part must be image/* and at most 10 MiB.
                      */
                     file: string;
-                    /**
-                     * @description Which edit slot the image is for: cover or screenshot.
-                     * @enum {string}
-                     */
-                    preset: "cover" | "screenshot";
+                    /** @description Which edit slot the image is for: cover or screenshot. */
+                    preset: components["schemas"]["Preset"];
                 };
             };
         };
@@ -38000,7 +37516,7 @@ export interface operations {
                 /** @description When true, the response includes total counted under the same predicate as items. */
                 include_total?: boolean;
                 /** @description Only claims in these states, comma-separated. */
-                state?: ("live" | "draft" | "pending" | "declined" | "hidden")[];
+                state?: components["schemas"]["ClaimState"][];
             };
             header?: never;
             path?: never;
@@ -38547,19 +38063,19 @@ export interface operations {
                 /** @description Page size. 1–100, default 24. Values above 100 are rejected, not clamped. */
                 limit?: number;
                 /** @description Sort order. resource_updated: when a resource last changed. created: when the forum page was made. view / view_1d / view_7d / view_30d: page reads, all time or over the last day, 7 or 30 days. release_date: the release date. rating: the bayesian forum rating. Works the forum has no page for rank after every work it has. */
-                sort?: "resource_updated_desc" | "resource_updated_asc" | "created_desc" | "created_asc" | "view_desc" | "view_asc" | "view_1d_desc" | "view_1d_asc" | "view_7d_desc" | "view_7d_asc" | "view_30d_desc" | "view_30d_asc" | "release_date_desc" | "release_date_asc" | "rating_desc" | "rating_asc";
+                sort?: components["schemas"]["WorkSort"];
                 /** @description Only works with at least one forum resource of this type. Omitted means no filter. */
-                resource_type?: "game" | "patch" | "collection" | "crack_fix" | "mod" | "tool" | "walkthrough" | "ost" | "voice" | "cg" | "wallpaper" | "artbook" | "video" | "other";
+                resource_type?: components["schemas"]["ResourceType"];
                 /** @description Only works with at least one forum resource for any of these platforms. Comma-separated. Omitted means no filter. */
-                resource_platforms?: ("win" | "and" | "ios" | "mac" | "lin" | "web" | "mob" | "swi" | "sw2" | "n3d" | "nds" | "wii" | "wiu" | "gba" | "gbc" | "nes" | "sfc" | "ps1" | "ps2" | "ps3" | "ps4" | "ps5" | "psp" | "psv" | "xb1" | "xb3" | "xbo" | "xxs" | "sat" | "smd" | "scd" | "drc" | "pce" | "pcf" | "tdo" | "p88" | "p98" | "x1s" | "x68" | "fm7" | "fm8" | "fmt" | "msx" | "dos" | "dvd" | "bdp" | "vnd" | "oth")[];
+                resource_platforms?: components["schemas"]["ResourcePlatform"][];
                 /** @description Only works with at least one forum resource in any of these languages. Comma-separated. Omitted means no filter. */
-                resource_languages?: ("zh-cn" | "zh-tw" | "ja-jp" | "en-us" | "other")[];
+                resource_languages?: components["schemas"]["ResourceLanguage"][];
                 /** @description Only works a forum rating labels with this game type; uncategorized is works no rating labels at all. Omitted means no filter. */
-                game_type?: "ba_saku" | "plot" | "moe" | "daily" | "uncategorized";
+                game_type?: components["schemas"]["GameTypeFilter"];
                 /** @description Only works with a resource hosted on any of these download hosts. Comma-separated. Omitted means no filter. */
-                resource_providers?: ("baidu" | "aliyun" | "quark" | "pan123" | "tianyiyun" | "caiyun" | "xunlei" | "uc" | "lanzou" | "other")[];
+                resource_providers?: components["schemas"]["ResourceProvider"][];
                 /** @description Only works whose resources are not hosted solely on these download hosts. Comma-separated. Omitted means no filter. */
-                excluded_sole_providers?: ("baidu" | "aliyun" | "quark" | "pan123" | "tianyiyun" | "caiyun" | "xunlei" | "uc" | "lanzou" | "other")[];
+                excluded_sole_providers?: components["schemas"]["ResourceProvider"][];
                 /** @description Released in or after this year (YYYY) or month (YYYY-MM). */
                 released_from?: string;
                 /** @description Released in or before this year (YYYY) or month (YYYY-MM). */
@@ -39064,7 +38580,7 @@ export interface operations {
         parameters: {
             query?: {
                 /** @description Proposal state. Default open. */
-                state?: "open" | "merged" | "declined" | "withdrawn";
+                state?: components["schemas"]["EditProposalState"];
                 /** @description Opaque keyset cursor from a previous page of this collection. */
                 cursor?: string;
                 /** @description Page size. 1–100, default 20. Values above 100 are rejected, not clamped. */
@@ -40110,7 +39626,7 @@ export interface operations {
                 /** @description Page size. 1–100, default 50. Values above 100 are rejected, not clamped. */
                 limit?: number;
                 /** @description When set, only this state. Omitted means every state. */
-                state?: "valid" | "expired";
+                state?: components["schemas"]["GalgameResourceState"];
             };
             header?: never;
             path: {
