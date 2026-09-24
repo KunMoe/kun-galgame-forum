@@ -39,6 +39,10 @@ type editCatalog interface {
 	Vocabularies(ctx context.Context) (map[string]catalogclient.Vocabulary, error)
 }
 
+// editing() asserts this at runtime, so a drifted signature would compile and
+// then answer 500 on every edit face.
+var _ editCatalog = (*catalogclient.Client)(nil)
+
 func (s *Service) WithEditing(n msgService.Notifier) *Service {
 	s.notifier = n
 	return s
