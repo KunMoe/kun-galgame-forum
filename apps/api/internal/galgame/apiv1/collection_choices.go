@@ -51,18 +51,9 @@ func (s *Service) listMyCollectionsForWork(ctx context.Context, in *listMyCollec
 	if err != nil {
 		return nil, mapUserPlane(err, true)
 	}
-	holdings, err := s.catalog.MyFolderHoldings(ctx, token, []int64{int64(workID)})
+	contains, err := s.foldersHolding(ctx, token, workID)
 	if err != nil {
 		return nil, mapUserPlane(err, true)
-	}
-	contains := map[int64]bool{}
-	for _, h := range holdings {
-		if h.WorkID != int64(workID) {
-			continue
-		}
-		for _, id := range h.FolderIDs {
-			contains[id] = true
-		}
 	}
 	sortFolders(folders)
 	n, rel := collect.ClampTotal(len(folders))

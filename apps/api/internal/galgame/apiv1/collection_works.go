@@ -2,13 +2,11 @@ package apiv1
 
 import (
 	"context"
-	"errors"
 	"sort"
 
 	"kun-galgame-api/internal/apiv1/collect"
 	"kun-galgame-api/internal/apiv1/repr"
 	"kun-galgame-api/internal/galgame/workrepr"
-	"kun-galgame-api/pkg/catalogclient"
 	"kun-galgame-api/pkg/problem"
 )
 
@@ -135,10 +133,7 @@ func (s *Service) putCollectionWork(ctx context.Context, in *collectionWorkInput
 	if s.catalog == nil {
 		return nil, problem.Unavailable(errUnconfigured)
 	}
-	if _, err := s.catalog.MyFolder(ctx, token, folderID); err != nil {
-		return nil, mapUserPlane(err, false)
-	}
-	holding, err := s.catalog.MyFoldersContaining(ctx, token, int64(workID))
+	holding, err := s.foldersHolding(ctx, token, workID)
 	if err != nil {
 		return nil, mapUserPlane(err, true)
 	}
@@ -178,24 +173,15 @@ func (s *Service) deleteCollectionWork(ctx context.Context, in *collectionWorkIn
 	if s.catalog == nil {
 		return nil, problem.Unavailable(errUnconfigured)
 	}
-	if _, err := s.catalog.MyFolder(ctx, token, folderID); err != nil {
-		return nil, mapUserPlane(err, false)
-	}
-	holding, err := s.catalog.MyFoldersContaining(ctx, token, int64(workID))
+	holding, err := s.foldersHolding(ctx, token, workID)
 	if err != nil {
 		return nil, mapUserPlane(err, true)
 	}
-	inThis := false
-	onlyThis := true
-	for _, f := range holding {
-		if f.ID == folderID {
-			inThis = true
-			continue
-		}
-		onlyThis = false
-	}
-	lastRemove := inThis && onlyThis
-	if err := s.catalog.DeleteFolderItem(ctx, token, folderID, int64(workID)); err != nil && !errors.Is(err, catalogclient.ErrNotFound) {
+	lastRemove := holding[folderID] && len(holding) == 1
+	// Catalog answers 204 for a membership that is not there and 404 only for a
+	// folder that is not the caller's. With no precheck in front, swallowing
+	// that 404 would turn someone else's folder into 200 has_work:false.
+	if err := s.catalog.DeleteFolderItem(ctx, token, folderID, int64(workID)); err != nil {
 		return nil, mapUserPlane(err, true)
 	}
 	if lastRemove {
@@ -205,4 +191,23 @@ func (s *Service) deleteCollectionWork(ctx context.Context, in *collectionWorkIn
 		Object: "collection_work_engagement", CollectionID: repr.ID(int(folderID)), WorkID: repr.ID(workID),
 		Viewer: &CollectionWorkEngagementViewer{HasWork: false},
 	}}, nil
+}
+
+// There is no MyFolder precheck before the item writes: catalog's own write
+// checks the folder is the caller's (ownedFolder → 404, infra user_folder.go).
+func (s *Service) foldersHolding(ctx context.Context, token string, workID int) (map[int64]bool, error) {
+	holdings, err := s.catalog.MyFolderHoldings(ctx, token, []int64{int64(workID)})
+	if err != nil {
+		return nil, err
+	}
+	out := map[int64]bool{}
+	for _, h := range holdings {
+		if h.WorkID != int64(workID) {
+			continue
+		}
+		for _, id := range h.FolderIDs {
+			out[id] = true
+		}
+	}
+	return out, nil
 }
