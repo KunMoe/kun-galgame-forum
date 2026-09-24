@@ -343,7 +343,7 @@ catalog 用户面一次调用的失败，按下表进 v1。**不得**落到无 c
 
 **撤回的回执不写死 `{minutes: 0}`。** catalog 的「我的时长」是**跨 client 取最大值**（infra#296 之后仍然如此），论坛这一行归零或删掉之后，该用户在别的 app 报的分钟仍在。DELETE 与 PUT 一样：写完**重读**（`MyPlaytime` + `MyWorkState` 折叠），回的就是此刻 `GET /works/{work_id}` 的 `viewer.playtime` 会给的值；两轴都空才是 `null`。变异 #21 钉住。
 
-**以后换成 DELETE。** infra#296（spec 2.24.1）把 `DeleteMine` 收窄到调用方的 `client_id` 并拒绝空 client。本轨不做运行时版本判断，仍写 0；#296 在生产部署并验证之后，另开一个小 PR 把撤回换成 DELETE（不留 0 行），回执语义不变。
+**本轨就用 DELETE（infra#296 已上线，2026-09-24 00:31Z）。** #296（merge `5dc86518`，spec 2.24.1）把 `DeleteMine` 收窄为 `WHERE actor_uid AND work_id AND client_id`，空 client 拒（`user_playtime.go:146-159`）；路由描述改成「Deletes only the row the calling app reported」。生产 catalog 容器 00:31:31Z 重建，晚于合并。所以 `DELETE /works/{work_id}/playtime` = catalog `DELETE /v2/me/playtimes/{work_id}`（只删论坛这一行，不留 0 行）+ 删 work-state；回执按上一段重读。上面「仍写 0」的理由只对 #296 之前的 catalog 成立。
 
 **上游 429 一律 `503 SERVICE_UNAVAILABLE`，转发 `Retry-After`，不嗅正文。** 打一行 WARN，带上游状态码。前文 `QUOTA_EXCEEDED` 的拆分作废：日配额与共享 IP 限流都不是调用者这一次请求的错，正文子串也不是可靠判据。
 
@@ -499,7 +499,7 @@ U3：主人不可渲染 404；非主人只有公开夹。
 |---|---|
 | **K-G41** | 本轨是 BFF：用户 token 打 catalog `/v2/me/*` 与 `/v2/folders`。论坛库不存票、时长、夹内容 |
 | **K-G42** | 封面投票是 K16 槽，见 §3.4。G17 的读面是 `GET /works/{work_id}/covers/{cover_id}` → `WorkCover` |
-| **K-G43** | 游玩时长槽见 §3.5 / §3.15。DELETE = 论坛 token `PUT {minutes:0}`（每 client 一行；infra#296 部署前 catalog 的 DELETE 会删掉其它 client）+ 清状态；回执重读（跨 client 最大值），不写死 0。`play_state` 与 G4 同 schema，handler 拒 `done` |
+| **K-G43** | 游玩时长槽见 §3.5 / §3.15。DELETE = catalog `DELETE /v2/me/playtimes/{work_id}`（infra#296 起只删调用 app 的行）+ 清状态；回执重读（跨 client 最大值），不写死 0。`play_state` 与 G4 同 schema，handler 拒 `done` |
 | **K-G44** | `/me/playtimes` 页码；合计与 `items` 同一谓词；生产每用户 ≤81 |
 | **K-G45** | `collection_id` = catalog folder id；页面 `/collection/{collection_id}`；别名表冻结为重定向表，`GET /collection-aliases/{alias_id}` 只读、可见性同详情；旧路径 Nitro 301 + 薄页 `router.replace`（§3.15） |
 | **K-G46** | 别人的私密夹 404。封禁主人的公开夹对路人 404 |
@@ -548,7 +548,7 @@ U3：主人不可渲染 404；非主人只有公开夹。
 | 2 | 成员资格恢复整集替换，且接受 `collection_ids: []`（旧 `SetMembership`） | 无该操作。读失败后 0 次对 `…/works/{work_id}` 的 PUT/DELETE；空差集不发请求 |
 | 3 | `GET /me/collections` 在空列表时创建默认夹（旧 `ensureDefault`） | 调用前后 `catalog_user_folder` 行数相同；200 `items: []` |
 | 4 | `PUT /works/{id}/playtime` 接受 `play_state: "done"` 并写成 catalog `state=done` 无 completion | 422 `VALIDATION_FAILED` `NOT_ALLOWED_VALUE`；上游 0 次 PUT work-state |
-| 5 | `DELETE /works/{id}/playtime` 改打 catalog `DELETE /v2/me/playtimes/{id}`（会删掉其它 client 的行） | 上游收到的是 `PUT {minutes:0}`，0 次 catalog DELETE；再撤回一次仍 200 `{minutes:0, play_state:null}` |
+| 5 | `DELETE /works/{id}/playtime` 改回写 `PUT {minutes:0}`（留下 0 行） | 上游收到的是 catalog `DELETE /v2/me/playtimes/{id}`，0 次 PUT；再撤回一次仍 200 |
 | 6 | 缺 `folder:write` / `catalog:edit` 回 500 或 401 | `403 SCOPE_REQUIRED` |
 | 7 | 上游 429（无 Daily quota）回 500 或 400（旧 playtime） | `503 SERVICE_UNAVAILABLE`，`Retry-After` 若上游有则转发 |
 | 8 | Bearer 调用者 `viewer.can_edit` / `can_delete` 为 true，或 PATCH 别人的夹 200 | `can_*` 全 false；PATCH 别人的夹 404；catalog 版主面 0 次调用 |
@@ -571,7 +571,7 @@ U3：主人不可渲染 404；非主人只有公开夹。
 | # | 事实 | 裁决 |
 |---|---|---|
 | O1 | 别名表仍在读写；旧 URL `/galgame/collection/{cid}` 与 folder id 撞号（4,079 / 9,338） | **编排者裁决方案 B（§3.15）**：v1 用 folder id，新页 `/collection/{id}`，别名表冻结为重定向表，旧路径 301 + 薄页；库内旧链接 0 条，无改写迁移 |
-| O2 | catalog 已有 `DELETE /v2/me/playtimes/{work_id}` | **不用**（§3.15 复核）：它按 (user, work) 删，不分 client；时长每 client 一行。撤回写 0 只动论坛这一行。以后若 infra 给出按 client 删，再换 |
+| O2 | catalog 已有 `DELETE /v2/me/playtimes/{work_id}` | **用它**（§3.15）：infra#296（2026-09-24 上线）起按 client 删，只动论坛这一行。#296 之前它不分 client，那时写 0 才对 |
 | O3 | infra 对 playtime 不再要求 `playtime:*` | 论坛继续申请。上游若拒再 `SCOPE_REQUIRED`。不在本轨删 scope |
 | O4 | 本地 `favorite_count` 与 catalog `nextmoe/favorites` 会漂（其它站点的收藏进指标、不进本地列） | 接受。详情数字用 catalog；本地列只当排行键（G4 已写） |
 | O5 | 空名默认夹的展示靠网页拼主人名 | 保持。API 下发空串 `name`，客户端继续 `collectionDisplayName` |
