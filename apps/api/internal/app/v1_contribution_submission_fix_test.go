@@ -38,6 +38,8 @@ const (
 	g7aWizDraft   = 948000013
 	g7aWizDecl    = 948000014
 	g7aStaffOwn   = 948000015
+	g7aGhostOwner = 948000016
+	g7aGhostUser  = 930000777
 	g7aFirstMint  = 948000100
 	g7aResource   = 948500001
 
@@ -97,6 +99,10 @@ type g7aUser struct {
 	autoMerge  bool
 	forceState map[int64]string
 	snapshots  int
+
+	failAfterWrite bool
+	readsFail      bool
+	onWrite        func()
 }
 
 type g7aFix struct {
@@ -258,6 +264,7 @@ func (u *g7aUser) seed(t *testing.T) {
 	add(g7aWizDecl, "WizardDeclined", "declined", bob, false, g7aEvent{to: "declined", actor: staff})
 	add(g7aTwin, "TwinTitle", "live", bob, false, g7aEvent{to: "live", actor: bob})
 	add(g7aStaffOwn, "StaffOwnG7", "pending", staff, false, g7aEvent{to: "pending", actor: staff})
+	add(g7aGhostOwner, "GhostOwnerG7", "pending", bob, false, g7aEvent{to: "pending", actor: bob})
 }
 
 func (f *g7aFix) cleanupG7(t *testing.T) {
@@ -287,6 +294,8 @@ func (f *g7aFix) seedG7(t *testing.T) {
 		VALUES (?, 0, 0, 0, ?, ?, false, ?, ?, false), (?, 0, 0, 0, ?, ?, false, ?, ?, false), (?, 0, 0, 0, ?, ?, false, ?, ?, false)`,
 		g7aBobPending, base, base, w3UserBob, base, g7aHiddenBare, base, base, w3UserBanned, base,
 		g7aStaffOwn, base, base, w3UserStaff, base)
+	run(`INSERT INTO galgame (id, view, like_count, favorite_count, created, updated, published, creator_user_id, resource_update_time, resource_publish_banned)
+		VALUES (?, 0, 0, 0, ?, ?, false, ?, ?, false)`, g7aGhostOwner, base, base, g7aGhostUser, base)
 	run(`INSERT INTO galgame_resource (id, type, language, platform, title, version_label, languages, platforms, runtimes, size, code, password, note, status, work_id, user_id, like_count, comment_count, view, download, provider_name, created, updated)
 		VALUES (?, 'game', 'zh-cn', 'windows', '', '', '["zh-cn"]'::jsonb, '["win"]'::jsonb, '["native-win"]'::jsonb, '1 GB', '', '', 'kept', 0, ?, ?, 0, 0, 0, 0, '[]'::jsonb, ?, ?)`,
 		g7aResource, g7aDraftRes, w3UserAlice, base, base)
@@ -367,6 +376,23 @@ func (u *g7aUser) item(c *g7aClaim, viewer int64, queueRow bool) catalogclient.U
 	return it
 }
 
+func (u *g7aUser) wrote() {
+	if !u.failAfterWrite {
+		return
+	}
+	u.readsFail = true
+	if u.onWrite != nil {
+		u.onWrite()
+	}
+}
+
+func (u *g7aUser) readGate(token string) error {
+	if u.readsFail {
+		return catalogclient.ErrUpstream
+	}
+	return u.gate(token)
+}
+
 func (u *g7aUser) own(token string, id int64) (*g7aClaim, error) {
 	if err := u.gate(token); err != nil {
 		return nil, err
@@ -439,13 +465,14 @@ func (u *g7aUser) SubmitWorkUser(_ context.Context, token string, req catalogcli
 		return nil, err
 	}
 	u.cat.rows[int(c.id)] = row
-	return &catalogclient.WorkSubmitResult{WorkID: c.id, ProductWorkID: c.id, ClaimState: state, Claim: u.item(c, uid, false), ETag: g7aETag(c)}, nil
+	u.wrote()
+	return &catalogclient.WorkSubmitResult{WorkID: c.id, ProductWorkID: c.id, ClaimState: state}, nil
 }
 
 func (u *g7aUser) GetMyClaim(_ context.Context, token string, workID int64) (*catalogclient.UserClaimItem, string, error) {
 	u.lock.Lock()
 	defer u.lock.Unlock()
-	if err := u.gate(token); err != nil {
+	if err := u.readGate(token); err != nil {
 		return nil, "", err
 	}
 	c := u.claims[workID]
@@ -460,7 +487,7 @@ func (u *g7aUser) GetModerationClaim(_ context.Context, token string, workID int
 	u.lock.Lock()
 	defer u.lock.Unlock()
 	u.modCalls++
-	if err := u.gate(token); err != nil {
+	if err := u.readGate(token); err != nil {
 		return nil, "", err
 	}
 	if !u.reviewer(token) {
@@ -499,27 +526,28 @@ func (u *g7aUser) PatchMyClaim(_ context.Context, token string, workID int64, st
 		return nil, "", g7aProblem(http.StatusConflict, "INVALID_STATE_TRANSITION", fmt.Sprintf("cannot submit a claim in state %q", c.state))
 	}
 	u.move(c, state, u.uid(token), nil)
-	it := u.item(c, u.uid(token), false)
+	u.wrote()
+	it := u.item(c, 0, false)
 	return &it, g7aETag(c), nil
 }
 
-func (u *g7aUser) DecideClaim(_ context.Context, token string, workID int64, decision, note, ifMatch string) error {
+func (u *g7aUser) DecideClaim(_ context.Context, token string, workID int64, decision, note, ifMatch string) (*catalogclient.ClaimDecision, error) {
 	u.lock.Lock()
 	defer u.lock.Unlock()
 	u.modCalls++
 	u.decisions = append(u.decisions, g7aMutation{workID: workID, state: decision, ifMatch: ifMatch, token: token})
 	if err := u.gate(token); err != nil {
-		return err
+		return nil, err
 	}
 	if !u.reviewer(token) {
-		return g7aProblem(http.StatusForbidden, "PERMISSION_REQUIRED", "needs catalog.claim.review")
+		return nil, g7aProblem(http.StatusForbidden, "PERMISSION_REQUIRED", "needs catalog.claim.review")
 	}
 	c := u.claims[workID]
 	if c == nil {
-		return g7aProblem(http.StatusNotFound, "NOT_FOUND", "No claim with this id.")
+		return nil, g7aProblem(http.StatusNotFound, "NOT_FOUND", "No claim with this id.")
 	}
 	if err := u.checkMatch(c, ifMatch); err != nil {
-		return err
+		return nil, err
 	}
 	var to string
 	switch decision {
@@ -529,7 +557,7 @@ func (u *g7aUser) DecideClaim(_ context.Context, token string, workID int64, dec
 		}
 	case "decline":
 		if strings.TrimSpace(note) == "" {
-			return &catalogclient.UserAPIError{Status: http.StatusUnprocessableEntity, ProblemCode: "VALIDATION_FAILED",
+			return nil, &catalogclient.UserAPIError{Status: http.StatusUnprocessableEntity, ProblemCode: "VALIDATION_FAILED",
 				Message: "a decline needs a reason", FieldErrors: []catalogclient.ProblemFieldError{{Pointer: "/", Reason: "REQUIRED"}}}
 		}
 		if c.state == "pending" {
@@ -553,17 +581,20 @@ func (u *g7aUser) DecideClaim(_ context.Context, token string, workID int64, dec
 		}
 	}
 	if to == "" {
-		return g7aProblem(http.StatusConflict, "INVALID_STATE_TRANSITION", "cannot "+decision+" a claim in state "+c.state)
+		return nil, g7aProblem(http.StatusConflict, "INVALID_STATE_TRANSITION", "cannot "+decision+" a claim in state "+c.state)
 	}
 	var reason *string
 	if note != "" {
 		reason = &note
 	}
+	from := c.state
 	u.move(c, to, u.uid(token), reason)
+	d := &catalogclient.ClaimDecision{EventID: c.events[len(c.events)-1].id, FromState: &from, ToState: to}
 	if forced := u.forceState[workID]; forced != "" {
 		c.state = forced
 	}
-	return nil
+	u.wrote()
+	return d, nil
 }
 
 func (u *g7aUser) DeleteMyClaim(_ context.Context, token string, workID int64, ifMatch string) error {

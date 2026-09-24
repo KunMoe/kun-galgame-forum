@@ -14,6 +14,8 @@ const api = useApiClient()
 const nameOf = useCatalogName()
 
 const hasSearched = ref(false)
+const searchFailed = ref(false)
+const pendingFailed = ref(false)
 const isSearching = ref(false)
 const isLoadingMore = ref(false)
 const hits = ref<WorkSubmissionCandidate[]>([])
@@ -53,14 +55,18 @@ const handleSearch = async () => {
     )
   ])
   isSearching.value = false
-  hasSearched.value = true
   if (!found.ok) {
     reportProblem(found.problem)
+    searchFailed.value = true
+    hasSearched.value = false
     return
   }
+  searchFailed.value = false
+  hasSearched.value = true
   searchedQuery.value = query
   hits.value = found.data.items
   nextCursor.value = found.data.next_cursor
+  pendingFailed.value = !mine.ok
   pending.value = mine.ok ? mine.data.items : []
 }
 
@@ -91,7 +97,11 @@ const handleCreateNew = async () => {
 }
 
 const noMatches = computed(
-  () => hasSearched.value && !hits.value.length && !pending.value.length
+  () =>
+    hasSearched.value &&
+    !pendingFailed.value &&
+    !hits.value.length &&
+    !pending.value.length
 )
 
 const route = useRoute()
@@ -147,7 +157,21 @@ onMounted(() => {
       </p>
     </div>
 
+    <KunInfo
+      v-if="searchFailed"
+      color="danger"
+      title="搜索失败"
+      description="资料库暂时无法搜索, 请稍后重试。在确认没有同名作品之前, 请不要新建申请。"
+    />
+
     <div v-if="hasSearched" class="space-y-4">
+      <KunInfo
+        v-if="pendingFailed"
+        color="danger"
+        title="无法读取您的待审投稿"
+        description="您自己的待审核 / 已拒绝投稿暂时读取失败, 请稍后到「我的提交」查看, 以免重复提交。"
+      />
+
       <div v-if="pending.length" class="space-y-2">
         <h3 class="text-default-700 text-sm font-bold">您的待审 / 已拒草稿</h3>
         <div

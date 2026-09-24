@@ -72,8 +72,11 @@ func TestV1WorkSubmissionCreate(t *testing.T) {
 	if loc := resp.Header.Get("Location"); loc != "/api/v1/work-submissions/"+id {
 		t.Errorf("Location %q", loc)
 	}
-	if resp.Header.Get("ETag") == "" {
-		t.Error("201 without ETag")
+	if etag := resp.Header.Get("ETag"); etag != `"c`+id+`.1"` {
+		t.Errorf("201 ETag %q, want the claim's own version, not the mint record's", etag)
+	}
+	if got["display_name"] != "新作品" {
+		t.Errorf("display_name %v: the 201 is read back, not the partial mint record", got["display_name"])
 	}
 	if got["state"] != "pending" || got["is_nsfw"] != true || got["content_rating"] != "r18" || got["has_banner_attached"] != true {
 		t.Errorf("body %+v", got)
@@ -259,7 +262,7 @@ func TestV1WorkSubmissionDuplicateSuspects(t *testing.T) {
 	if d, _ := got["detail"].(string); strings.Contains(d, "confirm_duplicates") || strings.Contains(d, "re-send") {
 		t.Errorf("catalog's sentence leaked into detail: %q", d)
 	}
-	if len(f.user.claims) != 13 {
+	if len(f.user.claims) != 14 {
 		t.Errorf("a refused mint wrote a claim")
 	}
 	resp, got = f.call(t, http.MethodPost, "/api/v1/work-submissions", g7aSpecColl, "sess-alice", g7aKey(11),
@@ -672,7 +675,7 @@ func TestV1WorkSubmissionListReviewsAndQueue(t *testing.T) {
 
 	searches := len(f.cat.searched)
 	queue := g7aWalk(t, f, "/api/v1/work-submissions?limit=2", g7aSpecColl, "sess-staff")
-	want = []string{idStr(g7aPending), idStr(g7aBobPending), idStr(g7aStaffOwn)}
+	want = []string{idStr(g7aPending), idStr(g7aBobPending), idStr(g7aStaffOwn), idStr(g7aGhostOwner)}
 	slices.Sort(queue)
 	slices.Sort(want)
 	if !slices.Equal(queue, want) {
@@ -854,5 +857,71 @@ func TestV1WorkSubmissionDeclaredCodes(t *testing.T) {
 	resp, got = f.call(t, http.MethodPost, "/api/v1/work-submissions", g7aSpecColl, "sess-alice", g7aKey(402), g7aMintBody("Reused", nil))
 	if resp.StatusCode != http.StatusCreated || resp.Header.Get("Idempotency-Replayed") != "true" || len(f.user.mints) != 3 {
 		t.Errorf("replay %d %q mints %d", resp.StatusCode, resp.Header.Get("Idempotency-Replayed"), len(f.user.mints))
+	}
+}
+
+func TestV1WorkSubmissionCreatedETagIsTheWriteVersion(t *testing.T) {
+	f := newG7aFix(t)
+	resp, got := f.call(t, http.MethodPost, "/api/v1/work-submissions", g7aSpecColl, "sess-alice", g7aKey(500), g7aMintBody("Versioned", nil))
+	if resp.StatusCode != http.StatusCreated {
+		t.Fatalf("create %d %+v", resp.StatusCode, got)
+	}
+	id, _ := strconv.Atoi(got["id"].(string))
+	resp, got = f.callWith(t, http.MethodPatch, g7aSub(id), g7aSpecOne, "sess-alice",
+		http.Header{"If-Match": {resp.Header.Get("ETag")}}, map[string]any{"state": "draft"})
+	if resp.StatusCode != http.StatusOK || got["state"] != "draft" {
+		t.Fatalf("withdraw with the 201 ETag %d %+v", resp.StatusCode, got)
+	}
+}
+
+func TestV1WorkSubmissionWritesSurviveAFailedReadBack(t *testing.T) {
+	f := newG7aFix(t)
+	f.user.failAfterWrite = true
+	f.user.onWrite = func() { f.failOA.Store(true) }
+	reset := func() {
+		f.failOA.Store(false)
+		f.user.lock.Lock()
+		f.user.readsFail = false
+		f.user.lock.Unlock()
+	}
+
+	resp, got := f.call(t, http.MethodPatch, g7aSub(g7aGhostOwner), g7aSpecOne, "sess-staff", "", map[string]any{"state": "live"})
+	if resp.StatusCode != http.StatusOK || got["state"] != "live" || g7aObj(got, "last_event")["to_state"] != "live" {
+		t.Fatalf("approve %d %+v: the decision landed, so the answer is 200 from its record", resp.StatusCode, got)
+	}
+	if sub := g7aObj(got, "submitter"); sub == nil || sub["name"] != nil {
+		t.Errorf("submitter %+v, want a deleted-user ref when the lookup fails after the write", sub)
+	}
+	if len(f.user.decisions) != 1 || resp.Header.Get("ETag") != "" {
+		t.Errorf("decisions %d, ETag %q", len(f.user.decisions), resp.Header.Get("ETag"))
+	}
+	reset()
+
+	resp, got = f.call(t, http.MethodPatch, g7aSub(g7aHiddenDraf), g7aSpecOne, "sess-staff", "", map[string]any{"state": "unban"})
+	if resp.StatusCode != http.StatusOK || got["state"] != "draft" {
+		t.Fatalf("unban %d %+v, want the decision's restored state", resp.StatusCode, got)
+	}
+	reset()
+
+	resp, got = f.call(t, http.MethodPatch, g7aSub(g7aDraft), g7aSpecOne, "sess-alice", "", map[string]any{"state": "pending"})
+	if resp.StatusCode != http.StatusOK || got["state"] != "pending" || resp.Header.Get("ETag") != `"c948000001.2"` {
+		t.Fatalf("submit %d %+v %q: answered from the PATCH record and its version", resp.StatusCode, got, resp.Header.Get("ETag"))
+	}
+	reset()
+
+	hash := strings.Repeat("cd", 32)
+	body := g7aMintBody("ReadBackFails", map[string]any{"banner_hash": hash})
+	resp, got = f.call(t, http.MethodPost, "/api/v1/work-submissions", g7aSpecColl, "sess-alice", g7aKey(501), body)
+	if resp.StatusCode != http.StatusCreated || got["display_name"] != "ReadBackFails" || got["state"] != "pending" || got["last_event"] != nil {
+		t.Fatalf("create %d %+v: the mint landed, so the answer is 201 from what was sent", resp.StatusCode, got)
+	}
+	if resp.Header.Get("ETag") != "" {
+		t.Errorf("ETag %q: without a read-back there is no version to give", resp.Header.Get("ETag"))
+	}
+	reset()
+	mints, proposals := len(f.user.mints), len(f.user.proposals)
+	resp, _ = f.call(t, http.MethodPost, "/api/v1/work-submissions", g7aSpecColl, "sess-alice", g7aKey(501), body)
+	if resp.StatusCode != http.StatusCreated || len(f.user.mints) != mints || len(f.user.proposals) != proposals {
+		t.Errorf("retry %d minted %d and proposed %d more", resp.StatusCode, len(f.user.mints)-mints, len(f.user.proposals)-proposals)
 	}
 }

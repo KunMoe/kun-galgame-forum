@@ -52,9 +52,6 @@ type WorkSubmitResult struct {
 	ClaimState    string `json:"claim_state"`
 	EventID       int64  `json:"event_id"`
 	ReleaseID     int64  `json:"release_id,omitempty"`
-
-	Claim UserClaimItem `json:"-"`
-	ETag  string        `json:"-"`
 }
 
 type ClaimEventFeedItem struct {

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
+	"time"
 
 	"kun-galgame-api/internal/apiv1/repr"
 	"kun-galgame-api/internal/galgame/client"
@@ -20,7 +21,7 @@ type submissionCatalog interface {
 	GetMyClaim(ctx context.Context, token string, workID int64) (*catalogclient.UserClaimItem, string, error)
 	GetModerationClaim(ctx context.Context, token string, workID int64) (*catalogclient.UserClaimItem, string, error)
 	PatchMyClaim(ctx context.Context, token string, workID int64, state, ifMatch string) (*catalogclient.UserClaimItem, string, error)
-	DecideClaim(ctx context.Context, token string, workID int64, decision, note, ifMatch string) error
+	DecideClaim(ctx context.Context, token string, workID int64, decision, note, ifMatch string) (*catalogclient.ClaimDecision, error)
 	DeleteMyClaim(ctx context.Context, token string, workID int64, ifMatch string) error
 	MyClaims(ctx context.Context, token string, f catalogclient.UserClaimFilter) (*catalogclient.UserClaimPage, error)
 	ListModerationClaims(ctx context.Context, token string, f catalogclient.UserClaimFilter) (*catalogclient.UserClaimPage, error)
@@ -76,22 +77,29 @@ func (s *Service) createWorkSubmission(ctx context.Context, in *createWorkSubmis
 		return nil, mapUserPlaneAt(err, true, submissionPointer)
 	}
 	workID := int(res.WorkID)
+	sc := submissionContext{axes: submissionAxes{isNSFW: in.Body.IsNSFW, rating: in.Body.ContentRating}}
 	if s.store.Ready() {
 		if err := s.store.SubmitLocal(workID, c.user.ID); err != nil {
 			slog.Warn("submit: failed to record local creator", "work_id", workID, "err", err)
+		} else {
+			sc.creator = c.user.ID
 		}
 	}
 	attached := in.Body.BannerHash == "" || s.attachBanner(ctx, c, res.WorkID, in.Body.BannerHash)
 	if s.scan != nil {
 		s.scan.ScanBg(gate.SubjectKindGalgame, string(repr.ID(workID)), text, int64(c.user.ID))
 	}
-	body, p := s.toWorkSubmission(ctx, c.user, res.Claim, true, submissionAxes{isNSFW: in.Body.IsNSFW, rating: in.Body.ContentRating})
-	if p != nil {
-		return nil, p
-	}
+	// Catalog's mint answers only {id, state}, and its ETag is hashed over that
+	// partial record, so it never matches what a PATCH checks. The claim is
+	// read back instead; without it the 201 carries no ETag rather than a
+	// wrong one.
+	held := catalogclient.UserClaimItem{WorkID: res.WorkID, DisplayName: mint.display, ClaimState: res.ClaimState}
+	body, etag := s.settle(ctx, c, func() (*catalogclient.UserClaimItem, string, error) {
+		return c.cat.GetMyClaim(ctx, c.token, res.WorkID)
+	}, held, "", true, sc)
 	return &createWorkSubmissionOutput{
 		Location: "/api/v1/work-submissions/" + string(body.ID),
-		ETag:     res.ETag,
+		ETag:     etag,
 		Body:     WorkSubmissionCreated{WorkSubmission: body, HasBannerAttached: attached},
 	}, nil
 }
@@ -138,7 +146,15 @@ func (s *Service) getWorkSubmission(ctx context.Context, in *workSubmissionIDInp
 	if err != nil {
 		return nil, err
 	}
-	return s.submissionResponse(ctx, c, item, etag, owner)
+	sc, err := s.readSubmissionContext(ctx, c, int64(workID))
+	if err != nil {
+		return nil, err
+	}
+	body, p := s.toWorkSubmission(ctx, c.user, *item, owner, sc)
+	if p != nil {
+		return nil, p
+	}
+	return &workSubmissionOutput{ETag: etag, Body: body}, nil
 }
 
 func (s *Service) readSubmission(ctx context.Context, c *submissionCall, workID int64) (*catalogclient.UserClaimItem, string, bool, error) {
@@ -168,16 +184,39 @@ func upstreamNotFound(err error) bool {
 		api.Status == http.StatusForbidden && (api.ProblemCode == "CLAIM_NOT_OWNED" || api.ProblemCode == "TENANT_MISMATCH")
 }
 
-func (s *Service) submissionResponse(ctx context.Context, c *submissionCall, item *catalogclient.UserClaimItem, etag string, owner bool) (*workSubmissionOutput, error) {
-	axes, err := s.readSubmissionAxes(ctx, c, item.WorkID)
-	if err != nil {
-		return nil, err
+// settle answers a write catalog has already accepted, so nothing after the
+// write may fail it: a 5xx there turned a reviewer's retry into a 409 and a
+// submitter's retry into a second mint with a second cover proposal. The
+// claim is read back when it can be; otherwise the answer is what the write
+// itself returned.
+func (s *Service) settle(
+	ctx context.Context,
+	c *submissionCall,
+	reread func() (*catalogclient.UserClaimItem, string, error),
+	held catalogclient.UserClaimItem,
+	heldETag string,
+	owner bool,
+	sc submissionContext,
+) (WorkSubmission, string) {
+	item, etag := held, heldETag
+	got, gotETag, err := reread()
+	switch {
+	case err != nil:
+		slog.Warn("galgame submissions: write landed, read-back failed; answering from the write",
+			"work_id", held.WorkID, "upstream_status", upstreamStatus(err), "err", err)
+	case !claimStates[got.ClaimState]:
+		slog.Warn("galgame submissions: write landed, read-back state not in the vocabulary; answering from the write",
+			"work_id", held.WorkID, "value", got.ClaimState)
+	default:
+		item, etag = *got, gotETag
 	}
-	body, p := s.toWorkSubmission(ctx, c.user, *item, owner, axes)
+	refs, p := s.lookupUserRefs(ctx, []int{int(item.LastActorUID), sc.creator})
 	if p != nil {
-		return nil, p
+		slog.Warn("galgame submissions: write landed, user lookup failed; answering with deleted-user refs",
+			"work_id", held.WorkID, "err", p)
+		refs = map[int]repr.UserRef{}
 	}
-	return &workSubmissionOutput{ETag: etag, Body: body}, nil
+	return buildWorkSubmission(c.user, item, owner, sc, refs), etag
 }
 
 var reviewerTargets = map[string]bool{"live": true, "declined": true, "hidden": true, "unban": true}
@@ -202,11 +241,18 @@ func (s *Service) updateWorkSubmission(ctx context.Context, in *updateWorkSubmis
 		if upstream == "" {
 			return nil, invalidTransition("claim", cur.ClaimState, allowed)
 		}
+		sc, err := s.readSubmissionContext(ctx, c, id)
+		if err != nil {
+			return nil, err
+		}
 		item, etag, err := c.cat.PatchMyClaim(ctx, c.token, id, upstream, ifMatchOrAny(in.IfMatch))
 		if err != nil {
 			return nil, mapUserPlane(err, true)
 		}
-		return s.submissionResponse(ctx, c, item, etag, true)
+		body, etag := s.settle(ctx, c, func() (*catalogclient.UserClaimItem, string, error) {
+			return c.cat.GetMyClaim(ctx, c.token, id)
+		}, *item, etag, true, sc)
+		return &workSubmissionOutput{ETag: etag, Body: body}, nil
 	}
 
 	if !c.user.Can(perm.GalgameClaimReview) {
@@ -224,18 +270,25 @@ func (s *Service) updateWorkSubmission(ctx context.Context, in *updateWorkSubmis
 	if decision == "" {
 		return nil, invalidTransition("claim", cur.ClaimState, allowed)
 	}
-	if err := c.cat.DecideClaim(ctx, c.token, id, decision, note, ifMatchOrAny(in.IfMatch)); err != nil {
+	sc, err := s.readSubmissionContext(ctx, c, id)
+	if err != nil {
+		return nil, err
+	}
+	d, err := c.cat.DecideClaim(ctx, c.token, id, decision, note, ifMatchOrAny(in.IfMatch))
+	if err != nil {
 		return nil, mapUserPlane(err, true)
 	}
-	item, etag, err := c.cat.GetModerationClaim(ctx, c.token, id)
-	if err != nil {
-		return nil, mapUserPlane(err, false)
+	held := *cur
+	if d.ToState != "" {
+		held.ClaimState, held.LastToState = d.ToState, d.ToState
+		held.LastEventID, held.LastFromState = d.EventID, d.FromState
+		held.LastReason, held.LastActorUID = optionalNote(note), int64(c.user.ID)
+		held.LastEventAt = time.Now().UTC()
 	}
-	creator, p := s.localCreator(workID)
-	if p != nil {
-		return nil, p
-	}
-	return s.submissionResponse(ctx, c, item, etag, creator == c.user.ID)
+	body, etag := s.settle(ctx, c, func() (*catalogclient.UserClaimItem, string, error) {
+		return c.cat.GetModerationClaim(ctx, c.token, id)
+	}, held, "", sc.creator == c.user.ID, sc)
+	return &workSubmissionOutput{ETag: etag, Body: body}, nil
 }
 
 func submitterMove(current, target string) (string, []string) {
@@ -317,6 +370,23 @@ func (s *Service) deleteWorkSubmission(ctx context.Context, in *workSubmissionWr
 type submissionAxes struct {
 	isNSFW bool
 	rating string
+}
+
+type submissionContext struct {
+	axes    submissionAxes
+	creator int
+}
+
+func (s *Service) readSubmissionContext(ctx context.Context, c *submissionCall, workID int64) (submissionContext, error) {
+	axes, err := s.readSubmissionAxes(ctx, c, workID)
+	if err != nil {
+		return submissionContext{}, err
+	}
+	creator, p := s.localCreator(int(workID))
+	if p != nil {
+		return submissionContext{}, p
+	}
+	return submissionContext{axes: axes, creator: creator}, nil
 }
 
 // A hidden work is not in catalog's public rows at all, so the review face

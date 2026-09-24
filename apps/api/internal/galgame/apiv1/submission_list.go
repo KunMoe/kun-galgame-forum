@@ -143,28 +143,28 @@ func (s *Service) createdBy(workIDs []int, userID int) (map[int]bool, *problem.P
 	return out, nil
 }
 
-func (s *Service) toWorkSubmission(ctx context.Context, user *middleware.UserInfo, it catalogclient.UserClaimItem, owner bool, axes submissionAxes) (WorkSubmission, *problem.Problem) {
+func (s *Service) toWorkSubmission(ctx context.Context, user *middleware.UserInfo, it catalogclient.UserClaimItem, owner bool, sc submissionContext) (WorkSubmission, *problem.Problem) {
 	if !claimStates[it.ClaimState] {
 		slog.Warn("galgame submissions: claim with an unknown state answered as not found", "work_id", it.WorkID, "value", it.ClaimState)
 		return WorkSubmission{}, notFound()
 	}
+	refs, p := s.lookupUserRefs(ctx, []int{int(it.LastActorUID), sc.creator})
+	if p != nil {
+		return WorkSubmission{}, p
+	}
+	return buildWorkSubmission(user, it, owner, sc, refs), nil
+}
+
+func buildWorkSubmission(user *middleware.UserInfo, it catalogclient.UserClaimItem, owner bool, sc submissionContext, refs map[int]repr.UserRef) WorkSubmission {
 	id := int(it.WorkID)
-	creator, p := s.localCreator(id)
-	if p != nil {
-		return WorkSubmission{}, p
-	}
-	refs, p := s.lookupUserRefs(ctx, []int{int(it.LastActorUID), creator})
-	if p != nil {
-		return WorkSubmission{}, p
-	}
 	return WorkSubmission{
 		Object: "work_submission", ID: repr.ID(id), WorkID: repr.ID(id),
 		DisplayName: it.DisplayName, State: it.ClaimState,
-		IsNSFW: axes.isNSFW, ContentRating: axes.rating,
-		Submitter: userRefPtr(refs, creator), LastEvent: claimEventRef(it, refs),
+		IsNSFW: sc.axes.isNSFW, ContentRating: sc.axes.rating,
+		Submitter: userRefPtr(refs, sc.creator), LastEvent: claimEventRef(it, refs),
 		FirstActedAt: optionalTime(it), ActedCount: max(it.ActedCount, 0),
 		Viewer: submissionViewer(user, it.ClaimState, owner),
-	}, nil
+	}
 }
 
 func optionalTime(it catalogclient.UserClaimItem) *repr.DateTime {

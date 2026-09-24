@@ -108,11 +108,15 @@ func TestDecideClaim_WithoutAValidatorSendsStar(t *testing.T) {
 	}))
 	t.Cleanup(srv.Close)
 
-	if err := New(Config{BaseURL: srv.URL}).DecideClaim(context.Background(), "user-jwt", 4649, "unban", "", ""); err != nil {
+	got, err := New(Config{BaseURL: srv.URL}).DecideClaim(context.Background(), "user-jwt", 4649, "unban", "", "")
+	if err != nil {
 		t.Fatalf("DecideClaim: %v", err)
 	}
 	if path != "/v2/moderation/claims/4649/decisions" || ifMatch != "*" {
 		t.Errorf("hit %s with If-Match %q", path, ifMatch)
+	}
+	if got.EventID != 78 || got.ToState != "draft" || got.FromState == nil || *got.FromState != "hidden" {
+		t.Errorf("decision %+v: unban's outcome is the restored state catalog reports", got)
 	}
 }
 

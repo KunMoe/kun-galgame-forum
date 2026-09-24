@@ -2,6 +2,7 @@ package catalogclient
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -38,13 +39,12 @@ func (c *Client) SubmitWorkUser(ctx context.Context, accessToken string, req Use
 		body["confirm_duplicates"] = true
 	}
 	var out v2Claim
-	etag, err := c.userV2JSONMeta(ctx, http.MethodPost, accessToken, "/v2/me/claims", body, &out,
-		idempotencyHeader(nil, req.IdempotencyKey))
-	if err != nil {
+	if err := c.userV2JSON(ctx, http.MethodPost, accessToken, "/v2/me/claims", body, &out,
+		idempotencyHeader(nil, req.IdempotencyKey)); err != nil {
 		return nil, err
 	}
 	id := parseFlexID(out.ID)
-	return &WorkSubmitResult{WorkID: id, ProductWorkID: id, ClaimState: out.State, Claim: out.item(), ETag: etag}, nil
+	return &WorkSubmitResult{WorkID: id, ProductWorkID: id, ClaimState: out.State}, nil
 }
 
 type UserClaimActionRequest struct {
@@ -113,10 +113,24 @@ func (c *Client) PatchMyClaim(ctx context.Context, accessToken string, workID in
 	return &item, etag, nil
 }
 
-func (c *Client) DecideClaim(ctx context.Context, accessToken string, workID int64, decision, note, ifMatch string) error {
-	return c.userV2JSON(ctx, http.MethodPost, accessToken,
+type ClaimDecision struct {
+	EventID   int64
+	FromState *string
+	ToState   string
+}
+
+func (c *Client) DecideClaim(ctx context.Context, accessToken string, workID int64, decision, note, ifMatch string) (*ClaimDecision, error) {
+	var out struct {
+		ID        json.RawMessage `json:"id"`
+		FromState *string         `json:"from_state"`
+		ToState   string          `json:"to_state"`
+	}
+	if err := c.userV2JSON(ctx, http.MethodPost, accessToken,
 		"/v2/moderation/claims/"+strconv.FormatInt(workID, 10)+"/decisions",
-		map[string]any{"decision": decision, "note": note}, nil, ifMatchHeader(ifMatch))
+		map[string]any{"decision": decision, "note": note}, &out, ifMatchHeader(ifMatch)); err != nil {
+		return nil, err
+	}
+	return &ClaimDecision{EventID: parseFlexID(out.ID), FromState: out.FromState, ToState: out.ToState}, nil
 }
 
 func (c *Client) GetMyClaim(ctx context.Context, accessToken string, workID int64) (*UserClaimItem, string, error) {
