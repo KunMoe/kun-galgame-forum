@@ -1,11 +1,20 @@
 <script setup lang="ts">
+import type {
+  CollectionSummary,
+  CollectionVisibility
+} from '#shared/utils/api/schemas'
+
 const props = defineProps<{
   collection: CollectionSummary
-  ownerName?: string
+  ownerName?: string | null
 }>()
 
 const displayName = computed(() =>
   collectionDisplayName(props.collection, props.ownerName)
+)
+
+const covers = computed(() =>
+  props.collection.preview_covers.filter((cover) => cover.url).slice(0, 4)
 )
 
 const visibilityMeta = (v: CollectionVisibility) =>
@@ -15,22 +24,19 @@ const visibilityMeta = (v: CollectionVisibility) =>
 </script>
 
 <template>
-  <KunCard
-    :href="`/galgame/collection/${collection.id}`"
-    content-class="space-y-3"
-  >
+  <KunCard :href="`/collection/${collection.id}`" content-class="space-y-3">
     <div
       class="bg-default-100 grid aspect-video grid-cols-2 grid-rows-2 gap-0.5 overflow-hidden rounded-lg"
     >
-      <template v-if="collection.preview_covers.length">
+      <template v-if="covers.length">
         <img
-          v-for="(cover, index) in collection.preview_covers.slice(0, 4)"
-          :key="index"
-          :src="cover"
+          v-for="cover in covers"
+          :key="cover.hash"
+          :src="cover.url"
           :class="
             cn(
               'size-full object-cover',
-              collection.preview_covers.length === 1 && 'col-span-2 row-span-2'
+              covers.length === 1 && 'col-span-2 row-span-2'
             )
           "
           alt=""

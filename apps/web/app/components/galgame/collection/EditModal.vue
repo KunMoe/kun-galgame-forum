@@ -1,12 +1,20 @@
 <script setup lang="ts">
 import { createCollectionSchema } from '~/validations/collection'
+import { settle } from '#shared/utils/api/problem'
+import { useIdempotencyKey } from '~/composables/useIdempotencyKey'
+import type {
+  CollectionCreate,
+  CollectionPatch,
+  CollectionVisibility
+} from '#shared/utils/api/schemas'
 
 const props = defineProps<{
   modelValue: boolean
   mode: 'create' | 'edit'
-  collectionId?: number
+  collectionId?: string
+  isDefault?: boolean
   initial?: {
-    name: string
+    title: string
     description: string
     visibility: CollectionVisibility
   }
@@ -14,8 +22,11 @@ const props = defineProps<{
 
 const emits = defineEmits<{
   'update:modelValue': [value: boolean]
-  saved: [newId?: number]
+  saved: [newId?: string]
 }>()
+
+const api = useApiClient()
+const createKey = useIdempotencyKey()
 
 const isOpen = computed({
   get: () => props.modelValue,
@@ -28,11 +39,11 @@ const visibilityOptions = [
 ] as const
 
 const form = reactive<{
-  name: string
+  title: string
   description: string
   visibility: CollectionVisibility
 }>({
-  name: '',
+  title: '',
   description: '',
   visibility: 'public'
 })
@@ -45,45 +56,81 @@ watch(
       return
     }
     submitting.value = false
-    form.name = props.initial?.name ?? ''
+    form.title = props.initial?.title ?? ''
     form.description = props.initial?.description ?? ''
     form.visibility = props.initial?.visibility ?? 'public'
   }
 )
 
 const submit = async () => {
-  const payload = {
-    name: form.name.trim(),
+  const parsed = createCollectionSchema.safeParse({
+    title: form.title.trim(),
     description: form.description,
-    visibility: form.visibility,
-  }
-
-  const result = createCollectionSchema.safeParse(payload)
-  if (!result.success) {
-    const issue = JSON.parse(result.error.message)[0]
+    visibility: form.visibility
+  })
+  if (!parsed.success) {
+    const issue = JSON.parse(parsed.error.message)[0]
     useMessage(formatKunZodIssue(issue), 'warn')
     return
   }
 
   submitting.value = true
   if (props.mode === 'create') {
-    const id = await kunFetch<number>('/galgame/collection', {
-      method: 'POST',
-      body: result.data
-    })
-    submitting.value = false
-    if (id === null || id === undefined) {
-      return
+    const payload: CollectionCreate = {
+      title: parsed.data.title,
+      description: parsed.data.description,
+      visibility: parsed.data.visibility
     }
-    useMessage(10566, 'success')
-    emits('saved', id)
-  } else {
-    const ok = await kunFetch<string>(
-      `/galgame/collection/${props.collectionId}`,
-      { method: 'PATCH', body: result.data }
+    if (props.isDefault) {
+      payload.is_default = true
+    }
+    const result = await settle(
+      api.POST('/collections', {
+        params: {
+          header: {
+            'Idempotency-Key': createKey.take('/collections', payload)
+          }
+        },
+        body: payload
+      })
     )
     submitting.value = false
-    if (!ok) {
+    if (!result.ok) {
+      reportProblem(result.problem)
+      return
+    }
+    createKey.clear()
+    useMessage(10566, 'success')
+    emits('saved', result.data.id)
+  } else {
+    if (!props.collectionId) {
+      submitting.value = false
+      return
+    }
+    const body: CollectionPatch = {}
+    if (parsed.data.title !== (props.initial?.title ?? '')) {
+      body.title = parsed.data.title
+    }
+    if (parsed.data.description !== (props.initial?.description ?? '')) {
+      body.description = parsed.data.description
+    }
+    if (parsed.data.visibility !== (props.initial?.visibility ?? 'public')) {
+      body.visibility = parsed.data.visibility
+    }
+    if (Object.keys(body).length === 0) {
+      submitting.value = false
+      isOpen.value = false
+      return
+    }
+    const result = await settle(
+      api.PATCH('/collections/{collection_id}', {
+        params: { path: { collection_id: props.collectionId } },
+        body
+      })
+    )
+    submitting.value = false
+    if (!result.ok) {
+      reportProblem(result.problem)
       return
     }
     useMessage(10567, 'success')
@@ -104,7 +151,7 @@ const submit = async () => {
         {{ mode === 'create' ? '新建收藏夹' : '编辑收藏夹' }}
       </h2>
 
-      <KunInput v-model="form.name" label="名称" required />
+      <KunInput v-model="form.title" label="名称" required />
       <KunTextarea v-model="form.description" label="描述 (可选)" :rows="3" />
       <KunSelect
         v-model="form.visibility"

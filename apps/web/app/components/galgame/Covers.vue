@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { galgameImageSourceLabel } from '~/constants/galgameImageSource'
+import { settle } from '#shared/utils/api/problem'
 import type { WorkCover } from '#shared/utils/api/schemas'
 
 const props = defineProps<{ workId: number; covers: WorkCover[] }>()
@@ -39,6 +40,7 @@ watch(() => props.covers, seedBallots)
 const ballotOf = (cover: WorkCover): CoverBallot | undefined =>
   ballots.value.get(cover.id)
 
+const api = useApiClient()
 const voting = ref('')
 
 const applyVote = (coverId: string, count: number, voted: boolean) => {
@@ -56,20 +58,33 @@ const applyVote = (coverId: string, count: number, voted: boolean) => {
 const toggleVote = async (cover: WorkCover) => {
   if (voting.value) return
   if (!requireLogin()) return
+  const previous = ballots.value
   const willUnvote = !!ballotOf(cover)?.voted
   voting.value = cover.id
-  const result = await kunFetch<{
-    cover_id: number
-    vote_count: number
-    voted: boolean
-  }>(`/galgame/${props.workId}/cover/${cover.id}/vote`, {
-    method: willUnvote ? 'DELETE' : 'PUT'
-  })
+  const params = {
+    params: {
+      path: {
+        work_id: String(props.workId),
+        cover_id: cover.id
+      }
+    }
+  }
+  const result = await settle(
+    willUnvote
+      ? api.DELETE('/works/{work_id}/covers/{cover_id}/vote', params)
+      : api.PUT('/works/{work_id}/covers/{cover_id}/vote', params)
+  )
   voting.value = ''
-  if (!result) {
+  if (!result.ok) {
+    ballots.value = previous
+    reportProblem(result.problem)
     return
   }
-  applyVote(String(result.cover_id), result.vote_count, result.voted)
+  applyVote(
+    result.data.cover_id,
+    result.data.vote_count,
+    result.data.viewer?.has_voted ?? !willUnvote
+  )
 }
 
 const coverSrc = (cover: WorkCover) => cover.image?.url ?? ''

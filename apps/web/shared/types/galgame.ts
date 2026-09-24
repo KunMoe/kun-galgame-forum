@@ -64,21 +64,6 @@ export interface GalgameCard {
   via_official?: { id: number; name: string }
 }
 
-export interface PlaytimeMineItem {
-  galgame: GalgameCard
-  minutes: number
-  status: string
-  clients: number
-}
-
-export interface PlaytimeMinePage {
-  items: PlaytimeMineItem[]
-  total: number
-  total_minutes: number
-  finished_works: number
-  truncated: boolean
-}
-
 export interface UserClaimItem {
   work_id: number
   display_name: string

@@ -4,15 +4,26 @@ import {
   KUN_GALGAME_PLAY_STATE_MAP,
   type KunGalgamePlayStateRead
 } from '~/constants/galgame-playtime'
+import type { WorkPlaytimeList } from '#shared/utils/api/schemas'
 
+const { allowsNsfw } = useContentStance()
+const nameOf = useCatalogName()
 const pageData = reactive({ page: usePageQuery(), limit: 24 })
 
-const { data, status } = await useKunFetch<PlaytimeMinePage>(
-  '/galgame/playtime/mine',
-  {
-    query: computed(() => ({ ...pageData })),
-    watch: [() => pageData.page]
-  }
+const { data, status, problem } = await useApi<WorkPlaytimeList>(
+  () =>
+    `me-playtimes:${pageData.page}:${pageData.limit}:${allowsNsfw.value ? 'nsfw' : 'sfw'}`,
+  (api, { signal }) =>
+    api.GET('/me/playtimes', {
+      params: {
+        query: {
+          page: pageData.page,
+          limit: pageData.limit,
+          include_nsfw: allowsNsfw.value
+        }
+      },
+      signal
+    })
 )
 
 const summary = computed(() => {
@@ -20,9 +31,15 @@ const summary = computed(() => {
   const total = formatDurationMinutes(data.value.total_minutes)
   const parts = [`${data.value.total} 部作品`]
   if (total) parts.push(`合计 ${total}`)
-  parts.push(`已通关 ${data.value.finished_works} 部`)
+  parts.push(`已通关 ${data.value.finished_work_count} 部`)
   return parts.join(' · ')
 })
+
+const namesOf = (item: WorkPlaytimeList['items'][number]) =>
+  nameOf(item.work_summary)
+
+const bannerOf = (item: WorkPlaytimeList['items'][number]) =>
+  item.work_summary.banner ?? item.work_summary.cover
 
 const statusColor = (value: string) => {
   if (
@@ -45,35 +62,31 @@ const statusColor = (value: string) => {
     />
 
     <p v-if="summary" class="text-default-600 text-sm">{{ summary }}</p>
-
-    <KunInfo
-      v-if="data?.truncated"
-      color="warning"
-      title="记录过多"
-      description="你的记录超出了一次同步能取回的数量, 这里只展示其中最近改动的一部分。"
-    />
+    <p v-if="data?.is_truncated" class="text-default-500 text-sm">
+      部分记录未能读取，统计可能偏少
+    </p>
 
     <div v-if="data && data.items.length" class="flex flex-col space-y-2">
       <KunCard
         v-for="item in data.items"
-        :key="item.galgame.id"
-        :href="`/galgame/${item.galgame.id}`"
+        :key="item.work_summary.id"
+        :href="`/galgame/${item.work_summary.id}`"
         :is-transparent="false"
         content-class="flex items-center gap-3"
       >
         <KunImage
-          :src="getEffectiveBanner(item.galgame, { variant: 'mini' })"
+          :src="bannerOf(item)?.url ?? '/placeholder.webp'"
           loading="lazy"
-          :alt="item.galgame.name"
+          :alt="namesOf(item).name"
           placeholder="/placeholder.webp"
-          :thumbhash="resolveBannerThumbhash(item.galgame)"
+          :thumbhash="bannerOf(item)?.thumbhash ?? undefined"
           class="h-14 w-24 shrink-0 rounded-lg object-cover"
         />
 
         <div class="min-w-0 grow">
-          <p class="line-clamp-1 font-medium">{{ item.galgame.name }}</p>
+          <p class="line-clamp-1 font-medium">{{ namesOf(item).name }}</p>
           <p class="text-default-500 line-clamp-1 text-sm">
-            {{ item.galgame.name_original }}
+            {{ namesOf(item).original }}
           </p>
         </div>
 
@@ -84,12 +97,16 @@ const statusColor = (value: string) => {
           >
             {{ formatDurationMinutes(item.minutes) }}
           </span>
-          <div v-if="item.status" class="flex items-center gap-1">
-            <KunChip size="sm" variant="flat" :color="statusColor(item.status)">
+          <div v-if="item.play_state" class="flex items-center gap-1">
+            <KunChip
+              size="sm"
+              variant="flat"
+              :color="statusColor(item.play_state)"
+            >
               {{
                 KUN_GALGAME_PLAY_STATE_MAP[
-                  item.status as KunGalgamePlayStateRead
-                ] ?? item.status
+                  item.play_state as KunGalgamePlayStateRead
+                ] ?? item.play_state
               }}
             </KunChip>
           </div>
@@ -105,10 +122,10 @@ const statusColor = (value: string) => {
     </div>
 
     <KunInfo
-      v-else-if="!data && status !== 'pending'"
+      v-else-if="problem && status !== 'pending'"
       color="danger"
       title="读取失败"
-      description="暂时读不到你的游玩记录。如果你很久没有重新登录过, 请退出后重新登录以授予时长权限。"
+      description="暂时读不到你的游玩记录。"
     />
 
     <KunNull

@@ -93,7 +93,6 @@ export const KUN_GALGAME_PLAY_STATE_DONE = [
 ] as const
 
 // Both floors are catalog's, not ours: it refuses anything above the ceiling,
-// and its aggregate ignores anything under the floor — which is how a report
-// gets withdrawn from the public median without a delete endpoint.
+// and its aggregate ignores anything under the floor.
 export const KUN_GALGAME_PLAYTIME_HOURS_MAX = 1000
 export const KUN_GALGAME_PLAYTIME_MINUTES_FLOOR = 10

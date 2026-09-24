@@ -85,6 +85,15 @@ App 用 AppAuth + PKCE 直接从 OP 换出 access token，然后 `Authorization:
 | `GET /api/v1/library-works` | 公开 | 资料库列表（前瞻；App 尚未调用）。旧 `GET /api/galgame?library=true` 已删除。参数与响应以 `listLibraryWorks` 为准 |
 | `GET /api/v1/works/{work_id}` | 匿名+ | 作品详情。旧 `GET /api/galgame/:gid` 已删除。`include_nsfw` 只控制成人标签是否出现；错误是 problem+json |
 | `PUT` / `DELETE /api/v1/works/{work_id}/like` | Bearer | 点赞槽。都 200 `WorkEngagement`。自赞 `403 SELF_LIKE_FORBIDDEN` |
+| `PUT` / `DELETE /api/v1/works/{work_id}/covers/{cover_id}/vote` | Bearer | 封面投票槽（前瞻；App 尚未调用）。都 200 `WorkCoverEngagement` |
+| `PUT` / `DELETE /api/v1/works/{work_id}/playtime` | Bearer | 游玩时长槽（前瞻；App 尚未调用）。都 200 `WorkViewerPlaytime`。DELETE 只撤回本 client 这一行，回执可能仍带其它 client 的分钟 |
+| `GET /api/v1/me/playtimes` | Bearer | 调用者自己的游玩时长列表（前瞻；App 尚未调用）。页码；`include_nsfw` |
+| `POST /api/v1/collections` | Bearer | 创建收藏夹（前瞻；App 尚未调用）。**必须**带幂等键。201 `Collection`。id 是 catalog folder id，页面 `/collection/{collection_id}` |
+| `GET` / `PATCH` / `DELETE /api/v1/collections/{collection_id}` | 匿名+ / Bearer | 收藏夹元数据（前瞻；App 尚未调用）。DELETE 204。旧 `/galgame/collection/{cid}` 经 `GET /api/v1/collection-aliases/{alias_id}` 301 |
+| `GET /api/v1/collections/{collection_id}/works` | 匿名+ | 收藏夹作品列表（前瞻；App 尚未调用）。页码 `PageList<WorkSummary>` |
+| `PUT` / `DELETE /api/v1/collections/{collection_id}/works/{work_id}` | Bearer | 收藏夹成员槽（前瞻；App 尚未调用）。每夹一条，没有整集替换 |
+| `GET /api/v1/me/collections` | Bearer | 调用者自己的收藏夹（前瞻；App 尚未调用） |
+| `GET /api/v1/users/{user_id}/collections` | 匿名+ | 用户收藏夹列表（前瞻；App 尚未调用） |
 | `GET /api/v1/users/{user_id}` | 公开 | 公开资料。未知或封禁/注销用户 404 |
 | `POST /api/v1/topics`、`POST /api/v1/topics/{topic_id}/replies` | Bearer | **必须**带幂等键（§2）。旧 `POST /api/topic`、`POST /api/topic/:tid/reply` 已于 2026-09-22 删除；话题 id 在路径上，不再放进请求体 |
 | `GET /api/v1/me/account` | Bearer | 当前用户；Bearer 下 `roles` 已剥掉 staff 角色，`content_stance` 恒为 `null`（立场问账号中心） |
@@ -143,7 +152,7 @@ Go api 自己就能供数，**不依赖 Nitro**。`/api/galgame` 列表仍是旧
 
 ## 2. 幂等键：`Idempotency-Key`
 
-挂在三个 v1 写端点上，且**必填**（`internal/apiv1/idempotency.go`）：`POST /api/v1/topics`、`POST /api/v1/topics/{topic_id}/replies`、`POST /api/v1/topics/{topic_id}/upvotes`。旧的 `internal/middleware/idempotency.go` 随 2026-09-22 的旧路由清理一并删除，它那套 `code: 237/238` 的信封错误码不再存在。
+挂在 v1 写端点上，且**必填**（`internal/apiv1/idempotency.go`）：`POST /api/v1/topics`、`POST /api/v1/topics/{topic_id}/replies`、`POST /api/v1/topics/{topic_id}/upvotes`、`POST /api/v1/collections`。旧的 `internal/middleware/idempotency.go` 随 2026-09-22 的旧路由清理一并删除，它那套 `code: 237/238` 的信封错误码不再存在。
 
 - 值必须是标准 UUID（8-4-4-4-12，版本不限）或 26 位 Crockford ULID，否则 `422 INVALID_FORMAT`（`errors[]` 指向这个头）；不带则 `422`，理由 `required`。
 - Redis 键为 `kungal:idem:v1:{uid}:{operationId}:{key}`，按用户和操作隔离，保存 **24 小时**。

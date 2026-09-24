@@ -367,3 +367,21 @@ export type GalgameResourceSort = NonNullable<
     operations['listGalgameResources']['parameters']['query']
   >['sort']
 >
+
+export type WorkCoverEngagement = components['schemas']['WorkCoverEngagement']
+export type WorkCoverEngagementViewer =
+  components['schemas']['WorkCoverEngagementViewer']
+export type PutWorkPlaytimeBody = components['schemas']['PutWorkPlaytimeBody']
+export type WorkPlaytime = components['schemas']['WorkPlaytime']
+export type WorkPlaytimeList = components['schemas']['WorkPlaytimeList']
+export type Collection = components['schemas']['Collection']
+export type CollectionSummary = components['schemas']['CollectionSummary']
+export type CollectionViewer = components['schemas']['CollectionViewer']
+export type CollectionCreate = components['schemas']['CollectionCreate']
+export type CollectionPatch = components['schemas']['CollectionPatch']
+export type CollectionAlias = components['schemas']['CollectionAlias']
+export type CollectionWorkEngagement =
+  components['schemas']['CollectionWorkEngagement']
+export type CollectionVisibility = Collection['visibility']
+export type PageListCollectionSummary =
+  components['schemas']['PageListCollectionSummary']

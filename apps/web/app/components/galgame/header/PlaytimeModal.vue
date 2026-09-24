@@ -7,7 +7,12 @@ import {
   KUN_GALGAME_PLAY_STATE_OPTIONS,
   type KunGalgamePlayState
 } from '~/constants/galgame-playtime'
-import type { Work, WorkViewerPlaytime } from '#shared/utils/api/schemas'
+import { settle } from '#shared/utils/api/problem'
+import type {
+  PutWorkPlaytimeBody,
+  Work,
+  WorkViewerPlaytime
+} from '#shared/utils/api/schemas'
 
 const props = defineProps<{
   galgame: Work
@@ -51,6 +56,7 @@ const tooLong = computed(
   () => minutes.value > KUN_GALGAME_PLAYTIME_HOURS_MAX * 60
 )
 
+const api = useApiClient()
 const pending = ref(false)
 
 const canSave = computed(() => {
@@ -59,56 +65,46 @@ const canSave = computed(() => {
   return minutes.value > 0 && !tooShort.value && !tooLong.value
 })
 
-const toViewerPlaytime = (row: {
-  minutes: number
-  status: string
-}): WorkViewerPlaytime | null => {
-  const playState = row.status
-    ? (row.status as WorkViewerPlaytime['play_state'])
-    : null
-  if (row.minutes <= 0 && !playState) {
+const asMine = (row: WorkViewerPlaytime): WorkViewerPlaytime | null => {
+  if (row.minutes <= 0 && !row.play_state) {
     return null
   }
-  return { minutes: row.minutes, play_state: playState }
+  return row
 }
 
-const submit = async (body: { minutes?: number; status?: string }) => {
-  pending.value = true
-  let failed = false
-  const result = await kunFetch<{ minutes: number; status: string }>(
-    `/galgame/${props.galgame.id}/playtime`,
-    {
-      method: 'PUT',
-      body,
-      onApiError: () => {
-        failed = true
-        return false
-      }
-    }
-  )
-  pending.value = false
-  const isClear = body.minutes === 0 && body.status === ''
-  if (failed || (result == null && !isClear)) return
-  const mine = result ? toViewerPlaytime(result) : null
+const finish = (row: WorkViewerPlaytime, cleared: boolean) => {
+  const mine = asMine(row)
   emits('saved', mine)
-  const marked = (mine?.play_state || body.status || '') as string
+  const marked = mine?.play_state ?? ''
   if ((KUN_GALGAME_PLAY_STATE_DONE as readonly string[]).includes(marked)) {
     emits('finished', marked as KunGalgamePlayState)
   }
   open.value = false
-  useMessage(isClear ? '已清除游玩记录' : '已保存', 'success')
+  useMessage(cleared ? '已清除游玩记录' : '已保存', 'success')
 }
 
-const save = () => {
+const save = async () => {
   if (!canSave.value) return
-  const body: { minutes?: number; status?: string } = {}
-  if (status.value) body.status = status.value
+  const body: PutWorkPlaytimeBody = {}
+  if (status.value) body.play_state = status.value
   // 0 means withdraw. Sending it unasked would wipe a duration the user still wants.
   if (minutes.value > 0 && !tooShort.value && !tooLong.value) {
     body.minutes = minutes.value
   }
-  if (body.status == null && body.minutes == null) return
-  submit(body)
+  if (body.play_state === undefined && body.minutes === undefined) return
+  pending.value = true
+  const result = await settle(
+    api.PUT('/works/{work_id}/playtime', {
+      params: { path: { work_id: String(props.galgame.id) } },
+      body
+    })
+  )
+  pending.value = false
+  if (!result.ok) {
+    reportProblem(result.problem)
+    return
+  }
+  finish(result.data, false)
 }
 
 const clear = async () => {
@@ -118,7 +114,18 @@ const clear = async () => {
     '本站这一条记录的时长和游玩状态都会被清零, 不再计入本站中位数。其它应用上报的记录不受影响。'
   )
   if (!ok) return
-  submit({ minutes: 0, status: '' })
+  pending.value = true
+  const result = await settle(
+    api.DELETE('/works/{work_id}/playtime', {
+      params: { path: { work_id: String(props.galgame.id) } }
+    })
+  )
+  pending.value = false
+  if (!result.ok) {
+    reportProblem(result.problem)
+    return
+  }
+  finish(result.data, true)
 }
 </script>
 

@@ -1,19 +1,32 @@
 <script setup lang="ts">
+import type { PageListCollectionSummary } from '#shared/utils/api/schemas'
+import { deletedUserName } from '#shared/utils/deletedUser'
+
 const props = defineProps<{
   userId: number
-  ownerName: string
+  ownerName: string | null
 }>()
 
+const { allowsNsfw } = useContentStance()
 const page = usePageQuery()
 const limit = 24
 
-const { data, status } = await useKunFetch<{
-  items: CollectionSummary[]
-  total: number
-}>(() => `/user/${props.userId}/collections`, {
-  query: computed(() => ({ page: page.value, limit })),
-  watch: [page]
-})
+const { data, status } = await useApi<PageListCollectionSummary>(
+  () =>
+    `user-collections:${props.userId}:${page.value}:${limit}:${allowsNsfw.value ? 'nsfw' : 'sfw'}`,
+  (api, { signal }) =>
+    api.GET('/users/{user_id}/collections', {
+      params: {
+        path: { user_id: String(props.userId) },
+        query: {
+          page: page.value,
+          limit,
+          include_nsfw: allowsNsfw.value
+        }
+      },
+      signal
+    })
+)
 </script>
 
 <template>
@@ -24,7 +37,7 @@ const { data, status } = await useKunFetch<{
           v-for="c in data.items"
           :key="c.id"
           :collection="c"
-          :owner-name="ownerName"
+          :owner-name="ownerName ?? deletedUserName"
         />
       </div>
 

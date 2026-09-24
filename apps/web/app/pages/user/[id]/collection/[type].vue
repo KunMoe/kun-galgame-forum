@@ -33,7 +33,7 @@ useKunDisableSeo(`${props.user.name ?? ''}的收藏`)
     <UserCollectionGalgame
       v-if="collectionType === 'galgame'"
       :user-id="Number(user.id)"
-      :owner-name="user.name ?? ''"
+      :owner-name="user.name"
     />
     <UserCollectionTopic v-else :user-id="Number(user.id)" />
   </div>
