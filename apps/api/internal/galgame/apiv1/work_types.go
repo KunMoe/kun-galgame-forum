@@ -38,18 +38,13 @@ type Work struct {
 }
 
 type WorkCover struct {
-	Object    string           `json:"object" enum:"work_cover" maxLength:"10" doc:"Type discriminant. Always work_cover."`
-	ID        repr.DecimalID   `json:"id" doc:"Catalog cover row id, which the cover vote path takes."`
-	Image     *repr.Image      `json:"image" doc:"The cover at original size. Never null on a cover; the type is shared with images that can be absent."`
-	CoverSlot string           `json:"cover_slot" enum:"main,pkgfront,dig,pkgback,pkgcontent,pkgside,pkgmed,other" maxLength:"10" doc:"Which face of the package this cover is."`
-	Site      string           `json:"site" maxLength:"64" pattern:"^[a-z0-9][a-z0-9_-]*$" doc:"Where the image came from, such as vndb or dlsite. An open vocabulary."`
-	SortOrder int              `json:"sort_order" minimum:"0" maximum:"9999" doc:"Catalog order among covers."`
-	VoteCount int              `json:"vote_count" minimum:"0" doc:"Public votes for this cover. 0 when the vote store is unread."`
-	Viewer    *WorkCoverViewer `json:"viewer" doc:"The caller's vote on this cover. null for an anonymous caller."`
-}
-
-type WorkCoverViewer struct {
-	HasVoted bool `json:"has_voted" doc:"Whether the caller voted for this cover."`
+	Object    string         `json:"object" enum:"work_cover" maxLength:"10" doc:"Type discriminant. Always work_cover."`
+	ID        repr.DecimalID `json:"id" doc:"Catalog cover row id, which the cover vote path takes."`
+	Image     *repr.Image    `json:"image" doc:"The cover at original size. Never null on a cover; the type is shared with images that can be absent."`
+	CoverSlot string         `json:"cover_slot" enum:"main,pkgfront,dig,pkgback,pkgcontent,pkgside,pkgmed,other" maxLength:"10" doc:"Which face of the package this cover is."`
+	Site      string         `json:"site" maxLength:"64" pattern:"^[a-z0-9][a-z0-9_-]*$" doc:"Where the image came from, such as vndb or dlsite. An open vocabulary."`
+	SortOrder int            `json:"sort_order" minimum:"0" maximum:"9999" doc:"Catalog order among covers."`
+	VoteCount int            `json:"vote_count" minimum:"0" doc:"Public votes for this cover. 0 when the vote store is unread. The caller's own vote is on GET /me/cover-votes."`
 }
 
 type WorkScreenshot struct {
@@ -143,10 +138,8 @@ type WorkPlaytimeAggregate struct {
 }
 
 type WorkViewer struct {
-	HasLiked              bool                `json:"has_liked" doc:"Whether the caller liked this work."`
-	HasFavorited          bool                `json:"has_favorited" doc:"Whether the caller holds this work in any folder."`
-	Playtime              *WorkViewerPlaytime `json:"playtime" doc:"The caller's own playtime. null when they have none or the token cannot read it."`
-	CanBanResourcePublish bool                `json:"can_ban_resource_publish" doc:"Whether the caller may ban publishing download resources on this work. Requests authenticated with a Bearer token never carry staff powers."`
+	HasLiked              bool `json:"has_liked" doc:"Whether the caller liked this work. The caller's collections and playtime for it are on GET /me/works."`
+	CanBanResourcePublish bool `json:"can_ban_resource_publish" doc:"Whether the caller may ban publishing download resources on this work. Requests authenticated with a Bearer token never carry staff powers."`
 }
 
 type WorkViewerPlaytime struct {
@@ -154,11 +147,22 @@ type WorkViewerPlaytime struct {
 	PlayState *string `json:"play_state" enum:"wish,doing,done_one_route,done_main,done_all,on_hold,dropped,done" maxLength:"14" doc:"The caller's play state as catalog records it: a rating's play_status, or done for a finished game with no completion recorded, which no write accepts. null when they have none."`
 }
 
-type WorkState struct {
-	Object       string         `json:"object" enum:"work_state" maxLength:"10" doc:"Type discriminant. Always work_state."`
-	WorkID       repr.DecimalID `json:"work_id" doc:"Work id this state is about."`
-	HasLiked     bool           `json:"has_liked" doc:"Whether the caller liked this work."`
-	HasFavorited bool           `json:"has_favorited" doc:"Whether the caller holds this work in any folder."`
+type MyWork struct {
+	Object   string         `json:"object" enum:"my_work" maxLength:"7" doc:"Type discriminant. Always my_work."`
+	WorkID   repr.DecimalID `json:"work_id" doc:"Work id this entry is about."`
+	HasLiked bool           `json:"has_liked" doc:"Whether the caller liked this work."`
+	Library  *MyWorkLibrary `json:"library" doc:"The caller's collections and playtime for this work, read from catalog. null when catalog could not be read for this caller (a quota, an outage, or a token without folder:read): the state is unknown, not empty. Render the collect button and playtime as unknown, never as not collected."`
+}
+
+type MyWorkLibrary struct {
+	CollectionIDs []repr.DecimalID    `json:"collection_ids" maxItems:"10000" doc:"The caller's collections holding this work, ascending. Empty array, never null: the work is collected when this is not empty."`
+	Playtime      *WorkViewerPlaytime `json:"playtime" doc:"The caller's own playtime and play state. null when they have neither."`
+}
+
+type MyCoverVote struct {
+	Object       string          `json:"object" enum:"my_cover_vote" maxLength:"13" doc:"Type discriminant. Always my_cover_vote."`
+	WorkID       repr.DecimalID  `json:"work_id" doc:"Work id this entry is about."`
+	VotedCoverID *repr.DecimalID `json:"voted_cover_id" doc:"The cover of this work the caller voted for. null when they have not voted on this work."`
 }
 
 type WorkEngagement struct {

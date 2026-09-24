@@ -1694,6 +1694,78 @@
         ],
         "type": "object"
       },
+      "BatchListMyCoverVote": {
+        "properties": {
+          "items": {
+            "description": "One member per requested id that the caller may see. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/MyCoverVote"
+            },
+            "type": "array"
+          },
+          "missing": {
+            "description": "Requested ids that did not come back, in the order they were requested. Empty array, never null. The reason is deliberately not given.",
+            "items": {
+              "maxLength": 20,
+              "minLength": 1,
+              "pattern": "^[0-9]+$",
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "object": {
+            "description": "Type discriminant. Always list.",
+            "enum": [
+              "list"
+            ],
+            "maxLength": 4,
+            "type": "string",
+            "x-vocabulary-closed": true
+          }
+        },
+        "required": [
+          "object",
+          "items",
+          "missing"
+        ],
+        "type": "object"
+      },
+      "BatchListMyWork": {
+        "properties": {
+          "items": {
+            "description": "One member per requested id that the caller may see. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/MyWork"
+            },
+            "type": "array"
+          },
+          "missing": {
+            "description": "Requested ids that did not come back, in the order they were requested. Empty array, never null. The reason is deliberately not given.",
+            "items": {
+              "maxLength": 20,
+              "minLength": 1,
+              "pattern": "^[0-9]+$",
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "object": {
+            "description": "Type discriminant. Always list.",
+            "enum": [
+              "list"
+            ],
+            "maxLength": 4,
+            "type": "string",
+            "x-vocabulary-closed": true
+          }
+        },
+        "required": [
+          "object",
+          "items",
+          "missing"
+        ],
+        "type": "object"
+      },
       "BatchListQuizState": {
         "properties": {
           "items": {
@@ -1772,42 +1844,6 @@
             "description": "One member per requested id that the caller may see. Empty array, never null.",
             "items": {
               "$ref": "#/components/schemas/UserRef"
-            },
-            "type": "array"
-          },
-          "missing": {
-            "description": "Requested ids that did not come back, in the order they were requested. Empty array, never null. The reason is deliberately not given.",
-            "items": {
-              "maxLength": 20,
-              "minLength": 1,
-              "pattern": "^[0-9]+$",
-              "type": "string"
-            },
-            "type": "array"
-          },
-          "object": {
-            "description": "Type discriminant. Always list.",
-            "enum": [
-              "list"
-            ],
-            "maxLength": 4,
-            "type": "string",
-            "x-vocabulary-closed": true
-          }
-        },
-        "required": [
-          "object",
-          "items",
-          "missing"
-        ],
-        "type": "object"
-      },
-      "BatchListWorkState": {
-        "properties": {
-          "items": {
-            "description": "One member per requested id that the caller may see. Empty array, never null.",
-            "items": {
-              "$ref": "#/components/schemas/WorkState"
             },
             "type": "array"
           },
@@ -10640,6 +10676,42 @@
         ],
         "type": "object"
       },
+      "MyCoverVote": {
+        "properties": {
+          "object": {
+            "description": "Type discriminant. Always my_cover_vote.",
+            "enum": [
+              "my_cover_vote"
+            ],
+            "maxLength": 13,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "voted_cover_id": {
+            "description": "The cover of this work the caller voted for. null when they have not voted on this work.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "work_id": {
+            "description": "Work id this entry is about.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "object",
+          "work_id",
+          "voted_cover_id"
+        ],
+        "type": "object"
+      },
       "MyProfile": {
         "properties": {
           "avatar": {
@@ -10692,6 +10764,79 @@
           "name",
           "avatar",
           "bio"
+        ],
+        "type": "object"
+      },
+      "MyWork": {
+        "properties": {
+          "has_liked": {
+            "description": "Whether the caller liked this work.",
+            "type": "boolean"
+          },
+          "library": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MyWorkLibrary"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The caller's collections and playtime for this work, read from catalog. null when catalog could not be read for this caller (a quota, an outage, or a token without folder:read): the state is unknown, not empty. Render the collect button and playtime as unknown, never as not collected."
+          },
+          "object": {
+            "description": "Type discriminant. Always my_work.",
+            "enum": [
+              "my_work"
+            ],
+            "maxLength": 7,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "work_id": {
+            "description": "Work id this entry is about.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "object",
+          "work_id",
+          "has_liked",
+          "library"
+        ],
+        "type": "object"
+      },
+      "MyWorkLibrary": {
+        "properties": {
+          "collection_ids": {
+            "description": "The caller's collections holding this work, ascending. Empty array, never null: the work is collected when this is not empty.",
+            "items": {
+              "maxLength": 20,
+              "minLength": 1,
+              "pattern": "^[0-9]+$",
+              "type": "string"
+            },
+            "maxItems": 10000,
+            "type": "array"
+          },
+          "playtime": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WorkViewerPlaytime"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The caller's own playtime and play state. null when they have neither."
+          }
+        },
+        "required": [
+          "collection_ids",
+          "playtime"
         ],
         "type": "object"
       },
@@ -24196,19 +24341,8 @@
             "minimum": 0,
             "type": "integer"
           },
-          "viewer": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/WorkCoverViewer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "The caller's vote on this cover. null for an anonymous caller."
-          },
           "vote_count": {
-            "description": "Public votes for this cover. 0 when the vote store is unread.",
+            "description": "Public votes for this cover. 0 when the vote store is unread. The caller's own vote is on GET /me/cover-votes.",
             "format": "int64",
             "minimum": 0,
             "type": "integer"
@@ -24221,8 +24355,7 @@
           "cover_slot",
           "site",
           "sort_order",
-          "vote_count",
-          "viewer"
+          "vote_count"
         ],
         "type": "object"
       },
@@ -24279,18 +24412,6 @@
         "type": "object"
       },
       "WorkCoverEngagementViewer": {
-        "properties": {
-          "has_voted": {
-            "description": "Whether the caller voted for this cover.",
-            "type": "boolean"
-          }
-        },
-        "required": [
-          "has_voted"
-        ],
-        "type": "object"
-      },
-      "WorkCoverViewer": {
         "properties": {
           "has_voted": {
             "description": "Whether the caller voted for this cover.",
@@ -25178,41 +25299,6 @@
           "caption",
           "site",
           "sort_order"
-        ],
-        "type": "object"
-      },
-      "WorkState": {
-        "properties": {
-          "has_favorited": {
-            "description": "Whether the caller holds this work in any folder.",
-            "type": "boolean"
-          },
-          "has_liked": {
-            "description": "Whether the caller liked this work.",
-            "type": "boolean"
-          },
-          "object": {
-            "description": "Type discriminant. Always work_state.",
-            "enum": [
-              "work_state"
-            ],
-            "maxLength": 10,
-            "type": "string",
-            "x-vocabulary-closed": true
-          },
-          "work_id": {
-            "description": "Work id this state is about.",
-            "maxLength": 20,
-            "minLength": 1,
-            "pattern": "^[0-9]+$",
-            "type": "string"
-          }
-        },
-        "required": [
-          "object",
-          "work_id",
-          "has_liked",
-          "has_favorited"
         ],
         "type": "object"
       },
@@ -26119,30 +26205,13 @@
             "description": "Whether the caller may ban publishing download resources on this work. Requests authenticated with a Bearer token never carry staff powers.",
             "type": "boolean"
           },
-          "has_favorited": {
-            "description": "Whether the caller holds this work in any folder.",
-            "type": "boolean"
-          },
           "has_liked": {
-            "description": "Whether the caller liked this work.",
+            "description": "Whether the caller liked this work. The caller's collections and playtime for it are on GET /me/works.",
             "type": "boolean"
-          },
-          "playtime": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/WorkViewerPlaytime"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "The caller's own playtime. null when they have none or the token cannot read it."
           }
         },
         "required": [
           "has_liked",
-          "has_favorited",
-          "playtime",
           "can_ban_resource_publish"
         ],
         "type": "object"
@@ -39700,6 +39769,106 @@
         ]
       }
     },
+    "/me/cover-votes": {
+      "get": {
+        "description": "Answers, for each work id named in work_ids, which of its covers the caller voted for. It is a batch read and is not paginated: work_ids is required, holds 1 to 100 ids. An id catalog does not know or has hidden is missing. A vote cast in another application can take up to 10 minutes to appear.",
+        "operationId": "listMyCoverVotes",
+        "parameters": [
+          {
+            "description": "Work ids to answer for, comma-separated. 1 to 100 of them.",
+            "explode": false,
+            "in": "query",
+            "name": "work_ids",
+            "required": true,
+            "schema": {
+              "description": "Work ids to answer for, comma-separated. 1 to 100 of them.",
+              "items": {
+                "maxLength": 20,
+                "minLength": 1,
+                "pattern": "^[0-9]+$",
+                "type": "string"
+              },
+              "maxItems": 100,
+              "type": "array"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BatchListMyCoverVote"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "INVALID_PARAMETER when work_ids is absent, empty, holds more than 100 ids, or holds something that is not a positive decimal integer."
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SCOPE_REQUIRED when the token lacks catalog:edit; ACCOUNT_BANNED."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the catalog cannot be reached."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Batch-read the caller's cover votes",
+        "tags": [
+          "me"
+        ]
+      }
+    },
     "/me/creator-applications": {
       "post": {
         "description": "Submits a creator-role application. Location points at the caller's creator-status resource.",
@@ -42861,106 +43030,6 @@
         ]
       }
     },
-    "/me/work-states": {
-      "get": {
-        "description": "Answers, for each work id named in work_ids, whether the caller liked it and whether they hold it in a folder. It is a batch read and is not paginated: work_ids is required, holds 1 to 100 ids. An id catalog does not know or has hidden is missing. has_favorited is false when the caller's folders cannot be read; has_liked is always answered.",
-        "operationId": "listMyWorkStates",
-        "parameters": [
-          {
-            "description": "Work ids to answer for, comma-separated. 1 to 100 of them.",
-            "explode": false,
-            "in": "query",
-            "name": "work_ids",
-            "required": true,
-            "schema": {
-              "description": "Work ids to answer for, comma-separated. 1 to 100 of them.",
-              "items": {
-                "maxLength": 20,
-                "minLength": 1,
-                "pattern": "^[0-9]+$",
-                "type": "string"
-              },
-              "maxItems": 100,
-              "type": "array"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BatchListWorkState"
-                }
-              }
-            },
-            "description": "OK"
-          },
-          "400": {
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            },
-            "description": "INVALID_PARAMETER when work_ids is absent, empty, holds more than 100 ids, or holds something that is not a positive decimal integer."
-          },
-          "401": {
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            },
-            "description": "Unauthorized"
-          },
-          "403": {
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            },
-            "description": "ACCOUNT_BANNED."
-          },
-          "500": {
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            },
-            "description": "Internal Server Error"
-          },
-          "503": {
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            },
-            "description": "SERVICE_UNAVAILABLE when the catalog cannot say which works exist."
-          }
-        },
-        "security": [
-          {
-            "session": []
-          },
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "Batch-read the caller's work like and favorite states",
-        "tags": [
-          "me"
-        ]
-      }
-    },
     "/me/work-submission-reviews": {
       "get": {
         "description": "Claims the caller decided on and did not submit. Needs a cookie session holding galgame.claim.review.",
@@ -43240,6 +43309,106 @@
           }
         ],
         "summary": "List the caller's work submissions",
+        "tags": [
+          "me"
+        ]
+      }
+    },
+    "/me/works": {
+      "get": {
+        "description": "Answers, for each work id named in work_ids, whether the caller liked it, and from catalog which of their collections hold it and their playtime and play state. It is a batch read and is not paginated: work_ids is required, holds 1 to 100 ids. An id catalog does not know or has hidden is missing, and is never sent to catalog's user plane. library is null when catalog cannot be read for this caller (a quota, an outage, or a token without folder:read); has_liked is always answered.",
+        "operationId": "listMyWorks",
+        "parameters": [
+          {
+            "description": "Work ids to answer for, comma-separated. 1 to 100 of them.",
+            "explode": false,
+            "in": "query",
+            "name": "work_ids",
+            "required": true,
+            "schema": {
+              "description": "Work ids to answer for, comma-separated. 1 to 100 of them.",
+              "items": {
+                "maxLength": 20,
+                "minLength": 1,
+                "pattern": "^[0-9]+$",
+                "type": "string"
+              },
+              "maxItems": 100,
+              "type": "array"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BatchListMyWork"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "INVALID_PARAMETER when work_ids is absent, empty, holds more than 100 ids, or holds something that is not a positive decimal integer."
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "ACCOUNT_BANNED."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the catalog cannot say which works exist."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Batch-read the caller's own state on works",
         "tags": [
           "me"
         ]

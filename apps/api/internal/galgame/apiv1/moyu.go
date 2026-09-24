@@ -52,8 +52,9 @@ type workDetailCatalog interface {
 type CatalogUser interface {
 	MyFoldersContaining(ctx context.Context, token string, workID int64) ([]catalogclient.Folder, error)
 	MyFolderHoldings(ctx context.Context, token string, workIDs []int64) ([]catalogclient.FolderHolding, error)
-	WorkCoversUser(ctx context.Context, token string, workID int64) ([]catalogclient.CoverTally, error)
 	WorkCoverVotes(ctx context.Context, workID int64) ([]catalogclient.CoverTally, error)
+	MyWorks(ctx context.Context, token string, workIDs []int64) ([]catalogclient.MyWork, error)
+	MyCoverVotes(ctx context.Context, token string) ([]catalogclient.MyCoverVote, error)
 	MyPlaytime(ctx context.Context, token string, workID int64) (*catalogclient.PlaytimeSelf, error)
 	MyWorkState(ctx context.Context, token string, workID int64) (*catalogclient.WorkStateRecord, error)
 	VoteCover(ctx context.Context, token string, workID, coverID int64) (*catalogclient.CoverVoteResult, error)

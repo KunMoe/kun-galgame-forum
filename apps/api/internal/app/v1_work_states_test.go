@@ -2,6 +2,7 @@ package app
 
 import (
 	"bytes"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"strings"
@@ -11,15 +12,29 @@ import (
 	"kun-galgame-api/pkg/problem"
 )
 
-func TestV1ListMyWorkStatesMissingAndLiked(t *testing.T) {
+func myWorksByID(t *testing.T, body map[string]any) map[string]map[string]any {
+	t.Helper()
+	out := map[string]map[string]any{}
+	for _, raw := range body["items"].([]any) {
+		it, _ := raw.(map[string]any)
+		out[strID(it["work_id"])] = it
+	}
+	return out
+}
+
+func TestV1ListMyWorksMissingLikedAndLibrary(t *testing.T) {
 	f := newWorkFix(t)
 	if _, body := f.wk(t, http.MethodPut, g4WorkPath(g4WorkLive)+"/like", "/works/{work_id}/like", "sess-bob", nil); body["code"] != nil {
 		t.Fatalf("seed like %+v", body)
 	}
-	ids := strings.Join([]string{idStr(g4WorkHidden), idStr(g4WorkNoLocal), idStr(g4WorkLive), idStr(g4WorkUnknown)}, ",")
-	resp, body := f.wk(t, http.MethodGet, "/api/v1/me/work-states?work_ids="+ids, "/me/work-states", "sess-bob", nil)
+	f.user.containing = map[int64]bool{g4WorkLive: true}
+	f.user.play = &catalogclient.PlaytimeSelf{WorkID: g4WorkLive, Minutes: 120}
+	main := "main"
+	f.user.state = &catalogclient.WorkStateRecord{WorkID: g4WorkLive, State: "done", Completion: &main}
+	ids := strings.Join([]string{idStr(g4WorkHidden), idStr(g4WorkNoLocal), idStr(g4WorkLive), idStr(g4WorkUnknown), idStr(g4WorkLive)}, ",")
+	resp, body := f.wk(t, http.MethodGet, "/api/v1/me/works?work_ids="+ids, "/me/works", "sess-bob", nil)
 	if resp.StatusCode != http.StatusOK {
-		t.Fatalf("states %d %+v", resp.StatusCode, body)
+		t.Fatalf("my works %d %+v", resp.StatusCode, body)
 	}
 	missing := map[string]bool{}
 	for _, raw := range body["missing"].([]any) {
@@ -29,73 +44,115 @@ func TestV1ListMyWorkStatesMissingAndLiked(t *testing.T) {
 		t.Errorf("missing %+v", body["missing"])
 	}
 	items, _ := body["items"].([]any)
-	byID := map[string]map[string]any{}
-	for _, raw := range items {
-		it, _ := raw.(map[string]any)
-		byID[strID(it["work_id"])] = it
+	if len(items) != 2 || strID(items[0].(map[string]any)["work_id"]) != idStr(g4WorkNoLocal) {
+		t.Fatalf("want the two readable works once each in request order: %+v", items)
 	}
-	if byID[idStr(g4WorkHidden)] != nil || byID[idStr(g4WorkUnknown)] != nil {
-		t.Errorf("hidden/unknown in items %+v", items)
-	}
+	byID := myWorksByID(t, body)
 	live := byID[idStr(g4WorkLive)]
-	if live == nil || live["has_liked"] != true {
-		t.Errorf("live %+v", live)
+	lib, _ := live["library"].(map[string]any)
+	if live["has_liked"] != true || lib == nil {
+		t.Fatalf("live %+v", live)
 	}
-	ghost := byID[idStr(g4WorkNoLocal)]
-	if ghost == nil || ghost["has_liked"] != false {
-		t.Errorf("readable unliked %+v", ghost)
+	if cols, _ := lib["collection_ids"].([]any); len(cols) != 1 || strID(cols[0]) != "1" {
+		t.Errorf("collection_ids %+v", lib["collection_ids"])
 	}
-}
-
-func TestV1ListMyWorkStatesFolderScope(t *testing.T) {
-	f := newWorkFix(t)
-	f.user.scopeFolders = true
-	var buf bytes.Buffer
-	prev := slog.Default()
-	slog.SetDefault(slog.New(slog.NewTextHandler(&buf, nil)))
-	t.Cleanup(func() { slog.SetDefault(prev) })
-	resp, body := f.wk(t, http.MethodGet, "/api/v1/me/work-states?work_ids="+idStr(g4WorkLive), "/me/work-states", "sess-alice", nil)
-	if resp.StatusCode != http.StatusOK {
-		t.Fatalf("states %d %+v", resp.StatusCode, body)
+	if pt, _ := lib["playtime"].(map[string]any); pt == nil || asInt(pt["minutes"]) != 120 || pt["play_state"] != "done_main" {
+		t.Errorf("playtime %+v", lib["playtime"])
 	}
-	items, _ := body["items"].([]any)
-	if len(items) != 1 {
-		t.Fatalf("items %+v", items)
+	ghost, _ := byID[idStr(g4WorkNoLocal)]["library"].(map[string]any)
+	if cols, ok := ghost["collection_ids"].([]any); !ok || len(cols) != 0 || ghost["playtime"] != nil {
+		t.Errorf("a work the reader holds nowhere answers [] and no playtime: %+v", ghost)
 	}
-	it, _ := items[0].(map[string]any)
-	if it["has_favorited"] != false {
-		t.Errorf("has_favorited %+v", it)
-	}
-	if !strings.Contains(buf.String(), "token lacks folder:read") {
-		t.Errorf("log %q", buf.String())
+	if len(f.user.sentWorks) != 1 || fmt.Sprint(f.user.sentWorks[0]) != fmt.Sprint([]int64{g4WorkNoLocal, g4WorkLive}) {
+		t.Errorf("catalog saw %v; a hidden or unknown work must never reach /v2/me/works", f.user.sentWorks)
 	}
 }
 
-func TestV1ListMyWorkStatesHoldingsErrorKeepsLikes(t *testing.T) {
-	f := newWorkFix(t)
-	if _, body := f.wk(t, http.MethodPut, g4WorkPath(g4WorkLive)+"/like", "/works/{work_id}/like", "sess-bob", nil); body["code"] != nil {
-		t.Fatalf("like %+v", body)
+// A failure reading catalog is "unknown", never "not collected", and it never
+// takes the likes down with it.
+func TestV1ListMyWorksLibraryUnknownWhenCatalogFails(t *testing.T) {
+	cases := []struct {
+		name    string
+		setup   func(*workFix)
+		bearer  bool
+		wantLog string
+		quiet   bool
+	}{
+		{"cookie session without folder:read", func(f *workFix) { f.user.scopeFolders = true }, false, "token lacks folder:read", false},
+		{"bearer app token without folder:read", func(f *workFix) { f.user.scopeFolders = true }, true, "", true},
+		{"throttled", func(f *workFix) {
+			f.user.worksErr = &catalogclient.UserAPIError{Status: http.StatusTooManyRequests, Message: "Short-window rate limit exceeded."}
+		}, false, "upstream_status=429", false},
 	}
-	f.user.holdingsErr = &catalogclient.UserAPIError{Status: http.StatusTooManyRequests, Message: "quota"}
-	var buf bytes.Buffer
-	prev := slog.Default()
-	slog.SetDefault(slog.New(slog.NewTextHandler(&buf, nil)))
-	t.Cleanup(func() { slog.SetDefault(prev) })
-	resp, body := f.wk(t, http.MethodGet, "/api/v1/me/work-states?work_ids="+idStr(g4WorkLive), "/me/work-states", "sess-bob", nil)
-	if resp.StatusCode != http.StatusOK {
-		t.Fatalf("a folder-plane failure took the likes down with it: %d %+v", resp.StatusCode, body)
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			f := newWorkFix(t)
+			if _, body := f.wk(t, http.MethodPut, g4WorkPath(g4WorkLive)+"/like", "/works/{work_id}/like", "sess-bob", nil); body["code"] != nil {
+				t.Fatalf("seed like %+v", body)
+			}
+			c.setup(f)
+			var buf bytes.Buffer
+			prev := slog.Default()
+			slog.SetDefault(slog.New(slog.NewTextHandler(&buf, nil)))
+			t.Cleanup(func() { slog.SetDefault(prev) })
+			url := "/api/v1/me/works?work_ids=" + idStr(g4WorkLive)
+			var (
+				resp *http.Response
+				body map[string]any
+			)
+			if c.bearer {
+				var raw []byte
+				resp, raw = f.doJSON(t, http.MethodGet, url, "", "/me/works", "", http.Header{"Authorization": {"Bearer bob-token"}}, nil)
+				body = problemMap(t, raw)
+			} else {
+				resp, body = f.wk(t, http.MethodGet, url, "/me/works", "sess-bob", nil)
+			}
+			if resp.StatusCode != http.StatusOK {
+				t.Fatalf("the batch must answer 200 with likes: %d %+v", resp.StatusCode, body)
+			}
+			live := myWorksByID(t, body)[idStr(g4WorkLive)]
+			if live["has_liked"] != true {
+				t.Errorf("likes went with the catalog failure: %+v", live)
+			}
+			if v, ok := live["library"]; !ok || v != nil {
+				t.Errorf("library must be null (unknown): %+v", live)
+			}
+			logs := buf.String()
+			if c.wantLog != "" && (!strings.Contains(logs, "level=WARN") || !strings.Contains(logs, c.wantLog)) {
+				t.Errorf("want a WARN with %q, got %q", c.wantLog, logs)
+			}
+			if c.quiet && (strings.Contains(logs, "level=WARN") || strings.Contains(logs, "level=ERROR")) {
+				t.Errorf("a Bearer app token without folder:read is the App's ordinary case, not a WARN: %q", logs)
+			}
+		})
 	}
-	items, _ := body["items"].([]any)
-	if len(items) != 1 {
-		t.Fatalf("items %+v", body)
-	}
-	item, _ := items[0].(map[string]any)
-	if item["has_liked"] != true || item["has_favorited"] != false {
-		t.Errorf("item %+v", item)
-	}
-	line := buf.String()
-	if !strings.Contains(line, "level=WARN") || !strings.Contains(line, "my folders unreadable") || !strings.Contains(line, "upstream_status=429") {
-		t.Errorf("the degrade must log WARN with the upstream status: %q", line)
+}
+
+func TestV1ListMyWorksDecodesPlayStateStrictly(t *testing.T) {
+	odd := "sideways"
+	for _, st := range []catalogclient.WorkStateRecord{
+		{WorkID: g4WorkLive, State: "finished"},
+		{WorkID: g4WorkLive, State: "done", Completion: &odd},
+	} {
+		f := newWorkFix(t)
+		f.user.play = &catalogclient.PlaytimeSelf{WorkID: g4WorkLive, Minutes: 45}
+		f.user.state = &st
+		var buf bytes.Buffer
+		prev := slog.Default()
+		slog.SetDefault(slog.New(slog.NewTextHandler(&buf, nil)))
+		resp, body := f.wk(t, http.MethodGet, "/api/v1/me/works?work_ids="+idStr(g4WorkLive), "/me/works", "sess-bob", nil)
+		slog.SetDefault(prev)
+		if resp.StatusCode != http.StatusOK {
+			t.Fatalf("%s: %d %+v", st.State, resp.StatusCode, body)
+		}
+		lib, _ := myWorksByID(t, body)[idStr(g4WorkLive)]["library"].(map[string]any)
+		pt, _ := lib["playtime"].(map[string]any)
+		if pt == nil || asInt(pt["minutes"]) != 45 || pt["play_state"] != nil {
+			t.Errorf("%s/%v: an unknown state nulls play_state only: %+v", st.State, st.Completion, lib)
+		}
+		if !strings.Contains(buf.String(), "unknown catalog work state") {
+			t.Errorf("%s: no WARN for the unknown state: %q", st.State, buf.String())
+		}
 	}
 }
 
@@ -126,7 +183,7 @@ func TestV1AppPlaneThrottleLogsWarnNotError(t *testing.T) {
 	prev := slog.Default()
 	slog.SetDefault(slog.New(slog.NewTextHandler(&buf, nil)))
 	t.Cleanup(func() { slog.SetDefault(prev) })
-	resp, body := f.wk(t, http.MethodGet, "/api/v1/me/work-states?work_ids="+idStr(g4WorkLive), "/me/work-states", "sess-bob", nil)
+	resp, body := f.wk(t, http.MethodGet, "/api/v1/me/works?work_ids="+idStr(g4WorkLive), "/me/works", "sess-bob", nil)
 	wantCode(t, resp, body, http.StatusServiceUnavailable, problem.CodeServiceUnavailable)
 	wantThrottleLoggedOnce(t, buf.String(), resp.Header.Get("X-Request-ID"))
 }

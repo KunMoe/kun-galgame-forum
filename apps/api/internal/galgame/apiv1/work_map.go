@@ -513,7 +513,7 @@ func (s *Service) fillSeriesSamples(ctx context.Context, seriesID int, card *ent
 	}
 }
 
-func coversOf(d *client.CatalogWorkDetail, cdn string, tallies []catalogclient.CoverTally, viewer *WorkCoverViewer) []WorkCover {
+func coversOf(d *client.CatalogWorkDetail, cdn string, tallies []catalogclient.CoverTally) []WorkCover {
 	byHash := map[string]catalogclient.CoverTally{}
 	for _, t := range tallies {
 		if t.ImageHash != "" {
@@ -538,7 +538,7 @@ func coversOf(d *client.CatalogWorkDetail, cdn string, tallies []catalogclient.C
 		}
 		item := WorkCover{
 			Object: "work_cover", Image: img, CoverSlot: coverSlotOf(c.Kind),
-			Site: site, SortOrder: i, Viewer: viewer,
+			Site: site, SortOrder: i,
 		}
 		id := c.ID
 		if t, ok := byHash[hash]; ok {
@@ -546,10 +546,6 @@ func coversOf(d *client.CatalogWorkDetail, cdn string, tallies []catalogclient.C
 				id = t.ID
 			}
 			item.VoteCount = max(t.VoteCount, 0)
-			if viewer != nil {
-				v := WorkCoverViewer{HasVoted: t.Voted}
-				item.Viewer = &v
-			}
 		}
 		if id <= 0 {
 			slog.Warn("work covers: cover row has no id, row dropped", "index", i)

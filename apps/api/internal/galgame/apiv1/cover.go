@@ -4,7 +4,6 @@ import (
 	"context"
 	"log/slog"
 
-	v1 "kun-galgame-api/internal/apiv1"
 	"kun-galgame-api/internal/apiv1/repr"
 	"kun-galgame-api/internal/galgame/client"
 	"kun-galgame-api/pkg/problem"
@@ -28,16 +27,7 @@ func (s *Service) getWorkCover(ctx context.Context, in *workCoverInput) (*workCo
 	if p != nil {
 		return nil, p
 	}
-	user := v1.User(ctx)
-	var viewer *WorkCoverViewer
-	if user != nil {
-		viewer = &WorkCoverViewer{}
-	}
-	tallies := s.coverTallies(ctx, workID, accessToken(ctx))
-	if tallies == nil && s.catalog != nil {
-		slog.Warn("work cover: vote tallies unavailable", "work_id", workID, "cover_id", coverID)
-	}
-	covers := coversOf(d, s.cdn, tallies, viewer)
+	covers := coversOf(d, s.cdn, s.coverTallies(ctx, workID))
 	for _, c := range covers {
 		id, ok := repr.ParseID(c.ID)
 		if ok && id == coverID {
@@ -56,7 +46,8 @@ func (s *Service) deleteWorkCoverVote(ctx context.Context, in *workCoverInput) (
 }
 
 func (s *Service) castCoverVote(ctx context.Context, in *workCoverInput, vote bool) (*workCoverEngagementOutput, error) {
-	if _, p := s.requireActive(ctx); p != nil {
+	user, p := s.requireActive(ctx)
+	if p != nil {
 		return nil, p
 	}
 	token, p := requireToken(ctx)
@@ -79,6 +70,7 @@ func (s *Service) castCoverVote(ctx context.Context, in *workCoverInput, vote bo
 	if err != nil {
 		return nil, mapUserPlane(err, false)
 	}
+	s.dropCoverVoteCaches(ctx, user.ID, token, workID)
 	tallies, err := s.catalog.WorkCoverVotes(ctx, int64(workID))
 	if err != nil {
 		slog.Warn("work cover vote: public tallies unavailable after write",

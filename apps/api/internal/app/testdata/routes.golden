@@ -100,6 +100,7 @@ GET    /api/v1/me/conversations                       cors.New → v1Headers →
 GET    /api/v1/me/conversations/:user_id              cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/me/conversations/:user_id/messages     cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/me/conversations/:user_id/messages/:message_id cors.New → v1Headers → fiberAdapter.Handle
+GET    /api/v1/me/cover-votes                         cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/me/creator-status                      cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/me/edit-proposals                      cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/me/moemoepoint-entries                 cors.New → v1Headers → fiberAdapter.Handle
@@ -116,9 +117,9 @@ GET    /api/v1/me/topic-drafts/:draft_id              cors.New → v1Headers →
 GET    /api/v1/me/topic-states                        cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/me/walls                               cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/me/walls/:subject_type/:subject_id     cors.New → v1Headers → fiberAdapter.Handle
-GET    /api/v1/me/work-states                         cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/me/work-submission-reviews             cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/me/work-submissions                    cors.New → v1Headers → fiberAdapter.Handle
+GET    /api/v1/me/works                               cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/me/works/:work_id/collections          cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/news-archive                           cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/news-archive/:year/:month              cors.New → v1Headers → fiberAdapter.Handle

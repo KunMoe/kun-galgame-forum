@@ -136,3 +136,85 @@ func TestV1CoverVote429(t *testing.T) {
 		t.Errorf("quota Retry-After %q", resp.Header.Get("Retry-After"))
 	}
 }
+
+func TestV1ListMyCoverVotes(t *testing.T) {
+	f := newG6Fix(t)
+	list := "/api/v1/me/cover-votes?work_ids=" + idStr(g6WorkLive) + "," + idStr(g6WorkExtra) + "," + idStr(g6WorkHidden)
+	spec := "/me/cover-votes"
+	votePath := func(cover int) string { return g6Path(g6WorkLive) + "/covers/" + idStr(cover) + "/vote" }
+	voteSpec := "/works/{work_id}/covers/{cover_id}/vote"
+	voted := func(body map[string]any) map[string]any {
+		out := map[string]any{}
+		for _, raw := range body["items"].([]any) {
+			it := raw.(map[string]any)
+			out[strID(it["work_id"])] = it["voted_cover_id"]
+		}
+		return out
+	}
+	reads := func() int {
+		f.user.mu.Lock()
+		defer f.user.mu.Unlock()
+		return f.user.coverVoteReads
+	}
+
+	if resp, body := f.call(t, http.MethodPut, votePath(g6CoverA), voteSpec, "sess-alice", "", nil); resp.StatusCode != http.StatusOK {
+		t.Fatalf("vote %d %+v", resp.StatusCode, body)
+	}
+	resp, body := f.call(t, http.MethodGet, list, spec, "sess-alice", "", nil)
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("list %d %+v", resp.StatusCode, body)
+	}
+	got := voted(body)
+	if strID(got[idStr(g6WorkLive)]) != idStr(g6CoverA) || got[idStr(g6WorkExtra)] != nil {
+		t.Errorf("votes %+v", got)
+	}
+	if _, ok := got[idStr(g6WorkHidden)]; ok {
+		t.Errorf("a hidden work answered: %+v", got)
+	}
+	if missing, _ := body["missing"].([]any); len(missing) != 1 || strID(missing[0]) != idStr(g6WorkHidden) {
+		t.Errorf("missing %+v", body["missing"])
+	}
+
+	f.call(t, http.MethodGet, list, spec, "sess-alice", "", nil)
+	if n := reads(); n != 1 {
+		t.Errorf("two reads cost %d catalog calls, want 1 (cached per user)", n)
+	}
+
+	if resp, body := f.call(t, http.MethodPut, votePath(g6CoverB), voteSpec, "sess-alice", "", nil); resp.StatusCode != http.StatusOK {
+		t.Fatalf("revote %d %+v", resp.StatusCode, body)
+	}
+	resp, body = f.call(t, http.MethodGet, list, spec, "sess-alice", "", nil)
+	if resp.StatusCode != http.StatusOK || strID(voted(body)[idStr(g6WorkLive)]) != idStr(g6CoverB) {
+		t.Errorf("the forum's own vote left the cached list in place: %d %+v", resp.StatusCode, body)
+	}
+
+	resp, body = f.call(t, http.MethodGet, list, spec, "sess-noscope", "", nil)
+	wantCode(t, resp, body, http.StatusForbidden, problem.CodeScopeRequired)
+	resp, body = f.call(t, http.MethodGet, list, spec, "sess-429", "", nil)
+	wantCode(t, resp, body, http.StatusServiceUnavailable, problem.CodeServiceUnavailable)
+}
+
+func TestV1CoverVoteDropsTheCachedTallies(t *testing.T) {
+	f := newG6Fix(t)
+	count := func() int {
+		resp, body := f.call(t, http.MethodGet, g6Path(g6WorkLive), "/works/{work_id}", "", "", nil)
+		if resp.StatusCode != http.StatusOK {
+			t.Fatalf("get %d %+v", resp.StatusCode, body)
+		}
+		for _, raw := range body["covers"].([]any) {
+			c := raw.(map[string]any)
+			if strID(c["id"]) == idStr(g6CoverA) {
+				return asInt(c["vote_count"])
+			}
+		}
+		t.Fatalf("cover A missing %+v", body["covers"])
+		return 0
+	}
+	before := count()
+	if resp, body := f.call(t, http.MethodPut, g6Path(g6WorkLive)+"/covers/"+idStr(g6CoverA)+"/vote", "/works/{work_id}/covers/{cover_id}/vote", "sess-alice", "", nil); resp.StatusCode != http.StatusOK {
+		t.Fatalf("vote %d %+v", resp.StatusCode, body)
+	}
+	if after := count(); after != before+1 {
+		t.Errorf("vote_count %d after the forum's own vote, want %d: the cached tallies were not dropped", after, before+1)
+	}
+}

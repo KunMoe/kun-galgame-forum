@@ -2,17 +2,13 @@ package apiv1
 
 import (
 	"context"
-	"errors"
-	"log/slog"
 
 	v1 "kun-galgame-api/internal/apiv1"
 	"kun-galgame-api/internal/apiv1/repr"
 	"kun-galgame-api/internal/constants"
 	"kun-galgame-api/internal/galgame/client"
-	"kun-galgame-api/internal/galgame/service"
 	"kun-galgame-api/internal/galgame/workrepr"
 	"kun-galgame-api/internal/middleware"
-	"kun-galgame-api/pkg/catalogclient"
 	"kun-galgame-api/pkg/perm"
 	"kun-galgame-api/pkg/problem"
 	"kun-galgame-api/pkg/userclient"
@@ -54,7 +50,7 @@ func (s *Service) getWork(ctx context.Context, in *getWorkInput) (*getWorkOutput
 			return nil, problem.Internal(err)
 		}
 	}
-	body, p := s.assembleWork(ctx, workID, d, in.IncludeNSFW, v1.User(ctx), accessToken(ctx))
+	body, p := s.assembleWork(ctx, workID, d, in.IncludeNSFW, v1.User(ctx))
 	if p != nil {
 		return nil, p
 	}
@@ -67,7 +63,6 @@ func (s *Service) assembleWork(
 	d *client.CatalogWorkDetail,
 	includeNSFW bool,
 	user *middleware.UserInfo,
-	token string,
 ) (Work, *problem.Problem) {
 	item := d.ListItem()
 	summary := workrepr.WorkSummary{
@@ -170,16 +165,11 @@ func (s *Service) assembleWork(
 		out.Contributors = append(out.Contributors, repr.NewUserRef(s.cdn, users[id]))
 	}
 
-	var coverViewer *WorkCoverViewer
-	if user != nil {
-		coverViewer = &WorkCoverViewer{}
-	}
-	tallies := s.coverTallies(ctx, workID, token)
-	out.Covers = coversOf(d, s.cdn, tallies, coverViewer)
+	out.Covers = coversOf(d, s.cdn, s.coverTallies(ctx, workID))
 	out.Screenshots = screenshotsOf(d, s.cdn)
 
 	if user != nil {
-		viewer, p := s.workViewer(ctx, workID, user, token, creatorID)
+		viewer, p := s.workViewer(user, workID)
 		if p != nil {
 			return Work{}, p
 		}
@@ -188,34 +178,12 @@ func (s *Service) assembleWork(
 	return out, nil
 }
 
-func (s *Service) coverTallies(ctx context.Context, workID int, token string) []catalogclient.CoverTally {
-	if s.catalog == nil {
-		return nil
-	}
-	var (
-		tallies []catalogclient.CoverTally
-		err     error
-	)
-	if token != "" {
-		tallies, err = s.catalog.WorkCoversUser(ctx, token, int64(workID))
-		// The user lane answers 401 for every reader, not the 403 SCOPE_REQUIRED
-		// this fallback was written for, so signed-in readers saw no tallies at all
-		// while signed-out readers saw them. Degrading loses only the `voted` flag.
-		if errors.Is(err, catalogclient.ErrInsufficientScope) || errors.Is(err, catalogclient.ErrUnauthorized) {
-			tallies, err = s.catalog.WorkCoverVotes(ctx, int64(workID))
-		}
-	} else {
-		tallies, err = s.catalog.WorkCoverVotes(ctx, int64(workID))
-	}
-	if err != nil {
-		slog.Warn("galgame detail: cover vote tallies unavailable", "work_id", workID, "error", err)
-		return nil
-	}
-	return tallies
-}
-
-func (s *Service) workViewer(ctx context.Context, workID int, user *middleware.UserInfo, token string, _ int) (*WorkViewer, *problem.Problem) {
-	v := &WorkViewer{}
+// Nothing here reads catalog with the reader's token. The detail GET runs in
+// SSR for every tab a browser restores, and on 2026-09-24 one reader's
+// restored tabs spent catalog's per-uid bucket (100 a minute across every app)
+// at four calls each. The reader's own state is on GET /me/works.
+func (s *Service) workViewer(user *middleware.UserInfo, workID int) (*WorkViewer, *problem.Problem) {
+	v := &WorkViewer{CanBanResourcePublish: user.Can(perm.GalgameBanResourcePublish)}
 	if s.store != nil && s.store.Ready() {
 		liked, err := s.store.HasLiked(user.ID, workID)
 		if err != nil {
@@ -223,47 +191,7 @@ func (s *Service) workViewer(ctx context.Context, workID int, user *middleware.U
 		}
 		v.HasLiked = liked
 	}
-	v.HasFavorited = s.favorited(ctx, token, workID)
-	if token != "" && s.catalog != nil {
-		got, err := s.catalog.MyPlaytime(ctx, token, int64(workID))
-		// A token minted before playtime joined the authorize scope is the
-		// ordinary case, not a fault. It used to log nothing at all, and that is
-		// how the 2026-09-08 folder-scope outage stayed invisible on the sibling
-		// call sites for an hour — so it is counted rather than swallowed.
-		if err != nil {
-			if errors.Is(err, catalogclient.ErrInsufficientScope) {
-				service.WarnPlaytimeUnreadable(workID)
-			} else {
-				slog.Warn("galgame detail: own playtime unavailable", "work_id", workID, "error", err)
-			}
-		} else {
-			var ws *catalogclient.WorkStateRecord
-			if rec, werr := s.catalog.MyWorkState(ctx, token, int64(workID)); werr != nil {
-				slog.Warn("galgame detail: own work-state unavailable", "work_id", workID, "error", werr)
-			} else {
-				ws = rec
-			}
-			v.Playtime = viewerPlaytime(got, ws)
-		}
-	}
-	v.CanBanResourcePublish = user.Can(perm.GalgameBanResourcePublish)
 	return v, nil
-}
-
-func (s *Service) favorited(ctx context.Context, token string, workID int) bool {
-	if token == "" || s.catalog == nil {
-		return false
-	}
-	folders, err := s.catalog.MyFoldersContaining(ctx, token, int64(workID))
-	if err != nil {
-		if errors.Is(err, catalogclient.ErrInsufficientScope) {
-			service.WarnFavoriteUnreadable(workID)
-		} else {
-			slog.Warn("galgame: favourite state unreadable", "work_id", workID, "upstream_status", upstreamStatus(err), "err", err)
-		}
-		return false
-	}
-	return len(folders) > 0
 }
 
 func workNamePreview(ctx context.Context, it *client.CatalogWorkListItem) string {

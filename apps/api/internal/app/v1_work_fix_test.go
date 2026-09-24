@@ -41,14 +41,20 @@ type fakeCatalogUser struct {
 	holdings     map[int64]bool
 	containing   map[int64]bool
 	covers       []catalogclient.CoverTally
-	userCovers   []catalogclient.CoverTally
-	userCoverErr error
 	play         *catalogclient.PlaytimeSelf
 	state        *catalogclient.WorkStateRecord
 	holdingsErr  error
+	worksErr     error
+	sentWorks    [][]int64
+	coverVotes   []catalogclient.MyCoverVote
+	coverVoteErr error
+	talliesReads int
+	// tokenCalls counts every read made with the reader's token.
+	tokenCalls int
 }
 
 func (f *fakeCatalogUser) MyFoldersContaining(_ context.Context, _ string, workID int64) ([]catalogclient.Folder, error) {
+	f.tokenCalls++
 	if f.scopeFolders {
 		return nil, catalogclient.ErrInsufficientScope
 	}
@@ -59,6 +65,7 @@ func (f *fakeCatalogUser) MyFoldersContaining(_ context.Context, _ string, workI
 }
 
 func (f *fakeCatalogUser) MyFolderHoldings(_ context.Context, _ string, _ []int64) ([]catalogclient.FolderHolding, error) {
+	f.tokenCalls++
 	if f.holdingsErr != nil {
 		return nil, f.holdingsErr
 	}
@@ -74,21 +81,13 @@ func (f *fakeCatalogUser) MyFolderHoldings(_ context.Context, _ string, _ []int6
 	return out, nil
 }
 
-func (f *fakeCatalogUser) WorkCoversUser(context.Context, string, int64) ([]catalogclient.CoverTally, error) {
-	if f.userCoverErr != nil {
-		return nil, f.userCoverErr
-	}
-	if f.userCovers == nil {
-		return nil, catalogclient.ErrUnauthorized
-	}
-	return f.userCovers, nil
-}
-
 func (f *fakeCatalogUser) WorkCoverVotes(context.Context, int64) ([]catalogclient.CoverTally, error) {
+	f.talliesReads++
 	return f.covers, nil
 }
 
 func (f *fakeCatalogUser) MyPlaytime(context.Context, string, int64) (*catalogclient.PlaytimeSelf, error) {
+	f.tokenCalls++
 	if f.scopeFolders {
 		return nil, catalogclient.ErrInsufficientScope
 	}
@@ -96,7 +95,50 @@ func (f *fakeCatalogUser) MyPlaytime(context.Context, string, int64) (*catalogcl
 }
 
 func (f *fakeCatalogUser) MyWorkState(context.Context, string, int64) (*catalogclient.WorkStateRecord, error) {
+	f.tokenCalls++
 	return f.state, nil
+}
+
+// MyWorks answers like GET /v2/me/works: every id once, in request order.
+func (f *fakeCatalogUser) MyWorks(_ context.Context, _ string, ids []int64) ([]catalogclient.MyWork, error) {
+	f.tokenCalls++
+	f.sentWorks = append(f.sentWorks, append([]int64(nil), ids...))
+	if f.worksErr != nil {
+		return nil, f.worksErr
+	}
+	if f.scopeFolders {
+		return nil, catalogclient.ErrInsufficientScope
+	}
+	if len(ids) > catalogclient.MyWorksMax {
+		return nil, &catalogclient.UserAPIError{Status: http.StatusBadRequest, ProblemCode: "TOO_MANY_IDS"}
+	}
+	out := []catalogclient.MyWork{}
+	seen := map[int64]bool{}
+	for _, id := range ids {
+		if seen[id] {
+			continue
+		}
+		seen[id] = true
+		w := catalogclient.MyWork{WorkID: id, FolderIDs: []int64{}}
+		if f.containing[id] || f.holdings[id] {
+			w.FolderIDs = []int64{1}
+		}
+		if f.play != nil && (f.play.WorkID == 0 || f.play.WorkID == id) {
+			w.Playtime = &catalogclient.PlaytimeSelf{WorkID: id, Minutes: f.play.Minutes}
+		}
+		if f.state != nil && (f.state.WorkID == 0 || f.state.WorkID == id) {
+			st := *f.state
+			st.WorkID = id
+			w.WorkState = &st
+		}
+		out = append(out, w)
+	}
+	return out, nil
+}
+
+func (f *fakeCatalogUser) MyCoverVotes(context.Context, string) ([]catalogclient.MyCoverVote, error) {
+	f.tokenCalls++
+	return f.coverVotes, f.coverVoteErr
 }
 
 func (f *fakeCatalogUser) VoteCover(context.Context, string, int64, int64) (*catalogclient.CoverVoteResult, error) {

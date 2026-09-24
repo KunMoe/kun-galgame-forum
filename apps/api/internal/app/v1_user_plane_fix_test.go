@@ -56,31 +56,33 @@ type g6Fix struct {
 }
 
 type g6User struct {
-	mu          sync.Mutex
-	folders     map[int64]catalogclient.Folder
-	items       map[int64][]catalogclient.FolderItem
-	votes       map[int64]int64
-	voteCount   map[int64]int
-	play        map[string]map[int64]catalogclient.PlaytimeSelf
-	states      map[string]map[int64]catalogclient.WorkStateRecord
-	nextFolder  int64
-	creates     int
-	deletePlay  []int64
-	otherApp    map[int64]int
-	putStates   []int64
-	modPatch    int
-	modDelete   int
-	putItems    []string
-	deleteItems []string
-	tallyErr    error
-	itemsErr    error
-	pubReads    int
-	myReads     int
-	playSweeps  int
-	folderLists int
-	holdReads   int
-	previewRead int
-	ownPatch403 bool
+	mu             sync.Mutex
+	folders        map[int64]catalogclient.Folder
+	items          map[int64][]catalogclient.FolderItem
+	votes          map[int64]int64
+	voteCount      map[int64]int
+	play           map[string]map[int64]catalogclient.PlaytimeSelf
+	states         map[string]map[int64]catalogclient.WorkStateRecord
+	nextFolder     int64
+	creates        int
+	deletePlay     []int64
+	otherApp       map[int64]int
+	putStates      []int64
+	modPatch       int
+	modDelete      int
+	putItems       []string
+	deleteItems    []string
+	tallyErr       error
+	itemsErr       error
+	pubReads       int
+	myReads        int
+	playSweeps     int
+	folderLists    int
+	holdReads      int
+	worksCalls     int
+	coverVoteReads int
+	previewRead    int
+	ownPatch403    bool
 }
 
 func newG6Fix(t *testing.T) *g6Fix {
@@ -323,6 +325,63 @@ func (u *g6User) MyFoldersContaining(_ context.Context, token string, workID int
 	return out, nil
 }
 
+// MyWorks answers like GET /v2/me/works: every id once, in request order, with
+// the caller's folders, playtime and state.
+func (u *g6User) MyWorks(_ context.Context, token string, ids []int64) ([]catalogclient.MyWork, error) {
+	if err := u.gate(token); err != nil {
+		return nil, err
+	}
+	if len(ids) > catalogclient.MyWorksMax {
+		return nil, &catalogclient.UserAPIError{Status: http.StatusBadRequest, ProblemCode: "TOO_MANY_IDS"}
+	}
+	u.mu.Lock()
+	defer u.mu.Unlock()
+	u.worksCalls++
+	uid := u.uid(token)
+	out := []catalogclient.MyWork{}
+	seen := map[int64]bool{}
+	for _, id := range ids {
+		if seen[id] {
+			continue
+		}
+		seen[id] = true
+		w := catalogclient.MyWork{WorkID: id, FolderIDs: []int64{}}
+		for fid, items := range u.items {
+			if f, ok := u.folders[fid]; !ok || f.OwnerUID != uid {
+				continue
+			}
+			for _, it := range items {
+				if it.WorkID == id {
+					w.FolderIDs = append(w.FolderIDs, fid)
+					break
+				}
+			}
+		}
+		if p, ok := u.play[token][id]; ok {
+			w.Playtime = &catalogclient.PlaytimeSelf{WorkID: id, Minutes: p.Minutes}
+		}
+		if st, ok := u.states[token][id]; ok {
+			w.WorkState = &st
+		}
+		out = append(out, w)
+	}
+	return out, nil
+}
+
+func (u *g6User) MyCoverVotes(_ context.Context, token string) ([]catalogclient.MyCoverVote, error) {
+	if err := u.gate(token); err != nil {
+		return nil, err
+	}
+	u.mu.Lock()
+	defer u.mu.Unlock()
+	u.coverVoteReads++
+	out := []catalogclient.MyCoverVote{}
+	for work, cover := range u.votes {
+		out = append(out, catalogclient.MyCoverVote{WorkID: work, CoverID: cover})
+	}
+	return out, nil
+}
+
 func (u *g6User) MyFolderHoldings(_ context.Context, token string, workIDs []int64) ([]catalogclient.FolderHolding, error) {
 	if err := u.gate(token); err != nil {
 		return nil, err
@@ -350,9 +409,6 @@ func (u *g6User) MyFolderHoldings(_ context.Context, token string, workIDs []int
 		}
 	}
 	return out, nil
-}
-func (u *g6User) WorkCoversUser(context.Context, string, int64) ([]catalogclient.CoverTally, error) {
-	return u.WorkCoverVotes(context.Background(), 0)
 }
 func (u *g6User) WorkCoverVotes(_ context.Context, workID int64) ([]catalogclient.CoverTally, error) {
 	u.mu.Lock()

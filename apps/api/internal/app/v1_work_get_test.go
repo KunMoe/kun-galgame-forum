@@ -103,36 +103,42 @@ func TestV1GetWorkIncrementsViewWithoutTouchingUpdated(t *testing.T) {
 	}
 }
 
-func TestV1GetWorkCoverVotesFallBackToPublicTallies(t *testing.T) {
+func TestV1GetWorkMakesNoUserTokenCalls(t *testing.T) {
 	f := newWorkFix(t)
 	f.user.covers = []catalogclient.CoverTally{{ID: 11, ImageHash: g4PortraitHash, VoteCount: 3}}
-	first := func(label string) map[string]any {
-		t.Helper()
+	f.user.containing = map[int64]bool{g4WorkLive: true}
+	f.user.play = &catalogclient.PlaytimeSelf{Minutes: 120}
+	for i := range 2 {
 		resp, body := f.wk(t, http.MethodGet, g4WorkPath(g4WorkLive), "/works/{work_id}", "sess-alice", nil)
 		if resp.StatusCode != http.StatusOK {
-			t.Fatalf("%s: get %d %+v", label, resp.StatusCode, body)
+			t.Fatalf("get %d: %d %+v", i, resp.StatusCode, body)
 		}
 		covers, _ := body["covers"].([]any)
 		if len(covers) == 0 {
-			t.Fatalf("%s: no covers %+v", label, body["covers"])
+			t.Fatalf("no covers %+v", body["covers"])
 		}
 		c, _ := covers[0].(map[string]any)
-		return c
-	}
-	for _, err := range []error{catalogclient.ErrUnauthorized, catalogclient.ErrInsufficientScope} {
-		f.user.userCoverErr = err
-		c := first(err.Error())
-		viewer, _ := c["viewer"].(map[string]any)
-		if asInt(c["vote_count"]) != 3 || viewer == nil || viewer["has_voted"] != false {
-			t.Errorf("%v: signed-in reader lost the public tallies: %+v", err, c)
+		if asInt(c["vote_count"]) != 3 {
+			t.Errorf("public tallies %+v", c)
+		}
+		if _, ok := c["viewer"]; ok {
+			t.Errorf("a cover still carries the reader's vote: %+v", c)
+		}
+		viewer, _ := body["viewer"].(map[string]any)
+		for _, gone := range []string{"has_favorited", "playtime"} {
+			if _, ok := viewer[gone]; ok {
+				t.Errorf("Work.viewer still carries %s: %+v", gone, viewer)
+			}
+		}
+		if _, ok := viewer["has_liked"]; !ok {
+			t.Errorf("Work.viewer lost has_liked: %+v", viewer)
 		}
 	}
-	f.user.userCoverErr = nil
-	f.user.userCovers = []catalogclient.CoverTally{{ID: 11, ImageHash: g4PortraitHash, VoteCount: 4, Voted: true}}
-	c := first("viewer lane")
-	viewer, _ := c["viewer"].(map[string]any)
-	if asInt(c["vote_count"]) != 4 || viewer == nil || viewer["has_voted"] != true {
-		t.Errorf("viewer lane not used: %+v", c)
+	if f.user.tokenCalls != 0 {
+		t.Errorf("GET /works/{id} read catalog with the reader's token %d times; the reader's state is on /me/works", f.user.tokenCalls)
+	}
+	if f.user.talliesReads != 1 {
+		t.Errorf("tallies read %d times for two views, want 1 (cached)", f.user.talliesReads)
 	}
 }
 

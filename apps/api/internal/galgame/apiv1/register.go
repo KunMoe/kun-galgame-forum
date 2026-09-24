@@ -101,14 +101,14 @@ func Register(svc *Service) func(huma.API) {
 		}), svc.deleteWorkLike)
 
 		huma.Register(api, v1.Required(huma.Operation{
-			OperationID: "listMyWorkStates",
+			OperationID: "listMyWorks",
 			Method:      http.MethodGet,
-			Path:        "/me/work-states",
-			Summary:     "Batch-read the caller's work like and favorite states",
-			Description: "Answers, for each work id named in work_ids, whether the caller liked it and whether they hold it in a folder. " +
+			Path:        "/me/works",
+			Summary:     "Batch-read the caller's own state on works",
+			Description: "Answers, for each work id named in work_ids, whether the caller liked it, and from catalog which of their collections hold it and their playtime and play state. " +
 				"It is a batch read and is not paginated: work_ids is required, holds 1 to 100 ids. " +
-				"An id catalog does not know or has hidden is missing. " +
-				"has_favorited is false when the caller's folders cannot be read; has_liked is always answered.",
+				"An id catalog does not know or has hidden is missing, and is never sent to catalog's user plane. " +
+				"library is null when catalog cannot be read for this caller (a quota, an outage, or a token without folder:read); has_liked is always answered.",
 			Tags:        []string{"me"},
 			Middlewares: huma.Middlewares{withAccessToken},
 			Responses: problemResponses(map[int]string{
@@ -116,7 +116,25 @@ func Register(svc *Service) func(huma.API) {
 				403: "ACCOUNT_BANNED.",
 				503: "SERVICE_UNAVAILABLE when the catalog cannot say which works exist.",
 			}),
-		}), svc.listMyWorkStates)
+		}), svc.listMyWorks)
+
+		huma.Register(api, v1.Required(huma.Operation{
+			OperationID: "listMyCoverVotes",
+			Method:      http.MethodGet,
+			Path:        "/me/cover-votes",
+			Summary:     "Batch-read the caller's cover votes",
+			Description: "Answers, for each work id named in work_ids, which of its covers the caller voted for. " +
+				"It is a batch read and is not paginated: work_ids is required, holds 1 to 100 ids. " +
+				"An id catalog does not know or has hidden is missing. " +
+				"A vote cast in another application can take up to 10 minutes to appear.",
+			Tags:        []string{"me"},
+			Middlewares: huma.Middlewares{withAccessToken},
+			Responses: problemResponses(map[int]string{
+				400: "INVALID_PARAMETER when work_ids is absent, empty, holds more than 100 ids, or holds something that is not a positive decimal integer.",
+				403: "SCOPE_REQUIRED when the token lacks catalog:edit; ACCOUNT_BANNED.",
+				503: "SERVICE_UNAVAILABLE when the catalog cannot be reached.",
+			}),
+		}), svc.listMyCoverVotes)
 
 		svc.registerUserPlane(api)
 		svc.registerEdit(api)
