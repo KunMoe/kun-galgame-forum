@@ -128,7 +128,7 @@ pnpm migrate
 pnpm dev
 ```
 
-The checked-in environment examples target the local infra stack. See the [infra development-environment guide](https://github.com/next-moe/nextmoe-infra/blob/main/docs/dev-environment.md) for service profiles, database refreshes, and local credentials. Cross-repository identity migrations have additional ordering requirements documented in [docs/migration/user/README.md](docs/migration/user/README.md).
+The checked-in environment examples target the local infra stack. See the [infra development-environment guide](https://github.com/next-moe/nextmoe-infra/blob/main/docs/dev-environment.md) for service profiles, database refreshes, and local credentials. Cross-repository identity migrations have additional ordering requirements documented in the [user-migration runbook](https://github.com/KunMoe/nextmoe-docs/tree/main/docs/shared/user-migration).
 
 To run the forum in containers after the infra network is available:
 
@@ -158,7 +158,7 @@ See [docker/README.md](docker/README.md) for the complete container and deployme
 
 ## Development Boundaries
 
-- Contract mirrors under `docs/oauth/`, `docs/image_service/`, and `docs/artifact/` are generated and read-only. Change their sources in `nextmoe-infra`, then synchronize them through `kungal-docs`.
+- Contract docs live in `nextmoe-infra`. The one mirror here, `docs/oauth/oauth-integration-guide.md`, is generated and read-only: change its source in `nextmoe-infra`, then synchronize it through `nextmoe-docs`. Design docs are kept out of the repository.
 - Database schema changes require a numbered migration in `apps/api/migrations/`; the API never runs GORM AutoMigrate at startup.
 - Frontend work should use KunUI components before introducing local replacements. KunUI itself is an upstream package and is not modified in this repository.
 - Keep frontend and backend response shapes aligned. The Go API returns a stable `{ code, message, data }` envelope.

@@ -103,7 +103,7 @@ Do not paste the report into stdout.
   - the report path above
 - Forbidden: any shell command; any git operation; any database access; editing files
   outside the writable paths; writing a migration under `apps/api/migrations/**`; touching
-  `docs/oauth/`, `docs/image_service/` or `docs/artifact/` (read-only infra mirrors);
+  `docs/oauth/oauth-integration-guide.md` (read-only infra mirror);
   hand-editing `apps/api/internal/app/testdata/routes.golden` (it is derived by a command
   you cannot run — if your change alters routes, say so in section 5 and the orchestrator
   regenerates it); touching any `.env.example`.

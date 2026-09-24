@@ -71,7 +71,7 @@ Every prior adjudication this task depends on, stated inline. If the reader woul
 
 <Name the specific clauses, with file and quoted line. Not "follow the spec".>
 
-- `docs/proj/api-v1/01-standard.md` **K<n>**: "<rule, restated in English>"
+- `/home/kun/Desktop/code/website/kun-galgame-forum/refs/docs/proj/api-v1/01-standard.md` **K<n>**: "<rule, restated in English>"
 - `/home/kun/Desktop/code/website/nextmoe-infra/refs/api-v2/<file>` **<id>**: "<quoted line>"
 
 ## Scope

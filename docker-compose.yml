@@ -75,7 +75,7 @@ services:
   # ─────────────────────── one-off jobs (profile: jobs) ──────────────────────
   # Not started by `up`. The kungal migration ORDER is non-trivial (005/006/007/
   # 012/015 are deferred and must run AFTER oauth's migrate-users). For a fresh
-  # cross-repo bootstrap follow docs/migration; routine deploys run the default
+  # cross-repo bootstrap follow nextmoe-docs docs/shared/user-migration; routine deploys run the default
   # set:
   #   docker compose run --rm migrate                 # default (excludes 005/006/007/012/015)
   #   docker compose run --rm migrate --only=015      # e.g. after 007 exists

@@ -1,5 +1,6 @@
 <!--
-  /api/v1 rebuild PRs: the SOP is docs/proj/api-v1/05-session-sop.md.
+  /api/v1 rebuild PRs: the SOP is refs/docs/proj/api-v1/05-session-sop.md
+  (gitignored: read it in the source checkout, not the worktree).
   Anything else: delete the whole template and describe the change.
 -->
 
@@ -8,7 +9,7 @@
 <!-- Which domain moves onto /api/v1, which legacy routes go, which migration numbers. -->
 
 Wave:
-Contract: `docs/proj/api-v1/waves/`
+Contract: `refs/docs/proj/api-v1/waves/`
 Legacy routes removed: N (`legacy_route_baseline` A → B)
 Migrations: none / NNN–NNN
 

@@ -24,7 +24,7 @@
 # / cross-repo-ordered migrations are still held back by the migrate binary's
 # default `-exclude` list (005/006/007/012/015 today); to add a FUTURE cross-repo
 # migration, append its prefix to that default in cmd/migrate/main.go, then run
-# it manually with `--only=NNN` at the right moment (docs/migration + 16-data-cutover.md).
+# it manually with `--only=NNN` at the right moment (nextmoe-docs docs/shared/user-migration + 16-data-cutover.md).
 name: kungal
 
 x-svc-health: &svc-health
@@ -51,7 +51,7 @@ x-kungal-api-env: &kungal-api-env
   OAUTH_CLIENT_ID: 4ed9bc99ec0a789a4796b83e22bd84c5
   OAUTH_CLIENT_SECRET: ${OAUTH_CLIENT_SECRET:?set OAUTH_CLIENT_SECRET in Dokploy (论坛 client 注册时的明文)}
   OAUTH_REDIRECT_URI: https://www.kungal.com/auth/callback
-  # ── App direct access (docs/proj/app-direct-api.md) ──
+  # ── App direct access (refs/docs/proj/app-direct-api.md) ──
   # A first-party client's user access token (ES256 JWT) may call /api/* as
   # `Authorization: Bearer`. ISSUER must be the OP's PUBLIC origin — that is what
   # it stamps into `iss`; deriving it from OAUTH_SERVER_URL above would give
@@ -274,7 +274,7 @@ services:
   # Runs on a plain `up` (kungal-api depends_on it) → pending migrations apply
   # before the API starts. The binary's default `-exclude` still holds back the
   # deferred/cross-repo migrations (005/006/007/012/015); run those manually with
-  # `--only=NNN` at the right moment. See docs/migration + 16-data-cutover.md.
+  # `--only=NNN` at the right moment. See nextmoe-docs docs/shared/user-migration + 16-data-cutover.md.
   migrate:
     image: ghcr.io/kunmoe/kungal-migrate:latest
     pull_policy: always

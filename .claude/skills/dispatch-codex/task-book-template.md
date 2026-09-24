@@ -111,8 +111,8 @@ Do not paste the report into stdout.
   - the report path above
 - Forbidden: any git command that mutates state (`status` / `log` / `diff` are fine); any
   reads outside the repository beyond what Scope names; writing a migration under
-  `apps/api/migrations/**`; touching `docs/oauth/`, `docs/image_service/` or
-  `docs/artifact/` (read-only infra mirrors); hand-editing
+  `apps/api/migrations/**`; touching
+  `docs/oauth/oauth-integration-guide.md` (read-only infra mirror); hand-editing
   `apps/api/internal/app/testdata/routes.golden` (it is derived — if your change alters
   routes, regenerate with `go test ./internal/app/ -run TestRouteManifest -update-routes`,
   and if that fails in the sandbox, leave it stale and say so in section 5); touching any

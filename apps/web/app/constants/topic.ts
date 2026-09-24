@@ -251,7 +251,7 @@ export const KUN_TOPIC_ACCESS_SCOPE_OPTIONS: KunSelectOption<TopicAccessScope>[]
   }))
 
 // `user` is missing on purpose. The API accepts it as a grant subject, but OAuth
-// never puts it in the roles claim (docs/oauth/11-roles.md §2 — it is the
+// never puts it in the roles claim (infra docs/integration/oauth/11-roles.md §2 — it is the
 // implicit default identity), so a `user` grant matches nobody and the topic
 // silently becomes invisible to everyone the author picked. The login scope is
 // what "any signed-in user" means here.

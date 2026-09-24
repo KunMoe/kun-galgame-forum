@@ -132,7 +132,7 @@ gate then fails on the hand edit and the orchestrator has to re-derive it. In th
 - The permission tri-mirror — `apps/api/pkg/perm/perm.go`,
   `apps/web/app/composables/useCan.ts`, `apps/web/app/constants/permission.ts`:
   `frontend_mirror_test.go` fails unless all three move together. Grant all three or none.
-- `docs/oauth/**`, `docs/image_service/**`, `docs/artifact/**` — infra's read-only mirrors.
+- `docs/oauth/oauth-integration-guide.md` — infra's read-only mirror.
 - `.env.example` files — they pair with the config loaders; knob and line move together or
   not at all.
 - `package.json` version lines — husky bumps them; the orchestrator sweeps the bump into
@@ -228,8 +228,10 @@ Dispatch the code; keep the measurement.
 ## 7. Binding documents
 
 `CLAUDE.md` is auto-loaded (verify on the first dispatch here). Everything else binding
-lives in-repo and grok can read it: `docs/proj/*` for per-feature adjudications, and the
-read-only contract mirrors under `docs/{oauth,image_service,artifact}/`. Still name the
+is outside git: per-feature adjudications are in `refs/docs/proj/*`, which is gitignored and
+exists only in the source checkout (give grok absolute paths into
+`/home/kun/Desktop/code/website/kun-galgame-forum/refs/docs/`), and contract docs are at
+infra's source, `/home/kun/Desktop/code/website/nextmoe-infra/docs/`. Still name the
 specific file and quote the sentence a task depends on — an executor told to "follow the
 docs" will follow the wrong part of them. The orchestrator's memory files are **not**
 visible to grok; anything load-bearing from memory goes into the task book verbatim.

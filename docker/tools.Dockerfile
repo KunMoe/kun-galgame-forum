@@ -2,7 +2,7 @@
 # Tools image: EVERY apps/api/cmd/* binary in one image, for kungal's one-off
 # migration / backfill jobs the api/migrate images don't carry — e.g. the
 # deferred migrations (005/006/007/012/015), check-dup-email,
-# backfill-provider-names (see docs/migration + docs/deploy/03-bootstrap.md §B).
+# backfill-provider-names (see nextmoe-docs docs/shared/user-migration + infra docs/deploy/03-bootstrap.md §B).
 #
 # The per-service Dockerfile builds ONE binary (ARG CMD); this bundles them all
 # and invokes a job by name:

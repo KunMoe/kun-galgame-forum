@@ -185,9 +185,10 @@ Template: `task-book-template.md` (step 0, environment and discipline already fi
 
 - **English**, self-contained. The executor cannot see this conversation.
 - **State every adjudication inline, and quote binding clauses** rather than citing them.
-  Design docs in `docs/proj/**` are Chinese: the executor may read them, but the task book
-  restates in English every rule it depends on. infra's `refs/` is gitignored and exists only
-  in infra's main checkout: give absolute paths into
+  Design docs in `refs/docs/proj/**` are Chinese: the executor may read them, but the task book
+  restates in English every rule it depends on. `refs/` is gitignored here and in infra and exists
+  only in each source checkout: give absolute paths into
+  `/home/kun/Desktop/code/website/kun-galgame-forum/refs/docs/` and
   `/home/kun/Desktop/code/website/nextmoe-infra/refs/`.
 - **No open design decisions.** Where the mechanics depend on code the executor has yet to
   read, state the invariant plus the precedent, and require it to report what it chose.

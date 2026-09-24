@@ -7,7 +7,7 @@
 //	  run --rm tools purge-restore [-commit] <purge_id>
 //
 // Without -commit the forum restore is rolled back after its report is printed
-// and community is not called. See docs/proj/api-v1/waves/u3c-purge.md §6.
+// and community is not called. See refs/docs/proj/api-v1/waves/u3c-purge.md §6.
 package main
 
 import (
