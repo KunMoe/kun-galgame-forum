@@ -52,7 +52,7 @@ func TestPurgeKeepsSharedWebsites(t *testing.T) {
 		listed, tagID, now, now)
 
 	repo := NewPurgeRepository(db)
-	if _, err := repo.PurgeUserContent(purged); err != nil {
+	if _, err := repo.PurgeUserContent(purged, 1); err != nil {
 		t.Fatal(err)
 	}
 	scalar := func(q string, args ...any) int {
@@ -92,7 +92,7 @@ func TestPurgeKeepsSharedWebsites(t *testing.T) {
 			t.Errorf("%s: %d, want %d", c.what, got, c.want)
 		}
 	}
-	if again := repo.CountUserContent(purged); again.Websites != 0 {
-		t.Errorf("a second preview still counts %d websites", again.Websites)
+	if again, err := repo.CountUserContent(purged); err != nil || again.Websites != 0 {
+		t.Errorf("a second preview still counts %d websites (%v)", again.Websites, err)
 	}
 }

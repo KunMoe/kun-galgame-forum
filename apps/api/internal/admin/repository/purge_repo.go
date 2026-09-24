@@ -1,10 +1,14 @@
 package repository
 
 import (
+	"errors"
 	"fmt"
+	"slices"
+	"time"
 
-	"kun-galgame-api/internal/admin/dto"
+	topicModel "kun-galgame-api/internal/topic/model"
 
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
@@ -16,15 +20,44 @@ func NewPurgeRepository(db *gorm.DB) *PurgeRepository {
 	return &PurgeRepository{db: db}
 }
 
-func (r *PurgeRepository) CountUserContent(userID int) dto.UserContentStats {
-	return r.counts(r.db, userID)
+var ErrLotteryDrawing = errors.New("purge: one of the user's lotteries is being drawn")
+
+const ArchiveRetention = 30 * 24 * time.Hour
+
+type UserContentCounts struct {
+	Topics           int64
+	Replies          int64
+	TopicComments    int64
+	Ratings          int64
+	Resources        int64
+	Websites         int64
+	Toolsets         int64
+	ToolsetResources int64
+	Polls            int64
+	Lotteries        int64
+	Drafts           int64
+	Quizzes          int64
+	Collections      int64
+	Todos            int64
+	ChatMessages     int64
+	Messages         int64
+	Interactions     int64
+	Total            int64
 }
 
-func (r *PurgeRepository) counts(q *gorm.DB, userID int) dto.UserContentStats {
-	var s dto.UserContentStats
+type PurgeReceipt struct {
+	PurgeID  uuid.UUID
+	Archived map[string]int64
+}
+
+func (r *PurgeRepository) CountUserContent(userID int) (UserContentCounts, error) {
+	var s UserContentCounts
+	var firstErr error
 	countBy := func(table, col string) int64 {
 		var n int64
-		q.Table(table).Where(col+" = ?", userID).Count(&n)
+		if err := r.db.Table(table).Where(col+" = ?", userID).Count(&n).Error; err != nil && firstErr == nil {
+			firstErr = fmt.Errorf("count %s.%s: %w", table, col, err)
+		}
 		return n
 	}
 
@@ -55,7 +88,7 @@ func (r *PurgeRepository) counts(q *gorm.DB, userID int) dto.UserContentStats {
 		s.Polls + s.Lotteries + s.Drafts +
 		s.Quizzes + s.Collections + s.Todos +
 		s.ChatMessages + s.Messages + s.Interactions
-	return s
+	return s, firstErr
 }
 
 var interactionTables = []string{
@@ -72,18 +105,37 @@ var interactionTables = []string{
 	"galgame_toolset_practicality", "galgame_toolset_contributor",
 }
 
-func (r *PurgeRepository) PurgeUserContent(userID int) (dto.UserContentStats, error) {
-	stats := r.counts(r.db, userID)
+// PurgeUserContent runs with the kungal.purge_* settings, so migration 120's
+// trigger archives every row the transaction deletes, inserts or changes,
+// cascades included.
+func (r *PurgeRepository) PurgeUserContent(userID, operatorID int) (PurgeReceipt, error) {
+	receipt := PurgeReceipt{PurgeID: uuid.New(), Archived: map[string]int64{}}
 
 	err := r.db.Transaction(func(tx *gorm.DB) error {
-		var affTopics, affReplies, affGalgames, affChatRooms []int
+		if err := tx.Exec(`SELECT set_config('kungal.purge_id', ?, true),
+				set_config('kungal.purge_target_user_id', ?, true),
+				set_config('kungal.purge_operator_id', ?, true)`,
+			receipt.PurgeID.String(), fmt.Sprint(userID), fmt.Sprint(operatorID)).Error; err != nil {
+			return err
+		}
+
+		var lotteryStates []string
+		if err := tx.Raw(`SELECT status FROM topic_lottery
+			WHERE user_id = ? OR topic_id IN (SELECT id FROM topic WHERE user_id = ?)
+			FOR UPDATE`, userID, userID).Scan(&lotteryStates).Error; err != nil {
+			return err
+		}
+		if slices.Contains(lotteryStates, topicModel.LotteryStatusDrawing) {
+			return ErrLotteryDrawing
+		}
+
+		var affTopics, affGalgames, affChatRooms []int
 		captures := []struct {
 			dst *[]int
 			sql string
 		}{
 			{&affTopics, `SELECT DISTINCT topic_id FROM topic_reply WHERE user_id = ?
 				UNION SELECT DISTINCT topic_id FROM topic_comment WHERE user_id = ?`},
-			{&affReplies, `SELECT DISTINCT topic_reply_id FROM topic_comment WHERE user_id = ?`},
 			{&affGalgames, `SELECT DISTINCT work_id FROM galgame_rating WHERE user_id = ?
 				UNION SELECT DISTINCT work_id FROM galgame_resource WHERE user_id = ?`},
 			{&affChatRooms, `SELECT DISTINCT chat_room_id FROM chat_message WHERE sender_id = ?
@@ -154,6 +206,7 @@ func (r *PurgeRepository) PurgeUserContent(userID int) (dto.UserContentStats, er
 			"DELETE FROM galgame_rating WHERE user_id = ?",
 			"DELETE FROM galgame_resource WHERE user_id = ?",
 			"DELETE FROM galgame_toolset_resource WHERE user_id = ?",
+			"DELETE FROM toolset_upload WHERE user_id = ?",
 			"DELETE FROM galgame_activity WHERE user_id = ?",
 			"DELETE FROM galgame_contributor WHERE user_id = ?",
 			"DELETE FROM user_permission_override WHERE user_id = ?",
@@ -246,7 +299,6 @@ func (r *PurgeRepository) PurgeUserContent(userID int) (dto.UserContentStats, er
 		}{
 			{recountSpec{"topic", "reply_count", "topic_id", ""}, "topic_reply", affTopics},
 			{recountSpec{"topic", "comment_count", "topic_id", ""}, "topic_comment", affTopics},
-			{recountSpec{"topic_reply", "comment_count", "topic_reply_id", ""}, "topic_comment", affReplies},
 			{recountSpec{"galgame", "rating_count", "work_id", ""}, "galgame_rating", affGalgames},
 			{recountSpec{"galgame", "resource_count", "work_id", ""}, "galgame_resource", affGalgames},
 		}
@@ -256,10 +308,40 @@ func (r *PurgeRepository) PurgeUserContent(userID int) (dto.UserContentStats, er
 			}
 		}
 
+		var archived []struct {
+			TableName string
+			Rows      int64
+		}
+		if err := tx.Raw(`SELECT table_name, count(*) AS rows FROM user_purge_archive
+			WHERE purge_id = ? GROUP BY table_name`, receipt.PurgeID).Scan(&archived).Error; err != nil {
+			return err
+		}
+		for _, a := range archived {
+			receipt.Archived[a.TableName] = a.Rows
+		}
 		return nil
 	})
+	if err != nil {
+		return PurgeReceipt{}, err
+	}
+	return receipt, nil
+}
 
-	return stats, err
+// Rows of one purge share created_at, the purging transaction's start, so a
+// purge expires whole.
+func (r *PurgeRepository) ExpireArchive(cutoff time.Time, batch int) (int64, error) {
+	var total int64
+	for {
+		res := r.db.Exec(`DELETE FROM user_purge_archive WHERE id IN (
+			SELECT id FROM user_purge_archive WHERE created_at < ? ORDER BY id LIMIT ?)`, cutoff, batch)
+		if res.Error != nil {
+			return total, res.Error
+		}
+		total += res.RowsAffected
+		if res.RowsAffected < int64(batch) {
+			return total, nil
+		}
+	}
 }
 
 // recountSpec rebuilds one cached counter on parentTable from the rows the

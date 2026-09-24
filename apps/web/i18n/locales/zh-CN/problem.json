@@ -47,7 +47,8 @@
     "USERNAME_TAKEN": "这个用户名已被使用",
     "CREATOR_INELIGIBLE": "尚不满足创作者申请条件",
     "CREATOR_APPLICATION_COOLDOWN": "申请被拒绝后需等待一段时间才能再次申请",
-    "WEBSITE_CATEGORY_NOT_EMPTY": "该分类下还有网站, 请先把它们移到别的分类"
+    "WEBSITE_CATEGORY_NOT_EMPTY": "该分类下还有网站, 请先把它们移到别的分类",
+    "USER_PROTECTED": "该用户是版主或管理员, 不能清除其内容"
   },
   "reason": {
     "DUPLICATE_ITEM": {

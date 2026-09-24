@@ -389,6 +389,15 @@
     },
     {
       "object": "problem_type",
+      "code": "USER_PROTECTED",
+      "domain": "kungal",
+      "status": 403,
+      "type": "https://developer.nextmoe.dev/problems/kungal/user-protected",
+      "title": "User protected",
+      "description": "The target user holds a staff role, and the operation is never applied to staff: their content includes site documentation other users read."
+    },
+    {
+      "object": "problem_type",
       "code": "VOTE_ALREADY_CAST",
       "domain": "kungal",
       "status": 409,

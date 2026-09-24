@@ -113,6 +113,10 @@ run_migrate -only 092
 run_migrate -only 141
 run_migrate -only 145
 
+# 9. 120 put the purge-archive trigger on every table that existed when it ran;
+#    step 7 recreated galgame_contributor after that, without it.
+psql "${TEST_DATABASE_DSN}" -v ON_ERROR_STOP=1 -Atqc "SELECT user_purge_archive_attach();" >/dev/null
+
 is_excluded() {
 	local prefix="${1%%_*}"
 	case ",${excluded}," in

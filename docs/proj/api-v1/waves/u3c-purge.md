@@ -135,9 +135,9 @@
 | `target_user_id` | `integer NOT NULL` | 索引 |
 | `operator_id` | `integer NOT NULL` | |
 | `table_name` | `text NOT NULL` | |
-| `operation` | `text NOT NULL` `CHECK IN ('delete','update')` | |
+| `operation` | `text NOT NULL` `CHECK IN ('delete','update','insert')` | `insert`：清空事务里新写的行（§13） |
 | `row_pk` | `jsonb NOT NULL` | 主键列 → 值（复合主键多个键）。生产与临时库每张表都有主键（已核） |
-| `row_data` | `jsonb NOT NULL` | 改动前的整行 `to_jsonb(OLD)` |
+| `row_data` | `jsonb NOT NULL` | 改动前的整行 `to_jsonb(OLD)`；`insert` 存新行 |
 | `new_values` | `jsonb` | 只对 `update`：被改动的列 → 改动后的值 |
 | `created_at` | `timestamptz NOT NULL DEFAULT now()` | 索引（保留期清理） |
 | `restored_at` | `timestamptz` | 恢复过就不能再恢复（§6） |
@@ -146,7 +146,7 @@
 
 ### 5.2 怎么捕获：触发器，而不是清单
 
-- 函数 `user_purge_capture()`：`AFTER DELETE OR UPDATE … FOR EACH ROW WHEN (current_setting('kungal.purge_id', true) <> '')`。
+- 函数 `user_purge_capture()`：`AFTER INSERT OR UPDATE OR DELETE … FOR EACH ROW WHEN (coalesce(current_setting('kungal.purge_id', true), '') <> '')`。
   - `WHEN` 为假时事件不入队：清空之外的任何写几乎零开销，设置是事务级的，连接池里的别的请求看不到。
   - `UPDATE` 只在某列真的变了时记一行（`feed_upsert` 的同值 upsert 不记）。
   - 主键由 `pg_index` 按表现取，不靠传参。
@@ -184,7 +184,7 @@ ROLLBACK;   -- 报告无误后把这一行换成 COMMIT 再跑一遍
 
 1. **没有未恢复的行 → 报错**（不存在的 id、已经恢复过的 id）。
 2. `SET LOCAL session_replication_role = replica`：关掉触发器与外键检查，把 `operation = 'delete'` 的行按原主键原样插回（`jsonb_populate_record`，`ON CONFLICT DO NOTHING`）。关掉触发器是必须的：插回一个话题会让 `feed_sync_topic` 新铸一行动态，再插回存档里那行原动态就撞唯一键；原样插回的行本来就包括原来的动态行。
-3. 按存档 id **倒序**撤销 `update`：计数器列（名字以 `_count` / `_sum` 结尾的数值列）**加回差值** `旧 − 新`——清空之后新增的赞不会被抹掉；其余列**比较后置回**：当前值仍等于清空写下的新值才改回旧值，否则跳过、计入报告（清空之后有人动过它，以现在为准）。
+3. 按存档 id **倒序逐行**撤销（`delete` 插回、`insert` 删掉、`update` 按列改回）。`update`：计数器列（名字以 `_count` / `_sum` 结尾的数值列）**加回差值** `旧 − 新`——清空之后新增的赞不会被抹掉；其余列**比较后置回**：当前值仍等于清空写下的新值才改回旧值，否则跳过、计入报告（清空之后有人动过它，以现在为准）。
 4. 切回 `origin`，**校验外键**：对每个带恢复行的子表、每个单列外键，找恢复行里指向不存在父行的——有一个就 `RAISE EXCEPTION`，整个恢复回滚（例：清空后别人删了一个话题，而他在那里的回复要插回来）。报错信息写明表、列、条数；操作者按需把那几行从存档里删掉再跑。最后把本次处理的存档行记上 `restored_at`。
 
 必须以超级用户执行（`session_replication_role`）；生产的 `postgres` 就是。
@@ -249,3 +249,22 @@ ROLLBACK;   -- 报告无误后把这一行换成 COMMIT 再跑一遍
   - infra：community `AuthorPurge` 清空正文不可逆；要么 infra 侧留存档，要么改软删。报给协调会话转 infra。
   - T4 的话题硬删同样没有记录；它只要在事务里写上 `kungal.purge_*` 三个设置就能复用这个存档（`target_user_id` 填话题作者）。是否要做，由协调会话定。
   - 生产那张一次性表 `_user_merge_109310_to_1922` 会被挂上触发器（无害）；它本身该不该留，不归本段。
+
+## 13. 实现时对契约的更正（2026-09-24）
+
+实现、变异与协调会话的审查条件带来的，已改在上文对应位置，这里留底：
+
+| 原契约 | 改为 | 原因 |
+|---|---|---|
+| 存档只收 `delete` / `update` | 另收 `insert`，恢复时删掉 | `feed_sync_*` 在计数器重算触发的 UPDATE 上走 `feed_upsert`：动态行缺失时，清空会**新插**一行。不收它，恢复后多一行；往返测试里专门删掉一行动态来钉住它 |
+| 恢复：先成批插回删掉的行，再倒序撤销 `update` | 全部按存档 id 倒序逐行处理 | 同一个唯一键可能在一次清空里先删后插（或先插后删），只有严格倒序才对。代价：10 万行的恢复 2.1 秒（临时库实测） |
+| — | **清空不再重算 `topic_reply.comment_count`** | 迁移 102（2026-09-22）已删这一列，生产同样没有；从那天起，清空任何写过话题评论的用户都会 500：`column "comment_count" of relation "topic_reply" does not exist`。1484 与 104136 那两次跑通了，是因为两人都没有话题评论（生产只读核过：`topic_comment` 里两人 0 行）。写 DB 测试时第一次跑就红在这里 |
+| `WHEN (current_setting(...) <> '')` | `WHEN (coalesce(current_setting('kungal.purge_id', true), '') <> '')` | 协调会话条件 1：写明「设过又结束后读回 `''` 而不是 NULL」 |
+| 迁移「毫秒级」 | 文件开头 `SET LOCAL lock_timeout = '10s'` | 协调会话条件 3：迁移运行器把整个文件当一次简单查询发出，Postgres 把它当一个隐式事务，已锁的表会一直写阻塞到提交。某张表被长查询占着时，10 秒内失败；迁移失败时新 API 起不来（`depends_on: service_completed_successfully`），旧容器继续服务，重新部署即可。挂触发器用 `CREATE OR REPLACE TRIGGER`，只挂还没挂的表，重跑无副作用 |
+| 保留期「删 30 天前的行」 | 每批 5000 行，按 `created_at` | 协调会话条件 6。一次清空的所有行共用 `created_at`（事务开始时间），恢复过的也按清空时间算，所以一次清空要么整体留、要么整体删 |
+| `UserColumns` 只列业务表 | 另列 `user_purge_archive` 的两列（豁免） | 覆盖闸 2 扫到了存档表自己的用户列 |
+| 网页：`total_count` 为 0 就禁用清空按钮 | 本地为 0 但 `community_post_count` 不为 0 时仍可点 | 远端失败后本地已清空，要能重试把社区那半做完 |
+
+**性能（协调会话条件 1，临时库，5 万行 `UPDATE … SET n = n + 1`，各 5 次）**：不挂触发器 74–105 ms（中位 93）；挂触发器、会话从未设过 81–91 ms（中位 84）；挂触发器、设过又结束 82–91 ms（中位 89）；0 行进存档。噪声大于差异，`WHEN` 为假时事件不入队，plpgsql 不进入。清空事务内：每行 `UPDATE` 捕获约 19 µs、`DELETE` 约 13 µs；生产最重的一次清空（约 8 万行）多 1–2 秒。
+
+**测试**：`internal/admin/repository/purge_archive_db_test.go`（往返：全库快照 → 清空 → 每一条被删 / 被改 / 新写的行都在存档里 → 恢复 → 全库快照逐行相等；失败不留痕；设置随事务结束；恢复保留之后的计数变化；缺父行时整体中止；只能恢复一次；保留期；开奖中；覆盖闸）与 `internal/app/v1_user_purge_test.go`（经真实服务路径清空后存档里有行、操作者 id 正确，权限、受保护目标、新鲜读、上游失败与重试、开奖中）。

@@ -19986,6 +19986,177 @@
         ],
         "type": "object"
       },
+      "UserContent": {
+        "properties": {
+          "chat_message_count": {
+            "description": "Private messages the user sent.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "collection_count": {
+            "description": "Collections the user owns.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "community_post_count": {
+            "description": "The user's visible posts on the community comment walls. null when the community service is unavailable.",
+            "format": "int64",
+            "minimum": 0,
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "draft_count": {
+            "description": "Topic drafts the user saved.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "id": {
+            "description": "The user's id. JSON string of a decimal integer.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "interaction_count": {
+            "description": "The user's likes, favorites, votes, reactions, answers and other interaction rows.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "is_account_active": {
+            "description": "Whether the account service reports the account as usable: it exists and is neither banned nor deregistered. An active account can keep posting after a purge, so it should be banned or deregistered first.",
+            "type": "boolean"
+          },
+          "is_protected": {
+            "description": "Whether the user holds the moderation capability, by the account service's current record. purgeUserContent refuses such a user with USER_PROTECTED.",
+            "type": "boolean"
+          },
+          "lottery_count": {
+            "description": "Lotteries the user created.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "message_count": {
+            "description": "Notifications the user sent or received.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "object": {
+            "description": "Type discriminant. Always user_content.",
+            "enum": [
+              "user_content"
+            ],
+            "maxLength": 12,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "poll_count": {
+            "description": "Polls the user created.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "quiz_count": {
+            "description": "Quizzes the user wrote.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "rating_count": {
+            "description": "Galgame ratings the user wrote.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "reply_count": {
+            "description": "Replies the user wrote.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "resource_count": {
+            "description": "Galgame resources the user published.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "todo_count": {
+            "description": "Todo board entries the user filed.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "toolset_count": {
+            "description": "Toolsets the user created.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "toolset_resource_count": {
+            "description": "Toolset resources the user published.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "topic_comment_count": {
+            "description": "Topic comments the user wrote.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "topic_count": {
+            "description": "Topics the user wrote.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "total_count": {
+            "description": "The sum of the local counts above, community_post_count excluded. Rows of other users that go with the user's topics are not counted.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "website_count": {
+            "description": "Websites the user listed. A purge hands them to the directory's default owner instead of deleting them.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "object",
+          "id",
+          "is_protected",
+          "is_account_active",
+          "topic_count",
+          "reply_count",
+          "topic_comment_count",
+          "rating_count",
+          "resource_count",
+          "website_count",
+          "toolset_count",
+          "toolset_resource_count",
+          "poll_count",
+          "lottery_count",
+          "draft_count",
+          "quiz_count",
+          "collection_count",
+          "todo_count",
+          "chat_message_count",
+          "message_count",
+          "interaction_count",
+          "community_post_count",
+          "total_count"
+        ],
+        "type": "object"
+      },
       "UserCounts": {
         "properties": {
           "community_comment_count": {
@@ -26634,6 +26805,215 @@
         "summary": "Get a topic's staff view",
         "tags": [
           "topics"
+        ]
+      }
+    },
+    "/admin/user-contents/{user_id}": {
+      "delete": {
+        "description": "Deletes everything the user has on this site, with what cascades from it, hands their listed websites to the directory's default owner, then purges their catalog collections and community posts. The account itself is untouched: ban or deregister it at the account service first, or it can keep posting. Every local row the purge deletes or changes is archived for 30 days so a developer can undo it; the catalog and community parts cannot be undone. Purging again is safe and is how a purge that failed after its local part is finished. It needs the user.purge_content permission, which a Bearer request never carries.",
+        "operationId": "purgeUserContent",
+        "parameters": [
+          {
+            "description": "User id.",
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "description": "User id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "PERMISSION_REQUIRED when the caller lacks user.purge_content. USER_PROTECTED when the user holds the moderation capability."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when the id is larger than any user id can be."
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "LOTTERY_DRAWN when one of the user's lotteries is being drawn; nothing was deleted, retry once the draw ends."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the account service, the catalog or the community service cannot be reached. If it happens after the local part, the local rows are already purged and retrying finishes the rest."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Purge a user's content",
+        "tags": [
+          "users"
+        ]
+      },
+      "get": {
+        "description": "Counts the user's content on this site and reports whether the user may be purged and whether the account is still usable. Any user id that fits the path answers, with zero counts when the user has nothing here. It needs the user.purge_content permission, which a Bearer request never carries.",
+        "operationId": "getUserContent",
+        "parameters": [
+          {
+            "description": "User id.",
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "description": "User id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserContent"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "PERMISSION_REQUIRED when the caller lacks user.purge_content."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when the id is larger than any user id can be."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the account service cannot be reached."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get what a purge would delete for a user",
+        "tags": [
+          "users"
         ]
       }
     },

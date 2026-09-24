@@ -159,11 +159,6 @@ func (a *App) setupRoutes() {
 	// encodes. Where a route proxies infra, the local Require* is a VIEW gate
 	// deciding which page opens; infra re-checks and owns the outcome. Never
 	// tighten one into a second answer that can disagree with the engine.
-	admin := authed.Group("")
-
-	admin.Get("/admin/user/:id/content-stats", middleware.RequirePermission(perm.UserPurgeContent), a.AdminPurgeHandler.GetUserContentStats)
-	admin.Delete("/admin/user/:id/content", middleware.RequirePermission(perm.UserPurgeContent), a.AdminPurgeHandler.PurgeUserContent)
-
 	galgameAdmin := authed.Group("")
 	galgameAdmin.Get("/admin/galgame/submissions", middleware.RequirePermission(perm.GalgameClaimReview), a.GalgameClaimReviewHandler.PendingQueue)
 	galgameAdmin.Post(

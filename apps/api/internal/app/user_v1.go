@@ -1,6 +1,10 @@
 package app
 
 import (
+	"log/slog"
+	"time"
+
+	adminRepo "kun-galgame-api/internal/admin/repository"
 	galgameRepo "kun-galgame-api/internal/galgame/repository"
 	galgameService "kun-galgame-api/internal/galgame/service"
 	"kun-galgame-api/internal/galgame/workrepr"
@@ -68,6 +72,18 @@ func (a *App) newUserV1() *userapiv1.Users {
 		Contributed: a.ContributedWorkIDs,
 		Redis:       a.Redis,
 		State:       state,
+		Purge:       a.AdminPurge,
 		CDN:         cdn,
 	})
+}
+
+func expirePurgeArchive(repo *adminRepo.PurgeRepository) func() {
+	return func() {
+		n, err := repo.ExpireArchive(time.Now().Add(-adminRepo.ArchiveRetention), 5000)
+		if err != nil {
+			slog.Error("清空存档过期清理失败", "deleted", n, "error", err)
+			return
+		}
+		slog.Info("清空存档过期清理完成", "deleted", n)
+	}
 }

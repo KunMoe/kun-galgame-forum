@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 
+	adminService "kun-galgame-api/internal/admin/service"
 	v1 "kun-galgame-api/internal/apiv1"
 	resourceapiv1 "kun-galgame-api/internal/galgame/resourceapiv1"
 	galgameService "kun-galgame-api/internal/galgame/service"
@@ -33,6 +34,7 @@ type Users struct {
 	contributed func(context.Context, int64) ([]int, error)
 	redis       *redis.Client
 	state       *repository.StateRepository
+	purge       *adminService.PurgeService
 	cdn         string
 }
 
@@ -49,6 +51,7 @@ type Deps struct {
 	Contributed func(context.Context, int64) ([]int, error)
 	Redis       *redis.Client
 	State       *repository.StateRepository
+	Purge       *adminService.PurgeService
 	CDN         string
 }
 
@@ -66,6 +69,7 @@ func New(d Deps) *Users {
 		contributed: d.Contributed,
 		redis:       d.Redis,
 		state:       d.State,
+		purge:       d.Purge,
 		cdn:         d.CDN,
 	}
 }
@@ -298,5 +302,6 @@ func Register(u *Users) func(huma.API) {
 		})), u.createCreatorApplication)
 
 		u.registerLists(api)
+		u.registerAdminPurge(api)
 	}
 }

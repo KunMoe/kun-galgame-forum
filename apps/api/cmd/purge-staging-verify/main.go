@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"strconv"
@@ -22,70 +23,18 @@ type colCheck struct {
 	why        string
 }
 
-var colChecks = []colCheck{
-	{"topic", "user_id", "zero", ""},
-	{"topic_reply", "user_id", "zero", ""},
-	{"topic_comment", "user_id", "zero", ""},
-	{"topic_comment", "target_user_id", "keep", "NOT NULL; 3rd-party comment kept"},
-	{"topic_like", "user_id", "zero", ""},
-	{"topic_dislike", "user_id", "zero", ""},
-	{"topic_favorite", "user_id", "zero", ""},
-	{"topic_upvote", "user_id", "zero", ""},
-	{"topic_comment_like", "user_id", "zero", ""},
-	{"topic_reply_like", "user_id", "zero", ""},
-	{"topic_reply_dislike", "user_id", "zero", ""},
-	{"topic_poll", "user_id", "zero", ""},
-	{"topic_poll_vote", "user_id", "zero", ""},
-	{"topic_reaction", "user_id", "zero", ""},
-	{"topic_reply_reaction", "user_id", "zero", ""},
-	{"topic_draft", "user_id", "zero", ""},
-	{"topic_lottery", "user_id", "zero", ""},
-	{"topic_lottery_entry", "user_id", "zero", ""},
-	{"galgame_post_like", "user_id", "zero", ""},
-	{"galgame_favorite", "user_id", "zero", ""},
-	{"galgame_like", "user_id", "zero", ""},
-	{"galgame_rating", "user_id", "zero", ""},
-	{"galgame_rating_like", "user_id", "zero", ""},
-	{"galgame_resource", "user_id", "zero", ""},
-	{"galgame_resource_like", "user_id", "zero", ""},
-	{"galgame_toolset", "user_id", "zero", ""},
-	{"galgame_toolset_contributor", "user_id", "zero", ""},
-	{"galgame_toolset_practicality", "user_id", "zero", ""},
-	{"galgame_toolset_resource", "user_id", "zero", ""},
-	{"galgame_website", "user_id", "zero", ""},
-	{"galgame_website_favorite", "user_id", "zero", ""},
-	{"galgame_website_like", "user_id", "zero", ""},
-	{"galgame_collection", "user_id", "zero", ""},
-	{"galgame_collection_item", "user_id", "zero", ""},
-	{"galgame_collection_viewer", "user_id", "zero", ""},
-	{"galgame_quiz", "user_id", "zero", ""},
-	{"galgame_quiz_answer", "user_id", "zero", ""},
-	{"galgame_quiz_favorite", "user_id", "zero", ""},
-	{"galgame_activity", "user_id", "zero", ""},
-	{"galgame_contributor", "user_id", "zero", ""},
-	{"feed_activity", "user_id", "zero", ""},
-	{"user_permission_override", "user_id", "zero", ""},
-	{"chat_message", "sender_id", "zero", ""},
-	{"chat_message", "receiver_id", "zero", ""},
-	{"chat_message_reaction", "user_id", "zero", ""},
-	{"chat_message_read_by", "user_id", "zero", ""},
-	{"chat_room_admin", "user_id", "zero", ""},
-	{"chat_room_participant", "user_id", "zero", ""},
-	{"message", "sender_id", "zero", ""},
-	{"message", "receiver_id", "zero", ""},
-	{"system_message", "user_id", "zero", ""},
-	{"system_message_read_state", "user_id", "zero", ""},
-	{"kungal_user_state", "user_id", "zero", ""},
-	{"user_follow", "follower_id", "zero", ""},
-	{"user_follow", "followed_id", "zero", ""},
-	{"user_friend", "user_id", "zero", ""},
-	{"user_friend", "friend_id", "zero", ""},
-	{"doc_article", "author_id", "keep", "admin content; role>1 not purgeable"},
-	{"todo", "user_id", "zero", ""},
-	{"todo", "claimed_user_id", "keep", "closed board entries keep who worked them"},
-	{"permission_audit_log", "operator_id", "keep", "audit trail"},
-	{"update_log", "user_id", "keep", "admin content"},
-	{"unmoe", "user_id", "keep", "read-only logs; not a POST surface"},
+// Derived from the purge's own coverage list, so a column added there is
+// checked here without a second edit.
+func colChecks() []colCheck {
+	out := make([]colCheck, 0, len(repository.UserColumns))
+	for _, c := range repository.UserColumns {
+		mode := "keep"
+		if c.Handling == repository.HandlingDelete || c.Handling == repository.HandlingTransfer {
+			mode = "zero"
+		}
+		out = append(out, colCheck{table: c.Table, col: c.Column, mode: mode, why: c.Why})
+	}
+	return out
 }
 
 type counterCheck struct {
@@ -100,7 +49,6 @@ var counterChecks = []counterCheck{
 	{"topic", "dislike_count", "topic_dislike", "topic_id", ""},
 	{"topic", "favorite_count", "topic_favorite", "topic_id", ""},
 	{"topic", "upvote_count", "topic_upvote", "topic_id", ""},
-	{"topic_reply", "comment_count", "topic_comment", "topic_reply_id", ""},
 	{"topic_reply", "like_count", "topic_reply_like", "topic_reply_id", ""},
 	{"topic_reply", "dislike_count", "topic_reply_dislike", "topic_reply_id", ""},
 	{"topic_poll_option", "vote_count", "topic_poll_vote", "option_id", ""},
@@ -176,8 +124,10 @@ func main() {
 
 	fmt.Println("[1] pre-purge footprint (non-zero columns):")
 	var preTotal int64
-	for _, c := range colChecks {
+	preFootprint := map[string]int64{}
+	for _, c := range colChecks() {
 		if n := count(c.table, c.col); n > 0 {
+			preFootprint[c.table+"."+c.col] = n
 			preTotal += n
 			fmt.Printf("    %-28s %-15s %d\n", c.table, c.col, n)
 		}
@@ -196,20 +146,21 @@ func main() {
 
 	fmt.Println("\n[2] running PurgeRepository.PurgeUserContent ...")
 	repo := repository.NewPurgeRepository(db)
-	stats, perr := repo.PurgeUserContent(userID)
+	preview, cerr := repo.CountUserContent(userID)
+	if cerr != nil {
+		fail("preview count errored: %v", cerr)
+	}
+	receipt, perr := repo.PurgeUserContent(userID, 0)
 	if perr != nil {
 		fail("purge returned error: %v", perr)
 		fmt.Println("\nRESULT: FAIL")
 		os.Exit(1)
 	}
-	fmt.Printf("    reported preview Total=%d (topics=%d replies=%d topicComments=%d ratings=%d resources=%d websites=%d toolsets=%d polls=%d lotteries=%d drafts=%d quizzes=%d collections=%d todos=%d chat=%d msgs=%d interactions=%d)\n",
-		stats.Total, stats.Topics, stats.Replies, stats.TopicComments,
-		stats.Ratings, stats.Resources, stats.Websites, stats.Toolsets,
-		stats.Polls, stats.Lotteries, stats.Drafts, stats.Quizzes, stats.Collections, stats.Todos,
-		stats.ChatMessages, stats.Messages, stats.Interactions)
+	fmt.Printf("    preview Total=%d; purge %s archived %d rows across %d tables\n",
+		preview.Total, receipt.PurgeID, sumArchived(receipt), len(receipt.Archived))
 
 	fmt.Println("\n[3] completeness — every traced column must be 0 (except by-design keeps):")
-	for _, c := range colChecks {
+	for _, c := range colChecks() {
 		n := count(c.table, c.col)
 		switch c.mode {
 		case "zero":
@@ -266,14 +217,17 @@ func main() {
 	}
 
 	fmt.Println("\n[6] idempotency — re-run purge:")
-	stats2, perr2 := repo.PurgeUserContent(userID)
+	receipt2, perr2 := repo.PurgeUserContent(userID, 0)
 	if perr2 != nil {
 		fail("second purge errored: %v", perr2)
-	} else if stats2.Total != 0 {
-		fail("second purge still found Total=%d (expected 0)", stats2.Total)
+	} else if n := sumArchived(receipt2); n != 0 {
+		fail("second purge still changed %d rows (expected 0): %v", n, receipt2.Archived)
 	} else {
-		fmt.Println("    OK — second run found nothing and errored not")
+		fmt.Println("    OK — second run changed nothing and errored not")
 	}
+
+	fmt.Println("\n[8] restore — user_purge_restore inside a transaction that is rolled back:")
+	verifyRestore(db, fail, receipt, userID, preFootprint)
 
 	fmt.Println("\n[7] community purge — author has 0 visible posts:")
 	verifyCommunityPurge(fail, userID)
@@ -282,6 +236,50 @@ func main() {
 	if !pass {
 		os.Exit(1)
 	}
+}
+
+func sumArchived(r repository.PurgeReceipt) int64 {
+	var n int64
+	for _, v := range r.Archived {
+		n += v
+	}
+	return n
+}
+
+func verifyRestore(db *gorm.DB, fail func(string, ...any), receipt repository.PurgeReceipt, userID int, pre map[string]int64) {
+	errRollback := errors.New("rollback")
+	err := db.Transaction(func(tx *gorm.DB) error {
+		var report []struct {
+			TableName string
+			Operation string
+			Archived  int64
+			Restored  int64
+		}
+		if err := tx.Raw("SELECT * FROM user_purge_restore(?)", receipt.PurgeID).Scan(&report).Error; err != nil {
+			return err
+		}
+		for _, r := range report {
+			if r.Archived != r.Restored {
+				fmt.Printf("    skipped %-26s %-6s %d of %d\n", r.TableName, r.Operation, r.Archived-r.Restored, r.Archived)
+			}
+		}
+		for _, c := range colChecks() {
+			if c.mode != "zero" {
+				continue
+			}
+			var got int64
+			tx.Table(c.table).Where(c.col+" = ?", userID).Count(&got)
+			if want := pre[c.table+"."+c.col]; got != want {
+				fail("after restore %s.%s has %d rows, want %d", c.table, c.col, got, want)
+			}
+		}
+		return errRollback
+	})
+	if err != nil && !errors.Is(err, errRollback) {
+		fail("restore errored: %v", err)
+		return
+	}
+	fmt.Println("    done — rolled back, the staging copy stays purged")
 }
 
 func verifyCommunityPurge(fail func(string, ...any), userID int) {

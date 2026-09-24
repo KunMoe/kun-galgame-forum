@@ -6,7 +6,6 @@ import (
 	"time"
 
 	activityapiv1 "kun-galgame-api/internal/activity/apiv1"
-	adminHandler "kun-galgame-api/internal/admin/handler"
 	adminRepo "kun-galgame-api/internal/admin/repository"
 	adminService "kun-galgame-api/internal/admin/service"
 	"kun-galgame-api/internal/apiv1"
@@ -113,7 +112,7 @@ type App struct {
 
 	OAuthHandler              *handler.OAuthHandler
 	LotteryService            *topicService.LotteryService
-	AdminPurgeHandler         *adminHandler.PurgeHandler
+	AdminPurge                *adminService.PurgeService
 	TrustHandler              *trustHandler.TrustHandler
 	NewsV1                    *newsapiv1.Service
 	GalgameSubmissionHandler  *galgameHandler.SubmissionHandler
@@ -404,7 +403,8 @@ func New(cfg *config.Config) *App {
 	galgameCatalogMirror := galgameService.NewGalgameCatalogMirror(gc, galgameLocalRepo, rdb, galgameMergeSync)
 
 	adminOverviewRepo := adminRepo.NewOverviewRepository(db)
-	adminPurgeSvc := adminService.NewPurgeService(adminRepo.NewPurgeRepository(db), uc, communityCli, catalogCli)
+	adminPurgeRepo := adminRepo.NewPurgeRepository(db)
+	adminPurgeSvc := adminService.NewPurgeService(adminPurgeRepo, uc, communityCli, catalogCli)
 	adminRolePermRepo := adminRepo.NewRolePermissionRepository(db)
 	adminUserPermRepo := adminRepo.NewUserPermissionRepository(db)
 	adminPermSync := adminService.NewPermissionOverrideSync(adminRolePermRepo, adminUserPermRepo)
@@ -492,7 +492,7 @@ func New(cfg *config.Config) *App {
 		OAuthHandler:              handler.NewOAuthHandler(authService, cfg.Server.Mode == "prod", communityBooster),
 		LotteryService:            lotterySvc,
 		OverviewV1:                overviewapiv1.New(adminOverviewRepo, nil),
-		AdminPurgeHandler:         adminHandler.NewPurgeHandler(adminPurgeSvc),
+		AdminPurge:                adminPurgeSvc,
 		TrustHandler:              trustHandler.NewTrustHandler(trustEnforce, cfg.Trust.CallbackSecret),
 		NewsV1:                    newsapiv1.New(newsCli, uc, cfg.NextMoeAPI.ImageCDNBase),
 		GalgameSubmissionHandler:  galgameHandler.NewSubmissionHandler(galgameSubmissionSvc),
@@ -510,6 +510,7 @@ func New(cfg *config.Config) *App {
 			GalgameMergeSync:           galgameMergeSync.Run,
 			DlsiteCampaignRefresh:      storeLinks.RefreshCampaign,
 			TopicMiniAppDeadlines:      lotteryDrawer.Run,
+			UserPurgeArchiveExpiry:     expirePurgeArchive(adminPurgeRepo),
 		}),
 		StoreLinkStop:       storeLinks.Start(),
 		CommunityNotifyStop: communitynotify.New(communityCli, messageRepository, anchorResolver, rdb).Start(),

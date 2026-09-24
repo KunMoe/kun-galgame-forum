@@ -2,13 +2,14 @@ package service
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"log/slog"
+	"net/http"
 
-	"kun-galgame-api/internal/admin/dto"
 	"kun-galgame-api/internal/admin/repository"
 	"kun-galgame-api/pkg/catalogclient"
 	"kun-galgame-api/pkg/communityclient"
-	"kun-galgame-api/pkg/errors"
 	"kun-galgame-api/pkg/role"
 	"kun-galgame-api/pkg/userclient"
 )
@@ -25,78 +26,143 @@ func NewPurgeService(repo *repository.PurgeRepository, userClient *userclient.Cl
 	return &PurgeService{repo: repo, userClient: userClient, community: community, catalog: catalog}
 }
 
-func (s *PurgeService) GetUserContentStats(ctx context.Context, userID int) dto.UserContentStats {
-	stats := s.repo.CountUserContent(userID)
-	if resp, err := s.community.AuthorStats(ctx, []int64{int64(userID)}); err == nil {
-		for _, st := range resp.Stats {
-			if st.AuthorID == int64(userID) {
-				stats.CommunityPosts = st.VisiblePosts
-				break
-			}
-		}
-	}
-	return stats
+var (
+	ErrPurgeTargetProtected = errors.New("purge: the target holds the moderation capability")
+	ErrPurgeLotteryDrawing  = repository.ErrLotteryDrawing
+)
+
+type UnavailableError struct {
+	Stage string
+	Err   error
 }
 
-// Privileged accounts (anyone with the moderation capability) are NOT purgeable:
-// their content includes site documentation other users read, and this feature
-// exists for spam accounts. Roles come from OAuth, and an OAuth lookup ERROR
-// refuses the purge — never purge during an outage when the target's privilege
-// cannot be confirmed. A not-found user is a gone normal account and is purgeable.
-//
-// Order: local transaction first, then the community compliance purge. Both
-// sides are idempotent, so a community failure surfaces as an error and the
-// admin retries.
-// operatorToken is the acting moderator's own access token: the catalog judges
-// their standing rather than taking this site's word for it, which is why the
-// purge cannot run without one.
-func (s *PurgeService) PurgeUserContent(ctx context.Context, operatorID, userID int, operatorToken string) (dto.PurgeResult, *errors.AppError) {
+func (e *UnavailableError) Error() string { return "purge " + e.Stage + ": " + e.Err.Error() }
+func (e *UnavailableError) Unwrap() error { return e.Err }
+
+type UserContentPreview struct {
+	Counts         repository.UserContentCounts
+	CommunityPosts *int64
+	Protected      bool
+	AccountActive  bool
+}
+
+type target struct {
+	protected bool
+	active    bool
+}
+
+// Staff are never purged: their content includes site documentation other
+// users read, and the purge exists for spam accounts. A lookup error refuses;
+// a user OAuth does not know is a gone account and purgeable.
+func (s *PurgeService) lookupTarget(ctx context.Context, userID int) (target, error) {
+	s.userClient.Invalidate(userID)
 	u, found, err := s.userClient.User(ctx, userID)
 	if err != nil {
-		return dto.PurgeResult{}, errors.ErrInternal("无法核验用户身份, 已中止清除")
+		return target{}, &UnavailableError{Stage: "account lookup", Err: err}
 	}
-	if found && role.CanModerate(u.Roles) {
-		return dto.PurgeResult{}, errors.ErrForbidden("不可清除管理员 / 版主用户的内容")
-	}
+	return target{
+		protected: found && role.CanModerate(u.Roles),
+		active:    found && u.Status == 0,
+	}, nil
+}
 
-	stats, dbErr := s.repo.PurgeUserContent(userID)
-	if dbErr != nil {
-		return dto.PurgeResult{}, errors.ErrInternal("清除用户内容失败")
+func (s *PurgeService) Preview(ctx context.Context, userID int) (UserContentPreview, error) {
+	t, err := s.lookupTarget(ctx, userID)
+	if err != nil {
+		return UserContentPreview{}, err
 	}
-
-	// Favourites live in the catalog since the folder cutover, so deleting the
-	// galgame_collection alias rows above removes this site's names for them
-	// and nothing else. Without this call a purged account's collections stay
-	// on /v2/folders with no face left that could ever take them down.
-	if s.catalog != nil && operatorToken != "" {
-		receipt, fErr := s.catalog.PurgeUserFolders(ctx, operatorToken, int64(userID))
-		if fErr != nil {
-			slog.Error("purge: catalog folder purge failed — local delete done, folders pending; admin should retry",
-				"operator_id", operatorID, "target_id", userID, "error", fErr)
-			return dto.PurgeResult{}, errors.ErrInternal("已清除本地内容, 但收藏夹清除失败, 请重试")
+	counts, err := s.repo.CountUserContent(userID)
+	if err != nil {
+		return UserContentPreview{}, err
+	}
+	preview := UserContentPreview{Counts: counts, Protected: t.protected, AccountActive: t.active}
+	resp, err := s.community.AuthorStats(ctx, []int64{int64(userID)})
+	if err != nil {
+		slog.Warn("purge preview: community author stats unavailable", "target_id", userID, "error", err)
+		return preview, nil
+	}
+	var posts int64
+	for _, st := range resp.Stats {
+		if st.AuthorID == int64(userID) {
+			posts = st.VisiblePosts
+			break
 		}
-		slog.Info("purge: catalog folders purged", "target_id", userID,
-			"folders", receipt.FoldersDeleted, "items", receipt.ItemsDeleted)
+	}
+	preview.CommunityPosts = &posts
+	return preview, nil
+}
+
+// Purge deletes locally first, then the catalog folders, then the community
+// posts. The remote steps are idempotent and the local one finds nothing the
+// second time, so an operator retries a purge that failed after the local
+// commit. operatorToken is the acting admin's own access token: the catalog
+// judges their standing instead of taking this site's word for it.
+func (s *PurgeService) Purge(ctx context.Context, operatorID, userID int, operatorToken string) error {
+	t, err := s.lookupTarget(ctx, userID)
+	if err != nil {
+		return err
+	}
+	if t.protected {
+		return ErrPurgeTargetProtected
+	}
+	receipt, err := s.repo.PurgeUserContent(userID, operatorID)
+	if err != nil {
+		return err
+	}
+	var archived int64
+	for _, n := range receipt.Archived {
+		archived += n
+	}
+	slog.Info("purge: local content purged and archived",
+		"purge_id", receipt.PurgeID, "operator_id", operatorID, "target_id", userID,
+		"archived_rows", archived, "archived_by_table", receipt.Archived)
+
+	folders, err := s.catalog.PurgeUserFolders(ctx, operatorToken, int64(userID))
+	if err != nil {
+		slog.Error("purge: catalog folder purge failed; local rows are purged, retry the purge",
+			"purge_id", receipt.PurgeID, "operator_id", operatorID, "target_id", userID, "error", err)
+		return remoteError("catalog folders", err, catalogRetryable(err))
 	}
 
-	purged, cErr := s.community.AuthorPurge(ctx, int64(userID))
-	if cErr != nil {
-		slog.Error("purge: community AuthorPurge failed — local delete done, community pending; admin should retry",
-			"operator_id", operatorID, "target_id", userID, "local_total", stats.Total, "error", cErr)
-		return dto.PurgeResult{}, errors.ErrInternal("已清除本地内容, 但社区内容清除失败, 请重试")
+	purged, err := s.community.AuthorPurge(ctx, int64(userID))
+	if err != nil {
+		slog.Error("purge: community AuthorPurge failed; local rows and folders are purged, retry the purge",
+			"purge_id", receipt.PurgeID, "operator_id", operatorID, "target_id", userID, "error", err)
+		return remoteError("community posts", err, communityRetryable(err))
 	}
 
 	slog.Info("purge: user content purged",
-		"operator_id", operatorID, "target_id", userID,
-		"local_total", stats.Total,
+		"purge_id", receipt.PurgeID, "operator_id", operatorID, "target_id", userID,
+		"archived_rows", archived,
+		"catalog_folders_deleted", folders.FoldersDeleted,
+		"catalog_folder_items_deleted", folders.ItemsDeleted,
 		"community_posts_purged", purged.PostsPurged,
 		"community_reactions_deleted", purged.ReactionsDeleted,
 		"community_anchor_subscriptions_deleted", purged.AnchorSubscriptionsDeleted,
 		"community_notifications_deleted", purged.NotificationsDeleted)
+	return nil
+}
 
-	return dto.PurgeResult{
-		UserContentStats:          stats,
-		CommunityPostsPurged:      purged.PostsPurged,
-		CommunityReactionsDeleted: purged.ReactionsDeleted,
-	}, nil
+// An upstream 4xx means this site sent a request it should not have, or the
+// operator lacks standing there: a retry cannot fix it, so it is not a 503.
+func remoteError(stage string, err error, retryable bool) error {
+	if retryable {
+		return &UnavailableError{Stage: stage, Err: err}
+	}
+	return fmt.Errorf("purge %s: %w", stage, err)
+}
+
+func catalogRetryable(err error) bool {
+	var apiErr *catalogclient.UserAPIError
+	if errors.As(err, &apiErr) {
+		return apiErr.Status == http.StatusTooManyRequests
+	}
+	return !errors.Is(err, catalogclient.ErrUnauthorized) &&
+		!errors.Is(err, catalogclient.ErrInsufficientScope) &&
+		!errors.Is(err, catalogclient.ErrNotFound) &&
+		!errors.Is(err, catalogclient.ErrNotConfigured)
+}
+
+func communityRetryable(err error) bool {
+	return !errors.Is(err, communityclient.ErrForbidden) && !errors.Is(err, communityclient.ErrNotConfigured)
 }

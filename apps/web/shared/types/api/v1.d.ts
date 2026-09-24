@@ -332,6 +332,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/user-contents/{user_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get what a purge would delete for a user
+         * @description Counts the user's content on this site and reports whether the user may be purged and whether the account is still usable. Any user id that fits the path answers, with zero counts when the user has nothing here. It needs the user.purge_content permission, which a Bearer request never carries.
+         */
+        get: operations["getUserContent"];
+        put?: never;
+        post?: never;
+        /**
+         * Purge a user's content
+         * @description Deletes everything the user has on this site, with what cascades from it, hands their listed websites to the directory's default owner, then purges their catalog collections and community posts. The account itself is untouched: ban or deregister it at the account service first, or it can keep posting. Every local row the purge deletes or changes is archived for 30 days so a developer can undo it; the catalog and community parts cannot be undone. Purging again is safe and is how a purge that failed after its local part is finished. It needs the user.purge_content permission, which a Bearer request never carries.
+         */
+        delete: operations["purgeUserContent"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/user-permissions/{user_id}": {
         parameters: {
             query?: never;
@@ -11661,6 +11685,114 @@ export interface components {
             /** @description Id of the topic the comment belongs to. */
             topic_id: string;
         };
+        UserContent: {
+            /**
+             * Format: int64
+             * @description Private messages the user sent.
+             */
+            chat_message_count: number;
+            /**
+             * Format: int64
+             * @description Collections the user owns.
+             */
+            collection_count: number;
+            /**
+             * Format: int64
+             * @description The user's visible posts on the community comment walls. null when the community service is unavailable.
+             */
+            community_post_count: number | null;
+            /**
+             * Format: int64
+             * @description Topic drafts the user saved.
+             */
+            draft_count: number;
+            /** @description The user's id. JSON string of a decimal integer. */
+            id: string;
+            /**
+             * Format: int64
+             * @description The user's likes, favorites, votes, reactions, answers and other interaction rows.
+             */
+            interaction_count: number;
+            /** @description Whether the account service reports the account as usable: it exists and is neither banned nor deregistered. An active account can keep posting after a purge, so it should be banned or deregistered first. */
+            is_account_active: boolean;
+            /** @description Whether the user holds the moderation capability, by the account service's current record. purgeUserContent refuses such a user with USER_PROTECTED. */
+            is_protected: boolean;
+            /**
+             * Format: int64
+             * @description Lotteries the user created.
+             */
+            lottery_count: number;
+            /**
+             * Format: int64
+             * @description Notifications the user sent or received.
+             */
+            message_count: number;
+            /**
+             * @description Type discriminant. Always user_content.
+             * @enum {string}
+             */
+            object: "user_content";
+            /**
+             * Format: int64
+             * @description Polls the user created.
+             */
+            poll_count: number;
+            /**
+             * Format: int64
+             * @description Quizzes the user wrote.
+             */
+            quiz_count: number;
+            /**
+             * Format: int64
+             * @description Galgame ratings the user wrote.
+             */
+            rating_count: number;
+            /**
+             * Format: int64
+             * @description Replies the user wrote.
+             */
+            reply_count: number;
+            /**
+             * Format: int64
+             * @description Galgame resources the user published.
+             */
+            resource_count: number;
+            /**
+             * Format: int64
+             * @description Todo board entries the user filed.
+             */
+            todo_count: number;
+            /**
+             * Format: int64
+             * @description Toolsets the user created.
+             */
+            toolset_count: number;
+            /**
+             * Format: int64
+             * @description Toolset resources the user published.
+             */
+            toolset_resource_count: number;
+            /**
+             * Format: int64
+             * @description Topic comments the user wrote.
+             */
+            topic_comment_count: number;
+            /**
+             * Format: int64
+             * @description Topics the user wrote.
+             */
+            topic_count: number;
+            /**
+             * Format: int64
+             * @description The sum of the local counts above, community_post_count excluded. Rows of other users that go with the user's topics are not counted.
+             */
+            total_count: number;
+            /**
+             * Format: int64
+             * @description Websites the user listed. A purge hands them to the directory's default owner instead of deleting them.
+             */
+            website_count: number;
+        };
         UserCounts: {
             /**
              * Format: int64
@@ -14921,6 +15053,167 @@ export interface operations {
                 };
             };
             /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getUserContent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description User id. */
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserContent"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description PERMISSION_REQUIRED when the caller lacks user.purge_content. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the id is larger than any user id can be. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the account service cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    purgeUserContent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description User id. */
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description PERMISSION_REQUIRED when the caller lacks user.purge_content. USER_PROTECTED when the user holds the moderation capability. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the id is larger than any user id can be. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description LOTTERY_DRAWN when one of the user's lotteries is being drawn; nothing was deleted, retry once the draw ends. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the account service, the catalog or the community service cannot be reached. If it happens after the local part, the local rows are already purged and retrying finishes the rest. */
             503: {
                 headers: {
                     [name: string]: unknown;

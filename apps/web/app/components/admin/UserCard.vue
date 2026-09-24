@@ -1,80 +1,80 @@
 <script setup lang="ts">
-import type { UserSearchHit } from '#shared/utils/api/schemas'
+import type { UserContent, UserSearchHit } from '#shared/utils/api/schemas'
+import { settle } from '#shared/utils/api/problem'
 import { toKunUser } from '~/utils/userRef'
 
 const props = defineProps<{
   user: UserSearchHit
 }>()
 
+const api = useApiClient()
 const kunUser = computed(() => toKunUser(props.user))
 
-const STAT_LABELS: { key: keyof AdminUserContentStats; label: string }[] = [
-  { key: 'topics', label: '话题' },
-  { key: 'replies', label: '回复' },
-  { key: 'topic_comments', label: '话题评论' },
-  { key: 'ratings', label: '评分' },
-  { key: 'resources', label: '资源' },
-  { key: 'websites', label: '收录网站 (转交保留)' },
-  { key: 'toolsets', label: '工具' },
-  { key: 'toolset_resources', label: '工具资源' },
-  { key: 'community_posts', label: '社区评论' },
-  { key: 'polls', label: '投票' },
-  { key: 'lotteries', label: '抽奖' },
-  { key: 'quizzes', label: '题目' },
-  { key: 'collections', label: '收藏夹' },
-  { key: 'drafts', label: '草稿' },
-  { key: 'todos', label: '待办' },
-  { key: 'chat_messages', label: '私聊消息' },
-  { key: 'messages', label: '通知消息' },
-  { key: 'interactions', label: '互动' }
-]
+type CountKey = {
+  [K in keyof UserContent]: K extends `${string}_count` ? K : never
+}[keyof UserContent]
 
-const stats = ref<AdminUserContentStats | null>(null)
+const STAT_LABELS: { key: Exclude<CountKey, 'total_count'>; label: string }[] =
+  [
+    { key: 'topic_count', label: '话题' },
+    { key: 'reply_count', label: '回复' },
+    { key: 'topic_comment_count', label: '话题评论' },
+    { key: 'rating_count', label: '评分' },
+    { key: 'resource_count', label: '资源' },
+    { key: 'website_count', label: '收录网站 (转交保留)' },
+    { key: 'toolset_count', label: '工具' },
+    { key: 'toolset_resource_count', label: '工具资源' },
+    { key: 'community_post_count', label: '社区评论' },
+    { key: 'poll_count', label: '投票' },
+    { key: 'lottery_count', label: '抽奖' },
+    { key: 'quiz_count', label: '题目' },
+    { key: 'collection_count', label: '收藏夹' },
+    { key: 'draft_count', label: '草稿' },
+    { key: 'todo_count', label: '待办' },
+    { key: 'chat_message_count', label: '私聊消息' },
+    { key: 'message_count', label: '通知消息' },
+    { key: 'interaction_count', label: '互动' }
+  ]
+
+const content = ref<UserContent | null>(null)
 const isLoading = ref(false)
-const purged = ref(false)
+const purgedTotal = ref<number | null>(null)
 
 const isPermOpen = ref(false)
+const isPurgeOpen = ref(false)
 
-const loadStats = async () => {
+const countText = (value: number | null) => (value === null ? '?' : value)
+
+const breakdown = computed(() => {
+  const c = content.value
+  if (!c) {
+    return ''
+  }
+  return STAT_LABELS.filter((item) => c[item.key])
+    .map((item) => `${item.label} ${c[item.key]}`)
+    .join(' / ')
+})
+
+const loadContent = async () => {
   isLoading.value = true
-  stats.value =
-    (await kunFetch<AdminUserContentStats>(
-      `/admin/user/${props.user.id}/content-stats`
-    )) ?? null
+  const result = await settle(
+    api.GET('/admin/user-contents/{user_id}', {
+      params: { path: { user_id: props.user.id } }
+    })
+  )
   isLoading.value = false
+  if (!result.ok) {
+    reportProblem(result.problem)
+    return
+  }
+  content.value = result.data
 }
 
-const handlePurge = async () => {
-  if (!stats.value || !stats.value.total) {
-    return
-  }
-  const s = stats.value
-  const breakdown = STAT_LABELS.filter((item) => s[item.key])
-    .map((item) => `${item.label} ${s[item.key]}`)
-    .join(' / ')
-  const confirmed = await useComponentMessageStore().alert(
-    `确认清除用户 ${kunUser.value.name} 的全部内容吗`,
-    `🚨 将永久删除该用户在本站的 ${s.total} 项内容: ${breakdown} (含其下全部嵌套回复、私聊会话与关联数据)。此操作不可撤销, 仅用于清理广告与 spam 账号, 请谨慎使用!`
-  )
-  if (!confirmed) {
-    return
-  }
-
-  isLoading.value = true
-  const deleted = await kunFetch<AdminUserContentStats>(
-    `/admin/user/${props.user.id}/content`,
-    { method: 'DELETE' }
-  )
-  isLoading.value = false
-
-  if (deleted) {
-    stats.value = deleted
-    purged.value = true
-    useMessage(
-      `已清除用户 ${kunUser.value.name} 的 ${deleted.total} 项内容`,
-      'success'
-    )
-  }
+const handlePurged = async () => {
+  const total = content.value?.total_count ?? 0
+  purgedTotal.value = total
+  useMessage(`已清除用户 ${kunUser.value.name} 的 ${total} 项内容`, 'success')
+  await loadContent()
 }
 </script>
 
@@ -91,10 +91,10 @@ const handlePurge = async () => {
           权限调整
         </KunButton>
         <KunButton
-          v-if="!stats"
+          v-if="!content"
           size="sm"
           variant="flat"
-          @click="loadStats"
+          @click="loadContent"
           :loading="isLoading"
           :disabled="isLoading"
         >
@@ -109,37 +109,52 @@ const handlePurge = async () => {
       {{ user.bio }}
     </div>
 
-    <template v-if="stats">
+    <template v-if="content">
       <div class="flex flex-wrap gap-2 text-sm">
         <KunChip
           v-for="item in STAT_LABELS"
           :key="item.key"
           size="sm"
           variant="flat"
-          :color="stats[item.key] ? 'primary' : 'default'"
+          :color="content[item.key] ? 'primary' : 'default'"
         >
-          {{ item.label }} {{ stats[item.key] }}
+          {{ item.label }} {{ countText(content[item.key]) }}
         </KunChip>
       </div>
 
-      <div class="flex items-center justify-between">
+      <div class="flex items-center justify-between gap-3">
         <span class="text-default-700 text-sm">
           {{
-            purged
-              ? `已清除 ${stats.total} 项内容（社区评论 ${stats.community_posts_purged ?? 0} / 互动 ${stats.community_reactions_deleted ?? 0}）`
-              : `共 ${stats.total} 项内容`
+            purgedTotal !== null
+              ? `已清除 ${purgedTotal} 项内容`
+              : content.is_protected
+                ? '该用户是版主或管理员, 不能清除其内容'
+                : `共 ${content.total_count} 项内容`
           }}
         </span>
 
         <KunButton
           color="danger"
-          @click="handlePurge"
+          @click="isPurgeOpen = true"
           :loading="isLoading"
-          :disabled="isLoading || purged || !stats.total"
+          :disabled="
+            isLoading ||
+            content.is_protected ||
+            (!content.total_count && !content.community_post_count)
+          "
         >
           一键清除全部内容
         </KunButton>
       </div>
+
+      <AdminUserPurgeDialog
+        v-model="isPurgeOpen"
+        :user-id="user.id"
+        :name="kunUser.name"
+        :content="content"
+        :breakdown="breakdown"
+        @purged="handlePurged"
+      />
     </template>
   </div>
 </template>

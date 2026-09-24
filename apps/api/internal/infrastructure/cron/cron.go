@@ -34,6 +34,7 @@ type Jobs struct {
 	GalgameMergeSync           func()
 	DlsiteCampaignRefresh      func()
 	TopicMiniAppDeadlines      func()
+	UserPurgeArchiveExpiry     func()
 }
 
 func Start(
@@ -109,6 +110,10 @@ func Start(
 	// waiting for it, and the sweep is one indexed query against two tables.
 	if jobs.TopicMiniAppDeadlines != nil {
 		schedule(c, "* * * * *", "话题小程序到点处理", jobs.TopicMiniAppDeadlines)
+	}
+
+	if jobs.UserPurgeArchiveExpiry != nil {
+		schedule(c, "30 3 * * *", "清空存档过期清理", jobs.UserPurgeArchiveExpiry)
 	}
 
 	if jobs.DlsiteCampaignRefresh != nil {
