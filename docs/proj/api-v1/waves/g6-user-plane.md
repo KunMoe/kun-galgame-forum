@@ -489,6 +489,21 @@ U3：主人不可渲染 404；非主人只有公开夹。
 | 404 | 主人不可渲染 / 未知用户 |
 | 503 | userclient / catalog |
 
+### 4.17 `listMyCollectionsForWork` · `GET /me/works/{work_id}/collections` · required · 200 `PageList<CollectionChoice>`（K-G53，2026-09-24 追加）
+
+选择器的面。本人全部夹（含私密），每条 `viewer.has_work` 是该夹是否收了这部作品。Query：`page`、`limit`（默认 24，最大 100）。排序、分页、GET 零写入与 §4.15 相同。
+
+`CollectionChoice`（`object: "collection"`）：`id`、`title`、`visibility`、`is_default`、`item_count`、`updated_at`、`viewer: CollectionViewer`，与 `CollectionSummary` 同名同型（G8）；**没有** `preview_covers`、`owner`、`description`、`created_at`。
+
+catalog 调用：`/v2/me/folders` + `/v2/me/folders/holdings?work_ids=<work_id>`，与夹数无关，恒 2 次用户 token 调用。不查主人（夹都是调用者的）。
+
+| 状态 | code |
+|---|---|
+| 401 | 无凭据 / 坏 Bearer |
+| 403 | `SCOPE_REQUIRED`；`ACCOUNT_BANNED` |
+| 404 | 作品 hidden / 未知（`catalogWork`，与 §3.7 成员槽同一闸） |
+| 503 | catalog；上游 429 转发 `Retry-After`（K-G49） |
+
 ## 5. 预分配
 
 ### 5.1 迁移
@@ -524,6 +539,8 @@ U3：主人不可渲染 404；非主人只有公开夹。
 | **K-G50** | 副作用见 §3.8。保留本地收藏计数、萌萌点、`favorite` 消息；不写 catalog favorites 指标 |
 | **K-G51** | 收藏夹 staff 改删仅 cookie + `user.Can`；Bearer 永不持有（K2） |
 | **K-G52** | 名称 / 描述 / 可见性 / 分钟 / 状态词表对齐 infra（§3.13），不按旧 DTO 60 字收窄 |
+| **K-G53** | （2026-09-24 追加）选择器改读 `GET /me/works/{work_id}/collections`（§4.17）。`/me/collections?work_id=` 给每个夹水合预览封面，而选择器从不画它：一次打开 2+N 次用户 token 调用；2026-09-24 07:05 一位 12 个夹的用户每 8 秒整理一部作品，打满了 catalog 每账号每分钟 100 次的桶。K10 不许投影参数，所以是一个静态形状不含预览的新操作。`/me/collections?work_id=` 原样保留 |
+| **K-G54** | （2026-09-24 追加）`/me/playtimes` 的两路全扫（时长 + 状态，各最多 10 页）按用户在 Redis 缓存 60 秒（`kungal:me-playtimes:v1:<uid>`），论坛自己的时长 / 状态写入即删。翻页不再重扫。代价：别的 app 报的时长最多晚 1 分钟出现 |
 
 权限不新增。`collection.edit_any` / `collection.delete_any` 沿用，经 `viewer.can_*` 下发。
 

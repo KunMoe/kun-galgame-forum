@@ -1,5 +1,23 @@
 # API v1 changelog
 
+## 2026-09-24 (user-plane fan-out, part 1)
+
+Not breaking. Catalog's per-account limit (100 user-token calls a minute, shared by every app) was hit three times on 2026-09-24; this is the first half of cutting the forum's share.
+
+Offered:
+
+- `GET /api/v1/me/works/{work_id}/collections` → `PageList<CollectionChoice>`: every collection the caller owns with `viewer.has_work` for that work, and no `preview_covers`, `owner` or `description`. The collection picker uses it; it costs two catalog calls whatever the number of collections. `GET /api/v1/me/collections?work_id=` is unchanged.
+
+Fixed:
+
+- An NSFW work could render on its detail page for a reader whose stance is hide. The gate was decided once, before the data arrived, whenever the page's data key missed the server-rendered payload; it now follows the data and the stance. The topic page's gate follows them too, so a stance narrowed after load closes it.
+- A signed-in reader's detail page loaded twice when the saved stance disagreed with the account's (about one signed-in view in five), and could show the title 「请求 Galgame 错误」.
+- An upstream 429 logged `ERROR "problem cause"`; it is a quota state and logs one `WARN` with the request id.
+
+Changed:
+
+- `GET /api/v1/me/playtimes` reuses one read of the caller's catalog playtimes for a minute, so paging costs no catalog calls; the forum's own playtime and play-state writes discard it. Playtime reported by another app shows up within a minute.
+
 ## 2026-09-24 (G7a work submissions and the claim review queue)
 
 Breaking for `POST /api/galgame/submit`, `POST /api/galgame/:id/resubmit`, `DELETE /api/galgame/:id`, `DELETE /api/galgame/:id/draft`, `GET /api/galgame/mine`, `GET /api/galgame/audited`, `GET /api/galgame/search/wizard`, `GET /api/admin/galgame/submissions` and `POST /api/admin/galgame/:id/review`; all nine are gone. No App build calls them; `docs/proj/app-direct-api.md` names the replacements. The kungal error code `236` retired with them.
