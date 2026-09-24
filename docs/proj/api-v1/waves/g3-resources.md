@@ -538,7 +538,7 @@ CREATE TRIGGER trg_feed_galgame_resource
 | # | 事实 | 裁决 |
 |---|---|---|
 | O1 | G17 要求 `POST /works/{work_id}/resources` 与禁发槽有 `GET /works/{work_id}`，任务书寻址表漏了；G4 才拥有作品详情 `Work` | 本轨加 `getWork`，200 `WorkRef`。G4 把同一路径的 200 扩成 `Work`（重叠字段同名同型）。网页作品页本轨不切 |
-| O2 | 464 个资源落在 `resource_publish_banned` 作品上，旧墙仍展示 | **不改**。留给编排者：要不要在浏览里藏它们 |
+| O2 | 464 个资源落在 `resource_publish_banned` 作品上，旧墙仍展示 | **不改**。2026-09-24 用户裁决：保持可见，浏览里也不藏。禁发只挡新资源 |
 | O3 | catalog hidden 且本地仍 published 的资源：COUNT 按 SQL，页上丢掉 brief | 接受这点偏差。RPC 失败仍是 503。要 COUNT 也排除 hidden 得先有本地 hidden 缓存 |
 | O4 | 单作品最多 123 个资源，页码 `limit` 最大 100 | 作品页传 `limit=100`；那一部会有第二页。把本集合上限抬到 200 是加法 |
 | O5 | 资源页 Hero 用 `effective_banner_*`；`work` 必须是 `WorkRef`（G8），只有 `cover` | Hero 改画 `cover`。要 banner 等 G4 的 `Work` / `WorkSummary` |
