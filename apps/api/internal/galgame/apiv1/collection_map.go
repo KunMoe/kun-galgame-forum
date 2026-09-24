@@ -12,6 +12,7 @@ import (
 	v1 "kun-galgame-api/internal/apiv1"
 	"kun-galgame-api/internal/apiv1/repr"
 	"kun-galgame-api/internal/galgame/client"
+	"kun-galgame-api/internal/galgame/workrepr"
 	"kun-galgame-api/internal/middleware"
 	"kun-galgame-api/internal/moemoepoint"
 	"kun-galgame-api/pkg/catalogclient"
@@ -429,4 +430,62 @@ func truncateFolderText(folder catalogclient.Folder, field, v string, max int) s
 	slog.Warn("catalog folder text longer than the v1 schema; truncated",
 		"folder_id", folder.ID, "field", field, "runes", utf8.RuneCountInString(v), "max", max)
 	return string([]rune(v)[:max])
+}
+
+const folderPopulationTTL = 10 * time.Minute
+
+func folderPopulationKey(folder *catalogclient.Folder, includeNSFW bool) string {
+	return "kungal:folder-population:v1:" + strconv.FormatInt(folder.ID, 10) + ":" + folder.UpdatedAt + ":" + workrepr.ContentLimit(includeNSFW)
+}
+
+// Catalog's folder item list carries no content gate, so counting what a reader
+// may page through means reading every work in the folder.
+func (s *Service) folderPopulation(ctx context.Context, folder *catalogclient.Folder, items []catalogclient.FolderItem, includeNSFW bool) ([]int, *problem.Problem) {
+	key := folderPopulationKey(folder, includeNSFW)
+	if s.rdb != nil {
+		if raw, err := s.rdb.Get(ctx, key).Bytes(); err == nil {
+			var cached []int
+			if json.Unmarshal(raw, &cached) == nil {
+				return cached, nil
+			}
+		}
+	}
+	ids := make([]int, 0, len(items))
+	for _, it := range items {
+		ids = append(ids, int(it.WorkID))
+	}
+	// Counting from content_limit=all plus the forum's own NSFW guess, then
+	// hydrating the page under content_limit=sfw, counted works catalog hides
+	// from SFW readers: on 2026-09-24 folder 12015's total included three works
+	// its pages never showed.
+	rows, appErr := s.works.CatalogRowsByWorkIDs(ctx, ids, workrepr.RowInclude, workrepr.ContentLimit(includeNSFW))
+	if appErr != nil {
+		return nil, catalogUnavailable(appErr)
+	}
+	population := make([]int, 0, len(ids))
+	for _, id := range ids {
+		row, ok := rows[id]
+		if !ok {
+			if includeNSFW {
+				slog.Warn("collection: catalog did not render work, dropped", "work_id", id, "folder_id", folder.ID)
+			}
+			continue
+		}
+		if !client.CatalogItemRenderable(&row) {
+			slog.Warn("collection: catalog row not renderable, dropped", "work_id", id, "folder_id", folder.ID)
+			continue
+		}
+		if !includeNSFW && workNSFW(&row) {
+			continue
+		}
+		population = append(population, id)
+	}
+	if s.rdb != nil {
+		if raw, err := json.Marshal(population); err == nil {
+			if err := s.rdb.Set(ctx, key, raw, folderPopulationTTL).Err(); err != nil {
+				slog.Warn("collection: folder population cache write failed", "folder_id", folder.ID, "err", err)
+			}
+		}
+	}
+	return population, nil
 }

@@ -31,10 +31,7 @@ const loaded = ref(false)
 const saving = ref(false)
 const createOpen = ref(false)
 
-const applyList = (
-  items: CollectionSummary[],
-  preserveSelection: boolean
-) => {
+const applyList = (items: CollectionSummary[], preserveSelection: boolean) => {
   collections.value = items
   const nextHeld = new Set(
     items.filter((c) => c.viewer?.has_work).map((c) => c.id)

@@ -75,6 +75,17 @@ if (detail.value) {
   useKunDisableSeo('未找到该收藏夹')
 }
 
+const hiddenCount = computed(() =>
+  detail.value && works.value
+    ? Math.max(detail.value.item_count - works.value.total, 0)
+    : 0
+)
+const hiddenNote = computed(() =>
+  allowsNsfw.value
+    ? `另有 ${hiddenCount.value} 部作品已下架，未显示`
+    : `另有 ${hiddenCount.value} 部作品未显示：受你的内容显示设置影响，或已下架`
+)
+
 const canEdit = computed(() => !!detail.value?.viewer?.can_edit)
 const canDelete = computed(() => !!detail.value?.viewer?.can_delete)
 
@@ -171,6 +182,13 @@ const remove = async () => {
         </template>
       </KunHeader>
 
+      <p
+        v-if="hiddenCount > 0 && works?.items.length"
+        class="text-default-500 text-sm"
+      >
+        {{ hiddenNote }}
+      </p>
+
       <div v-if="works && works.items.length" class="flex flex-col space-y-3">
         <GalgameCard :is-transparent="false" :galgames="galgames" />
         <KunPagination
@@ -182,7 +200,9 @@ const remove = async () => {
       </div>
       <KunNull
         v-else-if="works"
-        description="这个收藏夹还没有收藏任何 Galgame"
+        :description="
+          hiddenCount > 0 ? hiddenNote : '这个收藏夹还没有收藏任何 Galgame'
+        "
       />
 
       <GalgameCollectionEditModal

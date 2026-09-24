@@ -115,3 +115,27 @@ func TestV1ListCollectionWorksCountsWhatItShows(t *testing.T) {
 		}
 	}
 }
+
+func TestV1ListCollectionWorksCachesPopulation(t *testing.T) {
+	f := newG6Fix(t)
+	reads := func() int {
+		f.cat.mu.Lock()
+		defer f.cat.mu.Unlock()
+		return len(f.cat.gotLimits)
+	}
+	view := func() {
+		resp, body := f.call(t, http.MethodGet, g6col(g6FolderAliceDef)+"/works",
+			"/collections/{collection_id}/works", "", "", nil)
+		if resp.StatusCode != http.StatusOK {
+			t.Fatalf("works %d %+v", resp.StatusCode, body)
+		}
+	}
+	before := reads()
+	view()
+	cold := reads() - before
+	view()
+	warm := reads() - before - cold
+	if cold != 2 || warm != 1 {
+		t.Errorf("catalog row reads: cold %d (want population + page = 2), warm %d (want the page only = 1)", cold, warm)
+	}
+}

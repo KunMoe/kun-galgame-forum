@@ -3,12 +3,10 @@ package apiv1
 import (
 	"context"
 	"errors"
-	"log/slog"
 	"sort"
 
 	"kun-galgame-api/internal/apiv1/collect"
 	"kun-galgame-api/internal/apiv1/repr"
-	"kun-galgame-api/internal/galgame/client"
 	"kun-galgame-api/internal/galgame/workrepr"
 	"kun-galgame-api/pkg/catalogclient"
 	"kun-galgame-api/pkg/problem"
@@ -57,44 +55,18 @@ func (s *Service) listCollectionWorks(ctx context.Context, in *listCollectionWor
 		}
 		return items[i].WorkID > items[j].WorkID
 	})
-	ids := make([]int, 0, len(items))
-	for _, it := range items {
-		ids = append(ids, int(it.WorkID))
-	}
-	// Counting from content_limit=all plus the forum's own NSFW guess, then
-	// hydrating the page under content_limit=sfw, counted works catalog hides
-	// from SFW readers: on 2026-09-24 folder 12015's total included three works
-	// its pages never showed.
-	rows, appErr := s.works.CatalogRowsByWorkIDs(ctx, ids, workrepr.RowInclude, workrepr.ContentLimit(in.IncludeNSFW))
-	if appErr != nil {
-		return nil, catalogUnavailable(appErr)
-	}
-	population := make([]client.CatalogWorkListItem, 0, len(ids))
-	for _, id := range ids {
-		row, ok := rows[id]
-		if !ok {
-			if in.IncludeNSFW {
-				slog.Warn("collection: catalog did not render work, dropped", "work_id", id)
-			}
-			continue
-		}
-		if !client.CatalogItemRenderable(&row) {
-			slog.Warn("collection: catalog row not renderable, dropped", "work_id", id)
-			continue
-		}
-		if !in.IncludeNSFW && workNSFW(&row) {
-			continue
-		}
-		population = append(population, row)
+	population, p := s.folderPopulation(ctx, folder, items, in.IncludeNSFW)
+	if p != nil {
+		return nil, p
 	}
 	n, rel := collect.ClampTotal(len(population))
 	start := pg.Offset()
-	pageRows := []client.CatalogWorkListItem{}
+	pageIDs := []int{}
 	if start < len(population) {
 		end := min(start+pg.Limit, len(population))
-		pageRows = population[start:end]
+		pageIDs = population[start:end]
 	}
-	summaries, p := s.hydrator.FromRows(ctx, pageRows)
+	summaries, p := s.hydrator.ByIDs(ctx, pageIDs, in.IncludeNSFW)
 	if p != nil {
 		return nil, p
 	}

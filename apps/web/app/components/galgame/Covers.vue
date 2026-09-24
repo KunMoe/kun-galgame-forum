@@ -133,11 +133,7 @@ const sourceLabel = (cover: WorkCover) => galgameImageSourceLabel(cover.site)
               <span class="text-default-400">({{ g.covers.length }})</span>
             </h3>
             <div class="grid grid-cols-1 items-start gap-3 sm:grid-cols-2">
-              <div
-                v-for="c in g.covers"
-                :key="c.id"
-                class="space-y-1.5"
-              >
+              <div v-for="c in g.covers" :key="c.id" class="space-y-1.5">
                 <KunLightboxGalleryItem
                   :src="coverSrc(c)"
                   :alt="g.label"
@@ -149,7 +145,10 @@ const sourceLabel = (cover: WorkCover) => galgameImageSourceLabel(cover.site)
                     :alt="g.label"
                     loading="lazy"
                     :aspect-ratio="
-                      imageAspectRatio(c.image?.width ?? undefined, c.image?.height ?? undefined)
+                      imageAspectRatio(
+                        c.image?.width ?? undefined,
+                        c.image?.height ?? undefined
+                      )
                     "
                     :thumbhash="c.image?.thumbhash ?? undefined"
                     class-name="bg-default-100"

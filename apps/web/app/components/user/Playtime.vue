@@ -65,6 +65,9 @@ const statusColor = (value: string) => {
     <p v-if="data?.is_truncated" class="text-default-500 text-sm">
       部分记录未能读取，统计可能偏少
     </p>
+    <p v-if="data && !allowsNsfw" class="text-default-500 text-sm">
+      未开启 NSFW 显示，成人作品的记录不在这里，也不计入统计
+    </p>
 
     <div v-if="data && data.items.length" class="flex flex-col space-y-2">
       <KunCard
@@ -91,10 +94,7 @@ const statusColor = (value: string) => {
         </div>
 
         <div class="flex shrink-0 flex-col items-end gap-1">
-          <span
-            v-if="item.minutes > 0"
-            class="font-medium tabular-nums"
-          >
+          <span v-if="item.minutes > 0" class="font-medium tabular-nums">
             {{ formatDurationMinutes(item.minutes) }}
           </span>
           <div v-if="item.play_state" class="flex items-center gap-1">

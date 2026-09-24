@@ -355,6 +355,8 @@ catalog 用户面一次调用的失败，按下表进 v1。**不得**落到无 c
 - **上游 400 → `500 INTERNAL_ERROR`**（cause 进 ERROR 日志）。v2 对越界时长回的是 422（`me_playtime.go:184`），所以 400 只可能是论坛自己发错了请求：不是调用者的错，重试也没用。§3.14 的「上游 400 游玩时长越界」一行作废。
 - **上游 403 `USER_IDENTITY_REQUIRED` → `500 INTERNAL_ERROR`**，不再按「别人的」折成 404。catalog 用它说「这把凭据不是用户 token」（`apiv2/problem/registry.go:144`），只可能是论坛自己发错了凭据。浏览器验收（2026-09-24）里 dev 的 `/auth/login` token 没有 client id，`/me/playtimes` 因此读成了「没有这个东西」。catalogclient 的 403 分支以前丢掉 `ProblemCode`，一并补上（用户车道与应用车道）。
 - **选择器读失败时显示「收藏夹读取失败」**，不再显示「还没有收藏夹」（旧面同病）。保存照旧禁用。
+- **G6.1（上线后，2026-09-24）夹内作品的计数与分页用同一批行。** 上线后日志里 `workrepr: catalog did not render work, dropped` 两分钟 52 条：总数按 `content_limit=all` + 论坛自己的 NSFW 判断数，页面按 `content_limit=sfw` 水合，catalog 对 SFW 读者隐藏、论坛行却读成 SFW 的作品被数进 `total` 又被页面丢掉（夹 12015 每次少三部，没有泄漏）。现在按读者的内容档读一次、在同一批行上数和切页。catalog 的条目列表不带内容闸（`listPublicFolderItems` 说明），所以精确计数要读整夹：生产最大夹 4535 有 3,826 部 = 39 批 × 100。算好的人口（有序 id）按「夹 id + `updated_at` + 内容档」缓存 10 分钟，热读只剩一批页内水合。
+- **旧面「先分页再过闸」的裁决被 v1 取代，但主人仍要知道有东西被藏了。** 旧面有意让总数包含被过滤的条目；v1 的总数与条目同谓词（§3.2）。网页用 `Collection.item_count`（catalog 的原始条数）减 `total` 得出未显示条数并写明：SFW 读者「另有 N 部作品未显示：受你的内容显示设置影响，或已下架」，NSFW 读者「另有 N 部作品已下架，未显示」；全被藏时空态也这么说，不再说「还没有收藏」。`/me/playtimes` 没有原始条数，SFW 读者看到一行静态说明。
 - **认不出的上游 422** → `422 VALIDATION_FAILED` `NOT_ALLOWED_VALUE`（pointer 为空），打 WARN 带上游 code 与 message。认得的几条按 infra `me_folder.go:313-336` 的原文匹配。
 - **夹名 / 说明比 schema 长**（100 / 500 字符）→ 截断并打 WARN。infra 的上限相同，这条分支正常不会走到。
 - **删夹时读不到成员资格就拒（503），什么都不删。** 旧面读夹内作品失败时照删不误，只是跳过本地 `favorite_count` 的扣减，计数从此永久偏高。上游的非 404 错误也不再落进 staff 分支：以前一次瞬时 503 会让普通用户看到 404。变异 #22 钉住。
