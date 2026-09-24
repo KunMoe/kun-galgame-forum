@@ -472,6 +472,24 @@ catalog 用户面一次调用的失败，按下表进 v1。**不得**落到无 c
   - #25：缺席 `If-Match` 时没有回落 `*`（上游收到空头）→ 上游收到 `*`；
   - #26：单条 GET 不回 `ETag` → 响应头存在，且等于上游值。
 
+### 3.16 实现记录（G7b 编辑引擎半，2026-09-24；编排者逐条批准，覆盖前文同名条目）
+
+逐条对 nextmoe-infra `5dc86518` 核过（路径相对 `apps/api/internal/platform/`）。
+
+- **`EditProposal.decision_note` 删掉。** infra 任何面都不发它：`apiv2/repr/me.go:59-78` 的 `ProposalRecord` 没有这一列，`apiv2/handler/me_proposals.go` 的 `proposalFrom` 不填；只有决定 POST 的 `ProposalDecisionRecord.note` 回显一次（`repr/me.go:99-107`）。留着它每次 GET 都是 `null`。拒绝理由照旧经 `NotifyDeclined` 送到提案人（内容 `作品名：理由`），测试钉住。
+- **`viewer.can_revert` 与 `EditForm.viewer` 删掉。** `GET /v2/catalog/schemas/{object}` 不鉴权、不看调用者（`apiv2/handler/catalog_schema_routes.go:22-30`，`getCatalogSchema` 不收 actor），schema 不随 token 变。回滚按钮给所有已登录者；infra 拒绝 → `403 PERMISSION_REQUIRED`。匿名本就合法可「试」的动作不做成 viewer 旗（05 §9）。修订列表信封不带 `viewer`。`EditField` 只发 infra `SchemaField` 有的属性（`repr/schema.go`），没有 `is_locked` / `can_propose` / `can_review`。
+- **编辑队列分两面。** `/v2/moderation/proposals` 只出 `open`（`me_proposals.go:397` 强制 `f.Status = editing.StatusOpen`；旧面的状态标签页因此永远显示 open）。`state=open`（缺席）走 moderation + 用户 token；`merged` / `declined` / `withdrawn` 走公开面 `GET /v2/catalog/proposals?object=work&site=kungal&state=…`（应用 key），同一道本地键门在前。两面的条目都不带 patch。游标用 `collect.EncodeCursor` 绑定 (面, state)，跨过滤条件复用 → `400 INVALID_CURSOR`。
+- **建提案 / 回滚回的是提案，不是修订。** `createMyProposal` 与 `revertModeration` 都回 `ProposalRecord`（`me_write_routes.go:398-409,563-574`）。自动合并（`state=merged`）时，BFF 读 `GET /v2/catalog/revisions?object=work&entity_id=`（默认 `recorded_desc` 新的在前，`catalog_edit_routes.go:32`；`limit=100`，生产每作至多 15 条），按 `proposal_id` 配出修订。读失败或配不上：**上游写已成功，绝不回 5xx**（客户端会重试、再建一个提案），201 照回、`revision: null`，WARN `galgame edit: merged revision not found`。
+- **修正回的是整条提案。** `amendMyProposal` 回提案 + 修正链（`proposalAfterWrite`，`me_proposals.go:360-372`）。v1 201 是链里 `seq` 最大的那条 `EditAmendment`；`ETag` 取同一响应。
+- **`can_decide`（仅 UI 提示，infra 是权威）** = cookie ∧ `state=open` ∧（`user.Can(galgame.edit_proposal.review)` ∨ 本地 `creator_user_id` = 调用者）。infra 的主人是 `catalog_work.owner_user_id`（`catalog/editspec/work.go:141-151`，`editing/engine.go:73-78`），v2 没有任何面暴露它（`repr/resource.go:9-15` 的 `Claim` 只有 site/state/content_limit），所以用本地创建者代位；不一致只会落到 infra 403 → `PERMISSION_REQUIRED`。Bearer 恒 false。
+- **`can_amend`** = `state=open` ∧（`is_proposer` ∨（cookie ∧（键 ∨ 本地主人）））。infra `fenceProposal(…, proposerOrReviewer=true)`（`me_proposals.go:117-128`）。
+- **工作台读法。** 先 `GET /v2/me/proposals/{id}?include=patch,amendments`（infra 对非提案人 404，`me_proposals.go:231-247`）；404 且 cookie ∧（键 ∨ 本地主人）再 `GET /v2/moderation/proposals/{id}?include=patch,amendments`（要该作品的审查资格，`me_proposals.go:249-270`）。上游 403 / `TENANT_MISMATCH` / 404 一律 404。Bearer 不走第二步（K2）。两条路都再钉一次租户（`site=kungal` ∧ `entity_type=catalog.work`）。
+- **合并通知的「（审核时有修正）」** 以重读提案的修正链非空为准。旧面读 `rev.AmenderUID`，但 v2 决定回的是 `ProposalDecisionRecord`，这个后缀自割接以来一次都没出现过。
+- **变异题追加**（接 §3.14）：
+  - #27：`PATCH state=declined` 的 `NotifyDeclined` 内容不带理由 → 提案人的通知里必须有 note 原文；
+  - #28：编辑队列 `state=merged`（或 declined / withdrawn）仍打 `/v2/moderation/proposals` → moderation 面 0 次调用，上游是 `/v2/catalog/proposals?state=merged&site=kungal`；
+  - #29：自动合并后修订读失败时回 5xx（或 201 前就报错）→ 201，`state: merged`，`revision: null`，上游提案只建了一次。
+
 ## 4. 逐条操作
 
 通用：401 `MISSING_CREDENTIAL` / `INVALID_CREDENTIAL`（required；optional 的坏 Bearer）、403 `ACCOUNT_BANNED`、500 `INTERNAL_ERROR`、503 `SERVICE_UNAVAILABLE`（会话存储 / userclient / catalog / 传输）。每个 401 带 `WWW-Authenticate`。v1 全部 `Cache-Control: no-store`。缺 OAuth token 的已登录会话：写与私密读走 401 `INVALID_CREDENTIAL`。请求体的错一律 `422 VALIDATION_FAILED`；`400 INVALID_PARAMETER` 只给参数（路径、查询、`Idempotency-Key`）（G6 §3.16）。
