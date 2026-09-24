@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"testing"
 
+	"kun-galgame-api/pkg/catalogclient"
 	"kun-galgame-api/pkg/problem"
 )
 
@@ -84,5 +85,33 @@ func TestV1MembershipDoesNotTouchOtherFolders(t *testing.T) {
 	}
 	if len(f.user.deleteItems) != 0 {
 		t.Errorf("adding a work held in the default folder removed it elsewhere: %v", f.user.deleteItems)
+	}
+}
+
+func TestV1ListCollectionWorksCountsWhatItShows(t *testing.T) {
+	f := newG6Fix(t)
+	f.cat.sfwHidden = map[int]bool{g6WorkExtra: true}
+	f.user.mu.Lock()
+	f.user.items[g6FolderAliceDef] = append(f.user.items[g6FolderAliceDef], catalogclient.FolderItem{
+		FolderID: g6FolderAliceDef, WorkID: g6WorkExtra, CreatedAt: "2026-09-03T00:00:00Z", UpdatedAt: "2026-09-03T00:00:00Z",
+	})
+	folder := f.user.folders[g6FolderAliceDef]
+	folder.ItemCount = 2
+	folder.UpdatedAt = "2026-09-03T00:00:00Z"
+	f.user.folders[g6FolderAliceDef] = folder
+	f.user.mu.Unlock()
+	for _, tc := range []struct {
+		query string
+		want  int
+	}{{"", 1}, {"?include_nsfw=true", 2}} {
+		resp, body := f.call(t, http.MethodGet, g6col(g6FolderAliceDef)+"/works"+tc.query,
+			"/collections/{collection_id}/works", "", "", nil)
+		if resp.StatusCode != http.StatusOK {
+			t.Fatalf("works%s %d %+v", tc.query, resp.StatusCode, body)
+		}
+		items, _ := body["items"].([]any)
+		if asInt(body["total"]) != tc.want || len(items) != tc.want {
+			t.Errorf("works%s: total %v with %d items, want %d of each", tc.query, body["total"], len(items), tc.want)
+		}
 	}
 }

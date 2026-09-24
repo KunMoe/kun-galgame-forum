@@ -3,6 +3,7 @@ package apiv1
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"sort"
 
 	"kun-galgame-api/internal/apiv1/collect"
@@ -60,29 +61,40 @@ func (s *Service) listCollectionWorks(ctx context.Context, in *listCollectionWor
 	for _, it := range items {
 		ids = append(ids, int(it.WorkID))
 	}
-	rows, appErr := s.works.CatalogRowsByWorkIDs(ctx, ids, workrepr.RowInclude, "all")
+	// Counting from content_limit=all plus the forum's own NSFW guess, then
+	// hydrating the page under content_limit=sfw, counted works catalog hides
+	// from SFW readers: on 2026-09-24 folder 12015's total included three works
+	// its pages never showed.
+	rows, appErr := s.works.CatalogRowsByWorkIDs(ctx, ids, workrepr.RowInclude, workrepr.ContentLimit(in.IncludeNSFW))
 	if appErr != nil {
 		return nil, catalogUnavailable(appErr)
 	}
-	population := make([]int, 0, len(ids))
+	population := make([]client.CatalogWorkListItem, 0, len(ids))
 	for _, id := range ids {
 		row, ok := rows[id]
-		if !ok || !client.CatalogItemRenderable(&row) {
+		if !ok {
+			if in.IncludeNSFW {
+				slog.Warn("collection: catalog did not render work, dropped", "work_id", id)
+			}
+			continue
+		}
+		if !client.CatalogItemRenderable(&row) {
+			slog.Warn("collection: catalog row not renderable, dropped", "work_id", id)
 			continue
 		}
 		if !in.IncludeNSFW && workNSFW(&row) {
 			continue
 		}
-		population = append(population, id)
+		population = append(population, row)
 	}
 	n, rel := collect.ClampTotal(len(population))
 	start := pg.Offset()
-	pageIDs := []int{}
+	pageRows := []client.CatalogWorkListItem{}
 	if start < len(population) {
 		end := min(start+pg.Limit, len(population))
-		pageIDs = population[start:end]
+		pageRows = population[start:end]
 	}
-	summaries, p := s.hydrator.ByIDs(ctx, pageIDs, in.IncludeNSFW)
+	summaries, p := s.hydrator.FromRows(ctx, pageRows)
 	if p != nil {
 		return nil, p
 	}
