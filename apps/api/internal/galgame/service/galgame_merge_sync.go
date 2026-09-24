@@ -218,6 +218,12 @@ func (s *GalgameMergeSync) commitFold(ctx context.Context, oldID, newID int, wor
 	return 1, 0
 }
 
+// Enqueue folds a merge the redirect cursor went past before its local row
+// existed: rows created after their work was merged away were never folded.
+func (s *GalgameMergeSync) Enqueue(ctx context.Context, oldID int, survivor int64) {
+	s.park(ctx, oldID, survivor)
+}
+
 func (s *GalgameMergeSync) park(ctx context.Context, oldID int, work int64) {
 	if s.rdb == nil {
 		return

@@ -411,8 +411,8 @@ func New(cfg *config.Config) *App {
 	galgameClaimSync := galgameService.NewGalgameClaimEventSync(catalogCli, galgameLocalRepo, rdb)
 	galgameRevisionSync := galgameService.NewGalgameEditRevisionSync(catalogCli, gc, db, rdb)
 	galgameContributorSync := galgameService.NewGalgameContributorSync(catalogCli, galgameContributorRepo, rdb)
-	galgameCatalogMirror := galgameService.NewGalgameCatalogMirror(gc, galgameLocalRepo, rdb)
 	galgameMergeSync := galgameService.NewGalgameMergeSync(gc, galgameMergeRepo, rdb)
+	galgameCatalogMirror := galgameService.NewGalgameCatalogMirror(gc, galgameLocalRepo, rdb, galgameMergeSync)
 
 	adminOverviewRepo := adminRepo.NewOverviewRepository(db)
 	adminPurgeSvc := adminService.NewPurgeService(adminRepo.NewPurgeRepository(db), uc, communityCli, catalogCli)
@@ -516,14 +516,14 @@ func New(cfg *config.Config) *App {
 		Artifact:                  artCli,
 		FileStorage:               fileStorageClient,
 		CronStop: cronPkg.Start(db, rdb, imgCli, cronPkg.Jobs{
-			GalgameClaimSync:         galgameClaimSync.Run,
-			GalgameRevisionSync:      galgameRevisionSync.Run,
-			GalgameContributorSync:   galgameContributorSync.Run,
-			GalgameCatalogMirror:     galgameCatalogMirror.RunMirror,
-			GalgameCatalogMirrorFill: galgameCatalogMirror.RunPending,
-			GalgameMergeSync:         galgameMergeSync.Run,
-			DlsiteCampaignRefresh:    storeLinks.RefreshCampaign,
-			TopicMiniAppDeadlines:    lotteryDrawer.Run,
+			GalgameClaimSync:           galgameClaimSync.Run,
+			GalgameRevisionSync:        galgameRevisionSync.Run,
+			GalgameContributorSync:     galgameContributorSync.Run,
+			GalgameCatalogMirror:       galgameCatalogMirror.RunMirror,
+			GalgameCatalogMirrorVerify: galgameCatalogMirror.RunVerify,
+			GalgameMergeSync:           galgameMergeSync.Run,
+			DlsiteCampaignRefresh:      storeLinks.RefreshCampaign,
+			TopicMiniAppDeadlines:      lotteryDrawer.Run,
 		}),
 		StoreLinkStop:       storeLinks.Start(),
 		CommunityNotifyStop: communitynotify.New(communityCli, messageRepository, anchorResolver, rdb).Start(),

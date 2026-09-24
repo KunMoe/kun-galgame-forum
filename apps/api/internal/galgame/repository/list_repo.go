@@ -82,7 +82,7 @@ func (r *GalgameListRepository) ListIDs(f model.GalgameListFilter) (ids []int, t
 
 	if !f.HasResourcePredicate() {
 		build := func() *gorm.DB {
-			q := applyContentLimit(applyPublished(r.db.Table("galgame g"), f), f)
+			q := applyCatalogGates(applyPublished(r.db.Table("galgame g"), f), f)
 			if f.RestrictIDs != nil {
 				q = q.Where("g.id = ANY(?::int[])", intArrayLit(f.RestrictIDs))
 			}
@@ -118,7 +118,7 @@ func (r *GalgameListRepository) ListIDs(f model.GalgameListFilter) (ids []int, t
 		return
 	}
 
-	inner := applyContentLimit(applyPublished(r.db.Table("galgame g").
+	inner := applyCatalogGates(applyPublished(r.db.Table("galgame g").
 		Select("DISTINCT g.id").
 		Joins("JOIN galgame_resource gr ON gr.work_id = g.id"), f), f)
 	if f.RestrictIDs != nil {
@@ -256,7 +256,7 @@ func (r *GalgameListRepository) ListCollectedCalendar(isSFW bool) ([]CollectedMo
 		Select("EXTRACT(YEAR FROM g.created)::int AS year, EXTRACT(MONTH FROM g.created)::int AS month").
 		Where("g.published").
 		Where("EXISTS (SELECT 1 FROM galgame_resource gr WHERE gr.work_id = g.id)")
-	err := applyContentLimit(q, model.GalgameListFilter{SFWOnly: isSFW}).
+	err := applyCatalogGates(q, model.GalgameListFilter{SFWOnly: isSFW}).
 		Group("EXTRACT(YEAR FROM g.created)::int, EXTRACT(MONTH FROM g.created)::int").
 		Order("EXTRACT(YEAR FROM g.created)::int DESC, EXTRACT(MONTH FROM g.created)::int ASC").
 		Scan(&rows).Error
@@ -362,10 +362,12 @@ func applyPublished(q *gorm.DB, f model.GalgameListFilter) *gorm.DB {
 	return q.Where("g.published")
 }
 
-// The gate that actually hides a work is catalog's, applied when the page is
-// hydrated — this only decides which ids get that far. NULL is "the sync has
-// not seen this row yet" and must pass, or a fresh column empties every list.
-func applyContentLimit(q *gorm.DB, f model.GalgameListFilter) *gorm.DB {
+// The gates that actually hide a work are catalog's, applied when the page is
+// hydrated — these only decide which ids get that far, so a page is not cut
+// short by rows catalog then drops. NULL is "the sync has not seen this row
+// yet" and must pass, or a fresh column empties every list.
+func applyCatalogGates(q *gorm.DB, f model.GalgameListFilter) *gorm.DB {
+	q = q.Where("g.catalog_rendered")
 	if !f.SFWOnly {
 		return q
 	}

@@ -65,7 +65,7 @@ var workRankingColumns = map[string]string{
 }
 
 func (r *RankingRepository) TopWorks(key string, includeNSFW, includeResourceless bool, limit int) ([]RankedRow, error) {
-	q := r.db.Table("galgame g").Where("g.published")
+	q := r.db.Table("galgame g").Where("g.published AND g.catalog_rendered")
 	if !includeNSFW {
 		q = q.Where("g.content_limit IS NULL OR g.content_limit = 'sfw'")
 	}

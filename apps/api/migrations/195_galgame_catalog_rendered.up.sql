@@ -1,0 +1,21 @@
+-- 195: whether catalog still renders the work behind a local galgame row, and
+-- when the forum last asked.
+--
+-- The catalog mirror wrote content_limit and release_date once and never asked
+-- again, so a row catalog stopped answering for kept whatever it had. On
+-- 2026-09-24 that was 29 of 16,219 rows: 11 merged-away works whose local row
+-- was created after merge-fold had read their redirect, 8 on a non-galgame
+-- medium that no /v2 face serves, and 10 whose sfw/nsfw verdict changed
+-- upstream without reaching the forum. 26 of them sat in the SFW lists, and
+-- /works hydrated each page short and logged a WARN per row.
+--
+-- catalog_checked_at orders the mirror's verify lane: NULL first, then oldest.
+-- catalog_rendered = false keeps a row catalog will not render out of every
+-- local list that pages ids before hydrating them.
+--
+-- Existing rows: catalog_rendered = true and catalog_checked_at = NULL, so the
+-- verify lane re-asks about every row once after deploy (about 5.5 hours at
+-- 500 rows per ten-minute tick) and marks the 19 unrenderable ones then. No
+-- row is deleted here.
+ALTER TABLE galgame ADD COLUMN IF NOT EXISTS catalog_checked_at timestamptz;
+ALTER TABLE galgame ADD COLUMN IF NOT EXISTS catalog_rendered boolean NOT NULL DEFAULT true;

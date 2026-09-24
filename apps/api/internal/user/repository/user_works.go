@@ -24,6 +24,7 @@ func (r *UserContentRepository) ListUserWorkIDs(q UserWorkQuery) ([]int, int, er
 	default:
 		db = db.Where("1 = 0")
 	}
+	db = db.Where("galgame.catalog_rendered")
 	if !q.IncludeNSFW {
 		db = db.Where("galgame.content_limit IS NULL OR galgame.content_limit <> ?", "nsfw")
 	}

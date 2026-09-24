@@ -367,7 +367,7 @@ func TestLiveMirrorChannel(t *testing.T) {
 			}
 			ids = append(ids, it.ID)
 		}
-		got, appErr := c.MirrorByCatalogIDs(ctx, ids)
+		got, _, appErr := c.MirrorByCatalogIDs(ctx, ids)
 		if appErr != nil {
 			t.Fatalf("MirrorByCatalogIDs: %v", appErr)
 		}

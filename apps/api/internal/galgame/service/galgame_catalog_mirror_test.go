@@ -8,7 +8,6 @@ import (
 	"strings"
 	"sync"
 	"testing"
-	"time"
 
 	"kun-galgame-api/internal/galgame/client"
 
@@ -60,6 +59,7 @@ func newMirror(t *testing.T, stub *mirrorStub) (*GalgameCatalogMirror, *miniredi
 		client.New(srv.URL, "nmk_test", ""),
 		nil,
 		redis.NewClient(&redis.Options{Addr: mr.Addr()}),
+		nil,
 	)
 	return s, mr
 }
@@ -194,43 +194,6 @@ func TestMirrorHoldsTheCursorWhenRedisIsDown(t *testing.T) {
 // that the pass is capped, orphans at the front of the window would starve every
 // row behind them. The nightly full sweep used to be what cleared the memo;
 // nothing does now, so it has to expire.
-func TestOrphanMemoExpires(t *testing.T) {
-	s := NewGalgameCatalogMirror(nil, nil, nil)
-	answered := func(workIDs ...int) map[int]client.CatalogMirror {
-		out := map[int]client.CatalogMirror{}
-		for _, workID := range workIDs {
-			out[workID] = client.CatalogMirror{ContentLimit: "sfw"}
-		}
-		return out
-	}
-	memoised := func() []int {
-		got := s.memoisedOrphans()
-		slices.Sort(got)
-		return got
-	}
-	asked := []int{1, 2, 3}
-
-	s.rememberUnresolved(asked, answered(1, 3))
-	if got := memoised(); !slices.Equal(got, []int{2}) {
-		t.Fatalf("memoised = %v, want [2]", got)
-	}
-
-	s.rememberUnresolved(asked, answered())
-	if got := memoised(); !slices.Equal(got, asked) {
-		t.Fatalf("memoised = %v, want every id", got)
-	}
-
-	s.rememberUnresolved([]int{2}, answered(2))
-	if got := memoised(); !slices.Equal(got, []int{1, 3}) {
-		t.Fatalf("an adopted orphan stays skipped: memoised = %v, want [1 3]", got)
-	}
-
-	s.unresolved[1] = time.Now().Add(-time.Minute)
-	if got := memoised(); !slices.Equal(got, []int{3}) {
-		t.Fatalf("memoised = %v, want the expired entry dropped", got)
-	}
-}
-
 func TestGroupByContentLimitDropsUnknownVerdicts(t *testing.T) {
 	got := groupByContentLimit(map[int]string{1: "sfw", 2: "nsfw", 3: "", 4: "all"})
 	if !slices.Equal(got["sfw"], []int{1}) || !slices.Equal(got["nsfw"], []int{2}) {

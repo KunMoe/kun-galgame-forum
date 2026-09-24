@@ -3,6 +3,8 @@ package service
 import (
 	"context"
 	"log/slog"
+	"maps"
+	"slices"
 	"sync"
 	"time"
 
@@ -14,7 +16,6 @@ import (
 )
 
 const (
-	mirrorSyncChunk   = 500
 	mirrorSyncTimeout = 15 * time.Minute
 
 	// Named for content_limit because that is what it was when it was written,
@@ -27,18 +28,21 @@ const (
 	// two hours, and enough to walk the whole inventory in about the same time.
 	mirrorChannelPages = 100
 
-	// Two chunks a tick walks the forum's ~11.5k rows in about two hours and
-	// stays far under the 100/min the /v2 limiter allows the site's single
-	// egress address.
-	mirrorFillRows = 2 * mirrorSyncChunk
+	// One catalog request a tick. On the two-minute beat that re-asks the forum's
+	// ~16k rows about every five and a half hours, and stays far under the
+	// 100/min the /v2 limiter allows the site's single egress address.
+	mirrorVerifyRows = 100
 
-	// A local row catalog has no work for cannot be resolved by asking again a
-	// minute later, but it can be resolved by asking again after a submission is
-	// approved. The nightly full sweep used to be what re-asked; the mirror
-	// channel never will, because a row that is missing upstream is exactly the
-	// row the channel has nothing to say about.
-	mirrorOrphanTTL = 6 * time.Hour
+	// A tick that would unlist more than this many rows unlists none of them.
+	// Catalog has changed how a read face answers under the forum before, and a
+	// library blanked by one bad answer is worse than one that is a few hours stale.
+	mirrorFlipFloor   = 20
+	mirrorFlipPercent = 5
 )
+
+type mergeQueue interface {
+	Enqueue(ctx context.Context, oldID int, survivor int64)
+}
 
 // Keeps the local galgame row's copies of catalog's data in step: content_limit
 // (the editorial display verdict) and release_date.
@@ -52,37 +56,36 @@ const (
 // release date" was actually sorting.
 //
 // Two lanes, and they answer different questions. The mirror channel carries
-// every catalog-side change — an editor flipping display_nsfw or correcting a
-// date reaches the local lists within a tick. The fill lane carries the local
-// side: a stub row created by a user this minute has no catalog change to its
-// name and would otherwise stay unmirrored until its work happens to be touched
-// upstream.
+// every catalog-side change: an editor flipping display_nsfw or correcting a
+// date reaches the local lists within a tick. The verify lane re-asks about
+// every local row in turn, because the channel alone left rows wrong for good:
+// a stub created this minute has no change to its name, a row created after its
+// work was merged away never hears of it, a non-galgame medium is on no /v2 face,
+// and on 2026-09-24 ten verdicts had changed upstream without reaching the forum.
 type GalgameCatalogMirror struct {
 	galgameClient *client.GalgameClient
 	galgameRepo   *repository.GalgameRepository
 	rdb           *redis.Client
+	merges        mergeQueue
 	maxPages      int
-	fillRows      int
+	verifyRows    int
 
 	running sync.Mutex
-	// Local rows catalog has no work for. They stay unmirrored, so without this
-	// the ten-minute pass would ask about the same orphans forever.
-	unresolvedMu sync.Mutex
-	unresolved   map[int]time.Time
 }
 
 func NewGalgameCatalogMirror(
 	galgameClient *client.GalgameClient,
 	galgameRepo *repository.GalgameRepository,
 	rdb *redis.Client,
+	merges mergeQueue,
 ) *GalgameCatalogMirror {
 	return &GalgameCatalogMirror{
 		galgameClient: galgameClient,
 		galgameRepo:   galgameRepo,
 		rdb:           rdb,
+		merges:        merges,
 		maxPages:      mirrorChannelPages,
-		fillRows:      mirrorFillRows,
-		unresolved:    map[int]time.Time{},
+		verifyRows:    mirrorVerifyRows,
 	}
 }
 
@@ -118,7 +121,7 @@ func (s *GalgameCatalogMirror) RunMirror() {
 	}
 	bootstrap := cursor == ""
 
-	var changed, gone, matched, limits, dates int64
+	var changed, gone, matched, limits, dates, unlisted int64
 	pages := 0
 	for ; pages < s.maxPages; pages++ {
 		page, appErr := s.galgameClient.CatalogChanges(ctx, cursor, client.CatalogChangesLimit)
@@ -130,16 +133,18 @@ func (s *GalgameCatalogMirror) RunMirror() {
 			break
 		}
 		ids := make([]int64, 0, len(page.Items))
+		var goneIDs []int
 		for _, it := range page.Items {
 			if it.Gone {
 				gone++
+				goneIDs = append(goneIDs, int(it.ID))
 				continue
 			}
 			ids = append(ids, it.ID)
 		}
 		changed += int64(len(page.Items))
 
-		rows, appErr := s.galgameClient.MirrorByCatalogIDs(ctx, ids)
+		rows, hidden, appErr := s.galgameClient.MirrorByCatalogIDs(ctx, ids)
 		if appErr != nil {
 			slog.Warn("catalog 变更条目水合失败, 游标保持不动", "pages", pages, "error", appErr.Message)
 			break
@@ -152,6 +157,12 @@ func (s *GalgameCatalogMirror) RunMirror() {
 		}
 		limits += n
 		dates += d
+		u, err := s.settle(ctx, hidden, goneIDs, len(page.Items), "信道")
+		if err != nil {
+			slog.Warn("catalog 镜像入库失败, 游标保持不动", "pages", pages, "error", err)
+			break
+		}
+		unlisted += u
 
 		if page.NextCursor == "" {
 			break
@@ -168,54 +179,120 @@ func (s *GalgameCatalogMirror) RunMirror() {
 	}
 	slog.Info("galgame catalog 镜像信道同步完成", "bootstrap", bootstrap,
 		"pages", pages, "changed", changed, "gone", gone, "matched", matched,
-		"content_limit", limits, "release_date", dates)
+		"content_limit", limits, "release_date", dates, "unlisted", unlisted)
 }
 
-// RunPending resolves rows catalog has not confirmed since the last pass, so a
-// game published at noon is filtered and sorted correctly the same day instead
-// of leaving a hole in every SFW page and a NULL at the end of every date sort
-// until its catalog work next changes.
-func (s *GalgameCatalogMirror) RunPending() {
+// RunVerify re-asks catalog about the local rows it has gone longest without
+// asking about. Only an answer changes a row: a failed request leaves both
+// catalog_rendered and catalog_checked_at alone, so the next tick asks again.
+func (s *GalgameCatalogMirror) RunVerify() {
 	if s.galgameClient == nil || s.galgameRepo == nil {
 		return
 	}
-	ids := s.galgameRepo.MirrorPendingIDs(s.fillRows, s.memoisedOrphans())
+	ids := s.galgameRepo.MirrorVerifyIDs(s.verifyRows)
 	if len(ids) == 0 {
 		return
 	}
 	if !s.running.TryLock() {
-		slog.Info("catalog 镜像同步仍在进行, 跳过本轮", "mode", "增量")
+		slog.Info("catalog 镜像同步仍在进行, 跳过本轮", "mode", "核对")
 		return
 	}
 	defer s.running.Unlock()
 
 	ctx, cancel := context.WithTimeout(context.Background(), mirrorSyncTimeout)
 	defer cancel()
+	s.verify(ctx, ids)
+}
 
-	var seen, limits, dates int64
-	for start := 0; start < len(ids); start += mirrorSyncChunk {
-		chunk := ids[start:min(start+mirrorSyncChunk, len(ids))]
-		ids := make([]int64, len(chunk))
-		for i, id := range chunk {
-			ids[i] = int64(id)
-		}
-		rows, appErr := s.galgameClient.MirrorByCatalogIDs(ctx, ids)
-		if appErr != nil {
-			slog.Warn("catalog 镜像拉取失败, 本轮中止", "offset", start, "error", appErr.Message)
-			break
-		}
-		n, d, err := s.apply(rows)
-		if err != nil {
-			slog.Warn("catalog 镜像入库失败, 本轮中止", "offset", start, "error", err)
-			break
-		}
-		s.rememberUnresolved(chunk, rows)
-		seen += int64(len(rows))
-		limits += n
-		dates += d
+func (s *GalgameCatalogMirror) verify(ctx context.Context, ids []int) {
+	asked := make([]int64, len(ids))
+	for i, id := range ids {
+		asked[i] = int64(id)
 	}
-	slog.Info("galgame catalog 镜像增量同步完成",
-		"requested", len(ids), "resolved", seen, "content_limit", limits, "release_date", dates)
+	rows, hidden, appErr := s.galgameClient.MirrorByCatalogIDs(ctx, asked)
+	if appErr != nil {
+		slog.Warn("catalog 镜像核对拉取失败, 本轮不改任何行", "requested", len(ids), "error", appErr.Message)
+		return
+	}
+	limits, dates, err := s.apply(rows)
+	if err != nil {
+		slog.Warn("catalog 镜像核对入库失败", "error", err)
+		return
+	}
+	answered := make(map[int]bool, len(rows)+len(hidden))
+	for id := range rows {
+		answered[id] = true
+	}
+	for _, id := range hidden {
+		answered[id] = true
+	}
+	var absent []int
+	for _, id := range ids {
+		if !answered[id] {
+			absent = append(absent, id)
+		}
+	}
+	unlisted, err := s.settle(ctx, hidden, absent, len(ids), "核对")
+	if err != nil {
+		slog.Warn("catalog 镜像核对入库失败", "error", err)
+		return
+	}
+	slog.Info("galgame catalog 镜像核对完成", "requested", len(ids), "rendered", len(rows),
+		"unlisted", unlisted, "content_limit", limits, "release_date", dates)
+}
+
+// settle unlists the rows catalog answered for but will not render. hidden came
+// back under a hidden claim. absent did not come back at all, and each local one
+// is asked about on the detail face: a merge with a survivor catalog renders is
+// handed to merge-fold, and anything but an answer leaves the row untouched.
+func (s *GalgameCatalogMirror) settle(ctx context.Context, hidden, absent []int, asked int, lane string) (int64, error) {
+	if s.galgameRepo == nil {
+		return 0, nil
+	}
+	absent, err := s.galgameRepo.LocalAmong(absent)
+	if err != nil {
+		return 0, err
+	}
+	hidden, err = s.galgameRepo.LocalAmong(hidden)
+	if err != nil {
+		return 0, err
+	}
+	flips, err := s.galgameRepo.RenderedAmong(append(slices.Clone(hidden), absent...))
+	if err != nil {
+		return 0, err
+	}
+	if limit := max(mirrorFlipFloor, (asked*mirrorFlipPercent+99)/100); len(flips) > limit {
+		slog.Warn("catalog 镜像将一次下架过多条目, 本轮全部不下架",
+			"lane", lane, "asked", asked, "would_unlist", len(flips), "limit", limit)
+		return 0, nil
+	}
+
+	unrendered := slices.Clone(hidden)
+	for _, id := range absent {
+		movedTo, found, appErr := s.galgameClient.WorkFate(ctx, int64(id))
+		switch {
+		case appErr != nil:
+			slog.Warn("catalog 作品去向查询失败, 本行不动", "work_id", id, "error", appErr.Message)
+			continue
+		case found:
+			slog.Warn("catalog 批量面与详情面对同一作品答法不同, 本行不动", "work_id", id)
+			continue
+		case movedTo != 0:
+			survivor, _, appErr := s.galgameClient.MirrorByCatalogIDs(ctx, []int64{movedTo})
+			if appErr != nil {
+				slog.Warn("catalog 合并幸存条目查询失败, 本行不动", "work_id", id, "survivor", movedTo, "error", appErr.Message)
+				continue
+			}
+			if _, ok := survivor[int(movedTo)]; ok && s.merges != nil {
+				s.merges.Enqueue(ctx, id, movedTo)
+			}
+		}
+		unrendered = append(unrendered, id)
+	}
+	if err := s.galgameRepo.MarkCatalogChecked(unrendered, false); err != nil {
+		return 0, err
+	}
+	return int64(len(unrendered)), nil
 }
 
 // apply writes one hydrated batch. The two columns are written separately
@@ -244,33 +321,10 @@ func (s *GalgameCatalogMirror) apply(rows map[int]client.CatalogMirror) (int64, 
 		return limitCount, 0, err
 	}
 	dateCount, err := s.galgameRepo.SetReleaseDates(dates)
-	return limitCount, dateCount, err
-}
-
-func (s *GalgameCatalogMirror) memoisedOrphans() []int {
-	now := time.Now()
-	s.unresolvedMu.Lock()
-	defer s.unresolvedMu.Unlock()
-	out := make([]int, 0, len(s.unresolved))
-	for id, until := range s.unresolved {
-		if now.Before(until) {
-			out = append(out, id)
-		}
+	if err != nil {
+		return limitCount, dateCount, err
 	}
-	return out
-}
-
-func (s *GalgameCatalogMirror) rememberUnresolved(asked []int, got map[int]client.CatalogMirror) {
-	until := time.Now().Add(mirrorOrphanTTL)
-	s.unresolvedMu.Lock()
-	defer s.unresolvedMu.Unlock()
-	for _, id := range asked {
-		if _, ok := got[id]; ok {
-			delete(s.unresolved, id)
-			continue
-		}
-		s.unresolved[id] = until
-	}
+	return limitCount, dateCount, s.galgameRepo.MarkCatalogChecked(slices.Collect(maps.Keys(rows)), true)
 }
 
 func groupByContentLimit(limits map[int]string) map[string][]int {

@@ -88,7 +88,7 @@ func TestMirrorByCatalogIDsKeysByCatalogID(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	got, appErr := New(srv.URL, "nmk_test", "").
+	got, hidden, appErr := New(srv.URL, "nmk_test", "").
 		MirrorByCatalogIDs(t.Context(), []int64{923, 924, 925, 926, 927})
 	if appErr != nil {
 		t.Fatalf("MirrorByCatalogIDs: %v", appErr.Message)
@@ -105,6 +105,9 @@ func TestMirrorByCatalogIDsKeysByCatalogID(t *testing.T) {
 	}
 	if _, ok := got[927]; ok {
 		t.Errorf("hidden claim leaked: %v", got)
+	}
+	if len(hidden) != 1 || hidden[0] != 927 {
+		t.Errorf("hidden = %v, want [927]", hidden)
 	}
 
 	if got[923].ContentLimit == "nsfw" || got[924].ContentLimit == "sfw" {

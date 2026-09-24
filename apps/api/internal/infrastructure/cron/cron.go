@@ -26,14 +26,14 @@ func ScheduleLocation() *time.Location {
 // Every field is a bare func(), so positional arguments would put a job on
 // another job's schedule with nothing to notice it.
 type Jobs struct {
-	GalgameClaimSync         func()
-	GalgameRevisionSync      func()
-	GalgameContributorSync   func()
-	GalgameCatalogMirror     func()
-	GalgameCatalogMirrorFill func()
-	GalgameMergeSync         func()
-	DlsiteCampaignRefresh    func()
-	TopicMiniAppDeadlines    func()
+	GalgameClaimSync           func()
+	GalgameRevisionSync        func()
+	GalgameContributorSync     func()
+	GalgameCatalogMirror       func()
+	GalgameCatalogMirrorVerify func()
+	GalgameMergeSync           func()
+	DlsiteCampaignRefresh      func()
+	TopicMiniAppDeadlines      func()
 }
 
 func Start(
@@ -94,15 +94,11 @@ func Start(
 		schedule(c, "*/10 * * * *", "galgame catalog 镜像信道同步", jobs.GalgameCatalogMirror)
 	}
 
-	// Two minutes, not ten. The lane costs one indexed query when there is
-	// nothing pending, which is the normal state, and the beat is what decides
-	// two things that are not normal: how long a row created this minute is
-	// shown to every SFW reader before its verdict lands, and how long a
-	// backfill takes. 092 left 11.5k rows unconfirmed at once; at ten minutes
-	// that sweep is two hours, at two it is twenty-five minutes, and the burst
-	// per pass is the same ~30 catalog requests either way.
-	if jobs.GalgameCatalogMirrorFill != nil {
-		schedule(c, "*/2 * * * *", "galgame catalog 镜像增量同步", jobs.GalgameCatalogMirrorFill)
+	// Two minutes, not ten: rows never checked head the verify window, so the
+	// beat is how long a row created this minute is shown to every SFW reader
+	// before its verdict lands.
+	if jobs.GalgameCatalogMirrorVerify != nil {
+		schedule(c, "*/2 * * * *", "galgame catalog 镜像核对", jobs.GalgameCatalogMirrorVerify)
 	}
 
 	if jobs.GalgameMergeSync != nil {

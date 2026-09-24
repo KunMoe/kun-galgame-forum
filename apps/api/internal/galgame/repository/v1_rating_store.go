@@ -70,7 +70,7 @@ var ratingSortColumns = map[string]string{
 }
 
 func (s *RatingStore) filtered(q RatingQuery) *gorm.DB {
-	tx := s.db.Table("galgame_rating r").Joins("JOIN galgame g ON g.id = r.work_id")
+	tx := s.db.Table("galgame_rating r").Joins("JOIN galgame g ON g.id = r.work_id").Where("g.catalog_rendered")
 	if q.WorkID > 0 {
 		tx = tx.Where("r.work_id = ?", q.WorkID)
 	}

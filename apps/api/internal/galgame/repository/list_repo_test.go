@@ -19,8 +19,8 @@ func TestListIDsSFWFilter(t *testing.T) {
 	db := testdb.Open(t)
 
 	const base = 2_000_100_000
-	unsynced, safe, adult := base, base+1, base+2
-	all := []int{unsynced, safe, adult}
+	unsynced, safe, adult, unlisted := base, base+1, base+2, base+3
+	all := []int{unsynced, safe, adult, unlisted}
 
 	cleanup := func() {
 		db.Exec("DELETE FROM galgame_resource WHERE work_id = ANY(?::int[])", intArrayLit(all))
@@ -32,6 +32,8 @@ func TestListIDsSFWFilter(t *testing.T) {
 	seed(t, db, unsynced, nil)
 	seed(t, db, safe, ptr("sfw"))
 	seed(t, db, adult, ptr("nsfw"))
+	seed(t, db, unlisted, ptr("sfw"))
+	db.Exec("UPDATE galgame SET catalog_rendered = false WHERE id = ?", unlisted)
 
 	repo := NewGalgameListRepository(db)
 	for name, tc := range map[string]struct {
@@ -42,9 +44,9 @@ func TestListIDsSFWFilter(t *testing.T) {
 			model.GalgameListFilter{SFWOnly: true},
 			[]int{unsynced, safe},
 		},
-		"nsfw reader keeps everything": {
+		"nsfw reader keeps every rendered row": {
 			model.GalgameListFilter{},
-			all,
+			[]int{unsynced, safe, adult},
 		},
 		"the resource-filter lane gates too": {
 			model.GalgameListFilter{SFWOnly: true, Type: "game"},
@@ -289,5 +291,13 @@ func TestCollectedCalendarHonoursTheReadersGate(t *testing.T) {
 	}
 	if holds(sfwRows) {
 		t.Error("a SFW reader was offered a month whose only entry the list will hide")
+	}
+
+	db.Exec("UPDATE galgame SET catalog_rendered = false WHERE id = ?", id)
+	if adultRows, err = repo.ListCollectedCalendar(false); err != nil {
+		t.Fatalf("ListCollectedCalendar(false): %v", err)
+	}
+	if holds(adultRows) {
+		t.Error("a month whose only entry catalog will not render was still offered")
 	}
 }

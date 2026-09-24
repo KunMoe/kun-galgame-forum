@@ -83,28 +83,8 @@ func TestReleaseDateMirrorConfirmsRowsWithNoDate(t *testing.T) {
 		}
 	}
 
-	pending := func(skip ...int) []int {
-		var out []int
-		for _, id := range repo.MirrorPendingIDs(1000, skip) {
-			if slices.Contains(all, id) {
-				out = append(out, id)
-			}
-		}
-		return out
-	}
-	if got := pending(); !slices.Equal(got, all) {
-		t.Fatalf("pending = %v, want every seeded row — a fresh column is unconfirmed", got)
-	}
-	if got := pending(tba, orphan); !slices.Equal(got, []int{dated, untouched}) {
-		t.Fatalf("pending with a skip list = %v, want the unskipped rows", got)
-	}
-
 	if _, err := repo.SetReleaseDates(map[int]string{dated: "2026-08-27", tba: ""}); err != nil {
 		t.Fatalf("SetReleaseDates: %v", err)
-	}
-
-	if got := pending(); !slices.Equal(got, []int{orphan, untouched}) {
-		t.Fatalf("pending after the write = %v, want only the rows catalog never answered for", got)
 	}
 
 	var rows []struct {
@@ -131,6 +111,69 @@ func TestReleaseDateMirrorConfirmsRowsWithNoDate(t *testing.T) {
 	}
 	if rows[2].SyncedAt != nil || rows[3].SyncedAt != nil {
 		t.Error("a row the write never named must stay unconfirmed")
+	}
+}
+
+// The verify lane walks the table oldest-checked first, and a row it has just
+// asked about goes to the back whatever catalog said, so a row catalog cannot
+// answer does not head every window.
+func TestMirrorVerifyOrderAndMarks(t *testing.T) {
+	db := testdb.Open(t)
+	repo := NewGalgameRepository(db)
+
+	const base = 2_000_310_000
+	fresh, old, older, never := base, base+1, base+2, base+3
+	all := []int{fresh, old, older, never}
+	cleanup := func() { db.Exec("DELETE FROM galgame WHERE id = ANY(?::int[])", intArrayLit(all)) }
+	cleanup()
+	defer cleanup()
+	for _, id := range all {
+		if err := db.Create(&model.GalgameLocal{ID: id}).Error; err != nil {
+			t.Fatalf("seed galgame %d: %v", id, err)
+		}
+	}
+	db.Exec("UPDATE galgame SET catalog_checked_at = now() WHERE id = ?", fresh)
+	db.Exec("UPDATE galgame SET catalog_checked_at = now() - interval '1 hour' WHERE id = ?", old)
+	db.Exec("UPDATE galgame SET catalog_checked_at = now() - interval '2 hours' WHERE id = ?", older)
+
+	window := func() []int {
+		var out []int
+		for _, id := range repo.MirrorVerifyIDs(1_000_000) {
+			if slices.Contains(all, id) {
+				out = append(out, id)
+			}
+		}
+		return out
+	}
+	if got := window(); !slices.Equal(got, []int{never, older, old, fresh}) {
+		t.Fatalf("window = %v, want never-checked first, then oldest", got)
+	}
+
+	if err := repo.MarkCatalogChecked([]int{never, older}, false); err != nil {
+		t.Fatalf("MarkCatalogChecked: %v", err)
+	}
+	if got := window(); !slices.Equal(got, []int{old, fresh, older, never}) {
+		t.Fatalf("window after marking = %v, want the marked rows at the back", got)
+	}
+	rendered, err := repo.RenderedAmong(append(slices.Clone(all), base+9))
+	if err != nil {
+		t.Fatalf("RenderedAmong: %v", err)
+	}
+	if !slices.Equal(rendered, []int{fresh, old}) {
+		t.Errorf("rendered = %v, want the two unmarked rows", rendered)
+	}
+	local, err := repo.LocalAmong([]int{never, base + 9})
+	if err != nil {
+		t.Fatalf("LocalAmong: %v", err)
+	}
+	if !slices.Equal(local, []int{never}) {
+		t.Errorf("local = %v, want only the row that exists", local)
+	}
+	if err := repo.MarkCatalogChecked([]int{never}, true); err != nil {
+		t.Fatalf("MarkCatalogChecked: %v", err)
+	}
+	if rendered, _ = repo.RenderedAmong([]int{never}); !slices.Equal(rendered, []int{never}) {
+		t.Errorf("a row catalog answers for again must be listed again, got %v", rendered)
 	}
 }
 

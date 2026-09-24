@@ -70,21 +70,34 @@ func (c *GalgameClient) CatalogChanges(ctx context.Context, cursor string, limit
 	return page, nil
 }
 
-func (c *GalgameClient) MirrorByCatalogIDs(ctx context.Context, ids []int64) (map[int]CatalogMirror, *errors.AppError) {
+func (c *GalgameClient) MirrorByCatalogIDs(ctx context.Context, ids []int64) (map[int]CatalogMirror, []int, *errors.AppError) {
 	out := make(map[int]CatalogMirror, len(ids))
 	if len(ids) == 0 {
-		return out, nil
+		return out, nil, nil
 	}
 	rows, appErr := c.worksByCatalogIDs(ctx, ids, "", "all")
 	if appErr != nil {
-		return nil, appErr
+		return nil, nil, appErr
 	}
+	var hidden []int
 	for i := range rows {
 		row := &rows[i]
-		if !row.isRenderable() || row.ID <= 0 {
+		if row.ID <= 0 {
+			continue
+		}
+		if !row.isRenderable() {
+			hidden = append(hidden, int(row.ID))
 			continue
 		}
 		out[int(row.ID)] = mirrorOf(row)
 	}
-	return out, nil
+	return out, hidden, nil
+}
+
+// WorkFate asks the detail face about a work the batch face did not return.
+// movedTo is the survivor of a merge. found means the detail face still serves
+// the work, which is the two faces disagreeing, not an answer about the work.
+func (c *GalgameClient) WorkFate(ctx context.Context, workID int64) (movedTo int64, found bool, appErr *errors.AppError) {
+	_, found, movedTo, appErr = c.catalogGetRecord(ctx, "/catalog/works/"+strconv.FormatInt(workID, 10), openPopulation(url.Values{}))
+	return movedTo, found, appErr
 }

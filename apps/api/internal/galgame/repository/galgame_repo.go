@@ -59,7 +59,7 @@ func (r *GalgameRepository) FindLocalBatch(ids []int) map[int]GalgameLocalRow {
 // so the profile used to list 13 entries a moderator had merely reviewed, and
 // count them toward creator eligibility. The owner lives here.
 func (r *GalgameRepository) PublishedIDsByCreator(userID, page, limit int) ([]int, int64, error) {
-	base := r.db.Table("galgame").Where("published AND creator_user_id = ?", userID)
+	base := r.db.Table("galgame").Where("published AND catalog_rendered AND creator_user_id = ?", userID)
 
 	var total int64
 	if err := base.Count(&total).Error; err != nil {
@@ -94,31 +94,47 @@ func (r *GalgameRepository) PublishLocal(tx *gorm.DB, workID int) error {
 	}).Create(&model.GalgameLocal{ID: workID, Published: true}).Error
 }
 
-// ids the catalog mirror still has to confirm — normally empty, and non-empty
-// only right after a row is created or a column is added.
-//
-// The two mirrored columns have different "not asked yet" markers. An unmirrored
-// content_limit is NULL; a NULL release_date is ALSO what catalog says about a
-// work with no date, so the release side asks release_date_synced_at (092)
-// instead. Reading NULL as "pending" there re-asks about every TBA work forever.
-//
-// skip is the caller's list of rows catalog has no work for. They stay
-// unconfirmed for good, so against a capped window they would otherwise sit at
-// the front of every pass and starve the rows that can still be resolved.
-func (r *GalgameRepository) MirrorPendingIDs(limit int, skip []int) []int {
+// The verify lane's next window: rows never checked first, then the ones
+// checked longest ago. Every row catalog is asked about gets a checked_at, so a
+// row catalog cannot answer moves to the back instead of heading every window.
+func (r *GalgameRepository) MirrorVerifyIDs(limit int) []int {
 	var ids []int
 	r.db.Table("galgame").
-		Where("content_limit IS NULL OR release_date_synced_at IS NULL").
-		Where("id <> ALL(?::int[])", intArrayLit(skip)).
-		// A row missing a value goes before a row that only needs re-confirming.
-		// Both are unconfirmed, but only the first one is visibly wrong: a NULL
-		// release_date is a row in the arbitrary tail of the date sort, and a
-		// NULL content_limit is a row every SFW reader is shown. Ordering by id
-		// alone spreads those over the whole sweep instead of clearing them in
-		// its first passes.
-		Order("(release_date IS NOT NULL AND content_limit IS NOT NULL), id").
+		Order("catalog_checked_at ASC NULLS FIRST, id").
 		Limit(limit).Pluck("id", &ids)
 	return ids
+}
+
+func (r *GalgameRepository) LocalAmong(ids []int) ([]int, error) {
+	var out []int
+	if len(ids) == 0 {
+		return out, nil
+	}
+	err := r.db.Table("galgame").
+		Where("id = ANY(?::int[])", intArrayLit(ids)).
+		Order("id").Pluck("id", &out).Error
+	return out, err
+}
+
+func (r *GalgameRepository) RenderedAmong(ids []int) ([]int, error) {
+	var out []int
+	if len(ids) == 0 {
+		return out, nil
+	}
+	err := r.db.Table("galgame").
+		Where("id = ANY(?::int[]) AND catalog_rendered", intArrayLit(ids)).
+		Order("id").Pluck("id", &out).Error
+	return out, err
+}
+
+func (r *GalgameRepository) MarkCatalogChecked(ids []int, rendered bool) error {
+	if len(ids) == 0 {
+		return nil
+	}
+	return r.db.Exec(
+		"UPDATE galgame SET catalog_checked_at = now(), catalog_rendered = ? WHERE id = ANY(?::int[])",
+		rendered, intArrayLit(ids),
+	).Error
 }
 
 // SetReleaseDates writes catalog's dates onto the local rows, as date strings so
