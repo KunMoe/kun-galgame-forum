@@ -1,7 +1,10 @@
 package app
 
 import (
+	"bytes"
+	"log/slog"
 	"net/http"
+	"strings"
 	"testing"
 	"time"
 
@@ -169,5 +172,49 @@ func TestV1ListCollectionWorksBuildsPopulationOnce(t *testing.T) {
 	f.cat.mu.Unlock()
 	if reads != 3 {
 		t.Errorf("catalog row reads %d, want 3: one shared population build and one page read per view", reads)
+	}
+}
+
+func TestV1CollectionPreviewKeepsNSFWFromSFWReaders(t *testing.T) {
+	f := newG6Fix(t)
+	f.user.mu.Lock()
+	f.user.items[g6FolderAlicePub] = []catalogclient.FolderItem{
+		{FolderID: g6FolderAlicePub, WorkID: g6WorkNSFW, CreatedAt: "2026-09-04T00:00:00Z", UpdatedAt: "2026-09-04T00:00:00Z"},
+		{FolderID: g6FolderAlicePub, WorkID: g6WorkLive, CreatedAt: "2026-09-03T00:00:00Z", UpdatedAt: "2026-09-03T00:00:00Z"},
+	}
+	folder := f.user.folders[g6FolderAlicePub]
+	folder.ItemCount = 2
+	f.user.folders[g6FolderAlicePub] = folder
+	f.user.mu.Unlock()
+	covers := func(query string) []string {
+		resp, body := f.call(t, http.MethodGet, g6col(g6FolderAlicePub)+query, "/collections/{collection_id}", "", "", nil)
+		if resp.StatusCode != http.StatusOK {
+			t.Fatalf("get%s %d %+v", query, resp.StatusCode, body)
+		}
+		var out []string
+		list, _ := body["preview_covers"].([]any)
+		for _, c := range list {
+			out = append(out, c.(map[string]any)["url"].(string))
+		}
+		return out
+	}
+
+	var buf bytes.Buffer
+	prev := slog.Default()
+	slog.SetDefault(slog.New(slog.NewTextHandler(&buf, nil)))
+	sfw := covers("")
+	slog.SetDefault(prev)
+	all := covers("?include_nsfw=true")
+
+	if len(all) != len(sfw)+1 {
+		t.Fatalf("preview covers: sfw %v, include_nsfw %v; want the NSFW work's cover only in the second", sfw, all)
+	}
+	for _, u := range sfw {
+		if u == all[0] {
+			t.Errorf("an SFW reader got the NSFW work's cover %s", u)
+		}
+	}
+	if strings.Contains(buf.String(), "did not render work") {
+		t.Errorf("SFW preview logged a drop WARN: %s", buf.String())
 	}
 }

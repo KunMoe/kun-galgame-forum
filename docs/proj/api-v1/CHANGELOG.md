@@ -1,11 +1,19 @@
 # API v1 changelog
 
+## 2026-09-24 (G6.2 collection preview covers)
+
+Collection preview covers are fetched without a content limit and gated on each work's `is_nsfw`, which is the same key catalog's SFW filter uses. SFW readers still never get an NSFW work's cover. The previous fetch under `sfw` made the hydrator log every omitted NSFW item as `catalog did not render work`, and that noise was mistaken for a counting bug in G6.1.
+
+**Correction to G6.1:** no miscount was ever observed. The entry below said a folder's `total` included works its pages never showed. The WARNs behind that claim came from the preview covers described above, and the NSFW works they named were already excluded from the count. G6.1's changes stand:
+- the count and the page come from one read;
+- the population cache and the singleflight;
+- the "N works not shown" note.
+
 ## 2026-09-24 (G6.1 collection works count)
 
-`GET /api/v1/collections/{collection_id}/works`: `total` now counts exactly what the pages show. It counted works that catalog hides from SFW readers while the forum's own row read them as SFW. The pages then dropped those works: short pages, a `total` larger than what can be paged through, and a WARN on every view. Nothing NSFW leaked.
+`GET /api/v1/collections/{collection_id}/works` counts and pages from one read under the reader's content limit (it used to read twice).
 
-- The count and the page are built from one read under the reader's content limit.
-- The counted population is cached for 10 minutes per folder, folder `updated_at` and content limit.
+- The counted population is cached for 10 minutes per folder, folder `updated_at` and content limit, and built at most once at a time.
 - The collection page says how many works it is not showing: `item_count − total`, meaning hidden by the content setting or no longer listed. It no longer shows "no works yet" when every work is hidden.
 - `/me/playtimes` tells SFW readers that adult works are left out.
 

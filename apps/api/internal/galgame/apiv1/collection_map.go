@@ -100,7 +100,10 @@ func (s *Service) previewCovers(ctx context.Context, token string, folder catalo
 	for _, it := range items {
 		ids = append(ids, int(it.WorkID))
 	}
-	sums, p := s.hydrator.ByIDs(ctx, ids, includeNSFW)
+	// Hydrating under sfw made catalog omit NSFW preview items and the hydrator
+	// log each one as "catalog did not render work"; on 2026-09-24 that noise
+	// was misread as a counting bug (G6.1). The IsNSFW check below is the gate.
+	sums, p := s.hydrator.ByIDs(ctx, ids, true)
 	if p != nil {
 		slog.Warn("collection: preview hydrate failed", "folder_id", folder.ID, "err", p)
 		return out
@@ -481,10 +484,6 @@ func (s *Service) buildFolderPopulation(ctx context.Context, folder *catalogclie
 	for _, it := range items {
 		ids = append(ids, int(it.WorkID))
 	}
-	// Counting from content_limit=all plus the forum's own NSFW guess, then
-	// hydrating the page under content_limit=sfw, counted works catalog hides
-	// from SFW readers: on 2026-09-24 folder 12015's total included three works
-	// its pages never showed.
 	rows, appErr := s.works.CatalogRowsByWorkIDs(ctx, ids, workrepr.RowInclude, workrepr.ContentLimit(includeNSFW))
 	if appErr != nil {
 		return nil, catalogUnavailable(appErr)
