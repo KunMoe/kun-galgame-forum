@@ -10532,7 +10532,7 @@ export interface components {
         /** @enum {string} */
         ResourceProvider: "baidu" | "aliyun" | "quark" | "pan123" | "tianyiyun" | "caiyun" | "xunlei" | "uc" | "lanzou" | "other";
         /** @enum {string} */
-        ResourceRuntime: "native-win" | "native-and" | "native-ios" | "winlator" | "gamehub" | "kirikiroid2" | "krkrsdl2" | "onscripter" | "joiplay" | "easyrpg" | "renpy-android" | "tyranor" | "tyranor-next" | "other";
+        ResourceRuntime: "native-win" | "native-and" | "native-ios" | "winlator" | "gamehub" | "kirikiroid2" | "krkrsdl2" | "onscripter" | "joiplay" | "easyrpg" | "renpy-android" | "tyranor" | "tyranor-next" | "emulator" | "other";
         /** @enum {string} */
         ResourceType: "game" | "patch" | "collection" | "crack_fix" | "mod" | "tool" | "walkthrough" | "ost" | "voice" | "cg" | "wallpaper" | "artbook" | "video" | "other";
         ResourceViewer: {
@@ -19236,6 +19236,8 @@ export interface operations {
                 resource_platform?: components["schemas"]["ResourcePlatform"];
                 /** @description Only works with at least one forum resource in this language. Omitted means no filter. */
                 resource_language?: components["schemas"]["ResourceLanguage"];
+                /** @description Only works with at least one forum resource that runs through this runtime. emulator matches every emulator runtime, including a resource whose uploader named none. Omitted means no filter. */
+                resource_runtime?: components["schemas"]["ResourceRuntime"];
                 /** @description Only works a forum rating labels with this game type; uncategorized is works no rating labels at all. Omitted means no filter. */
                 game_type?: components["schemas"]["GameTypeFilter"];
                 /** @description When true, adult works are included. Default false. */
@@ -20125,6 +20127,8 @@ export interface operations {
                 resource_platform?: components["schemas"]["ResourcePlatform"];
                 /** @description Only works with at least one forum resource in this language. Omitted means no filter. */
                 resource_language?: components["schemas"]["ResourceLanguage"];
+                /** @description Only works with at least one forum resource that runs through this runtime. emulator matches every emulator runtime, including a resource whose uploader named none. Omitted means no filter. */
+                resource_runtime?: components["schemas"]["ResourceRuntime"];
                 /** @description Only works a forum rating labels with this game type; uncategorized is works no rating labels at all. Omitted means no filter. */
                 game_type?: components["schemas"]["GameTypeFilter"];
                 /** @description When true, adult works are included. Default false. */
@@ -29981,6 +29985,8 @@ export interface operations {
                 resource_platform?: components["schemas"]["ResourcePlatform"];
                 /** @description Only works with at least one forum resource in this language. Omitted means no filter. */
                 resource_language?: components["schemas"]["ResourceLanguage"];
+                /** @description Only works with at least one forum resource that runs through this runtime. emulator matches every emulator runtime, including a resource whose uploader named none. Omitted means no filter. */
+                resource_runtime?: components["schemas"]["ResourceRuntime"];
                 /** @description Only works a forum rating labels with this game type; uncategorized is works no rating labels at all. Omitted means no filter. */
                 game_type?: components["schemas"]["GameTypeFilter"];
                 /** @description When true, adult works are included. Default false. */
@@ -30233,6 +30239,8 @@ export interface operations {
                 resource_platform?: components["schemas"]["ResourcePlatform"];
                 /** @description Only works with at least one forum resource in this language. Omitted means no filter. */
                 resource_language?: components["schemas"]["ResourceLanguage"];
+                /** @description Only works with at least one forum resource that runs through this runtime. emulator matches every emulator runtime, including a resource whose uploader named none. Omitted means no filter. */
+                resource_runtime?: components["schemas"]["ResourceRuntime"];
                 /** @description Only works a forum rating labels with this game type; uncategorized is works no rating labels at all. Omitted means no filter. */
                 game_type?: components["schemas"]["GameTypeFilter"];
                 /** @description When true, adult works are included. Default false. */
@@ -38070,6 +38078,8 @@ export interface operations {
                 resource_platforms?: components["schemas"]["ResourcePlatform"][];
                 /** @description Only works with at least one forum resource in any of these languages. Comma-separated. Omitted means no filter. */
                 resource_languages?: components["schemas"]["ResourceLanguage"][];
+                /** @description Only works with at least one forum resource that runs through any of these runtimes. emulator matches every emulator runtime, including a resource whose uploader named none. Comma-separated. Omitted means no filter. */
+                resource_runtimes?: components["schemas"]["ResourceRuntime"][];
                 /** @description Only works a forum rating labels with this game type; uncategorized is works no rating labels at all. Omitted means no filter. */
                 game_type?: components["schemas"]["GameTypeFilter"];
                 /** @description Only works with a resource hosted on any of these download hosts. Comma-separated. Omitted means no filter. */

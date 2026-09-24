@@ -7,8 +7,9 @@ import {
 } from '~/constants/galgameResource'
 import { KUN_GALGAME_RATING_GAME_TYPE_MAP } from '~/constants/galgame-rating'
 import {
+  EMULATOR_RUNTIME_OPTIONS,
   LANGUAGE_OPTIONS,
-  PLATFORM_OPTIONS,
+  PLATFORM_FILTER_OPTIONS,
   RESOURCE_TYPE_OPTIONS
 } from '#shared/utils/galgameResourceVocab'
 import { settle } from '#shared/utils/api/problem'
@@ -27,6 +28,7 @@ const {
   type,
   language,
   platform,
+  runtime,
   gameType,
   sortField,
   sortOrder,
@@ -49,6 +51,7 @@ watch(
     type.value,
     language.value,
     platform.value,
+    runtime.value,
     gameType.value,
     sortField.value,
     sortOrder.value,
@@ -73,18 +76,23 @@ const csvToArray = (csv: string) => csv.split(',').filter(Boolean)
 const firstOf = (value: string | string[]) =>
   Array.isArray(value) ? (value[0] ?? '') : value
 
-const typeOptions = [
-  { value: '', label: '全部类型' },
-  ...RESOURCE_TYPE_OPTIONS
-]
-const langOptions = [
-  { value: '', label: '全部语言' },
-  ...LANGUAGE_OPTIONS
-]
+const typeOptions = [{ value: '', label: '全部类型' }, ...RESOURCE_TYPE_OPTIONS]
+const langOptions = [{ value: '', label: '全部语言' }, ...LANGUAGE_OPTIONS]
 const platformOptions = [
   { value: '', label: '全部平台' },
-  ...PLATFORM_OPTIONS
+  ...PLATFORM_FILTER_OPTIONS
 ]
+const emulatorOptions = [
+  { value: '', label: '全部模拟器' },
+  ...EMULATOR_RUNTIME_OPTIONS
+]
+
+const setPlatform = (value: string) => {
+  platform.value = value
+  if (value !== 'emulator') {
+    runtime.value = ''
+  }
+}
 
 const gameTypeOptions = [
   { value: '', label: '全部作品' },
@@ -285,6 +293,13 @@ const chips = computed<FilterChip[]>(() => {
       label: labelOf(platformOptions, platform.value)
     })
   }
+  if (platform.value === 'emulator' && runtime.value) {
+    list.push({
+      key: 'runtime',
+      prefix: '模拟器',
+      label: labelOf(emulatorOptions, runtime.value)
+    })
+  }
   if (gameType.value) {
     list.push({
       key: 'gameType',
@@ -333,7 +348,9 @@ const removeChip = (key: string) => {
   } else if (dimension === 'language') {
     language.value = ''
   } else if (dimension === 'platform') {
-    platform.value = ''
+    setPlatform('')
+  } else if (dimension === 'runtime') {
+    runtime.value = ''
   } else if (dimension === 'gameType') {
     gameType.value = ''
   } else if (dimension === 'years') {
@@ -362,7 +379,7 @@ const removeChip = (key: string) => {
 const clearFilters = () => {
   type.value = ''
   language.value = ''
-  platform.value = ''
+  setPlatform('')
   gameType.value = ''
   releasedFrom.value = ''
   releasedTo.value = ''
@@ -438,7 +455,16 @@ const clearFilters = () => {
         :options="platformOptions"
         :model-value="platform"
         empty-value=""
-        @update:model-value="platform = firstOf($event)"
+        @update:model-value="setPlatform(firstOf($event))"
+      />
+      <FilterMenu
+        v-if="platform === 'emulator'"
+        icon="lucide:joystick"
+        label="模拟器"
+        :options="emulatorOptions"
+        :model-value="runtime"
+        empty-value=""
+        @update:model-value="runtime = firstOf($event)"
       />
       <FilterMenu
         icon="lucide:gamepad-2"

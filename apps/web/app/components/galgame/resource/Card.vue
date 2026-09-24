@@ -8,6 +8,7 @@ import type { GalgameResource } from '#shared/utils/api/schemas'
 import {
   resourceLanguageLabel,
   resourcePlatformLabel,
+  resourceRuntimeLabel,
   resourceTypeLabel
 } from '~~/shared/utils/galgameResourceVocab'
 
@@ -20,6 +21,7 @@ const title = computed(() =>
   props.resource.work ? workName(props.resource.work) : ''
 )
 const platform = computed(() => props.resource.resource_platforms[0])
+const runtime = computed(() => props.resource.resource_runtimes[0])
 const language = computed(() => props.resource.resource_languages[0])
 </script>
 
@@ -37,6 +39,10 @@ const language = computed(() => props.resource.resource_languages[0])
           class="text-primary h-4 w-4"
         />
         {{ resourcePlatformLabel(platform) }}
+      </KunChip>
+      <KunChip v-else-if="runtime" size="sm" variant="flat" color="primary">
+        <KunIcon name="lucide:joystick" class="text-primary h-4 w-4" />
+        {{ resourceRuntimeLabel(runtime) }}
       </KunChip>
 
       <KunChip color="warning" :class-name="KUN_USER_TEXT_CHIP_CLASS">

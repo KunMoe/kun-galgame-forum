@@ -90,6 +90,8 @@ func (f *g5Fix) seedCatalog(t *testing.T) {
 			platforms: []string{"win"}, languages: []string{"zh-cn"},
 		})
 	}
+	works[0].runtimes = []string{"emulator"}
+	works[1].runtimes = []string{"kirikiroid2"}
 	works = append(works,
 		geWork{id: g5NULL, name: "NullLimit", release: "2026-02-01", limit: "", rating: "all_ages", local: true, created: base.Add(20 * time.Hour), platforms: []string{"win"}, languages: []string{"ja-jp"}},
 		geWork{id: g5NSFW, name: "NewestNSFW", release: "2026-03-01", limit: "nsfw", rating: "r18", local: true, created: base.Add(40 * time.Hour), platforms: []string{"and"}, languages: []string{"zh-cn"}},
@@ -192,8 +194,8 @@ func (f *g5Fix) seedLocal(t *testing.T) {
 		if len(w.languages) == 0 {
 			lang = []byte("[]")
 		}
-		run(`INSERT INTO galgame_resource (work_id, user_id, type, platform, language, platforms, languages, provider, updated) VALUES (?, ?, 'game', 'windows', 'zh-cn', ?::jsonb, ?::jsonb, '{baidu}', now())`,
-			w.id, geUser, string(plat), string(lang))
+		run(`INSERT INTO galgame_resource (work_id, user_id, type, platform, language, platforms, languages, runtimes, provider, updated) VALUES (?, ?, 'game', 'windows', 'zh-cn', ?::jsonb, ?::jsonb, ?::jsonb, '{baidu}', now())`,
+			w.id, geUser, string(plat), string(lang), geJSONKeys(w.runtimes))
 	}
 }
 

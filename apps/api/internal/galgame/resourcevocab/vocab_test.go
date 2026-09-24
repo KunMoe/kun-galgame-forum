@@ -1,6 +1,9 @@
 package resourcevocab
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
 
 func TestLegacyAndCompatRoundTrip(t *testing.T) {
 	cases := []struct {
@@ -14,7 +17,7 @@ func TestLegacyAndCompatRoundTrip(t *testing.T) {
 		{old: "mac", plat: Keys{"mac"}, back: "mac"},
 		{old: "linux", plat: Keys{"lin"}, back: "linux"},
 		{old: "others", plat: Keys{"oth"}, back: "others"},
-		{old: "emulator", back: ""},
+		{old: "emulator", run: Keys{"emulator"}, back: "emulator"},
 	}
 	for _, c := range cases {
 		p, r := LegacyPlatform(c.old)
@@ -34,6 +37,31 @@ func TestCompatEmulatorRuntimeWins(t *testing.T) {
 	got := CompatPlatform(Keys{"win", "and"}, Keys{"native-win", "tyranor"})
 	if got != "emulator" {
 		t.Fatalf("got %q", got)
+	}
+}
+
+func TestRuntimeFilterWidensEmulator(t *testing.T) {
+	got := RuntimeFilter([]string{"native-and", "emulator"})
+	want := append([]string{"native-and"}, emulatorRuntimes...)
+	if stringsJoin(got) != stringsJoin(want) {
+		t.Fatalf("got %v want %v", got, want)
+	}
+	if got := RuntimeFilter([]string{"kirikiroid2"}); stringsJoin(got) != "kirikiroid2" {
+		t.Fatalf("a named emulator stays itself, got %v", got)
+	}
+}
+
+// The web lists the emulator runtimes as every runtime that is neither native-*
+// nor other, so a key added here must follow that rule.
+func TestEmulatorRuntimesAreTheNonNativeKeys(t *testing.T) {
+	var want Keys
+	for _, k := range RuntimeKeys {
+		if !strings.HasPrefix(k, "native-") && k != "other" {
+			want = append(want, k)
+		}
+	}
+	if stringsJoin(want) != stringsJoin(emulatorRuntimes) {
+		t.Fatalf("emulatorRuntimes %v, non-native runtimes %v", emulatorRuntimes, want)
 	}
 }
 

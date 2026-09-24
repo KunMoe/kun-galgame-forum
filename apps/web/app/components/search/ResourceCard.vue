@@ -7,6 +7,7 @@ import { contentPlainText } from '~/utils/contentPlainText'
 import {
   resourceLanguageLabel,
   resourcePlatformLabel,
+  resourceRuntimeLabel,
   resourceTypeLabel
 } from '~~/shared/utils/galgameResourceVocab'
 
@@ -21,6 +22,7 @@ const title = computed(() =>
 )
 const note = computed(() => contentPlainText(props.resource.content).trim())
 const platform = computed(() => props.resource.resource_platforms[0])
+const runtime = computed(() => props.resource.resource_runtimes[0])
 const language = computed(() => props.resource.resource_languages[0])
 </script>
 
@@ -63,6 +65,7 @@ const language = computed(() => props.resource.resource_languages[0])
       </span>
       <span v-if="language">{{ resourceLanguageLabel(language) }}</span>
       <span v-if="platform">{{ resourcePlatformLabel(platform) }}</span>
+      <span v-else-if="runtime">{{ resourceRuntimeLabel(runtime) }}</span>
       <span v-if="resource.size" class="flex items-center gap-1">
         <KunIcon name="lucide:database" class="size-3.5" />
         {{ resource.size }}

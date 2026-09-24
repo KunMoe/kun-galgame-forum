@@ -6,7 +6,8 @@ import {
   LEGACY_RESOURCE_TYPE,
   PLATFORM_OPTIONS,
   RESOURCE_TYPE_OPTIONS,
-  axisKey
+  axisKey,
+  emulatorRuntimeFilter
 } from '#shared/utils/galgameResourceVocab'
 import { workSummaryToCard } from '~/utils/galgame/workCard'
 import { browseSortToken } from './useGalgameFilters'
@@ -18,6 +19,7 @@ export const useEntityWorksQuery = () => {
     type,
     language,
     platform,
+    runtime,
     gameType,
     sortField,
     sortOrder
@@ -38,16 +40,13 @@ export const useEntityWorksQuery = () => {
         LEGACY_RESOURCE_TYPE,
         RESOURCE_TYPE_OPTIONS
       ),
-      resource_platform: axisKey<
-        NonNullable<WorksQuery['resource_platform']>
-      >(
+      resource_platform: axisKey<NonNullable<WorksQuery['resource_platform']>>(
         platform.value,
         LEGACY_RESOURCE_PLATFORM,
         PLATFORM_OPTIONS
       ),
-      resource_language: axisKey<
-        NonNullable<WorksQuery['resource_language']>
-      >(
+      resource_runtime: emulatorRuntimeFilter(platform.value, runtime.value),
+      resource_language: axisKey<NonNullable<WorksQuery['resource_language']>>(
         language.value,
         LEGACY_RESOURCE_LANGUAGE,
         LANGUAGE_OPTIONS
@@ -65,5 +64,7 @@ export const useEntityWorksQuery = () => {
 
 export const useWorkCards = (works: () => WorkSummary[] | undefined) => {
   const nameOf = useCatalogName()
-  return computed(() => (works() ?? []).map((w) => workSummaryToCard(w, nameOf)))
+  return computed(() =>
+    (works() ?? []).map((w) => workSummaryToCard(w, nameOf))
+  )
 }

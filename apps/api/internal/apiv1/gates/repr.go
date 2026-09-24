@@ -46,9 +46,10 @@ var (
 	}
 	languageTagValue = regexp.MustCompile(`^[a-z]{2,3}(-[a-z0-9]{2,8})*$`)
 	// kebabCaseProperties hold lowercase kebab-case tokens with hyphens: the
-	// named exception in 01 §3 (resource_runtimes). Checked for that shape instead.
+	// named exception in 01 §3 (resource_runtime, resource_runtimes). Checked for
+	// that shape instead.
 	kebabCaseProperties = map[string]bool{
-		"resource_runtimes": true,
+		"resource_runtime": true, "resource_runtimes": true,
 	}
 	kebabCaseValue = regexp.MustCompile(`^[a-z][a-z0-9]*(-[a-z0-9]+)*$`)
 )

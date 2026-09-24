@@ -136,6 +136,7 @@ func (r *GalgameListRepository) ListIDs(f model.GalgameListFilter) (ids []int, t
 	}
 	inner = applyJSONOverlap(inner, "gr.platforms", axisKeys(f.PlatformAxis, f.PlatformAxes))
 	inner = applyJSONOverlap(inner, "gr.languages", axisKeys(f.LanguageAxis, f.LanguageAxes))
+	inner = applyJSONOverlap(inner, "gr.runtimes", axisKeys("", resourcevocab.RuntimeFilter(f.RuntimeAxes)))
 	if len(f.IncludeProviders) > 0 {
 		inner = inner.Where("gr.provider && ?", providerArrayLit(f.IncludeProviders))
 	}

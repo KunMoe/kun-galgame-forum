@@ -51,6 +51,7 @@ func (s *Service) listWorks(ctx context.Context, in *listWorksInput) (*workSumma
 		Type:                 string(in.ResourceType),
 		PlatformAxes:         strKeys(in.ResourcePlatforms),
 		LanguageAxes:         strKeys(in.ResourceLanguages),
+		RuntimeAxes:          strKeys(in.ResourceRuntimes),
 		GameType:             string(in.GameType),
 		SortField:            field,
 		SortOrder:            order,

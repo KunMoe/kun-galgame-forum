@@ -47,6 +47,12 @@ func (ResourcePlatform) Schema(huma.Registry) *huma.Schema {
 	return vocabSchema(resourcevocab.PlatformKeys, "A resource platform key.")
 }
 
+type ResourceRuntime string
+
+func (ResourceRuntime) Schema(huma.Registry) *huma.Schema {
+	return vocabSchema(resourcevocab.RuntimeKeys, "A resource runtime key.")
+}
+
 type ResourceLanguage string
 
 func (ResourceLanguage) Schema(huma.Registry) *huma.Schema {

@@ -71,6 +71,7 @@ type geWork struct {
 	created    time.Time
 	platforms  []string
 	languages  []string
+	runtimes   []string
 	legacyPlat string
 	ratings    []int
 	gameTypes  []string
@@ -85,9 +86,9 @@ func geWorks() []geWork {
 		{id: geWorkMin + 0, name: "Alpha", release: "2026-01-01", limit: "sfw", rating: "all_ages", tags: []int{geTagMain}, local: true, view: 7, created: t0, platforms: []string{"win", "and"}, languages: []string{"zh-cn"}, legacyPlat: "windows", ratings: []int{8, 9}, gameTypes: []string{"plot"}},
 		{id: geWorkMin + 1, name: "Beta", release: "2026-01-01", limit: "sfw", rating: "r18", tags: []int{geTagMain, geTagSexual}, local: true, view: 7, created: t0.Add(time.Hour), platforms: []string{"win"}, languages: []string{"ja-jp", "zh-cn"}, legacyPlat: "windows"},
 		{id: geWorkMin + 2, name: "Gamma", release: "2025-06", limit: "nsfw", rating: "all_ages", tags: []int{geTagMain}, local: true, view: 7, created: t0.Add(2 * time.Hour), platforms: []string{"and"}, languages: []string{"zh-tw"}, legacyPlat: "app"},
-		{id: geWorkMin + 3, name: "Delta", release: "2024", limit: "sfw", rating: "all_ages", tags: []int{geTagMain}, local: true, view: 3, created: t0.Add(3 * time.Hour), platforms: []string{"mac"}, languages: []string{"en-us"}, legacyPlat: "windows", ratings: []int{5}},
+		{id: geWorkMin + 3, name: "Delta", release: "2024", limit: "sfw", rating: "all_ages", tags: []int{geTagMain}, local: true, view: 3, created: t0.Add(3 * time.Hour), platforms: []string{"mac"}, languages: []string{"en-us"}, runtimes: []string{"emulator"}, legacyPlat: "windows", ratings: []int{5}},
 		{id: geWorkMin + 4, name: "Epsilon", release: "", limit: "", rating: "all_ages", tags: []int{geTagMain}},
-		{id: geWorkMin + 5, name: "Zeta", release: "2023-02-02", limit: "sfw", rating: "all_ages", tags: []int{geTagMain}, local: true, view: 1, created: t0.Add(4 * time.Hour), platforms: []string{"win"}, languages: []string{"zh-cn"}, legacyPlat: "windows", gameTypes: []string{"moe"}},
+		{id: geWorkMin + 5, name: "Zeta", release: "2023-02-02", limit: "sfw", rating: "all_ages", tags: []int{geTagMain}, local: true, view: 1, created: t0.Add(4 * time.Hour), platforms: []string{"win"}, languages: []string{"zh-cn"}, runtimes: []string{"tyranor"}, legacyPlat: "windows", gameTypes: []string{"moe"}},
 	}
 }
 
@@ -827,8 +828,8 @@ func (f *geFix) seedLocal(t *testing.T) {
 			w.id, w.view, w.created, w.created, w.view*2, w.limit, w.created.Add(24*time.Hour))
 		plat, _ := json.Marshal(w.platforms)
 		lang, _ := json.Marshal(w.languages)
-		run(`INSERT INTO galgame_resource (work_id, user_id, type, platform, language, platforms, languages, updated) VALUES (?, ?, 'game', ?, 'zh-cn', ?::jsonb, ?::jsonb, now())`,
-			w.id, geUser, w.legacyPlat, string(plat), string(lang))
+		run(`INSERT INTO galgame_resource (work_id, user_id, type, platform, language, platforms, languages, runtimes, updated) VALUES (?, ?, 'game', ?, 'zh-cn', ?::jsonb, ?::jsonb, ?::jsonb, now())`,
+			w.id, geUser, w.legacyPlat, string(plat), string(lang), geJSONKeys(w.runtimes))
 		gameTypes := w.gameTypes
 		if gameTypes == nil {
 			gameTypes = []string{}
@@ -866,6 +867,14 @@ func (f *geFix) get(t *testing.T, rawURL, specPath string) (*http.Response, map[
 		}
 	}
 	return resp, m
+}
+
+func geJSONKeys(keys []string) string {
+	if len(keys) == 0 {
+		return "[]"
+	}
+	b, _ := json.Marshal(keys)
+	return string(b)
 }
 
 func geItemIDs(body map[string]any) []string {

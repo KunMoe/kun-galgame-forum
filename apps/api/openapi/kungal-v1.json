@@ -15166,6 +15166,7 @@
           "renpy-android",
           "tyranor",
           "tyranor-next",
+          "emulator",
           "other"
         ],
         "maxLength": 13,
@@ -31662,6 +31663,16 @@
             }
           },
           {
+            "description": "Only works with at least one forum resource that runs through this runtime. emulator matches every emulator runtime, including a resource whose uploader named none. Omitted means no filter.",
+            "explode": false,
+            "in": "query",
+            "name": "resource_runtime",
+            "schema": {
+              "$ref": "#/components/schemas/ResourceRuntime",
+              "description": "Only works with at least one forum resource that runs through this runtime. emulator matches every emulator runtime, including a resource whose uploader named none. Omitted means no filter."
+            }
+          },
+          {
             "description": "Only works a forum rating labels with this game type; uncategorized is works no rating labels at all. Omitted means no filter.",
             "explode": false,
             "in": "query",
@@ -33069,6 +33080,16 @@
             "schema": {
               "$ref": "#/components/schemas/ResourceLanguage",
               "description": "Only works with at least one forum resource in this language. Omitted means no filter."
+            }
+          },
+          {
+            "description": "Only works with at least one forum resource that runs through this runtime. emulator matches every emulator runtime, including a resource whose uploader named none. Omitted means no filter.",
+            "explode": false,
+            "in": "query",
+            "name": "resource_runtime",
+            "schema": {
+              "$ref": "#/components/schemas/ResourceRuntime",
+              "description": "Only works with at least one forum resource that runs through this runtime. emulator matches every emulator runtime, including a resource whose uploader named none. Omitted means no filter."
             }
           },
           {
@@ -47532,6 +47553,16 @@
             }
           },
           {
+            "description": "Only works with at least one forum resource that runs through this runtime. emulator matches every emulator runtime, including a resource whose uploader named none. Omitted means no filter.",
+            "explode": false,
+            "in": "query",
+            "name": "resource_runtime",
+            "schema": {
+              "$ref": "#/components/schemas/ResourceRuntime",
+              "description": "Only works with at least one forum resource that runs through this runtime. emulator matches every emulator runtime, including a resource whose uploader named none. Omitted means no filter."
+            }
+          },
+          {
             "description": "Only works a forum rating labels with this game type; uncategorized is works no rating labels at all. Omitted means no filter.",
             "explode": false,
             "in": "query",
@@ -48012,6 +48043,16 @@
             "schema": {
               "$ref": "#/components/schemas/ResourceLanguage",
               "description": "Only works with at least one forum resource in this language. Omitted means no filter."
+            }
+          },
+          {
+            "description": "Only works with at least one forum resource that runs through this runtime. emulator matches every emulator runtime, including a resource whose uploader named none. Omitted means no filter.",
+            "explode": false,
+            "in": "query",
+            "name": "resource_runtime",
+            "schema": {
+              "$ref": "#/components/schemas/ResourceRuntime",
+              "description": "Only works with at least one forum resource that runs through this runtime. emulator matches every emulator runtime, including a resource whose uploader named none. Omitted means no filter."
             }
           },
           {
@@ -59479,6 +59520,20 @@
               "items": {
                 "$ref": "#/components/schemas/ResourceLanguage",
                 "description": "A resource language key."
+              },
+              "type": "array"
+            }
+          },
+          {
+            "description": "Only works with at least one forum resource that runs through any of these runtimes. emulator matches every emulator runtime, including a resource whose uploader named none. Comma-separated. Omitted means no filter.",
+            "explode": false,
+            "in": "query",
+            "name": "resource_runtimes",
+            "schema": {
+              "description": "Only works with at least one forum resource that runs through any of these runtimes. emulator matches every emulator runtime, including a resource whose uploader named none. Comma-separated. Omitted means no filter.",
+              "items": {
+                "$ref": "#/components/schemas/ResourceRuntime",
+                "description": "A resource runtime key."
               },
               "type": "array"
             }

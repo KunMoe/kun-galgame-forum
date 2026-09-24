@@ -76,7 +76,7 @@ var vocabularies = []vocabulary{
 	{"ResourceLanguage", []string{"zh-cn", "zh-tw", "ja-jp", "en-us", "other"}},
 	{"ResourcePlatform", []string{"win", "and", "ios", "mac", "lin", "web", "mob", "swi", "sw2", "n3d", "nds", "wii", "wiu", "gba", "gbc", "nes", "sfc", "ps1", "ps2", "ps3", "ps4", "ps5", "psp", "psv", "xb1", "xb3", "xbo", "xxs", "sat", "smd", "scd", "drc", "pce", "pcf", "tdo", "p88", "p98", "x1s", "x68", "fm7", "fm8", "fmt", "msx", "dos", "dvd", "bdp", "vnd", "oth"}},
 	{"ResourceProvider", []string{"baidu", "aliyun", "quark", "pan123", "tianyiyun", "caiyun", "xunlei", "uc", "lanzou", "other"}},
-	{"ResourceRuntime", []string{"native-win", "native-and", "native-ios", "winlator", "gamehub", "kirikiroid2", "krkrsdl2", "onscripter", "joiplay", "easyrpg", "renpy-android", "tyranor", "tyranor-next", "other"}},
+	{"ResourceRuntime", []string{"native-win", "native-and", "native-ios", "winlator", "gamehub", "kirikiroid2", "krkrsdl2", "onscripter", "joiplay", "easyrpg", "renpy-android", "tyranor", "tyranor-next", "emulator", "other"}},
 	{"ResourceType", []string{"game", "patch", "collection", "crack_fix", "mod", "tool", "walkthrough", "ost", "voice", "cg", "wallpaper", "artbook", "video", "other"}},
 	{"ReviewAction", []string{"none", "hide", "remove", "warn_user", "restrict", "escalate_idp"}},
 	{"ReviewItemState", []string{"pending", "claimed", "actioned", "dismissed"}},

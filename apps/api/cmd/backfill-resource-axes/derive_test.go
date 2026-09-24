@@ -30,13 +30,13 @@ func TestPlanAxesIsNoopWhenAxesFilled(t *testing.T) {
 	}
 }
 
-func TestPlanAxesUnknownEmulatorGetsOther(t *testing.T) {
+func TestPlanAxesUnnamedEmulatorStaysEmulator(t *testing.T) {
 	p, ok := planAxes(axesRow{Type: "game", Legacy: "emulator"})
-	if !ok || !p.SetR || !contains(p.Runtimes, "other") {
+	if !ok || !p.SetR || len(p.Runtimes) != 1 || p.Runtimes[0] != "emulator" {
 		t.Fatalf("runtimes %+v ok=%v", p, ok)
 	}
-	if !p.SetP || !contains(p.Platforms, "oth") {
-		t.Fatalf("platforms %v", p.Platforms)
+	if p.SetP {
+		t.Fatalf("an emulator pack's own platform is unknown, got %v", p.Platforms)
 	}
 }
 

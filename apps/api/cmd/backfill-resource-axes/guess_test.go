@@ -13,6 +13,13 @@ func TestGuessFromEmulatorNote(t *testing.T) {
 	}
 }
 
+func TestGuessNamedEmulatorAddsNoPlaceholder(t *testing.T) {
+	g := guessFromText("KRKR模拟器", "", "emulator")
+	if contains(g.Runtimes, "emulator") {
+		t.Fatalf("runtimes %v", g.Runtimes)
+	}
+}
+
 func TestGuessDoesNotTripOnEnglishTy(t *testing.T) {
 	g := guessFromText("quality entity notes", "2 GB", "windows")
 	if contains(g.Runtimes, "tyranor") {

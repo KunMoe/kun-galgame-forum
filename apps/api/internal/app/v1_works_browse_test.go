@@ -85,6 +85,23 @@ func TestV1WorksUnknownSortAndEnumAndDate(t *testing.T) {
 	geStatus(t, resp, body, http.StatusBadRequest, "LIMIT_TOO_LARGE")
 }
 
+func TestV1WorksEmulatorRuntimeMatchesEveryEmulator(t *testing.T) {
+	f := newG5Fix(t)
+	resp, body := f.get(t, "/api/v1/works?resource_runtimes=emulator", "/works")
+	geStatus(t, resp, body, http.StatusOK, "")
+	if ids := geItemIDs(body); len(ids) != 2 || !g5HasID(body, g5SFW0) || !g5HasID(body, g5SFW0+1) {
+		t.Fatalf("emulator should match the unnamed and the kirikiroid2 resource: %v", ids)
+	}
+	_, body = f.get(t, "/api/v1/works?resource_runtimes=kirikiroid2", "/works")
+	if ids := geItemIDs(body); len(ids) != 1 || !g5HasID(body, g5SFW0+1) {
+		t.Fatalf("kirikiroid2: %v", ids)
+	}
+	_, body = f.get(t, "/api/v1/works?resource_runtimes=native-win,emulator", "/works")
+	if ids := geItemIDs(body); len(ids) != 2 {
+		t.Fatalf("any-of with no native-win rows: %v", ids)
+	}
+}
+
 func TestV1WorksIncludeResourceless(t *testing.T) {
 	f := newG5Fix(t)
 	_, body := f.get(t, "/api/v1/works", "/works")

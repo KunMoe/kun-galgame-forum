@@ -25,7 +25,7 @@ var PlatformKeys = []string{
 var RuntimeKeys = []string{
 	"native-win", "native-and", "native-ios", "winlator", "gamehub",
 	"kirikiroid2", "krkrsdl2", "onscripter", "joiplay", "easyrpg",
-	"renpy-android", "tyranor", "tyranor-next", "other",
+	"renpy-android", "tyranor", "tyranor-next", "emulator", "other",
 }
 
 var RuntimeRelevantTypes = []string{
@@ -34,7 +34,7 @@ var RuntimeRelevantTypes = []string{
 
 var emulatorRuntimes = []string{
 	"winlator", "gamehub", "kirikiroid2", "krkrsdl2", "onscripter",
-	"joiplay", "easyrpg", "renpy-android", "tyranor", "tyranor-next",
+	"joiplay", "easyrpg", "renpy-android", "tyranor", "tyranor-next", "emulator",
 }
 
 func index(keys []string) map[string]int {
@@ -67,5 +67,21 @@ var (
 
 func HasRuntimeAxis(resourceType string) bool { return runtimeSet[resourceType] }
 
+func IsEmulatorRuntime(runtime string) bool { return emulatorRuntimeSet[runtime] }
+
 func Platforms(in []string) (Keys, bool) { return Normalize(in, platformIndex) }
 func Runtimes(in []string) (Keys, bool)  { return Normalize(in, runtimeIndex) }
+
+// RuntimeFilter widens emulator, which a resource stores when its uploader
+// said only that it needs one, to every emulator runtime.
+func RuntimeFilter(keys []string) []string {
+	out := make([]string, 0, len(keys))
+	for _, k := range keys {
+		if k == "emulator" {
+			out = append(out, emulatorRuntimes...)
+		} else {
+			out = append(out, k)
+		}
+	}
+	return out
+}

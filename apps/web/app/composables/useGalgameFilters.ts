@@ -1,13 +1,16 @@
 import { useRouteQuery } from '@vueuse/router'
 import type { ListWorksQuery } from '#shared/utils/api/schemas'
 import {
+  EMULATOR_RUNTIME_OPTIONS,
   LANGUAGE_OPTIONS,
   LEGACY_RESOURCE_LANGUAGE,
   LEGACY_RESOURCE_PLATFORM,
   LEGACY_RESOURCE_TYPE,
+  PLATFORM_FILTER_OPTIONS,
   PLATFORM_OPTIONS,
   RESOURCE_TYPE_OPTIONS,
-  axisKey
+  axisKey,
+  emulatorRuntimeFilter
 } from '#shared/utils/galgameResourceVocab'
 import {
   PROVIDER_KEY_OPTIONS,
@@ -49,6 +52,7 @@ export const GALGAME_FILTER_QUERY_KEYS = [
   'type',
   'language',
   'platform',
+  'runtime',
   'gameType',
   'sortField',
   'sortOrder',
@@ -102,11 +106,7 @@ export const browseSortToken = (
   order: string
 ): NonNullable<ListWorksQuery['sort']> => {
   const key =
-    field === 'time'
-      ? 'resource_updated'
-      : field === 'views'
-        ? 'view'
-        : field
+    field === 'time' ? 'resource_updated' : field === 'views' ? 'view' : field
   const dir = order === 'asc' ? 'asc' : 'desc'
   const token = `${key}_${dir}`
   return BROWSE_SORT_FIELDS.has(key)
@@ -128,8 +128,9 @@ export const useGalgameFilters = (defaultSortField: SortField = 'time') => {
   const platform = mappedAxis(
     'platform',
     LEGACY_RESOURCE_PLATFORM,
-    PLATFORM_OPTIONS
+    PLATFORM_FILTER_OPTIONS
   )
+  const runtime = mappedAxis('runtime', {}, EMULATOR_RUNTIME_OPTIONS)
   const gameTypeRaw = useRouteQuery<string>('gameType', '', opts)
   const gameType = computed({
     get: () => (gameTypeRaw.value === 'all' ? '' : gameTypeRaw.value),
@@ -176,6 +177,7 @@ export const useGalgameFilters = (defaultSortField: SortField = 'time') => {
     type,
     language,
     platform,
+    runtime,
     gameType,
     sortField,
     sortOrder,
@@ -204,18 +206,14 @@ export const useBrowseWorksQuery = () => {
     )
     const platform = axisKey<
       NonNullable<ListWorksQuery['resource_platforms']>[number]
-    >(
+    >(filters.platform.value, LEGACY_RESOURCE_PLATFORM, PLATFORM_OPTIONS)
+    const runtime = emulatorRuntimeFilter(
       filters.platform.value,
-      LEGACY_RESOURCE_PLATFORM,
-      PLATFORM_OPTIONS
+      filters.runtime.value
     )
     const language = axisKey<
       NonNullable<ListWorksQuery['resource_languages']>[number]
-    >(
-      filters.language.value,
-      LEGACY_RESOURCE_LANGUAGE,
-      LANGUAGE_OPTIONS
-    )
+    >(filters.language.value, LEGACY_RESOURCE_LANGUAGE, LANGUAGE_OPTIONS)
     const gameType = GAME_TYPES.has(
       filters.gameType.value as NonNullable<ListWorksQuery['game_type']>
     )
@@ -233,11 +231,10 @@ export const useBrowseWorksQuery = () => {
       sort: browseSortToken(filters.sortField.value, filters.sortOrder.value),
       ...(type ? { resource_type: type } : {}),
       ...(platform ? { resource_platforms: [platform] } : {}),
+      ...(runtime ? { resource_runtimes: [runtime] } : {}),
       ...(language ? { resource_languages: [language] } : {}),
       ...(gameType ? { game_type: gameType } : {}),
-      ...(resourceProviders
-        ? { resource_providers: resourceProviders }
-        : {}),
+      ...(resourceProviders ? { resource_providers: resourceProviders } : {}),
       ...(excludedSoleProviders
         ? { excluded_sole_providers: excludedSoleProviders }
         : {}),

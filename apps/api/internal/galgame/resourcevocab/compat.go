@@ -29,7 +29,7 @@ func LegacyPlatform(scalar string) (platforms Keys, runtimes Keys) {
 	case "others":
 		return Keys{"oth"}, Keys{}
 	case "emulator":
-		return Keys{}, Keys{}
+		return Keys{}, Keys{"emulator"}
 	default:
 		return Keys{}, Keys{}
 	}

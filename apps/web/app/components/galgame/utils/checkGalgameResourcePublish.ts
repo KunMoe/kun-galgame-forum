@@ -40,7 +40,7 @@ export const checkGalgameResourcePublish = (link: GalgameResourceStoreTemp) => {
   }
 
   if (
-    !link.resource_platforms.length ||
+    (!link.resource_platforms.length && !link.resource_runtimes.length) ||
     link.resource_platforms.some((k) => !PLATFORM_LABELS[k])
   ) {
     useMessage(10561, 'warn')

@@ -5,7 +5,9 @@ export interface VocabOption<T extends string = string> {
   label: string
 }
 
-export const RESOURCE_TYPE_OPTIONS: VocabOption<GalgameResource['resource_type']>[] = [
+export const RESOURCE_TYPE_OPTIONS: VocabOption<
+  GalgameResource['resource_type']
+>[] = [
   { value: 'game', label: '游戏本体' },
   { value: 'collection', label: '合集' },
   { value: 'patch', label: '补丁' },
@@ -135,8 +137,39 @@ export const RUNTIME_OPTIONS: VocabOption<
   { value: 'renpy-android', label: "Ren'Py 安卓版" },
   { value: 'tyranor', label: 'Tyranor' },
   { value: 'tyranor-next', label: 'Tyranor Next' },
+  { value: 'emulator', label: '模拟器（未注明哪种）' },
   { value: 'other', label: '其它运行环境' }
 ]
+
+type ResourceRuntime = GalgameResource['resource_runtimes'][number]
+
+// 模拟器 left the platform list for the runtime axis, and the /galgame filter
+// lost it until users asked where it went. It stays a platform-filter choice,
+// so ?platform=emulator links from the old filter still land on it.
+export const PLATFORM_FILTER_OPTIONS: VocabOption[] = PLATFORM_OPTIONS.flatMap(
+  (option) =>
+    option.value === 'and'
+      ? [option, { value: 'emulator', label: '模拟器' }]
+      : [option]
+)
+
+// The server counts every runtime that is neither native-* nor other as an
+// emulator; emulator itself is left out because as a filter it means all of them.
+export const EMULATOR_RUNTIME_OPTIONS = RUNTIME_OPTIONS.filter(
+  (option) =>
+    !option.value.startsWith('native-') &&
+    option.value !== 'other' &&
+    option.value !== 'emulator'
+)
+
+export const emulatorRuntimeFilter = (
+  platform: string,
+  runtime: string
+): ResourceRuntime | undefined =>
+  platform === 'emulator'
+    ? (axisKey<ResourceRuntime>(runtime, {}, EMULATOR_RUNTIME_OPTIONS) ??
+      'emulator')
+    : undefined
 
 export const VERSION_LABEL_OPTIONS: VocabOption<
   NonNullable<GalgameResource['version_label']>
@@ -193,5 +226,4 @@ export const resourceLanguageLabel = (key: string) =>
 export const resourcePlatformLabel = (key: string) =>
   PLATFORM_LABELS[key] || key
 
-export const resourceRuntimeLabel = (key: string) =>
-  RUNTIME_LABELS[key] || key
+export const resourceRuntimeLabel = (key: string) => RUNTIME_LABELS[key] || key

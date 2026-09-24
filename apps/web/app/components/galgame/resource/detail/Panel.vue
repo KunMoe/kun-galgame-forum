@@ -4,6 +4,7 @@ import type { GalgameResource } from '#shared/utils/api/schemas'
 import {
   resourceLanguageLabel as langLabel,
   resourcePlatformLabel as platLabel,
+  resourceRuntimeLabel as runtimeLabel,
   resourceTypeLabel as typeLabel
 } from '~~/shared/utils/galgameResourceVocab'
 import {
@@ -32,7 +33,9 @@ const galgameTitle = computed(() =>
   props.resource.work ? workName(props.resource.work) : ''
 )
 const headerName = computed(() => {
-  const platform = platformLabels.value[0] ?? ''
+  const firstRuntime = props.resource.resource_runtimes[0]
+  const platform =
+    platformLabels.value[0] ?? (firstRuntime ? runtimeLabel(firstRuntime) : '')
   const language = languageLabels.value[0] ?? ''
   return `${galgameTitle.value} ${platform} ${language}${resourceTypeLabel.value}资源下载`
 })
@@ -72,6 +75,14 @@ const headerName = computed(() => {
       >
         <KunIcon :name="GALGAME_RESOURCE_PLATFORM_ICON_MAP[platform]" />
         {{ platLabel(platform) }}
+      </KunChip>
+      <KunChip
+        v-for="runtime in resource.resource_runtimes"
+        :key="runtime"
+        color="default"
+      >
+        <KunIcon name="lucide:joystick" />
+        {{ runtimeLabel(runtime) }}
       </KunChip>
       <KunChip color="warning" :class-name="KUN_USER_TEXT_CHIP_CLASS">
         <KunIcon name="lucide:database" />

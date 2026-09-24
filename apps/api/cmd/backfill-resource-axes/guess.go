@@ -1,6 +1,7 @@
 package main
 
 import (
+	"slices"
 	"strings"
 
 	"kun-galgame-api/internal/galgame/resourcevocab"
@@ -84,6 +85,9 @@ func guessFromText(note, size, legacyPlatform string) guess {
 	if legacyPlatform == "app" {
 		addRun("native-and")
 		addPlat("and")
+	}
+	if legacyPlatform == "emulator" && !slices.ContainsFunc(setKeys(runs), resourcevocab.IsEmulatorRuntime) {
+		addRun("emulator")
 	}
 
 	outP, _ := resourcevocab.Platforms(setKeys(plats))
