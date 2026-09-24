@@ -163,7 +163,17 @@
 
 ## 6. 恢复
 
-迁移 120 装一个函数 `user_purge_restore(p_purge_id uuid)`，**恢复就是这条查询**：
+**完整撤销是两步：论坛库 + community**（U3c.1，§14）。一条命令做完两步：
+
+```bash
+# 在 kungal-neo 上，/etc/dokploy/compose/kun-visual-novel-forum-iunwa9/code 目录里
+sudo docker compose -f docker-compose.prod.yml -p kun-visual-novel-forum-iunwa9 run --rm tools purge-restore <purge_id>          # 演练：论坛库回滚，不调 community
+sudo docker compose -f docker-compose.prod.yml -p kun-visual-novel-forum-iunwa9 run --rm tools purge-restore -commit <purge_id>  # 提交：论坛库，然后 community
+```
+
+`tools` 容器带的是 API 的同一份环境，数据库与 S2S 凭证都不出现在命令行上。community 回 `404` 表示那边没有可恢复的内容（本站没清空过他、已撤销、超过 30 天），不算失败。community 失败时论坛库那半已提交，重跑同一条命令：论坛库报「已恢复」，只补 community。
+
+论坛库那一步就是迁移 120 装的函数 `user_purge_restore(p_purge_id uuid)`，工具只是替你开事务、读报告、再调 community。手工只恢复论坛库时：
 
 ```sql
 -- 生产：ssh kungal-neo "sudo -n docker exec -i kun-visual-novel-infra-vqvqbc-postgres-1 psql -U postgres -d kungalgame"
@@ -185,11 +195,11 @@ ROLLBACK;   -- 报告无误后把这一行换成 COMMIT 再跑一遍
 1. **没有未恢复的行 → 报错**（不存在的 id、已经恢复过的 id）。
 2. `SET LOCAL session_replication_role = replica`：关掉触发器与外键检查，把 `operation = 'delete'` 的行按原主键原样插回（`jsonb_populate_record`，`ON CONFLICT DO NOTHING`）。关掉触发器是必须的：插回一个话题会让 `feed_sync_topic` 新铸一行动态，再插回存档里那行原动态就撞唯一键；原样插回的行本来就包括原来的动态行。
 3. 按存档 id **倒序逐行**撤销（`delete` 插回、`insert` 删掉、`update` 按列改回）。`update`：计数器列（名字以 `_count` / `_sum` 结尾的数值列）**加回差值** `旧 − 新`——清空之后新增的赞不会被抹掉；其余列**比较后置回**：当前值仍等于清空写下的新值才改回旧值，否则跳过、计入报告（清空之后有人动过它，以现在为准）。
-4. 切回 `origin`，**校验外键**：对每个带恢复行的子表、每个单列外键，找恢复行里指向不存在父行的——有一个就 `RAISE EXCEPTION`，整个恢复回滚（例：清空后别人删了一个话题，而他在那里的回复要插回来）。报错信息写明表、列、条数；操作者按需把那几行从存档里删掉再跑。最后把本次处理的存档行记上 `restored_at`。
+4. 切回 `origin`，**校验外键**：对每个带恢复行的子表、它的每个外键（多列外键同样处理），找恢复行里指向不存在父行的——有一个就 `RAISE EXCEPTION`，整个恢复回滚（例：清空后别人删了一个话题，而他在那里的回复要插回来）。报错信息写明表、列、条数；操作者按需把那几行从存档里删掉再跑。最后把本次处理的存档行记上 `restored_at`。
 
 必须以超级用户执行（`session_replication_role`）；生产的 `postgres` 就是。
 
-**恢复不了的**：community 帖子正文与反应、catalog 收藏夹（§1.5）；账号中心的封禁 / 注销（在账号中心撤销）。清空之后懒建的 `kungal_user_state` 会让原行冲突被跳过（记忆 `prod-accidental-purge-restore`：当时的修法是按存档行 UPDATE）。恢复后 ~10 分钟内内容仍可能被 userclient 缓存判成不可渲染。清空之后才加的列，恢复时是 NULL；`NOT NULL` 无默认值的会让恢复报错，要手工补。
+**恢复不了的**：catalog 收藏夹（§1.5）；账号中心的封禁 / 注销（在账号中心撤销）。community 帖子正文与反应自 infra #298 起可以恢复（上面的第二步），同样只有 30 天。清空之后懒建的 `kungal_user_state` 会让原行冲突被跳过（记忆 `prod-accidental-purge-restore`：当时的修法是按存档行 UPDATE）。恢复后 ~10 分钟内内容仍可能被 userclient 缓存判成不可渲染。清空之后才加的列，恢复时是 NULL；`NOT NULL` 无默认值的会让恢复报错，要手工补。
 
 ## 7. 覆盖闸（新）
 
@@ -295,3 +305,18 @@ infra #298（2026-09-24 上线）让 community 的作者清空也在同一事务
 | 3 | community `404` 当成失败 | `404` 时恢复成功，报告「没有可恢复的」 |
 | 4 | 论坛库已恢复时报错、不继续 community | 第二次 `-commit` 成功，并且调了 community |
 | 5 | 用操作者 id 而不是存档里的 `target_user_id` 调 community | 假 community 收到的作者 id 是清空目标 |
+
+### 14.3 实现与验收（2026-09-24）
+
+- `communityclient.RestoreAuthorPurge`；`PurgeRepository.RestoreArchive(purge_id, commit)`（先读存档头：无行 → `ErrPurgeNotArchived`，全已恢复 → 跳过论坛库那半）；`PurgeService.Restore`；`cmd/purge-restore` 打印两份报告。
+- 测试：`internal/admin/service/purge_restore_db_test.go`（演练、提交、community `404` 视为无可恢复、community 失败后重跑、未知清空 id）与 `pkg/communityclient` 的 `TestRestoreAuthorPurge`。
+- 在临时库上跑了真二进制：演练（回滚、不调 community，退出 0）→ `-commit`（两半都恢复）→ 再 `-commit`（论坛库「已恢复」、community「没有可恢复的」，退出 0）→ 未知 id（退出 1）→ 非 UUID（退出 2）。
+
+## 15. U3c 上线验收（2026-09-24，#236 = 1a9dd75f2）
+
+- 部署：API 容器 06:17:36Z 重建，migrate 退出 0；`_migrations` 记着 `120_user_purge_archive`（14:17:37 +08）。
+- 生产只读：91 张表、89 个 `trg_user_purge_archive`，没挂的只有 `_migrations` 与 `user_purge_archive`；存档 0 行；三个函数都在。
+- 运行中的 `/app` 含 `/admin/user-contents/{user_id}` 与 `kungal.purge_target_user_id`，不含 `PurgeHandler`。
+- 匿名 `GET` / `DELETE /api/v1/admin/user-contents/1` → `401 MISSING_CREDENTIAL`（路由已注册；未知 v1 路径是 404）。
+- 日志：除 infra #298 重启 community 带来的 16 条 `lookup community: no such host` 外无 ERROR；WARN 都是既有类别。镜像核对（每 2 分钟一批 UPDATE）的「核对完成」照常出现，`WHEN` 闸在真实批量写上没有造成异常。
+- 没做：生产带登录的清空（没有生产会话，也不在生产铸会话）。

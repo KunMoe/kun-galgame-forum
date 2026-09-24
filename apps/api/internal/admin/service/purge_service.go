@@ -12,6 +12,8 @@ import (
 	"kun-galgame-api/pkg/communityclient"
 	"kun-galgame-api/pkg/role"
 	"kun-galgame-api/pkg/userclient"
+
+	"github.com/google/uuid"
 )
 
 type PurgeService struct {
@@ -165,4 +167,38 @@ func catalogRetryable(err error) bool {
 
 func communityRetryable(err error) bool {
 	return !errors.Is(err, communityclient.ErrForbidden) && !errors.Is(err, communityclient.ErrNotConfigured)
+}
+
+type PurgeRestoreReport struct {
+	Local             repository.LocalRestore
+	Community         *communityclient.RestoreResult
+	CommunityNothing  bool
+	CommunityResponse string
+}
+
+// Restore undoes a purge: the forum's rows first, then the target's community
+// posts. Community has no dry run, so it is only called with commit. A purge
+// whose local half is already restored goes straight to community, which is
+// how an operator finishes one whose community call failed.
+func (s *PurgeService) Restore(ctx context.Context, purgeID uuid.UUID, commit bool) (PurgeRestoreReport, error) {
+	local, err := s.repo.RestoreArchive(purgeID, commit)
+	if err != nil {
+		return PurgeRestoreReport{}, err
+	}
+	report := PurgeRestoreReport{Local: local}
+	if !commit {
+		return report, nil
+	}
+	res, err := s.community.RestoreAuthorPurge(ctx, int64(local.TargetUserID))
+	var apiErr *communityclient.APIError
+	if errors.As(err, &apiErr) && apiErr.Status == http.StatusNotFound {
+		report.CommunityNothing = true
+		report.CommunityResponse = apiErr.Msg
+		return report, nil
+	}
+	if err != nil {
+		return report, fmt.Errorf("community restore of author %d: %w", local.TargetUserID, err)
+	}
+	report.Community = res
+	return report, nil
 }

@@ -261,6 +261,44 @@ func TestAuthorPurge(t *testing.T) {
 	}
 }
 
+func TestRestoreAuthorPurge(t *testing.T) {
+	nothingLeft := false
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost || r.URL.Path != "/authors/55/purge/restore" {
+			t.Errorf("method/path = %s %q", r.Method, r.URL.Path)
+		}
+		if nothingLeft {
+			w.WriteHeader(http.StatusNotFound)
+			_ = json.NewEncoder(w).Encode(map[string]any{"code": 4, "message": "no purge of this author in the last 30 days is left to restore"})
+			return
+		}
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"code": 0, "data": map[string]any{
+				"posts_restored": 3, "reactions_restored": 2, "read_states_restored": 1,
+				"anchor_subscriptions_restored": 4, "notifications_restored": 5,
+			},
+		})
+	}))
+	defer srv.Close()
+	cli := newTestClient(srv.URL)
+
+	out, err := cli.RestoreAuthorPurge(context.Background(), 55)
+	if err != nil {
+		t.Fatalf("RestoreAuthorPurge: %v", err)
+	}
+	if out.PostsRestored != 3 || out.ReactionsRestored != 2 || out.ReadStatesRestored != 1 ||
+		out.AnchorSubscriptionsRestored != 4 || out.NotificationsRestored != 5 {
+		t.Errorf("decoded = %+v", out)
+	}
+
+	nothingLeft = true
+	_, err = cli.RestoreAuthorPurge(context.Background(), 55)
+	var apiErr *communityclient.APIError
+	if !errors.As(err, &apiErr) || apiErr.Status != http.StatusNotFound || !strings.Contains(apiErr.Msg, "left to restore") {
+		t.Errorf("nothing to restore: %v", err)
+	}
+}
+
 func TestResolvePosts(t *testing.T) {
 	var gotPath, gotBody string
 	hit := false

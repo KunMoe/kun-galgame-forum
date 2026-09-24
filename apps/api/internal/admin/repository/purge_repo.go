@@ -20,7 +20,10 @@ func NewPurgeRepository(db *gorm.DB) *PurgeRepository {
 	return &PurgeRepository{db: db}
 }
 
-var ErrLotteryDrawing = errors.New("purge: one of the user's lotteries is being drawn")
+var (
+	ErrLotteryDrawing   = errors.New("purge: one of the user's lotteries is being drawn")
+	ErrPurgeNotArchived = errors.New("purge: the archive holds no rows for this purge id")
+)
 
 const ArchiveRetention = 30 * 24 * time.Hour
 
@@ -430,4 +433,56 @@ func countPlaceholders(sql string) int {
 		}
 	}
 	return n
+}
+
+type RestoreRow struct {
+	TableName string
+	Operation string
+	Archived  int64
+	Restored  int64
+}
+
+type LocalRestore struct {
+	TargetUserID    int
+	AlreadyRestored bool
+	Rows            []RestoreRow
+}
+
+// RestoreArchive runs migration 120's user_purge_restore, which needs a
+// superuser connection. Without commit the transaction is rolled back after
+// the report is read.
+func (r *PurgeRepository) RestoreArchive(purgeID uuid.UUID, commit bool) (LocalRestore, error) {
+	var heads []struct {
+		TargetUserID int
+		Pending      int64
+	}
+	if err := r.db.Raw(`SELECT target_user_id, count(*) FILTER (WHERE restored_at IS NULL) AS pending
+		FROM user_purge_archive WHERE purge_id = ? GROUP BY target_user_id`, purgeID).Scan(&heads).Error; err != nil {
+		return LocalRestore{}, err
+	}
+	if len(heads) == 0 {
+		return LocalRestore{}, ErrPurgeNotArchived
+	}
+	out := LocalRestore{TargetUserID: heads[0].TargetUserID}
+	if heads[0].Pending == 0 {
+		out.AlreadyRestored = true
+		return out, nil
+	}
+	errDryRun := errors.New("dry run")
+	err := r.db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Raw(`SELECT * FROM user_purge_restore(?)`, purgeID).Scan(&out.Rows).Error; err != nil {
+			return err
+		}
+		if !commit {
+			return errDryRun
+		}
+		return nil
+	})
+	if errors.Is(err, errDryRun) {
+		err = nil
+	}
+	if err != nil {
+		return LocalRestore{}, err
+	}
+	return out, nil
 }

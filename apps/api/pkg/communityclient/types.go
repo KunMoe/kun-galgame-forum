@@ -118,6 +118,14 @@ type PurgeResult struct {
 	NotificationsDeleted       int64 `json:"notifications_deleted"`
 }
 
+type RestoreResult struct {
+	PostsRestored               int64 `json:"posts_restored"`
+	ReactionsRestored           int64 `json:"reactions_restored"`
+	ReadStatesRestored          int64 `json:"read_states_restored"`
+	AnchorSubscriptionsRestored int64 `json:"anchor_subscriptions_restored"`
+	NotificationsRestored       int64 `json:"notifications_restored"`
+}
+
 type TrustView struct {
 	UserID                  int64 `json:"user_id"`
 	Level                   int32 `json:"level"`

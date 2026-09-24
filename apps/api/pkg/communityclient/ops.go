@@ -102,6 +102,15 @@ func (c *Client) AuthorPurge(ctx context.Context, authorID int64) (*PurgeResult,
 	return &out, err
 }
 
+// RestoreAuthorPurge answers 404 when nothing is left to restore: the author
+// was never purged on this site, the purge was already undone, or it is older
+// than 30 days.
+func (c *Client) RestoreAuthorPurge(ctx context.Context, authorID int64) (*RestoreResult, error) {
+	var out RestoreResult
+	err := c.do(ctx, http.MethodPost, "/authors/"+itoa(authorID)+"/purge/restore", nil, &out)
+	return &out, err
+}
+
 func (c *Client) ResolvePosts(ctx context.Context, ids []int64) (*PostsResolveResponse, error) {
 	if len(ids) == 0 {
 		return &PostsResolveResponse{Posts: []AuthorPostView{}}, nil
