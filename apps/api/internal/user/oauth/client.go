@@ -60,20 +60,6 @@ func IsRefreshTokenDead(err error) bool {
 	return false
 }
 
-func IsTransient(err error) bool {
-	var oe *Error
-	if !stderrors.As(err, &oe) {
-		return true
-	}
-	if oe.HTTPStatus == 0 || oe.HTTPStatus >= 500 {
-		return true
-	}
-	if oe.Code == 0 {
-		return true
-	}
-	return false
-}
-
 type Client struct {
 	cfg        config.OAuthConfig
 	httpClient *http.Client

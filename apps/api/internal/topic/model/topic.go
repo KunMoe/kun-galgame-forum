@@ -64,28 +64,6 @@ type TopicSectionRelation struct {
 
 func (TopicSectionRelation) TableName() string { return "topic_section_relation" }
 
-type TopicLike struct {
-	ID      int `gorm:"primaryKey;autoIncrement" json:"id"`
-	TopicID int `gorm:"column:topic_id;not null;uniqueIndex:idx_topic_like" json:"topic_id"`
-	UserID  int `gorm:"column:user_id;not null;uniqueIndex:idx_topic_like" json:"user_id"`
-
-	CreatedAt time.Time `gorm:"column:created" json:"created"`
-	UpdatedAt time.Time `gorm:"column:updated" json:"updated"`
-}
-
-func (TopicLike) TableName() string { return "topic_like" }
-
-type TopicDislike struct {
-	ID      int `gorm:"primaryKey;autoIncrement" json:"id"`
-	TopicID int `gorm:"column:topic_id;not null;uniqueIndex:idx_topic_dislike" json:"topic_id"`
-	UserID  int `gorm:"column:user_id;not null;uniqueIndex:idx_topic_dislike" json:"user_id"`
-
-	CreatedAt time.Time `gorm:"column:created" json:"created"`
-	UpdatedAt time.Time `gorm:"column:updated" json:"updated"`
-}
-
-func (TopicDislike) TableName() string { return "topic_dislike" }
-
 type TopicUpvote struct {
 	ID          int    `gorm:"primaryKey;autoIncrement" json:"id"`
 	TopicID     int    `gorm:"column:topic_id;not null" json:"topic_id"`

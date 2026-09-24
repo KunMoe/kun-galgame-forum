@@ -27,21 +27,6 @@ func (c *Client) CommentOnAnchor(ctx context.Context, req CommentRequest) (*Thre
 	return &out, err
 }
 
-func (c *Client) ListPosts(ctx context.Context, threadID int64, after, limit string) (*PostListResponse, error) {
-	var out PostListResponse
-	q := query(map[string]string{"after": after, "limit": limit})
-	err := c.do(ctx, http.MethodGet, "/threads/"+itoa(threadID)+"/posts"+q, nil, &out)
-	return &out, err
-}
-
-func (c *Client) Reply(ctx context.Context, threadID int64, req ReplyRequest) (*PostView, error) {
-	var out struct {
-		Post PostView `json:"post"`
-	}
-	err := c.do(ctx, http.MethodPost, "/threads/"+itoa(threadID)+"/posts", req, &out)
-	return &out.Post, err
-}
-
 func (c *Client) EditPost(ctx context.Context, postID int64, req EditPostRequest) (*PostView, error) {
 	var out struct {
 		Post PostView `json:"post"`

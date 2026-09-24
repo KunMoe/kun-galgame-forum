@@ -58,21 +58,3 @@ func TestMakerName_PrefersTheRoleThatMadeTheGame(t *testing.T) {
 		})
 	}
 }
-
-func TestCatalogItemToNextMoeItem_CarriesPortraitAndMaker(t *testing.T) {
-	raw := []byte(`{"object":"work","id":"7","display_name":"Kun","cover":{"url":"https://cdn.example/p.webp","width":600,"height":800,"thumbhash":"P"},"banner":{"url":"https://cdn.example/b.webp","width":1280,"height":720,"thumbhash":"B"},"companies":[{"object":"company","id":"1","display_name":"Key","company_kind":"publisher","attribution_role":"developer"}]}`)
-	var it CatalogWorkListItem
-	if err := json.Unmarshal(rewriteV2JSON(raw, ""), &it); err != nil {
-		t.Fatalf("decode: %v", err)
-	}
-	m := CatalogItemToNextMoeItem(context.Background(), &it)
-	if m.EffectivePortraitURL != "https://cdn.example/p.webp" {
-		t.Fatalf("portrait = %q, want the portrait slot", m.EffectivePortraitURL)
-	}
-	if m.EffectiveBannerURL != "https://cdn.example/b.webp" {
-		t.Fatalf("banner = %q, want the banner slot, not the flat cover fallback", m.EffectiveBannerURL)
-	}
-	if m.Company != "Key" {
-		t.Fatalf("company = %q", m.Company)
-	}
-}

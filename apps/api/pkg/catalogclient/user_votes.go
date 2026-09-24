@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
-	"strings"
 )
 
 var ErrInsufficientScope = errors.New("catalogclient: access token lacks the scope the call needs")
@@ -82,10 +81,6 @@ func (c *Client) coverVote(ctx context.Context, method, accessToken string, work
 		voted = out.Voted
 	}
 	return &CoverVoteResult{CoverID: id, VoteCount: int64(out.VoteCount), Voted: voted}, nil
-}
-
-func isScopeDenial(message string) bool {
-	return strings.Contains(strings.ToLower(message), "scope")
 }
 
 type MyCoverVote struct {

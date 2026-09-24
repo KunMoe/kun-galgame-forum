@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 
-	v1 "kun-galgame-api/internal/apiv1"
 	"kun-galgame-api/internal/apiv1/collect"
 	"kun-galgame-api/internal/apiv1/repr"
 	msgService "kun-galgame-api/internal/message/service"
@@ -116,10 +115,6 @@ func (x *Interactions) ready() *problem.Problem {
 		return problem.Internal(errUnconfigured)
 	}
 	return nil
-}
-
-func (x *Interactions) caller(ctx context.Context) *middleware.UserInfo {
-	return v1.User(ctx)
 }
 
 func (x *Interactions) visiblePublishedTopic(ctx context.Context, idStr string) (*model.Topic, *middleware.UserInfo, *problem.Problem) {

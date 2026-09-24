@@ -1,7 +1,6 @@
 package client
 
 import (
-	"kun-galgame-api/internal/galgame/dto"
 	"kun-galgame-api/pkg/imageclient"
 )
 
@@ -15,13 +14,6 @@ type ArtMeta struct {
 	Width     int    `json:"width"`
 	Height    int    `json:"height"`
 	Thumbhash string `json:"thumbhash"`
-}
-
-func ArtMetaDTO(m ArtMeta) *dto.GalgameArtMeta {
-	if m.Width <= 0 || m.Height <= 0 {
-		return nil
-	}
-	return &dto.GalgameArtMeta{Width: m.Width, Height: m.Height, Thumbhash: m.Thumbhash}
 }
 
 func (c *GalgameClient) resolveArtMeta(urls []string) map[string]ArtMeta {

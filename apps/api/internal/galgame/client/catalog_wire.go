@@ -7,8 +7,6 @@ import (
 	"encoding/json"
 	"log/slog"
 	"strings"
-
-	"kun-galgame-api/internal/galgame/dto"
 )
 
 type catClaim struct {
@@ -499,51 +497,4 @@ func CatalogItemToDetailBrief(ctx context.Context, it *CatalogWorkListItem) Galg
 		b.Officials = append(b.Officials, l.Name(ctx))
 	}
 	return b
-}
-
-func CatalogItemToNextMoeItem(ctx context.Context, it *CatalogWorkListItem) dto.NextMoeGalgameItem {
-	name, original := it.Names(ctx)
-	m := dto.NextMoeGalgameItem{
-		ID:               int(it.ID),
-		Name:             name,
-		NameOriginal:     original,
-		ReleaseDate:      it.ReleaseDate,
-		ContentLimit:     contentLimitOf(it.ID, it.ContentLimit),
-		ReleasePrecision: releasePrecisionOf(it.ReleaseDate),
-		Company:          makerName(ctx, it.Labels),
-	}
-	if it.Claim != nil {
-		m.Status = statusFromClaimState(it.Claim.State)
-	} else {
-		m.Status = galgameStatusVndbDraft
-	}
-	// v2 fills cover_slots, never covers, so reading it.Covers alone left every
-	// calendar / tag / staff card on the flat `cover` fallback — which is the
-	// PORTRAIT image, drawn into a 16:9 box.
-	slots := it.CoverSlots
-	if slots == nil {
-		slots = it.Covers
-	}
-	m.EffectiveBannerHash, m.EffectiveBannerURL,
-		m.EffectiveBannerWidth, m.EffectiveBannerHeight,
-		m.EffectiveBannerThumbhash = coverFields(slots, it.Cover)
-	m.EffectivePortraitHash, m.EffectivePortraitURL,
-		m.EffectivePortraitWidth, m.EffectivePortraitHeight,
-		m.EffectivePortraitThumbhash = portraitFields(slots)
-	return m
-}
-
-func releasePrecisionOf(date *string) string {
-	if date == nil {
-		return "tba"
-	}
-	switch len(*date) {
-	case 4:
-		return "year"
-	case 7:
-		return "month"
-	case 10:
-		return "day"
-	}
-	return ""
 }

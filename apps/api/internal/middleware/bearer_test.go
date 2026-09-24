@@ -47,6 +47,7 @@ type echoed struct {
 	Bearer   bool     `json:"bearer"`
 	Token    string   `json:"token"`
 	Moderate bool     `json:"moderate"`
+	Hide     bool     `json:"hide"`
 	Code     int      `json:"code"`
 	Message  string   `json:"message"`
 }
@@ -63,14 +64,12 @@ func newAuthApp(t *testing.T, verifier AccessTokenVerifier, firstSeen FirstSeen)
 		}
 		return c.JSON(echoed{
 			ID: u.ID, Roles: u.Roles, Bearer: u.ViaBearer(),
-			Token: GetAccessToken(c), Moderate: u.CanModerate(),
+			Token: GetAccessToken(c), Moderate: u.CanModerate(), Hide: u.Can(perm.TopicHide),
 		})
 	}
 	app := fiber.New()
 	app.Get("/optional", authn.OptionalAuth(), echo)
 	app.Get("/required", authn.OptionalAuth(), authn.Auth(), echo)
-	app.Get("/moderate", authn.Auth(), RequireModerator(), echo)
-	app.Get("/hide", authn.Auth(), RequirePermission(perm.TopicHide), echo)
 	return app
 }
 
@@ -127,11 +126,9 @@ func TestBearerNeverReachesStaffGates(t *testing.T) {
 	})
 	app := newAuthApp(t, stubVerifier{}, nil)
 
-	for _, path := range []string{"/moderate", "/hide"} {
-		status, got := call(t, app, path, "Bearer "+goodToken)
-		if status != http.StatusForbidden || got.Message != "管理操作请在网页端进行" {
-			t.Errorf("%s: status %d, %+v", path, status, got)
-		}
+	status, got := call(t, app, "/required", "Bearer "+goodToken)
+	if status != http.StatusOK || got.Hide || got.Moderate {
+		t.Errorf("a Bearer user holds a staff power through a personal grant: status %d, %+v", status, got)
 	}
 	if !perm.CanUser(1207, nil, perm.TopicHide) {
 		t.Fatal("fixture broken: the override should grant on the web path")
@@ -190,5 +187,13 @@ func TestNonBearerAuthorizationStaysOnTheCookiePath(t *testing.T) {
 		if status, got := call(t, app, "/optional", auth); status != http.StatusOK || !got.Anon {
 			t.Errorf("Authorization %q: status %d, %+v", auth, status, got)
 		}
+	}
+}
+
+func TestBearerUserHasNoStaffPowers(t *testing.T) {
+	u := &UserInfo{ID: 1207, Roles: []string{"user", "moderator", "admin"}, viaBearer: true}
+	if u.CanModerate() || u.CanAdminister() || u.Can(perm.TopicHide) {
+		t.Errorf("a Bearer UserInfo exercised a staff power: moderate=%v administer=%v hide=%v",
+			u.CanModerate(), u.CanAdminister(), u.Can(perm.TopicHide))
 	}
 }

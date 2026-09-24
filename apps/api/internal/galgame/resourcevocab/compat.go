@@ -96,11 +96,3 @@ func Title(v string) (string, bool) {
 	}
 	return v, len([]rune(v)) <= 200
 }
-
-func VersionLabel(v string) (string, bool) {
-	v = strings.TrimSpace(v)
-	if strings.ContainsAny(v, "\r\n\t") {
-		return "", false
-	}
-	return v, len([]rune(v)) <= 64
-}

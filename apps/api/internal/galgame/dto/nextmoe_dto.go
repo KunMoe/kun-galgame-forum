@@ -4,31 +4,6 @@ type NextMoeAlias struct {
 	Name string `json:"name"`
 }
 
-type NextMoeGalgameItem struct {
-	ID                       int     `json:"id"`
-	Name                     string  `json:"name"`
-	NameOriginal             string  `json:"name_original"`
-	ContentLimit             string  `json:"content_limit"`
-	ReleaseDate              *string `json:"release_date"`
-	ReleaseDateTBA           bool    `json:"release_date_tba"`
-	EffectiveBannerHash      string  `json:"effective_banner_hash"`
-	EffectiveBannerURL       string  `json:"effective_banner_url"`
-	EffectiveBannerWidth     int     `json:"effective_banner_width,omitempty"`
-	EffectiveBannerHeight    int     `json:"effective_banner_height,omitempty"`
-	EffectiveBannerThumbhash string  `json:"effective_banner_thumbhash,omitempty"`
-
-	EffectivePortraitHash      string `json:"effective_portrait_hash,omitempty"`
-	EffectivePortraitURL       string `json:"effective_portrait_url,omitempty"`
-	EffectivePortraitWidth     int    `json:"effective_portrait_width,omitempty"`
-	EffectivePortraitHeight    int    `json:"effective_portrait_height,omitempty"`
-	EffectivePortraitThumbhash string `json:"effective_portrait_thumbhash,omitempty"`
-
-	Company          string `json:"company,omitempty"`
-	UserID           int    `json:"user_id"`
-	ReleasePrecision string `json:"release_precision"`
-	Status           int    `json:"status"`
-}
-
 type NextMoeGalgameCover struct {
 	ID        int64  `json:"id,omitempty"`
 	ImageHash string `json:"image_hash"`
@@ -84,12 +59,6 @@ type NextMoeTag struct {
 
 type NextMoeContributor struct {
 	UserID int `json:"user_id"`
-}
-
-type NextMoeUser struct {
-	ID     int    `json:"id"`
-	Name   string `json:"name"`
-	Avatar string `json:"avatar"`
 }
 
 type NextMoeTagWithSpoiler struct {

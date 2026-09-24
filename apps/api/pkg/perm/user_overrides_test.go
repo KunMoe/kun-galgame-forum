@@ -59,8 +59,8 @@ func TestCanUserRenImmunity(t *testing.T) {
 			t.Errorf("ren-holder lost %q to a personal override — ren must be immune", p)
 		}
 	}
-	if got := len(EffectiveForUser(9, []string{"ren"})); got != totalPerms {
-		t.Errorf("EffectiveForUser(ren-holder) has %d keys, want %d", got, totalPerms)
+	if got := len(effectiveForUser(9, []string{"ren"})); got != totalPerms {
+		t.Errorf("effectiveForUser(ren-holder) has %d keys, want %d", got, totalPerms)
 	}
 }
 
@@ -85,7 +85,7 @@ func TestCanUserUnknownKeyFiltered(t *testing.T) {
 	if CanUser(5, nil, Permission("does.not.exist")) {
 		t.Error("unknown permission was granted through a personal override")
 	}
-	if got := len(EffectiveForUser(5, nil)); got != 0 {
+	if got := len(effectiveForUser(5, nil)); got != 0 {
 		t.Errorf("roleless user 5 effective has %d keys, want 0 (unknown filtered out)", got)
 	}
 }
@@ -114,7 +114,7 @@ func TestEffectiveForUserComposition(t *testing.T) {
 			{Permission: AdminDashboard, Effect: EffectGrant},
 		},
 	})
-	eff := EffectiveForUser(7, []string{"moderator"})
+	eff := effectiveForUser(7, []string{"moderator"})
 	if len(eff) != modPerms {
 		t.Errorf("effective has %d keys, want %d", len(eff), modPerms)
 	}
@@ -129,4 +129,14 @@ func TestEffectiveForUserComposition(t *testing.T) {
 		t.Error("admin.dashboard should be granted into the effective set")
 	}
 	assertCatalogOrder(t, eff)
+}
+
+func effectiveForUser(uid int, roles []string) []Permission {
+	var out []Permission
+	for _, p := range catalog {
+		if CanUser(uid, roles, p) {
+			out = append(out, p)
+		}
+	}
+	return out
 }

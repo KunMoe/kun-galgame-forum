@@ -41,7 +41,7 @@ func TestRenImmunity(t *testing.T) {
 			t.Errorf("ren lost %q to an override — ren must be immune", p)
 		}
 	}
-	if got := len(EffectiveBundles()["ren"]); got != totalPerms {
+	if got := len(effectiveRole("ren")); got != totalPerms {
 		t.Errorf("effective ren has %d keys, want %d (pinned to full catalog)", got, totalPerms)
 	}
 }
@@ -54,7 +54,7 @@ func TestUnknownKeyFiltered(t *testing.T) {
 	if Can([]string{"creator"}, Permission("does.not.exist")) {
 		t.Error("unknown permission was granted through an override")
 	}
-	if got := len(EffectiveBundles()["creator"]); got != 0 {
+	if got := len(effectiveRole("creator")); got != 0 {
 		t.Errorf("creator effective has %d keys, want 0 (unknown filtered out)", got)
 	}
 }
@@ -73,30 +73,21 @@ func TestNilResetRestoresBaseline(t *testing.T) {
 	if !Can([]string{"moderator"}, TopicHide) {
 		t.Error("after reset moderator should hold its baseline topic.hide again")
 	}
-	if got := len(EffectiveBundles()["moderator"]); got != modPerms {
+	if got := len(effectiveRole("moderator")); got != modPerms {
 		t.Errorf("after reset moderator has %d keys, want %d", got, modPerms)
 	}
 }
 
-func TestEffectiveBundlesShape(t *testing.T) {
+func TestEffectiveRoleShape(t *testing.T) {
 	resetOverrides(t)
 	SetOverrides(nil)
-	b := EffectiveBundles()
 	sizes := map[string]int{"creator": 0, "moderator": modPerms, "admin": totalPerms, "ren": totalPerms}
 	for role, want := range sizes {
-		got, ok := b[role]
-		if !ok {
-			t.Errorf("EffectiveBundles missing role %q", role)
-			continue
-		}
-		if len(got) != want {
+		if got := effectiveRole(role); len(got) != want {
 			t.Errorf("effective %q has %d keys, want %d", role, len(got), want)
 		}
 	}
-	if b["creator"] == nil {
-		t.Error("creator bundle is nil, want an empty non-nil slice")
-	}
-	assertCatalogOrder(t, b["admin"])
+	assertCatalogOrder(t, effectiveRole("admin"))
 }
 
 func TestCatalogAndBaseline(t *testing.T) {
@@ -145,4 +136,14 @@ func assertCatalogOrder(t *testing.T, perms []Permission) {
 		}
 		last = idx
 	}
+}
+
+func effectiveRole(role string) []Permission {
+	var out []Permission
+	for _, p := range catalog {
+		if Can([]string{role}, p) {
+			out = append(out, p)
+		}
+	}
+	return out
 }

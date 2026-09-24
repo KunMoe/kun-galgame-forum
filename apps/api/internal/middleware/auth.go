@@ -124,14 +124,6 @@ func GetUser(c fiber.Ctx) *UserInfo {
 	return info
 }
 
-func MustGetUser(c fiber.Ctx) (*UserInfo, *errors.AppError) {
-	info := GetUser(c)
-	if info == nil {
-		return nil, errors.ErrAuthExpired()
-	}
-	return info, nil
-}
-
 func GetAccessToken(c fiber.Ctx) string {
 	tok, _ := c.Locals(string(OAuthAccessTokenKey)).(string)
 	return tok

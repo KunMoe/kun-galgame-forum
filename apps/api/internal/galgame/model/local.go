@@ -23,14 +23,3 @@ type GalgameLocal struct {
 }
 
 func (GalgameLocal) TableName() string { return "galgame" }
-
-type GalgameFavorite struct {
-	ID     int `gorm:"primaryKey;autoIncrement" json:"id"`
-	WorkID int `gorm:"column:work_id;not null;uniqueIndex:idx_galgame_favorite" json:"galgame_id"`
-	UserID int `gorm:"column:user_id;not null;uniqueIndex:idx_galgame_favorite" json:"user_id"`
-
-	CreatedAt time.Time `gorm:"column:created" json:"created"`
-	UpdatedAt time.Time `gorm:"column:updated" json:"updated"`
-}
-
-func (GalgameFavorite) TableName() string { return "galgame_favorite" }

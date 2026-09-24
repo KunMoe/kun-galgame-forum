@@ -15,17 +15,6 @@ func All() []string {
 	return []string{Wish, Doing, DoneOneRoute, DoneMain, DoneAll, OnHold, Dropped}
 }
 
-// Valid reports whether s is one of the seven values a client may send.
-// The read-only "done" is deliberately not valid input.
-func Valid(s string) bool {
-	switch s {
-	case Wish, Doing, DoneOneRoute, DoneMain, DoneAll, OnHold, Dropped:
-		return true
-	default:
-		return false
-	}
-}
-
 // ToCatalog maps a flat value onto catalog's two axes. completion is nil for
 // every state but done. ok is false for anything Valid rejects.
 func ToCatalog(s string) (state string, completion *string, ok bool) {

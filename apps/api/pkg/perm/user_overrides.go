@@ -70,13 +70,3 @@ func CanUser(uid int, roles []string, p Permission) bool {
 	}
 	return Can(roles, p)
 }
-
-func EffectiveForUser(uid int, roles []string) []Permission {
-	out := make([]Permission, 0, len(catalog))
-	for _, p := range catalog {
-		if CanUser(uid, roles, p) {
-			out = append(out, p)
-		}
-	}
-	return out
-}

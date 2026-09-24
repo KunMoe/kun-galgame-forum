@@ -76,11 +76,6 @@ type ThreadView struct {
 	LastPostedAt      string `json:"last_posted_at"`
 }
 
-type PostListResponse struct {
-	Posts      []PostView `json:"posts"`
-	NextCursor string     `json:"next_cursor"`
-}
-
 type PostThreadContext struct {
 	ThreadID   int64  `json:"thread_id"`
 	Title      string `json:"title"`
@@ -158,13 +153,6 @@ type ThreadWithPost struct {
 
 type PostsResolveRequest struct {
 	IDs []int64 `json:"ids"`
-}
-
-type ReplyRequest struct {
-	AuthorID      int64  `json:"author_id"`
-	Body          string `json:"body"`
-	ReplyToPostID int64  `json:"reply_to_post_id,omitempty"`
-	TargetUserID  int64  `json:"target_user_id,omitempty"`
 }
 
 type EditPostRequest struct {

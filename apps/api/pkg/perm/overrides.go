@@ -117,13 +117,3 @@ func BaselineHas(role string, p Permission) bool {
 func EffectiveSet(role string, overrides []Override) []Permission {
 	return orderedFrom(applyOverrides(role, overrides))
 }
-
-func EffectiveBundles() map[string][]Permission {
-	r := current.Load()
-	roles := []string{"creator", "moderator", "admin", roleRen}
-	out := make(map[string][]Permission, len(roles))
-	for _, role := range roles {
-		out[role] = orderedFrom(r.grants[role])
-	}
-	return out
-}

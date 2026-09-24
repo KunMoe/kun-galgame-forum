@@ -37,13 +37,6 @@ func TestCompatEmulatorRuntimeWins(t *testing.T) {
 	}
 }
 
-func TestLanguagesOthersAlias(t *testing.T) {
-	got, ok := Languages([]string{"others", "zh-cn"})
-	if !ok || stringsJoin(got) != "zh-cn,other" {
-		t.Fatalf("got %v ok=%v", got, ok)
-	}
-}
-
 func TestHasRuntimeAxis(t *testing.T) {
 	if !HasRuntimeAxis("collection") || HasRuntimeAxis("ost") {
 		t.Fatal("collection needs a runtime, ost does not")

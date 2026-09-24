@@ -35,9 +35,6 @@ func TestDecodeProtocol(t *testing.T) {
 		if !IsRefreshTokenDead(err) {
 			t.Fatalf("expected IsRefreshTokenDead, got %v", err)
 		}
-		if IsTransient(err) {
-			t.Fatalf("invalid_token must not be transient")
-		}
 	})
 
 	t.Run("invalid_grant → refresh dead", func(t *testing.T) {
@@ -52,16 +49,10 @@ func TestDecodeProtocol(t *testing.T) {
 		if IsRefreshTokenDead(err) {
 			t.Fatalf("invalid_request must not be refresh-dead")
 		}
-		if !IsTransient(err) {
-			t.Fatalf("expected IsTransient for an unknown error")
-		}
 	})
 
 	t.Run("server_error 5xx stays transient", func(t *testing.T) {
 		_, err := decodeProtocol(resp(500, `{"error":"server_error","error_description":"操作失败"}`))
-		if !IsTransient(err) {
-			t.Fatalf("expected IsTransient for 500")
-		}
 		if IsRefreshTokenDead(err) {
 			t.Fatalf("a 5xx must never read as refresh-dead")
 		}

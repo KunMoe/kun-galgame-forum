@@ -212,15 +212,6 @@ type catPopularity struct {
 	Value  int64  `json:"value"`
 }
 
-func catalogFavoriteCount(rows []catPopularity) int {
-	for _, r := range rows {
-		if r.Source == "nextmoe" && r.Metric == "favorites" {
-			return int(r.Value)
-		}
-	}
-	return 0
-}
-
 type catWorkCharacter struct {
 	ID          int64                       `json:"id"`
 	DisplayName string                      `json:"display_name"`

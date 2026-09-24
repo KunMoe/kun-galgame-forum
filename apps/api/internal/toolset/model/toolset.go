@@ -84,18 +84,6 @@ type GalgameToolsetResource struct {
 
 func (GalgameToolsetResource) TableName() string { return "galgame_toolset_resource" }
 
-type GalgameToolsetCategory struct {
-	ID          int             `gorm:"primaryKey;autoIncrement" json:"id"`
-	Name        string          `gorm:"uniqueIndex;not null" json:"name"`
-	Description string          `gorm:"default:''" json:"description"`
-	Alias       json.RawMessage `gorm:"type:jsonb;default:'[]'" json:"alias"`
-
-	CreatedAt time.Time `gorm:"column:created" json:"created"`
-	UpdatedAt time.Time `gorm:"column:updated" json:"updated"`
-}
-
-func (GalgameToolsetCategory) TableName() string { return "galgame_toolset_category" }
-
 type GalgameToolsetCategoryRelation struct {
 	ToolsetID  int `gorm:"column:toolset_id;primaryKey" json:"toolset_id"`
 	CategoryID int `gorm:"column:category_id;primaryKey" json:"category_id"`

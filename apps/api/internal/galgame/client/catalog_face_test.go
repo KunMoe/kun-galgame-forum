@@ -547,17 +547,6 @@ func TestProductLocaleProjection(t *testing.T) {
 	}
 }
 
-func TestReleasePrecisionFromPartialISO(t *testing.T) {
-	day, month, year := "2021-06-04", "2021-06", "2021"
-	for date, want := range map[*string]string{
-		&day: "day", &month: "month", &year: "year", nil: "tba",
-	} {
-		if got := releasePrecisionOf(date); got != want {
-			t.Errorf("releasePrecisionOf(%v) = %q, want %q", date, got, want)
-		}
-	}
-}
-
 func TestCatalogLabelRollupMembers_AsksForTheHopAndKeepsTheAttribution(t *testing.T) {
 	rec := &catalogRecorder{}
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {

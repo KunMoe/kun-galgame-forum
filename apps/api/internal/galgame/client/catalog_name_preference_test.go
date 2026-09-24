@@ -2,10 +2,8 @@ package client
 
 import (
 	"context"
-	"encoding/json"
 	"testing"
 
-	"kun-galgame-api/internal/galgame/dto"
 	"kun-galgame-api/pkg/namepref"
 )
 
@@ -155,29 +153,5 @@ func TestNamePreference_LeavesTheVocabularyChinese(t *testing.T) {
 	mustDecode(t, wire, &hit)
 	if got := hit.VocabularyName(); got != "金发" {
 		t.Errorf("tag search hit = %q, want 金发", got)
-	}
-}
-
-func TestNamePreference_CreditCharactersMatchTheRoster(t *testing.T) {
-	var group catCreditGroup
-	if err := json.Unmarshal([]byte(`{"role_key":"voice-actor","role_name":"声优","credits":[`+
-		`{"id":8957,"display_name":"かわしまりの","character_id":855,`+
-		`"character":"スィーリア・クマーニ・エイントリー"},`+
-		`{"id":2357,"display_name":"川中濑奈","character_id":404,"character":"ミアータ・ラッセル"}]}`,
-	), &group); err != nil {
-		t.Fatalf("decode: %v", err)
-	}
-	roster := []dto.NextMoeGalgameCharacter{{ID: 855, Name: "苏莉亚·库玛尼·爱因特里"}}
-
-	staff := catalogStaffFromCredits(context.Background(), []catCreditGroup{group}, roster)
-	if len(staff) != 1 || len(staff[0].People) != 2 {
-		t.Fatalf("staff = %+v, want one group of two VAs", staff)
-	}
-	if got := staff[0].People[0].Characters; len(got) != 1 || got[0] != "苏莉亚·库玛尼·爱因特里" {
-		t.Errorf("credit character = %v, want the roster's rendered name — the same page "+
-			"prints that character's Chinese name in the character panel", got)
-	}
-	if got := staff[0].People[1].Characters; len(got) != 1 || got[0] != "ミアータ・ラッセル" {
-		t.Errorf("credit character off the roster = %v, want catalog's own string", got)
 	}
 }

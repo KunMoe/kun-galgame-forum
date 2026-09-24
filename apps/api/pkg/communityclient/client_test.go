@@ -137,7 +137,7 @@ func TestErrorMapping(t *testing.T) {
 			}))
 			defer srv.Close()
 
-			_, err := newTestClient(srv.URL).ListPosts(context.Background(), 7, "", "")
+			_, err := newTestClient(srv.URL).GetComments(context.Background(), communityclient.AnchorSiteGame, "42", "", "")
 			if tc.want != nil {
 				if !errors.Is(err, tc.want) {
 					t.Errorf("err = %v, want %v", err, tc.want)
@@ -332,24 +332,6 @@ func TestResolvePosts(t *testing.T) {
 	hit = false
 	if res, err := c.ResolvePosts(context.Background(), nil); err != nil || len(res.Posts) != 0 || hit {
 		t.Errorf("empty ResolvePosts hit=%v res=%+v err=%v", hit, res, err)
-	}
-}
-
-func TestListPostsQuery(t *testing.T) {
-	var gotQuery string
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		gotQuery = r.URL.RawQuery
-		_ = json.NewEncoder(w).Encode(map[string]any{"code": 0, "data": map[string]any{"posts": []any{}}})
-	}))
-	defer srv.Close()
-
-	if _, err := newTestClient(srv.URL).ListPosts(context.Background(), 7, "50", "30"); err != nil {
-		t.Fatalf("ListPosts: %v", err)
-	}
-	for _, want := range []string{"after=50", "limit=30"} {
-		if !strings.Contains(gotQuery, want) {
-			t.Errorf("query %q missing %q", gotQuery, want)
-		}
 	}
 }
 

@@ -71,13 +71,6 @@ func (r *LotteryRepository) CreateCode(tx *gorm.DB, code *model.TopicLotteryCode
 	return tx.Create(code).Error
 }
 
-func (r *LotteryRepository) CountUnclaimedCodes(prizeID int) (int64, error) {
-	var count int64
-	err := r.db.Model(&model.TopicLotteryCode{}).
-		Where("prize_id = ? AND claimed_by = 0", prizeID).Count(&count).Error
-	return count, err
-}
-
 // Keyed by prize id across every lottery asked for: the topic page renders up
 // to ten lotteries at once and one query per lottery is one query too many on a
 // path every topic view hits.
@@ -204,15 +197,6 @@ func (r *LotteryRepository) FindRepliesByFloors(topicID int, floors []int) ([]Fl
 		Where("topic_id = ? AND status = 0 AND floor IN ?", topicID, floors).
 		Order("floor ASC").Find(&rows).Error
 	return rows, err
-}
-
-func (r *LotteryRepository) MaxFloor(topicID int) (int, error) {
-	var max int
-	err := r.db.Table("topic_reply").
-		Select("COALESCE(MAX(floor), 0)").
-		Where("topic_id = ? AND status = 0", topicID).
-		Scan(&max).Error
-	return max, err
 }
 
 // A lottery left in 'drawing' is picked up again after this long. Recovery is

@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"kun-galgame-api/internal/galgame/model"
-	"kun-galgame-api/internal/infrastructure/viewstats"
 
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -79,19 +78,6 @@ func (r *GalgameRepository) CountPublishedByCreatorSince(userID int, since time.
 		Where("published AND creator_user_id = ? AND created >= ?", userID, since).
 		Count(&n)
 	return int(n)
-}
-
-func (r *GalgameRepository) IncrementView(id int) {
-	r.db.Table("galgame").Where("id = ?", id).
-		Update("view", gorm.Expr("view + 1"))
-	_ = viewstats.BumpDaily(r.db, viewstats.GalgameDaily, id)
-}
-
-func (r *GalgameRepository) PublishLocal(tx *gorm.DB, workID int) error {
-	return tx.Clauses(clause.OnConflict{
-		Columns:   []clause.Column{{Name: "id"}},
-		DoUpdates: clause.Assignments(map[string]any{"published": true}),
-	}).Create(&model.GalgameLocal{ID: workID, Published: true}).Error
 }
 
 // The verify lane's next window: rows never checked first, then the ones

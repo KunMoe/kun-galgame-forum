@@ -4,18 +4,16 @@ import (
 	"crypto/rand"
 	"encoding/binary"
 	"regexp"
-	"strings"
 	"time"
 
 	"github.com/gofiber/fiber/v3"
 )
 
 const (
-	HeaderRequestID     = "X-Request-ID"
-	requestIDPrefix     = "req_"
-	requestIDLocalKey   = "request_id"
-	crockford           = "0123456789ABCDEFGHJKMNPQRSTVWXYZ"
-	requestIDULIDLength = 26
+	HeaderRequestID   = "X-Request-ID"
+	requestIDPrefix   = "req_"
+	requestIDLocalKey = "request_id"
+	crockford         = "0123456789ABCDEFGHJKMNPQRSTVWXYZ"
 )
 
 var requestIDPattern = regexp.MustCompile(`^req_[0-9A-HJKMNP-TV-Z]{26}$`)
@@ -39,11 +37,6 @@ func RequestID(c fiber.Ctx) string {
 	id := NewRequestID()
 	c.Locals(requestIDLocalKey, id)
 	return id
-}
-
-func RequestIDMiddleware(c fiber.Ctx) error {
-	c.Set(HeaderRequestID, RequestID(c))
-	return c.Next()
 }
 
 func newULID() string {
@@ -92,19 +85,4 @@ func encodeULID(id [16]byte) string {
 		crockford[id[15]&31],
 	}
 	return string(dst[:])
-}
-
-func decodeULIDUnixMilli(ulid string) (int64, bool) {
-	if len(ulid) < 10 {
-		return 0, false
-	}
-	var n uint64
-	for i := 0; i < 10; i++ {
-		idx := strings.IndexByte(crockford, ulid[i])
-		if idx < 0 {
-			return 0, false
-		}
-		n = (n << 5) | uint64(idx)
-	}
-	return int64(n), true
 }

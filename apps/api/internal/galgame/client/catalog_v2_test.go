@@ -154,26 +154,17 @@ func TestLiveV2Works(t *testing.T) {
 	if appErr != nil || !found || d == nil {
 		t.Fatalf("CatalogWorkDetail(%d) = (%v, %v)", b.ID, appErr, found)
 	}
-	full := CatalogDetailToFull(ctx, d, b.ID)
-	if full.Name == "" {
+	if d.ListItem().DisplayName == "" {
 		t.Error("detail name empty")
 	}
-	if full.EffectiveBannerURL == "" {
-		t.Error("detail hero empty — the cover slots did not survive the rewrite")
+	if d.CoverSlots == nil || (d.CoverSlots.Portrait == nil && d.CoverSlots.Banner == nil) {
+		t.Error("detail cover slots empty — the cover slots did not survive the rewrite")
 	}
-	if len(full.Official) == 0 {
-		t.Error("no 制作方 rows — the companies block decoded to nothing")
+	if len(d.Labels) == 0 {
+		t.Error("no label rows — the companies block decoded to nothing")
 	}
-	// A tag row the forum drops when canonical_id is 0, which is what v2 naming
-	// the same column `id` would produce.
-	if len(full.Tag) == 0 {
-		t.Error("no tag rows — a canonical_id of 0 drops every one of them")
-	}
-	for i := range full.Tag {
-		if full.Tag[i].Tag.ID == 0 || full.Tag[i].Tag.Name == "" {
-			t.Errorf("tag %d = %+v, want an id and a name", i, full.Tag[i].Tag)
-			break
-		}
+	if len(d.Tags) == 0 {
+		t.Error("no tag rows")
 	}
 }
 

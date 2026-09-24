@@ -5,8 +5,6 @@ var TypeKeys = []string{
 	"walkthrough", "ost", "voice", "cg", "wallpaper", "artbook", "video", "other",
 }
 
-var LegacyTypeKeys = []string{"image", "ai", "others"}
-
 var ProviderKeys = []string{
 	"baidu", "aliyun", "quark", "pan123", "tianyiyun",
 	"caiyun", "xunlei", "uc", "lanzou", "other",
@@ -30,8 +28,6 @@ var RuntimeKeys = []string{
 	"renpy-android", "tyranor", "tyranor-next", "other",
 }
 
-var VersionLabelKeys = []string{"官方最新", "稳定版", "镜像版", "汉化版", "未知版本"}
-
 var RuntimeRelevantTypes = []string{
 	"game", "collection", "patch", "crack_fix", "mod", "tool",
 }
@@ -50,7 +46,6 @@ func index(keys []string) map[string]int {
 }
 
 var (
-	typeIndex     = index(append(append([]string{}, TypeKeys...), LegacyTypeKeys...))
 	languageIndex = index(LanguageKeys)
 	platformIndex = index(PlatformKeys)
 	runtimeIndex  = index(RuntimeKeys)
@@ -70,10 +65,7 @@ var (
 	}()
 )
 
-func IsType(v string) bool { _, ok := typeIndex[v]; return ok }
-
 func HasRuntimeAxis(resourceType string) bool { return runtimeSet[resourceType] }
 
-func Languages(in []string) (Keys, bool) { return Normalize(in, languageIndex) }
 func Platforms(in []string) (Keys, bool) { return Normalize(in, platformIndex) }
 func Runtimes(in []string) (Keys, bool)  { return Normalize(in, runtimeIndex) }

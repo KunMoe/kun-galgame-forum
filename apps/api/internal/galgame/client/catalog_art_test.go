@@ -6,19 +6,6 @@ import (
 	"kun-galgame-api/pkg/imageclient"
 )
 
-func TestArtMetaDTO_UnknownIsAbsentNotZero(t *testing.T) {
-	if got := ArtMetaDTO(ArtMeta{}); got != nil {
-		t.Errorf("ArtMetaDTO(zero) = %+v, want nil", got)
-	}
-	if got := ArtMetaDTO(ArtMeta{Width: 0, Height: 800}); got != nil {
-		t.Errorf("ArtMetaDTO(half-known) = %+v, want nil", got)
-	}
-	got := ArtMetaDTO(ArtMeta{Width: 600, Height: 800, Thumbhash: "abc"})
-	if got == nil || got.Width != 600 || got.Height != 800 || got.Thumbhash != "abc" {
-		t.Errorf("ArtMetaDTO(known) = %+v", got)
-	}
-}
-
 func TestHydrateRosterArt_OneBatchKeyedByURL(t *testing.T) {
 	const bust = "https://cdn.test/aa/bb/aabbhash1.webp"
 	const figure = "https://cdn.test/cc/dd/ccddhash2.webp"

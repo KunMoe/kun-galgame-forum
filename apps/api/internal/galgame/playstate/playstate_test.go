@@ -30,17 +30,6 @@ func TestFromCatalogEmptyAndUnknown(t *testing.T) {
 	}
 }
 
-func TestValidRejectsDisplayOnlyDone(t *testing.T) {
-	if Valid("done") {
-		t.Fatal("Valid(done) = true, want false")
-	}
-	for _, s := range All() {
-		if !Valid(s) {
-			t.Errorf("Valid(%q) = false, want true", s)
-		}
-	}
-}
-
 func TestToCatalogRejectsDisplayOnlyDone(t *testing.T) {
 	_, _, ok := ToCatalog("done")
 	if ok {

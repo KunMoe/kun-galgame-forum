@@ -31,5 +31,3 @@ type GalgameRating struct {
 	CreatedAt time.Time `gorm:"column:created" json:"created"`
 	UpdatedAt time.Time `gorm:"column:updated" json:"updated"`
 }
-
-func (GalgameRating) TableName() string { return "galgame_rating" }
