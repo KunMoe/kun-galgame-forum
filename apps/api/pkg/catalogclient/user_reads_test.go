@@ -134,31 +134,6 @@ func TestListEditProposalsUserPage_QueueDenialStaysADenial(t *testing.T) {
 	}
 }
 
-func TestWorkCoversUser_BallotFromTheToken(t *testing.T) {
-	srv, got := recordingServer(t, 0, `{"code":0,"message":"ok","data":{"covers":[`+
-		`{"id":88,"image_hash":"abc","vote_count":3,"voted":true}]}}`)
-
-	covers, err := userClient(srv.URL).WorkCoversUser(context.Background(), "user-jwt", 1000)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if got.method != http.MethodGet || got.path != "/v2/catalog/works/1000/covers" {
-		t.Fatalf("covers hit %s %s", got.method, got.path)
-	}
-	if got.auth != "Bearer user-jwt" {
-		t.Fatalf("auth = %q, want the user's bearer", got.auth)
-	}
-	if strings.Contains(got.query, "uid") || strings.Contains(got.query, "user") {
-		t.Fatalf("the viewer is the token, not a query parameter: %q", got.query)
-	}
-	if !strings.Contains(got.query, "nsfw=true") {
-		t.Fatalf("query = %q, want the population gate open — without it every r18 work is a 404", got.query)
-	}
-	if len(covers) != 1 || covers[0].ID != 88 || !covers[0].Voted || covers[0].VoteCount != 3 {
-		t.Fatalf("covers decoded wrong: %+v", covers)
-	}
-}
-
 func TestUploadEditImageUser_SendsNoActorUID(t *testing.T) {
 	var (
 		gotPath   string

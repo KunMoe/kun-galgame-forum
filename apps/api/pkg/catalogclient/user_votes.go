@@ -87,3 +87,27 @@ func (c *Client) coverVote(ctx context.Context, method, accessToken string, work
 func isScopeDenial(message string) bool {
 	return strings.Contains(strings.ToLower(message), "scope")
 }
+
+type MyCoverVote struct {
+	WorkID  int64
+	CoverID int64
+}
+
+// MyCoverVotes is every cover the caller voted up. Catalog answers the whole
+// list in one page (one ballot per work, no pagination) and needs catalog:edit.
+func (c *Client) MyCoverVotes(ctx context.Context, accessToken string) ([]MyCoverVote, error) {
+	var page v2List[v2CoverVote]
+	if err := c.userV2JSON(ctx, http.MethodGet, accessToken, "/v2/me/cover-votes", nil, &page, nil); err != nil {
+		return nil, err
+	}
+	rows := page.rows()
+	out := make([]MyCoverVote, 0, len(rows))
+	for _, r := range rows {
+		work, cover := parseFlexID(r.WorkID), parseFlexID(r.CoverID)
+		if work <= 0 || cover <= 0 {
+			return nil, fmt.Errorf("%w: /v2/me/cover-votes row without ids", ErrUpstream)
+		}
+		out = append(out, MyCoverVote{WorkID: work, CoverID: cover})
+	}
+	return out, nil
+}

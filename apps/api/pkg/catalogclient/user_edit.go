@@ -2,7 +2,6 @@ package catalogclient
 
 import (
 	"context"
-	"encoding/json"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -142,29 +141,4 @@ func proposalPageOf(page v2List[v2Proposal]) *ProposalPage {
 		out.Items = append(out.Items, it.proposal())
 	}
 	return out
-}
-
-func (c *Client) WorkCoversUser(ctx context.Context, accessToken string, workID int64) ([]CoverTally, error) {
-	var page v2List[struct {
-		ID        json.RawMessage `json:"id"`
-		VoteCount int             `json:"vote_count"`
-		Hash      string          `json:"hash"`
-		ImageHash string          `json:"image_hash"`
-		Voted     bool            `json:"voted"`
-	}]
-	err := c.userV2JSON(ctx, http.MethodGet, accessToken,
-		"/v2/catalog/works/"+strconv.FormatInt(workID, 10)+"/covers?nsfw=true", nil, &page, nil)
-	if err != nil {
-		return nil, err
-	}
-	rows := page.rows()
-	out := make([]CoverTally, 0, len(rows))
-	for _, it := range rows {
-		hash := it.Hash
-		if hash == "" {
-			hash = it.ImageHash
-		}
-		out = append(out, CoverTally{ID: parseFlexID(it.ID), ImageHash: hash, VoteCount: it.VoteCount, Voted: it.Voted})
-	}
-	return out, nil
 }
