@@ -265,3 +265,65 @@ func TestV1DeleteCollectionRefusesWhenMembershipUnread(t *testing.T) {
 		t.Error("the folder was deleted without knowing which works leave the library")
 	}
 }
+
+func TestV1ListMyCollectionsForWork(t *testing.T) {
+	f := newG6Fix(t)
+	path := "/api/v1/me/works/" + idStr(g6WorkLive) + "/collections"
+	spec := "/me/works/{work_id}/collections"
+	resp, body := f.call(t, http.MethodGet, path, spec, "sess-alice", "", nil)
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("mine %d %+v", resp.StatusCode, body)
+	}
+	items, _ := body["items"].([]any)
+	if len(items) != 3 || asInt(body["total"]) != 3 {
+		t.Fatalf("want alice's 3 collections, got %+v", body)
+	}
+	held := map[string]bool{}
+	for _, raw := range items {
+		it := raw.(map[string]any)
+		for _, k := range []string{"preview_covers", "owner", "description", "created_at"} {
+			if _, ok := it[k]; ok {
+				t.Errorf("the picker shape carries %s: %+v", k, it)
+			}
+		}
+		viewer := it["viewer"].(map[string]any)
+		held[it["id"].(string)] = viewer["has_work"] == true
+	}
+	if first := items[0].(map[string]any); first["id"] != idStr(g6FolderAliceDef) || first["is_default"] != true {
+		t.Errorf("the default collection sorts first: %+v", first)
+	}
+	if !held[idStr(g6FolderAliceDef)] || held[idStr(g6FolderAlicePub)] || held[idStr(g6FolderAlicePriv)] {
+		t.Errorf("has_work %+v", held)
+	}
+	f.user.mu.Lock()
+	lists, holds, previews := f.user.folderLists, f.user.holdReads, f.user.previewRead
+	f.user.mu.Unlock()
+	if lists != 1 || holds != 1 || previews != 0 {
+		t.Errorf("want 2 user-token calls (folders + holdings) and no previews; got lists=%d holdings=%d previews=%d", lists, holds, previews)
+	}
+
+	resp, body = f.call(t, http.MethodGet, "/api/v1/me/works/"+idStr(g6WorkExtra)+"/collections", spec, "sess-alice", "", nil)
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("unheld %d %+v", resp.StatusCode, body)
+	}
+	for _, raw := range body["items"].([]any) {
+		if raw.(map[string]any)["viewer"].(map[string]any)["has_work"] != false {
+			t.Errorf("unheld work painted has_work: %+v", raw)
+		}
+	}
+
+	resp, body = f.call(t, http.MethodGet, "/api/v1/me/works/"+idStr(g6WorkHidden)+"/collections", spec, "sess-alice", "", nil)
+	wantCode(t, resp, body, http.StatusNotFound, problem.CodeNotFound)
+
+	resp, body = f.call(t, http.MethodGet, path, spec, "", "", nil)
+	wantCode(t, resp, body, http.StatusUnauthorized, problem.CodeMissingCredential)
+
+	resp, body = f.call(t, http.MethodGet, path, spec, "sess-429", "", nil)
+	wantCode(t, resp, body, http.StatusServiceUnavailable, problem.CodeServiceUnavailable)
+	if resp.Header.Get("Retry-After") != "30" {
+		t.Errorf("Retry-After %q", resp.Header.Get("Retry-After"))
+	}
+
+	resp, body = f.call(t, http.MethodGet, path, spec, "sess-noscope", "", nil)
+	wantCode(t, resp, body, http.StatusForbidden, problem.CodeScopeRequired)
+}

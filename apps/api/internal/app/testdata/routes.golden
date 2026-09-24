@@ -119,6 +119,7 @@ GET    /api/v1/me/walls/:subject_type/:subject_id     cors.New → v1Headers →
 GET    /api/v1/me/work-states                         cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/me/work-submission-reviews             cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/me/work-submissions                    cors.New → v1Headers → fiberAdapter.Handle
+GET    /api/v1/me/works/:work_id/collections          cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/news-archive                           cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/news-archive/:year/:month              cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/news-archive/:year/:month/items        cors.New → v1Headers → fiberAdapter.Handle

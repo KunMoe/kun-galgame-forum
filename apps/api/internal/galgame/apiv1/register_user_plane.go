@@ -242,6 +242,22 @@ func (s *Service) registerUserPlane(api huma.API) {
 		}),
 	}), s.listMyCollections)
 
+	huma.Register(api, v1.Required(huma.Operation{
+		OperationID: "listMyCollectionsForWork",
+		Method:      http.MethodGet,
+		Path:        "/me/works/{work_id}/collections",
+		Summary:     "List the caller's collections against one work",
+		Description: "A page-number collection of every collection the caller owns, including private ones, each with viewer.has_work for this work. The shape the collection picker needs: no preview covers, no owner, no description. GET never creates a default collection.",
+		Tags:        []string{"me"},
+		Middlewares: huma.Middlewares{withAccessToken},
+		Responses: problemResponses(map[int]string{
+			400: "LIMIT_TOO_LARGE or INVALID_PARAMETER.",
+			403: "SCOPE_REQUIRED; ACCOUNT_BANNED.",
+			404: "NOT_FOUND when the work does not exist or is hidden.",
+			503: "SERVICE_UNAVAILABLE when the catalog cannot be reached.",
+		}),
+	}), s.listMyCollectionsForWork)
+
 	huma.Register(api, v1.Optional(huma.Operation{
 		OperationID: "listUserCollections",
 		Method:      http.MethodGet,

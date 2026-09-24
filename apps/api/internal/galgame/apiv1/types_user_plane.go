@@ -70,6 +70,17 @@ type CollectionSummary struct {
 	Viewer        *CollectionViewer `json:"viewer" doc:"The caller's own state. null for an anonymous caller."`
 }
 
+type CollectionChoice struct {
+	Object     string            `json:"object" enum:"collection" maxLength:"10" doc:"Type discriminant. Always collection."`
+	ID         repr.DecimalID    `json:"id" doc:"Catalog folder id."`
+	Title      string            `json:"title" maxLength:"100" doc:"Display name. Empty string for an unnamed imported default. Free text; never use it as a decision input."`
+	Visibility string            `json:"visibility" enum:"private,public" maxLength:"7" doc:"private folders are visible only to their owner; public folders are readable by anyone."`
+	IsDefault  bool              `json:"is_default" doc:"Whether this is the owner's default collection."`
+	ItemCount  int               `json:"item_count" minimum:"0" doc:"Works in this collection as catalog records them. Not affected by include_nsfw."`
+	UpdatedAt  repr.DateTime     `json:"updated_at" doc:"When catalog last updated the collection."`
+	Viewer     *CollectionViewer `json:"viewer" doc:"The caller's own state. Never null on this operation, which requires a signed-in caller."`
+}
+
 type CollectionViewer struct {
 	IsOwner   bool `json:"is_owner" doc:"Whether the caller owns this collection."`
 	CanEdit   bool `json:"can_edit" doc:"Whether the caller may change this collection's metadata. Requests authenticated with a Bearer token never carry staff powers."`
