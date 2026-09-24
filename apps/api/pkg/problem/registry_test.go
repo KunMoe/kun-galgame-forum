@@ -53,6 +53,7 @@ var requiredCodes = []struct {
 	{CodePollClosed, DomainKungal, 409},
 	{CodeVoteAlreadyCast, DomainKungal, 409},
 	{CodeAlreadyExists, DomainMe, 409},
+	{CodeDuplicateSuspects, DomainMe, 409},
 	{CodePreconditionFailed, DomainPlatform, 412},
 	{CodeUsernameTaken, DomainKungal, 409},
 	{CodeCreatorIneligible, DomainKungal, 403},

@@ -9,9 +9,11 @@ import (
 )
 
 type UserWorkSubmitRequest struct {
-	ProductWorkID     int64          `json:"product_work_id,omitempty"`
-	Fields            map[string]any `json:"fields"`
-	ConfirmDuplicates bool           `json:"confirm_duplicates,omitempty"`
+	ProductWorkID     int64           `json:"product_work_id,omitempty"`
+	Fields            map[string]any  `json:"fields"`
+	Released          *WorkSubmitDate `json:"released,omitempty"`
+	ConfirmDuplicates bool            `json:"confirm_duplicates,omitempty"`
+	IdempotencyKey    string          `json:"-"`
 }
 
 // The mint needs field_values. display_name alone is not a mint request at all:
@@ -29,11 +31,15 @@ func (c *Client) SubmitWorkUser(ctx context.Context, accessToken string, req Use
 	if req.ProductWorkID > 0 {
 		body["site_work_id"] = strconv.FormatInt(req.ProductWorkID, 10)
 	}
+	if req.Released != nil {
+		body["released"] = req.Released
+	}
 	if req.ConfirmDuplicates {
 		body["confirm_duplicates"] = true
 	}
 	var out v2Claim
-	if err := c.userV2JSON(ctx, http.MethodPost, accessToken, "/v2/me/claims", body, &out, nil); err != nil {
+	if err := c.userV2JSON(ctx, http.MethodPost, accessToken, "/v2/me/claims", body, &out,
+		idempotencyHeader(nil, req.IdempotencyKey)); err != nil {
 		return nil, err
 	}
 	id := parseFlexID(out.ID)
@@ -59,11 +65,11 @@ func (c *Client) ActOnClaimUser(ctx context.Context, accessToken string, workID 
 		}
 		return &ClaimActionResult{WorkID: parseFlexID(out.ID), To: out.State}, nil
 	case ClaimActionWithdraw:
-		return c.patchMyClaim(ctx, accessToken, id, "withdrawn")
+		return c.patchMyClaim(ctx, accessToken, workID, "withdrawn")
 	case ClaimActionPublish:
-		return c.patchMyClaim(ctx, accessToken, id, "live")
+		return c.patchMyClaim(ctx, accessToken, workID, "live")
 	case ClaimActionSubmit:
-		return c.patchMyClaim(ctx, accessToken, id, "pending")
+		return c.patchMyClaim(ctx, accessToken, workID, "pending")
 	case ClaimActionApprove, ClaimActionDecline, ClaimActionBan, ClaimActionUnban:
 		decision := action
 		if action == ClaimActionApprove {
@@ -86,13 +92,48 @@ func (c *Client) ActOnClaimUser(ctx context.Context, accessToken string, workID 
 	}
 }
 
-func (c *Client) patchMyClaim(ctx context.Context, accessToken, workID, state string) (*ClaimActionResult, error) {
-	var out v2Claim
-	if err := c.userV2JSON(ctx, http.MethodPatch, accessToken, "/v2/me/claims/"+workID,
-		map[string]any{"state": state}, &out, ifMatchStar()); err != nil {
+func (c *Client) patchMyClaim(ctx context.Context, accessToken string, workID int64, state string) (*ClaimActionResult, error) {
+	item, _, err := c.PatchMyClaim(ctx, accessToken, workID, state, "")
+	if err != nil {
 		return nil, err
 	}
-	return &ClaimActionResult{WorkID: parseFlexID(out.ID), To: out.State}, nil
+	return &ClaimActionResult{WorkID: item.WorkID, To: item.ClaimState}, nil
+}
+
+func (c *Client) PatchMyClaim(ctx context.Context, accessToken string, workID int64, state, ifMatch string) (*UserClaimItem, string, error) {
+	var out v2Claim
+	etag, err := c.userV2JSONMeta(ctx, http.MethodPatch, accessToken,
+		"/v2/me/claims/"+strconv.FormatInt(workID, 10),
+		map[string]any{"state": state}, &out, ifMatchHeader(ifMatch))
+	if err != nil {
+		return nil, etag, err
+	}
+	item := out.item()
+	return &item, etag, nil
+}
+
+func (c *Client) DecideClaim(ctx context.Context, accessToken string, workID int64, decision, note, ifMatch string) error {
+	return c.userV2JSON(ctx, http.MethodPost, accessToken,
+		"/v2/moderation/claims/"+strconv.FormatInt(workID, 10)+"/decisions",
+		map[string]any{"decision": decision, "note": note}, nil, ifMatchHeader(ifMatch))
+}
+
+func (c *Client) GetMyClaim(ctx context.Context, accessToken string, workID int64) (*UserClaimItem, string, error) {
+	return c.getClaim(ctx, accessToken, "/v2/me/claims/"+strconv.FormatInt(workID, 10))
+}
+
+func (c *Client) GetModerationClaim(ctx context.Context, accessToken string, workID int64) (*UserClaimItem, string, error) {
+	return c.getClaim(ctx, accessToken, "/v2/moderation/claims/"+strconv.FormatInt(workID, 10))
+}
+
+func (c *Client) getClaim(ctx context.Context, accessToken, path string) (*UserClaimItem, string, error) {
+	var out v2Claim
+	etag, err := c.userV2JSONMeta(ctx, http.MethodGet, accessToken, path, nil, &out, nil)
+	if err != nil {
+		return nil, etag, err
+	}
+	item := out.item()
+	return &item, etag, nil
 }
 
 // DeleteMyClaim removes a draft the caller owns; catalog refuses anything else,
@@ -103,12 +144,20 @@ func (c *Client) patchMyClaim(ctx context.Context, accessToken, workID, state st
 //
 // The spec does not list If-Match on this operation the way it does on PATCH,
 // but it does list 412 and 428 among the responses, so send the precondition.
-func (c *Client) DeleteMyClaim(ctx context.Context, accessToken string, workID int64) error {
+func (c *Client) DeleteMyClaim(ctx context.Context, accessToken string, workID int64, ifMatch string) error {
 	return c.userV2JSON(ctx, http.MethodDelete, accessToken,
-		"/v2/me/claims/"+strconv.FormatInt(workID, 10), nil, nil, ifMatchStar())
+		"/v2/me/claims/"+strconv.FormatInt(workID, 10), nil, nil, ifMatchHeader(ifMatch))
 }
 
 func (c *Client) MyClaims(ctx context.Context, accessToken string, f UserClaimFilter) (*UserClaimPage, error) {
+	return c.listClaims(ctx, accessToken, "/v2/me/claims", f)
+}
+
+func (c *Client) ListModerationClaims(ctx context.Context, accessToken string, f UserClaimFilter) (*UserClaimPage, error) {
+	return c.listClaims(ctx, accessToken, "/v2/moderation/claims", f)
+}
+
+func (c *Client) listClaims(ctx context.Context, accessToken, path string, f UserClaimFilter) (*UserClaimPage, error) {
 	q := url.Values{}
 	if len(f.ClaimStates) > 0 {
 		q.Set("claim_state", strings.Join(f.ClaimStates, ","))
@@ -116,13 +165,18 @@ func (c *Client) MyClaims(ctx context.Context, accessToken string, f UserClaimFi
 	if f.Before > 0 {
 		q.Set("before", strconv.FormatInt(f.Before, 10))
 	}
+	if f.Cursor != "" {
+		q.Set("cursor", f.Cursor)
+	}
 	if f.Limit > 0 {
 		q.Set("limit", strconv.Itoa(f.Limit))
 	}
 	if f.Kind != "" {
 		q.Set("kind", f.Kind)
 	}
-	path := "/v2/me/claims"
+	if f.IncludeTotal {
+		q.Set("include_total", "true")
+	}
 	if len(q) > 0 {
 		path += "?" + q.Encode()
 	}
@@ -131,7 +185,7 @@ func (c *Client) MyClaims(ctx context.Context, accessToken string, f UserClaimFi
 		return nil, err
 	}
 	rows := page.rows()
-	out := &UserClaimPage{Items: make([]UserClaimItem, 0, len(rows))}
+	out := &UserClaimPage{Items: make([]UserClaimItem, 0, len(rows)), NextCursor: page.cursor()}
 	if page.Total != nil {
 		out.Total = *page.Total
 	}

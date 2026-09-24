@@ -225,14 +225,30 @@ func (c *Client) EditSnapshotUser(ctx context.Context, accessToken, entityType s
 }
 
 type UserEditProposalFilter struct {
-	EntityType string
-	EntityID   int64
-	Status     string
-	Limit      int
-	Mine       bool
+	EntityType   string
+	EntityID     int64
+	Status       string
+	Cursor       string
+	Limit        int
+	Mine         bool
+	IncludeTotal bool
+}
+
+type ProposalPage struct {
+	Items      []EditProposal
+	NextCursor string
+	Total      int64
 }
 
 func (c *Client) ListEditProposalsUser(ctx context.Context, accessToken string, f UserEditProposalFilter) ([]EditProposal, error) {
+	page, err := c.ListEditProposalsUserPage(ctx, accessToken, f)
+	if err != nil {
+		return nil, err
+	}
+	return page.Items, nil
+}
+
+func (c *Client) ListEditProposalsUserPage(ctx context.Context, accessToken string, f UserEditProposalFilter) (*ProposalPage, error) {
 	q := url.Values{}
 	if f.EntityType != "" {
 		q.Set("entity_type", f.EntityType)
@@ -243,8 +259,14 @@ func (c *Client) ListEditProposalsUser(ctx context.Context, accessToken string, 
 	if f.Status != "" {
 		q.Set("state", f.Status)
 	}
+	if f.Cursor != "" {
+		q.Set("cursor", f.Cursor)
+	}
 	if f.Limit > 0 {
 		q.Set("limit", strconv.Itoa(f.Limit))
+	}
+	if f.IncludeTotal {
+		q.Set("include_total", "true")
 	}
 	path := "/v2/me/proposals"
 	if !f.Mine {
@@ -257,12 +279,19 @@ func (c *Client) ListEditProposalsUser(ctx context.Context, accessToken string, 
 	if err := c.userV2JSON(ctx, http.MethodGet, accessToken, path, nil, &page, nil); err != nil {
 		return nil, err
 	}
+	return proposalPageOf(page), nil
+}
+
+func proposalPageOf(page v2List[v2Proposal]) *ProposalPage {
 	rows := page.rows()
-	out := make([]EditProposal, 0, len(rows))
-	for _, it := range rows {
-		out = append(out, it.proposal())
+	out := &ProposalPage{Items: make([]EditProposal, 0, len(rows)), NextCursor: page.cursor()}
+	if page.Total != nil {
+		out.Total = *page.Total
 	}
-	return out, nil
+	for _, it := range rows {
+		out.Items = append(out.Items, it.proposal())
+	}
+	return out
 }
 
 func (c *Client) WorkCoversUser(ctx context.Context, accessToken string, workID int64) ([]CoverTally, error) {

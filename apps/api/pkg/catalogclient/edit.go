@@ -193,6 +193,7 @@ type EditProposalFilter struct {
 	Site        string
 	ProposerUID int64
 	Status      string
+	Cursor      string
 	Limit       int
 }
 
@@ -206,6 +207,23 @@ func (c *Client) ListEditProposals(ctx context.Context, f EditProposalFilter) ([
 		return nil, err
 	}
 	return page.Items, nil
+}
+
+func (c *Client) ListPublicProposalsPage(ctx context.Context, f EditProposalFilter) (*ProposalPage, error) {
+	q := publicProposalQuery(f)
+	if f.Cursor != "" {
+		q.Set("cursor", f.Cursor)
+	}
+	limit := f.Limit
+	if limit <= 0 {
+		limit = 20
+	}
+	q.Set("limit", strconv.Itoa(limit))
+	var page v2List[v2Proposal]
+	if err := c.appV2JSON(ctx, "/v2/catalog/proposals", q, &page); err != nil {
+		return nil, err
+	}
+	return proposalPageOf(page), nil
 }
 
 func (c *Client) CountEditProposals(ctx context.Context, f EditProposalFilter) (int64, error) {
@@ -222,9 +240,8 @@ type proposalListPage struct {
 	Total int64          `json:"total"`
 }
 
-func (c *Client) listPublicProposals(ctx context.Context, f EditProposalFilter) (*proposalListPage, error) {
+func publicProposalQuery(f EditProposalFilter) url.Values {
 	q := url.Values{}
-	q.Set("include_total", "true")
 	if object := objectFamily(f.EntityType); object != "" {
 		q.Set("object", object)
 	}
@@ -240,6 +257,12 @@ func (c *Client) listPublicProposals(ctx context.Context, f EditProposalFilter) 
 	if f.Status != "" {
 		q.Set("state", f.Status)
 	}
+	return q
+}
+
+func (c *Client) listPublicProposals(ctx context.Context, f EditProposalFilter) (*proposalListPage, error) {
+	q := publicProposalQuery(f)
+	q.Set("include_total", "true")
 	rows, total, err := collectV2List[v2Proposal](ctx, c, "/v2/catalog/proposals", q, f.Limit)
 	if err != nil {
 		return nil, err

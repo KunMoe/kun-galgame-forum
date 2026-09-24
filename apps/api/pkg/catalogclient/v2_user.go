@@ -13,10 +13,11 @@ import (
 )
 
 type v2Problem struct {
-	Code   string              `json:"code"`
-	Title  string              `json:"title"`
-	Detail string              `json:"detail"`
-	Errors []ProblemFieldError `json:"errors"`
+	Code     string              `json:"code"`
+	Title    string              `json:"title"`
+	Detail   string              `json:"detail"`
+	Errors   []ProblemFieldError `json:"errors"`
+	Suspects []DuplicateSuspect  `json:"suspects"`
 }
 
 func (c *Client) origin() string {
@@ -48,7 +49,26 @@ func parseFlexID(raw json.RawMessage) int64 {
 }
 
 func ifMatchStar() map[string]string {
-	return map[string]string{"If-Match": "*"}
+	return ifMatchHeader("")
+}
+
+func ifMatchHeader(ifMatch string) map[string]string {
+	v := strings.TrimSpace(ifMatch)
+	if v == "" {
+		v = "*"
+	}
+	return map[string]string{"If-Match": v}
+}
+
+func idempotencyHeader(h map[string]string, key string) map[string]string {
+	if key == "" {
+		return h
+	}
+	if h == nil {
+		h = map[string]string{}
+	}
+	h["Idempotency-Key"] = key
+	return h
 }
 
 func (c *Client) userV2Do(ctx context.Context, method, accessToken, path string, body any, headers map[string]string) ([]byte, string, error) {
@@ -100,7 +120,7 @@ func (c *Client) userV2Do(ctx context.Context, method, accessToken, path string,
 		if p.Code == "SCOPE_REQUIRED" || strings.Contains(blob, "scope") {
 			return nil, etag, ErrInsufficientScope
 		}
-		return nil, etag, &UserAPIError{Status: resp.StatusCode, Message: problemMsg(p, raw), ProblemCode: p.Code, RetryAfter: retryAfter}
+		return nil, etag, &UserAPIError{Status: resp.StatusCode, Message: problemMsg(p, raw), ProblemCode: p.Code, RetryAfter: retryAfter, Suspects: p.Suspects}
 	default:
 		if resp.StatusCode >= 500 {
 			return nil, etag, ErrUpstream
@@ -108,6 +128,7 @@ func (c *Client) userV2Do(ctx context.Context, method, accessToken, path string,
 		return nil, etag, &UserAPIError{
 			Status: resp.StatusCode, Message: problemMsg(p, raw),
 			ProblemCode: p.Code, FieldErrors: p.Errors, RetryAfter: retryAfter,
+			Suspects: p.Suspects,
 		}
 	}
 }
@@ -123,12 +144,17 @@ func problemMsg(p v2Problem, raw []byte) string {
 }
 
 func (c *Client) userV2JSON(ctx context.Context, method, accessToken, path string, body, out any, headers map[string]string) error {
-	raw, _, err := c.userV2Do(ctx, method, accessToken, path, body, headers)
+	_, err := c.userV2JSONMeta(ctx, method, accessToken, path, body, out, headers)
+	return err
+}
+
+func (c *Client) userV2JSONMeta(ctx context.Context, method, accessToken, path string, body, out any, headers map[string]string) (string, error) {
+	raw, etag, err := c.userV2Do(ctx, method, accessToken, path, body, headers)
 	if err != nil {
-		return err
+		return etag, err
 	}
 	if out == nil || len(bytes.TrimSpace(raw)) == 0 || string(bytes.TrimSpace(raw)) == "null" {
-		return nil
+		return etag, nil
 	}
 	var env struct {
 		Code   int             `json:"code"`
@@ -138,7 +164,7 @@ func (c *Client) userV2JSON(ctx context.Context, method, accessToken, path strin
 	if json.Unmarshal(raw, &env) == nil && env.Object == "" && len(bytes.TrimSpace(env.Data)) > 0 {
 		raw = env.Data
 	}
-	return json.Unmarshal(raw, out)
+	return etag, json.Unmarshal(raw, out)
 }
 
 type v2Proposal struct {
@@ -154,6 +180,7 @@ type v2Proposal struct {
 	EffectivePatch map[string]any  `json:"effective_patch"`
 	Amendments     []EditAmendment `json:"amendments"`
 	ProposerUID    json.RawMessage `json:"proposer_uid"`
+	DecidedByUID   json.RawMessage `json:"decided_by_uid"`
 	Site           string          `json:"site"`
 	Merged         bool            `json:"merged"`
 	CreatedAt      string          `json:"created_at"`
@@ -165,9 +192,6 @@ func (p v2Proposal) proposal() EditProposal {
 	status := p.State
 	if status == "" {
 		status = p.Status
-	}
-	if status == "" {
-		status = "open"
 	}
 	entityType := p.EntityType
 	if entityType == "" {
@@ -205,6 +229,9 @@ func (p v2Proposal) proposal() EditProposal {
 		if !t.IsZero() {
 			out.DecidedAt = &t
 		}
+	}
+	if n := parseFlexID(p.DecidedByUID); n != 0 {
+		out.DecidedByUID = &n
 	}
 	return out
 }
@@ -256,17 +283,31 @@ func (r v2Revision) revision() EditRevision {
 	return out
 }
 
+type v2ClaimEventRef struct {
+	ID        json.RawMessage `json:"id"`
+	FromState *string         `json:"from_state"`
+	ToState   string          `json:"to_state"`
+	Reason    *string         `json:"reason"`
+	ActorUID  json.RawMessage `json:"actor_uid"`
+	CreatedAt string          `json:"created_at"`
+}
+
 type v2Claim struct {
-	ID            json.RawMessage `json:"id"`
-	WorkID        json.RawMessage `json:"work_id"`
-	State         string          `json:"state"`
-	ClaimState    string          `json:"claim_state"`
-	DisplayName   string          `json:"display_name"`
-	LastToState   string          `json:"last_to_state"`
-	LastFromState *string         `json:"last_from_state"`
-	LastEventID   int64           `json:"last_event_id"`
-	LastActorUID  int64           `json:"last_actor_uid"`
-	ActedCount    int             `json:"acted_count"`
+	ID            json.RawMessage  `json:"id"`
+	WorkID        json.RawMessage  `json:"work_id"`
+	State         string           `json:"state"`
+	ClaimState    string           `json:"claim_state"`
+	DisplayName   string           `json:"display_name"`
+	Site          string           `json:"site"`
+	LastEvent     *v2ClaimEventRef `json:"last_event"`
+	LastToState   string           `json:"last_to_state"`
+	LastFromState *string          `json:"last_from_state"`
+	LastEventID   int64            `json:"last_event_id"`
+	LastActorUID  int64            `json:"last_actor_uid"`
+	LastReason    *string          `json:"last_reason"`
+	LastEventAt   string           `json:"last_event_at"`
+	FirstActedAt  *string          `json:"first_acted_at"`
+	ActedCount    int              `json:"acted_count"`
 }
 
 func (c v2Claim) item() UserClaimItem {
@@ -278,11 +319,39 @@ func (c v2Claim) item() UserClaimItem {
 	if state == "" {
 		state = c.ClaimState
 	}
-	return UserClaimItem{
-		WorkID: id, DisplayName: c.DisplayName, ClaimState: state,
+	out := UserClaimItem{
+		WorkID: id, DisplayName: c.DisplayName, Site: c.Site, ClaimState: state,
 		LastToState: c.LastToState, LastFromState: c.LastFromState,
-		LastEventID: c.LastEventID, LastActorUID: c.LastActorUID, ActedCount: c.ActedCount,
+		LastEventID: c.LastEventID, LastActorUID: c.LastActorUID,
+		LastReason: c.LastReason, ActedCount: c.ActedCount,
 	}
+	if c.LastEventAt != "" {
+		out.LastEventAt = parseRFC3339(c.LastEventAt)
+	}
+	if c.FirstActedAt != nil && *c.FirstActedAt != "" {
+		out.FirstActedAt = parseRFC3339(*c.FirstActedAt)
+	}
+	if ev := c.LastEvent; ev != nil {
+		if n := parseFlexID(ev.ID); n != 0 {
+			out.LastEventID = n
+		}
+		if ev.FromState != nil {
+			out.LastFromState = ev.FromState
+		}
+		if ev.ToState != "" {
+			out.LastToState = ev.ToState
+		}
+		if ev.Reason != nil {
+			out.LastReason = ev.Reason
+		}
+		if n := parseFlexID(ev.ActorUID); n != 0 {
+			out.LastActorUID = n
+		}
+		if ev.CreatedAt != "" {
+			out.LastEventAt = parseRFC3339(ev.CreatedAt)
+		}
+	}
+	return out
 }
 
 type v2List[T any] struct {

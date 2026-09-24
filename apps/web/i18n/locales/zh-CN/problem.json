@@ -43,6 +43,7 @@
     "LOTTERY_DRAWN": "抽奖正在开奖或已经开奖，中奖者还需要它来领取奖品，无法删除",
     "REDEMPTION_CODE_FORFEITED": "兑换码已超过领取期限或已被放弃，无法再领取",
     "ALREADY_EXISTS": "记录已存在",
+    "DUPLICATE_SUSPECTS": "已有同名作品，确认不是重复后再提交",
     "PRECONDITION_FAILED": "内容已被他人修改，请刷新后重试",
     "USERNAME_TAKEN": "这个用户名已被使用",
     "CREATOR_INELIGIBLE": "尚不满足创作者申请条件",

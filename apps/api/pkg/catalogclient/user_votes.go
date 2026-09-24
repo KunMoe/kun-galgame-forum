@@ -23,6 +23,11 @@ type ProblemFieldError struct {
 	Detail    string `json:"detail,omitempty"`
 }
 
+type DuplicateSuspect struct {
+	ID          string `json:"id"`
+	DisplayName string `json:"display_name"`
+}
+
 type UserAPIError struct {
 	Status  int
 	Code    int
@@ -32,6 +37,7 @@ type UserAPIError struct {
 	ProblemCode string
 	FieldErrors []ProblemFieldError
 	RetryAfter  string
+	Suspects    []DuplicateSuspect
 }
 
 func (e *UserAPIError) Error() string {

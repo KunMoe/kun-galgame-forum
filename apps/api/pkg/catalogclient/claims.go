@@ -174,6 +174,7 @@ type UserClaimItem struct {
 type UserClaimPage struct {
 	Items      []UserClaimItem `json:"items"`
 	NextBefore int64           `json:"next_before"`
+	NextCursor string          `json:"next_cursor"`
 	Total      int64           `json:"total"`
 }
 
@@ -184,8 +185,10 @@ type UserClaimPage struct {
 // has no client here on purpose; a per-user owned list comes from
 // GalgameRepository.PublishedIDsByCreator.
 type UserClaimFilter struct {
-	ClaimStates []string
-	Before      int64
-	Limit       int
-	Kind        string
+	ClaimStates  []string
+	Before       int64
+	Cursor       string
+	Limit        int
+	Kind         string
+	IncludeTotal bool
 }

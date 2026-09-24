@@ -425,6 +425,15 @@
     },
     {
       "object": "problem_type",
+      "code": "DUPLICATE_SUSPECTS",
+      "domain": "me",
+      "status": 409,
+      "type": "https://developer.nextmoe.dev/problems/me/duplicate-suspects",
+      "title": "Duplicate suspects",
+      "description": "The mint's titles match live works of the same medium; suspects[] names them. Nothing was written. Re-send with confirm_duplicates=true to mint anyway — the pairs are still filed for reconciliation."
+    },
+    {
+      "object": "problem_type",
       "code": "INVALID_STATE_TRANSITION",
       "domain": "me",
       "status": 409,

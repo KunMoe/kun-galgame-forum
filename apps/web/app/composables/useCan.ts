@@ -33,6 +33,7 @@ const MODERATOR_PERMISSIONS = [
   'lottery.view_restricted',
   'galgame.ban_resource_publish',
   'galgame.claim.review',
+  'galgame.edit_proposal.review',
   'collection.edit_any',
   'collection.delete_any',
   'quiz.edit_any',

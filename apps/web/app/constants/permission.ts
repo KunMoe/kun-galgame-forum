@@ -62,6 +62,10 @@ export const KUN_PERMISSION_META: Record<ForumPermission, KunPermissionMeta> = {
     label: '审核 Galgame 投稿',
     group: 'Galgame'
   },
+  'galgame.edit_proposal.review': {
+    label: '审核资料编辑提案',
+    group: 'Galgame'
+  },
   'collection.edit_any': { label: '编辑任意收藏夹', group: '收藏夹' },
   'collection.delete_any': { label: '删除任意收藏夹', group: '收藏夹' },
   'quiz.edit_any': { label: '编辑任意题目', group: '题目' },

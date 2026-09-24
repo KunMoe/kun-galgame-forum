@@ -190,7 +190,7 @@ func (s *SubmissionService) DeleteDraft(
 	// Owner-only and draft-only are catalog's checks, and they have to stay
 	// catalog's: the local delete below cascades, so it must not run until the
 	// authority has agreed this row is a disposable draft.
-	if err := s.catalog.DeleteMyClaim(ctx, accessToken, id); err != nil {
+	if err := s.catalog.DeleteMyClaim(ctx, accessToken, id, ""); err != nil {
 		return claimActionError(err)
 	}
 	if err := s.galgameRepo.DeleteLocalDraft(workID); err != nil {
