@@ -449,6 +449,29 @@ catalog 用户面一次调用的失败，按下表进 v1。**不得**落到无 c
 - **§3.3 词表里的 `title_kind` 行删掉**：请求体不收它（titles 全是 official，别名走 `aliases`）。
 - **O1（两套审核门）维持原样交编排者；O3（If-Match `*`）、O4（不开自发布）、O6–O9 照准。**
 
+### 3.14 编排者裁决二（2026-09-24，37 批准契约时定，覆盖前文、§5 与 §7 同名条目）
+
+- **O1 → 两个队列都改权限键（permission-first，见记忆 kungal-permission-first）。** 审投稿与审编辑是两种能力，分成两个键：
+  - `galgame.claim.review` 不变：投稿队列、我审核过的、投稿 PATCH 审核态。
+  - 新键 **`galgame.edit_proposal.review`**：编辑队列 `GET /edit-proposals`、工作台的审核者路径（作品主人路径照旧，infra `OwnerReview`）、提案 PATCH `merged` / `declined` 的本地预检。
+  - 新键进 `pkg/perm` 的 moderator bundle。基线在代码里，覆盖表 `role_permission_override` / `user_permission_override` 只存增量，新键没有增量行，所以默认授予 = moderator / admin / ren = 今天 `CanModerate()` 的集合：**上线时没人多拿、没人少拿，不需要种子迁移**。
+  - 检查一律 `user.Can(perm.GalgameEditProposalReview)`，不看角色；Bearer 恒 false（K2）。
+  - 镜像四处一起改：`pkg/perm/perm.go` 键 + bundle、`pkg/perm/perm_test.go` 金表、`apps/web/app/composables/useCan.ts`、`apps/web/app/constants/permission.ts` 的 `KUN_PERMISSION_META`（`/admin/permission` 矩阵从这里画）。再加 BE↔FE 镜像测试（记忆 kungal-claim-review-authz 的那条）。
+  - 网页 `galgame-edit/review/Container.vue` 停用 `useRole().canModerate`，改 `useCan('galgame.edit_proposal.review')`。
+  - 这推翻了阶段一「INFRA-PROXY 七项留在角色门、永不进 `pkg/perm`」的规矩里「编辑审核」这一项。先例是 `galgame.claim.review`：同样是 infra 真值前面的一道论坛查看门。
+- **O2 → 不迁移，列名 `wiki_pr_id` 只留在库里。** 任何 v1 字段一旦暴露它，名字是 `proposal_id`。现在 v1 没有字段暴露它（动态流的 `galgame_pr_creation` 条目不带这个 id）。
+- **If-Match 不写死 `*`（推翻 O3 / K-G64 后半）。** infra 要它，是为了挡住两个审核者的竞态，`*` 把这层保护丢了。
+  - 读：`GET /work-submissions/{work_id}` 与 `GET /edit-proposals/{proposal_id}` 回 **`ETag` 响应头**，原样转发 catalog 的校验值（`me_write_routes.go:189,222`）。每个写响应（投稿 PATCH、提案 PATCH、修正 201）也带重读后的新 `ETag`。01 把 ETag 列为「暂不做、以后是加法」，这是第一次加，只加在这几个面。
+  - 写：`PATCH` / `DELETE /work-submissions/{work_id}`、`POST /edit-proposals/{proposal_id}/amendments`、`PATCH /edit-proposals/{proposal_id}` 收可选的 **`If-Match`** 请求头，原样转给 catalog。缺席才回落 `*`，照顾 App 与旧客户端。网页每次都带：列表条目不带校验值，网页在写之前取一次单条 GET（或用上一个写响应的 `ETag`）。
+  - 上游 412 → **`412 PRECONDITION_FAILED`**（论坛注册表已有，与 infra 同码），`detail` 用论坛自己的句子。上游 428 仍是论坛 bug → 500。
+  - 测试钉住两条路径：带 `If-Match` 时原样转发、412 映射成 `PRECONDITION_FAILED`；不带时发 `*`。
+- **CHANGELOG 要写的已修缺陷**：「我的投稿」以前的 `next_before` 恒 0，20 条以后永远到不了（每 actor 最多 1,283 条）；v1 是游标集合。
+- **变异题追加**（接 §7）：
+  - #23：编辑队列或提案 PATCH `merged` 用角色而不是 `galgame.edit_proposal.review` 判（撤销覆盖后的 moderator 仍能进）→ 403；
+  - #24：`If-Match` 不转发、写死 `*`（夹具 catalog 对旧值回 412）→ 必须 `412 PRECONDITION_FAILED`；
+  - #25：缺席 `If-Match` 时没有回落 `*`（上游收到空头）→ 上游收到 `*`；
+  - #26：单条 GET 不回 `ETag` → 响应头存在，且等于上游值。
+
 ## 4. 逐条操作
 
 通用：401 `MISSING_CREDENTIAL` / `INVALID_CREDENTIAL`（required；optional 的坏 Bearer）、403 `ACCOUNT_BANNED`、500 `INTERNAL_ERROR`、503 `SERVICE_UNAVAILABLE`（会话存储 / userclient / catalog / 传输）。每个 401 带 `WWW-Authenticate`。v1 全部 `Cache-Control: no-store`。缺 OAuth token 的已登录会话：写与私密读走 401 `INVALID_CREDENTIAL`。请求体的错一律 `422 VALIDATION_FAILED`；`400 INVALID_PARAMETER` 只给参数（路径、查询、`Idempotency-Key`）（G6 §3.16）。
