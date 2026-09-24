@@ -15,10 +15,14 @@ export const patchEditProposal = async (
 ) => {
   let validator = etag
   if (validator === undefined) {
-    const { response } = await api.GET('/edit-proposals/{proposal_id}', {
+    const call = api.GET('/edit-proposals/{proposal_id}', {
       params: { path: { proposal_id: id } }
     })
-    validator = response.ok ? response.headers.get('ETag') : null
+    const [read, raw] = await Promise.all([settle(call), call])
+    if (!read.ok) {
+      return read
+    }
+    validator = raw.response.headers.get('ETag')
   }
   return settle(
     api.PATCH('/edit-proposals/{proposal_id}', {

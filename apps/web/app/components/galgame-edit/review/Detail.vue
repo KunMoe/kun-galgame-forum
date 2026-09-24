@@ -28,7 +28,7 @@ useKunDisableSeo('审阅提案')
 const canReviewQueue = useCan('galgame.edit_proposal.review')
 const amendKey = useIdempotencyKey()
 
-const { data, problem } = await useApi<{
+const { data, problem, refresh } = await useApi<{
   proposal: EditProposal
   etag: string | null
 }>(
@@ -49,7 +49,7 @@ const { data, problem } = await useApi<{
 
 const proposal = computed(() => data.value?.proposal)
 const workId = computed(() => proposal.value?.work_id)
-const { data: form } = await useApi<EditForm>(
+const { data: form, problem: formProblem } = await useApi<EditForm>(
   () => `work-edit-form:${workId.value ?? ''}`,
   (client, { signal }) =>
     client.GET('/works/{work_id}/edit-form', {
@@ -62,7 +62,9 @@ const values = computed(() => form.value?.field_values ?? {})
 const fields = computed(() => (form.value?.fields ?? []).map(toKitField))
 const userName = (ref: UserRef) => toKunUser(ref).name
 
-const canDecide = computed(() => proposal.value?.viewer?.can_decide ?? false)
+const canDecide = computed(
+  () => !formProblem.value && (proposal.value?.viewer?.can_decide ?? false)
+)
 const isOpen = computed(() => proposal.value?.state === 'open')
 const exitTo = computed(() =>
   canReviewQueue.value
@@ -240,6 +242,15 @@ const remainingKeys = computed(() =>
 
 const note = ref('')
 const acting = ref(false)
+const amendedEtag = ref<string | null>(null)
+
+const resetAmendment = () => {
+  for (const record of [overrides, editing, rejected]) {
+    for (const key of Object.keys(record)) {
+      Reflect.deleteProperty(record, key)
+    }
+  }
+}
 
 const handleMerge = async () => {
   if (acting.value || !proposal.value) {
@@ -250,8 +261,8 @@ const handleMerge = async () => {
     return
   }
   acting.value = true
-  let etag = data.value?.etag ?? null
-  if (hasAmendment.value) {
+  const amending = hasAmendment.value
+  if (amending) {
     const body = {
       set: amendSet.value,
       unset: amendUnset.value,
@@ -261,7 +272,7 @@ const handleMerge = async () => {
       api,
       proposalId.value,
       body,
-      etag,
+      amendedEtag.value ?? data.value?.etag ?? null,
       amendKey.take(`/edit-proposals/${proposalId.value}/amendments`, body)
     )
     if (!amended.result.ok) {
@@ -270,13 +281,15 @@ const handleMerge = async () => {
       return
     }
     amendKey.clear()
-    etag = amended.etag
+    resetAmendment()
+    amendedEtag.value = amended.etag
+    await refresh()
   }
   const merged = await patchEditProposal(
     api,
     proposalId.value,
     { state: 'merged', note: note.value || null },
-    etag
+    amendedEtag.value ?? data.value?.etag ?? null
   )
   acting.value = false
   if (!merged.ok) {
@@ -284,7 +297,7 @@ const handleMerge = async () => {
     return
   }
   useMessage(
-    hasAmendment.value ? '已修正并合并（双方署名）' : '提案已合并',
+    amending ? '已修正并合并（双方署名）' : '提案已合并',
     'success'
   )
   await navigateTo(exitTo.value)
@@ -303,7 +316,7 @@ const handleDecline = async () => {
     api,
     proposalId.value,
     { state: 'declined', note: note.value },
-    data.value?.etag ?? null
+    amendedEtag.value ?? data.value?.etag ?? null
   )
   acting.value = false
   declineOpen.value = false
@@ -374,7 +387,15 @@ const handleDecline = async () => {
         </div>
       </KunCard>
 
+      <KunInfo
+        v-if="formProblem"
+        color="danger"
+        title="无法读取条目的当前资料，暂时不能审阅或裁决"
+        :description="problemMessage(formProblem)"
+      />
+
       <KunCard
+        v-else
         :is-hoverable="false"
         :is-transparent="false"
         content-class="space-y-5"
@@ -464,7 +485,7 @@ const handleDecline = async () => {
       </KunCard>
 
       <KunInfo
-        v-if="isOpen && !canDecide"
+        v-if="isOpen && !canDecide && !formProblem"
         color="info"
         title="只读审阅"
         description="您可以查看此提案，但只有具备裁决权限的管理员（或该条目的创建者）可以合并、修正或拒绝。"

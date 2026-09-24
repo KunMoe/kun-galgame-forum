@@ -76,12 +76,16 @@ func (c *Client) AmendMyProposal(ctx context.Context, accessToken string, id int
 	return &prop, etag, nil
 }
 
-// DecideProposal returns no proposal: catalog answers a decision record whose
-// id is the proposal id, so the caller re-reads.
-func (c *Client) DecideProposal(ctx context.Context, accessToken string, id int64, decision, note, ifMatch string) error {
-	return c.userV2JSON(ctx, http.MethodPost, accessToken,
+// DecideProposal answers the state catalog read back after the decision, which
+// can differ from the verb: a suppression rule can close a merge as declined.
+func (c *Client) DecideProposal(ctx context.Context, accessToken string, id int64, decision, note, ifMatch string) (string, error) {
+	var out struct {
+		ToState string `json:"to_state"`
+	}
+	err := c.userV2JSON(ctx, http.MethodPost, accessToken,
 		"/v2/moderation/proposals/"+strconv.FormatInt(id, 10)+"/decisions",
-		map[string]any{"decision": decision, "note": note}, nil, ifMatchHeader(ifMatch))
+		map[string]any{"decision": decision, "note": note}, &out, ifMatchHeader(ifMatch))
+	return out.ToState, err
 }
 
 func (c *Client) RevertToRevision(ctx context.Context, accessToken string, revisionID int64, note, idempotencyKey string) (*EditProposal, string, error) {

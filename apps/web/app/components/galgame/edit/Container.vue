@@ -59,7 +59,11 @@ const editNames = computed<GalgameEditNames>(() =>
 )
 const editConfig = computed(() => createGalgameEditConfig(editNames.value))
 
-const { data: openList, refresh: refreshOpen } = await useApi<{
+const {
+  data: openList,
+  problem: openProblem,
+  refresh: refreshOpen
+} = await useApi<{
   items: EditProposalSummary[]
 }>(
   () => `work-edit-open:${workId.value}`,
@@ -202,6 +206,13 @@ const handleWithdraw = async (id: string) => {
           </KunButton>
         </div>
       </KunCard>
+
+      <KunInfo
+        v-if="openProblem"
+        color="warning"
+        title="无法读取这部作品的待审提案"
+        :description="problemMessage(openProblem)"
+      />
 
       <div v-if="reviewable.length" class="space-y-2">
         <EditkitProposalCard

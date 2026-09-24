@@ -238,10 +238,12 @@ func TestUserEditAdjudicationErrorMapping(t *testing.T) {
 			return err
 		},
 		"merge": func(c *Client) error {
-			return c.DecideProposal(context.Background(), "user-jwt", 7, "merge", "", "")
+			_, err := c.DecideProposal(context.Background(), "user-jwt", 7, "merge", "", "")
+			return err
 		},
 		"decline": func(c *Client) error {
-			return c.DecideProposal(context.Background(), "user-jwt", 7, "decline", "no", "")
+			_, err := c.DecideProposal(context.Background(), "user-jwt", 7, "decline", "no", "")
+			return err
 		},
 		"revert": func(c *Client) error {
 			_, _, err := c.RevertToRevision(context.Background(), "user-jwt", 101, "", "")
@@ -299,8 +301,8 @@ func TestUserEditAdjudicationWithoutTokenNeverCalls(t *testing.T) {
 	defer srv.Close()
 	c := userClient(srv.URL)
 	_, _, amend := c.AmendMyProposal(context.Background(), "", 7, map[string]any{"k": "v"}, nil, "", "", "")
-	merge := c.DecideProposal(context.Background(), "", 7, "merge", "", "")
-	decline := c.DecideProposal(context.Background(), "", 7, "decline", "x", "")
+	_, merge := c.DecideProposal(context.Background(), "", 7, "merge", "", "")
+	_, decline := c.DecideProposal(context.Background(), "", 7, "decline", "x", "")
 	_, _, revert := c.RevertToRevision(context.Background(), "", 2, "", "")
 	_, _, detail := c.GetModerationProposal(context.Background(), "", 7)
 	for name, err := range map[string]error{
@@ -317,7 +319,7 @@ func TestUserEditAdjudicationWithoutTokenNeverCalls(t *testing.T) {
 
 func TestUserEditAdjudicationUnconfigured(t *testing.T) {
 	c := New(Config{})
-	if err := c.DecideProposal(context.Background(), "user-jwt", 7, "merge", "", ""); !errors.Is(err, ErrNotConfigured) {
+	if _, err := c.DecideProposal(context.Background(), "user-jwt", 7, "merge", "", ""); !errors.Is(err, ErrNotConfigured) {
 		t.Fatalf("err = %v, want ErrNotConfigured", err)
 	}
 	if _, _, err := c.RevertToRevision(context.Background(), "user-jwt", 2, "", ""); !errors.Is(err, ErrNotConfigured) {

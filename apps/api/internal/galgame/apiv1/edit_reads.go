@@ -348,7 +348,7 @@ func (s *Service) getEditProposal(ctx context.Context, in *editProposalIDInput) 
 	if p != nil {
 		return nil, p
 	}
-	body, p := s.editProposalBody(ctx, user, prop)
+	body, p := s.editProposalBody(ctx, user, prop, false)
 	if p != nil {
 		return nil, p
 	}

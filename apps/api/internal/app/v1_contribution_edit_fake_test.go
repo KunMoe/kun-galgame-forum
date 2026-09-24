@@ -38,6 +38,8 @@ type g7bCatalog struct {
 	failVocab     bool
 	failApp       bool
 	denyRevert    bool
+	failReadBack  bool
+	afterWrite    func()
 	emptyState    int64
 }
 
@@ -298,6 +300,8 @@ func (c *g7bCatalog) serve(w http.ResponseWriter, r *http.Request) {
 		c.listMine(w, r, actor)
 	case path == "/v2/me/proposals" && r.Method == http.MethodPost:
 		c.create(w, r, actor, raw)
+	case len(seg) == 4 && seg[2] == "proposals" && r.Method == http.MethodGet && c.failReadBack:
+		g7bProblem(w, http.StatusServiceUnavailable, "SERVICE_UNAVAILABLE", "down")
 	case len(seg) == 4 && seg[1] == "me" && seg[2] == "proposals" && r.Method == http.MethodGet:
 		c.getMine(w, r, actor, seg[3])
 	case len(seg) == 4 && seg[1] == "me" && seg[2] == "proposals" && r.Method == http.MethodPatch:
@@ -658,6 +662,9 @@ func (c *g7bCatalog) create(w http.ResponseWriter, r *http.Request, actor g7bAct
 	if actor.trusted {
 		c.mergeLocked(p, actor.uid, "merged")
 	}
+	if c.afterWrite != nil {
+		c.afterWrite()
+	}
 	w.Header().Set("ETag", c.etag(p))
 	g7bJSON(w, http.StatusCreated, c.record_(p, false))
 }
@@ -748,6 +755,9 @@ func (c *g7bCatalog) amend(w http.ResponseWriter, r *http.Request, actor g7bActo
 	})
 	c.nextAmend++
 	p.updated = now
+	if c.afterWrite != nil {
+		c.afterWrite()
+	}
 	c.detail(w, r, p, http.StatusCreated)
 }
 
@@ -786,6 +796,9 @@ func (c *g7bCatalog) decide(w http.ResponseWriter, r *http.Request, actor g7bAct
 	default:
 		g7bProblem(w, http.StatusUnprocessableEntity, "VALIDATION_FAILED", "decision must be merge or decline.")
 		return
+	}
+	if c.afterWrite != nil {
+		c.afterWrite()
 	}
 	g7bJSON(w, http.StatusCreated, map[string]any{
 		"object": "decision", "id": strconv.FormatInt(p.id, 10), "decision": in.Decision,

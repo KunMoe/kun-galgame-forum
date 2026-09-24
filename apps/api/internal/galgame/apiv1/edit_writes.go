@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"slices"
 	"strconv"
+	"time"
 
 	"kun-galgame-api/internal/constants"
 	msgService "kun-galgame-api/internal/message/service"
@@ -70,7 +71,7 @@ func (s *Service) createWorkEditProposal(ctx context.Context, in *createWorkEdit
 	case "open":
 		s.proposalFiled(ctx, prop, workID)
 	}
-	body, p := s.editProposalBody(ctx, user, prop)
+	body, p := s.editProposalBody(ctx, user, prop, true)
 	if p != nil {
 		return nil, p
 	}
@@ -131,7 +132,7 @@ func (s *Service) createWorkEditRevert(ctx context.Context, in *createWorkEditRe
 	if prop.Status == "merged" {
 		revision = s.mergedRevision(ctx, cat, workID, prop.ID)
 	}
-	body, p := s.editProposalBody(ctx, user, prop)
+	body, p := s.editProposalBody(ctx, user, prop, true)
 	if p != nil {
 		return nil, p
 	}
@@ -146,7 +147,8 @@ func (s *Service) createEditProposalAmendment(ctx context.Context, in *createEdi
 	if p != nil {
 		return nil, p
 	}
-	if _, p := s.requireActive(ctx); p != nil {
+	caller, p := s.requireActive(ctx)
+	if p != nil {
 		return nil, p
 	}
 	token, p := requireToken(ctx)
@@ -175,19 +177,16 @@ func (s *Service) createEditProposalAmendment(ctx context.Context, in *createEdi
 	if err != nil {
 		return nil, mapUserPlaneAt(err, true, amendmentPointer)
 	}
-	var latest *catalogclient.EditAmendment
-	for i := range prop.Amendments {
-		if latest == nil || prop.Amendments[i].Seq > latest.Seq {
-			latest = &prop.Amendments[i]
+	latest := latestAmendment(prop)
+	if latest == nil {
+		if again, _, p := readProposal(ctx, cat, caller, token, int64(id)); p == nil {
+			latest = latestAmendment(again)
 		}
 	}
 	if latest == nil {
 		return nil, problem.Internal(errors.New("catalog answered an amendment with no amendment chain"))
 	}
-	refs, p := s.lookupUserRefs(ctx, []int{int(latest.AmenderUID)})
-	if p != nil {
-		return nil, p
-	}
+	refs := s.userRefsAfterWrite(ctx, []int{int(latest.AmenderUID)})
 	return &createEditProposalAmendmentOutput{
 		Location: editProposalLocation + strconv.Itoa(id),
 		ETag:     etag,
@@ -213,6 +212,9 @@ func (s *Service) updateEditProposal(ctx context.Context, in *updateEditProposal
 		return nil, notFound()
 	}
 	decision := in.Body.State != "withdrawn"
+	if decision && user.ViaBearer() {
+		return nil, permissionRequired()
+	}
 	current, err := cat.GetPublicProposal(ctx, int64(id))
 	if err != nil {
 		return nil, mapAppPlane(err)
@@ -240,18 +242,31 @@ func (s *Service) updateEditProposal(ctx context.Context, in *updateEditProposal
 		return nil, noteRequired()
 	}
 
+	written := *current
 	switch in.Body.State {
 	case "withdrawn":
-		if _, _, err := cat.WithdrawMyProposal(ctx, token, int64(id), in.IfMatch); err != nil {
+		after, _, err := cat.WithdrawMyProposal(ctx, token, int64(id), in.IfMatch)
+		if err != nil {
 			return nil, mapUserPlane(err, true)
 		}
-	case "merged":
-		if err := cat.DecideProposal(ctx, token, int64(id), "merge", note, in.IfMatch); err != nil {
+		written = *after
+	case "merged", "declined":
+		verb := map[string]string{"merged": "merge", "declined": "decline"}[in.Body.State]
+		outcome, err := cat.DecideProposal(ctx, token, int64(id), verb, note, in.IfMatch)
+		if err != nil {
 			return nil, mapUserPlaneAt(err, true, proposalPointer)
 		}
-	case "declined":
-		if err := cat.DecideProposal(ctx, token, int64(id), "decline", note, in.IfMatch); err != nil {
-			return nil, mapUserPlaneAt(err, true, proposalPointer)
+		if outcome == "" {
+			outcome = in.Body.State
+		}
+		now := time.Now().UTC()
+		decider := int64(user.ID)
+		written.Status, written.DecidedByUID, written.DecidedAt = outcome, &decider, &now
+		switch outcome {
+		case "merged":
+			s.proposalMerged(ctx, current, workID, user.ID)
+		case "declined":
+			s.notifyDecision(ctx, current, workID, user.ID, msgService.NotifyDeclined, s.declineContent(ctx, workID, note))
 		}
 	}
 
@@ -261,19 +276,24 @@ func (s *Service) updateEditProposal(ctx context.Context, in *updateEditProposal
 	}
 	after, etag, err := read(ctx, token, int64(id))
 	if err != nil {
-		return nil, mapUserPlane(err, true)
+		slog.Warn("galgame edit: proposal read-back failed after the write", "proposal_id", id, "state", written.Status, "err", err)
+		after, etag = &written, ""
 	}
-	switch {
-	case in.Body.State == "merged" && after.Status == "merged":
-		s.proposalMerged(ctx, after, workID, user.ID)
-	case in.Body.State == "declined" && after.Status == "declined":
-		s.notifyDecision(ctx, after, workID, user.ID, msgService.NotifyDeclined, s.declineContent(ctx, workID, note))
-	}
-	body, p := s.editProposalBody(ctx, user, after)
+	body, p := s.editProposalBody(ctx, user, after, true)
 	if p != nil {
 		return nil, p
 	}
 	return &editProposalOutput{ETag: etag, Body: body}, nil
+}
+
+func latestAmendment(p *catalogclient.EditProposal) *catalogclient.EditAmendment {
+	var latest *catalogclient.EditAmendment
+	for i := range p.Amendments {
+		if latest == nil || p.Amendments[i].Seq > latest.Seq {
+			latest = &p.Amendments[i]
+		}
+	}
+	return latest
 }
 
 func (s *Service) declineContent(ctx context.Context, workID int, note string) string {

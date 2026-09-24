@@ -27,7 +27,7 @@ type editCatalog interface {
 	GetPublicProposal(ctx context.Context, id int64) (*catalogclient.EditProposal, error)
 	WithdrawMyProposal(ctx context.Context, token string, id int64, ifMatch string) (*catalogclient.EditProposal, string, error)
 	AmendMyProposal(ctx context.Context, token string, id int64, set map[string]any, unset []string, note, ifMatch, idempotencyKey string) (*catalogclient.EditProposal, string, error)
-	DecideProposal(ctx context.Context, token string, id int64, decision, note, ifMatch string) error
+	DecideProposal(ctx context.Context, token string, id int64, decision, note, ifMatch string) (string, error)
 	RevertToRevision(ctx context.Context, token string, revisionID int64, note, idempotencyKey string) (*catalogclient.EditProposal, string, error)
 	ListEditProposalsUserPage(ctx context.Context, token string, f catalogclient.UserEditProposalFilter) (*catalogclient.ProposalPage, error)
 	ListPublicProposalsPage(ctx context.Context, f catalogclient.EditProposalFilter) (*catalogclient.ProposalPage, error)
@@ -329,22 +329,41 @@ func (s *Service) editProposalSummaries(ctx context.Context, user *middleware.Us
 
 // editProposalBody renders one proposal read or written through the user plane.
 // A state outside the vocabulary is a catalog contract break, not a row to drop.
-func (s *Service) editProposalBody(ctx context.Context, user *middleware.UserInfo, p *catalogclient.EditProposal) (EditProposal, *problem.Problem) {
+// After a write catalog has already accepted, a failed user or owner lookup
+// degrades the body instead of failing: a client retry would write again.
+func (s *Service) editProposalBody(ctx context.Context, user *middleware.UserInfo, p *catalogclient.EditProposal, afterWrite bool) (EditProposal, *problem.Problem) {
 	if !editProposalStates[p.Status] {
 		slog.Error("galgame edit: catalog answered a proposal state outside the vocabulary", "proposal_id", p.ID, "value", p.Status)
 		return EditProposal{}, problem.Internal(errors.New("unknown proposal state " + strconv.Quote(p.Status)))
 	}
-	refs, pr := s.lookupUserRefs(ctx, proposalUserIDs(p))
-	if pr != nil {
-		return EditProposal{}, pr
-	}
 	workID := int(p.EntityID)
+	var refs map[int]repr.UserRef
 	owners, pr := s.editOwners(user, []int{workID})
-	if pr != nil {
-		return EditProposal{}, pr
+	if afterWrite {
+		refs = s.userRefsAfterWrite(ctx, proposalUserIDs(p))
+		if pr != nil {
+			slog.Warn("galgame edit: owner lookup failed after the write", "proposal_id", p.ID, "err", pr)
+			owners = map[int]int{}
+		}
+	} else {
+		if pr != nil {
+			return EditProposal{}, pr
+		}
+		if refs, pr = s.lookupUserRefs(ctx, proposalUserIDs(p)); pr != nil {
+			return EditProposal{}, pr
+		}
 	}
 	works := s.workSummaries(ctx, []int{workID})
 	return editProposalOf(p, refs, workSummaryOr(works, workID), proposalViewer(user, p, owners[workID])), nil
+}
+
+func (s *Service) userRefsAfterWrite(ctx context.Context, ids []int) map[int]repr.UserRef {
+	refs, p := s.lookupUserRefs(ctx, ids)
+	if p != nil {
+		slog.Warn("galgame edit: user lookup failed after the write", "err", p)
+		return map[int]repr.UserRef{}
+	}
+	return refs
 }
 
 func editRevisionOf(r catalogclient.EditRevision, refs map[int]repr.UserRef) EditRevision {

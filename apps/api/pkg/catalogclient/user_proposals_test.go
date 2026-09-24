@@ -48,8 +48,9 @@ func TestDecideProposal_SendsTheDecision(t *testing.T) {
 	}))
 	t.Cleanup(srv.Close)
 
-	if err := New(Config{BaseURL: srv.URL}).DecideProposal(context.Background(), "user-jwt", 41, "merge", "", `"p3"`); err != nil {
-		t.Fatalf("DecideProposal: %v", err)
+	state, err := New(Config{BaseURL: srv.URL}).DecideProposal(context.Background(), "user-jwt", 41, "merge", "", `"p3"`)
+	if err != nil || state != "merged" {
+		t.Fatalf("DecideProposal: %q %v", state, err)
 	}
 	if path != "/v2/moderation/proposals/41/decisions" || ifMatch != `"p3"` {
 		t.Errorf("hit %s with If-Match %q", path, ifMatch)
