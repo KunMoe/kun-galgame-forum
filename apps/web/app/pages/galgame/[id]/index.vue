@@ -41,6 +41,12 @@ if (movedTo) {
     redirectCode: 301,
     replace: true
   })
+} else if (problem.value?.status === 404) {
+  throw createError({
+    statusCode: 404,
+    statusMessage: '未找到这个 Galgame',
+    fatal: true
+  })
 }
 
 const galgame = data.value
@@ -227,10 +233,7 @@ if (galgame) {
       <KunNsfwGate v-else noun="Galgame" @reveal="isShowGalgame = true" />
     </div>
 
-    <KunNull
-      v-else-if="problem && problem.status !== 404"
-      :description="problemMessage(problem)"
-    />
+    <KunNull v-else-if="problem" :description="problemMessage(problem)" />
 
     <KunNull v-else description="未找到这个 Galgame" />
   </div>
