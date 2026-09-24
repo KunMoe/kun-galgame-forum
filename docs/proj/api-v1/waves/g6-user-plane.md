@@ -543,6 +543,9 @@ catalog 调用：`/v2/me/folders` + `/v2/me/folders/holdings?work_ids=<work_id>`
 | **K-G52** | 名称 / 描述 / 可见性 / 分钟 / 状态词表对齐 infra（§3.13），不按旧 DTO 60 字收窄 |
 | **K-G66** | （2026-09-24 追加）选择器改读 `GET /me/works/{work_id}/collections`（§4.17）。`/me/collections?work_id=` 给每个夹水合预览封面，而选择器从不画它：一次打开 2+N 次用户 token 调用；2026-09-24 07:05 一位 12 个夹的用户每 8 秒整理一部作品，打满了 catalog 每账号每分钟 100 次的桶。K10 不许投影参数，所以是一个静态形状不含预览的新操作。`/me/collections?work_id=` 原样保留 |
 | **K-G67** | （2026-09-24 追加）`/me/playtimes` 的两路全扫（时长 + 状态，各最多 10 页）按用户在 Redis 缓存 60 秒（`kungal:me-playtimes:v1:<uid>`），时长槽的 PUT / DELETE 即删。翻页不再重扫。代价：别的 app 报的时长、以及发布评价时同步到 catalog 的游玩状态（`service.SyncWorkState`，不经时长槽）最多晚 1 分钟出现 |
+| **K-G70** | （2026-09-24 追加）成员槽 `PUT` / `DELETE /collections/{collection_id}/works/{work_id}` 不再先读 `MyFolder`：catalog 自己的写入按 uid 查夹（`ownedFolder` → `ErrFolderNotFound` → 404，infra `user_folder.go`），`mapUserPlane` 把 404 映成 `NOT_FOUND`，不披露存在性照旧。首加 / 末删的副作用改由一次 `/v2/me/folders/holdings?work_ids=` 判定（原来走遍 `MyFoldersContaining` 的页）。一次切换 3 → 2 次用户 token 调用。`DELETE` 不再吞 404：catalog 对夹里没有的作品回 204，只有「夹不是你的 / 不存在」才 404；没有前置读，吞掉它会把别人的夹变成 200 `has_work: false`。catalog 的 `assertFolderableWork` 与夹满检查顺序在归属之后，映射不变（404 / 422 `VALIDATION_FAILED` `work_id` `OUT_OF_RANGE`） |
+| **K-G71** | （2026-09-24 追加）删夹时「哪些作品离开书库」改为：读被删夹的条目 + 对这些作品一次 holdings（每 100 个一次），不再逐个读调用者的其它夹 |
+| **K-G72** | （2026-09-24 追加，建在 G6.3 的「横幅否则竖版」预览之上）预览封面只缓存最早四条的作品 id，键为夹 id + `updated_at`（catalog 在每次增删条目时推进它），6 小时。图与 NSFW 判定不进缓存：换封面不推进 `updated_at`，图由水合器的应用密钥读取（本身缓存 60 秒）每次现取；过滤按读者执行，第一个读者不能替所有人决定。主人收藏夹页重复访问 1+N → 1 次用户 token 调用 |
 
 权限不新增。`collection.edit_any` / `collection.delete_any` 沿用，经 `viewer.can_*` 下发。
 

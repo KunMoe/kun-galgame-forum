@@ -1,5 +1,13 @@
 # API v1 changelog
 
+## 2026-09-24 (user-plane fan-out, part 3)
+
+Not breaking; no shape changes. Fewer catalog calls on the collections faces:
+
+- Adding a work to a collection or removing it costs two catalog calls instead of three.
+- Deleting a collection no longer reads every other collection the caller owns.
+- A collection's `preview_covers` reuse the ids of its earliest works until the collection changes; the art and the NSFW filter are still resolved per request.
+
 ## 2026-09-24 (user-plane fan-out, part 2)
 
 Breaking for `GET /api/v1/works/{work_id}`, `GET /api/v1/works/{work_id}/covers/{cover_id}` and `GET /api/v1/me/work-states`. No App build reads any of them.
