@@ -49,7 +49,7 @@ type Collection struct {
 	IsDefault     bool              `json:"is_default" doc:"Whether this is the owner's default collection."`
 	ItemCount     int               `json:"item_count" minimum:"0" doc:"Works in this collection as catalog records them. Not affected by include_nsfw."`
 	Owner         repr.UserRef      `json:"owner" doc:"The account that owns this collection."`
-	PreviewCovers []repr.Image      `json:"preview_covers" maxItems:"4" doc:"Banners of the earliest memberships, at most 4. Empty array, never null."`
+	PreviewCovers []repr.Image      `json:"preview_covers" maxItems:"4" doc:"Art of the earliest memberships, at most 4: each work's banner, else its cover. A work with neither is skipped, and without include_nsfw so are adult works and images graded explicit. Empty array, never null."`
 	CreatedAt     repr.DateTime     `json:"created_at" doc:"When catalog created the collection."`
 	UpdatedAt     repr.DateTime     `json:"updated_at" doc:"When catalog last updated the collection."`
 	Viewer        *CollectionViewer `json:"viewer" doc:"The caller's own state. null for an anonymous caller."`
@@ -64,7 +64,7 @@ type CollectionSummary struct {
 	IsDefault     bool              `json:"is_default" doc:"Whether this is the owner's default collection."`
 	ItemCount     int               `json:"item_count" minimum:"0" doc:"Works in this collection as catalog records them. Not affected by include_nsfw."`
 	Owner         repr.UserRef      `json:"owner" doc:"The account that owns this collection."`
-	PreviewCovers []repr.Image      `json:"preview_covers" maxItems:"4" doc:"Banners of the earliest memberships, at most 4. Empty array, never null."`
+	PreviewCovers []repr.Image      `json:"preview_covers" maxItems:"4" doc:"Art of the earliest memberships, at most 4: each work's banner, else its cover. A work with neither is skipped, and without include_nsfw so are adult works and images graded explicit. Empty array, never null."`
 	CreatedAt     repr.DateTime     `json:"created_at" doc:"When catalog created the collection."`
 	UpdatedAt     repr.DateTime     `json:"updated_at" doc:"When catalog last updated the collection."`
 	Viewer        *CollectionViewer `json:"viewer" doc:"The caller's own state. null for an anonymous caller."`

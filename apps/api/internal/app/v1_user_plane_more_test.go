@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"kun-galgame-api/internal/galgame/client"
 	"kun-galgame-api/pkg/catalogclient"
 	"kun-galgame-api/pkg/problem"
 )
@@ -216,5 +217,87 @@ func TestV1CollectionPreviewKeepsNSFWFromSFWReaders(t *testing.T) {
 	}
 	if strings.Contains(buf.String(), "did not render work") {
 		t.Errorf("SFW preview logged a drop WARN: %s", buf.String())
+	}
+}
+
+func TestV1CollectionPreviewFallsBackToCover(t *testing.T) {
+	f := newG6Fix(t)
+	f.cat.mu.Lock()
+	f.cat.rows[g6WorkExtra].CoverSlots.Banner = nil
+	bare := f.cat.rows[g6WorkOwner]
+	bare.CoverSlots = nil
+	f.cat.rows[g6WorkOwner] = bare
+	f.cat.mu.Unlock()
+	f.user.mu.Lock()
+	f.user.items[g6FolderAlicePub] = []catalogclient.FolderItem{
+		{FolderID: g6FolderAlicePub, WorkID: g6WorkExtra, CreatedAt: "2026-09-02T00:00:00Z", UpdatedAt: "2026-09-02T00:00:00Z"},
+		{FolderID: g6FolderAlicePub, WorkID: g6WorkOwner, CreatedAt: "2026-09-03T00:00:00Z", UpdatedAt: "2026-09-03T00:00:00Z"},
+		{FolderID: g6FolderAlicePub, WorkID: g6WorkLive, CreatedAt: "2026-09-04T00:00:00Z", UpdatedAt: "2026-09-04T00:00:00Z"},
+	}
+	folder := f.user.folders[g6FolderAlicePub]
+	folder.ItemCount = 3
+	f.user.folders[g6FolderAlicePub] = folder
+	f.user.mu.Unlock()
+
+	var buf bytes.Buffer
+	prev := slog.Default()
+	slog.SetDefault(slog.New(slog.NewTextHandler(&buf, nil)))
+	resp, body := f.call(t, http.MethodGet, g6col(g6FolderAlicePub), "/collections/{collection_id}", "", "", nil)
+	slog.SetDefault(prev)
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("get %d %+v", resp.StatusCode, body)
+	}
+	var got []string
+	list, _ := body["preview_covers"].([]any)
+	for _, c := range list {
+		got = append(got, c.(map[string]any)["hash"].(string))
+	}
+	want := []string{geHash(g6WorkExtra), geHash(g6WorkLive + 1000)}
+	if strings.Join(got, ",") != strings.Join(want, ",") {
+		t.Errorf("preview covers %v, want %v: the portrait for the bannerless work, the banner for the other, nothing for the bare one", got, want)
+	}
+	if buf.Len() > 0 {
+		t.Errorf("preview logged for works that simply lack art: %s", buf.String())
+	}
+}
+
+func TestV1CollectionPreviewKeepsExplicitArtFromSFWReaders(t *testing.T) {
+	const allExplicit = 947000006
+	f := newG6Fix(t)
+	var row client.CatalogWorkListItem
+	decodeInto(t, geRowJSON(geWork{id: allExplicit, name: "ExplicitG6", rating: "all_ages"}), &row)
+	explicit := 2
+	row.CoverSlots.Banner = nil
+	row.CoverSlots.Portrait.Sexual = &explicit
+	f.cat.mu.Lock()
+	f.cat.rows[allExplicit] = row
+	f.cat.mu.Unlock()
+	f.user.mu.Lock()
+	f.user.items[g6FolderAlicePub] = []catalogclient.FolderItem{
+		{FolderID: g6FolderAlicePub, WorkID: allExplicit, CreatedAt: "2026-09-02T00:00:00Z", UpdatedAt: "2026-09-02T00:00:00Z"},
+		{FolderID: g6FolderAlicePub, WorkID: g6WorkLive, CreatedAt: "2026-09-03T00:00:00Z", UpdatedAt: "2026-09-03T00:00:00Z"},
+	}
+	folder := f.user.folders[g6FolderAlicePub]
+	folder.ItemCount = 2
+	f.user.folders[g6FolderAlicePub] = folder
+	f.user.mu.Unlock()
+	hashes := func(query string) string {
+		resp, body := f.call(t, http.MethodGet, g6col(g6FolderAlicePub)+query, "/collections/{collection_id}", "", "", nil)
+		if resp.StatusCode != http.StatusOK {
+			t.Fatalf("get%s %d %+v", query, resp.StatusCode, body)
+		}
+		var out []string
+		list, _ := body["preview_covers"].([]any)
+		for _, c := range list {
+			out = append(out, c.(map[string]any)["hash"].(string))
+		}
+		return strings.Join(out, ",")
+	}
+
+	if got, want := hashes(""), geHash(g6WorkLive+1000); got != want {
+		t.Errorf("sfw preview %s, want only %s: an unclaimed work's explicit portrait reached an SFW reader", got, want)
+	}
+	if got, want := hashes("?include_nsfw=true"), geHash(allExplicit)+","+geHash(g6WorkLive+1000); got != want {
+		t.Errorf("include_nsfw preview %s, want %s", got, want)
 	}
 }

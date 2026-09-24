@@ -151,7 +151,7 @@ G17：写路径里每个 `{x_id}`，以它结尾的那段必须有 GET，且 200
 | `is_default` | bool | | catalog |
 | `item_count` | int ≥0 | catalog 原值，**不**随 `include_nsfw` 变 | catalog |
 | `owner` | `UserRef` | 不可渲染且调用者不是主人 → 整段 404 | `owner_uid` |
-| `preview_covers` | `Image[]` | 永不 `null`，最多 4，缺 url 的跳过 | 最早加入的 4 条成员的 banner（catalog 条目 `updated_at` 升序的头 4 条，与现行 `FolderPreviewItems` 相同） |
+| `preview_covers` | `Image[]` | 永不 `null`，最多 4，banner 与 cover 都没有的跳过（不打日志）；不带 `include_nsfw` 时 `sexual=explicit` 的图也跳过（未认领作品论坛只按 r18 判 `is_nsfw`，catalog 还看封面是否全 explicit） | 最早加入的 4 条成员的 banner，没有 banner 取 cover（旧面 `EffectiveBannerURL` 就是这个回落；只取 banner 会让全竖版封面的作品从预览里消失，G6.3）（catalog 条目 `updated_at` 升序的头 4 条，与现行 `FolderPreviewItems` 相同） |
 | `created_at` / `updated_at` | date-time | catalog 解析失败打 WARN，该行丢掉 | catalog |
 | `viewer` | `CollectionViewer \| null` | 匿名为 `null` | |
 

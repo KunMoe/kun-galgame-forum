@@ -108,27 +108,34 @@ func (s *Service) previewCovers(ctx context.Context, token string, folder catalo
 		slog.Warn("collection: preview hydrate failed", "folder_id", folder.ID, "err", p)
 		return out
 	}
-	byID := map[int]workBanner{}
+	byID := map[int]previewArt{}
 	for i := range sums {
 		id, ok := repr.ParseID(sums[i].ID)
 		if !ok {
 			continue
 		}
-		byID[id] = workBanner{banner: sums[i].Banner, nsfw: sums[i].IsNSFW}
+		// Catalog leaves banner null when no cover is landscape. v1 read the
+		// banner alone, so such works vanished from every preview with a WARN
+		// a minute (2026-09-24); the legacy preview fell back to the portrait.
+		art := sums[i].Banner
+		if art == nil {
+			art = sums[i].Cover
+		}
+		byID[id] = previewArt{image: art, nsfw: sums[i].IsNSFW}
 	}
 	for _, it := range items {
-		b, ok := byID[int(it.WorkID)]
-		if !ok {
+		a, ok := byID[int(it.WorkID)]
+		if !ok || a.image == nil {
 			continue
 		}
-		if !includeNSFW && b.nsfw {
+		// For an unclaimed work the forum's is_nsfw is the r18 rating alone,
+		// while catalog also shelves it nsfw when all its cover art is explicit
+		// and then elects explicit art for this unfiltered read (18 works on
+		// 2026-09-24). Only those can reach here with an explicit image.
+		if !includeNSFW && (a.nsfw || isExplicit(a.image)) {
 			continue
 		}
-		if b.banner == nil || b.banner.URL == "" {
-			slog.Warn("collection: preview cover missing url, skipped", "work_id", it.WorkID, "folder_id", folder.ID)
-			continue
-		}
-		out = append(out, *b.banner)
+		out = append(out, *a.image)
 		if len(out) >= previewCoversPerCollection {
 			break
 		}
@@ -136,9 +143,13 @@ func (s *Service) previewCovers(ctx context.Context, token string, folder catalo
 	return out
 }
 
-type workBanner struct {
-	banner *repr.Image
-	nsfw   bool
+type previewArt struct {
+	image *repr.Image
+	nsfw  bool
+}
+
+func isExplicit(img *repr.Image) bool {
+	return img.Sexual != nil && *img.Sexual == "explicit"
 }
 
 func (s *Service) toCollection(ctx context.Context, folder catalogclient.Folder, user *middleware.UserInfo, token string, hasWork, includeNSFW bool) (*Collection, bool, *problem.Problem) {

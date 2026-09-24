@@ -5699,7 +5699,7 @@ export interface components {
             object: "collection";
             /** @description The account that owns this collection. */
             owner: components["schemas"]["UserRef"];
-            /** @description Banners of the earliest memberships, at most 4. Empty array, never null. */
+            /** @description Art of the earliest memberships, at most 4: each work's banner, else its cover. A work with neither is skipped, and without include_nsfw so are adult works and images graded explicit. Empty array, never null. */
             preview_covers: components["schemas"]["Image"][];
             /** @description Display name. Empty string for an unnamed imported default. Free text; never use it as a decision input. */
             title: string;
@@ -5807,7 +5807,7 @@ export interface components {
             object: "collection";
             /** @description The account that owns this collection. */
             owner: components["schemas"]["UserRef"];
-            /** @description Banners of the earliest memberships, at most 4. Empty array, never null. */
+            /** @description Art of the earliest memberships, at most 4: each work's banner, else its cover. A work with neither is skipped, and without include_nsfw so are adult works and images graded explicit. Empty array, never null. */
             preview_covers: components["schemas"]["Image"][];
             /** @description Display name. Empty string for an unnamed imported default. Free text; never use it as a decision input. */
             title: string;
