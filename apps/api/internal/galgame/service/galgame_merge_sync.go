@@ -10,6 +10,7 @@ import (
 
 	"kun-galgame-api/internal/galgame/client"
 	"kun-galgame-api/internal/galgame/repository"
+	"kun-galgame-api/pkg/errors"
 
 	"github.com/redis/go-redis/v9"
 )
@@ -38,8 +39,13 @@ type galgameMerger interface {
 	Fold(oldWorkID, newWorkID int) (repository.MergeCounts, error)
 }
 
+type survivorHydrator interface {
+	MirrorByCatalogIDs(ctx context.Context, ids []int64) (map[int]client.CatalogMirror, []int, *errors.AppError)
+}
+
 type GalgameMergeSync struct {
 	galgameClient *client.GalgameClient
+	survivors     survivorHydrator
 	mergeRepo     galgameMerger
 	rdb           *redis.Client
 	maxPages      int
@@ -56,6 +62,9 @@ func NewGalgameMergeSync(
 		galgameClient: galgameClient,
 		rdb:           rdb,
 		maxPages:      mergeSyncPages,
+	}
+	if galgameClient != nil {
+		s.survivors = galgameClient
 	}
 	if mergeRepo != nil {
 		s.mergeRepo = mergeRepo
@@ -175,10 +184,16 @@ func (s *GalgameMergeSync) fold(ctx context.Context, survivorWork map[int]int64)
 		}
 	}
 
+	renderable := s.renderableSurvivors(ctx, candidates, survivorWork)
 	for _, oldID := range candidates {
 		work := survivorWork[oldID]
 		newID := int(work)
 		if work <= 0 || int64(newID) != work {
+			s.park(ctx, oldID, work)
+			deferred++
+			continue
+		}
+		if newID != oldID && !renderable[newID] {
 			s.park(ctx, oldID, work)
 			deferred++
 			continue
@@ -188,6 +203,35 @@ func (s *GalgameMergeSync) fold(ctx context.Context, survivorWork map[int]int64)
 		deferred += d
 	}
 	return folded, deferred
+}
+
+// Folding into a survivor catalog will not render moves resources, ratings and
+// collection entries onto a page nobody can open: 206987's survivor 226964 is a
+// hidden claim. Such a fold, and any batch whose survivors could not be looked
+// up, stays parked and is retried.
+func (s *GalgameMergeSync) renderableSurvivors(ctx context.Context, olds []int, survivorWork map[int]int64) map[int]bool {
+	out := map[int]bool{}
+	if s.survivors == nil {
+		return out
+	}
+	var ids []int64
+	for _, oldID := range olds {
+		if work := survivorWork[oldID]; work > 0 && work != int64(oldID) {
+			ids = append(ids, work)
+		}
+	}
+	if len(ids) == 0 {
+		return out
+	}
+	rows, _, appErr := s.survivors.MirrorByCatalogIDs(ctx, ids)
+	if appErr != nil {
+		slog.Warn("galgame 合并幸存条目查询失败, 本批全部暂存", "survivors", len(ids), "error", appErr.Message)
+		return out
+	}
+	for id := range rows {
+		out[id] = true
+	}
+	return out
 }
 
 func (s *GalgameMergeSync) commitFold(ctx context.Context, oldID, newID int, work int64) (folded, deferred int) {

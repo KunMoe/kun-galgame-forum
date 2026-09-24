@@ -114,3 +114,5 @@
 | 1 | 不验证幸存条目 | 幸存条目 hidden → 不折叠，计为暂存 |
 | 2 | 水合失败当作可渲染 | 水合出错 → 不折叠，计为暂存 |
 | 3 | 可渲染的也暂存 | 幸存条目可渲染 → 照常折叠 |
+
+变异结果：3/3 杀。1 号 `TestFold_HiddenSurvivorIsParked`、`TestFold_SurvivorLookupFailureParks`；2 号 `TestFold_SurvivorLookupFailureParks`；3 号 `TestFold_LocalRetiredIDMovesOntoSurvivor`（第一次写成 `if newID != oldID` 让 `renderable` 成了未使用变量，没编译过，改写后重跑）。

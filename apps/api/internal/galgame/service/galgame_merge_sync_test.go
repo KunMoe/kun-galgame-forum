@@ -1,9 +1,12 @@
 package service
 
 import (
+	"context"
 	"testing"
 
+	"kun-galgame-api/internal/galgame/client"
 	"kun-galgame-api/internal/galgame/repository"
+	"kun-galgame-api/pkg/errors"
 )
 
 type fakeMergeRepo struct {
@@ -38,9 +41,30 @@ func (f *fakeMergeRepo) Fold(oldWorkID, newWorkID int) (repository.MergeCounts, 
 	return repository.MergeCounts{}, nil
 }
 
+type fakeSurvivors struct {
+	rendered map[int]bool
+	down     bool
+}
+
+func (f fakeSurvivors) MirrorByCatalogIDs(_ context.Context, ids []int64) (map[int]client.CatalogMirror, []int, *errors.AppError) {
+	if f.down {
+		return nil, nil, errors.ErrInternal("catalog down")
+	}
+	out := map[int]client.CatalogMirror{}
+	var hidden []int
+	for _, id := range ids {
+		if f.rendered[int(id)] {
+			out[int(id)] = client.CatalogMirror{}
+		} else {
+			hidden = append(hidden, int(id))
+		}
+	}
+	return out, hidden, nil
+}
+
 func TestFold_LocalRetiredIDMovesOntoSurvivor(t *testing.T) {
 	repo := newFakeMerge(5904, 61101)
-	s := &GalgameMergeSync{mergeRepo: repo}
+	s := &GalgameMergeSync{mergeRepo: repo, survivors: fakeSurvivors{rendered: map[int]bool{61101: true}}}
 
 	folded, deferred := s.fold(t.Context(), map[int]int64{5904: 61101})
 	if folded != 1 || deferred != 0 {
@@ -74,5 +98,31 @@ func TestFold_IdentityRedirectIsSkipped(t *testing.T) {
 	}
 	if len(repo.folds) != 0 {
 		t.Errorf("folds = %v, want none", repo.folds)
+	}
+}
+
+func TestFold_HiddenSurvivorIsParked(t *testing.T) {
+	repo := newFakeMerge(206987)
+	s := &GalgameMergeSync{mergeRepo: repo, survivors: fakeSurvivors{}}
+
+	folded, deferred := s.fold(t.Context(), map[int]int64{206987: 226964})
+	if folded != 0 || deferred != 1 {
+		t.Errorf("folded=%d deferred=%d, want 0/1", folded, deferred)
+	}
+	if len(repo.folds) != 0 {
+		t.Errorf("folds = %v, want none: the survivor is a page nobody can open", repo.folds)
+	}
+}
+
+func TestFold_SurvivorLookupFailureParks(t *testing.T) {
+	repo := newFakeMerge(5904)
+	s := &GalgameMergeSync{mergeRepo: repo, survivors: fakeSurvivors{down: true}}
+
+	folded, deferred := s.fold(t.Context(), map[int]int64{5904: 61101})
+	if folded != 0 || deferred != 1 {
+		t.Errorf("folded=%d deferred=%d, want 0/1", folded, deferred)
+	}
+	if len(repo.folds) != 0 {
+		t.Errorf("folds = %v, want none until the survivor can be looked up", repo.folds)
 	}
 }
