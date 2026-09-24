@@ -353,6 +353,8 @@ catalog 用户面一次调用的失败，按下表进 v1。**不得**落到无 c
 - **`WorkPlaytime` 的作品键是 `work_summary`**，不是 `work`（spec 里 `work` 是另一个 schema，G8）。夹内作品列表就是 `PageList<WorkSummary>`。
 - **请求体的错一律 `422 VALIDATION_FAILED`**，`400 INVALID_PARAMETER` 只给参数（路径、查询、`Idempotency-Key`）。huma 自己对请求体的 schema 校验本来就回 422，handler 再回 400 会让同一个字段的错分成两种码。具体：空 PATCH、PUT 时长两字段都缺（`REQUIRED`，pointer 为空）；`minutes` 越界（PUT 请求体的 `minutes` 带 `maximum: 60000`，`TestV1Gates` 通过；覆盖 §3.12 那句「不在 schema 上加」；`OUT_OF_RANGE`）；未知 `play_state`、闭集外 `visibility`（`UNKNOWN_VALUE`）；`title` 去空白后为空（`TOO_SHORT`）；`is_default: false`（`NOT_ALLOWED_VALUE`）。§7 #10 的期望改为 `422 VALIDATION_FAILED` 单条 `UNKNOWN_VALUE`，#16 改为 `422 VALIDATION_FAILED` `OUT_OF_RANGE`。
 - **上游 400 → `500 INTERNAL_ERROR`**（cause 进 ERROR 日志）。v2 对越界时长回的是 422（`me_playtime.go:184`），所以 400 只可能是论坛自己发错了请求：不是调用者的错，重试也没用。§3.14 的「上游 400 游玩时长越界」一行作废。
+- **上游 403 `USER_IDENTITY_REQUIRED` → `500 INTERNAL_ERROR`**，不再按「别人的」折成 404。catalog 用它说「这把凭据不是用户 token」（`apiv2/problem/registry.go:144`），只可能是论坛自己发错了凭据。浏览器验收（2026-09-24）里 dev 的 `/auth/login` token 没有 client id，`/me/playtimes` 因此读成了「没有这个东西」。catalogclient 的 403 分支以前丢掉 `ProblemCode`，一并补上（用户车道与应用车道）。
+- **选择器读失败时显示「收藏夹读取失败」**，不再显示「还没有收藏夹」（旧面同病）。保存照旧禁用。
 - **认不出的上游 422** → `422 VALIDATION_FAILED` `NOT_ALLOWED_VALUE`（pointer 为空），打 WARN 带上游 code 与 message。认得的几条按 infra `me_folder.go:313-336` 的原文匹配。
 - **夹名 / 说明比 schema 长**（100 / 500 字符）→ 截断并打 WARN。infra 的上限相同，这条分支正常不会走到。
 - **删夹时读不到成员资格就拒（503），什么都不删。** 旧面读夹内作品失败时照删不误，只是跳过本地 `favorite_count` 的扣减，计数从此永久偏高。上游的非 404 错误也不再落进 staff 分支：以前一次瞬时 503 会让普通用户看到 404。变异 #22 钉住。

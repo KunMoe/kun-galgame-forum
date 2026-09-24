@@ -100,7 +100,7 @@ func (c *Client) userV2Do(ctx context.Context, method, accessToken, path string,
 		if p.Code == "SCOPE_REQUIRED" || strings.Contains(blob, "scope") {
 			return nil, etag, ErrInsufficientScope
 		}
-		return nil, etag, &UserAPIError{Status: resp.StatusCode, Message: problemMsg(p, raw), RetryAfter: retryAfter}
+		return nil, etag, &UserAPIError{Status: resp.StatusCode, Message: problemMsg(p, raw), ProblemCode: p.Code, RetryAfter: retryAfter}
 	default:
 		if resp.StatusCode >= 500 {
 			return nil, etag, ErrUpstream

@@ -94,8 +94,10 @@ func (c *GalgameClient) CatalogRowsByWorkIDs(ctx context.Context, ids []int, inc
 		return map[int]CatalogWorkListItem{}, nil
 	}
 	catIDs := make([]int64, 0, len(ids))
+	seen := make(map[int]bool, len(ids))
 	for _, id := range ids {
-		if id > 0 {
+		if id > 0 && !seen[id] {
+			seen[id] = true
 			catIDs = append(catIDs, int64(id))
 		}
 	}

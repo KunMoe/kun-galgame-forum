@@ -76,7 +76,7 @@ func (s *Service) registerUserPlane(api huma.API) {
 		Method:      http.MethodDelete,
 		Path:        "/works/{work_id}/playtime",
 		Summary:     "Withdraw the caller's playtime on a work",
-		Description: "Deletes the caller's playtime on this work and clears the work-state. Repeating the delete is 200 with minutes 0 and play_state null.",
+		Description: "Deletes the playtime this site reported for the caller on this work and clears the work-state. Repeating the delete is 200. The response is read back from catalog, so minutes another app reported can remain.",
 		Tags:        []string{"works"},
 		Middlewares: huma.Middlewares{withAccessToken},
 		Responses: problemResponses(map[int]string{

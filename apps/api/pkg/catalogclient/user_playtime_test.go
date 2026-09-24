@@ -257,3 +257,18 @@ func TestMyWorkStates_ParsesItemsAndIgnoresMissing(t *testing.T) {
 		t.Errorf("missing id 9 must not appear, got %+v", got)
 	}
 }
+
+func TestListMyPlaytime_ForbiddenKeepsProblemCode(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/problem+json")
+		w.WriteHeader(http.StatusForbidden)
+		_, _ = w.Write([]byte(`{"code":"USER_IDENTITY_REQUIRED","detail":"the access token is missing a client id."}`))
+	}))
+	defer srv.Close()
+
+	_, _, err := New(Config{BaseURL: srv.URL}).ListMyPlaytime(context.Background(), "user-jwt", "", 100)
+	var api *UserAPIError
+	if !errors.As(err, &api) || api.Status != http.StatusForbidden || api.ProblemCode != "USER_IDENTITY_REQUIRED" {
+		t.Fatalf("err = %#v, want a 403 carrying USER_IDENTITY_REQUIRED", err)
+	}
+}

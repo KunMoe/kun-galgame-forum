@@ -149,7 +149,7 @@ func (c *Client) appV2Do(ctx context.Context, path string, query url.Values) ([]
 		if resp.StatusCode >= 500 {
 			return nil, ErrUpstream
 		}
-		return nil, &UserAPIError{Status: resp.StatusCode, Message: problemMsg(p, raw), RetryAfter: retryAfter}
+		return nil, &UserAPIError{Status: resp.StatusCode, Message: problemMsg(p, raw), ProblemCode: p.Code, RetryAfter: retryAfter}
 	}
 }
 

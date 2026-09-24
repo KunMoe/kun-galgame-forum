@@ -4421,7 +4421,7 @@ export interface paths {
         post?: never;
         /**
          * Withdraw the caller's playtime on a work
-         * @description Deletes the caller's playtime on this work and clears the work-state. Repeating the delete is 200 with minutes 0 and play_state null.
+         * @description Deletes the playtime this site reported for the caller on this work and clears the work-state. Repeating the delete is 200. The response is read back from catalog, so minutes another app reported can remain.
          */
         delete: operations["deleteWorkPlaytime"];
         options?: never;

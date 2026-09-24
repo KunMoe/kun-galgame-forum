@@ -40,6 +40,12 @@ func mapUserPlane(err error, own bool) error {
 	}
 	switch api.Status {
 	case http.StatusForbidden:
+		// Catalog answers this when the credential is not a user token (dev's
+		// /auth/login tokens carry no client id). Folding it into 404 made the
+		// playtime list read as "nothing here" on 2026-09-24's browser pass.
+		if api.ProblemCode == "USER_IDENTITY_REQUIRED" {
+			return problem.Internal(err)
+		}
 		if own {
 			return problem.New(problem.CodePermissionRequired, "The caller cannot perform this operation.")
 		}
