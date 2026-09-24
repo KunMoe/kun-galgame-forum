@@ -130,3 +130,44 @@ func TestV1DeleteWorkPlaytimeAnswersWhatIsLeft(t *testing.T) {
 		t.Errorf("another app's minutes survive the forum's withdraw and must be what the response says: %+v", body)
 	}
 }
+
+func TestV1ListMyPlaytimesReusesTheSweepUntilTheForumWrites(t *testing.T) {
+	f := newG6Fix(t)
+	sweeps := func() int {
+		f.user.mu.Lock()
+		defer f.user.mu.Unlock()
+		return f.user.playSweeps
+	}
+	list := func(query string) map[string]any {
+		t.Helper()
+		resp, body := f.call(t, http.MethodGet, "/api/v1/me/playtimes"+query, "/me/playtimes", "sess-alice", "", nil)
+		if resp.StatusCode != http.StatusOK {
+			t.Fatalf("list %s: %d %+v", query, resp.StatusCode, body)
+		}
+		return body
+	}
+	list("")
+	list("?page=2&limit=1")
+	if n := sweeps(); n != 1 {
+		t.Fatalf("paging re-swept catalog: %d sweeps, want 1", n)
+	}
+
+	resp, body := f.call(t, http.MethodPut, g6Path(g6WorkLive)+"/playtime", "/works/{work_id}/playtime", "sess-alice", "", map[string]any{"minutes": 4321})
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("put %d %+v", resp.StatusCode, body)
+	}
+	after := list("?include_nsfw=true&limit=100")
+	if n := sweeps(); n != 2 {
+		t.Fatalf("the forum's own write left the cached sweep in place: %d sweeps, want 2", n)
+	}
+	found := false
+	for _, it := range after["items"].([]any) {
+		row := it.(map[string]any)
+		if asInt(row["minutes"]) == 4321 {
+			found = true
+		}
+	}
+	if !found {
+		t.Errorf("the write is missing from the next read: %+v", after["items"])
+	}
+}

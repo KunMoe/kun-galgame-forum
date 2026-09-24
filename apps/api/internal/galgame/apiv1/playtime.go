@@ -48,9 +48,11 @@ type listMyPlaytimesOutput struct {
 }
 
 func (s *Service) putWorkPlaytime(ctx context.Context, in *putWorkPlaytimeInput) (*workViewerPlaytimeOutput, error) {
-	if _, p := s.requireActive(ctx); p != nil {
+	user, p := s.requireActive(ctx)
+	if p != nil {
 		return nil, p
 	}
+	defer s.dropMyPlaytimeSweep(ctx, user.ID)
 	token, p := requireToken(ctx)
 	if p != nil {
 		return nil, p
@@ -109,9 +111,11 @@ func (s *Service) putWorkPlaytime(ctx context.Context, in *putWorkPlaytimeInput)
 }
 
 func (s *Service) deleteWorkPlaytime(ctx context.Context, in *workPlaytimeInput) (*workViewerPlaytimeOutput, error) {
-	if _, p := s.requireActive(ctx); p != nil {
+	user, p := s.requireActive(ctx)
+	if p != nil {
 		return nil, p
 	}
+	defer s.dropMyPlaytimeSweep(ctx, user.ID)
 	token, p := requireToken(ctx)
 	if p != nil {
 		return nil, p
@@ -143,7 +147,8 @@ func (s *Service) deleteWorkPlaytime(ctx context.Context, in *workPlaytimeInput)
 }
 
 func (s *Service) listMyPlaytimes(ctx context.Context, in *listMyPlaytimesInput) (*listMyPlaytimesOutput, error) {
-	if _, p := s.requireActive(ctx); p != nil {
+	user, p := s.requireActive(ctx)
+	if p != nil {
 		return nil, p
 	}
 	token, p := requireToken(ctx)
@@ -158,21 +163,14 @@ func (s *Service) listMyPlaytimes(ctx context.Context, in *listMyPlaytimesInput)
 		return nil, prob
 	}
 
-	playtimeRows, playTrunc, err := s.sweepPlaytimes(ctx, token)
+	sweep, err := s.myPlaytimeSweep(ctx, user.ID, token)
 	if err != nil {
 		return nil, mapUserPlane(err, false)
 	}
-	stateRows, stateTrunc, err := s.sweepWorkStates(ctx, token)
-	if err != nil {
-		return nil, mapUserPlane(err, false)
-	}
-	truncated := playTrunc || stateTrunc
-	if truncated {
-		slog.Warn("me playtimes: sweep hit page cap", "pages", playtimeSweepPages, "playtime_truncated", playTrunc, "state_truncated", stateTrunc)
-	}
+	truncated := sweep.Truncated
 
-	order, byWork := foldPlaytimeRecords(playtimeRows)
-	states, stateOrder := indexWorkStates(stateRows)
+	order, byWork := foldPlaytimeRecords(sweep.Playtimes)
+	states, stateOrder := indexWorkStates(sweep.States)
 	folded := assemblePlaytimes(order, byWork, stateOrder, states)
 
 	ids := make([]int, 0, len(folded))

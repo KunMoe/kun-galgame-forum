@@ -76,6 +76,7 @@ type g6User struct {
 	itemsErr    error
 	pubReads    int
 	myReads     int
+	playSweeps  int
 	ownPatch403 bool
 }
 
@@ -428,6 +429,7 @@ func (u *g6User) ListMyPlaytime(_ context.Context, token, _ string, _ int) ([]ca
 	}
 	u.mu.Lock()
 	defer u.mu.Unlock()
+	u.playSweeps++
 	var out []catalogclient.PlaytimeRecord
 	for _, row := range u.play[token] {
 		out = append(out, catalogclient.PlaytimeRecord{WorkID: row.WorkID, Minutes: row.Minutes})
