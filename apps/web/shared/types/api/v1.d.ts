@@ -2192,6 +2192,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/me/works/{work_id}/collections": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the caller's collections against one work
+         * @description A page-number collection of every collection the caller owns, including private ones, each with viewer.has_work for this work. The shape the collection picker needs: no preview covers, no owner, no description. GET never creates a default collection.
+         */
+        get: operations["listMyCollectionsForWork"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/news-archive": {
         parameters: {
             query?: never;
@@ -5707,6 +5727,36 @@ export interface components {
              */
             object: "collection_alias";
         };
+        CollectionChoice: {
+            /** @description Catalog folder id. */
+            id: string;
+            /** @description Whether this is the owner's default collection. */
+            is_default: boolean;
+            /**
+             * Format: int64
+             * @description Works in this collection as catalog records them. Not affected by include_nsfw.
+             */
+            item_count: number;
+            /**
+             * @description Type discriminant. Always collection.
+             * @enum {string}
+             */
+            object: "collection";
+            /** @description Display name. Empty string for an unnamed imported default. Free text; never use it as a decision input. */
+            title: string;
+            /**
+             * Format: date-time
+             * @description When catalog last updated the collection.
+             */
+            updated_at: string;
+            /** @description The caller's own state. Never null on this operation, which requires a signed-in caller. */
+            viewer: components["schemas"]["CollectionViewer"] | null;
+            /**
+             * @description private folders are visible only to their owner; public folders are readable by anyone.
+             * @enum {string}
+             */
+            visibility: "private" | "public";
+        };
         CollectionCreate: {
             /** @description Owner's note. Omitted is an empty string. Free text; never use it as a decision input. */
             description?: string;
@@ -8760,6 +8810,25 @@ export interface components {
         PageListCharacterSummary: {
             /** @description Members of this page. Empty array, never null. */
             items: components["schemas"]["CharacterSummary"][];
+            /**
+             * @description Type discriminant. Always list.
+             * @enum {string}
+             */
+            object: "list";
+            /**
+             * Format: int64
+             * @description Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.
+             */
+            total: number;
+            /**
+             * @description eq when total is exact, gte when it stopped at the depth limit and there are at least that many.
+             * @enum {string}
+             */
+            total_relation: "eq" | "gte";
+        };
+        PageListCollectionChoice: {
+            /** @description Members of this page. Empty array, never null. */
+            items: components["schemas"]["CollectionChoice"][];
             /**
              * @description Type discriminant. Always list.
              * @enum {string}
@@ -25816,6 +25885,88 @@ export interface operations {
             };
             /** @description SCOPE_REQUIRED; ACCOUNT_BANNED. */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the catalog cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listMyCollectionsForWork: {
+        parameters: {
+            query?: {
+                /** @description 1-based page number. page × limit may not exceed 10000. */
+                page?: number;
+                /** @description Page size. 1–100, default 24. Values above 100 are rejected, not clamped. */
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                /** @description Work id. */
+                work_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PageListCollectionChoice"];
+                };
+            };
+            /** @description LIMIT_TOO_LARGE or INVALID_PARAMETER. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SCOPE_REQUIRED; ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the work does not exist or is hidden. */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

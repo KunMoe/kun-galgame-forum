@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { settle } from '#shared/utils/api/problem'
 import type {
-  CollectionSummary,
+  CollectionChoice,
   CollectionVisibility
 } from '#shared/utils/api/schemas'
 
@@ -23,7 +23,7 @@ const isOpen = computed({
   set: (value) => emits('update:modelValue', value)
 })
 
-const collections = ref<CollectionSummary[]>([])
+const collections = ref<CollectionChoice[]>([])
 const selected = ref<Set<string>>(new Set())
 const held = ref<Set<string>>(new Set())
 const pending = ref(false)
@@ -31,7 +31,7 @@ const loaded = ref(false)
 const saving = ref(false)
 const createOpen = ref(false)
 
-const applyList = (items: CollectionSummary[], preserveSelection: boolean) => {
+const applyList = (items: CollectionChoice[], preserveSelection: boolean) => {
   collections.value = items
   const nextHeld = new Set(
     items.filter((c) => c.viewer?.has_work).map((c) => c.id)
@@ -50,12 +50,10 @@ const load = async (preserveSelection = false) => {
   }
   pending.value = true
   const result = await settle(
-    api.GET('/me/collections', {
+    api.GET('/me/works/{work_id}/collections', {
       params: {
-        query: {
-          work_id: String(props.workId),
-          limit: 100
-        }
+        path: { work_id: String(props.workId) },
+        query: { limit: 100 }
       }
     })
   )
