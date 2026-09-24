@@ -5,6 +5,7 @@ import {
   galgameEditLabel,
   type GalgameEditNames
 } from '~/constants/galgameEdit'
+import { problemMessage } from '#shared/utils/api/message'
 import { settle } from '#shared/utils/api/problem'
 import type { UserRef, Work } from '#shared/utils/api/schemas'
 import {
@@ -27,7 +28,7 @@ useKunDisableSeo('审阅提案')
 const canReviewQueue = useCan('galgame.edit_proposal.review')
 const amendKey = useIdempotencyKey()
 
-const { data, status } = await useApi<{
+const { data, problem } = await useApi<{
   proposal: EditProposal
   etag: string | null
 }>(
@@ -524,9 +525,6 @@ const handleDecline = async () => {
       </KunModal>
     </template>
 
-    <KunNull
-      v-else-if="status !== 'pending'"
-      description="提案不存在或编辑服务暂不可用"
-    />
+    <KunNull v-else-if="problem" :description="problemMessage(problem)" />
   </div>
 </template>

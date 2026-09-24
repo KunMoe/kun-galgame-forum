@@ -7,6 +7,7 @@ import {
   galgameEditLabel,
   type GalgameEditNames
 } from '~/constants/galgameEdit'
+import { problemMessage } from '#shared/utils/api/message'
 import { settle } from '#shared/utils/api/problem'
 import type { Work } from '#shared/utils/api/schemas'
 import {
@@ -28,7 +29,7 @@ useKunDisableSeo('编辑 Galgame 资料')
 const api = useApiClient()
 const submitKey = useIdempotencyKey()
 
-const { data: form, status } = await useApi<EditForm>(
+const { data: form, problem, status } = await useApi<EditForm>(
   () => `work-edit-form:${workId.value}`,
   (client, { signal }) =>
     client.GET('/works/{work_id}/edit-form', {
@@ -334,9 +335,6 @@ const handleWithdraw = async (id: string) => {
       </div>
     </template>
 
-    <KunNull
-      v-else-if="status !== 'pending'"
-      description="无法加载编辑数据（条目不存在或编辑服务暂不可用）"
-    />
+    <KunNull v-else-if="problem" :description="problemMessage(problem)" />
   </div>
 </template>

@@ -4,6 +4,7 @@ import {
   galgameEditFieldConfig,
   galgameEditLabel
 } from '~/constants/galgameEdit'
+import { problemMessage } from '#shared/utils/api/message'
 import { settle } from '#shared/utils/api/problem'
 import {
   kitUsers,
@@ -21,7 +22,7 @@ const api = useApiClient()
 const revertKey = useIdempotencyKey()
 const userStore = usePersistUserStore()
 
-const { data, status, refresh } = await useApi<{ items: EditRevision[] }>(
+const { data, problem, refresh } = await useApi<{ items: EditRevision[] }>(
   () => `work-edit-revisions:${workId.value}`,
   (client, { signal }) =>
     client.GET('/works/{work_id}/edit-revisions', {
@@ -171,10 +172,7 @@ const handleRevert = async () => {
       </EditkitRevisionTimeline>
     </KunCard>
 
-    <KunNull
-      v-else-if="status !== 'pending'"
-      description="无法加载修订历史（条目不存在或编辑服务暂不可用）"
-    />
+    <KunNull v-else-if="problem" :description="problemMessage(problem)" />
 
     <KunModal v-model="revertOpen">
       <div class="space-y-4">

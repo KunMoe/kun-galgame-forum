@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { galgameEditLabel } from '~/constants/galgameEdit'
+import { problemMessage } from '#shared/utils/api/message'
 import {
   proposalUsers,
   toKitProposal,
@@ -12,7 +13,7 @@ useKunDisableSeo('我的资料编辑提案')
 const api = useApiClient()
 const nameOf = useWorkName()
 
-const { data, status, refresh } = await useApi<{
+const { data, problem, status, refresh } = await useApi<{
   items: EditProposalSummary[]
   next_cursor?: string
 }>('me-edit-proposals', (client, { signal }) =>
@@ -55,6 +56,8 @@ const handleWithdraw = async (id: string) => {
     <div v-if="status === 'pending'" class="flex justify-center py-8">
       <KunLoading />
     </div>
+
+    <KunNull v-else-if="problem" :description="problemMessage(problem)" />
 
     <KunNull
       v-else-if="!items.length"

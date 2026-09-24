@@ -1,5 +1,7 @@
 <script setup lang="ts">
+import type { KunTabItem } from '@kungal/ui-vue'
 import { galgameEditLabel } from '~/constants/galgameEdit'
+import { problemMessage } from '#shared/utils/api/message'
 import {
   proposalUsers,
   toKitProposal,
@@ -16,7 +18,7 @@ useKunDisableSeo('Galgame 提案审核队列')
 
 const state = ref<QueueState>('open')
 
-const { data, status: fetchStatus } = await useApi<{
+const { data, problem, status: fetchStatus } = await useApi<{
   items: EditProposalSummary[]
   next_cursor?: string
 }>(
@@ -49,12 +51,15 @@ const titleOf = (id: number): string => {
   return nameOf(item.work_summary) || `Galgame #${item.work_id}`
 }
 
-const statusModel = computed({
-  get: () => state.value,
-  set: (next: string) => {
-    state.value = next as QueueState
-  }
-})
+const stateTabs: KunTabItem[] = [
+  { value: 'open', textValue: '待审核' },
+  { value: 'merged', textValue: '已合并' },
+  { value: 'declined', textValue: '已拒绝' },
+  { value: 'withdrawn', textValue: '已撤回' }
+]
+const onTab = (next: string) => {
+  state.value = next as QueueState
+}
 </script>
 
 <template>
@@ -75,46 +80,52 @@ const statusModel = computed({
       :is-transparent="false"
       content-class="space-y-3"
     >
-      <EditkitReviewQueue
-        v-model:status="statusModel"
-        :items="kitItems"
-        :users="users"
-        :label-for="galgameEditLabel"
-        :loading="fetchStatus === 'pending'"
-      >
-        <template #item="{ proposal }">
-          <EditkitProposalCard
-            :proposal="proposal"
-            :label-for="galgameEditLabel"
-            :proposer="users[proposal.proposer_uid]"
-            :decider="
-              proposal.decided_by_uid !== undefined
-                ? users[proposal.decided_by_uid]
-                : undefined
-            "
-          >
-            <template #title>
-              <KunLink
-                :to="`/galgame/${proposal.entity_id}`"
-                size="sm"
-                class-name="font-medium"
-              >
-                {{ titleOf(proposal.id) }}
-              </KunLink>
-            </template>
-            <template #actions>
-              <KunButton
-                variant="flat"
-                color="primary"
-                size="sm"
-                @click="navigateTo(`/galgame-edit/review/${proposal.id}`)"
-              >
-                {{ proposal.status === 'open' ? '审阅' : '查看' }}
-              </KunButton>
-            </template>
-          </EditkitProposalCard>
-        </template>
-      </EditkitReviewQueue>
+      <KunTab
+        :model-value="state"
+        :items="stateTabs"
+        variant="light"
+        size="sm"
+        @update:model-value="onTab"
+      />
+      <div v-if="fetchStatus === 'pending'" class="flex justify-center py-8">
+        <KunLoading />
+      </div>
+      <KunNull v-else-if="problem" :description="problemMessage(problem)" />
+      <KunNull v-else-if="!kitItems.length" description="这里还没有提案" />
+      <div v-else class="space-y-3">
+        <EditkitProposalCard
+          v-for="proposal in kitItems"
+          :key="proposal.id"
+          :proposal="proposal"
+          :label-for="galgameEditLabel"
+          :proposer="users[proposal.proposer_uid]"
+          :decider="
+            proposal.decided_by_uid !== undefined
+              ? users[proposal.decided_by_uid]
+              : undefined
+          "
+        >
+          <template #title>
+            <KunLink
+              :to="`/galgame/${proposal.entity_id}`"
+              size="sm"
+              class-name="font-medium"
+            >
+              {{ titleOf(proposal.id) }}
+            </KunLink>
+          </template>
+          <template #actions>
+            <KunButton
+              variant="flat"
+              color="primary"
+              size="sm"
+              @click="navigateTo(`/galgame-edit/review/${proposal.id}`)"
+            >
+              {{ proposal.status === 'open' ? '审阅' : '查看' }}
+            </KunButton>
+          </template>
+        </EditkitProposalCard>
+      </div>
       <div v-if="hasMore" class="flex justify-center">
         <KunButton variant="light" :loading="loadingMore" @click="loadMore">
           加载更多
