@@ -16,7 +16,7 @@ Fixed:
 
 Changed:
 
-- `GET /api/v1/me/playtimes` reuses one read of the caller's catalog playtimes for a minute, so paging costs no catalog calls; the forum's own playtime and play-state writes discard it. Playtime reported by another app shows up within a minute.
+- `GET /api/v1/me/playtimes` reuses one read of the caller's catalog playtimes for a minute, so paging costs no catalog calls; a write through `PUT`/`DELETE /api/v1/works/{work_id}/playtime` discards it. Playtime reported by another app, and a play state set by publishing a rating, show up within a minute.
 
 ## 2026-09-24 (G7a work submissions and the claim review queue)
 
