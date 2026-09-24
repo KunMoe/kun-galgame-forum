@@ -1,8 +1,6 @@
 DELETE /api/admin/user/:id/content                    cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → RequirePermission → PurgeHandler.PurgeUserContent
 DELETE /api/galgame/:id                               cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → SubmissionHandler.Withdraw
-DELETE /api/galgame/:id/cover/:coverId/vote           cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → CoverVoteHandler.Unvote
 DELETE /api/galgame/:id/draft                         cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → SubmissionHandler.DeleteDraft
-DELETE /api/galgame/collection/:cid                   cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → GalgameCollectionHandler.Delete
 DELETE /api/v1/admin/docs/:doc_id                     cors.New → v1Headers → fiberAdapter.Handle
 DELETE /api/v1/admin/friend-links/:friend_link_id     cors.New → v1Headers → fiberAdapter.Handle
 DELETE /api/v1/admin/topics/:topic_id                 cors.New → v1Headers → fiberAdapter.Handle
@@ -10,6 +8,8 @@ DELETE /api/v1/admin/website-categories/:website_category_id cors.New → v1Head
 DELETE /api/v1/admin/website-tag-groups/:website_tag_group_id cors.New → v1Headers → fiberAdapter.Handle
 DELETE /api/v1/admin/website-tags/:website_tag_id     cors.New → v1Headers → fiberAdapter.Handle
 DELETE /api/v1/admin/websites/:website_id             cors.New → v1Headers → fiberAdapter.Handle
+DELETE /api/v1/collections/:collection_id             cors.New → v1Headers → fiberAdapter.Handle
+DELETE /api/v1/collections/:collection_id/works/:work_id cors.New → v1Headers → fiberAdapter.Handle
 DELETE /api/v1/comments/:comment_id                   cors.New → v1Headers → fiberAdapter.Handle
 DELETE /api/v1/comments/:comment_id/like              cors.New → v1Headers → fiberAdapter.Handle
 DELETE /api/v1/galgame-resources/:resource_id         cors.New → v1Headers → fiberAdapter.Handle
@@ -40,24 +40,22 @@ DELETE /api/v1/wall-comments/:wall_comment_id         cors.New → v1Headers →
 DELETE /api/v1/wall-comments/:wall_comment_id/like    cors.New → v1Headers → fiberAdapter.Handle
 DELETE /api/v1/websites/:website_host/favorite        cors.New → v1Headers → fiberAdapter.Handle
 DELETE /api/v1/websites/:website_host/like            cors.New → v1Headers → fiberAdapter.Handle
+DELETE /api/v1/works/:work_id/covers/:cover_id/vote   cors.New → v1Headers → fiberAdapter.Handle
 DELETE /api/v1/works/:work_id/like                    cors.New → v1Headers → fiberAdapter.Handle
+DELETE /api/v1/works/:work_id/playtime                cors.New → v1Headers → fiberAdapter.Handle
 DELETE /api/v1/works/:work_id/resource-publish-ban    cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/admin/galgame/submissions                 cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → RequirePermission → ClaimReviewHandler.PendingQueue
 GET    /api/admin/user/:id/content-stats              cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → RequirePermission → PurgeHandler.GetUserContentStats
 GET    /api/galgame-edit/mine                         cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → EditHandler.Mine
 GET    /api/galgame-edit/proposals/:id                cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → EditHandler.ProposalDetail
 GET    /api/galgame-edit/queue                        cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → RequireModerator → EditHandler.Queue
-GET    /api/galgame/:id/collections/mine              cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → GalgameCollectionHandler.MyCollectionsForGalgame
 GET    /api/galgame/:id/edit/bootstrap                cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → EditHandler.Bootstrap
 GET    /api/galgame/:id/edit/diff                     cors.New → middleware.NamePreference → ContentStance → EditHandler.Diff
 GET    /api/galgame/:id/edit/proposals                cors.New → middleware.NamePreference → ContentStance → EditHandler.GameProposals
 GET    /api/galgame/:id/edit/revisions                cors.New → middleware.NamePreference → ContentStance → OptionalAuth → EditHandler.Revisions
 GET    /api/galgame/audited                           cors.New → middleware.NamePreference → ContentStance → Auth → RequirePermission → SubmissionHandler.ListAudit
-GET    /api/galgame/collection/:cid                   cors.New → middleware.NamePreference → ContentStance → OptionalAuth → GalgameCollectionHandler.GetDetail
 GET    /api/galgame/mine                              cors.New → middleware.NamePreference → ContentStance → Auth → SubmissionHandler.ListMine
-GET    /api/galgame/playtime/mine                     cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → PlaytimeHandler.ListMine
 GET    /api/galgame/search/wizard                     cors.New → middleware.NamePreference → ContentStance → Auth → SubmissionHandler.SearchWithPending
-GET    /api/user/:id/collections                      cors.New → middleware.NamePreference → ContentStance → OptionalAuth → GalgameCollectionHandler.GetUserCollections
 GET    /api/v1/activities                             cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/admin/docs/:doc_id                     cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/admin/friend-links/:friend_link_id     cors.New → v1Headers → fiberAdapter.Handle
@@ -78,6 +76,10 @@ GET    /api/v1/app/version                            cors.New → v1Headers →
 GET    /api/v1/characters                             cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/characters/:character_id               cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/characters/:character_id/appearances   cors.New → v1Headers → fiberAdapter.Handle
+GET    /api/v1/collection-aliases/:alias_id           cors.New → v1Headers → fiberAdapter.Handle
+GET    /api/v1/collections/:collection_id             cors.New → v1Headers → fiberAdapter.Handle
+GET    /api/v1/collections/:collection_id/works       cors.New → v1Headers → fiberAdapter.Handle
+GET    /api/v1/collections/:collection_id/works/:work_id cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/comments/:comment_id                   cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/comments/:comment_id/source            cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/companies                              cors.New → v1Headers → fiberAdapter.Handle
@@ -103,6 +105,7 @@ GET    /api/v1/lotteries/:lottery_id/winners/:winner_id cors.New → v1Headers �
 GET    /api/v1/me                                     cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/me/account                             cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/me/answered-quizzes                    cors.New → v1Headers → fiberAdapter.Handle
+GET    /api/v1/me/collections                         cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/me/conversations                       cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/me/conversations/:user_id              cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/me/conversations/:user_id/messages     cors.New → v1Headers → fiberAdapter.Handle
@@ -114,6 +117,7 @@ GET    /api/v1/me/notifications                       cors.New → v1Headers →
 GET    /api/v1/me/notifications/:notification_id      cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/me/notifications/summary               cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/me/permissions                         cors.New → v1Headers → fiberAdapter.Handle
+GET    /api/v1/me/playtimes                           cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/me/preferences                         cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/me/quiz-states                         cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/me/topic-drafts                        cors.New → v1Headers → fiberAdapter.Handle
@@ -183,6 +187,7 @@ GET    /api/v1/update-logs                            cors.New → v1Headers →
 GET    /api/v1/update-logs/:update_log_id             cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/users                                  cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/users/:user_id                         cors.New → v1Headers → fiberAdapter.Handle
+GET    /api/v1/users/:user_id/collections             cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/users/:user_id/comments                cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/users/:user_id/galgame-resources       cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/users/:user_id/replies                 cors.New → v1Headers → fiberAdapter.Handle
@@ -204,11 +209,11 @@ GET    /api/v1/wiki-company-redirects/:wiki_company_id cors.New → v1Headers �
 GET    /api/v1/work-suggestions                       cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/works                                  cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/works/:work_id                         cors.New → v1Headers → fiberAdapter.Handle
+GET    /api/v1/works/:work_id/covers/:cover_id        cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/works/:work_id/moyu-patches            cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/works/:work_id/resources               cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/works/collected-months                 cors.New → v1Headers → fiberAdapter.Handle
 GET    /healthz                                       cors.New → App.setupRoutes
-PATCH  /api/galgame/collection/:cid                   cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → GalgameCollectionHandler.Update
 PATCH  /api/v1/admin/docs/:doc_id                     cors.New → v1Headers → fiberAdapter.Handle
 PATCH  /api/v1/admin/friend-links/:friend_link_id     cors.New → v1Headers → fiberAdapter.Handle
 PATCH  /api/v1/admin/review-items/:review_item_id     cors.New → v1Headers → fiberAdapter.Handle
@@ -217,6 +222,7 @@ PATCH  /api/v1/admin/website-categories/:website_category_id cors.New → v1Head
 PATCH  /api/v1/admin/website-tag-groups/:website_tag_group_id cors.New → v1Headers → fiberAdapter.Handle
 PATCH  /api/v1/admin/website-tags/:website_tag_id     cors.New → v1Headers → fiberAdapter.Handle
 PATCH  /api/v1/admin/websites/:website_id             cors.New → v1Headers → fiberAdapter.Handle
+PATCH  /api/v1/collections/:collection_id             cors.New → v1Headers → fiberAdapter.Handle
 PATCH  /api/v1/comments/:comment_id                   cors.New → v1Headers → fiberAdapter.Handle
 PATCH  /api/v1/galgame-resources/:resource_id         cors.New → v1Headers → fiberAdapter.Handle
 PATCH  /api/v1/lotteries/:lottery_id                  cors.New → v1Headers → fiberAdapter.Handle
@@ -244,7 +250,6 @@ POST   /api/galgame-edit/proposals/:id/withdraw       cors.New → middleware.Na
 POST   /api/galgame/:id/edit/proposals                cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → EditHandler.Submit
 POST   /api/galgame/:id/edit/revert                   cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → EditHandler.Revert
 POST   /api/galgame/:id/resubmit                      cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → SubmissionHandler.Resubmit
-POST   /api/galgame/collection                        cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → GalgameCollectionHandler.Create
 POST   /api/galgame/submit                            cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → SubmissionHandler.Submit
 POST   /api/trust/callback                            cors.New → middleware.NamePreference → ContentStance → TrustHandler.Callback
 POST   /api/v1/admin/docs                             cors.New → v1Headers → fiberAdapter.Handle
@@ -253,6 +258,7 @@ POST   /api/v1/admin/website-categories               cors.New → v1Headers →
 POST   /api/v1/admin/website-tag-groups               cors.New → v1Headers → fiberAdapter.Handle
 POST   /api/v1/admin/website-tags                     cors.New → v1Headers → fiberAdapter.Handle
 POST   /api/v1/admin/websites                         cors.New → v1Headers → fiberAdapter.Handle
+POST   /api/v1/collections                            cors.New → v1Headers → fiberAdapter.Handle
 POST   /api/v1/galgame-resources/:resource_id/downloads cors.New → v1Headers → fiberAdapter.Handle
 POST   /api/v1/galgame-resources/:resource_id/expiry-reports cors.New → v1Headers → fiberAdapter.Handle
 POST   /api/v1/images                                 cors.New → v1Headers → fiberAdapter.Handle
@@ -282,12 +288,10 @@ POST   /api/v1/wall-comments                          cors.New → v1Headers →
 POST   /api/v1/wall-comments/:wall_comment_id/flags   cors.New → v1Headers → fiberAdapter.Handle
 POST   /api/v1/work-edit-images                       cors.New → v1Headers → fiberAdapter.Handle
 POST   /api/v1/works/:work_id/resources               cors.New → v1Headers → fiberAdapter.Handle
-PUT    /api/galgame/:id/collections                   cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → GalgameCollectionHandler.SetMembership
-PUT    /api/galgame/:id/cover/:coverId/vote           cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → CoverVoteHandler.Vote
-PUT    /api/galgame/:id/playtime                      cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → PlaytimeHandler.Report
 PUT    /api/v1/admin/doc-order                        cors.New → v1Headers → fiberAdapter.Handle
 PUT    /api/v1/admin/friend-link-order                cors.New → v1Headers → fiberAdapter.Handle
 PUT    /api/v1/admin/user-permissions/:user_id        cors.New → v1Headers → fiberAdapter.Handle
+PUT    /api/v1/collections/:collection_id/works/:work_id cors.New → v1Headers → fiberAdapter.Handle
 PUT    /api/v1/comments/:comment_id/like              cors.New → v1Headers → fiberAdapter.Handle
 PUT    /api/v1/galgame-resources/:resource_id/like    cors.New → v1Headers → fiberAdapter.Handle
 PUT    /api/v1/lotteries/:lottery_id/entries/me       cors.New → v1Headers → fiberAdapter.Handle
@@ -312,5 +316,7 @@ PUT    /api/v1/topics/:topic_id/reactions/:reaction   cors.New → v1Headers →
 PUT    /api/v1/wall-comments/:wall_comment_id/like    cors.New → v1Headers → fiberAdapter.Handle
 PUT    /api/v1/websites/:website_host/favorite        cors.New → v1Headers → fiberAdapter.Handle
 PUT    /api/v1/websites/:website_host/like            cors.New → v1Headers → fiberAdapter.Handle
+PUT    /api/v1/works/:work_id/covers/:cover_id/vote   cors.New → v1Headers → fiberAdapter.Handle
 PUT    /api/v1/works/:work_id/like                    cors.New → v1Headers → fiberAdapter.Handle
+PUT    /api/v1/works/:work_id/playtime                cors.New → v1Headers → fiberAdapter.Handle
 PUT    /api/v1/works/:work_id/resource-publish-ban    cors.New → v1Headers → fiberAdapter.Handle

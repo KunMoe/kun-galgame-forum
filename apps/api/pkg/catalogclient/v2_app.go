@@ -134,6 +134,7 @@ func (c *Client) appV2Do(ctx context.Context, path string, query url.Values) ([]
 	}
 	defer resp.Body.Close()
 	raw, _ := io.ReadAll(resp.Body)
+	retryAfter := resp.Header.Get("Retry-After")
 
 	var p v2Problem
 	_ = json.Unmarshal(raw, &p)
@@ -148,7 +149,7 @@ func (c *Client) appV2Do(ctx context.Context, path string, query url.Values) ([]
 		if resp.StatusCode >= 500 {
 			return nil, ErrUpstream
 		}
-		return nil, &UserAPIError{Status: resp.StatusCode, Message: problemMsg(p, raw)}
+		return nil, &UserAPIError{Status: resp.StatusCode, Message: problemMsg(p, raw), RetryAfter: retryAfter}
 	}
 }
 

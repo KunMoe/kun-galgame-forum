@@ -1,5 +1,36 @@
 # API v1 changelog
 
+## 2026-09-24 (G6 cover votes, playtime, collections)
+
+Breaking for `PUT` / `DELETE /api/galgame/:id/cover/:coverId/vote`, `PUT /api/galgame/:id/playtime`, `GET /api/galgame/playtime/mine`, `POST /api/galgame/collection`, `GET` / `PATCH` / `DELETE /api/galgame/collection/:cid`, `PUT /api/galgame/:id/collections`, `GET /api/galgame/:id/collections/mine` and `GET /api/user/:id/collections`; all eleven are gone. No App build calls them; `docs/proj/app-direct-api.md` names the replacements.
+
+**A collection's id is now the catalog folder id.** The old forum id is a different number for 4,079 of 9,338 collections, so the two must never be swapped. The page moves from `/galgame/collection/{cid}` to `/collection/{collection_id}`. An old link still works: a full page load answers `301`, and an in-site link goes through a redirect page. Both resolve the old id with `GET /api/v1/collection-aliases/{alias_id}`. No stored content links to the old path (0 occurrences on prod), so there is no link-rewrite migration.
+
+Offered:
+
+- `GET /api/v1/works/{work_id}/covers/{cover_id}` → `WorkCover`.
+- `PUT` / `DELETE /api/v1/works/{work_id}/covers/{cover_id}/vote` → `WorkCoverEngagement` (`vote_count`, `viewer.has_voted`). Both are idempotent.
+- `PUT /api/v1/works/{work_id}/playtime` `{minutes?, play_state?}` → `WorkViewerPlaytime`. An omitted field is left unchanged; `play_state: null` clears the state. `done` is display-only and refused.
+- `DELETE /api/v1/works/{work_id}/playtime` removes the forum's own report and clears the work state. The response is read back from catalog, so another app's minutes can remain in it.
+- `GET /api/v1/me/playtimes`: page-number; `total_minutes`, `finished_work_count` and `is_truncated` on the envelope; `include_nsfw`.
+- `POST /api/v1/collections`: `Idempotency-Key` required; 201 + `Location`; `visibility` must be sent.
+- `GET` / `PATCH` / `DELETE /api/v1/collections/{collection_id}`.
+- `GET /api/v1/collections/{collection_id}/works` → `PageList<WorkSummary>`.
+- `GET` / `PUT` / `DELETE /api/v1/collections/{collection_id}/works/{work_id}`: one folder's membership, as a slot.
+- `GET /api/v1/me/collections` (`work_id=` sets `viewer.has_work`) and `GET /api/v1/users/{user_id}/collections`.
+- `GET /api/v1/collection-aliases/{alias_id}`: read-only. It is `404` whenever the target collection is not visible to the caller.
+
+Fixed:
+
+- **The picker could remove a work from every folder.** The old write replaced the whole membership set, so a failed read that saved `collection_ids: []` emptied every folder. Membership is now written one folder at a time, and only for the folders the user changed.
+- **A read created data.** Listing collections minted an alias row for every folder without one. No GET writes now, and the alias table is frozen.
+- **A collection's page showed an empty grid when the work lookup failed.** It is `503` now.
+- **A catalog rate limit surfaced as a data failure:** a 429 fell through to a 500 and rendered as 「读取收藏夹列表失败」. Every upstream 429 is `503 SERVICE_UNAVAILABLE` now, with the upstream `Retry-After`. A session missing a scope is `403 SCOPE_REQUIRED` (legacy code 235).
+- **Withdrawing a playtime left a 0-minute row.** It now deletes the forum's row only (infra#296 scoped catalog's delete to the calling app).
+- **Deleting a folder whose contents could not be read** still went ahead, leaving the local favourite ranking too high. It is refused with `503` now, and nothing is deleted.
+- **`/me/playtimes` counted NSFW works in its totals** while hiding them from the list. Totals and items now share one predicate.
+- Request-body errors on these operations are `422 VALIDATION_FAILED`, and parameter errors stay `400`.
+
 ## 2026-09-24 (G5 galgame browse, library, release calendar, entity search)
 
 Breaking for `GET /api/galgame` (both engines), `GET /api/galgame/calendar{,/today,/pending,/tba,/upcoming}`, `GET /api/galgame/collected-calendar`, `GET /api/rss/galgame`, `GET /api/search/entity` and `GET /api/search/entity/resolve`; all ten are gone. No App build calls them; `docs/proj/app-direct-api.md` names the replacements.

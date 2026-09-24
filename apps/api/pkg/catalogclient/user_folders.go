@@ -263,8 +263,16 @@ type FolderWrite struct {
 }
 
 func (c *Client) CreateFolder(ctx context.Context, token string, in FolderWrite) (*Folder, error) {
+	return c.CreateFolderKeyed(ctx, token, in, "")
+}
+
+func (c *Client) CreateFolderKeyed(ctx context.Context, token string, in FolderWrite, idempotencyKey string) (*Folder, error) {
+	var headers map[string]string
+	if idempotencyKey != "" {
+		headers = map[string]string{"Idempotency-Key": idempotencyKey}
+	}
 	var out v2Folder
-	if err := c.userV2JSON(ctx, http.MethodPost, token, "/v2/me/folders", in, &out, nil); err != nil {
+	if err := c.userV2JSON(ctx, http.MethodPost, token, "/v2/me/folders", in, &out, headers); err != nil {
 		return nil, err
 	}
 	f := out.view()

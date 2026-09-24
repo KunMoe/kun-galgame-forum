@@ -14,6 +14,7 @@ import (
 	"kun-galgame-api/internal/galgame/workrepr"
 	"kun-galgame-api/internal/infrastructure/storelink"
 	"kun-galgame-api/internal/moemoepoint"
+	"kun-galgame-api/internal/trust/gate"
 	"kun-galgame-api/pkg/catalogclient"
 	legacyErrors "kun-galgame-api/pkg/errors"
 	"kun-galgame-api/pkg/moyuclient"
@@ -53,6 +54,28 @@ type CatalogUser interface {
 	WorkCoverVotes(ctx context.Context, workID int64) ([]catalogclient.CoverTally, error)
 	MyPlaytime(ctx context.Context, token string, workID int64) (*catalogclient.PlaytimeSelf, error)
 	MyWorkState(ctx context.Context, token string, workID int64) (*catalogclient.WorkStateRecord, error)
+	VoteCover(ctx context.Context, token string, workID, coverID int64) (*catalogclient.CoverVoteResult, error)
+	UnvoteCover(ctx context.Context, token string, workID, coverID int64) (*catalogclient.CoverVoteResult, error)
+	ReportPlaytime(ctx context.Context, token string, workID int64, report catalogclient.PlaytimeReport) (*catalogclient.PlaytimeRecord, error)
+	DeleteMyPlaytime(ctx context.Context, token string, workID int64) error
+	ListMyPlaytime(ctx context.Context, token, cursor string, limit int) ([]catalogclient.PlaytimeRecord, string, error)
+	PutWorkState(ctx context.Context, token string, workID int64, state string, completion *string) (*catalogclient.WorkStateRecord, error)
+	DeleteWorkState(ctx context.Context, token string, workID int64) error
+	ListMyWorkStates(ctx context.Context, token, cursor string, limit int) ([]catalogclient.WorkStateRecord, string, error)
+	MyFolders(ctx context.Context, token string) ([]catalogclient.Folder, error)
+	MyFolder(ctx context.Context, token string, folderID int64) (*catalogclient.Folder, error)
+	FolderPreviewItems(ctx context.Context, token string, folderID int64, n int) ([]catalogclient.FolderItem, error)
+	MyFolderItems(ctx context.Context, token string, folderID int64) ([]catalogclient.FolderItem, error)
+	PublicFolders(ctx context.Context, ownerUID int64) ([]catalogclient.Folder, error)
+	PublicFolder(ctx context.Context, folderID int64) (*catalogclient.Folder, error)
+	PublicFolderItems(ctx context.Context, folderID int64) ([]catalogclient.FolderItem, error)
+	CreateFolderKeyed(ctx context.Context, token string, in catalogclient.FolderWrite, idempotencyKey string) (*catalogclient.Folder, error)
+	PatchFolder(ctx context.Context, token string, folderID int64, in catalogclient.FolderWrite) (*catalogclient.Folder, error)
+	DeleteFolder(ctx context.Context, token string, folderID int64) error
+	PutFolderItem(ctx context.Context, token string, folderID, workID int64) error
+	DeleteFolderItem(ctx context.Context, token string, folderID, workID int64) error
+	ModeratePatchFolder(ctx context.Context, token string, folderID int64, in catalogclient.FolderWrite) (*catalogclient.Folder, error)
+	ModerateDeleteFolder(ctx context.Context, token string, folderID int64) error
 }
 
 type userLookup interface {
@@ -82,6 +105,9 @@ type Service struct {
 	catalog         CatalogUser
 	storeLinks      *storelink.Resolver
 	award           AwardFunc
+	check           *gate.CheckService
+	scan            *gate.ScanService
+	aliases         *repository.GalgameCollectionRepository
 }
 
 func New(works workCatalog, moyu *moyuclient.Client, users userLookup, rdb *redis.Client, cdn string) *Service {
@@ -100,6 +126,13 @@ func (s *Service) WithWork(db *gorm.DB, catalog CatalogUser, storeLinks *storeli
 	if award != nil {
 		s.award = award
 	}
+	return s
+}
+
+func (s *Service) WithUserPlane(check *gate.CheckService, scan *gate.ScanService, aliases *repository.GalgameCollectionRepository) *Service {
+	s.check = check
+	s.scan = scan
+	s.aliases = aliases
 	return s
 }
 

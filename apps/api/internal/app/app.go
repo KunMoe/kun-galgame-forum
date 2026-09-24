@@ -116,12 +116,9 @@ type App struct {
 	AdminPurgeHandler         *adminHandler.PurgeHandler
 	TrustHandler              *trustHandler.TrustHandler
 	NewsV1                    *newsapiv1.Service
-	GalgameCollectionHandler  *galgameHandler.GalgameCollectionHandler
 	GalgameSubmissionHandler  *galgameHandler.SubmissionHandler
 	GalgameClaimReviewHandler *galgameHandler.ClaimReviewHandler
 	GalgameEditHandler        *galgameHandler.EditHandler
-	GalgameCoverVoteHandler   *galgameHandler.CoverVoteHandler
-	GalgamePlaytimeHandler    *galgameHandler.PlaytimeHandler
 	ImagesV1                  *imageapiv1.Service
 	Artifact                  *artifactclient.Client
 	FileStorage               *storage.S3Client
@@ -395,19 +392,11 @@ func New(cfg *config.Config) *App {
 
 	galgameCommunityPostRepo := galgameRepo.NewCommunityPostRepository(db)
 	creatorSvc := galgameService.NewCreatorService(galgameRepo.NewRatingStore(db), galgameUserStatsSvc, uc)
-	galgameListRepo := galgameRepo.NewGalgameListRepository(db)
-	galgameResourceMetaRepo := galgameRepo.NewGalgameResourceMetaRepository(db)
 	galgameContributorRepo := galgameRepo.NewGalgameContributorRepository(db)
-	galgameCoreSvc := galgameService.NewGalgameService(
-		galgameLocalRepo, galgameListRepo,
-		galgameResourceMetaRepo, galgameContributorRepo,
-		userStateRepo, gc, uc, catalogCli, storeLinks,
-	)
 	galgameCollectionRepo := galgameRepo.NewGalgameCollectionRepository(db)
-	galgameCollectionSvc := galgameService.NewCollectionService(galgameCollectionRepo, galgameCoreSvc, gc, uc, catalogCli, trustCheck, trustScan, rdb)
 	galgameSubmissionSvc := galgameService.NewSubmissionService(gc, catalogCli, galgameLocalRepo)
 	galgameClaimReviewSvc := galgameService.NewClaimReviewService(gc, catalogCli)
-	galgamePlaytimeSvc := galgameService.NewPlaytimeService(galgameCoreSvc, gc, catalogCli, cfg.OAuth.ClientID)
+	galgamePlaytimeSvc := galgameService.NewPlaytimeService(gc, catalogCli)
 	galgameClaimSync := galgameService.NewGalgameClaimEventSync(catalogCli, galgameLocalRepo, rdb)
 	galgameRevisionSync := galgameService.NewGalgameEditRevisionSync(catalogCli, gc, db, rdb)
 	galgameContributorSync := galgameService.NewGalgameContributorSync(catalogCli, galgameContributorRepo, rdb)
@@ -480,7 +469,7 @@ func New(cfg *config.Config) *App {
 		Authn:             authn,
 		BearerStance:      bearerStance,
 		ImageMeta:         imageMetaResolve(imageMeta),
-		GalgameV1:         galgameapiv1.New(gc, moyuCli, uc, rdb, cfg.NextMoeAPI.ImageCDNBase).WithWork(db, catalogCli, storeLinks, moemoepoint.Award),
+		GalgameV1:         galgameapiv1.New(gc, moyuCli, uc, rdb, cfg.NextMoeAPI.ImageCDNBase).WithWork(db, catalogCli, storeLinks, moemoepoint.Award).WithUserPlane(trustCheck, trustScan, galgameCollectionRepo),
 		GalgameEntityV1:   galgameentityv1.New(gc, db, cfg.NextMoeAPI.ImageCDNBase),
 		GalgameCalendarV1: calendarapiv1.New(gc, db, cfg.NextMoeAPI.ImageCDNBase),
 		GalgameRatingV1:   newRatingV1(db, gc, uc, trustCheck, trustScan, galgamePlaytimeSvc, cfg.NextMoeAPI.ImageCDNBase),
@@ -506,12 +495,9 @@ func New(cfg *config.Config) *App {
 		AdminPurgeHandler:         adminHandler.NewPurgeHandler(adminPurgeSvc),
 		TrustHandler:              trustHandler.NewTrustHandler(trustEnforce, cfg.Trust.CallbackSecret),
 		NewsV1:                    newsapiv1.New(newsCli, uc, cfg.NextMoeAPI.ImageCDNBase),
-		GalgameCollectionHandler:  galgameHandler.NewGalgameCollectionHandler(galgameCollectionSvc),
 		GalgameSubmissionHandler:  galgameHandler.NewSubmissionHandler(galgameSubmissionSvc),
 		GalgameClaimReviewHandler: galgameHandler.NewClaimReviewHandler(galgameClaimReviewSvc),
 		GalgameEditHandler:        galgameHandler.NewEditHandler(catalogCli, gc, uc, notifier, galgameLocalRepo),
-		GalgameCoverVoteHandler:   galgameHandler.NewCoverVoteHandler(catalogCli, gc),
-		GalgamePlaytimeHandler:    galgameHandler.NewPlaytimeHandler(galgamePlaytimeSvc),
 		ImagesV1:                  imageapiv1.New(imgCli, catalogCli, db, cfg.NextMoeAPI.ImageCDNBase),
 		Artifact:                  artCli,
 		FileStorage:               fileStorageClient,

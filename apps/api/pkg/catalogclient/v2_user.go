@@ -84,6 +84,7 @@ func (c *Client) userV2Do(ctx context.Context, method, accessToken, path string,
 	defer resp.Body.Close()
 	raw, _ := io.ReadAll(resp.Body)
 	etag := resp.Header.Get("ETag")
+	retryAfter := resp.Header.Get("Retry-After")
 
 	var p v2Problem
 	_ = json.Unmarshal(raw, &p)
@@ -99,14 +100,14 @@ func (c *Client) userV2Do(ctx context.Context, method, accessToken, path string,
 		if p.Code == "SCOPE_REQUIRED" || strings.Contains(blob, "scope") {
 			return nil, etag, ErrInsufficientScope
 		}
-		return nil, etag, &UserAPIError{Status: resp.StatusCode, Message: problemMsg(p, raw)}
+		return nil, etag, &UserAPIError{Status: resp.StatusCode, Message: problemMsg(p, raw), RetryAfter: retryAfter}
 	default:
 		if resp.StatusCode >= 500 {
 			return nil, etag, ErrUpstream
 		}
 		return nil, etag, &UserAPIError{
 			Status: resp.StatusCode, Message: problemMsg(p, raw),
-			ProblemCode: p.Code, FieldErrors: p.Errors,
+			ProblemCode: p.Code, FieldErrors: p.Errors, RetryAfter: retryAfter,
 		}
 	}
 }

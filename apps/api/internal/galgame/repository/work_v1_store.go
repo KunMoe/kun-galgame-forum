@@ -134,6 +134,49 @@ func (s *WorkV1Store) ResourceTypes(workID int) ([]string, error) {
 	return types, err
 }
 
+// galgame.favorite_count backs the "most favourited" ranking and nothing
+// else — the number a reader sees on a game page comes from the catalog's
+// nextmoe/favorites popularity row, which counts distinct people across every
+// site. This counter moves only on writes made HERE, so a favourite added from
+// the patch site does not reach it. That is a known, bounded divergence in a
+// ranking's sort key; the cure is a catalog-side sort=popularity, not a second
+// copy of the memberships.
+func (s *WorkV1Store) AdjustFavoriteCount(tx *gorm.DB, workID, delta int) error {
+	if delta >= 0 {
+		return tx.Exec(`UPDATE galgame SET favorite_count = favorite_count + ? WHERE id = ?`, delta, workID).Error
+	}
+	return tx.Exec(`UPDATE galgame SET favorite_count = GREATEST(favorite_count + ?, 0) WHERE id = ?`, delta, workID).Error
+}
+
+func (s *WorkV1Store) DecrementFavoriteCounts(tx *gorm.DB, workIDs []int) error {
+	if len(workIDs) == 0 {
+		return nil
+	}
+	return tx.Model(&model.GalgameLocal{}).Where("id IN ?", workIDs).
+		Update("favorite_count", gorm.Expr("GREATEST(favorite_count - 1, 0)")).Error
+}
+
+func (s *WorkV1Store) CreateFavoriteMessage(tx *gorm.DB, senderID, receiverID int, content string, workID int) error {
+	if senderID == receiverID || receiverID <= 0 {
+		return nil
+	}
+	link := "/galgame/" + strconv.Itoa(workID)
+	var count int64
+	if err := tx.Model(&msgModel.Message{}).
+		Where("sender_id = ? AND receiver_id = ? AND type = ? AND link = ?",
+			senderID, receiverID, "favorite", link).
+		Count(&count).Error; err != nil {
+		return err
+	}
+	if count > 0 {
+		return nil
+	}
+	return tx.Create(&msgModel.Message{
+		SenderID: senderID, ReceiverID: receiverID,
+		Type: "favorite", Content: content, Link: link, Status: "unread",
+	}).Error
+}
+
 func (s *WorkV1Store) CreateLikedMessage(tx *gorm.DB, senderID, receiverID int, content string, workID int) error {
 	if senderID == receiverID || receiverID <= 0 {
 		return nil

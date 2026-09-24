@@ -1,8 +1,6 @@
 package repository
 
 import (
-	"kun-galgame-api/internal/galgame/model"
-
 	"gorm.io/gorm"
 )
 
@@ -12,17 +10,6 @@ type GalgameResourceMetaRepository struct {
 
 func NewGalgameResourceMetaRepository(db *gorm.DB) *GalgameResourceMetaRepository {
 	return &GalgameResourceMetaRepository{db: db}
-}
-
-func (r *GalgameResourceMetaRepository) FindResourceMetaBatch(workIDs []int) []model.GalgameResourceMeta {
-	if len(workIDs) == 0 {
-		return nil
-	}
-	var rows []model.GalgameResourceMeta
-	r.db.Table("galgame_resource").
-		Select("DISTINCT work_id, platform, language").
-		Where("work_id IN ?", workIDs).Scan(&rows)
-	return rows
 }
 
 type ResourceAxes struct {

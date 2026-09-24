@@ -20,15 +20,34 @@ import (
 )
 
 type accessTokenCtxKey struct{}
+type idempotencyKeyCtxKey struct{}
 
 func withAccessToken(ctx huma.Context, next func(huma.Context)) {
 	fc := humafiber.Unwrap(ctx)
-	next(huma.WithValue(ctx, accessTokenCtxKey{}, middleware.GetAccessToken(fc)))
+	ctx = huma.WithValue(ctx, accessTokenCtxKey{}, middleware.GetAccessToken(fc))
+	next(huma.WithValue(ctx, idempotencyKeyCtxKey{}, fc.Get("Idempotency-Key")))
 }
 
 func accessToken(ctx context.Context) string {
 	s, _ := ctx.Value(accessTokenCtxKey{}).(string)
 	return s
+}
+
+func idempotencyKey(ctx context.Context) string {
+	s, _ := ctx.Value(idempotencyKeyCtxKey{}).(string)
+	return s
+}
+
+// Every collection write speaks to the catalog as the signed-in person, so a
+// session with no OAuth access token cannot make one. That is a re-login, not
+// a server fault: the token is minted at sign-in and this site never had one
+// to begin with for a session that predates the folder scopes.
+func requireToken(ctx context.Context) (string, *problem.Problem) {
+	tok := accessToken(ctx)
+	if tok == "" {
+		return "", problem.New(problem.CodeInvalidCredential, "The credential is invalid, expired, or revoked.")
+	}
+	return tok, nil
 }
 
 func notFound() *problem.Problem {
@@ -48,6 +67,10 @@ func selfLikeForbidden() *problem.Problem {
 
 func invalidParameter(fields ...problem.FieldError) *problem.Problem {
 	return problem.New(problem.CodeInvalidParameter, "A request parameter is invalid.", fields...)
+}
+
+func validationFailed(fields ...problem.FieldError) *problem.Problem {
+	return problem.New(problem.CodeValidationFailed, "The request body is invalid.", fields...)
 }
 
 func problemResponses(byStatus map[int]string) map[string]*huma.Response {

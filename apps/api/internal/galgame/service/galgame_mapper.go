@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"kun-galgame-api/internal/galgame/dto"
-	"kun-galgame-api/internal/galgame/model"
 	"kun-galgame-api/internal/galgame/repository"
 	"kun-galgame-api/internal/infrastructure/markdown"
 	"kun-galgame-api/pkg/userclient"
@@ -16,20 +15,6 @@ func splitCSV(s string) []string {
 		return nil
 	}
 	return strings.Split(s, ",")
-}
-
-func groupResourceMeta(rows []model.GalgameResourceMeta) (platforms, languages map[int][]string) {
-	platforms = make(map[int][]string)
-	languages = make(map[int][]string)
-	for _, r := range rows {
-		if r.Platform != "" {
-			platforms[r.WorkID] = appendUniqueStr(platforms[r.WorkID], r.Platform)
-		}
-		if r.Language != "" {
-			languages[r.WorkID] = appendUniqueStr(languages[r.WorkID], r.Language)
-		}
-	}
-	return
 }
 
 func frozenCreatorBrief(row repository.GalgameLocalRow, userMap map[int]userclient.User) dto.UserBrief {

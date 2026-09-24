@@ -133,9 +133,6 @@ func (a *App) setupRoutes() {
 	// anonymous reads start demanding a session. Their writes mount after it.
 	optAuth.Get("/galgame/:id/edit/revisions", a.GalgameEditHandler.Revisions)
 
-	optAuth.Get("/galgame/collection/:cid", a.GalgameCollectionHandler.GetDetail)
-	optAuth.Get("/user/:id/collections", a.GalgameCollectionHandler.GetUserCollections)
-
 	// THE AUTH BOUNDARY. This empty-prefix group registers Auth as Use() on
 	// "/api", so it applies to EVERY route below this line. Nothing public or
 	// optAuth may be registered after this point.
@@ -145,19 +142,6 @@ func (a *App) setupRoutes() {
 	authed.Post("/galgame/:id/resubmit", a.GalgameSubmissionHandler.Resubmit)
 	authed.Delete("/galgame/:id", a.GalgameSubmissionHandler.Withdraw)
 	authed.Delete("/galgame/:id/draft", a.GalgameSubmissionHandler.DeleteDraft)
-
-	authed.Get("/galgame/playtime/mine", a.GalgamePlaytimeHandler.ListMine)
-	// Unlike every other catalog write here, this one travels as the USER: the
-	// session's OAuth token goes out as a Bearer and the registry derives the
-	// actor from it.
-	authed.Put("/galgame/:id/playtime", a.GalgamePlaytimeHandler.Report)
-	authed.Put("/galgame/:id/cover/:coverId/vote", a.GalgameCoverVoteHandler.Vote)
-	authed.Delete("/galgame/:id/cover/:coverId/vote", a.GalgameCoverVoteHandler.Unvote)
-	authed.Post("/galgame/collection", a.GalgameCollectionHandler.Create)
-	authed.Patch("/galgame/collection/:cid", a.GalgameCollectionHandler.Update)
-	authed.Delete("/galgame/collection/:cid", a.GalgameCollectionHandler.Delete)
-	authed.Get("/galgame/:id/collections/mine", a.GalgameCollectionHandler.MyCollectionsForGalgame)
-	authed.Put("/galgame/:id/collections", a.GalgameCollectionHandler.SetMembership)
 
 	authed.Get("/galgame/:id/edit/bootstrap", a.GalgameEditHandler.Bootstrap)
 	authed.Post("/galgame/:id/edit/proposals", a.GalgameEditHandler.Submit)

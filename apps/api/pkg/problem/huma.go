@@ -59,10 +59,19 @@ func FromHuma(ctx huma.Context, status int, msg string, errs ...error) *Problem 
 // ("windows" against the three-letter platform keys) also failed maxLength, and
 // the extra TOO_LONG turned UNKNOWN_ENUM_VALUE into INVALID_PARAMETER.
 func dropImpliedLengthErrors(fields []FieldError) []FieldError {
+	where := func(f FieldError) string {
+		switch {
+		case f.Parameter != nil:
+			return "p:" + *f.Parameter
+		case f.Pointer != nil:
+			return "b:" + *f.Pointer
+		}
+		return ""
+	}
 	unknown := map[string]bool{}
 	for _, f := range fields {
-		if f.Parameter != nil && f.Reason == ReasonUnknownValue {
-			unknown[*f.Parameter] = true
+		if k := where(f); k != "" && f.Reason == ReasonUnknownValue {
+			unknown[k] = true
 		}
 	}
 	if len(unknown) == 0 {
@@ -70,7 +79,7 @@ func dropImpliedLengthErrors(fields []FieldError) []FieldError {
 	}
 	out := fields[:0:0]
 	for _, f := range fields {
-		if f.Parameter != nil && unknown[*f.Parameter] && (f.Reason == ReasonTooLong || f.Reason == ReasonTooShort) {
+		if unknown[where(f)] && (f.Reason == ReasonTooLong || f.Reason == ReasonTooShort) {
 			continue
 		}
 		out = append(out, f)

@@ -655,6 +655,11 @@ func TestUnknownEnumTokenLongerThanItsKeysIsStillUnknown(t *testing.T) {
 	if code := pickCode(nil, http.StatusBadRequest, "", fields); code != CodeUnknownEnumValue {
 		t.Fatalf("code %s, want %s", code, CodeUnknownEnumValue)
 	}
+	ptr := "/visibility"
+	body := dropImpliedLengthErrors([]FieldError{{Pointer: &ptr, Reason: ReasonTooLong}, {Pointer: &ptr, Reason: ReasonUnknownValue}})
+	if len(body) != 1 || body[0].Reason != ReasonUnknownValue {
+		t.Fatalf("body pointer: %+v", body)
+	}
 	other := "q"
 	kept := dropImpliedLengthErrors([]FieldError{{Parameter: &other, Reason: ReasonTooLong}, {Parameter: &param, Reason: ReasonUnknownValue}})
 	if len(kept) != 2 {

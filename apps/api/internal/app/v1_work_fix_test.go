@@ -99,6 +99,73 @@ func (f *fakeCatalogUser) MyWorkState(context.Context, string, int64) (*catalogc
 	return f.state, nil
 }
 
+func (f *fakeCatalogUser) VoteCover(context.Context, string, int64, int64) (*catalogclient.CoverVoteResult, error) {
+	return nil, catalogclient.ErrNotFound
+}
+func (f *fakeCatalogUser) UnvoteCover(context.Context, string, int64, int64) (*catalogclient.CoverVoteResult, error) {
+	return nil, catalogclient.ErrNotFound
+}
+func (f *fakeCatalogUser) ReportPlaytime(context.Context, string, int64, catalogclient.PlaytimeReport) (*catalogclient.PlaytimeRecord, error) {
+	return nil, catalogclient.ErrNotFound
+}
+func (f *fakeCatalogUser) DeleteMyPlaytime(context.Context, string, int64) error {
+	return nil
+}
+func (f *fakeCatalogUser) ListMyPlaytime(context.Context, string, string, int) ([]catalogclient.PlaytimeRecord, string, error) {
+	return nil, "", nil
+}
+func (f *fakeCatalogUser) PutWorkState(context.Context, string, int64, string, *string) (*catalogclient.WorkStateRecord, error) {
+	return nil, catalogclient.ErrNotFound
+}
+func (f *fakeCatalogUser) DeleteWorkState(context.Context, string, int64) error {
+	return nil
+}
+func (f *fakeCatalogUser) ListMyWorkStates(context.Context, string, string, int) ([]catalogclient.WorkStateRecord, string, error) {
+	return nil, "", nil
+}
+func (f *fakeCatalogUser) MyFolders(context.Context, string) ([]catalogclient.Folder, error) {
+	return nil, nil
+}
+func (f *fakeCatalogUser) MyFolder(context.Context, string, int64) (*catalogclient.Folder, error) {
+	return nil, catalogclient.ErrNotFound
+}
+func (f *fakeCatalogUser) FolderPreviewItems(context.Context, string, int64, int) ([]catalogclient.FolderItem, error) {
+	return nil, nil
+}
+func (f *fakeCatalogUser) MyFolderItems(context.Context, string, int64) ([]catalogclient.FolderItem, error) {
+	return nil, nil
+}
+func (f *fakeCatalogUser) PublicFolders(context.Context, int64) ([]catalogclient.Folder, error) {
+	return nil, nil
+}
+func (f *fakeCatalogUser) PublicFolder(context.Context, int64) (*catalogclient.Folder, error) {
+	return nil, catalogclient.ErrNotFound
+}
+func (f *fakeCatalogUser) PublicFolderItems(context.Context, int64) ([]catalogclient.FolderItem, error) {
+	return nil, nil
+}
+func (f *fakeCatalogUser) CreateFolderKeyed(context.Context, string, catalogclient.FolderWrite, string) (*catalogclient.Folder, error) {
+	return nil, catalogclient.ErrNotFound
+}
+func (f *fakeCatalogUser) PatchFolder(context.Context, string, int64, catalogclient.FolderWrite) (*catalogclient.Folder, error) {
+	return nil, catalogclient.ErrNotFound
+}
+func (f *fakeCatalogUser) DeleteFolder(context.Context, string, int64) error {
+	return catalogclient.ErrNotFound
+}
+func (f *fakeCatalogUser) PutFolderItem(context.Context, string, int64, int64) error {
+	return catalogclient.ErrNotFound
+}
+func (f *fakeCatalogUser) DeleteFolderItem(context.Context, string, int64, int64) error {
+	return nil
+}
+func (f *fakeCatalogUser) ModeratePatchFolder(context.Context, string, int64, catalogclient.FolderWrite) (*catalogclient.Folder, error) {
+	return nil, catalogclient.ErrNotFound
+}
+func (f *fakeCatalogUser) ModerateDeleteFolder(context.Context, string, int64) error {
+	return catalogclient.ErrNotFound
+}
+
 func newWorkFix(t *testing.T) *workFix {
 	t.Helper()
 	f := newWriteFix(t, nil)

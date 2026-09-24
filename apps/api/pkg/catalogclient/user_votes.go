@@ -31,6 +31,7 @@ type UserAPIError struct {
 	// (IMMUTABLE, NOT_PERMITTED, …), which is not the numeric Code above.
 	ProblemCode string
 	FieldErrors []ProblemFieldError
+	RetryAfter  string
 }
 
 func (e *UserAPIError) Error() string {

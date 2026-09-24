@@ -108,3 +108,12 @@ func (c *Client) ListMyPlaytime(ctx context.Context, accessToken, cursor string,
 	}
 	return items, out.cursor(), nil
 }
+
+func (c *Client) DeleteMyPlaytime(ctx context.Context, accessToken string, workID int64) error {
+	path := "/v2/me/playtimes/" + strconv.FormatInt(workID, 10)
+	_, _, err := c.userV2Do(ctx, http.MethodDelete, accessToken, path, nil, nil)
+	if err != nil && errors.Is(err, ErrNotFound) {
+		return nil
+	}
+	return err
+}

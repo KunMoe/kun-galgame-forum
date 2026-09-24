@@ -347,6 +347,16 @@ catalog 用户面一次调用的失败，按下表进 v1。**不得**落到无 c
 
 **上游 429 一律 `503 SERVICE_UNAVAILABLE`，转发 `Retry-After`，不嗅正文。** 打一行 WARN，带上游状态码。前文 `QUOTA_EXCEEDED` 的拆分作废：日配额与共享 IP 限流都不是调用者这一次请求的错，正文子串也不是可靠判据。
 
+### 3.16 实现时改的（2026-09-24，覆盖前文与 §7 同名条目）
+
+- **`name` → `title`。** 创建 / PATCH 的请求体与 `Collection` / `CollectionSummary` 的显示名叫 `title`。spec 里 `name` 已是可空的（moyu 补丁的 `name`），非空的夹名叫 `name` 过不了 G8。
+- **`WorkPlaytime` 的作品键是 `work_summary`**，不是 `work`（spec 里 `work` 是另一个 schema，G8）。夹内作品列表就是 `PageList<WorkSummary>`。
+- **请求体的错一律 `422 VALIDATION_FAILED`**，`400 INVALID_PARAMETER` 只给参数（路径、查询、`Idempotency-Key`）。huma 自己对请求体的 schema 校验本来就回 422，handler 再回 400 会让同一个字段的错分成两种码。具体：空 PATCH、PUT 时长两字段都缺（`REQUIRED`，pointer 为空）；`minutes` 越界（PUT 请求体的 `minutes` 带 `maximum: 60000`，`TestV1Gates` 通过；覆盖 §3.12 那句「不在 schema 上加」；`OUT_OF_RANGE`）；未知 `play_state`、闭集外 `visibility`（`UNKNOWN_VALUE`）；`title` 去空白后为空（`TOO_SHORT`）；`is_default: false`（`NOT_ALLOWED_VALUE`）。§7 #10 的期望改为 `422 VALIDATION_FAILED` 单条 `UNKNOWN_VALUE`，#16 改为 `422 VALIDATION_FAILED` `OUT_OF_RANGE`。
+- **上游 400 → `500 INTERNAL_ERROR`**（cause 进 ERROR 日志）。v2 对越界时长回的是 422（`me_playtime.go:184`），所以 400 只可能是论坛自己发错了请求：不是调用者的错，重试也没用。§3.14 的「上游 400 游玩时长越界」一行作废。
+- **认不出的上游 422** → `422 VALIDATION_FAILED` `NOT_ALLOWED_VALUE`（pointer 为空），打 WARN 带上游 code 与 message。认得的几条按 infra `me_folder.go:313-336` 的原文匹配。
+- **夹名 / 说明比 schema 长**（100 / 500 字符）→ 截断并打 WARN。infra 的上限相同，这条分支正常不会走到。
+- **删夹时读不到成员资格就拒（503），什么都不删。** 旧面读夹内作品失败时照删不误，只是跳过本地 `favorite_count` 的扣减，计数从此永久偏高。上游的非 404 错误也不再落进 staff 分支：以前一次瞬时 503 会让普通用户看到 404。变异 #22 钉住。
+
 ## 4. 逐条操作
 
 通用：401 `MISSING_CREDENTIAL` / `INVALID_CREDENTIAL`（required；optional 的坏 Bearer）、403 `ACCOUNT_BANNED`、500 `INTERNAL_ERROR`、503 `SERVICE_UNAVAILABLE`（会话存储 / userclient / catalog / 传输）。每个 401 带 `WWW-Authenticate`。v1 全部 `Cache-Control: no-store`。缺 OAuth token 的已登录会话：写与私密读走 401 `INVALID_CREDENTIAL`。
@@ -565,6 +575,7 @@ U3：主人不可渲染 404；非主人只有公开夹。
 | 19 | 别名查询对别人的私密夹回 200（披露存在） | 404；对主人本人 200 |
 | 20 | 别名查询对未知 cid 铸一行 / 回 200 | 404；`galgame_collection` 行数不变 |
 | 21 | 撤回回执写死 `{minutes:0, play_state:null}` | 夹具里另一 client 有 300 分钟：DELETE 后回执 `minutes: 300`，与随后 `GET /works/{id}` 的 `viewer.playtime` 相同 |
+| 22 | 删夹时读夹内作品失败仍照删（旧面如此，跳过 `favorite_count` 扣减） | `503 SERVICE_UNAVAILABLE`；夹仍在 |
 
 ## 8. 开放问题
 
