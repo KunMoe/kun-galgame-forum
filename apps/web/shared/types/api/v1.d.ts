@@ -1011,6 +1011,70 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/edit-proposals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the edit review queue
+         * @description A cursor collection of this site's proposals, newest first. state defaults to open. Requires a cookie session holding galgame.edit_proposal.review; requests authenticated with a Bearer token never hold staff powers.
+         */
+        get: operations["listEditProposals"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/edit-proposals/{proposal_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get an edit proposal
+         * @description The proposal with its patch and amendments. The proposer, the work's owner and reviewers may read it; anyone else is NOT_FOUND. ETag is catalog's validator; send it back as If-Match to amend, withdraw or decide.
+         */
+        get: operations["getEditProposal"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Merge, decline or withdraw an edit proposal
+         * @description Moves an open proposal. withdrawn is the proposer's; merged and declined need a cookie session holding galgame.edit_proposal.review, or owning the work, and catalog decides. declined requires a note. The response is the proposal read back from catalog. If-Match is forwarded; without it the write is unconditional.
+         */
+        patch: operations["updateEditProposal"];
+        trace?: never;
+    };
+    "/edit-proposals/{proposal_id}/amendments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Amend an edit proposal
+         * @description Appends a correction to an open proposal. Idempotency-Key is required. set or unset must name at least one key. If-Match is forwarded to catalog; without it the write is unconditional. Location is the proposal's path; ETag is its new validator.
+         */
+        post: operations["createEditProposalAmendment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/engines": {
         parameters: {
             query?: never;
@@ -1636,6 +1700,26 @@ export interface paths {
          * @description Returns whether the caller is a creator, the live eligibility snapshot, and their latest application if any.
          */
         get: operations["getCreatorStatus"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/edit-proposals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the caller's edit proposals
+         * @description A cursor collection of the proposals the caller filed on this site, newest first. work_id narrows it to one work; state to one state.
+         */
+        get: operations["listMyEditProposals"];
         put?: never;
         post?: never;
         delete?: never;
@@ -4385,6 +4469,110 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/works/{work_id}/edit-form": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a work's edit form
+         * @description Current field values, the editable-field schema and the closed vocabularies the fields name. The schema is the same for every caller: whether a proposal can be decided is on the proposal. A vocabulary read failure answers vocabularies=[] with a warning, still 200. Hidden or unknown works are NOT_FOUND.
+         */
+        get: operations["getWorkEditForm"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/works/{work_id}/edit-proposals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List a work's edit proposals
+         * @description A cursor collection of the proposals filed on this site for the work, newest first. state defaults to open. Items carry no patch: the patch is on GET /edit-proposals/{proposal_id} for those who may read it. viewer is null for an anonymous caller. Hidden or unknown works are NOT_FOUND.
+         */
+        get: operations["listWorkEditProposals"];
+        put?: never;
+        /**
+         * Propose an edit to a work
+         * @description Files a proposal. Idempotency-Key is required. Every patch key starts with catalog.work. A proposal catalog merges at once answers state=merged with its revision; revision is null when it did not merge, and also when the merged revision could not be read back, in which case the proposal still stands. Location is the proposal's path.
+         */
+        post: operations["createWorkEditProposal"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/works/{work_id}/edit-reverts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Revert a work to a revision
+         * @description Files a proposal that restores the work to to_seq. Idempotency-Key is required. When catalog merges it at once, revision is the new revision; otherwise revision is null and the proposal waits for review. Location is the proposal's path.
+         */
+        post: operations["createWorkEditRevert"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/works/{work_id}/edit-revisions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List a work's edit revisions
+         * @description A page-number collection of the work's revision chain, newest first. Hidden or unknown works are NOT_FOUND.
+         */
+        get: operations["listWorkEditRevisions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/works/{work_id}/edit-revisions/diff": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Diff two revisions of a work
+         * @description The field-level changes from from_seq to to_seq. Both are required and at least 1. A seq the work does not have is NOT_FOUND.
+         */
+        get: operations["getWorkEditRevisionDiff"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/works/{work_id}/like": {
         parameters: {
             query?: never;
@@ -6241,6 +6429,354 @@ export interface components {
              */
             view_count: number;
         };
+        EditAmendment: {
+            /** @description Who amended. A deleted or banned account is a deleted user ref. */
+            amender: components["schemas"]["UserRef"];
+            /**
+             * Format: date-time
+             * @description When it was filed.
+             */
+            created_at: string;
+            /** @description Amendment id. */
+            id: string;
+            /** @description The amender's summary. null when none. Free text; never use it as a decision input. */
+            note: string | null;
+            /**
+             * @description Type discriminant. Always edit_amendment.
+             * @enum {string}
+             */
+            object: "edit_amendment";
+            /**
+             * Format: int64
+             * @description Position in the proposal's amendment chain.
+             */
+            seq: number;
+        };
+        EditAmendmentCreate: {
+            /** @description Amendment summary. Absent or null for none. Free text; never use it as a decision input. */
+            note?: string | null;
+            /** @description Corrected values keyed by catalog.work.*. */
+            set?: {
+                [key: string]: unknown;
+            };
+            /** @description Keys to drop from the proposal. */
+            unset?: string[];
+        };
+        EditField: {
+            /**
+             * Format: int64
+             * @description Wire code of the vocabulary's first token on an int-encoded field.
+             */
+            base: number;
+            /**
+             * @description How a diff of this field should be rendered.
+             * @enum {string}
+             */
+            diff_hint: "inline" | "lines" | "items" | "image";
+            /** @description Shape of one list element. null on scalar fields and on lists whose shape catalog does not declare. */
+            element: components["schemas"]["EditFieldElement"] | null;
+            /**
+             * @description How a write carries the vocabulary value: token is the token itself, int is base plus the token's index in the vocabulary's order. null when vocabulary is empty.
+             * @enum {string|null}
+             */
+            encoding: "token" | "int" | null;
+            /**
+             * @description Control type. Not a domain vocabulary.
+             * @enum {string}
+             */
+            field_type: "text" | "i18nmap" | "enum" | "int" | "date" | "list" | "ref" | "imagehash";
+            /** @description Whether catalog rejects writes of this key. */
+            is_deprecated: boolean;
+            /** @description Whether null is accepted and clears the stored value. */
+            is_nullable: boolean;
+            /** @description Editing-engine field key, such as catalog.work.titles. */
+            key: string;
+            /**
+             * Format: int64
+             * @description Cap on a list field's element count. 0 for scalar fields.
+             */
+            max_elements: number;
+            /**
+             * Format: int64
+             * @description Cap on this field's suppression set. 0 when the field has none.
+             */
+            max_suppressed: number;
+            /** @description Name of the vocabulary whose tokens this field accepts. Empty when it has none. */
+            vocabulary: string;
+        };
+        EditFieldChange: {
+            /** @description Value at from_seq. null when unset. */
+            from: unknown;
+            /** @description Editing-engine field key. Its field_type and diff_hint are on the edit form's fields. */
+            key: string;
+            /** @description Value at to_seq. null when cleared. */
+            to: unknown;
+        };
+        EditFieldElement: {
+            /**
+             * @description text elements are strings, ref elements are decimal ids of another entity, object elements have members.
+             * @enum {string}
+             */
+            element_type: "object" | "text" | "ref";
+            /** @description Members of an object element, in validation order. Empty array for scalar elements, never null. */
+            members: components["schemas"]["EditFieldElementMember"][];
+        };
+        EditFieldElementMember: {
+            /**
+             * Format: int64
+             * @description Wire code of the vocabulary's first token on an int member.
+             */
+            base: number;
+            /** @description Whether the member may be absent or empty in at least one valid element. */
+            is_nullable: boolean;
+            /** @description Member key inside the element object. */
+            key: string;
+            /**
+             * @description Member value type. ref is the decimal id of another entity.
+             * @enum {string}
+             */
+            member_type: "text" | "int" | "enum" | "bool" | "ref" | "imagehash";
+            /** @description Name of the vocabulary whose tokens this member accepts. Empty when it has none. */
+            vocabulary: string;
+        };
+        EditForm: {
+            /** @description Current value of every editable field, keyed by catalog.work.*. Empty object, never null. */
+            field_values: {
+                [key: string]: unknown;
+            };
+            /** @description Editable fields. Empty array, never null. The same for every caller. */
+            fields: components["schemas"]["EditField"][];
+            /**
+             * @description Type discriminant. Always edit_form.
+             * @enum {string}
+             */
+            object: "edit_form";
+            /** @description Closed vocabularies the fields name. Empty array when catalog could not be read; render those fields read-only. */
+            vocabularies: components["schemas"]["EditVocabulary"][];
+            /** @description Work id. */
+            work_id: string;
+        };
+        EditProposal: {
+            /** @description Amendments in seq order. Empty array, never null. */
+            amendments: components["schemas"]["EditAmendment"][];
+            /**
+             * Format: int64
+             * @description The revision seq the proposal was written against.
+             */
+            base_revision_seq: number;
+            /**
+             * Format: date-time
+             * @description When it was filed.
+             */
+            created_at: string;
+            /**
+             * Format: date-time
+             * @description When it was merged or declined. null while open.
+             */
+            decided_at: string | null;
+            /** @description Who merged or declined it. null while open, and when withdrawn. */
+            decider: components["schemas"]["UserRef"] | null;
+            /** @description patch with every amendment folded in: what a merge would write. Empty object, never null. */
+            effective_patch: {
+                [key: string]: unknown;
+            };
+            /** @description Proposal id. */
+            id: string;
+            /** @description The proposer's summary. null when none. Free text; never use it as a decision input. */
+            note: string | null;
+            /**
+             * @description Type discriminant. Always edit_proposal.
+             * @enum {string}
+             */
+            object: "edit_proposal";
+            /** @description Proposed values keyed by catalog.work.*. Empty object, never null. */
+            patch: {
+                [key: string]: unknown;
+            };
+            /** @description Who filed it. A deleted or banned account is a deleted user ref. */
+            proposer: components["schemas"]["UserRef"];
+            /**
+             * @description Lifecycle state, read back from catalog.
+             * @enum {string}
+             */
+            state: "open" | "merged" | "declined" | "withdrawn";
+            /**
+             * Format: date-time
+             * @description When it last changed.
+             */
+            updated_at: string;
+            /** @description The caller's own capabilities. null for an anonymous caller. */
+            viewer: components["schemas"]["EditProposalViewer"] | null;
+            /** @description The work this proposal edits. */
+            work_id: string;
+            /** @description The work. display_name is empty when catalog did not render it. */
+            work_summary: components["schemas"]["WorkSummary"];
+        };
+        EditProposalCreate: {
+            /** @description Summary for reviewers. Absent or null for none. Free text; never use it as a decision input. */
+            note?: string | null;
+            /** @description New values keyed by catalog.work.*. Must name at least one key. */
+            patch: {
+                [key: string]: unknown;
+            };
+        };
+        EditProposalPatch: {
+            /** @description Decision note. Required and not blank when declining; the proposer is told it. Free text; never use it as a decision input. */
+            note?: string | null;
+            /**
+             * @description Target state. merged and declined are reviewer decisions; withdrawn is the proposer's.
+             * @enum {string}
+             */
+            state: "merged" | "declined" | "withdrawn";
+        };
+        EditProposalSummary: {
+            /**
+             * Format: int64
+             * @description The revision seq the proposal was written against.
+             */
+            base_revision_seq: number;
+            /**
+             * Format: date-time
+             * @description When it was filed.
+             */
+            created_at: string;
+            /**
+             * Format: date-time
+             * @description When it was merged or declined. null while open.
+             */
+            decided_at: string | null;
+            /** @description Who merged or declined it. null while open, and when withdrawn. */
+            decider: components["schemas"]["UserRef"] | null;
+            /** @description Proposal id. */
+            id: string;
+            /** @description The proposer's summary. null when none. Free text; never use it as a decision input. */
+            note: string | null;
+            /**
+             * @description Type discriminant. Always edit_proposal.
+             * @enum {string}
+             */
+            object: "edit_proposal";
+            /** @description Who filed it. A deleted or banned account is a deleted user ref. */
+            proposer: components["schemas"]["UserRef"];
+            /**
+             * @description Lifecycle state.
+             * @enum {string}
+             */
+            state: "open" | "merged" | "declined" | "withdrawn";
+            /**
+             * Format: date-time
+             * @description When it last changed.
+             */
+            updated_at: string;
+            /** @description The caller's own capabilities. null for an anonymous caller. */
+            viewer: components["schemas"]["EditProposalViewer"] | null;
+            /** @description The work this proposal edits. */
+            work_id: string;
+            /** @description The work. display_name is empty when catalog did not render it. */
+            work_summary: components["schemas"]["WorkSummary"];
+        };
+        EditProposalViewer: {
+            /** @description Whether the caller may amend it: the proposer, or a reviewer, while open. */
+            can_amend: boolean;
+            /** @description Whether the caller may merge or decline it. A hint; catalog decides. Requests authenticated with a Bearer token never carry staff powers. */
+            can_decide: boolean;
+            /** @description Whether the caller may withdraw it: the proposer, while open. */
+            can_withdraw: boolean;
+            /** @description Whether the caller filed it. */
+            is_proposer: boolean;
+        };
+        EditRevert: {
+            /**
+             * @description Type discriminant. Always edit_revert.
+             * @enum {string}
+             */
+            object: "edit_revert";
+            /** @description The proposal the revert filed. */
+            proposal: components["schemas"]["EditProposal"];
+            /** @description The revision written when catalog merged the revert at once. null otherwise, or when it could not be read back. */
+            revision: components["schemas"]["EditRevision"] | null;
+        };
+        EditRevertCreate: {
+            /** @description Why. Absent or null for none. Free text; never use it as a decision input. */
+            note?: string | null;
+            /**
+             * Format: int64
+             * @description The revision seq to restore.
+             */
+            to_seq: number;
+        };
+        EditRevision: {
+            /** @description Who caused it. A deleted or banned account is a deleted user ref. */
+            actor: components["schemas"]["UserRef"];
+            /** @description Field keys the revision touched. Empty array, never null. */
+            changed_fields: string[];
+            /**
+             * Format: date-time
+             * @description When it was recorded.
+             */
+            created_at: string;
+            /** @description Revision id. */
+            id: string;
+            /** @description The last reviewer who amended the proposal before it merged. null when nobody did. */
+            last_amender: components["schemas"]["UserRef"] | null;
+            /**
+             * @description Type discriminant. Always edit_revision.
+             * @enum {string}
+             */
+            object: "edit_revision";
+            /** @description The proposal it merged. null for direct edits and imports. */
+            proposal_id: string | null;
+            /**
+             * @description How the revision came about.
+             * @enum {string}
+             */
+            revision_action: "created" | "merged" | "direct" | "reverted";
+            /**
+             * Format: int64
+             * @description Position in the work's revision chain, 1-based and contiguous.
+             */
+            seq: number;
+        };
+        EditRevisionDiff: {
+            /** @description Fields whose value differs. Empty array when none. */
+            field_changes: components["schemas"]["EditFieldChange"][];
+            /**
+             * Format: int64
+             * @description Base revision seq.
+             */
+            from_seq: number;
+            /**
+             * @description Type discriminant. Always edit_revision_diff.
+             * @enum {string}
+             */
+            object: "edit_revision_diff";
+            /**
+             * Format: int64
+             * @description Target revision seq.
+             */
+            to_seq: number;
+        };
+        EditVocabulary: {
+            /** @description Whether a value outside values is refused. */
+            is_closed: boolean;
+            /**
+             * @description Type discriminant. Always vocabulary.
+             * @enum {string}
+             */
+            object: "vocabulary";
+            /** @description Tokens in the vocabulary's published order. Empty array, never null. */
+            values: components["schemas"]["EditVocabularyValue"][];
+            /** @description The name fields use to point at this vocabulary. */
+            vocabulary: string;
+        };
+        EditVocabularyValue: {
+            /** @description Description. Empty when catalog gives none. Free text; never use it as a decision input. */
+            description: string;
+            /** @description Label. Empty when catalog gives none. Free text; never use it as a decision input. */
+            display_name: string;
+            /** @description Token. */
+            value: string;
+        };
         EmphasisNode: {
             /** @description Emphasized inline nodes. */
             children: components["schemas"]["InlineNode"][];
@@ -6871,6 +7407,17 @@ export interface components {
         ListDocSummary: {
             /** @description Members of this page. Empty array, never null. */
             items: components["schemas"]["DocSummary"][];
+            /** @description Opaque keyset cursor. Omitted on the last page. */
+            next_cursor?: string;
+            /**
+             * @description Type discriminant. Always list.
+             * @enum {string}
+             */
+            object: "list";
+        };
+        ListEditProposalSummary: {
+            /** @description Members of this page. Empty array, never null. */
+            items: components["schemas"]["EditProposalSummary"][];
             /** @description Opaque keyset cursor. Omitted on the last page. */
             next_cursor?: string;
             /**
@@ -8141,6 +8688,25 @@ export interface components {
         PageListCreditNameRef: {
             /** @description Members of this page. Empty array, never null. */
             items: components["schemas"]["CreditNameRef"][];
+            /**
+             * @description Type discriminant. Always list.
+             * @enum {string}
+             */
+            object: "list";
+            /**
+             * Format: int64
+             * @description Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.
+             */
+            total: number;
+            /**
+             * @description eq when total is exact, gte when it stopped at the depth limit and there are at least that many.
+             * @enum {string}
+             */
+            total_relation: "eq" | "gte";
+        };
+        PageListEditRevision: {
+            /** @description Members of this page. Empty array, never null. */
+            items: components["schemas"]["EditRevision"][];
             /**
              * @description Type discriminant. Always list.
              * @enum {string}
@@ -12808,6 +13374,64 @@ export interface components {
             intro_excerpt: string | null;
             /** @description Release date at its recorded precision: YYYY, YYYY-MM or YYYY-MM-DD. null when not announced. */
             release: string | null;
+        };
+        WorkEditProposalCreateResult: {
+            /** @description Amendments in seq order. Empty array, never null. */
+            amendments: components["schemas"]["EditAmendment"][];
+            /**
+             * Format: int64
+             * @description The revision seq the proposal was written against.
+             */
+            base_revision_seq: number;
+            /**
+             * Format: date-time
+             * @description When it was filed.
+             */
+            created_at: string;
+            /**
+             * Format: date-time
+             * @description When it was merged or declined. null while open.
+             */
+            decided_at: string | null;
+            /** @description Who merged or declined it. null while open, and when withdrawn. */
+            decider: components["schemas"]["UserRef"] | null;
+            /** @description patch with every amendment folded in: what a merge would write. Empty object, never null. */
+            effective_patch: {
+                [key: string]: unknown;
+            };
+            /** @description Proposal id. */
+            id: string;
+            /** @description The proposer's summary. null when none. Free text; never use it as a decision input. */
+            note: string | null;
+            /**
+             * @description Type discriminant. Always edit_proposal.
+             * @enum {string}
+             */
+            object: "edit_proposal";
+            /** @description Proposed values keyed by catalog.work.*. Empty object, never null. */
+            patch: {
+                [key: string]: unknown;
+            };
+            /** @description Who filed it. A deleted or banned account is a deleted user ref. */
+            proposer: components["schemas"]["UserRef"];
+            /** @description The revision written when catalog merged the proposal at once. null otherwise, or when it could not be read back. */
+            revision: components["schemas"]["EditRevision"] | null;
+            /**
+             * @description Lifecycle state, read back from catalog.
+             * @enum {string}
+             */
+            state: "open" | "merged" | "declined" | "withdrawn";
+            /**
+             * Format: date-time
+             * @description When it last changed.
+             */
+            updated_at: string;
+            /** @description The caller's own capabilities. null for an anonymous caller. */
+            viewer: components["schemas"]["EditProposalViewer"] | null;
+            /** @description The work this proposal edits. */
+            work_id: string;
+            /** @description The work. display_name is empty when catalog did not render it. */
+            work_summary: components["schemas"]["WorkSummary"];
         };
         WorkEngagement: {
             /**
@@ -18973,6 +19597,419 @@ export interface operations {
             };
         };
     };
+    listEditProposals: {
+        parameters: {
+            query?: {
+                /** @description Proposal state. Default open. */
+                state?: "open" | "merged" | "declined" | "withdrawn";
+                /** @description Opaque keyset cursor from a previous page of this collection. */
+                cursor?: string;
+                /** @description Page size. 1–100, default 20. Values above 100 are rejected, not clamped. */
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListEditProposalSummary"];
+                };
+            };
+            /** @description UNKNOWN_ENUM_VALUE, LIMIT_TOO_LARGE or INVALID_CURSOR. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description PERMISSION_REQUIRED; SCOPE_REQUIRED; ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the catalog or the account service cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getEditProposal: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Proposal id. */
+                proposal_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EditProposal"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SCOPE_REQUIRED; ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the proposal does not exist, belongs to another site, or the caller may not read it. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the catalog or the account service cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    updateEditProposal: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The proposal's ETag from GET /edit-proposals/{proposal_id} or a previous write. Absent means unconditional. */
+                "If-Match"?: string;
+            };
+            path: {
+                /** @description Proposal id. */
+                proposal_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EditProposalPatch"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EditProposal"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description PERMISSION_REQUIRED for a Bearer decision, a caller without review standing, or someone else's withdrawal; SCOPE_REQUIRED; ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the proposal does not exist, belongs to another site, or the caller may not read it. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description INVALID_STATE_TRANSITION when the proposal is not open. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description PRECONDITION_FAILED when If-Match does not match. */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description VALIDATION_FAILED when declining without a note. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the catalog cannot be reached, or its quota is used up. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    createEditProposalAmendment: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Caller-generated UUID (canonical 8-4-4-4-12 hex, any version) or 26-character Crockford ULID. Scoped to (user, operation, key) for 24 hours. */
+                "Idempotency-Key": string;
+                /** @description The proposal's ETag from GET /edit-proposals/{proposal_id} or a previous write. Absent means unconditional. */
+                "If-Match"?: string;
+            };
+            path: {
+                /** @description Proposal id. */
+                proposal_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EditAmendmentCreate"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    ETag?: string;
+                    Location?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EditAmendment"];
+                };
+            };
+            /** @description INVALID_PARAMETER when Idempotency-Key is missing or malformed. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description PERMISSION_REQUIRED when catalog refuses the caller; SCOPE_REQUIRED; ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the proposal does not exist or belongs to another site. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description INVALID_STATE_TRANSITION when the proposal is not open; IDEMPOTENCY_KEY_REUSED or IDEMPOTENCY_REQUEST_IN_PROGRESS. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description PRECONDITION_FAILED when If-Match does not match. */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description VALIDATION_FAILED when set and unset are both empty, a key lacks the catalog.work. prefix, or catalog refuses a value. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the catalog cannot be reached, or its quota is used up. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     listEngines: {
         parameters: {
             query?: {
@@ -22180,6 +23217,80 @@ export interface operations {
                 };
             };
             /** @description SERVICE_UNAVAILABLE when the account service cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listMyEditProposals: {
+        parameters: {
+            query?: {
+                /** @description Narrow to one work. */
+                work_id?: string;
+                /** @description Narrow to one state. Absent means every state. */
+                state?: "open" | "merged" | "declined" | "withdrawn";
+                /** @description Opaque keyset cursor from a previous page of this collection. */
+                cursor?: string;
+                /** @description Page size. 1–100, default 20. Values above 100 are rejected, not clamped. */
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListEditProposalSummary"];
+                };
+            };
+            /** @description UNKNOWN_ENUM_VALUE, LIMIT_TOO_LARGE or INVALID_CURSOR. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SCOPE_REQUIRED; ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the catalog or the account service cannot be reached. */
             503: {
                 headers: {
                     [name: string]: unknown;
@@ -36537,6 +37648,573 @@ export interface operations {
                 };
             };
             /** @description SERVICE_UNAVAILABLE when the catalog or the vote store cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getWorkEditForm: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Work id. */
+                work_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EditForm"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SCOPE_REQUIRED without catalog:edit; ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the work does not exist or is hidden; ENTITY_MERGED when it was merged, with current_id. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the catalog cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listWorkEditProposals: {
+        parameters: {
+            query?: {
+                /** @description Proposal state. Default open. */
+                state?: "open" | "merged" | "declined" | "withdrawn";
+                /** @description Opaque keyset cursor from a previous page of this collection. */
+                cursor?: string;
+                /** @description Page size. 1–100, default 20. Values above 100 are rejected, not clamped. */
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                /** @description Work id. */
+                work_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListEditProposalSummary"];
+                };
+            };
+            /** @description UNKNOWN_ENUM_VALUE, LIMIT_TOO_LARGE or INVALID_CURSOR. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description INVALID_CREDENTIAL for a bad Bearer. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the work does not exist or is hidden; ENTITY_MERGED when it was merged. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the catalog or the account service cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    createWorkEditProposal: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Caller-generated UUID (canonical 8-4-4-4-12 hex, any version) or 26-character Crockford ULID. Scoped to (user, operation, key) for 24 hours. */
+                "Idempotency-Key": string;
+            };
+            path: {
+                /** @description Work id. */
+                work_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EditProposalCreate"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    Location?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkEditProposalCreateResult"];
+                };
+            };
+            /** @description INVALID_PARAMETER when Idempotency-Key is missing or malformed. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SCOPE_REQUIRED; ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the work does not exist or is hidden; ENTITY_MERGED when it was merged. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description IDEMPOTENCY_KEY_REUSED or IDEMPOTENCY_REQUEST_IN_PROGRESS. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description VALIDATION_FAILED when patch is empty, a key lacks the catalog.work. prefix, or catalog refuses a value. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the catalog cannot be reached, or its quota is used up. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    createWorkEditRevert: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Caller-generated UUID (canonical 8-4-4-4-12 hex, any version) or 26-character Crockford ULID. Scoped to (user, operation, key) for 24 hours. */
+                "Idempotency-Key": string;
+            };
+            path: {
+                /** @description Work id. */
+                work_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EditRevertCreate"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    Location?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EditRevert"];
+                };
+            };
+            /** @description INVALID_PARAMETER when Idempotency-Key is missing or malformed. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SCOPE_REQUIRED; PERMISSION_REQUIRED when catalog refuses the revert; ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the work does not exist, is hidden, or has no revision to_seq; ENTITY_MERGED when it was merged. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description IDEMPOTENCY_KEY_REUSED or IDEMPOTENCY_REQUEST_IN_PROGRESS. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description VALIDATION_FAILED when to_seq is below 1. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the catalog cannot be reached, or its quota is used up. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listWorkEditRevisions: {
+        parameters: {
+            query?: {
+                /** @description 1-based page number. page × limit may not exceed 10000. */
+                page?: number;
+                /** @description Page size. 1–100, default 20. Values above 100 are rejected, not clamped. */
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                /** @description Work id. */
+                work_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PageListEditRevision"];
+                };
+            };
+            /** @description LIMIT_TOO_LARGE or INVALID_PARAMETER when page × limit is too deep. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description INVALID_CREDENTIAL for a bad Bearer. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the work does not exist or is hidden; ENTITY_MERGED when it was merged. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the catalog or the account service cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getWorkEditRevisionDiff: {
+        parameters: {
+            query: {
+                /** @description Base revision seq. */
+                from_seq: number;
+                /** @description Target revision seq. */
+                to_seq: number;
+            };
+            header?: never;
+            path: {
+                /** @description Work id. */
+                work_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EditRevisionDiff"];
+                };
+            };
+            /** @description INVALID_PARAMETER when from_seq or to_seq is missing or below 1. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description INVALID_CREDENTIAL for a bad Bearer. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the work does not exist, is hidden, or lacks either seq; ENTITY_MERGED when it was merged. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the catalog cannot be reached. */
             503: {
                 headers: {
                     [name: string]: unknown;

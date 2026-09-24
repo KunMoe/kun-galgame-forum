@@ -4,29 +4,60 @@ import {
   galgameEditFieldConfig,
   galgameEditLabel
 } from '~/constants/galgameEdit'
+import { settle } from '#shared/utils/api/problem'
+import {
+  kitUsers,
+  toKitRevision,
+  type EditRevision,
+  type EditRevisionDiff
+} from '~/utils/galgame/editAdapt'
 
 const route = useRoute()
-const workId = computed(() => parseInt((route.params as { id: string }).id))
+const workId = computed(() => (route.params as { id: string }).id)
 
 useKunDisableSeo('Galgame 修订历史')
 
-const { data, status, refresh } = await useKunFetch<GalgameEditRevisionList>(
-  `/galgame/${workId.value}/edit/revisions`,
-  { method: 'GET', watch: false, query: { limit: 200 } }
+const api = useApiClient()
+const revertKey = useIdempotencyKey()
+const userStore = usePersistUserStore()
+
+const { data, status, refresh } = await useApi<{ items: EditRevision[] }>(
+  () => `work-edit-revisions:${workId.value}`,
+  (client, { signal }) =>
+    client.GET('/works/{work_id}/edit-revisions', {
+      params: { path: { work_id: workId.value }, query: { limit: 100 } },
+      signal
+    })
+)
+const revisions = computed(() => (data.value?.items ?? []).map(toKitRevision))
+const users = computed(() =>
+  kitUsers(
+    (data.value?.items ?? []).flatMap((r) => [r.actor, r.last_amender])
+  )
 )
 
 const diffOpen = ref(false)
 const diffLoading = ref(false)
-const diff = ref<GalgameEditDiff | null>(null)
+const diff = ref<EditRevisionDiff | null>(null)
 
 const handleDiff = async (fromSeq: number, toSeq: number) => {
   diffLoading.value = true
   diffOpen.value = true
-  diff.value = await kunFetch<GalgameEditDiff>(
-    `/galgame/${workId.value}/edit/diff`,
-    { method: 'GET', query: { from: fromSeq, to: toSeq } }
+  const result = await settle(
+    api.GET('/works/{work_id}/edit-revisions/diff', {
+      params: {
+        path: { work_id: workId.value },
+        query: { from_seq: fromSeq, to_seq: toSeq }
+      }
+    })
   )
   diffLoading.value = false
+  if (!result.ok) {
+    diffOpen.value = false
+    reportProblem(result.problem)
+    return
+  }
+  diff.value = result.data
 }
 
 const latestSeq = computed(() => data.value?.items?.[0]?.seq ?? 0)
@@ -46,16 +77,35 @@ const handleRevert = async () => {
     return
   }
   reverting.value = true
-  const result = await kunFetch<GalgameEditRevertResult>(
-    `/galgame/${workId.value}/edit/revert`,
-    { method: 'POST', body: { to_seq: revertTarget.value } }
+  const body = { to_seq: revertTarget.value }
+  const result = await settle(
+    api.POST('/works/{work_id}/edit-reverts', {
+      params: {
+        path: { work_id: workId.value },
+        header: {
+          'Idempotency-Key': revertKey.take(
+            `/works/${workId.value}/edit-reverts`,
+            body
+          )
+        }
+      },
+      body
+    })
   )
   reverting.value = false
   revertTarget.value = null
-  if (result) {
-    useMessage('回滚成功（已生成一条新的修订记录）', 'success')
-    await refresh()
+  if (!result.ok) {
+    reportProblem(result.problem)
+    return
   }
+  revertKey.clear()
+  useMessage(
+    result.data.revision
+      ? '回滚成功（已生成一条新的修订记录）'
+      : '回滚提案已提交，等待审核',
+    'success'
+  )
+  await refresh()
 }
 </script>
 
@@ -100,15 +150,15 @@ const handleRevert = async () => {
       content-class="space-y-3"
     >
       <EditkitRevisionTimeline
-        :items="data.items"
-        :users="data.users"
+        :items="revisions"
+        :users="users"
         :label-for="galgameEditLabel"
         :legacy-action-labels="GALGAME_EDIT_LEGACY_ACTION_LABELS"
         @diff="handleDiff"
       >
         <template #actions="{ revision }">
           <KunButton
-            v-if="data.can_revert && revision.seq < latestSeq"
+            v-if="userStore.id && revision.seq < latestSeq"
             variant="light"
             color="warning"
             size="sm"
@@ -158,13 +208,15 @@ const handleRevert = async () => {
         />
         <KunLoading v-if="diffLoading" />
         <template v-else-if="diff">
-          <KunNull v-if="!diff.fields.length" description="两个版本没有差异" />
+          <KunNull
+            v-if="!diff.field_changes.length"
+            description="两个版本没有差异"
+          />
           <div v-else class="space-y-4">
             <EditkitFieldDiff
-              v-for="row in diff.fields"
+              v-for="row in diff.field_changes"
               :key="row.key"
               :label="galgameEditLabel(row.key)"
-              :diff-hint="row.diff_hint"
               :from="row.from"
               :to="row.to"
               :config="galgameEditFieldConfig(row.key)"

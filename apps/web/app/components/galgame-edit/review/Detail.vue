@@ -6,34 +6,72 @@ import {
   type GalgameEditNames
 } from '~/constants/galgameEdit'
 import { settle } from '#shared/utils/api/problem'
-import type { Work } from '#shared/utils/api/schemas'
+import type { UserRef, Work } from '#shared/utils/api/schemas'
+import {
+  toKitField,
+  type EditForm,
+  type EditProposal
+} from '~/utils/galgame/editAdapt'
+import {
+  amendEditProposal,
+  patchEditProposal
+} from '~/utils/galgame/editProposal'
 import { mapsFromWork } from '~/utils/galgame/workEditNames'
+import { toKunUser } from '~/utils/userRef'
 
 const route = useRoute()
-const proposalId = computed(() => parseInt((route.params as { id: string }).id))
+const proposalId = computed(() => (route.params as { id: string }).id)
 
 useKunDisableSeo('审阅提案')
 
-const { canModerate } = useRole()
+const canReviewQueue = useCan('galgame.edit_proposal.review')
+const amendKey = useIdempotencyKey()
 
-const { data, status, refresh } = await useKunFetch<GalgameEditProposalDetail>(
-  `/galgame-edit/proposals/${proposalId.value}`,
-  { method: 'GET', watch: false }
+const { data, status } = await useApi<{
+  proposal: EditProposal
+  etag: string | null
+}>(
+  () => `edit-proposal:${proposalId.value}`,
+  async (client, { signal }) => {
+    const res = await client.GET('/edit-proposals/{proposal_id}', {
+      params: { path: { proposal_id: proposalId.value } },
+      signal
+    })
+    return {
+      ...res,
+      data: res.data
+        ? { proposal: res.data, etag: res.response.headers.get('ETag') }
+        : undefined
+    }
+  }
 )
 
-const canDecide = computed(() => data.value?.can_decide ?? false)
-
 const proposal = computed(() => data.value?.proposal)
-const isOpen = computed(() => proposal.value?.status === 'open')
+const workId = computed(() => proposal.value?.work_id)
+const { data: form } = await useApi<EditForm>(
+  () => `work-edit-form:${workId.value ?? ''}`,
+  (client, { signal }) =>
+    client.GET('/works/{work_id}/edit-form', {
+      params: { path: { work_id: workId.value ?? '' } },
+      signal
+    }),
+  { immediate: !!workId.value }
+)
+const values = computed(() => form.value?.field_values ?? {})
+const fields = computed(() => (form.value?.fields ?? []).map(toKitField))
+const userName = (ref: UserRef) => toKunUser(ref).name
+
+const canDecide = computed(() => proposal.value?.viewer?.can_decide ?? false)
+const isOpen = computed(() => proposal.value?.state === 'open')
 const exitTo = computed(() =>
-  canModerate.value
+  canReviewQueue.value
     ? '/galgame-edit/review'
-    : `/galgame/${proposal.value?.gid ?? ''}/edit`
+    : `/galgame/${proposal.value?.work_id ?? ''}/edit`
 )
 const effective = computed(
   () => proposal.value?.effective_patch ?? proposal.value?.patch ?? {}
 )
-const fieldOf = (key: string) => data.value?.fields.find((f) => f.key === key)
+const fieldOf = (key: string) => fields.value.find((f) => f.key === key)
 
 const names = ref<GalgameEditNames>({})
 const nameOf = useCatalogName()
@@ -55,7 +93,7 @@ const idsFrom = (key: string, el: unknown): number[] => {
 }
 
 const relationIds = (key: string): number[] => {
-  const pools = [data.value?.values?.[key], effective.value[key]]
+  const pools = [values.value[key], effective.value[key]]
   const out = new Set<number>()
   for (const pool of pools) {
     if (!Array.isArray(pool)) {
@@ -73,14 +111,13 @@ const relationIds = (key: string): number[] => {
 }
 
 onMounted(async () => {
-  const workId = proposal.value?.gid
-  if (!workId) {
+  if (!workId.value) {
     return
   }
   const result = await settle(
     api.GET('/works/{work_id}', {
       params: {
-        path: { work_id: String(workId) },
+        path: { work_id: workId.value },
         query: { include_nsfw: true }
       }
     })
@@ -90,7 +127,7 @@ onMounted(async () => {
   const creditCharacterIds = (): number[] => {
     const out = new Set<number>()
     for (const pool of [
-      data.value?.values?.['catalog.work.credits'],
+      values.value['catalog.work.credits'],
       effective.value['catalog.work.credits']
     ]) {
       if (!Array.isArray(pool)) {
@@ -212,35 +249,44 @@ const handleMerge = async () => {
     return
   }
   acting.value = true
+  let etag = data.value?.etag ?? null
   if (hasAmendment.value) {
-    const amended = await kunFetch<unknown>(
-      `/galgame-edit/proposals/${proposalId.value}/amend`,
-      {
-        method: 'POST',
-        body: {
-          set: amendSet.value,
-          unset: amendUnset.value,
-          note: note.value
-        }
-      }
+    const body = {
+      set: amendSet.value,
+      unset: amendUnset.value,
+      note: note.value || null
+    }
+    const amended = await amendEditProposal(
+      api,
+      proposalId.value,
+      body,
+      etag,
+      amendKey.take(`/edit-proposals/${proposalId.value}/amendments`, body)
     )
-    if (!amended) {
+    if (!amended.result.ok) {
       acting.value = false
+      reportProblem(amended.result.problem)
       return
     }
+    amendKey.clear()
+    etag = amended.etag
   }
-  const merged = await kunFetch<unknown>(
-    `/galgame-edit/proposals/${proposalId.value}/merge`,
-    { method: 'POST', body: { note: note.value } }
+  const merged = await patchEditProposal(
+    api,
+    proposalId.value,
+    { state: 'merged', note: note.value || null },
+    etag
   )
   acting.value = false
-  if (merged) {
-    useMessage(
-      hasAmendment.value ? '已修正并合并（双方署名）' : '提案已合并',
-      'success'
-    )
-    await navigateTo(exitTo.value)
+  if (!merged.ok) {
+    reportProblem(merged.problem)
+    return
   }
+  useMessage(
+    hasAmendment.value ? '已修正并合并（双方署名）' : '提案已合并',
+    'success'
+  )
+  await navigateTo(exitTo.value)
 }
 
 const declineOpen = ref(false)
@@ -252,29 +298,26 @@ const handleDecline = async () => {
     return
   }
   acting.value = true
-  const declined = await kunFetch<unknown>(
-    `/galgame-edit/proposals/${proposalId.value}/decline`,
-    { method: 'POST', body: { note: note.value } }
+  const declined = await patchEditProposal(
+    api,
+    proposalId.value,
+    { state: 'declined', note: note.value },
+    data.value?.etag ?? null
   )
   acting.value = false
   declineOpen.value = false
-  if (declined) {
-    useMessage('提案已拒绝', 'success')
-    await navigateTo(exitTo.value)
+  if (!declined.ok) {
+    reportProblem(declined.problem)
+    return
   }
-}
-
-const userName = (uid?: number) => {
-  if (uid === undefined) {
-    return ''
-  }
-  return data.value?.users?.[uid]?.name ?? `用户 #${uid}`
+  useMessage('提案已拒绝', 'success')
+  await navigateTo(exitTo.value)
 }
 </script>
 
 <template>
   <div class="mx-auto flex max-w-3xl flex-col gap-3">
-    <template v-if="data && proposal">
+    <template v-if="proposal">
       <KunCard
         :is-hoverable="false"
         :is-transparent="false"
@@ -282,11 +325,11 @@ const userName = (uid?: number) => {
       >
         <KunHeader :name="`审阅提案 #${proposal.id}`" scale="h2" />
         <div class="flex flex-wrap items-center gap-2 text-sm">
-          <KunLink :to="`/galgame/${proposal.gid}`" size="sm">
-            前往条目 #{{ proposal.gid }}
+          <KunLink :to="`/galgame/${proposal.work_id}`" size="sm">
+            前往条目 #{{ proposal.work_id }}
           </KunLink>
           <span class="text-default-400">
-            提案人：{{ userName(proposal.proposer_uid) }} ·
+            提案人：{{ userName(proposal.proposer) }} ·
             <KunTime :time="proposal.created_at" type="date" show-year />
           </span>
           <KunButton
@@ -297,7 +340,7 @@ const userName = (uid?: number) => {
             @click="navigateTo(exitTo)"
           >
             <KunIcon name="lucide:arrow-left" />
-            {{ canModerate ? '返回队列' : '返回编辑页' }}
+            {{ canReviewQueue ? '返回队列' : '返回编辑页' }}
           </KunButton>
         </div>
         <KunInfo
@@ -305,12 +348,6 @@ const userName = (uid?: number) => {
           color="info"
           title="提案说明"
           :description="proposal.note"
-        />
-        <KunInfo
-          v-if="proposal.status === 'declined' && proposal.decision_note"
-          color="danger"
-          title="拒绝理由"
-          :description="proposal.decision_note"
         />
       </KunCard>
 
@@ -327,29 +364,9 @@ const userName = (uid?: number) => {
           class="border-default-200 rounded border p-2 text-sm"
         >
           <p class="text-default-500">
-            #{{ a.seq }} · {{ userName(a.amender_uid) }}
+            #{{ a.seq }} · {{ userName(a.amender) }}
             <KunTime :time="a.created_at" type="date" show-year />
           </p>
-          <div class="mt-1 flex flex-wrap gap-1">
-            <KunChip
-              v-for="key in Object.keys(a.set ?? {})"
-              :key="`set-${key}`"
-              size="sm"
-              variant="flat"
-              color="secondary"
-            >
-              修正 {{ galgameEditLabel(key) }}
-            </KunChip>
-            <KunChip
-              v-for="key in a.unset ?? []"
-              :key="`unset-${key}`"
-              size="sm"
-              variant="flat"
-              color="danger"
-            >
-              拒绝 {{ galgameEditLabel(key) }}
-            </KunChip>
-          </div>
           <p v-if="a.note" class="text-default-400 mt-1 text-xs">
             {{ a.note }}
           </p>
@@ -380,7 +397,7 @@ const userName = (uid?: number) => {
           <EditkitFieldDiff
             :label="galgameEditLabel(String(key))"
             :diff-hint="fieldOf(String(key))?.diff_hint"
-            :from="data.values[String(key)]"
+            :from="values[String(key)]"
             :to="editing[String(key)] ? overrides[String(key)] : value"
             :config="configOf(String(key))"
           />

@@ -1,24 +1,60 @@
 <script setup lang="ts">
 import { galgameEditLabel } from '~/constants/galgameEdit'
+import {
+  proposalUsers,
+  toKitProposal,
+  type EditProposalSummary
+} from '~/utils/galgame/editAdapt'
 
-const { canModerate } = useRole()
+type QueueState = 'open' | 'merged' | 'declined' | 'withdrawn'
+
+const canReview = useCan('galgame.edit_proposal.review')
+const api = useApiClient()
+const nameOf = useWorkName()
 
 useKunDisableSeo('Galgame 提案审核队列')
 
-const status = ref('open')
+const state = ref<QueueState>('open')
 
-const { data, status: fetchStatus } =
-  await useKunFetch<GalgameEditProposalList>('/galgame-edit/queue', {
-    method: 'GET',
-    query: { status }
-  })
+const { data, status: fetchStatus } = await useApi<{
+  items: EditProposalSummary[]
+  next_cursor?: string
+}>(
+  () => `edit-proposal-queue:${state.value}`,
+  (client, { signal }) =>
+    client.GET('/edit-proposals', {
+      params: { query: { state: state.value, limit: 50 } },
+      signal
+    }),
+  { immediate: canReview.value }
+)
+const { items, hasMore, loadingMore, loadMore } = useEditProposalPages(
+  data,
+  (cursor) =>
+    api.GET('/edit-proposals', {
+      params: { query: { state: state.value, limit: 50, cursor } }
+    })
+)
+const kitItems = computed(() => items.value.map(toKitProposal))
+const byId = computed(
+  () => new Map(items.value.map((item) => [Number(item.id), item]))
+)
+const users = computed(() => proposalUsers(items.value))
 
-const briefName = (item: GalgameEditProposalItem): string => {
-  if (!item.galgame) {
-    return `Galgame #${item.gid}`
+const titleOf = (id: number): string => {
+  const item = byId.value.get(id)
+  if (!item) {
+    return `Galgame #${id}`
   }
-  return item.galgame.name || `Galgame #${item.gid}`
+  return nameOf(item.work_summary) || `Galgame #${item.work_id}`
 }
+
+const statusModel = computed({
+  get: () => state.value,
+  set: (next: string) => {
+    state.value = next as QueueState
+  }
+})
 </script>
 
 <template>
@@ -31,7 +67,7 @@ const briefName = (item: GalgameEditProposalItem): string => {
       />
     </KunCard>
 
-    <KunNull v-if="!canModerate" description="需要管理权限" />
+    <KunNull v-if="!canReview" description="需要审核资料编辑的权限" />
 
     <KunCard
       v-else
@@ -40,9 +76,9 @@ const briefName = (item: GalgameEditProposalItem): string => {
       content-class="space-y-3"
     >
       <EditkitReviewQueue
-        v-model:status="status"
-        :items="data?.items ?? []"
-        :users="data?.users"
+        v-model:status="statusModel"
+        :items="kitItems"
+        :users="users"
         :label-for="galgameEditLabel"
         :loading="fetchStatus === 'pending'"
       >
@@ -50,20 +86,20 @@ const briefName = (item: GalgameEditProposalItem): string => {
           <EditkitProposalCard
             :proposal="proposal"
             :label-for="galgameEditLabel"
-            :proposer="data?.users?.[proposal.proposer_uid]"
+            :proposer="users[proposal.proposer_uid]"
             :decider="
               proposal.decided_by_uid !== undefined
-                ? data?.users?.[proposal.decided_by_uid]
+                ? users[proposal.decided_by_uid]
                 : undefined
             "
           >
             <template #title>
               <KunLink
-                :to="`/galgame/${(proposal as GalgameEditProposalItem).gid}`"
+                :to="`/galgame/${proposal.entity_id}`"
                 size="sm"
                 class-name="font-medium"
               >
-                {{ briefName(proposal as GalgameEditProposalItem) }}
+                {{ titleOf(proposal.id) }}
               </KunLink>
             </template>
             <template #actions>
@@ -79,6 +115,11 @@ const briefName = (item: GalgameEditProposalItem): string => {
           </EditkitProposalCard>
         </template>
       </EditkitReviewQueue>
+      <div v-if="hasMore" class="flex justify-center">
+        <KunButton variant="light" :loading="loadingMore" @click="loadMore">
+          加载更多
+        </KunButton>
+      </div>
     </KunCard>
   </div>
 </template>

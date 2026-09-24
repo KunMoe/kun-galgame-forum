@@ -7,26 +7,47 @@ import {
   galgameEditLabel,
   type GalgameEditNames
 } from '~/constants/galgameEdit'
+import { settle } from '#shared/utils/api/problem'
 import type { Work } from '#shared/utils/api/schemas'
+import {
+  proposalUsers,
+  toKitField,
+  toKitProposal,
+  toKitVocabularies,
+  type EditForm,
+  type EditProposalSummary
+} from '~/utils/galgame/editAdapt'
+import { patchEditProposal } from '~/utils/galgame/editProposal'
 import { mapsFromWork } from '~/utils/galgame/workEditNames'
 
 const route = useRoute()
-const workId = computed(() => parseInt((route.params as { id: string }).id))
+const workId = computed(() => (route.params as { id: string }).id)
 
 useKunDisableSeo('编辑 Galgame 资料')
 
-const { data: bootstrap, status } = await useKunFetch<GalgameEditBootstrap>(
-  `/galgame/${workId.value}/edit/bootstrap`,
-  { method: 'GET', watch: false }
+const api = useApiClient()
+const submitKey = useIdempotencyKey()
+
+const { data: form, status } = await useApi<EditForm>(
+  () => `work-edit-form:${workId.value}`,
+  (client, { signal }) =>
+    client.GET('/works/{work_id}/edit-form', {
+      params: { path: { work_id: workId.value } },
+      signal
+    })
+)
+const fields = computed(() => (form.value?.fields ?? []).map(toKitField))
+const vocabularies = computed(() =>
+  form.value ? toKitVocabularies(form.value) : {}
 )
 
 const nameOf = useCatalogName()
 const { data: detail } = await useApi<Work>(
   () => `work-edit:${workId.value}`,
-  (api, { signal }) =>
-    api.GET('/works/{work_id}', {
+  (client, { signal }) =>
+    client.GET('/works/{work_id}', {
       params: {
-        path: { work_id: String(workId.value) },
+        path: { work_id: workId.value },
         query: { include_nsfw: true }
       },
       signal
@@ -37,33 +58,30 @@ const editNames = computed<GalgameEditNames>(() =>
 )
 const editConfig = computed(() => createGalgameEditConfig(editNames.value))
 
-const { data: mine, refresh: refreshMine } =
-  await useKunFetch<GalgameEditProposalList>('/galgame-edit/mine', {
-    method: 'GET',
-    watch: false,
-    query: { gid: workId.value }
-  })
+const { data: openList, refresh: refreshOpen } = await useApi<{
+  items: EditProposalSummary[]
+}>(
+  () => `work-edit-open:${workId.value}`,
+  (client, { signal }) =>
+    client.GET('/works/{work_id}/edit-proposals', {
+      params: {
+        path: { work_id: workId.value },
+        query: { state: 'open', limit: 100 }
+      },
+      signal
+    })
+)
+const openItems = computed(() => openList.value?.items ?? [])
+const reviewable = computed(() =>
+  openItems.value.filter((p) => !p.viewer?.is_proposer && p.viewer?.can_decide)
+)
+const mine = computed(() => openItems.value.filter((p) => p.viewer?.is_proposer))
+const users = computed(() => proposalUsers(openItems.value))
 
-const { data: pending, refresh: refreshPending } =
-  await useKunFetch<GalgameEditProposalList>(
-    `/galgame/${workId.value}/edit/proposals`,
-    { method: 'GET', watch: false }
-  )
-
-const userStore = usePersistUserStore()
-const reviewable = computed(() => {
-  if (!bootstrap.value?.can_review) {
-    return []
-  }
-  return (pending.value?.items ?? []).filter(
-    (p) => p.status === 'open' && p.proposer_uid !== userStore.id
-  )
-})
-
-const { canModerate } = useRole()
+const canReviewQueue = useCan('galgame.edit_proposal.review')
 
 const gameName = computed(() =>
-  String(bootstrap.value?.values['catalog.work.display_name'] ?? '')
+  String(form.value?.field_values['catalog.work.display_name'] ?? '')
 )
 
 const patch = ref<Record<string, unknown>>({})
@@ -83,19 +101,6 @@ const dirtyLabels = computed(() =>
   Object.keys(patch.value).map((key) => galgameEditLabel(key))
 )
 
-const automergeByKey = computed(() => {
-  const map: Record<string, boolean> = {}
-  for (const field of bootstrap.value?.fields ?? []) {
-    map[field.key] = field.would_automerge
-  }
-  return map
-})
-const willAutomerge = computed(
-  () =>
-    dirtyCount.value > 0 &&
-    Object.keys(patch.value).every((key) => automergeByKey.value[key])
-)
-
 const handleSubmit = async () => {
   if (!dirtyCount.value || submitting.value || !formValid.value) {
     return
@@ -103,62 +108,58 @@ const handleSubmit = async () => {
   submitting.value = true
   fieldErrors.value = {}
   formErrors.value = []
-  const result = await kunFetch<GalgameEditSubmitResult>(
-    `/galgame/${workId.value}/edit/proposals`,
-    {
-      method: 'POST',
-      body: { patch: patch.value, note: note.value },
-      onApiError: (envelope: {
-        code: number
-        message: string
-        errors?: unknown[]
-      }) => {
-        const parsed = parseEditProblem({
-          detail: envelope.message,
-          errors: envelope.errors
-        })
-        fieldErrors.value = parsed.fields
-        formErrors.value = parsed.form
-        return Object.keys(parsed.fields).length > 0
-      }
-    }
+  const body = { patch: patch.value, note: note.value || null }
+  const result = await settle(
+    api.POST('/works/{work_id}/edit-proposals', {
+      params: {
+        path: { work_id: workId.value },
+        header: {
+          'Idempotency-Key': submitKey.take(
+            `/works/${workId.value}/edit-proposals`,
+            body
+          )
+        }
+      },
+      body
+    })
   )
   submitting.value = false
-  if (!result) {
+  if (!result.ok) {
+    fieldErrors.value = parseEditProblem({ errors: result.problem.errors }).fields
+    reportProblem(result.problem)
     return
   }
-  if (result.merged) {
-    useMessage('修改已生效', 'success')
-  } else {
-    useMessage('提案已提交，等待审核', 'success')
-  }
+  submitKey.clear()
+  useMessage(
+    result.data.state === 'merged' ? '修改已生效' : '提案已提交，等待审核',
+    'success'
+  )
   formRef.value?.reset()
   patch.value = {}
   note.value = ''
-  await Promise.all([refreshMine(), refreshPending()])
+  await refreshOpen()
 }
 
 const withdrawing = ref(false)
-const handleWithdraw = async (id: number) => {
+const handleWithdraw = async (id: string) => {
   if (withdrawing.value) {
     return
   }
   withdrawing.value = true
-  const result = await kunFetch<GalgameEditProposal>(
-    `/galgame-edit/proposals/${id}/withdraw`,
-    { method: 'POST' }
-  )
+  const result = await patchEditProposal(api, id, { state: 'withdrawn' })
   withdrawing.value = false
-  if (result) {
-    useMessage('提案已撤回', 'success')
-    await refreshMine()
+  if (!result.ok) {
+    reportProblem(result.problem)
+    return
   }
+  useMessage('提案已撤回', 'success')
+  await refreshOpen()
 }
 </script>
 
 <template>
   <div class="flex w-full flex-col gap-3">
-    <template v-if="bootstrap">
+    <template v-if="form">
       <KunCard
         :is-hoverable="false"
         :is-transparent="false"
@@ -189,7 +190,7 @@ const handleWithdraw = async (id: number) => {
             修订历史
           </KunButton>
           <KunButton
-            v-if="canModerate"
+            v-if="canReviewQueue"
             variant="light"
             color="primary"
             size="sm"
@@ -205,9 +206,9 @@ const handleWithdraw = async (id: number) => {
         <EditkitProposalCard
           v-for="item in reviewable"
           :key="item.id"
-          :proposal="item"
+          :proposal="toKitProposal(item)"
           :label-for="galgameEditLabel"
-          :proposer="pending?.users?.[item.proposer_uid]"
+          :proposer="users[Number(item.proposer.id)]"
         >
           <template #title>
             <span class="text-default-700 text-sm font-medium">
@@ -227,11 +228,11 @@ const handleWithdraw = async (id: number) => {
         </EditkitProposalCard>
       </div>
 
-      <div v-if="mine?.items.length" class="space-y-2">
+      <div v-if="mine.length" class="space-y-2">
         <EditkitProposalCard
-          v-for="item in mine.items.filter((p) => p.status === 'open')"
+          v-for="item in mine"
           :key="item.id"
-          :proposal="item"
+          :proposal="toKitProposal(item)"
           :label-for="galgameEditLabel"
         >
           <template #title>
@@ -241,6 +242,7 @@ const handleWithdraw = async (id: number) => {
           </template>
           <template #actions>
             <KunButton
+              v-if="item.viewer?.can_withdraw"
               variant="flat"
               color="danger"
               size="sm"
@@ -256,10 +258,10 @@ const handleWithdraw = async (id: number) => {
       <KunCard :is-hoverable="false" :is-transparent="false">
         <EditkitSchemaForm
           ref="formRef"
-          :fields="bootstrap.fields"
-          :values="bootstrap.values"
+          :fields="fields"
+          :values="form.field_values"
           :config="editConfig"
-          :vocabularies="bootstrap.vocabularies"
+          :vocabularies="vocabularies"
           :group-order="GALGAME_EDIT_GROUP_ORDER"
           :tabbed-groups="GALGAME_EDIT_TABBED_GROUPS"
           :disabled="submitting"
@@ -289,14 +291,7 @@ const handleWithdraw = async (id: number) => {
           <div class="flex flex-wrap items-center justify-between gap-3">
             <div class="text-default-500 min-w-0 space-y-1 text-sm">
               <template v-if="dirtyCount">
-                <p>
-                  已修改 {{ dirtyCount }} 个字段 ·
-                  <span
-                    :class="willAutomerge ? 'text-success' : 'text-warning'"
-                  >
-                    {{ willAutomerge ? '保存后立即生效' : '提交后需审核' }}
-                  </span>
-                </p>
+                <p>已修改 {{ dirtyCount }} 个字段</p>
                 <div class="flex flex-wrap gap-1">
                   <KunChip
                     v-for="name in dirtyLabels"
@@ -330,10 +325,8 @@ const handleWithdraw = async (id: number) => {
                 :loading="submitting"
                 @click="handleSubmit"
               >
-                <KunIcon
-                  :name="willAutomerge ? 'lucide:check' : 'lucide:send'"
-                />
-                {{ willAutomerge ? '保存修改' : '提交提案' }}
+                <KunIcon name="lucide:send" />
+                提交修改
               </KunButton>
             </div>
           </div>

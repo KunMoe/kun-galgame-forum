@@ -3,13 +3,16 @@ import {
   galgameEditFieldConfig,
   galgameEditLabel
 } from '~/constants/galgameEdit'
+import { settle } from '#shared/utils/api/problem'
 import type { Activity, WorkRef } from '#shared/utils/api/schemas'
+import type { EditRevisionDiff } from '~/utils/galgame/editAdapt'
 
 const props = defineProps<{ activity: Activity; work: WorkRef }>()
 
 const nameOf = useWorkName()
 
-const diff = ref<GalgameEditDiff | null>(null)
+const api = useApiClient()
+const diff = ref<EditRevisionDiff | null>(null)
 const isLoading = ref(false)
 
 const loadDiff = async () => {
@@ -20,17 +23,26 @@ const loadDiff = async () => {
   try {
     let seq = revision.revision_number ?? undefined
     if (!seq) {
-      const rowId = Number(revision.legacy_revision_id)
-      const history = await kunFetch<GalgameEditRevisionList>(
-        `/galgame/${workId}/edit/revisions?limit=200`
+      const rowId = revision.legacy_revision_id
+      const history = await settle(
+        api.GET('/works/{work_id}/edit-revisions', {
+          params: { path: { work_id: workId }, query: { limit: 100 } }
+        })
       )
-      seq = history?.items?.find((r) => (r.legacy_id ?? r.id) === rowId)?.seq
+      seq = history.ok
+        ? history.data.items.find((r) => r.id === rowId)?.seq
+        : undefined
     }
     if (!seq || seq <= 1) return
-    const res = await kunFetch<GalgameEditDiff>(
-      `/galgame/${workId}/edit/diff?from=${seq - 1}&to=${seq}`
+    const res = await settle(
+      api.GET('/works/{work_id}/edit-revisions/diff', {
+        params: {
+          path: { work_id: workId },
+          query: { from_seq: seq - 1, to_seq: seq }
+        }
+      })
     )
-    if (res) diff.value = res
+    if (res.ok) diff.value = res.data
   } finally {
     isLoading.value = false
   }
@@ -87,15 +99,14 @@ onBeforeUnmount(() => {
 
       <div v-if="isLoading" class="text-default-400 text-sm">加载编辑内容…</div>
       <div
-        v-else-if="diff && diff.fields.length"
+        v-else-if="diff && diff.field_changes.length"
         class="border-default-200 rounded-lg border p-2 text-sm"
       >
         <div ref="diffRef" :style="diffStyle" class="space-y-3">
           <EditkitFieldDiff
-            v-for="row in diff.fields"
+            v-for="row in diff.field_changes"
             :key="row.key"
             :label="galgameEditLabel(row.key)"
-            :diff-hint="row.diff_hint"
             :from="row.from"
             :to="row.to"
             :config="galgameEditFieldConfig(row.key)"
