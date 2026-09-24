@@ -137,7 +137,7 @@ export const RUNTIME_OPTIONS: VocabOption<
   { value: 'renpy-android', label: "Ren'Py 安卓版" },
   { value: 'tyranor', label: 'Tyranor' },
   { value: 'tyranor-next', label: 'Tyranor Next' },
-  { value: 'emulator', label: '模拟器（未注明哪种）' },
+  { value: 'emulator', label: '模拟器' },
   { value: 'other', label: '其它运行环境' }
 ]
 
