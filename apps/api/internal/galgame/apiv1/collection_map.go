@@ -3,6 +3,7 @@ package apiv1
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"log/slog"
 	"sort"
 	"strconv"
@@ -450,6 +451,32 @@ func (s *Service) folderPopulation(ctx context.Context, folder *catalogclient.Fo
 			}
 		}
 	}
+	shared, err, _ := s.popFlight.Do(key, func() (any, error) {
+		bctx := context.WithoutCancel(ctx)
+		population, p := s.buildFolderPopulation(bctx, folder, items, includeNSFW)
+		if p != nil {
+			return nil, p
+		}
+		if s.rdb != nil {
+			if raw, mErr := json.Marshal(population); mErr == nil {
+				if sErr := s.rdb.Set(bctx, key, raw, folderPopulationTTL).Err(); sErr != nil {
+					slog.Warn("collection: folder population cache write failed", "folder_id", folder.ID, "err", sErr)
+				}
+			}
+		}
+		return population, nil
+	})
+	if err != nil {
+		var p *problem.Problem
+		if errors.As(err, &p) {
+			return nil, p
+		}
+		return nil, problem.Unavailable(err)
+	}
+	return shared.([]int), nil
+}
+
+func (s *Service) buildFolderPopulation(ctx context.Context, folder *catalogclient.Folder, items []catalogclient.FolderItem, includeNSFW bool) ([]int, *problem.Problem) {
 	ids := make([]int, 0, len(items))
 	for _, it := range items {
 		ids = append(ids, int(it.WorkID))
@@ -479,13 +506,6 @@ func (s *Service) folderPopulation(ctx context.Context, folder *catalogclient.Fo
 			continue
 		}
 		population = append(population, id)
-	}
-	if s.rdb != nil {
-		if raw, err := json.Marshal(population); err == nil {
-			if err := s.rdb.Set(ctx, key, raw, folderPopulationTTL).Err(); err != nil {
-				slog.Warn("collection: folder population cache write failed", "folder_id", folder.ID, "err", err)
-			}
-		}
 	}
 	return population, nil
 }

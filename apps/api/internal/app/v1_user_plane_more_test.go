@@ -3,6 +3,7 @@ package app
 import (
 	"net/http"
 	"testing"
+	"time"
 
 	"kun-galgame-api/pkg/catalogclient"
 	"kun-galgame-api/pkg/problem"
@@ -137,5 +138,36 @@ func TestV1ListCollectionWorksCachesPopulation(t *testing.T) {
 	warm := reads() - before - cold
 	if cold != 2 || warm != 1 {
 		t.Errorf("catalog row reads: cold %d (want population + page = 2), warm %d (want the page only = 1)", cold, warm)
+	}
+}
+
+func TestV1ListCollectionWorksBuildsPopulationOnce(t *testing.T) {
+	f := newG6Fix(t)
+	gate := make(chan struct{})
+	f.cat.mu.Lock()
+	f.cat.rowsGate, f.cat.rowsIn = gate, make(chan struct{}, 1)
+	before := len(f.cat.gotLimits)
+	f.cat.mu.Unlock()
+	view := func(done chan<- int) {
+		resp, _ := f.call(t, http.MethodGet, g6col(g6FolderAliceDef)+"/works",
+			"/collections/{collection_id}/works", "", "", nil)
+		done <- resp.StatusCode
+	}
+	done := make(chan int, 2)
+	go view(done)
+	<-f.cat.rowsIn
+	go view(done)
+	time.Sleep(300 * time.Millisecond)
+	close(gate)
+	for range 2 {
+		if code := <-done; code != http.StatusOK {
+			t.Fatalf("status %d", code)
+		}
+	}
+	f.cat.mu.Lock()
+	reads := len(f.cat.gotLimits) - before
+	f.cat.mu.Unlock()
+	if reads != 3 {
+		t.Errorf("catalog row reads %d, want 3: one shared population build and one page read per view", reads)
 	}
 }

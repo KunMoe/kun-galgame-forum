@@ -23,6 +23,7 @@ import (
 
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/redis/go-redis/v9"
+	"golang.org/x/sync/singleflight"
 	"gorm.io/gorm"
 )
 
@@ -108,6 +109,7 @@ type Service struct {
 	check           *gate.CheckService
 	scan            *gate.ScanService
 	aliases         *repository.GalgameCollectionRepository
+	popFlight       singleflight.Group
 }
 
 func New(works workCatalog, moyu *moyuclient.Client, users userLookup, rdb *redis.Client, cdn string) *Service {
