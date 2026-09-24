@@ -128,11 +128,7 @@ func (s *Service) previewCovers(ctx context.Context, token string, folder catalo
 		if !ok || a.image == nil {
 			continue
 		}
-		// For an unclaimed work the forum's is_nsfw is the r18 rating alone,
-		// while catalog also shelves it nsfw when all its cover art is explicit
-		// and then elects explicit art for this unfiltered read (18 works on
-		// 2026-09-24). Only those can reach here with an explicit image.
-		if !includeNSFW && (a.nsfw || isExplicit(a.image)) {
+		if !includeNSFW && a.nsfw {
 			continue
 		}
 		out = append(out, *a.image)
@@ -146,10 +142,6 @@ func (s *Service) previewCovers(ctx context.Context, token string, folder catalo
 type previewArt struct {
 	image *repr.Image
 	nsfw  bool
-}
-
-func isExplicit(img *repr.Image) bool {
-	return img.Sexual != nil && *img.Sexual == "explicit"
 }
 
 func (s *Service) toCollection(ctx context.Context, folder catalogclient.Folder, user *middleware.UserInfo, token string, hasWork, includeNSFW bool) (*Collection, bool, *problem.Problem) {

@@ -8,6 +8,7 @@ Fixed:
 
 - A work's `is_nsfw`, and every SFW gate built on it, is catalog's own `content_limit`. For an unclaimed work the forum used to judge by `content_rating == r18` alone. Catalog also shelves a work as adult when all its cover art is explicit, so 18 unclaimed works (229831 among them) showed explicit covers with `is_nsfw: false` to SFW readers, on `/works/{id}` and eight other surfaces. A missing or unknown verdict now counts as adult.
 - The SFW filters on the forum's own lists (resources, ratings, rankings, a user's works, the /galgame lists, quizzes) treat a work whose verdict has not synced yet as adult. They used to let it through.
+- The collection preview no longer needs its own check for images graded `explicit` (added in G6.3). A work's verdict now covers them, so the check is gone.
 
 ## 2026-09-24 (G6.3 collection preview covers fall back to the cover)
 

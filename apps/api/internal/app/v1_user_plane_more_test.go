@@ -267,6 +267,7 @@ func TestV1CollectionPreviewKeepsExplicitArtFromSFWReaders(t *testing.T) {
 	var row client.CatalogWorkListItem
 	decodeInto(t, geRowJSON(geWork{id: allExplicit, name: "ExplicitG6", rating: "all_ages"}), &row)
 	explicit := 2
+	row.ContentLimit = "nsfw"
 	row.CoverSlots.Banner = nil
 	row.CoverSlots.Portrait.Sexual = &explicit
 	f.cat.mu.Lock()

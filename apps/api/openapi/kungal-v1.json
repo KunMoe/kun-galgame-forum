@@ -2525,7 +2525,7 @@
             "description": "The account that owns this collection."
           },
           "preview_covers": {
-            "description": "Art of the earliest memberships, at most 4: each work's banner, else its cover. A work with neither is skipped, and without include_nsfw so are adult works and images graded explicit. Empty array, never null.",
+            "description": "Art of the earliest memberships, at most 4: each work's banner, else its cover. A work with neither is skipped, and without include_nsfw so are adult works. Empty array, never null.",
             "items": {
               "$ref": "#/components/schemas/Image"
             },
@@ -2801,7 +2801,7 @@
             "description": "The account that owns this collection."
           },
           "preview_covers": {
-            "description": "Art of the earliest memberships, at most 4: each work's banner, else its cover. A work with neither is skipped, and without include_nsfw so are adult works and images graded explicit. Empty array, never null.",
+            "description": "Art of the earliest memberships, at most 4: each work's banner, else its cover. A work with neither is skipped, and without include_nsfw so are adult works. Empty array, never null.",
             "items": {
               "$ref": "#/components/schemas/Image"
             },

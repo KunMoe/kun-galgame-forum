@@ -151,7 +151,7 @@ G17：写路径里每个 `{x_id}`，以它结尾的那段必须有 GET，且 200
 | `is_default` | bool | | catalog |
 | `item_count` | int ≥0 | catalog 原值，**不**随 `include_nsfw` 变 | catalog |
 | `owner` | `UserRef` | 不可渲染且调用者不是主人 → 整段 404 | `owner_uid` |
-| `preview_covers` | `Image[]` | 永不 `null`，最多 4，banner 与 cover 都没有的跳过（不打日志）；不带 `include_nsfw` 时 `sexual=explicit` 的图也跳过（未认领作品论坛只按 r18 判 `is_nsfw`，catalog 还看封面是否全 explicit） | 最早加入的 4 条成员的 banner，没有 banner 取 cover（旧面 `EffectiveBannerURL` 就是这个回落；只取 banner 会让全竖版封面的作品从预览里消失，G6.3）（catalog 条目 `updated_at` 升序的头 4 条，与现行 `FolderPreviewItems` 相同） |
+| `preview_covers` | `Image[]` | 永不 `null`，最多 4，banner 与 cover 都没有的跳过（不打日志） | 最早加入的 4 条成员的 banner，没有 banner 取 cover（旧面 `EffectiveBannerURL` 就是这个回落；只取 banner 会让全竖版封面的作品从预览里消失，G6.3）（catalog 条目 `updated_at` 升序的头 4 条，与现行 `FolderPreviewItems` 相同） |
 | `created_at` / `updated_at` | date-time | catalog 解析失败打 WARN，该行丢掉 | catalog |
 | `viewer` | `CollectionViewer \| null` | 匿名为 `null` | |
 
@@ -357,7 +357,7 @@ catalog 用户面一次调用的失败，按下表进 v1。**不得**落到无 c
 - **选择器读失败时显示「收藏夹读取失败」**，不再显示「还没有收藏夹」（旧面同病）。保存照旧禁用。
 - **G6.1（上线后，2026-09-24）夹内作品的计数与分页用同一批行**：按读者的内容档读一次，在同一批行上数和切页。catalog 的条目列表不带内容闸（`listPublicFolderItems` 说明），精确计数要读整夹：生产最大夹 4535 有 3,826 部 = 39 批 × 100。人口（有序 id）按「夹 id + `updated_at` + 内容档」缓存 10 分钟，并以同键 singleflight 构建；批次本来就是串行，无并发可封顶。**更正（G6.2）**：G6.1 当时以为修的是「总数多数了三部」，其实没有观察到的错数——那批 `did not render work` WARN 来自预览封面在 sfw 档下水合 NSFW 条目（被点名的作品全是 `is_nsfw: true`，早已被 G6 的人口排除）；论坛的 `contentLimitOf` 与 infra `DisplayLimitKey` 逐字一致，两个谓词本来不会分歧。
 - **G6.2 预览封面按 all 水合、按 `is_nsfw` 过闸**：SFW 读者照样拿不到 NSFW 作品的封面（测试钉住：NSFW 首条目不出封面、不打 WARN），日志里不再有预览造成的假「did not render」。
-- **G6.3 预览封面缺 banner 时取 cover**：只取 banner 让全竖版封面的作品从每个预览里消失（生产 7242 / 12778），每条打一次 WARN。旧面 `EffectiveBannerURL` 本来就回落竖版。另加了单图 explicit 闸，见下一条。
+- **G6.3 预览封面缺 banner 时取 cover**：只取 banner 让全竖版封面的作品从每个预览里消失（生产 7242 / 12778），每条打一次 WARN。旧面 `EffectiveBannerURL` 本来就回落竖版。当时另加的单图 explicit 闸已在 CL 删除，见下一条。
 - **更正（CL，2026-09-24）：G6.1 那句「`contentLimitOf` 与 infra `DisplayLimitKey` 逐字一致」从 09-14 起就不成立。** infra 的 `WorkShelf.NSFW()` 那天加了首条 `cover_art_all_explicit`，/v2 不暴露这一列，而未认领作品在论坛这边只看 `rating == r18`。生产有 18 部未认领、封面全 explicit、非 r18 的作品，在九个 include-all 读面以 `is_nsfw=false` 给 SFW 读者露 explicit 封面。infra 2.26.0 在每个 /v2 作品上给出 `content_limit`，CL 起 `contentLimitOf` 只读它（缺失或不认识即 nsfw），G6.3 的单图闸随之删除。本地缓存列的 NULL 也改成按 nsfw 算。
 - **旧面「先分页再过闸」的裁决被 v1 取代，但主人仍要知道有东西被藏了。** 旧面有意让总数包含被过滤的条目；v1 的总数与条目同谓词（§3.2）。网页用 `Collection.item_count`（catalog 的原始条数）减 `total` 得出未显示条数并写明：SFW 读者「另有 N 部作品未显示：受你的内容显示设置影响，或已下架」，NSFW 读者「另有 N 部作品已下架，未显示」；全被藏时空态也这么说，不再说「还没有收藏」。`/me/playtimes` 没有原始条数，SFW 读者看到一行静态说明。
 - **认不出的上游 422** → `422 VALIDATION_FAILED` `NOT_ALLOWED_VALUE`（pointer 为空），打 WARN 带上游 code 与 message。认得的几条按 infra `me_folder.go:313-336` 的原文匹配。
