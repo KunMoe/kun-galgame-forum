@@ -36,6 +36,8 @@ type g7bCatalog struct {
 
 	failRevisions bool
 	failVocab     bool
+	failApp       bool
+	denyRevert    bool
 	emptyState    int64
 }
 
@@ -327,6 +329,10 @@ func (c *g7bCatalog) serve(w http.ResponseWriter, r *http.Request) {
 
 func (c *g7bCatalog) serveApp(w http.ResponseWriter, r *http.Request, path string) {
 	q := r.URL.Query()
+	if c.failApp && (strings.HasPrefix(path, "/v2/catalog/proposals") || strings.HasPrefix(path, "/v2/catalog/revisions")) {
+		g7bProblem(w, http.StatusServiceUnavailable, "SERVICE_UNAVAILABLE", "down")
+		return
+	}
 	seg := strings.Split(strings.Trim(path, "/"), "/")
 	switch {
 	case path == "/v2/vocabularies":
@@ -788,6 +794,10 @@ func (c *g7bCatalog) decide(w http.ResponseWriter, r *http.Request, actor g7bAct
 }
 
 func (c *g7bCatalog) revert(w http.ResponseWriter, r *http.Request, actor g7bActor, raw []byte) {
+	if c.denyRevert {
+		g7bProblem(w, http.StatusForbidden, "PERMISSION_REQUIRED", "no field of this entity may be reverted by the actor")
+		return
+	}
 	if done, _ := c.replay(w, r, raw); done {
 		return
 	}

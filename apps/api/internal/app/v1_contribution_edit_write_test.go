@@ -309,8 +309,14 @@ func TestV1EditDecisionsNeedStanding(t *testing.T) {
 		resp, body = f.call(t, http.MethodPatch, g7bProposalPath(f.pPlainAlice), spec, g7bSessBob, "", map[string]any{"state": state, "note": "n"})
 		wantCode(t, resp, body, http.StatusForbidden, problem.CodePermissionRequired)
 	}
+	resp, body := f.bearer(t, http.MethodPatch, path, spec, "bob-token", "", map[string]any{"state": "merged"})
+	wantCode(t, resp, body, http.StatusForbidden, problem.CodePermissionRequired)
+	_, body = f.bearer(t, http.MethodGet, g7bWorkPath(g7bWork)+"/edit-proposals", "/works/{work_id}/edit-proposals", "bob-token", "", nil)
+	if v, _ := itemByID(body, f.pOpenAlice)["viewer"].(map[string]any); v["can_decide"] != false || v["can_amend"] != false {
+		t.Errorf("a Bearer owner holds no review standing %+v", v)
+	}
 	f.denyEditReview(t)
-	resp, body := f.call(t, http.MethodPatch, path, spec, g7bSessStaff, "", map[string]any{"state": "merged"})
+	resp, body = f.call(t, http.MethodPatch, path, spec, g7bSessStaff, "", map[string]any{"state": "merged"})
 	wantCode(t, resp, body, http.StatusForbidden, problem.CodePermissionRequired)
 	if n := len(f.up.callsTo(http.MethodPost, "/v2/moderation/")); n != 0 {
 		t.Errorf("refused decisions reached catalog %d times", n)

@@ -41,7 +41,7 @@ type g7bFix struct {
 	up  *g7bCatalog
 
 	pOpenAlice, pOpenOther, pOpenBanned, pMergedBob, pDeclined, pWithdrawn int64
-	pEmptyState, pOtherSite, pTag, pHidden, pPlainAlice, pStaffOwn        int64
+	pEmptyState, pOtherSite, pTag, pHidden, pPlainAlice, pStaffOwn         int64
 	rev1, rev2, rev3                                                       int64
 }
 

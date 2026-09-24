@@ -64,7 +64,6 @@ func TestV1EditFormShape(t *testing.T) {
 		t.Errorf("vocabularies %+v", vocab)
 	}
 
-
 	for _, c := range []struct {
 		name, path, session, code string
 		status                    int
@@ -443,14 +442,18 @@ func TestV1GetEditProposalWorkbench(t *testing.T) {
 		name string
 		do   func() (*http.Response, map[string]any)
 	}{
-		{"stranger", func() (*http.Response, map[string]any) { return f.call(t, http.MethodGet, path, spec, g7bSessOther, "", nil) }},
+		{"stranger", func() (*http.Response, map[string]any) {
+			return f.call(t, http.MethodGet, path, spec, g7bSessOther, "", nil)
+		}},
 		{"other site", func() (*http.Response, map[string]any) {
 			return f.call(t, http.MethodGet, g7bProposalPath(f.pOtherSite), spec, g7bSessAlice, "", nil)
 		}},
 		{"other family", func() (*http.Response, map[string]any) {
 			return f.call(t, http.MethodGet, g7bProposalPath(f.pTag), spec, g7bSessAlice, "", nil)
 		}},
-		{"unknown", func() (*http.Response, map[string]any) { return f.call(t, http.MethodGet, g7bProposalPath(957199999), spec, g7bSessStaff, "", nil) }},
+		{"unknown", func() (*http.Response, map[string]any) {
+			return f.call(t, http.MethodGet, g7bProposalPath(957199999), spec, g7bSessStaff, "", nil)
+		}},
 	} {
 		resp, body := c.do()
 		if resp.StatusCode != http.StatusNotFound || body["code"] != problem.CodeNotFound {

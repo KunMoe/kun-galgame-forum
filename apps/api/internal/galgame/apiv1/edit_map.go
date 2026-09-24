@@ -203,7 +203,7 @@ func proposalViewer(user *middleware.UserInfo, p *catalogclient.EditProposal, ow
 }
 
 func (s *Service) editOwners(user *middleware.UserInfo, workIDs []int) (map[int]int, *problem.Problem) {
-	if user == nil || user.ViaBearer() || user.Can(perm.GalgameEditProposalReview) || s.store == nil || !s.store.Ready() {
+	if user == nil || user.Can(perm.GalgameEditProposalReview) || s.store == nil || !s.store.Ready() {
 		return map[int]int{}, nil
 	}
 	owners, err := s.store.CreatorsOf(workIDs)

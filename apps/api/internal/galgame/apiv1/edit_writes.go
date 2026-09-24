@@ -213,9 +213,6 @@ func (s *Service) updateEditProposal(ctx context.Context, in *updateEditProposal
 		return nil, notFound()
 	}
 	decision := in.Body.State != "withdrawn"
-	if decision && user.ViaBearer() {
-		return nil, permissionRequired()
-	}
 	current, err := cat.GetPublicProposal(ctx, int64(id))
 	if err != nil {
 		return nil, mapAppPlane(err)
