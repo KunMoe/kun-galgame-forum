@@ -327,3 +327,102 @@ func TestV1ListMyCollectionsForWork(t *testing.T) {
 	resp, body = f.call(t, http.MethodGet, path, spec, "sess-noscope", "", nil)
 	wantCode(t, resp, body, http.StatusForbidden, problem.CodeScopeRequired)
 }
+
+func TestV1CollectionWorkSlotsLeaveOwnershipToCatalog(t *testing.T) {
+	f := newG6Fix(t)
+	spec := "/collections/{collection_id}/works/{work_id}"
+	slot := func(folder int64, work int) string { return g6col(folder) + "/works/" + idStr(work) }
+	counts := func() (int, int, int) {
+		f.user.mu.Lock()
+		defer f.user.mu.Unlock()
+		return f.user.folderReads, f.user.containRead, f.user.holdReads
+	}
+
+	before := f.scalar(t, `SELECT favorite_count FROM galgame WHERE id = ?`, g6WorkExtra)
+	resp, body := f.call(t, http.MethodPut, slot(g6FolderAlicePub, g6WorkExtra), spec, "sess-alice", "", nil)
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("put %d %+v", resp.StatusCode, body)
+	}
+	if got := f.scalar(t, `SELECT favorite_count FROM galgame WHERE id = ?`, g6WorkExtra); got != before+1 {
+		t.Errorf("first add into the library: favorite_count %d, want %d", got, before+1)
+	}
+	if folders, containing, holdings := counts(); folders != 0 || containing != 0 || holdings != 1 {
+		t.Errorf("a toggle is holdings + the write; got MyFolder=%d MyFoldersContaining=%d holdings=%d", folders, containing, holdings)
+	}
+
+	resp, body = f.call(t, http.MethodDelete, slot(g6FolderAlicePub, g6WorkExtra), spec, "sess-alice", "", nil)
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("delete %d %+v", resp.StatusCode, body)
+	}
+	if got := f.scalar(t, `SELECT favorite_count FROM galgame WHERE id = ?`, g6WorkExtra); got != before {
+		t.Errorf("last removal from the library: favorite_count %d, want %d", got, before)
+	}
+
+	// Catalog's DELETE answers 204 for a missing membership and 404 only for a
+	// folder that is not the caller's; that 404 must not become has_work:false.
+	for _, c := range []struct {
+		name   string
+		method string
+		folder int64
+	}{
+		{"delete in someone else's folder", http.MethodDelete, g6FolderBobPub},
+		{"delete in a folder that does not exist", http.MethodDelete, 947299999},
+		{"put in someone else's folder", http.MethodPut, g6FolderBobPub},
+	} {
+		resp, body := f.call(t, c.method, slot(c.folder, g6WorkLive), spec, "sess-alice", "", nil)
+		if resp.StatusCode != http.StatusNotFound || body["code"] != problem.CodeNotFound {
+			t.Errorf("%s: %d %+v, want 404 NOT_FOUND", c.name, resp.StatusCode, body)
+		}
+	}
+	f.user.mu.Lock()
+	bobItems := len(f.user.items[g6FolderBobPub])
+	f.user.mu.Unlock()
+	if bobItems != 0 {
+		t.Errorf("alice wrote into bob's folder: %d items", bobItems)
+	}
+
+	f.user.mu.Lock()
+	f.user.fullFolder = map[int64]bool{g6FolderAlicePub: true}
+	f.user.unfoldable = map[int64]bool{g6WorkOwner: true}
+	f.user.mu.Unlock()
+	resp, body = f.call(t, http.MethodPut, slot(g6FolderAlicePub, g6WorkExtra), spec, "sess-alice", "", nil)
+	wantCode(t, resp, body, http.StatusUnprocessableEntity, problem.CodeValidationFailed)
+	if e := firstError(t, body); e["parameter"] != "work_id" || e["reason"] != problem.ReasonOutOfRange {
+		t.Errorf("full folder %+v", body["errors"])
+	}
+	resp, body = f.call(t, http.MethodPut, slot(g6FolderAlicePub, g6WorkOwner), spec, "sess-alice", "", nil)
+	wantCode(t, resp, body, http.StatusNotFound, problem.CodeNotFound)
+}
+
+func TestV1DeleteCollectionReadsHoldingsNotEveryFolder(t *testing.T) {
+	f := newG6Fix(t)
+	spec := "/collections/{collection_id}/works/{work_id}"
+	for _, w := range []int{g6WorkLive, g6WorkExtra} {
+		resp, body := f.call(t, http.MethodPut, g6col(g6FolderAlicePub)+"/works/"+idStr(w), spec, "sess-alice", "", nil)
+		if resp.StatusCode != http.StatusOK {
+			t.Fatalf("seed %d: %d %+v", w, resp.StatusCode, body)
+		}
+	}
+	liveBefore := f.scalar(t, `SELECT favorite_count FROM galgame WHERE id = ?`, g6WorkLive)
+	extraBefore := f.scalar(t, `SELECT favorite_count FROM galgame WHERE id = ?`, g6WorkExtra)
+	f.user.mu.Lock()
+	f.user.myReads, f.user.folderLists, f.user.holdReads = 0, 0, 0
+	f.user.mu.Unlock()
+
+	resp, body := f.call(t, http.MethodDelete, g6col(g6FolderAlicePub), "/collections/{collection_id}", "sess-alice", "", nil)
+	if resp.StatusCode != http.StatusNoContent {
+		t.Fatalf("delete %d %+v", resp.StatusCode, body)
+	}
+	f.user.mu.Lock()
+	itemReads, lists, holdings := f.user.myReads, f.user.folderLists, f.user.holdReads
+	f.user.mu.Unlock()
+	if itemReads != 1 || lists != 0 || holdings != 1 {
+		t.Errorf("want the deleted folder's items + one holdings read; got item reads=%d folder lists=%d holdings=%d", itemReads, lists, holdings)
+	}
+	if got := f.scalar(t, `SELECT favorite_count FROM galgame WHERE id = ?`, g6WorkExtra); got != extraBefore-1 {
+		t.Errorf("the work only this folder held left the library: favorite_count %d, want %d", got, extraBefore-1)
+	}
+	if got := f.scalar(t, `SELECT favorite_count FROM galgame WHERE id = ?`, g6WorkLive); got != liveBefore {
+		t.Errorf("the work the default folder still holds: favorite_count %d, want %d", got, liveBefore)
+	}
+}

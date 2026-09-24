@@ -393,21 +393,21 @@ func (s *Service) worksLeavingTheLibrary(ctx context.Context, token string, fold
 	if err != nil || len(items) == 0 {
 		return nil, err
 	}
-	folders, err := s.catalog.MyFolders(ctx, token)
+	ids := make([]int64, 0, len(items))
+	for _, it := range items {
+		ids = append(ids, it.WorkID)
+	}
+	holdings, err := s.catalog.MyFolderHoldings(ctx, token, ids)
 	if err != nil {
 		return nil, err
 	}
 	elsewhere := map[int64]bool{}
-	for _, f := range folders {
-		if f.ID == folderID {
-			continue
-		}
-		others, oErr := s.catalog.MyFolderItems(ctx, token, f.ID)
-		if oErr != nil {
-			return nil, oErr
-		}
-		for _, it := range others {
-			elsewhere[it.WorkID] = true
+	for _, h := range holdings {
+		for _, id := range h.FolderIDs {
+			if id != folderID {
+				elsewhere[h.WorkID] = true
+				break
+			}
 		}
 	}
 	out := []int{}
