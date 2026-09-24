@@ -488,6 +488,8 @@ catalog 用户面一次调用的失败，按下表进 v1。**不得**落到无 c
 - **实现时按 G8 改的名（只增不改）**：表单当前值 `values` → `field_values`（infra 原名；`values` 已是词表的数组）；diff 的 `fields` → `field_changes`（`fields` 已是表单字段数组，`changes` 已被 `RolePermissionMatrixPatch` 占用）；修订的 `amender` → `last_amender`（`EditAmendment.amender` 非空，修订的可空；也正是 infra「最后一个修正人」的意思）；词表的 `name` → `vocabulary`（`name` 在全 spec 是可空）；元素 `type` → `element_type`、成员 `type` → `member_type`（`type` 已是 problem 的 uri）。`EditField.encoding` 是 `token`/`int`/`null`（无词表时为 `null`，不用空串）。
 - **工作台第二步不做本地预检。** 作品主人的资格要作品 id，读到提案之前不知道，所以 cookie 调用者在 me 面 404 之后一律再问 moderation 面，由 infra 判资格；403 / 404 都回 404。Bearer 不走第二步。
 - **提案 PATCH 先读公开面。** `GET /v2/catalog/proposals/{id}`（应用 key）拿作品 id、提案人、状态、site：租户钉、非 open 的本地 409、撤回只许提案人、决定的本地资格（键或本地主人）都在任何用户面调用之前判完；Bearer 的 `merged`/`declined` 连公开面都不读。写完用 me（撤回）或 moderation（决定）面重读，响应与 `ETag` 取自重读。
+- **写成功之后不回 5xx（评审，2026-09-24）。** 提案 PATCH 的副作用（萌萌点、`resource_update_time`、通知）按写本身的回答跑：决定看决定记录的 `to_state`（infra 读回结果，抑制规则可能把 merge 关成 declined），不看之后的重读。重读失败 → WARN `galgame edit: proposal read-back failed after the write`，用公开面读到的提案 + 新状态回 200，`ETag` 为空。建提案 / 回滚 / 修正 / 决定之后的用户或主人查询失败 → WARN，用删除用户 ref 和空主人表回 2xx；修正回执里没有修正链 → 重读一次。Bearer 的 `merged` / `declined` 在任何 catalog 调用之前就 403。变异题追加 R1（重读失败让决定 5xx）、R2（写后查询失败让写 5xx）、R7（Bearer 先读公开面再拒）。
+- **CORS 放行 `If-Match`、暴露 `ETag`**（`internal/middleware/cors.go`），否则跨域客户端既送不出校验值也读不到它。
 - **旧路由删除顺带删了 `optAuth` 分组。** 它最后一个用户是 `GET /galgame/:id/edit/revisions`。空前缀 `Group` 在 Fiber 里是 `/api` 上的 `Use()`，所以此后注册的遗留路由（管理员清除内容、投稿）的链上不再有 `OptionalAuth`；它们都挂着 `Auth`，`Auth` 自己解析身份，少的只是一次重复解析。
 - **变异题追加**（接 §3.14）：
   - #27：`PATCH state=declined` 的 `NotifyDeclined` 内容不带理由 → 提案人的通知里必须有 note 原文；
