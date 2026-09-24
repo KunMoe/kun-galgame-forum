@@ -74,3 +74,29 @@
 ## 6. 迁移
 
 **195**：新增两列，现有行 `catalog_rendered = true`、`catalog_checked_at = NULL`（部署后核对车道从头走一遍）。随部署自动跑，无手动步骤。
+
+## 7. 实现时的修正与结果（只增不改）
+
+1. **核对窗口是每两分钟 100 行，不是每十分钟 500 行**。补齐车道本来就挂在 `*/2` 上（新建的行两分钟内拿到判决），核对车道沿用这个节拍；它永远有活干，所以一轮只问一个请求（批量面一次 100 个 id），全表 16.2k 行约 5.4 小时走一遍，与 §3 承诺的周期相同。
+2. **合并折叠没有「幸存条目是 hidden 认领就暂存」的判断**（§3 已写）；206987 还在暂存是 G0 之前的代码留下的。镜像交接前先用批量面验证幸存条目可渲染，不可渲染就不交。合并折叠自己的 redirect 游标车道仍然没有这道判断，本次没改。
+3. **判决陈旧的上游一半，infra 答了**：变更信道没有漏发，那两次批量写是每周的 vndb / bgm 刷新，不碰判决字段。8 行（217283、217284、218248、221850、223030、224270、226273、226320）是 G0（2026-09-23 09:48Z）之前就已经是 r18、未认领，信道也发过；G0 之前的 `MirrorByCatalogIDs` 只按 kungal 认领的 `site_work_id` 落本地，没有认领的作品一律对不上本地行，G0 改成按作品 id 之后游标早已走过。另 2 行（9113、211869）最后一次被写是 G0 的认领改号，它没动 `updated_at`，所以任何镜像都看不到。
+4. **asmr 上的认领从哪来**：本地这 5 个 live 认领全部是同一个用户（80834）在 2026-09-19 的 35 分钟里发资源时创建的，每个认领都与该作品上的资源同一秒创建，时间上对应 G3 之前的旧资源路由「发布资源时顺带认领」（旧路由的代码没有逐行复核，这是按时间戳的推断）。master 上唯一的认领入口是 v1 `POST /works/{work_id}/resources` 的 `ResourceClaim`，它排在 `lookupWork` 之后，而 `lookupWork` 走批量面，catalog 按 `medium_id = galgame` 过滤，asmr 作品在认领之前就是 404。发布向导的搜索（`/v2/catalog/works/search`，2026-07-29 起）与详情面（`WorkDetail`）同样按媒介过滤，投稿不带媒介字段。**master 上没有任何路径能再认领非 galgame 作品**，不需要修复 PR；已有的认领留给 infra / 用户处理。
+
+### 变异执行结果
+
+17/17 杀（11 拆成 6 个列表各一题）。4 号第一次没编译过（删掉那行后 `maps` 成了未使用的包），改写后重跑，被杀。
+
+| # | 结果 |
+|---|---|
+| 1 | `TestMirrorVerifyTouchesNothingOnAFailedAnswer` |
+| 2、6、7、8 | `TestMirrorVerifySettlesEveryKindOfAnswer` |
+| 3 | `TestMirrorVerifyHoldsAMassUnlisting`、`TestMirrorChannelHoldsAMassUnlisting` |
+| 4 | `TestMirrorVerifyAlwaysRelists` |
+| 5 | `TestMirrorVerifyOrderAndMarks` |
+| 9 | `TestMirrorChannelUnlistsGoneRows` |
+| 10 | `TestMirrorChannelHoldsAMassUnlisting` |
+| 11 浏览 / 实体页 / 月历 | `TestListIDsSFWFilter`、`TestCollectedCalendarHonoursTheReadersGate` |
+| 11 资源、评分、发布者作品 | `TestListsSkipWorksCatalogWillNotRender` |
+| 11 排行 | `TestTopWorksSkipsWorksCatalogWillNotRender` |
+| 11 用户作品 | `TestUserWorksSkipWorksCatalogWillNotRender` |
+| 12 | `TestMirrorVerifySettlesEveryKindOfAnswer` 等 3 题 |
