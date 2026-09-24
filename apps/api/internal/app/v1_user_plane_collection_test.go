@@ -426,3 +426,65 @@ func TestV1DeleteCollectionReadsHoldingsNotEveryFolder(t *testing.T) {
 		t.Errorf("the work the default folder still holds: favorite_count %d, want %d", got, liveBefore)
 	}
 }
+
+func TestV1CollectionPreviewCachesIDsNotArt(t *testing.T) {
+	f := newG6Fix(t)
+	put := func(work int) {
+		t.Helper()
+		resp, body := f.call(t, http.MethodPut, g6col(g6FolderAlicePub)+"/works/"+idStr(work), "/collections/{collection_id}/works/{work_id}", "sess-alice", "", nil)
+		if resp.StatusCode != http.StatusOK {
+			t.Fatalf("put %d: %d %+v", work, resp.StatusCode, body)
+		}
+	}
+	reads := func() int {
+		f.user.mu.Lock()
+		defer f.user.mu.Unlock()
+		return f.user.previewRead
+	}
+	pubCovers := func(url, spec, session string) int {
+		t.Helper()
+		resp, body := f.call(t, http.MethodGet, url, spec, session, "", nil)
+		if resp.StatusCode != http.StatusOK {
+			t.Fatalf("%s: %d %+v", url, resp.StatusCode, body)
+		}
+		for _, raw := range body["items"].([]any) {
+			it := raw.(map[string]any)
+			if it["id"] == idStr(g6FolderAlicePub) {
+				return len(it["preview_covers"].([]any))
+			}
+		}
+		t.Fatalf("%s: alice's public collection missing: %+v", url, body["items"])
+		return 0
+	}
+	mine := "/api/v1/me/collections?include_nsfw=true"
+	theirs := "/api/v1/users/" + idStr(w3UserAlice) + "/collections"
+
+	put(g6WorkNSFW)
+	put(g6WorkLive)
+	before := reads()
+	if n := pubCovers(mine, "/me/collections", "sess-alice"); n != 2 {
+		t.Fatalf("an NSFW reader sees both works' art, got %d", n)
+	}
+	first := reads() - before
+	if first == 0 {
+		t.Fatal("the first view read no preview items")
+	}
+	pubCovers(mine, "/me/collections", "sess-alice")
+	if reads()-before != first {
+		t.Errorf("a repeat view read catalog again: %d reads, want %d", reads()-before, first)
+	}
+	// The first reader allowed NSFW; the cache holds ids only, so an SFW
+	// reader still gets the filter.
+	if n := pubCovers(theirs, "/users/{user_id}/collections", "sess-bob"); n != 1 {
+		t.Errorf("an SFW reader after an NSFW one sees %d covers, want 1", n)
+	}
+
+	put(g6WorkExtra)
+	after := reads()
+	if n := pubCovers(mine, "/me/collections", "sess-alice"); n != 3 {
+		t.Errorf("after an add the preview shows %d covers, want 3", n)
+	}
+	if reads() == after {
+		t.Error("an add did not invalidate the cached preview (updated_at is part of the key)")
+	}
+}

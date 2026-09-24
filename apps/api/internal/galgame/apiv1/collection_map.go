@@ -91,14 +91,10 @@ func (s *Service) previewCovers(ctx context.Context, token string, folder catalo
 	if s.catalog == nil || folder.ItemCount == 0 || s.hydrator == nil {
 		return out
 	}
-	items, err := s.catalog.FolderPreviewItems(ctx, token, folder.ID, previewCoversPerCollection)
+	ids, err := s.previewWorkIDs(ctx, token, folder)
 	if err != nil {
 		slog.Warn("collection: preview items unreadable", "folder_id", folder.ID, "upstream_status", upstreamStatus(err), "err", err)
 		return out
-	}
-	ids := make([]int, 0, len(items))
-	for _, it := range items {
-		ids = append(ids, int(it.WorkID))
 	}
 	// Hydrating under sfw made catalog omit NSFW preview items and the hydrator
 	// log each one as "catalog did not render work"; on 2026-09-24 that noise
@@ -123,8 +119,8 @@ func (s *Service) previewCovers(ctx context.Context, token string, folder catalo
 		}
 		byID[id] = previewArt{image: art, nsfw: sums[i].IsNSFW}
 	}
-	for _, it := range items {
-		a, ok := byID[int(it.WorkID)]
+	for _, id := range ids {
+		a, ok := byID[id]
 		if !ok || a.image == nil {
 			continue
 		}
@@ -137,6 +133,41 @@ func (s *Service) previewCovers(ctx context.Context, token string, folder catalo
 		}
 	}
 	return out
+}
+
+// Only the ids are cached, never the art or the NSFW verdict: a cover can
+// change without bumping the folder's updated_at, and the filter belongs to each
+// reader. The hydrator's app-key read supplies the art every time.
+func folderPreviewKey(folder catalogclient.Folder) string {
+	return "kungal:folder-preview:v1:" + strconv.FormatInt(folder.ID, 10) + ":" + folder.UpdatedAt
+}
+
+func (s *Service) previewWorkIDs(ctx context.Context, token string, folder catalogclient.Folder) ([]int, error) {
+	cacheable := s.rdb != nil && folder.UpdatedAt != ""
+	if cacheable {
+		if raw, err := s.rdb.Get(ctx, folderPreviewKey(folder)).Bytes(); err == nil {
+			var ids []int
+			if json.Unmarshal(raw, &ids) == nil {
+				return ids, nil
+			}
+		}
+	}
+	items, err := s.catalog.FolderPreviewItems(ctx, token, folder.ID, previewCoversPerCollection)
+	if err != nil {
+		return nil, err
+	}
+	ids := make([]int, 0, len(items))
+	for _, it := range items {
+		ids = append(ids, int(it.WorkID))
+	}
+	if cacheable {
+		if raw, err := json.Marshal(ids); err == nil {
+			if err := s.rdb.Set(ctx, folderPreviewKey(folder), raw, folderItemsCacheTTL).Err(); err != nil {
+				slog.Warn("collection: preview cache write failed", "folder_id", folder.ID, "err", err)
+			}
+		}
+	}
+	return ids, nil
 }
 
 type previewArt struct {

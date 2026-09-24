@@ -82,6 +82,7 @@ type g6User struct {
 	worksCalls     int
 	coverVoteReads int
 	previewRead    int
+	clock          int
 	folderReads    int
 	containRead    int
 	fullFolder     map[int64]bool
@@ -763,8 +764,16 @@ func (u *g6User) PutFolderItem(_ context.Context, token string, folderID, workID
 		FolderID: folderID, WorkID: workID, CreatedAt: "2026-09-20T00:00:00Z", UpdatedAt: "2026-09-20T00:00:00Z",
 	})
 	f.ItemCount++
+	f.UpdatedAt = u.touch()
 	u.folders[folderID] = f
 	return nil
+}
+
+// touch mirrors catalog bumping a folder's updated_at on every item add and
+// remove; the folder item and preview caches key on it.
+func (u *g6User) touch() string {
+	u.clock++
+	return fmt.Sprintf("2026-09-21T00:%02d:%02dZ", u.clock/60, u.clock%60)
 }
 func (u *g6User) DeleteFolderItem(_ context.Context, token string, folderID, workID int64) error {
 	if err := u.gate(token); err != nil {
@@ -776,15 +785,20 @@ func (u *g6User) DeleteFolderItem(_ context.Context, token string, folderID, wor
 	if f, ok := u.folders[folderID]; !ok || f.OwnerUID != u.uid(token) {
 		return catalogclient.ErrNotFound
 	}
+	f0 := len(u.items[folderID])
 	kept := u.items[folderID][:0]
 	for _, it := range u.items[folderID] {
 		if it.WorkID != workID {
 			kept = append(kept, it)
 		}
 	}
+	removed := len(kept) != f0
 	u.items[folderID] = kept
 	if f, ok := u.folders[folderID]; ok {
 		f.ItemCount = len(kept)
+		if removed {
+			f.UpdatedAt = u.touch()
+		}
 		u.folders[folderID] = f
 	}
 	return nil
