@@ -9,6 +9,10 @@ export default defineVitestConfig({
     // "Cannot read properties of undefined (reading 'vueApp')".
     environment: 'happy-dom',
     globals: true,
+    // @nuxt/test-utils runs setupNuxt in its own beforeAll. On a loaded dev
+    // machine (load ≈ 9.6) six happy-dom files failed at file level with
+    // "Hook timed out in 10000ms"; the tests themselves never timed out.
+    hookTimeout: 30_000,
     include: [
       'app/**/*.spec.ts',
       'shared/**/*.spec.ts',
