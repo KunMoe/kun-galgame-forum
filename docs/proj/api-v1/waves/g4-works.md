@@ -395,6 +395,33 @@ Query：`work_ids` 必填，1–100，逗号形。`missing` 与 `/me/topic-state
 | 400 | `INVALID_PARAMETER`（缺席 / 空 / 超过 100 / 非正十进制） |
 | 503 | catalog holdings（非 scope）/ catalog 可读性 |
 
+（2026-09-24 退役，由 §4.5 取代，见 K-G68。）
+
+### 4.5 `listMyWorks` · `GET /me/works` · required · 200 `BatchList<MyWork>`（K-G68，2026-09-24 追加）
+
+Query：`work_ids` 必填，1–100，逗号形。一条 catalog `GET /v2/me/works`（infra spec 2.25.0，`fac31d2a`；需 `folder:read`；每 100 个 id 一次，u<uid> 桶只记一次）。
+
+`MyWork`（`object: "my_work"`）：`work_id`、`has_liked`（本地）、`library: MyWorkLibrary | null`。`MyWorkLibrary`：`collection_ids`（升序，永不 `null`；非空即已收藏）、`playtime: WorkViewerPlaytime | null`。
+
+- hidden / 未知 id 先过 G4 可见性闸进 `missing`，**不发给** `/v2/me/works`，也不回任何 library 数据（连「你收藏了它」都不泄露）。
+- catalog 读失败 → `library: null`（未知），`has_liked` 照答，整批 200。scope 不足：cookie 会话走限流 WARN（`service.WarnFoldersUnreadable`），Bearer 只打 DEBUG（App 目前只请求 `openid profile preferences`，它的每个请求都会走到这里）；429 / 5xx → WARN。整批永不因 catalog 失败 403 / 503；只有「catalog 认不认识这些作品」那一步失败才 503。
+- 解码按 infra repr 严格：`state` ∈ `wish|doing|done|on_hold|dropped`，`completion` ∈ `one_route|main|all|null`；认不出 → WARN 并只把 `play_state` 置 `null`，`minutes` 照给。`minutes` 低于 10 按撤回算 0。
+
+| 状态 | code |
+|---|---|
+| 400 | `INVALID_PARAMETER`（缺席 / 空 / 超过 100 / 非正十进制） |
+| 503 | catalog 可读性（应用密钥行） |
+
+### 4.6 `listMyCoverVotes` · `GET /me/cover-votes` · required · 200 `BatchList<MyCoverVote>`（K-G69，2026-09-24 追加）
+
+Query 同 §4.5。`MyCoverVote`（`object: "my_cover_vote"`）：`work_id`、`voted_cover_id: DecimalID | null`。catalog `GET /v2/me/cover-votes` 一页给全（无分页、无上限；一部作品一张票；生产 2026-09-24 共 365 人投过、每人最多 6 票），需 `catalog:edit`。可见性闸同 §4.5。
+
+| 状态 | code |
+|---|---|
+| 400 | `INVALID_PARAMETER` |
+| 403 | `SCOPE_REQUIRED`（token 缺 `catalog:edit`） |
+| 503 | catalog；上游 429 转发 `Retry-After` |
+
 ## 5. 预分配
 
 ### 5.1 迁移
@@ -422,6 +449,8 @@ Query：`work_ids` 必填，1–100，逗号形。`missing` 与 `/me/topic-state
 | **K-G27** | 封面槽与详情封面 / 截图行的 `sexual` 按指针解码；竖版等级进 `WorkRef.cover.sexual`。`WorkRefOf` 委托 `workrepr.Ref` |
 | **K-G28** | 合并作品 `404 ENTITY_MERGED` `object: "work"` + `current_id`。实现走 `catalogGetRecord`。用户裁决不重定向（由客户端 301） |
 | **K-G29** | G6 的读侧留在 `Work`：每张封面的 `vote_count` / `viewer.has_voted`、`playtimes[]`、`viewer.playtime`。G6 只迁写 |
+| **K-G68** | （2026-09-24 追加，取代 K-G25 与 K-G29 的读者部分）`GET /works/{work_id}` 不再用读者的 token 读 catalog：`Work.viewer` 只留本地的 `has_liked` / `can_ban_resource_publish`；`viewer.has_favorited`、`viewer.playtime`、`covers[].viewer.has_voted` 从 `Work`（及 `GET /works/{work_id}/covers/{cover_id}`）删除。封面票数走应用密钥，按作品缓存 60 秒，论坛自己的投票写入即删。理由：2026-09-24 04:13 与 06:31，一位读者按同一顺序以每秒约一个的速度重读二十余个详情页（每个 SSR 四次用户 token 调用；顺序与他 00:22 往收藏夹里加作品的顺序一致，推测是浏览器恢复标签页），两次都打满 catalog 每账号每分钟 100 次的桶。读者自己的状态改由 §4.5 `GET /me/works`（背后一条 `/v2/me/works`）客户端读取，只在标签页可见时读；读不到时是「未知」，永不画成「未收藏」。`GET /me/work-states` 同批退役（旧 bundle 调它会 404，爱心保持中性直到刷新） |
+| **K-G69** | （2026-09-24 追加）读者自己的封面票走 §4.6 `GET /me/cover-votes`。catalog 那一页按 token（不是按用户）缓存 10 分钟：它要 `catalog:edit`，按用户缓存会把一个会话的票交给同一个人另一个没被授予该 scope 的会话。论坛自己的投票写入删掉写入者 token 的那一格；别的 app（或同一人的另一个会话）投的票最多晚 10 分钟出现 |
 
 权限不新增。`galgame.ban_resource_publish` 沿用，经 `viewer.can_ban_resource_publish` 下发。
 

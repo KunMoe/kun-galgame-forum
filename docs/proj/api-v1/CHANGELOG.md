@@ -1,5 +1,23 @@
 # API v1 changelog
 
+## 2026-09-24 (user-plane fan-out, part 2)
+
+Breaking for `GET /api/v1/works/{work_id}`, `GET /api/v1/works/{work_id}/covers/{cover_id}` and `GET /api/v1/me/work-states`. No App build reads any of them.
+
+Removed:
+
+- `Work.viewer.has_favorited` and `Work.viewer.playtime`. The reader's collections and playtime are on `GET /api/v1/me/works`.
+- `covers[].viewer` (with `has_voted`) on `Work` and on `GET /api/v1/works/{work_id}/covers/{cover_id}`. The reader's own vote is on `GET /api/v1/me/cover-votes`.
+- `GET /api/v1/me/work-states`. Its answers are on `GET /api/v1/me/works`. A browser still running the previous bundle gets 404 there, and its hearts stay neutral until the page is reloaded.
+
+Offered:
+
+- `GET /api/v1/me/works?work_ids=` (1–100) → `BatchList<MyWork>`: `has_liked`, and `library: {collection_ids, playtime} | null`. A null `library` means catalog could not be read for this reader (a quota, an outage, or a token without `folder:read`): unknown, not "not collected". Hidden and unknown works are in `missing`. An App token asks only for `openid profile preferences` today, so its `library` is null until it adds `folder:read` and users authorize again.
+- `GET /api/v1/me/cover-votes?work_ids=` (1–100) → `BatchList<MyCoverVote>`: `voted_cover_id | null`. Needs `catalog:edit` (`403 SCOPE_REQUIRED` without it). A vote cast in another app shows up within 10 minutes.
+
+Changed:
+
+- `GET /api/v1/works/{work_id}` no longer reads catalog with the reader's token, so a signed-in detail view no longer spends the reader's catalog quota. Cover vote counts come from a shared read that can lag the forum's own votes by nothing and other apps' votes by up to a minute.
 ## 2026-09-24 (CL: the adult verdict comes from catalog)
 
 Not breaking. Needs catalog spec 2.26.0, which puts `content_limit` on every /v2 work.
