@@ -13,7 +13,7 @@ func TestV1UserWorksPublishedWalk(t *testing.T) {
 		  AND galgame.id BETWEEN ? AND ?
 		  AND galgame.content_limit = 'sfw'
 		ORDER BY galgame.created DESC, galgame.id DESC`, u3bOwner, u3bWorkMin, u3bWorkMax)
-	if len(want) < 5 {
+	if len(want) < 4 {
 		t.Fatalf("published seed too thin: %v", want)
 	}
 	got, total := f.walkU3b(t, "works", "published", "")
@@ -30,12 +30,22 @@ func TestV1UserWorksLikedWalk(t *testing.T) {
 		  AND galgame.id BETWEEN ? AND ?
 		  AND galgame.content_limit = 'sfw'
 		ORDER BY galgame.created DESC, galgame.id DESC`, u3bOwner, u3bWorkMin, u3bWorkMax)
-	if len(want) < 4 {
+	if len(want) < 3 {
 		t.Fatalf("liked seed too thin: %v", want)
 	}
 	got, total := f.walkU3b(t, "works", "liked", "")
 	if total != len(want) || fmt.Sprint(got) != fmt.Sprint(want) {
 		t.Fatalf("walked %v total %d, want %v", got, total, want)
+	}
+}
+
+func TestV1UserWorksUnsyncedVerdictFailsClosed(t *testing.T) {
+	f := newU3bFix(t)
+	if listContains(f.u3bListOK(t, "works", "published", ""), u3bWorkTieMin) {
+		t.Error("an SFW reader got a work whose content_limit has not synced")
+	}
+	if !listContains(f.u3bListOK(t, "works", "published", "&include_nsfw=true"), u3bWorkTieMin) {
+		t.Error("include_nsfw dropped a work whose content_limit has not synced")
 	}
 }
 

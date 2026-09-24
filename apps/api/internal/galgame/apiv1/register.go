@@ -30,7 +30,7 @@ func Register(svc *Service) func(huma.API) {
 			Path:        "/works",
 			Summary:     "List works on the forum",
 			Description: "A page-number collection of published forum works. Default sort is resource_updated_desc, default limit 24. " +
-				"NSFW works are excluded before paging unless include_nsfw=true; a work whose content_limit has not been synced yet is excluded until it is. " +
+				"NSFW works are excluded before paging unless include_nsfw=true; a work whose content_limit has not been synced yet counts as adult until it is. " +
 				"Default pages require at least one forum resource; include_resourceless=true lists every published work. " +
 				"An id catalog does not render is dropped with a warning, so a page may be shorter than limit; total still counts the SQL population.",
 			Tags: []string{"works"},

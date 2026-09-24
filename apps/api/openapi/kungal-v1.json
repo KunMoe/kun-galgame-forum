@@ -62558,7 +62558,7 @@
     },
     "/works": {
       "get": {
-        "description": "A page-number collection of published forum works. Default sort is resource_updated_desc, default limit 24. NSFW works are excluded before paging unless include_nsfw=true; a work whose content_limit has not been synced yet is excluded until it is. Default pages require at least one forum resource; include_resourceless=true lists every published work. An id catalog does not render is dropped with a warning, so a page may be shorter than limit; total still counts the SQL population.",
+        "description": "A page-number collection of published forum works. Default sort is resource_updated_desc, default limit 24. NSFW works are excluded before paging unless include_nsfw=true; a work whose content_limit has not been synced yet counts as adult until it is. Default pages require at least one forum resource; include_resourceless=true lists every published work. An id catalog does not render is dropped with a warning, so a page may be shorter than limit; total still counts the SQL population.",
         "operationId": "listWorks",
         "parameters": [
           {
@@ -62919,13 +62919,13 @@
             }
           },
           {
-            "description": "When true, adult works are included. Default false. A work whose content_limit has not been synced yet is excluded until it is.",
+            "description": "When true, adult works are included. Default false. A work whose content_limit has not been synced yet counts as adult until it is.",
             "explode": false,
             "in": "query",
             "name": "include_nsfw",
             "schema": {
               "default": false,
-              "description": "When true, adult works are included. Default false. A work whose content_limit has not been synced yet is excluded until it is.",
+              "description": "When true, adult works are included. Default false. A work whose content_limit has not been synced yet counts as adult until it is.",
               "type": "boolean"
             }
           },

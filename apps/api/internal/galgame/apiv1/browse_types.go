@@ -62,7 +62,7 @@ type listWorksInput struct {
 	CollectedMonths       []MonthNumber               `query:"collected_months" doc:"Only works first listed on the forum in any of these months (1–12), any year. Comma-separated."`
 	MinRating             float64                     `query:"min_rating" minimum:"0" maximum:"10" doc:"Minimum Bayesian forum rating. 0 or omitted means no filter."`
 	MinRatingCount        int                         `query:"min_rating_count" minimum:"0" doc:"Minimum number of forum ratings. 0 or omitted means no filter."`
-	IncludeNSFW           bool                        `query:"include_nsfw" default:"false" doc:"When true, adult works are included. Default false. A work whose content_limit has not been synced yet is excluded until it is."`
+	IncludeNSFW           bool                        `query:"include_nsfw" default:"false" doc:"When true, adult works are included. Default false. A work whose content_limit has not been synced yet counts as adult until it is."`
 	IncludeResourceless   bool                        `query:"include_resourceless" default:"false" doc:"When true, published works with no forum resource are included. Default false. A resource-axis or host filter still requires a resource."`
 }
 

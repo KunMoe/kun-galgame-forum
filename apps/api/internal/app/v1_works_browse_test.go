@@ -11,15 +11,15 @@ import (
 	"kun-galgame-api/internal/galgame/repository"
 )
 
-func TestV1WorksDefaultSFWGateAndNULL(t *testing.T) {
+func TestV1WorksDefaultSFWGateFailsClosedOnNULL(t *testing.T) {
 	f := newG5Fix(t)
 	resp, body := f.get(t, "/api/v1/works", "/works")
 	geStatus(t, resp, body, http.StatusOK, "")
 	if g5HasID(body, g5NSFW) {
 		t.Fatalf("default page included NSFW: %v", geItemIDs(body))
 	}
-	if !g5HasID(body, g5NULL) {
-		t.Fatalf("content_limit NULL missing from default page: %v", geItemIDs(body))
+	if g5HasID(body, g5NULL) {
+		t.Fatalf("default page included a work whose content_limit has not synced: %v", geItemIDs(body))
 	}
 	if g5HasID(body, g5None) {
 		t.Fatalf("resourceless published work on the default page: %v", geItemIDs(body))
@@ -27,8 +27,8 @@ func TestV1WorksDefaultSFWGateAndNULL(t *testing.T) {
 	if g5HasID(body, g5Drop) || g5HasID(body, g5Hidden) {
 		t.Fatalf("hydrate-dropped ids still in items: %v", geItemIDs(body))
 	}
-	if int(body["total"].(float64)) != 15 {
-		t.Fatalf("total %v want 15 SFW-or-NULL resource-bearing published rows (including hydrate-dropped ones, excluding NSFW)", body["total"])
+	if int(body["total"].(float64)) != 14 {
+		t.Fatalf("total %v want 14 SFW resource-bearing published rows (including hydrate-dropped ones, excluding NSFW and NULL)", body["total"])
 	}
 }
 

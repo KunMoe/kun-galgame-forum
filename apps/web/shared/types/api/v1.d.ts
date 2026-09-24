@@ -4506,7 +4506,7 @@ export interface paths {
         };
         /**
          * List works on the forum
-         * @description A page-number collection of published forum works. Default sort is resource_updated_desc, default limit 24. NSFW works are excluded before paging unless include_nsfw=true; a work whose content_limit has not been synced yet is excluded until it is. Default pages require at least one forum resource; include_resourceless=true lists every published work. An id catalog does not render is dropped with a warning, so a page may be shorter than limit; total still counts the SQL population.
+         * @description A page-number collection of published forum works. Default sort is resource_updated_desc, default limit 24. NSFW works are excluded before paging unless include_nsfw=true; a work whose content_limit has not been synced yet counts as adult until it is. Default pages require at least one forum resource; include_resourceless=true lists every published work. An id catalog does not render is dropped with a warning, so a page may be shorter than limit; total still counts the SQL population.
          */
         get: operations["listWorks"];
         put?: never;
@@ -38470,7 +38470,7 @@ export interface operations {
                 min_rating?: number;
                 /** @description Minimum number of forum ratings. 0 or omitted means no filter. */
                 min_rating_count?: number;
-                /** @description When true, adult works are included. Default false. A work whose content_limit has not been synced yet is excluded until it is. */
+                /** @description When true, adult works are included. Default false. A work whose content_limit has not been synced yet counts as adult until it is. */
                 include_nsfw?: boolean;
                 /** @description When true, published works with no forum resource are included. Default false. A resource-axis or host filter still requires a resource. */
                 include_resourceless?: boolean;
