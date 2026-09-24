@@ -82,23 +82,24 @@ type g7aUser struct {
 	*g6User
 	cat *fakeCatalog
 
-	lock       sync.Mutex
-	claims     map[int64]*g7aClaim
-	nextWork   int64
-	nextEvent  int64
-	clock      time.Time
-	modCalls   int
-	decisions  []g7aMutation
-	patches    []g7aMutation
-	deletes    []g7aMutation
-	mints      []catalogclient.UserWorkSubmitRequest
-	proposals  []catalogclient.UserEditCreateRequest
-	merges     []g7aMutation
-	proposeErr error
-	mergeErr   error
-	autoMerge  bool
-	forceState map[int64]string
-	snapshots  int
+	lock          sync.Mutex
+	claims        map[int64]*g7aClaim
+	nextWork      int64
+	nextEvent     int64
+	clock         time.Time
+	modCalls      int
+	decisions     []g7aMutation
+	patches       []g7aMutation
+	deletes       []g7aMutation
+	mints         []catalogclient.UserWorkSubmitRequest
+	proposals     []catalogclient.UserEditCreateRequest
+	merges        []g7aMutation
+	proposeErr    error
+	mergeErr      error
+	mergeClosesAs string
+	autoMerge     bool
+	forceState    map[int64]string
+	snapshots     int
 
 	failAfterWrite bool
 	readsFail      bool
@@ -711,11 +712,17 @@ func (u *g7aUser) CreateMyProposal(_ context.Context, _ string, req catalogclien
 	return &catalogclient.EditProposal{ID: int64(8000 + len(u.proposals)), Status: status}, `"p1"`, nil
 }
 
-func (u *g7aUser) DecideProposal(_ context.Context, token string, id int64, decision, _, ifMatch string) error {
+func (u *g7aUser) DecideProposal(_ context.Context, token string, id int64, decision, _, ifMatch string) (string, error) {
 	u.lock.Lock()
 	defer u.lock.Unlock()
 	u.merges = append(u.merges, g7aMutation{workID: id, state: decision, ifMatch: ifMatch, token: token})
-	return u.mergeErr
+	if u.mergeErr != nil {
+		return "", u.mergeErr
+	}
+	if u.mergeClosesAs != "" {
+		return u.mergeClosesAs, nil
+	}
+	return "merged", nil
 }
 
 func (u *g7aUser) EditSnapshotUser(_ context.Context, token, _ string, id int64) (map[string]any, error) {

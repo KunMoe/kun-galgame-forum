@@ -302,6 +302,13 @@ func TestV1WorkSubmissionCreateBanner(t *testing.T) {
 	}
 
 	f.user.mergeErr = nil
+	f.user.mergeClosesAs = "declined"
+	resp, got = f.call(t, http.MethodPost, "/api/v1/work-submissions", g7aSpecColl, "sess-alice", g7aKey(600), g7aMintBody("BannerDeclined", map[string]any{"banner_hash": hash}))
+	if resp.StatusCode != http.StatusCreated || got["has_banner_attached"] != false {
+		t.Fatalf("merge closed as declined %d %+v: catalog did not attach the cover", resp.StatusCode, got)
+	}
+
+	f.user.mergeClosesAs = ""
 	f.user.autoMerge = true
 	merges := len(f.user.merges)
 	resp, got = f.call(t, http.MethodPost, "/api/v1/work-submissions", g7aSpecColl, "sess-alice", g7aKey(15), g7aMintBody("Banner3", map[string]any{"banner_hash": hash}))

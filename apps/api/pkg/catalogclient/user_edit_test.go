@@ -42,14 +42,15 @@ func userClient(baseURL string) *Client {
 	return New(Config{BaseURL: baseURL})
 }
 
-func TestCreateEditProposalUser_TravelsAsTheUser(t *testing.T) {
-	srv, got := recordingServer(t, 0, `{"code":0,"message":"ok","data":{"merged":false,`+
-		`"proposal":{"id":7,"entity_type":"catalog.work","entity_id":1000,"site":"kungal",`+
-		`"status":"open","proposer_uid":9,"patch":{"catalog.work.name_zh_cn":"新标题"}}}}`)
+func TestCreateMyProposal_TravelsAsTheUser(t *testing.T) {
+	srv, got := recordingServer(t, 0, `{"object":"proposal","id":"7","state":"open","target_object":"work",`+
+		`"entity_type":"catalog.work","entity_id":"1000","site":"kungal","proposer_uid":"9","note":"typo",`+
+		`"base_revision_seq":3,"decided_by_uid":null,"decided_at":null,`+
+		`"created_at":"2026-09-20T00:00:00Z","updated_at":"2026-09-20T00:00:00Z"}`)
 
-	res, err := userClient(srv.URL).CreateEditProposalUser(context.Background(), "user-jwt",
+	prop, _, err := userClient(srv.URL).CreateMyProposal(context.Background(), "user-jwt",
 		UserEditCreateRequest{EntityType: "catalog.work", EntityID: 1000,
-			Patch: map[string]any{"catalog.work.name_zh_cn": "新标题"}, Note: "typo"})
+			Patch: map[string]any{"catalog.work.name_zh_cn": "新标题"}, Note: "typo"}, "")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -75,24 +76,8 @@ func TestCreateEditProposalUser_TravelsAsTheUser(t *testing.T) {
 	if patch["catalog.work.name_zh_cn"] != "新标题" {
 		t.Fatalf("patch not passed through verbatim: %v", got.body)
 	}
-	if res.Merged || res.Proposal.ID != 7 || res.Proposal.Status != "open" {
-		t.Fatalf("pending result decoded wrong: %+v", res)
-	}
-}
-
-func TestCreateEditProposalUser_DecodesAutomerge(t *testing.T) {
-	srv, _ := recordingServer(t, 0, `{"code":0,"message":"ok","data":{"merged":true,`+
-		`"proposal":{"id":8,"entity_type":"catalog.work","entity_id":1000,"site":"kungal","status":"merged","patch":{}},`+
-		`"revision":{"id":100,"seq":4,"action":"merged","actor_uid":42,"changed_fields":["catalog.work.name_zh_cn"],"snapshot":{}}}}`)
-
-	res, err := userClient(srv.URL).CreateEditProposalUser(context.Background(), "admin-jwt",
-		UserEditCreateRequest{EntityType: "catalog.work", EntityID: 1000,
-			Patch: map[string]any{"catalog.work.name_zh_cn": "x"}})
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if !res.Merged || res.Revision == nil || res.Revision.Seq != 4 {
-		t.Fatalf("automerge result decoded wrong: %+v", res)
+	if prop.ID != 7 || prop.Status != "open" {
+		t.Fatalf("proposal decoded wrong: %+v", prop)
 	}
 }
 
@@ -135,9 +120,9 @@ func TestUserEditErrorMapping(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			srv, _ := recordingServer(t, tc.status, tc.body)
-			_, err := userClient(srv.URL).CreateEditProposalUser(context.Background(), "user-jwt",
+			_, _, err := userClient(srv.URL).CreateMyProposal(context.Background(), "user-jwt",
 				UserEditCreateRequest{EntityType: "catalog.work", EntityID: 1000,
-					Patch: map[string]any{"catalog.work.name_zh_cn": "x"}})
+					Patch: map[string]any{"catalog.work.name_zh_cn": "x"}}, "")
 			if !errors.Is(err, tc.want) {
 				t.Fatalf("err = %v, want %v", err, tc.want)
 			}
@@ -157,9 +142,9 @@ func TestUserEditKeepsActionableReplies(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			srv, _ := recordingServer(t, tc.status, tc.body)
-			_, err := userClient(srv.URL).CreateEditProposalUser(context.Background(), "user-jwt",
+			_, _, err := userClient(srv.URL).CreateMyProposal(context.Background(), "user-jwt",
 				UserEditCreateRequest{EntityType: "catalog.work", EntityID: 1000,
-					Patch: map[string]any{"catalog.work.name_zh_cn": "x"}})
+					Patch: map[string]any{"catalog.work.name_zh_cn": "x"}}, "")
 			if errors.Is(err, ErrInsufficientScope) {
 				t.Fatalf("%s must not read as a scope problem", tc.name)
 			}
@@ -193,40 +178,12 @@ func TestUserEditWithoutTokenNeverCalls(t *testing.T) {
 
 func TestUserEditUnconfigured(t *testing.T) {
 	c := New(Config{})
-	if _, err := c.CreateEditProposalUser(context.Background(), "user-jwt",
-		UserEditCreateRequest{EntityType: "catalog.work", EntityID: 1}); !errors.Is(err, ErrNotConfigured) {
+	if _, _, err := c.CreateMyProposal(context.Background(), "user-jwt",
+		UserEditCreateRequest{EntityType: "catalog.work", EntityID: 1}, ""); !errors.Is(err, ErrNotConfigured) {
 		t.Fatalf("err = %v, want ErrNotConfigured", err)
 	}
 	if _, err := c.GetEditSchemaUser(context.Background(), "user-jwt", "catalog.work", 1); !errors.Is(err, ErrNotConfigured) {
 		t.Fatalf("err = %v, want ErrNotConfigured", err)
-	}
-}
-
-func TestMergeEditProposalUser(t *testing.T) {
-	srv, got := recordingServer(t, 0, `{"code":0,"message":"ok","data":{"id":100,"seq":4,`+
-		`"action":"merged","actor_uid":9,"amender_uid":42,"changed_fields":["catalog.work.name_zh_cn"],"snapshot":{}}}`)
-
-	rev, err := userClient(srv.URL).MergeEditProposalUser(context.Background(), "user-jwt", 7, "looks right")
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if got.method != http.MethodPost || got.path != "/v2/moderation/proposals/7/decisions" {
-		t.Fatalf("merge hit %s %s", got.method, got.path)
-	}
-	if got.body["decision"] != "merge" {
-		t.Fatalf("merge body wrong: %v", got.body)
-	}
-	if got.auth != "Bearer user-jwt" {
-		t.Fatalf("auth = %q, want the user's bearer", got.auth)
-	}
-	if _, ok := got.body["actor"]; ok {
-		t.Fatalf("the user plane asserts no actor: %v", got.body)
-	}
-	if got.body["note"] != "looks right" {
-		t.Fatalf("note lost: %v", got.body)
-	}
-	if rev.Seq != 4 || rev.AmenderUID == nil || *rev.AmenderUID != 42 {
-		t.Fatalf("revision decoded wrong: %+v", rev)
 	}
 }
 
@@ -370,9 +327,9 @@ func TestUserEditKeepsTheProblemsFieldErrors(t *testing.T) {
 			`"errors":[{"pointer":"/patch/catalog.work.links","reason":"UNKNOWN_VALUE",`+
 			`"detail":"element 0: must be an http:// or https:// URL"}]}`)
 
-	_, err := userClient(srv.URL).CreateEditProposalUser(context.Background(), "user-jwt",
+	_, _, err := userClient(srv.URL).CreateMyProposal(context.Background(), "user-jwt",
 		UserEditCreateRequest{EntityType: "catalog.work", EntityID: 1000,
-			Patch: map[string]any{"catalog.work.links": []string{"ftp://x"}}})
+			Patch: map[string]any{"catalog.work.links": []string{"ftp://x"}}}, "")
 
 	var apiErr *UserAPIError
 	if !errors.As(err, &apiErr) {

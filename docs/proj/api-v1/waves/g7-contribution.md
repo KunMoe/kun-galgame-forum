@@ -499,6 +499,7 @@ catalog 用户面一次调用的失败，按下表进 v1。**不得**落到无 c
 - 向导的 VNDB 号不再显示：`WorkSummary` 没有外部 id。
 - **catalog 接受写之后不再回 5xx**（编排者评审，2026-09-24）。创建、提交者 PATCH、审核决定在上游写成功后：重读失败就用写本身的结果回答——审核用决定记录的 `to_state`（unban 的恢复态就在里面）、提交者用 PATCH 返回的记录与 ETag、创建用铸造的 `state` 加送出的名字；用户查询失败就发删除用户 ref。都打 WARN `galgame submissions: write landed, …`。`is_nsfw` / `content_rating` / 本地提交者在写**之前**读，读失败是写前的 5xx。否则审核者点「通过」看到失败、重试得 409；创建的 5xx 不进幂等缓存，重试会再挂一次横幅提案，换了表单就再铸一部。变异 #31–#35。
 - **创建回执重读**：catalog 铸造只回 `{object, id, state}`（infra `me_claims_mint.go:77`），它的 ETag 按这份残缺记录算（`claimETag` 含 `last_event` 等），永远对不上 PATCH 校验的版本。201 改为铸造后 `GET /v2/me/claims/{id}` 重读，用它的 `display_name` / `last_event` / ETag；重读失败则 201 不带 ETag（给错的不如不给）。变异 #30。
+- 横幅合并看结果（G7b 之后）：`DecideProposal` 回 catalog 的 `to_state`，合并被规则收成 `declined` 等非 `merged` 时 `has_banner_attached: false` 并 ERROR。`submissionCatalog` 是运行期类型断言拿到的，rebase 时 G7b 改了 `DecideProposal` 签名，编译照过、所有投稿调用都会 503——加了 `var _ submissionCatalog = (*catalogclient.Client)(nil)` 让这类漂移在编译期红。变异 #37。
 - 删除草稿（编排者裁决，推翻 §4.4 的 500）：catalog 已删之后本地清理 SQL 出错 → **`204`** + ERROR `delete draft: catalog draft gone, local row not cleaned`。用户的动作已经发生，500 只会让重试撞 404；残留行交给 ERROR 与镜像核对车道。变异 #36。
 
 ### 3.16 实现记录（G7b 编辑引擎半，2026-09-24；编排者逐条批准，覆盖前文同名条目）

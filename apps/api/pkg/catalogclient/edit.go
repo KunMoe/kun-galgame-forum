@@ -176,12 +176,6 @@ type EditDiff struct {
 	Fields  []EditFieldDiff `json:"fields"`
 }
 
-type EditCreateResult struct {
-	Proposal EditProposal  `json:"proposal"`
-	Merged   bool          `json:"merged"`
-	Revision *EditRevision `json:"revision,omitempty"`
-}
-
 type EditProposalFilter struct {
 	EntityType  string
 	EntityID    int64

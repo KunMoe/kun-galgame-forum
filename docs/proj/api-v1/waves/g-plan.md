@@ -13,8 +13,8 @@
 | G3 | galgame 资源：浏览、详情、按作品列、写、赞、有效/失效、发布禁止，外加 `/search` 的资源车道（[契约](g3-resources.md)，迁移 145） | 12 | ✅ 2026-09-24 #223 |
 | G4 | 作品详情 `GET /works/{work_id}`、赞槽、`/me/work-states`、外链并入；删 `/galgame/drafts`（[契约](g4-works.md)，无迁移） | 5 | ✅ 2026-09-24 #225；G4.1 #226（roster `unknown`、`sensitive` 等收窄，§3.14） |
 | G5 | 浏览 `/works`（本地引擎）+ `/library-works`（catalog 引擎）+ 发售月历五条 + `/works/collected-months`；删 `/rss/galgame`（Nitro 改读 `/works`）与 `/search/entity*`（改打 GE 族集合 + `/tags`、`/companies` 的 `ids`）（[契约](g5-browse.md)，无迁移） | 10 | ✅ 2026-09-24 #227 |
-| G6 | catalog 用户面：封面投票、游玩时长、收藏夹（含 `/users/{user_id}/collections`） | 11 | |
-| G7 | 投稿、认领审核、资料编辑引擎（`census/galgame-contribution.md`） | 22 | |
+| G6 | catalog 用户面：封面投票、游玩时长、收藏夹（含 `/users/{user_id}/collections`） | 11 | ✅ 2026-09-24 #231；G6.1 #232、G6.2 #233 |
+| G7 | 投稿、认领审核、资料编辑引擎（[契约](g7-contribution.md)，`census/galgame-contribution.md`，无迁移） | 22 | ✅ 2026-09-24 G7b 编辑引擎 #235（13 条）；G7a 投稿与认领审核 #237（9 条） |
 
 G1 的 16 条加 G3 的 11 条就是 resources + toolsets 普查的 27 条。
 

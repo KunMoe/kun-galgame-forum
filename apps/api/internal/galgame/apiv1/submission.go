@@ -26,9 +26,14 @@ type submissionCatalog interface {
 	MyClaims(ctx context.Context, token string, f catalogclient.UserClaimFilter) (*catalogclient.UserClaimPage, error)
 	ListModerationClaims(ctx context.Context, token string, f catalogclient.UserClaimFilter) (*catalogclient.UserClaimPage, error)
 	CreateMyProposal(ctx context.Context, token string, req catalogclient.UserEditCreateRequest, idempotencyKey string) (*catalogclient.EditProposal, string, error)
-	DecideProposal(ctx context.Context, token string, id int64, decision, note, ifMatch string) error
+	DecideProposal(ctx context.Context, token string, id int64, decision, note, ifMatch string) (string, error)
 	EditSnapshotUser(ctx context.Context, token, entityType string, entityID int64) (map[string]any, error)
 }
+
+// s.catalog is asserted to this interface at runtime, so a catalogclient
+// signature change broke every submission call without failing the build
+// (G7b's DecideProposal, caught on the 2026-09-24 rebase).
+var _ submissionCatalog = (*catalogclient.Client)(nil)
 
 var claimStates = map[string]bool{
 	"live": true, "draft": true, "pending": true, "declined": true, "hidden": true,
@@ -125,9 +130,15 @@ func (s *Service) attachBanner(ctx context.Context, c *submissionCall, workID in
 	if prop.Status == "merged" {
 		return true
 	}
-	if err := c.cat.DecideProposal(ctx, c.token, prop.ID, "merge", "", etag); err != nil {
+	to, err := c.cat.DecideProposal(ctx, c.token, prop.ID, "merge", "", etag)
+	if err != nil {
 		slog.Error("submit: banner proposal merge failed, submission stands without cover",
 			"work_id", workID, "proposal_id", prop.ID, "err", err)
+		return false
+	}
+	if to != "merged" {
+		slog.Error("submit: banner proposal closed without merging, submission stands without cover",
+			"work_id", workID, "proposal_id", prop.ID, "to_state", to)
 		return false
 	}
 	return true

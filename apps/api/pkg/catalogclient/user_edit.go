@@ -1,7 +1,6 @@
 package catalogclient
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"net/http"
@@ -15,60 +14,6 @@ type UserEditCreateRequest struct {
 	EntityID   int64          `json:"entity_id"`
 	Patch      map[string]any `json:"patch"`
 	Note       string         `json:"note,omitempty"`
-}
-
-func (c *Client) CreateEditProposalUser(ctx context.Context, accessToken string, req UserEditCreateRequest) (*EditCreateResult, error) {
-	raw, _, err := c.userV2Do(ctx, http.MethodPost, accessToken, "/v2/me/proposals", map[string]any{
-		"entity_type": req.EntityType,
-		"entity_id":   strconv.FormatInt(req.EntityID, 10),
-		"patch":       req.Patch,
-		"note":        req.Note,
-	}, nil)
-	if err != nil {
-		return nil, err
-	}
-	var env struct {
-		Code     int             `json:"code"`
-		Data     json.RawMessage `json:"data"`
-		Object   string          `json:"object"`
-		Merged   bool            `json:"merged"`
-		Proposal json.RawMessage `json:"proposal"`
-		Revision *EditRevision   `json:"revision"`
-	}
-	_ = json.Unmarshal(raw, &env)
-	payload := raw
-	if env.Object == "" && len(bytes.TrimSpace(env.Data)) > 0 {
-		payload = env.Data
-		_ = json.Unmarshal(payload, &env)
-	}
-	if len(bytes.TrimSpace(env.Proposal)) > 0 {
-		var prop EditProposal
-		if err := json.Unmarshal(env.Proposal, &prop); err != nil {
-			return nil, err
-		}
-		return &EditCreateResult{Proposal: prop, Merged: env.Merged, Revision: env.Revision}, nil
-	}
-	var out v2Proposal
-	if err := json.Unmarshal(payload, &out); err != nil {
-		return nil, err
-	}
-	prop := out.proposal()
-	return &EditCreateResult{Proposal: prop, Merged: prop.Status == "merged" || env.Merged, Revision: env.Revision}, nil
-}
-
-func (c *Client) MergeEditProposalUser(ctx context.Context, accessToken string, id int64, note string) (*EditRevision, error) {
-	var out EditRevision
-	err := c.userV2JSON(ctx, http.MethodPost, accessToken,
-		"/v2/moderation/proposals/"+strconv.FormatInt(id, 10)+"/decisions",
-		map[string]any{"decision": "merge", "note": note}, &out,
-		ifMatchStar())
-	if err != nil {
-		return nil, err
-	}
-	if out.Action == "" {
-		out.Action = "merged"
-	}
-	return &out, nil
 }
 
 func (c *Client) GetEditSchemaUser(ctx context.Context, accessToken, entityType string, entityID int64) (*EditSchema, error) {
