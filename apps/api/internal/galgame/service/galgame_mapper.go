@@ -2,20 +2,12 @@ package service
 
 import (
 	"fmt"
-	"strings"
 
 	"kun-galgame-api/internal/galgame/dto"
 	"kun-galgame-api/internal/galgame/repository"
 	"kun-galgame-api/internal/infrastructure/markdown"
 	"kun-galgame-api/pkg/userclient"
 )
-
-func splitCSV(s string) []string {
-	if s == "" {
-		return nil
-	}
-	return strings.Split(s, ",")
-}
 
 func frozenCreatorBrief(row repository.GalgameLocalRow, userMap map[int]userclient.User) dto.UserBrief {
 	id := userclient.DerefID(row.CreatorUserID)

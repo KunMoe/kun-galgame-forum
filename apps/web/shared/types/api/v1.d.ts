@@ -2152,6 +2152,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/me/work-submission-reviews": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the submissions the caller reviewed
+         * @description Claims the caller decided on and did not submit. Needs a cookie session holding galgame.claim.review.
+         */
+        get: operations["listMyWorkSubmissionReviews"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/work-submissions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the caller's work submissions
+         * @description Claims the caller submitted, newest activity first. state filters; absent lists every state.
+         */
+        get: operations["listMyWorkSubmissions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/news-archive": {
         parameters: {
             query?: never;
@@ -4345,6 +4385,78 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/work-submission-candidates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Search works before submitting one
+         * @description Catalog works matching q that a submitter could publish resources on: unclaimed works, and works this forum claimed in live, draft or pending. Works the forum displays as adult content are left out unless include_nsfw=true. Filtering happens after catalog's page, so a page can be shorter than limit and there is no total.
+         */
+        get: operations["listWorkSubmissionCandidates"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/work-submissions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the review queue
+         * @description Submissions awaiting or past review on this forum. state absent is pending; hidden lists the claims an unban can restore. Queue rows carry no last_event. Needs a cookie session holding galgame.claim.review.
+         */
+        get: operations["listWorkSubmissions"];
+        put?: never;
+        /**
+         * Submit a new work
+         * @description Mints a catalog work from the submitted names and claims it for this forum. The claim lands in pending, or straight in live for a submitter catalog trusts; state says which. Idempotency-Key is required. When live works share a submitted title the mint is refused with DUPLICATE_SUSPECTS naming them and nothing is written; re-send with is_duplicate_confirmed=true once the submitter has confirmed it is a different work. A banner_hash becomes the work's cover after the mint; has_banner_attached=false means it did not, and the submission stands. Location is the new submission's path.
+         */
+        post: operations["createWorkSubmission"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/work-submissions/{work_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a work submission
+         * @description The caller's own claim on the work. A cookie session holding galgame.claim.review may read anyone's. Someone else's claim and no claim are the same NOT_FOUND. ETag is the claim's version, the If-Match for a write.
+         */
+        get: operations["getWorkSubmission"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete a draft submission
+         * @description Deletes the caller's draft from catalog, then the forum's page for it. A page that already carries a resource is kept. Only a draft can be deleted; withdraw a pending or live claim to draft first.
+         */
+        delete: operations["deleteWorkSubmission"];
+        options?: never;
+        head?: never;
+        /**
+         * Move a work submission
+         * @description The submitter sends pending (from draft or declined) or draft (withdraw, from pending or live). A cookie session holding galgame.claim.review sends live or declined (from pending), hidden (from any other state) or unban (from hidden); declined needs a note. unban restores the state the claim was hidden from. The response is read back from catalog; its state is the outcome. If-Match is forwarded; absent means no version check.
+         */
+        patch: operations["updateWorkSubmission"];
+        trace?: never;
+    };
     "/work-suggestions": {
         parameters: {
             query?: never;
@@ -5504,6 +5616,34 @@ export interface components {
              */
             object: "check_in";
         };
+        ClaimEventRef: {
+            /** @description Who made the transition: the submitter, or a reviewer on a decision. */
+            actor: components["schemas"]["UserRef"];
+            /**
+             * Format: date-time
+             * @description When the transition happened.
+             */
+            created_at: string;
+            /**
+             * @description State before the event. null on the event that created the claim.
+             * @enum {string|null}
+             */
+            from_state: "live" | "draft" | "pending" | "declined" | "hidden" | null;
+            /** @description Claim event id. */
+            id: string;
+            /** @description The note given with the transition, such as a decline reason. null when none was given. Free text; never use it as a decision input. */
+            note: string | null;
+            /**
+             * @description Type discriminant. Always claim_event.
+             * @enum {string}
+             */
+            object: "claim_event";
+            /**
+             * @description State after the event.
+             * @enum {string}
+             */
+            to_state: "live" | "draft" | "pending" | "declined" | "hidden";
+        };
         CodeNode: {
             /** @description Language named on the fence, lowercased. null when the fence names none or the block is indented. */
             lang: string | null;
@@ -6020,6 +6160,22 @@ export interface components {
         CountedListWebsiteSummary: {
             /** @description Members of this page. Empty array, never null. */
             items: components["schemas"]["WebsiteSummary"][];
+            /** @description Opaque keyset cursor. Omitted on the last page. */
+            next_cursor?: string;
+            /**
+             * @description Type discriminant. Always list.
+             * @enum {string}
+             */
+            object: "list";
+            /**
+             * Format: int64
+             * @description Present only when include_total=true. Same visibility gate as items.
+             */
+            total?: number;
+        };
+        CountedListWorkSubmissionSummary: {
+            /** @description Members of this page. Empty array, never null. */
+            items: components["schemas"]["WorkSubmissionSummary"][];
             /** @description Opaque keyset cursor. Omitted on the last page. */
             next_cursor?: string;
             /**
@@ -7777,6 +7933,17 @@ export interface components {
         ListWorkRef: {
             /** @description Members of this page. Empty array, never null. */
             items: components["schemas"]["WorkRef"][];
+            /** @description Opaque keyset cursor. Omitted on the last page. */
+            next_cursor?: string;
+            /**
+             * @description Type discriminant. Always list.
+             * @enum {string}
+             */
+            object: "list";
+        };
+        ListWorkSubmissionCandidate: {
+            /** @description Members of this page. Empty array, never null. */
+            items: components["schemas"]["WorkSubmissionCandidate"][];
             /** @description Opaque keyset cursor. Omitted on the last page. */
             next_cursor?: string;
             /**
@@ -10931,6 +11098,18 @@ export interface components {
              */
             object: "strong";
         };
+        SubmissionIntroduction: {
+            /** @description BCP-47 tag of the introduction: en, ja, zh-Hans or zh-Hant. */
+            locale: string;
+            /** @description The introduction. Free text; never use it as a decision input. */
+            value: string;
+        };
+        SubmissionTitle: {
+            /** @description BCP-47 tag of the title. */
+            locale: string;
+            /** @description The official title in this locale. Free text; never use it as a decision input. */
+            title: string;
+        };
         TableCellNode: {
             /**
              * @description Horizontal alignment of the column. null for the default.
@@ -13699,6 +13878,185 @@ export interface components {
              * @description Download resources on this forum.
              */
             resource_count: number;
+        };
+        WorkSubmission: {
+            /**
+             * Format: int64
+             * @description How many times the caller acted on this claim.
+             */
+            acted_count: number;
+            /**
+             * @description Age axis, the same field as Work.content_rating. Independent of is_nsfw.
+             * @enum {string}
+             */
+            content_rating: "all_ages" | "sensitive" | "r18";
+            /** @description Catalog display name. Free text; never use it as a decision input. */
+            display_name: string;
+            /**
+             * Format: date-time
+             * @description When the caller first acted on this claim. null when the caller never has, or catalog did not say.
+             */
+            first_acted_at: string | null;
+            /** @description Catalog work id; the same value as work_id. */
+            id: string;
+            /** @description Display axis, the same field as Work.is_nsfw. */
+            is_nsfw: boolean;
+            /** @description The newest transition of this claim, whoever made it. null when catalog has none. */
+            last_event: components["schemas"]["ClaimEventRef"] | null;
+            /**
+             * @description Type discriminant. Always work_submission.
+             * @enum {string}
+             */
+            object: "work_submission";
+            /**
+             * @description Claim state, read back from catalog.
+             * @enum {string}
+             */
+            state: "live" | "draft" | "pending" | "declined" | "hidden";
+            /** @description The forum account recorded as the submitter. A deleted account is a deleted user ref. null when none is recorded. */
+            submitter: components["schemas"]["UserRef"] | null;
+            /** @description The caller's capabilities on this submission. */
+            viewer: components["schemas"]["WorkSubmissionViewer"] | null;
+            /** @description Catalog work id. */
+            work_id: string;
+        };
+        WorkSubmissionCandidate: {
+            /**
+             * @description Type discriminant. Always work_submission_candidate.
+             * @enum {string}
+             */
+            object: "work_submission_candidate";
+            /**
+             * @description none when no site has claimed the work; otherwise this forum's claim state.
+             * @enum {string}
+             */
+            state: "none" | "live" | "draft" | "pending";
+            /** @description A catalog work matching the query. */
+            work_summary: components["schemas"]["WorkSummary"];
+        };
+        WorkSubmissionCreate: {
+            /** @description Alias titles, counted against the same 100. Blank entries are ignored. Free text; never use it as a decision input. */
+            aliases?: string[];
+            /** @description Image-service hash of a banner uploaded for this work. */
+            banner_hash?: string;
+            /**
+             * @description Age rating. Never derived from is_nsfw.
+             * @enum {string}
+             */
+            content_rating: "all_ages" | "sensitive" | "r18";
+            /** @description Display name. When omitted, the first non-blank title in ja, zh-Hans, zh-Hant, en is used. Free text; never use it as a decision input. */
+            display_name?: string;
+            /** @description At most one introduction per language. Blank ones are ignored. */
+            introductions?: components["schemas"]["SubmissionIntroduction"][];
+            /** @description Mint even though live works share a submitted title. Send true only after the submitter saw DUPLICATE_SUSPECTS and confirmed. Default false. */
+            is_duplicate_confirmed?: boolean;
+            /** @description Whether the forum should display the work as adult content. Must be sent: an omitted value is not false. */
+            is_nsfw: boolean;
+            /** @description Original language as a BCP-47 tag from catalog's closed set. null is refused. */
+            original_language: string | null;
+            /**
+             * Format: date
+             * @description Release date. Omitted or null is TBA. A month- or year-precise date is written as that month or year.
+             */
+            release_date?: string | null;
+            /**
+             * @description How much of release_date is known. Default day when release_date is sent; refused without it.
+             * @enum {string|null}
+             */
+            release_date_precision?: "day" | "month" | "year" | null;
+            /** @description Official titles. Titles and aliases together hold at most 100. */
+            titles: components["schemas"]["SubmissionTitle"][];
+        };
+        WorkSubmissionCreated: {
+            /**
+             * Format: int64
+             * @description How many times the caller acted on this claim.
+             */
+            acted_count: number;
+            /**
+             * @description Age axis, the same field as Work.content_rating. Independent of is_nsfw.
+             * @enum {string}
+             */
+            content_rating: "all_ages" | "sensitive" | "r18";
+            /** @description Catalog display name. Free text; never use it as a decision input. */
+            display_name: string;
+            /**
+             * Format: date-time
+             * @description When the caller first acted on this claim. null when the caller never has, or catalog did not say.
+             */
+            first_acted_at: string | null;
+            /** @description false when a banner_hash was sent but did not become the work's cover; the submission stands either way. true when none was sent. */
+            has_banner_attached: boolean;
+            /** @description Catalog work id; the same value as work_id. */
+            id: string;
+            /** @description Display axis, the same field as Work.is_nsfw. */
+            is_nsfw: boolean;
+            /** @description The newest transition of this claim, whoever made it. null when catalog has none. */
+            last_event: components["schemas"]["ClaimEventRef"] | null;
+            /**
+             * @description Type discriminant. Always work_submission.
+             * @enum {string}
+             */
+            object: "work_submission";
+            /**
+             * @description Claim state, read back from catalog.
+             * @enum {string}
+             */
+            state: "live" | "draft" | "pending" | "declined" | "hidden";
+            /** @description The forum account recorded as the submitter. A deleted account is a deleted user ref. null when none is recorded. */
+            submitter: components["schemas"]["UserRef"] | null;
+            /** @description The caller's capabilities on this submission. */
+            viewer: components["schemas"]["WorkSubmissionViewer"] | null;
+            /** @description Catalog work id. */
+            work_id: string;
+        };
+        WorkSubmissionPatch: {
+            /** @description Required, and not blank, with declined. Free text; never use it as a decision input. */
+            note?: string | null;
+            /**
+             * @description Target. The submitter sends pending or draft; a reviewer sends live, declined, hidden or unban. unban restores the state the claim was hidden from, which the response reports.
+             * @enum {string}
+             */
+            state: "pending" | "draft" | "live" | "declined" | "hidden" | "unban";
+        };
+        WorkSubmissionSummary: {
+            /** @description Catalog display name. Free text; never use it as a decision input. */
+            display_name: string;
+            /**
+             * Format: date-time
+             * @description When the caller first acted on this claim. null on review-queue rows.
+             */
+            first_acted_at: string | null;
+            /** @description Catalog work id; the same value as work_id. */
+            id: string;
+            /** @description The newest transition of this claim. null on review-queue rows, which catalog serves without it. */
+            last_event: components["schemas"]["ClaimEventRef"] | null;
+            /**
+             * @description Type discriminant. Always work_submission.
+             * @enum {string}
+             */
+            object: "work_submission";
+            /**
+             * @description Claim state.
+             * @enum {string}
+             */
+            state: "live" | "draft" | "pending" | "declined" | "hidden";
+            /** @description The caller's capabilities on this submission. */
+            viewer: components["schemas"]["WorkSubmissionViewer"] | null;
+            /** @description Catalog work id. */
+            work_id: string;
+            /** @description The work. When catalog does not render it (a hidden work), only id and display name are filled. */
+            work_summary: components["schemas"]["WorkSummary"];
+        };
+        WorkSubmissionViewer: {
+            /** @description Whether the caller may delete this claim: the caller submitted it and it is draft. */
+            can_delete: boolean;
+            /** @description Whether the caller may set live, declined, hidden or unban. Requests authenticated with a Bearer token never carry this. */
+            can_review: boolean;
+            /** @description Whether the caller may move this claim to pending: the caller submitted it and it is draft or declined. */
+            can_submit: boolean;
+            /** @description Whether the caller may move this claim back to draft: the caller submitted it and it is pending or live. */
+            can_withdraw: boolean;
         };
         WorkSummary: {
             /** @description The landscape art at its original size, never the 16:9 crop. null when the work has none; clients fall back to cover. */
@@ -25327,6 +25685,154 @@ export interface operations {
                 };
             };
             /** @description SERVICE_UNAVAILABLE when the catalog cannot say which works exist. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listMyWorkSubmissionReviews: {
+        parameters: {
+            query?: {
+                /** @description Opaque keyset cursor from a previous page of this collection. */
+                cursor?: string;
+                /** @description Page size. 1–100, default 20. Values above 100 are rejected, not clamped. */
+                limit?: number;
+                /** @description When true, the response includes total counted under the same predicate as items. */
+                include_total?: boolean;
+                /** @description Only claims in these states, comma-separated. */
+                state?: ("live" | "draft" | "pending" | "declined" | "hidden")[];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CountedListWorkSubmissionSummary"];
+                };
+            };
+            /** @description UNKNOWN_ENUM_VALUE for an unknown state; INVALID_CURSOR; LIMIT_TOO_LARGE. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description PERMISSION_REQUIRED without galgame.claim.review, and always for a Bearer request; SCOPE_REQUIRED; ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the catalog cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listMyWorkSubmissions: {
+        parameters: {
+            query?: {
+                /** @description Opaque keyset cursor from a previous page of this collection. */
+                cursor?: string;
+                /** @description Page size. 1–100, default 20. Values above 100 are rejected, not clamped. */
+                limit?: number;
+                /** @description When true, the response includes total counted under the same predicate as items. */
+                include_total?: boolean;
+                /** @description Only claims in these states, comma-separated. */
+                state?: ("live" | "draft" | "pending" | "declined" | "hidden")[];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CountedListWorkSubmissionSummary"];
+                };
+            };
+            /** @description UNKNOWN_ENUM_VALUE for an unknown state; INVALID_CURSOR; LIMIT_TOO_LARGE. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SCOPE_REQUIRED; ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the catalog cannot be reached. */
             503: {
                 headers: {
                     [name: string]: unknown;
@@ -37143,6 +37649,568 @@ export interface operations {
                 };
             };
             /** @description SERVICE_UNAVAILABLE when the catalog is not configured or cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listWorkSubmissionCandidates: {
+        parameters: {
+            query?: {
+                /** @description Opaque keyset cursor from a previous page of this collection. */
+                cursor?: string;
+                /** @description Page size. 1–100, default 20. Values above 100 are rejected, not clamped. */
+                limit?: number;
+                /** @description Search text in any language. Required. Free text; never use it as a decision input. */
+                q?: string;
+                /** @description When true, works the forum displays as adult content are included. Default false. */
+                include_nsfw?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListWorkSubmissionCandidate"];
+                };
+            };
+            /** @description INVALID_PARAMETER when q is blank; INVALID_CURSOR; LIMIT_TOO_LARGE. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the catalog cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listWorkSubmissions: {
+        parameters: {
+            query?: {
+                /** @description Opaque keyset cursor from a previous page of this collection. */
+                cursor?: string;
+                /** @description Page size. 1–100, default 20. Values above 100 are rejected, not clamped. */
+                limit?: number;
+                /** @description When true, the response includes total counted under the same predicate as items. */
+                include_total?: boolean;
+                /** @description Only claims in these states, comma-separated. */
+                state?: ("live" | "draft" | "pending" | "declined" | "hidden")[];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CountedListWorkSubmissionSummary"];
+                };
+            };
+            /** @description UNKNOWN_ENUM_VALUE for an unknown state; INVALID_CURSOR; LIMIT_TOO_LARGE. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description PERMISSION_REQUIRED without galgame.claim.review, and always for a Bearer request; SCOPE_REQUIRED; ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the catalog cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    createWorkSubmission: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Caller-generated UUID (canonical 8-4-4-4-12 hex, any version) or 26-character Crockford ULID. Scoped to (user, operation, key) for 24 hours. */
+                "Idempotency-Key": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WorkSubmissionCreate"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    ETag?: string;
+                    Location?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkSubmissionCreated"];
+                };
+            };
+            /** @description INVALID_PARAMETER when Idempotency-Key is missing or malformed. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SCOPE_REQUIRED without catalog:edit; ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description DUPLICATE_SUSPECTS with suspects[]; ALREADY_EXISTS; IDEMPOTENCY_KEY_REUSED or IDEMPOTENCY_REQUEST_IN_PROGRESS. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description VALIDATION_FAILED when a title or display_name is blank or too long, a locale or original_language is not one of catalog's languages, titles and aliases exceed 100, an introduction locale repeats, or release_date is outside 1970–2200; CONTENT_REJECTED. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the catalog cannot be reached or refuses for rate. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getWorkSubmission: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Catalog work id. */
+                work_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkSubmission"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SCOPE_REQUIRED; ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the caller may not see a claim on this work. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the catalog cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    deleteWorkSubmission: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The ETag of the claim this write is based on, from GET /work-submissions/{work_id} or the previous write. Absent means *: no version check. */
+                "If-Match"?: string;
+            };
+            path: {
+                /** @description Catalog work id. */
+                work_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SCOPE_REQUIRED; ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the claim is not the caller's. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description INVALID_STATE_TRANSITION when the claim is not a draft. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description PRECONDITION_FAILED when If-Match is not the claim's current version. */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the catalog cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    updateWorkSubmission: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The ETag of the claim this write is based on, from GET /work-submissions/{work_id} or the previous write. Absent means *: no version check. */
+                "If-Match"?: string;
+            };
+            path: {
+                /** @description Catalog work id. */
+                work_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WorkSubmissionPatch"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkSubmission"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description PERMISSION_REQUIRED for a reviewer state without galgame.claim.review, and always for a Bearer request; SCOPE_REQUIRED; ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the caller may not see a claim on this work. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description INVALID_STATE_TRANSITION when the current state does not allow the target; detail names both. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description PRECONDITION_FAILED when If-Match is not the claim's current version. */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description VALIDATION_FAILED when declined comes without a note. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the catalog cannot be reached. */
             503: {
                 headers: {
                     [name: string]: unknown;

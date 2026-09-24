@@ -15,7 +15,7 @@ import (
 // without moving the claim state — and catalog will happily delete that draft.
 func TestDeleteLocalDraftRefusesARowThatCarriesAResource(t *testing.T) {
 	db := testdb.Open(t)
-	repo := NewGalgameRepository(db)
+	repo := NewWorkV1Store(db)
 
 	const base = 2_000_200_000
 	bare, withResource := base, base+1

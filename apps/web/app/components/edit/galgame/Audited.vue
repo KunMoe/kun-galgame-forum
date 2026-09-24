@@ -1,14 +1,16 @@
 <script setup lang="ts">
-const { data, items, hasMore, isLoadingMore, loadMore } =
-  await useGalgameClaimList('/galgame/audited')
+import type { WorkSubmissionSummary } from '#shared/utils/api/schemas'
+
+const { items, hasMore, loadingMore, loadMore, problem } =
+  await useGalgameClaimList('reviews')
 
 const previewWorkId = ref(0)
 const previewState = ref('')
 const isPreviewOpen = ref(false)
 
-const openPreview = (item: UserClaimItem) => {
-  previewWorkId.value = item.work_id
-  previewState.value = item.claim_state
+const openPreview = (item: WorkSubmissionSummary) => {
+  previewWorkId.value = Number(item.id)
+  previewState.value = item.state
   isPreviewOpen.value = true
 }
 </script>
@@ -34,7 +36,7 @@ const openPreview = (item: UserClaimItem) => {
     <KunDivider />
 
     <KunInfo
-      v-if="!data"
+      v-if="problem"
       color="danger"
       title="加载失败"
       description="无法获取您的审核列表, 可能是后端 / Galgame 资料库暂时不可用, 请稍后重试。"
@@ -43,32 +45,24 @@ const openPreview = (item: UserClaimItem) => {
     <div v-else-if="items.length" class="flex flex-col gap-3">
       <EditGalgameClaimRow
         v-for="item in items"
-        :key="item.work_id"
+        :key="item.id"
         :item="item"
         time-label="首次审核"
       >
         <template #note>
           <div
-            v-if="item.last_reason"
+            v-if="item.last_event?.note"
             class="text-default-500 bg-default-500/10 mt-1 rounded-md px-2 py-1 text-sm"
           >
-            审核理由: {{ item.last_reason }}
+            审核理由: {{ item.last_event.note }}
           </div>
         </template>
 
         <template #actions>
-          <KunLink
-            v-if="item.work_id && isPublicState(item.claim_state)"
-            :to="`/galgame/${item.work_id}`"
-          >
+          <KunLink v-if="isPublicState(item.state)" :to="`/galgame/${item.id}`">
             <KunButton size="sm" variant="flat">查看</KunButton>
           </KunLink>
-          <KunButton
-            v-else-if="item.work_id"
-            size="sm"
-            variant="flat"
-            @click="openPreview(item)"
-          >
+          <KunButton v-else size="sm" variant="flat" @click="openPreview(item)">
             预览
           </KunButton>
         </template>
@@ -80,7 +74,7 @@ const openPreview = (item: UserClaimItem) => {
     <KunButton
       v-if="hasMore"
       variant="flat"
-      :loading="isLoadingMore"
+      :loading="loadingMore"
       @click="loadMore"
     >
       加载更多

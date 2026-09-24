@@ -1,46 +1,86 @@
 <script setup lang="ts">
-interface SearchHit {
-  id: number
-  vndb_id?: string
-  name?: string
-  effective_banner_hash?: string
-  effective_banner_url?: string
-  claim_state?: string
-}
+import { settle } from '#shared/utils/api/problem'
+import type {
+  WorkSubmissionCandidate,
+  WorkSubmissionSummary
+} from '#shared/utils/api/schemas'
 
-interface WizardSearchResp {
-  items: SearchHit[]
-  pending?: UserClaimItem[]
-  total: number
-}
+const SEARCH_LIMIT = 12
 
 const q = ref('')
 const canReviewClaims = useCan('galgame.claim.review')
+const { allowsNsfw } = useContentStance()
+const api = useApiClient()
+const nameOf = useCatalogName()
+
 const hasSearched = ref(false)
 const isSearching = ref(false)
-const searchResults = ref<WizardSearchResp | null>(null)
+const isLoadingMore = ref(false)
+const hits = ref<WorkSubmissionCandidate[]>([])
+const nextCursor = ref<string | undefined>()
+const pending = ref<WorkSubmissionSummary[]>([])
+const searchedQuery = ref('')
 
-const nameOfHit = (h: SearchHit): string =>
-  h.name || (h.vndb_id ? `VNDB ${h.vndb_id}` : `#${h.id}`)
-
-const stateBadge = galgameClaimStateBadge
+const searchPage = (query: string, cursor?: string) =>
+  settle(
+    api.GET('/work-submission-candidates', {
+      params: {
+        query: {
+          q: query,
+          limit: SEARCH_LIMIT,
+          include_nsfw: allowsNsfw.value,
+          cursor
+        }
+      }
+    })
+  )
 
 const handleSearch = async () => {
-  if (!q.value.trim()) {
+  const query = q.value.trim()
+  if (!query) {
     useMessage('请先输入关键词', 'warn')
     return
   }
   isSearching.value = true
-  const res = await kunFetch<WizardSearchResp>('/galgame/search/wizard', {
-    method: 'GET',
-    query: { q: q.value.trim(), limit: 12 }
-  })
+  const [found, mine] = await Promise.all([
+    searchPage(query),
+    settle(
+      api.GET('/me/work-submissions', {
+        params: {
+          query: { state: ['pending', 'declined'], limit: SEARCH_LIMIT }
+        }
+      })
+    )
+  ])
   isSearching.value = false
   hasSearched.value = true
-  searchResults.value = res
+  if (!found.ok) {
+    reportProblem(found.problem)
+    return
+  }
+  searchedQuery.value = query
+  hits.value = found.data.items
+  nextCursor.value = found.data.next_cursor
+  pending.value = mine.ok ? mine.data.items : []
 }
 
-const gameHref = (hit: SearchHit): string => `/galgame/${hit.id}`
+const loadMore = async () => {
+  if (isLoadingMore.value || !nextCursor.value) {
+    return
+  }
+  isLoadingMore.value = true
+  const next = await searchPage(searchedQuery.value, nextCursor.value)
+  isLoadingMore.value = false
+  if (!next.ok) {
+    reportProblem(next.problem)
+    return
+  }
+  hits.value.push(...next.data.items)
+  nextCursor.value = next.data.next_cursor
+}
+
+const imageOf = (hit: WorkSubmissionCandidate) =>
+  hit.work_summary.banner?.url ?? hit.work_summary.cover?.url
 
 const handleCreateNew = async () => {
   const store = usePersistEditGalgameStore()
@@ -51,11 +91,7 @@ const handleCreateNew = async () => {
 }
 
 const noMatches = computed(
-  () =>
-    hasSearched.value &&
-    searchResults.value !== null &&
-    !searchResults.value.items.length &&
-    !searchResults.value.pending?.length
+  () => hasSearched.value && !hits.value.length && !pending.value.length
 )
 
 const route = useRoute()
@@ -111,76 +147,81 @@ onMounted(() => {
       </p>
     </div>
 
-    <div v-if="searchResults" class="space-y-4">
-      <div
-        v-if="searchResults.pending && searchResults.pending.length"
-        class="space-y-2"
-      >
+    <div v-if="hasSearched" class="space-y-4">
+      <div v-if="pending.length" class="space-y-2">
         <h3 class="text-default-700 text-sm font-bold">您的待审 / 已拒草稿</h3>
         <div
-          v-for="item in searchResults.pending"
-          :key="`pending-${item.work_id}`"
+          v-for="item in pending"
+          :key="`pending-${item.id}`"
           class="dark:border-default-200 flex flex-col gap-3 rounded-lg border border-transparent p-3 backdrop-blur-none transition-all duration-200 sm:flex-row sm:items-center"
         >
           <div class="min-w-0 flex-1 space-y-1">
             <div class="flex flex-wrap items-center gap-2">
               <h4 class="truncate font-medium">
-                {{ item.display_name || `#${item.work_id}` }}
+                {{ item.display_name || `#${item.id}` }}
               </h4>
               <KunChip
                 size="xs"
                 variant="flat"
-                :color="stateBadge(item.claim_state).color"
+                :color="galgameClaimStateBadge(item.state).color"
               >
-                {{ stateBadge(item.claim_state).label }}
+                {{ galgameClaimStateBadge(item.state).label }}
               </KunChip>
             </div>
-            <p v-if="item.last_reason" class="text-default-500 text-sm">
-              {{ item.last_reason }}
+            <p v-if="item.last_event?.note" class="text-default-500 text-sm">
+              {{ item.last_event.note }}
             </p>
           </div>
-          <KunLink
-            v-if="item.work_id"
-            :to="`/galgame/${item.work_id}/edit`"
-          >
+          <KunLink :to="`/galgame/${item.id}/edit`">
             <KunButton size="sm" variant="flat">继续编辑</KunButton>
           </KunLink>
         </div>
       </div>
 
-      <div v-if="searchResults.items.length" class="space-y-2">
+      <div v-if="hits.length" class="space-y-2">
         <h3 class="text-default-700 text-sm font-bold">匹配的 Galgame</h3>
         <div
-          v-for="hit in searchResults.items"
-          :key="`item-${hit.id}`"
+          v-for="hit in hits"
+          :key="`item-${hit.work_summary.id}`"
           class="dark:border-default-200 flex flex-col gap-3 rounded-lg border border-transparent p-3 backdrop-blur-none transition-all duration-200 sm:flex-row sm:items-center"
         >
           <KunImage
-            v-if="hit.effective_banner_url"
-            :src="hit.effective_banner_url"
+            v-if="imageOf(hit)"
+            :src="imageOf(hit) ?? ''"
             loading="lazy"
             placeholder="/placeholder.webp"
             class="h-16 w-28 shrink-0 rounded object-cover"
             :style="{ aspectRatio: '16/9' }"
           />
           <div class="min-w-0 flex-1 space-y-1">
-            <div class="flex flex-wrap items-center gap-2">
-              <h4 class="truncate font-medium">{{ nameOfHit(hit) }}</h4>
-            </div>
-            <p class="text-default-500 text-sm">
-              VNDB: {{ hit.vndb_id || '—' }}
+            <h4 class="truncate font-medium">
+              {{ nameOf(hit.work_summary).name || `#${hit.work_summary.id}` }}
+            </h4>
+            <p
+              v-if="hit.work_summary.release_date"
+              class="text-default-500 text-sm"
+            >
+              {{ hit.work_summary.release_date }}
             </p>
           </div>
           <span
-            v-if="hit.claim_state === CLAIM_STATE_PENDING"
+            v-if="hit.state === CLAIM_STATE_PENDING"
             class="text-default-400 shrink-0 text-sm"
           >
             他人投稿审核中
           </span>
-          <KunLink v-else :to="gameHref(hit)">
+          <KunLink v-else :to="`/galgame/${hit.work_summary.id}`">
             <KunButton size="sm" variant="flat">查看 / 发布资源</KunButton>
           </KunLink>
         </div>
+        <KunButton
+          v-if="nextCursor"
+          variant="flat"
+          :loading="isLoadingMore"
+          @click="loadMore"
+        >
+          加载更多
+        </KunButton>
       </div>
 
       <KunInfo

@@ -31,7 +31,6 @@ import (
 	userapiv1 "kun-galgame-api/internal/user/apiv1"
 	wallapiv1 "kun-galgame-api/internal/wall/apiv1"
 	websiteapiv1 "kun-galgame-api/internal/website/apiv1"
-	"kun-galgame-api/pkg/perm"
 
 	"github.com/gofiber/fiber/v3"
 	fiberCors "github.com/gofiber/fiber/v3/middleware/cors"
@@ -103,46 +102,10 @@ func (a *App) setupRoutes() {
 	auth.Post("/oauth/callback", a.OAuthHandler.Callback)
 	auth.Post("/logout", a.OAuthHandler.Logout)
 
-	userAuth := a.Authn.Auth()
-
-	// Every literal /galgame/<segment> route must precede /galgame/:id: the
-	// catch-all binds "mine" / "calendar" / "drafts" as a work id and then fails
-	// inside GetDetail with Atoi("mine").
-	api.Get("/galgame/mine", userAuth, a.GalgameSubmissionHandler.ListMine)
-	api.Get(
-		"/galgame/audited",
-		userAuth,
-		middleware.RequirePermission(perm.GalgameClaimReview),
-		a.GalgameSubmissionHandler.ListAudit,
-	)
-	api.Get(
-		"/galgame/search/wizard",
-		userAuth,
-		a.GalgameSubmissionHandler.SearchWithPending,
-	)
-
 	// THE AUTH BOUNDARY. This empty-prefix group registers Auth as Use() on
 	// "/api", so it applies to EVERY route below this line. Nothing public or
 	// optAuth may be registered after this point.
-	authed := api.Group("", a.Authn.Auth())
-
-	authed.Post("/galgame/submit", a.GalgameSubmissionHandler.Submit)
-	authed.Post("/galgame/:id/resubmit", a.GalgameSubmissionHandler.Resubmit)
-	authed.Delete("/galgame/:id", a.GalgameSubmissionHandler.Withdraw)
-	authed.Delete("/galgame/:id/draft", a.GalgameSubmissionHandler.DeleteDraft)
-
-	// Every admin gate below is PER-ROUTE, never Group("", middleware.X()) — see
-	// router_gate_test.go for the 2026-07-21..2026-08-07 outage that rule
-	// encodes. Where a route proxies infra, the local Require* is a VIEW gate
-	// deciding which page opens; infra re-checks and owns the outcome. Never
-	// tighten one into a second answer that can disagree with the engine.
-	galgameAdmin := authed.Group("")
-	galgameAdmin.Get("/admin/galgame/submissions", middleware.RequirePermission(perm.GalgameClaimReview), a.GalgameClaimReviewHandler.PendingQueue)
-	galgameAdmin.Post(
-		"/admin/galgame/:id/review",
-		middleware.RequirePermission(perm.GalgameClaimReview),
-		a.GalgameClaimReviewHandler.Review,
-	)
+	api.Group("", a.Authn.Auth())
 }
 
 func (a *App) newTopicV1() *topicapiv1.Service {

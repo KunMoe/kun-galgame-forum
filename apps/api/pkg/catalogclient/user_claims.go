@@ -38,12 +38,13 @@ func (c *Client) SubmitWorkUser(ctx context.Context, accessToken string, req Use
 		body["confirm_duplicates"] = true
 	}
 	var out v2Claim
-	if err := c.userV2JSON(ctx, http.MethodPost, accessToken, "/v2/me/claims", body, &out,
-		idempotencyHeader(nil, req.IdempotencyKey)); err != nil {
+	etag, err := c.userV2JSONMeta(ctx, http.MethodPost, accessToken, "/v2/me/claims", body, &out,
+		idempotencyHeader(nil, req.IdempotencyKey))
+	if err != nil {
 		return nil, err
 	}
 	id := parseFlexID(out.ID)
-	return &WorkSubmitResult{WorkID: id, ProductWorkID: id, ClaimState: out.State}, nil
+	return &WorkSubmitResult{WorkID: id, ProductWorkID: id, ClaimState: out.State, Claim: out.item(), ETag: etag}, nil
 }
 
 type UserClaimActionRequest struct {

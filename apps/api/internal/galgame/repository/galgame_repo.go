@@ -181,35 +181,18 @@ func (r *GalgameRepository) UnpublishLocal(workID int) error {
 		UpdateColumn("published", false).Error
 }
 
-// DeleteLocalDraft is the only cleanup a deleted draft will ever get — catalog's
-// delete writes no claim event, so no cron comes along behind it. It refuses
-// rather than cascades: galgame_resource is ON DELETE CASCADE, and a draft claim
-// carrying a published resource is reachable, because publishing a resource sets
-// `published` without moving the claim state.
-func (r *GalgameRepository) DeleteLocalDraft(workID int) error {
-	return r.db.Exec(`DELETE FROM galgame WHERE id = ?
-		AND NOT EXISTS (SELECT 1 FROM galgame_resource r WHERE r.work_id = galgame.id)`,
-		workID).Error
-}
-
 func (r *GalgameRepository) EnsureLocalStub(tx *gorm.DB, workID int) error {
 	return tx.Clauses(clause.OnConflict{DoNothing: true}).
 		Create(&model.GalgameLocal{ID: workID}).Error
 }
 
-// Two callers only: SubmitLocal, and the claim feed's approval branch. The
-// column is the 066 migration's frozen wiki-era submitter, and every other
-// caller has been wrong — the resource lane called it on a first download link,
-// so 2,073 pages ended up naming an author the retired wiki does not.
+// One caller only: the claim feed's approval branch (WorkV1Store.SubmitLocal
+// stamps the submitter at mint time). The column is the 066 migration's frozen
+// wiki-era submitter, and every other caller has been wrong — the resource lane
+// called it on a first download link, so 2,073 pages ended up naming an author
+// the retired wiki does not.
 func (r *GalgameRepository) SetCreatorIfUnset(tx *gorm.DB, workID, userID int) error {
 	return tx.Model(&model.GalgameLocal{}).
 		Where("id = ? AND creator_user_id IS NULL", workID).
 		UpdateColumn("creator_user_id", userID).Error
-}
-
-func (r *GalgameRepository) SubmitLocal(tx *gorm.DB, workID, userID int) error {
-	if err := r.EnsureLocalStub(tx, workID); err != nil {
-		return err
-	}
-	return r.SetCreatorIfUnset(tx, workID, userID)
 }

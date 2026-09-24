@@ -106,6 +106,15 @@ func noteRequired() *problem.Problem {
 	return validationFailed(problem.AtPointer("/note", problem.ReasonRequired, "declining needs a note that is not blank", nil))
 }
 
+// ifMatchOrAny forwards the client's validator, or * when it sent none: catalog
+// answers 428 to a write without If-Match.
+func ifMatchOrAny(v string) string {
+	if v == "" {
+		return "*"
+	}
+	return v
+}
+
 func invalidTransition(object, current string, allowed []string) *problem.Problem {
 	targets := "none"
 	if len(allowed) > 0 {

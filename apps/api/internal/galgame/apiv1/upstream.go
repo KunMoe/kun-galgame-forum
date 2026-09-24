@@ -100,6 +100,9 @@ func mapUserPlaneAt(err error, own bool, pointer pointerOf) error {
 func mapCatalog409(api *catalogclient.UserAPIError) error {
 	switch api.ProblemCode {
 	case problem.CodeDuplicateSuspects:
+		// Catalog's detail tells the caller to resend with confirm_duplicates,
+		// a field v1 clients do not have; on the old route that English was the
+		// whole message and a same-title work could not be submitted at all.
 		p := problem.New(problem.CodeDuplicateSuspects, "Live works share a submitted title; nothing was written.")
 		suspects := make([]map[string]string, 0, len(api.Suspects))
 		for _, s := range api.Suspects {

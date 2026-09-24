@@ -9,7 +9,10 @@ const ageLimitOptions = [
   { value: 'r18', label: 'R18 (本游戏含成人内容)' }
 ] as const
 
-const originalLanguageOptions = kunGalgameOriginalLanguageOptions
+// Catalog keeps a closed set of original languages and has none for "others".
+const originalLanguageOptions = kunGalgameOriginalLanguageOptions.filter(
+  (option) => option.value !== 'others'
+)
 </script>
 
 <template>

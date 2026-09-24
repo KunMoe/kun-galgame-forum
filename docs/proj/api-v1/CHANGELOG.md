@@ -1,5 +1,30 @@
 # API v1 changelog
 
+## 2026-09-24 (G7a work submissions and the claim review queue)
+
+Breaking for `POST /api/galgame/submit`, `POST /api/galgame/:id/resubmit`, `DELETE /api/galgame/:id`, `DELETE /api/galgame/:id/draft`, `GET /api/galgame/mine`, `GET /api/galgame/audited`, `GET /api/galgame/search/wizard`, `GET /api/admin/galgame/submissions` and `POST /api/admin/galgame/:id/review`; all nine are gone. No App build calls them; `docs/proj/app-direct-api.md` names the replacements. The kungal error code `236` retired with them.
+
+A submission's `id` is the catalog work id, the same number as `/galgame/{id}`.
+
+Offered:
+
+- `POST /api/v1/work-submissions`: `Idempotency-Key` required; 201 + `Location` + `ETag` → `WorkSubmissionCreated`. The body is `titles` / `aliases` / `introductions` / `original_language` / `content_rating` / `is_nsfw` / `release_date` (+ `release_date_precision`) / `banner_hash`; the four per-language name and intro slots are gone. `is_nsfw` and `content_rating` must both be sent and are written independently. A same-title mint is `409 DUPLICATE_SUSPECTS` with `suspects[]`; resend with `is_duplicate_confirmed: true`.
+- `GET /api/v1/work-submissions/{work_id}` → `WorkSubmission` with `ETag`. Someone else's claim is `404`; a cookie session holding `galgame.claim.review` reads any.
+- `PATCH /api/v1/work-submissions/{work_id}` `{state, note?}`: the submitter sends `pending` or `draft`; a reviewer sends `live`, `declined` (note required), `hidden` or `unban`. `If-Match` is forwarded (absent = no check); a stale one is `412 PRECONDITION_FAILED`. The response state is read back from catalog.
+- `DELETE /api/v1/work-submissions/{work_id}`: drafts only, 204.
+- `GET /api/v1/me/work-submissions`, `GET /api/v1/me/work-submission-reviews`, `GET /api/v1/work-submissions` (review queue, default `pending`): cursor collections with `include_total` and a comma-separated `state`.
+- `GET /api/v1/work-submission-candidates?q=`: the publish wizard's search; a cursor collection without `total`, `include_nsfw` default false.
+
+Fixed:
+
+- "My submissions" paged with a `next_before` that was always 0, so nothing after the first 20 was reachable (an account can hold 1,283).
+- A decline reason never reached the page: catalog's `last_event` was not decoded.
+- A submitted release date was validated and then dropped; it now becomes the work's release row.
+- Unban always reported `live`; it now reports the state catalog restored (a banned draft comes back as a draft).
+- Any age rating other than `r18` was written as all-ages, and an unknown original language was passed through to catalog.
+- The wizard showed adult works to SFW readers, and its `total` counted rows before filtering.
+- The review queue was read with the app key from the search index; it now uses the reviewer's own catalog queue.
+
 ## 2026-09-24 (G7b catalog editing engine)
 
 Breaking for `GET /api/galgame/:id/edit/{bootstrap,diff,revisions,proposals}`, `POST /api/galgame/:id/edit/{proposals,revert}`, `GET /api/galgame-edit/{mine,queue}`, `GET /api/galgame-edit/proposals/:id` and `POST /api/galgame-edit/proposals/:id/{amend,merge,decline,withdraw}`; all thirteen are gone. No App build calls them.

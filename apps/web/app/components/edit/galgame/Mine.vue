@@ -1,26 +1,53 @@
 <script setup lang="ts">
-const { data, items, hasMore, isLoadingMore, loadMore, refresh } =
-  await useGalgameClaimList('/galgame/mine')
+import type { ApiResult } from '#shared/utils/api/problem'
+import type { WorkSubmissionSummary } from '#shared/utils/api/schemas'
 
-const isWithdrawing = ref<Record<number, boolean>>({})
+const { items, hasMore, loadingMore, loadMore, problem, refresh } =
+  await useGalgameClaimList('mine')
+const { move, remove } = useWorkSubmission()
 
-const handleWithdraw = async (item: UserClaimItem) => {
+const busy = ref<Record<string, boolean>>({})
+
+const act = async (
+  item: WorkSubmissionSummary,
+  run: () => Promise<ApiResult<unknown>>,
+  done: string
+) => {
+  busy.value = { ...busy.value, [item.id]: true }
+  const result = await run()
+  busy.value = { ...busy.value, [item.id]: false }
+  if (!result.ok) {
+    reportProblem(result.problem)
+    return
+  }
+  useMessage(done, 'success')
+  refresh()
+}
+
+const handleWithdraw = async (item: WorkSubmissionSummary) => {
   const ok = await useComponentMessageStore().alert(
     '确定撤回这条申请吗?',
     '撤回后该条目会退回草稿状态, 不再公开展示。您填写的内容不会丢失, 随时可以重新提交。'
   )
-  if (!ok) {
-    return
+  if (ok) {
+    await act(item, () => move(item.id, 'draft'), '已撤回')
   }
-  const workId = item.work_id
-  isWithdrawing.value = { ...isWithdrawing.value, [workId]: true }
-  const res = await kunFetch<string>(`/galgame/${workId}`, {
-    method: 'DELETE'
-  })
-  isWithdrawing.value = { ...isWithdrawing.value, [workId]: false }
-  if (res !== null) {
-    useMessage('已撤回', 'success')
-    refresh()
+}
+
+const handleSubmit = (item: WorkSubmissionSummary) =>
+  act(
+    item,
+    () => move(item.id, 'pending'),
+    item.state === CLAIM_STATE_DECLINED ? '已重新提交审核' : '已提交审核'
+  )
+
+const handleDelete = async (item: WorkSubmissionSummary) => {
+  const ok = await useComponentMessageStore().alert(
+    '确定删除这条草稿吗?',
+    '草稿会被彻底移除, 无法恢复。已经发布过资源的条目不会被删除。'
+  )
+  if (ok) {
+    await act(item, () => remove(item.id), '已删除')
   }
 }
 
@@ -29,49 +56,12 @@ const previewState = ref('')
 const previewReason = ref('')
 const isPreviewOpen = ref(false)
 
-const openPreview = (item: UserClaimItem) => {
-  previewWorkId.value = item.work_id
-  previewState.value = item.claim_state
+const openPreview = (item: WorkSubmissionSummary) => {
+  previewWorkId.value = Number(item.id)
+  previewState.value = item.state
   previewReason.value =
-    item.claim_state === CLAIM_STATE_DECLINED ? (item.last_reason ?? '') : ''
+    item.state === CLAIM_STATE_DECLINED ? (item.last_event?.note ?? '') : ''
   isPreviewOpen.value = true
-}
-
-const isResubmitting = ref<Record<number, boolean>>({})
-
-const handleResubmit = async (item: UserClaimItem) => {
-  const workId = item.work_id
-  isResubmitting.value = { ...isResubmitting.value, [workId]: true }
-  const res = await kunFetch<unknown>(`/galgame/${workId}/resubmit`, {
-    method: 'POST'
-  })
-  isResubmitting.value = { ...isResubmitting.value, [workId]: false }
-  if (res !== null) {
-    useMessage('已重新提交审核', 'success')
-    refresh()
-  }
-}
-
-const isDeleting = ref<Record<number, boolean>>({})
-
-const handleDelete = async (item: UserClaimItem) => {
-  const ok = await useComponentMessageStore().alert(
-    '确定删除这条草稿吗?',
-    '草稿会被彻底移除, 无法恢复。已经发布过资源的条目不会被删除。'
-  )
-  if (!ok) {
-    return
-  }
-  const workId = item.work_id
-  isDeleting.value = { ...isDeleting.value, [workId]: true }
-  const res = await kunFetch<string>(`/galgame/${workId}/draft`, {
-    method: 'DELETE'
-  })
-  isDeleting.value = { ...isDeleting.value, [workId]: false }
-  if (res !== null) {
-    useMessage('已删除', 'success')
-    refresh()
-  }
 }
 </script>
 
@@ -100,7 +90,7 @@ const handleDelete = async (item: UserClaimItem) => {
     <KunDivider />
 
     <KunInfo
-      v-if="!data"
+      v-if="problem"
       color="danger"
       title="加载失败"
       description="无法获取您的提交列表, 可能是后端 / Galgame 资料库暂时不可用, 请稍后重试。"
@@ -109,61 +99,59 @@ const handleDelete = async (item: UserClaimItem) => {
     <div v-else-if="items.length" class="flex flex-col gap-3">
       <EditGalgameClaimRow
         v-for="item in items"
-        :key="item.work_id"
+        :key="item.id"
         :item="item"
         time-label="提交于"
       >
         <template #note>
           <div
-            v-if="item.claim_state === CLAIM_STATE_DECLINED && item.last_reason"
+            v-if="item.state === CLAIM_STATE_DECLINED && item.last_event?.note"
             class="text-danger bg-danger/10 mt-1 rounded-md px-2 py-1 text-sm"
           >
-            被拒原因: {{ item.last_reason }}
+            被拒原因: {{ item.last_event.note }}
           </div>
         </template>
 
         <template #actions>
-          <template v-if="item.work_id">
-            <KunButton size="sm" variant="flat" @click="openPreview(item)">
-              预览
-            </KunButton>
-            <KunLink :to="`/galgame/${item.work_id}/edit`">
-              <KunButton size="sm" variant="flat">编辑</KunButton>
-            </KunLink>
-            <KunButton
-              v-if="item.claim_state === CLAIM_STATE_DECLINED"
-              size="sm"
-              color="primary"
-              variant="flat"
-              :loading="isResubmitting[item.work_id]"
-              :disabled="isResubmitting[item.work_id]"
-              @click="handleResubmit(item)"
-            >
-              重新提交
-            </KunButton>
-            <KunButton
-              v-else-if="item.claim_state !== CLAIM_STATE_DRAFT"
-              size="sm"
-              color="danger"
-              variant="flat"
-              :loading="isWithdrawing[item.work_id]"
-              :disabled="isWithdrawing[item.work_id]"
-              @click="handleWithdraw(item)"
-            >
-              撤回
-            </KunButton>
-            <KunButton
-              v-if="item.claim_state === CLAIM_STATE_DRAFT"
-              size="sm"
-              color="danger"
-              variant="flat"
-              :loading="isDeleting[item.work_id]"
-              :disabled="isDeleting[item.work_id]"
-              @click="handleDelete(item)"
-            >
-              删除
-            </KunButton>
-          </template>
+          <KunButton size="sm" variant="flat" @click="openPreview(item)">
+            预览
+          </KunButton>
+          <KunLink :to="`/galgame/${item.id}/edit`">
+            <KunButton size="sm" variant="flat">编辑</KunButton>
+          </KunLink>
+          <KunButton
+            v-if="item.viewer?.can_submit"
+            size="sm"
+            color="primary"
+            variant="flat"
+            :loading="busy[item.id]"
+            :disabled="busy[item.id]"
+            @click="handleSubmit(item)"
+          >
+            {{ item.state === CLAIM_STATE_DECLINED ? '重新提交' : '提交审核' }}
+          </KunButton>
+          <KunButton
+            v-if="item.viewer?.can_withdraw"
+            size="sm"
+            color="danger"
+            variant="flat"
+            :loading="busy[item.id]"
+            :disabled="busy[item.id]"
+            @click="handleWithdraw(item)"
+          >
+            撤回
+          </KunButton>
+          <KunButton
+            v-if="item.viewer?.can_delete"
+            size="sm"
+            color="danger"
+            variant="flat"
+            :loading="busy[item.id]"
+            :disabled="busy[item.id]"
+            @click="handleDelete(item)"
+          >
+            删除
+          </KunButton>
         </template>
       </EditGalgameClaimRow>
     </div>
@@ -173,7 +161,7 @@ const handleDelete = async (item: UserClaimItem) => {
     <KunButton
       v-if="hasMore"
       variant="flat"
-      :loading="isLoadingMore"
+      :loading="loadingMore"
       @click="loadMore"
     >
       加载更多

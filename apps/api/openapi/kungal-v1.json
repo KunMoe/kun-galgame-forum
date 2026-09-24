@@ -2365,6 +2365,86 @@
         ],
         "type": "object"
       },
+      "ClaimEventRef": {
+        "properties": {
+          "actor": {
+            "$ref": "#/components/schemas/UserRef",
+            "description": "Who made the transition: the submitter, or a reviewer on a decision."
+          },
+          "created_at": {
+            "description": "When the transition happened.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": "string"
+          },
+          "from_state": {
+            "description": "State before the event. null on the event that created the claim.",
+            "enum": [
+              "live",
+              "draft",
+              "pending",
+              "declined",
+              "hidden",
+              null
+            ],
+            "maxLength": 8,
+            "type": [
+              "string",
+              "null"
+            ],
+            "x-vocabulary-closed": true
+          },
+          "id": {
+            "description": "Claim event id.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "note": {
+            "description": "The note given with the transition, such as a decline reason. null when none was given. Free text; never use it as a decision input.",
+            "maxLength": 2000,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "object": {
+            "description": "Type discriminant. Always claim_event.",
+            "enum": [
+              "claim_event"
+            ],
+            "maxLength": 11,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "to_state": {
+            "description": "State after the event.",
+            "enum": [
+              "live",
+              "draft",
+              "pending",
+              "declined",
+              "hidden"
+            ],
+            "maxLength": 8,
+            "type": "string",
+            "x-vocabulary-closed": true
+          }
+        },
+        "required": [
+          "object",
+          "id",
+          "from_state",
+          "to_state",
+          "note",
+          "actor",
+          "created_at"
+        ],
+        "type": "object"
+      },
       "CodeNode": {
         "properties": {
           "lang": {
@@ -3786,6 +3866,43 @@
             "description": "Members of this page. Empty array, never null.",
             "items": {
               "$ref": "#/components/schemas/WebsiteSummary"
+            },
+            "type": "array"
+          },
+          "next_cursor": {
+            "description": "Opaque keyset cursor. Omitted on the last page.",
+            "maxLength": 512,
+            "pattern": "^cur_[A-Za-z0-9_-]+$",
+            "type": "string"
+          },
+          "object": {
+            "description": "Type discriminant. Always list.",
+            "enum": [
+              "list"
+            ],
+            "maxLength": 4,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "total": {
+            "description": "Present only when include_total=true. Same visibility gate as items.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "object",
+          "items"
+        ],
+        "type": "object"
+      },
+      "CountedListWorkSubmissionSummary": {
+        "properties": {
+          "items": {
+            "description": "Members of this page. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/WorkSubmissionSummary"
             },
             "type": "array"
           },
@@ -8956,6 +9073,37 @@
             "description": "Members of this page. Empty array, never null.",
             "items": {
               "$ref": "#/components/schemas/WorkRef"
+            },
+            "type": "array"
+          },
+          "next_cursor": {
+            "description": "Opaque keyset cursor. Omitted on the last page.",
+            "maxLength": 512,
+            "pattern": "^cur_[A-Za-z0-9_-]+$",
+            "type": "string"
+          },
+          "object": {
+            "description": "Type discriminant. Always list.",
+            "enum": [
+              "list"
+            ],
+            "maxLength": 4,
+            "type": "string",
+            "x-vocabulary-closed": true
+          }
+        },
+        "required": [
+          "object",
+          "items"
+        ],
+        "type": "object"
+      },
+      "ListWorkSubmissionCandidate": {
+        "properties": {
+          "items": {
+            "description": "Members of this page. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/WorkSubmissionCandidate"
             },
             "type": "array"
           },
@@ -17183,6 +17331,46 @@
         ],
         "type": "object"
       },
+      "SubmissionIntroduction": {
+        "properties": {
+          "locale": {
+            "description": "BCP-47 tag of the introduction: en, ja, zh-Hans or zh-Hant.",
+            "maxLength": 35,
+            "pattern": "^[A-Za-z]{1,8}(-[A-Za-z0-9]{1,8})*$",
+            "type": "string"
+          },
+          "value": {
+            "description": "The introduction. Free text; never use it as a decision input.",
+            "maxLength": 50000,
+            "type": "string"
+          }
+        },
+        "required": [
+          "locale",
+          "value"
+        ],
+        "type": "object"
+      },
+      "SubmissionTitle": {
+        "properties": {
+          "locale": {
+            "description": "BCP-47 tag of the title.",
+            "maxLength": 35,
+            "pattern": "^[A-Za-z]{1,8}(-[A-Za-z0-9]{1,8})*$",
+            "type": "string"
+          },
+          "title": {
+            "description": "The official title in this locale. Free text; never use it as a decision input.",
+            "maxLength": 500,
+            "type": "string"
+          }
+        },
+        "required": [
+          "locale",
+          "title"
+        ],
+        "type": "object"
+      },
       "TableCellNode": {
         "properties": {
           "align": {
@@ -24935,6 +25123,549 @@
           "resource_count",
           "like_count",
           "favorite_count"
+        ],
+        "type": "object"
+      },
+      "WorkSubmission": {
+        "properties": {
+          "acted_count": {
+            "description": "How many times the caller acted on this claim.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "content_rating": {
+            "description": "Age axis, the same field as Work.content_rating. Independent of is_nsfw.",
+            "enum": [
+              "all_ages",
+              "sensitive",
+              "r18"
+            ],
+            "maxLength": 9,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "display_name": {
+            "description": "Catalog display name. Free text; never use it as a decision input.",
+            "maxLength": 512,
+            "type": "string"
+          },
+          "first_acted_at": {
+            "description": "When the caller first acted on this claim. null when the caller never has, or catalog did not say.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "id": {
+            "description": "Catalog work id; the same value as work_id.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "is_nsfw": {
+            "description": "Display axis, the same field as Work.is_nsfw.",
+            "type": "boolean"
+          },
+          "last_event": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ClaimEventRef"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The newest transition of this claim, whoever made it. null when catalog has none."
+          },
+          "object": {
+            "description": "Type discriminant. Always work_submission.",
+            "enum": [
+              "work_submission"
+            ],
+            "maxLength": 15,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "state": {
+            "description": "Claim state, read back from catalog.",
+            "enum": [
+              "live",
+              "draft",
+              "pending",
+              "declined",
+              "hidden"
+            ],
+            "maxLength": 8,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "submitter": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UserRef"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The forum account recorded as the submitter. A deleted account is a deleted user ref. null when none is recorded."
+          },
+          "viewer": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WorkSubmissionViewer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The caller's capabilities on this submission."
+          },
+          "work_id": {
+            "description": "Catalog work id.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "object",
+          "id",
+          "work_id",
+          "display_name",
+          "state",
+          "is_nsfw",
+          "content_rating",
+          "submitter",
+          "last_event",
+          "first_acted_at",
+          "acted_count",
+          "viewer"
+        ],
+        "type": "object"
+      },
+      "WorkSubmissionCandidate": {
+        "properties": {
+          "object": {
+            "description": "Type discriminant. Always work_submission_candidate.",
+            "enum": [
+              "work_submission_candidate"
+            ],
+            "maxLength": 25,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "state": {
+            "description": "none when no site has claimed the work; otherwise this forum's claim state.",
+            "enum": [
+              "none",
+              "live",
+              "draft",
+              "pending"
+            ],
+            "maxLength": 7,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "work_summary": {
+            "$ref": "#/components/schemas/WorkSummary",
+            "description": "A catalog work matching the query."
+          }
+        },
+        "required": [
+          "object",
+          "work_summary",
+          "state"
+        ],
+        "type": "object"
+      },
+      "WorkSubmissionCreate": {
+        "properties": {
+          "aliases": {
+            "description": "Alias titles, counted against the same 100. Blank entries are ignored. Free text; never use it as a decision input.",
+            "items": {
+              "description": "One alias. Free text; never use it as a decision input.",
+              "maxLength": 512,
+              "type": "string"
+            },
+            "maxItems": 100,
+            "type": "array"
+          },
+          "banner_hash": {
+            "description": "Image-service hash of a banner uploaded for this work.",
+            "maxLength": 64,
+            "minLength": 64,
+            "pattern": "^[0-9a-f]{64}$",
+            "type": "string"
+          },
+          "content_rating": {
+            "description": "Age rating. Never derived from is_nsfw.",
+            "enum": [
+              "all_ages",
+              "sensitive",
+              "r18"
+            ],
+            "maxLength": 9,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "display_name": {
+            "description": "Display name. When omitted, the first non-blank title in ja, zh-Hans, zh-Hant, en is used. Free text; never use it as a decision input.",
+            "maxLength": 500,
+            "type": "string"
+          },
+          "introductions": {
+            "description": "At most one introduction per language. Blank ones are ignored.",
+            "items": {
+              "$ref": "#/components/schemas/SubmissionIntroduction"
+            },
+            "maxItems": 4,
+            "type": "array"
+          },
+          "is_duplicate_confirmed": {
+            "description": "Mint even though live works share a submitted title. Send true only after the submitter saw DUPLICATE_SUSPECTS and confirmed. Default false.",
+            "type": "boolean"
+          },
+          "is_nsfw": {
+            "description": "Whether the forum should display the work as adult content. Must be sent: an omitted value is not false.",
+            "type": "boolean"
+          },
+          "original_language": {
+            "description": "Original language as a BCP-47 tag from catalog's closed set. null is refused.",
+            "maxLength": 35,
+            "pattern": "^[A-Za-z]{1,8}(-[A-Za-z0-9]{1,8})*$",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "release_date": {
+            "description": "Release date. Omitted or null is TBA. A month- or year-precise date is written as that month or year.",
+            "format": "date",
+            "maxLength": 10,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "release_date_precision": {
+            "description": "How much of release_date is known. Default day when release_date is sent; refused without it.",
+            "enum": [
+              "day",
+              "month",
+              "year",
+              null
+            ],
+            "maxLength": 5,
+            "type": [
+              "string",
+              "null"
+            ],
+            "x-vocabulary-closed": true
+          },
+          "titles": {
+            "description": "Official titles. Titles and aliases together hold at most 100.",
+            "items": {
+              "$ref": "#/components/schemas/SubmissionTitle"
+            },
+            "maxItems": 100,
+            "minItems": 1,
+            "type": "array"
+          }
+        },
+        "required": [
+          "titles",
+          "original_language",
+          "content_rating",
+          "is_nsfw"
+        ],
+        "type": "object"
+      },
+      "WorkSubmissionCreated": {
+        "properties": {
+          "acted_count": {
+            "description": "How many times the caller acted on this claim.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "content_rating": {
+            "description": "Age axis, the same field as Work.content_rating. Independent of is_nsfw.",
+            "enum": [
+              "all_ages",
+              "sensitive",
+              "r18"
+            ],
+            "maxLength": 9,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "display_name": {
+            "description": "Catalog display name. Free text; never use it as a decision input.",
+            "maxLength": 512,
+            "type": "string"
+          },
+          "first_acted_at": {
+            "description": "When the caller first acted on this claim. null when the caller never has, or catalog did not say.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "has_banner_attached": {
+            "description": "false when a banner_hash was sent but did not become the work's cover; the submission stands either way. true when none was sent.",
+            "type": "boolean"
+          },
+          "id": {
+            "description": "Catalog work id; the same value as work_id.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "is_nsfw": {
+            "description": "Display axis, the same field as Work.is_nsfw.",
+            "type": "boolean"
+          },
+          "last_event": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ClaimEventRef"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The newest transition of this claim, whoever made it. null when catalog has none."
+          },
+          "object": {
+            "description": "Type discriminant. Always work_submission.",
+            "enum": [
+              "work_submission"
+            ],
+            "maxLength": 15,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "state": {
+            "description": "Claim state, read back from catalog.",
+            "enum": [
+              "live",
+              "draft",
+              "pending",
+              "declined",
+              "hidden"
+            ],
+            "maxLength": 8,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "submitter": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UserRef"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The forum account recorded as the submitter. A deleted account is a deleted user ref. null when none is recorded."
+          },
+          "viewer": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WorkSubmissionViewer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The caller's capabilities on this submission."
+          },
+          "work_id": {
+            "description": "Catalog work id.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "has_banner_attached",
+          "object",
+          "id",
+          "work_id",
+          "display_name",
+          "state",
+          "is_nsfw",
+          "content_rating",
+          "submitter",
+          "last_event",
+          "first_acted_at",
+          "acted_count",
+          "viewer"
+        ],
+        "type": "object"
+      },
+      "WorkSubmissionPatch": {
+        "properties": {
+          "note": {
+            "description": "Required, and not blank, with declined. Free text; never use it as a decision input.",
+            "maxLength": 2000,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "state": {
+            "description": "Target. The submitter sends pending or draft; a reviewer sends live, declined, hidden or unban. unban restores the state the claim was hidden from, which the response reports.",
+            "enum": [
+              "pending",
+              "draft",
+              "live",
+              "declined",
+              "hidden",
+              "unban"
+            ],
+            "maxLength": 8,
+            "type": "string",
+            "x-vocabulary-closed": true
+          }
+        },
+        "required": [
+          "state"
+        ],
+        "type": "object"
+      },
+      "WorkSubmissionSummary": {
+        "properties": {
+          "display_name": {
+            "description": "Catalog display name. Free text; never use it as a decision input.",
+            "maxLength": 512,
+            "type": "string"
+          },
+          "first_acted_at": {
+            "description": "When the caller first acted on this claim. null on review-queue rows.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "id": {
+            "description": "Catalog work id; the same value as work_id.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "last_event": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ClaimEventRef"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The newest transition of this claim. null on review-queue rows, which catalog serves without it."
+          },
+          "object": {
+            "description": "Type discriminant. Always work_submission.",
+            "enum": [
+              "work_submission"
+            ],
+            "maxLength": 15,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "state": {
+            "description": "Claim state.",
+            "enum": [
+              "live",
+              "draft",
+              "pending",
+              "declined",
+              "hidden"
+            ],
+            "maxLength": 8,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "viewer": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WorkSubmissionViewer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The caller's capabilities on this submission."
+          },
+          "work_id": {
+            "description": "Catalog work id.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "work_summary": {
+            "$ref": "#/components/schemas/WorkSummary",
+            "description": "The work. When catalog does not render it (a hidden work), only id and display name are filled."
+          }
+        },
+        "required": [
+          "object",
+          "id",
+          "work_id",
+          "display_name",
+          "state",
+          "work_summary",
+          "last_event",
+          "first_acted_at",
+          "viewer"
+        ],
+        "type": "object"
+      },
+      "WorkSubmissionViewer": {
+        "properties": {
+          "can_delete": {
+            "description": "Whether the caller may delete this claim: the caller submitted it and it is draft.",
+            "type": "boolean"
+          },
+          "can_review": {
+            "description": "Whether the caller may set live, declined, hidden or unban. Requests authenticated with a Bearer token never carry this.",
+            "type": "boolean"
+          },
+          "can_submit": {
+            "description": "Whether the caller may move this claim to pending: the caller submitted it and it is draft or declined.",
+            "type": "boolean"
+          },
+          "can_withdraw": {
+            "description": "Whether the caller may move this claim back to draft: the caller submitted it and it is pending or live.",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "can_submit",
+          "can_withdraw",
+          "can_delete",
+          "can_review"
         ],
         "type": "object"
       },
@@ -42107,6 +42838,290 @@
           }
         ],
         "summary": "Batch-read the caller's work like and favorite states",
+        "tags": [
+          "me"
+        ]
+      }
+    },
+    "/me/work-submission-reviews": {
+      "get": {
+        "description": "Claims the caller decided on and did not submit. Needs a cookie session holding galgame.claim.review.",
+        "operationId": "listMyWorkSubmissionReviews",
+        "parameters": [
+          {
+            "description": "Opaque keyset cursor from a previous page of this collection.",
+            "explode": false,
+            "in": "query",
+            "name": "cursor",
+            "schema": {
+              "description": "Opaque keyset cursor from a previous page of this collection.",
+              "maxLength": 512,
+              "pattern": "^cur_[A-Za-z0-9_-]+$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Page size. 1–100, default 20. Values above 100 are rejected, not clamped.",
+            "explode": false,
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 20,
+              "description": "Page size. 1–100, default 20. Values above 100 are rejected, not clamped.",
+              "format": "int64",
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "When true, the response includes total counted under the same predicate as items.",
+            "explode": false,
+            "in": "query",
+            "name": "include_total",
+            "schema": {
+              "description": "When true, the response includes total counted under the same predicate as items.",
+              "type": "boolean"
+            }
+          },
+          {
+            "description": "Only claims in these states, comma-separated.",
+            "explode": false,
+            "in": "query",
+            "name": "state",
+            "schema": {
+              "description": "Only claims in these states, comma-separated.",
+              "items": {
+                "description": "A claim state.",
+                "enum": [
+                  "live",
+                  "draft",
+                  "pending",
+                  "declined",
+                  "hidden"
+                ],
+                "maxLength": 8,
+                "type": "string",
+                "x-vocabulary-closed": true
+              },
+              "maxItems": 5,
+              "type": "array"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CountedListWorkSubmissionSummary"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "UNKNOWN_ENUM_VALUE for an unknown state; INVALID_CURSOR; LIMIT_TOO_LARGE."
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "PERMISSION_REQUIRED without galgame.claim.review, and always for a Bearer request; SCOPE_REQUIRED; ACCOUNT_BANNED."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the catalog cannot be reached."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List the submissions the caller reviewed",
+        "tags": [
+          "me"
+        ]
+      }
+    },
+    "/me/work-submissions": {
+      "get": {
+        "description": "Claims the caller submitted, newest activity first. state filters; absent lists every state.",
+        "operationId": "listMyWorkSubmissions",
+        "parameters": [
+          {
+            "description": "Opaque keyset cursor from a previous page of this collection.",
+            "explode": false,
+            "in": "query",
+            "name": "cursor",
+            "schema": {
+              "description": "Opaque keyset cursor from a previous page of this collection.",
+              "maxLength": 512,
+              "pattern": "^cur_[A-Za-z0-9_-]+$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Page size. 1–100, default 20. Values above 100 are rejected, not clamped.",
+            "explode": false,
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 20,
+              "description": "Page size. 1–100, default 20. Values above 100 are rejected, not clamped.",
+              "format": "int64",
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "When true, the response includes total counted under the same predicate as items.",
+            "explode": false,
+            "in": "query",
+            "name": "include_total",
+            "schema": {
+              "description": "When true, the response includes total counted under the same predicate as items.",
+              "type": "boolean"
+            }
+          },
+          {
+            "description": "Only claims in these states, comma-separated.",
+            "explode": false,
+            "in": "query",
+            "name": "state",
+            "schema": {
+              "description": "Only claims in these states, comma-separated.",
+              "items": {
+                "description": "A claim state.",
+                "enum": [
+                  "live",
+                  "draft",
+                  "pending",
+                  "declined",
+                  "hidden"
+                ],
+                "maxLength": 8,
+                "type": "string",
+                "x-vocabulary-closed": true
+              },
+              "maxItems": 5,
+              "type": "array"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CountedListWorkSubmissionSummary"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "UNKNOWN_ENUM_VALUE for an unknown state; INVALID_CURSOR; LIMIT_TOO_LARGE."
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SCOPE_REQUIRED; ACCOUNT_BANNED."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the catalog cannot be reached."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List the caller's work submissions",
         "tags": [
           "me"
         ]
@@ -60349,6 +61364,859 @@
         "summary": "Upload an image for a work edit",
         "tags": [
           "images"
+        ]
+      }
+    },
+    "/work-submission-candidates": {
+      "get": {
+        "description": "Catalog works matching q that a submitter could publish resources on: unclaimed works, and works this forum claimed in live, draft or pending. Works the forum displays as adult content are left out unless include_nsfw=true. Filtering happens after catalog's page, so a page can be shorter than limit and there is no total.",
+        "operationId": "listWorkSubmissionCandidates",
+        "parameters": [
+          {
+            "description": "Opaque keyset cursor from a previous page of this collection.",
+            "explode": false,
+            "in": "query",
+            "name": "cursor",
+            "schema": {
+              "description": "Opaque keyset cursor from a previous page of this collection.",
+              "maxLength": 512,
+              "pattern": "^cur_[A-Za-z0-9_-]+$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Page size. 1–100, default 20. Values above 100 are rejected, not clamped.",
+            "explode": false,
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 20,
+              "description": "Page size. 1–100, default 20. Values above 100 are rejected, not clamped.",
+              "format": "int64",
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Search text in any language. Required. Free text; never use it as a decision input.",
+            "explode": false,
+            "in": "query",
+            "name": "q",
+            "schema": {
+              "description": "Search text in any language. Required. Free text; never use it as a decision input.",
+              "maxLength": 200,
+              "type": "string"
+            }
+          },
+          {
+            "description": "When true, works the forum displays as adult content are included. Default false.",
+            "explode": false,
+            "in": "query",
+            "name": "include_nsfw",
+            "schema": {
+              "default": false,
+              "description": "When true, works the forum displays as adult content are included. Default false.",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListWorkSubmissionCandidate"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "INVALID_PARAMETER when q is blank; INVALID_CURSOR; LIMIT_TOO_LARGE."
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "ACCOUNT_BANNED."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the catalog cannot be reached."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Search works before submitting one",
+        "tags": [
+          "work-submissions"
+        ]
+      }
+    },
+    "/work-submissions": {
+      "get": {
+        "description": "Submissions awaiting or past review on this forum. state absent is pending; hidden lists the claims an unban can restore. Queue rows carry no last_event. Needs a cookie session holding galgame.claim.review.",
+        "operationId": "listWorkSubmissions",
+        "parameters": [
+          {
+            "description": "Opaque keyset cursor from a previous page of this collection.",
+            "explode": false,
+            "in": "query",
+            "name": "cursor",
+            "schema": {
+              "description": "Opaque keyset cursor from a previous page of this collection.",
+              "maxLength": 512,
+              "pattern": "^cur_[A-Za-z0-9_-]+$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Page size. 1–100, default 20. Values above 100 are rejected, not clamped.",
+            "explode": false,
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 20,
+              "description": "Page size. 1–100, default 20. Values above 100 are rejected, not clamped.",
+              "format": "int64",
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "When true, the response includes total counted under the same predicate as items.",
+            "explode": false,
+            "in": "query",
+            "name": "include_total",
+            "schema": {
+              "description": "When true, the response includes total counted under the same predicate as items.",
+              "type": "boolean"
+            }
+          },
+          {
+            "description": "Only claims in these states, comma-separated.",
+            "explode": false,
+            "in": "query",
+            "name": "state",
+            "schema": {
+              "description": "Only claims in these states, comma-separated.",
+              "items": {
+                "description": "A claim state.",
+                "enum": [
+                  "live",
+                  "draft",
+                  "pending",
+                  "declined",
+                  "hidden"
+                ],
+                "maxLength": 8,
+                "type": "string",
+                "x-vocabulary-closed": true
+              },
+              "maxItems": 5,
+              "type": "array"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CountedListWorkSubmissionSummary"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "UNKNOWN_ENUM_VALUE for an unknown state; INVALID_CURSOR; LIMIT_TOO_LARGE."
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "PERMISSION_REQUIRED without galgame.claim.review, and always for a Bearer request; SCOPE_REQUIRED; ACCOUNT_BANNED."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the catalog cannot be reached."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List the review queue",
+        "tags": [
+          "work-submissions"
+        ]
+      },
+      "post": {
+        "description": "Mints a catalog work from the submitted names and claims it for this forum. The claim lands in pending, or straight in live for a submitter catalog trusts; state says which. Idempotency-Key is required. When live works share a submitted title the mint is refused with DUPLICATE_SUSPECTS naming them and nothing is written; re-send with is_duplicate_confirmed=true once the submitter has confirmed it is a different work. A banner_hash becomes the work's cover after the mint; has_banner_attached=false means it did not, and the submission stands. Location is the new submission's path.",
+        "operationId": "createWorkSubmission",
+        "parameters": [
+          {
+            "description": "Caller-generated UUID (canonical 8-4-4-4-12 hex, any version) or 26-character Crockford ULID. Scoped to (user, operation, key) for 24 hours.",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "description": "Caller-generated UUID (canonical 8-4-4-4-12 hex, any version) or 26-character Crockford ULID. Scoped to (user, operation, key) for 24 hours.",
+              "maxLength": 36,
+              "minLength": 26,
+              "pattern": "^([0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}|[0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{26})$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WorkSubmissionCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkSubmissionCreated"
+                }
+              }
+            },
+            "description": "Created",
+            "headers": {
+              "ETag": {
+                "schema": {
+                  "description": "The claim's version. Send it back as If-Match to write this claim.",
+                  "maxLength": 128,
+                  "type": "string"
+                }
+              },
+              "Location": {
+                "schema": {
+                  "description": "Absolute path of the new submission, /api/v1/work-submissions/{work_id}.",
+                  "format": "uri-reference",
+                  "maxLength": 64,
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "INVALID_PARAMETER when Idempotency-Key is missing or malformed."
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SCOPE_REQUIRED without catalog:edit; ACCOUNT_BANNED."
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "DUPLICATE_SUSPECTS with suspects[]; ALREADY_EXISTS; IDEMPOTENCY_KEY_REUSED or IDEMPOTENCY_REQUEST_IN_PROGRESS."
+          },
+          "413": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Request Entity Too Large"
+          },
+          "415": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unsupported Media Type"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED when a title or display_name is blank or too long, a locale or original_language is not one of catalog's languages, titles and aliases exceed 100, an introduction locale repeats, or release_date is outside 1970–2200; CONTENT_REJECTED."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the catalog cannot be reached or refuses for rate."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Submit a new work",
+        "tags": [
+          "work-submissions"
+        ]
+      }
+    },
+    "/work-submissions/{work_id}": {
+      "delete": {
+        "description": "Deletes the caller's draft from catalog, then the forum's page for it. A page that already carries a resource is kept. Only a draft can be deleted; withdraw a pending or live claim to draft first.",
+        "operationId": "deleteWorkSubmission",
+        "parameters": [
+          {
+            "description": "Catalog work id.",
+            "in": "path",
+            "name": "work_id",
+            "required": true,
+            "schema": {
+              "description": "Catalog work id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "The ETag of the claim this write is based on, from GET /work-submissions/{work_id} or the previous write. Absent means *: no version check.",
+            "in": "header",
+            "name": "If-Match",
+            "schema": {
+              "description": "The ETag of the claim this write is based on, from GET /work-submissions/{work_id} or the previous write. Absent means *: no version check.",
+              "maxLength": 128,
+              "pattern": "^(\\*|\"[!#-~]{1,126}\")$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SCOPE_REQUIRED; ACCOUNT_BANNED."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when the claim is not the caller's."
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "INVALID_STATE_TRANSITION when the claim is not a draft."
+          },
+          "412": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "PRECONDITION_FAILED when If-Match is not the claim's current version."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the catalog cannot be reached."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Delete a draft submission",
+        "tags": [
+          "work-submissions"
+        ]
+      },
+      "get": {
+        "description": "The caller's own claim on the work. A cookie session holding galgame.claim.review may read anyone's. Someone else's claim and no claim are the same NOT_FOUND. ETag is the claim's version, the If-Match for a write.",
+        "operationId": "getWorkSubmission",
+        "parameters": [
+          {
+            "description": "Catalog work id.",
+            "in": "path",
+            "name": "work_id",
+            "required": true,
+            "schema": {
+              "description": "Catalog work id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkSubmission"
+                }
+              }
+            },
+            "description": "OK",
+            "headers": {
+              "ETag": {
+                "schema": {
+                  "description": "The claim's version. Send it back as If-Match to write this claim.",
+                  "maxLength": 128,
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SCOPE_REQUIRED; ACCOUNT_BANNED."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when the caller may not see a claim on this work."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the catalog cannot be reached."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get a work submission",
+        "tags": [
+          "work-submissions"
+        ]
+      },
+      "patch": {
+        "description": "The submitter sends pending (from draft or declined) or draft (withdraw, from pending or live). A cookie session holding galgame.claim.review sends live or declined (from pending), hidden (from any other state) or unban (from hidden); declined needs a note. unban restores the state the claim was hidden from. The response is read back from catalog; its state is the outcome. If-Match is forwarded; absent means no version check.",
+        "operationId": "updateWorkSubmission",
+        "parameters": [
+          {
+            "description": "Catalog work id.",
+            "in": "path",
+            "name": "work_id",
+            "required": true,
+            "schema": {
+              "description": "Catalog work id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "The ETag of the claim this write is based on, from GET /work-submissions/{work_id} or the previous write. Absent means *: no version check.",
+            "in": "header",
+            "name": "If-Match",
+            "schema": {
+              "description": "The ETag of the claim this write is based on, from GET /work-submissions/{work_id} or the previous write. Absent means *: no version check.",
+              "maxLength": 128,
+              "pattern": "^(\\*|\"[!#-~]{1,126}\")$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WorkSubmissionPatch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkSubmission"
+                }
+              }
+            },
+            "description": "OK",
+            "headers": {
+              "ETag": {
+                "schema": {
+                  "description": "The claim's version. Send it back as If-Match to write this claim.",
+                  "maxLength": 128,
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "PERMISSION_REQUIRED for a reviewer state without galgame.claim.review, and always for a Bearer request; SCOPE_REQUIRED; ACCOUNT_BANNED."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when the caller may not see a claim on this work."
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "INVALID_STATE_TRANSITION when the current state does not allow the target; detail names both."
+          },
+          "412": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "PRECONDITION_FAILED when If-Match is not the claim's current version."
+          },
+          "413": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Request Entity Too Large"
+          },
+          "415": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unsupported Media Type"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED when declined comes without a note."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the catalog cannot be reached."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Move a work submission",
+        "tags": [
+          "work-submissions"
         ]
       }
     },

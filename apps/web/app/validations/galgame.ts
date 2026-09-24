@@ -8,12 +8,6 @@ import { PROVIDER_KEY_OPTIONS } from '~/constants/galgameResource'
 
 const SORT_ORDER_CONST = ['asc', 'desc'] as const
 
-const originalLanguageCode = z
-  .string()
-  .refine((v) => v === 'others' || /^[a-z]{2}(-[a-z]{2})?$/i.test(v), {
-    message: '无效的游戏原语言代码'
-  })
-
 const ProviderEnum = z.enum(PROVIDER_KEY_OPTIONS)
 
 const providerQueryArray = z.preprocess((v) => {
@@ -48,85 +42,77 @@ export const getGalgameSchema = z.object({
   exclude_only_providers: providerQueryArray
 })
 
+const SUBMISSION_TITLE_MAX = 500
+const SUBMISSION_INTRO_MAX = 50000
+const SUBMISSION_TITLES_TOTAL = 100
+
+const submissionTitle = z
+  .string()
+  .max(SUBMISSION_TITLE_MAX, {
+    message: `游戏名称最多 ${SUBMISSION_TITLE_MAX} 字`
+  })
+  .default('')
+
+const submissionIntro = z
+  .string()
+  .max(SUBMISSION_INTRO_MAX, {
+    message: `游戏介绍最多 ${SUBMISSION_INTRO_MAX} 字`
+  })
+  .default('')
+
 export const submitGalgameSchema = z
   .object({
-    name_en_us: z
-      .string()
-      .max(100007, { message: '游戏名称最多 233 字' })
-      .default(''),
-    name_ja_jp: z
-      .string()
-      .max(100007, { message: '游戏名称最多 233 字' })
-      .default(''),
-    name_zh_cn: z
-      .string()
-      .max(100007, { message: '游戏名称最多 233 字' })
-      .default(''),
-    name_zh_tw: z
-      .string()
-      .max(100007, { message: '游戏名称最多 233 字' })
-      .default(''),
-    intro_en_us: z
-      .string()
-      .max(100007, { message: '游戏介绍最多 100007 字' })
-      .default(''),
-    intro_ja_jp: z
-      .string()
-      .max(100007, { message: '游戏介绍最多 100007 字' })
-      .default(''),
-    intro_zh_cn: z
-      .string()
-      .max(100007, { message: '游戏介绍最多 100007 字' })
-      .default(''),
-    intro_zh_tw: z
-      .string()
-      .max(100007, { message: '游戏介绍最多 100007 字' })
-      .default(''),
+    name_en_us: submissionTitle,
+    name_ja_jp: submissionTitle,
+    name_zh_cn: submissionTitle,
+    name_zh_tw: submissionTitle,
+    intro_en_us: submissionIntro,
+    intro_ja_jp: submissionIntro,
+    intro_zh_cn: submissionIntro,
+    intro_zh_tw: submissionIntro,
     content_limit: z.enum(['sfw', 'nsfw'], { error: '请选择 SFW 或 NSFW' }),
-    age_limit: z.enum(['all', 'r18']).default('all'),
-    original_language: originalLanguageCode.default('ja-jp'),
     release_date: z
       .string()
       .refine((v) => v === '' || /^\d{4}-\d{2}-\d{2}$/.test(v), {
         message: '发售日期格式应为 YYYY-MM-DD 或留空'
       })
       .default(''),
-    release_date_tba: z.boolean().default(false),
-    aliases: z.string().default(''),
-    banner: z.unknown()
+    aliases: z
+      .array(
+        z.string().max(SUBMISSION_TITLE_MAX, {
+          message: `每个 Galgame 别名最多 ${SUBMISSION_TITLE_MAX} 个字符`
+        })
+      )
+      .default([])
   })
   .superRefine((data, ctx) => {
-    const aliasArray = data.aliases.split(',')
-    if (aliasArray.length >= 30) {
-      ctx.addIssue({
-        code: 'custom',
-        message: 'Galgame 最多有 30 个别名',
-        path: ['aliases']
-      })
-    }
-    if (aliasArray.some((a) => a.length > 500)) {
-      ctx.addIssue({
-        code: 'custom',
-        message: '每个 Galgame 别名最多 500 个字符',
-        path: ['aliases']
-      })
-    }
-
-    const hasAtLeastOneName =
-      data.name_en_us || data.name_ja_jp || data.name_zh_cn || data.name_zh_tw
-    if (!hasAtLeastOneName) {
+    const names = [
+      data.name_en_us,
+      data.name_ja_jp,
+      data.name_zh_cn,
+      data.name_zh_tw
+    ].filter((n) => n.trim())
+    if (!names.length) {
       ctx.addIssue({
         code: 'custom',
         message: '至少需要填写一个语言版本的游戏名称',
         path: ['name_zh_cn']
       })
     }
+    const aliasCount = data.aliases.filter((a) => a.trim()).length
+    if (names.length + aliasCount > SUBMISSION_TITLES_TOTAL) {
+      ctx.addIssue({
+        code: 'custom',
+        message: `游戏名称与别名合计最多 ${SUBMISSION_TITLES_TOTAL} 个`,
+        path: ['aliases']
+      })
+    }
 
     const hasAtLeastOneIntro =
-      data.intro_en_us ||
-      data.intro_ja_jp ||
-      data.intro_zh_cn ||
-      data.intro_zh_tw
+      data.intro_en_us.trim() ||
+      data.intro_ja_jp.trim() ||
+      data.intro_zh_cn.trim() ||
+      data.intro_zh_tw.trim()
     if (!hasAtLeastOneIntro) {
       ctx.addIssue({
         code: 'custom',

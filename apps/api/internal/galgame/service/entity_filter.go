@@ -1,8 +1,6 @@
 package service
 
 import (
-	"strconv"
-
 	"kun-galgame-api/internal/galgame/model"
 )
 
@@ -30,15 +28,4 @@ func catalogMemberSort(f model.GalgameListFilter) string {
 		return "released_asc"
 	}
 	return "released_desc"
-}
-
-func atoiOr(s string, fallback int) int {
-	if s == "" {
-		return fallback
-	}
-	n, err := strconv.Atoi(s)
-	if err != nil {
-		return fallback
-	}
-	return n
 }

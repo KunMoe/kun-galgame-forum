@@ -94,6 +94,10 @@ App 用 AppAuth + PKCE 直接从 OP 换出 access token，然后 `Authorization:
 | `PUT` / `DELETE /api/v1/collections/{collection_id}/works/{work_id}` | Bearer | 收藏夹成员槽（前瞻；App 尚未调用）。每夹一条，没有整集替换 |
 | `GET /api/v1/me/collections` | Bearer | 调用者自己的收藏夹（前瞻；App 尚未调用） |
 | `GET /api/v1/users/{user_id}/collections` | 匿名+ | 用户收藏夹列表（前瞻；App 尚未调用） |
+| `POST /api/v1/work-submissions` | Bearer | 投稿新作品（前瞻；App 尚未调用）。**必须**带幂等键。201 `WorkSubmissionCreated`；同名作品 `409 DUPLICATE_SUSPECTS`，确认后带 `is_duplicate_confirmed: true` 重发。旧 `POST /api/galgame/submit` 已删除 |
+| `GET` / `PATCH` / `DELETE /api/v1/work-submissions/{work_id}` | Bearer | 自己的投稿（前瞻；App 尚未调用）。GET 回 `ETag`，写时作 `If-Match` 发回（不发 = 不校验）。PATCH `{state: pending \| draft}`；审核态 Bearer 恒 403。DELETE 只删草稿，204。旧 `DELETE /api/galgame/:id`、`/draft`、`/resubmit` 已删除 |
+| `GET /api/v1/me/work-submissions` | Bearer | 自己的投稿列表（前瞻；App 尚未调用）。游标；`state` 逗号分隔。旧 `GET /api/galgame/mine` 已删除 |
+| `GET /api/v1/work-submission-candidates` | Bearer | 投稿前搜索（前瞻；App 尚未调用）。游标、无 `total`；`include_nsfw` 默认 false。旧 `GET /api/galgame/search/wizard` 已删除 |
 | `GET /api/v1/users/{user_id}` | 公开 | 公开资料。未知或封禁/注销用户 404 |
 | `POST /api/v1/topics`、`POST /api/v1/topics/{topic_id}/replies` | Bearer | **必须**带幂等键（§2）。旧 `POST /api/topic`、`POST /api/topic/:tid/reply` 已于 2026-09-22 删除；话题 id 在路径上，不再放进请求体 |
 | `GET /api/v1/me/account` | Bearer | 当前用户；Bearer 下 `roles` 已剥掉 staff 角色，`content_stance` 恒为 `null`（立场问账号中心） |

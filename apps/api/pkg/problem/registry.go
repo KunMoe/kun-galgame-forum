@@ -164,7 +164,7 @@ var Codes = []Def{
 	{CodeLotteryDrawn, DomainKungal, http.StatusConflict, "Lottery drawn", "The lottery is being drawn, or has been drawn and only staff may delete it: its winners still need it to collect their prizes.", nil},
 	{CodeRedemptionCodeForfeited, DomainKungal, http.StatusConflict, "Redemption code forfeited", "The caller won this code, but it was given up or not revealed before claim_expires_at, and it can no longer be revealed.", nil},
 	{CodeAlreadyExists, DomainMe, http.StatusConflict, "Already exists", "The same subject already has a live record for this target.", nil},
-	{CodeDuplicateSuspects, DomainMe, http.StatusConflict, "Duplicate suspects", "The mint's titles match live works of the same medium; suspects[] names them. Nothing was written. Re-send with confirm_duplicates=true to mint anyway — the pairs are still filed for reconciliation.", []ExtDef{{Name: "suspects", Type: "array"}}},
+	{CodeDuplicateSuspects, DomainMe, http.StatusConflict, "Duplicate suspects", "The mint's titles match live works of the same medium; suspects[] names them. Nothing was written. Re-send with is_duplicate_confirmed=true to mint anyway — the pairs are still filed for reconciliation.", []ExtDef{{Name: "suspects", Type: "array"}}},
 	{CodePreconditionFailed, DomainPlatform, http.StatusPreconditionFailed, "Precondition failed", "If-Match did not match the current representation.", nil},
 	{CodeUsernameTaken, DomainKungal, http.StatusConflict, "Username taken", "The requested name is already in use by another account.", nil},
 	{CodeCreatorIneligible, DomainKungal, http.StatusForbidden, "Creator ineligible", "The caller does not meet the conditions to apply for the creator role.", nil},

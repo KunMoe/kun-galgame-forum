@@ -120,6 +120,7 @@ func Register(svc *Service) func(huma.API) {
 
 		svc.registerUserPlane(api)
 		svc.registerEdit(api)
+		svc.registerSubmissions(api)
 
 		huma.Register(api, v1.Public(huma.Operation{
 			OperationID: "listWorkMoyuPatches",

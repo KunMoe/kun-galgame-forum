@@ -224,10 +224,8 @@ export type ListWorksQuery = ListWorksParams
 export type ListLibraryWorksQuery = NonNullable<
   operations['listLibraryWorks']['parameters']['query']
 >
-export type ReleaseCalendarMonth =
-  components['schemas']['ReleaseCalendarMonth']
-export type ReleaseCalendarToday =
-  components['schemas']['ReleaseCalendarToday']
+export type ReleaseCalendarMonth = components['schemas']['ReleaseCalendarMonth']
+export type ReleaseCalendarToday = components['schemas']['ReleaseCalendarToday']
 export type ReleaseCalendarPending =
   components['schemas']['ReleaseCalendarPending']
 export type ReleaseCalendarTBA = components['schemas']['ReleaseCalendarTBA']
@@ -235,10 +233,8 @@ export type ReleaseCalendarUpcoming =
   components['schemas']['ReleaseCalendarUpcoming']
 export type ReleaseCalendarUpcomingEntry =
   components['schemas']['ReleaseCalendarUpcomingEntry']
-export type WorkCollectedMonths =
-  components['schemas']['WorkCollectedMonths']
-export type WorkCollectedMonth =
-  components['schemas']['WorkCollectedMonth']
+export type WorkCollectedMonths = components['schemas']['WorkCollectedMonths']
+export type WorkCollectedMonth = components['schemas']['WorkCollectedMonth']
 export type TagPage = components['schemas']['PageListTagSummary']
 export type CompanyPage = components['schemas']['PageListCompanySummary']
 export type CompanyWorkPage = components['schemas']['PageListCompanyWork']
@@ -276,7 +272,8 @@ export type ToolsetType = Toolset['toolset_type']
 export type ToolsetInterfaceLanguage = Toolset['interface_language']
 export type ToolsetPlatform = Toolset['platform']
 export type ToolsetReleaseChannel = Toolset['release_channel']
-export type ToolsetResourceType = ToolsetResourceSummary['toolset_resource_type']
+export type ToolsetResourceType =
+  ToolsetResourceSummary['toolset_resource_type']
 export type AdminOverview = components['schemas']['AdminOverview']
 export type OverviewDay = components['schemas']['OverviewDay']
 export type TopicRankingEntry = components['schemas']['TopicRankingEntry']
@@ -364,9 +361,7 @@ export type DlsiteOffer = components['schemas']['DlsiteOffer']
 export type GalgameResourceType = GalgameResource['resource_type']
 export type GalgameResourceState = GalgameResource['state']
 export type GalgameResourceSort = NonNullable<
-  NonNullable<
-    operations['listGalgameResources']['parameters']['query']
-  >['sort']
+  NonNullable<operations['listGalgameResources']['parameters']['query']>['sort']
 >
 
 export type WorkCoverEngagement = components['schemas']['WorkCoverEngagement']
@@ -386,3 +381,13 @@ export type CollectionWorkEngagement =
 export type CollectionVisibility = Collection['visibility']
 export type PageListCollectionSummary =
   components['schemas']['PageListCollectionSummary']
+export type WorkSubmission = components['schemas']['WorkSubmission']
+export type WorkSubmissionCreated =
+  components['schemas']['WorkSubmissionCreated']
+export type WorkSubmissionSummary =
+  components['schemas']['WorkSubmissionSummary']
+export type WorkSubmissionCreate = components['schemas']['WorkSubmissionCreate']
+export type WorkSubmissionCandidate =
+  components['schemas']['WorkSubmissionCandidate']
+export type WorkSubmissionState = WorkSubmission['state']
+export type ClaimEventRef = components['schemas']['ClaimEventRef']

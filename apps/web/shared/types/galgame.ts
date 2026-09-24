@@ -63,28 +63,3 @@ export interface GalgameCard {
   company?: string
   via_official?: { id: number; name: string }
 }
-
-export interface UserClaimItem {
-  work_id: number
-  display_name: string
-  site: string
-  claim_state: string
-
-  last_event_id: number
-  last_from_state: string | null
-  last_to_state: string
-  last_reason: string | null
-  last_actor_uid: number
-  last_event_at: string
-
-  first_acted_at: string
-  acted_count: number
-}
-
-export interface UserClaimList {
-  items: UserClaimItem[]
-  next_before: number
-  total: number
-}
-
-
