@@ -8,8 +8,6 @@ import (
 
 var mentionIDRe = regexp.MustCompile(`kungal-user:(\d+)`)
 
-var mentionLinkRe = regexp.MustCompile(`(<a [^>]*\bdata-uid=")(\d+)("[^>]*>)@?[^<]*(</a>)`)
-
 func ExtractMentionIDs(content string) []int {
 	matches := mentionIDRe.FindAllStringSubmatch(content, -1)
 	if matches == nil {

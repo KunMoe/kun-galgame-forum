@@ -1,5 +1,4 @@
 import type { KunGalgameOfficialCategory } from '~/constants/galgameOfficial'
-import type { GalgameCard } from './galgame'
 
 export interface GalgameOfficialItem {
   id: number
@@ -11,31 +10,6 @@ export interface GalgameOfficialItem {
   alias: string[]
   galgame_count: number
   logo?: string
-}
-
-export interface GalgameOfficialLink {
-  source: string
-  name: string
-  url: string
-}
-
-export interface GalgameOfficialDetail {
-  id: number
-  name: string
-  original: string
-  links: GalgameOfficialLink[]
-  link: string
-  logo: string
-  category: KunGalgameOfficialCategory
-  lang: string
-  description: string
-  description_machine: boolean
-  alias: string[]
-  galgame: GalgameCard[]
-  galgame_count: number
-  own_galgame_count: number
-  imprint_galgame_count: number
-  moved_to?: number
 }
 
 export type GalgameOfficialRelation =

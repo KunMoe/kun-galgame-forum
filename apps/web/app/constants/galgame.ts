@@ -1,54 +1,3 @@
-export type KunGalgameResourceTypeOptions =
-  | 'all'
-  | 'game'
-  | 'patch'
-  | 'collection'
-  | 'voice'
-  | 'image'
-  | 'ai'
-  | 'video'
-  | 'others'
-
-export type KunGalgameResourceLanguageOptions =
-  | 'all'
-  | 'ja-jp'
-  | 'en-us'
-  | 'zh-cn'
-  | 'zh-tw'
-  | 'others'
-
-export type KunGalgameResourcePlatformOptions =
-  | 'all'
-  | 'windows'
-  | 'mac'
-  | 'linux'
-  | 'emulator'
-  | 'app'
-  | 'others'
-
-export const KUN_GALGAME_RESOURCE_TYPE_MAP: Record<string, string> = {
-  name: '资源链接的类型',
-  all: '全部类型',
-  game: '游戏本体',
-  patch: '补丁',
-  collection: '合集',
-  voice: '音声相关',
-  image: '图片相关',
-  ai: 'AI 相关',
-  video: '视频相关',
-  others: '其它'
-}
-export const kunGalgameResourceTypeOptions = [
-  { value: 'all', label: '全部类型' },
-  { value: 'game', label: '游戏本体' },
-  { value: 'patch', label: '补丁' },
-  { value: 'collection', label: '合集' },
-  { value: 'voice', label: '音声相关' },
-  { value: 'image', label: '图片相关' },
-  { value: 'ai', label: 'AI 相关' },
-  { value: 'video', label: '视频相关' },
-  { value: 'others', label: '其它' }
-] as const
 export const KUN_RESOURCE_TYPE_CONST = [
   'game',
   'patch',
@@ -60,22 +9,6 @@ export const KUN_RESOURCE_TYPE_CONST = [
   'others'
 ] as const
 
-export const KUN_GALGAME_RESOURCE_LANGUAGE_MAP: Record<string, string> = {
-  all: '全部语言',
-  'ja-jp': '日语',
-  'en-us': '英语',
-  'zh-cn': '简体中文',
-  'zh-tw': '繁体中文',
-  others: '其它'
-}
-export const kunGalgameResourceLanguageOptions = [
-  { value: 'all', label: '全部语言' },
-  { value: 'ja-jp', label: '日语' },
-  { value: 'en-us', label: '英语' },
-  { value: 'zh-cn', label: '简体中文' },
-  { value: 'zh-tw', label: '繁体中文' },
-  { value: 'others', label: '其它' }
-] as const
 export const KUN_RESOURCE_LANGUAGE_CONST = [
   'ja-jp',
   'en-us',
@@ -117,25 +50,6 @@ export const kunGalgameOriginalLanguageOptions = Object.entries(
 export const getGalgameOriginalLanguageName = (langCode: string): string =>
   KUN_GALGAME_ORIGINAL_LANGUAGE_MAP[langCode?.toLowerCase()] || langCode
 
-export const KUN_GALGAME_RESOURCE_PLATFORM_MAP: Record<string, string> = {
-  name: '资源链接的平台',
-  all: '全部平台',
-  windows: 'Windows',
-  mac: 'macOS',
-  linux: 'Linux',
-  emulator: '模拟器',
-  app: '应用直装',
-  others: '其它'
-}
-export const kunGalgameResourcePlatformOptions = [
-  { value: 'all', label: '全部平台' },
-  { value: 'windows', label: 'Windows' },
-  { value: 'mac', label: 'macOS' },
-  { value: 'linux', label: 'Linux' },
-  { value: 'emulator', label: '模拟器' },
-  { value: 'app', label: '应用直装' },
-  { value: 'others', label: '其它' }
-] as const
 export const KUN_RESOURCE_PLATFORM_CONST = [
   'windows',
   'mac',

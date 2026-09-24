@@ -24,5 +24,3 @@ export type {
 
 export type ToolsetCard = import('#shared/utils/api/schemas').ToolsetSummary
 export type ToolsetDetail = import('#shared/utils/api/schemas').Toolset
-export type ToolsetResource =
-  import('#shared/utils/api/schemas').ToolsetResourceSummary

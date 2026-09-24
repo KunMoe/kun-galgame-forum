@@ -2,7 +2,6 @@ package collect
 
 const (
 	DefaultLimit = 20
-	MaxLimit     = 100
 )
 
 type Page struct {

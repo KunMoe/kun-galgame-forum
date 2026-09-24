@@ -1,5 +1,3 @@
-import type { GalgameCard } from './galgame'
-
 export interface GalgameSeriesSample {
   name: string
   effective_banner_hash?: string
@@ -14,12 +12,4 @@ export interface GalgameSeriesCard {
   galgame_count: number
   catalog_galgame_count: number
   sample_galgame: GalgameSeriesSample[]
-}
-
-export interface GalgameSeriesDetail {
-  id: number
-  name: string
-  description: string
-  galgame: GalgameCard[]
-  galgame_count: number
 }

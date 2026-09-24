@@ -9,6 +9,7 @@ import (
 	v1 "kun-galgame-api/internal/apiv1"
 	"kun-galgame-api/internal/apiv1/collect"
 	"kun-galgame-api/internal/apiv1/repr"
+	"kun-galgame-api/internal/constants"
 	"kun-galgame-api/internal/galgame/model"
 	"kun-galgame-api/internal/infrastructure/markdown"
 	"kun-galgame-api/internal/moemoepoint"
@@ -191,7 +192,7 @@ func (s *Service) createQuiz(ctx context.Context, in *createQuizInput) (*createQ
 	if err != nil {
 		return nil, problem.Internal(err)
 	}
-	s.award(user.ID, 2, moemoepoint.ReasonContentApproved,
+	s.award(user.ID, constants.QuizCreateReward, moemoepoint.ReasonContentApproved,
 		moemoepoint.Ref("galgame_quiz", row.ID),
 		moemoepoint.Key("quiz_create", strconv.Itoa(row.ID)))
 	s.scan.ScanBg(gate.SubjectKindGalgameQuiz, strconv.Itoa(row.ID), moderation, int64(user.ID))
@@ -447,7 +448,7 @@ func (s *Service) deleteQuiz(ctx context.Context, in *quizIDInput) (*noContentOu
 		}
 		return nil, problem.Internal(err)
 	}
-	s.award(row.UserID, -2, moemoepoint.ReasonContentRemoved,
+	s.award(row.UserID, -constants.QuizCreateReward, moemoepoint.ReasonContentRemoved,
 		moemoepoint.Ref("galgame_quiz", row.ID),
 		moemoepoint.Key("quiz_delete", strconv.Itoa(row.ID)))
 	return &noContentOutput{}, nil

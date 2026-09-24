@@ -2,8 +2,6 @@ package apiv1
 
 import "kun-galgame-api/internal/apiv1/repr"
 
-const draftSummaryLength = 120
-
 type TopicDraft struct {
 	Object           string         `json:"object" enum:"topic_draft" maxLength:"11" doc:"Type discriminant. Always topic_draft."`
 	ID               repr.DecimalID `json:"id" doc:"Draft id. JSON string of a decimal integer."`

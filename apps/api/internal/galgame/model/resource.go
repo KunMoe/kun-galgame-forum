@@ -1,7 +1,6 @@
 package model
 
 import (
-	"encoding/json"
 	"time"
 
 	"kun-galgame-api/internal/galgame/resourcevocab"
@@ -46,35 +45,3 @@ type GalgameResourceLink struct {
 }
 
 func (GalgameResourceLink) TableName() string { return "galgame_resource_link" }
-
-type GalgameResourceRow struct {
-	ID           int                `gorm:"column:id"`
-	View         int                `gorm:"column:view"`
-	WorkID       int                `gorm:"column:work_id"`
-	UserID       int                `gorm:"column:user_id"`
-	Type         string             `gorm:"column:type"`
-	Language     string             `gorm:"column:language"`
-	Platform     string             `gorm:"column:platform"`
-	Title        string             `gorm:"column:title"`
-	VersionLabel string             `gorm:"column:version_label"`
-	Languages    resourcevocab.Keys `gorm:"column:languages"`
-	Platforms    resourcevocab.Keys `gorm:"column:platforms"`
-	Runtimes     resourcevocab.Keys `gorm:"column:runtimes"`
-	Size         string             `gorm:"column:size"`
-	Status       int                `gorm:"column:status"`
-	Download     int                `gorm:"column:download"`
-	LikeCount    int                `gorm:"column:like_count"`
-	CommentCount int                `gorm:"column:comment_count"`
-	Code         string             `gorm:"column:code"`
-	Password     string             `gorm:"column:password"`
-	Note         string             `gorm:"column:note"`
-	ProviderName json.RawMessage    `gorm:"column:provider_name"`
-	Created      string             `gorm:"column:created"`
-	Edited       *string            `gorm:"column:edited"`
-}
-
-type ResourceAggregate struct {
-	Platform string `gorm:"column:platform"`
-	Language string `gorm:"column:language"`
-	Type     string `gorm:"column:type"`
-}

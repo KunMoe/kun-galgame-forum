@@ -3,7 +3,6 @@ import {
   applyResourceLinkBlur,
   applyResourceLinkPaste,
   detectProviderKeyFromURL,
-  detectProviderNameFromURL,
   isCleanLinkDump,
   parseResourceLinks,
   splitResourceLinkText
@@ -121,32 +120,6 @@ describe('detectProviderKeyFromURL', () => {
       'lanzou'
     )
     expect(detectProviderKeyFromURL('https://mega.nz/file/xxx')).toBe('other')
-  })
-})
-
-describe('detectProviderNameFromURL', () => {
-  it('covers the common netdisks this form sees', () => {
-    expect(detectProviderNameFromURL('https://www.123pan.com/s/xxx')).toBe(
-      '123 云盘'
-    )
-    expect(detectProviderNameFromURL('https://cloud.189.cn/t/xxx')).toBe(
-      '天翼云盘'
-    )
-    expect(detectProviderNameFromURL('https://pan.xunlei.com/s/xxx')).toBe(
-      '迅雷云盘'
-    )
-    expect(detectProviderNameFromURL('https://wwx.lanzoui.com/xxx')).toBe(
-      '蓝奏云'
-    )
-    expect(detectProviderNameFromURL('https://drive.uc.cn/s/xxx')).toBe(
-      'UC 网盘'
-    )
-  })
-
-  it('falls back to the host when the provider is unknown', () => {
-    expect(detectProviderNameFromURL('https://www.example.com/file')).toBe(
-      'example.com'
-    )
   })
 })
 

@@ -315,7 +315,6 @@ func optionalString(s string) *string {
 	return &s
 }
 
-
 func (l *Lotteries) listTopicLotteries(ctx context.Context, in *listTopicLotteriesInput) (*listTopicLotteriesOutput, error) {
 	if prob := l.ready(); prob != nil {
 		return nil, prob

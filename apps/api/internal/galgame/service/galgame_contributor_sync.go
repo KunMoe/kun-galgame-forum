@@ -30,9 +30,8 @@ func NewGalgameContributorSync(
 }
 
 const (
-	contributorCursorKey     = "catalog:contrib:cron:since"
-	contributorSite          = client.ClaimSiteKungal
-	contributorMaxPerGalgame = 50
+	contributorCursorKey = "catalog:contrib:cron:since"
+	contributorSite      = client.ClaimSiteKungal
 
 	contributorFeedBatch    = 100
 	contributorMaxPagesRun  = 50

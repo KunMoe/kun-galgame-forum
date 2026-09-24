@@ -394,18 +394,18 @@ func (l *Lotteries) createLottery(ctx context.Context, in *createLotteryInput) (
 		seed, seedHash = "", ""
 	}
 	row := &model.TopicLottery{
-		TopicID:           topic.ID,
-		UserID:            user.ID,
-		Title:             title,
-		Description:       description,
-		EntryMode:         shape.entryMode,
-		DrawMode:          shape.drawMode,
-		Deadline:          closesAt,
-		ShowEntrants:      body.IsEntryListPublic == nil || *body.IsEntryListPublic,
-		Status:            model.LotteryStatusOpen,
-		SeedHash:          seedHash,
-		Seed:              seed,
-		PointEscrow:       shape.budget(),
+		TopicID:      topic.ID,
+		UserID:       user.ID,
+		Title:        title,
+		Description:  description,
+		EntryMode:    shape.entryMode,
+		DrawMode:     shape.drawMode,
+		Deadline:     closesAt,
+		ShowEntrants: body.IsEntryListPublic == nil || *body.IsEntryListPublic,
+		Status:       model.LotteryStatusOpen,
+		SeedHash:     seedHash,
+		Seed:         seed,
+		PointEscrow:  shape.budget(),
 	}
 	if shape.entryMode == model.LotteryEntryFloor {
 		row.FloorRule = shape.floorRule

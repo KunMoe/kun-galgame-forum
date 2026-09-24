@@ -72,12 +72,6 @@ export const KUN_GALGAME_RATING_GAME_TYPE_DESCRIPTION_MAP: Record<
   daily: '作品风格偏日常恋爱系'
 }
 
-export const KUN_GALGAME_RATING_SORT_FIELD_CONST = [
-  'time',
-  'view',
-  'overall'
-] as const
-
 export const KUN_GALGAME_EXTERNAL_RATING_CONST = [
   'vndb',
   'bangumi',

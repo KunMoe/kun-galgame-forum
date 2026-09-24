@@ -30,8 +30,6 @@ func (BannerImageHash) Schema(huma.Registry) *huma.Schema {
 	}
 }
 
-const linkURLPattern = `^https?://`
-
 type FriendLinkCreate struct {
 	FriendLinkCategory string           `json:"friend_link_category" enum:"official,galgame,others" maxLength:"8" doc:"Shelf. The new link goes last on it."`
 	Title              string           `json:"title" minLength:"1" maxLength:"100" doc:"Site name. Trimmed; only whitespace is refused as TOO_SHORT. Free text; never use it as a decision input."`

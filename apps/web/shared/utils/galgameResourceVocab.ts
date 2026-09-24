@@ -184,8 +184,6 @@ export const PLATFORM_LABELS: Record<string, string> = {
 
 export const RUNTIME_LABELS = labelsOf(RUNTIME_OPTIONS)
 
-export const VERSION_LABELS = labelsOf(VERSION_LABEL_OPTIONS)
-
 export const resourceTypeLabel = (key: string) =>
   RESOURCE_TYPE_LABELS[key] || key
 
@@ -197,6 +195,3 @@ export const resourcePlatformLabel = (key: string) =>
 
 export const resourceRuntimeLabel = (key: string) =>
   RUNTIME_LABELS[key] || key
-
-export const resourceVersionLabel = (key: string) =>
-  VERSION_LABELS[key] || key

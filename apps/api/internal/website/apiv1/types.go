@@ -10,11 +10,7 @@ import (
 )
 
 const (
-	hostPattern      = `^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?(\.[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)+$`
-	hostInputPattern = `^[A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?(\.[A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?)+$`
-	slugPattern      = `^[a-z0-9_-]+$`
-	languagePattern  = `^[a-z]{2,3}(-[a-z0-9]{2,8})*$`
-	hashOrEmpty      = `^([0-9a-f]{64})?$`
+	languagePattern = `^[a-z]{2,3}(-[a-z0-9]{2,8})*$`
 )
 
 // SiteURL is one address of a website.
@@ -234,11 +230,11 @@ type CategoryPatch struct {
 }
 
 type TagCreate struct {
-	Slug              string          `json:"slug" minLength:"1" maxLength:"30" pattern:"^[a-z0-9_-]+$" doc:"URL key. Taken is ALREADY_EXISTS."`
-	Label             string          `json:"label" minLength:"1" maxLength:"30" doc:"Display name. Free text; never use it as a decision input."`
-	Description       string          `json:"description" required:"false" maxLength:"300" doc:"Plain-text description. Absent means empty. Free text; never use it as a decision input."`
-	Level             int             `json:"level" minimum:"-100" maximum:"20" doc:"Weight of the tag."`
-	WebsiteTagGroupID TagGroupRef     `json:"website_tag_group_id" required:"false" doc:"Group id. Absent or null means ungrouped; an unknown id is UNKNOWN_REFERENCE."`
+	Slug              string      `json:"slug" minLength:"1" maxLength:"30" pattern:"^[a-z0-9_-]+$" doc:"URL key. Taken is ALREADY_EXISTS."`
+	Label             string      `json:"label" minLength:"1" maxLength:"30" doc:"Display name. Free text; never use it as a decision input."`
+	Description       string      `json:"description" required:"false" maxLength:"300" doc:"Plain-text description. Absent means empty. Free text; never use it as a decision input."`
+	Level             int         `json:"level" minimum:"-100" maximum:"20" doc:"Weight of the tag."`
+	WebsiteTagGroupID TagGroupRef `json:"website_tag_group_id" required:"false" doc:"Group id. Absent or null means ungrouped; an unknown id is UNKNOWN_REFERENCE."`
 }
 
 // TagGroupRef tells an absent field (keep) from an explicit null (ungroup).

@@ -36,9 +36,3 @@ func (f GalgameListFilter) HasResourcePredicate() bool {
 		len(f.IncludeProviders) > 0 ||
 		len(f.ExcludeOnlyProviders) > 0
 }
-
-type GalgameResourceMeta struct {
-	WorkID   int    `gorm:"column:work_id"`
-	Platform string `gorm:"column:platform"`
-	Language string `gorm:"column:language"`
-}

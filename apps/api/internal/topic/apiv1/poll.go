@@ -10,12 +10,9 @@ import (
 )
 
 const (
-	pollTitleLimit       = 100
-	pollDescriptionLimit = 500
-	pollOptionTextLimit  = 100
-	pollMinOptions       = 2
-	pollMaxOptions       = 20
-	pollSampleVoters     = 5
+	pollMinOptions   = 2
+	pollMaxOptions   = 20
+	pollSampleVoters = 5
 )
 
 // G8 compares one property name's schema across the whole document, and a $ref
@@ -71,10 +68,10 @@ func (PollOptionResult) Schema(r huma.Registry) *huma.Schema {
 }
 
 type PollResults struct {
-	TotalVoteCount   int                `json:"total_vote_count" minimum:"0" doc:"Number of votes cast, counting every option a voter picked."`
-	VoterCount   int                `json:"voter_count" minimum:"0" doc:"Number of distinct users who have voted."`
-	Options      []PollOptionResult `json:"options" maxItems:"20" doc:"One entry per option of this poll, in the same order as options. Empty array if the poll has no options."`
-	SampleVoters []repr.UserRef     `json:"sample_voters" maxItems:"5" doc:"Up to five of the earliest voters, oldest first. Empty array when the poll is anonymous, and banned users are left out, so it can hold fewer than min(voter_count, 5)."`
+	TotalVoteCount int                `json:"total_vote_count" minimum:"0" doc:"Number of votes cast, counting every option a voter picked."`
+	VoterCount     int                `json:"voter_count" minimum:"0" doc:"Number of distinct users who have voted."`
+	Options        []PollOptionResult `json:"options" maxItems:"20" doc:"One entry per option of this poll, in the same order as options. Empty array if the poll has no options."`
+	SampleVoters   []repr.UserRef     `json:"sample_voters" maxItems:"5" doc:"Up to five of the earliest voters, oldest first. Empty array when the poll is anonymous, and banned users are left out, so it can hold fewer than min(voter_count, 5)."`
 }
 
 type PollViewer struct {

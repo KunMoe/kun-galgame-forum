@@ -22,8 +22,6 @@ type (
 	ArtifactResponse      = gen.ArtifactResponse
 	DownloadResponse      = gen.DownloadResponse
 	CompletedPart         = gen.CompletedPart
-	PartURL               = gen.PartURL
-	ManifestInput         = gen.ManifestInput
 )
 
 type UploadedPart struct {

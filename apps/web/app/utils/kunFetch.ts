@@ -94,9 +94,8 @@ export const probeSessionExpiry = (message?: string) => {
 }
 
 // A 429 carries no forum envelope — it is refused before a handler runs — so it
-// fell through to 「网络请求失败，请稍后重试」 on the kunFetch path and to
-// nothing at all on the useKunFetch one, whose onResponseError only speaks when
-// there is an envelope to read. A reader who hit the limit posting a reply saw
+// fell through to 「网络请求失败，请稍后重试」 here, and to nothing at all on the
+// retired useKunFetch path. A reader who hit the limit posting a reply saw
 // their reply not appear and no reason why; the 429 was in the console.
 // A non-JSON error body (a proxy's 429, an nginx 502 page) parses into a
 // STRING, not an object — and a string is truthy with `code === undefined`, so
@@ -143,42 +142,6 @@ const handleApiError = async (code: number, message: string) => {
     useMessage(message, 'error')
   }
 }
-
-export const useKunFetch = createUseFetch({
-  timeout: import.meta.server ? SSR_API_TIMEOUT_MS : undefined,
-  credentials: 'include',
-  onRequest({ options }) {
-    const config = useRuntimeConfig()
-    options.baseURL = `${
-      import.meta.server ? config.apiBaseUrl : config.public.apiBaseUrl
-    }/api`
-    if (import.meta.server) {
-      const forwarded = extractForwardedCookies(
-        useRequestHeaders(['cookie']).cookie
-      )
-      if (forwarded) {
-        const merged = new Headers(options.headers as HeadersInit | undefined)
-        merged.set('cookie', forwarded)
-        options.headers = merged
-      }
-    }
-  },
-  async onResponseError({ response }) {
-    const resp = asEnvelope(response._data)
-    if (resp && resp.code !== 0) {
-      await handleApiError(resp.code, resp.message)
-      return
-    }
-    handleRateLimited(response.status)
-  },
-  transform(resp: unknown) {
-    const envelope = resp as KunApiResponse<unknown> | null | undefined
-    if (!envelope || envelope.code !== 0) {
-      return null
-    }
-    return envelope.data !== undefined ? envelope.data : envelope.message
-  }
-})
 
 export const kunFetch = async <T>(
   url: string,

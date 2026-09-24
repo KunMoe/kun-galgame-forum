@@ -9,6 +9,7 @@ const (
 	RewardPRMerge        = 1
 
 	CostConsumeSection = 10
+	// Charged by the OAuth account center (infra setting auth.name_change_cost), not here.
 	CostChangeUsername = 17
 	CostUpvoteSender   = 10
 	RewardUpvoteOwner  = 5
@@ -19,8 +20,7 @@ const (
 	RatingLenThresholdHigh   = 666
 	RatingLenThresholdMedium = 233
 
-	QuizCreateReward  = 2
-	QuizCorrectReward = 0
+	QuizCreateReward = 2
 
 	RewardBestAnswer = 7
 	CheckinMaxReward = 7

@@ -23,7 +23,3 @@ type UserProfile struct {
 	AdultConfirmed bool     `json:"adult_confirmed"`
 	NSFWDisplay    string   `json:"nsfw_display"`
 }
-
-type BanUserRequest struct {
-	Status int `json:"status" validate:"oneof=0 1"`
-}

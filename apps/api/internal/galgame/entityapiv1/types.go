@@ -24,8 +24,6 @@ func aliases(values []string) []AliasName {
 	return out
 }
 
-const catalogCountDoc = "Works catalog files under it, NSFW ones included. How many a reader can page through is the total of its works collection."
-
 type TagSummary struct {
 	Object string         `json:"object" enum:"tag" maxLength:"3" doc:"Type discriminant. Always tag."`
 	ID     repr.DecimalID `json:"id" doc:"Tag id: the catalog tag id, which is also the id in the web's /galgame/tag/{id}."`

@@ -79,13 +79,6 @@ func (r *TopicRepository) TouchStatusUpdateTime(tx *gorm.DB, topicID int, t time
 		Updates(map[string]any{"status_update_time": t}).Error
 }
 
-type TopicUpvoteRow struct {
-	ID          int       `gorm:"column:id"`
-	UserID      int       `gorm:"column:user_id"`
-	Description string    `gorm:"column:description"`
-	Created     time.Time `gorm:"column:created"`
-}
-
 func (r *TopicRepository) ApplyUpvoteCountAndTime(tx *gorm.DB, topicID int, t time.Time) error {
 	return tx.Model(&model.Topic{}).Where("id = ?", topicID).Updates(map[string]any{
 		"upvote_count": gorm.Expr("upvote_count + 1"),
@@ -93,11 +86,4 @@ func (r *TopicRepository) ApplyUpvoteCountAndTime(tx *gorm.DB, topicID int, t ti
 		"status_update_time": gorm.Expr(
 			"CASE WHEN created > ? THEN ? ELSE status_update_time END", model.BumpCutoff(t), t),
 	}).Error
-}
-
-type TopicAuthorUser struct {
-	ID          int    `json:"id"`
-	Name        string `json:"name"`
-	Avatar      string `json:"avatar"`
-	Moemoepoint int    `json:"moemoepoint"`
 }

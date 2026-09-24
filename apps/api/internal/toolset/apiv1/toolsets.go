@@ -10,6 +10,7 @@ import (
 	v1 "kun-galgame-api/internal/apiv1"
 	"kun-galgame-api/internal/apiv1/collect"
 	"kun-galgame-api/internal/apiv1/repr"
+	"kun-galgame-api/internal/constants"
 	"kun-galgame-api/internal/infrastructure/markdown"
 	"kun-galgame-api/internal/moemoepoint"
 	"kun-galgame-api/internal/toolset/model"
@@ -170,7 +171,7 @@ func (s *Service) createToolset(ctx context.Context, in *createToolsetInput) (*c
 		}
 		return nil, problem.Internal(err)
 	}
-	s.pushPoints(user.ID, row.ID, 3, moemoepoint.ReasonContentApproved, "toolset_create", "toolset")
+	s.pushPoints(user.ID, row.ID, constants.RewardCreateToolset, moemoepoint.ReasonContentApproved, "toolset_create", "toolset")
 	s.scan.ScanBg(gate.SubjectKindToolset, strconv.Itoa(row.ID), moderation, int64(user.ID))
 	created, err := s.store.Find(row.ID)
 	if err != nil {
@@ -333,7 +334,7 @@ func (s *Service) deleteToolset(ctx context.Context, in *toolsetIDInput) (*noCon
 		}
 		return nil, problem.Internal(err)
 	}
-	s.pushPoints(row.UserID, row.ID, -3, moemoepoint.ReasonContentRemoved, "toolset_delete", "toolset")
+	s.pushPoints(row.UserID, row.ID, -constants.RewardCreateToolset, moemoepoint.ReasonContentRemoved, "toolset_delete", "toolset")
 	return &noContentOutput{}, nil
 }
 

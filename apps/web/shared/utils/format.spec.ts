@@ -1,11 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import {
-  formatFileSize,
-  formatNumber,
-  formatNumberWithCommas,
-  camelToSnakeCase,
-  truncateRunes
-} from './format'
+import { formatFileSize, formatNumber, truncateRunes } from './format'
 
 describe('formatFileSize', () => {
   it('B for <1KB', () => {
@@ -44,30 +38,6 @@ describe('formatNumber', () => {
   it('M suffix for >=1M', () => {
     expect(formatNumber(1_000_000)).toBe('1.0M')
     expect(formatNumber(2_500_000)).toBe('2.5M')
-  })
-})
-
-describe('formatNumberWithCommas', () => {
-  it('comma-grouped for <10k', () => {
-    expect(formatNumberWithCommas(0)).toBe('0')
-    expect(formatNumberWithCommas(1234)).toBe('1,234')
-    expect(formatNumberWithCommas(9999)).toBe('9,999')
-  })
-  it('k suffix for >=10k', () => {
-    expect(formatNumberWithCommas(10_000)).toBe('10.0k')
-    expect(formatNumberWithCommas(123_456)).toBe('123.5k')
-  })
-})
-
-describe('camelToSnakeCase', () => {
-  it('inserts _ before each capital, lowercases', () => {
-    expect(camelToSnakeCase('camelCase')).toBe('camel_case')
-    expect(camelToSnakeCase('XMLHttpRequest')).toBe('_x_m_l_http_request')
-  })
-  it('passes through already-snake / lowercase strings', () => {
-    expect(camelToSnakeCase('already_snake')).toBe('already_snake')
-    expect(camelToSnakeCase('lowercase')).toBe('lowercase')
-    expect(camelToSnakeCase('')).toBe('')
   })
 })
 

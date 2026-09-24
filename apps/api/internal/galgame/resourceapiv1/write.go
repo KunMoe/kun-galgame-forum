@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"time"
 
+	"kun-galgame-api/internal/constants"
 	"kun-galgame-api/internal/galgame/model"
 	"kun-galgame-api/internal/galgame/resourcevocab"
 	"kun-galgame-api/internal/infrastructure/markdown"
@@ -103,7 +104,7 @@ func (s *Service) createWorkResource(ctx context.Context, in *createWorkResource
 	if err != nil {
 		return nil, problem.Internal(err)
 	}
-	s.award(user.ID, 3, moemoepoint.ReasonContentApproved,
+	s.award(user.ID, constants.RewardCreateResource, moemoepoint.ReasonContentApproved,
 		moemoepoint.Ref("galgame_resource", row.ID),
 		moemoepoint.Key("galgame_resource_create", strconv.Itoa(row.ID)))
 	if decision == gate.DecisionHold {
@@ -370,7 +371,7 @@ func (s *Service) deleteGalgameResource(ctx context.Context, in *resourceIDInput
 	if err != nil {
 		return nil, problem.Internal(err)
 	}
-	s.award(row.UserID, -3, moemoepoint.ReasonContentRemoved,
+	s.award(row.UserID, -constants.RewardCreateResource, moemoepoint.ReasonContentRemoved,
 		moemoepoint.Ref("galgame_resource", row.ID),
 		moemoepoint.Key("galgame_resource_delete", strconv.Itoa(row.ID)))
 	return &noContentOutput{}, nil

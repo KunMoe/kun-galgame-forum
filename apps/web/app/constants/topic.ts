@@ -7,13 +7,6 @@ export const KUN_TOPIC_CATEGORY: Record<string, string> = {
   others: '其它话题'
 }
 
-export const KUN_TOPIC_CATEGORY_CONST = [
-  'galgame',
-  'technique',
-  'others',
-  'all'
-] as const
-
 export const KUN_TOPIC_SECTION: Record<string, string> = {
   'g-walkthrough': '攻略',
   'g-chatting': '闲聊',
@@ -323,12 +316,6 @@ export const KUN_LOTTERY_DELIVERY_OPTIONS = [
   { value: 'code', label: '系统托管兑换码 (激活码等)' },
   { value: 'point', label: '自动发放萌萌点' }
 ] as const
-
-export const KUN_LOTTERY_POINT_MODE: Record<string, string> = {
-  fixed: '每人固定',
-  split: '奖池均分',
-  random: '奖池拼手气'
-}
 
 export const KUN_LOTTERY_POINT_MODE_OPTIONS = [
   { value: 'fixed', label: '每人固定 — 每位中奖者都拿同样多' },

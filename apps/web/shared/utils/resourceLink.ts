@@ -106,77 +106,6 @@ export const detectProviderKeyFromURL = (url: string): ResourceProviderKey => {
   return 'other'
 }
 
-export const detectProviderKeysFromURLs = (
-  urls: string[]
-): ResourceProviderKey[] => {
-  const keys: ResourceProviderKey[] = []
-  for (const url of urls) {
-    const key = detectProviderKeyFromURL(url)
-    if (!keys.includes(key)) keys.push(key)
-  }
-  return keys
-}
-
-const PROVIDER_NAME_PATTERNS: readonly { pattern: string; name: string }[] = [
-  { pattern: 'magnet', name: '磁力下载' },
-  { pattern: 'tieba.baidu.com', name: '百度贴吧' },
-  { pattern: 'baidu.com', name: '百度网盘' },
-  { pattern: 'quark.cn', name: '夸克网盘' },
-  { pattern: 'alipan.com', name: '阿里云盘' },
-  { pattern: 'aliyundrive.com', name: '阿里云盘' },
-  { pattern: '123912.com', name: '123 云盘' },
-  { pattern: '123865.com', name: '123 云盘' },
-  { pattern: '123684.com', name: '123 云盘' },
-  { pattern: '123pan.com', name: '123 云盘' },
-  { pattern: '123pan.cn', name: '123 云盘' },
-  { pattern: 'xunlei.com', name: '迅雷云盘' },
-  { pattern: 'weiyun.com', name: '腾讯微云' },
-  { pattern: '139.com', name: '和彩云 (移动云盘)' },
-  { pattern: '189.cn', name: '天翼云盘' },
-  { pattern: 'uc.cn', name: 'UC 网盘' },
-  { pattern: 'lanzou', name: '蓝奏云' },
-  { pattern: 'ctfile.com', name: '城通网盘' },
-  { pattern: 'nullcloud.top', name: '未知云盘' },
-  { pattern: 'mypikpak.com', name: 'PikPak' },
-  { pattern: 'sharepoint.com', name: 'OneDrive' },
-  { pattern: 'sharepoint.cn', name: 'OneDrive' },
-  { pattern: '1drv.ms', name: 'OneDrive' },
-  { pattern: 'mega.nz', name: 'MEGA' },
-  { pattern: 'google.com', name: 'Google 云盘' },
-  { pattern: 'yandex.com', name: 'Yandex Disk' },
-  { pattern: 'gofile.io', name: 'GoFile' },
-  { pattern: 'ipfs.dweb.link', name: 'IPFS' },
-  { pattern: 'steampowered.com', name: 'Steam' },
-  { pattern: 'epicgames.com', name: 'Epic 游戏商店' },
-  { pattern: 'itch.io', name: 'itch.io' },
-  { pattern: 'github.com', name: 'GitHub' },
-  { pattern: 'bilibili.com', name: '哔哩哔哩' },
-  { pattern: 't.me', name: 'Telegram' },
-  { pattern: 'telegram.me', name: 'Telegram' },
-  { pattern: 'archive.org', name: 'Internet Archive' },
-  { pattern: 'nyaa.si', name: 'Nyaa' },
-  { pattern: '2dfan.com', name: '2BFun' },
-  { pattern: 'ddfan.org', name: '2BFun' },
-  { pattern: 'ddfan.top', name: '2BFun' },
-  { pattern: 'galge.top', name: '2BFun' },
-  { pattern: 'hacg.uno', name: '琉璃神社 (HACG)' },
-  { pattern: 'kungal.com', name: '鲲 Galgame 论坛' },
-  { pattern: 'moyu.moe', name: '鲲 Galgame 补丁' },
-  { pattern: 'anime-sharing.com', name: 'Anime-Sharing' },
-  { pattern: 'e-hentai.org', name: 'E-Hentai' },
-  { pattern: 'dmm.co.jp', name: 'DMM' },
-  { pattern: 'zi6.cc', name: '梓澪' },
-  { pattern: 'zi0.cc', name: '梓澪' },
-  { pattern: 'zi8.cc', name: '梓澪' },
-  { pattern: 'shinnku.com', name: '真红小站' },
-  { pattern: 'shinnku.org', name: '真红小站' },
-  { pattern: 'oo0o.ooo', name: '真红小站' },
-  { pattern: 'touchgal.io', name: 'TouchGal' },
-  { pattern: 'touchgal.us', name: 'TouchGal' },
-  { pattern: 'dlgal.com', name: 'GGbases' },
-  { pattern: 'lycorisgal.com', name: 'LycorisGal' }
-]
-
 export interface ParsedResourceLinks {
   links: string[]
   code: string
@@ -234,39 +163,6 @@ const parseCodeFromSearchParams = (url: URL): string =>
   url.searchParams.get('password') ||
   url.searchParams.get('code') ||
   ''
-
-const hostFromURL = (raw: string): string => {
-  let s = raw
-  const scheme = s.indexOf('://')
-  if (scheme >= 0) s = s.slice(scheme + 3)
-  const cut = s.search(/[/?#]/)
-  if (cut >= 0) s = s.slice(0, cut)
-  const at = s.lastIndexOf('@')
-  if (at >= 0) s = s.slice(at + 1)
-  const colon = s.lastIndexOf(':')
-  if (colon >= 0) s = s.slice(0, colon)
-  s = s.replace(/^www\./i, '').toLowerCase()
-  return s || raw
-}
-
-export const detectProviderNameFromURL = (rawURL: string): string => {
-  if (!rawURL) return ''
-  const s = rawURL.toLowerCase()
-  for (const entry of PROVIDER_NAME_PATTERNS) {
-    if (s.includes(entry.pattern)) return entry.name
-  }
-  if (s.startsWith('magnet:')) return '磁力下载'
-  return hostFromURL(rawURL)
-}
-
-export const detectProviderNamesFromURLs = (urls: string[]): string[] => {
-  const names: string[] = []
-  for (const url of urls) {
-    const name = detectProviderNameFromURL(url)
-    if (name) names.push(name)
-  }
-  return unique(names)
-}
 
 export const splitResourceLinkText = (raw: string): string[] =>
   raw

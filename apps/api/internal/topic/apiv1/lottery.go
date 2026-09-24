@@ -9,13 +9,8 @@ import (
 )
 
 const (
-	lotteryTitleLimit            = 100
-	lotteryDescriptionLimit      = 1000
-	lotteryPrizeTitleLimit       = 100
-	lotteryPrizeDescriptionLimit = 500
-	lotteryFloorRuleLimit        = 200
-	lotteryCodeLimit             = 200
-	lotteryPointBudgetLimit      = 100000
+	lotteryCodeLimit        = 200
+	lotteryPointBudgetLimit = 100000
 )
 
 type LotteryPrizeImage struct {
