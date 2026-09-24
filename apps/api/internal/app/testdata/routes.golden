@@ -1,9 +1,9 @@
-DELETE /api/admin/user/:id/content                    cors.New → middleware.NamePreference → ContentStance → Auth → RequirePermission → PurgeHandler.PurgeUserContent
 DELETE /api/galgame/:id                               cors.New → middleware.NamePreference → ContentStance → Auth → SubmissionHandler.Withdraw
 DELETE /api/galgame/:id/draft                         cors.New → middleware.NamePreference → ContentStance → Auth → SubmissionHandler.DeleteDraft
 DELETE /api/v1/admin/docs/:doc_id                     cors.New → v1Headers → fiberAdapter.Handle
 DELETE /api/v1/admin/friend-links/:friend_link_id     cors.New → v1Headers → fiberAdapter.Handle
 DELETE /api/v1/admin/topics/:topic_id                 cors.New → v1Headers → fiberAdapter.Handle
+DELETE /api/v1/admin/user-contents/:user_id           cors.New → v1Headers → fiberAdapter.Handle
 DELETE /api/v1/admin/website-categories/:website_category_id cors.New → v1Headers → fiberAdapter.Handle
 DELETE /api/v1/admin/website-tag-groups/:website_tag_group_id cors.New → v1Headers → fiberAdapter.Handle
 DELETE /api/v1/admin/website-tags/:website_tag_id     cors.New → v1Headers → fiberAdapter.Handle
@@ -45,7 +45,6 @@ DELETE /api/v1/works/:work_id/like                    cors.New → v1Headers →
 DELETE /api/v1/works/:work_id/playtime                cors.New → v1Headers → fiberAdapter.Handle
 DELETE /api/v1/works/:work_id/resource-publish-ban    cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/admin/galgame/submissions                 cors.New → middleware.NamePreference → ContentStance → Auth → RequirePermission → ClaimReviewHandler.PendingQueue
-GET    /api/admin/user/:id/content-stats              cors.New → middleware.NamePreference → ContentStance → Auth → RequirePermission → PurgeHandler.GetUserContentStats
 GET    /api/galgame/audited                           cors.New → middleware.NamePreference → ContentStance → Auth → RequirePermission → SubmissionHandler.ListAudit
 GET    /api/galgame/mine                              cors.New → middleware.NamePreference → ContentStance → Auth → SubmissionHandler.ListMine
 GET    /api/galgame/search/wizard                     cors.New → middleware.NamePreference → ContentStance → Auth → SubmissionHandler.SearchWithPending
@@ -60,6 +59,7 @@ GET    /api/v1/admin/review-items                     cors.New → v1Headers →
 GET    /api/v1/admin/review-items/:review_item_id     cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/admin/role-permissions                 cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/admin/topics/:topic_id                 cors.New → v1Headers → fiberAdapter.Handle
+GET    /api/v1/admin/user-contents/:user_id           cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/admin/user-permissions/:user_id        cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/admin/website-categories/:website_category_id cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/admin/website-tag-groups/:website_tag_group_id cors.New → v1Headers → fiberAdapter.Handle

@@ -27,6 +27,27 @@ Fixed:
 
 Not carried, because catalog publishes none of them: a proposal's decision note (the decline reason still reaches the proposer as a notification), per-field review capabilities on the edit form, and a revert capability on the revision list.
 
+## 2026-09-24 (U3c user-content purge)
+
+Breaking for `GET /api/admin/user/:id/content-stats` and `DELETE /api/admin/user/:id/content`; both are gone. No App build calls them, and a Bearer request never holds `user.purge_content`.
+
+Offered:
+
+- `GET /api/v1/admin/user-contents/{user_id}` → `UserContent`: the local counts as `*_count` fields and `total_count`. It also carries `community_post_count`, which is `null` when community is unavailable (the old face said 0). `is_protected` tells whether the user holds the moderation capability. `is_account_active` tells whether the account can still post.
+- `DELETE /api/v1/admin/user-contents/{user_id}` → `204`. `403 USER_PROTECTED` for a moderator or admin target. `409 LOTTERY_DRAWN` while one of the user's lotteries is being drawn; nothing is deleted. `503` when the account service, catalog or community is unavailable; if the local part already ran, retrying finishes the rest.
+
+Changed:
+
+- The target's roles are read fresh, not from the 10-minute account cache.
+- Every local row a purge deletes, changes or writes is archived for 30 days (`user_purge_archive`, migration 120). A developer can undo the purge with `SELECT * FROM user_purge_restore('<purge_id>')`. Community posts and catalog collections are purged outside the forum's database and cannot be restored.
+- The web confirmation asks the operator to type the user id. While the account is still active, it tells them to ban or deregister it first.
+
+Fixed:
+
+- Since migration 102 (2026-09-22), purging any user who had written a topic comment failed with a 500. The purge still recounted `topic_reply.comment_count`, which 102 dropped.
+- The purge left upload records the user had made in other users' toolsets (`toolset_upload`).
+- A preview count that failed showed 0 instead of an error.
+
 ## 2026-09-24 (G6.2 collection preview covers)
 
 Collection preview covers are fetched without a content limit and gated on each work's `is_nsfw`, which is the same key catalog's SFW filter uses. SFW readers still never get an NSFW work's cover. The previous fetch under `sfw` made the hydrator log every omitted NSFW item as `catalog did not render work`, and that noise was mistaken for a counting bug in G6.1.
