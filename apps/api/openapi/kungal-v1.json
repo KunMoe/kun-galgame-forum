@@ -4849,6 +4849,941 @@
         ],
         "type": "object"
       },
+      "EditAmendment": {
+        "properties": {
+          "amender": {
+            "$ref": "#/components/schemas/UserRef",
+            "description": "Who amended. A deleted or banned account is a deleted user ref."
+          },
+          "created_at": {
+            "description": "When it was filed.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": "string"
+          },
+          "id": {
+            "description": "Amendment id.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "note": {
+            "description": "The amender's summary. null when none. Free text; never use it as a decision input.",
+            "maxLength": 2000,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "object": {
+            "description": "Type discriminant. Always edit_amendment.",
+            "enum": [
+              "edit_amendment"
+            ],
+            "maxLength": 14,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "seq": {
+            "description": "Position in the proposal's amendment chain.",
+            "format": "int64",
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "object",
+          "id",
+          "seq",
+          "amender",
+          "note",
+          "created_at"
+        ],
+        "type": "object"
+      },
+      "EditAmendmentCreate": {
+        "properties": {
+          "note": {
+            "description": "Amendment summary. Absent or null for none. Free text; never use it as a decision input.",
+            "maxLength": 2000,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "set": {
+            "additionalProperties": {},
+            "description": "Corrected values keyed by catalog.work.*.",
+            "type": "object"
+          },
+          "unset": {
+            "description": "Keys to drop from the proposal.",
+            "items": {
+              "description": "Editing-engine field key, such as catalog.work.titles.",
+              "maxLength": 128,
+              "pattern": "^[a-z0-9_]+(\\.[a-z0-9_]+)+$",
+              "type": "string"
+            },
+            "maxItems": 100,
+            "type": "array"
+          }
+        },
+        "type": "object"
+      },
+      "EditField": {
+        "properties": {
+          "base": {
+            "description": "Wire code of the vocabulary's first token on an int-encoded field.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "diff_hint": {
+            "description": "How a diff of this field should be rendered.",
+            "enum": [
+              "inline",
+              "lines",
+              "items",
+              "image"
+            ],
+            "maxLength": 6,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "element": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EditFieldElement"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Shape of one list element. null on scalar fields and on lists whose shape catalog does not declare."
+          },
+          "encoding": {
+            "description": "How a write carries the vocabulary value: token is the token itself, int is base plus the token's index in the vocabulary's order. null when vocabulary is empty.",
+            "enum": [
+              "token",
+              "int",
+              null
+            ],
+            "maxLength": 5,
+            "type": [
+              "string",
+              "null"
+            ],
+            "x-vocabulary-closed": true
+          },
+          "field_type": {
+            "description": "Control type. Not a domain vocabulary.",
+            "enum": [
+              "text",
+              "i18nmap",
+              "enum",
+              "int",
+              "date",
+              "list",
+              "ref",
+              "imagehash"
+            ],
+            "maxLength": 9,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "is_deprecated": {
+            "description": "Whether catalog rejects writes of this key.",
+            "type": "boolean"
+          },
+          "is_nullable": {
+            "description": "Whether null is accepted and clears the stored value.",
+            "type": "boolean"
+          },
+          "key": {
+            "description": "Editing-engine field key, such as catalog.work.titles.",
+            "maxLength": 128,
+            "pattern": "^[a-z0-9_]+(\\.[a-z0-9_]+)+$",
+            "type": "string"
+          },
+          "max_elements": {
+            "description": "Cap on a list field's element count. 0 for scalar fields.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "max_suppressed": {
+            "description": "Cap on this field's suppression set. 0 when the field has none.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "vocabulary": {
+            "description": "Name of the vocabulary whose tokens this field accepts. Empty when it has none.",
+            "maxLength": 64,
+            "pattern": "^[a-z_]*$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "field_type",
+          "diff_hint",
+          "is_deprecated",
+          "max_elements",
+          "max_suppressed",
+          "vocabulary",
+          "encoding",
+          "base",
+          "is_nullable",
+          "element"
+        ],
+        "type": "object"
+      },
+      "EditFieldChange": {
+        "properties": {
+          "from": {
+            "description": "Value at from_seq. null when unset."
+          },
+          "key": {
+            "description": "Editing-engine field key. Its field_type and diff_hint are on the edit form's fields.",
+            "maxLength": 128,
+            "pattern": "^[a-z0-9_]+(\\.[a-z0-9_]+)+$",
+            "type": "string"
+          },
+          "to": {
+            "description": "Value at to_seq. null when cleared."
+          }
+        },
+        "required": [
+          "key",
+          "from",
+          "to"
+        ],
+        "type": "object"
+      },
+      "EditFieldElement": {
+        "properties": {
+          "element_type": {
+            "description": "text elements are strings, ref elements are decimal ids of another entity, object elements have members.",
+            "enum": [
+              "object",
+              "text",
+              "ref"
+            ],
+            "maxLength": 6,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "members": {
+            "description": "Members of an object element, in validation order. Empty array for scalar elements, never null.",
+            "items": {
+              "$ref": "#/components/schemas/EditFieldElementMember"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "element_type",
+          "members"
+        ],
+        "type": "object"
+      },
+      "EditFieldElementMember": {
+        "properties": {
+          "base": {
+            "description": "Wire code of the vocabulary's first token on an int member.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "is_nullable": {
+            "description": "Whether the member may be absent or empty in at least one valid element.",
+            "type": "boolean"
+          },
+          "key": {
+            "description": "Member key inside the element object.",
+            "maxLength": 64,
+            "pattern": "^[a-z0-9_]+$",
+            "type": "string"
+          },
+          "member_type": {
+            "description": "Member value type. ref is the decimal id of another entity.",
+            "enum": [
+              "text",
+              "int",
+              "enum",
+              "bool",
+              "ref",
+              "imagehash"
+            ],
+            "maxLength": 9,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "vocabulary": {
+            "description": "Name of the vocabulary whose tokens this member accepts. Empty when it has none.",
+            "maxLength": 64,
+            "pattern": "^[a-z_]*$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "member_type",
+          "vocabulary",
+          "base",
+          "is_nullable"
+        ],
+        "type": "object"
+      },
+      "EditForm": {
+        "properties": {
+          "field_values": {
+            "additionalProperties": {},
+            "description": "Current value of every editable field, keyed by catalog.work.*. Empty object, never null.",
+            "type": "object"
+          },
+          "fields": {
+            "description": "Editable fields. Empty array, never null. The same for every caller.",
+            "items": {
+              "$ref": "#/components/schemas/EditField"
+            },
+            "type": "array"
+          },
+          "object": {
+            "description": "Type discriminant. Always edit_form.",
+            "enum": [
+              "edit_form"
+            ],
+            "maxLength": 9,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "vocabularies": {
+            "description": "Closed vocabularies the fields name. Empty array when catalog could not be read; render those fields read-only.",
+            "items": {
+              "$ref": "#/components/schemas/EditVocabulary"
+            },
+            "type": "array"
+          },
+          "work_id": {
+            "description": "Work id.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "object",
+          "work_id",
+          "field_values",
+          "fields",
+          "vocabularies"
+        ],
+        "type": "object"
+      },
+      "EditProposal": {
+        "properties": {
+          "amendments": {
+            "description": "Amendments in seq order. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/EditAmendment"
+            },
+            "type": "array"
+          },
+          "base_revision_seq": {
+            "description": "The revision seq the proposal was written against.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "created_at": {
+            "description": "When it was filed.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": "string"
+          },
+          "decided_at": {
+            "description": "When it was merged or declined. null while open.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "decider": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UserRef"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Who merged or declined it. null while open, and when withdrawn."
+          },
+          "effective_patch": {
+            "additionalProperties": {},
+            "description": "patch with every amendment folded in: what a merge would write. Empty object, never null.",
+            "type": "object"
+          },
+          "id": {
+            "description": "Proposal id.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "note": {
+            "description": "The proposer's summary. null when none. Free text; never use it as a decision input.",
+            "maxLength": 2000,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "object": {
+            "description": "Type discriminant. Always edit_proposal.",
+            "enum": [
+              "edit_proposal"
+            ],
+            "maxLength": 13,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "patch": {
+            "additionalProperties": {},
+            "description": "Proposed values keyed by catalog.work.*. Empty object, never null.",
+            "type": "object"
+          },
+          "proposer": {
+            "$ref": "#/components/schemas/UserRef",
+            "description": "Who filed it. A deleted or banned account is a deleted user ref."
+          },
+          "state": {
+            "description": "Lifecycle state, read back from catalog.",
+            "enum": [
+              "open",
+              "merged",
+              "declined",
+              "withdrawn"
+            ],
+            "maxLength": 9,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "updated_at": {
+            "description": "When it last changed.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": "string"
+          },
+          "viewer": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EditProposalViewer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The caller's own capabilities. null for an anonymous caller."
+          },
+          "work_id": {
+            "description": "The work this proposal edits.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "work_summary": {
+            "$ref": "#/components/schemas/WorkSummary",
+            "description": "The work. display_name is empty when catalog did not render it."
+          }
+        },
+        "required": [
+          "object",
+          "id",
+          "state",
+          "work_id",
+          "work_summary",
+          "note",
+          "proposer",
+          "decider",
+          "base_revision_seq",
+          "patch",
+          "effective_patch",
+          "amendments",
+          "created_at",
+          "updated_at",
+          "decided_at",
+          "viewer"
+        ],
+        "type": "object"
+      },
+      "EditProposalCreate": {
+        "properties": {
+          "note": {
+            "description": "Summary for reviewers. Absent or null for none. Free text; never use it as a decision input.",
+            "maxLength": 2000,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "patch": {
+            "additionalProperties": {},
+            "description": "New values keyed by catalog.work.*. Must name at least one key.",
+            "type": "object"
+          }
+        },
+        "required": [
+          "patch"
+        ],
+        "type": "object"
+      },
+      "EditProposalPatch": {
+        "properties": {
+          "note": {
+            "description": "Decision note. Required and not blank when declining; the proposer is told it. Free text; never use it as a decision input.",
+            "maxLength": 2000,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "state": {
+            "description": "Target state. merged and declined are reviewer decisions; withdrawn is the proposer's.",
+            "enum": [
+              "merged",
+              "declined",
+              "withdrawn"
+            ],
+            "maxLength": 9,
+            "type": "string",
+            "x-vocabulary-closed": true
+          }
+        },
+        "required": [
+          "state"
+        ],
+        "type": "object"
+      },
+      "EditProposalSummary": {
+        "properties": {
+          "base_revision_seq": {
+            "description": "The revision seq the proposal was written against.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "created_at": {
+            "description": "When it was filed.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": "string"
+          },
+          "decided_at": {
+            "description": "When it was merged or declined. null while open.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "decider": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UserRef"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Who merged or declined it. null while open, and when withdrawn."
+          },
+          "id": {
+            "description": "Proposal id.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "note": {
+            "description": "The proposer's summary. null when none. Free text; never use it as a decision input.",
+            "maxLength": 2000,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "object": {
+            "description": "Type discriminant. Always edit_proposal.",
+            "enum": [
+              "edit_proposal"
+            ],
+            "maxLength": 13,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "proposer": {
+            "$ref": "#/components/schemas/UserRef",
+            "description": "Who filed it. A deleted or banned account is a deleted user ref."
+          },
+          "state": {
+            "description": "Lifecycle state.",
+            "enum": [
+              "open",
+              "merged",
+              "declined",
+              "withdrawn"
+            ],
+            "maxLength": 9,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "updated_at": {
+            "description": "When it last changed.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": "string"
+          },
+          "viewer": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EditProposalViewer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The caller's own capabilities. null for an anonymous caller."
+          },
+          "work_id": {
+            "description": "The work this proposal edits.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "work_summary": {
+            "$ref": "#/components/schemas/WorkSummary",
+            "description": "The work. display_name is empty when catalog did not render it."
+          }
+        },
+        "required": [
+          "object",
+          "id",
+          "state",
+          "work_id",
+          "work_summary",
+          "note",
+          "proposer",
+          "decider",
+          "base_revision_seq",
+          "created_at",
+          "updated_at",
+          "decided_at",
+          "viewer"
+        ],
+        "type": "object"
+      },
+      "EditProposalViewer": {
+        "properties": {
+          "can_amend": {
+            "description": "Whether the caller may amend it: the proposer, or a reviewer, while open.",
+            "type": "boolean"
+          },
+          "can_decide": {
+            "description": "Whether the caller may merge or decline it. A hint; catalog decides. Requests authenticated with a Bearer token never carry staff powers.",
+            "type": "boolean"
+          },
+          "can_withdraw": {
+            "description": "Whether the caller may withdraw it: the proposer, while open.",
+            "type": "boolean"
+          },
+          "is_proposer": {
+            "description": "Whether the caller filed it.",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "is_proposer",
+          "can_withdraw",
+          "can_decide",
+          "can_amend"
+        ],
+        "type": "object"
+      },
+      "EditRevert": {
+        "properties": {
+          "object": {
+            "description": "Type discriminant. Always edit_revert.",
+            "enum": [
+              "edit_revert"
+            ],
+            "maxLength": 11,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "proposal": {
+            "$ref": "#/components/schemas/EditProposal",
+            "description": "The proposal the revert filed."
+          },
+          "revision": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EditRevision"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The revision written when catalog merged the revert at once. null otherwise, or when it could not be read back."
+          }
+        },
+        "required": [
+          "object",
+          "proposal",
+          "revision"
+        ],
+        "type": "object"
+      },
+      "EditRevertCreate": {
+        "properties": {
+          "note": {
+            "description": "Why. Absent or null for none. Free text; never use it as a decision input.",
+            "maxLength": 2000,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "to_seq": {
+            "description": "The revision seq to restore.",
+            "format": "int64",
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "to_seq"
+        ],
+        "type": "object"
+      },
+      "EditRevision": {
+        "properties": {
+          "actor": {
+            "$ref": "#/components/schemas/UserRef",
+            "description": "Who caused it. A deleted or banned account is a deleted user ref."
+          },
+          "changed_fields": {
+            "description": "Field keys the revision touched. Empty array, never null.",
+            "items": {
+              "description": "Editing-engine field key, such as catalog.work.titles.",
+              "maxLength": 128,
+              "pattern": "^[a-z0-9_]+(\\.[a-z0-9_]+)+$",
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "created_at": {
+            "description": "When it was recorded.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": "string"
+          },
+          "id": {
+            "description": "Revision id.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "last_amender": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UserRef"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The last reviewer who amended the proposal before it merged. null when nobody did."
+          },
+          "object": {
+            "description": "Type discriminant. Always edit_revision.",
+            "enum": [
+              "edit_revision"
+            ],
+            "maxLength": 13,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "proposal_id": {
+            "description": "The proposal it merged. null for direct edits and imports.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "revision_action": {
+            "description": "How the revision came about.",
+            "enum": [
+              "created",
+              "merged",
+              "direct",
+              "reverted"
+            ],
+            "maxLength": 8,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "seq": {
+            "description": "Position in the work's revision chain, 1-based and contiguous.",
+            "format": "int64",
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "object",
+          "id",
+          "seq",
+          "revision_action",
+          "changed_fields",
+          "actor",
+          "last_amender",
+          "proposal_id",
+          "created_at"
+        ],
+        "type": "object"
+      },
+      "EditRevisionDiff": {
+        "properties": {
+          "field_changes": {
+            "description": "Fields whose value differs. Empty array when none.",
+            "items": {
+              "$ref": "#/components/schemas/EditFieldChange"
+            },
+            "type": "array"
+          },
+          "from_seq": {
+            "description": "Base revision seq.",
+            "format": "int64",
+            "minimum": 1,
+            "type": "integer"
+          },
+          "object": {
+            "description": "Type discriminant. Always edit_revision_diff.",
+            "enum": [
+              "edit_revision_diff"
+            ],
+            "maxLength": 18,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "to_seq": {
+            "description": "Target revision seq.",
+            "format": "int64",
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "object",
+          "from_seq",
+          "to_seq",
+          "field_changes"
+        ],
+        "type": "object"
+      },
+      "EditVocabulary": {
+        "properties": {
+          "is_closed": {
+            "description": "Whether a value outside values is refused.",
+            "type": "boolean"
+          },
+          "object": {
+            "description": "Type discriminant. Always vocabulary.",
+            "enum": [
+              "vocabulary"
+            ],
+            "maxLength": 10,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "values": {
+            "description": "Tokens in the vocabulary's published order. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/EditVocabularyValue"
+            },
+            "type": "array"
+          },
+          "vocabulary": {
+            "description": "The name fields use to point at this vocabulary.",
+            "maxLength": 64,
+            "pattern": "^[a-z_]*$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "object",
+          "vocabulary",
+          "is_closed",
+          "values"
+        ],
+        "type": "object"
+      },
+      "EditVocabularyValue": {
+        "properties": {
+          "description": {
+            "description": "Description. Empty when catalog gives none. Free text; never use it as a decision input.",
+            "maxLength": 2048,
+            "type": "string"
+          },
+          "display_name": {
+            "description": "Label. Empty when catalog gives none. Free text; never use it as a decision input.",
+            "maxLength": 512,
+            "type": "string"
+          },
+          "value": {
+            "description": "Token.",
+            "maxLength": 128,
+            "pattern": "^\\S+$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "value",
+          "display_name",
+          "description"
+        ],
+        "type": "object"
+      },
       "EmphasisNode": {
         "properties": {
           "children": {
@@ -6982,6 +7917,37 @@
             "description": "Members of this page. Empty array, never null.",
             "items": {
               "$ref": "#/components/schemas/DocSummary"
+            },
+            "type": "array"
+          },
+          "next_cursor": {
+            "description": "Opaque keyset cursor. Omitted on the last page.",
+            "maxLength": 512,
+            "pattern": "^cur_[A-Za-z0-9_-]+$",
+            "type": "string"
+          },
+          "object": {
+            "description": "Type discriminant. Always list.",
+            "enum": [
+              "list"
+            ],
+            "maxLength": 4,
+            "type": "string",
+            "x-vocabulary-closed": true
+          }
+        },
+        "required": [
+          "object",
+          "items"
+        ],
+        "type": "object"
+      },
+      "ListEditProposalSummary": {
+        "properties": {
+          "items": {
+            "description": "Members of this page. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/EditProposalSummary"
             },
             "type": "array"
           },
@@ -10315,6 +11281,49 @@
             "description": "Members of this page. Empty array, never null.",
             "items": {
               "$ref": "#/components/schemas/CreditNameRef"
+            },
+            "type": "array"
+          },
+          "object": {
+            "description": "Type discriminant. Always list.",
+            "enum": [
+              "list"
+            ],
+            "maxLength": 4,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "total": {
+            "description": "Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "total_relation": {
+            "description": "eq when total is exact, gte when it stopped at the depth limit and there are at least that many.",
+            "enum": [
+              "eq",
+              "gte"
+            ],
+            "maxLength": 3,
+            "type": "string",
+            "x-vocabulary-closed": true
+          }
+        },
+        "required": [
+          "object",
+          "items",
+          "total",
+          "total_relation"
+        ],
+        "type": "object"
+      },
+      "PageListEditRevision": {
+        "properties": {
+          "items": {
+            "description": "Members of this page. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/EditRevision"
             },
             "type": "array"
           },
@@ -23120,6 +24129,164 @@
         ],
         "type": "object"
       },
+      "WorkEditProposalCreateResult": {
+        "properties": {
+          "amendments": {
+            "description": "Amendments in seq order. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/EditAmendment"
+            },
+            "type": "array"
+          },
+          "base_revision_seq": {
+            "description": "The revision seq the proposal was written against.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "created_at": {
+            "description": "When it was filed.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": "string"
+          },
+          "decided_at": {
+            "description": "When it was merged or declined. null while open.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "decider": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UserRef"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Who merged or declined it. null while open, and when withdrawn."
+          },
+          "effective_patch": {
+            "additionalProperties": {},
+            "description": "patch with every amendment folded in: what a merge would write. Empty object, never null.",
+            "type": "object"
+          },
+          "id": {
+            "description": "Proposal id.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "note": {
+            "description": "The proposer's summary. null when none. Free text; never use it as a decision input.",
+            "maxLength": 2000,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "object": {
+            "description": "Type discriminant. Always edit_proposal.",
+            "enum": [
+              "edit_proposal"
+            ],
+            "maxLength": 13,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "patch": {
+            "additionalProperties": {},
+            "description": "Proposed values keyed by catalog.work.*. Empty object, never null.",
+            "type": "object"
+          },
+          "proposer": {
+            "$ref": "#/components/schemas/UserRef",
+            "description": "Who filed it. A deleted or banned account is a deleted user ref."
+          },
+          "revision": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EditRevision"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The revision written when catalog merged the proposal at once. null otherwise, or when it could not be read back."
+          },
+          "state": {
+            "description": "Lifecycle state, read back from catalog.",
+            "enum": [
+              "open",
+              "merged",
+              "declined",
+              "withdrawn"
+            ],
+            "maxLength": 9,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "updated_at": {
+            "description": "When it last changed.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": "string"
+          },
+          "viewer": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EditProposalViewer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The caller's own capabilities. null for an anonymous caller."
+          },
+          "work_id": {
+            "description": "The work this proposal edits.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "work_summary": {
+            "$ref": "#/components/schemas/WorkSummary",
+            "description": "The work. display_name is empty when catalog did not render it."
+          }
+        },
+        "required": [
+          "revision",
+          "object",
+          "id",
+          "state",
+          "work_id",
+          "work_summary",
+          "note",
+          "proposer",
+          "decider",
+          "base_revision_seq",
+          "patch",
+          "effective_patch",
+          "amendments",
+          "created_at",
+          "updated_at",
+          "decided_at",
+          "viewer"
+        ],
+        "type": "object"
+      },
       "WorkEngagement": {
         "properties": {
           "like_count": {
@@ -32478,6 +33645,633 @@
         ]
       }
     },
+    "/edit-proposals": {
+      "get": {
+        "description": "A cursor collection of this site's proposals, newest first. state defaults to open. Requires a cookie session holding galgame.edit_proposal.review; requests authenticated with a Bearer token never hold staff powers.",
+        "operationId": "listEditProposals",
+        "parameters": [
+          {
+            "description": "Proposal state. Default open.",
+            "explode": false,
+            "in": "query",
+            "name": "state",
+            "schema": {
+              "default": "open",
+              "description": "Proposal state. Default open.",
+              "enum": [
+                "open",
+                "merged",
+                "declined",
+                "withdrawn"
+              ],
+              "maxLength": 9,
+              "type": "string",
+              "x-vocabulary-closed": true
+            }
+          },
+          {
+            "description": "Opaque keyset cursor from a previous page of this collection.",
+            "explode": false,
+            "in": "query",
+            "name": "cursor",
+            "schema": {
+              "description": "Opaque keyset cursor from a previous page of this collection.",
+              "maxLength": 512,
+              "pattern": "^cur_[A-Za-z0-9_-]+$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Page size. 1–100, default 20. Values above 100 are rejected, not clamped.",
+            "explode": false,
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 20,
+              "description": "Page size. 1–100, default 20. Values above 100 are rejected, not clamped.",
+              "format": "int64",
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListEditProposalSummary"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "UNKNOWN_ENUM_VALUE, LIMIT_TOO_LARGE or INVALID_CURSOR."
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "PERMISSION_REQUIRED; SCOPE_REQUIRED; ACCOUNT_BANNED."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the catalog or the account service cannot be reached."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List the edit review queue",
+        "tags": [
+          "edit-proposals"
+        ]
+      }
+    },
+    "/edit-proposals/{proposal_id}": {
+      "get": {
+        "description": "The proposal with its patch and amendments. The proposer, the work's owner and reviewers may read it; anyone else is NOT_FOUND. ETag is catalog's validator; send it back as If-Match to amend, withdraw or decide.",
+        "operationId": "getEditProposal",
+        "parameters": [
+          {
+            "description": "Proposal id.",
+            "in": "path",
+            "name": "proposal_id",
+            "required": true,
+            "schema": {
+              "description": "Proposal id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EditProposal"
+                }
+              }
+            },
+            "description": "OK",
+            "headers": {
+              "ETag": {
+                "schema": {
+                  "description": "Catalog's validator for this proposal. Send it back as If-Match.",
+                  "maxLength": 64,
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SCOPE_REQUIRED; ACCOUNT_BANNED."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when the proposal does not exist, belongs to another site, or the caller may not read it."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the catalog or the account service cannot be reached."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get an edit proposal",
+        "tags": [
+          "edit-proposals"
+        ]
+      },
+      "patch": {
+        "description": "Moves an open proposal. withdrawn is the proposer's; merged and declined need a cookie session holding galgame.edit_proposal.review, or owning the work, and catalog decides. declined requires a note. The response is the proposal read back from catalog. If-Match is forwarded; without it the write is unconditional.",
+        "operationId": "updateEditProposal",
+        "parameters": [
+          {
+            "description": "Proposal id.",
+            "in": "path",
+            "name": "proposal_id",
+            "required": true,
+            "schema": {
+              "description": "Proposal id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "The proposal's ETag from GET /edit-proposals/{proposal_id} or a previous write. Absent means unconditional.",
+            "in": "header",
+            "name": "If-Match",
+            "schema": {
+              "description": "The proposal's ETag from GET /edit-proposals/{proposal_id} or a previous write. Absent means unconditional.",
+              "maxLength": 64,
+              "pattern": "^(\\*|(W/)?\"[^\"]{1,60}\")$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EditProposalPatch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EditProposal"
+                }
+              }
+            },
+            "description": "OK",
+            "headers": {
+              "ETag": {
+                "schema": {
+                  "description": "Catalog's validator for this proposal. Send it back as If-Match.",
+                  "maxLength": 64,
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "PERMISSION_REQUIRED for a Bearer decision, a caller without review standing, or someone else's withdrawal; SCOPE_REQUIRED; ACCOUNT_BANNED."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when the proposal does not exist, belongs to another site, or the caller may not read it."
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "INVALID_STATE_TRANSITION when the proposal is not open."
+          },
+          "412": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "PRECONDITION_FAILED when If-Match does not match."
+          },
+          "413": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Request Entity Too Large"
+          },
+          "415": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unsupported Media Type"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED when declining without a note."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the catalog cannot be reached, or its quota is used up."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Merge, decline or withdraw an edit proposal",
+        "tags": [
+          "edit-proposals"
+        ]
+      }
+    },
+    "/edit-proposals/{proposal_id}/amendments": {
+      "post": {
+        "description": "Appends a correction to an open proposal. Idempotency-Key is required. set or unset must name at least one key. If-Match is forwarded to catalog; without it the write is unconditional. Location is the proposal's path; ETag is its new validator.",
+        "operationId": "createEditProposalAmendment",
+        "parameters": [
+          {
+            "description": "Caller-generated UUID (canonical 8-4-4-4-12 hex, any version) or 26-character Crockford ULID. Scoped to (user, operation, key) for 24 hours.",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "description": "Caller-generated UUID (canonical 8-4-4-4-12 hex, any version) or 26-character Crockford ULID. Scoped to (user, operation, key) for 24 hours.",
+              "maxLength": 36,
+              "minLength": 26,
+              "pattern": "^([0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}|[0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{26})$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Proposal id.",
+            "in": "path",
+            "name": "proposal_id",
+            "required": true,
+            "schema": {
+              "description": "Proposal id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "The proposal's ETag from GET /edit-proposals/{proposal_id} or a previous write. Absent means unconditional.",
+            "in": "header",
+            "name": "If-Match",
+            "schema": {
+              "description": "The proposal's ETag from GET /edit-proposals/{proposal_id} or a previous write. Absent means unconditional.",
+              "maxLength": 64,
+              "pattern": "^(\\*|(W/)?\"[^\"]{1,60}\")$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EditAmendmentCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EditAmendment"
+                }
+              }
+            },
+            "description": "Created",
+            "headers": {
+              "ETag": {
+                "schema": {
+                  "description": "The proposal's new validator.",
+                  "maxLength": 64,
+                  "type": "string"
+                }
+              },
+              "Location": {
+                "schema": {
+                  "description": "Absolute path of the amended proposal, such as /api/v1/edit-proposals/1207.",
+                  "format": "uri-reference",
+                  "maxLength": 64,
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "INVALID_PARAMETER when Idempotency-Key is missing or malformed."
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "PERMISSION_REQUIRED when catalog refuses the caller; SCOPE_REQUIRED; ACCOUNT_BANNED."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when the proposal does not exist or belongs to another site."
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "INVALID_STATE_TRANSITION when the proposal is not open; IDEMPOTENCY_KEY_REUSED or IDEMPOTENCY_REQUEST_IN_PROGRESS."
+          },
+          "412": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "PRECONDITION_FAILED when If-Match does not match."
+          },
+          "413": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Request Entity Too Large"
+          },
+          "415": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unsupported Media Type"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED when set and unset are both empty, a key lacks the catalog.work. prefix, or catalog refuses a value."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the catalog cannot be reached, or its quota is used up."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Amend an edit proposal",
+        "tags": [
+          "edit-proposals"
+        ]
+      }
+    },
     "/engines": {
       "get": {
         "description": "Every engine catalog records, most works first, ties broken by ascending id. A page-number collection.",
@@ -37278,6 +39072,144 @@
         "summary": "Get the caller's creator eligibility",
         "tags": [
           "users"
+        ]
+      }
+    },
+    "/me/edit-proposals": {
+      "get": {
+        "description": "A cursor collection of the proposals the caller filed on this site, newest first. work_id narrows it to one work; state to one state.",
+        "operationId": "listMyEditProposals",
+        "parameters": [
+          {
+            "description": "Narrow to one work.",
+            "explode": false,
+            "in": "query",
+            "name": "work_id",
+            "schema": {
+              "description": "Narrow to one work.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Narrow to one state. Absent means every state.",
+            "explode": false,
+            "in": "query",
+            "name": "state",
+            "schema": {
+              "description": "Narrow to one state. Absent means every state.",
+              "enum": [
+                "open",
+                "merged",
+                "declined",
+                "withdrawn"
+              ],
+              "maxLength": 9,
+              "type": "string",
+              "x-vocabulary-closed": true
+            }
+          },
+          {
+            "description": "Opaque keyset cursor from a previous page of this collection.",
+            "explode": false,
+            "in": "query",
+            "name": "cursor",
+            "schema": {
+              "description": "Opaque keyset cursor from a previous page of this collection.",
+              "maxLength": 512,
+              "pattern": "^cur_[A-Za-z0-9_-]+$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Page size. 1–100, default 20. Values above 100 are rejected, not clamped.",
+            "explode": false,
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 20,
+              "description": "Page size. 1–100, default 20. Values above 100 are rejected, not clamped.",
+              "format": "int64",
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListEditProposalSummary"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "UNKNOWN_ENUM_VALUE, LIMIT_TOO_LARGE or INVALID_CURSOR."
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SCOPE_REQUIRED; ACCOUNT_BANNED."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the catalog or the account service cannot be reached."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List the caller's edit proposals",
+        "tags": [
+          "me"
         ]
       }
     },
@@ -59453,6 +61385,875 @@
           }
         ],
         "summary": "Vote for a work cover",
+        "tags": [
+          "works"
+        ]
+      }
+    },
+    "/works/{work_id}/edit-form": {
+      "get": {
+        "description": "Current field values, the editable-field schema and the closed vocabularies the fields name. The schema is the same for every caller: whether a proposal can be decided is on the proposal. A vocabulary read failure answers vocabularies=[] with a warning, still 200. Hidden or unknown works are NOT_FOUND.",
+        "operationId": "getWorkEditForm",
+        "parameters": [
+          {
+            "description": "Work id.",
+            "in": "path",
+            "name": "work_id",
+            "required": true,
+            "schema": {
+              "description": "Work id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EditForm"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SCOPE_REQUIRED without catalog:edit; ACCOUNT_BANNED."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when the work does not exist or is hidden; ENTITY_MERGED when it was merged, with current_id."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the catalog cannot be reached."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get a work's edit form",
+        "tags": [
+          "works"
+        ]
+      }
+    },
+    "/works/{work_id}/edit-proposals": {
+      "get": {
+        "description": "A cursor collection of the proposals filed on this site for the work, newest first. state defaults to open. Items carry no patch: the patch is on GET /edit-proposals/{proposal_id} for those who may read it. viewer is null for an anonymous caller. Hidden or unknown works are NOT_FOUND.",
+        "operationId": "listWorkEditProposals",
+        "parameters": [
+          {
+            "description": "Work id.",
+            "in": "path",
+            "name": "work_id",
+            "required": true,
+            "schema": {
+              "description": "Work id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Proposal state. Default open.",
+            "explode": false,
+            "in": "query",
+            "name": "state",
+            "schema": {
+              "default": "open",
+              "description": "Proposal state. Default open.",
+              "enum": [
+                "open",
+                "merged",
+                "declined",
+                "withdrawn"
+              ],
+              "maxLength": 9,
+              "type": "string",
+              "x-vocabulary-closed": true
+            }
+          },
+          {
+            "description": "Opaque keyset cursor from a previous page of this collection.",
+            "explode": false,
+            "in": "query",
+            "name": "cursor",
+            "schema": {
+              "description": "Opaque keyset cursor from a previous page of this collection.",
+              "maxLength": 512,
+              "pattern": "^cur_[A-Za-z0-9_-]+$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Page size. 1–100, default 20. Values above 100 are rejected, not clamped.",
+            "explode": false,
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 20,
+              "description": "Page size. 1–100, default 20. Values above 100 are rejected, not clamped.",
+              "format": "int64",
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListEditProposalSummary"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "UNKNOWN_ENUM_VALUE, LIMIT_TOO_LARGE or INVALID_CURSOR."
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "INVALID_CREDENTIAL for a bad Bearer."
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when the work does not exist or is hidden; ENTITY_MERGED when it was merged."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the catalog or the account service cannot be reached."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          },
+          {}
+        ],
+        "summary": "List a work's edit proposals",
+        "tags": [
+          "works"
+        ]
+      },
+      "post": {
+        "description": "Files a proposal. Idempotency-Key is required. Every patch key starts with catalog.work. A proposal catalog merges at once answers state=merged with its revision; revision is null when it did not merge, and also when the merged revision could not be read back, in which case the proposal still stands. Location is the proposal's path.",
+        "operationId": "createWorkEditProposal",
+        "parameters": [
+          {
+            "description": "Caller-generated UUID (canonical 8-4-4-4-12 hex, any version) or 26-character Crockford ULID. Scoped to (user, operation, key) for 24 hours.",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "description": "Caller-generated UUID (canonical 8-4-4-4-12 hex, any version) or 26-character Crockford ULID. Scoped to (user, operation, key) for 24 hours.",
+              "maxLength": 36,
+              "minLength": 26,
+              "pattern": "^([0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}|[0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{26})$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Work id.",
+            "in": "path",
+            "name": "work_id",
+            "required": true,
+            "schema": {
+              "description": "Work id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EditProposalCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkEditProposalCreateResult"
+                }
+              }
+            },
+            "description": "Created",
+            "headers": {
+              "Location": {
+                "schema": {
+                  "description": "Absolute path of the new proposal, such as /api/v1/edit-proposals/1207.",
+                  "format": "uri-reference",
+                  "maxLength": 64,
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "INVALID_PARAMETER when Idempotency-Key is missing or malformed."
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SCOPE_REQUIRED; ACCOUNT_BANNED."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when the work does not exist or is hidden; ENTITY_MERGED when it was merged."
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "IDEMPOTENCY_KEY_REUSED or IDEMPOTENCY_REQUEST_IN_PROGRESS."
+          },
+          "413": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Request Entity Too Large"
+          },
+          "415": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unsupported Media Type"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED when patch is empty, a key lacks the catalog.work. prefix, or catalog refuses a value."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the catalog cannot be reached, or its quota is used up."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Propose an edit to a work",
+        "tags": [
+          "works"
+        ]
+      }
+    },
+    "/works/{work_id}/edit-reverts": {
+      "post": {
+        "description": "Files a proposal that restores the work to to_seq. Idempotency-Key is required. When catalog merges it at once, revision is the new revision; otherwise revision is null and the proposal waits for review. Location is the proposal's path.",
+        "operationId": "createWorkEditRevert",
+        "parameters": [
+          {
+            "description": "Caller-generated UUID (canonical 8-4-4-4-12 hex, any version) or 26-character Crockford ULID. Scoped to (user, operation, key) for 24 hours.",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "description": "Caller-generated UUID (canonical 8-4-4-4-12 hex, any version) or 26-character Crockford ULID. Scoped to (user, operation, key) for 24 hours.",
+              "maxLength": 36,
+              "minLength": 26,
+              "pattern": "^([0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}|[0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{26})$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Work id.",
+            "in": "path",
+            "name": "work_id",
+            "required": true,
+            "schema": {
+              "description": "Work id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EditRevertCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EditRevert"
+                }
+              }
+            },
+            "description": "Created",
+            "headers": {
+              "Location": {
+                "schema": {
+                  "description": "Absolute path of the proposal the revert filed, such as /api/v1/edit-proposals/1207.",
+                  "format": "uri-reference",
+                  "maxLength": 64,
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "INVALID_PARAMETER when Idempotency-Key is missing or malformed."
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SCOPE_REQUIRED; PERMISSION_REQUIRED when catalog refuses the revert; ACCOUNT_BANNED."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when the work does not exist, is hidden, or has no revision to_seq; ENTITY_MERGED when it was merged."
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "IDEMPOTENCY_KEY_REUSED or IDEMPOTENCY_REQUEST_IN_PROGRESS."
+          },
+          "413": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Request Entity Too Large"
+          },
+          "415": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unsupported Media Type"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED when to_seq is below 1."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the catalog cannot be reached, or its quota is used up."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Revert a work to a revision",
+        "tags": [
+          "works"
+        ]
+      }
+    },
+    "/works/{work_id}/edit-revisions": {
+      "get": {
+        "description": "A page-number collection of the work's revision chain, newest first. Hidden or unknown works are NOT_FOUND.",
+        "operationId": "listWorkEditRevisions",
+        "parameters": [
+          {
+            "description": "Work id.",
+            "in": "path",
+            "name": "work_id",
+            "required": true,
+            "schema": {
+              "description": "Work id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "1-based page number. page × limit may not exceed 10000.",
+            "explode": false,
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "default": 1,
+              "description": "1-based page number. page × limit may not exceed 10000.",
+              "format": "int64",
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Page size. 1–100, default 20. Values above 100 are rejected, not clamped.",
+            "explode": false,
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 20,
+              "description": "Page size. 1–100, default 20. Values above 100 are rejected, not clamped.",
+              "format": "int64",
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageListEditRevision"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "LIMIT_TOO_LARGE or INVALID_PARAMETER when page × limit is too deep."
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "INVALID_CREDENTIAL for a bad Bearer."
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when the work does not exist or is hidden; ENTITY_MERGED when it was merged."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the catalog or the account service cannot be reached."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          },
+          {}
+        ],
+        "summary": "List a work's edit revisions",
+        "tags": [
+          "works"
+        ]
+      }
+    },
+    "/works/{work_id}/edit-revisions/diff": {
+      "get": {
+        "description": "The field-level changes from from_seq to to_seq. Both are required and at least 1. A seq the work does not have is NOT_FOUND.",
+        "operationId": "getWorkEditRevisionDiff",
+        "parameters": [
+          {
+            "description": "Work id.",
+            "in": "path",
+            "name": "work_id",
+            "required": true,
+            "schema": {
+              "description": "Work id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Base revision seq.",
+            "explode": false,
+            "in": "query",
+            "name": "from_seq",
+            "required": true,
+            "schema": {
+              "description": "Base revision seq.",
+              "format": "int64",
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Target revision seq.",
+            "explode": false,
+            "in": "query",
+            "name": "to_seq",
+            "required": true,
+            "schema": {
+              "description": "Target revision seq.",
+              "format": "int64",
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EditRevisionDiff"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "INVALID_PARAMETER when from_seq or to_seq is missing or below 1."
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "INVALID_CREDENTIAL for a bad Bearer."
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when the work does not exist, is hidden, or lacks either seq; ENTITY_MERGED when it was merged."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the catalog cannot be reached."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          },
+          {}
+        ],
+        "summary": "Diff two revisions of a work",
         "tags": [
           "works"
         ]

@@ -117,7 +117,6 @@ type App struct {
 	NewsV1                    *newsapiv1.Service
 	GalgameSubmissionHandler  *galgameHandler.SubmissionHandler
 	GalgameClaimReviewHandler *galgameHandler.ClaimReviewHandler
-	GalgameEditHandler        *galgameHandler.EditHandler
 	ImagesV1                  *imageapiv1.Service
 	Artifact                  *artifactclient.Client
 	FileStorage               *storage.S3Client
@@ -469,7 +468,7 @@ func New(cfg *config.Config) *App {
 		Authn:             authn,
 		BearerStance:      bearerStance,
 		ImageMeta:         imageMetaResolve(imageMeta),
-		GalgameV1:         galgameapiv1.New(gc, moyuCli, uc, rdb, cfg.NextMoeAPI.ImageCDNBase).WithWork(db, catalogCli, storeLinks, moemoepoint.Award).WithUserPlane(trustCheck, trustScan, galgameCollectionRepo),
+		GalgameV1:         galgameapiv1.New(gc, moyuCli, uc, rdb, cfg.NextMoeAPI.ImageCDNBase).WithWork(db, catalogCli, storeLinks, moemoepoint.Award).WithUserPlane(trustCheck, trustScan, galgameCollectionRepo).WithEditing(notifier),
 		GalgameEntityV1:   galgameentityv1.New(gc, db, cfg.NextMoeAPI.ImageCDNBase),
 		GalgameCalendarV1: calendarapiv1.New(gc, db, cfg.NextMoeAPI.ImageCDNBase),
 		GalgameRatingV1:   newRatingV1(db, gc, uc, trustCheck, trustScan, galgamePlaytimeSvc, cfg.NextMoeAPI.ImageCDNBase),
@@ -497,7 +496,6 @@ func New(cfg *config.Config) *App {
 		NewsV1:                    newsapiv1.New(newsCli, uc, cfg.NextMoeAPI.ImageCDNBase),
 		GalgameSubmissionHandler:  galgameHandler.NewSubmissionHandler(galgameSubmissionSvc),
 		GalgameClaimReviewHandler: galgameHandler.NewClaimReviewHandler(galgameClaimReviewSvc),
-		GalgameEditHandler:        galgameHandler.NewEditHandler(catalogCli, gc, uc, notifier, galgameLocalRepo),
 		ImagesV1:                  imageapiv1.New(imgCli, catalogCli, db, cfg.NextMoeAPI.ImageCDNBase),
 		Artifact:                  artCli,
 		FileStorage:               fileStorageClient,

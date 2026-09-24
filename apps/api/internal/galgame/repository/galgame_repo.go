@@ -207,14 +207,6 @@ func (r *GalgameRepository) SetCreatorIfUnset(tx *gorm.DB, workID, userID int) e
 		UpdateColumn("creator_user_id", userID).Error
 }
 
-func (r *GalgameRepository) Touch(tx *gorm.DB, workID int) error {
-	if err := r.EnsureLocalStub(tx, workID); err != nil {
-		return err
-	}
-	return tx.Model(&model.GalgameLocal{}).Where("id = ?", workID).
-		UpdateColumn("resource_update_time", time.Now()).Error
-}
-
 func (r *GalgameRepository) SubmitLocal(tx *gorm.DB, workID, userID int) error {
 	if err := r.EnsureLocalStub(tx, workID); err != nil {
 		return err

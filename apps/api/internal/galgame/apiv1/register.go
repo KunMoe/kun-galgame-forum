@@ -119,6 +119,7 @@ func Register(svc *Service) func(huma.API) {
 		}), svc.listMyWorkStates)
 
 		svc.registerUserPlane(api)
+		svc.registerEdit(api)
 
 		huma.Register(api, v1.Public(huma.Operation{
 			OperationID: "listWorkMoyuPatches",

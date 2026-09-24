@@ -120,11 +120,6 @@ func (r *EditRevision) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
-type EditRevertResult struct {
-	Proposal EditProposal `json:"proposal"`
-	Revision EditRevision `json:"revision"`
-}
-
 // One member of a list field's element object, as the schema declares it.
 type EditSchemaElementMember struct {
 	Key        string `json:"key"`

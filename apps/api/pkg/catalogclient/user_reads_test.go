@@ -45,16 +45,17 @@ func TestEditSnapshotUser_TravelsAsTheUser(t *testing.T) {
 	}
 }
 
-func TestListEditProposalsUser_MineIsTheToken(t *testing.T) {
+func TestListEditProposalsUserPage_MineIsTheToken(t *testing.T) {
 	srv, got := recordingServer(t, 0, `{"code":0,"message":"ok","data":{"items":[`+
 		`{"id":7,"entity_type":"catalog.work","entity_id":1000,"site":"kungal","status":"open","proposer_uid":9,"patch":{}}`+
 		`],"total":1}}`)
 
-	items, err := userClient(srv.URL).ListEditProposalsUser(context.Background(), "user-jwt",
+	page, err := userClient(srv.URL).ListEditProposalsUserPage(context.Background(), "user-jwt",
 		UserEditProposalFilter{EntityType: "catalog.work", EntityID: 1000, Status: "open", Limit: 20, Mine: true})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
+	items := page.Items
 	if got.method != http.MethodGet || got.path != "/v2/me/proposals" {
 		t.Fatalf("list hit %s %s", got.method, got.path)
 	}
@@ -76,17 +77,18 @@ func TestListEditProposalsUser_MineIsTheToken(t *testing.T) {
 	}
 }
 
-func TestListEditProposalsUser_V2OmitsPatchAndCarriesTimes(t *testing.T) {
+func TestListEditProposalsUserPage_V2OmitsPatchAndCarriesTimes(t *testing.T) {
 	srv, _ := recordingServer(t, 0, `{"object":"list","items":[{`+
 		`"id":"1064","state":"merged","target_object":"work","entity_id":"17",`+
 		`"proposer_uid":"2","site":"kungal","created_at":"2026-08-15T11:35:34Z"`+
 		`}]}`)
 
-	items, err := userClient(srv.URL).ListEditProposalsUser(context.Background(), "user-jwt",
+	page, err := userClient(srv.URL).ListEditProposalsUserPage(context.Background(), "user-jwt",
 		UserEditProposalFilter{Mine: true})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
+	items := page.Items
 	if len(items) != 1 {
 		t.Fatalf("items decoded wrong: %+v", items)
 	}
@@ -105,10 +107,10 @@ func TestListEditProposalsUser_V2OmitsPatchAndCarriesTimes(t *testing.T) {
 	}
 }
 
-func TestListEditProposalsUser_QueueOmitsMine(t *testing.T) {
+func TestListEditProposalsUserPage_QueueOmitsMine(t *testing.T) {
 	srv, got := recordingServer(t, 0, `{"code":0,"message":"ok","data":{"items":[],"total":0}}`)
 
-	if _, err := userClient(srv.URL).ListEditProposalsUser(context.Background(), "mod-jwt",
+	if _, err := userClient(srv.URL).ListEditProposalsUserPage(context.Background(), "mod-jwt",
 		UserEditProposalFilter{EntityType: "catalog.work", Status: "open"}); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -117,11 +119,11 @@ func TestListEditProposalsUser_QueueOmitsMine(t *testing.T) {
 	}
 }
 
-func TestListEditProposalsUser_QueueDenialStaysADenial(t *testing.T) {
+func TestListEditProposalsUserPage_QueueDenialStaysADenial(t *testing.T) {
 	srv, _ := recordingServer(t, http.StatusForbidden,
 		`{"code":233,"message":"permission denied: catalog.edit.review"}`)
 
-	_, err := userClient(srv.URL).ListEditProposalsUser(context.Background(), "user-jwt",
+	_, err := userClient(srv.URL).ListEditProposalsUserPage(context.Background(), "user-jwt",
 		UserEditProposalFilter{EntityType: "catalog.work"})
 	if errors.Is(err, ErrInsufficientScope) {
 		t.Fatal("a permission denial must not be reported as a scope denial")

@@ -56,60 +56,6 @@ func (c *Client) CreateEditProposalUser(ctx context.Context, accessToken string,
 	return &EditCreateResult{Proposal: prop, Merged: prop.Status == "merged" || env.Merged, Revision: env.Revision}, nil
 }
 
-func (c *Client) WithdrawEditProposalUser(ctx context.Context, accessToken string, id int64) (*EditProposal, error) {
-	var out v2Proposal
-	err := c.userV2JSON(ctx, http.MethodPatch, accessToken, "/v2/me/proposals/"+strconv.FormatInt(id, 10),
-		map[string]any{"state": "withdrawn"}, &out, ifMatchStar())
-	if err != nil {
-		return nil, err
-	}
-	prop := out.proposal()
-	return &prop, nil
-}
-
-func (c *Client) GetEditProposalUser(ctx context.Context, accessToken string, id int64) (*EditProposal, error) {
-	var out v2Proposal
-	q := url.Values{"include": {"patch,amendments"}}
-	err := c.userV2JSON(ctx, http.MethodGet, accessToken,
-		"/v2/moderation/proposals/"+strconv.FormatInt(id, 10)+"?"+q.Encode(),
-		nil, &out, nil)
-	if err != nil {
-		return nil, err
-	}
-	prop := out.proposal()
-	return &prop, nil
-}
-
-func (c *Client) AmendEditProposalUser(ctx context.Context, accessToken string, id int64, set map[string]any, unset []string, note string) (*EditAmendment, error) {
-	body := map[string]any{}
-	if len(set) > 0 {
-		body["set"] = set
-	}
-	if len(unset) > 0 {
-		body["unset"] = unset
-	}
-	if note != "" {
-		body["note"] = note
-	}
-	var out EditAmendment
-	err := c.userV2JSON(ctx, http.MethodPost, accessToken,
-		"/v2/me/proposals/"+strconv.FormatInt(id, 10)+"/amendments", body, &out,
-		ifMatchStar())
-	if err != nil {
-		return nil, err
-	}
-	if out.Set == nil {
-		out.Set = set
-	}
-	if out.Unset == nil {
-		out.Unset = unset
-	}
-	if out.Note == "" {
-		out.Note = note
-	}
-	return &out, nil
-}
-
 func (c *Client) MergeEditProposalUser(ctx context.Context, accessToken string, id int64, note string) (*EditRevision, error) {
 	var out EditRevision
 	err := c.userV2JSON(ctx, http.MethodPost, accessToken,
@@ -123,39 +69,6 @@ func (c *Client) MergeEditProposalUser(ctx context.Context, accessToken string, 
 		out.Action = "merged"
 	}
 	return &out, nil
-}
-
-func (c *Client) DeclineEditProposalUser(ctx context.Context, accessToken string, id int64, note string) (*EditProposal, error) {
-	var out v2Proposal
-	err := c.userV2JSON(ctx, http.MethodPost, accessToken,
-		"/v2/moderation/proposals/"+strconv.FormatInt(id, 10)+"/decisions",
-		map[string]any{"decision": "decline", "note": note}, &out,
-		ifMatchStar())
-	if err != nil {
-		return nil, err
-	}
-	prop := out.proposal()
-	if prop.ID == 0 {
-		prop.ID = id
-	}
-	if prop.Status == "" || prop.Status == "open" {
-		prop.Status = "declined"
-	}
-	if prop.DecisionNote == "" {
-		prop.DecisionNote = note
-	}
-	return &prop, nil
-}
-
-func (c *Client) RevertEditEntityUser(ctx context.Context, accessToken string, revisionID int64, note string) (*EditRevertResult, error) {
-	var out v2Proposal
-	err := c.userV2JSON(ctx, http.MethodPost, accessToken, "/v2/moderation/reverts",
-		map[string]any{"revision_id": strconv.FormatInt(revisionID, 10), "reason": note},
-		&out, nil)
-	if err != nil {
-		return nil, err
-	}
-	return &EditRevertResult{Proposal: out.proposal()}, nil
 }
 
 func (c *Client) GetEditSchemaUser(ctx context.Context, accessToken, entityType string, entityID int64) (*EditSchema, error) {
@@ -238,14 +151,6 @@ type ProposalPage struct {
 	Items      []EditProposal
 	NextCursor string
 	Total      int64
-}
-
-func (c *Client) ListEditProposalsUser(ctx context.Context, accessToken string, f UserEditProposalFilter) ([]EditProposal, error) {
-	page, err := c.ListEditProposalsUserPage(ctx, accessToken, f)
-	if err != nil {
-		return nil, err
-	}
-	return page.Items, nil
 }
 
 func (c *Client) ListEditProposalsUserPage(ctx context.Context, accessToken string, f UserEditProposalFilter) (*ProposalPage, error) {

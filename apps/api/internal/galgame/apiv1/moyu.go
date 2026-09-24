@@ -13,6 +13,7 @@ import (
 	"kun-galgame-api/internal/galgame/repository"
 	"kun-galgame-api/internal/galgame/workrepr"
 	"kun-galgame-api/internal/infrastructure/storelink"
+	msgService "kun-galgame-api/internal/message/service"
 	"kun-galgame-api/internal/moemoepoint"
 	"kun-galgame-api/internal/trust/gate"
 	"kun-galgame-api/pkg/catalogclient"
@@ -109,6 +110,7 @@ type Service struct {
 	check           *gate.CheckService
 	scan            *gate.ScanService
 	aliases         *repository.GalgameCollectionRepository
+	notifier        msgService.Notifier
 	popFlight       singleflight.Group
 }
 

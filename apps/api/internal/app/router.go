@@ -120,18 +120,6 @@ func (a *App) setupRoutes() {
 		userAuth,
 		a.GalgameSubmissionHandler.SearchWithPending,
 	)
-	api.Get("/galgame/:id/edit/diff", a.GalgameEditHandler.Diff)
-	api.Get("/galgame/:id/edit/proposals", a.GalgameEditHandler.GameProposals)
-
-	optAuth := api.Group("", a.Authn.OptionalAuth())
-	// The rating and resource families sit here, not in the public group above:
-	// leaving them there made optionalUID return 0 unconditionally and silently
-	// broke the FindLikedSet batch fix, so every row rendered as not-liked for
-	// logged-in viewers.
-
-	// Both comment READ halves must mount before the auth boundary below, or
-	// anonymous reads start demanding a session. Their writes mount after it.
-	optAuth.Get("/galgame/:id/edit/revisions", a.GalgameEditHandler.Revisions)
 
 	// THE AUTH BOUNDARY. This empty-prefix group registers Auth as Use() on
 	// "/api", so it applies to EVERY route below this line. Nothing public or
@@ -142,17 +130,6 @@ func (a *App) setupRoutes() {
 	authed.Post("/galgame/:id/resubmit", a.GalgameSubmissionHandler.Resubmit)
 	authed.Delete("/galgame/:id", a.GalgameSubmissionHandler.Withdraw)
 	authed.Delete("/galgame/:id/draft", a.GalgameSubmissionHandler.DeleteDraft)
-
-	authed.Get("/galgame/:id/edit/bootstrap", a.GalgameEditHandler.Bootstrap)
-	authed.Post("/galgame/:id/edit/proposals", a.GalgameEditHandler.Submit)
-	authed.Get("/galgame-edit/mine", a.GalgameEditHandler.Mine)
-	authed.Post("/galgame-edit/proposals/:id/withdraw", a.GalgameEditHandler.Withdraw)
-	authed.Get("/galgame-edit/queue", middleware.RequireModerator(), a.GalgameEditHandler.Queue)
-	authed.Get("/galgame-edit/proposals/:id", a.GalgameEditHandler.ProposalDetail)
-	authed.Post("/galgame-edit/proposals/:id/amend", a.GalgameEditHandler.Amend)
-	authed.Post("/galgame-edit/proposals/:id/merge", a.GalgameEditHandler.Merge)
-	authed.Post("/galgame-edit/proposals/:id/decline", a.GalgameEditHandler.Decline)
-	authed.Post("/galgame/:id/edit/revert", a.GalgameEditHandler.Revert)
 
 	// Every admin gate below is PER-ROUTE, never Group("", middleware.X()) — see
 	// router_gate_test.go for the 2026-07-21..2026-08-07 outage that rule

@@ -484,7 +484,11 @@ catalog 用户面一次调用的失败，按下表进 v1。**不得**落到无 c
 - **`can_decide`（仅 UI 提示，infra 是权威）** = cookie ∧ `state=open` ∧（`user.Can(galgame.edit_proposal.review)` ∨ 本地 `creator_user_id` = 调用者）。infra 的主人是 `catalog_work.owner_user_id`（`catalog/editspec/work.go:141-151`，`editing/engine.go:73-78`），v2 没有任何面暴露它（`repr/resource.go:9-15` 的 `Claim` 只有 site/state/content_limit），所以用本地创建者代位；不一致只会落到 infra 403 → `PERMISSION_REQUIRED`。Bearer 恒 false。
 - **`can_amend`** = `state=open` ∧（`is_proposer` ∨（cookie ∧（键 ∨ 本地主人）））。infra `fenceProposal(…, proposerOrReviewer=true)`（`me_proposals.go:117-128`）。
 - **工作台读法。** 先 `GET /v2/me/proposals/{id}?include=patch,amendments`（infra 对非提案人 404，`me_proposals.go:231-247`）；404 且 cookie ∧（键 ∨ 本地主人）再 `GET /v2/moderation/proposals/{id}?include=patch,amendments`（要该作品的审查资格，`me_proposals.go:249-270`）。上游 403 / `TENANT_MISMATCH` / 404 一律 404。Bearer 不走第二步（K2）。两条路都再钉一次租户（`site=kungal` ∧ `entity_type=catalog.work`）。
-- **合并通知的「（审核时有修正）」** 以重读提案的修正链非空为准。旧面读 `rev.AmenderUID`，但 v2 决定回的是 `ProposalDecisionRecord`，这个后缀自割接以来一次都没出现过。
+- **合并通知不带「（审核时有修正）」后缀。** 旧面读 `rev.AmenderUID`，但 v2 决定回的是 `ProposalDecisionRecord`，这个后缀自割接以来一次都没出现过；v1 代码不许写人类语言字面量（F8），通知内容就是作品名。
+- **实现时按 G8 改的名（只增不改）**：表单当前值 `values` → `field_values`（infra 原名；`values` 已是词表的数组）；diff 的 `fields` → `field_changes`（`fields` 已是表单字段数组，`changes` 已被 `RolePermissionMatrixPatch` 占用）；修订的 `amender` → `last_amender`（`EditAmendment.amender` 非空，修订的可空；也正是 infra「最后一个修正人」的意思）；词表的 `name` → `vocabulary`（`name` 在全 spec 是可空）；元素 `type` → `element_type`、成员 `type` → `member_type`（`type` 已是 problem 的 uri）。`EditField.encoding` 是 `token`/`int`/`null`（无词表时为 `null`，不用空串）。
+- **工作台第二步不做本地预检。** 作品主人的资格要作品 id，读到提案之前不知道，所以 cookie 调用者在 me 面 404 之后一律再问 moderation 面，由 infra 判资格；403 / 404 都回 404。Bearer 不走第二步。
+- **提案 PATCH 先读公开面。** `GET /v2/catalog/proposals/{id}`（应用 key）拿作品 id、提案人、状态、site：租户钉、非 open 的本地 409、撤回只许提案人、决定的本地资格（键或本地主人）都在任何用户面调用之前判完；Bearer 的 `merged`/`declined` 连公开面都不读。写完用 me（撤回）或 moderation（决定）面重读，响应与 `ETag` 取自重读。
+- **旧路由删除顺带删了 `optAuth` 分组。** 它最后一个用户是 `GET /galgame/:id/edit/revisions`。空前缀 `Group` 在 Fiber 里是 `/api` 上的 `Use()`，所以此后注册的遗留路由（管理员清除内容、投稿）的链上不再有 `OptionalAuth`；它们都挂着 `Auth`，`Auth` 自己解析身份，少的只是一次重复解析。
 - **变异题追加**（接 §3.14）：
   - #27：`PATCH state=declined` 的 `NotifyDeclined` 内容不带理由 → 提案人的通知里必须有 note 原文；
   - #28：编辑队列 `state=merged`（或 declined / withdrawn）仍打 `/v2/moderation/proposals` → moderation 面 0 次调用，上游是 `/v2/catalog/proposals?state=merged&site=kungal`；

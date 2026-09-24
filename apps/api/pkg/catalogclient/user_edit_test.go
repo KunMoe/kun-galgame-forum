@@ -96,28 +96,6 @@ func TestCreateEditProposalUser_DecodesAutomerge(t *testing.T) {
 	}
 }
 
-func TestWithdrawEditProposalUser(t *testing.T) {
-	srv, got := recordingServer(t, 0, `{"code":0,"message":"ok","data":{"id":7,`+
-		`"entity_type":"catalog.work","entity_id":1000,"site":"kungal","status":"withdrawn","patch":{}}}`)
-
-	prop, err := userClient(srv.URL).WithdrawEditProposalUser(context.Background(), "user-jwt", 7)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if got.method != http.MethodPatch || got.path != "/v2/me/proposals/7" {
-		t.Fatalf("withdraw hit %s %s", got.method, got.path)
-	}
-	if got.auth != "Bearer user-jwt" {
-		t.Fatalf("auth = %q, want the user's bearer", got.auth)
-	}
-	if _, ok := got.body["actor"]; ok {
-		t.Fatalf("withdraw must assert no actor: %v", got.body)
-	}
-	if prop.Status != "withdrawn" || prop.ID != 7 {
-		t.Fatalf("withdraw result decoded wrong: %+v", prop)
-	}
-}
-
 func TestGetEditSchemaUser(t *testing.T) {
 	srv, got := recordingServer(t, 0, `{"code":0,"message":"ok","data":{"entity_type":"catalog.work",`+
 		`"fields":[{"key":"catalog.work.name_zh_cn","kind":"text","diff_hint":"inline",`+
@@ -202,7 +180,7 @@ func TestUserEditWithoutTokenNeverCalls(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) { called = true }))
 	defer srv.Close()
 	c := userClient(srv.URL)
-	if _, err := c.WithdrawEditProposalUser(context.Background(), "", 7); !errors.Is(err, ErrUnauthorized) {
+	if _, _, err := c.WithdrawMyProposal(context.Background(), "", 7, ""); !errors.Is(err, ErrUnauthorized) {
 		t.Fatalf("err = %v, want ErrUnauthorized", err)
 	}
 	if _, err := c.GetEditSchemaUser(context.Background(), "", "catalog.work", 1000); !errors.Is(err, ErrUnauthorized) {
@@ -221,51 +199,6 @@ func TestUserEditUnconfigured(t *testing.T) {
 	}
 	if _, err := c.GetEditSchemaUser(context.Background(), "user-jwt", "catalog.work", 1); !errors.Is(err, ErrNotConfigured) {
 		t.Fatalf("err = %v, want ErrNotConfigured", err)
-	}
-}
-
-func TestAmendEditProposalUser(t *testing.T) {
-	srv, got := recordingServer(t, 0, `{"code":0,"message":"ok","data":{"id":1,"seq":1,`+
-		`"amender_uid":7,"set":{"catalog.work.name_zh_cn":"修正"},"note":"typo fixed"}}`)
-
-	amendment, err := userClient(srv.URL).AmendEditProposalUser(context.Background(), "user-jwt", 7,
-		map[string]any{"catalog.work.name_zh_cn": "修正"}, []string{"catalog.work.vndb_id"}, "typo fixed")
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if got.method != http.MethodPost || got.path != "/v2/me/proposals/7/amendments" {
-		t.Fatalf("amend hit %s %s", got.method, got.path)
-	}
-	if got.auth != "Bearer user-jwt" || strings.HasPrefix(got.auth, "Basic ") {
-		t.Fatalf("auth = %q, want the user's bearer only", got.auth)
-	}
-	if _, ok := got.body["actor"]; ok {
-		t.Fatalf("the user plane asserts no actor: %v", got.body)
-	}
-	set, _ := got.body["set"].(map[string]any)
-	unset, _ := got.body["unset"].([]any)
-	if set["catalog.work.name_zh_cn"] != "修正" || len(unset) != 1 || unset[0] != "catalog.work.vndb_id" {
-		t.Fatalf("amend delta wrong: %v", got.body)
-	}
-	if got.body["note"] != "typo fixed" {
-		t.Fatalf("note lost: %v", got.body)
-	}
-	if amendment.Seq != 1 || amendment.AmenderUID != 7 {
-		t.Fatalf("amendment decoded wrong: %+v", amendment)
-	}
-}
-
-func TestAmendEditProposalUserOmitsEmptyParts(t *testing.T) {
-	srv, got := recordingServer(t, 0, `{"code":0,"message":"ok","data":{"id":1,"seq":1,"amender_uid":7}}`)
-	if _, err := userClient(srv.URL).AmendEditProposalUser(context.Background(), "user-jwt", 7,
-		map[string]any{"catalog.work.name_zh_cn": "x"}, nil, ""); err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if _, ok := got.body["unset"]; ok {
-		t.Fatalf("an absent unset must not travel: %v", got.body)
-	}
-	if _, ok := got.body["note"]; ok {
-		t.Fatalf("an empty note must not travel: %v", got.body)
 	}
 }
 
@@ -297,105 +230,25 @@ func TestMergeEditProposalUser(t *testing.T) {
 	}
 }
 
-func TestDeclineEditProposalUser(t *testing.T) {
-	srv, got := recordingServer(t, 0, `{"code":0,"message":"ok","data":{"id":7,`+
-		`"entity_type":"catalog.work","entity_id":1000,"site":"kungal","status":"declined","proposer_uid":9,"patch":{}}}`)
-
-	prop, err := userClient(srv.URL).DeclineEditProposalUser(context.Background(), "user-jwt", 7, "来源不可靠")
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if got.method != http.MethodPost || got.path != "/v2/moderation/proposals/7/decisions" {
-		t.Fatalf("decline hit %s %s", got.method, got.path)
-	}
-	if got.body["decision"] != "decline" {
-		t.Fatalf("decline body wrong: %v", got.body)
-	}
-	if got.auth != "Bearer user-jwt" {
-		t.Fatalf("auth = %q, want the user's bearer", got.auth)
-	}
-	if _, ok := got.body["actor"]; ok {
-		t.Fatalf("the user plane asserts no actor: %v", got.body)
-	}
-	if got.body["note"] != "来源不可靠" {
-		t.Fatalf("decline reason lost: %v", got.body)
-	}
-	if prop.Status != "declined" {
-		t.Fatalf("proposal decoded wrong: %+v", prop)
-	}
-}
-
-func TestRevertEditEntityUser(t *testing.T) {
-	srv, got := recordingServer(t, http.StatusCreated, `{"object":"proposal","id":"8","entity_type":"catalog.work","entity_id":"1000","site":"kungal","state":"merged","patch":{}}`)
-
-	res, err := userClient(srv.URL).RevertEditEntityUser(context.Background(), "user-jwt", 101, "回滚")
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if got.method != http.MethodPost || got.path != "/v2/moderation/reverts" {
-		t.Fatalf("revert hit %s %s", got.method, got.path)
-	}
-	if got.auth != "Bearer user-jwt" {
-		t.Fatalf("auth = %q, want the user's bearer", got.auth)
-	}
-	if got.body["revision_id"] != "101" || got.body["reason"] != "回滚" {
-		t.Fatalf("revert body wrong: %v", got.body)
-	}
-	if res.Proposal.ID != 8 || res.Proposal.Status != "merged" {
-		t.Fatalf("revert result decoded wrong: %+v", res)
-	}
-}
-
-func TestGetEditProposalUser(t *testing.T) {
-	srv, got := recordingServer(t, 0, `{"object":"proposal","id":"7",`+
-		`"entity_type":"catalog.work","entity_id":"1000","site":"kungal","state":"open","proposer_uid":"9",`+
-		`"patch":{"catalog.work.name_zh_cn":"新标题","catalog.work.vndb_id":"v1"},`+
-		`"effective_patch":{"catalog.work.name_zh_cn":"修正"},`+
-		`"amendments":[{"id":"1","seq":1,"amender_uid":"42","set":{"catalog.work.name_zh_cn":"修正"},`+
-		`"unset":["catalog.work.vndb_id"],"note":"来源存疑"}]}`)
-
-	prop, err := userClient(srv.URL).GetEditProposalUser(context.Background(), "user-jwt", 7)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if got.method != http.MethodGet || got.path != "/v2/moderation/proposals/7" {
-		t.Fatalf("detail hit %s %s", got.method, got.path)
-	}
-	if got.auth != "Bearer user-jwt" {
-		t.Fatalf("auth = %q, want the user's bearer", got.auth)
-	}
-	if !strings.Contains(got.query, "include=") {
-		t.Fatalf("review detail must ask for patch+amendments: %q", got.query)
-	}
-	if len(prop.Amendments) != 1 || prop.Amendments[0].AmenderUID != 42 {
-		t.Fatalf("amendments decoded wrong: %+v", prop)
-	}
-	if prop.EffectivePatch["catalog.work.name_zh_cn"] != "修正" || len(prop.EffectivePatch) != 1 {
-		t.Fatalf("effective patch decoded wrong: %+v", prop.EffectivePatch)
-	}
-}
-
 func TestUserEditAdjudicationErrorMapping(t *testing.T) {
 	lanes := map[string]func(c *Client) error{
 		"amend": func(c *Client) error {
-			_, err := c.AmendEditProposalUser(context.Background(), "user-jwt", 7,
-				map[string]any{"catalog.work.name_zh_cn": "x"}, nil, "")
+			_, _, err := c.AmendMyProposal(context.Background(), "user-jwt", 7,
+				map[string]any{"catalog.work.name_zh_cn": "x"}, nil, "", "", "")
 			return err
 		},
 		"merge": func(c *Client) error {
-			_, err := c.MergeEditProposalUser(context.Background(), "user-jwt", 7, "")
-			return err
+			return c.DecideProposal(context.Background(), "user-jwt", 7, "merge", "", "")
 		},
 		"decline": func(c *Client) error {
-			_, err := c.DeclineEditProposalUser(context.Background(), "user-jwt", 7, "no")
-			return err
+			return c.DecideProposal(context.Background(), "user-jwt", 7, "decline", "no", "")
 		},
 		"revert": func(c *Client) error {
-			_, err := c.RevertEditEntityUser(context.Background(), "user-jwt", 101, "")
+			_, _, err := c.RevertToRevision(context.Background(), "user-jwt", 101, "", "")
 			return err
 		},
 		"detail": func(c *Client) error {
-			_, err := c.GetEditProposalUser(context.Background(), "user-jwt", 7)
+			_, _, err := c.GetModerationProposal(context.Background(), "user-jwt", 7)
 			return err
 		},
 	}
@@ -445,11 +298,11 @@ func TestUserEditAdjudicationWithoutTokenNeverCalls(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) { called = true }))
 	defer srv.Close()
 	c := userClient(srv.URL)
-	_, amend := c.AmendEditProposalUser(context.Background(), "", 7, map[string]any{"k": "v"}, nil, "")
-	_, merge := c.MergeEditProposalUser(context.Background(), "", 7, "")
-	_, decline := c.DeclineEditProposalUser(context.Background(), "", 7, "x")
-	_, revert := c.RevertEditEntityUser(context.Background(), "", 2, "")
-	_, detail := c.GetEditProposalUser(context.Background(), "", 7)
+	_, _, amend := c.AmendMyProposal(context.Background(), "", 7, map[string]any{"k": "v"}, nil, "", "", "")
+	merge := c.DecideProposal(context.Background(), "", 7, "merge", "", "")
+	decline := c.DecideProposal(context.Background(), "", 7, "decline", "x", "")
+	_, _, revert := c.RevertToRevision(context.Background(), "", 2, "", "")
+	_, _, detail := c.GetModerationProposal(context.Background(), "", 7)
 	for name, err := range map[string]error{
 		"amend": amend, "merge": merge, "decline": decline, "revert": revert, "detail": detail,
 	} {
@@ -464,10 +317,10 @@ func TestUserEditAdjudicationWithoutTokenNeverCalls(t *testing.T) {
 
 func TestUserEditAdjudicationUnconfigured(t *testing.T) {
 	c := New(Config{})
-	if _, err := c.MergeEditProposalUser(context.Background(), "user-jwt", 7, ""); !errors.Is(err, ErrNotConfigured) {
+	if err := c.DecideProposal(context.Background(), "user-jwt", 7, "merge", "", ""); !errors.Is(err, ErrNotConfigured) {
 		t.Fatalf("err = %v, want ErrNotConfigured", err)
 	}
-	if _, err := c.RevertEditEntityUser(context.Background(), "user-jwt", 2, ""); !errors.Is(err, ErrNotConfigured) {
+	if _, _, err := c.RevertToRevision(context.Background(), "user-jwt", 2, "", ""); !errors.Is(err, ErrNotConfigured) {
 		t.Fatalf("err = %v, want ErrNotConfigured", err)
 	}
 }
