@@ -18,6 +18,7 @@ import {
   patchEditProposal
 } from '~/utils/galgame/editProposal'
 import { mapsFromWork } from '~/utils/galgame/workEditNames'
+import { resolveEditNames } from '~/utils/galgame/resolveEditNames'
 import { toKunUser } from '~/utils/userRef'
 
 const route = useRoute()
@@ -146,52 +147,29 @@ onMounted(async () => {
     return [...out]
   }
 
-  const families = [
+  const resolved = {
+    tag: (maps.tag ??= new Map()),
+    official: (maps.official ??= new Map()),
+    engine: (maps.engine ??= new Map()),
+    series: (maps.series ??= new Map()),
+    character: (maps.character ??= new Map()),
+    staff: (maps.staff ??= new Map())
+  }
+  await resolveEditNames(
+    api,
     {
-      map: maps.tag ?? new Map(),
-      ids: relationIds('catalog.work.tag_ids'),
-      path: 'galgame-tag'
+      tag: relationIds('catalog.work.tag_ids'),
+      official: relationIds('catalog.work.labels'),
+      engine: relationIds('catalog.work.engine_ids'),
+      series: relationIds('catalog.work.series_ids'),
+      character: [
+        ...relationIds('catalog.work.roster'),
+        ...creditCharacterIds()
+      ],
+      staff: relationIds('catalog.work.credits')
     },
-    {
-      map: maps.official ?? new Map(),
-      ids: relationIds('catalog.work.labels'),
-      path: 'galgame-official'
-    },
-    {
-      map: maps.engine ?? new Map(),
-      ids: relationIds('catalog.work.engine_ids'),
-      path: 'galgame-engine'
-    },
-    {
-      map: maps.series ?? new Map(),
-      ids: relationIds('catalog.work.series_ids'),
-      path: 'galgame-series'
-    },
-    {
-      map: maps.character ?? new Map(),
-      ids: [...relationIds('catalog.work.roster'), ...creditCharacterIds()],
-      path: 'galgame-character'
-    },
-    {
-      map: maps.staff ?? new Map(),
-      ids: relationIds('catalog.work.credits'),
-      path: 'galgame-staff'
-    }
-  ]
-  await Promise.all(
-    families.flatMap(({ map, ids, path }) =>
-      ids
-        .filter((id) => !map.has(id))
-        .map(async (id) => {
-          const hit = await kunFetch<{ id: number; name: string }>(
-            `/${path}/${id}`,
-            { method: 'GET' }
-          )
-          if (hit?.name) {
-            map.set(id, hit.name)
-          }
-        })
-    )
+    nameOf,
+    resolved
   )
   names.value = maps
 })
@@ -296,10 +274,7 @@ const handleMerge = async () => {
     reportProblem(merged.problem)
     return
   }
-  useMessage(
-    amending ? '已修正并合并（双方署名）' : '提案已合并',
-    'success'
-  )
+  useMessage(amending ? '已修正并合并（双方署名）' : '提案已合并', 'success')
   await navigateTo(exitTo.value)
 }
 
