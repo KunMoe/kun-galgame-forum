@@ -18,7 +18,8 @@ describe('markdownToText', () => {
     for (const cut of [
       '好![鲲 Galgame 表情包 \\[5\\] - 41](/image/61ba40',
       '好![鲲 Galgame 表',
-      '好![鲲]'
+      '好![鲲]',
+      '好![鲲 Galgame 表情包 \\[5\\] - 41](/image/61ba_320 "鲲 Gal'
     ]) {
       expect(markdownToText(cut)).toBe('好')
     }
