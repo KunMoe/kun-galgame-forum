@@ -30,6 +30,16 @@ export const notificationCategoryGroups: NotificationCategoryGroup[] = [
     ]
   },
   {
+    value: 'follow',
+    textValue: '关注',
+    icon: 'lucide:user-plus',
+    stream: 'local',
+    items: [
+      { key: 'user_followed', label: '被关注' },
+      { key: 'followee_topic_created', label: '关注的人发布新话题' }
+    ]
+  },
+  {
     value: 'reply',
     textValue: '回复评论',
     icon: 'lucide:message-circle',

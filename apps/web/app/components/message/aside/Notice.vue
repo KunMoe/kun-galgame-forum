@@ -26,6 +26,9 @@ const actorPath = computed(() =>
 )
 
 const contentPreview = computed(() => {
+  if (props.notification.notification_type === 'user_followed') {
+    return '查看 TA 的主页'
+  }
   const text = markdownToText(props.notification.excerpt_markdown).trim()
   return text || '点击查看详情'
 })

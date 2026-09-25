@@ -8,18 +8,54 @@ const props = defineProps<{
   user: UserProfile
 }>()
 
-const currentUserId = usePersistUserStore().id
-const isSelf = computed(() => currentUserId === Number(props.user.id))
+const { id: currentUserId } = storeToRefs(usePersistUserStore())
+const isSelf = computed(
+  () => !!currentUserId.value && currentUserId.value === Number(props.user.id)
+)
 const kunUser = computed(() => toKunUser(props.user))
 const displayName = computed(() => props.user.name ?? '')
 
-const metrics = computed(() => [
+const followerCount = ref<number | null>(props.user.counts.follower_count)
+
+watch(
+  () => props.user.counts.follower_count,
+  (value) => {
+    followerCount.value = value
+  }
+)
+
+const onFollowChange = (delta: number) => {
+  if (typeof followerCount.value === 'number') {
+    followerCount.value += delta
+  }
+}
+
+const displayCount = (value: number | null) => (value === null ? '—' : value)
+
+type Metric = {
+  label: string
+  value: number | null
+  accent?: boolean
+  href?: string
+}
+
+const metrics = computed<Metric[]>(() => [
   { label: '萌萌点', value: props.user.moemoepoint, accent: true },
   { label: '话题', value: props.user.counts.topic_count },
   { label: 'Galgame', value: props.user.counts.published_galgame_count },
   { label: '评分', value: props.user.counts.galgame_rating_count },
   { label: '被赞', value: props.user.counts.received_like_count },
-  { label: '被推', value: props.user.counts.received_upvote_count }
+  { label: '被推', value: props.user.counts.received_upvote_count },
+  {
+    label: '关注',
+    value: props.user.counts.following_count,
+    href: `/user/${props.user.id}/follow/following`
+  },
+  {
+    label: '粉丝',
+    value: followerCount.value,
+    href: `/user/${props.user.id}/follow/followers`
+  }
 ])
 
 const bannerRef = ref<HTMLElement | null>(null)
@@ -59,6 +95,11 @@ useIntersectionObserver(
               <KunIcon name="lucide:message-circle" />
               私聊
             </KunButton>
+            <UserFollowButton
+              v-if="!isSelf"
+              :user-id="user.id"
+              @change="onFollowChange"
+            />
             <ReportButton
               v-if="!isSelf"
               subject-kind="user"
@@ -96,10 +137,22 @@ useIntersectionObserver(
 
       <div class="mt-5 flex flex-wrap gap-x-8 gap-y-3">
         <div v-for="m in metrics" :key="m.label" class="min-w-14">
-          <div :class="cn('text-xl font-bold', m.accent && 'text-secondary')">
-            {{ m.value }}
-          </div>
-          <div class="text-default-500 text-xs">{{ m.label }}</div>
+          <KunLink
+            v-if="m.href"
+            :to="m.href"
+            color="default"
+            underline="none"
+            class-name="hover:text-primary"
+          >
+            <div class="text-xl font-bold">{{ displayCount(m.value) }}</div>
+            <div class="text-default-500 text-xs">{{ m.label }}</div>
+          </KunLink>
+          <template v-else>
+            <div :class="cn('text-xl font-bold', m.accent && 'text-secondary')">
+              {{ displayCount(m.value) }}
+            </div>
+            <div class="text-default-500 text-xs">{{ m.label }}</div>
+          </template>
         </div>
       </div>
     </KunCard>

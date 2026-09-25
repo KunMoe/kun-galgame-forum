@@ -43,7 +43,9 @@ const notification = (over: Partial<Notification> = {}): Notification => ({
 
 describe('getMessageI18n', () => {
   it('has a template for every v1 token', () => {
-    for (const notification_type of Object.keys(ALL_TYPES) as NotificationType[]) {
+    for (const notification_type of Object.keys(
+      ALL_TYPES
+    ) as NotificationType[]) {
       expect(getMessageI18n(notification({ notification_type }))).not.toBe('')
     }
   })
@@ -87,6 +89,17 @@ describe('getMessageI18n', () => {
         notification({ notification_type: 'liked', actor_count: 3 })
       )
     ).toBe(' 等 3 人点赞了您!')
+  })
+
+  it('folds user_followed by actor_count', () => {
+    expect(
+      getMessageI18n(notification({ notification_type: 'user_followed' }))
+    ).toBe(' 关注了您!')
+    expect(
+      getMessageI18n(
+        notification({ notification_type: 'user_followed', actor_count: 3 })
+      )
+    ).toBe(' 等 3 人关注了您!')
   })
 
   it('folds followed_thread_activity by actor_count and item_count', () => {
