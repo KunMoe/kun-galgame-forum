@@ -69,20 +69,24 @@ func TestV1GetUserToolsetCount(t *testing.T) {
 
 func TestV1GetUserTopicTodayIsBeijingDay(t *testing.T) {
 	f := newMeFix(t)
-	f.UserService.WithClock(func() time.Time {
-		return time.Date(2026, 9, 23, 16, 30, 0, 0, time.UTC)
-	})
+	// The day is tomorrow in Beijing, not a fixed date: the fixture seeds
+	// Alice's topics two days before the real clock, and a pinned 2026-09-24
+	// counted all seven of them from 2026-09-25 16:00 UTC on.
+	bj := time.FixedZone("Asia/Shanghai", 8*60*60)
+	y, m, d := time.Now().In(bj).AddDate(0, 0, 1).Date()
+	dayStart := time.Date(y, m, d, 0, 0, 0, 0, bj)
+	f.UserService.WithClock(func() time.Time { return dayStart.Add(30 * time.Minute) })
 	t.Cleanup(func() {
 		f.db.Exec(`DELETE FROM topic WHERE id IN (?, ?)`, u2TopicToday, u2TopicOldDay)
 	})
-	f.insertTopic(t, u2TopicToday, w3UserAlice, 0, time.Date(2026, 9, 23, 16, 40, 0, 0, time.UTC))
-	f.insertTopic(t, u2TopicOldDay, w3UserAlice, 0, time.Date(2026, 9, 23, 15, 50, 0, 0, time.UTC))
+	f.insertTopic(t, u2TopicToday, w3UserAlice, 0, dayStart.Add(40*time.Minute))
+	f.insertTopic(t, u2TopicOldDay, w3UserAlice, 0, dayStart.Add(-10*time.Minute))
 	resp, body := f.getUser(t, "", strconv.Itoa(w3UserAlice))
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("get user %d %+v", resp.StatusCode, body)
 	}
 	if asInt(userCounts(t, body)["topic_today_count"]) != 1 {
-		t.Fatalf("topic_today_count %v, want 1 (16:40 UTC counts, 15:50 UTC does not)", userCounts(t, body)["topic_today_count"])
+		t.Fatalf("topic_today_count %v, want 1 (00:40 Beijing counts, 23:50 the day before does not, though both share a UTC day)", userCounts(t, body)["topic_today_count"])
 	}
 }
 
