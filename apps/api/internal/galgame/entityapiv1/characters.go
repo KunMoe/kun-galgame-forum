@@ -3,75 +3,171 @@ package entityapiv1
 import (
 	"cmp"
 	"context"
-	"log/slog"
+	"strconv"
 
+	"kun-galgame-api/internal/apiv1/collect"
 	"kun-galgame-api/internal/apiv1/repr"
 	"kun-galgame-api/internal/galgame/client"
 	"kun-galgame-api/internal/galgame/workrepr"
+	"kun-galgame-api/pkg/imageclient"
 	"kun-galgame-api/pkg/problem"
+
+	"github.com/danielgtaylor/huma/v2"
 )
 
 var spoilerLevels = []string{"none", "minor", "major"}
+
+type CharacterGender string
+
+func (CharacterGender) Schema(huma.Registry) *huma.Schema {
+	n := 6
+	return &huma.Schema{Type: huma.TypeString, Enum: []any{"female", "male", "other"}, MaxLength: &n, Description: "A character's recorded gender."}
+}
+
+var characterSorts = map[string]string{
+	"popularity_desc": "popularity",
+	"relevance_desc":  "relevance",
+	"id_desc":         "newest",
+}
+
+type listCharactersInput struct {
+	Q           string            `query:"q" maxLength:"100" doc:"Name search over every name and alias catalog records for the character. Free text; never use it as a decision input."`
+	TraitIDs    []repr.DecimalID  `query:"trait_ids" maxItems:"10" doc:"Trait ids, comma-separated, 1–10. A trait also matches its descendants, so boots finds knee-high boots too. Only trait links without a spoiler count. An adult trait needs include_nsfw=true."`
+	TraitMatch  string            `query:"trait_match" enum:"all,any" default:"all" maxLength:"3" doc:"all: a character must match every trait in trait_ids. any: at least one. No effect without trait_ids."`
+	Genders     []CharacterGender `query:"genders" maxItems:"3" doc:"Only characters of any of these genders. Comma-separated. Omitted means no filter."`
+	Sort        string            `query:"sort" enum:"popularity_desc,relevance_desc,id_desc" maxLength:"15" doc:"Order. popularity: how widely the works a character appears in are collected, lead roles weighing double. relevance: the name search's ranking, and needs q. id: newest in catalog first. Omitted: relevance_desc when q is set, popularity_desc otherwise."`
+	Page        int               `query:"page" minimum:"1" default:"1" doc:"1-based page number. page × limit may not exceed 10000."`
+	Limit       int               `query:"limit" minimum:"1" maximum:"100" default:"24" doc:"Page size. 1–100, default 24. Values above 100 are rejected, not clamped."`
+	IncludeNSFW bool              `query:"include_nsfw" default:"false" doc:"When true, adult traits may be named in trait_ids. Default false."`
+}
 
 type listCharactersOutput struct {
 	Body repr.PageList[CharacterSummary]
 }
 
-func (s *Service) listCharacters(ctx context.Context, in *searchInput) (*listCharactersOutput, error) {
+func (s *Service) listCharacters(ctx context.Context, in *listCharactersInput) (*listCharactersOutput, error) {
 	if s == nil {
 		return nil, problem.Internal(errUnconfigured)
 	}
-	q, prob := in.query()
+	if prob := checkDepth(in.Page, in.Limit, false); prob != nil {
+		return nil, prob
+	}
+	q := trimQuery(in.Q)
+	sort := in.Sort
+	if sort == "" {
+		sort = "popularity_desc"
+		if q != "" {
+			sort = "relevance_desc"
+		}
+	}
+	if sort == "relevance_desc" && q == "" {
+		return nil, problem.New(problem.CodeInvalidParameter, "sort=relevance_desc ranks a name search and needs q.",
+			problem.AtParameter("sort", problem.ReasonInconsistentWith, "q", nil))
+	}
+	traitIDs, prob := s.characterTraitFilter(ctx, in.TraitIDs, in.IncludeNSFW)
 	if prob != nil {
 		return nil, prob
 	}
-	hits, _, appErr := s.catalog.CatalogEntitySearch(ctx, "characters", q, 1, searchDepth)
+	genders := make([]string, 0, len(in.Genders))
+	for _, g := range in.Genders {
+		genders = append(genders, string(g))
+	}
+	page, appErr := s.catalog.CatalogCharacterList(ctx, client.CatalogCharacterQuery{
+		Q:        q,
+		TraitIDs: traitIDs,
+		MatchAny: in.TraitMatch == "any",
+		Genders:  genders,
+		Sort:     characterSorts[sort],
+		Page:     in.Page,
+		Limit:    in.Limit,
+		NSFW:     in.IncludeNSFW,
+	})
 	if appErr != nil {
 		return nil, unavailable(appErr)
 	}
-	rows := make([]CharacterSummary, 0, len(hits))
-	for i := range hits {
-		h := &hits[i]
-		rows = append(rows, CharacterSummary{CharacterRef: CharacterRef{
-			Object:      "character",
-			ID:          repr.ID(int(h.ID)),
-			CatalogName: workrepr.Name(h.DisplayName, h.Latin, client.LocalizedValues(h.Localized)),
-		}})
+	var vocab *traitVocab
+	if len(traitIDs) > 0 {
+		v, err := s.traitVocab(ctx)
+		if err != nil {
+			return nil, problem.Unavailable(err)
+		}
+		vocab = v
 	}
-	page := pageList(rows, in.Page, in.Limit)
-	s.fillCharacterMedia(ctx, page.Items)
-	return &listCharactersOutput{Body: page}, nil
+	rows := make([]CharacterSummary, 0, len(page.Items))
+	for i := range page.Items {
+		rows = append(rows, s.characterSummary(&page.Items[i], vocab, in.IncludeNSFW))
+	}
+	total, relation := collect.ClampTotal(page.Total)
+	return &listCharactersOutput{Body: repr.NewPageList(rows, total, relation)}, nil
 }
 
-// The search face carries names only; the legacy entity search added the
-// portrait and work count with one batch read, and the search tab draws both.
-func (s *Service) fillCharacterMedia(ctx context.Context, items []CharacterSummary) {
-	if len(items) == 0 {
-		return
+func (s *Service) characterTraitFilter(ctx context.Context, raw []repr.DecimalID, includeNSFW bool) ([]int, *problem.Problem) {
+	if len(raw) == 0 {
+		return nil, nil
 	}
-	ids := make([]int64, 0, len(items))
-	for _, it := range items {
-		if id, ok := repr.ParseID(it.ID); ok {
-			ids = append(ids, int64(id))
+	ids, prob := parseEntityIDs(raw)
+	if prob != nil {
+		return nil, prob
+	}
+	ids = uniqueIDs(ids)
+	if includeNSFW {
+		return ids, nil
+	}
+	v, err := s.traitVocab(ctx)
+	if err != nil {
+		return nil, problem.Unavailable(err)
+	}
+	for _, id := range ids {
+		if n, ok := v.byID[id]; ok && n.sexual {
+			return nil, problem.New(problem.CodeInvalidParameter, "An adult trait needs include_nsfw=true.",
+				problem.AtParameter("trait_ids", problem.ReasonNotAllowedValue, "trait "+strconv.Itoa(id)+" is adult content", nil))
 		}
 	}
-	media, appErr := s.catalog.CatalogEntityMediaBatch(ctx, "characters", ids)
-	if appErr != nil {
-		slog.Warn("list characters: portraits unavailable, sent without", "error", appErr.Message)
-		return
+	return ids, nil
+}
+
+var imageSexualLevel = map[string]int16{"safe": 0, "suggestive": 1, "explicit": 2}
+
+func (s *Service) characterSummary(row *client.CatalogCharacterRow, vocab *traitVocab, includeNSFW bool) CharacterSummary {
+	latin := ""
+	if row.Latin != nil {
+		latin = *row.Latin
 	}
-	for i := range items {
-		id, ok := repr.ParseID(items[i].ID)
-		if !ok {
-			continue
-		}
-		m, ok := media[int64(id)]
-		if !ok {
-			continue
-		}
-		items[i].Image = workrepr.ImageFromURL(s.cdn, m.Image, 0, 0, "", nil)
-		items[i].CatalogWorkCount = max(m.WorkCount, 0)
+	out := CharacterSummary{
+		CharacterRef: CharacterRef{
+			Object:      "character",
+			ID:          repr.ID(int(row.ID)),
+			CatalogName: workrepr.Name(row.DisplayName, latin, client.LocalizedValues(row.Localized)),
+		},
+		CatalogWorkCount: max(row.WorkCount, 0),
+		MatchedTraits:    []TraitRef{},
 	}
+	if vocab != nil {
+		for _, id := range row.MatchedIDs() {
+			if n, ok := vocab.visible(id, includeNSFW); ok {
+				out.MatchedTraits = append(out.MatchedTraits, vocab.ref(n))
+			}
+		}
+	}
+	if img := row.Image; img != nil {
+		meta := &imageclient.ImageMeta{}
+		if img.Width != nil {
+			meta.Width = *img.Width
+		}
+		if img.Height != nil {
+			meta.Height = *img.Height
+		}
+		if img.Thumbhash != nil {
+			meta.Thumbhash = *img.Thumbhash
+		}
+		if img.Sexual != nil {
+			if level, ok := imageSexualLevel[*img.Sexual]; ok {
+				meta.Sexual = &level
+			}
+		}
+		out.Image = repr.NewImage(s.cdn, img.Hash, meta)
+	}
+	return out
 }
 
 type characterPathInput struct {

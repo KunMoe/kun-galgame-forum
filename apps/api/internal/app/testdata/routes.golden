@@ -178,6 +178,8 @@ GET    /api/v1/topics/:topic_id/reactions             cors.New → v1Headers →
 GET    /api/v1/topics/:topic_id/replies               cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/topics/:topic_id/source                cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/topics/:topic_id/upvotes               cors.New → v1Headers → fiberAdapter.Handle
+GET    /api/v1/traits                                 cors.New → v1Headers → fiberAdapter.Handle
+GET    /api/v1/traits/:trait_id                       cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/update-logs                            cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/update-logs/:update_log_id             cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/users                                  cors.New → v1Headers → fiberAdapter.Handle

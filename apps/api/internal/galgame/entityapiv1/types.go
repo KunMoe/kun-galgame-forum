@@ -183,7 +183,8 @@ type CharacterRef struct {
 type CharacterSummary struct {
 	CharacterRef
 	Image            *repr.Image `json:"image" doc:"The character's portrait. null when catalog has none or its picture could not be read."`
-	CatalogWorkCount int         `json:"catalog_work_count" minimum:"0" doc:"Works catalog attributes the character to. 0 when unknown."`
+	CatalogWorkCount int         `json:"catalog_work_count" minimum:"0" doc:"Works the character appears in, under include_nsfw."`
+	MatchedTraits    []TraitRef  `json:"matched_traits" maxItems:"100" doc:"The character's own traits that made it match trait_ids, descendants of a named trait included. Empty array without trait_ids, never null."`
 }
 
 type Character struct {
@@ -212,4 +213,39 @@ type Appearance struct {
 	Object      string               `json:"object" enum:"appearance" maxLength:"10" doc:"Type discriminant. Always appearance."`
 	WorkSummary workrepr.WorkSummary `json:"work_summary" doc:"The work the character appears in."`
 	Voices      []CreditNameRef      `json:"voices" doc:"Who voices the character in that work. Empty array, never null."`
+}
+
+type TraitRef struct {
+	Object string         `json:"object" enum:"trait" maxLength:"5" doc:"Type discriminant. Always trait."`
+	ID     repr.DecimalID `json:"id" doc:"Trait id: the catalog trait id, which is also the id in the web's /galgame/trait/{id}."`
+	repr.CatalogName
+}
+
+type TraitSummary struct {
+	Object string         `json:"object" enum:"trait" maxLength:"5" doc:"Type discriminant. Always trait."`
+	ID     repr.DecimalID `json:"id" doc:"Trait id: the catalog trait id, which is also the id in the web's /galgame/trait/{id}."`
+	repr.CatalogName
+	TraitGroup     repr.CatalogName `json:"trait_group" doc:"The root group the trait sits in, such as hair or personality. A root trait is its own group."`
+	TraitGroupID   repr.DecimalID   `json:"trait_group_id" doc:"The root group's trait id."`
+	Parents        []TraitRef       `json:"parents" maxItems:"100" doc:"The traits directly above this one; a few traits sit under more than one. Empty array for a root trait, never null."`
+	IsSexual       bool             `json:"is_sexual" doc:"Whether the trait is adult content. Such traits are left out unless include_nsfw=true."`
+	IsSearchable   bool             `json:"is_searchable" doc:"Whether the trait is specific enough to filter characters by. Grouping traits such as hair colour are not, though they still have a page."`
+	CharacterCount int              `json:"character_count" minimum:"0" doc:"Characters carrying the trait or one of its descendants without a spoiler, under include_nsfw: the total of /characters?trait_ids= this trait with the same include_nsfw. Refreshed nightly."`
+	ChildCount     int              `json:"child_count" minimum:"0" doc:"Traits directly below this one that the reader may see."`
+}
+
+type Trait struct {
+	Object string         `json:"object" enum:"trait" maxLength:"5" doc:"Type discriminant. Always trait."`
+	ID     repr.DecimalID `json:"id" doc:"Trait id: the catalog trait id, which is also the id in the web's /galgame/trait/{id}."`
+	repr.CatalogName
+	TraitGroup     repr.CatalogName `json:"trait_group" doc:"The root group the trait sits in, such as hair or personality. A root trait is its own group."`
+	TraitGroupID   repr.DecimalID   `json:"trait_group_id" doc:"The root group's trait id."`
+	Parents        []TraitRef       `json:"parents" maxItems:"100" doc:"The traits directly above this one; a few traits sit under more than one. Empty array for a root trait, never null."`
+	IsSexual       bool             `json:"is_sexual" doc:"Whether the trait is adult content. Such a trait is NOT_FOUND unless include_nsfw=true."`
+	IsSearchable   bool             `json:"is_searchable" doc:"Whether the trait is specific enough to filter characters by. Grouping traits such as hair colour are not, though they still have a page."`
+	CharacterCount int              `json:"character_count" minimum:"0" doc:"Characters carrying the trait or one of its descendants without a spoiler, under include_nsfw: the total of /characters?trait_ids= this trait with the same include_nsfw. Refreshed nightly."`
+	ChildCount     int              `json:"child_count" minimum:"0" doc:"Traits directly below this one that the reader may see."`
+	Aliases        []AliasName      `json:"aliases" maxItems:"1000" doc:"Other names the trait goes by. Empty array, never null."`
+	Description    string           `json:"description" maxLength:"65535" doc:"Catalog's note on the trait, plain text, usually English. Empty string if none. Free text; never use it as a decision input."`
+	Subtraits      []TraitSummary   `json:"subtraits" doc:"Traits up to two levels below this one: the direct ones first, then theirs, most characters first under each parent. An item's parents say where it hangs. Empty array, never null."`
 }

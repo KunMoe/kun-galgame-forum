@@ -3829,6 +3829,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/traits": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List character traits
+         * @description Without q, ids or parent_id: the root groups (hair, eyes, personality, …) in catalog's order. parent_id lists the traits directly below one, ids resolves the named traits in request order, q searches every name. Adult traits only with include_nsfw=true. A page-number collection.
+         */
+        get: operations["listTraits"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/traits/{trait_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a character trait
+         * @description An adult trait is NOT_FOUND unless include_nsfw=true, the same answer as a trait that does not exist.
+         */
+        get: operations["getTrait"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/update-logs": {
         parameters: {
             query?: never;
@@ -5594,11 +5634,15 @@ export interface components {
             traits: components["schemas"]["CharacterTrait"][];
         };
         /** @enum {string} */
+        CharacterGender: "female" | "male" | "other";
+        /** @enum {string} */
         CharacterKind: "main" | "secondary" | "appears" | "unknown";
+        /** @enum {string} */
+        CharacterSort: "popularity_desc" | "relevance_desc" | "id_desc";
         CharacterSummary: {
             /**
              * Format: int64
-             * @description Works catalog attributes the character to. 0 when unknown.
+             * @description Works the character appears in, under include_nsfw.
              */
             catalog_work_count: number;
             /** @description The entity's own name. Never empty. Free text; never use it as a decision input. */
@@ -5613,6 +5657,8 @@ export interface components {
             localized: {
                 [key: string]: components["schemas"]["LocalizedName"];
             };
+            /** @description The character's own traits that made it match trait_ids, descendants of a named trait included. Empty array without trait_ids, never null. */
+            matched_traits: components["schemas"]["TraitRef"][];
             /**
              * @description Type discriminant. Always character.
              * @constant
@@ -9075,6 +9121,22 @@ export interface components {
             /** @description eq when total is exact, gte when it stopped at the depth limit and there are at least that many. */
             total_relation: components["schemas"]["TotalRelation"];
         };
+        PageListTraitSummary: {
+            /** @description Members of this page. Empty array, never null. */
+            items: components["schemas"]["TraitSummary"][];
+            /**
+             * @description Type discriminant. Always list.
+             * @constant
+             */
+            object: "list";
+            /**
+             * Format: int64
+             * @description Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.
+             */
+            total: number;
+            /** @description eq when total is exact, gte when it stopped at the depth limit and there are at least that many. */
+            total_relation: components["schemas"]["TotalRelation"];
+        };
         PageListUserCommentItem: {
             /** @description Members of this page. Empty array, never null. */
             items: components["schemas"]["UserCommentItem"][];
@@ -12058,6 +12120,105 @@ export interface components {
         };
         /** @enum {string} */
         TotalRelation: "eq" | "gte";
+        Trait: {
+            /** @description Other names the trait goes by. Empty array, never null. */
+            aliases: string[];
+            /**
+             * Format: int64
+             * @description Characters carrying the trait or one of its descendants without a spoiler, under include_nsfw: the total of /characters?trait_ids= this trait with the same include_nsfw. Refreshed nightly.
+             */
+            character_count: number;
+            /**
+             * Format: int64
+             * @description Traits directly below this one that the reader may see.
+             */
+            child_count: number;
+            /** @description Catalog's note on the trait, plain text, usually English. Empty string if none. Free text; never use it as a decision input. */
+            description: string;
+            /** @description The entity's own name. Never empty. Free text; never use it as a decision input. */
+            display_name: string;
+            /** @description Trait id: the catalog trait id, which is also the id in the web's /galgame/trait/{id}. */
+            id: string;
+            /** @description Whether the trait is specific enough to filter characters by. Grouping traits such as hair colour are not, though they still have a page. */
+            is_searchable: boolean;
+            /** @description Whether the trait is adult content. Such a trait is NOT_FOUND unless include_nsfw=true. */
+            is_sexual: boolean;
+            /** @description Romanization of the name. null when none is recorded. Free text; never use it as a decision input. */
+            latin: string | null;
+            /** @description Names by BCP-47 tag, sparse. Empty object when there are none, never null. */
+            localized: {
+                [key: string]: components["schemas"]["LocalizedName"];
+            };
+            /**
+             * @description Type discriminant. Always trait.
+             * @constant
+             */
+            object: "trait";
+            /** @description The traits directly above this one; a few traits sit under more than one. Empty array for a root trait, never null. */
+            parents: components["schemas"]["TraitRef"][];
+            /** @description Traits up to two levels below this one: the direct ones first, then theirs, most characters first under each parent. An item's parents say where it hangs. Empty array, never null. */
+            subtraits: components["schemas"]["TraitSummary"][];
+            /** @description The root group the trait sits in, such as hair or personality. A root trait is its own group. */
+            trait_group: components["schemas"]["CatalogName"];
+            /** @description The root group's trait id. */
+            trait_group_id: string;
+        };
+        /** @enum {string} */
+        TraitMatch: "all" | "any";
+        TraitRef: {
+            /** @description The entity's own name. Never empty. Free text; never use it as a decision input. */
+            display_name: string;
+            /** @description Trait id: the catalog trait id, which is also the id in the web's /galgame/trait/{id}. */
+            id: string;
+            /** @description Romanization of the name. null when none is recorded. Free text; never use it as a decision input. */
+            latin: string | null;
+            /** @description Names by BCP-47 tag, sparse. Empty object when there are none, never null. */
+            localized: {
+                [key: string]: components["schemas"]["LocalizedName"];
+            };
+            /**
+             * @description Type discriminant. Always trait.
+             * @constant
+             */
+            object: "trait";
+        };
+        TraitSummary: {
+            /**
+             * Format: int64
+             * @description Characters carrying the trait or one of its descendants without a spoiler, under include_nsfw: the total of /characters?trait_ids= this trait with the same include_nsfw. Refreshed nightly.
+             */
+            character_count: number;
+            /**
+             * Format: int64
+             * @description Traits directly below this one that the reader may see.
+             */
+            child_count: number;
+            /** @description The entity's own name. Never empty. Free text; never use it as a decision input. */
+            display_name: string;
+            /** @description Trait id: the catalog trait id, which is also the id in the web's /galgame/trait/{id}. */
+            id: string;
+            /** @description Whether the trait is specific enough to filter characters by. Grouping traits such as hair colour are not, though they still have a page. */
+            is_searchable: boolean;
+            /** @description Whether the trait is adult content. Such traits are left out unless include_nsfw=true. */
+            is_sexual: boolean;
+            /** @description Romanization of the name. null when none is recorded. Free text; never use it as a decision input. */
+            latin: string | null;
+            /** @description Names by BCP-47 tag, sparse. Empty object when there are none, never null. */
+            localized: {
+                [key: string]: components["schemas"]["LocalizedName"];
+            };
+            /**
+             * @description Type discriminant. Always trait.
+             * @constant
+             */
+            object: "trait";
+            /** @description The traits directly above this one; a few traits sit under more than one. Empty array for a root trait, never null. */
+            parents: components["schemas"]["TraitRef"][];
+            /** @description The root group the trait sits in, such as hair or personality. A root trait is its own group. */
+            trait_group: components["schemas"]["CatalogName"];
+            /** @description The root group's trait id. */
+            trait_group_id: string;
+        };
         UpdateLog: {
             /** @description What kind of change the entry records. Clients map the token to a localized label. */
             change_type: components["schemas"]["UpdateLogChangeType"];
@@ -17588,13 +17749,23 @@ export interface operations {
     };
     listCharacters: {
         parameters: {
-            query: {
-                /** @description Name search, required: this family has no browse order. The collection is catalog's 100 best name matches in relevance order. Free text; never use it as a decision input. */
-                q: string;
-                /** @description 1-based page number. page × limit may not exceed 100. */
+            query?: {
+                /** @description Name search over every name and alias catalog records for the character. Free text; never use it as a decision input. */
+                q?: string;
+                /** @description Trait ids, comma-separated, 1–10. A trait also matches its descendants, so boots finds knee-high boots too. Only trait links without a spoiler count. An adult trait needs include_nsfw=true. */
+                trait_ids?: string[];
+                /** @description all: a character must match every trait in trait_ids. any: at least one. No effect without trait_ids. */
+                trait_match?: components["schemas"]["TraitMatch"];
+                /** @description Only characters of any of these genders. Comma-separated. Omitted means no filter. */
+                genders?: components["schemas"]["CharacterGender"][];
+                /** @description Order. popularity: how widely the works a character appears in are collected, lead roles weighing double. relevance: the name search's ranking, and needs q. id: newest in catalog first. Omitted: relevance_desc when q is set, popularity_desc otherwise. */
+                sort?: components["schemas"]["CharacterSort"];
+                /** @description 1-based page number. page × limit may not exceed 10000. */
                 page?: number;
-                /** @description Page size. 1–100, default 20. Values above 100 are rejected, not clamped. */
+                /** @description Page size. 1–100, default 24. Values above 100 are rejected, not clamped. */
                 limit?: number;
+                /** @description When true, adult traits may be named in trait_ids. Default false. */
+                include_nsfw?: boolean;
             };
             header?: never;
             path?: never;
@@ -34478,6 +34649,128 @@ export interface operations {
                 };
             };
             /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listTraits: {
+        parameters: {
+            query?: {
+                /** @description Name search over every name and alias, case-insensitive: exact names first, then prefixes, then other matches, most characters first within each. Reaches the first 100 matches. Free text; never use it as a decision input. Mutually exclusive with ids and parent_id. */
+                q?: string;
+                /** @description Trait ids to resolve, comma-separated. 1 to 100 of them, answered in request order. Absent ids are omitted. Mutually exclusive with q and parent_id. */
+                ids?: string[];
+                /** @description Only the traits directly below this one, most characters first. Mutually exclusive with q and ids. */
+                parent_id?: string;
+                /** @description 1-based page number. page × limit may not exceed 10000, or 100 when q is set. */
+                page?: number;
+                /** @description Page size. 1–100, default 100. Values above 100 are rejected, not clamped. */
+                limit?: number;
+                /** @description When true, adult traits are included. Default false. */
+                include_nsfw?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PageListTraitSummary"];
+                };
+            };
+            /** @description INVALID_PARAMETER when page × limit is too deep, more than one of q, ids and parent_id is set, or ids is malformed or longer than 100. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when catalog cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getTrait: {
+        parameters: {
+            query?: {
+                /** @description When true, an adult trait answers. Default false: it is NOT_FOUND. */
+                include_nsfw?: boolean;
+            };
+            header?: never;
+            path: {
+                /** @description Trait id. */
+                trait_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Trait"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when no such entity is visible. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when catalog cannot be reached. */
             503: {
                 headers: {
                     [name: string]: unknown;

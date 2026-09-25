@@ -97,5 +97,15 @@ func Register(s *Service) func(huma.API) {
 		huma.Register(api, op("listCharacterAppearances", "/characters/{character_id}/appearances", "List a character's appearances",
 			"Works the character appears in, with who voices it there, in catalog's order. A cursor collection.",
 			characters, map[int]string{400: "INVALID_CURSOR when the cursor is broken or was made with another include_nsfw.", 404: notFoundDesc + " " + mergedDesc, 503: unavailableMsg}), s.listCharacterAppearances)
+
+		traits := []string{"galgame-traits"}
+		huma.Register(api, op("listTraits", "/traits", "List character traits",
+			"Without q, ids or parent_id: the root groups (hair, eyes, personality, …) in catalog's order. "+
+				"parent_id lists the traits directly below one, ids resolves the named traits in request order, q searches every name. "+
+				"Adult traits only with include_nsfw=true. A page-number collection.",
+			traits, map[int]string{400: "INVALID_PARAMETER when page × limit is too deep, more than one of q, ids and parent_id is set, or ids is malformed or longer than 100.", 503: unavailableMsg}), s.listTraits)
+		huma.Register(api, op("getTrait", "/traits/{trait_id}", "Get a character trait",
+			"An adult trait is NOT_FOUND unless include_nsfw=true, the same answer as a trait that does not exist.",
+			traits, map[int]string{404: notFoundDesc, 503: unavailableMsg}), s.getTrait)
 	}
 }
