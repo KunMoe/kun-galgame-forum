@@ -12,7 +12,6 @@ import {
 } from '~/utils/galgame/entityCards'
 import type { Image, WorkCharacter } from '#shared/utils/api/schemas'
 import type { GalgameArtMeta } from '~~/shared/types/galgame'
-import type { GalgameCharacterTrait } from '~~/shared/types/galgame-character'
 
 const props = defineProps<{
   character: WorkCharacter | null
@@ -70,12 +69,25 @@ const metaOf = (img: Image | null | undefined): GalgameArtMeta | undefined =>
     ? { width: img.width, height: img.height, thumbhash: img.thumbhash ?? '' }
     : undefined
 
-const figureFrame = computed(() =>
-  artFrame(metaOf(props.character?.figure), detail.value?.figure_meta)
+const figureMeta = computed(
+  () => metaOf(props.character?.figure) ?? detail.value?.figure_meta
 )
-const bustFrame = computed(() =>
-  artFrame(metaOf(props.character?.image), detail.value?.image_meta)
+const bustMeta = computed(
+  () => metaOf(props.character?.image) ?? detail.value?.image_meta
 )
+
+const artImages = computed(() =>
+  [props.character?.figure, props.character?.image]
+    .filter((img): img is Image => !!img)
+    .map((img) => ({ src: img.url, alt: heading.value }))
+)
+const bustIndex = computed(() => (props.character?.figure ? 1 : 0))
+const isLightboxOpen = ref(false)
+const lightboxIndex = ref(0)
+const openArt = (index: number) => {
+  lightboxIndex.value = index
+  isLightboxOpen.value = true
+}
 
 const spoilerRank = (spoiler: WorkCharacter['spoiler'] | undefined) =>
   spoiler === 'major' ? 2 : spoiler === 'minor' ? 1 : 0
@@ -97,29 +109,6 @@ const spoilerText = computed(() =>
     : ''
 )
 
-const isTraitSpoilerRevealed = ref(false)
-const traits = computed(() => {
-  const all = detail.value?.traits ?? []
-  return isTraitSpoilerRevealed.value ? all : all.filter((t) => t.spoiler === 0)
-})
-const hiddenTraitCount = computed(
-  () => (detail.value?.traits ?? []).filter((t) => t.spoiler > 0).length
-)
-
-const traitGroups = computed(() => {
-  const groups: { name: string; traits: GalgameCharacterTrait[] }[] = []
-  for (const trait of traits.value) {
-    const name = trait.group || '其他'
-    const last = groups.at(-1)
-    if (last && last.name === name) {
-      last.traits.push(trait)
-    } else {
-      groups.push({ name, traits: [trait] })
-    }
-  }
-  return groups
-})
-
 const introCredit = computed(() =>
   getGalgameCharacterIntroCredit(
     detail.value?.intros.find((i) => i.intro === detail.value?.intro)
@@ -140,93 +129,84 @@ const headingOriginal = computed(() => {
   ].filter((part): part is string => !!part && part !== heading.value)
   return parts.join(' · ')
 })
-
-watch(
-  () => props.character?.id,
-  () => {
-    isTraitSpoilerRevealed.value = false
-  }
-)
 </script>
 
 <template>
-  <KunModal v-model="isOpen" size="xl" scroll-behavior="inside">
+  <KunModal
+    v-model="isOpen"
+    size="xl"
+    scroll-behavior="inside"
+    :aria-label="heading"
+  >
     <div v-if="character" class="space-y-4">
-      <div class="flex flex-col gap-4 sm:flex-row">
-        <KunLightboxGallery v-if="character.figure || character.image">
-          <div
-            class="flex shrink-0 items-start gap-3 sm:flex-col sm:items-center"
-          >
-            <KunLightboxGalleryItem
-              v-if="character.figure"
-              :src="character.figure.url"
-              :alt="nameOf(character).name"
-              :wrap="false"
-              v-slot="{ open }"
-            >
-              <button
-                type="button"
-                class="bg-default-100 w-fit cursor-zoom-in overflow-hidden rounded-xl"
-                :aria-label="`查看 ${nameOf(character).name} 的立绘`"
-                @click="open"
-              >
-                <KunImage
-                  :src="character.figure.url"
-                  :alt="nameOf(character).name"
-                  loading="eager"
-                  :aspect-ratio="figureFrame.aspectRatio"
-                  :object-fit="figureFrame.objectFit"
-                  :thumbhash="figureFrame.thumbhash"
-                  class-name="w-36 sm:w-48"
-                />
-              </button>
-            </KunLightboxGalleryItem>
-
-            <KunLightboxGalleryItem
-              v-if="character.image"
-              :src="character.image.url"
-              :alt="nameOf(character).name"
-              :wrap="false"
-              v-slot="{ open }"
-            >
-              <button
-                type="button"
-                class="bg-default-100 w-fit cursor-zoom-in overflow-hidden rounded-xl"
-                :aria-label="`查看 ${nameOf(character).name} 的头像`"
-                @click="open"
-              >
-                <KunImage
-                  :src="character.image.url"
-                  :alt="nameOf(character).name"
-                  loading="eager"
-                  :aspect-ratio="bustFrame.aspectRatio"
-                  :object-fit="bustFrame.objectFit"
-                  :thumbhash="bustFrame.thumbhash"
-                  :class-name="
-                    character.figure ? 'w-20 sm:w-24' : 'w-36 sm:w-48'
-                  "
-                />
-              </button>
-            </KunLightboxGalleryItem>
-          </div>
-        </KunLightboxGallery>
+      <div class="flex gap-5">
+        <div
+          v-if="character.figure || character.image"
+          class="hidden shrink-0 flex-col items-center gap-3 sm:flex"
+        >
+          <GalgameCharacterArt
+            v-if="character.figure"
+            :src="character.figure.url"
+            :alt="heading"
+            :label="`查看 ${heading} 的立绘`"
+            :meta="figureMeta"
+            :max-width="200"
+            :max-height="360"
+            @open="openArt(0)"
+          />
+          <GalgameCharacterArt
+            v-if="character.image"
+            :src="character.image.url"
+            :alt="heading"
+            :label="`查看 ${heading} 的头像`"
+            :meta="bustMeta"
+            :max-width="character.figure ? 96 : 180"
+            :max-height="character.figure ? 112 : 240"
+            @open="openArt(bustIndex)"
+          />
+        </div>
 
         <div class="min-w-0 grow space-y-3">
-          <div class="space-y-1">
-            <div class="flex flex-wrap items-center gap-2">
-              <h3 class="text-foreground text-xl font-medium">
-                {{ heading }}
-              </h3>
-              <KunChip v-if="kindText" :color="kindColor" size="sm">
-                {{ kindText }}
-              </KunChip>
-              <KunChip v-if="spoilerText" color="warning" size="sm">
-                {{ spoilerText }}
-              </KunChip>
+          <div class="flex items-start gap-3">
+            <GalgameCharacterArt
+              v-if="character.image"
+              class="sm:hidden"
+              :src="character.image.url"
+              :alt="heading"
+              :label="`查看 ${heading} 的头像`"
+              :meta="bustMeta"
+              :max-width="72"
+              :max-height="96"
+              @open="openArt(bustIndex)"
+            />
+
+            <div class="min-w-0 space-y-1">
+              <div class="flex flex-wrap items-center gap-2">
+                <h3 class="text-foreground text-xl font-medium">
+                  {{ heading }}
+                </h3>
+                <KunChip v-if="kindText" :color="kindColor" size="sm">
+                  {{ kindText }}
+                </KunChip>
+                <KunChip v-if="spoilerText" color="warning" size="sm">
+                  {{ spoilerText }}
+                </KunChip>
+              </div>
+              <p v-if="headingOriginal" class="text-default-400 text-sm">
+                {{ headingOriginal }}
+              </p>
+              <KunButton
+                v-if="character.figure"
+                class-name="sm:hidden"
+                variant="flat"
+                color="primary"
+                size="xs"
+                @click="openArt(0)"
+              >
+                <KunIcon name="lucide:user-round" />
+                查看立绘
+              </KunButton>
             </div>
-            <p v-if="headingOriginal" class="text-default-400 text-sm">
-              {{ headingOriginal }}
-            </p>
           </div>
 
           <div v-if="character.voices.length" class="text-default-500 text-sm">
@@ -258,36 +238,7 @@ watch(
               </p>
             </div>
 
-            <div v-if="traitGroups.length" class="space-y-2">
-              <div
-                v-for="group in traitGroups"
-                :key="group.name"
-                class="space-y-1"
-              >
-                <p class="text-default-400 text-xs">{{ group.name }}</p>
-                <div class="flex flex-wrap gap-1.5">
-                  <KunChip
-                    v-for="trait in group.traits"
-                    :key="trait.id"
-                    size="xs"
-                    :color="trait.spoiler > 0 ? 'warning' : 'default'"
-                  >
-                    {{ trait.name }}<template v-if="trait.lie">（伪）</template>
-                  </KunChip>
-                </div>
-              </div>
-            </div>
-
-            <KunButton
-              v-if="hiddenTraitCount && !isTraitSpoilerRevealed"
-              variant="flat"
-              color="warning"
-              size="sm"
-              @click="isTraitSpoilerRevealed = true"
-            >
-              <KunIcon name="lucide:eye" />
-              显示 {{ hiddenTraitCount }} 条剧透特征
-            </KunButton>
+            <GalgameCharacterTraits :traits="detail.traits" />
 
             <div
               v-if="detail.links.length"
@@ -326,5 +277,11 @@ watch(
         </KunButton>
       </div>
     </div>
+
+    <KunLightbox
+      v-model:is-open="isLightboxOpen"
+      :images="artImages"
+      :initial-index="lightboxIndex"
+    />
   </KunModal>
 </template>
