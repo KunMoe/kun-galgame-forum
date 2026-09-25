@@ -36,7 +36,9 @@ func (s *Users) getUser(ctx context.Context, in *getUserInput) (*getUserOutput, 
 		}
 		return nil, problem.Internal(err)
 	}
-	return &getUserOutput{Body: mapUserProfile(s.cdn, p)}, nil
+	body := mapUserProfile(s.cdn, p)
+	body.Counts.FollowerCount, body.Counts.FollowingCount = s.followCounts(ctx, id)
+	return &getUserOutput{Body: body}, nil
 }
 
 func mapUserProfile(cdn string, p *service.PublicProfile) UserProfile {

@@ -188,3 +188,53 @@ func (c *Client) MarkNotificationsRead(ctx context.Context, userID int64, ids []
 	err := c.do(ctx, http.MethodPost, "/users/"+itoa(userID)+"/notifications/read", MarkNotificationsReadRequest{IDs: ids}, &out)
 	return &out, err
 }
+
+func (c *Client) FollowUser(ctx context.Context, userID, targetID int64) (*FollowResult, error) {
+	var out FollowResult
+	err := c.do(ctx, http.MethodPut, "/users/"+itoa(userID)+"/following/"+itoa(targetID), nil, &out)
+	return &out, err
+}
+
+func (c *Client) UnfollowUser(ctx context.Context, userID, targetID int64) (*FollowResult, error) {
+	var out FollowResult
+	err := c.do(ctx, http.MethodDelete, "/users/"+itoa(userID)+"/following/"+itoa(targetID), nil, &out)
+	return &out, err
+}
+
+func (c *Client) ListFollowers(ctx context.Context, userID int64, cursor string, limit int) (*FollowListResponse, error) {
+	return c.listFollows(ctx, userID, "followers", cursor, limit)
+}
+
+func (c *Client) ListFollowing(ctx context.Context, userID int64, cursor string, limit int) (*FollowListResponse, error) {
+	return c.listFollows(ctx, userID, "following", cursor, limit)
+}
+
+func (c *Client) listFollows(ctx context.Context, userID int64, relation, cursor string, limit int) (*FollowListResponse, error) {
+	var out FollowListResponse
+	q := map[string]string{"cursor": cursor}
+	if limit > 0 {
+		q["limit"] = itoa(int64(limit))
+	}
+	err := c.do(ctx, http.MethodGet, "/users/"+itoa(userID)+"/"+relation+query(q), nil, &out)
+	return &out, err
+}
+
+func (c *Client) FollowStates(ctx context.Context, viewerID int64, userIDs []int64) (*FollowStatesResponse, error) {
+	if len(userIDs) == 0 {
+		return &FollowStatesResponse{States: []FollowState{}}, nil
+	}
+	out := FollowStatesResponse{States: make([]FollowState, 0, len(userIDs))}
+	for start := 0; start < len(userIDs); start += FollowStatesMaxIDs {
+		end := min(start+FollowStatesMaxIDs, len(userIDs))
+		req := FollowStatesRequest{UserIDs: userIDs[start:end]}
+		if viewerID > 0 {
+			req.ViewerID = viewerID
+		}
+		var page FollowStatesResponse
+		if err := c.do(ctx, http.MethodPost, "/follows/states", req, &page); err != nil {
+			return nil, err
+		}
+		out.States = append(out.States, page.States...)
+	}
+	return &out, nil
+}

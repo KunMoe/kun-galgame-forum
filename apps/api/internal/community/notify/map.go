@@ -13,6 +13,9 @@ import (
 )
 
 func MapNotification(n communityclient.NotificationView, post *communityclient.PostView, target *anchor.Target) *model.Message {
+	if n.Kind == communityclient.InboxFollowed {
+		return mapFollowed(n)
+	}
 	if target == nil {
 		return nil
 	}
@@ -81,8 +84,43 @@ func mapKind(kind int32, post *communityclient.PostView) (string, bool) {
 		return "followed", true
 	case communityclient.InboxLiked:
 		return "liked", true
+	case communityclient.InboxFollowed:
+		return "user-followed", true
 	default:
 		return "", false
+	}
+}
+
+func mapFollowed(n communityclient.NotificationView) *model.Message {
+	msgType, ok := mapKind(n.Kind, nil)
+	if !ok {
+		return nil
+	}
+	senderID := 0
+	if n.ActorID != nil {
+		senderID = int(*n.ActorID)
+	}
+	link := "/user/" + strconv.Itoa(senderID)
+	if len(link) > 100 {
+		link = link[:100]
+	}
+	status := "unread"
+	if n.ReadAt != nil && *n.ReadAt != "" {
+		status = "read"
+	}
+	id := n.ID
+	seq := n.Seq
+	return &model.Message{
+		Link:                    link,
+		Status:                  status,
+		Type:                    msgType,
+		SenderID:                senderID,
+		ReceiverID:              int(n.UserID),
+		CommunityNotificationID: &id,
+		CommunitySeq:            &seq,
+		ItemCount:               int(n.ItemCount),
+		ActorCount:              int(n.ActorCount),
+		CreatedAt:               parseTime(n.UpdatedAt),
 	}
 }
 

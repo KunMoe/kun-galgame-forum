@@ -21,7 +21,9 @@ const ALL_TYPES = {
   lottery_won: true,
   lottery_drawn: true,
   lottery_code_expired: true,
-  poll_closed: true
+  poll_closed: true,
+  user_followed: true,
+  followee_topic_created: true
 } as const satisfies Record<NotificationType, true>
 
 const notification = (over: Partial<Notification> = {}): Notification => ({

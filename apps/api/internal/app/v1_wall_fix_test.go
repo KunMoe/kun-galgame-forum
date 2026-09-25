@@ -104,6 +104,11 @@ type fakeCommunity struct {
 	threadSubs  map[[2]int64]int32
 	reads       [][2]int64
 	levelWrites []levelWrite
+
+	userFollows map[int64]map[int64]string
+	followCap   atomic.Bool
+	followPuts  atomic.Int32
+	followLists atomic.Int32
 }
 
 type levelWrite struct {
@@ -119,6 +124,7 @@ func newFakeCommunity() *fakeCommunity {
 		reactions: map[[2]int64]bool{}, follows: map[int64]bool{},
 		nextPost: 7_000_000, nextThr: 800_000,
 		anchorSubs: map[int64]map[string]int32{}, threadSubs: map[[2]int64]int32{},
+		userFollows: map[int64]map[int64]string{},
 	}
 }
 
@@ -366,6 +372,7 @@ func (c *fakeCommunity) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		default:
 			writeEnvelope(w, http.StatusNotFound, 40400, "no route "+path, nil)
 		}
+	case c.handleUserFollow(w, r):
 	case r.Method == http.MethodGet && strings.HasPrefix(path, "/users/") && strings.HasSuffix(path, "/anchor-subscriptions"):
 		uid, _ := strconv.ParseInt(strings.TrimSuffix(strings.TrimPrefix(path, "/users/"), "/anchor-subscriptions"), 10, 64)
 		keys := make([]string, 0, len(c.anchorSubs[uid]))

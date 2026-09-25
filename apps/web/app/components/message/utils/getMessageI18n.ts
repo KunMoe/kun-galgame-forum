@@ -18,7 +18,9 @@ const messageTemplates: Record<NotificationType, string> = {
   lottery_won: ' 的抽奖开奖了, 您中奖了!',
   lottery_drawn: ' 的抽奖开奖了',
   lottery_code_expired: ' 的抽奖兑换码已过领取期限',
-  poll_closed: ' 的投票已经截止'
+  poll_closed: ' 的投票已经截止',
+  user_followed: '关注了你',
+  followee_topic_created: '发布了新话题'
 }
 
 export const getMessageI18n = (notification: Notification) => {

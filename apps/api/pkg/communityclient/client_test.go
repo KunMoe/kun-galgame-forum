@@ -516,3 +516,191 @@ func TestMarkNotificationsRead(t *testing.T) {
 		t.Errorf("decoded = %+v", out)
 	}
 }
+
+func TestFollowUser(t *testing.T) {
+	var gotMethod, gotPath string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotMethod, gotPath = r.Method, r.URL.Path
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"code": 0, "data": map[string]any{
+				"follower_id": 3, "followee_id": 9, "following": true, "created": true,
+			},
+		})
+	}))
+	defer srv.Close()
+
+	out, err := newTestClient(srv.URL).FollowUser(context.Background(), 3, 9)
+	if err != nil {
+		t.Fatalf("FollowUser: %v", err)
+	}
+	if gotMethod != http.MethodPut || gotPath != "/users/3/following/9" {
+		t.Errorf("method/path = %s %q", gotMethod, gotPath)
+	}
+	if out.FollowerID != 3 || out.FolloweeID != 9 || !out.Following || !out.Created {
+		t.Errorf("decoded = %+v", out)
+	}
+}
+
+func TestUnfollowUser(t *testing.T) {
+	var gotMethod, gotPath string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotMethod, gotPath = r.Method, r.URL.Path
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"code": 0, "data": map[string]any{
+				"follower_id": 3, "followee_id": 9, "following": false, "deleted": true,
+			},
+		})
+	}))
+	defer srv.Close()
+
+	out, err := newTestClient(srv.URL).UnfollowUser(context.Background(), 3, 9)
+	if err != nil {
+		t.Fatalf("UnfollowUser: %v", err)
+	}
+	if gotMethod != http.MethodDelete || gotPath != "/users/3/following/9" {
+		t.Errorf("method/path = %s %q", gotMethod, gotPath)
+	}
+	if out.Following || !out.Deleted {
+		t.Errorf("decoded = %+v", out)
+	}
+}
+
+func TestListFollowers(t *testing.T) {
+	var gotPath, gotQuery string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotPath, gotQuery = r.URL.Path, r.URL.RawQuery
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"code": 0, "data": map[string]any{
+				"users": []any{
+					map[string]any{"user_id": 9, "followed_at": "2026-09-25T00:00:00Z"},
+					map[string]any{"user_id": 8, "followed_at": nil},
+				},
+				"next_cursor": "abc",
+			},
+		})
+	}))
+	defer srv.Close()
+
+	out, err := newTestClient(srv.URL).ListFollowers(context.Background(), 3, "cur1", 40)
+	if err != nil {
+		t.Fatalf("ListFollowers: %v", err)
+	}
+	if gotPath != "/users/3/followers" {
+		t.Errorf("path = %q", gotPath)
+	}
+	for _, want := range []string{"cursor=cur1", "limit=40"} {
+		if !strings.Contains(gotQuery, want) {
+			t.Errorf("query %q missing %q", gotQuery, want)
+		}
+	}
+	if len(out.Users) != 2 || out.Users[0].UserID != 9 || out.Users[1].FollowedAt != nil || out.NextCursor != "abc" {
+		t.Errorf("decoded = %+v", out)
+	}
+}
+
+func TestListFollowing(t *testing.T) {
+	var gotPath, gotQuery string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotPath, gotQuery = r.URL.Path, r.URL.RawQuery
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"code": 0, "data": map[string]any{"users": []any{}, "next_cursor": ""},
+		})
+	}))
+	defer srv.Close()
+
+	out, err := newTestClient(srv.URL).ListFollowing(context.Background(), 3, "", 0)
+	if err != nil {
+		t.Fatalf("ListFollowing: %v", err)
+	}
+	if gotPath != "/users/3/following" {
+		t.Errorf("path = %q", gotPath)
+	}
+	if gotQuery != "" {
+		t.Errorf("empty cursor and limit still queried: %q", gotQuery)
+	}
+	if len(out.Users) != 0 {
+		t.Errorf("decoded = %+v", out)
+	}
+}
+
+func TestFollowStates(t *testing.T) {
+	var gotBody string
+	hit := 0
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/follows/states" {
+			t.Errorf("path = %q", r.URL.Path)
+		}
+		hit++
+		b, _ := io.ReadAll(r.Body)
+		gotBody = string(b)
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"code": 0, "data": map[string]any{"states": []any{
+				map[string]any{"user_id": 9, "followers_count": 2, "following_count": 4, "viewer_follows": true, "follows_viewer": false},
+			}},
+		})
+	}))
+	defer srv.Close()
+
+	c := newTestClient(srv.URL)
+	out, err := c.FollowStates(context.Background(), 3, []int64{9})
+	if err != nil {
+		t.Fatalf("FollowStates: %v", err)
+	}
+	if !strings.Contains(gotBody, `"viewer_id":3`) || !strings.Contains(gotBody, `"user_ids":[9]`) {
+		t.Errorf("body = %q", gotBody)
+	}
+	if len(out.States) != 1 || !out.States[0].ViewerFollows || out.States[0].FollowersCount != 2 {
+		t.Errorf("decoded = %+v", out)
+	}
+
+	hit = 0
+	out, err = c.FollowStates(context.Background(), 0, []int64{9})
+	if err != nil {
+		t.Fatalf("FollowStates anonymous: %v", err)
+	}
+	if strings.Contains(gotBody, "viewer_id") {
+		t.Errorf("anonymous viewer was sent: %s", gotBody)
+	}
+	if hit != 1 || len(out.States) != 1 {
+		t.Errorf("hit=%d decoded=%+v", hit, out)
+	}
+}
+
+func TestFollowStatesBatching(t *testing.T) {
+	var sizes []int
+	var bodies []string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		b, _ := io.ReadAll(r.Body)
+		bodies = append(bodies, string(b))
+		var req communityclient.FollowStatesRequest
+		_ = json.Unmarshal(b, &req)
+		sizes = append(sizes, len(req.UserIDs))
+		states := make([]any, 0, len(req.UserIDs))
+		for _, id := range req.UserIDs {
+			states = append(states, map[string]any{"user_id": id, "followers_count": 0, "following_count": 0})
+		}
+		_ = json.NewEncoder(w).Encode(map[string]any{"code": 0, "data": map[string]any{"states": states}})
+	}))
+	defer srv.Close()
+
+	c := newTestClient(srv.URL)
+	ids := make([]int64, 150)
+	for i := range ids {
+		ids[i] = int64(i + 1)
+	}
+	out, err := c.FollowStates(context.Background(), 3, ids)
+	if err != nil {
+		t.Fatalf("FollowStates: %v", err)
+	}
+	if len(sizes) != 2 || sizes[0] != 100 || sizes[1] != 50 {
+		t.Errorf("batch sizes = %v, want [100 50]", sizes)
+	}
+	if len(out.States) != 150 || out.States[0].UserID != 1 || out.States[149].UserID != 150 {
+		t.Errorf("decoded len=%d first=%d last=%d", len(out.States), out.States[0].UserID, out.States[len(out.States)-1].UserID)
+	}
+
+	sizes = nil
+	if res, err := c.FollowStates(context.Background(), 3, nil); err != nil || len(res.States) != 0 || len(sizes) != 0 {
+		t.Errorf("empty FollowStates hit=%d res=%+v err=%v", len(sizes), res, err)
+	}
+}

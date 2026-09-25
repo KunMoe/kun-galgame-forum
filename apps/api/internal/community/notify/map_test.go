@@ -94,6 +94,27 @@ func TestMapNotification(t *testing.T) {
 			skip: true,
 		},
 		{
+			name: "kind 8 followed needs no target",
+			note: func() communityclient.NotificationView {
+				n := baseNote(communityclient.InboxFollowed)
+				n.ThreadID = 0
+				n.AnchorKind = 0
+				n.AnchorID = ""
+				n.PostID = nil
+				n.PostNumber = nil
+				n.ActorCount = 4
+				n.ItemCount = 4
+				return n
+			}(),
+			post: nil, target: nil,
+			typ: "user-followed", link: "/user/9", sender: 9,
+		},
+		{
+			name: "kind 9 skipped",
+			note: baseNote(communityclient.InboxFolloweeTopic), post: top, target: game,
+			skip: true,
+		},
+		{
 			name: "unresolvable anchor skipped",
 			note: baseNote(communityclient.InboxPosted), post: top, target: nil,
 			skip: true,
@@ -165,6 +186,17 @@ func TestMapNotification(t *testing.T) {
 			}
 			if tc.name == "null actor is sender 0" && got.SenderID != 0 {
 				t.Errorf("sender = %d, want 0", got.SenderID)
+			}
+			if tc.name == "kind 8 followed needs no target" {
+				if got.SenderID != 9 {
+					t.Errorf("sender = %d, want 9", got.SenderID)
+				}
+				if got.ActorCount != 4 || got.ItemCount != 4 {
+					t.Errorf("counts actor=%d item=%d", got.ActorCount, got.ItemCount)
+				}
+				if got.CommunityThreadID != nil || got.CommunityPostNumber != nil {
+					t.Errorf("thread/post fields set: %+v", got)
+				}
 			}
 			if tc.name == "quiz preview empty" && got.Content != "" {
 				t.Errorf("quiz content = %q, want empty", got.Content)

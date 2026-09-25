@@ -14,6 +14,7 @@ DELETE /api/v1/galgame-resources/:resource_id         cors.New → v1Headers →
 DELETE /api/v1/galgame-resources/:resource_id/like    cors.New → v1Headers → fiberAdapter.Handle
 DELETE /api/v1/lotteries/:lottery_id                  cors.New → v1Headers → fiberAdapter.Handle
 DELETE /api/v1/lotteries/:lottery_id/entries/me       cors.New → v1Headers → fiberAdapter.Handle
+DELETE /api/v1/me/following/:user_id                  cors.New → v1Headers → fiberAdapter.Handle
 DELETE /api/v1/me/notifications/:notification_id      cors.New → v1Headers → fiberAdapter.Handle
 DELETE /api/v1/me/topic-drafts/:draft_id              cors.New → v1Headers → fiberAdapter.Handle
 DELETE /api/v1/me/walls/:subject_type/:subject_id/follow cors.New → v1Headers → fiberAdapter.Handle
@@ -103,6 +104,7 @@ GET    /api/v1/me/conversations/:user_id/messages/:message_id cors.New → v1Hea
 GET    /api/v1/me/cover-votes                         cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/me/creator-status                      cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/me/edit-proposals                      cors.New → v1Headers → fiberAdapter.Handle
+GET    /api/v1/me/following/:user_id                  cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/me/moemoepoint-entries                 cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/me/notification-preferences            cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/me/notifications                       cors.New → v1Headers → fiberAdapter.Handle
@@ -186,6 +188,8 @@ GET    /api/v1/users                                  cors.New → v1Headers →
 GET    /api/v1/users/:user_id                         cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/users/:user_id/collections             cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/users/:user_id/comments                cors.New → v1Headers → fiberAdapter.Handle
+GET    /api/v1/users/:user_id/followers               cors.New → v1Headers → fiberAdapter.Handle
+GET    /api/v1/users/:user_id/following               cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/users/:user_id/galgame-resources       cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/users/:user_id/replies                 cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/users/:user_id/toolsets                cors.New → v1Headers → fiberAdapter.Handle
@@ -298,6 +302,7 @@ PUT    /api/v1/galgame-resources/:resource_id/like    cors.New → v1Headers →
 PUT    /api/v1/lotteries/:lottery_id/entries/me       cors.New → v1Headers → fiberAdapter.Handle
 PUT    /api/v1/me/avatar                              cors.New → v1Headers → fiberAdapter.Handle
 PUT    /api/v1/me/conversations/:user_id/read-marker  cors.New → v1Headers → fiberAdapter.Handle
+PUT    /api/v1/me/following/:user_id                  cors.New → v1Headers → fiberAdapter.Handle
 PUT    /api/v1/me/notification-preferences            cors.New → v1Headers → fiberAdapter.Handle
 PUT    /api/v1/me/notifications/read-marker           cors.New → v1Headers → fiberAdapter.Handle
 PUT    /api/v1/me/nsfw-display                        cors.New → v1Headers → fiberAdapter.Handle
