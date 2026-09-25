@@ -26,6 +26,7 @@ type CatalogTrait struct {
 	Searchable     bool                        `json:"is_searchable"`
 	Aliases        []string                    `json:"aliases"`
 	Description    string                      `json:"description"`
+	Intros         []CatalogIntro              `json:"intros"`
 	CharacterCount int                         `json:"character_count"`
 	// SFWCharacterCount is character_count under nsfw=false: a trait with an
 	// adult descendant matches fewer characters there.

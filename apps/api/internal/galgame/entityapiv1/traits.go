@@ -10,6 +10,7 @@ import (
 
 	"kun-galgame-api/internal/apiv1/repr"
 	"kun-galgame-api/internal/galgame/client"
+	"kun-galgame-api/internal/galgame/workrepr"
 	"kun-galgame-api/pkg/problem"
 )
 
@@ -28,6 +29,7 @@ type traitNode struct {
 	group       int
 	aliases     []string
 	description string
+	intros      []client.CatalogIntro
 	haystack    []string
 }
 
@@ -71,6 +73,7 @@ func newTraitVocab(wire []client.CatalogTrait) traitVocab {
 			group:       int(t.ID),
 			aliases:     t.Aliases,
 			description: t.Description,
+			intros:      t.Intros,
 		}
 		// Catalog's group_id decides, not the first root a walk reaches: 2279
 		// Lesbian Rape also hangs under Subject of through Rape, and the walk
@@ -347,6 +350,7 @@ func (s *Service) getTrait(ctx context.Context, in *traitPathInput) (*getTraitOu
 		ChildCount:     sum.ChildCount,
 		Aliases:        aliases(n.aliases),
 		Description:    n.description,
+		Intros:         workrepr.Intros(n.intros),
 		Subtraits:      v.subtraits(n.id, in.IncludeNSFW),
 	}}, nil
 }

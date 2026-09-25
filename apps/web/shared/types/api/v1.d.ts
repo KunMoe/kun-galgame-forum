@@ -12229,6 +12229,8 @@ export interface components {
             display_name: string;
             /** @description Trait id: the catalog trait id, which is also the id in the web's /galgame/trait/{id}. */
             id: string;
+            /** @description The note in every language catalog has, unordered: en is description's text, zh-Hans its translation. Plain text. Empty array, never null. */
+            intros: components["schemas"]["CatalogIntro"][];
             /** @description Whether the trait is specific enough to filter characters by. Grouping traits such as hair colour are not, though they still have a page. */
             is_searchable: boolean;
             /** @description Whether the trait is adult content. Such a trait is NOT_FOUND unless include_nsfw=true. */
