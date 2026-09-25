@@ -12,9 +12,9 @@ export const markdownToText = (
   // end mid-token (`![表情包 \[5\] - 41](/image/61ba…`) and never close.
   const stripped = maskSpoilers(markdown)
     .replace(/!\[(?:\\.|[^\]\\])*\]\([^)]*\)/g, '')
-    .replace(/!\[(?:\\.|[^\]\\\n])*(?:\](?:\([^)\s]*)?)?$/, '')
+    .replace(/!\[(?:\\.|[^\]\\\n])*(?:\](?:\([^)\n]*)?)?$/, '')
     .replace(/\[((?:\\.|[^\]\\])+)\]\([^)]*\)/g, '$1')
-    .replace(/\[((?:\\.|[^\]\\\n])+)\]\([^)\s]*$/, '$1')
+    .replace(/\[((?:\\.|[^\]\\\n])+)\]\([^)\n]*$/, '$1')
     .replace(/\\\\/g, '\uE000')
     .replace(/\\\n/g, '\n')
     .replace(/\\([\\`*_{}[\]()#+\-.!_>~|])/g, '$1')
