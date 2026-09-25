@@ -5324,6 +5324,20 @@ export interface components {
              */
             updated_at: string;
         };
+        AndroidPackage: {
+            /**
+             * Format: int64
+             * @description Exact byte length of the file.
+             */
+            file_size: number;
+            /** @description SHA-256 of the file, lowercase hex. */
+            sha256: string;
+            /**
+             * Format: uri
+             * @description The .apk file itself, never a page. Always https.
+             */
+            url: string;
+        };
         AppDownloads: {
             /**
              * Format: uri
@@ -5347,6 +5361,8 @@ export interface components {
             windows: string;
         };
         AppVersion: {
+            /** @description The Android package of latest_version, for an in-place update. null while none is published: open downloads.android instead. Before installing, check the file's file_size and sha256 against these, and that the package's version is latest_version and its signing certificate is the running app's. */
+            android_package: components["schemas"]["AndroidPackage"] | null;
             /** @description Where each platform downloads the latest version. */
             downloads: components["schemas"]["AppDownloads"];
             /** @description Newest published app version. MAJOR.MINOR.PATCH, never below min_version. */

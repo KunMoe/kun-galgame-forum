@@ -199,6 +199,12 @@ x-kungal-api-env: &kungal-api-env
   KUN_APP_DOWNLOAD_IOS: ${KUN_APP_DOWNLOAD_IOS:-}
   KUN_APP_DOWNLOAD_WINDOWS: ${KUN_APP_DOWNLOAD_WINDOWS:-}
   KUN_APP_DOWNLOAD_LINUX: ${KUN_APP_DOWNLOAD_LINUX:-}
+  # The .apk of KUN_APP_LATEST_VERSION for the App's in-place update: all three
+  # or none. Bump them together with KUN_APP_LATEST_VERSION, or the App refuses
+  # the file as the wrong version and shows the user an error.
+  KUN_APP_ANDROID_PACKAGE_URL: ${KUN_APP_ANDROID_PACKAGE_URL:-}
+  KUN_APP_ANDROID_PACKAGE_SIZE: ${KUN_APP_ANDROID_PACKAGE_SIZE:-}
+  KUN_APP_ANDROID_PACKAGE_SHA256: ${KUN_APP_ANDROID_PACKAGE_SHA256:-}
 
 services:
   # ───────────────────────────── Go API (distroless) ─────────────────────────

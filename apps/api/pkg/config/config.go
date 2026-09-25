@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"net/url"
 	"os"
 	"regexp"
 	"slices"
@@ -44,10 +45,17 @@ type BearerConfig struct {
 func (c BearerConfig) Enabled() bool { return len(c.ClientIDs) > 0 }
 
 type AppReleaseConfig struct {
-	MinVersion    string
-	LatestVersion string
-	Notes         string
-	Downloads     AppDownloads
+	MinVersion     string
+	LatestVersion  string
+	Notes          string
+	Downloads      AppDownloads
+	AndroidPackage *AndroidPackage
+}
+
+type AndroidPackage struct {
+	URL    string
+	Size   int64
+	SHA256 string
 }
 
 type AppDownloads struct {
@@ -371,7 +379,31 @@ func loadAppRelease() (AppReleaseConfig, error) {
 	if slices.Compare(minV, latestV) > 0 {
 		return cfg, fmt.Errorf("KUN_APP_MIN_VERSION=%s 高于 KUN_APP_LATEST_VERSION=%s", cfg.MinVersion, cfg.LatestVersion)
 	}
-	return cfg, nil
+	cfg.AndroidPackage, err = loadAndroidPackage()
+	return cfg, err
+}
+
+var sha256HexRe = regexp.MustCompile(`^[0-9a-f]{64}$`)
+
+func loadAndroidPackage() (*AndroidPackage, error) {
+	rawURL := os.Getenv("KUN_APP_ANDROID_PACKAGE_URL")
+	rawSize := os.Getenv("KUN_APP_ANDROID_PACKAGE_SIZE")
+	sum := os.Getenv("KUN_APP_ANDROID_PACKAGE_SHA256")
+	if rawURL == "" && rawSize == "" && sum == "" {
+		return nil, nil
+	}
+	u, err := url.Parse(rawURL)
+	if err != nil || u.Scheme != "https" || u.Host == "" || len(rawURL) > 512 {
+		return nil, fmt.Errorf("KUN_APP_ANDROID_PACKAGE_URL=%q 不是 512 字符以内的 https 链接", rawURL)
+	}
+	size, err := strconv.ParseInt(rawSize, 10, 64)
+	if err != nil || size <= 0 {
+		return nil, fmt.Errorf("KUN_APP_ANDROID_PACKAGE_SIZE=%q 不是正整数字节数", rawSize)
+	}
+	if !sha256HexRe.MatchString(sum) {
+		return nil, fmt.Errorf("KUN_APP_ANDROID_PACKAGE_SHA256=%q 不是 64 位小写十六进制", sum)
+	}
+	return &AndroidPackage{URL: rawURL, Size: size, SHA256: sum}, nil
 }
 
 func parseReleaseVersion(key, v string) ([]int, error) {
