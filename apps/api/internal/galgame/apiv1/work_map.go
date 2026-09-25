@@ -153,12 +153,26 @@ func coverSlotOf(kind string) string {
 	return "other"
 }
 
+// Catalog's work tags are source attachments, not canonical tags: two sources
+// mapped onto one tag arrive as two rows, and work 59609 listed tag 947 twice.
+// The merged row keeps the stricter spoiler and sexual flag of the two.
 func tagsOf(d *client.CatalogWorkDetail, includeNSFW bool) []WorkTag {
-	out := []WorkTag{}
+	rows := d.Tags[:0:0]
+	at := map[int64]int{}
 	for _, t := range d.Tags {
 		if t.CanonicalID == 0 || t.Tier == client.TagTierHidden {
 			continue
 		}
+		if i, seen := at[t.CanonicalID]; seen {
+			rows[i].Spoiler = max(rows[i].Spoiler, t.Spoiler)
+			rows[i].Sexual = rows[i].Sexual || t.Sexual
+			continue
+		}
+		at[t.CanonicalID] = len(rows)
+		rows = append(rows, t)
+	}
+	out := []WorkTag{}
+	for _, t := range rows {
 		if t.Sexual && !includeNSFW {
 			continue
 		}
