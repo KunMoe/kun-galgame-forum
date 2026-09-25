@@ -5,7 +5,6 @@ import {
   KUN_GALGAME_CHARACTER_SPOILER_MAP
 } from '~/constants/galgameCharacter'
 import type { Image, WorkCharacter } from '#shared/utils/api/schemas'
-import type { GalgameArtMeta } from '~~/shared/types/galgame'
 
 const props = defineProps<{
   roster: WorkCharacter[]
@@ -41,18 +40,6 @@ const secondaryName = (c: WorkCharacter) => {
 
 const thumbOf = (image: Image) => withImageVariant(image.url, 'mini')
 
-const metaOf = (img: Image | null): GalgameArtMeta | undefined =>
-  img?.width && img.height
-    ? { width: img.width, height: img.height, thumbhash: img.thumbhash ?? '' }
-    : undefined
-
-const figureRatio = computed(() =>
-  artGridRatio(
-    featured.value.map((c) => metaOf(c.figure)),
-    '1/1'
-  )
-)
-
 const COLLAPSED_PORTRAITS = 12
 const isExpanded = ref(false)
 const isCollapsible = computed(
@@ -75,8 +62,7 @@ const open = (character: WorkCharacter) => {
   isModalOpen.value = true
 }
 
-const voiceName = (voice: WorkCharacter['voices'][number]) =>
-  nameOf(voice).name
+const voiceName = (voice: WorkCharacter['voices'][number]) => nameOf(voice).name
 </script>
 
 <template>
@@ -106,7 +92,7 @@ const voiceName = (voice: WorkCharacter['voices'][number]) =>
 
     <div
       v-if="featured.length"
-      class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4"
+      class="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-5"
     >
       <button
         v-for="c in featured"
@@ -116,16 +102,15 @@ const voiceName = (voice: WorkCharacter['voices'][number]) =>
         :aria-label="`查看角色 ${nameOf(c).name}`"
         @click="open(c)"
       >
-        <div class="relative w-full">
+        <div class="relative h-56 w-full px-2 pt-2 sm:h-64">
           <KunImage
             :src="thumbOf(c.figure!)"
             :alt="nameOf(c).name"
             loading="lazy"
-            :aspect-ratio="figureRatio"
             :thumbhash="c.figure?.thumbhash ?? undefined"
             object-fit="contain"
-            class-name="w-full"
-            image-class-name="transition-transform duration-200 group-hover:scale-105"
+            class-name="size-full"
+            image-class-name="size-full transition-transform duration-200 group-hover:scale-105"
           />
 
           <KunChip

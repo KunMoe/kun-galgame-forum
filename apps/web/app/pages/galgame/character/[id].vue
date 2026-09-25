@@ -130,40 +130,36 @@ const subtitle = computed(() => {
   return parts.join(' · ')
 })
 
-const figureFrame = computed(() => artFrame(data.value?.figure_meta))
-const bustFrame = computed(() => artFrame(data.value?.image_meta))
-
-const leadIntro = computed(() =>
-  data.value?.intros.find((i) => i.intro === data.value?.intro)
-)
-const introCredit = computed(() =>
-  getGalgameCharacterIntroCredit(leadIntro.value)
-)
-const otherIntros = computed(() =>
-  (data.value?.intros ?? []).filter((i) => i.intro !== data.value?.intro)
-)
-
-const isTraitSpoilerRevealed = ref(false)
-const traits = computed(() => {
-  const all = data.value?.traits ?? []
-  return isTraitSpoilerRevealed.value ? all : all.filter((t) => t.spoiler === 0)
+const intros = computed(() => {
+  const all = data.value?.intros ?? []
+  const lead = all.find((i) => i.intro === data.value?.intro)
+  return lead ? [lead, ...all.filter((i) => i !== lead)] : all
 })
-const hiddenTraitCount = computed(
-  () => (data.value?.traits ?? []).filter((t) => t.spoiler > 0).length
+const introTabs = computed(() =>
+  intros.value.map((i) => ({
+    value: i.lang,
+    textValue: getGalgameCharacterLangName(i.lang)
+  }))
 )
-const traitGroups = computed(() => {
-  const groups: { name: string; traits: GalgameCharacterTrait[] }[] = []
-  for (const trait of traits.value) {
-    const name = trait.group || '其他'
-    const last = groups.at(-1)
-    if (last && last.name === name) {
-      last.traits.push(trait)
-    } else {
-      groups.push({ name, traits: [trait] })
-    }
+const introLang = ref(intros.value[0]?.lang ?? '')
+watch(intros, (rows) => {
+  if (!rows.some((i) => i.lang === introLang.value)) {
+    introLang.value = rows[0]?.lang ?? ''
   }
-  return groups
 })
+
+const artImages = computed(() =>
+  [data.value?.figure, data.value?.image]
+    .filter((src): src is string => !!src)
+    .map((src) => ({ src, alt: data.value?.name ?? '' }))
+)
+const bustIndex = computed(() => (data.value?.figure ? 1 : 0))
+const isLightboxOpen = ref(false)
+const lightboxIndex = ref(0)
+const openArt = (index: number) => {
+  lightboxIndex.value = index
+  isLightboxOpen.value = true
+}
 
 const view = data.value
 if (view) {
@@ -178,181 +174,171 @@ if (view) {
 </script>
 
 <template>
-  <div v-if="data" class="space-y-6">
-    <KunHeader :name="data.name" :description="subtitle">
-      <template v-if="data.figure || data.image" #headerEndContent>
-        <KunLightboxGallery>
-          <div class="flex shrink-0 items-start gap-2">
-            <KunLightboxGalleryItem
-              v-if="data.figure"
-              :src="data.figure"
-              :alt="data.name"
-              :wrap="false"
-              v-slot="{ open }"
-            >
-              <button
-                type="button"
-                class="bg-default-100 w-fit cursor-zoom-in overflow-hidden rounded-lg"
-                :aria-label="`查看 ${data.name} 的立绘`"
-                @click="open"
-              >
-                <KunImage
-                  :src="data.figure"
-                  :alt="data.name"
-                  loading="eager"
-                  :aspect-ratio="figureFrame.aspectRatio"
-                  :object-fit="figureFrame.objectFit"
-                  :thumbhash="figureFrame.thumbhash"
-                  class-name="w-40 sm:w-48"
-                />
-              </button>
-            </KunLightboxGalleryItem>
+  <div v-if="data" class="space-y-8">
+    <div class="flex flex-col gap-8 lg:flex-row lg:items-start">
+      <aside
+        v-if="data.figure || data.image"
+        class="hidden shrink-0 flex-col items-center gap-3 lg:sticky lg:top-24 lg:flex"
+      >
+        <GalgameCharacterArt
+          v-if="data.figure"
+          :src="data.figure"
+          :alt="data.name"
+          :label="`查看 ${data.name} 的立绘`"
+          :meta="data.figure_meta"
+          :max-width="280"
+          :max-height="520"
+          @open="openArt(0)"
+        />
+        <GalgameCharacterArt
+          v-if="data.image"
+          :src="data.image"
+          :alt="data.name"
+          :label="`查看 ${data.name} 的头像`"
+          :meta="data.image_meta"
+          :max-width="data.figure ? 112 : 240"
+          :max-height="data.figure ? 132 : 300"
+          @open="openArt(bustIndex)"
+        />
+      </aside>
 
-            <KunLightboxGalleryItem
-              v-if="data.image"
-              :src="data.image"
-              :alt="data.name"
-              :wrap="false"
-              v-slot="{ open }"
-            >
-              <button
-                type="button"
-                class="bg-default-100 w-fit cursor-zoom-in overflow-hidden rounded-lg"
-                :aria-label="`查看 ${data.name} 的头像`"
-                @click="open"
-              >
-                <KunImage
-                  :src="data.image"
-                  :alt="data.name"
-                  loading="eager"
-                  :aspect-ratio="bustFrame.aspectRatio"
-                  :object-fit="bustFrame.objectFit"
-                  :thumbhash="bustFrame.thumbhash"
-                  :class-name="data.figure ? 'w-24 sm:w-28' : 'w-32 sm:w-40'"
-                />
-              </button>
-            </KunLightboxGalleryItem>
+      <div class="min-w-0 flex-1 space-y-8">
+        <div class="flex items-start gap-4">
+          <GalgameCharacterArt
+            v-if="data.image"
+            class="lg:hidden"
+            :src="data.image"
+            :alt="data.name"
+            :label="`查看 ${data.name} 的头像`"
+            :meta="data.image_meta"
+            :max-width="96"
+            :max-height="128"
+            @open="openArt(bustIndex)"
+          />
+
+          <div class="min-w-0 flex-1">
+            <KunHeader :name="data.name" :description="subtitle">
+              <template #endContent>
+                <div class="flex flex-wrap items-center gap-3">
+                  <KunButton
+                    v-if="data.figure"
+                    class-name="lg:hidden"
+                    variant="flat"
+                    color="primary"
+                    size="sm"
+                    @click="openArt(0)"
+                  >
+                    <KunIcon name="lucide:user-round" />
+                    查看立绘
+                  </KunButton>
+                  <template v-for="link in data.links" :key="link.source">
+                    <KunLink
+                      v-if="link.url"
+                      :to="link.url"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      size="sm"
+                      color="default"
+                      class-name="text-default-500 hover:text-default-700"
+                    >
+                      {{ link.name }}
+                      <KunIcon
+                        name="lucide:external-link"
+                        class="inline size-3"
+                      />
+                    </KunLink>
+                    <span v-else class="text-default-400 text-sm">
+                      {{ link.name }}
+                    </span>
+                  </template>
+                </div>
+              </template>
+            </KunHeader>
           </div>
-        </KunLightboxGallery>
-      </template>
+        </div>
 
-      <template #endContent>
-        <div class="space-y-3">
-          <div v-if="data.intro" class="space-y-1">
-            <p class="text-default-600 whitespace-pre-line">{{ data.intro }}</p>
-            <p v-if="introCredit" class="text-default-400 text-xs">
-              {{ introCredit }}
-            </p>
+        <section v-if="intros.length" class="space-y-3">
+          <div class="flex flex-wrap items-end justify-between gap-2">
+            <h2 class="text-foreground text-lg font-semibold">角色简介</h2>
+            <KunTab
+              v-if="introTabs.length > 1"
+              v-model="introLang"
+              :items="introTabs"
+              name="character-intro"
+              variant="underlined"
+              size="sm"
+            />
           </div>
-
-          <KunAccordion v-if="otherIntros.length">
-            <KunAccordionItem
-              v-for="intro in otherIntros"
+          <KunTabPanels v-model="introLang" name="character-intro">
+            <KunTabPanel
+              v-for="intro in intros"
               :key="intro.lang"
               :value="intro.lang"
-              :title="`${getGalgameCharacterLangName(intro.lang)} 简介`"
+              class-name="space-y-2"
             >
-              <p class="text-default-600 whitespace-pre-line">
+              <p class="text-default-700 leading-relaxed whitespace-pre-line">
                 {{ intro.intro }}
               </p>
-              <p v-if="intro.source" class="text-default-400 mt-1 text-xs">
+              <p
+                v-if="getGalgameCharacterIntroCredit(intro)"
+                class="text-default-400 text-xs"
+              >
                 {{ getGalgameCharacterIntroCredit(intro) }}
               </p>
-            </KunAccordionItem>
-          </KunAccordion>
+            </KunTabPanel>
+          </KunTabPanels>
+        </section>
 
-          <div v-if="traitGroups.length" class="space-y-2">
-            <div
-              v-for="group in traitGroups"
-              :key="group.name"
-              class="space-y-1"
-            >
-              <p class="text-default-400 text-xs">{{ group.name }}</p>
-              <div class="flex flex-wrap gap-1.5">
-                <KunLink
-                  v-for="trait in group.traits"
-                  :key="trait.id"
-                  underline="none"
-                  :to="`/galgame/trait/${trait.id}`"
-                >
-                  <KunChip
-                    size="xs"
-                    :color="trait.spoiler > 0 ? 'warning' : 'default'"
-                    class-name="cursor-pointer"
-                  >
-                    {{ trait.name }}<template v-if="trait.lie">（伪）</template>
-                  </KunChip>
-                </KunLink>
-              </div>
-            </div>
-          </div>
+        <section v-if="data.traits.length" class="space-y-3">
+          <h2 class="text-foreground text-lg font-semibold">角色属性</h2>
+          <GalgameCharacterTraits :traits="data.traits" />
+        </section>
 
-          <KunButton
-            v-if="hiddenTraitCount && !isTraitSpoilerRevealed"
-            variant="flat"
-            color="warning"
-            size="sm"
-            @click="isTraitSpoilerRevealed = true"
-          >
-            <KunIcon name="lucide:eye" />
-            显示 {{ hiddenTraitCount }} 条剧透特征
-          </KunButton>
-
-          <div
-            v-if="data.links.length"
-            class="flex flex-wrap items-center gap-3"
-          >
-            <template v-for="link in data.links" :key="link.source">
-              <KunLink
-                v-if="link.url"
-                :to="link.url"
-                target="_blank"
-                rel="noopener noreferrer"
-                size="sm"
-                color="default"
-                class-name="text-default-500 hover:text-default-700"
-              >
-                {{ link.name }}
-                <KunIcon name="lucide:external-link" class="inline size-3" />
-              </KunLink>
-              <span v-else class="text-default-400 text-sm">{{
-                link.name
-              }}</span>
-            </template>
-          </div>
-
-          <p class="text-default-500 text-sm">
-            资料来自 NextMoe 目录的角色图谱。默认仅显示 SFW 的 Galgame, 查看
-            NSFW Galgame 请在设置面板打开 NSFW 开关。如果有数据错误请
-            <KunLink to="/doc/contact"> 联系我们 </KunLink>。
-          </p>
-        </div>
-      </template>
-    </KunHeader>
-
-    <GalgameCard v-if="works.length" :galgames="works" :is-transparent="false">
-      <template #meta="{ galgame }">
-        <p
-          v-if="galgame.voices?.length"
-          class="text-default-500 mt-1 line-clamp-2 text-xs"
-          :title="voiceTitle(galgame.voices)"
-        >
-          CV {{ galgame.voices.map(voiceLabel).join(' / ') }}
+        <p class="text-default-500 text-sm">
+          资料来自 NextMoe 目录的角色图谱。默认仅显示 SFW 的 Galgame, 查看 NSFW
+          Galgame 请在设置面板打开 NSFW 开关。如果有数据错误请
+          <KunLink to="/doc/contact"> 联系我们 </KunLink>。
         </p>
-      </template>
-    </GalgameCard>
-
-    <KunNull v-else description="暂无该角色登场的 Galgame" />
-
-    <div v-if="nextCursor !== null" class="flex justify-center">
-      <KunButton
-        variant="flat"
-        color="primary"
-        :is-loading="loadingMore"
-        @click="loadMore"
-      >
-        加载更多作品
-      </KunButton>
+      </div>
     </div>
+
+    <section class="space-y-3">
+      <h2 class="text-foreground text-lg font-semibold">登场作品</h2>
+
+      <GalgameCard
+        v-if="works.length"
+        :galgames="works"
+        :is-transparent="false"
+      >
+        <template #meta="{ galgame }">
+          <p
+            v-if="galgame.voices?.length"
+            class="text-default-500 mt-1 line-clamp-2 text-xs"
+            :title="voiceTitle(galgame.voices)"
+          >
+            CV {{ galgame.voices.map(voiceLabel).join(' / ') }}
+          </p>
+        </template>
+      </GalgameCard>
+
+      <KunNull v-else description="暂无该角色登场的 Galgame" />
+
+      <div v-if="nextCursor !== null" class="flex justify-center">
+        <KunButton
+          variant="flat"
+          color="primary"
+          :is-loading="loadingMore"
+          @click="loadMore"
+        >
+          加载更多作品
+        </KunButton>
+      </div>
+    </section>
+
+    <KunLightbox
+      v-model:is-open="isLightboxOpen"
+      :images="artImages"
+      :initial-index="lightboxIndex"
+    />
   </div>
 </template>
