@@ -5,7 +5,12 @@ export const markdownToText = (
   opts?: { preserveNewlines?: boolean }
 ) => {
   if (!markdown) return ''
+  // Images and links match before unescaping: a sticker alt like
+  // `\u8868\u60C5\u5305 \[1\] - 56` unescaped to a bare `]` first, and the whole
+  // `![...](/image/...)` survived raw into notification excerpts.
   const stripped = maskSpoilers(markdown)
+    .replace(/!\[(?:\\.|[^\]\\])*\]\([^)]*\)/g, '')
+    .replace(/\[((?:\\.|[^\]\\])+)\]\([^)]*\)/g, '$1')
     .replace(/\\\\/g, '\uE000')
     .replace(/\\\n/g, '\n')
     .replace(/\\([\\`*_{}[\]()#+\-.!_>~|])/g, '$1')
@@ -13,8 +18,6 @@ export const markdownToText = (
     .replace(/^[ \t]*```+.*$/gm, '')
     .replace(/<br\s*\/?>/gi, '\n')
     .replace(/<[^>]+>/g, '')
-    .replace(/!\[[^\]]*\]\([^)]*\)/g, '')
-    .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
     .replace(/(\*\*|__)(.*?)\1/g, '$2')
     .replace(/~~(.*?)~~/g, '$1')
     .replace(/(\*)(.*?)\1/g, '$2')
