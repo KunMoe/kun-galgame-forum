@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { CharacterSummary } from '#shared/utils/api/schemas'
+import { traitSide } from '~/utils/galgame/trait'
 
 const props = defineProps<{
   character: CharacterSummary
@@ -77,6 +78,9 @@ const isMasked = computed(() => isExplicit.value && isBlurred.value)
           color="primary"
         >
           {{ catalogVocabularyName(trait) }}
+          <span v-if="traitSide(trait)" class="opacity-60">
+            · {{ traitSide(trait) }}
+          </span>
         </KunChip>
       </div>
     </div>

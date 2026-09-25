@@ -8,6 +8,7 @@ import type {
   TraitSummary
 } from '#shared/utils/api/schemas'
 import { settle } from '#shared/utils/api/problem'
+import { traitSide } from '~/utils/galgame/trait'
 
 const TRAIT_MAX = 10
 const LIMIT = 24
@@ -197,10 +198,13 @@ const chips = computed<FilterChip[]>(() => [
     label: GENDER_LABEL[g]
   })),
   ...pickedIds.value.map((id) => {
-    const parent = known.value.get(id)?.parents[0]
+    const trait = known.value.get(id)
+    const parent = trait?.parents[0]
     return {
       key: String(id),
-      prefix: parent ? catalogVocabularyName(parent) : '属性',
+      prefix:
+        (trait && traitSide(trait)) ||
+        (parent ? catalogVocabularyName(parent) : '属性'),
       label: traitLabel(id)
     }
   })
