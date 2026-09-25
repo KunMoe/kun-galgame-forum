@@ -25,6 +25,8 @@ const (
 	LotteryDrawn           Type = "lottery_drawn"
 	LotteryCodeExpired     Type = "lottery_code_expired"
 	PollClosed             Type = "poll_closed"
+	UserFollowed           Type = "user_followed"
+	FolloweeTopicCreated   Type = "followee_topic_created"
 )
 
 const KeyChat = "chat"
@@ -48,6 +50,8 @@ var all = []Type{
 	LotteryDrawn,
 	LotteryCodeExpired,
 	PollClosed,
+	UserFollowed,
+	FolloweeTopicCreated,
 }
 
 var toDB = map[Type]string{
@@ -69,6 +73,8 @@ var toDB = map[Type]string{
 	LotteryDrawn:           "lottery-closed",
 	LotteryCodeExpired:     "lottery-expired",
 	PollClosed:             "poll-closed",
+	UserFollowed:           "user-followed",
+	FolloweeTopicCreated:   "followee-topic",
 }
 
 var fromDB = func() map[string]Type {

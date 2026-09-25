@@ -11,7 +11,7 @@ type Notification struct {
 	ID               repr.DecimalID  `json:"id" doc:"Notification id. JSON string of a decimal integer."`
 	NotificationType notifytype.Type `json:"notification_type" doc:"Notification type. Closed vocabulary of v1 tokens."`
 	Actor            repr.UserRef    `json:"actor" doc:"The user who triggered this notification. name is null when the account no longer exists."`
-	ActorCount       int             `json:"actor_count" minimum:"0" doc:"How many people are folded into this mirrored row. Values stored below 1 are emitted as 1. Only followed_thread_activity is greater than 1 in production."`
+	ActorCount       int             `json:"actor_count" minimum:"0" doc:"How many people are folded into this mirrored row. Values stored below 1 are emitted as 1. followed_thread_activity and user_followed can be greater than 1."`
 	ItemCount        int             `json:"item_count" minimum:"0" doc:"How many upstream posts are folded into this mirrored row. Values stored below 1 are emitted as 1."`
 	Path             string          `json:"path" maxLength:"100" pattern:"^/" doc:"In-site web path of the target, stored as the legacy link. Always starts with a slash."`
 	ExcerptMarkdown  string          `json:"excerpt_markdown" maxLength:"1000" doc:"Markdown snapshot stored on the row, truncated to 1000 runes. May be empty. Free text; never use it as a decision input."`

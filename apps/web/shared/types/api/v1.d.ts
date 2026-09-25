@@ -1748,6 +1748,34 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/me/following/{user_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the caller's standing toward a user
+         * @description Whether the caller follows the named user, and whether that user follows the caller. NOT_FOUND when the account does not exist or is not renderable.
+         */
+        get: operations["getUserFollowState"];
+        /**
+         * Follow a user
+         * @description The caller follows the named user. Following a user the caller already follows changes nothing. NOT_FOUND when the account does not exist or is not renderable.
+         */
+        put: operations["followUser"];
+        post?: never;
+        /**
+         * Stop following a user
+         * @description The caller stops following the named user. Unfollowing a user the caller does not follow changes nothing. NOT_FOUND when the account does not exist or is not renderable.
+         */
+        delete: operations["unfollowUser"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/me/moemoepoint-entries": {
         parameters: {
             query?: never;
@@ -3950,7 +3978,7 @@ export interface paths {
         };
         /**
          * Get a user's public profile
-         * @description Returns one user's public profile and activity counts. NOT_FOUND when the account does not exist or is not renderable. topic_count excludes hidden topics. topic_today_count uses the Asia/Shanghai calendar day. community_comment_count is null when the community service is unavailable and there is no cached value.
+         * @description Returns one user's public profile and activity counts. NOT_FOUND when the account does not exist or is not renderable. topic_count excludes hidden topics. topic_today_count uses the Asia/Shanghai calendar day. community_comment_count, follower_count and following_count are null when the community service is unavailable.
          */
         get: operations["getUser"];
         put?: never;
@@ -3993,6 +4021,46 @@ export interface paths {
          * @description Lists topic comments related to a user as a page-number collection, newest first with ties broken by descending id. relation is required and closed. Comments whose parent topic is hidden or restricted never appear. NOT_FOUND when the account does not exist or is not renderable.
          */
         get: operations["listUserComments"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/users/{user_id}/followers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List a user's followers
+         * @description Accounts that follow this user, newest first, as a cursor page. An account the forum cannot resolve is still listed, with a null name. The last page omits next_cursor. NOT_FOUND when the account does not exist or is not renderable.
+         */
+        get: operations["listUserFollowers"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/users/{user_id}/following": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the accounts a user follows
+         * @description Accounts this user follows, newest first, as a cursor page. An account the forum cannot resolve is still listed, with a null name. The last page omits next_cursor. NOT_FOUND when the account does not exist or is not renderable.
+         */
+        get: operations["listUserFollowing"];
         put?: never;
         post?: never;
         delete?: never;
@@ -7889,6 +7957,28 @@ export interface components {
              */
             object: "list";
         };
+        ListUserFollowee: {
+            /** @description Members of this page. Empty array, never null. */
+            items: components["schemas"]["UserFollowee"][];
+            /** @description Opaque keyset cursor. Omitted on the last page. */
+            next_cursor?: string;
+            /**
+             * @description Type discriminant. Always list.
+             * @constant
+             */
+            object: "list";
+        };
+        ListUserFollower: {
+            /** @description Members of this page. Empty array, never null. */
+            items: components["schemas"]["UserFollower"][];
+            /** @description Opaque keyset cursor. Omitted on the last page. */
+            next_cursor?: string;
+            /**
+             * @description Type discriminant. Always list.
+             * @constant
+             */
+            object: "list";
+        };
         ListUserRankingEntry: {
             /** @description Members of this page. Empty array, never null. */
             items: components["schemas"]["UserRankingEntry"][];
@@ -8497,7 +8587,7 @@ export interface components {
             web_url: string;
         };
         /** @enum {string} */
-        MutedType: "upvoted" | "liked" | "favorited" | "replied" | "commented" | "mentioned" | "followed_thread_activity" | "best_answer_chosen" | "reply_pinned" | "quiz_answered" | "resource_link_reported" | "edit_requested" | "edit_merged" | "edit_declined" | "lottery_won" | "lottery_drawn" | "lottery_code_expired" | "poll_closed" | "chat";
+        MutedType: "upvoted" | "liked" | "favorited" | "replied" | "commented" | "mentioned" | "followed_thread_activity" | "best_answer_chosen" | "reply_pinned" | "quiz_answered" | "resource_link_reported" | "edit_requested" | "edit_merged" | "edit_declined" | "lottery_won" | "lottery_drawn" | "lottery_code_expired" | "poll_closed" | "user_followed" | "followee_topic_created" | "chat";
         MyCoverVote: {
             /**
              * @description Type discriminant. Always my_cover_vote.
@@ -8631,7 +8721,7 @@ export interface components {
             actor: components["schemas"]["UserRef"];
             /**
              * Format: int64
-             * @description How many people are folded into this mirrored row. Values stored below 1 are emitted as 1. Only followed_thread_activity is greater than 1 in production.
+             * @description How many people are folded into this mirrored row. Values stored below 1 are emitted as 1. followed_thread_activity and user_followed can be greater than 1.
              */
             actor_count: number;
             /**
@@ -8716,7 +8806,7 @@ export interface components {
             unread_count: number;
         };
         /** @enum {string} */
-        NotificationType: "upvoted" | "liked" | "favorited" | "replied" | "commented" | "mentioned" | "followed_thread_activity" | "best_answer_chosen" | "reply_pinned" | "quiz_answered" | "resource_link_reported" | "edit_requested" | "edit_merged" | "edit_declined" | "lottery_won" | "lottery_drawn" | "lottery_code_expired" | "poll_closed";
+        NotificationType: "upvoted" | "liked" | "favorited" | "replied" | "commented" | "mentioned" | "followed_thread_activity" | "best_answer_chosen" | "reply_pinned" | "quiz_answered" | "resource_link_reported" | "edit_requested" | "edit_merged" | "edit_declined" | "lottery_won" | "lottery_drawn" | "lottery_code_expired" | "poll_closed" | "user_followed" | "followee_topic_created";
         NsfwDisplay: {
             /** @description How adult content is shown: hide, blur, or show. */
             nsfw_display: components["schemas"]["NsfwDisplayMode"];
@@ -12450,6 +12540,16 @@ export interface components {
             contributed_galgame_count: number;
             /**
              * Format: int64
+             * @description Accounts that follow this user. null when the community service is unavailable.
+             */
+            follower_count: number | null;
+            /**
+             * Format: int64
+             * @description Accounts this user follows. null when the community service is unavailable.
+             */
+            following_count: number | null;
+            /**
+             * Format: int64
              * @description Galgame ratings the user authored.
              */
             galgame_rating_count: number;
@@ -12523,6 +12623,49 @@ export interface components {
              * @description Topics the user authored on the current Asia/Shanghai calendar day.
              */
             topic_today_count: number;
+        };
+        UserFollowState: {
+            /** @description The target user id, the same value as user_id. */
+            id: string;
+            /** @description Whether this user follows the caller. */
+            is_followed_by: boolean;
+            /** @description Whether the caller follows this user. */
+            is_following: boolean;
+            /**
+             * @description Type discriminant. Always user_follow_state.
+             * @constant
+             */
+            object: "user_follow_state";
+            /** @description The user this standing is about. */
+            user_id: string;
+        };
+        UserFollowee: {
+            /**
+             * Format: date-time
+             * @description When the follow was created. null when the community service did not send a time.
+             */
+            followed_at: string | null;
+            /** @description The followed account. name is null when the account no longer exists; show a localized label. */
+            followee: components["schemas"]["UserRef"];
+            /**
+             * @description Type discriminant. Always user_followee.
+             * @constant
+             */
+            object: "user_followee";
+        };
+        UserFollower: {
+            /**
+             * Format: date-time
+             * @description When the follow was created. null when the community service did not send a time.
+             */
+            followed_at: string | null;
+            /** @description The following account. name is null when the account no longer exists; show a localized label. */
+            follower: components["schemas"]["UserRef"];
+            /**
+             * @description Type discriminant. Always user_follower.
+             * @constant
+             */
+            object: "user_follower";
         };
         UserPermissions: {
             /** @description Permissions the user's roles grant, in catalog order. */
@@ -23534,6 +23677,246 @@ export interface operations {
                 };
             };
             /** @description SERVICE_UNAVAILABLE when the catalog or the account service cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getUserFollowState: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description User id of the account to follow or unfollow. */
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserFollowState"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SCOPE_REQUIRED or ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the account does not exist or is not renderable. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the community service is unreachable or unconfigured. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    followUser: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description User id of the account to follow or unfollow. */
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserFollowState"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SCOPE_REQUIRED or ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the account does not exist or is not renderable. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description VALIDATION_FAILED when the caller follows themselves, or when the following limit is reached. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the community service is unreachable or unconfigured. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    unfollowUser: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description User id of the account to follow or unfollow. */
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserFollowState"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SCOPE_REQUIRED or ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the account does not exist or is not renderable. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the community service is unreachable or unconfigured. */
             503: {
                 headers: {
                     [name: string]: unknown;
@@ -35520,6 +35903,134 @@ export interface operations {
                 };
             };
             /** @description SERVICE_UNAVAILABLE when the account service cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listUserFollowers: {
+        parameters: {
+            query?: {
+                /** @description Opaque keyset cursor from a previous page of this collection. */
+                cursor?: string;
+                /** @description Page size. 1–100, default 20. Values above 100 are rejected, not clamped. */
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                /** @description User id. */
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListUserFollower"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the community service is unreachable or unconfigured. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listUserFollowing: {
+        parameters: {
+            query?: {
+                /** @description Opaque keyset cursor from a previous page of this collection. */
+                cursor?: string;
+                /** @description Page size. 1–100, default 20. Values above 100 are rejected, not clamped. */
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                /** @description User id. */
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListUserFollowee"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the community service is unreachable or unconfigured. */
             503: {
                 headers: {
                     [name: string]: unknown;

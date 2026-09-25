@@ -32,6 +32,9 @@ const (
 	NotifyLotteryClosed  NotifyKind = "lottery-closed"
 	NotifyLotteryExpired NotifyKind = "lottery-expired"
 	NotifyPollClosed     NotifyKind = "poll-closed"
+
+	NotifyUserFollowed  NotifyKind = "user-followed"
+	NotifyFolloweeTopic NotifyKind = "followee-topic"
 )
 
 const notifyContentLimit = 233

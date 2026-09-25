@@ -8234,6 +8234,62 @@
         ],
         "type": "object"
       },
+      "ListUserFollowee": {
+        "properties": {
+          "items": {
+            "description": "Members of this page. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/UserFollowee"
+            },
+            "type": "array"
+          },
+          "next_cursor": {
+            "description": "Opaque keyset cursor. Omitted on the last page.",
+            "maxLength": 512,
+            "pattern": "^cur_[A-Za-z0-9_-]+$",
+            "type": "string"
+          },
+          "object": {
+            "const": "list",
+            "description": "Type discriminant. Always list.",
+            "maxLength": 4,
+            "type": "string"
+          }
+        },
+        "required": [
+          "object",
+          "items"
+        ],
+        "type": "object"
+      },
+      "ListUserFollower": {
+        "properties": {
+          "items": {
+            "description": "Members of this page. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/UserFollower"
+            },
+            "type": "array"
+          },
+          "next_cursor": {
+            "description": "Opaque keyset cursor. Omitted on the last page.",
+            "maxLength": 512,
+            "pattern": "^cur_[A-Za-z0-9_-]+$",
+            "type": "string"
+          },
+          "object": {
+            "const": "list",
+            "description": "Type discriminant. Always list.",
+            "maxLength": 4,
+            "type": "string"
+          }
+        },
+        "required": [
+          "object",
+          "items"
+        ],
+        "type": "object"
+      },
       "ListUserRankingEntry": {
         "properties": {
           "items": {
@@ -9879,6 +9935,8 @@
           "lottery_drawn",
           "lottery_code_expired",
           "poll_closed",
+          "user_followed",
+          "followee_topic_created",
           "chat"
         ],
         "maxLength": 24,
@@ -10255,7 +10313,7 @@
             "description": "The user who triggered this notification. name is null when the account no longer exists."
           },
           "actor_count": {
-            "description": "How many people are folded into this mirrored row. Values stored below 1 are emitted as 1. Only followed_thread_activity is greater than 1 in production.",
+            "description": "How many people are folded into this mirrored row. Values stored below 1 are emitted as 1. followed_thread_activity and user_followed can be greater than 1.",
             "format": "int64",
             "minimum": 0,
             "type": "integer"
@@ -10343,7 +10401,7 @@
               "$ref": "#/components/schemas/MutedType",
               "description": "Notification type the caller has muted. Closed vocabulary of v1 tokens plus chat for private messages."
             },
-            "maxItems": 19,
+            "maxItems": 21,
             "type": "array",
             "uniqueItems": true
           },
@@ -10466,7 +10524,9 @@
           "lottery_won",
           "lottery_drawn",
           "lottery_code_expired",
-          "poll_closed"
+          "poll_closed",
+          "user_followed",
+          "followee_topic_created"
         ],
         "maxLength": 24,
         "type": "string",
@@ -12613,7 +12673,7 @@
               "$ref": "#/components/schemas/MutedType",
               "description": "Notification type the caller has muted. Closed vocabulary of v1 tokens plus chat for private messages."
             },
-            "maxItems": 19,
+            "maxItems": 21,
             "type": "array",
             "uniqueItems": true
           }
@@ -20224,6 +20284,24 @@
             "minimum": 0,
             "type": "integer"
           },
+          "follower_count": {
+            "description": "Accounts that follow this user. null when the community service is unavailable.",
+            "format": "int64",
+            "minimum": 0,
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "following_count": {
+            "description": "Accounts this user follows. null when the community service is unavailable.",
+            "format": "int64",
+            "minimum": 0,
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
           "galgame_rating_count": {
             "description": "Galgame ratings the user authored.",
             "format": "int64",
@@ -20332,7 +20410,111 @@
           "received_upvote_count",
           "received_like_count",
           "received_dislike_count",
-          "topic_today_count"
+          "topic_today_count",
+          "follower_count",
+          "following_count"
+        ],
+        "type": "object"
+      },
+      "UserFollowState": {
+        "properties": {
+          "id": {
+            "description": "The target user id, the same value as user_id.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "is_followed_by": {
+            "description": "Whether this user follows the caller.",
+            "type": "boolean"
+          },
+          "is_following": {
+            "description": "Whether the caller follows this user.",
+            "type": "boolean"
+          },
+          "object": {
+            "const": "user_follow_state",
+            "description": "Type discriminant. Always user_follow_state.",
+            "maxLength": 17,
+            "type": "string"
+          },
+          "user_id": {
+            "description": "The user this standing is about.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "object",
+          "id",
+          "user_id",
+          "is_following",
+          "is_followed_by"
+        ],
+        "type": "object"
+      },
+      "UserFollowee": {
+        "properties": {
+          "followed_at": {
+            "description": "When the follow was created. null when the community service did not send a time.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "followee": {
+            "$ref": "#/components/schemas/UserRef",
+            "description": "The followed account. name is null when the account no longer exists; show a localized label."
+          },
+          "object": {
+            "const": "user_followee",
+            "description": "Type discriminant. Always user_followee.",
+            "maxLength": 13,
+            "type": "string"
+          }
+        },
+        "required": [
+          "object",
+          "followee",
+          "followed_at"
+        ],
+        "type": "object"
+      },
+      "UserFollower": {
+        "properties": {
+          "followed_at": {
+            "description": "When the follow was created. null when the community service did not send a time.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "follower": {
+            "$ref": "#/components/schemas/UserRef",
+            "description": "The following account. name is null when the account no longer exists; show a localized label."
+          },
+          "object": {
+            "const": "user_follower",
+            "description": "Type discriminant. Always user_follower.",
+            "maxLength": 13,
+            "type": "string"
+          }
+        },
+        "required": [
+          "object",
+          "follower",
+          "followed_at"
         ],
         "type": "object"
       },
@@ -38158,6 +38340,324 @@
         ]
       }
     },
+    "/me/following/{user_id}": {
+      "delete": {
+        "description": "The caller stops following the named user. Unfollowing a user the caller does not follow changes nothing. NOT_FOUND when the account does not exist or is not renderable.",
+        "operationId": "unfollowUser",
+        "parameters": [
+          {
+            "description": "User id of the account to follow or unfollow.",
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "description": "User id of the account to follow or unfollow.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserFollowState"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SCOPE_REQUIRED or ACCOUNT_BANNED."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when the account does not exist or is not renderable."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the community service is unreachable or unconfigured."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Stop following a user",
+        "tags": [
+          "users"
+        ]
+      },
+      "get": {
+        "description": "Whether the caller follows the named user, and whether that user follows the caller. NOT_FOUND when the account does not exist or is not renderable.",
+        "operationId": "getUserFollowState",
+        "parameters": [
+          {
+            "description": "User id of the account to follow or unfollow.",
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "description": "User id of the account to follow or unfollow.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserFollowState"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SCOPE_REQUIRED or ACCOUNT_BANNED."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when the account does not exist or is not renderable."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the community service is unreachable or unconfigured."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get the caller's standing toward a user",
+        "tags": [
+          "users"
+        ]
+      },
+      "put": {
+        "description": "The caller follows the named user. Following a user the caller already follows changes nothing. NOT_FOUND when the account does not exist or is not renderable.",
+        "operationId": "followUser",
+        "parameters": [
+          {
+            "description": "User id of the account to follow or unfollow.",
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "description": "User id of the account to follow or unfollow.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserFollowState"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SCOPE_REQUIRED or ACCOUNT_BANNED."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when the account does not exist or is not renderable."
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED when the caller follows themselves, or when the following limit is reached."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the community service is unreachable or unconfigured."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Follow a user",
+        "tags": [
+          "users"
+        ]
+      }
+    },
     "/me/moemoepoint-entries": {
       "get": {
         "description": "Lists the caller's moemoepoint ledger as a cursor page, newest first. limit is 1–50 because that is the upstream page cap. The cursor is bound to the caller and the reason filter.",
@@ -55474,7 +55974,7 @@
     },
     "/users/{user_id}": {
       "get": {
-        "description": "Returns one user's public profile and activity counts. NOT_FOUND when the account does not exist or is not renderable. topic_count excludes hidden topics. topic_today_count uses the Asia/Shanghai calendar day. community_comment_count is null when the community service is unavailable and there is no cached value.",
+        "description": "Returns one user's public profile and activity counts. NOT_FOUND when the account does not exist or is not renderable. topic_count excludes hidden topics. topic_today_count uses the Asia/Shanghai calendar day. community_comment_count, follower_count and following_count are null when the community service is unavailable.",
         "operationId": "getUser",
         "parameters": [
           {
@@ -55840,6 +56340,210 @@
           {}
         ],
         "summary": "List a user's comments",
+        "tags": [
+          "users"
+        ]
+      }
+    },
+    "/users/{user_id}/followers": {
+      "get": {
+        "description": "Accounts that follow this user, newest first, as a cursor page. An account the forum cannot resolve is still listed, with a null name. The last page omits next_cursor. NOT_FOUND when the account does not exist or is not renderable.",
+        "operationId": "listUserFollowers",
+        "parameters": [
+          {
+            "description": "User id.",
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "description": "User id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Opaque keyset cursor from a previous page of this collection.",
+            "explode": false,
+            "in": "query",
+            "name": "cursor",
+            "schema": {
+              "description": "Opaque keyset cursor from a previous page of this collection.",
+              "maxLength": 512,
+              "pattern": "^cur_[A-Za-z0-9_-]+$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Page size. 1–100, default 20. Values above 100 are rejected, not clamped.",
+            "explode": false,
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 20,
+              "description": "Page size. 1–100, default 20. Values above 100 are rejected, not clamped.",
+              "format": "int64",
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListUserFollower"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the community service is unreachable or unconfigured."
+          }
+        },
+        "summary": "List a user's followers",
+        "tags": [
+          "users"
+        ]
+      }
+    },
+    "/users/{user_id}/following": {
+      "get": {
+        "description": "Accounts this user follows, newest first, as a cursor page. An account the forum cannot resolve is still listed, with a null name. The last page omits next_cursor. NOT_FOUND when the account does not exist or is not renderable.",
+        "operationId": "listUserFollowing",
+        "parameters": [
+          {
+            "description": "User id.",
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "description": "User id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Opaque keyset cursor from a previous page of this collection.",
+            "explode": false,
+            "in": "query",
+            "name": "cursor",
+            "schema": {
+              "description": "Opaque keyset cursor from a previous page of this collection.",
+              "maxLength": 512,
+              "pattern": "^cur_[A-Za-z0-9_-]+$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Page size. 1–100, default 20. Values above 100 are rejected, not clamped.",
+            "explode": false,
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 20,
+              "description": "Page size. 1–100, default 20. Values above 100 are rejected, not clamped.",
+              "format": "int64",
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListUserFollowee"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the community service is unreachable or unconfigured."
+          }
+        },
+        "summary": "List the accounts a user follows",
         "tags": [
           "users"
         ]

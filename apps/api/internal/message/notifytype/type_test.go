@@ -9,8 +9,8 @@ import (
 
 func TestV1TokensRoundTripAndMatchLocalNotificationTypes(t *testing.T) {
 	all := notifytype.All()
-	if len(all) != 18 {
-		t.Fatalf("All() length %d, want 18", len(all))
+	if len(all) != 20 {
+		t.Fatalf("All() length %d, want 20", len(all))
 	}
 	dbSet := map[string]struct{}{}
 	seen := map[notifytype.Type]struct{}{}

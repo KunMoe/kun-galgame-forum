@@ -96,6 +96,9 @@ func (p *Poller) writePage(ctx context.Context, notes []communityclient.Notifica
 	refs := make([]anchor.Ref, 0, len(notes))
 	seenRef := make(map[anchor.Ref]bool, len(notes))
 	for _, n := range notes {
+		if n.Kind == communityclient.InboxFollowed {
+			continue
+		}
 		if n.PostID != nil && *n.PostID > 0 && !seenPost[*n.PostID] {
 			seenPost[*n.PostID] = true
 			postIDs = append(postIDs, *n.PostID)
@@ -114,6 +117,16 @@ func (p *Poller) writePage(ctx context.Context, notes []communityclient.Notifica
 
 	for i := range notes {
 		n := notes[i]
+		if n.Kind == communityclient.InboxFollowed {
+			msg := MapNotification(n, nil, nil)
+			if msg == nil {
+				continue
+			}
+			if err := p.messages.UpsertCommunityMirror(msg); err != nil {
+				return err
+			}
+			continue
+		}
 		target, ok := targets[anchor.Ref{Kind: n.AnchorKind, ID: n.AnchorID}]
 		if !ok {
 			continue

@@ -201,6 +201,8 @@ const (
 	InboxLiked          int32 = 5
 	InboxAnswerAccepted int32 = 6
 	InboxFeedbackStatus int32 = 7
+	InboxFollowed       int32 = 8
+	InboxFolloweeTopic  int32 = 9
 )
 
 type PostFeedResponse struct {
@@ -303,4 +305,41 @@ type MarkNotificationsReadRequest struct {
 type MarkNotificationsReadResponse struct {
 	Marked      int64 `json:"marked"`
 	UnreadCount int64 `json:"unread_count"`
+}
+
+const FollowStatesMaxIDs = 100
+
+type FollowResult struct {
+	FollowerID int64 `json:"follower_id"`
+	FolloweeID int64 `json:"followee_id"`
+	Following  bool  `json:"following"`
+	Created    bool  `json:"created"`
+	Deleted    bool  `json:"deleted"`
+}
+
+type FollowListUser struct {
+	UserID     int64   `json:"user_id"`
+	FollowedAt *string `json:"followed_at"`
+}
+
+type FollowListResponse struct {
+	Users      []FollowListUser `json:"users"`
+	NextCursor string           `json:"next_cursor"`
+}
+
+type FollowStatesRequest struct {
+	ViewerID int64   `json:"viewer_id,omitempty"`
+	UserIDs  []int64 `json:"user_ids"`
+}
+
+type FollowState struct {
+	UserID         int64 `json:"user_id"`
+	FollowersCount int64 `json:"followers_count"`
+	FollowingCount int64 `json:"following_count"`
+	ViewerFollows  bool  `json:"viewer_follows"`
+	FollowsViewer  bool  `json:"follows_viewer"`
+}
+
+type FollowStatesResponse struct {
+	States []FollowState `json:"states"`
 }

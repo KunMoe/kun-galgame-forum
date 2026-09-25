@@ -25,6 +25,7 @@ import (
 	"kun-galgame-api/internal/user/oauth"
 	userRepo "kun-galgame-api/internal/user/repository"
 	"kun-galgame-api/pkg/artifactclient"
+	"kun-galgame-api/pkg/communityclient"
 	"kun-galgame-api/pkg/imageclient"
 	"kun-galgame-api/pkg/secretbox"
 	"kun-galgame-api/pkg/trustclient"
@@ -124,6 +125,11 @@ type writeFix struct {
 
 func newWriteFix(t *testing.T, checker gate.Checker) *writeFix {
 	t.Helper()
+	return newWriteFixCommunity(t, checker, nil)
+}
+
+func newWriteFixCommunity(t *testing.T, checker gate.Checker, community http.Handler) *writeFix {
+	t.Helper()
 	db := testdb.Open(t)
 	mr := miniredis.RunT(t)
 	rdb := redis.NewClient(&redis.Options{Addr: mr.Addr(), MaxRetries: 0})
@@ -184,6 +190,13 @@ func newWriteFix(t *testing.T, checker gate.Checker) *writeFix {
 		BaseURL: artSrv.URL, ClientID: "test-client", ClientSecret: "test-secret",
 		HTTPClient: &http.Client{Timeout: 2 * time.Second},
 	})
+	var communityCli *communityclient.Client
+	if community != nil {
+		cmSrv := httptest.NewServer(community)
+		t.Cleanup(cmSrv.Close)
+		communityCli = communityclient.New(communityclient.Config{BaseURL: cmSrv.URL, ClientID: "c", ClientSecret: "s"})
+	}
+	notify := msgService.NewNotifier(msgRepo.NewMessageRepository(db))
 	f.App = &App{
 		Fiber:      newFiber(),
 		Config:     cfg,
@@ -194,6 +207,8 @@ func newWriteFix(t *testing.T, checker gate.Checker) *writeFix {
 		TopicAward: f.recordAward,
 		TrustCheck: trust,
 		Artifact:   artCli,
+		Community:  communityCli,
+		Notifier:   notify,
 		Authn:      middleware.NewAuthenticator(rdb, nil, middleware.NewBearer(w3Verifier{}, rdb, nil)),
 		ImageMeta: func(hashes []string) map[string]imageclient.ImageMeta {
 			out := map[string]imageclient.ImageMeta{}

@@ -1,19 +1,23 @@
 package apiv1
 
 import (
+	msgService "kun-galgame-api/internal/message/service"
 	"kun-galgame-api/internal/moemoepoint"
 	"kun-galgame-api/internal/trust/gate"
 	userRepo "kun-galgame-api/internal/user/repository"
+	"kun-galgame-api/pkg/communityclient"
 )
 
 type AwardFunc func(userID, delta int, reason, ref, idempotencyKey string)
 
 type Writes struct {
-	reads *Service
-	state *userRepo.StateRepository
-	check *gate.CheckService
-	scan  *gate.ScanService
-	award AwardFunc
+	reads     *Service
+	state     *userRepo.StateRepository
+	check     *gate.CheckService
+	scan      *gate.ScanService
+	award     AwardFunc
+	notify    msgService.Notifier
+	community *communityclient.Client
 }
 
 func NewWrites(
@@ -22,6 +26,8 @@ func NewWrites(
 	check *gate.CheckService,
 	scan *gate.ScanService,
 	award AwardFunc,
+	notify msgService.Notifier,
+	community *communityclient.Client,
 ) *Writes {
 	if check == nil {
 		check = gate.NewCheckService(nil)
@@ -35,7 +41,7 @@ func NewWrites(
 	if state == nil && reads != nil && reads.topics != nil {
 		state = userRepo.NewStateRepository(reads.topics.DB())
 	}
-	return &Writes{reads: reads, state: state, check: check, scan: scan, award: award}
+	return &Writes{reads: reads, state: state, check: check, scan: scan, award: award, notify: notify, community: community}
 }
 
 type createTopicInput struct {

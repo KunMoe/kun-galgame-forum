@@ -142,6 +142,8 @@ type UserCounts struct {
 	ReceivedLikeCount          int  `json:"received_like_count" minimum:"0" doc:"Likes on topics the user authored."`
 	ReceivedDislikeCount       int  `json:"received_dislike_count" minimum:"0" doc:"Dislikes on topics the user authored."`
 	TopicTodayCount            int  `json:"topic_today_count" minimum:"0" doc:"Topics the user authored on the current Asia/Shanghai calendar day."`
+	FollowerCount              *int `json:"follower_count" minimum:"0" doc:"Accounts that follow this user. null when the community service is unavailable."`
+	FollowingCount             *int `json:"following_count" minimum:"0" doc:"Accounts this user follows. null when the community service is unavailable."`
 }
 
 type MutedType string
@@ -160,5 +162,5 @@ func (MutedType) Schema(huma.Registry) *huma.Schema {
 
 type NotificationPreferences struct {
 	Object     string      `json:"object" enum:"notification_preferences" maxLength:"24" doc:"Type discriminant. Always notification_preferences."`
-	MutedTypes []MutedType `json:"muted_types" maxItems:"19" uniqueItems:"true" doc:"Notification types the caller has muted. Empty array if none."`
+	MutedTypes []MutedType `json:"muted_types" maxItems:"21" uniqueItems:"true" doc:"Notification types the caller has muted. Empty array if none."`
 }

@@ -233,7 +233,7 @@ func Register(u *Users) func(huma.API) {
 			Description: "Returns one user's public profile and activity counts. " +
 				"NOT_FOUND when the account does not exist or is not renderable. " +
 				"topic_count excludes hidden topics. topic_today_count uses the Asia/Shanghai calendar day. " +
-				"community_comment_count is null when the community service is unavailable and there is no cached value.",
+				"community_comment_count, follower_count and following_count are null when the community service is unavailable.",
 			Tags: []string{"users"},
 			Responses: problemResponses(map[int]string{
 				503: "SERVICE_UNAVAILABLE when the account service cannot be reached.",
@@ -301,6 +301,7 @@ func Register(u *Users) func(huma.API) {
 			}),
 		})), u.createCreatorApplication)
 
+		u.registerFollows(api)
 		u.registerLists(api)
 		u.registerAdminPurge(api)
 	}
