@@ -168,6 +168,13 @@ func TestTraitFaces(t *testing.T) {
 	if boots["description"] != "This character wears boots." || boots["trait_group"].(map[string]any)["display_name"] != "Clothes" {
 		t.Fatalf("boots %v", boots)
 	}
+	intros := boots["intros"].([]any)
+	if zh := intros[1].(map[string]any); len(intros) != 2 || zh["locale"] != "zh-Hans" || zh["value"] != "该角色穿着靴子。" || zh["data_source"] != "vndb" {
+		t.Fatalf("boots intros %v", intros)
+	}
+	if intros := getJSON(t, app, "/api/v1/traits/782", http.StatusOK)["intros"].([]any); len(intros) != 0 {
+		t.Fatalf("a trait without a note has no intros, never null: %v", intros)
+	}
 	var sub []string
 	for _, s := range boots["subtraits"].([]any) {
 		sub = append(sub, s.(map[string]any)["id"].(string))

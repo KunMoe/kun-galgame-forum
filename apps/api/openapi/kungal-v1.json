@@ -19590,6 +19590,13 @@
             "pattern": "^[0-9]+$",
             "type": "string"
           },
+          "intros": {
+            "description": "The note in every language catalog has, unordered: en is description's text, zh-Hans its translation. Plain text. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/CatalogIntro"
+            },
+            "type": "array"
+          },
           "is_searchable": {
             "description": "Whether the trait is specific enough to filter characters by. Grouping traits such as hair colour are not, though they still have a page.",
             "type": "boolean"
@@ -19658,6 +19665,7 @@
           "child_count",
           "aliases",
           "description",
+          "intros",
           "subtraits",
           "display_name",
           "latin",

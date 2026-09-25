@@ -46,6 +46,9 @@ const isGroupParent = computed(() =>
 const sections = computed(() =>
   traitSections(trait.value!.id, trait.value!.subtraits)
 )
+const intro = computed(
+  () => pickCatalogIntro(trait.value!.intros)?.value || trait.value!.description
+)
 const aliases = computed(() =>
   trait.value!.aliases.filter((a) => a && a !== name.value)
 )
@@ -113,11 +116,8 @@ if (!t.is_sexual) {
             别名: {{ aliases.join(' / ') }}
           </p>
 
-          <p
-            v-if="trait.description"
-            class="text-default-600 text-sm whitespace-pre-line"
-          >
-            {{ trait.description }}
+          <p v-if="intro" class="text-default-600 text-sm whitespace-pre-line">
+            {{ intro }}
           </p>
 
           <p class="text-default-500 text-sm">

@@ -20,7 +20,7 @@ const testTraitsJSON = `[
 	{"id":"32","display_name":"Kemonomimi Headband","name_zh":"兽耳发箍","group_id":"3","parents":[{"id":"31"}],"is_searchable":true,"character_count":95},
 	{"id":"40","display_name":"Footwear","name_zh":"鞋类","group_id":"4","parents":[{"id":"4"}],"character_count":400},
 	{"id":"50","display_name":"Latex","name_zh":"乳胶","group_id":"4","parents":[{"id":"4"}],"is_searchable":true,"character_count":30},
-	{"id":"781","display_name":"Boots","name_zh":"靴子","group_id":"4","parents":[{"id":"40"}],"is_searchable":true,"character_count":200,"description":"This character wears boots."},
+	{"id":"781","display_name":"Boots","name_zh":"靴子","group_id":"4","parents":[{"id":"40"}],"is_searchable":true,"character_count":200,"description":"This character wears boots.","intros":[{"lang":"en","value":"This character wears boots.","is_machine":false,"source":"vndb"},{"lang":"zh-Hans","value":"该角色穿着靴子。","is_machine":false,"source":"vndb"}]},
 	{"id":"782","display_name":"Knee-high Boots","name_zh":"及膝靴","group_id":"4","parents":[{"id":"781"}],"is_searchable":true,"character_count":60},
 	{"id":"783","display_name":"Latex Knee-high Boots","name_zh":"乳胶过膝靴","group_id":"4","parents":[{"id":"782"},{"id":"50"}],"is_searchable":true,"character_count":5},
 	{"id":"41","display_name":"Barefoot (Sexual)","name_zh":"赤足(性)","group_id":"4","parents":[{"id":"40"}],"is_sexual":true,"is_searchable":true,"character_count":7},
