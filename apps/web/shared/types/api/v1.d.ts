@@ -12271,6 +12271,10 @@ export interface components {
              * @constant
              */
             object: "trait";
+            /** @description The root group the trait sits in, such as hair or personality. A root trait is its own group. Two traits can share a name across groups, such as the same act under Engages in and Subject of; show the group beside the name there. */
+            trait_group: components["schemas"]["CatalogName"];
+            /** @description The root group's trait id. */
+            trait_group_id: string;
         };
         TraitSummary: {
             /**

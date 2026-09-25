@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { Trait } from '#shared/utils/api/schemas'
-import { traitSections } from '~/utils/galgame/trait'
+import { traitFullName, traitSections, traitSide } from '~/utils/galgame/trait'
 
 const route = useRoute()
 const traitId = computed(() => Number((route.params as { id: string }).id))
@@ -37,6 +37,7 @@ if (!trait.value) {
 }
 
 const name = computed(() => catalogVocabularyName(trait.value!))
+const fullName = computed(() => traitFullName(trait.value!))
 const group = computed(() => catalogVocabularyName(trait.value!.trait_group))
 const isRoot = computed(() => !trait.value!.parents.length)
 const isGroupParent = computed(() =>
@@ -52,11 +53,11 @@ const aliases = computed(() =>
 const t = trait.value
 if (!t.is_sexual) {
   useKunSeoMeta({
-    title: `含有属性 ${name.value} 的 Galgame 角色`,
-    description: `拥有「${name.value}」属性的 Galgame 角色一览, 共 ${t.character_count} 名。可以继续叠加其他属性或按名字筛选, 找到你喜欢的角色。`
+    title: `含有属性 ${fullName.value} 的 Galgame 角色`,
+    description: `拥有「${fullName.value}」属性的 Galgame 角色一览, 共 ${t.character_count} 名。可以继续叠加其他属性或按名字筛选, 找到你喜欢的角色。`
   })
 } else {
-  useKunDisableSeo(`含有属性 ${name.value} 的 Galgame 角色`)
+  useKunDisableSeo(`含有属性 ${fullName.value} 的 Galgame 角色`)
 }
 </script>
 
@@ -101,6 +102,9 @@ if (!t.is_sexual) {
             >
               <KunChip size="xs" variant="flat" class-name="cursor-pointer">
                 {{ catalogVocabularyName(parent) }}
+                <span v-if="traitSide(parent)" class="opacity-60">
+                  · {{ traitSide(parent) }}
+                </span>
               </KunChip>
             </KunLink>
           </div>

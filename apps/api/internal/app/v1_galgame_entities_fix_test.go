@@ -769,8 +769,8 @@ func (f *geFix) seedCatalog(t *testing.T) {
 	c.hits["names"] = decodeHits(t, `[{"id":9101,"display_name":"瀬戸","latin":"Seto"}]`)
 	decodeInto(t, fmt.Sprintf(`[{"id":"9201","display_name":"夏帆","latin":"Kaho","image":{"url":%q,"hash":%q},"work_count":3}]`,
 		geImageURL(9201), geHash(9201)), &c.charRows)
-	decodeInto(t, `[{"id":"1","display_name":"Hair","name_zh":"毛发","root_order":1,"character_count":9},
-		{"id":"10","display_name":"Blonde","name_zh":"金发","parents":[{"id":"1"}],"is_searchable":true,"character_count":3}]`, &c.traits)
+	decodeInto(t, `[{"id":"1","display_name":"Hair","name_zh":"毛发","group_id":null,"root_order":1,"character_count":9},
+		{"id":"10","display_name":"Blonde","name_zh":"金发","group_id":"1","parents":[{"id":"1"}],"is_searchable":true,"character_count":3}]`, &c.traits)
 	for i := range c.traits {
 		c.traits[i].SFWCharacterCount = c.traits[i].CharacterCount
 	}

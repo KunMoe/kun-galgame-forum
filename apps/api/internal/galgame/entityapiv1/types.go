@@ -219,6 +219,8 @@ type TraitRef struct {
 	Object string         `json:"object" enum:"trait" maxLength:"5" doc:"Type discriminant. Always trait."`
 	ID     repr.DecimalID `json:"id" doc:"Trait id: the catalog trait id, which is also the id in the web's /galgame/trait/{id}."`
 	repr.CatalogName
+	TraitGroup   repr.CatalogName `json:"trait_group" doc:"The root group the trait sits in, such as hair or personality. A root trait is its own group. Two traits can share a name across groups, such as the same act under Engages in and Subject of; show the group beside the name there."`
+	TraitGroupID repr.DecimalID   `json:"trait_group_id" doc:"The root group's trait id."`
 }
 
 type TraitSummary struct {

@@ -20,6 +20,7 @@ type CatalogTrait struct {
 	NameZh         string                      `json:"name_zh"`
 	Localized      map[string]catLocalizedName `json:"localized"`
 	Parents        []catTraitRef               `json:"parents"`
+	GroupID        *int64                      `json:"group_id,string"`
 	RootOrder      *int                        `json:"root_order"`
 	Sexual         bool                        `json:"is_sexual"`
 	Searchable     bool                        `json:"is_searchable"`

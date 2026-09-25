@@ -1,4 +1,20 @@
-import type { TraitSummary } from '#shared/utils/api/schemas'
+import type { TraitRef, TraitSummary } from '#shared/utils/api/schemas'
+import { catalogVocabularyName } from '#shared/utils/catalogName'
+
+// Engages in, Subject of and their (Sexual) twins file the same act on each
+// side under one name: 2279 and 2312 both read 女同强奸.
+const PAIRED_GROUP_IDS = new Set(['2625', '2689', '2709', '625'])
+
+export const traitSide = (t: TraitRef) =>
+  PAIRED_GROUP_IDS.has(t.trait_group_id) && t.id !== t.trait_group_id
+    ? catalogVocabularyName(t.trait_group)
+    : ''
+
+export const traitFullName = (t: TraitRef) => {
+  const name = catalogVocabularyName(t)
+  const side = traitSide(t)
+  return side ? `${name} · ${side}` : name
+}
 
 export const traitContext = (t: TraitSummary) => {
   if (!t.parents.length) {

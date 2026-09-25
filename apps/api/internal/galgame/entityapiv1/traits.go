@@ -68,8 +68,15 @@ func newTraitVocab(wire []client.CatalogTrait) traitVocab {
 			count:       max(t.CharacterCount, 0),
 			sfwCount:    max(t.SFWCharacterCount, 0),
 			order:       order,
+			group:       int(t.ID),
 			aliases:     t.Aliases,
 			description: t.Description,
+		}
+		// Catalog's group_id decides, not the first root a walk reaches: 2279
+		// Lesbian Rape also hangs under Subject of through Rape, and the walk
+		// filed it there instead of Subject of (Sexual).
+		if t.GroupID != nil {
+			n.group = int(*t.GroupID)
 		}
 		for _, p := range t.ParentIDs() {
 			n.parents = append(n.parents, int(p))
@@ -79,6 +86,9 @@ func newTraitVocab(wire []client.CatalogTrait) traitVocab {
 	}
 	for _, n := range v.byID {
 		n.parents = slices.DeleteFunc(n.parents, func(p int) bool { return v.byID[p] == nil })
+		if v.byID[n.group] == nil {
+			n.group = n.id
+		}
 		if len(n.parents) == 0 {
 			v.roots = append(v.roots, n.id)
 		}
@@ -89,9 +99,6 @@ func newTraitVocab(wire []client.CatalogTrait) traitVocab {
 	v.sortByOrder(v.roots)
 	for _, n := range v.byID {
 		v.sortByCount(n.children)
-	}
-	for _, root := range v.roots {
-		v.assignGroup(root, root)
 	}
 	return v
 }
@@ -113,17 +120,6 @@ func (n *traitNode) countFor(includeNSFW bool) int {
 		return n.count
 	}
 	return n.sfwCount
-}
-
-func (v *traitVocab) assignGroup(id, group int) {
-	n := v.byID[id]
-	if n.group != 0 {
-		return
-	}
-	n.group = group
-	for _, c := range n.children {
-		v.assignGroup(c, group)
-	}
 }
 
 func traitHaystack(n *traitNode) []string {
@@ -164,7 +160,7 @@ func (v *traitVocab) visible(id int, includeNSFW bool) (*traitNode, bool) {
 }
 
 func (v *traitVocab) ref(n *traitNode) TraitRef {
-	return TraitRef{Object: "trait", ID: repr.ID(n.id), CatalogName: n.name}
+	return TraitRef{Object: "trait", ID: repr.ID(n.id), CatalogName: n.name, TraitGroup: v.byID[n.group].name, TraitGroupID: repr.ID(n.group)}
 }
 
 func (v *traitVocab) summary(n *traitNode, includeNSFW bool) TraitSummary {
