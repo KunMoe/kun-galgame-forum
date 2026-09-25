@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"kun-galgame-api/pkg/config"
 	"kun-galgame-api/pkg/perm"
 )
 
@@ -282,5 +283,17 @@ func TestV1AppVersion(t *testing.T) {
 	if resp.StatusCode != http.StatusOK || body["object"] != "app_version" || body["min_version"] != "1.2.0" ||
 		body["latest_version"] != "1.3.4" || downloads["windows"] != "https://dl.example/kungal.exe" {
 		t.Errorf("app version %d %+v", resp.StatusCode, body)
+	}
+	if pkg, has := body["android_package"]; !has || pkg != nil {
+		t.Errorf("android_package = %v (present %v), want null while none is published", pkg, has)
+	}
+
+	sum := strings.Repeat("ab", 32)
+	f.Config.AppRelease.AndroidPackage = &config.AndroidPackage{URL: "https://dl.example/kungal-1.3.4.apk", Size: 52428800, SHA256: sum}
+	resp, body = f.docCall(t, http.MethodGet, "/api/v1/app/version", "/app/version", "", "", nil, nil)
+	pkg, _ := body["android_package"].(map[string]any)
+	if resp.StatusCode != http.StatusOK || pkg["url"] != "https://dl.example/kungal-1.3.4.apk" ||
+		pkg["file_size"] != float64(52428800) || pkg["sha256"] != sum {
+		t.Errorf("android package %d %+v", resp.StatusCode, body)
 	}
 }

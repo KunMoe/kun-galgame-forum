@@ -19,12 +19,19 @@ type AppDownloads struct {
 	Linux   string `json:"linux" format:"uri" maxLength:"512" doc:"Linux package, or the download page while none is published."`
 }
 
+type AndroidPackage struct {
+	URL      string `json:"url" format:"uri" maxLength:"512" doc:"The .apk file itself, never a page. Always https."`
+	FileSize int64  `json:"file_size" minimum:"1" doc:"Exact byte length of the file."`
+	SHA256   string `json:"sha256" pattern:"^[0-9a-f]{64}$" minLength:"64" maxLength:"64" doc:"SHA-256 of the file, lowercase hex."`
+}
+
 type AppVersion struct {
-	Object        string       `json:"object" enum:"app_version" maxLength:"11" doc:"Type discriminant. Always app_version."`
-	MinVersion    string       `json:"min_version" pattern:"^[0-9]+\\.[0-9]+\\.[0-9]+$" maxLength:"32" doc:"Oldest app version still allowed to run; older installs must update. MAJOR.MINOR.PATCH."`
-	LatestVersion string       `json:"latest_version" pattern:"^[0-9]+\\.[0-9]+\\.[0-9]+$" maxLength:"32" doc:"Newest published app version. MAJOR.MINOR.PATCH, never below min_version."`
-	Notes         string       `json:"notes" maxLength:"2000" doc:"Release notes of the latest version. Empty string if none. Free text; never use it as a decision input."`
-	Downloads     AppDownloads `json:"downloads" doc:"Where each platform downloads the latest version."`
+	Object         string          `json:"object" enum:"app_version" maxLength:"11" doc:"Type discriminant. Always app_version."`
+	MinVersion     string          `json:"min_version" pattern:"^[0-9]+\\.[0-9]+\\.[0-9]+$" maxLength:"32" doc:"Oldest app version still allowed to run; older installs must update. MAJOR.MINOR.PATCH."`
+	LatestVersion  string          `json:"latest_version" pattern:"^[0-9]+\\.[0-9]+\\.[0-9]+$" maxLength:"32" doc:"Newest published app version. MAJOR.MINOR.PATCH, never below min_version."`
+	Notes          string          `json:"notes" maxLength:"2000" doc:"Release notes of the latest version. Empty string if none. Free text; never use it as a decision input."`
+	Downloads      AppDownloads    `json:"downloads" doc:"Where each platform downloads the latest version."`
+	AndroidPackage *AndroidPackage `json:"android_package" doc:"The Android package of latest_version, for an in-place update. null while none is published: open downloads.android instead. Before installing, check the file's file_size and sha256 against these, and that the package's version is latest_version and its signing certificate is the running app's."`
 }
 
 type appVersionOutput struct {
@@ -46,6 +53,10 @@ func (s *Service) getAppVersion(_ context.Context, _ *struct{}) (*appVersionOutp
 		return nil, problem.Internal(errUnconfigured)
 	}
 	r := s.release
+	var pkg *AndroidPackage
+	if p := r.AndroidPackage; p != nil {
+		pkg = &AndroidPackage{URL: p.URL, FileSize: p.Size, SHA256: p.SHA256}
+	}
 	return &appVersionOutput{Body: AppVersion{
 		Object:        "app_version",
 		MinVersion:    r.MinVersion,
@@ -57,6 +68,7 @@ func (s *Service) getAppVersion(_ context.Context, _ *struct{}) (*appVersionOutp
 			Windows: r.Downloads.Windows,
 			Linux:   r.Downloads.Linux,
 		},
+		AndroidPackage: pkg,
 	}}, nil
 }
 

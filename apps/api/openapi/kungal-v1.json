@@ -1343,6 +1343,35 @@
         ],
         "type": "object"
       },
+      "AndroidPackage": {
+        "properties": {
+          "file_size": {
+            "description": "Exact byte length of the file.",
+            "format": "int64",
+            "minimum": 1,
+            "type": "integer"
+          },
+          "sha256": {
+            "description": "SHA-256 of the file, lowercase hex.",
+            "maxLength": 64,
+            "minLength": 64,
+            "pattern": "^[0-9a-f]{64}$",
+            "type": "string"
+          },
+          "url": {
+            "description": "The .apk file itself, never a page. Always https.",
+            "format": "uri",
+            "maxLength": 512,
+            "type": "string"
+          }
+        },
+        "required": [
+          "url",
+          "file_size",
+          "sha256"
+        ],
+        "type": "object"
+      },
       "AppDownloads": {
         "properties": {
           "android": {
@@ -1380,6 +1409,17 @@
       },
       "AppVersion": {
         "properties": {
+          "android_package": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AndroidPackage"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The Android package of latest_version, for an in-place update. null while none is published: open downloads.android instead. Before installing, check the file's file_size and sha256 against these, and that the package's version is latest_version and its signing certificate is the running app's."
+          },
           "downloads": {
             "$ref": "#/components/schemas/AppDownloads",
             "description": "Where each platform downloads the latest version."
@@ -1413,7 +1453,8 @@
           "min_version",
           "latest_version",
           "notes",
-          "downloads"
+          "downloads",
+          "android_package"
         ],
         "type": "object"
       },
