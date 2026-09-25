@@ -411,6 +411,11 @@ func TestV1EntityCharacters(t *testing.T) {
 		t.Fatalf("the search tab draws the portrait and the work count: %+v", hit)
 	}
 
+	_, body = f.get(t, "/api/v1/traits/10", "/traits/{trait_id}")
+	if body["trait_group_id"] != "1" || asInt(body["character_count"]) != 3 {
+		t.Fatalf("trait %+v", body)
+	}
+
 	resp, body := f.get(t, "/api/v1/characters/9201", "/characters/{character_id}")
 	geStatus(t, resp, body, http.StatusOK, "")
 	traits := body["traits"].([]any)
@@ -453,6 +458,8 @@ func TestV1EntityUpstreamDown(t *testing.T) {
 		{"/api/v1/companies/6101/works", "/companies/{company_id}/works"},
 		{"/api/v1/credit-names?q=x", "/credit-names"},
 		{"/api/v1/characters/9201/appearances", "/characters/{character_id}/appearances"},
+		{"/api/v1/characters", "/characters"},
+		{"/api/v1/traits", "/traits"},
 	} {
 		resp, body := f.get(t, c.path, c.spec)
 		geStatus(t, resp, body, http.StatusServiceUnavailable, "SERVICE_UNAVAILABLE")

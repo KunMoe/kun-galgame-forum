@@ -269,14 +269,20 @@ if (view) {
             >
               <p class="text-default-400 text-xs">{{ group.name }}</p>
               <div class="flex flex-wrap gap-1.5">
-                <KunChip
+                <KunLink
                   v-for="trait in group.traits"
                   :key="trait.id"
-                  size="xs"
-                  :color="trait.spoiler > 0 ? 'warning' : 'default'"
+                  underline="none"
+                  :to="`/galgame/trait/${trait.id}`"
                 >
-                  {{ trait.name }}<template v-if="trait.lie">（伪）</template>
-                </KunChip>
+                  <KunChip
+                    size="xs"
+                    :color="trait.spoiler > 0 ? 'warning' : 'default'"
+                    class-name="cursor-pointer"
+                  >
+                    {{ trait.name }}<template v-if="trait.lie">（伪）</template>
+                  </KunChip>
+                </KunLink>
               </div>
             </div>
           </div>

@@ -130,6 +130,12 @@ export const kunLayoutItem: KunLayoutItem[] = [
         label: 'Galgame 标签'
       },
       {
+        name: 'galgame-character',
+        icon: 'lucide:drama',
+        router: '/galgame/character',
+        label: 'Galgame 角色'
+      },
+      {
         name: 'galgame-engine',
         icon: 'carbon:ibm-engineering-lifecycle-mgmt',
         router: '/galgame/engine',
@@ -434,6 +440,11 @@ export const kunSidebarRail: KunRailGroup[] = [
             icon: 'cuida:building-outline'
           },
           { label: 'Galgame 标签', router: '/galgame/tag', icon: 'lucide:tag' },
+          {
+            label: 'Galgame 角色',
+            router: '/galgame/character',
+            icon: 'lucide:drama'
+          },
           {
             label: 'Galgame 引擎',
             router: '/galgame/engine',

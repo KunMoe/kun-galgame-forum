@@ -140,7 +140,8 @@ type fakeCatalog struct {
 	rows       map[int]client.CatalogWorkListItem
 	details    map[int]*client.CatalogWorkDetail
 	movedWorks map[int]int64
-	media      map[int64]client.CatalogEntityMedia
+	traits     []client.CatalogTrait
+	charRows   []client.CatalogCharacterRow
 	works      []geWork
 	taxonomy   map[string][]client.CatalogTaxonomyItem
 	hits       map[string][]client.CatalogEntityHit
@@ -314,17 +315,25 @@ func (f *fakeCatalog) CatalogWorkDetail(_ context.Context, workID int) (*client.
 	return &d, true, 0, nil
 }
 
-func (f *fakeCatalog) CatalogEntityMediaBatch(_ context.Context, entity string, ids []int64) (map[int64]client.CatalogEntityMedia, *legacyErrors.AppError) {
+func (f *fakeCatalog) CatalogTraitVocabulary(context.Context) ([]client.CatalogTrait, *legacyErrors.AppError) {
 	if e := f.err(); e != nil {
 		return nil, e
 	}
-	out := map[int64]client.CatalogEntityMedia{}
-	for _, id := range ids {
-		if m, ok := f.media[id]; ok {
-			out[id] = m
+	return f.traits, nil
+}
+
+func (f *fakeCatalog) CatalogCharacterList(_ context.Context, in client.CatalogCharacterQuery) (*client.CatalogCharacterPage, *legacyErrors.AppError) {
+	if e := f.err(); e != nil {
+		return nil, e
+	}
+	var hit []client.CatalogCharacterRow
+	for _, row := range f.charRows {
+		if strings.Contains(strings.ToLower(row.DisplayName+" "+*row.Latin), strings.ToLower(in.Q)) {
+			hit = append(hit, row)
 		}
 	}
-	return out, nil
+	start := min((in.Page-1)*in.Limit, len(hit))
+	return &client.CatalogCharacterPage{Items: hit[start:min(start+in.Limit, len(hit))], Total: len(hit)}, nil
 }
 
 func (f *fakeCatalog) CatalogEngine(_ context.Context, id string) (*client.CatalogEngineDetail, bool, *legacyErrors.AppError) {
@@ -758,9 +767,12 @@ func (f *geFix) seedCatalog(t *testing.T) {
 	c.series[strconv.Itoa(geSeries)] = &series
 
 	c.hits["names"] = decodeHits(t, `[{"id":9101,"display_name":"瀬戸","latin":"Seto"}]`)
-	c.hits["characters"] = decodeHits(t, `[{"id":9201,"display_name":"夏帆","latin":"Kaho"}]`)
-	c.media = map[int64]client.CatalogEntityMedia{
-		9201: {Image: "https://image.other.example/aa/bb/" + geHash(9201) + ".webp", WorkCount: 3},
+	decodeInto(t, fmt.Sprintf(`[{"id":"9201","display_name":"夏帆","latin":"Kaho","image":{"url":%q,"hash":%q},"work_count":3}]`,
+		geImageURL(9201), geHash(9201)), &c.charRows)
+	decodeInto(t, `[{"id":"1","display_name":"Hair","name_zh":"毛发","root_order":1,"character_count":9},
+		{"id":"10","display_name":"Blonde","name_zh":"金发","parents":[{"id":"1"}],"is_searchable":true,"character_count":3}]`, &c.traits)
+	for i := range c.traits {
+		c.traits[i].SFWCharacterCount = c.traits[i].CharacterCount
 	}
 	var name client.CatalogName
 	decodeInto(t, fmt.Sprintf(`{"id":9101,"display_name":"瀬戸","latin":"Seto","lang":"ja","gender":2,"birth_m":4,"birth_d":1,

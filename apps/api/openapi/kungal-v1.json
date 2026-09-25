@@ -2112,6 +2112,16 @@
         ],
         "type": "object"
       },
+      "CharacterGender": {
+        "enum": [
+          "female",
+          "male",
+          "other"
+        ],
+        "maxLength": 6,
+        "type": "string",
+        "x-vocabulary-closed": true
+      },
       "CharacterKind": {
         "enum": [
           "main",
@@ -2123,10 +2133,20 @@
         "type": "string",
         "x-vocabulary-closed": true
       },
+      "CharacterSort": {
+        "enum": [
+          "popularity_desc",
+          "relevance_desc",
+          "id_desc"
+        ],
+        "maxLength": 15,
+        "type": "string",
+        "x-vocabulary-closed": true
+      },
       "CharacterSummary": {
         "properties": {
           "catalog_work_count": {
-            "description": "Works catalog attributes the character to. 0 when unknown.",
+            "description": "Works the character appears in, under include_nsfw.",
             "format": "int64",
             "minimum": 0,
             "type": "integer"
@@ -2169,6 +2189,14 @@
             "description": "Names by BCP-47 tag, sparse. Empty object when there are none, never null.",
             "type": "object"
           },
+          "matched_traits": {
+            "description": "The character's own traits that made it match trait_ids, descendants of a named trait included. Empty array without trait_ids, never null.",
+            "items": {
+              "$ref": "#/components/schemas/TraitRef"
+            },
+            "maxItems": 100,
+            "type": "array"
+          },
           "object": {
             "const": "character",
             "description": "Type discriminant. Always character.",
@@ -2179,6 +2207,7 @@
         "required": [
           "image",
           "catalog_work_count",
+          "matched_traits",
           "object",
           "id",
           "display_name",
@@ -11272,6 +11301,40 @@
         ],
         "type": "object"
       },
+      "PageListTraitSummary": {
+        "properties": {
+          "items": {
+            "description": "Members of this page. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/TraitSummary"
+            },
+            "type": "array"
+          },
+          "object": {
+            "const": "list",
+            "description": "Type discriminant. Always list.",
+            "maxLength": 4,
+            "type": "string"
+          },
+          "total": {
+            "description": "Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "total_relation": {
+            "$ref": "#/components/schemas/TotalRelation",
+            "description": "eq when total is exact, gte when it stopped at the depth limit and there are at least that many."
+          }
+        },
+        "required": [
+          "object",
+          "items",
+          "total",
+          "total_relation"
+        ],
+        "type": "object"
+      },
       "PageListUserCommentItem": {
         "properties": {
           "items": {
@@ -19425,6 +19488,267 @@
         "maxLength": 3,
         "type": "string",
         "x-vocabulary-closed": true
+      },
+      "Trait": {
+        "properties": {
+          "aliases": {
+            "description": "Other names the trait goes by. Empty array, never null.",
+            "items": {
+              "description": "One alias. Free text; never use it as a decision input.",
+              "maxLength": 512,
+              "type": "string"
+            },
+            "maxItems": 1000,
+            "type": "array"
+          },
+          "character_count": {
+            "description": "Characters carrying the trait or one of its descendants without a spoiler, under include_nsfw: the total of /characters?trait_ids= this trait with the same include_nsfw. Refreshed nightly.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "child_count": {
+            "description": "Traits directly below this one that the reader may see.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "description": {
+            "description": "Catalog's note on the trait, plain text, usually English. Empty string if none. Free text; never use it as a decision input.",
+            "maxLength": 65535,
+            "type": "string"
+          },
+          "display_name": {
+            "description": "The entity's own name. Never empty. Free text; never use it as a decision input.",
+            "maxLength": 512,
+            "type": "string"
+          },
+          "id": {
+            "description": "Trait id: the catalog trait id, which is also the id in the web's /galgame/trait/{id}.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "is_searchable": {
+            "description": "Whether the trait is specific enough to filter characters by. Grouping traits such as hair colour are not, though they still have a page.",
+            "type": "boolean"
+          },
+          "is_sexual": {
+            "description": "Whether the trait is adult content. Such a trait is NOT_FOUND unless include_nsfw=true.",
+            "type": "boolean"
+          },
+          "latin": {
+            "description": "Romanization of the name. null when none is recorded. Free text; never use it as a decision input.",
+            "maxLength": 512,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "localized": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/LocalizedName"
+            },
+            "description": "Names by BCP-47 tag, sparse. Empty object when there are none, never null.",
+            "type": "object"
+          },
+          "object": {
+            "const": "trait",
+            "description": "Type discriminant. Always trait.",
+            "maxLength": 5,
+            "type": "string"
+          },
+          "parents": {
+            "description": "The traits directly above this one; a few traits sit under more than one. Empty array for a root trait, never null.",
+            "items": {
+              "$ref": "#/components/schemas/TraitRef"
+            },
+            "maxItems": 100,
+            "type": "array"
+          },
+          "subtraits": {
+            "description": "Traits up to two levels below this one: the direct ones first, then theirs, most characters first under each parent. An item's parents say where it hangs. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/TraitSummary"
+            },
+            "type": "array"
+          },
+          "trait_group": {
+            "$ref": "#/components/schemas/CatalogName",
+            "description": "The root group the trait sits in, such as hair or personality. A root trait is its own group."
+          },
+          "trait_group_id": {
+            "description": "The root group's trait id.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "object",
+          "id",
+          "trait_group",
+          "trait_group_id",
+          "parents",
+          "is_sexual",
+          "is_searchable",
+          "character_count",
+          "child_count",
+          "aliases",
+          "description",
+          "subtraits",
+          "display_name",
+          "latin",
+          "localized"
+        ],
+        "type": "object"
+      },
+      "TraitMatch": {
+        "enum": [
+          "all",
+          "any"
+        ],
+        "maxLength": 3,
+        "type": "string",
+        "x-vocabulary-closed": true
+      },
+      "TraitRef": {
+        "properties": {
+          "display_name": {
+            "description": "The entity's own name. Never empty. Free text; never use it as a decision input.",
+            "maxLength": 512,
+            "type": "string"
+          },
+          "id": {
+            "description": "Trait id: the catalog trait id, which is also the id in the web's /galgame/trait/{id}.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "latin": {
+            "description": "Romanization of the name. null when none is recorded. Free text; never use it as a decision input.",
+            "maxLength": 512,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "localized": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/LocalizedName"
+            },
+            "description": "Names by BCP-47 tag, sparse. Empty object when there are none, never null.",
+            "type": "object"
+          },
+          "object": {
+            "const": "trait",
+            "description": "Type discriminant. Always trait.",
+            "maxLength": 5,
+            "type": "string"
+          }
+        },
+        "required": [
+          "object",
+          "id",
+          "display_name",
+          "latin",
+          "localized"
+        ],
+        "type": "object"
+      },
+      "TraitSummary": {
+        "properties": {
+          "character_count": {
+            "description": "Characters carrying the trait or one of its descendants without a spoiler, under include_nsfw: the total of /characters?trait_ids= this trait with the same include_nsfw. Refreshed nightly.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "child_count": {
+            "description": "Traits directly below this one that the reader may see.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "display_name": {
+            "description": "The entity's own name. Never empty. Free text; never use it as a decision input.",
+            "maxLength": 512,
+            "type": "string"
+          },
+          "id": {
+            "description": "Trait id: the catalog trait id, which is also the id in the web's /galgame/trait/{id}.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "is_searchable": {
+            "description": "Whether the trait is specific enough to filter characters by. Grouping traits such as hair colour are not, though they still have a page.",
+            "type": "boolean"
+          },
+          "is_sexual": {
+            "description": "Whether the trait is adult content. Such traits are left out unless include_nsfw=true.",
+            "type": "boolean"
+          },
+          "latin": {
+            "description": "Romanization of the name. null when none is recorded. Free text; never use it as a decision input.",
+            "maxLength": 512,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "localized": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/LocalizedName"
+            },
+            "description": "Names by BCP-47 tag, sparse. Empty object when there are none, never null.",
+            "type": "object"
+          },
+          "object": {
+            "const": "trait",
+            "description": "Type discriminant. Always trait.",
+            "maxLength": 5,
+            "type": "string"
+          },
+          "parents": {
+            "description": "The traits directly above this one; a few traits sit under more than one. Empty array for a root trait, never null.",
+            "items": {
+              "$ref": "#/components/schemas/TraitRef"
+            },
+            "maxItems": 100,
+            "type": "array"
+          },
+          "trait_group": {
+            "$ref": "#/components/schemas/CatalogName",
+            "description": "The root group the trait sits in, such as hair or personality. A root trait is its own group."
+          },
+          "trait_group_id": {
+            "description": "The root group's trait id.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "object",
+          "id",
+          "trait_group",
+          "trait_group_id",
+          "parents",
+          "is_sexual",
+          "is_searchable",
+          "character_count",
+          "child_count",
+          "display_name",
+          "latin",
+          "localized"
+        ],
+        "type": "object"
       },
       "UpdateLog": {
         "properties": {
@@ -29234,43 +29558,105 @@
         "operationId": "listCharacters",
         "parameters": [
           {
-            "description": "Name search, required: this family has no browse order. The collection is catalog's 100 best name matches in relevance order. Free text; never use it as a decision input.",
+            "description": "Name search over every name and alias catalog records for the character. Free text; never use it as a decision input.",
             "explode": false,
             "in": "query",
             "name": "q",
-            "required": true,
             "schema": {
-              "description": "Name search, required: this family has no browse order. The collection is catalog's 100 best name matches in relevance order. Free text; never use it as a decision input.",
+              "description": "Name search over every name and alias catalog records for the character. Free text; never use it as a decision input.",
               "maxLength": 100,
-              "minLength": 1,
               "type": "string"
             }
           },
           {
-            "description": "1-based page number. page × limit may not exceed 100.",
+            "description": "Trait ids, comma-separated, 1–10. A trait also matches its descendants, so boots finds knee-high boots too. Only trait links without a spoiler count. An adult trait needs include_nsfw=true.",
+            "explode": false,
+            "in": "query",
+            "name": "trait_ids",
+            "schema": {
+              "description": "Trait ids, comma-separated, 1–10. A trait also matches its descendants, so boots finds knee-high boots too. Only trait links without a spoiler count. An adult trait needs include_nsfw=true.",
+              "items": {
+                "maxLength": 20,
+                "minLength": 1,
+                "pattern": "^[0-9]+$",
+                "type": "string"
+              },
+              "maxItems": 10,
+              "type": "array"
+            }
+          },
+          {
+            "description": "all: a character must match every trait in trait_ids. any: at least one. No effect without trait_ids.",
+            "explode": false,
+            "in": "query",
+            "name": "trait_match",
+            "schema": {
+              "$ref": "#/components/schemas/TraitMatch",
+              "default": "all",
+              "description": "all: a character must match every trait in trait_ids. any: at least one. No effect without trait_ids."
+            }
+          },
+          {
+            "description": "Only characters of any of these genders. Comma-separated. Omitted means no filter.",
+            "explode": false,
+            "in": "query",
+            "name": "genders",
+            "schema": {
+              "description": "Only characters of any of these genders. Comma-separated. Omitted means no filter.",
+              "items": {
+                "$ref": "#/components/schemas/CharacterGender",
+                "description": "A character's recorded gender."
+              },
+              "maxItems": 3,
+              "type": "array"
+            }
+          },
+          {
+            "description": "Order. popularity: how widely the works a character appears in are collected, lead roles weighing double. relevance: the name search's ranking, and needs q. id: newest in catalog first. Omitted: relevance_desc when q is set, popularity_desc otherwise.",
+            "explode": false,
+            "in": "query",
+            "name": "sort",
+            "schema": {
+              "$ref": "#/components/schemas/CharacterSort",
+              "description": "Order. popularity: how widely the works a character appears in are collected, lead roles weighing double. relevance: the name search's ranking, and needs q. id: newest in catalog first. Omitted: relevance_desc when q is set, popularity_desc otherwise."
+            }
+          },
+          {
+            "description": "1-based page number. page × limit may not exceed 10000.",
             "explode": false,
             "in": "query",
             "name": "page",
             "schema": {
               "default": 1,
-              "description": "1-based page number. page × limit may not exceed 100.",
+              "description": "1-based page number. page × limit may not exceed 10000.",
               "format": "int64",
               "minimum": 1,
               "type": "integer"
             }
           },
           {
-            "description": "Page size. 1–100, default 20. Values above 100 are rejected, not clamped.",
+            "description": "Page size. 1–100, default 24. Values above 100 are rejected, not clamped.",
             "explode": false,
             "in": "query",
             "name": "limit",
             "schema": {
-              "default": 20,
-              "description": "Page size. 1–100, default 20. Values above 100 are rejected, not clamped.",
+              "default": 24,
+              "description": "Page size. 1–100, default 24. Values above 100 are rejected, not clamped.",
               "format": "int64",
               "maximum": 100,
               "minimum": 1,
               "type": "integer"
+            }
+          },
+          {
+            "description": "When true, adult traits may be named in trait_ids. Default false.",
+            "explode": false,
+            "in": "query",
+            "name": "include_nsfw",
+            "schema": {
+              "default": false,
+              "description": "When true, adult traits may be named in trait_ids. Default false.",
+              "type": "boolean"
             }
           }
         ],
@@ -54127,6 +54513,225 @@
         "summary": "Record a topic view",
         "tags": [
           "topics"
+        ]
+      }
+    },
+    "/traits": {
+      "get": {
+        "description": "Without q, ids or parent_id: the root groups (hair, eyes, personality, …) in catalog's order. parent_id lists the traits directly below one, ids resolves the named traits in request order, q searches every name. Adult traits only with include_nsfw=true. A page-number collection.",
+        "operationId": "listTraits",
+        "parameters": [
+          {
+            "description": "Name search over every name and alias, case-insensitive: exact names first, then prefixes, then other matches, most characters first within each. Reaches the first 100 matches. Free text; never use it as a decision input. Mutually exclusive with ids and parent_id.",
+            "explode": false,
+            "in": "query",
+            "name": "q",
+            "schema": {
+              "description": "Name search over every name and alias, case-insensitive: exact names first, then prefixes, then other matches, most characters first within each. Reaches the first 100 matches. Free text; never use it as a decision input. Mutually exclusive with ids and parent_id.",
+              "maxLength": 100,
+              "type": "string"
+            }
+          },
+          {
+            "description": "Trait ids to resolve, comma-separated. 1 to 100 of them, answered in request order. Absent ids are omitted. Mutually exclusive with q and parent_id.",
+            "explode": false,
+            "in": "query",
+            "name": "ids",
+            "schema": {
+              "description": "Trait ids to resolve, comma-separated. 1 to 100 of them, answered in request order. Absent ids are omitted. Mutually exclusive with q and parent_id.",
+              "items": {
+                "maxLength": 20,
+                "minLength": 1,
+                "pattern": "^[0-9]+$",
+                "type": "string"
+              },
+              "maxItems": 100,
+              "type": "array"
+            }
+          },
+          {
+            "description": "Only the traits directly below this one, most characters first. Mutually exclusive with q and ids.",
+            "explode": false,
+            "in": "query",
+            "name": "parent_id",
+            "schema": {
+              "description": "Only the traits directly below this one, most characters first. Mutually exclusive with q and ids.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "1-based page number. page × limit may not exceed 10000, or 100 when q is set.",
+            "explode": false,
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "default": 1,
+              "description": "1-based page number. page × limit may not exceed 10000, or 100 when q is set.",
+              "format": "int64",
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Page size. 1–100, default 100. Values above 100 are rejected, not clamped.",
+            "explode": false,
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 100,
+              "description": "Page size. 1–100, default 100. Values above 100 are rejected, not clamped.",
+              "format": "int64",
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "When true, adult traits are included. Default false.",
+            "explode": false,
+            "in": "query",
+            "name": "include_nsfw",
+            "schema": {
+              "default": false,
+              "description": "When true, adult traits are included. Default false.",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageListTraitSummary"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "INVALID_PARAMETER when page × limit is too deep, more than one of q, ids and parent_id is set, or ids is malformed or longer than 100."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when catalog cannot be reached."
+          }
+        },
+        "summary": "List character traits",
+        "tags": [
+          "galgame-traits"
+        ]
+      }
+    },
+    "/traits/{trait_id}": {
+      "get": {
+        "description": "An adult trait is NOT_FOUND unless include_nsfw=true, the same answer as a trait that does not exist.",
+        "operationId": "getTrait",
+        "parameters": [
+          {
+            "description": "Trait id.",
+            "in": "path",
+            "name": "trait_id",
+            "required": true,
+            "schema": {
+              "description": "Trait id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "When true, an adult trait answers. Default false: it is NOT_FOUND.",
+            "explode": false,
+            "in": "query",
+            "name": "include_nsfw",
+            "schema": {
+              "default": false,
+              "description": "When true, an adult trait answers. Default false: it is NOT_FOUND.",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Trait"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when no such entity is visible."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when catalog cannot be reached."
+          }
+        },
+        "summary": "Get a character trait",
+        "tags": [
+          "galgame-traits"
         ]
       }
     },
