@@ -1,7 +1,6 @@
 package app
 
 import (
-	"encoding/json"
 	"net/http"
 	"strconv"
 	"testing"
@@ -13,25 +12,25 @@ func TestV1FollowUserRoundTrip(t *testing.T) {
 	bob := strconv.Itoa(w3UserBob)
 
 	resp, body := f.followOp(t, http.MethodPut, "sess-alice", bob)
-	wantFollowState(t, resp, body, bob, true, false)
+	wantFollowState(t, resp, body, bob, true, false, "all")
 
 	resp, body = f.followOp(t, http.MethodPut, "sess-alice", bob)
-	wantFollowState(t, resp, body, bob, true, false)
+	wantFollowState(t, resp, body, bob, true, false, "all")
 
 	resp, body = f.followOp(t, http.MethodGet, "sess-alice", bob)
-	wantFollowState(t, resp, body, bob, true, false)
+	wantFollowState(t, resp, body, bob, true, false, "all")
 
 	resp, body = f.followOp(t, http.MethodPut, "sess-bob", strconv.Itoa(w3UserAlice))
-	wantFollowState(t, resp, body, strconv.Itoa(w3UserAlice), true, true)
+	wantFollowState(t, resp, body, strconv.Itoa(w3UserAlice), true, true, "all")
 
 	resp, body = f.followOp(t, http.MethodGet, "sess-alice", bob)
-	wantFollowState(t, resp, body, bob, true, true)
+	wantFollowState(t, resp, body, bob, true, true, "all")
 
 	resp, body = f.followOp(t, http.MethodDelete, "sess-alice", bob)
-	wantFollowState(t, resp, body, bob, false, true)
+	wantFollowState(t, resp, body, bob, false, true, nil)
 
 	resp, body = f.followOp(t, http.MethodDelete, "sess-alice", bob)
-	wantFollowState(t, resp, body, bob, false, true)
+	wantFollowState(t, resp, body, bob, false, true, nil)
 }
 
 func TestV1FollowUserRejects(t *testing.T) {
@@ -148,7 +147,63 @@ func TestV1GetUserFollowCounts(t *testing.T) {
 	}
 }
 
-func TestV1CreateTopicNotifiesFollowers(t *testing.T) {
+func TestV1SetUserFollowNotify(t *testing.T) {
+	f := newFollowFix(t)
+	bob := strconv.Itoa(w3UserBob)
+
+	resp, body := f.patchFollowNotify(t, "sess-alice", bob, map[string]any{"notify": "feed"})
+	mustCode(t, resp, body, http.StatusNotFound, "NOT_FOUND")
+
+	resp, body = f.followOp(t, http.MethodPut, "sess-alice", bob)
+	wantFollowState(t, resp, body, bob, true, false, "all")
+
+	resp, body = f.patchFollowNotify(t, "sess-alice", bob, map[string]any{"notify": "feed"})
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("patch %d %+v", resp.StatusCode, body)
+	}
+	wantFollowState(t, resp, body, bob, true, false, "feed")
+	if f.cm.lastFollowPatch != `{"notify":"feed"}` {
+		t.Fatalf("community body %q", f.cm.lastFollowPatch)
+	}
+
+	resp, body = f.followOp(t, http.MethodGet, "sess-alice", bob)
+	wantFollowState(t, resp, body, bob, true, false, "feed")
+
+	resp, body = f.followOp(t, http.MethodPut, "sess-alice", bob)
+	wantFollowState(t, resp, body, bob, true, false, "feed")
+
+	resp, body = f.patchFollowNotify(t, "sess-alice", bob, map[string]any{})
+	mustCode(t, resp, body, http.StatusUnprocessableEntity, "VALIDATION_FAILED")
+
+	resp, body = f.patchFollowNotify(t, "", bob, map[string]any{"notify": "feed"})
+	mustCode(t, resp, body, http.StatusUnauthorized, "MISSING_CREDENTIAL")
+
+	f.cm.down.Store(true)
+	resp, body = f.patchFollowNotify(t, "sess-alice", bob, map[string]any{"notify": "all"})
+	mustCode(t, resp, body, http.StatusServiceUnavailable, "SERVICE_UNAVAILABLE")
+}
+
+func TestV1GetUserFollowStateMapsViewerNotify(t *testing.T) {
+	f := newFollowFix(t)
+	bob := strconv.Itoa(w3UserBob)
+
+	resp, body := f.followOp(t, http.MethodGet, "sess-alice", bob)
+	wantFollowState(t, resp, body, bob, false, false, nil)
+
+	f.cm.seedFollow(int64(w3UserAlice), int64(w3UserBob), "2026-09-25T00:00:00Z")
+	resp, body = f.followOp(t, http.MethodGet, "sess-alice", bob)
+	wantFollowState(t, resp, body, bob, true, false, "all")
+
+	f.cm.mu.Lock()
+	edge := f.cm.userFollows[int64(w3UserAlice)][int64(w3UserBob)]
+	edge.notify = "feed"
+	f.cm.userFollows[int64(w3UserAlice)][int64(w3UserBob)] = edge
+	f.cm.mu.Unlock()
+	resp, body = f.followOp(t, http.MethodGet, "sess-alice", bob)
+	wantFollowState(t, resp, body, bob, true, false, "feed")
+}
+
+func TestV1CreateTopicWritesNoFolloweeTopic(t *testing.T) {
 	f := newFollowFix(t)
 	f.cm.seedFollow(int64(w3UserBob), int64(w3UserAlice), "2026-09-25T00:00:00Z")
 	f.cm.seedFollow(int64(w3UserOther), int64(w3UserAlice), "2026-09-25T01:00:00Z")
@@ -161,26 +216,13 @@ func TestV1CreateTopicNotifiesFollowers(t *testing.T) {
 	if resp.StatusCode != http.StatusCreated {
 		t.Fatalf("create %d %s", resp.StatusCode, raw)
 	}
-	var out map[string]any
-	if err := json.Unmarshal(raw, &out); err != nil {
-		t.Fatal(err)
+	if n := f.cm.followLists.Load(); n != 0 {
+		t.Fatalf("listed followers: %d", n)
 	}
-	id := strID(out["id"])
-	link := "/topic/" + id
-	waitFolloweeTopic(t, f, link, 2)
-
-	var receivers []int
-	if err := f.db.Raw(`SELECT receiver_id FROM message WHERE type = ? AND link = ? ORDER BY receiver_id`,
-		"followee-topic", link).Scan(&receivers).Error; err != nil {
-		t.Fatal(err)
-	}
-	if len(receivers) != 2 || receivers[0] != w3UserBob || receivers[1] != w3UserOther {
-		t.Fatalf("receivers %v", receivers)
-	}
-	var sender int
-	f.db.Raw(`SELECT sender_id FROM message WHERE type = ? AND link = ? LIMIT 1`, "followee-topic", link).Scan(&sender)
-	if sender != w3UserAlice {
-		t.Fatalf("sender %d", sender)
+	var count int64
+	f.db.Raw(`SELECT COUNT(*) FROM message WHERE type = ?`, "followee-topic").Scan(&count)
+	if count != 0 {
+		t.Fatalf("public topic wrote %d followee-topic rows", count)
 	}
 }
 
@@ -228,13 +270,14 @@ func TestV1CreateTopicCommunityFailureStillCreates(t *testing.T) {
 	}
 }
 
-func wantFollowState(t *testing.T, resp *http.Response, body map[string]any, userID string, following, followedBy bool) {
+func wantFollowState(t *testing.T, resp *http.Response, body map[string]any, userID string, following, followedBy bool, notify any) {
 	t.Helper()
 	if resp.StatusCode != http.StatusOK || body["object"] != "user_follow_state" ||
 		body["id"] != userID || body["user_id"] != userID ||
-		body["is_following"] != following || body["is_followed_by"] != followedBy {
-		t.Fatalf("state %d %+v, want user %s following=%v followed_by=%v",
-			resp.StatusCode, body, userID, following, followedBy)
+		body["is_following"] != following || body["is_followed_by"] != followedBy ||
+		body["notify_level"] != notify {
+		t.Fatalf("state %d %+v, want user %s following=%v followed_by=%v notify_level=%v",
+			resp.StatusCode, body, userID, following, followedBy, notify)
 	}
 }
 
@@ -250,41 +293,4 @@ func listItems(t *testing.T, body map[string]any) []map[string]any {
 		out = append(out, m)
 	}
 	return out
-}
-
-func waitFolloweeTopic(t *testing.T, f *followFix, link string, want int) {
-	t.Helper()
-	deadline := time.Now().Add(2 * time.Second)
-	for time.Now().Before(deadline) {
-		var n int64
-		f.db.Raw(`SELECT COUNT(*) FROM message WHERE type = ? AND link = ?`, "followee-topic", link).Scan(&n)
-		if int(n) >= want {
-			return
-		}
-		time.Sleep(20 * time.Millisecond)
-	}
-	t.Fatalf("wanted %d followee-topic rows for %s", want, link)
-}
-
-func TestV1CreateTopicNotifiesFollowersPastTheFirstPage(t *testing.T) {
-	f := newFollowFix(t)
-	const followers = 101
-	for i := range followers {
-		at := time.Date(2026, 9, 25, 0, 0, i, 0, time.UTC).Format(time.RFC3339)
-		f.cm.seedFollow(int64(9_000_001+i), int64(w3UserAlice), at)
-	}
-
-	body := map[string]any{
-		"title": "hello", "content_markdown": "x", "category": "galgame",
-		"sections": []string{"g-news"}, "is_nsfw": false, "access_scope": "public",
-	}
-	resp, raw := f.doJSON(t, http.MethodPost, "/api/v1/topics", "sess-alice", "/topics", keyUUID(84), nil, body)
-	if resp.StatusCode != http.StatusCreated {
-		t.Fatalf("create %d %s", resp.StatusCode, raw)
-	}
-	var out map[string]any
-	if err := json.Unmarshal(raw, &out); err != nil {
-		t.Fatal(err)
-	}
-	waitFolloweeTopic(t, f, "/topic/"+strID(out["id"]), followers)
 }

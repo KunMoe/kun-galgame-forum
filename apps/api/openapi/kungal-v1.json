@@ -6078,6 +6078,15 @@
         "type": "string",
         "x-vocabulary-closed": true
       },
+      "FollowNotifyLevel": {
+        "enum": [
+          "all",
+          "feed"
+        ],
+        "maxLength": 4,
+        "type": "string",
+        "x-vocabulary-closed": true
+      },
       "FollowedWall": {
         "properties": {
           "object": {
@@ -10348,9 +10357,10 @@
           "poll_closed",
           "user_followed",
           "followee_topic_created",
+          "followee_activity_published",
           "chat"
         ],
-        "maxLength": 24,
+        "maxLength": 27,
         "type": "string",
         "x-vocabulary-closed": true
       },
@@ -10724,7 +10734,7 @@
             "description": "The user who triggered this notification. name is null when the account no longer exists."
           },
           "actor_count": {
-            "description": "How many people are folded into this mirrored row. Values stored below 1 are emitted as 1. followed_thread_activity and user_followed can be greater than 1.",
+            "description": "How many people are folded into this mirrored row. Values stored below 1 are emitted as 1. followed_thread_activity and user_followed can be greater than 1. followee_activity_published is always 1.",
             "format": "int64",
             "minimum": 0,
             "type": "integer"
@@ -10754,7 +10764,7 @@
             "type": "boolean"
           },
           "item_count": {
-            "description": "How many upstream posts are folded into this mirrored row. Values stored below 1 are emitted as 1.",
+            "description": "How many upstream posts are folded into this mirrored row. Values stored below 1 are emitted as 1. For followee_activity_published this is the author's publications folded into the row; 100 means 100 or more.",
             "format": "int64",
             "minimum": 0,
             "type": "integer"
@@ -10812,7 +10822,7 @@
               "$ref": "#/components/schemas/MutedType",
               "description": "Notification type the caller has muted. Closed vocabulary of v1 tokens plus chat for private messages."
             },
-            "maxItems": 21,
+            "maxItems": 22,
             "type": "array",
             "uniqueItems": true
           },
@@ -10949,9 +10959,10 @@
           "lottery_code_expired",
           "poll_closed",
           "user_followed",
-          "followee_topic_created"
+          "followee_topic_created",
+          "followee_activity_published"
         ],
-        "maxLength": 24,
+        "maxLength": 27,
         "type": "string",
         "x-vocabulary-closed": true
       },
@@ -13096,7 +13107,7 @@
               "$ref": "#/components/schemas/MutedType",
               "description": "Notification type the caller has muted. Closed vocabulary of v1 tokens plus chat for private messages."
             },
-            "maxItems": 21,
+            "maxItems": 22,
             "type": "array",
             "uniqueItems": true
           }
@@ -16801,6 +16812,18 @@
           "display_name",
           "latin",
           "localized"
+        ],
+        "type": "object"
+      },
+      "SetUserFollowNotifyBody": {
+        "properties": {
+          "notify": {
+            "$ref": "#/components/schemas/FollowNotifyLevel",
+            "description": "Whether the caller is notified when this user publishes: all (the default) or feed (the user's activity shows in the following feed only)."
+          }
+        },
+        "required": [
+          "notify"
         ],
         "type": "object"
       },
@@ -20963,6 +20986,17 @@
             "description": "Whether the caller follows this user.",
             "type": "boolean"
           },
+          "notify_level": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FollowNotifyLevel"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Whether the caller is notified when this user publishes: all (the default) or feed (the user's activity shows in the following feed only). null when the caller does not follow this user. Private to the caller."
+          },
           "object": {
             "const": "user_follow_state",
             "description": "Type discriminant. Always user_follow_state.",
@@ -20982,7 +21016,8 @@
           "id",
           "user_id",
           "is_following",
-          "is_followed_by"
+          "is_followed_by",
+          "notify_level"
         ],
         "type": "object"
       },
@@ -39625,6 +39660,148 @@
           }
         ],
         "summary": "Get the caller's standing toward a user",
+        "tags": [
+          "users"
+        ]
+      },
+      "patch": {
+        "description": "Sets whether the caller is notified when this user publishes. all (the default) sends followee-activity notifications; feed keeps the user in the following feed only. The level only decides notifications; the feed shows the user either way. Changing the level never creates a follow. NOT_FOUND when the account does not exist or is not renderable. Also NOT_FOUND when the caller does not follow the named user.",
+        "operationId": "setUserFollowNotify",
+        "parameters": [
+          {
+            "description": "User id of the followed account.",
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "description": "User id of the followed account.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetUserFollowNotifyBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserFollowState"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SCOPE_REQUIRED or ACCOUNT_BANNED."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when the account does not exist or is not renderable. Also when the caller does not follow this user."
+          },
+          "413": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Request Entity Too Large"
+          },
+          "415": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unsupported Media Type"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED when notify is missing or not all or feed."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the community service is unreachable or unconfigured."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Set follow notification level",
         "tags": [
           "users"
         ]

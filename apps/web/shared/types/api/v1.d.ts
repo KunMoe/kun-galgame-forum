@@ -1873,7 +1873,11 @@ export interface paths {
         delete: operations["unfollowUser"];
         options?: never;
         head?: never;
-        patch?: never;
+        /**
+         * Set follow notification level
+         * @description Sets whether the caller is notified when this user publishes. all (the default) sends followee-activity notifications; feed keeps the user in the following feed only. The level only decides notifications; the feed shows the user either way. Changing the level never creates a follow. NOT_FOUND when the account does not exist or is not renderable. Also NOT_FOUND when the caller does not follow the named user.
+         */
+        patch: operations["setUserFollowNotify"];
         trace?: never;
     };
     "/me/moemoepoint-entries": {
@@ -7309,6 +7313,8 @@ export interface components {
         };
         /** @enum {string} */
         FlagReason: "spam" | "abuse" | "off_topic" | "other" | "nsfw_mislabel";
+        /** @enum {string} */
+        FollowNotifyLevel: "all" | "feed";
         FollowedWall: {
             /**
              * @description Type discriminant. Always followed_wall.
@@ -8871,7 +8877,7 @@ export interface components {
             web_url: string;
         };
         /** @enum {string} */
-        MutedType: "upvoted" | "liked" | "favorited" | "replied" | "commented" | "mentioned" | "followed_thread_activity" | "best_answer_chosen" | "reply_pinned" | "quiz_answered" | "resource_link_reported" | "edit_requested" | "edit_merged" | "edit_declined" | "lottery_won" | "lottery_drawn" | "lottery_code_expired" | "poll_closed" | "user_followed" | "followee_topic_created" | "chat";
+        MutedType: "upvoted" | "liked" | "favorited" | "replied" | "commented" | "mentioned" | "followed_thread_activity" | "best_answer_chosen" | "reply_pinned" | "quiz_answered" | "resource_link_reported" | "edit_requested" | "edit_merged" | "edit_declined" | "lottery_won" | "lottery_drawn" | "lottery_code_expired" | "poll_closed" | "user_followed" | "followee_topic_created" | "followee_activity_published" | "chat";
         MyCoverVote: {
             /**
              * @description Type discriminant. Always my_cover_vote.
@@ -9005,7 +9011,7 @@ export interface components {
             actor: components["schemas"]["UserRef"];
             /**
              * Format: int64
-             * @description How many people are folded into this mirrored row. Values stored below 1 are emitted as 1. followed_thread_activity and user_followed can be greater than 1.
+             * @description How many people are folded into this mirrored row. Values stored below 1 are emitted as 1. followed_thread_activity and user_followed can be greater than 1. followee_activity_published is always 1.
              */
             actor_count: number;
             /**
@@ -9021,7 +9027,7 @@ export interface components {
             is_read: boolean;
             /**
              * Format: int64
-             * @description How many upstream posts are folded into this mirrored row. Values stored below 1 are emitted as 1.
+             * @description How many upstream posts are folded into this mirrored row. Values stored below 1 are emitted as 1. For followee_activity_published this is the author's publications folded into the row; 100 means 100 or more.
              */
             item_count: number;
             /** @description Notification type. Closed vocabulary of v1 tokens. */
@@ -9097,7 +9103,7 @@ export interface components {
             unread_count: number;
         };
         /** @enum {string} */
-        NotificationType: "upvoted" | "liked" | "favorited" | "replied" | "commented" | "mentioned" | "followed_thread_activity" | "best_answer_chosen" | "reply_pinned" | "quiz_answered" | "resource_link_reported" | "edit_requested" | "edit_merged" | "edit_declined" | "lottery_won" | "lottery_drawn" | "lottery_code_expired" | "poll_closed" | "user_followed" | "followee_topic_created";
+        NotificationType: "upvoted" | "liked" | "favorited" | "replied" | "commented" | "mentioned" | "followed_thread_activity" | "best_answer_chosen" | "reply_pinned" | "quiz_answered" | "resource_link_reported" | "edit_requested" | "edit_merged" | "edit_declined" | "lottery_won" | "lottery_drawn" | "lottery_code_expired" | "poll_closed" | "user_followed" | "followee_topic_created" | "followee_activity_published";
         NsfwDisplay: {
             /** @description How adult content is shown: hide, blur, or show. */
             nsfw_display: components["schemas"]["NsfwDisplayMode"];
@@ -11350,6 +11356,10 @@ export interface components {
             /** @description Up to five listed works of the series, earliest release first. Empty array, never null. */
             sample_works: components["schemas"]["SeriesSampleWork"][];
         };
+        SetUserFollowNotifyBody: {
+            /** @description Whether the caller is notified when this user publishes: all (the default) or feed (the user's activity shows in the following feed only). */
+            notify: components["schemas"]["FollowNotifyLevel"];
+        };
         /** @enum {string} */
         SexualGrade: "safe" | "suggestive" | "explicit";
         /** @enum {string} */
@@ -12958,6 +12968,8 @@ export interface components {
             is_followed_by: boolean;
             /** @description Whether the caller follows this user. */
             is_following: boolean;
+            /** @description Whether the caller is notified when this user publishes: all (the default) or feed (the user's activity shows in the following feed only). null when the caller does not follow this user. Private to the caller. */
+            notify_level: components["schemas"]["FollowNotifyLevel"] | null;
             /**
              * @description Type discriminant. Always user_follow_state.
              * @constant
@@ -24570,6 +24582,114 @@ export interface operations {
             };
             /** @description NOT_FOUND when the account does not exist or is not renderable. */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the community service is unreachable or unconfigured. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    setUserFollowNotify: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description User id of the followed account. */
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetUserFollowNotifyBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserFollowState"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SCOPE_REQUIRED or ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the account does not exist or is not renderable. Also when the caller does not follow this user. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description VALIDATION_FAILED when notify is missing or not all or feed. */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };

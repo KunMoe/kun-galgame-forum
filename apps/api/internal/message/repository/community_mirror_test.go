@@ -94,6 +94,67 @@ func TestUpsertCommunityMirrorSeqGuard(t *testing.T) {
 	}
 }
 
+func TestDeleteCommunityMirrorSeqGuard(t *testing.T) {
+	db := testdb.Open(t)
+	for _, stmt := range []string{
+		`ALTER TABLE message ADD COLUMN IF NOT EXISTS community_notification_id bigint NULL`,
+		`ALTER TABLE message ADD COLUMN IF NOT EXISTS community_seq bigint NULL`,
+		`ALTER TABLE message ADD COLUMN IF NOT EXISTS community_thread_id bigint NULL`,
+		`ALTER TABLE message ADD COLUMN IF NOT EXISTS community_post_number integer NULL`,
+		`ALTER TABLE message ADD COLUMN IF NOT EXISTS item_count integer NOT NULL DEFAULT 1`,
+		`ALTER TABLE message ADD COLUMN IF NOT EXISTS actor_count integer NOT NULL DEFAULT 1`,
+		`CREATE UNIQUE INDEX IF NOT EXISTS message_community_notification_id_key ON message (community_notification_id) WHERE community_notification_id IS NOT NULL`,
+	} {
+		if err := db.Exec(stmt).Error; err != nil {
+			t.Fatalf("ensure schema: %v", err)
+		}
+	}
+	repo := NewMessageRepository(db)
+
+	const nid int64 = 9_000_000_201
+	db.Exec("DELETE FROM message WHERE community_notification_id = ?", nid)
+	t.Cleanup(func() {
+		db.Exec("DELETE FROM message WHERE community_notification_id = ?", nid)
+	})
+
+	id, seq20 := nid, int64(20)
+	if err := repo.UpsertCommunityMirror(&model.Message{
+		Link: "/topic/1", Status: "unread", Type: "followee-activity", SenderID: 9, ReceiverID: 3,
+		CreatedAt: time.Now(), CommunityNotificationID: &id, CommunitySeq: &seq20, ItemCount: 2, ActorCount: 1,
+	}); err != nil {
+		t.Fatalf("insert: %v", err)
+	}
+
+	if err := repo.DeleteCommunityMirror(nid, 10); err != nil {
+		t.Fatalf("older seq: %v", err)
+	}
+	var n int64
+	db.Raw(`SELECT COUNT(*) FROM message WHERE community_notification_id = ?`, nid).Scan(&n)
+	if n != 1 {
+		t.Fatalf("older seq deleted the row, count=%d", n)
+	}
+
+	if err := repo.DeleteCommunityMirror(nid, 30); err != nil {
+		t.Fatalf("newer seq: %v", err)
+	}
+	db.Raw(`SELECT COUNT(*) FROM message WHERE community_notification_id = ?`, nid).Scan(&n)
+	if n != 0 {
+		t.Fatalf("newer seq left %d rows", n)
+	}
+
+	seq40 := int64(40)
+	if err := repo.UpsertCommunityMirror(&model.Message{
+		Link: "/topic/1", Status: "unread", Type: "followee-activity", SenderID: 9, ReceiverID: 3,
+		CreatedAt: time.Now(), CommunityNotificationID: &id, CommunitySeq: &seq40, ItemCount: 1, ActorCount: 1,
+	}); err != nil {
+		t.Fatalf("reinsert: %v", err)
+	}
+	db.Raw(`SELECT COUNT(*) FROM message WHERE community_notification_id = ?`, nid).Scan(&n)
+	if n != 1 {
+		t.Fatalf("reinsert count=%d", n)
+	}
+}
+
 func TestMarkReadUpToReturnsMirroredIDs(t *testing.T) {
 	db := testdb.Open(t)
 	repo := NewMessageRepository(db)

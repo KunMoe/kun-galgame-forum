@@ -500,3 +500,52 @@ func TestV1Notifications_N5_NotFound(t *testing.T) {
 		}
 	}
 }
+
+func TestV1NotificationsFolloweeActivityPublished(t *testing.T) {
+	f := newMessageFix(t)
+	const id = 960000170
+	t.Cleanup(func() {
+		_ = f.db.Exec(`DELETE FROM message WHERE id = ?`, id).Error
+		_ = f.db.Exec(`UPDATE kungal_user_state SET muted_notification_types = '[]' WHERE user_id = ?`, w3UserAlice).Error
+	})
+	at := time.Date(2026, 9, 26, 12, 0, 0, 0, time.UTC)
+	if err := f.db.Exec(`INSERT INTO message (id, content, link, status, type, sender_id, receiver_id, created, updated, item_count, actor_count, community_notification_id)
+		VALUES (?, 'Hello topic', '/topic/12', 'unread', 'followee-activity', ?, ?, ?, ?, 4, 1, ?)`,
+		id, w3UserBob, w3UserAlice, at, at, int64(960000002)).Error; err != nil {
+		t.Fatal(err)
+	}
+
+	resp, body := f.notifList(t, "sess-alice", "?notification_type=followee_activity_published")
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("list %d %+v", resp.StatusCode, body)
+	}
+	ids := listIDs(t, body)
+	if fmt.Sprint(ids) != fmt.Sprint([]string{strconv.Itoa(id)}) {
+		t.Fatalf("ids %v", ids)
+	}
+	item, _ := body["items"].([]any)[0].(map[string]any)
+	if item["notification_type"] != "followee_activity_published" {
+		t.Fatalf("notification_type %v", item["notification_type"])
+	}
+	if item["path"] != "/topic/12" || item["excerpt_markdown"] != "Hello topic" || item["origin"] != "community" {
+		t.Fatalf("row %+v", item)
+	}
+	if asInt(item["item_count"]) != 4 || asInt(item["actor_count"]) != 1 {
+		t.Fatalf("counts %+v", item)
+	}
+
+	resp, body = f.callJSON(t, http.MethodPut, mePath+"/notification-preferences", "/me/notification-preferences",
+		"sess-alice", "", map[string]any{"muted_types": []string{"followee_activity_published"}})
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("put prefs %d %+v", resp.StatusCode, body)
+	}
+
+	_, unmuted := f.notifList(t, "sess-alice", "?is_muted=false&notification_type=followee_activity_published")
+	if ids := listIDs(t, unmuted); len(ids) != 0 {
+		t.Fatalf("unmuted still has %v", ids)
+	}
+	_, muted := f.notifList(t, "sess-alice", "?is_muted=true&notification_type=followee_activity_published")
+	if fmt.Sprint(listIDs(t, muted)) != fmt.Sprint([]string{strconv.Itoa(id)}) {
+		t.Fatalf("muted ids %v", listIDs(t, muted))
+	}
+}

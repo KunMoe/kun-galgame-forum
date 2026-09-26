@@ -13,7 +13,7 @@ var LocalNotificationTypes = []string{
 	string(NotifyLotteryWon), string(NotifyLotteryClosed),
 	string(NotifyLotteryExpired), string(NotifyPollClosed),
 	"quiz-answered",
-	string(NotifyUserFollowed), string(NotifyFolloweeTopic),
+	string(NotifyUserFollowed), string(NotifyFolloweeTopic), string(NotifyFolloweeActivity),
 }
 
 func SplitMuted(muted []string) (local []string, chatMuted bool) {

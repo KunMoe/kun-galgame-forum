@@ -242,6 +242,7 @@ PATCH  /api/v1/galgame-resources/:resource_id         cors.New → v1Headers →
 PATCH  /api/v1/lotteries/:lottery_id                  cors.New → v1Headers → fiberAdapter.Handle
 PATCH  /api/v1/lotteries/:lottery_id/winners/:winner_id cors.New → v1Headers → fiberAdapter.Handle
 PATCH  /api/v1/me/conversations/:user_id/messages/:message_id cors.New → v1Headers → fiberAdapter.Handle
+PATCH  /api/v1/me/following/:user_id                  cors.New → v1Headers → fiberAdapter.Handle
 PATCH  /api/v1/me/profile                             cors.New → v1Headers → fiberAdapter.Handle
 PATCH  /api/v1/polls/:poll_id                         cors.New → v1Headers → fiberAdapter.Handle
 PATCH  /api/v1/quizzes/:quiz_id                       cors.New → v1Headers → fiberAdapter.Handle

@@ -96,7 +96,7 @@ func (p *Poller) writePage(ctx context.Context, notes []communityclient.Notifica
 	refs := make([]anchor.Ref, 0, len(notes))
 	seenRef := make(map[anchor.Ref]bool, len(notes))
 	for _, n := range notes {
-		if n.Kind == communityclient.InboxFollowed {
+		if n.Kind == communityclient.InboxFollowed || n.Kind == communityclient.InboxFolloweeActivity {
 			continue
 		}
 		if n.PostID != nil && *n.PostID > 0 && !seenPost[*n.PostID] {
@@ -117,7 +117,13 @@ func (p *Poller) writePage(ctx context.Context, notes []communityclient.Notifica
 
 	for i := range notes {
 		n := notes[i]
-		if n.Kind == communityclient.InboxFollowed {
+		if n.Kind == communityclient.InboxFollowed || n.Kind == communityclient.InboxFolloweeActivity {
+			if n.Kind == communityclient.InboxFolloweeActivity && n.ItemCount == 0 {
+				if err := p.messages.DeleteCommunityMirror(n.ID, n.Seq); err != nil {
+					return err
+				}
+				continue
+			}
 			msg := MapNotification(n, nil, nil)
 			if msg == nil {
 				continue

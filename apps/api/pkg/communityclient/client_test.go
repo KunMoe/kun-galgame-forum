@@ -523,7 +523,7 @@ func TestFollowUser(t *testing.T) {
 		gotMethod, gotPath = r.Method, r.URL.Path
 		_ = json.NewEncoder(w).Encode(map[string]any{
 			"code": 0, "data": map[string]any{
-				"follower_id": 3, "followee_id": 9, "following": true, "created": true,
+				"follower_id": 3, "followee_id": 9, "following": true, "created": true, "notify": "all",
 			},
 		})
 	}))
@@ -536,8 +536,49 @@ func TestFollowUser(t *testing.T) {
 	if gotMethod != http.MethodPut || gotPath != "/users/3/following/9" {
 		t.Errorf("method/path = %s %q", gotMethod, gotPath)
 	}
-	if out.FollowerID != 3 || out.FolloweeID != 9 || !out.Following || !out.Created {
+	if out.FollowerID != 3 || out.FolloweeID != 9 || !out.Following || !out.Created || out.Notify != "all" {
 		t.Errorf("decoded = %+v", out)
+	}
+}
+
+func TestSetFollowNotify(t *testing.T) {
+	var gotMethod, gotPath, gotBody string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotMethod, gotPath = r.Method, r.URL.Path
+		b, _ := io.ReadAll(r.Body)
+		gotBody = string(b)
+		if r.Method == http.MethodPatch && r.URL.Path == "/users/3/following/9" {
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"code": 0, "data": map[string]any{
+					"follower_id": 3, "followee_id": 9, "notify": "feed",
+				},
+			})
+			return
+		}
+		w.WriteHeader(http.StatusNotFound)
+		_ = json.NewEncoder(w).Encode(map[string]any{"code": 4, "message": "not following"})
+	}))
+	defer srv.Close()
+	cli := newTestClient(srv.URL)
+
+	out, err := cli.SetFollowNotify(context.Background(), 3, 9, "feed")
+	if err != nil {
+		t.Fatalf("SetFollowNotify: %v", err)
+	}
+	if gotMethod != http.MethodPatch || gotPath != "/users/3/following/9" {
+		t.Errorf("method/path = %s %q", gotMethod, gotPath)
+	}
+	if gotBody != `{"notify":"feed"}` {
+		t.Errorf("body = %q", gotBody)
+	}
+	if out.FollowerID != 3 || out.FolloweeID != 9 || out.Notify != "feed" {
+		t.Errorf("decoded = %+v", out)
+	}
+
+	_, err = cli.SetFollowNotify(context.Background(), 3, 8, "all")
+	var apiErr *communityclient.APIError
+	if !errors.As(err, &apiErr) || apiErr.Status != http.StatusNotFound {
+		t.Errorf("not following: %v", err)
 	}
 }
 
@@ -635,7 +676,7 @@ func TestFollowStates(t *testing.T) {
 		gotBody = string(b)
 		_ = json.NewEncoder(w).Encode(map[string]any{
 			"code": 0, "data": map[string]any{"states": []any{
-				map[string]any{"user_id": 9, "followers_count": 2, "following_count": 4, "viewer_follows": true, "follows_viewer": false},
+				map[string]any{"user_id": 9, "followers_count": 2, "following_count": 4, "viewer_follows": true, "follows_viewer": false, "viewer_notify": "all"},
 			}},
 		})
 	}))
@@ -651,6 +692,9 @@ func TestFollowStates(t *testing.T) {
 	}
 	if len(out.States) != 1 || !out.States[0].ViewerFollows || out.States[0].FollowersCount != 2 {
 		t.Errorf("decoded = %+v", out)
+	}
+	if out.States[0].ViewerNotify == nil || *out.States[0].ViewerNotify != "all" {
+		t.Errorf("viewer_notify = %v", out.States[0].ViewerNotify)
 	}
 
 	hit = 0

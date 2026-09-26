@@ -105,10 +105,11 @@ type fakeCommunity struct {
 	reads       [][2]int64
 	levelWrites []levelWrite
 
-	userFollows map[int64]map[int64]string
-	followCap   atomic.Bool
-	followPuts  atomic.Int32
-	followLists atomic.Int32
+	userFollows     map[int64]map[int64]fakeFollow
+	followCap       atomic.Bool
+	followPuts      atomic.Int32
+	followLists     atomic.Int32
+	lastFollowPatch string
 }
 
 type levelWrite struct {
@@ -124,7 +125,7 @@ func newFakeCommunity() *fakeCommunity {
 		reactions: map[[2]int64]bool{}, follows: map[int64]bool{},
 		nextPost: 7_000_000, nextThr: 800_000,
 		anchorSubs: map[int64]map[string]int32{}, threadSubs: map[[2]int64]int32{},
-		userFollows: map[int64]map[int64]string{},
+		userFollows: map[int64]map[int64]fakeFollow{},
 	}
 }
 

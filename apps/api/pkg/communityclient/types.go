@@ -194,15 +194,16 @@ const (
 )
 
 const (
-	InboxReplied        int32 = 1
-	InboxMentioned      int32 = 2
-	InboxPosted         int32 = 3
-	InboxThreadCreated  int32 = 4
-	InboxLiked          int32 = 5
-	InboxAnswerAccepted int32 = 6
-	InboxFeedbackStatus int32 = 7
-	InboxFollowed       int32 = 8
-	InboxFolloweeTopic  int32 = 9
+	InboxReplied          int32 = 1
+	InboxMentioned        int32 = 2
+	InboxPosted           int32 = 3
+	InboxThreadCreated    int32 = 4
+	InboxLiked            int32 = 5
+	InboxAnswerAccepted   int32 = 6
+	InboxFeedbackStatus   int32 = 7
+	InboxFollowed         int32 = 8
+	InboxFolloweeTopic    int32 = 9
+	InboxFolloweeActivity int32 = 10
 )
 
 type PostFeedResponse struct {
@@ -272,24 +273,38 @@ type AnchorSubscriptionListResponse struct {
 	NextCursor    string                   `json:"next_cursor"`
 }
 
+type NotificationActivityView struct {
+	ID           int64  `json:"id"`
+	Site         string `json:"site"`
+	Key          string `json:"key"`
+	Verb         string `json:"verb"`
+	ObjectKind   string `json:"object_kind"`
+	ObjectLabel  string `json:"object_label"`
+	Title        string `json:"title"`
+	URL          string `json:"url"`
+	ContentLimit string `json:"content_limit"`
+	OccurredAt   string `json:"occurred_at"`
+}
+
 type NotificationView struct {
-	ID              int64   `json:"id"`
-	UserID          int64   `json:"user_id"`
-	Kind            int32   `json:"kind"`
-	ThreadID        int64   `json:"thread_id"`
-	AnchorKind      int32   `json:"anchor_kind"`
-	AnchorID        string  `json:"anchor_id"`
-	BoardID         int64   `json:"board_id,omitempty"`
-	PostID          *int64  `json:"post_id"`
-	PostNumber      *int32  `json:"post_number"`
-	FirstPostNumber *int32  `json:"first_post_number"`
-	ActorID         *int64  `json:"actor_id"`
-	ActorCount      int64   `json:"actor_count"`
-	ItemCount       int64   `json:"item_count"`
-	ReadAt          *string `json:"read_at"`
-	CreatedAt       string  `json:"created_at"`
-	UpdatedAt       string  `json:"updated_at"`
-	Seq             int64   `json:"seq"`
+	ID              int64                     `json:"id"`
+	UserID          int64                     `json:"user_id"`
+	Kind            int32                     `json:"kind"`
+	ThreadID        int64                     `json:"thread_id"`
+	AnchorKind      int32                     `json:"anchor_kind"`
+	AnchorID        string                    `json:"anchor_id"`
+	BoardID         int64                     `json:"board_id,omitempty"`
+	PostID          *int64                    `json:"post_id"`
+	PostNumber      *int32                    `json:"post_number"`
+	FirstPostNumber *int32                    `json:"first_post_number"`
+	ActorID         *int64                    `json:"actor_id"`
+	ActorCount      int64                     `json:"actor_count"`
+	ItemCount       int64                     `json:"item_count"`
+	ReadAt          *string                   `json:"read_at"`
+	CreatedAt       string                    `json:"created_at"`
+	UpdatedAt       string                    `json:"updated_at"`
+	Seq             int64                     `json:"seq"`
+	Activity        *NotificationActivityView `json:"activity"`
 }
 
 type NotificationFeedResponse struct {
@@ -310,11 +325,22 @@ type MarkNotificationsReadResponse struct {
 const FollowStatesMaxIDs = 100
 
 type FollowResult struct {
-	FollowerID int64 `json:"follower_id"`
-	FolloweeID int64 `json:"followee_id"`
-	Following  bool  `json:"following"`
-	Created    bool  `json:"created"`
-	Deleted    bool  `json:"deleted"`
+	FollowerID int64  `json:"follower_id"`
+	FolloweeID int64  `json:"followee_id"`
+	Following  bool   `json:"following"`
+	Created    bool   `json:"created"`
+	Deleted    bool   `json:"deleted"`
+	Notify     string `json:"notify"`
+}
+
+type FollowNotifyRequest struct {
+	Notify string `json:"notify"`
+}
+
+type FollowNotifyResult struct {
+	FollowerID int64  `json:"follower_id"`
+	FolloweeID int64  `json:"followee_id"`
+	Notify     string `json:"notify"`
 }
 
 type FollowListUser struct {
@@ -333,11 +359,12 @@ type FollowStatesRequest struct {
 }
 
 type FollowState struct {
-	UserID         int64 `json:"user_id"`
-	FollowersCount int64 `json:"followers_count"`
-	FollowingCount int64 `json:"following_count"`
-	ViewerFollows  bool  `json:"viewer_follows"`
-	FollowsViewer  bool  `json:"follows_viewer"`
+	UserID         int64   `json:"user_id"`
+	FollowersCount int64   `json:"followers_count"`
+	FollowingCount int64   `json:"following_count"`
+	ViewerFollows  bool    `json:"viewer_follows"`
+	FollowsViewer  bool    `json:"follows_viewer"`
+	ViewerNotify   *string `json:"viewer_notify"`
 }
 
 type FollowStatesResponse struct {

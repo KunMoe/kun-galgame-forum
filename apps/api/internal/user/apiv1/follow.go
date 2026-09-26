@@ -20,12 +20,21 @@ import (
 
 const followSort = "followed"
 
+type FollowNotifyLevel string
+
+func (FollowNotifyLevel) Schema(huma.Registry) *huma.Schema {
+	s := repr.ClosedEnum("all", "feed")
+	s.Description = "Whether the caller is notified when this user publishes: all (the default) or feed (the user's activity shows in the following feed only)."
+	return s
+}
+
 type UserFollowState struct {
-	Object       string         `json:"object" enum:"user_follow_state" maxLength:"17" doc:"Type discriminant. Always user_follow_state."`
-	ID           repr.DecimalID `json:"id" doc:"The target user id, the same value as user_id."`
-	UserID       repr.DecimalID `json:"user_id" doc:"The user this standing is about."`
-	IsFollowing  bool           `json:"is_following" doc:"Whether the caller follows this user."`
-	IsFollowedBy bool           `json:"is_followed_by" doc:"Whether this user follows the caller."`
+	Object       string             `json:"object" enum:"user_follow_state" maxLength:"17" doc:"Type discriminant. Always user_follow_state."`
+	ID           repr.DecimalID     `json:"id" doc:"The target user id, the same value as user_id."`
+	UserID       repr.DecimalID     `json:"user_id" doc:"The user this standing is about."`
+	IsFollowing  bool               `json:"is_following" doc:"Whether the caller follows this user."`
+	IsFollowedBy bool               `json:"is_followed_by" doc:"Whether this user follows the caller."`
+	Notify       *FollowNotifyLevel `json:"notify_level" doc:"Whether the caller is notified when this user publishes: all (the default) or feed (the user's activity shows in the following feed only). null when the caller does not follow this user. Private to the caller."`
 }
 
 type UserFollower struct {
@@ -42,6 +51,15 @@ type UserFollowee struct {
 
 type followUserInput struct {
 	UserID string `path:"user_id" pattern:"^[1-9][0-9]{0,18}$" maxLength:"19" doc:"User id of the account to follow or unfollow."`
+}
+
+type setUserFollowNotifyInput struct {
+	UserID string `path:"user_id" pattern:"^[1-9][0-9]{0,18}$" maxLength:"19" doc:"User id of the followed account."`
+	Body   setUserFollowNotifyBody
+}
+
+type setUserFollowNotifyBody struct {
+	Notify FollowNotifyLevel `json:"notify" doc:"Whether the caller is notified when this user publishes: all (the default) or feed (the user's activity shows in the following feed only)."`
 }
 
 type followStateOutput struct {
@@ -96,6 +114,23 @@ func (s *Users) registerFollows(api huma.API) {
 			503: upstreamDown,
 		}),
 	}), s.unfollowUser)
+
+	huma.Register(api, v1.Required(huma.Operation{
+		OperationID: "setUserFollowNotify",
+		Method:      http.MethodPatch,
+		Path:        "/me/following/{user_id}",
+		Summary:     "Set follow notification level",
+		Description: "Sets whether the caller is notified when this user publishes. all (the default) sends followee-activity notifications; feed keeps the user in the following feed only. " +
+			"The level only decides notifications; the feed shows the user either way. Changing the level never creates a follow. " +
+			userMissing + " Also NOT_FOUND when the caller does not follow the named user.",
+		Tags: tags,
+		Responses: problemResponses(map[int]string{
+			403: "SCOPE_REQUIRED or ACCOUNT_BANNED.",
+			404: userMissing + " Also when the caller does not follow this user.",
+			422: "VALIDATION_FAILED when notify is missing or not all or feed.",
+			503: upstreamDown,
+		}),
+	}), s.setUserFollowNotify)
 
 	huma.Register(api, v1.Required(huma.Operation{
 		OperationID: "getUserFollowState",
@@ -159,6 +194,27 @@ func (s *Users) unfollowUser(ctx context.Context, in *followUserInput) (*followS
 	return s.setFollowing(ctx, in, false)
 }
 
+func (s *Users) setUserFollowNotify(ctx context.Context, in *setUserFollowNotifyInput) (*followStateOutput, error) {
+	if p := s.readyFollows(); p != nil {
+		return nil, p
+	}
+	viewer := v1.User(ctx)
+	target, p := s.requireRenderableOwner(ctx, in.UserID)
+	if p != nil {
+		return nil, p
+	}
+	result, err := s.community.SetFollowNotify(ctx, int64(viewer.ID), int64(target), string(in.Body.Notify))
+	if err != nil {
+		return nil, followUpstreamProblem(err)
+	}
+	out, err := s.followStateOf(ctx, viewer.ID, target)
+	if err != nil {
+		return nil, err
+	}
+	out.Body.Notify = followNotifyPtr(result.Notify)
+	return out, nil
+}
+
 func (s *Users) getUserFollowState(ctx context.Context, in *followUserInput) (*followStateOutput, error) {
 	if p := s.readyFollows(); p != nil {
 		return nil, p
@@ -184,16 +240,28 @@ func (s *Users) setFollowing(ctx context.Context, in *followUserInput, following
 		return nil, validationFailed(problem.AtParameter("user_id", problem.ReasonNotPermitted,
 			"the caller cannot follow themselves", nil))
 	}
-	var err error
+	var (
+		result *communityclient.FollowResult
+		err    error
+	)
 	if following {
-		_, err = s.community.FollowUser(ctx, int64(viewer.ID), int64(target))
+		result, err = s.community.FollowUser(ctx, int64(viewer.ID), int64(target))
 	} else {
-		_, err = s.community.UnfollowUser(ctx, int64(viewer.ID), int64(target))
+		result, err = s.community.UnfollowUser(ctx, int64(viewer.ID), int64(target))
 	}
 	if err != nil {
 		return nil, followUpstreamProblem(err)
 	}
-	return s.followStateOf(ctx, viewer.ID, target)
+	out, err := s.followStateOf(ctx, viewer.ID, target)
+	if err != nil {
+		return nil, err
+	}
+	if following {
+		out.Body.Notify = followNotifyPtr(result.Notify)
+	} else {
+		out.Body.Notify = nil
+	}
+	return out, nil
 }
 
 func (s *Users) followStateOf(ctx context.Context, viewerID, targetID int) (*followStateOutput, error) {
@@ -209,6 +277,7 @@ func (s *Users) followStateOf(ctx context.Context, viewerID, targetID int) (*fol
 	if len(page.States) > 0 {
 		st.IsFollowing = page.States[0].ViewerFollows
 		st.IsFollowedBy = page.States[0].FollowsViewer
+		st.Notify = notifyFromViewer(st.IsFollowing, page.States[0].ViewerNotify)
 	}
 	return &followStateOutput{Body: st}, nil
 }
@@ -333,6 +402,18 @@ func (s *Users) followCounts(ctx context.Context, userID int) (followers, follow
 	f := int(page.States[0].FollowersCount)
 	g := int(page.States[0].FollowingCount)
 	return &f, &g
+}
+
+func followNotifyPtr(s string) *FollowNotifyLevel {
+	n := FollowNotifyLevel(s)
+	return &n
+}
+
+func notifyFromViewer(following bool, raw *string) *FollowNotifyLevel {
+	if !following || raw == nil {
+		return nil
+	}
+	return followNotifyPtr(*raw)
 }
 
 func followUpstreamProblem(err error) *problem.Problem {
