@@ -8,7 +8,6 @@ import (
 
 	adminService "kun-galgame-api/internal/admin/service"
 	v1 "kun-galgame-api/internal/apiv1"
-	"kun-galgame-api/internal/community/followees"
 	resourceapiv1 "kun-galgame-api/internal/galgame/resourceapiv1"
 	galgameService "kun-galgame-api/internal/galgame/service"
 	"kun-galgame-api/internal/galgame/workrepr"
@@ -34,7 +33,6 @@ type Users struct {
 	works       *workrepr.Hydrator
 	resources   *resourceapiv1.Service
 	community   *communityclient.Client
-	followees   *followees.Cache
 	wall        *wallapiv1.Service
 	contributed func(context.Context, int64) ([]int, error)
 	redis       *redis.Client
@@ -57,7 +55,6 @@ type Deps struct {
 	Works       *workrepr.Hydrator
 	Resources   *resourceapiv1.Service
 	Community   *communityclient.Client
-	Followees   *followees.Cache
 	Wall        *wallapiv1.Service
 	Contributed func(context.Context, int64) ([]int, error)
 	Redis       *redis.Client
@@ -77,7 +74,6 @@ func New(d Deps) *Users {
 		works:       d.Works,
 		resources:   d.Resources,
 		community:   d.Community,
-		followees:   d.Followees,
 		wall:        d.Wall,
 		contributed: d.Contributed,
 		redis:       d.Redis,

@@ -36,6 +36,13 @@ func (r *MessageRepository) UpsertCommunityMirror(m *model.Message) error {
 	).Error
 }
 
+func (r *MessageRepository) DeleteCommunityMirror(id, seq int64) error {
+	return r.db.Exec(
+		`DELETE FROM message WHERE community_notification_id = ? AND community_seq < ?`,
+		id, seq,
+	).Error
+}
+
 func (r *MessageRepository) MaxCommunitySeq() (int64, error) {
 	var max int64
 	err := r.db.Raw(`SELECT COALESCE(MAX(community_seq), 0) FROM message`).Scan(&max).Error

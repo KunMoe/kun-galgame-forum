@@ -25,5 +25,5 @@ func (a *App) newTopicV1Writes(reads *topicapiv1.Service) *topicapiv1.Writes {
 	if notify == nil && a.DB != nil {
 		notify = msgService.NewNotifier(msgRepo.NewMessageRepository(a.DB))
 	}
-	return topicapiv1.NewWrites(reads, state, check, scan, a.TopicAward, notify, a.Community)
+	return topicapiv1.NewWrites(reads, state, check, scan, a.TopicAward, notify)
 }

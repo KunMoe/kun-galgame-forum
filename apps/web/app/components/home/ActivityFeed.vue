@@ -1,17 +1,12 @@
 <script setup lang="ts">
 import { useIntersectionObserver, useThrottleFn } from '@vueuse/core'
-import type { Activity, FollowingActivity } from '#shared/utils/api/schemas'
+import type { Activity } from '#shared/utils/api/schemas'
 import { feedTabQuery } from '~/utils/activity'
 
-const props = defineProps<{
-  tabId: string
-  types: string
-  following?: boolean
-}>()
+const props = defineProps<{ tabId: string; types: string }>()
 
 const settings = usePersistSettingsStore()
 const { allowsNsfw } = useContentStance()
-const { markSeen } = useFollowingUnseen()
 
 const MAX_AUTO_LOADS = 4
 const autoLoadCount = ref(0)
@@ -23,55 +18,15 @@ const query = computed(() => ({
   limit: 30
 }))
 
-const followingQuery = computed(() => {
-  const { sort: _sort, ...rest } = query.value
-  return rest
-})
-
-const unwrapFollowing = <T extends { items: FollowingActivity[] }>(
-  data: T | undefined
-) =>
-  data && {
-    ...data,
-    items: data.items.flatMap((entry) =>
-      entry.activity ? [entry.activity] : []
-    )
-  }
-
-const { items, status, problem, hasMore, loadingMore, loadMore } =
+const { items, status, hasMore, loadingMore, loadMore } =
   await useCursorList<Activity>(
-    () =>
-      `${props.following ? 'following-activities' : 'activities'}:${JSON.stringify(query.value)}`,
+    () => `activities:${JSON.stringify(query.value)}`,
     (api, cursor, { signal }) =>
-      props.following
-        ? api
-            .GET('/me/following-activities', {
-              params: {
-                query: {
-                  ...followingQuery.value,
-                  ...(cursor ? { cursor } : {})
-                }
-              },
-              signal
-            })
-            .then((r) => ({ ...r, data: unwrapFollowing(r.data) }))
-        : api.GET('/activities', {
-            params: {
-              query: { ...query.value, ...(cursor ? { cursor } : {}) }
-            },
-            signal
-          })
+      api.GET('/activities', {
+        params: { query: { ...query.value, ...(cursor ? { cursor } : {}) } },
+        signal
+      })
   )
-
-watch(
-  () => props.following && status.value === 'success',
-  (loaded) => {
-    if (loaded && import.meta.client) {
-      markSeen()
-    }
-  },
-  { immediate: true }
-)
 
 watch(
   () => props.tabId,
@@ -112,16 +67,9 @@ useIntersectionObserver(
     :loading="status === 'pending' && items.length > 0"
   >
     <KunNull
-      v-if="following && problem && !items.length"
-      description="关注动态加载失败，请稍后再试"
+      v-if="status !== 'pending' && !items.length"
+      description="暂无动态"
     />
-
-    <div v-else-if="status !== 'pending' && !items.length">
-      <KunNull :description="following ? '你关注的人还没有动态' : '暂无动态'" />
-      <p v-if="following" class="text-default-500 text-center text-sm">
-        在用户主页点击「关注」，TA 的新话题、资源和评论会出现在这里
-      </p>
-    </div>
 
     <div v-else class="divide-default-200/60 divide-y">
       <div

@@ -2,6 +2,7 @@ package app
 
 import (
 	"encoding/json"
+	"io"
 	"net/http"
 	"sort"
 	"strconv"
@@ -18,10 +19,10 @@ func (c *fakeCommunity) seedFollow(follower, followee int64, at string) {
 
 func (c *fakeCommunity) addFollowLocked(follower, followee int64, at string) {
 	if c.userFollows[follower] == nil {
-		c.userFollows[follower] = map[int64]string{}
+		c.userFollows[follower] = map[int64]fakeFollow{}
 	}
 	if _, ok := c.userFollows[follower][followee]; !ok {
-		c.userFollows[follower][followee] = at
+		c.userFollows[follower][followee] = fakeFollow{at: at, notify: "all"}
 	}
 }
 
@@ -37,6 +38,8 @@ func (c *fakeCommunity) handleUserFollow(w http.ResponseWriter, r *http.Request)
 	switch {
 	case kind == "edge" && r.Method == http.MethodPut:
 		c.serveFollowPut(w, uid, target)
+	case kind == "edge" && r.Method == http.MethodPatch:
+		c.serveFollowPatch(w, r, uid, target)
 	case kind == "edge" && r.Method == http.MethodDelete:
 		c.serveFollowDelete(w, uid, target)
 	case kind == "followers" && r.Method == http.MethodGet:
@@ -91,8 +94,28 @@ func (c *fakeCommunity) serveFollowPut(w http.ResponseWriter, follower, followee
 	}
 	_, existed := c.userFollows[follower][followee]
 	c.addFollowLocked(follower, followee, time.Now().UTC().Format(time.RFC3339))
+	notify := c.userFollows[follower][followee].notify
 	writeEnvelope(w, 200, 0, "", map[string]any{
-		"follower_id": follower, "followee_id": followee, "following": true, "created": !existed,
+		"follower_id": follower, "followee_id": followee, "following": true, "created": !existed, "notify": notify,
+	})
+}
+
+func (c *fakeCommunity) serveFollowPatch(w http.ResponseWriter, r *http.Request, follower, followee int64) {
+	b, _ := io.ReadAll(r.Body)
+	c.lastFollowPatch = string(b)
+	edge, ok := c.userFollows[follower][followee]
+	if !ok {
+		writeEnvelope(w, http.StatusNotFound, 4, "not following", nil)
+		return
+	}
+	var req struct {
+		Notify string `json:"notify"`
+	}
+	_ = json.Unmarshal(b, &req)
+	edge.notify = req.Notify
+	c.userFollows[follower][followee] = edge
+	writeEnvelope(w, 200, 0, "", map[string]any{
+		"follower_id": follower, "followee_id": followee, "notify": edge.notify,
 	})
 }
 
@@ -106,6 +129,11 @@ func (c *fakeCommunity) serveFollowDelete(w http.ResponseWriter, follower, follo
 	})
 }
 
+type fakeFollow struct {
+	at     string
+	notify string
+}
+
 type fakeFollowEdge struct {
 	other int64
 	at    string
@@ -116,13 +144,13 @@ func (c *fakeCommunity) serveFollowList(w http.ResponseWriter, r *http.Request, 
 	var edges []fakeFollowEdge
 	if followers {
 		for follower, targets := range c.userFollows {
-			if at, ok := targets[uid]; ok {
-				edges = append(edges, fakeFollowEdge{other: follower, at: at})
+			if edge, ok := targets[uid]; ok {
+				edges = append(edges, fakeFollowEdge{other: follower, at: edge.at})
 			}
 		}
 	} else if c.userFollows[uid] != nil {
-		for followee, at := range c.userFollows[uid] {
-			edges = append(edges, fakeFollowEdge{other: followee, at: at})
+		for followee, edge := range c.userFollows[uid] {
+			edges = append(edges, fakeFollowEdge{other: followee, at: edge.at})
 		}
 	}
 	sort.Slice(edges, func(i, j int) bool {
@@ -178,11 +206,18 @@ func (c *fakeCommunity) serveFollowStates(w http.ResponseWriter, r *http.Request
 		if c.userFollows[id] != nil {
 			following = len(c.userFollows[id])
 		}
-		viewerFollows := req.ViewerID > 0 && c.userFollows[req.ViewerID] != nil && c.userFollows[req.ViewerID][id] != ""
-		followsViewer := req.ViewerID > 0 && c.userFollows[id] != nil && c.userFollows[id][req.ViewerID] != ""
+		_, viewerFollows := c.userFollows[req.ViewerID][id]
+		viewerFollows = req.ViewerID > 0 && viewerFollows
+		_, followsViewer := c.userFollows[id][req.ViewerID]
+		followsViewer = req.ViewerID > 0 && followsViewer
+		var viewerNotify any
+		if viewerFollows {
+			viewerNotify = c.userFollows[req.ViewerID][id].notify
+		}
 		states = append(states, map[string]any{
 			"user_id": id, "followers_count": followers, "following_count": following,
 			"viewer_follows": viewerFollows, "follows_viewer": followsViewer,
+			"viewer_notify": viewerNotify,
 		})
 	}
 	writeEnvelope(w, 200, 0, "", map[string]any{"states": states})
@@ -204,6 +239,11 @@ func newFollowFix(t *testing.T) *followFix {
 func (f *followFix) followOp(t *testing.T, method, session, userID string) (*http.Response, map[string]any) {
 	t.Helper()
 	return f.callJSON(t, method, "/api/v1/me/following/"+userID, "/me/following/{user_id}", session, "", nil)
+}
+
+func (f *followFix) patchFollowNotify(t *testing.T, session, userID string, payload any) (*http.Response, map[string]any) {
+	t.Helper()
+	return f.callJSON(t, http.MethodPatch, "/api/v1/me/following/"+userID, "/me/following/{user_id}", session, "", payload)
 }
 
 func (f *followFix) listFollows(t *testing.T, session, owner, relation, query string) (*http.Response, map[string]any) {

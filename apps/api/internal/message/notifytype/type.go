@@ -7,26 +7,27 @@ import (
 type Type string
 
 const (
-	Upvoted                Type = "upvoted"
-	Liked                  Type = "liked"
-	Favorited              Type = "favorited"
-	Replied                Type = "replied"
-	Commented              Type = "commented"
-	Mentioned              Type = "mentioned"
-	FollowedThreadActivity Type = "followed_thread_activity"
-	BestAnswerChosen       Type = "best_answer_chosen"
-	ReplyPinned            Type = "reply_pinned"
-	QuizAnswered           Type = "quiz_answered"
-	ResourceLinkReported   Type = "resource_link_reported"
-	EditRequested          Type = "edit_requested"
-	EditMerged             Type = "edit_merged"
-	EditDeclined           Type = "edit_declined"
-	LotteryWon             Type = "lottery_won"
-	LotteryDrawn           Type = "lottery_drawn"
-	LotteryCodeExpired     Type = "lottery_code_expired"
-	PollClosed             Type = "poll_closed"
-	UserFollowed           Type = "user_followed"
-	FolloweeTopicCreated   Type = "followee_topic_created"
+	Upvoted                   Type = "upvoted"
+	Liked                     Type = "liked"
+	Favorited                 Type = "favorited"
+	Replied                   Type = "replied"
+	Commented                 Type = "commented"
+	Mentioned                 Type = "mentioned"
+	FollowedThreadActivity    Type = "followed_thread_activity"
+	BestAnswerChosen          Type = "best_answer_chosen"
+	ReplyPinned               Type = "reply_pinned"
+	QuizAnswered              Type = "quiz_answered"
+	ResourceLinkReported      Type = "resource_link_reported"
+	EditRequested             Type = "edit_requested"
+	EditMerged                Type = "edit_merged"
+	EditDeclined              Type = "edit_declined"
+	LotteryWon                Type = "lottery_won"
+	LotteryDrawn              Type = "lottery_drawn"
+	LotteryCodeExpired        Type = "lottery_code_expired"
+	PollClosed                Type = "poll_closed"
+	UserFollowed              Type = "user_followed"
+	FolloweeTopicCreated      Type = "followee_topic_created"
+	FolloweeActivityPublished Type = "followee_activity_published"
 )
 
 const KeyChat = "chat"
@@ -52,29 +53,31 @@ var all = []Type{
 	PollClosed,
 	UserFollowed,
 	FolloweeTopicCreated,
+	FolloweeActivityPublished,
 }
 
 var toDB = map[Type]string{
-	Upvoted:                "upvoted",
-	Liked:                  "liked",
-	Favorited:              "favorite",
-	Replied:                "replied",
-	Commented:              "commented",
-	Mentioned:              "mentioned",
-	FollowedThreadActivity: "followed",
-	BestAnswerChosen:       "solution",
-	ReplyPinned:            "pin-reply",
-	QuizAnswered:           "quiz-answered",
-	ResourceLinkReported:   "expired",
-	EditRequested:          "requested",
-	EditMerged:             "merged",
-	EditDeclined:           "declined",
-	LotteryWon:             "lottery-won",
-	LotteryDrawn:           "lottery-closed",
-	LotteryCodeExpired:     "lottery-expired",
-	PollClosed:             "poll-closed",
-	UserFollowed:           "user-followed",
-	FolloweeTopicCreated:   "followee-topic",
+	Upvoted:                   "upvoted",
+	Liked:                     "liked",
+	Favorited:                 "favorite",
+	Replied:                   "replied",
+	Commented:                 "commented",
+	Mentioned:                 "mentioned",
+	FollowedThreadActivity:    "followed",
+	BestAnswerChosen:          "solution",
+	ReplyPinned:               "pin-reply",
+	QuizAnswered:              "quiz-answered",
+	ResourceLinkReported:      "expired",
+	EditRequested:             "requested",
+	EditMerged:                "merged",
+	EditDeclined:              "declined",
+	LotteryWon:                "lottery-won",
+	LotteryDrawn:              "lottery-closed",
+	LotteryCodeExpired:        "lottery-expired",
+	PollClosed:                "poll-closed",
+	UserFollowed:              "user-followed",
+	FolloweeTopicCreated:      "followee-topic",
+	FolloweeActivityPublished: "followee-activity",
 }
 
 var fromDB = func() map[string]Type {

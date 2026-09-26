@@ -1,6 +1,7 @@
 package notify
 
 import (
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -16,6 +17,9 @@ import (
 func MapNotification(n communityclient.NotificationView, post *communityclient.PostView, target *anchor.Target) *model.Message {
 	if n.Kind == communityclient.InboxFollowed {
 		return mapFollowed(n)
+	}
+	if n.Kind == communityclient.InboxFolloweeActivity {
+		return mapFolloweeActivity(n)
 	}
 	if target == nil {
 		return nil
@@ -87,6 +91,8 @@ func mapKind(kind int32, post *communityclient.PostView) (string, bool) {
 		return "liked", true
 	case communityclient.InboxFollowed:
 		return "user-followed", true
+	case communityclient.InboxFolloweeActivity:
+		return "followee-activity", true
 	default:
 		return "", false
 	}
@@ -123,6 +129,67 @@ func mapFollowed(n communityclient.NotificationView) *model.Message {
 		ActorCount:              int(n.ActorCount),
 		CreatedAt:               parseTime(n.UpdatedAt),
 	}
+}
+
+func mapFolloweeActivity(n communityclient.NotificationView) *model.Message {
+	msgType, ok := mapKind(n.Kind, nil)
+	if !ok {
+		return nil
+	}
+	senderID := 0
+	if n.ActorID != nil {
+		senderID = int(*n.ActorID)
+	}
+	preview := ""
+	if n.Activity != nil {
+		preview = content.PlainText(n.Activity.Title, constants.TextPreviewLength)
+	}
+	status := "unread"
+	if n.ReadAt != nil && *n.ReadAt != "" {
+		status = "read"
+	}
+	id := n.ID
+	seq := n.Seq
+	return &model.Message{
+		Content:                 preview,
+		Link:                    followeeActivityLink(n, senderID),
+		Status:                  status,
+		Type:                    msgType,
+		SenderID:                senderID,
+		ReceiverID:              int(n.UserID),
+		CommunityNotificationID: &id,
+		CommunitySeq:            &seq,
+		ItemCount:               int(n.ItemCount),
+		ActorCount:              int(n.ActorCount),
+		CreatedAt:               parseTime(n.UpdatedAt),
+	}
+}
+
+func followeeActivityLink(n communityclient.NotificationView, senderID int) string {
+	fallback := "/user/" + strconv.Itoa(senderID)
+	if n.Activity == nil {
+		return fallback
+	}
+	u, err := url.Parse(n.Activity.URL)
+	if err != nil {
+		return fallback
+	}
+	switch strings.ToLower(u.Hostname()) {
+	case "www.kungal.com", "kungal.com":
+	default:
+		return fallback
+	}
+	link := u.EscapedPath()
+	if link == "" {
+		link = "/"
+	}
+	if u.RawQuery != "" {
+		link += "?" + u.RawQuery
+	}
+	if len(link) > 100 {
+		return fallback
+	}
+	return link
 }
 
 func parseTime(s string) time.Time {

@@ -245,12 +245,6 @@ const KUN_ALL_TAB_KINDS = [
   'UPDATE_LOG_CREATION'
 ]
 
-const KUN_FOLLOWING_TAB_KINDS = [
-  ...KUN_FEED_KIND_GROUPS.flatMap((group) => group.kinds.map((k) => k.value)),
-  'GALGAME_RESOURCE_COMMENT_CREATION',
-  'GALGAME_QUIZ_COMMENT_CREATION'
-]
-
 export const KUN_FEED_TABS_VERSION = 8
 
 export const KUN_DEFAULT_FEED_TABS: KunFeedTab[] = [
@@ -264,7 +258,7 @@ export const KUN_DEFAULT_FEED_TABS: KunFeedTab[] = [
     id: 'following',
     name: '关注',
     icon: 'lucide:user-round-check',
-    kinds: [...KUN_FOLLOWING_TAB_KINDS],
+    kinds: [],
     source: 'following'
   },
   {

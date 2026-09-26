@@ -115,6 +115,106 @@ func TestMapNotification(t *testing.T) {
 			skip: true,
 		},
 		{
+			name: "kind 10 followee activity",
+			note: func() communityclient.NotificationView {
+				n := baseNote(communityclient.InboxFolloweeActivity)
+				n.ThreadID = 0
+				n.AnchorKind = 0
+				n.AnchorID = ""
+				n.PostID = nil
+				n.PostNumber = nil
+				n.ActorCount = 1
+				n.ItemCount = 3
+				n.Activity = &communityclient.NotificationActivityView{
+					ID: 101, Site: "kungal", Key: "kungal:topic:12", Verb: "publish",
+					ObjectKind: "topic", ObjectLabel: "Topic", Title: "Hello topic",
+					URL: "https://www.kungal.com/topic/12?from=feed", ContentLimit: "sfw",
+					OccurredAt: "2026-09-26T00:00:00Z",
+				}
+				return n
+			}(),
+			post: nil, target: nil,
+			typ: "followee-activity", link: "/topic/12?from=feed", content: "Hello topic", sender: 9,
+		},
+		{
+			name: "kind 10 kungal.com host",
+			note: func() communityclient.NotificationView {
+				n := baseNote(communityclient.InboxFolloweeActivity)
+				n.ThreadID = 0
+				n.AnchorKind = 0
+				n.AnchorID = ""
+				n.PostID = nil
+				n.PostNumber = nil
+				n.Activity = &communityclient.NotificationActivityView{
+					Title: "Bare host", URL: "https://kungal.com/galgame/9",
+				}
+				return n
+			}(),
+			post: nil, target: nil,
+			typ: "followee-activity", link: "/galgame/9", content: "Bare host", sender: 9,
+		},
+		{
+			name: "kind 10 foreign host falls back",
+			note: func() communityclient.NotificationView {
+				n := baseNote(communityclient.InboxFolloweeActivity)
+				n.ThreadID = 0
+				n.PostID = nil
+				n.PostNumber = nil
+				n.Activity = &communityclient.NotificationActivityView{
+					Title: "Other site", URL: "https://example.com/topic/1",
+				}
+				return n
+			}(),
+			post: nil, target: nil,
+			typ: "followee-activity", link: "/user/9", content: "Other site", sender: 9,
+		},
+		{
+			name: "kind 10 over-long path falls back",
+			note: func() communityclient.NotificationView {
+				n := baseNote(communityclient.InboxFolloweeActivity)
+				n.ThreadID = 0
+				n.PostID = nil
+				n.PostNumber = nil
+				path := "/" + strings.Repeat("a", 100)
+				n.Activity = &communityclient.NotificationActivityView{
+					Title: "Long", URL: "https://www.kungal.com" + path,
+				}
+				return n
+			}(),
+			post: nil, target: nil,
+			typ: "followee-activity", link: "/user/9", content: "Long", sender: 9,
+		},
+		{
+			name: "kind 10 null activity falls back",
+			note: func() communityclient.NotificationView {
+				n := baseNote(communityclient.InboxFolloweeActivity)
+				n.ThreadID = 0
+				n.PostID = nil
+				n.PostNumber = nil
+				n.ItemCount = 2
+				n.Activity = nil
+				return n
+			}(),
+			post: nil, target: nil,
+			typ: "followee-activity", link: "/user/9", content: "", sender: 9,
+		},
+		{
+			name: "kind 10 read_at maps to read",
+			note: func() communityclient.NotificationView {
+				n := baseNote(communityclient.InboxFolloweeActivity)
+				n.ThreadID = 0
+				n.PostID = nil
+				n.PostNumber = nil
+				n.ReadAt = ptrStr("2026-09-16T01:00:00Z")
+				n.Activity = &communityclient.NotificationActivityView{
+					Title: "Read", URL: "https://www.kungal.com/topic/1",
+				}
+				return n
+			}(),
+			post: nil, target: nil,
+			typ: "followee-activity", link: "/topic/1", status: "read", sender: 9,
+		},
+		{
 			name: "unresolvable anchor skipped",
 			note: baseNote(communityclient.InboxPosted), post: top, target: nil,
 			skip: true,
@@ -196,6 +296,23 @@ func TestMapNotification(t *testing.T) {
 				}
 				if got.CommunityThreadID != nil || got.CommunityPostNumber != nil {
 					t.Errorf("thread/post fields set: %+v", got)
+				}
+			}
+			if strings.HasPrefix(tc.name, "kind 10") {
+				if got.SenderID != 9 {
+					t.Errorf("sender = %d, want 9", got.SenderID)
+				}
+				if got.CommunityThreadID != nil || got.CommunityPostNumber != nil {
+					t.Errorf("thread/post fields set: %+v", got)
+				}
+				if tc.content != "" && got.Content != tc.content {
+					t.Errorf("content = %q, want %q", got.Content, tc.content)
+				}
+				if tc.name == "kind 10 followee activity" && (got.ItemCount != 3 || got.ActorCount != 1) {
+					t.Errorf("counts actor=%d item=%d", got.ActorCount, got.ItemCount)
+				}
+				if tc.name == "kind 10 null activity falls back" && got.Content != "" {
+					t.Errorf("null activity content = %q, want empty", got.Content)
 				}
 			}
 			if tc.name == "quiz preview empty" && got.Content != "" {

@@ -64,12 +64,13 @@ const toggleKind = (kind: string) => {
       description="Gal 情报来自合作站点转载的情报流，不是站内动态，因此没有可勾选的种类。"
     />
 
+    <KunInfo
+      v-else-if="isFollowingFeedTab(editingTab)"
+      color="info"
+      description="关注标签显示你关注的人在鲲 Galgame 和 NextMoe 各站的动态，按人、按天合并，没有可勾选的种类。"
+    />
+
     <div v-else-if="editingTab" class="space-y-3">
-      <KunInfo
-        v-if="isFollowingFeedTab(editingTab)"
-        color="info"
-        description="关注标签只显示你关注的人的动态，下面勾选的种类同样生效。"
-      />
       <div
         v-for="group in KUN_FEED_KIND_GROUPS"
         :key="group.label"

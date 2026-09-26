@@ -21,6 +21,7 @@ type UserColumn struct {
 // not name: the purge's table list is hand-written, and on 2026-08-30 it
 // covered about 30 of the 58 tables that had one.
 var UserColumns = []UserColumn{
+	{"activity_push_sent", "actor_id", HandlingKeep, "sync bookkeeping: a tombstone needs the author id after the content is gone"},
 	{"chat_message", "receiver_id", HandlingDelete, "the private room goes with its sender"},
 	{"chat_message", "sender_id", HandlingDelete, ""},
 	{"chat_message_reaction", "user_id", HandlingDelete, ""},

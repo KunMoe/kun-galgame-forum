@@ -310,7 +310,10 @@ export type WorkDigest = components['schemas']['WorkDigest']
 export type ListActivitiesQuery = NonNullable<
   operations['listActivities']['parameters']['query']
 >
-export type FollowingActivity = components['schemas']['FollowingActivity']
+export type FollowingActivityGroup =
+  components['schemas']['FollowingActivityGroup']
+export type FollowingActivityItem =
+  components['schemas']['FollowingActivityItem']
 export type FollowingActivityQuery = NonNullable<
   operations['getFollowingActivitySummary']['parameters']['query']
 >

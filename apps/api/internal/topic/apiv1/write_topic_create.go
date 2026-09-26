@@ -104,7 +104,6 @@ func (w *Writes) createTopic(ctx context.Context, in *createTopicInput) (*create
 	}
 	w.flushAwards(awards)
 	w.scanTopic(decision, matched, topicID, user.ID, moderation)
-	w.notifyFollowersOfTopic(user.ID, topicID, in.Body.AccessScope)
 
 	topic, p := w.loadTopic(topicID)
 	if p != nil {

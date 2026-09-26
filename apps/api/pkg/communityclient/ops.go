@@ -195,6 +195,12 @@ func (c *Client) FollowUser(ctx context.Context, userID, targetID int64) (*Follo
 	return &out, err
 }
 
+func (c *Client) SetFollowNotify(ctx context.Context, userID, targetID int64, notify string) (*FollowNotifyResult, error) {
+	var out FollowNotifyResult
+	err := c.do(ctx, http.MethodPatch, "/users/"+itoa(userID)+"/following/"+itoa(targetID), FollowNotifyRequest{Notify: notify}, &out)
+	return &out, err
+}
+
 func (c *Client) UnfollowUser(ctx context.Context, userID, targetID int64) (*FollowResult, error) {
 	var out FollowResult
 	err := c.do(ctx, http.MethodDelete, "/users/"+itoa(userID)+"/following/"+itoa(targetID), nil, &out)

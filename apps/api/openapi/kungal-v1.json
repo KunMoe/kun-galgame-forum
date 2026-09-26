@@ -739,6 +739,19 @@
         ],
         "type": "object"
       },
+      "ActivityVerb": {
+        "enum": [
+          "publish",
+          "reply",
+          "comment",
+          "rate",
+          "like",
+          "edit"
+        ],
+        "maxLength": 7,
+        "type": "string",
+        "x-vocabulary-closed": true
+      },
       "AdminDoc": {
         "properties": {
           "banner": {
@@ -6065,6 +6078,15 @@
         "type": "string",
         "x-vocabulary-closed": true
       },
+      "FollowNotifyLevel": {
+        "enum": [
+          "all",
+          "feed"
+        ],
+        "maxLength": 4,
+        "type": "string",
+        "x-vocabulary-closed": true
+      },
       "FollowedWall": {
         "properties": {
           "object": {
@@ -6116,36 +6138,208 @@
         ],
         "type": "object"
       },
-      "FollowingActivity": {
+      "FollowingActivityGroup": {
         "properties": {
-          "activity": {
+          "actor": {
+            "$ref": "#/components/schemas/UserRef",
+            "description": "Who did it. name is null when the account no longer exists; show a localized label."
+          },
+          "calendar_date": {
+            "description": "The Asia/Shanghai calendar day the group belongs to.",
+            "format": "date",
+            "maxLength": 10,
+            "minLength": 10,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+            "type": "string"
+          },
+          "id": {
+            "description": "Community group id.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "item_count": {
+            "description": "Live items in the group. At least 1 from community; 0 is reserved for the integer floor every *_count uses.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "items": {
+            "description": "Newest items in the group, at most 3. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/FollowingActivityItem"
+            },
+            "maxItems": 3,
+            "type": "array"
+          },
+          "latest_at": {
+            "description": "When the newest item in the group occurred.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": "string"
+          },
+          "object": {
+            "const": "following_activity_group",
+            "description": "Type discriminant. Always following_activity_group.",
+            "maxLength": 24,
+            "type": "string"
+          },
+          "object_kind": {
+            "description": "The site's type name for the object, such as topic or patch. An open vocabulary.",
+            "maxLength": 32,
+            "pattern": "^[a-z0-9_]{1,32}$",
+            "type": "string"
+          },
+          "object_label": {
+            "description": "Display name of object_kind. Show as it is. Free text; never use it as a decision input.",
+            "maxLength": 16,
+            "type": "string"
+          },
+          "site": {
+            "description": "The NextMoe site the group happened on. kungal is this forum. An open vocabulary: show an unknown token as it is.",
+            "maxLength": 64,
+            "pattern": "^[a-z0-9][a-z0-9_-]*$",
+            "type": "string"
+          },
+          "verb": {
+            "$ref": "#/components/schemas/ActivityVerb",
+            "description": "What the performer did."
+          }
+        },
+        "required": [
+          "object",
+          "id",
+          "site",
+          "actor",
+          "verb",
+          "object_kind",
+          "object_label",
+          "calendar_date",
+          "item_count",
+          "latest_at",
+          "items"
+        ],
+        "type": "object"
+      },
+      "FollowingActivityItem": {
+        "properties": {
+          "cover": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/Activity"
+                "$ref": "#/components/schemas/Image"
               },
               {
                 "type": "null"
               }
             ],
-            "description": "The activity, when site is kungal: the same object listActivities returns. An activity on another site will leave this null and carry a block of its own; none are sent yet, so skip an entry with neither."
+            "description": "Cover from community's cover_image_hash. null when none."
           },
-          "object": {
-            "const": "following_activity",
-            "description": "Type discriminant. Always following_activity.",
-            "maxLength": 18,
+          "excerpt": {
+            "description": "Plain-text excerpt, may be empty. Free text; never use it as a decision input.",
+            "maxLength": 300,
             "type": "string"
           },
+          "id": {
+            "description": "Community item id.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "in_site_path": {
+            "description": "Path and query of url when site is kungal. null for other sites.",
+            "maxLength": 512,
+            "pattern": "^/",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "is_nsfw": {
+            "description": "Whether the item is not sfw.",
+            "type": "boolean"
+          },
+          "key": {
+            "description": "Community's idempotency key for the item. Free text; never use it as a decision input.",
+            "maxLength": 128,
+            "type": "string"
+          },
+          "object": {
+            "const": "following_activity_item",
+            "description": "Type discriminant. Always following_activity_item.",
+            "maxLength": 23,
+            "type": "string"
+          },
+          "object_kind": {
+            "description": "The site's type name for the object. An open vocabulary.",
+            "maxLength": 32,
+            "pattern": "^[a-z0-9_]{1,32}$",
+            "type": "string"
+          },
+          "object_label": {
+            "description": "Display name of object_kind. Show as it is. Free text; never use it as a decision input.",
+            "maxLength": 16,
+            "type": "string"
+          },
+          "occurred_at": {
+            "description": "When it happened.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": "string"
+          },
+          "related_work_id": {
+            "description": "Catalog work id when the item names one. null when none.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "site": {
-            "description": "The NextMoe site it happened on. kungal is this forum and the only value sent today; other sites will join. An open vocabulary: show an unknown token as it is.",
+            "description": "The NextMoe site the item happened on. kungal is this forum. An open vocabulary: show an unknown token as it is.",
             "maxLength": 64,
             "pattern": "^[a-z0-9][a-z0-9_-]*$",
             "type": "string"
+          },
+          "title": {
+            "description": "Plain-text title. Free text; never use it as a decision input.",
+            "maxLength": 200,
+            "type": "string"
+          },
+          "url": {
+            "description": "Absolute https URL of the item.",
+            "format": "uri",
+            "maxLength": 2048,
+            "type": "string"
+          },
+          "verb": {
+            "$ref": "#/components/schemas/ActivityVerb",
+            "description": "What the performer did."
           }
         },
         "required": [
           "object",
+          "id",
           "site",
-          "activity"
+          "key",
+          "verb",
+          "object_kind",
+          "object_label",
+          "title",
+          "excerpt",
+          "url",
+          "in_site_path",
+          "cover",
+          "related_work_id",
+          "is_nsfw",
+          "occurred_at"
         ],
         "type": "object"
       },
@@ -6158,7 +6352,7 @@
             "type": "string"
           },
           "seen_at": {
-            "description": "The seen mark as stored.",
+            "description": "The seen mark as stored by community.",
             "format": "date-time",
             "maxLength": 20,
             "minLength": 20,
@@ -6175,7 +6369,7 @@
       "FollowingActivityReadMarkerWrite": {
         "properties": {
           "seen_at": {
-            "description": "Everything that occurred at or before this instant counts as seen. Absent means everything up to now. When present, send the occurred_at of the newest activity shown. The mark only moves forward, and a time in the future is stored as the server's current time.",
+            "description": "Mark everything at or before this instant as seen. Absent means now. The mark only moves forward and is never stored past now. Omit this field (send {}) when opening the list; do not send the time of the first group rendered.",
             "format": "date-time",
             "maxLength": 20,
             "minLength": 20,
@@ -6188,7 +6382,7 @@
       "FollowingActivitySummary": {
         "properties": {
           "last_seen_at": {
-            "description": "The caller's seen mark: activities at or before it count as seen. null until the caller first sets it.",
+            "description": "The caller's seen mark. null until the caller first sets it.",
             "format": "date-time",
             "maxLength": 20,
             "minLength": 20,
@@ -6205,7 +6399,7 @@
             "type": "string"
           },
           "unseen_count": {
-            "description": "Matching rows after last_seen_at counted in SQL up to 100: 100 means 100 or more. With no seen mark, the last seven days are counted. Can include rows the list leaves out, such as a banned author's or a work catalog does not show.",
+            "description": "Followed groups whose latest_at is after the later of last_seen_at and when each follow began, counted up to 100: 100 means 100 or more. Uses the same include_nsfw, verbs and sites as listFollowingActivities.",
             "format": "int64",
             "maximum": 100,
             "minimum": 0,
@@ -7706,12 +7900,40 @@
         ],
         "type": "object"
       },
-      "ListFollowingActivity": {
+      "ListFollowingActivityGroup": {
         "properties": {
           "items": {
             "description": "Members of this page. Empty array, never null.",
             "items": {
-              "$ref": "#/components/schemas/FollowingActivity"
+              "$ref": "#/components/schemas/FollowingActivityGroup"
+            },
+            "type": "array"
+          },
+          "next_cursor": {
+            "description": "Opaque keyset cursor. Omitted on the last page.",
+            "maxLength": 512,
+            "pattern": "^cur_[A-Za-z0-9_-]+$",
+            "type": "string"
+          },
+          "object": {
+            "const": "list",
+            "description": "Type discriminant. Always list.",
+            "maxLength": 4,
+            "type": "string"
+          }
+        },
+        "required": [
+          "object",
+          "items"
+        ],
+        "type": "object"
+      },
+      "ListFollowingActivityItem": {
+        "properties": {
+          "items": {
+            "description": "Members of this page. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/FollowingActivityItem"
             },
             "type": "array"
           },
@@ -10135,9 +10357,10 @@
           "poll_closed",
           "user_followed",
           "followee_topic_created",
+          "followee_activity_published",
           "chat"
         ],
-        "maxLength": 24,
+        "maxLength": 27,
         "type": "string",
         "x-vocabulary-closed": true
       },
@@ -10511,7 +10734,7 @@
             "description": "The user who triggered this notification. name is null when the account no longer exists."
           },
           "actor_count": {
-            "description": "How many people are folded into this mirrored row. Values stored below 1 are emitted as 1. followed_thread_activity and user_followed can be greater than 1.",
+            "description": "How many people are folded into this mirrored row. Values stored below 1 are emitted as 1. followed_thread_activity and user_followed can be greater than 1. followee_activity_published is always 1.",
             "format": "int64",
             "minimum": 0,
             "type": "integer"
@@ -10541,7 +10764,7 @@
             "type": "boolean"
           },
           "item_count": {
-            "description": "How many upstream posts are folded into this mirrored row. Values stored below 1 are emitted as 1.",
+            "description": "How many upstream posts are folded into this mirrored row. Values stored below 1 are emitted as 1. For followee_activity_published this is the author's publications folded into the row; 100 means 100 or more.",
             "format": "int64",
             "minimum": 0,
             "type": "integer"
@@ -10599,7 +10822,7 @@
               "$ref": "#/components/schemas/MutedType",
               "description": "Notification type the caller has muted. Closed vocabulary of v1 tokens plus chat for private messages."
             },
-            "maxItems": 21,
+            "maxItems": 22,
             "type": "array",
             "uniqueItems": true
           },
@@ -10736,9 +10959,10 @@
           "lottery_code_expired",
           "poll_closed",
           "user_followed",
-          "followee_topic_created"
+          "followee_topic_created",
+          "followee_activity_published"
         ],
-        "maxLength": 24,
+        "maxLength": 27,
         "type": "string",
         "x-vocabulary-closed": true
       },
@@ -12883,7 +13107,7 @@
               "$ref": "#/components/schemas/MutedType",
               "description": "Notification type the caller has muted. Closed vocabulary of v1 tokens plus chat for private messages."
             },
-            "maxItems": 21,
+            "maxItems": 22,
             "type": "array",
             "uniqueItems": true
           }
@@ -16588,6 +16812,18 @@
           "display_name",
           "latin",
           "localized"
+        ],
+        "type": "object"
+      },
+      "SetUserFollowNotifyBody": {
+        "properties": {
+          "notify": {
+            "$ref": "#/components/schemas/FollowNotifyLevel",
+            "description": "Whether the caller is notified when this user publishes: all (the default) or feed (the user's activity shows in the following feed only)."
+          }
+        },
+        "required": [
+          "notify"
         ],
         "type": "object"
       },
@@ -20750,6 +20986,17 @@
             "description": "Whether the caller follows this user.",
             "type": "boolean"
           },
+          "notify_level": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FollowNotifyLevel"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Whether the caller is notified when this user publishes: all (the default) or feed (the user's activity shows in the following feed only). null when the caller does not follow this user. Private to the caller."
+          },
           "object": {
             "const": "user_follow_state",
             "description": "Type discriminant. Always user_follow_state.",
@@ -20769,7 +21016,8 @@
           "id",
           "user_id",
           "is_following",
-          "is_followed_by"
+          "is_followed_by",
+          "notify_level"
         ],
         "type": "object"
       },
@@ -25169,6 +25417,119 @@
           }
         },
         "summary": "List activities",
+        "tags": [
+          "activities"
+        ]
+      }
+    },
+    "/activity-groups/{group_id}/items": {
+      "get": {
+        "description": "Every live item of one activity group, newest first. Unknown groups, and groups whose actor is not renderable, are NOT_FOUND. A page can be shorter than limit. The cursor is bound to include_nsfw.",
+        "operationId": "listActivityGroupItems",
+        "parameters": [
+          {
+            "description": "Community group id.",
+            "in": "path",
+            "name": "group_id",
+            "required": true,
+            "schema": {
+              "description": "Community group id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "When true, NSFW items are included. Default false.",
+            "explode": false,
+            "in": "query",
+            "name": "include_nsfw",
+            "schema": {
+              "default": false,
+              "description": "When true, NSFW items are included. Default false.",
+              "type": "boolean"
+            }
+          },
+          {
+            "description": "Opaque keyset cursor from a previous page of this collection.",
+            "explode": false,
+            "in": "query",
+            "name": "cursor",
+            "schema": {
+              "description": "Opaque keyset cursor from a previous page of this collection.",
+              "maxLength": 512,
+              "pattern": "^cur_[A-Za-z0-9_-]+$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Page size. 1–50, default 20. Values above 50 are rejected, not clamped.",
+            "explode": false,
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 20,
+              "description": "Page size. 1–50, default 20. Values above 50 are rejected, not clamped.",
+              "format": "int64",
+              "maximum": 50,
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListFollowingActivityItem"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "INVALID_CURSOR, LIMIT_TOO_LARGE or INVALID_PARAMETER."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the community service or the account service is unreachable."
+          }
+        },
+        "summary": "List every live item of an activity group",
         "tags": [
           "activities"
         ]
@@ -38702,7 +39063,7 @@
     },
     "/me/following-activities": {
       "get": {
-        "description": "The activities of every account the caller follows, newest first, with the filters of listActivities and its occurred_desc order. Follows are NextMoe's, shared with the other NextMoe sites; a follow or unfollow made on this forum shows at once, one made elsewhere within a minute. An activity whose actor is banned, or whose work catalog does not show under include_nsfw, is left out, so a page can be short; only an absent next_cursor means the end. The cursor is bound to every filter, but not to who the caller follows.",
+        "description": "Groups of activity by accounts the caller follows, across NextMoe sites, newest group first. A group is one author's items of one verb and object_kind on one site on one Asia/Shanghai calendar day. A group whose actor is not renderable is dropped, so a page can be shorter than limit; next_cursor still comes from community, and only an absent next_cursor means the end. The cursor is bound to include_nsfw, verbs and sites.",
         "operationId": "listFollowingActivities",
         "parameters": [
           {
@@ -38718,65 +39079,61 @@
             }
           },
           {
-            "description": "Page size. 1–100, default 20. Values above 100 are rejected, not clamped.",
+            "description": "Page size. 1–50, default 20. Values above 50 are rejected, not clamped.",
             "explode": false,
             "in": "query",
             "name": "limit",
             "schema": {
               "default": 20,
-              "description": "Page size. 1–100, default 20. Values above 100 are rejected, not clamped.",
+              "description": "Page size. 1–50, default 20. Values above 50 are rejected, not clamped.",
               "format": "int64",
-              "maximum": 100,
+              "maximum": 50,
               "minimum": 1,
               "type": "integer"
             }
           },
           {
-            "description": "Only these activity types, comma-separated. Absent means every type.",
-            "explode": false,
-            "in": "query",
-            "name": "activity_types",
-            "schema": {
-              "description": "Only these activity types, comma-separated. Absent means every type.",
-              "items": {
-                "$ref": "#/components/schemas/ActivityType",
-                "description": "Activity type: what happened. best_answer_set is a topic author choosing a best answer."
-              },
-              "maxItems": 22,
-              "type": "array"
-            }
-          },
-          {
-            "description": "Which topic_creation activities to include: help is the resource and help sections (g-seeking, g-other, t-help), normal is every other section, all is both. Other kinds are not affected.",
-            "explode": false,
-            "in": "query",
-            "name": "topic_sections",
-            "schema": {
-              "$ref": "#/components/schemas/ActivityTopicSection",
-              "default": "normal",
-              "description": "Which topic_creation activities to include: help is the resource and help sections (g-seeking, g-other, t-help), normal is every other section, all is both. Other kinds are not affected."
-            }
-          },
-          {
-            "description": "When true, NSFW activities and works are included. Default false.",
+            "description": "When true, NSFW groups are included. Default false.",
             "explode": false,
             "in": "query",
             "name": "include_nsfw",
             "schema": {
               "default": false,
-              "description": "When true, NSFW activities and works are included. Default false.",
+              "description": "When true, NSFW groups are included. Default false.",
               "type": "boolean"
             }
           },
           {
-            "description": "When true, galgame_creation includes works that have no download resource yet. Default false.",
+            "description": "Only these verbs, comma-separated. Absent means every verb.",
             "explode": false,
             "in": "query",
-            "name": "include_galgames_without_resources",
+            "name": "verbs",
             "schema": {
-              "default": false,
-              "description": "When true, galgame_creation includes works that have no download resource yet. Default false.",
-              "type": "boolean"
+              "description": "Only these verbs, comma-separated. Absent means every verb.",
+              "items": {
+                "$ref": "#/components/schemas/ActivityVerb",
+                "description": "What the performer did: publish, reply, comment, rate, like or edit."
+              },
+              "maxItems": 6,
+              "type": "array"
+            }
+          },
+          {
+            "description": "Only these NextMoe sites, comma-separated. Absent means every site.",
+            "explode": false,
+            "in": "query",
+            "name": "sites",
+            "schema": {
+              "description": "Only these NextMoe sites, comma-separated. Absent means every site.",
+              "items": {
+                "description": "A NextMoe site token. kungal is this forum. An open vocabulary: show an unknown token as it is.",
+                "maxLength": 64,
+                "pattern": "^[a-z0-9][a-z0-9_-]*$",
+                "type": "string",
+                "x-vocabulary": "activity_site",
+                "x-vocabulary-closed": false
+              },
+              "type": "array"
             }
           }
         ],
@@ -38785,7 +39142,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ListFollowingActivity"
+                  "$ref": "#/components/schemas/ListFollowingActivityGroup"
                 }
               }
             },
@@ -38839,7 +39196,7 @@
                 }
               }
             },
-            "description": "SERVICE_UNAVAILABLE when the community follow graph, the account service or catalog is unreachable."
+            "description": "SERVICE_UNAVAILABLE when the community service or the account service is unreachable."
           }
         },
         "security": [
@@ -38850,7 +39207,7 @@
             "bearer": []
           }
         ],
-        "summary": "List the activity of the accounts the caller follows",
+        "summary": "List grouped activity of the accounts the caller follows",
         "tags": [
           "activities"
         ]
@@ -38858,7 +39215,7 @@
     },
     "/me/following-activities/read-marker": {
       "put": {
-        "description": "Stores the later of the current mark and seen_at, with a future seen_at taken as now. Absent seen_at means now. Replaying it, or sending an earlier time, changes nothing and is still 200.",
+        "description": "The mark is account-wide across NextMoe sites, moves forward only, and is never stored past now. Omit seen_at (send {}) to mark everything up to now, which is what opening the list should do; never send the time of the first group the client rendered, or a hidden group above it would stay unseen.",
         "operationId": "markFollowingActivitiesSeen",
         "requestBody": {
           "content": {
@@ -38959,7 +39316,7 @@
                 }
               }
             },
-            "description": "Service Unavailable"
+            "description": "SERVICE_UNAVAILABLE when the community service or the account service is unreachable."
           }
         },
         "security": [
@@ -38978,55 +39335,51 @@
     },
     "/me/following-activities/summary": {
       "get": {
-        "description": "The caller's seen mark and a SQL count, capped at 100, of matching rows by followed accounts after the mark (or in the last seven days when there is no mark), which can include rows listFollowingActivities leaves out.",
+        "description": "The caller's seen mark and a count, capped at 100, of followed groups whose latest_at is after the later of the mark and when each follow began. 100 means 100 or more. Following someone never lights up their history. last_seen_at is null until the caller first sets the mark. The same include_nsfw, verbs and sites filters as listFollowingActivities apply.",
         "operationId": "getFollowingActivitySummary",
         "parameters": [
           {
-            "description": "Only these activity types, comma-separated. Absent means every type.",
-            "explode": false,
-            "in": "query",
-            "name": "activity_types",
-            "schema": {
-              "description": "Only these activity types, comma-separated. Absent means every type.",
-              "items": {
-                "$ref": "#/components/schemas/ActivityType",
-                "description": "Activity type: what happened. best_answer_set is a topic author choosing a best answer."
-              },
-              "maxItems": 22,
-              "type": "array"
-            }
-          },
-          {
-            "description": "Which topic_creation activities to include: help is the resource and help sections (g-seeking, g-other, t-help), normal is every other section, all is both. Other kinds are not affected.",
-            "explode": false,
-            "in": "query",
-            "name": "topic_sections",
-            "schema": {
-              "$ref": "#/components/schemas/ActivityTopicSection",
-              "default": "normal",
-              "description": "Which topic_creation activities to include: help is the resource and help sections (g-seeking, g-other, t-help), normal is every other section, all is both. Other kinds are not affected."
-            }
-          },
-          {
-            "description": "When true, NSFW activities and works are included. Default false.",
+            "description": "When true, NSFW groups are included. Default false.",
             "explode": false,
             "in": "query",
             "name": "include_nsfw",
             "schema": {
               "default": false,
-              "description": "When true, NSFW activities and works are included. Default false.",
+              "description": "When true, NSFW groups are included. Default false.",
               "type": "boolean"
             }
           },
           {
-            "description": "When true, galgame_creation includes works that have no download resource yet. Default false.",
+            "description": "Only these verbs, comma-separated. Absent means every verb.",
             "explode": false,
             "in": "query",
-            "name": "include_galgames_without_resources",
+            "name": "verbs",
             "schema": {
-              "default": false,
-              "description": "When true, galgame_creation includes works that have no download resource yet. Default false.",
-              "type": "boolean"
+              "description": "Only these verbs, comma-separated. Absent means every verb.",
+              "items": {
+                "$ref": "#/components/schemas/ActivityVerb",
+                "description": "What the performer did: publish, reply, comment, rate, like or edit."
+              },
+              "maxItems": 6,
+              "type": "array"
+            }
+          },
+          {
+            "description": "Only these NextMoe sites, comma-separated. Absent means every site.",
+            "explode": false,
+            "in": "query",
+            "name": "sites",
+            "schema": {
+              "description": "Only these NextMoe sites, comma-separated. Absent means every site.",
+              "items": {
+                "description": "A NextMoe site token. kungal is this forum. An open vocabulary: show an unknown token as it is.",
+                "maxLength": 64,
+                "pattern": "^[a-z0-9][a-z0-9_-]*$",
+                "type": "string",
+                "x-vocabulary": "activity_site",
+                "x-vocabulary-closed": false
+              },
+              "type": "array"
             }
           }
         ],
@@ -39089,7 +39442,7 @@
                 }
               }
             },
-            "description": "SERVICE_UNAVAILABLE when the community follow graph is unreachable."
+            "description": "SERVICE_UNAVAILABLE when the community service or the account service is unreachable."
           }
         },
         "security": [
@@ -39307,6 +39660,148 @@
           }
         ],
         "summary": "Get the caller's standing toward a user",
+        "tags": [
+          "users"
+        ]
+      },
+      "patch": {
+        "description": "Sets whether the caller is notified when this user publishes. all (the default) sends followee-activity notifications; feed keeps the user in the following feed only. The level only decides notifications; the feed shows the user either way. Changing the level never creates a follow. NOT_FOUND when the account does not exist or is not renderable. Also NOT_FOUND when the caller does not follow the named user.",
+        "operationId": "setUserFollowNotify",
+        "parameters": [
+          {
+            "description": "User id of the followed account.",
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "description": "User id of the followed account.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetUserFollowNotifyBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserFollowState"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SCOPE_REQUIRED or ACCOUNT_BANNED."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when the account does not exist or is not renderable. Also when the caller does not follow this user."
+          },
+          "413": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Request Entity Too Large"
+          },
+          "415": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unsupported Media Type"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED when notify is missing or not all or feed."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the community service is unreachable or unconfigured."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Set follow notification level",
         "tags": [
           "users"
         ]
