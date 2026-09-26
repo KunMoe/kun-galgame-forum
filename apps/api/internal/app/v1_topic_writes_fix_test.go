@@ -15,6 +15,12 @@ import (
 	"testing"
 	"time"
 
+	activityapiv1 "kun-galgame-api/internal/activity/apiv1"
+	activityRepo "kun-galgame-api/internal/activity/repository"
+	"kun-galgame-api/internal/apiv1"
+	"kun-galgame-api/internal/apiv1/content"
+	"kun-galgame-api/internal/community/followees"
+	"kun-galgame-api/internal/galgame/client"
 	msgRepo "kun-galgame-api/internal/message/repository"
 	msgService "kun-galgame-api/internal/message/service"
 	"kun-galgame-api/internal/middleware"
@@ -121,6 +127,7 @@ type writeFix struct {
 	failOA     atomic.Bool
 	oauthExtra []map[string]any
 	art        *artifactFake
+	catalog    *fakeActivityCatalog
 }
 
 func newWriteFix(t *testing.T, checker gate.Checker) *writeFix {
@@ -197,6 +204,10 @@ func newWriteFixCommunity(t *testing.T, checker gate.Checker, community http.Han
 		communityCli = communityclient.New(communityclient.Config{BaseURL: cmSrv.URL, ClientID: "c", ClientSecret: "s"})
 	}
 	notify := msgService.NewNotifier(msgRepo.NewMessageRepository(db))
+	following := followees.NewFromClient(communityCli)
+	f.catalog = &fakeActivityCatalog{items: map[int]client.CatalogWorkListItem{}, adult: map[int]bool{}}
+	convert := &content.Converter{CDNBase: "https://image.test.example", SiteBase: apiv1.SiteOrigin,
+		Images: func([]string) map[string]imageclient.ImageMeta { return map[string]imageclient.ImageMeta{} }, Users: uc.Users}
 	f.App = &App{
 		Fiber:      newFiber(),
 		Config:     cfg,
@@ -208,6 +219,8 @@ func newWriteFixCommunity(t *testing.T, checker gate.Checker, community http.Han
 		TrustCheck: trust,
 		Artifact:   artCli,
 		Community:  communityCli,
+		Followees:  following,
+		ActivityV1: activityapiv1.New(activityRepo.NewActivityRepository(db), f.catalog, uc, following, convert, "https://image.test.example"),
 		Notifier:   notify,
 		Authn:      middleware.NewAuthenticator(rdb, nil, middleware.NewBearer(w3Verifier{}, rdb, nil)),
 		ImageMeta: func(hashes []string) map[string]imageclient.ImageMeta {

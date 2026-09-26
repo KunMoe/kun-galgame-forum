@@ -29,7 +29,10 @@ type listOutput struct {
 }
 
 func (in *listInput) feedTypes() []string {
-	kinds := in.Types
+	return feedTypesOf(in.Types)
+}
+
+func feedTypesOf(kinds []ActivityType) []string {
 	if len(kinds) == 0 {
 		out := make([]string, len(feedTypes))
 		for i, t := range feedTypes {
@@ -59,60 +62,78 @@ func (s *Service) listActivities(ctx context.Context, in *listInput) (*listOutpu
 	}
 	fp := collect.Fingerprint(strings.Join(types, ","), in.TopicSections,
 		strconv.FormatBool(in.IncludeNSFW), strconv.FormatBool(in.IncludeUnresourced))
-	keys, prob := collect.DecodeCursor(in.Cursor, in.Sort, fp)
+	items, next, prob := s.collectPage(ctx, feedPage{
+		sort: in.Sort, fingerprint: fp, cursor: in.Cursor, limit: in.Limit, includeNSFW: in.IncludeNSFW,
+		fetch: func(feedPos *repository.FeedPos, topicPos *repository.TopicFeedPos) ([]repository.FeedRow, error) {
+			if in.Sort == "bumped_desc" {
+				return s.repo.TopicFeedPage(repository.TopicFeedQuery{
+					TopicSections: in.TopicSections, IncludeNSFW: in.IncludeNSFW, Limit: in.Limit, After: topicPos,
+				})
+			}
+			return s.repo.FeedPage(repository.FeedQuery{
+				Types: types, TopicSections: in.TopicSections, IncludeNSFW: in.IncludeNSFW,
+				IncludeUnresourced: in.IncludeUnresourced, Limit: in.Limit, After: feedPos,
+			})
+		},
+	})
 	if prob != nil {
 		return nil, prob
 	}
+	return &listOutput{Body: repr.NewList(items, next)}, nil
+}
 
+type feedPage struct {
+	sort        string
+	fingerprint string
+	cursor      string
+	limit       int
+	includeNSFW bool
+	fetch       func(*repository.FeedPos, *repository.TopicFeedPos) ([]repository.FeedRow, error)
+}
+
+func (s *Service) collectPage(ctx context.Context, p feedPage) ([]Activity, *string, *problem.Problem) {
+	keys, prob := collect.DecodeCursor(p.cursor, p.sort, p.fingerprint)
+	if prob != nil {
+		return nil, nil, prob
+	}
 	var (
 		collected []Activity
 		lastKeys  []string
 		scanned   []string
 		exhausted bool
 	)
-	feedPos, topicPos, prob := parsePos(in.Sort, keys)
+	feedPos, topicPos, prob := parsePos(p.sort, keys)
 	if prob != nil {
-		return nil, prob
+		return nil, nil, prob
 	}
-	for round := 0; len(collected) < in.Limit && round < maxRounds; round++ {
-		var rows []repository.FeedRow
-		var err error
-		if in.Sort == "bumped_desc" {
-			rows, err = s.repo.TopicFeedPage(repository.TopicFeedQuery{
-				TopicSections: in.TopicSections, IncludeNSFW: in.IncludeNSFW, Limit: in.Limit, After: topicPos,
-			})
-		} else {
-			rows, err = s.repo.FeedPage(repository.FeedQuery{
-				Types: types, TopicSections: in.TopicSections, IncludeNSFW: in.IncludeNSFW,
-				IncludeUnresourced: in.IncludeUnresourced, Limit: in.Limit, After: feedPos,
-			})
-		}
+	for round := 0; len(collected) < p.limit && round < maxRounds; round++ {
+		rows, err := p.fetch(feedPos, topicPos)
 		if err != nil {
-			return nil, problem.Internal(err)
+			return nil, nil, problem.Internal(err)
 		}
 		if len(rows) == 0 {
 			exhausted = true
 			break
 		}
-		items, prob := s.assemble(ctx, rows, in.IncludeNSFW)
+		items, prob := s.assemble(ctx, rows, p.includeNSFW)
 		if prob != nil {
-			return nil, prob
+			return nil, nil, prob
 		}
 		for i, it := range items {
 			if it == nil {
 				continue
 			}
 			collected = append(collected, *it)
-			lastKeys = rowKeys(in.Sort, rows[i])
-			if len(collected) == in.Limit {
+			lastKeys = rowKeys(p.sort, rows[i])
+			if len(collected) == p.limit {
 				break
 			}
 		}
 		last := rows[len(rows)-1]
-		scanned = rowKeys(in.Sort, last)
+		scanned = rowKeys(p.sort, last)
 		feedPos = &repository.FeedPos{Created: last.Created, TypeStr: last.TypeStr, SourceID: last.SourceID}
 		topicPos = &repository.TopicFeedPos{Bumped: last.Bumped, ID: last.SourceID}
-		if len(rows) < in.Limit {
+		if len(rows) < p.limit {
 			exhausted = true
 			break
 		}
@@ -120,14 +141,14 @@ func (s *Service) listActivities(ctx context.Context, in *listInput) (*listOutpu
 
 	var next *string
 	switch {
-	case len(collected) == in.Limit:
-		c := collect.EncodeCursor(in.Sort, fp, lastKeys...)
+	case len(collected) == p.limit:
+		c := collect.EncodeCursor(p.sort, p.fingerprint, lastKeys...)
 		next = &c
 	case !exhausted && scanned != nil:
-		c := collect.EncodeCursor(in.Sort, fp, scanned...)
+		c := collect.EncodeCursor(p.sort, p.fingerprint, scanned...)
 		next = &c
 	}
-	return &listOutput{Body: repr.NewList(collected, next)}, nil
+	return collected, next, nil
 }
 
 func rowKeys(sort string, r repository.FeedRow) []string {

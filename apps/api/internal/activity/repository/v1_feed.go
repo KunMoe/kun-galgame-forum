@@ -25,6 +25,7 @@ type FeedQuery struct {
 	TopicSections      string
 	IncludeNSFW        bool
 	IncludeUnresourced bool
+	ActorIDs           []int
 	Limit              int
 	After              *FeedPos
 }
@@ -68,9 +69,13 @@ func sectionCond(mode, topicCol string, onlyTopicCreation bool) string {
 	return cond
 }
 
-func (r *ActivityRepository) FeedPage(q FeedQuery) ([]FeedRow, error) {
+func feedConds(q FeedQuery) ([]string, []any) {
 	conds := []string{"fa.type IN ?"}
 	args := []any{q.Types}
+	if q.ActorIDs != nil {
+		conds = append(conds, "fa.user_id IN ?")
+		args = append(args, q.ActorIDs)
+	}
 	if !q.IncludeNSFW {
 		conds = append(conds, "NOT fa.is_nsfw")
 	}
@@ -80,6 +85,11 @@ func (r *ActivityRepository) FeedPage(q FeedQuery) ([]FeedRow, error) {
 	if c := sectionCond(q.TopicSections, "fa.source_id", true); c != "" {
 		conds = append(conds, c)
 	}
+	return conds, args
+}
+
+func (r *ActivityRepository) FeedPage(q FeedQuery) ([]FeedRow, error) {
+	conds, args := feedConds(q)
 	if q.After != nil {
 		conds = append(conds, "(fa.created, fa.type, fa.source_id) < (?, ?, ?)")
 		args = append(args, q.After.Created, q.After.TypeStr, q.After.SourceID)

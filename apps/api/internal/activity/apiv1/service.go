@@ -32,11 +32,12 @@ type Users interface {
 }
 
 type Service struct {
-	repo    *repository.ActivityRepository
-	catalog Catalog
-	users   Users
-	convert *content.Converter
-	cdn     string
+	repo      *repository.ActivityRepository
+	catalog   Catalog
+	users     Users
+	followees Followees
+	convert   *content.Converter
+	cdn       string
 
 	mu     sync.Mutex
 	works  map[workKey]workEntry
@@ -54,8 +55,8 @@ type workEntry struct {
 	expires time.Time
 }
 
-func New(repo *repository.ActivityRepository, catalog Catalog, users Users, convert *content.Converter, cdn string) *Service {
-	return &Service{repo: repo, catalog: catalog, users: users, convert: convert, cdn: cdn, works: map[workKey]workEntry{}}
+func New(repo *repository.ActivityRepository, catalog Catalog, users Users, followees Followees, convert *content.Converter, cdn string) *Service {
+	return &Service{repo: repo, catalog: catalog, users: users, followees: followees, convert: convert, cdn: cdn, works: map[workKey]workEntry{}}
 }
 
 func (s *Service) ready() *problem.Problem {
@@ -157,6 +158,7 @@ func Register(s *Service) func(huma.API) {
 				503: "SERVICE_UNAVAILABLE when the account service or catalog is unreachable.",
 			}),
 		}), s.listActivities)
+		registerFollowing(api, s)
 	}
 }
 
