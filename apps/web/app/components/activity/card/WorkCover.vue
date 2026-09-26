@@ -6,6 +6,12 @@ const props = defineProps<{ work: WorkRef }>()
 const nameOf = useWorkName()
 const { isBlurred } = useContentStance()
 const masked = computed(() => props.work.is_nsfw && isBlurred.value)
+
+const failedSrc = ref('')
+const cover = computed(() => {
+  const url = props.work.cover?.url
+  return url !== failedSrc.value ? url : ''
+})
 </script>
 
 <template>
@@ -13,12 +19,22 @@ const masked = computed(() => props.work.is_nsfw && isBlurred.value)
     <div
       class="bg-default-100 aspect-[3/4] w-20 overflow-hidden rounded-lg sm:w-24"
     >
-      <img
-        v-if="work.cover"
-        :src="work.cover.url"
+      <KunImage
+        v-if="cover"
+        :src="cover"
         :alt="nameOf(work)"
         loading="lazy"
-        :class="cn('h-full w-full object-cover', masked && 'blur-xl')"
+        aspect-ratio="3 / 4"
+        :image-class-name="masked ? 'blur-xl' : undefined"
+        @error="failedSrc = cover"
+      />
+      <KunImage
+        v-else
+        src="/galgame-no-cover.webp"
+        :alt="nameOf(work)"
+        loading="lazy"
+        aspect-ratio="3 / 4"
+        object-fit="contain"
       />
     </div>
   </KunLink>

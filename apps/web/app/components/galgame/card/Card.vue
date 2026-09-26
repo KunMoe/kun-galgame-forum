@@ -134,26 +134,12 @@ const cards = computed(() =>
           class-name="p-0 h-full"
         >
           <div class="relative overflow-hidden">
-            <KunNsfwMask
-              v-if="card.cover"
-              :active="isBlurred && !card.isSfw"
-              class-name=""
-            >
-              <KunImage
-                :src="card.cover"
-                loading="lazy"
-                :alt="card.galgame.name"
-                :thumbhash="card.thumbhash"
-                aspect-ratio="5 / 7"
-              />
-            </KunNsfwMask>
-            <div
-              v-else
-              class="bg-default-100 text-default-400 flex items-center justify-center"
-              style="aspect-ratio: 5 / 7"
-            >
-              <KunIcon name="lucide:image-off" class="size-6" />
-            </div>
+            <GalgameCardCover
+              :src="card.cover"
+              :alt="card.galgame.name"
+              :thumbhash="card.thumbhash"
+              :masked="isBlurred && !card.isSfw"
+            />
 
             <div
               v-if="showPlatform && card.galgame.platform.length"
