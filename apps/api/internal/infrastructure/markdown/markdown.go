@@ -49,7 +49,7 @@ func ParseContentImageRef(dest string) (hash, variant string, ok bool) {
 
 var contentImageScanRe = regexp.MustCompile(`/image/[0-9a-f]{64}`)
 
-func ExtractContentImages(content string, limit int) []string {
+func ExtractCoverImages(content string, limit int) []string {
 	if limit <= 0 {
 		return nil
 	}
@@ -60,6 +60,9 @@ func ExtractContentImages(content string, limit int) []string {
 			continue
 		}
 		seen[tk] = struct{}{}
+		if IsSticker(strings.TrimPrefix(tk, "/image/")) {
+			continue
+		}
 		out = append(out, tk)
 		if len(out) >= limit {
 			break

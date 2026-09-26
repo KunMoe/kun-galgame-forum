@@ -61,7 +61,7 @@ type TopicSummary struct {
 	State         string         `json:"state" enum:"published,hidden" maxLength:"9" doc:"Lifecycle state. A hidden topic is visible only to its author and to staff."`
 	Category      string         `json:"category" enum:"galgame,technique,others" maxLength:"9" doc:"Topic category."`
 	Sections      []SectionSlug  `json:"sections" maxItems:"3" doc:"Section slugs, in stored order. Empty array if none. Hyphenated URL segments of /section/{key}."`
-	CoverImages   []repr.Image   `json:"cover_images" maxItems:"9" doc:"Cover images in stored token order. Tokens that do not parse are skipped. Empty array if none."`
+	CoverImages   []repr.Image   `json:"cover_images" maxItems:"9" doc:"Cover images in stored token order. Tokens that do not parse are skipped, and so are stickers: a sticker is never a cover. Empty array if none."`
 	Author        repr.UserRef   `json:"author" doc:"Topic author."`
 	ViewCount     int            `json:"view_count" minimum:"0" doc:"Lifetime view count."`
 	LikeCount     int            `json:"like_count" minimum:"0" doc:"Like count."`
@@ -104,6 +104,7 @@ func topicLifecycle(status int, hiddenBy string) (string, *string, error) {
 }
 
 func coverImagesWithMeta(cdn string, tokens model.ImageTokens, metaByHash map[string]imageclient.ImageMeta) []repr.Image {
+	tokens = withoutStickers(tokens)
 	if len(tokens) == 0 {
 		return []repr.Image{}
 	}
@@ -173,6 +174,7 @@ func toMiniAppKinds(ss []string) []MiniAppKind {
 }
 
 func coverImages(cdn string, tokens model.ImageTokens) []repr.Image {
+	tokens = withoutStickers(tokens)
 	if len(tokens) == 0 {
 		return []repr.Image{}
 	}
@@ -188,6 +190,17 @@ func coverImages(cdn string, tokens model.ImageTokens) []repr.Image {
 			continue
 		}
 		out = append(out, *img)
+	}
+	return out
+}
+
+func withoutStickers(tokens model.ImageTokens) model.ImageTokens {
+	out := make(model.ImageTokens, 0, len(tokens))
+	for _, tok := range tokens {
+		if hash, _, ok := markdown.ParseContentImageRef(tok); ok && markdown.IsSticker(hash) {
+			continue
+		}
+		out = append(out, tok)
 	}
 	return out
 }

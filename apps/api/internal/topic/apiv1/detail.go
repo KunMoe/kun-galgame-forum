@@ -25,7 +25,7 @@ type Topic struct {
 	AccessScope       string                  `json:"access_scope" enum:"public,login,role,users" maxLength:"6" doc:"Who may read the topic: everyone, signed-in users, holders of granted roles, or granted users. The author and staff always may."`
 	Category          string                  `json:"category" enum:"galgame,technique,others" maxLength:"9" doc:"Topic category."`
 	Sections          []SectionSlug           `json:"sections" maxItems:"3" doc:"Section slugs, in stored order. Empty array if none. Hyphenated URL segments of /section/{key}."`
-	CoverImages       []repr.Image            `json:"cover_images" maxItems:"9" doc:"Cover images in stored token order. Tokens that do not parse are skipped. Empty array if none."`
+	CoverImages       []repr.Image            `json:"cover_images" maxItems:"9" doc:"Cover images in stored token order. Tokens that do not parse are skipped, and so are stickers: a sticker is never a cover. Empty array if none."`
 	IsNSFW            bool                    `json:"is_nsfw" doc:"Whether the author marked the topic NSFW. The body is returned either way; a client that hides NSFW content gates it."`
 	Author            repr.UserRef            `json:"author" doc:"Topic author."`
 	AuthorMoemoepoint int                     `json:"author_moemoepoint" minimum:"-2147483648" doc:"The author's moemoepoint balance as this forum last cached it. It can be negative."`

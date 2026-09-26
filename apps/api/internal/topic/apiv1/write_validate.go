@@ -103,7 +103,7 @@ func coversFromHashes(hashes []ImageHash) model.ImageTokens {
 }
 
 func deriveCovers(body string) model.ImageTokens {
-	tokens := markdown.ExtractContentImages(body, 9)
+	tokens := markdown.ExtractCoverImages(body, 9)
 	if len(tokens) == 0 {
 		return model.ImageTokens{}
 	}

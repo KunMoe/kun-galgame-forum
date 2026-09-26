@@ -7573,6 +7573,8 @@ export interface components {
             alt: string;
             /** @description Image-service record of the picture, whose url is the full-size original. null for a picture hosted elsewhere. */
             image: components["schemas"]["Image"] | null;
+            /** @description Whether the picture is an official sticker, one of the images listStickerPacks returns, judged by its image-service hash and never by alt or url. Show a sticker inline at text size, not as a figure. Always false when image is null. */
+            is_sticker: boolean;
             /**
              * @description Type discriminant. Always image. (enum property replaced by openapi-typescript)
              * @enum {string}
@@ -11847,7 +11849,7 @@ export interface components {
             comment_count: number;
             /** @description Topic body as a node tree. */
             content: components["schemas"]["ContentDocument"];
-            /** @description Cover images in stored token order. Tokens that do not parse are skipped. Empty array if none. */
+            /** @description Cover images in stored token order. Tokens that do not parse are skipped, and so are stickers: a sticker is never a cover. Empty array if none. */
             cover_images: components["schemas"]["Image"][];
             /**
              * Format: date-time
@@ -11933,7 +11935,7 @@ export interface components {
             category: components["schemas"]["TopicCategory"];
             /** @description Topic body as Markdown source, stored as sent. A body of only whitespace is refused as TOO_SHORT. Free text; never use it as a decision input. */
             content_markdown: string;
-            /** @description Cover images by image-service hash, in display order. When absent, the covers are the first nine distinct /image/{hash} tokens of the body in body order; an empty array means no covers. */
+            /** @description Cover images by image-service hash, in display order. When absent, the covers are the first nine distinct /image/{hash} tokens of the body in body order, stickers skipped; an empty array means no covers. */
             cover_image_hashes?: string[];
             /** @description Whether the topic is NSFW. */
             is_nsfw: boolean;
@@ -12130,7 +12132,7 @@ export interface components {
             category: components["schemas"]["TopicCategory"];
             /** @description Topic body as the stored Markdown source. Free text; never use it as a decision input. */
             content_markdown: string;
-            /** @description Cover images in stored token order. Tokens that do not parse are skipped. Empty array if none. */
+            /** @description Cover images in stored token order. Tokens that do not parse are skipped, and so are stickers: a sticker is never a cover. Empty array if none. */
             cover_images: components["schemas"]["Image"][];
             /** @description Whether the topic is NSFW. */
             is_nsfw: boolean;
@@ -12174,7 +12176,7 @@ export interface components {
              * @description Comment count.
              */
             comment_count: number;
-            /** @description Cover images in stored token order. Tokens that do not parse are skipped. Empty array if none. */
+            /** @description Cover images in stored token order. Tokens that do not parse are skipped, and so are stickers: a sticker is never a cover. Empty array if none. */
             cover_images: components["schemas"]["Image"][];
             /**
              * Format: date-time

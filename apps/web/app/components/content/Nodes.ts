@@ -215,6 +215,9 @@ const renderImage = (node: ImageNode): Rendered => {
     decoding: 'async',
     'data-kun-lazy-image': 'true'
   }
+  if (node.is_sticker) {
+    props.class = 'kun-sticker'
+  }
   if (node.image) {
     if (node.image.width !== null) {
       props.width = node.image.width

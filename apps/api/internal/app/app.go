@@ -460,6 +460,12 @@ func New(cfg *config.Config) *App {
 	}
 	trustEnforce := enforce.NewService(db, trustRegistry, nil)
 
+	stickersV1 := stickerapiv1.New(stickerCli, imageMetaResolve(imageMeta), cfg.NextMoeAPI.ImageCDNBase)
+	var stickerPackRefresh func()
+	if stickerCli.Configured() {
+		stickerPackRefresh = stickersV1.Refresh
+	}
+
 	app := &App{
 		DB: db, Redis: rdb, Config: cfg, OAuthClient: oauthClient,
 		UserState:         userStateRepo,
@@ -499,7 +505,7 @@ func New(cfg *config.Config) *App {
 		TrustHandler:       trustHandler.NewTrustHandler(trustEnforce, cfg.Trust.CallbackSecret),
 		NewsV1:             newsapiv1.New(newsCli, uc, cfg.NextMoeAPI.ImageCDNBase),
 		ImagesV1:           imageapiv1.New(imgCli, catalogCli, db, cfg.NextMoeAPI.ImageCDNBase),
-		StickersV1:         stickerapiv1.New(stickerCli, imageMetaResolve(imageMeta), cfg.NextMoeAPI.ImageCDNBase),
+		StickersV1:         stickersV1,
 		Artifact:           artCli,
 		FileStorage:        fileStorageClient,
 		CronStop: cronPkg.Start(db, rdb, imgCli, cronPkg.Jobs{
@@ -512,6 +518,7 @@ func New(cfg *config.Config) *App {
 			DlsiteCampaignRefresh:      storeLinks.RefreshCampaign,
 			TopicMiniAppDeadlines:      lotteryDrawer.Run,
 			UserPurgeArchiveExpiry:     expirePurgeArchive(adminPurgeRepo),
+			StickerPackRefresh:         stickerPackRefresh,
 		}),
 		StoreLinkStop:       storeLinks.Start(),
 		CommunityNotifyStop: communitynotify.New(communityCli, messageRepository, anchorResolver, rdb).Start(),

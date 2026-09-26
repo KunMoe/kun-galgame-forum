@@ -35,6 +35,7 @@ type Jobs struct {
 	DlsiteCampaignRefresh      func()
 	TopicMiniAppDeadlines      func()
 	UserPurgeArchiveExpiry     func()
+	StickerPackRefresh         func()
 }
 
 func Start(
@@ -118,6 +119,10 @@ func Start(
 
 	if jobs.DlsiteCampaignRefresh != nil {
 		schedule(c, "*/10 * * * *", "dlsite 优惠券活动刷新", jobs.DlsiteCampaignRefresh)
+	}
+
+	if jobs.StickerPackRefresh != nil {
+		schedule(c, "5 * * * *", "表情包列表刷新", jobs.StickerPackRefresh)
 	}
 
 	c.Start()

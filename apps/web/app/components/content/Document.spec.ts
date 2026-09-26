@@ -66,7 +66,8 @@ describe('ContentDocument', () => {
                   height: 600,
                   thumbhash: 'thumb',
                   sexual: 'safe'
-                }
+                },
+                is_sticker: false
               }
             ]
           }

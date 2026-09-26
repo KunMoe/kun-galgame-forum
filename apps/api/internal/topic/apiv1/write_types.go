@@ -37,7 +37,7 @@ type TopicCreate struct {
 	Category         string            `json:"category" enum:"galgame,technique,others" maxLength:"9" doc:"Topic category."`
 	Sections         []SectionSlug     `json:"sections" minItems:"1" maxItems:"3" uniqueItems:"true" doc:"Section slugs. Each must belong to category: g- slugs to galgame, t- slugs to technique, o- slugs to others."`
 	IsNSFW           bool              `json:"is_nsfw" doc:"Whether the topic is NSFW."`
-	CoverImageHashes *[]ImageHash      `json:"cover_image_hashes,omitempty" maxItems:"9" uniqueItems:"true" doc:"Cover images by image-service hash, in display order. When absent, the covers are the first nine distinct /image/{hash} tokens of the body in body order; an empty array means no covers."`
+	CoverImageHashes *[]ImageHash      `json:"cover_image_hashes,omitempty" maxItems:"9" uniqueItems:"true" doc:"Cover images by image-service hash, in display order. When absent, the covers are the first nine distinct /image/{hash} tokens of the body in body order, stickers skipped; an empty array means no covers."`
 	AccessScope      string            `json:"access_scope" enum:"public,login,role,users" maxLength:"6" doc:"Who may read the topic: everyone, signed-in users, holders of granted roles, or granted users. The author and staff always may."`
 	AccessRoles      *[]AccessRole     `json:"access_roles,omitempty" minItems:"1" maxItems:"4" uniqueItems:"true" doc:"Roles granted to read the topic. Required when access_scope is role; must be absent otherwise."`
 	AccessUserIDs    *[]repr.DecimalID `json:"access_user_ids,omitempty" minItems:"1" maxItems:"50" uniqueItems:"true" doc:"Users granted to read the topic. Required when access_scope is users; must be absent otherwise. The author always reads their own topic and is dropped from the list, so a list of only the author leaves the topic readable by its author and staff alone."`
@@ -69,7 +69,7 @@ type TopicSource struct {
 	Category        string         `json:"category" enum:"galgame,technique,others" maxLength:"9" doc:"Topic category."`
 	Sections        []SectionSlug  `json:"sections" maxItems:"3" doc:"Section slugs, in stored order. Empty array if none. Hyphenated URL segments of /section/{key}."`
 	IsNSFW          bool           `json:"is_nsfw" doc:"Whether the topic is NSFW."`
-	CoverImages     []repr.Image   `json:"cover_images" maxItems:"9" doc:"Cover images in stored token order. Tokens that do not parse are skipped. Empty array if none."`
+	CoverImages     []repr.Image   `json:"cover_images" maxItems:"9" doc:"Cover images in stored token order. Tokens that do not parse are skipped, and so are stickers: a sticker is never a cover. Empty array if none."`
 	AccessScope     string         `json:"access_scope" enum:"public,login,role,users" maxLength:"6" doc:"Who may read the topic: everyone, signed-in users, holders of granted roles, or granted users. The author and staff always may."`
 	AccessGrants    AccessGrants   `json:"access_grants" doc:"The stored grants."`
 }
