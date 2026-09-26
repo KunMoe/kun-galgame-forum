@@ -59,7 +59,6 @@ const correctRate = (q: QuizSummary) =>
         >
           <span class="text-default-700 flex items-center gap-1">
             <KunAvatar
-              :disable-floating="true"
               :user="authorOf(quiz)"
               size="xs"
               :is-navigation="false"

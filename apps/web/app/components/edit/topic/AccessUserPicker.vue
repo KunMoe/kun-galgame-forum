@@ -134,7 +134,6 @@ const remove = (id: number) => {
             :user="{ id: chip.id, name: chip.name, avatar: chip.avatar }"
             size="xs"
             :is-navigation="false"
-            :disable-floating="true"
           />
         </template>
         {{ chip.name }}
@@ -165,12 +164,7 @@ const remove = (id: number) => {
         "
         @click="add(user)"
       >
-        <KunAvatar
-          :user="user"
-          size="xs"
-          :is-navigation="false"
-          :disable-floating="true"
-        />
+        <KunAvatar :user="user" size="xs" :is-navigation="false" />
         {{ user.name }}
       </button>
     </div>

@@ -42,7 +42,6 @@ const statusClasses = computed(() => {
             size="lg"
             :is-navigation="false"
             :user="{ id, name, avatar }"
-            :disable-floating="true"
           />
           <div
             class="absolute right-0 bottom-0 size-2 rounded-full"

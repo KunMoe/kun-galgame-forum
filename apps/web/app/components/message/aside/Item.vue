@@ -32,12 +32,7 @@ const preview = computed(() => {
     class-name="hover:bg-primary/20 flex cursor-pointer flex-nowrap gap-3 rounded-lg p-2 transition-colors hover:opacity-80"
     :to="`/message/user/${conversation.peer.id}`"
   >
-    <KunAvatar
-      :user="peerUser"
-      size="xl"
-      :disable-floating="true"
-      :is-navigation="false"
-    />
+    <KunAvatar :user="peerUser" size="xl" :is-navigation="false" />
     <div class="justify-space flex w-full flex-col">
       <div class="flex items-center justify-between">
         <span class="font-bold">{{ peerName }}</span>

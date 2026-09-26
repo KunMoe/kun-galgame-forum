@@ -56,10 +56,7 @@ const {
           class="flex flex-col justify-between gap-2"
         >
           <div class="flex items-center gap-3">
-            <KunUserChip
-              :disable-floating="true"
-              :user="toKunUser(vote.voter)"
-            />
+            <KunUserChip :user="toKunUser(vote.voter)" />
             <div class="text-default-500 text-sm">
               <KunTime :time="vote.created_at" type="datetime" show-year />
             </div>

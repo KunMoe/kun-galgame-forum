@@ -69,7 +69,6 @@ const sorted = computed(() =>
               :user="rating.user"
               size="sm"
               :is-navigation="false"
-              :disable-floating="true"
               class-name="min-w-0"
             />
             <span class="text-warning shrink-0 font-bold">

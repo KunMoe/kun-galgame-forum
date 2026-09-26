@@ -316,12 +316,7 @@ const correctRate = computed(() =>
             class="text-default-500 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm"
           >
             <span class="text-default-700 flex items-center gap-1">
-              <KunAvatar
-                :disable-floating="true"
-                :user="author"
-                size="xs"
-                :is-navigation="false"
-              />
+              <KunAvatar :user="author" size="xs" :is-navigation="false" />
               {{ author.name }}
             </span>
             <KunTime :time="state.created_at" />

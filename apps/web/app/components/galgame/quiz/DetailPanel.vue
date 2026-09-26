@@ -171,7 +171,6 @@ const formatSubmitted = (s: QuizSubmission): string => {
               >
                 <div class="flex items-center gap-2 text-sm">
                   <KunAvatar
-                    :disable-floating="true"
                     :user="toKunUser(rec.answerer)"
                     size="xs"
                     :is-navigation="false"

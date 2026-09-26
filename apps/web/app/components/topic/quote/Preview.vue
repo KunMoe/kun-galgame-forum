@@ -44,7 +44,7 @@ const author = computed(() =>
 
         <template v-else-if="preview.reply && author">
           <div class="mb-1.5 flex items-center gap-2">
-            <KunAvatar :user="author" size="sm" :disable-floating="true" />
+            <KunAvatar :user="author" size="sm" />
             <span class="text-default-800 truncate text-sm font-medium">
               {{ author.name }}
             </span>

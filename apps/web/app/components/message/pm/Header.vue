@@ -28,7 +28,7 @@ const user = computed(() =>
       <KunIcon name="lucide:chevron-left" />
     </KunButton>
 
-    <KunAvatar v-if="user" :disable-floating="true" :user="user" />
+    <KunAvatar v-if="user" :user="user" />
 
     <h2 class="relative flex items-center gap-2">
       <span>{{ title }}</span>

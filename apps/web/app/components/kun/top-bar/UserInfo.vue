@@ -212,7 +212,6 @@ const openLogout = () => {
           :user="{ id: account.id, name: account.name, avatar: account.avatar }"
           size="sm"
           :is-navigation="false"
-          :disable-floating="true"
         />
         <span class="flex min-w-0 flex-col items-start">
           <span class="max-w-40 truncate">{{ account.name }}</span>

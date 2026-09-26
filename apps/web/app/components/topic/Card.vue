@@ -31,12 +31,7 @@ const actionsCount = computed(
     />
 
     <div class="text-default-600 flex flex-wrap items-center gap-2 text-sm">
-      <KunAvatar
-        :disable-floating="true"
-        :user="author"
-        size="xs"
-        :is-navigation="false"
-      />
+      <KunAvatar :user="author" size="xs" :is-navigation="false" />
       <span>{{ author.name }}</span>
       <KunTime :time="topic.created_at" type="relative" />
 

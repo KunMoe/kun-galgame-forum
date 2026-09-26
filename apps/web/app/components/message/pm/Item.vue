@@ -69,11 +69,7 @@ const handleClick = (event: MouseEvent) => {
     </template>
 
     <template v-else>
-      <KunAvatar
-        :disable-floating="true"
-        :user="senderUser"
-        class="mb-auto"
-      />
+      <KunAvatar :user="senderUser" class="mb-auto" />
 
       <div
         class="relative max-w-[75%] rounded-lg border p-3 transition-colors"

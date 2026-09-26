@@ -72,12 +72,7 @@ const systemRating = (rating: GalgameRatingCard) => {
         </h2>
 
         <div class="text-default-700 flex items-center gap-1 text-sm">
-          <KunAvatar
-            :disable-floating="true"
-            :user="rating.user"
-            size="xs"
-            :is-navigation="false"
-          />
+          <KunAvatar :user="rating.user" size="xs" :is-navigation="false" />
           {{ rating.user.name }} - <KunTime :time="rating.created" />
         </div>
 

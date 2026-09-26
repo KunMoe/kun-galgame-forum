@@ -78,7 +78,6 @@ useIntersectionObserver(
           :is-navigation="false"
           size="original-sm"
           :user="kunUser"
-          :disable-floating="true"
         />
 
         <div class="min-w-0 flex-1">
@@ -178,7 +177,6 @@ useIntersectionObserver(
                 :is-navigation="false"
                 size="sm"
                 :user="kunUser"
-                :disable-floating="true"
               />
               <span class="truncate font-semibold">{{ displayName }}</span>
               <KunChip

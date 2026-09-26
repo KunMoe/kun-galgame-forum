@@ -87,7 +87,6 @@ const handleDeleteMessage = async () => {
 
     <div class="flex gap-2">
       <KunAvatar
-        :disable-floating="true"
         :user="actorUser"
         :is-navigation="Boolean(notification.actor.name)"
       />

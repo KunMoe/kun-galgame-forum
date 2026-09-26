@@ -128,7 +128,6 @@ onBeforeUnmount(() => {
     >
       <div class="flex min-h-0 flex-col items-center gap-3 overflow-hidden">
         <KunAvatar
-          :disable-floating="true"
           class-name="aspect-square h-auto w-full hover:scale-100"
           size="original"
           image-class-name="size-full rounded-lg"
@@ -178,7 +177,6 @@ onBeforeUnmount(() => {
         >
           <KunAvatar
             :user="user"
-            :disable-floating="true"
             :is-navigation="false"
             size="original"
             class-name="size-10 shrink-0"

@@ -25,7 +25,6 @@ const role = computed(() =>
   <KunCard :href="`/user/${user.id}`" :is-hoverable="true" padding="none">
     <div class="flex w-full gap-3 p-3">
       <KunAvatar
-        :disable-floating="true"
         :user="avatarUser"
         :is-navigation="false"
         size="lg"
