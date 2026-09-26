@@ -4,7 +4,6 @@ import type { FollowingActivityQuery } from '#shared/utils/api/schemas'
 export const useFollowingUnseen = () => {
   const api = useApiClient()
   const hasUnseen = useState('following-activity-unseen', () => false)
-  const lastMarked = useState<string>('following-activity-marked', () => '')
 
   const check = async (query: FollowingActivityQuery) => {
     const result = await settle(
@@ -13,17 +12,9 @@ export const useFollowingUnseen = () => {
     hasUnseen.value = result.ok && result.data.unseen_count > 0
   }
 
-  const markSeen = async (seenAt: string) => {
+  const markSeen = async () => {
     hasUnseen.value = false
-    if (seenAt <= lastMarked.value) {
-      return
-    }
-    lastMarked.value = seenAt
-    await settle(
-      api.PUT('/me/following-activities/read-marker', {
-        body: { seen_at: seenAt }
-      })
-    )
+    await settle(api.PUT('/me/following-activities/read-marker', { body: {} }))
   }
 
   return { hasUnseen, check, markSeen }

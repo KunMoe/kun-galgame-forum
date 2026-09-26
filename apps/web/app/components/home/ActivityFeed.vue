@@ -64,10 +64,10 @@ const { items, status, problem, hasMore, loadingMore, loadMore } =
   )
 
 watch(
-  () => (props.following && status.value === 'success' ? items.value[0] : null),
-  (newest) => {
-    if (newest && import.meta.client) {
-      markSeen(newest.occurred_at)
+  () => props.following && status.value === 'success',
+  (loaded) => {
+    if (loaded && import.meta.client) {
+      markSeen()
     }
   },
   { immediate: true }
