@@ -23,7 +23,8 @@ const ALL_TYPES = {
   lottery_code_expired: true,
   poll_closed: true,
   user_followed: true,
-  followee_topic_created: true
+  followee_topic_created: true,
+  followee_activity_published: true
 } as const satisfies Record<NotificationType, true>
 
 const notification = (over: Partial<Notification> = {}): Notification => ({
@@ -100,6 +101,30 @@ describe('getMessageI18n', () => {
         notification({ notification_type: 'user_followed', actor_count: 3 })
       )
     ).toBe(' 等 3 人关注了您!')
+  })
+
+  it('folds followee_activity_published by item_count', () => {
+    expect(
+      getMessageI18n(
+        notification({ notification_type: 'followee_activity_published' })
+      )
+    ).toBe(' 发布了新内容!')
+    expect(
+      getMessageI18n(
+        notification({
+          notification_type: 'followee_activity_published',
+          item_count: 4
+        })
+      )
+    ).toBe(' 发布了 4 个新内容')
+    expect(
+      getMessageI18n(
+        notification({
+          notification_type: 'followee_activity_published',
+          item_count: 100
+        })
+      )
+    ).toBe(' 发布了 100+ 个新内容')
   })
 
   it('folds followed_thread_activity by actor_count and item_count', () => {

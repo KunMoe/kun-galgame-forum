@@ -20,7 +20,8 @@ const messageTemplates: Record<NotificationType, string> = {
   lottery_code_expired: ' 的抽奖兑换码已过领取期限',
   poll_closed: ' 的投票已经截止',
   user_followed: ' 关注了您!',
-  followee_topic_created: ' 发布了新话题!'
+  followee_topic_created: ' 发布了新话题!',
+  followee_activity_published: ' 发布了新内容!'
 }
 
 export const getMessageI18n = (notification: Notification) => {
@@ -41,6 +42,14 @@ export const getMessageI18n = (notification: Notification) => {
     if (notification.notification_type === 'user_followed') {
       return ` 等 ${notification.actor_count} 人关注了您!`
     }
+  }
+  if (
+    notification.notification_type === 'followee_activity_published' &&
+    notification.item_count > 1
+  ) {
+    const count =
+      notification.item_count >= 100 ? '100+' : notification.item_count
+    return ` 发布了 ${count} 个新内容`
   }
   if (
     notification.notification_type === 'followed_thread_activity' &&

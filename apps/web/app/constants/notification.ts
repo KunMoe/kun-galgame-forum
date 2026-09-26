@@ -36,7 +36,7 @@ export const notificationCategoryGroups: NotificationCategoryGroup[] = [
     stream: 'local',
     items: [
       { key: 'user_followed', label: '被关注' },
-      { key: 'followee_topic_created', label: '关注的人发布新话题' }
+      { key: 'followee_activity_published', label: '关注的人有新发布' }
     ]
   },
   {
