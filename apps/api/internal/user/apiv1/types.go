@@ -38,9 +38,15 @@ type MoemoepointEntry struct {
 	ID        repr.DecimalID    `json:"id" doc:"Ledger entry id. JSON string of a decimal integer."`
 	Delta     int               `json:"delta" minimum:"-2147483648" doc:"Signed change. Negative when moemoepoint was deducted."`
 	Reason    MoemoepointReason `json:"reason" doc:"Ledger reason token."`
-	Ref       string            `json:"ref" maxLength:"80" doc:"Triggering entity reference as stored upstream. Empty string when none. Free text; never use it as a decision input."`
+	Ref       string            `json:"ref" maxLength:"80" doc:"Triggering entity reference as stored upstream. Empty string when none. Free text; never use it as a decision input. Ids in it can be stale (a work renumbered on 2026-09-23) or name a row that is not the subject (an upvote); use ref_path."`
+	RefPath   *string           `json:"ref_path" pattern:"^/" maxLength:"512" doc:"In-site web path of what the entry is about, resolved by the forum: a topic, a reply, a work, a quiz or a toolset. null when the entry names nothing this forum can link, came from another site or the account center, or its subject no longer exists. Link with this, never by parsing ref."`
 	CreatedAt repr.DateTime     `json:"created_at" doc:"When the ledger entry was written."`
 	Source    string            `json:"source" enum:"this_site,account_center,other_site" maxLength:"14" doc:"Who issued the entry: this_site, account_center (the OAuth account service itself, e.g. a rename charge or an admin adjustment), or other_site. Closed."`
+}
+
+type AccountPrices struct {
+	Object     string `json:"object" enum:"account_prices" maxLength:"14" doc:"Type discriminant. Always account_prices."`
+	RenameCost *int   `json:"rename_cost" minimum:"0" doc:"Moemoepoints the account center charges for a username change; 0 means renaming is free. null when the account center does not publish the price or cannot be reached; say that it costs moemoepoints without a number."`
 }
 
 type Preferences struct {

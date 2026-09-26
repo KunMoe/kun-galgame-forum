@@ -9,8 +9,6 @@ const (
 	RewardPRMerge        = 1
 
 	CostConsumeSection = 10
-	// Charged by the OAuth account center (infra setting auth.name_change_cost), not here.
-	CostChangeUsername = 17
 	CostUpvoteSender   = 10
 	RewardUpvoteOwner  = 5
 

@@ -306,6 +306,19 @@ func (c *Client) AdjustMoemoepoint(
 	return out, err
 }
 
+func (c *Client) PublicSettings(ctx context.Context) (map[string]any, error) {
+	var data struct {
+		Settings map[string]any `json:"settings"`
+	}
+	if err := c.do(ctx, "GET", c.cfg.BaseURL+"/settings", &data); err != nil {
+		return nil, err
+	}
+	if data.Settings == nil {
+		return map[string]any{}, nil
+	}
+	return data.Settings, nil
+}
+
 func (c *Client) GetMoemoepoint(ctx context.Context, userID int) (int, error) {
 	var out struct {
 		Balance int `json:"balance"`

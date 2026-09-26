@@ -4,6 +4,26 @@
  */
 
 export interface paths {
+    "/account-prices": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get account-center prices
+         * @description Returns prices the account center publishes for this site. rename_cost is null when the price is unpublished or the account center cannot be reached.
+         */
+        get: operations["getAccountPrices"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/activities": {
         parameters: {
             query?: never;
@@ -2063,7 +2083,7 @@ export interface paths {
         head?: never;
         /**
          * Update the caller's name or bio
-         * @description Changes the fields present in the body. At least one of name or bio is required.
+         * @description Changes the fields present in the body. At least one of name or bio is required. The rename price is at getAccountPrices.
          */
         patch: operations["patchMyProfile"];
         trace?: never;
@@ -5057,6 +5077,18 @@ export interface components {
             object: "account";
             /** @description Ranked roles this credential carries, lowest rank first. A Bearer request never carries moderator, admin or ren. Other account roles are not listed. */
             roles: components["schemas"]["SiteRole"][];
+        };
+        AccountPrices: {
+            /**
+             * @description Type discriminant. Always account_prices.
+             * @constant
+             */
+            object: "account_prices";
+            /**
+             * Format: int64
+             * @description Moemoepoints the account center charges for a username change; 0 means renaming is free. null when the account center does not publish the price or cannot be reached; say that it costs moemoepoints without a number.
+             */
+            rename_cost: number | null;
         };
         Activity: {
             /** @description What happened. It decides which of the detail blocks below is set: every block other than its own is null. */
@@ -8660,8 +8692,10 @@ export interface components {
             object: "moemoepoint_entry";
             /** @description Ledger reason token. */
             reason: string;
-            /** @description Triggering entity reference as stored upstream. Empty string when none. Free text; never use it as a decision input. */
+            /** @description Triggering entity reference as stored upstream. Empty string when none. Free text; never use it as a decision input. Ids in it can be stale (a work renumbered on 2026-09-23) or name a row that is not the subject (an upvote); use ref_path. */
             ref: string;
+            /** @description In-site web path of what the entry is about, resolved by the forum: a topic, a reply, a work, a quiz or a toolset. null when the entry names nothing this forum can link, came from another site or the account center, or its subject no longer exists. Link with this, never by parsing ref. */
+            ref_path: string | null;
             /** @description Who issued the entry: this_site, account_center (the OAuth account service itself, e.g. a rename charge or an admin adjustment), or other_site. Closed. */
             source: components["schemas"]["MoemoepointSource"];
         };
@@ -14348,6 +14382,35 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    getAccountPrices: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccountPrices"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     listActivities: {
         parameters: {
             query?: {

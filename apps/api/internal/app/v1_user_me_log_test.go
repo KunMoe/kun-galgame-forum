@@ -115,6 +115,12 @@ func TestV1MoemoepointSource(t *testing.T) {
 	if len(want) != 0 {
 		t.Fatalf("entries not seen: %v", want)
 	}
+	for _, it := range items {
+		m, _ := it.(map[string]any)
+		if m["ref_path"] != nil {
+			t.Errorf("entry %s ref_path %v, want null (default refs are not linkable)", strID(m["id"]), m["ref_path"])
+		}
+	}
 }
 
 func TestV1MoemoepointEncodeCursorShape(t *testing.T) {

@@ -1,11 +1,17 @@
 <script setup lang="ts">
 import { settle } from '#shared/utils/api/problem'
-import { KUN_MOEMOEPOINT } from '~/constants/moemoepoint'
 
 const api = useApiClient()
 const userStore = usePersistUserStore()
 
 const inputValue = ref('')
+const renameCost = useRenameCost()
+
+const renameCostText = computed(() => {
+  if (renameCost.value === null) return '改名需要消耗萌萌点。'
+  if (renameCost.value === 0) return '改名免费。'
+  return `改名需要 ${renameCost.value} 个萌萌点。`
+})
 
 const handleChangeUsername = async () => {
   const next = inputValue.value.trim()
@@ -39,8 +45,7 @@ const handleChangeUsername = async () => {
     <div>
       <span class="text-xl">更改用户名</span>
       <p class="text-default-500 text-sm">
-        用户名为 1~17 位任意字符, 全局唯一。改名需要
-        {{ KUN_MOEMOEPOINT.changeUsername }} 个萌萌点。当前:
+        用户名为 1~17 位任意字符, 全局唯一。{{ renameCostText }}当前:
         {{ userStore.name }}
       </p>
     </div>

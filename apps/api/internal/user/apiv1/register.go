@@ -3,6 +3,8 @@ package apiv1
 import (
 	"context"
 	"net/http"
+	"sync"
+	"time"
 
 	adminService "kun-galgame-api/internal/admin/service"
 	v1 "kun-galgame-api/internal/apiv1"
@@ -28,6 +30,7 @@ type Users struct {
 	oauth       *oauth.Client
 	accounts    *userclient.Client
 	content     *repository.UserContentRepository
+	paths       *repository.MoemoepointPathRepository
 	works       *workrepr.Hydrator
 	resources   *resourceapiv1.Service
 	community   *communityclient.Client
@@ -38,6 +41,10 @@ type Users struct {
 	state       *repository.StateRepository
 	purge       *adminService.PurgeService
 	cdn         string
+
+	pricesMu    sync.Mutex
+	pricesCost  *int
+	pricesUntil time.Time
 }
 
 type Deps struct {
@@ -46,6 +53,7 @@ type Deps struct {
 	OAuth       *oauth.Client
 	Accounts    *userclient.Client
 	Content     *repository.UserContentRepository
+	Paths       *repository.MoemoepointPathRepository
 	Works       *workrepr.Hydrator
 	Resources   *resourceapiv1.Service
 	Community   *communityclient.Client
@@ -65,6 +73,7 @@ func New(d Deps) *Users {
 		oauth:       d.OAuth,
 		accounts:    d.Accounts,
 		content:     d.Content,
+		paths:       d.Paths,
 		works:       d.Works,
 		resources:   d.Resources,
 		community:   d.Community,
@@ -244,12 +253,23 @@ func Register(u *Users) func(huma.API) {
 			}),
 		}), u.getUser)
 
+		huma.Register(api, v1.Public(huma.Operation{
+			OperationID: "getAccountPrices",
+			Method:      http.MethodGet,
+			Path:        "/account-prices",
+			Summary:     "Get account-center prices",
+			Description: "Returns prices the account center publishes for this site. " +
+				"rename_cost is null when the price is unpublished or the account center cannot be reached.",
+			Tags: []string{"users"},
+		}), u.getAccountPrices)
+
 		huma.Register(api, v1.Required(huma.Operation{
 			OperationID: "patchMyProfile",
 			Method:      http.MethodPatch,
 			Path:        "/me/profile",
 			Summary:     "Update the caller's name or bio",
-			Description: "Changes the fields present in the body. At least one of name or bio is required.",
+			Description: "Changes the fields present in the body. At least one of name or bio is required. " +
+				"The rename price is at getAccountPrices.",
 			Tags:        []string{"users"},
 			Middlewares: huma.Middlewares{withUpstream},
 			Responses: problemResponses(map[int]string{

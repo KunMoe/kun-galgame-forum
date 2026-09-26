@@ -103,6 +103,30 @@
         ],
         "type": "object"
       },
+      "AccountPrices": {
+        "properties": {
+          "object": {
+            "const": "account_prices",
+            "description": "Type discriminant. Always account_prices.",
+            "maxLength": 14,
+            "type": "string"
+          },
+          "rename_cost": {
+            "description": "Moemoepoints the account center charges for a username change; 0 means renaming is free. null when the account center does not publish the price or cannot be reached; say that it costs moemoepoints without a number.",
+            "format": "int64",
+            "minimum": 0,
+            "type": [
+              "integer",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "object",
+          "rename_cost"
+        ],
+        "type": "object"
+      },
       "Activity": {
         "properties": {
           "activity_type": {
@@ -9859,9 +9883,18 @@
             "x-vocabulary-closed": false
           },
           "ref": {
-            "description": "Triggering entity reference as stored upstream. Empty string when none. Free text; never use it as a decision input.",
+            "description": "Triggering entity reference as stored upstream. Empty string when none. Free text; never use it as a decision input. Ids in it can be stale (a work renumbered on 2026-09-23) or name a row that is not the subject (an upvote); use ref_path.",
             "maxLength": 80,
             "type": "string"
+          },
+          "ref_path": {
+            "description": "In-site web path of what the entry is about, resolved by the forum: a topic, a reply, a work, a quiz or a toolset. null when the entry names nothing this forum can link, came from another site or the account center, or its subject no longer exists. Link with this, never by parsing ref.",
+            "maxLength": 512,
+            "pattern": "^/",
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "source": {
             "$ref": "#/components/schemas/MoemoepointSource",
@@ -9874,6 +9907,7 @@
           "delta",
           "reason",
           "ref",
+          "ref_path",
           "created_at",
           "source"
         ],
@@ -24969,6 +25003,38 @@
   },
   "openapi": "3.1.0",
   "paths": {
+    "/account-prices": {
+      "get": {
+        "description": "Returns prices the account center publishes for this site. rename_cost is null when the price is unpublished or the account center cannot be reached.",
+        "operationId": "getAccountPrices",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountPrices"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Get account-center prices",
+        "tags": [
+          "users"
+        ]
+      }
+    },
     "/activities": {
       "get": {
         "description": "The site's activity stream, newest first: topics, replies, comments, upvotes, best answers, works and their resources, ratings, edits and quizzes, toolsets, websites, todos and update logs. occurred_desc sorts by occurred_at with ties broken on kind and subject; bumped_desc lists topics by bump time and is allowed only when activity_types is exactly topic_creation. An activity whose actor is banned, or whose work catalog does not show under include_nsfw, is left out, so a page can be short; only an absent next_cursor means the end. The cursor is bound to the sort and to every filter.",
@@ -40725,7 +40791,7 @@
     },
     "/me/profile": {
       "patch": {
-        "description": "Changes the fields present in the body. At least one of name or bio is required.",
+        "description": "Changes the fields present in the body. At least one of name or bio is required. The rename price is at getAccountPrices.",
         "operationId": "patchMyProfile",
         "requestBody": {
           "content": {

@@ -11,7 +11,6 @@ export const KUN_MOEMOEPOINT = {
   reply: 1,
   prMerge: 1,
   consumeSection: 10,
-  changeUsername: 17,
   upvoteSender: 10,
   upvoteOwner: 5,
   ratingHigh: 10,

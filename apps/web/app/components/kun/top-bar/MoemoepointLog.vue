@@ -74,34 +74,13 @@ const behaviorLabel = (entry: MoemoepointEntry): string => {
   return reasonMeta(entry.reason).label
 }
 
-const REF_LINK_BASE: Record<string, string> = {
-  topic: '/topic',
-  topic_upvote: '/topic',
-  galgame: '/galgame',
-  galgame_pr: '/galgame',
-  galgame_quiz: '/galgame-quiz',
-  toolset: '/toolset'
-}
-
-const refHref = (entry: MoemoepointEntry): string => {
-  if (entry.source !== 'this_site') return ''
-  const base = REF_LINK_BASE[refKindOf(entry.ref)]
-  const id = entry.ref.split(':')[1]
-  return base && id ? `${base}/${id}` : ''
-}
-
-const refId = (refValue: string): string => {
-  const id = refValue.split(':')[1]
-  return id ? `#${id}` : ''
-}
-
 const metaSegments = (
   entry: MoemoepointEntry
 ): { text: string; href?: string }[] => {
   const segments: { text: string; href?: string }[] = []
   if (entry.source === 'account_center') segments.push({ text: '账号中心' })
-  const id = refId(entry.ref)
-  if (id) segments.push({ text: id, href: refHref(entry) || undefined })
+  const id = (entry.ref_path ?? entry.ref).match(/\d+/)?.[0]
+  if (id) segments.push({ text: `#${id}`, href: entry.ref_path ?? undefined })
   segments.push({ text: formatTimeDifference(entry.created_at) })
   return segments
 }

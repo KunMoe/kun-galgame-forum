@@ -52,8 +52,10 @@ func (a *App) newUserV1() *userapiv1.Users {
 		state = a.UserState
 	}
 	var content *repository.UserContentRepository
+	var paths *repository.MoemoepointPathRepository
 	if a.DB != nil {
 		content = repository.NewUserContentRepository(a.DB)
+		paths = repository.NewMoemoepointPathRepository(a.DB)
 	}
 	var works *workrepr.Hydrator
 	if a.DB != nil && a.ResourceCatalog != nil {
@@ -65,6 +67,7 @@ func (a *App) newUserV1() *userapiv1.Users {
 		OAuth:       oauthClient,
 		Accounts:    a.UserClient,
 		Content:     content,
+		Paths:       paths,
 		Works:       works,
 		Resources:   a.newGalgameResourceV1(),
 		Community:   a.Community,

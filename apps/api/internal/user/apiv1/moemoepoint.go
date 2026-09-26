@@ -72,6 +72,9 @@ func (s *Users) listMoemoepointEntries(ctx context.Context, in *listMoemoepointE
 		}
 		items = append(items, entry)
 	}
+	if err := s.attachMoemoepointPaths(items, page.Items); err != nil {
+		return nil, problem.Internal(err)
+	}
 	var next *string
 	if page.HasMore && len(page.Items) > 0 {
 		last := page.Items[len(page.Items)-1]

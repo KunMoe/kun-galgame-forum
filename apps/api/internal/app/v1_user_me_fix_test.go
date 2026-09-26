@@ -38,6 +38,9 @@ type meFix struct {
 	creatorPost  atomic.Int32
 	creatorState atomic.Value
 	logFail      atomic.Bool
+	moeLog       atomic.Value
+	settings     atomic.Value
+	settingsHTTP atomic.Int32
 	searchFail   atomic.Bool
 	searchRefuse atomic.Bool
 	avatarFail   atomic.Bool
@@ -110,6 +113,9 @@ func (f *meFix) installUpstream() {
 		before, _ := strconv.Atoi(r.URL.Query().Get("before_id"))
 		reason := r.URL.Query().Get("reason")
 		items := fakeMoeLog()
+		if v, ok := f.moeLog.Load().([]map[string]any); ok {
+			items = v
+		}
 		filtered := make([]map[string]any, 0, len(items))
 		for _, it := range items {
 			if reason != "" && it["reason"] != reason {
@@ -201,6 +207,19 @@ func (f *meFix) installUpstream() {
 		}
 		writeHouse(w, 200, 0, map[string]any{"doc": map[string]any{"ok": true}, "version": 5, "updated_at": "2026-09-22T08:32:00Z"})
 	})
+	f.mux.HandleFunc("GET /settings", func(w http.ResponseWriter, _ *http.Request) {
+		if status := int(f.settingsHTTP.Load()); status != 0 {
+			w.WriteHeader(status)
+			return
+		}
+		settings := map[string]any{}
+		if v, ok := f.settings.Load().(map[string]any); ok && v != nil {
+			settings = v
+		}
+		writeHouse(w, 200, 0, map[string]any{
+			"site_id": nil, "etag": "x", "settings": settings,
+		})
+	})
 	f.mux.HandleFunc("GET /creator/applications/me", func(w http.ResponseWriter, _ *http.Request) {
 		state, _ := f.creatorState.Load().(string)
 		if state == "" {
@@ -233,6 +252,21 @@ func fakeCreatorApp(state string) map[string]any {
 	return map[string]any{
 		"id": 9, "user_id": w3UserAlice, "source": "forum", "status": state,
 		"message": "please", "decline_reason": "", "created_at": "2026-09-01T00:00:00Z",
+	}
+}
+
+func (f *meFix) setMoeLog(items []map[string]any) {
+	f.moeLog.Store(items)
+}
+
+func (f *meFix) setSettings(settings map[string]any) {
+	f.settings.Store(settings)
+}
+
+func moeLogItem(id int, ref, sourceApp, created string) map[string]any {
+	return map[string]any{
+		"id": id, "delta": 1, "reason": "liked", "source_app": sourceApp,
+		"ref": ref, "created_at": created,
 	}
 }
 
