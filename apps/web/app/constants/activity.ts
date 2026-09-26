@@ -209,7 +209,7 @@ export const KUN_FEED_KIND_GROUPS: { label: string; kinds: KunFeedKind[] }[] = [
 // A tab reads either this site's own activity feed or an outside face. An
 // activity tab is defined by its `kinds`; a news tab has none, because its
 // content comes from the partner index rather than from feed_activity.
-export type KunFeedSource = 'activity' | 'news'
+export type KunFeedSource = 'activity' | 'news' | 'following'
 
 export interface KunFeedTab {
   id: string
@@ -221,6 +221,9 @@ export interface KunFeedTab {
 
 export const isNewsFeedTab = (tab?: KunFeedTab): boolean =>
   tab?.source === 'news'
+
+export const isFollowingFeedTab = (tab?: KunFeedTab): boolean =>
+  tab?.source === 'following'
 
 const KUN_ALL_TAB_KINDS = [
   'TOPIC_NORMAL',
@@ -242,7 +245,13 @@ const KUN_ALL_TAB_KINDS = [
   'UPDATE_LOG_CREATION'
 ]
 
-export const KUN_FEED_TABS_VERSION = 7
+const KUN_FOLLOWING_TAB_KINDS = [
+  ...KUN_FEED_KIND_GROUPS.flatMap((group) => group.kinds.map((k) => k.value)),
+  'GALGAME_RESOURCE_COMMENT_CREATION',
+  'GALGAME_QUIZ_COMMENT_CREATION'
+]
+
+export const KUN_FEED_TABS_VERSION = 8
 
 export const KUN_DEFAULT_FEED_TABS: KunFeedTab[] = [
   {
@@ -250,6 +259,13 @@ export const KUN_DEFAULT_FEED_TABS: KunFeedTab[] = [
     name: '话题',
     icon: 'icon-park-outline:topic',
     kinds: ['TOPIC_NORMAL']
+  },
+  {
+    id: 'following',
+    name: '关注',
+    icon: 'lucide:user-round-check',
+    kinds: [...KUN_FOLLOWING_TAB_KINDS],
+    source: 'following'
   },
   {
     id: 'galgame',
@@ -303,3 +319,20 @@ export const KUN_DEFAULT_FEED_TABS: KunFeedTab[] = [
     kinds: ['TODO_CREATION', 'UPDATE_LOG_CREATION']
   }
 ]
+
+export const upgradeFeedTabs = (
+  tabs: KunFeedTab[],
+  version: number
+): KunFeedTab[] => {
+  if (version < 7) {
+    return structuredClone(KUN_DEFAULT_FEED_TABS)
+  }
+  const have = new Set(tabs.map((t) => t.id))
+  const out = [...tabs]
+  KUN_DEFAULT_FEED_TABS.forEach((tab, i) => {
+    if (!have.has(tab.id)) {
+      out.splice(Math.min(i, out.length), 0, structuredClone(tab))
+    }
+  })
+  return out
+}
