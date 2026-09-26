@@ -173,7 +173,9 @@ const handleReset = async () => {
     <div class="flex max-h-[82dvh] flex-col gap-3">
       <header class="flex flex-wrap items-center gap-2">
         <h2 class="text-xl font-bold">权限调整</h2>
-        <KunUserChip :user="user" size="sm" />
+        <UserHoverCard :user-id="user.id">
+          <KunUserChip :user="user" size="sm" />
+        </UserHoverCard>
       </header>
 
       <div class="flex flex-wrap items-center gap-2 text-sm">

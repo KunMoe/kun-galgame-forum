@@ -189,7 +189,9 @@ const handleEditDone = () => {
       <div class="space-y-5 p-5">
         <div class="flex flex-wrap items-center justify-between gap-2">
           <div class="flex items-center gap-3">
-            <KunAvatar :user="author" size="lg" />
+            <UserHoverCard :user-id="author.id">
+              <KunAvatar :user="author" size="lg" />
+            </UserHoverCard>
             <div class="flex flex-col">
               <span class="font-medium">{{ author.name }}</span>
               <span class="text-default-500 text-xs">

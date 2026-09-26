@@ -15,13 +15,17 @@ const homepage = computed(() => props.group.source?.homepage_url || '')
       <span class="text-default-400 text-xs">
         {{ formatTimeDifference(group.items[0]!.published_at) }}
       </span>
-      <KunUserChip
+      <UserHoverCard
         v-if="group.source?.forum_account"
-        :user="toKunUser(group.source.forum_account)"
-        size="sm"
-        is-navigation
-        class-name="ml-auto"
-      />
+        :user-id="group.source.forum_account.id"
+      >
+        <KunUserChip
+          :user="toKunUser(group.source.forum_account)"
+          size="sm"
+          is-navigation
+          class-name="ml-auto"
+        />
+      </UserHoverCard>
       <KunLink
         v-else-if="homepage"
         :href="homepage"

@@ -89,11 +89,13 @@ const handleDeleteRating = async () => {
       <div class="flex flex-wrap gap-6">
         <div class="flex flex-1 flex-col gap-3">
           <div class="flex items-center gap-3">
-            <KunAvatar
-              class-name="size-15"
-              image-class-name="size-15"
-              :user="author"
-            />
+            <UserHoverCard :user-id="author.id">
+              <KunAvatar
+                class-name="size-15"
+                image-class-name="size-15"
+                :user="author"
+              />
+            </UserHoverCard>
 
             <div class="flex flex-col gap-1">
               <div class="flex items-center gap-3 text-lg font-bold sm:text-xl">

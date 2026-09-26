@@ -98,7 +98,9 @@ const advance = async (
           :key="winner.id"
           class="border-default-200 flex items-center gap-2 rounded-lg border py-1 pr-2 pl-1"
         >
-          <KunAvatar :user="toKunUser(winner.winner)" size="sm" />
+          <UserHoverCard :user-id="winner.winner.id">
+            <KunAvatar :user="toKunUser(winner.winner)" size="sm" />
+          </UserHoverCard>
           <span class="text-sm">{{ toKunUser(winner.winner).name }}</span>
           <KunChip
             v-if="winner.winning_floor"

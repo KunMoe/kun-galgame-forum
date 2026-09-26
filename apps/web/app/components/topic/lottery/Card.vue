@@ -572,7 +572,9 @@ const handleClaim = async () => {
           :key="entrant.id"
           class="flex items-center gap-2"
         >
-          <KunAvatar :user="toKunUser(entrant.entrant)" size="sm" />
+          <UserHoverCard :user-id="entrant.entrant.id">
+            <KunAvatar :user="toKunUser(entrant.entrant)" size="sm" />
+          </UserHoverCard>
           <span class="text-sm">{{ toKunUser(entrant.entrant).name }}</span>
         </div>
         <p v-if="!entrants.length" class="text-default-500 text-sm">

@@ -55,10 +55,12 @@ useIntersectionObserver(
         :key="activity.id"
         class="flex items-center gap-3"
       >
-        <KunAvatar
+        <UserHoverCard
           v-if="activity.performer"
-          :user="toKunUser(activity.performer)"
-        />
+          :user-id="activity.performer.id"
+        >
+          <KunAvatar :user="toKunUser(activity.performer)" />
+        </UserHoverCard>
 
         <div class="flex flex-col space-y-2">
           <KunLink

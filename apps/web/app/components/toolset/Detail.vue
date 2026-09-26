@@ -181,7 +181,9 @@ const handleResourceUpdated = (res: ToolsetResourceSummary) => {
         <div class="min-w-0 space-y-6 md:col-span-1">
           <div class="space-y-2">
             <h3 class="font-semibold">发布者</h3>
-            <KunUserChip :user="toKunUser(data.author)" />
+            <UserHoverCard :user-id="data.author.id">
+              <KunUserChip :user="toKunUser(data.author)" />
+            </UserHoverCard>
           </div>
 
           <div v-if="data.homepage_urls.length" class="space-y-2">

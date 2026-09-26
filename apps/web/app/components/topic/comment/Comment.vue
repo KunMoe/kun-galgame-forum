@@ -134,7 +134,9 @@ const handleSaveEdit = async (comment: Comment) => {
         :class="depth === 1 ? 'ml-9' : ''"
       >
         <div class="flex items-start space-x-3">
-          <KunAvatar :user="toKunUser(comment.author)" />
+          <UserHoverCard :user-id="comment.author.id">
+            <KunAvatar :user="toKunUser(comment.author)" />
+          </UserHoverCard>
 
           <div class="flex w-full flex-col space-y-1">
             <div class="text-sm">

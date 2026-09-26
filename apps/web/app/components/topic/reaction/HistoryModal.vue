@@ -69,7 +69,9 @@ const {
           class-name="hover:bg-default-100 flex items-center gap-3 rounded-lg p-2 transition-colors"
           @click="open = false"
         >
-          <KunAvatar :user="toKunUser(item.reactor)" size="sm" />
+          <UserHoverCard :user-id="item.reactor.id">
+            <KunAvatar :user="toKunUser(item.reactor)" size="sm" />
+          </UserHoverCard>
           <span class="text-foreground min-w-0 flex-1 truncate font-medium">
             {{ toKunUser(item.reactor).name }}
           </span>

@@ -146,14 +146,17 @@ const activeBucket = computed(() =>
               Galgame萌新入门(待补充)
             </KunLink>
             - by
-            <KunUserChip
-              size="sm"
-              :user="{
-                id: 19994,
-                name: '大伊兜子',
-                avatar: 'https://image.kungal.com/avatar/user_19994/avatar.webp'
-              }"
-            />
+            <UserHoverCard :user-id="19994">
+              <KunUserChip
+                size="sm"
+                :user="{
+                  id: 19994,
+                  name: '大伊兜子',
+                  avatar:
+                    'https://image.kungal.com/avatar/user_19994/avatar.webp'
+                }"
+              />
+            </UserHoverCard>
           </div>
 
           <div class="flex items-center gap-1">
@@ -161,14 +164,17 @@ const activeBucket = computed(() =>
               如何安装镜像文件(教程)
             </KunLink>
             - by
-            <KunUserChip
-              size="sm"
-              :user="{
-                id: 19994,
-                name: '大伊兜子',
-                avatar: 'https://image.kungal.com/avatar/user_19994/avatar.webp'
-              }"
-            />
+            <UserHoverCard :user-id="19994">
+              <KunUserChip
+                size="sm"
+                :user="{
+                  id: 19994,
+                  name: '大伊兜子',
+                  avatar:
+                    'https://image.kungal.com/avatar/user_19994/avatar.webp'
+                }"
+              />
+            </UserHoverCard>
           </div>
         </KunInfo>
       </template>

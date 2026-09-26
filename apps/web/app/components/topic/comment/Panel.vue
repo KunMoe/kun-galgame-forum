@@ -76,7 +76,9 @@ const handleClose = () => {
   <div class="w-full space-y-3 pt-2">
     <div class="flex items-center gap-1">
       {{ `${name} 评论` }}
-      <KunUserChip size="sm" :user="targetUser" />
+      <UserHoverCard :user-id="targetUser.id">
+        <KunUserChip size="sm" :user="targetUser" />
+      </UserHoverCard>
     </div>
 
     <KunTextarea

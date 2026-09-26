@@ -103,7 +103,9 @@ const handleEditDone = () => {
 <template>
   <div class="flex h-full flex-col gap-3" v-if="resource">
     <div class="flex items-center gap-2">
-      <KunAvatar :user="author" />
+      <UserHoverCard :user-id="author.id">
+        <KunAvatar :user="author" />
+      </UserHoverCard>
       <span>{{ author.name }}</span>
       <span class="text-default-500 text-sm">
         发布于 <KunTime :time="resource.created_at" />

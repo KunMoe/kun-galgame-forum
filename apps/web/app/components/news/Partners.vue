@@ -13,13 +13,17 @@ defineProps<{ sources: KunNewsSource[] }>()
       <KunDivider v-if="index" class="mb-4" />
 
       <div class="flex items-center gap-2">
-        <KunAvatar
+        <UserHoverCard
           v-if="source?.forum_account"
-          :user="toKunUser(source.forum_account)"
-          size="sm"
-          is-navigation
-          class-name="shrink-0"
-        />
+          :user-id="source.forum_account.id"
+        >
+          <KunAvatar
+            :user="toKunUser(source.forum_account)"
+            size="sm"
+            is-navigation
+            class-name="shrink-0"
+          />
+        </UserHoverCard>
         <KunLink
           v-if="source.homepage_url"
           :href="source.homepage_url"

@@ -199,7 +199,9 @@ const handlePurge = async () => {
             </KunChip>
           </div>
 
-          <KunUserChip :user="toKunUser(topic.author)" size="xs" />
+          <UserHoverCard :user-id="topic.author.id">
+            <KunUserChip :user="toKunUser(topic.author)" size="xs" />
+          </UserHoverCard>
 
           <div
             class="text-default-500 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm"
@@ -262,7 +264,9 @@ const handlePurge = async () => {
 
         <div class="space-y-1">
           <p class="font-medium break-words">{{ purgeTarget.title }}</p>
-          <KunUserChip :user="toKunUser(purgeTarget.author)" size="xs" />
+          <UserHoverCard :user-id="purgeTarget.author.id">
+            <KunUserChip :user="toKunUser(purgeTarget.author)" size="xs" />
+          </UserHoverCard>
         </div>
 
         <div class="flex flex-wrap gap-2 text-sm">

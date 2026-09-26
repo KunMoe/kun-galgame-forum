@@ -288,7 +288,9 @@ const handleSave = async () => {
 
     <div v-if="showing && download" class="space-y-2">
       <div class="flex items-center gap-2">
-        <KunAvatar :user="poster" />
+        <UserHoverCard :user-id="poster.id">
+          <KunAvatar :user="poster" />
+        </UserHoverCard>
         <span>{{ poster.name }}</span>
         <span class="text-default-500 text-sm">
           <KunTime :time="base.created_at" />

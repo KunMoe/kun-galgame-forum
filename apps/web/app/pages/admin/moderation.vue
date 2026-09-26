@@ -306,7 +306,9 @@ const actionOptions = TRUST_ACTIONS.map((a) => ({
             class="bg-default-100 space-y-1 rounded-lg p-2 text-sm"
           >
             <div class="text-default-400 flex flex-wrap gap-x-3 text-xs">
-              <KunUserChip :user="toKunUser(r.reporter)" size="xs" />
+              <UserHoverCard :user-id="r.reporter.id">
+                <KunUserChip :user="toKunUser(r.reporter)" size="xs" />
+              </UserHoverCard>
               <span
                 >理由：{{
                   r.report_reason?.display_name ?? '已停用的理由'
@@ -342,7 +344,9 @@ const actionOptions = TRUST_ACTIONS.map((a) => ({
                 class="text-default-500 flex items-center gap-1 text-sm"
               >
                 处理中，认领人
-                <KunUserChip :user="toKunUser(detail.claimant)" size="xs" />
+                <UserHoverCard :user-id="detail.claimant.id">
+                  <KunUserChip :user="toKunUser(detail.claimant)" size="xs" />
+                </UserHoverCard>
               </span>
             </div>
 

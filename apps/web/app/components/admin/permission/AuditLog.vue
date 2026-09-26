@@ -91,7 +91,9 @@ const DELTA_CHIP: Record<
           </KunChip>
           <span class="text-sm font-medium">{{ subjectLabel(entry) }}</span>
           <span class="text-default-400 text-xs">操作人</span>
-          <KunUserChip :user="toKunUser(entry.actor)" size="sm" />
+          <UserHoverCard :user-id="entry.actor.id">
+            <KunUserChip :user="toKunUser(entry.actor)" size="sm" />
+          </UserHoverCard>
           <KunTime
             :time="entry.created_at"
             type="datetime"

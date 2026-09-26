@@ -180,7 +180,9 @@ const STORAGE_MAP: Record<string, string> = {
 
       <div class="flex justify-between">
         <div class="flex gap-2">
-          <KunAvatar :user="toKunUser(resource.publisher)" />
+          <UserHoverCard :user-id="resource.publisher.id">
+            <KunAvatar :user="toKunUser(resource.publisher)" />
+          </UserHoverCard>
 
           <div class="flex flex-col">
             <span class="text-xs">

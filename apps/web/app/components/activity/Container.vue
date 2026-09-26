@@ -133,11 +133,12 @@ useIntersectionObserver(
       </KunLink>
 
       <div class="flex items-center space-x-2">
-        <KunUserChip
+        <UserHoverCard
           v-if="activity.performer"
-          size="sm"
-          :user="toKunUser(activity.performer)"
-        />
+          :user-id="activity.performer.id"
+        >
+          <KunUserChip size="sm" :user="toKunUser(activity.performer)" />
+        </UserHoverCard>
         <span class="text-default-500 text-sm">
           <KunTime :time="activity.occurred_at" />
         </span>

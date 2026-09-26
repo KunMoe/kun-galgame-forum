@@ -266,7 +266,9 @@ const workId = computed(() => Number(props.galgame.id))
             v-if="creator"
             class="text-default-500 flex cursor-default flex-wrap items-center gap-2"
           >
-            <KunUserChip :user="creator" />
+            <UserHoverCard :user-id="creator.id">
+              <KunUserChip :user="creator" />
+            </UserHoverCard>
             <span class="text-sm">
               <KunTime :time="galgame.created_at" type="date" show-year />
               创建本游戏

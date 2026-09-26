@@ -95,7 +95,9 @@ const loadMore = () => fetched?.loadMore() ?? Promise.resolve()
       class="flex items-center justify-between gap-2"
     >
       <div class="flex min-w-0 items-center gap-1.5">
-        <KunAvatar :user="r.user" size="sm" />
+        <UserHoverCard :user-id="r.user.id">
+          <KunAvatar :user="r.user" size="sm" />
+        </UserHoverCard>
         <span class="text-default-700 shrink-0 font-medium">
           {{ r.user.name }}
         </span>

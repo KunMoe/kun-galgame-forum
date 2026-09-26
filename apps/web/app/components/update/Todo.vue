@@ -231,7 +231,9 @@ const remove = async (todo: Todo) => {
         </div>
 
         <div class="flex items-center gap-2">
-          <KunAvatar :user="toKunUser(todo.author)" size="sm" />
+          <UserHoverCard :user-id="todo.author.id">
+            <KunAvatar :user="toKunUser(todo.author)" size="sm" />
+          </UserHoverCard>
           <KunLink
             color="default"
             underline="hover"

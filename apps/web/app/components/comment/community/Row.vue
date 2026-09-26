@@ -150,7 +150,9 @@ const handleReplyAdded = (reply: WallComment) => {
 
 <template>
   <div :id="`${surface.anchorPrefix}-${comment.id}`" class="flex gap-3">
-    <KunAvatar :user="author" :size="depth === 0 ? 'md' : 'sm'" />
+    <UserHoverCard :user-id="author.id">
+      <KunAvatar :user="author" :size="depth === 0 ? 'md' : 'sm'" />
+    </UserHoverCard>
 
     <div class="min-w-0 flex-1">
       <div

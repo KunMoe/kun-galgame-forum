@@ -109,11 +109,13 @@ const emptyDescription = computed(() =>
         :is-hoverable="false"
       >
         <div class="flex items-center gap-2">
-          <KunUserChip
-            size="sm"
-            :user="toKunUser(personOf(item))"
-            :is-navigation="Boolean(personOf(item).name)"
-          />
+          <UserHoverCard :user-id="personOf(item).id">
+            <KunUserChip
+              size="sm"
+              :user="toKunUser(personOf(item))"
+              :is-navigation="Boolean(personOf(item).name)"
+            />
+          </UserHoverCard>
           <span
             v-if="item.followed_at"
             class="text-default-500 ml-auto shrink-0 text-sm"

@@ -124,7 +124,9 @@ const handleMarkValid = async () => {
   <KunCard :color="isExpired ? 'warning' : 'success'" content-class="space-y-3">
     <div class="flex flex-wrap items-center justify-between gap-2">
       <div class="flex items-center gap-2">
-        <KunAvatar :user="author" size="md" />
+        <UserHoverCard :user-id="author.id">
+          <KunAvatar :user="author" size="md" />
+        </UserHoverCard>
         <div class="flex flex-col leading-tight">
           <span class="text-sm font-medium">{{ author.name }}</span>
           <span class="text-default-500 text-xs">

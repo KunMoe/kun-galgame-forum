@@ -10,8 +10,12 @@ const contributors = computed(() =>
 
 <template>
   <div v-if="contributors.length" class="flex flex-wrap items-center gap-1">
-    <KunTooltip v-for="user in contributors" :key="user.id" :text="user.name">
+    <UserHoverCard
+      v-for="user in contributors"
+      :key="user.id"
+      :user-id="user.id"
+    >
       <KunAvatar :user="user" size="sm" />
-    </KunTooltip>
+    </UserHoverCard>
   </div>
 </template>

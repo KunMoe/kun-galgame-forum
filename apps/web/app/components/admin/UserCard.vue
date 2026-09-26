@@ -83,7 +83,9 @@ const handlePurged = async () => {
     class="dark:border-default-200 flex flex-col gap-3 rounded-lg border border-transparent p-3"
   >
     <div class="flex items-center justify-between gap-3">
-      <KunUserChip :user="kunUser" />
+      <UserHoverCard :user-id="kunUser.id">
+        <KunUserChip :user="kunUser" />
+      </UserHoverCard>
 
       <div class="flex shrink-0 items-center gap-2">
         <KunButton size="sm" variant="flat" @click="isPermOpen = true">

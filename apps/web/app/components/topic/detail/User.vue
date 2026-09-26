@@ -15,7 +15,9 @@ withDefaults(
 
 <template>
   <div :class="cn('flex items-center gap-2', className)">
-    <KunAvatar size="lg" :user="user" />
+    <UserHoverCard :user-id="user.id">
+      <KunAvatar size="lg" :user="user" />
+    </UserHoverCard>
 
     <div class="w-full">
       <div class="flex items-center justify-between">
