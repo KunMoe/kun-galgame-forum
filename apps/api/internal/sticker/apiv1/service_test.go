@@ -12,6 +12,7 @@ import (
 	"time"
 
 	v1 "kun-galgame-api/internal/apiv1"
+	"kun-galgame-api/internal/infrastructure/markdown"
 	"kun-galgame-api/pkg/imageclient"
 	"kun-galgame-api/pkg/stickerclient"
 
@@ -225,5 +226,20 @@ func TestListStickerPacksUnavailable(t *testing.T) {
 	}
 	if err := json.Unmarshal(raw, &p); err != nil || p.Code != "SERVICE_UNAVAILABLE" {
 		t.Errorf("problem = %s", raw)
+	}
+}
+
+func TestRefreshTeachesTheStickerSet(t *testing.T) {
+	fresh := hash(0x5712c3e5)
+	src := &fakeSource{packs: []stickerclient.Pack{
+		pack(idA, time.Time{}, map[string]string{"zh-cn": "A"}, sticker(sid+"1", 1, fresh, 0, 0)),
+	}}
+	_, s, _ := newStickerAPI(t, src)
+	if markdown.IsSticker(fresh) {
+		t.Fatal("a sticker the packs never listed is already known")
+	}
+	s.Refresh()
+	if src.calls != 1 || !markdown.IsSticker(fresh) {
+		t.Fatalf("after a refresh: %d upstream reads, IsSticker %v", src.calls, markdown.IsSticker(fresh))
 	}
 }

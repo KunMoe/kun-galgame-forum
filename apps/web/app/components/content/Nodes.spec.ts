@@ -442,6 +442,24 @@ describe('ContentNodes markup', () => {
     )
   })
 
+  it('marks a sticker with the kun-sticker class, whatever its alt', async () => {
+    expect(
+      await html([
+        {
+          object: 'image',
+          url: 'https://cdn.example/s_320.webp',
+          alt: '鲲 Galgame 表情包 [1] - 36',
+          image: hostedImage(),
+          is_sticker: true
+        }
+      ])
+    ).toBe(
+      ssr(
+        '<img src="https://cdn.example/s_320.webp" alt="鲲 Galgame 表情包 [1] - 36" loading="lazy" decoding="async" data-kun-lazy-image="true" class="kun-sticker" width="800" height="600" data-thumbhash="thumb">'
+      )
+    )
+  })
+
   it('renders an image with image null', async () => {
     expect(
       await html([

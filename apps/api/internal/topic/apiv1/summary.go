@@ -104,6 +104,7 @@ func topicLifecycle(status int, hiddenBy string) (string, *string, error) {
 }
 
 func coverImagesWithMeta(cdn string, tokens model.ImageTokens, metaByHash map[string]imageclient.ImageMeta) []repr.Image {
+	tokens = withoutStickers(tokens)
 	if len(tokens) == 0 {
 		return []repr.Image{}
 	}
@@ -173,6 +174,7 @@ func toMiniAppKinds(ss []string) []MiniAppKind {
 }
 
 func coverImages(cdn string, tokens model.ImageTokens) []repr.Image {
+	tokens = withoutStickers(tokens)
 	if len(tokens) == 0 {
 		return []repr.Image{}
 	}
@@ -188,6 +190,17 @@ func coverImages(cdn string, tokens model.ImageTokens) []repr.Image {
 			continue
 		}
 		out = append(out, *img)
+	}
+	return out
+}
+
+func withoutStickers(tokens model.ImageTokens) model.ImageTokens {
+	out := make(model.ImageTokens, 0, len(tokens))
+	for _, tok := range tokens {
+		if hash, _, ok := markdown.ParseContentImageRef(tok); ok && markdown.IsSticker(hash) {
+			continue
+		}
+		out = append(out, tok)
 	}
 	return out
 }

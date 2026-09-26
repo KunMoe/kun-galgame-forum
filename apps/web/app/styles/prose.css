@@ -79,14 +79,17 @@
   }
 
   /* Stickers are inline (was a 128px block that hogged a line), at a readable
-     ~80px rather than emoji-tiny. */
-  & img[alt='Sticker'] {
+     ~80px rather than emoji-tiny. .kun-sticker comes from the API's
+     is_sticker. This rule used to match alt='Sticker'; the picker's alt became
+     the pack's display name on 2026-09-08, and every sticker posted after
+     that rendered full-size. */
+  & img.kun-sticker {
     @apply mx-0.5 inline-block h-20 w-auto max-w-full align-middle;
   }
   /* A lone sticker lands in its own block <p>, which forced it onto its own
      line. Let sticker-only paragraphs flow inline, so a sticker sits with
      adjacent text / packs with other stickers instead of hogging a line. */
-  & p:has(> img[alt='Sticker']:only-child) {
+  & p:has(> img.kun-sticker:only-child) {
     @apply my-1 inline-block;
   }
 

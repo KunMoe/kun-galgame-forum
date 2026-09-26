@@ -274,6 +274,12 @@ func imageCases() []convertCase {
 		{name: "R17 empty destination", src: "![]()", want: docJSON("")},
 		{name: "R17 unusable only no alt drops paragraph", src: "![](./rel.png)", want: docJSON("")},
 		{name: "R17 alt truncated", src: "![" + alt600 + "](https://e.com/i.png)", want: docJSON(paraJSON(img("https://e.com/i.png", alt512, "null")))},
+		{name: "R17 sticker token variant", src: "![鲲 Galgame 表情包 \\[1\\] - 2](/image/" + legacySticker(2) + "_320)",
+			want: docJSON(paraJSON(stickerImage(legacySticker(2), "_320", "鲲 Galgame 表情包 [1] - 2")))},
+		{name: "R17 sticker token no variant", src: "![Sticker](/image/" + legacySticker(3) + ")",
+			want: docJSON(paraJSON(stickerImage(legacySticker(3), "", "Sticker")))},
+		{name: "R17 offsite url carrying a sticker hash", src: "![](https://e.com/" + legacySticker(4) + "_320.webp)",
+			want: docJSON(paraJSON(img("https://e.com/"+legacySticker(4)+"_320.webp", "", "null")))},
 		{name: "R17 image inside link", src: "[![a](https://e.com/i.png)](https://e.com/)", want: docJSON(paraJSON(
 			`{"object":"link","url":"https://e.com/","children":[` + img("https://e.com/i.png", "a", "null") + `]}`))},
 	}
@@ -294,12 +300,20 @@ func docCases() []convertCase {
 }
 
 func stickerWant() string {
-	hash, ok := markdown.LegacyStickerHash(1, 1)
+	return docJSON(paraJSON(stickerImage(legacySticker(1), "_320", "")))
+}
+
+func legacySticker(position int) string {
+	hash, ok := markdown.LegacyStickerHash(1, position)
 	if !ok {
-		panic("sticker 1/1")
+		panic("sticker 1/" + strconv.Itoa(position))
 	}
-	display := "https://cdn.example/" + hash[:2] + "/" + hash[2:4] + "/" + hash + "_320.webp"
+	return hash
+}
+
+func stickerImage(hash, variant, alt string) string {
+	display := "https://cdn.example/" + hash[:2] + "/" + hash[2:4] + "/" + hash + variant + ".webp"
 	orig := "https://cdn.example/" + hash[:2] + "/" + hash[2:4] + "/" + hash + ".webp"
 	rec := `{"url":` + quoteJSON(orig) + `,"hash":` + quoteJSON(hash) + `,"width":null,"height":null,"thumbhash":null,"sexual":null}`
-	return docJSON(paraJSON(`{"object":"image","url":` + quoteJSON(display) + `,"alt":"","image":` + rec + `,"is_sticker":false}`))
+	return `{"object":"image","url":` + quoteJSON(display) + `,"alt":` + quoteJSON(alt) + `,"image":` + rec + `,"is_sticker":true}`
 }

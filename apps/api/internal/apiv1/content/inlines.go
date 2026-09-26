@@ -167,8 +167,9 @@ func (c *converter) convertAutoLink(n *ast.AutoLink) Inlines {
 func (c *converter) convertImage(dest, alt string) Inlines {
 	alt = truncateRunes(alt, maxAltRunes)
 	if url, hash, ok := c.imageServiceURL(dest); ok {
-		rec := repr.NewImage(c.cdn, hash, c.imageMeta(hash))
-		return Inlines{NewImage(url, alt, rec)}
+		node := NewImage(url, alt, repr.NewImage(c.cdn, hash, c.imageMeta(hash)))
+		node.IsSticker = markdown.IsSticker(hash)
+		return Inlines{node}
 	}
 	if url, ok := c.normalizeImageURL(dest); ok {
 		return Inlines{NewImage(url, alt, nil)}

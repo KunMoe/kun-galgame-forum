@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"kun-galgame-api/internal/apiv1/repr"
+	"kun-galgame-api/internal/infrastructure/markdown"
 	"kun-galgame-api/pkg/imageclient"
 	"kun-galgame-api/pkg/problem"
 	"kun-galgame-api/pkg/stickerclient"
@@ -72,6 +73,15 @@ func (s *Service) listStickerPacks(ctx context.Context, in *listStickerPacksInpu
 	return out, nil
 }
 
+func (s *Service) Refresh() {
+	if s == nil || s.source == nil {
+		return
+	}
+	if _, err := s.current(context.Background()); err != nil {
+		slog.Warn("sticker packs: refresh failed", "error", err)
+	}
+}
+
 func (s *Service) current(ctx context.Context) (*snapshot, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -110,6 +120,7 @@ func (s *Service) build(ctx context.Context) (*snapshot, error) {
 			hashes = append(hashes, st.Image.Hash)
 		}
 	}
+	markdown.LearnStickers(hashes)
 	metas := map[string]imageclient.ImageMeta{}
 	if s.images != nil {
 		metas = s.images(hashes)

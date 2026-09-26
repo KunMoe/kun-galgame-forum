@@ -9,6 +9,7 @@ const props = defineProps<{
   meta?: Record<string, KunImageMeta>
   zoomable?: boolean
   nsfw?: boolean
+  compact?: boolean
 }>()
 
 const { isBlurred } = useContentStance()
@@ -40,14 +41,14 @@ const aspectOf = (item: Cover): string | undefined => {
   return m.width && m.height ? `${m.width} / ${m.height}` : undefined
 }
 
-const SINGLE_MAX_HEIGHT_PX = 384
+const singleMaxHeight = computed(() => (props.compact ? 240 : 384))
 
 const singleWidth = computed(() => {
   const m = resolved(shown.value[0]!)
   if (!m.width || !m.height) {
     return undefined
   }
-  const heightCapped = Math.round((SINGLE_MAX_HEIGHT_PX * m.width) / m.height)
+  const heightCapped = Math.round((singleMaxHeight.value * m.width) / m.height)
   return { width: `min(${m.width}px, 100%, ${heightCapped}px)` }
 })
 
@@ -79,7 +80,13 @@ const {
           alt="话题封面"
           loading="lazy"
           object-fit="cover"
-          :class-name="cn('w-full rounded-lg', zoomable && 'cursor-zoom-in')"
+          :class-name="
+            cn(
+              'w-full rounded-lg',
+              compact && 'max-h-60',
+              zoomable && 'cursor-zoom-in'
+            )
+          "
         />
       </KunNsfwMask>
 
@@ -106,7 +113,8 @@ const {
               object-fit="contain"
               :class-name="
                 cn(
-                  'h-40 w-auto shrink-0 rounded-lg',
+                  'w-auto shrink-0 rounded-lg',
+                  compact ? 'h-30' : 'h-40',
                   zoomable && 'cursor-zoom-in'
                 )
               "

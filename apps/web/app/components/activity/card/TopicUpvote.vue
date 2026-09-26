@@ -69,6 +69,7 @@ provide(
           v-if="covers.length"
           :images="covers"
           :nsfw="topic.is_nsfw"
+          compact
         />
       </KunLink>
 

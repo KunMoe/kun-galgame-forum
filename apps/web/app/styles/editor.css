@@ -91,10 +91,14 @@
   @apply border-default-200 my-8 max-w-full cursor-pointer rounded-lg border;
 }
 
-/* Match prose.css: inline stickers at ~80px (was a 128px block). */
+/* Match prose.css: inline stickers at ~80px. The editor has no is_sticker, so
+ * it matches the /image/<hash>_320 token every sticker picker inserts; its alt
+ * has been the pack's display name since 2026-09-08. */
+.milkdown img[src$='_320'],
 .milkdown img[alt='Sticker'] {
   @apply mx-0.5 inline-block h-20 w-auto max-w-full align-middle;
 }
+.milkdown p:has(> img[src$='_320']:only-child),
 .milkdown p:has(> img[alt='Sticker']:only-child) {
   @apply my-1 inline-block;
 }
