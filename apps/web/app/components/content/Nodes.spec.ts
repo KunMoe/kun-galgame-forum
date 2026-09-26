@@ -431,7 +431,8 @@ describe('ContentNodes markup', () => {
           object: 'image',
           url: 'https://cdn.example/small.webp',
           alt: 'cover',
-          image: hostedImage()
+          image: hostedImage(),
+          is_sticker: false
         }
       ])
     ).toBe(
@@ -448,7 +449,8 @@ describe('ContentNodes markup', () => {
           object: 'image',
           url: 'https://cdn.example/offsite.png',
           alt: 'off',
-          image: null
+          image: null,
+          is_sticker: false
         }
       ])
     ).toBe(
@@ -469,7 +471,8 @@ describe('ContentNodes markup', () => {
             width: null,
             height: null,
             thumbhash: null
-          })
+          }),
+          is_sticker: false
         }
       ])
     ).toBe(
@@ -552,7 +555,8 @@ describe('ContentNodes XSS guards', () => {
           object: 'image',
           url: 'data:image/png;base64,xx',
           alt: 'safe alt',
-          image: null
+          image: null,
+          is_sticker: false
         }
       ])
     ).toBe(ssr('safe alt'))

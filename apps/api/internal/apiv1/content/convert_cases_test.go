@@ -151,7 +151,7 @@ func htmlCases() []convertCase {
 		{name: "R10 attribute-named non-element literal", src: "a <src> b <id>", want: docJSON(paraJSON(textJSON("a <src> b <id>")))},
 		{name: "R10 html comment", src: "a<!-- x -->b", want: docJSON(paraJSON(textJSON("ab")))},
 		{name: "R11 img html block", src: `<img src="https://e.com/i.png" alt="pic">`, want: docJSON(paraJSON(
-			`{"object":"image","url":"https://e.com/i.png","alt":"pic","image":null}`))},
+			`{"object":"image","url":"https://e.com/i.png","alt":"pic","image":null,"is_sticker":false}`))},
 		{name: "R10 inline img data alt", src: `<img src="data:image/png;base64,xx" alt="hello">`, want: docJSON(paraJSON(textJSON("hello")))},
 		{name: "R10 inline img long alt truncated", src: `<img src="data:x" alt="` + strings.Repeat("长", 600) + `">`,
 			want: docJSON(paraJSON(textJSON(strings.Repeat("长", 512))))},
@@ -181,7 +181,7 @@ func textCases() []convertCase {
 		{name: "R14 soft after link", src: "[l](https://a.example)\nnext", want: docJSON(paraJSON(
 			`{"object":"link","url":"https://a.example","children":[` + textJSON("l") + `]},` + textJSON(" next")))},
 		{name: "R14 soft after image", src: "![](https://a.example/x.png)\n中", want: docJSON(paraJSON(
-			`{"object":"image","url":"https://a.example/x.png","alt":"","image":null},` + textJSON(" 中")))},
+			`{"object":"image","url":"https://a.example/x.png","alt":"","image":null,"is_sticker":false},` + textJSON(" 中")))},
 		{name: "R14 soft after br", src: "a<br>\nb", want: docJSON(paraJSON(
 			textJSON("a") + `,{"object":"break"},` + textJSON("b")))},
 		{name: "R15 emphasis", src: "*i*", want: docJSON(paraJSON(`{"object":"emphasis","children":[` + textJSON("i") + `]}`))},
@@ -252,7 +252,7 @@ func imageCases() []convertCase {
 	main := "https://cdn.example/aa/aa/" + testHash + ".webp"
 	variant := "https://cdn.example/aa/aa/" + testHash + "_320.webp"
 	img := func(url, alt, rec string) string {
-		return `{"object":"image","url":` + quoteJSON(url) + `,"alt":` + quoteJSON(alt) + `,"image":` + rec + `}`
+		return `{"object":"image","url":` + quoteJSON(url) + `,"alt":` + quoteJSON(alt) + `,"image":` + rec + `,"is_sticker":false}`
 	}
 	nullRec := `{"url":` + quoteJSON(main) + `,"hash":` + quoteJSON(testHash) + `,"width":null,"height":null,"thumbhash":null,"sexual":null}`
 	metaRec := `{"url":` + quoteJSON(main) + `,"hash":` + quoteJSON(testHash) + `,"width":8,"height":6,"thumbhash":"th","sexual":null}`
@@ -289,7 +289,7 @@ func docCases() []convertCase {
 		{name: "whitespace only", src: "  \n\t", want: docJSON("")},
 		{name: "legacy sticker url", src: "![](" + sticker + ")", want: stickerWant()},
 		{name: "absolute image-service url", src: "![](" + abs + ")", want: docJSON(paraJSON(
-			`{"object":"image","url":` + quoteJSON(main) + `,"alt":"","image":` + nullRec + `}`))},
+			`{"object":"image","url":` + quoteJSON(main) + `,"alt":"","image":` + nullRec + `,"is_sticker":false}`))},
 	}
 }
 
@@ -301,5 +301,5 @@ func stickerWant() string {
 	display := "https://cdn.example/" + hash[:2] + "/" + hash[2:4] + "/" + hash + "_320.webp"
 	orig := "https://cdn.example/" + hash[:2] + "/" + hash[2:4] + "/" + hash + ".webp"
 	rec := `{"url":` + quoteJSON(orig) + `,"hash":` + quoteJSON(hash) + `,"width":null,"height":null,"thumbhash":null,"sexual":null}`
-	return docJSON(paraJSON(`{"object":"image","url":` + quoteJSON(display) + `,"alt":"","image":` + rec + `}`))
+	return docJSON(paraJSON(`{"object":"image","url":` + quoteJSON(display) + `,"alt":"","image":` + rec + `,"is_sticker":false}`))
 }

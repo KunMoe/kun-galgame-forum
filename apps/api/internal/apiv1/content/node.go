@@ -115,10 +115,11 @@ type LinkNode struct {
 }
 
 type ImageNode struct {
-	Object string      `json:"object" enum:"image" maxLength:"5" doc:"Type discriminant. Always image."`
-	URL    string      `json:"url" format:"uri" maxLength:"2048" doc:"Absolute URL to display inline. For an image-service picture it may be a smaller variant of image.url."`
-	Alt    string      `json:"alt" maxLength:"512" doc:"Alternative text. Empty when the author gave none. Free text; never use it as a decision input."`
-	Image  *repr.Image `json:"image" doc:"Image-service record of the picture, whose url is the full-size original. null for a picture hosted elsewhere."`
+	Object    string      `json:"object" enum:"image" maxLength:"5" doc:"Type discriminant. Always image."`
+	URL       string      `json:"url" format:"uri" maxLength:"2048" doc:"Absolute URL to display inline. For an image-service picture it may be a smaller variant of image.url."`
+	Alt       string      `json:"alt" maxLength:"512" doc:"Alternative text. Empty when the author gave none. Free text; never use it as a decision input."`
+	Image     *repr.Image `json:"image" doc:"Image-service record of the picture, whose url is the full-size original. null for a picture hosted elsewhere."`
+	IsSticker bool        `json:"is_sticker" doc:"Whether the picture is an official sticker, one of the images listStickerPacks returns, judged by its image-service hash and never by alt or url. Show a sticker inline at text size, not as a figure. Always false when image is null."`
 }
 
 type VideoNode struct {

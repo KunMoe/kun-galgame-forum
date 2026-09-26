@@ -7164,6 +7164,10 @@
             ],
             "description": "Image-service record of the picture, whose url is the full-size original. null for a picture hosted elsewhere."
           },
+          "is_sticker": {
+            "description": "Whether the picture is an official sticker, one of the images listStickerPacks returns, judged by its image-service hash and never by alt or url. Show a sticker inline at text size, not as a figure. Always false when image is null.",
+            "type": "boolean"
+          },
           "object": {
             "const": "image",
             "description": "Type discriminant. Always image.",
@@ -7181,7 +7185,8 @@
           "object",
           "url",
           "alt",
-          "image"
+          "image",
+          "is_sticker"
         ],
         "type": "object"
       },
@@ -18451,7 +18456,7 @@
             "description": "Topic body as a node tree."
           },
           "cover_images": {
-            "description": "Cover images in stored token order. Tokens that do not parse are skipped. Empty array if none.",
+            "description": "Cover images in stored token order. Tokens that do not parse are skipped, and so are stickers: a sticker is never a cover. Empty array if none.",
             "items": {
               "$ref": "#/components/schemas/Image"
             },
@@ -18694,7 +18699,7 @@
             "type": "string"
           },
           "cover_image_hashes": {
-            "description": "Cover images by image-service hash, in display order. When absent, the covers are the first nine distinct /image/{hash} tokens of the body in body order; an empty array means no covers.",
+            "description": "Cover images by image-service hash, in display order. When absent, the covers are the first nine distinct /image/{hash} tokens of the body in body order, stickers skipped; an empty array means no covers.",
             "items": {
               "description": "Image-service content hash of an uploaded image.",
               "maxLength": 64,
@@ -19294,7 +19299,7 @@
             "type": "string"
           },
           "cover_images": {
-            "description": "Cover images in stored token order. Tokens that do not parse are skipped. Empty array if none.",
+            "description": "Cover images in stored token order. Tokens that do not parse are skipped, and so are stickers: a sticker is never a cover. Empty array if none.",
             "items": {
               "$ref": "#/components/schemas/Image"
             },
@@ -19413,7 +19418,7 @@
             "type": "integer"
           },
           "cover_images": {
-            "description": "Cover images in stored token order. Tokens that do not parse are skipped. Empty array if none.",
+            "description": "Cover images in stored token order. Tokens that do not parse are skipped, and so are stickers: a sticker is never a cover. Empty array if none.",
             "items": {
               "$ref": "#/components/schemas/Image"
             },

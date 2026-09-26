@@ -104,7 +104,8 @@ describe('documentPlainText', () => {
             object: 'image',
             url: 'https://cdn.example/a.webp',
             alt: 'pic',
-            image: null
+            image: null,
+            is_sticker: false
           }),
           {
             object: 'math',
