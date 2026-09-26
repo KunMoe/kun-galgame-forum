@@ -7,8 +7,8 @@ import (
 
 	v1 "kun-galgame-api/internal/apiv1"
 	"kun-galgame-api/internal/apiv1/collect"
+	"kun-galgame-api/internal/apiv1/content"
 	"kun-galgame-api/internal/apiv1/repr"
-	"kun-galgame-api/internal/infrastructure/markdown"
 	"kun-galgame-api/internal/middleware"
 	"kun-galgame-api/internal/user/repository"
 	"kun-galgame-api/pkg/perm"
@@ -142,7 +142,7 @@ func (s *Users) listUserReplies(ctx context.Context, in *listUserRepliesInput) (
 			ID:        repr.ID(row.ID),
 			TopicID:   repr.ID(row.TopicID),
 			Floor:     row.Floor,
-			Excerpt:   excerptPlain(markdown.ToPlainText(row.Content, utf8.RuneCountInString(row.Content))),
+			Excerpt:   excerptPlain(content.PlainText(row.Content, utf8.RuneCountInString(row.Content))),
 			CreatedAt: repr.Timestamp(row.Created),
 		})
 	}
@@ -168,7 +168,7 @@ func (s *Users) listUserComments(ctx context.Context, in *listUserCommentsInput)
 			Object:    "comment",
 			ID:        repr.ID(row.ID),
 			TopicID:   repr.ID(row.TopicID),
-			Excerpt:   excerptPlain(row.Content),
+			Excerpt:   excerptPlain(content.PlainText(row.Content, utf8.RuneCountInString(row.Content))),
 			CreatedAt: repr.Timestamp(row.Created),
 		})
 	}

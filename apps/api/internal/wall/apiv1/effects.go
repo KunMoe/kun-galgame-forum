@@ -7,6 +7,7 @@ import (
 	"time"
 	"unicode/utf8"
 
+	"kun-galgame-api/internal/apiv1/content"
 	"kun-galgame-api/internal/constants"
 	galgameService "kun-galgame-api/internal/galgame/service"
 	"kun-galgame-api/internal/infrastructure/markdown"
@@ -48,7 +49,7 @@ func (s *Service) afterCreate(ctx context.Context, sub *subject, authorID int, b
 		sub.ownerID > 0 && sub.ownerID != authorID && !s.ownerFollows(ctx, sub, post.ThreadID) {
 		msg := repository.Message{
 			SenderID: authorID, ReceiverID: sub.ownerID, Type: "commented",
-			Content: markdown.ToPlainText(body, constants.TextPreviewLength), Link: sub.pageLink(),
+			Content: content.PlainText(body, constants.TextPreviewLength), Link: sub.pageLink(),
 		}
 		if err := s.store.InsertMessageOnce(msg); err != nil {
 			slog.Warn("wall owner notification failed (best-effort)", "receiver_id", sub.ownerID, "link", msg.Link, "error", err)

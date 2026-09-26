@@ -377,21 +377,6 @@ func buildTOCTree(flat []TocLink, maxDepth int) []TocLink {
 	return roots
 }
 
-func ToPlainText(source string, maxLen int) string {
-	text := source
-	text = regexp.MustCompile(`!\[.*?\]\(.*?\)`).ReplaceAllString(text, "")
-	text = regexp.MustCompile(`\[([^\]]*)\]\(.*?\)`).ReplaceAllString(text, "$1")
-	text = regexp.MustCompile("[#*_~>`|]").ReplaceAllString(text, "")
-	text = regexp.MustCompile(`\n{2,}`).ReplaceAllString(text, "\n")
-	text = strings.TrimSpace(text)
-
-	runes := []rune(text)
-	if len(runes) > maxLen {
-		return string(runes[:maxLen])
-	}
-	return text
-}
-
 type h1ToH2Extension struct{}
 
 func (e *h1ToH2Extension) Extend(m goldmark.Markdown) {

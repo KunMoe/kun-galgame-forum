@@ -1,8 +1,8 @@
 package apiv1
 
 import (
+	"kun-galgame-api/internal/apiv1/content"
 	"kun-galgame-api/internal/constants"
-	"kun-galgame-api/internal/infrastructure/markdown"
 	msgModel "kun-galgame-api/internal/message/model"
 	msgService "kun-galgame-api/internal/message/service"
 	"kun-galgame-api/internal/topic/model"
@@ -27,7 +27,7 @@ func replyContentPreview(content string) string {
 }
 
 func replyPlainPreview(reply model.TopicReply) string {
-	return markdown.ToPlainText(reply.Content, 500)
+	return content.PlainText(reply.Content, 500)
 }
 
 func dedupMessage(tx *gorm.DB, senderID, receiverID int, msgType, content, link string) error {
