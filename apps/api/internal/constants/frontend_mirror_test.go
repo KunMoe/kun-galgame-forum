@@ -23,7 +23,6 @@ func TestWebMirrorsTheMoemoepointRules(t *testing.T) {
 		"reply":              RewardReply,
 		"prMerge":            RewardPRMerge,
 		"consumeSection":     CostConsumeSection,
-		"changeUsername":     CostChangeUsername,
 		"upvoteSender":       CostUpvoteSender,
 		"upvoteOwner":        RewardUpvoteOwner,
 		"ratingHigh":         RatingRewardHigh,

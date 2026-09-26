@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { KUN_MOEMOEPOINT as P } from '~/constants/moemoepoint'
+
+const renameCost = useRenameCost()
 </script>
 
 <template>
@@ -84,9 +86,13 @@ import { KUN_MOEMOEPOINT as P } from '~/constants/moemoepoint'
           }}
           的发帖奖励，余额不足不能发。
         </li>
-        <li>
-          <b class="text-foreground">改名 -{{ P.changeUsername }}</b
-          >：修改一次用户名花 {{ P.changeUsername }} 点，余额不足改不了。
+        <li v-if="renameCost === null">
+          <b class="text-foreground">改名</b
+          >：修改用户名要花萌萌点，价格以账号中心为准，余额不足改不了。
+        </li>
+        <li v-else-if="renameCost > 0">
+          <b class="text-foreground">改名 -{{ renameCost }}</b
+          >：修改一次用户名花 {{ renameCost }} 点，余额不足改不了。
         </li>
         <li>
           <b class="text-foreground">删除内容会被"回扣"</b
