@@ -1,9 +1,7 @@
 <script setup lang="ts">
 import { isFollowingFeedTab, isNewsFeedTab } from '~/constants/activity'
-import { feedTabQuery } from '~/utils/activity'
 
-const settings = usePersistSettingsStore()
-const { feedTabs } = storeToRefs(settings)
+const { feedTabs } = storeToRefs(usePersistSettingsStore())
 const { id: userId } = storeToRefs(usePersistUserStore())
 const { allowsNsfw } = useContentStance()
 const { hasUnseen, check } = useFollowingUnseen()
@@ -36,16 +34,10 @@ watchEffect(() => {
 })
 
 onMounted(() => {
-  const tab = followingTab.value
-  if (!tab || isFollowingFeedTab(currentTab.value)) {
+  if (!followingTab.value || isFollowingFeedTab(currentTab.value)) {
     return
   }
-  const { sort: _sort, ...filters } = feedTabQuery(tab.kinds.join(','))
-  check({
-    ...filters,
-    include_nsfw: allowsNsfw.value,
-    include_galgames_without_resources: settings.showKUNGalgameNoResource
-  })
+  check({ include_nsfw: allowsNsfw.value })
 })
 </script>
 
@@ -111,12 +103,8 @@ onMounted(() => {
     <div class="min-w-0 sm:col-start-2">
       <Suspense :timeout="0">
         <HomeNewsFeed v-if="isNewsFeedTab(currentTab)" />
-        <HomeActivityFeed
-          v-else
-          :tab-id="activeTab"
-          :types="activeTypes"
-          :following="isFollowingFeedTab(currentTab)"
-        />
+        <HomeFollowingFeed v-else-if="isFollowingFeedTab(currentTab)" />
+        <HomeActivityFeed v-else :tab-id="activeTab" :types="activeTypes" />
 
         <template #fallback>
           <div class="divide-default-200/60 divide-y">

@@ -1,38 +1,33 @@
 <script setup lang="ts">
 import { useIntersectionObserver, useThrottleFn } from '@vueuse/core'
-import type { Activity } from '#shared/utils/api/schemas'
-import { feedTabQuery } from '~/utils/activity'
+import type { FollowingActivityGroup } from '#shared/utils/api/schemas'
 
-const props = defineProps<{ tabId: string; types: string }>()
-
-const settings = usePersistSettingsStore()
 const { allowsNsfw } = useContentStance()
+const { markSeen } = useFollowingUnseen()
 
 const MAX_AUTO_LOADS = 4
 const autoLoadCount = ref(0)
 
-const query = computed(() => ({
-  ...feedTabQuery(props.types),
-  include_nsfw: props.tabId === 'all' ? false : allowsNsfw.value,
-  include_galgames_without_resources: settings.showKUNGalgameNoResource,
-  limit: 30
-}))
+const query = computed(() => ({ include_nsfw: allowsNsfw.value, limit: 20 }))
 
-const { items, status, hasMore, loadingMore, loadMore } =
-  await useCursorList<Activity>(
-    () => `activities:${JSON.stringify(query.value)}`,
+const { items, status, problem, hasMore, loadingMore, loadMore } =
+  await useCursorList<FollowingActivityGroup>(
+    () => `following-activities:${JSON.stringify(query.value)}`,
     (api, cursor, { signal }) =>
-      api.GET('/activities', {
+      api.GET('/me/following-activities', {
         params: { query: { ...query.value, ...(cursor ? { cursor } : {}) } },
         signal
       })
   )
 
 watch(
-  () => props.tabId,
-  () => {
-    autoLoadCount.value = 0
-  }
+  () => status.value === 'success',
+  (loaded) => {
+    if (loaded && import.meta.client) {
+      markSeen()
+    }
+  },
+  { immediate: true }
 )
 
 const loadNext = (auto: boolean) => {
@@ -67,17 +62,25 @@ useIntersectionObserver(
     :loading="status === 'pending' && items.length > 0"
   >
     <KunNull
-      v-if="status !== 'pending' && !items.length"
-      description="暂无动态"
+      v-if="problem && !items.length"
+      description="关注动态加载失败，请稍后再试"
     />
+
+    <div v-else-if="status !== 'pending' && !items.length">
+      <KunNull description="你关注的人还没有动态" />
+      <p class="text-default-500 text-center text-sm">
+        在用户主页点击「关注」，TA 在鲲 Galgame 和 NextMoe
+        各站的新动态会出现在这里
+      </p>
+    </div>
 
     <div v-else class="divide-default-200/60 divide-y">
       <div
-        v-for="activity in items"
-        :key="activity.id"
+        v-for="group in items"
+        :key="group.id"
         class="py-5 first:pt-0 last:pb-0"
       >
-        <ActivityCard :activity="activity" />
+        <HomeFollowingGroup :group="group" :include-nsfw="allowsNsfw" />
       </div>
       <template v-if="loadingMore">
         <div v-for="n in 3" :key="`skeleton-${n}`" class="py-5">
