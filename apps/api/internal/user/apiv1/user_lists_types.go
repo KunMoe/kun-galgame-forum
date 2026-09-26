@@ -107,18 +107,22 @@ type UserTopicItem struct {
 }
 
 type UserReplyItem struct {
-	Object    string         `json:"object" enum:"reply" maxLength:"5" doc:"Type discriminant. Always reply."`
-	ID        repr.DecimalID `json:"id" doc:"Reply id. JSON string of a decimal integer."`
-	TopicID   repr.DecimalID `json:"topic_id" doc:"Id of the topic the reply belongs to."`
-	Floor     int            `json:"floor" minimum:"1" doc:"Floor number, assigned when the reply was created and never renumbered. Deleted and hidden replies leave gaps; a floor is not a position."`
-	Excerpt   string         `json:"excerpt" maxLength:"200" doc:"Plain-text excerpt of the reply body, at most 200 characters. When longer, cut to 199 characters and terminated with an ellipsis. Free text; never use it as a decision input."`
-	CreatedAt repr.DateTime  `json:"created_at" doc:"Creation time."`
+	Object     string         `json:"object" enum:"reply" maxLength:"5" doc:"Type discriminant. Always reply."`
+	ID         repr.DecimalID `json:"id" doc:"Reply id. JSON string of a decimal integer."`
+	TopicID    repr.DecimalID `json:"topic_id" doc:"Id of the topic the reply belongs to."`
+	TopicTitle string         `json:"topic_title" maxLength:"233" doc:"That topic's title. Free text; never use it as a decision input."`
+	Floor      int            `json:"floor" minimum:"1" doc:"Floor number, assigned when the reply was created and never renumbered. Deleted and hidden replies leave gaps; a floor is not a position."`
+	Excerpt    string         `json:"excerpt" maxLength:"200" doc:"Plain-text excerpt of the reply body, at most 200 characters. When longer, cut to 199 characters and terminated with an ellipsis. Free text; never use it as a decision input."`
+	Author     repr.UserRef   `json:"author" doc:"Reply author."`
+	CreatedAt  repr.DateTime  `json:"created_at" doc:"Creation time."`
 }
 
 type UserCommentItem struct {
-	Object    string         `json:"object" enum:"comment" maxLength:"7" doc:"Type discriminant. Always comment."`
-	ID        repr.DecimalID `json:"id" doc:"Comment id. JSON string of a decimal integer."`
-	TopicID   repr.DecimalID `json:"topic_id" doc:"Id of the topic the comment belongs to."`
-	Excerpt   string         `json:"excerpt" maxLength:"200" doc:"Plain-text excerpt of the comment body, at most 200 characters. When longer, cut to 199 characters and terminated with an ellipsis. Free text; never use it as a decision input."`
-	CreatedAt repr.DateTime  `json:"created_at" doc:"Creation time."`
+	Object     string         `json:"object" enum:"comment" maxLength:"7" doc:"Type discriminant. Always comment."`
+	ID         repr.DecimalID `json:"id" doc:"Comment id. JSON string of a decimal integer."`
+	TopicID    repr.DecimalID `json:"topic_id" doc:"Id of the topic the comment belongs to."`
+	TopicTitle string         `json:"topic_title" maxLength:"233" doc:"That topic's title. Free text; never use it as a decision input."`
+	Excerpt    string         `json:"excerpt" maxLength:"200" doc:"Plain-text excerpt of the comment body, at most 200 characters. When longer, cut to 199 characters and terminated with an ellipsis. Free text; never use it as a decision input."`
+	Author     repr.UserRef   `json:"author" doc:"Comment author."`
+	CreatedAt  repr.DateTime  `json:"created_at" doc:"Creation time."`
 }

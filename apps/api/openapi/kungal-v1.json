@@ -20185,6 +20185,10 @@
       },
       "UserCommentItem": {
         "properties": {
+          "author": {
+            "$ref": "#/components/schemas/UserRef",
+            "description": "Comment author."
+          },
           "created_at": {
             "description": "Creation time.",
             "format": "date-time",
@@ -20217,13 +20221,20 @@
             "minLength": 1,
             "pattern": "^[0-9]+$",
             "type": "string"
+          },
+          "topic_title": {
+            "description": "That topic's title. Free text; never use it as a decision input.",
+            "maxLength": 233,
+            "type": "string"
           }
         },
         "required": [
           "object",
           "id",
           "topic_id",
+          "topic_title",
           "excerpt",
+          "author",
           "created_at"
         ],
         "type": "object"
@@ -20947,6 +20958,10 @@
       },
       "UserReplyItem": {
         "properties": {
+          "author": {
+            "$ref": "#/components/schemas/UserRef",
+            "description": "Reply author."
+          },
           "created_at": {
             "description": "Creation time.",
             "format": "date-time",
@@ -20985,14 +21000,21 @@
             "minLength": 1,
             "pattern": "^[0-9]+$",
             "type": "string"
+          },
+          "topic_title": {
+            "description": "That topic's title. Free text; never use it as a decision input.",
+            "maxLength": 233,
+            "type": "string"
           }
         },
         "required": [
           "object",
           "id",
           "topic_id",
+          "topic_title",
           "floor",
           "excerpt",
+          "author",
           "created_at"
         ],
         "type": "object"
@@ -56396,7 +56418,7 @@
     },
     "/users/{user_id}/comments": {
       "get": {
-        "description": "Lists topic comments related to a user as a page-number collection, newest first with ties broken by descending id. relation is required and closed. Comments whose parent topic is hidden or restricted never appear. NOT_FOUND when the account does not exist or is not renderable.",
+        "description": "Lists topic comments related to a user as a page-number collection, newest first with ties broken by descending id. relation is required and closed. Comments whose parent topic is hidden or restricted never appear. Comments by banned authors, or under topics by banned authors, are dropped after counting, so a page may hold fewer items than limit and total may count them. NOT_FOUND when the account does not exist or is not renderable.",
         "operationId": "listUserComments",
         "parameters": [
           {
@@ -56918,7 +56940,7 @@
     },
     "/users/{user_id}/replies": {
       "get": {
-        "description": "Lists replies related to a user as a page-number collection, newest first with ties broken by descending id. relation is required and closed. Replies whose parent topic is hidden or restricted never appear. NOT_FOUND when the account does not exist or is not renderable.",
+        "description": "Lists replies related to a user as a page-number collection, newest first with ties broken by descending id. relation is required and closed. Replies whose parent topic is hidden or restricted never appear. Replies by banned authors, or under topics by banned authors, are dropped after counting, so a page may hold fewer items than limit and total may count them. NOT_FOUND when the account does not exist or is not renderable.",
         "operationId": "listUserReplies",
         "parameters": [
           {

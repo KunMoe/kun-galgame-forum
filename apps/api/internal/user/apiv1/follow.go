@@ -286,7 +286,7 @@ func (s *Users) listFollowEdges(ctx context.Context, in *listUserFollowsInput, r
 	}
 	edges := make([]followEdge, 0, len(page.Users))
 	for _, row := range page.Users {
-		edges = append(edges, followEdge{ref: followUserRef(s.cdn, users, int(row.UserID)), at: parseFollowedAt(row.FollowedAt)})
+		edges = append(edges, followEdge{ref: renderableUserRef(s.cdn, users, int(row.UserID)), at: parseFollowedAt(row.FollowedAt)})
 	}
 	var next *string
 	if page.NextCursor != "" {
@@ -296,7 +296,7 @@ func (s *Users) listFollowEdges(ctx context.Context, in *listUserFollowsInput, r
 	return edges, next, nil
 }
 
-func followUserRef(cdn string, users map[int]userclient.User, id int) repr.UserRef {
+func renderableUserRef(cdn string, users map[int]userclient.User, id int) repr.UserRef {
 	if u, ok := users[id]; ok && userclient.IsRenderable(u) {
 		return repr.NewUserRef(cdn, u)
 	}

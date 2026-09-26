@@ -51,6 +51,7 @@ const (
 	u3aReplyOnUsers      = 970000324
 	u3aReplyPeerOnUsers  = 970000325
 	u3aReplyOnNSFW       = 970000326
+	u3aReplyBanned       = 970000327
 
 	u3aCommTieMin         = 970000411
 	u3aCommTieMax         = 970000415
@@ -63,6 +64,7 @@ const (
 	u3aCommOnUsers        = 970000431
 	u3aCommReceivedUsers  = 970000432
 	u3aCommOnNSFW         = 970000441
+	u3aCommBanned         = 970000442
 )
 
 func newU3aFix(t *testing.T) *meFix {
