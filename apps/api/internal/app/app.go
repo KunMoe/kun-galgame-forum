@@ -123,6 +123,7 @@ type App struct {
 	RolePermStop        func()
 	StoreLinkStop       func()
 	CommunityNotifyStop func()
+	ActivityPushStop    func()
 	APIv1               huma.API
 }
 
@@ -523,6 +524,7 @@ func New(cfg *config.Config) *App {
 		StoreLinkStop:       storeLinks.Start(),
 		CommunityNotifyStop: communitynotify.New(communityCli, messageRepository, anchorResolver, rdb).Start(),
 	}
+	app.ActivityPushStop = startActivityPush(db, communityCli, app.ActivityV1, cfg.OAuth.RedirectURI)
 
 	if err := adminPermSync.Load(context.Background()); err != nil {
 		slog.Warn("加载权限覆盖失败, 暂时沿用编译期基线", "error", err)
