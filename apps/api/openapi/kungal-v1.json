@@ -8094,6 +8094,34 @@
         ],
         "type": "object"
       },
+      "ListStickerPack": {
+        "properties": {
+          "items": {
+            "description": "Members of this page. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/StickerPack"
+            },
+            "type": "array"
+          },
+          "next_cursor": {
+            "description": "Opaque keyset cursor. Omitted on the last page.",
+            "maxLength": 512,
+            "pattern": "^cur_[A-Za-z0-9_-]+$",
+            "type": "string"
+          },
+          "object": {
+            "const": "list",
+            "description": "Type discriminant. Always list.",
+            "maxLength": 4,
+            "type": "string"
+          }
+        },
+        "required": [
+          "object",
+          "items"
+        ],
+        "type": "object"
+      },
       "ListTopicDraftSummary": {
         "properties": {
           "items": {
@@ -16431,6 +16459,81 @@
         "required": [
           "object",
           "children"
+        ],
+        "type": "object"
+      },
+      "Sticker": {
+        "properties": {
+          "display_name": {
+            "description": "The pack's display_name, \" - \" and the sticker's 1-based position in the pack: the alt text and title the picker inserts. Free text; never use it as a decision input.",
+            "maxLength": 220,
+            "type": "string"
+          },
+          "id": {
+            "description": "The sticker's id on sticker.kungal.com. Stable.",
+            "maxLength": 36,
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+            "type": "string"
+          },
+          "image": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Image"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The sticker at original size. Never null here. A sticker goes into a body as a Markdown image of its 320-pixel variant, /image/{hash}_320, with display_name as its alt text and title."
+          },
+          "object": {
+            "const": "sticker",
+            "description": "Type discriminant. Always sticker.",
+            "maxLength": 7,
+            "type": "string"
+          }
+        },
+        "required": [
+          "object",
+          "id",
+          "display_name",
+          "image"
+        ],
+        "type": "object"
+      },
+      "StickerPack": {
+        "properties": {
+          "display_name": {
+            "description": "The pack's name, for its tab in the picker. Free text; never use it as a decision input.",
+            "maxLength": 200,
+            "type": "string"
+          },
+          "id": {
+            "description": "The pack's id on sticker.kungal.com. Stable.",
+            "maxLength": 36,
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+            "type": "string"
+          },
+          "object": {
+            "const": "sticker_pack",
+            "description": "Type discriminant. Always sticker_pack.",
+            "maxLength": 12,
+            "type": "string"
+          },
+          "stickers": {
+            "description": "In picker order. Never empty.",
+            "items": {
+              "$ref": "#/components/schemas/Sticker"
+            },
+            "minItems": 1,
+            "type": "array"
+          }
+        },
+        "required": [
+          "object",
+          "id",
+          "display_name",
+          "stickers"
         ],
         "type": "object"
       },
@@ -48587,6 +48690,80 @@
         "summary": "List a series' works",
         "tags": [
           "galgame-series"
+        ]
+      }
+    },
+    "/sticker-packs": {
+      "get": {
+        "description": "The official packs of sticker.kungal.com that the editor's sticker picker offers, all-ages only, in picker order. Not paged. Refreshed from the sticker site at most hourly; while it cannot be reached the last good list is served.",
+        "operationId": "listStickerPacks",
+        "parameters": [
+          {
+            "description": "The ETag of a copy already held. While it still matches, the answer is 304 with no body.",
+            "in": "header",
+            "name": "If-None-Match",
+            "schema": {
+              "description": "The ETag of a copy already held. While it still matches, the answer is 304 with no body.",
+              "maxLength": 1024,
+              "pattern": "^(\\*|(W/)?\"[!#-~]{0,64}\"( *, *(W/)?\"[!#-~]{0,64}\")*)$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListStickerPack"
+                }
+              }
+            },
+            "description": "OK",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "description": "private, max-age=3600. The list is the same for every viewer; private keeps shared caches out because the response also carries per-origin CORS headers.",
+                  "maxLength": 32,
+                  "type": "string"
+                }
+              },
+              "ETag": {
+                "schema": {
+                  "description": "Strong validator of the whole list. Send it back as If-None-Match.",
+                  "maxLength": 66,
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "The If-None-Match ETag still matches. No body."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the sticker site is not configured or cannot be reached and no list has been fetched yet."
+          }
+        },
+        "summary": "List the editor's sticker packs",
+        "tags": [
+          "stickers"
         ]
       }
     },
