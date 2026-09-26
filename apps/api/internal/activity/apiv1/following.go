@@ -2,80 +2,144 @@ package apiv1
 
 import (
 	"context"
+	"errors"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
 
-	"kun-galgame-api/internal/activity/repository"
 	v1 "kun-galgame-api/internal/apiv1"
 	"kun-galgame-api/internal/apiv1/collect"
 	"kun-galgame-api/internal/apiv1/repr"
+	"kun-galgame-api/pkg/communityclient"
+	"kun-galgame-api/pkg/imageclient"
 	"kun-galgame-api/pkg/problem"
+	"kun-galgame-api/pkg/userclient"
 
 	"github.com/danielgtaylor/huma/v2"
 )
 
 const (
-	siteKungal        = "kungal"
-	followingFeedMark = "following"
-	unseenCountLimit  = 100
-	unmarkedLookback  = 7 * 24 * time.Hour
-	followingListPath = "/me/following-activities"
-	followingSummary  = followingListPath + "/summary"
-	followingReadMark = followingListPath + "/read-marker"
-	followingDown     = "SERVICE_UNAVAILABLE when the community follow graph, the account service or catalog is unreachable."
+	siteKungal         = "kungal"
+	followingSort      = "following"
+	followingListPath  = "/me/following-activities"
+	followingSummary   = followingListPath + "/summary"
+	followingReadMark  = followingListPath + "/read-marker"
+	activityGroupItems = "/activity-groups/{group_id}/items"
+	followingDown      = "SERVICE_UNAVAILABLE when the community service or the account service is unreachable."
 )
 
-type Followees interface {
-	IDs(ctx context.Context, userID int) ([]int, error)
+type ActivityVerb string
+
+func (ActivityVerb) Schema(huma.Registry) *huma.Schema {
+	s := repr.ClosedEnum("publish", "reply", "comment", "rate", "like", "edit")
+	s.Description = "What the performer did: publish, reply, comment, rate, like or edit."
+	return s
 }
 
-type FollowingActivity struct {
-	Object   string    `json:"object" enum:"following_activity" maxLength:"18" doc:"Type discriminant. Always following_activity."`
-	Site     string    `json:"site" maxLength:"64" pattern:"^[a-z0-9][a-z0-9_-]*$" doc:"The NextMoe site it happened on. kungal is this forum and the only value sent today; other sites will join. An open vocabulary: show an unknown token as it is."`
-	Activity *Activity `json:"activity" doc:"The activity, when site is kungal: the same object listActivities returns. An activity on another site will leave this null and carry a block of its own; none are sent yet, so skip an entry with neither."`
+type ActivitySite string
+
+func (ActivitySite) Schema(huma.Registry) *huma.Schema {
+	s := repr.OpenEnum("activity_site", 64)
+	s.Pattern = `^[a-z0-9][a-z0-9_-]*$`
+	s.Description = "A NextMoe site token. kungal is this forum. An open vocabulary: show an unknown token as it is."
+	return s
+}
+
+type FollowingActivityGroup struct {
+	Object       string                  `json:"object" enum:"following_activity_group" maxLength:"24" doc:"Type discriminant. Always following_activity_group."`
+	ID           repr.DecimalID          `json:"id" doc:"Community group id."`
+	Site         string                  `json:"site" maxLength:"64" pattern:"^[a-z0-9][a-z0-9_-]*$" doc:"The NextMoe site the group happened on. kungal is this forum. An open vocabulary: show an unknown token as it is."`
+	Actor        repr.UserRef            `json:"actor" doc:"Who did it. name is null when the account no longer exists; show a localized label."`
+	Verb         ActivityVerb            `json:"verb" doc:"What the performer did."`
+	ObjectKind   string                  `json:"object_kind" pattern:"^[a-z0-9_]{1,32}$" maxLength:"32" doc:"The site's type name for the object, such as topic or patch. An open vocabulary."`
+	ObjectLabel  string                  `json:"object_label" maxLength:"16" doc:"Display name of object_kind. Show as it is. Free text; never use it as a decision input."`
+	CalendarDate repr.CalendarDate       `json:"calendar_date" doc:"The Asia/Shanghai calendar day the group belongs to."`
+	ItemCount    int                     `json:"item_count" minimum:"0" doc:"Live items in the group. At least 1 from community; 0 is reserved for the integer floor every *_count uses."`
+	LatestAt     repr.DateTime           `json:"latest_at" doc:"When the newest item in the group occurred."`
+	Items        []FollowingActivityItem `json:"items" maxItems:"3" doc:"Newest items in the group, at most 3. Empty array, never null."`
+}
+
+type FollowingActivityItem struct {
+	Object        string          `json:"object" enum:"following_activity_item" maxLength:"23" doc:"Type discriminant. Always following_activity_item."`
+	ID            repr.DecimalID  `json:"id" doc:"Community item id."`
+	Site          string          `json:"site" maxLength:"64" pattern:"^[a-z0-9][a-z0-9_-]*$" doc:"The NextMoe site the item happened on. kungal is this forum. An open vocabulary: show an unknown token as it is."`
+	Key           string          `json:"key" maxLength:"128" doc:"Community's idempotency key for the item. Free text; never use it as a decision input."`
+	Verb          ActivityVerb    `json:"verb" doc:"What the performer did."`
+	ObjectKind    string          `json:"object_kind" pattern:"^[a-z0-9_]{1,32}$" maxLength:"32" doc:"The site's type name for the object. An open vocabulary."`
+	ObjectLabel   string          `json:"object_label" maxLength:"16" doc:"Display name of object_kind. Show as it is. Free text; never use it as a decision input."`
+	Title         string          `json:"title" maxLength:"200" doc:"Plain-text title. Free text; never use it as a decision input."`
+	Excerpt       string          `json:"excerpt" maxLength:"300" doc:"Plain-text excerpt, may be empty. Free text; never use it as a decision input."`
+	URL           string          `json:"url" format:"uri" maxLength:"2048" doc:"Absolute https URL of the item."`
+	InSitePath    *string         `json:"in_site_path" pattern:"^/" maxLength:"512" doc:"Path and query of url when site is kungal. null for other sites."`
+	Cover         *repr.Image     `json:"cover" doc:"Cover from community's cover_image_hash. null when none."`
+	RelatedWorkID *repr.DecimalID `json:"related_work_id" doc:"Catalog work id when the item names one. null when none."`
+	IsNSFW        bool            `json:"is_nsfw" doc:"Whether the item is not sfw."`
+	OccurredAt    repr.DateTime   `json:"occurred_at" doc:"When it happened."`
 }
 
 type FollowingActivitySummary struct {
 	Object      string         `json:"object" enum:"following_activity_summary" maxLength:"26" doc:"Type discriminant. Always following_activity_summary."`
-	LastSeenAt  *repr.DateTime `json:"last_seen_at" doc:"The caller's seen mark: activities at or before it count as seen. null until the caller first sets it."`
-	UnseenCount int            `json:"unseen_count" minimum:"0" maximum:"100" doc:"Matching rows after last_seen_at counted in SQL up to 100: 100 means 100 or more. With no seen mark, the last seven days are counted. Can include rows the list leaves out, such as a banned author's or a work catalog does not show."`
+	LastSeenAt  *repr.DateTime `json:"last_seen_at" doc:"The caller's seen mark. null until the caller first sets it."`
+	UnseenCount int            `json:"unseen_count" minimum:"0" maximum:"100" doc:"Followed groups whose latest_at is after the later of last_seen_at and when each follow began, counted up to 100: 100 means 100 or more. Uses the same include_nsfw, verbs and sites as listFollowingActivities."`
 }
 
 type FollowingActivityReadMarker struct {
 	Object string        `json:"object" enum:"following_activity_read_marker" maxLength:"30" doc:"Type discriminant. Always following_activity_read_marker."`
-	SeenAt repr.DateTime `json:"seen_at" doc:"The seen mark as stored."`
+	SeenAt repr.DateTime `json:"seen_at" doc:"The seen mark as stored by community."`
 }
 
 type FollowingActivityReadMarkerWrite struct {
-	SeenAt *repr.DateTime `json:"seen_at,omitempty" required:"false" doc:"Everything that occurred at or before this instant counts as seen. Absent means everything up to now. When present, send the occurred_at of the newest activity shown. The mark only moves forward, and a time in the future is stored as the server's current time."`
+	SeenAt *repr.DateTime `json:"seen_at,omitempty" required:"false" doc:"Mark everything at or before this instant as seen. Absent means now. The mark only moves forward and is never stored past now. Omit this field (send {}) when opening the list; do not send the time of the first group rendered."`
 }
 
 type FollowingFilters struct {
-	Types              []ActivityType `query:"activity_types" required:"false" maxItems:"22" doc:"Only these activity types, comma-separated. Absent means every type."`
-	TopicSections      string         `query:"topic_sections" enum:"normal,help,all" default:"normal" maxLength:"6" doc:"Which topic_creation activities to include: help is the resource and help sections (g-seeking, g-other, t-help), normal is every other section, all is both. Other kinds are not affected."`
-	IncludeNSFW        bool           `query:"include_nsfw" default:"false" doc:"When true, NSFW activities and works are included. Default false."`
-	IncludeUnresourced bool           `query:"include_galgames_without_resources" default:"false" doc:"When true, galgame_creation includes works that have no download resource yet. Default false."`
+	IncludeNSFW bool           `query:"include_nsfw" default:"false" doc:"When true, NSFW groups are included. Default false."`
+	Verbs       []ActivityVerb `query:"verbs" required:"false" maxItems:"6" doc:"Only these verbs, comma-separated. Absent means every verb."`
+	Sites       []ActivitySite `query:"sites" required:"false" doc:"Only these NextMoe sites, comma-separated. Absent means every site."`
 }
 
-func (f *FollowingFilters) query(actors []int) repository.FeedQuery {
-	if actors == nil {
-		actors = []int{}
+func (f FollowingFilters) contentLimit() string {
+	if f.IncludeNSFW {
+		return "all"
 	}
-	return repository.FeedQuery{
-		Types: feedTypesOf(f.Types), TopicSections: f.TopicSections, IncludeNSFW: f.IncludeNSFW,
-		IncludeUnresourced: f.IncludeUnresourced, ActorIDs: actors,
+	return "sfw"
+}
+
+func (f FollowingFilters) verbList() []string {
+	out := make([]string, len(f.Verbs))
+	for i, v := range f.Verbs {
+		out[i] = string(v)
 	}
+	return out
+}
+
+func (f FollowingFilters) siteList() []string {
+	out := make([]string, len(f.Sites))
+	for i, s := range f.Sites {
+		out[i] = string(s)
+	}
+	return out
+}
+
+func (f FollowingFilters) fingerprint(extra ...string) string {
+	parts := append([]string{f.contentLimit(), strings.Join(f.verbList(), ","), strings.Join(f.siteList(), ",")}, extra...)
+	return collect.Fingerprint(parts...)
+}
+
+type FollowingPage struct {
+	Cursor string `query:"cursor" pattern:"^cur_[A-Za-z0-9_-]+$" maxLength:"512" doc:"Opaque keyset cursor from a previous page of this collection."`
+	Limit  int    `query:"limit" minimum:"1" maximum:"50" default:"20" doc:"Page size. 1–50, default 20. Values above 50 are rejected, not clamped."`
 }
 
 type followingListInput struct {
-	collect.Page
+	FollowingPage
 	FollowingFilters
 }
 
 type followingListOutput struct {
-	Body repr.List[FollowingActivity]
+	Body repr.List[FollowingActivityGroup]
 }
 
 type followingSummaryInput struct {
@@ -94,17 +158,28 @@ type followingReadMarkerOutput struct {
 	Body FollowingActivityReadMarker
 }
 
+type groupItemsInput struct {
+	GroupID     string `path:"group_id" pattern:"^[1-9][0-9]{0,18}$" maxLength:"19" doc:"Community group id."`
+	IncludeNSFW bool   `query:"include_nsfw" default:"false" doc:"When true, NSFW items are included. Default false."`
+	FollowingPage
+}
+
+type groupItemsOutput struct {
+	Body repr.List[FollowingActivityItem]
+}
+
 func registerFollowing(api huma.API, s *Service) {
 	tags := []string{"activities"}
 	huma.Register(api, v1.Required(huma.Operation{
 		OperationID: "listFollowingActivities",
 		Method:      http.MethodGet,
 		Path:        followingListPath,
-		Summary:     "List the activity of the accounts the caller follows",
-		Description: "The activities of every account the caller follows, newest first, with the filters of listActivities and its occurred_desc order. " +
-			"Follows are NextMoe's, shared with the other NextMoe sites; a follow or unfollow made on this forum shows at once, one made elsewhere within a minute. " +
-			"An activity whose actor is banned, or whose work catalog does not show under include_nsfw, is left out, so a page can be short; " +
-			"only an absent next_cursor means the end. The cursor is bound to every filter, but not to who the caller follows.",
+		Summary:     "List grouped activity of the accounts the caller follows",
+		Description: "Groups of activity by accounts the caller follows, across NextMoe sites, newest group first. " +
+			"A group is one author's items of one verb and object_kind on one site on one Asia/Shanghai calendar day. " +
+			"A group whose actor is not renderable is dropped, so a page can be shorter than limit; " +
+			"next_cursor still comes from community, and only an absent next_cursor means the end. " +
+			"The cursor is bound to include_nsfw, verbs and sites.",
 		Tags: tags,
 		Responses: problemResponses(map[int]string{
 			400: "INVALID_CURSOR, LIMIT_TOO_LARGE, UNKNOWN_ENUM_VALUE or INVALID_PARAMETER.",
@@ -112,16 +187,33 @@ func registerFollowing(api huma.API, s *Service) {
 		}),
 	}), s.listFollowingActivities)
 
+	huma.Register(api, v1.Public(huma.Operation{
+		OperationID: "listActivityGroupItems",
+		Method:      http.MethodGet,
+		Path:        activityGroupItems,
+		Summary:     "List every live item of an activity group",
+		Description: "Every live item of one activity group, newest first. " +
+			"Unknown groups, and groups whose actor is not renderable, are NOT_FOUND. " +
+			"A page can be shorter than limit. The cursor is bound to include_nsfw.",
+		Tags: tags,
+		Responses: problemResponses(map[int]string{
+			400: "INVALID_CURSOR, LIMIT_TOO_LARGE or INVALID_PARAMETER.",
+			503: followingDown,
+		}),
+	}), s.listActivityGroupItems)
+
 	huma.Register(api, v1.Required(huma.Operation{
 		OperationID: "getFollowingActivitySummary",
 		Method:      http.MethodGet,
 		Path:        followingSummary,
 		Summary:     "Count the followed accounts' activity the caller has not seen",
-		Description: "The caller's seen mark and a SQL count, capped at 100, of matching rows by followed accounts after the mark (or in the last seven days when there is no mark), which can include rows listFollowingActivities leaves out.",
-		Tags:        tags,
+		Description: "The caller's seen mark and a count, capped at 100, of followed groups whose latest_at is after the later of the mark and when each follow began. " +
+			"100 means 100 or more. Following someone never lights up their history. " +
+			"last_seen_at is null until the caller first sets the mark. The same include_nsfw, verbs and sites filters as listFollowingActivities apply.",
+		Tags: tags,
 		Responses: problemResponses(map[int]string{
 			400: "UNKNOWN_ENUM_VALUE or INVALID_PARAMETER.",
-			503: "SERVICE_UNAVAILABLE when the community follow graph is unreachable.",
+			503: followingDown,
 		}),
 	}), s.getFollowingActivitySummary)
 
@@ -130,105 +222,282 @@ func registerFollowing(api huma.API, s *Service) {
 		Method:      http.MethodPut,
 		Path:        followingReadMark,
 		Summary:     "Move the caller's seen mark on the followed accounts' activity",
-		Description: "Stores the later of the current mark and seen_at, with a future seen_at taken as now. Absent seen_at means now. Replaying it, or sending an earlier time, changes nothing and is still 200.",
-		Tags:        tags,
+		Description: "The mark is account-wide across NextMoe sites, moves forward only, and is never stored past now. " +
+			"Omit seen_at (send {}) to mark everything up to now, which is what opening the list should do; " +
+			"never send the time of the first group the client rendered, or a hidden group above it would stay unseen.",
+		Tags: tags,
 		Responses: problemResponses(map[int]string{
 			422: "VALIDATION_FAILED when seen_at is present but not a real instant.",
+			503: followingDown,
 		}),
 	}), s.markFollowingActivitiesSeen)
 }
 
-func (s *Service) followeeIDs(ctx context.Context, userID int) ([]int, *problem.Problem) {
-	if s.followees == nil {
-		return nil, problem.Unavailable(errUnconfigured)
+func (s *Service) readyFollowing() *problem.Problem {
+	if s == nil || s.users == nil || s.convert == nil {
+		return problem.Internal(errUnconfigured)
 	}
-	ids, err := s.followees.IDs(ctx, userID)
-	if err != nil {
-		return nil, problem.Unavailable(err)
+	if s.community == nil || !s.community.Configured() {
+		return problem.Unavailable(communityclient.ErrNotConfigured)
 	}
-	return ids, nil
+	return nil
 }
 
 func (s *Service) listFollowingActivities(ctx context.Context, in *followingListInput) (*followingListOutput, error) {
-	if prob := s.ready(); prob != nil {
+	if prob := s.readyFollowing(); prob != nil {
 		return nil, prob
 	}
-	ids, prob := s.followeeIDs(ctx, v1.User(ctx).ID)
+	fp := in.fingerprint()
+	upstream, prob := unwrapCursor(in.Cursor, fp)
 	if prob != nil {
 		return nil, prob
 	}
-	q := in.query(ids)
-	q.Limit = in.Limit
-	fp := collect.Fingerprint(followingFeedMark, strings.Join(q.Types, ","), in.TopicSections,
-		strconv.FormatBool(in.IncludeNSFW), strconv.FormatBool(in.IncludeUnresourced))
-	items, next, prob := s.collectPage(ctx, feedPage{
-		sort: "occurred_desc", fingerprint: fp, cursor: in.Cursor, limit: in.Limit, includeNSFW: in.IncludeNSFW,
-		fetch: func(after *repository.FeedPos, _ *repository.TopicFeedPos) ([]repository.FeedRow, error) {
-			if len(ids) == 0 {
-				return nil, nil
+	page, err := s.community.ListFollowingActivities(ctx, int64(v1.User(ctx).ID), upstream, in.Limit, in.contentLimit(), in.siteList(), in.verbList())
+	if err != nil {
+		return nil, communityReadProblem(err, true)
+	}
+	actorIDs := make([]int, 0, len(page.Groups))
+	for _, g := range page.Groups {
+		actorIDs = append(actorIDs, int(g.ActorID))
+	}
+	users, prob := s.lookupUsers(ctx, actorIDs)
+	if prob != nil {
+		return nil, prob
+	}
+	out := make([]FollowingActivityGroup, 0, len(page.Groups))
+	for _, g := range page.Groups {
+		ref, ok := s.performer(users, int(g.ActorID))
+		if !ok {
+			continue
+		}
+		items := make([]FollowingActivityItem, 0, min(len(g.Items), 3))
+		for i, it := range g.Items {
+			if i == 3 {
+				break
 			}
-			q.After = after
-			return s.repo.FeedPage(q)
-		},
-	})
+			items = append(items, s.followingItem(it))
+		}
+		out = append(out, FollowingActivityGroup{
+			Object:       "following_activity_group",
+			ID:           decimalID(g.ID),
+			Site:         g.Site,
+			Actor:        ref,
+			Verb:         ActivityVerb(g.Verb),
+			ObjectKind:   g.ObjectKind,
+			ObjectLabel:  g.ObjectLabel,
+			CalendarDate: repr.CalendarDate(g.Day),
+			ItemCount:    g.ItemCount,
+			LatestAt:     parseDateTime(g.LatestAt),
+			Items:        items,
+		})
+	}
+	return &followingListOutput{Body: repr.NewList(out, wrapCursor(fp, page.NextCursor))}, nil
+}
+
+func (s *Service) listActivityGroupItems(ctx context.Context, in *groupItemsInput) (*groupItemsOutput, error) {
+	if prob := s.readyFollowing(); prob != nil {
+		return nil, prob
+	}
+	gid, _ := strconv.ParseInt(in.GroupID, 10, 64)
+	contentLimit := "sfw"
+	if in.IncludeNSFW {
+		contentLimit = "all"
+	}
+	fp := collect.Fingerprint(in.GroupID, contentLimit)
+	upstream, prob := unwrapCursor(in.Cursor, fp)
 	if prob != nil {
 		return nil, prob
 	}
-	out := make([]FollowingActivity, len(items))
-	for i := range items {
-		out[i] = FollowingActivity{Object: "following_activity", Site: siteKungal, Activity: &items[i]}
+	page, err := s.community.ListActivityGroupItems(ctx, gid, upstream, in.Limit, contentLimit)
+	if err != nil {
+		return nil, communityReadProblem(err, true)
 	}
-	return &followingListOutput{Body: repr.NewList(out, next)}, nil
+	actorIDs := make([]int, 0, len(page.Items))
+	for _, it := range page.Items {
+		actorIDs = append(actorIDs, int(it.ActorID))
+	}
+	users, prob := s.lookupUsers(ctx, actorIDs)
+	if prob != nil {
+		return nil, prob
+	}
+	for _, it := range page.Items {
+		if _, ok := s.performer(users, int(it.ActorID)); !ok {
+			return nil, followingNotFound()
+		}
+	}
+	out := make([]FollowingActivityItem, 0, len(page.Items))
+	for _, it := range page.Items {
+		out = append(out, s.followingItem(it))
+	}
+	return &groupItemsOutput{Body: repr.NewList(out, wrapCursor(fp, page.NextCursor))}, nil
 }
 
 func (s *Service) getFollowingActivitySummary(ctx context.Context, in *followingSummaryInput) (*followingSummaryOutput, error) {
-	if prob := s.ready(); prob != nil {
+	if prob := s.readyFollowing(); prob != nil {
 		return nil, prob
 	}
-	uid := v1.User(ctx).ID
-	ids, prob := s.followeeIDs(ctx, uid)
-	if prob != nil {
-		return nil, prob
-	}
-	seen, err := s.repo.FollowingSeenAt(uid)
+	page, err := s.community.GetFollowingActivitiesUnseen(ctx, int64(v1.User(ctx).ID), in.contentLimit(), in.siteList(), in.verbList())
 	if err != nil {
-		return nil, problem.Internal(err)
-	}
-	count := 0
-	if len(ids) > 0 {
-		from := time.Now().Add(-unmarkedLookback)
-		if seen != nil {
-			// occurred_at goes out at second precision, so a client marking the
-			// newest item it showed passes that item's truncated time.
-			from = seen.Truncate(time.Second).Add(time.Second)
-		}
-		if count, err = s.repo.CountFeedSince(in.query(ids), from, unseenCountLimit); err != nil {
-			return nil, problem.Internal(err)
-		}
+		return nil, communityReadProblem(err, false)
 	}
 	return &followingSummaryOutput{Body: FollowingActivitySummary{
-		Object: "following_activity_summary", LastSeenAt: repr.TimestampPtr(seen), UnseenCount: count,
+		Object: "following_activity_summary", LastSeenAt: parseDateTimePtr(page.SeenAt), UnseenCount: page.UnseenCount,
 	}}, nil
 }
 
 func (s *Service) markFollowingActivitiesSeen(ctx context.Context, in *followingReadMarkerInput) (*followingReadMarkerOutput, error) {
-	if prob := s.ready(); prob != nil {
+	if prob := s.readyFollowing(); prob != nil {
 		return nil, prob
 	}
-	at := time.Now()
+	var at *string
 	if in.Body.SeenAt != nil {
-		parsed, err := time.Parse(time.RFC3339, string(*in.Body.SeenAt))
-		if err != nil {
-			return nil, problem.New(problem.CodeValidationFailed, "The request is syntactically valid but semantically not.",
-				problem.AtPointer("/seen_at", problem.ReasonInvalidFormat, "must be a real instant in RFC 3339 UTC with second precision", nil))
-		}
-		at = parsed
+		s := string(*in.Body.SeenAt)
+		at = &s
 	}
-	seen, err := s.repo.MarkFollowingSeen(v1.User(ctx).ID, at)
+	page, err := s.community.MarkFollowingActivitiesSeen(ctx, int64(v1.User(ctx).ID), at)
 	if err != nil {
-		return nil, problem.Internal(err)
+		return nil, communityReadProblem(err, false)
 	}
 	return &followingReadMarkerOutput{Body: FollowingActivityReadMarker{
-		Object: "following_activity_read_marker", SeenAt: repr.Timestamp(seen),
+		Object: "following_activity_read_marker", SeenAt: parseDateTime(page.SeenAt),
 	}}, nil
+}
+
+func (s *Service) followingItem(it communityclient.ActivityItemView) FollowingActivityItem {
+	return FollowingActivityItem{
+		Object:        "following_activity_item",
+		ID:            decimalID(it.ID),
+		Site:          it.Site,
+		Key:           it.Key,
+		Verb:          ActivityVerb(it.Verb),
+		ObjectKind:    it.ObjectKind,
+		ObjectLabel:   it.ObjectLabel,
+		Title:         it.Title,
+		Excerpt:       it.Excerpt,
+		URL:           it.URL,
+		InSitePath:    inSitePath(it.Site, it.URL),
+		Cover:         s.coverImage(it.CoverImageHash),
+		RelatedWorkID: workIDPtr(it.WorkID),
+		IsNSFW:        it.ContentLimit != "sfw",
+		OccurredAt:    parseDateTime(it.OccurredAt),
+	}
+}
+
+func (s *Service) coverImage(hash string) *repr.Image {
+	if hash == "" {
+		return nil
+	}
+	var meta *imageclient.ImageMeta
+	if s.convert.Images != nil {
+		if m, ok := s.convert.Images([]string{hash})[hash]; ok {
+			cp := m
+			meta = &cp
+		}
+	}
+	return repr.NewImage(s.cdn, hash, meta)
+}
+
+func (s *Service) performer(users map[int]userclient.User, id int) (repr.UserRef, bool) {
+	u, ok := users[id]
+	if !ok {
+		return repr.DeletedUserRef(id), true
+	}
+	if !userclient.IsRenderable(u) {
+		return repr.UserRef{}, false
+	}
+	return repr.NewUserRef(s.cdn, u), true
+}
+
+func unwrapCursor(cur, fp string) (string, *problem.Problem) {
+	keys, prob := collect.DecodeCursor(cur, followingSort, fp)
+	if prob != nil {
+		return "", prob
+	}
+	if keys == nil {
+		return "", nil
+	}
+	if len(keys) != 1 {
+		return "", followingInvalidCursor()
+	}
+	return keys[0], nil
+}
+
+func wrapCursor(fp, upstream string) *string {
+	if upstream == "" {
+		return nil
+	}
+	c := collect.EncodeCursor(followingSort, fp, upstream)
+	return &c
+}
+
+func communityReadProblem(err error, cursor400 bool) *problem.Problem {
+	switch {
+	case errors.Is(err, communityclient.ErrNotConfigured), errors.Is(err, communityclient.ErrForbidden):
+		return problem.Unavailable(err)
+	}
+	var apiErr *communityclient.APIError
+	if !errors.As(err, &apiErr) {
+		return problem.Unavailable(err)
+	}
+	switch {
+	case apiErr.Status == http.StatusBadRequest && cursor400:
+		return followingInvalidCursor()
+	case apiErr.Status == http.StatusNotFound:
+		return followingNotFound()
+	case apiErr.Status >= 500:
+		return problem.Unavailable(err)
+	}
+	return problem.Unavailable(err)
+}
+
+func followingInvalidCursor() *problem.Problem {
+	return problem.New(problem.CodeInvalidCursor, "The cursor cannot be parsed or is no longer valid.",
+		problem.AtParameter("cursor", problem.ReasonInvalidFormat, "pass the next_cursor from a previous page of this collection", nil))
+}
+
+func followingNotFound() *problem.Problem {
+	return problem.New(problem.CodeNotFound, "Nothing visible exists at this URL.")
+}
+
+func decimalID(id int64) repr.DecimalID {
+	return repr.DecimalID(strconv.FormatInt(id, 10))
+}
+
+func workIDPtr(id *int64) *repr.DecimalID {
+	if id == nil || *id <= 0 {
+		return nil
+	}
+	d := decimalID(*id)
+	return &d
+}
+
+func inSitePath(site, rawURL string) *string {
+	if site != siteKungal {
+		return nil
+	}
+	u, err := url.Parse(rawURL)
+	if err != nil {
+		return nil
+	}
+	p := u.RequestURI()
+	return &p
+}
+
+func parseDateTime(raw string) repr.DateTime {
+	t, err := time.Parse(time.RFC3339Nano, raw)
+	if err != nil {
+		t, err = time.Parse(time.RFC3339, raw)
+	}
+	if err != nil {
+		return repr.DateTime(raw)
+	}
+	return repr.Timestamp(t)
+}
+
+func parseDateTimePtr(raw *string) *repr.DateTime {
+	if raw == nil || *raw == "" {
+		return nil
+	}
+	t := parseDateTime(*raw)
+	return &t
 }

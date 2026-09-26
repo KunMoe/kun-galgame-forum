@@ -2,55 +2,113 @@ package app
 
 import (
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
+	"sync"
+	"sync/atomic"
 	"testing"
-	"time"
 
-	"kun-galgame-api/internal/apiv1/repr"
+	"kun-galgame-api/internal/apiv1/collect"
+	"kun-galgame-api/pkg/communityclient"
+	"kun-galgame-api/pkg/imageclient"
 )
 
 const (
-	faTopicMin = 930001001
-	faReplyMin = 930001501
-	faWorkMin  = 930002001
-	faPath     = "/me/following-activities"
+	faPath      = "/me/following-activities"
+	faGroupPath = "/activity-groups/{group_id}/items"
+	faCoverHash = "abababababababababababababababababababababababababababababababab"
 )
 
+type followingReq struct {
+	Method, Path, RawQuery, Body string
+}
+
+type followingUpstream struct {
+	mu         sync.Mutex
+	reqs       []followingReq
+	down       atomic.Bool
+	groups     []communityclient.ActivityGroupView
+	next       string
+	items      map[int64][]communityclient.ActivityItemView
+	unseen     int
+	seenAt     *string
+	seenReply  string
+	badCursors map[string]bool
+}
+
+func (u *followingUpstream) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if u.down.Load() {
+		writeEnvelope(w, http.StatusBadGateway, 50000, "upstream down", nil)
+		return
+	}
+	body, _ := io.ReadAll(r.Body)
+	u.mu.Lock()
+	u.reqs = append(u.reqs, followingReq{Method: r.Method, Path: r.URL.Path, RawQuery: r.URL.RawQuery, Body: string(body)})
+	groups := append([]communityclient.ActivityGroupView(nil), u.groups...)
+	next := u.next
+	items := u.items
+	unseen, seenAt, seenReply := u.unseen, u.seenAt, u.seenReply
+	bad := u.badCursors[r.URL.Query().Get("cursor")]
+	u.mu.Unlock()
+
+	path := r.URL.Path
+	switch {
+	case r.Method == http.MethodGet && strings.HasSuffix(path, "/following/activities") && !strings.HasSuffix(path, "/unseen"):
+		if bad {
+			writeEnvelope(w, http.StatusBadRequest, 40000, "bad cursor", nil)
+			return
+		}
+		writeEnvelope(w, 200, 0, "", communityclient.ActivityGroupListResponse{Groups: groups, NextCursor: next})
+	case r.Method == http.MethodGet && strings.HasSuffix(path, "/following/activities/unseen"):
+		writeEnvelope(w, 200, 0, "", communityclient.ActivityUnseenResponse{UnseenCount: unseen, SeenAt: seenAt})
+	case r.Method == http.MethodPost && strings.HasSuffix(path, "/following/activities/seen"):
+		writeEnvelope(w, 200, 0, "", communityclient.ActivitySeenResponse{SeenAt: seenReply})
+	case r.Method == http.MethodGet && strings.HasPrefix(path, "/activity-groups/") && strings.HasSuffix(path, "/items"):
+		if bad {
+			writeEnvelope(w, http.StatusBadRequest, 40000, "bad cursor", nil)
+			return
+		}
+		idStr := strings.TrimSuffix(strings.TrimPrefix(path, "/activity-groups/"), "/items")
+		id, _ := strconv.ParseInt(idStr, 10, 64)
+		page, ok := items[id]
+		if !ok {
+			writeEnvelope(w, http.StatusNotFound, 40400, "no such group", nil)
+			return
+		}
+		writeEnvelope(w, 200, 0, "", communityclient.ActivityItemListResponse{Items: page, NextCursor: next})
+	default:
+		writeEnvelope(w, http.StatusNotFound, 40400, "no route "+path, nil)
+	}
+}
+
+func (u *followingUpstream) last() followingReq {
+	u.mu.Lock()
+	defer u.mu.Unlock()
+	if len(u.reqs) == 0 {
+		return followingReq{}
+	}
+	return u.reqs[len(u.reqs)-1]
+}
+
+func (u *followingUpstream) query() url.Values {
+	q, _ := url.ParseQuery(u.last().RawQuery)
+	return q
+}
+
 type followingFix struct {
-	*followFix
+	*writeFix
+	cm *followingUpstream
 }
 
 func newFollowingFix(t *testing.T) *followingFix {
 	t.Helper()
-	return &followingFix{newFollowFix(t)}
-}
-
-func (f *followingFix) topic(t *testing.T, id, user int, nsfw bool, created time.Time) {
-	t.Helper()
-	if err := f.db.Exec(`INSERT INTO topic (
-		id, title, content, view, status, category, status_update_time, created, updated,
-		user_id, is_nsfw, access_scope, cover_images, like_count, dislike_count, reply_count, comment_count,
-		favorite_count, upvote_count, view_7d, view_30d, hidden_by, last_reply_floor
-	) VALUES (?, ?, 'body', 0, 0, 'galgame', ?, ?, ?, ?, ?, 'public', '', 0, 0, 0, 0, 0, 0, 0, 0, '', 0)`,
-		id, fmt.Sprintf("t%d", id), created, created, created, user, nsfw).Error; err != nil {
-		t.Fatalf("topic %d: %v", id, err)
-	}
-}
-
-func (f *followingFix) reply(t *testing.T, id, topicID, user int, created time.Time) {
-	t.Helper()
-	if err := f.db.Exec(`INSERT INTO topic_reply (id, content, floor, user_id, topic_id, status, like_count, created, updated)
-		VALUES (?, 'a reply', 1, ?, ?, 0, 0, ?, ?)`, id, user, topicID, created, created).Error; err != nil {
-		t.Fatalf("reply %d: %v", id, err)
-	}
-}
-
-func (f *followingFix) follows(viewer int, followees ...int) {
-	for _, id := range followees {
-		f.cm.seedFollow(int64(viewer), int64(id), "2026-09-25T00:00:00Z")
-	}
+	cm := &followingUpstream{items: map[int64][]communityclient.ActivityItemView{}, seenReply: "2026-09-26T00:00:00Z"}
+	base := newWriteFixCommunity(t, nil, cm)
+	base.alice(t)
+	return &followingFix{writeFix: base, cm: cm}
 }
 
 func (f *followingFix) list(t *testing.T, session string, q url.Values) (*http.Response, map[string]any) {
@@ -63,418 +121,254 @@ func (f *followingFix) summary(t *testing.T, session string, q url.Values) (*htt
 	return f.callJSON(t, http.MethodGet, "/api/v1"+faPath+"/summary?"+q.Encode(), faPath+"/summary", session, "", nil)
 }
 
-func (f *followingFix) mark(t *testing.T, session, seenAt string) (*http.Response, map[string]any) {
+func (f *followingFix) mark(t *testing.T, session string, payload map[string]any) (*http.Response, map[string]any) {
 	t.Helper()
-	return f.callJSON(t, http.MethodPut, "/api/v1"+faPath+"/read-marker", faPath+"/read-marker", session, "",
-		map[string]any{"seen_at": seenAt})
+	return f.callJSON(t, http.MethodPut, "/api/v1"+faPath+"/read-marker", faPath+"/read-marker", session, "", payload)
 }
 
-func (f *followingFix) markEmpty(t *testing.T, session string) (*http.Response, map[string]any) {
+func (f *followingFix) items(t *testing.T, session, groupID string, q url.Values) (*http.Response, map[string]any) {
 	t.Helper()
-	return f.callJSON(t, http.MethodPut, "/api/v1"+faPath+"/read-marker", faPath+"/read-marker", session, "",
-		map[string]any{})
+	return f.callJSON(t, http.MethodGet, "/api/v1/activity-groups/"+groupID+"/items?"+q.Encode(), faGroupPath, session, "", nil)
 }
 
-func (f *followingFix) walk(t *testing.T, session string, q url.Values, limit int) []map[string]any {
-	t.Helper()
-	q.Set("limit", strconv.Itoa(limit))
-	var all []map[string]any
-	for range 200 {
-		resp, body := f.list(t, session, q)
-		if resp.StatusCode != http.StatusOK {
-			t.Fatalf("list %d %+v", resp.StatusCode, body)
-		}
-		all = append(all, listItems(t, body)...)
-		next, _ := body["next_cursor"].(string)
-		if next == "" {
-			return all
-		}
-		q.Set("cursor", next)
+func faItem(id, actor int64, site, verb, title, rawURL, limit string, workID *int64, hash string) communityclient.ActivityItemView {
+	return communityclient.ActivityItemView{
+		ID: id, Site: site, Key: "key-" + strconv.FormatInt(id, 10), ActorID: actor, Verb: verb,
+		ObjectKind: "topic", ObjectLabel: "Topic", Title: title, Excerpt: "lede", URL: rawURL,
+		CoverImageHash: hash, WorkID: workID, ContentLimit: limit, OccurredAt: "2026-09-25T12:00:00Z",
 	}
-	t.Fatal("walk did not end")
-	return nil
 }
 
-func unseenCount(t *testing.T, resp *http.Response, body map[string]any) int {
-	t.Helper()
-	if resp.StatusCode != http.StatusOK {
-		t.Fatalf("summary %d %+v", resp.StatusCode, body)
+func faGroup(id, actor int64, site, verb, day string, items ...communityclient.ActivityItemView) communityclient.ActivityGroupView {
+	return communityclient.ActivityGroupView{
+		ID: id, Site: site, ActorID: actor, Verb: verb, ObjectKind: "topic", ObjectLabel: "Topic",
+		Day: day, ItemCount: max(len(items), 1), LatestAt: "2026-09-25T12:00:00Z", Items: items,
 	}
-	n, ok := body["unseen_count"].(float64)
-	if !ok {
-		t.Fatalf("unseen_count %v", body["unseen_count"])
-	}
-	return int(n)
 }
 
-func followedActivity(t *testing.T, item map[string]any) map[string]any {
-	t.Helper()
-	if item["object"] != "following_activity" || item["site"] != "kungal" {
-		t.Fatalf("entry %+v", item)
-	}
-	a, ok := item["activity"].(map[string]any)
-	if !ok {
-		t.Fatalf("activity %+v", item["activity"])
-	}
-	return a
-}
-
-func performerID(a map[string]any) string {
-	p, _ := a["performer"].(map[string]any)
-	return fmt.Sprint(p["id"])
-}
-
-func TestV1FollowingActivitiesOnlyFollowees(t *testing.T) {
+func TestV1FollowingActivitiesMapsGroupAndItems(t *testing.T) {
 	f := newFollowingFix(t)
-	base := time.Now().Add(-time.Hour).Truncate(time.Second)
-	f.topic(t, faTopicMin, w3UserOther, false, base)
-	f.topic(t, faTopicMin+1, w3UserGrant, false, base.Add(time.Minute))
-	f.topic(t, faTopicMin+2, w3UserBanned, false, base.Add(2*time.Minute))
-	f.follows(w3UserBob, w3UserOther, w3UserGrant, w3UserBanned)
-
-	items := f.walk(t, "sess-bob", url.Values{}, 20)
-	want := []string{strconv.Itoa(w3UserGrant), strconv.Itoa(w3UserOther)}
-	if len(items) != len(want) {
-		t.Fatalf("items %d, want %d: %+v", len(items), len(want), items)
+	work := int64(77)
+	kungal := faItem(101, int64(w3UserOther), "kungal", "publish", "Hello",
+		"https://www.kungal.com/topic/42?reply=3", "sfw", &work, faCoverHash)
+	moyu := faItem(202, int64(w3UserGrant), "moyu", "like", "Patch",
+		"https://www.moyu.moe/patch/9", "all", nil, "")
+	f.cm.groups = []communityclient.ActivityGroupView{
+		faGroup(11, int64(w3UserOther), "kungal", "publish", "2026-09-25", kungal),
+		faGroup(12, int64(w3UserGrant), "moyu", "like", "2026-09-26", moyu),
 	}
-	for i, it := range items {
-		a := followedActivity(t, it)
-		if a["activity_type"] != "topic_creation" || performerID(a) != want[i] {
-			t.Fatalf("item %d: %v by %s, want topic_creation by %s", i, a["activity_type"], performerID(a), want[i])
-		}
-	}
-
-	resp, body := f.summary(t, "sess-bob", url.Values{})
-	if n := unseenCount(t, resp, body); n != 3 {
-		t.Fatalf("unseen %d, want 3 (the banned author's row is counted, not listed)", n)
-	}
-	if body["last_seen_at"] != nil {
-		t.Fatalf("last_seen_at %v, want null", body["last_seen_at"])
-	}
-}
-
-func TestV1FollowingActivitiesFollowsNobody(t *testing.T) {
-	f := newFollowingFix(t)
-	f.topic(t, faTopicMin, w3UserOther, false, time.Now().Add(-time.Hour))
 
 	resp, body := f.list(t, "sess-bob", url.Values{})
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("list %d %+v", resp.StatusCode, body)
 	}
-	if items := listItems(t, body); len(items) != 0 {
-		t.Fatalf("items %+v, want none", items)
+	items := listItems(t, body)
+	if len(items) != 2 {
+		t.Fatalf("groups %d, want 2: %+v", len(items), items)
 	}
-	if _, ok := body["next_cursor"]; ok {
-		t.Fatalf("next_cursor on an empty list")
+	g0 := items[0]
+	if g0["object"] != "following_activity_group" || fmt.Sprint(g0["id"]) != "11" || g0["site"] != "kungal" ||
+		g0["verb"] != "publish" || g0["object_kind"] != "topic" || g0["object_label"] != "Topic" ||
+		g0["calendar_date"] != "2026-09-25" || asInt(g0["item_count"]) != 1 || g0["latest_at"] != "2026-09-25T12:00:00Z" {
+		t.Fatalf("kungal group %+v", g0)
 	}
-	resp, body = f.summary(t, "sess-bob", url.Values{})
-	if n := unseenCount(t, resp, body); n != 0 {
-		t.Fatalf("unseen %d, want 0", n)
+	perf, _ := g0["actor"].(map[string]any)
+	if fmt.Sprint(perf["id"]) != strconv.Itoa(w3UserOther) || perf["name"] != "other" {
+		t.Fatalf("actor %+v", perf)
 	}
-}
-
-func TestV1FollowingActivitiesNSFW(t *testing.T) {
-	f := newFollowingFix(t)
-	base := time.Now().Add(-time.Hour).Truncate(time.Second)
-	f.topic(t, faTopicMin, w3UserOther, false, base)
-	f.topic(t, faTopicMin+1, w3UserOther, true, base.Add(time.Minute))
-	f.follows(w3UserBob, w3UserOther)
-
-	if items := f.walk(t, "sess-bob", url.Values{}, 20); len(items) != 1 {
-		t.Fatalf("sfw items %d, want 1", len(items))
+	row, _ := g0["items"].([]any)
+	if len(row) != 1 {
+		t.Fatalf("items %+v", row)
 	}
-	if items := f.walk(t, "sess-bob", url.Values{"include_nsfw": {"true"}}, 20); len(items) != 2 {
-		t.Fatalf("nsfw items %d, want 2", len(items))
+	it, _ := row[0].(map[string]any)
+	if it["object"] != "following_activity_item" || fmt.Sprint(it["id"]) != "101" || it["title"] != "Hello" ||
+		it["excerpt"] != "lede" || it["url"] != "https://www.kungal.com/topic/42?reply=3" ||
+		it["in_site_path"] != "/topic/42?reply=3" || fmt.Sprint(it["related_work_id"]) != "77" ||
+		it["is_nsfw"] != false || it["occurred_at"] != "2026-09-25T12:00:00Z" {
+		t.Fatalf("kungal item %+v", it)
 	}
-	resp, body := f.summary(t, "sess-bob", url.Values{})
-	if n := unseenCount(t, resp, body); n != 1 {
-		t.Fatalf("sfw unseen %d, want 1", n)
+	cover, _ := it["cover"].(map[string]any)
+	wantURL := imageclient.MainURL("https://image.test.example", faCoverHash, "webp")
+	if cover["hash"] != faCoverHash || cover["url"] != wantURL {
+		t.Fatalf("cover %+v, want hash %s url %s", cover, faCoverHash, wantURL)
 	}
-}
-
-func TestV1FollowingActivitiesWalkWithTies(t *testing.T) {
-	f := newFollowingFix(t)
-	tie := time.Now().Add(-3 * time.Hour).Truncate(time.Second)
-	for i := range 5 {
-		f.topic(t, faTopicMin+i, []int{w3UserOther, w3UserGrant}[i%2], false, tie)
+	g1 := items[1]
+	if g1["site"] != "moyu" {
+		t.Fatalf("moyu group %+v", g1)
 	}
-	f.topic(t, faTopicMin+5, w3UserOther, false, tie.Add(time.Minute))
-	f.reply(t, faReplyMin, faTopicMin+5, w3UserGrant, tie)
-	f.follows(w3UserBob, w3UserOther, w3UserGrant)
-
-	var want []string
-	if err := f.db.Raw(`SELECT id::text FROM feed_activity WHERE user_id IN (?, ?) AND NOT is_nsfw
-		ORDER BY created DESC, type DESC, source_id DESC`, w3UserOther, w3UserGrant).Scan(&want).Error; err != nil {
-		t.Fatal(err)
-	}
-	if len(want) != 7 {
-		t.Fatalf("seeded rows %d, want 7", len(want))
-	}
-	for _, limit := range []int{1, 2, 3, 100} {
-		items := f.walk(t, "sess-bob", url.Values{}, limit)
-		var got []string
-		for _, it := range items {
-			got = append(got, fmt.Sprint(followedActivity(t, it)["id"]))
-		}
-		if fmt.Sprint(got) != fmt.Sprint(want) {
-			t.Fatalf("limit %d: %v, want %v", limit, got, want)
-		}
+	row, _ = g1["items"].([]any)
+	it, _ = row[0].(map[string]any)
+	if it["in_site_path"] != nil || it["is_nsfw"] != true || it["related_work_id"] != nil || it["cover"] != nil {
+		t.Fatalf("moyu item %+v", it)
 	}
 }
 
-func TestV1FollowingActivitiesCursorIsItsOwn(t *testing.T) {
+func TestV1FollowingActivitiesFiltersReachCommunity(t *testing.T) {
 	f := newFollowingFix(t)
-	base := time.Now().Add(-time.Hour).Truncate(time.Second)
-	f.topic(t, faTopicMin, w3UserOther, false, base)
-	f.topic(t, faTopicMin+1, w3UserOther, false, base.Add(time.Minute))
-	f.follows(w3UserBob, w3UserOther)
-
-	resp, body := f.callJSON(t, http.MethodGet, "/api/v1/activities?limit=1", "/activities", "", "", nil)
+	resp, body := f.list(t, "sess-bob", url.Values{})
 	if resp.StatusCode != http.StatusOK {
-		t.Fatalf("activities %d %+v", resp.StatusCode, body)
+		t.Fatalf("sfw %d %+v", resp.StatusCode, body)
 	}
-	foreign, _ := body["next_cursor"].(string)
-	if foreign == "" {
-		t.Fatal("no cursor from listActivities")
+	if f.cm.query().Get("content_limit") != "sfw" {
+		t.Fatalf("default content_limit %q", f.cm.last().RawQuery)
 	}
-	resp, body = f.list(t, "sess-bob", url.Values{"cursor": {foreign}})
-	mustCode(t, resp, body, http.StatusBadRequest, "INVALID_CURSOR")
+	resp, body = f.list(t, "sess-bob", url.Values{"include_nsfw": {"true"}, "verbs": {"publish,like"}, "sites": {"kungal,moyu"}})
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("filtered %d %+v", resp.StatusCode, body)
+	}
+	q := f.cm.query()
+	if q.Get("content_limit") != "all" || q.Get("verbs") != "publish,like" || q.Get("sites") != "kungal,moyu" {
+		t.Fatalf("filters %q", f.cm.last().RawQuery)
+	}
+}
 
-	resp, body = f.list(t, "sess-bob", url.Values{"limit": {"1"}})
-	own, _ := body["next_cursor"].(string)
+func TestV1FollowingActivitiesDropsBannedActorKeepsCursor(t *testing.T) {
+	f := newFollowingFix(t)
+	f.cm.next = "cm_page2"
+	f.cm.groups = []communityclient.ActivityGroupView{
+		faGroup(11, int64(w3UserBanned), "kungal", "publish", "2026-09-25",
+			faItem(101, int64(w3UserBanned), "kungal", "publish", "x", "https://www.kungal.com/topic/1", "sfw", nil, "")),
+		faGroup(12, int64(w3UserOther), "kungal", "reply", "2026-09-25",
+			faItem(102, int64(w3UserOther), "kungal", "reply", "y", "https://www.kungal.com/topic/2", "sfw", nil, "")),
+	}
+	resp, body := f.list(t, "sess-bob", url.Values{})
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("list %d %+v", resp.StatusCode, body)
+	}
+	items := listItems(t, body)
+	if len(items) != 1 || fmt.Sprint(items[0]["id"]) != "12" {
+		t.Fatalf("items %+v, want only group 12", items)
+	}
+	if nextCursor(body) == "" {
+		t.Fatal("dropped the banned group and also dropped next_cursor")
+	}
+}
+
+func TestV1FollowingActivitiesCursorRoundTrip(t *testing.T) {
+	f := newFollowingFix(t)
+	f.cm.next = "cm_page2"
+	f.cm.groups = []communityclient.ActivityGroupView{
+		faGroup(11, int64(w3UserOther), "kungal", "publish", "2026-09-25",
+			faItem(101, int64(w3UserOther), "kungal", "publish", "x", "https://www.kungal.com/topic/1", "sfw", nil, "")),
+	}
+	resp, body := f.list(t, "sess-bob", url.Values{"limit": {"1"}})
+	own := nextCursor(body)
 	if resp.StatusCode != http.StatusOK || own == "" {
 		t.Fatalf("first page %d %+v", resp.StatusCode, body)
+	}
+	f.cm.next = ""
+	resp, body = f.list(t, "sess-bob", url.Values{"limit": {"1"}, "cursor": {own}})
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("page 2 %d %+v", resp.StatusCode, body)
+	}
+	if f.cm.query().Get("cursor") != "cm_page2" {
+		t.Fatalf("community cursor %q, want cm_page2", f.cm.last().RawQuery)
 	}
 	resp, body = f.list(t, "sess-bob", url.Values{"limit": {"1"}, "cursor": {own}, "include_nsfw": {"true"}})
 	mustCode(t, resp, body, http.StatusBadRequest, "INVALID_CURSOR")
 }
 
-func TestV1FollowingActivitiesSeeAFollowAtOnce(t *testing.T) {
+func TestV1FollowingActivitiesCommunityCursor400(t *testing.T) {
 	f := newFollowingFix(t)
-	f.topic(t, faTopicMin, w3UserOther, false, time.Now().Add(-time.Hour))
-
-	resp, body := f.list(t, "sess-bob", url.Values{})
-	if resp.StatusCode != http.StatusOK || len(listItems(t, body)) != 0 {
-		t.Fatalf("before %d %+v", resp.StatusCode, body)
-	}
-	resp, body = f.followOp(t, http.MethodPut, "sess-bob", strconv.Itoa(w3UserOther))
-	wantFollowState(t, resp, body, strconv.Itoa(w3UserOther), true, false)
-	if items := f.walk(t, "sess-bob", url.Values{}, 20); len(items) != 1 {
-		t.Fatalf("after follow %d items, want 1", len(items))
-	}
-	resp, body = f.followOp(t, http.MethodDelete, "sess-bob", strconv.Itoa(w3UserOther))
-	wantFollowState(t, resp, body, strconv.Itoa(w3UserOther), false, false)
-	if items := f.walk(t, "sess-bob", url.Values{}, 20); len(items) != 0 {
-		t.Fatalf("after unfollow %d items, want 0", len(items))
-	}
+	fp := collect.Fingerprint("sfw", "", "")
+	cur := collect.EncodeCursor("following", fp, "nope")
+	f.cm.badCursors = map[string]bool{"nope": true}
+	resp, body := f.list(t, "sess-bob", url.Values{"cursor": {cur}})
+	mustCode(t, resp, body, http.StatusBadRequest, "INVALID_CURSOR")
 }
 
 func TestV1FollowingActivitiesCommunityDown(t *testing.T) {
 	f := newFollowingFix(t)
-	f.follows(w3UserBob, w3UserOther)
 	f.cm.down.Store(true)
-
 	resp, body := f.list(t, "sess-bob", url.Values{})
 	mustCode(t, resp, body, http.StatusServiceUnavailable, "SERVICE_UNAVAILABLE")
 	resp, body = f.summary(t, "sess-bob", url.Values{})
 	mustCode(t, resp, body, http.StatusServiceUnavailable, "SERVICE_UNAVAILABLE")
-	resp, body = f.mark(t, "sess-bob", faTime(time.Now().Add(-time.Minute)))
-	if resp.StatusCode != http.StatusOK {
-		t.Fatalf("mark %d %+v", resp.StatusCode, body)
-	}
+	resp, body = f.mark(t, "sess-bob", map[string]any{})
+	mustCode(t, resp, body, http.StatusServiceUnavailable, "SERVICE_UNAVAILABLE")
+	resp, body = f.items(t, "", "11", url.Values{})
+	mustCode(t, resp, body, http.StatusServiceUnavailable, "SERVICE_UNAVAILABLE")
+}
 
-	resp, body = f.list(t, "", url.Values{})
+func TestV1FollowingActivitiesUnauthenticated(t *testing.T) {
+	f := newFollowingFix(t)
+	resp, body := f.list(t, "", url.Values{})
 	mustCode(t, resp, body, http.StatusUnauthorized, "MISSING_CREDENTIAL")
 }
 
-func TestV1FollowingActivitySummaryWindow(t *testing.T) {
+func TestV1ActivityGroupItemsPublic(t *testing.T) {
 	f := newFollowingFix(t)
-	now := time.Now()
-	f.topic(t, faTopicMin, w3UserOther, false, now.Add(-7*24*time.Hour-time.Hour))
-	f.topic(t, faTopicMin+1, w3UserOther, false, now.Add(-6*24*time.Hour-23*time.Hour))
-	f.follows(w3UserBob, w3UserOther)
-
-	resp, body := f.summary(t, "sess-bob", url.Values{})
-	if n := unseenCount(t, resp, body); n != 1 {
-		t.Fatalf("unmarked unseen %d, want 1 (inside 6d23h, outside 7d1h)", n)
+	f.cm.items[11] = []communityclient.ActivityItemView{
+		faItem(101, int64(w3UserOther), "kungal", "publish", "Hello", "https://www.kungal.com/topic/42", "sfw", nil, ""),
+	}
+	resp, body := f.items(t, "", "11", url.Values{})
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("items %d %+v", resp.StatusCode, body)
+	}
+	got := listItems(t, body)
+	if len(got) != 1 || fmt.Sprint(got[0]["id"]) != "101" || got[0]["in_site_path"] != "/topic/42" {
+		t.Fatalf("items %+v", got)
 	}
 }
 
-func TestV1FollowingActivitySummaryAfterMark(t *testing.T) {
+func TestV1ActivityGroupItemsUnknown(t *testing.T) {
 	f := newFollowingFix(t)
-	mark := time.Now().Add(-time.Hour).Truncate(time.Second)
-	f.topic(t, faTopicMin, w3UserOther, false, mark.Add(-time.Minute))
-	f.topic(t, faTopicMin+1, w3UserOther, false, mark)
-	f.topic(t, faTopicMin+2, w3UserOther, false, mark.Add(500*time.Millisecond))
-	f.topic(t, faTopicMin+3, w3UserOther, false, mark.Add(time.Second))
-	f.reply(t, faReplyMin, faTopicMin, w3UserOther, mark.Add(2*time.Second))
-	f.follows(w3UserBob, w3UserOther)
+	resp, body := f.items(t, "", "99", url.Values{})
+	mustCode(t, resp, body, http.StatusNotFound, "NOT_FOUND")
+}
 
-	resp, body := f.mark(t, "sess-bob", faTime(mark))
-	if resp.StatusCode != http.StatusOK || body["seen_at"] != faTime(mark) {
-		t.Fatalf("mark %d %+v", resp.StatusCode, body)
+func TestV1ActivityGroupItemsBannedActor(t *testing.T) {
+	f := newFollowingFix(t)
+	f.cm.items[11] = []communityclient.ActivityItemView{
+		faItem(101, int64(w3UserBanned), "kungal", "publish", "x", "https://www.kungal.com/topic/1", "sfw", nil, ""),
 	}
+	resp, body := f.items(t, "", "11", url.Values{})
+	mustCode(t, resp, body, http.StatusNotFound, "NOT_FOUND")
+}
+
+func TestV1FollowingActivitySummary(t *testing.T) {
+	f := newFollowingFix(t)
+	f.cm.unseen = 7
+	resp, body := f.summary(t, "sess-bob", url.Values{"include_nsfw": {"true"}, "verbs": {"publish"}, "sites": {"kungal"}})
+	if resp.StatusCode != http.StatusOK || asInt(body["unseen_count"]) != 7 || body["last_seen_at"] != nil {
+		t.Fatalf("summary %d %+v", resp.StatusCode, body)
+	}
+	q := f.cm.query()
+	if q.Get("content_limit") != "all" || q.Get("verbs") != "publish" || q.Get("sites") != "kungal" {
+		t.Fatalf("unseen query %q", f.cm.last().RawQuery)
+	}
+	at := "2026-09-25T12:00:00Z"
+	f.cm.seenAt = &at
 	resp, body = f.summary(t, "sess-bob", url.Values{})
-	if n := unseenCount(t, resp, body); n != 2 {
-		t.Fatalf("unseen %d, want 2: the topic a second after the mark and the reply", n)
-	}
-	if body["last_seen_at"] != faTime(mark) {
-		t.Fatalf("last_seen_at %v", body["last_seen_at"])
-	}
-	resp, body = f.summary(t, "sess-bob", url.Values{"activity_types": {"topic_creation"}})
-	if n := unseenCount(t, resp, body); n != 1 {
-		t.Fatalf("topic-only unseen %d, want 1", n)
-	}
-	resp, body = f.summary(t, "sess-bob", url.Values{"activity_types": {"topic_reply_creation"}})
-	if n := unseenCount(t, resp, body); n != 1 {
-		t.Fatalf("reply-only unseen %d, want 1", n)
-	}
-}
-
-func TestV1FollowingActivitySummaryCap(t *testing.T) {
-	f := newFollowingFix(t)
-	base := time.Now().Add(-2 * time.Hour)
-	if err := f.db.Exec(`INSERT INTO topic (
-		id, title, content, view, status, category, status_update_time, created, updated,
-		user_id, is_nsfw, access_scope, cover_images, like_count, dislike_count, reply_count, comment_count,
-		favorite_count, upvote_count, view_7d, view_30d, hidden_by, last_reply_floor
-	) SELECT ? + g, 'bulk', 'body', 0, 0, 'galgame', ?, ?, ?, ?, false, 'public', '', 0, 0, 0, 0, 0, 0, 0, 0, '', 0
-	FROM generate_series(0, 149) g`, faTopicMin, base, base, base, w3UserOther).Error; err != nil {
-		t.Fatal(err)
-	}
-	f.follows(w3UserBob, w3UserOther)
-	resp, body := f.summary(t, "sess-bob", url.Values{})
-	if n := unseenCount(t, resp, body); n != 100 {
-		t.Fatalf("unseen %d, want the cap of 100", n)
+	if resp.StatusCode != http.StatusOK || body["last_seen_at"] != at {
+		t.Fatalf("seen summary %d %+v", resp.StatusCode, body)
 	}
 }
 
 func TestV1FollowingActivityReadMarker(t *testing.T) {
 	f := newFollowingFix(t)
-	later := time.Now().Add(-time.Hour).Truncate(time.Second)
-	earlier := later.Add(-24 * time.Hour)
-
-	resp, body := f.mark(t, "sess-bob", faTime(later))
-	if resp.StatusCode != http.StatusOK || body["object"] != "following_activity_read_marker" || body["seen_at"] != faTime(later) {
-		t.Fatalf("mark %d %+v", resp.StatusCode, body)
+	f.cm.seenReply = "2026-09-26T01:02:03Z"
+	resp, body := f.mark(t, "sess-bob", map[string]any{})
+	if resp.StatusCode != http.StatusOK || body["object"] != "following_activity_read_marker" ||
+		body["seen_at"] != "2026-09-26T01:02:03Z" {
+		t.Fatalf("empty mark %d %+v", resp.StatusCode, body)
 	}
-	resp, body = f.mark(t, "sess-bob", faTime(earlier))
-	if resp.StatusCode != http.StatusOK || body["seen_at"] != faTime(later) {
-		t.Fatalf("an earlier mark moved it back: %d %+v", resp.StatusCode, body)
+	if f.cm.last().Body != "{}" {
+		t.Fatalf("empty mark sent %q", f.cm.last().Body)
 	}
-
-	before := time.Now().Truncate(time.Second)
-	resp, body = f.mark(t, "sess-bob", faTime(time.Now().Add(24*time.Hour)))
-	if resp.StatusCode != http.StatusOK {
-		t.Fatalf("future mark %d %+v", resp.StatusCode, body)
+	at := "2026-09-25T12:00:00Z"
+	f.cm.seenReply = at
+	resp, body = f.mark(t, "sess-bob", map[string]any{"seen_at": at})
+	if resp.StatusCode != http.StatusOK || body["seen_at"] != at {
+		t.Fatalf("timed mark %d %+v", resp.StatusCode, body)
 	}
-	stored, err := time.Parse(time.RFC3339, fmt.Sprint(body["seen_at"]))
-	if err != nil || stored.Before(before) || stored.After(time.Now()) {
-		t.Fatalf("future mark stored %v, want the current time", body["seen_at"])
+	if f.cm.last().Body != `{"at":"2026-09-25T12:00:00Z"}` {
+		t.Fatalf("timed mark sent %q", f.cm.last().Body)
 	}
-
-	resp, body = f.mark(t, "sess-other", "2026-02-30T00:00:00Z")
-	mustCode(t, resp, body, http.StatusUnprocessableEntity, "VALIDATION_FAILED")
-	fieldErr(t, body, "pointer", "/seen_at", "INVALID_FORMAT")
-	resp, body = f.mark(t, "", faTime(later))
-	mustCode(t, resp, body, http.StatusUnauthorized, "MISSING_CREDENTIAL")
-}
-
-func TestV1FollowingActivitiesFollowedCreatorWork(t *testing.T) {
-	f := newFollowingFix(t)
-	followed, other := faWorkMin, faWorkMin+1
-	t.Cleanup(func() {
-		_ = f.db.Exec(`DELETE FROM galgame WHERE id IN ?`, []int{followed, other}).Error
-	})
-	created := time.Now().Add(-time.Hour)
-	if err := f.db.Exec(`INSERT INTO galgame (id, published, creator_user_id, resource_count, like_count, favorite_count, created, updated)
-		VALUES (?, true, ?, 0, 0, 0, ?, ?), (?, true, ?, 0, 0, 0, ?, ?)`,
-		followed, w3UserOther, created, created,
-		other, w3UserAlice, created, created).Error; err != nil {
-		t.Fatal(err)
-	}
-	f.catalog.items[followed] = catalogItem(t, followed, "sfw")
-	f.catalog.items[other] = catalogItem(t, other, "sfw")
-	f.follows(w3UserBob, w3UserOther)
-
-	q := url.Values{"include_galgames_without_resources": {"true"}}
-	items := f.walk(t, "sess-bob", url.Values{"include_galgames_without_resources": {"true"}}, 20)
-	if len(items) != 1 {
-		t.Fatalf("items %d, want 1: %+v", len(items), items)
-	}
-	a := followedActivity(t, items[0])
-	if a["activity_type"] != "galgame_creation" || performerID(a) != strconv.Itoa(w3UserOther) {
-		t.Fatalf("item %v by %s, want galgame_creation by %d", a["activity_type"], performerID(a), w3UserOther)
-	}
-	resp, body := f.summary(t, "sess-bob", q)
-	if n := unseenCount(t, resp, body); n != 1 {
-		t.Fatalf("unseen %d, want 1", n)
-	}
-}
-
-func TestV1FollowingActivitiesDotClearsPastDroppedRow(t *testing.T) {
-	f := newFollowingFix(t)
-	base := time.Now().Add(-time.Hour).Truncate(time.Second)
-	f.topic(t, faTopicMin, w3UserOther, false, base)
-	f.topic(t, faTopicMin+1, w3UserBanned, false, base.Add(time.Minute))
-	f.follows(w3UserBob, w3UserOther, w3UserBanned)
-
-	before := time.Now().Add(-3 * time.Second)
-	resp, body := f.markEmpty(t, "sess-bob")
-	if resp.StatusCode != http.StatusOK {
-		t.Fatalf("mark {} %d %+v", resp.StatusCode, body)
-	}
-	resp, body = f.summary(t, "sess-bob", url.Values{})
-	if n := unseenCount(t, resp, body); n != 0 {
-		t.Fatalf("unseen %d, want 0 after marking up to now", n)
-	}
-	stored, err := time.Parse(time.RFC3339, fmt.Sprint(body["last_seen_at"]))
-	if err != nil || stored.Before(before) || stored.After(time.Now().Add(time.Second)) {
-		t.Fatalf("last_seen_at %v, want within the last few seconds", body["last_seen_at"])
-	}
-}
-
-func TestV1FollowingActivitiesCursorRejectedBySiteStream(t *testing.T) {
-	f := newFollowingFix(t)
-	base := time.Now().Add(-time.Hour).Truncate(time.Second)
-	f.topic(t, faTopicMin, w3UserOther, false, base)
-	f.topic(t, faTopicMin+1, w3UserOther, false, base.Add(time.Minute))
-	f.follows(w3UserBob, w3UserOther)
-
-	resp, body := f.list(t, "sess-bob", url.Values{"limit": {"1"}})
-	own, _ := body["next_cursor"].(string)
-	if resp.StatusCode != http.StatusOK || own == "" {
-		t.Fatalf("first page %d %+v", resp.StatusCode, body)
-	}
-	q := url.Values{"cursor": {own}}
-	resp, body = f.callJSON(t, http.MethodGet, "/api/v1/activities?"+q.Encode(), "/activities", "", "", nil)
-	mustCode(t, resp, body, http.StatusBadRequest, "INVALID_CURSOR")
-}
-
-func TestV1FollowingActivitiesCursorBoundToTypes(t *testing.T) {
-	f := newFollowingFix(t)
-	base := time.Now().Add(-time.Hour).Truncate(time.Second)
-	f.topic(t, faTopicMin, w3UserOther, false, base)
-	f.topic(t, faTopicMin+1, w3UserOther, false, base.Add(time.Minute))
-	f.follows(w3UserBob, w3UserOther)
-
-	resp, body := f.list(t, "sess-bob", url.Values{"limit": {"1"}, "activity_types": {"topic_creation"}})
-	own, _ := body["next_cursor"].(string)
-	if resp.StatusCode != http.StatusOK || own == "" {
-		t.Fatalf("first page %d %+v", resp.StatusCode, body)
-	}
-	resp, body = f.list(t, "sess-bob", url.Values{
-		"limit": {"1"}, "cursor": {own}, "activity_types": {"topic_reply_creation"},
-	})
-	mustCode(t, resp, body, http.StatusBadRequest, "INVALID_CURSOR")
 }
 
 func TestV1FollowingActivitiesLimitTooLarge(t *testing.T) {
 	f := newFollowingFix(t)
-	resp, body := f.list(t, "sess-bob", url.Values{"limit": {"101"}})
+	resp, body := f.list(t, "sess-bob", url.Values{"limit": {"51"}})
 	mustCode(t, resp, body, http.StatusBadRequest, "LIMIT_TOO_LARGE")
-}
-
-func faTime(t time.Time) string {
-	return string(repr.Timestamp(t))
 }

@@ -193,7 +193,6 @@ func (s *Users) setFollowing(ctx context.Context, in *followUserInput, following
 	if err != nil {
 		return nil, followUpstreamProblem(err)
 	}
-	s.followees.Forget(viewer.ID)
 	return s.followStateOf(ctx, viewer.ID, target)
 }
 

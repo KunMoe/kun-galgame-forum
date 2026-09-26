@@ -8,6 +8,7 @@ var vocabularies = []vocabulary{
 	{"ActivitySort", []string{"occurred_desc", "bumped_desc"}},
 	{"ActivityTopicSection", []string{"normal", "help", "all"}},
 	{"ActivityType", []string{"topic_creation", "topic_reply_creation", "topic_comment_creation", "topic_upvote", "best_answer_set", "galgame_creation", "galgame_edit", "galgame_pr_creation", "galgame_resource_creation", "galgame_resource_comment_creation", "galgame_comment_creation", "galgame_rating_creation", "galgame_rating_comment_creation", "galgame_quiz_creation", "galgame_quiz_comment_creation", "galgame_website_creation", "galgame_website_comment_creation", "toolset_creation", "toolset_resource_creation", "toolset_comment_creation", "todo_creation", "update_log_creation"}},
+	{"ActivityVerb", []string{"publish", "reply", "comment", "rate", "like", "edit"}},
 	{"AttributionRole", []string{"developer", "publisher", "circle", "brand"}},
 	{"CandidateClaimState", []string{"none", "live", "draft", "pending"}},
 	{"CatalogSpoiler", []string{"none", "minor", "major"}},

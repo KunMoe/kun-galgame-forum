@@ -13,6 +13,7 @@ import (
 	v1 "kun-galgame-api/internal/apiv1"
 	"kun-galgame-api/internal/apiv1/content"
 	"kun-galgame-api/internal/galgame/client"
+	"kun-galgame-api/pkg/communityclient"
 	legacyErrors "kun-galgame-api/pkg/errors"
 	"kun-galgame-api/pkg/problem"
 	"kun-galgame-api/pkg/userclient"
@@ -35,7 +36,7 @@ type Service struct {
 	repo      *repository.ActivityRepository
 	catalog   Catalog
 	users     Users
-	followees Followees
+	community *communityclient.Client
 	convert   *content.Converter
 	cdn       string
 
@@ -55,8 +56,8 @@ type workEntry struct {
 	expires time.Time
 }
 
-func New(repo *repository.ActivityRepository, catalog Catalog, users Users, followees Followees, convert *content.Converter, cdn string) *Service {
-	return &Service{repo: repo, catalog: catalog, users: users, followees: followees, convert: convert, cdn: cdn, works: map[workKey]workEntry{}}
+func New(repo *repository.ActivityRepository, catalog Catalog, users Users, community *communityclient.Client, convert *content.Converter, cdn string) *Service {
+	return &Service{repo: repo, catalog: catalog, users: users, community: community, convert: convert, cdn: cdn, works: map[workKey]workEntry{}}
 }
 
 func (s *Service) ready() *problem.Problem {

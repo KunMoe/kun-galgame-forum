@@ -46,6 +46,7 @@ DELETE /api/v1/works/:work_id/playtime                cors.New → v1Headers →
 DELETE /api/v1/works/:work_id/resource-publish-ban    cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/account-prices                         cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/activities                             cors.New → v1Headers → fiberAdapter.Handle
+GET    /api/v1/activity-groups/:group_id/items        cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/admin/docs/:doc_id                     cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/admin/friend-links/:friend_link_id     cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/admin/hidden-topics                    cors.New → v1Headers → fiberAdapter.Handle
