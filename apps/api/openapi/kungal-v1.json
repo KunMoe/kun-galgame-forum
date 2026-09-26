@@ -6092,6 +6092,109 @@
         ],
         "type": "object"
       },
+      "FollowingActivity": {
+        "properties": {
+          "activity": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Activity"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The activity, when site is kungal: the same object listActivities returns. An activity on another site will leave this null and carry a block of its own; none are sent yet, so skip an entry with neither."
+          },
+          "object": {
+            "const": "following_activity",
+            "description": "Type discriminant. Always following_activity.",
+            "maxLength": 18,
+            "type": "string"
+          },
+          "site": {
+            "description": "The NextMoe site it happened on. kungal is this forum and the only value sent today; other sites will join. An open vocabulary: show an unknown token as it is.",
+            "maxLength": 64,
+            "pattern": "^[a-z0-9][a-z0-9_-]*$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "object",
+          "site",
+          "activity"
+        ],
+        "type": "object"
+      },
+      "FollowingActivityReadMarker": {
+        "properties": {
+          "object": {
+            "const": "following_activity_read_marker",
+            "description": "Type discriminant. Always following_activity_read_marker.",
+            "maxLength": 30,
+            "type": "string"
+          },
+          "seen_at": {
+            "description": "The seen mark as stored.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "object",
+          "seen_at"
+        ],
+        "type": "object"
+      },
+      "FollowingActivityReadMarkerWrite": {
+        "properties": {
+          "seen_at": {
+            "description": "Everything that occurred at or before this instant counts as seen. Absent means everything up to now. When present, send the occurred_at of the newest activity shown. The mark only moves forward, and a time in the future is stored as the server's current time.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "FollowingActivitySummary": {
+        "properties": {
+          "last_seen_at": {
+            "description": "The caller's seen mark: activities at or before it count as seen. null until the caller first sets it.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "object": {
+            "const": "following_activity_summary",
+            "description": "Type discriminant. Always following_activity_summary.",
+            "maxLength": 26,
+            "type": "string"
+          },
+          "unseen_count": {
+            "description": "Matching rows after last_seen_at counted in SQL up to 100: 100 means 100 or more. With no seen mark, the last seven days are counted. Can include rows the list leaves out, such as a banned author's or a work catalog does not show.",
+            "format": "int64",
+            "maximum": 100,
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "object",
+          "last_seen_at",
+          "unseen_count"
+        ],
+        "type": "object"
+      },
       "FriendLink": {
         "properties": {
           "banner": {
@@ -7557,6 +7660,34 @@
             "description": "Members of this page. Empty array, never null.",
             "items": {
               "$ref": "#/components/schemas/FollowedWall"
+            },
+            "type": "array"
+          },
+          "next_cursor": {
+            "description": "Opaque keyset cursor. Omitted on the last page.",
+            "maxLength": 512,
+            "pattern": "^cur_[A-Za-z0-9_-]+$",
+            "type": "string"
+          },
+          "object": {
+            "const": "list",
+            "description": "Type discriminant. Always list.",
+            "maxLength": 4,
+            "type": "string"
+          }
+        },
+        "required": [
+          "object",
+          "items"
+        ],
+        "type": "object"
+      },
+      "ListFollowingActivity": {
+        "properties": {
+          "items": {
+            "description": "Members of this page. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/FollowingActivity"
             },
             "type": "array"
           },
@@ -38500,6 +38631,412 @@
         "summary": "List the caller's edit proposals",
         "tags": [
           "me"
+        ]
+      }
+    },
+    "/me/following-activities": {
+      "get": {
+        "description": "The activities of every account the caller follows, newest first, with the filters of listActivities and its occurred_desc order. Follows are NextMoe's, shared with the other NextMoe sites; a follow or unfollow made on this forum shows at once, one made elsewhere within a minute. An activity whose actor is banned, or whose work catalog does not show under include_nsfw, is left out, so a page can be short; only an absent next_cursor means the end. The cursor is bound to every filter, but not to who the caller follows.",
+        "operationId": "listFollowingActivities",
+        "parameters": [
+          {
+            "description": "Opaque keyset cursor from a previous page of this collection.",
+            "explode": false,
+            "in": "query",
+            "name": "cursor",
+            "schema": {
+              "description": "Opaque keyset cursor from a previous page of this collection.",
+              "maxLength": 512,
+              "pattern": "^cur_[A-Za-z0-9_-]+$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Page size. 1–100, default 20. Values above 100 are rejected, not clamped.",
+            "explode": false,
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 20,
+              "description": "Page size. 1–100, default 20. Values above 100 are rejected, not clamped.",
+              "format": "int64",
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Only these activity types, comma-separated. Absent means every type.",
+            "explode": false,
+            "in": "query",
+            "name": "activity_types",
+            "schema": {
+              "description": "Only these activity types, comma-separated. Absent means every type.",
+              "items": {
+                "$ref": "#/components/schemas/ActivityType",
+                "description": "Activity type: what happened. best_answer_set is a topic author choosing a best answer."
+              },
+              "maxItems": 22,
+              "type": "array"
+            }
+          },
+          {
+            "description": "Which topic_creation activities to include: help is the resource and help sections (g-seeking, g-other, t-help), normal is every other section, all is both. Other kinds are not affected.",
+            "explode": false,
+            "in": "query",
+            "name": "topic_sections",
+            "schema": {
+              "$ref": "#/components/schemas/ActivityTopicSection",
+              "default": "normal",
+              "description": "Which topic_creation activities to include: help is the resource and help sections (g-seeking, g-other, t-help), normal is every other section, all is both. Other kinds are not affected."
+            }
+          },
+          {
+            "description": "When true, NSFW activities and works are included. Default false.",
+            "explode": false,
+            "in": "query",
+            "name": "include_nsfw",
+            "schema": {
+              "default": false,
+              "description": "When true, NSFW activities and works are included. Default false.",
+              "type": "boolean"
+            }
+          },
+          {
+            "description": "When true, galgame_creation includes works that have no download resource yet. Default false.",
+            "explode": false,
+            "in": "query",
+            "name": "include_galgames_without_resources",
+            "schema": {
+              "default": false,
+              "description": "When true, galgame_creation includes works that have no download resource yet. Default false.",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListFollowingActivity"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "INVALID_CURSOR, LIMIT_TOO_LARGE, UNKNOWN_ENUM_VALUE or INVALID_PARAMETER."
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the community follow graph, the account service or catalog is unreachable."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List the activity of the accounts the caller follows",
+        "tags": [
+          "activities"
+        ]
+      }
+    },
+    "/me/following-activities/read-marker": {
+      "put": {
+        "description": "Stores the later of the current mark and seen_at, with a future seen_at taken as now. Absent seen_at means now. Replaying it, or sending an earlier time, changes nothing and is still 200.",
+        "operationId": "markFollowingActivitiesSeen",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FollowingActivityReadMarkerWrite"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FollowingActivityReadMarker"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "413": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Request Entity Too Large"
+          },
+          "415": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unsupported Media Type"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED when seen_at is present but not a real instant."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Move the caller's seen mark on the followed accounts' activity",
+        "tags": [
+          "activities"
+        ]
+      }
+    },
+    "/me/following-activities/summary": {
+      "get": {
+        "description": "The caller's seen mark and a SQL count, capped at 100, of matching rows by followed accounts after the mark (or in the last seven days when there is no mark), which can include rows listFollowingActivities leaves out.",
+        "operationId": "getFollowingActivitySummary",
+        "parameters": [
+          {
+            "description": "Only these activity types, comma-separated. Absent means every type.",
+            "explode": false,
+            "in": "query",
+            "name": "activity_types",
+            "schema": {
+              "description": "Only these activity types, comma-separated. Absent means every type.",
+              "items": {
+                "$ref": "#/components/schemas/ActivityType",
+                "description": "Activity type: what happened. best_answer_set is a topic author choosing a best answer."
+              },
+              "maxItems": 22,
+              "type": "array"
+            }
+          },
+          {
+            "description": "Which topic_creation activities to include: help is the resource and help sections (g-seeking, g-other, t-help), normal is every other section, all is both. Other kinds are not affected.",
+            "explode": false,
+            "in": "query",
+            "name": "topic_sections",
+            "schema": {
+              "$ref": "#/components/schemas/ActivityTopicSection",
+              "default": "normal",
+              "description": "Which topic_creation activities to include: help is the resource and help sections (g-seeking, g-other, t-help), normal is every other section, all is both. Other kinds are not affected."
+            }
+          },
+          {
+            "description": "When true, NSFW activities and works are included. Default false.",
+            "explode": false,
+            "in": "query",
+            "name": "include_nsfw",
+            "schema": {
+              "default": false,
+              "description": "When true, NSFW activities and works are included. Default false.",
+              "type": "boolean"
+            }
+          },
+          {
+            "description": "When true, galgame_creation includes works that have no download resource yet. Default false.",
+            "explode": false,
+            "in": "query",
+            "name": "include_galgames_without_resources",
+            "schema": {
+              "default": false,
+              "description": "When true, galgame_creation includes works that have no download resource yet. Default false.",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FollowingActivitySummary"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "UNKNOWN_ENUM_VALUE or INVALID_PARAMETER."
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the community follow graph is unreachable."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Count the followed accounts' activity the caller has not seen",
+        "tags": [
+          "activities"
         ]
       }
     },

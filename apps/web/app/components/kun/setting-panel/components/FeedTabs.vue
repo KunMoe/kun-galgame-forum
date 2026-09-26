@@ -1,5 +1,9 @@
 <script setup lang="ts">
-import { KUN_FEED_KIND_GROUPS, isNewsFeedTab } from '~/constants/activity'
+import {
+  KUN_FEED_KIND_GROUPS,
+  isFollowingFeedTab,
+  isNewsFeedTab
+} from '~/constants/activity'
 
 const settings = usePersistSettingsStore()
 const { feedTabs } = storeToRefs(settings)
@@ -61,6 +65,11 @@ const toggleKind = (kind: string) => {
     />
 
     <div v-else-if="editingTab" class="space-y-3">
+      <KunInfo
+        v-if="isFollowingFeedTab(editingTab)"
+        color="info"
+        description="关注标签只显示你关注的人的动态，下面勾选的种类同样生效。"
+      />
       <div
         v-for="group in KUN_FEED_KIND_GROUPS"
         :key="group.label"

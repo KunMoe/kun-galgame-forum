@@ -2,6 +2,7 @@ package repository
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 	"time"
 
@@ -25,6 +26,7 @@ type FeedQuery struct {
 	TopicSections      string
 	IncludeNSFW        bool
 	IncludeUnresourced bool
+	ActorIDs           []int
 	Limit              int
 	After              *FeedPos
 }
@@ -68,7 +70,7 @@ func sectionCond(mode, topicCol string, onlyTopicCreation bool) string {
 	return cond
 }
 
-func (r *ActivityRepository) FeedPage(q FeedQuery) ([]FeedRow, error) {
+func feedConds(q FeedQuery) ([]string, []any) {
 	conds := []string{"fa.type IN ?"}
 	args := []any{q.Types}
 	if !q.IncludeNSFW {
@@ -80,12 +82,73 @@ func (r *ActivityRepository) FeedPage(q FeedQuery) ([]FeedRow, error) {
 	if c := sectionCond(q.TopicSections, "fa.source_id", true); c != "" {
 		conds = append(conds, c)
 	}
+	return conds, args
+}
+
+const feedPageSelect = "SELECT fa.id AS row_id, fa.type AS type_str, fa.source_id, fa.user_id, fa.work_id, fa.content, fa.link, fa.created "
+
+func feedCreationByFollowedCreator(actorIDs []int) ([]string, []any) {
+	// GALGAME_CREATION rows carry user_id 0 and name their creator through galgame.creator_user_id.
+	return []string{
+		"fa.type = 'GALGAME_CREATION'",
+		"fa.user_id = 0",
+		"fa.work_id IN (SELECT g.id FROM galgame g WHERE g.creator_user_id IN ?)",
+	}, []any{actorIDs}
+}
+
+func feedActorHalf(q FeedQuery, cols string, extra []string, extraArgs []any, orderPage bool, limit int) (string, []any) {
+	conds, args := feedConds(q)
+	conds = append(conds, extra...)
+	args = append(args, extraArgs...)
+	if orderPage && q.After != nil {
+		conds = append(conds, "(fa.created, fa.type, fa.source_id) < (?, ?, ?)")
+		args = append(args, q.After.Created, q.After.TypeStr, q.After.SourceID)
+	}
+	sql := cols + "FROM feed_activity fa WHERE " + strings.Join(conds, " AND ")
+	if orderPage {
+		sql += fmt.Sprintf(" ORDER BY fa.created DESC, fa.type DESC, fa.source_id DESC LIMIT %d", limit)
+	} else {
+		sql += fmt.Sprintf(" LIMIT %d", limit)
+	}
+	return sql, args
+}
+
+func feedActorUnion(q FeedQuery, cols string, extra []string, extraArgs []any, orderPage bool, limit int) (string, []any) {
+	sql, args := feedActorHalf(q, cols, slices.Concat(extra, []string{"fa.user_id IN ?"}),
+		slices.Concat(extraArgs, []any{q.ActorIDs}), orderPage, limit)
+	if !slices.Contains(q.Types, "GALGAME_CREATION") {
+		if orderPage {
+			return sql, args
+		}
+		return "SELECT count(*) FROM (" + sql + ") capped", args
+	}
+	more, moreArgs := feedCreationByFollowedCreator(q.ActorIDs)
+	bSQL, bArgs := feedActorHalf(q, cols, slices.Concat(extra, more), slices.Concat(extraArgs, moreArgs), orderPage, limit)
+	union := "(" + sql + ") UNION ALL (" + bSQL + ")"
+	args = append(args, bArgs...)
+	if orderPage {
+		return "SELECT * FROM (" + union + ") u ORDER BY created DESC, type_str DESC, source_id DESC" +
+			fmt.Sprintf(" LIMIT %d", limit), args
+	}
+	return "SELECT count(*) FROM (SELECT 1 FROM (" + union + ") u" + fmt.Sprintf(" LIMIT %d) capped", limit), args
+}
+
+func (r *ActivityRepository) FeedPage(q FeedQuery) ([]FeedRow, error) {
+	if q.ActorIDs != nil && len(q.ActorIDs) == 0 {
+		return nil, nil
+	}
+	if q.ActorIDs != nil {
+		sql, args := feedActorUnion(q, feedPageSelect, nil, nil, true, q.Limit)
+		var rows []FeedRow
+		err := r.db.Raw(sql, args...).Scan(&rows).Error
+		return rows, err
+	}
+	conds, args := feedConds(q)
 	if q.After != nil {
 		conds = append(conds, "(fa.created, fa.type, fa.source_id) < (?, ?, ?)")
 		args = append(args, q.After.Created, q.After.TypeStr, q.After.SourceID)
 	}
-	sql := "SELECT fa.id AS row_id, fa.type AS type_str, fa.source_id, fa.user_id, fa.work_id, fa.content, fa.link, fa.created " +
-		"FROM feed_activity fa WHERE " + strings.Join(conds, " AND ") +
+	sql := feedPageSelect + "FROM feed_activity fa WHERE " + strings.Join(conds, " AND ") +
 		fmt.Sprintf(" ORDER BY fa.created DESC, fa.type DESC, fa.source_id DESC LIMIT %d", q.Limit)
 	var rows []FeedRow
 	err := r.db.Raw(sql, args...).Scan(&rows).Error

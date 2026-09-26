@@ -10,6 +10,7 @@ import (
 	adminService "kun-galgame-api/internal/admin/service"
 	"kun-galgame-api/internal/apiv1"
 	"kun-galgame-api/internal/community/anchor"
+	"kun-galgame-api/internal/community/followees"
 	communitynotify "kun-galgame-api/internal/community/notify"
 	communitytrust "kun-galgame-api/internal/community/trust"
 	galgameapiv1 "kun-galgame-api/internal/galgame/apiv1"
@@ -103,6 +104,7 @@ type App struct {
 	StoreLinks         *storelink.Resolver
 	WallV1             *wallapiv1.Service
 	Community          *communityclient.Client
+	Followees          *followees.Cache
 	ContributedWorkIDs func(context.Context, int64) ([]int, error)
 	OverviewV1         *overviewapiv1.Service
 	RankingV1          *rankingapiv1.Service
@@ -309,6 +311,7 @@ func New(cfg *config.Config) *App {
 	} else {
 		slog.Warn("community comment backend NOT configured; comments degrade (reads empty / writes 503) — set KUN_COMMUNITY_API_BASE + OAuth creds")
 	}
+	followeeCache := followees.NewFromClient(communityCli)
 	anchorResolver := anchor.New(db, gc)
 
 	var storeCli *storeclient.Client
@@ -496,8 +499,9 @@ func New(cfg *config.Config) *App {
 		TrustV1:            trustapiv1.New(trustCli, uc, cfg.Trust.Site, cfg.NextMoeAPI.ImageCDNBase),
 		WallV1:             newWallV1(db, communityCli, uc, gc, imageMetaResolve(imageMeta), cfg.NextMoeAPI.ImageCDNBase),
 		Community:          communityCli,
+		Followees:          followeeCache,
 		ContributedWorkIDs: galgameUserStatsSvc.ContributedWorkIDs,
-		ActivityV1:         newActivityV1(db, gc, uc, imageMetaResolve(imageMeta), cfg.NextMoeAPI.ImageCDNBase),
+		ActivityV1:         newActivityV1(db, gc, uc, followeeCache, imageMetaResolve(imageMeta), cfg.NextMoeAPI.ImageCDNBase),
 		OAuthHandler:       handler.NewOAuthHandler(authService, cfg.Server.Mode == "prod", communityBooster),
 		LotteryService:     lotterySvc,
 		OverviewV1:         overviewapiv1.New(adminOverviewRepo, nil),

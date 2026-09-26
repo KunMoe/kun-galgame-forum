@@ -28,7 +28,7 @@ func (c *blockingCatalog) CatalogRowsByWorkIDs(_ context.Context, ids []int, _, 
 
 func TestCatalogRowsCoalescesConcurrentMisses(t *testing.T) {
 	cat := &blockingCatalog{release: make(chan struct{})}
-	s := New(nil, cat, nil, nil, "")
+	s := New(nil, cat, nil, nil, nil, "")
 	orders := [][]int{{3, 1, 2}, {1, 2, 3}, {2, 3, 1}, {3, 2, 1}, {1, 3, 2}, {2, 1, 3}, {3, 1, 2}, {1, 2, 3}}
 	var wg sync.WaitGroup
 	for _, ids := range orders {

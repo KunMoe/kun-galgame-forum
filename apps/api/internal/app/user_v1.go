@@ -68,6 +68,7 @@ func (a *App) newUserV1() *userapiv1.Users {
 		Works:       works,
 		Resources:   a.newGalgameResourceV1(),
 		Community:   a.Community,
+		Followees:   a.Followees,
 		Wall:        a.WallV1,
 		Contributed: a.ContributedWorkIDs,
 		Redis:       a.Redis,

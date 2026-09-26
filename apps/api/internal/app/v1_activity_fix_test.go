@@ -160,7 +160,7 @@ func newActivityFix(t *testing.T) *activityFix {
 		Redis:      rdb,
 		UserClient: uc,
 		Authn:      middleware.NewAuthenticator(rdb, nil, nil),
-		ActivityV1: activityapiv1.New(activityRepo.NewActivityRepository(db), f.catalog, uc, convert, "https://image.test.example"),
+		ActivityV1: activityapiv1.New(activityRepo.NewActivityRepository(db), f.catalog, uc, nil, convert, "https://image.test.example"),
 	}
 	f.app.setupRoutes()
 	f.spec = newSpecConformance(t)

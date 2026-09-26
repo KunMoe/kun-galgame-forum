@@ -1,24 +1,51 @@
 <script setup lang="ts">
-import { isNewsFeedTab } from '~/constants/activity'
+import { isFollowingFeedTab, isNewsFeedTab } from '~/constants/activity'
+import { feedTabQuery } from '~/utils/activity'
 
 const settings = usePersistSettingsStore()
 const { feedTabs } = storeToRefs(settings)
-const tabItems = computed(() =>
-  feedTabs.value.map((t) => ({ value: t.id, textValue: t.name, icon: t.icon }))
+const { id: userId } = storeToRefs(usePersistUserStore())
+const { allowsNsfw } = useContentStance()
+const { hasUnseen, check } = useFollowingUnseen()
+
+const visibleTabs = computed(() =>
+  feedTabs.value.filter((t) => userId.value || !isFollowingFeedTab(t))
 )
-const activeTab = useTabQuery(feedTabs.value[0]?.id ?? 'all')
+const tabItems = computed(() =>
+  visibleTabs.value.map((t) => ({
+    value: t.id,
+    textValue: t.name,
+    icon: t.icon
+  }))
+)
+const activeTab = useTabQuery(visibleTabs.value[0]?.id ?? 'all')
 const currentTab = computed(
   () =>
-    feedTabs.value.find((t) => t.id === activeTab.value) ?? feedTabs.value[0]
+    visibleTabs.value.find((t) => t.id === activeTab.value) ??
+    visibleTabs.value[0]
 )
 const activeTypes = computed(() => (currentTab.value?.kinds ?? []).join(','))
+const followingTab = computed(() => visibleTabs.value.find(isFollowingFeedTab))
 watchEffect(() => {
   if (
-    feedTabs.value.length &&
-    !feedTabs.value.some((t) => t.id === activeTab.value)
+    visibleTabs.value.length &&
+    !visibleTabs.value.some((t) => t.id === activeTab.value)
   ) {
-    activeTab.value = feedTabs.value[0]!.id
+    activeTab.value = visibleTabs.value[0]!.id
   }
+})
+
+onMounted(() => {
+  const tab = followingTab.value
+  if (!tab || isFollowingFeedTab(currentTab.value)) {
+    return
+  }
+  const { sort: _sort, ...filters } = feedTabQuery(tab.kinds.join(','))
+  check({
+    ...filters,
+    include_nsfw: allowsNsfw.value,
+    include_galgames_without_resources: settings.showKUNGalgameNoResource
+  })
 })
 </script>
 
@@ -38,7 +65,14 @@ watchEffect(() => {
         variant="underlined"
         color="primary"
         scrollable
-      />
+      >
+        <template #tab="{ item }">
+          <HomeFeedTabLabel
+            :item="item"
+            :dot="hasUnseen && item.value === followingTab?.id"
+          />
+        </template>
+      </KunTab>
     </div>
 
     <!-- Columns are placed EXPLICITLY (col-start), never auto-placed.
@@ -56,7 +90,14 @@ watchEffect(() => {
         variant="underlined"
         color="primary"
         full-width
-      />
+      >
+        <template #tab="{ item }">
+          <HomeFeedTabLabel
+            :item="item"
+            :dot="hasUnseen && item.value === followingTab?.id"
+          />
+        </template>
+      </KunTab>
     </div>
 
     <!-- The wrapper is a real grid item at all times, and the nested Suspense
@@ -74,6 +115,7 @@ watchEffect(() => {
           v-else
           :tab-id="activeTab"
           :types="activeTypes"
+          :following="isFollowingFeedTab(currentTab)"
         />
 
         <template #fallback>

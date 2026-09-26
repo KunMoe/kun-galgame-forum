@@ -6,7 +6,8 @@ import {
 } from '~/config/theme'
 import {
   KUN_DEFAULT_FEED_TABS,
-  KUN_FEED_TABS_VERSION
+  KUN_FEED_TABS_VERSION,
+  upgradeFeedTabs
 } from '~/constants/activity'
 import type { KUNGalgameSettingsStore } from '../types/settings'
 
@@ -194,7 +195,10 @@ export const usePersistSettingsStore = defineStore(
           feedTabs: KUNGalgameSettingsStore['feedTabs']
         }
         if (store.feedTabsVersion < KUN_FEED_TABS_VERSION) {
-          store.feedTabs = structuredClone(KUN_DEFAULT_FEED_TABS)
+          store.feedTabs = upgradeFeedTabs(
+            store.feedTabs,
+            store.feedTabsVersion
+          )
           store.feedTabsVersion = KUN_FEED_TABS_VERSION
         }
       }

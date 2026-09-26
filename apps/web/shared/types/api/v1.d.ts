@@ -1748,6 +1748,66 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/me/following-activities": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the activity of the accounts the caller follows
+         * @description The activities of every account the caller follows, newest first, with the filters of listActivities and its occurred_desc order. Follows are NextMoe's, shared with the other NextMoe sites; a follow or unfollow made on this forum shows at once, one made elsewhere within a minute. An activity whose actor is banned, or whose work catalog does not show under include_nsfw, is left out, so a page can be short; only an absent next_cursor means the end. The cursor is bound to every filter, but not to who the caller follows.
+         */
+        get: operations["listFollowingActivities"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/following-activities/read-marker": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Move the caller's seen mark on the followed accounts' activity
+         * @description Stores the later of the current mark and seen_at, with a future seen_at taken as now. Absent seen_at means now. Replaying it, or sending an earlier time, changes nothing and is still 200.
+         */
+        put: operations["markFollowingActivitiesSeen"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/following-activities/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Count the followed accounts' activity the caller has not seen
+         * @description The caller's seen mark and a SQL count, capped at 100, of matching rows by followed accounts after the mark (or in the last seven days when there is no mark), which can include rows listFollowingActivities leaves out.
+         */
+        get: operations["getFollowingActivitySummary"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/me/following/{user_id}": {
         parameters: {
             query?: never;
@@ -7210,6 +7270,53 @@ export interface components {
             /** @description The work, for a galgame wall. null for every other kind of wall, and for a galgame wall whose work catalog no longer shows. */
             work: components["schemas"]["WorkRef"] | null;
         };
+        FollowingActivity: {
+            /** @description The activity, when site is kungal: the same object listActivities returns. An activity on another site will leave this null and carry a block of its own; none are sent yet, so skip an entry with neither. */
+            activity: components["schemas"]["Activity"] | null;
+            /**
+             * @description Type discriminant. Always following_activity.
+             * @constant
+             */
+            object: "following_activity";
+            /** @description The NextMoe site it happened on. kungal is this forum and the only value sent today; other sites will join. An open vocabulary: show an unknown token as it is. */
+            site: string;
+        };
+        FollowingActivityReadMarker: {
+            /**
+             * @description Type discriminant. Always following_activity_read_marker.
+             * @constant
+             */
+            object: "following_activity_read_marker";
+            /**
+             * Format: date-time
+             * @description The seen mark as stored.
+             */
+            seen_at: string;
+        };
+        FollowingActivityReadMarkerWrite: {
+            /**
+             * Format: date-time
+             * @description Everything that occurred at or before this instant counts as seen. Absent means everything up to now. When present, send the occurred_at of the newest activity shown. The mark only moves forward, and a time in the future is stored as the server's current time.
+             */
+            seen_at?: string;
+        };
+        FollowingActivitySummary: {
+            /**
+             * Format: date-time
+             * @description The caller's seen mark: activities at or before it count as seen. null until the caller first sets it.
+             */
+            last_seen_at: string | null;
+            /**
+             * @description Type discriminant. Always following_activity_summary.
+             * @constant
+             */
+            object: "following_activity_summary";
+            /**
+             * Format: int64
+             * @description Matching rows after last_seen_at counted in SQL up to 100: 100 means 100 or more. With no seen mark, the last seven days are counted. Can include rows the list leaves out, such as a banned author's or a work catalog does not show.
+             */
+            unseen_count: number;
+        };
         FriendLink: {
             /** @description Banner image. null when the link has none. */
             banner: components["schemas"]["Image"] | null;
@@ -7711,6 +7818,17 @@ export interface components {
         ListFollowedWall: {
             /** @description Members of this page. Empty array, never null. */
             items: components["schemas"]["FollowedWall"][];
+            /** @description Opaque keyset cursor. Omitted on the last page. */
+            next_cursor?: string;
+            /**
+             * @description Type discriminant. Always list.
+             * @constant
+             */
+            object: "list";
+        };
+        ListFollowingActivity: {
+            /** @description Members of this page. Empty array, never null. */
+            items: components["schemas"]["FollowingActivity"][];
             /** @description Opaque keyset cursor. Omitted on the last page. */
             next_cursor?: string;
             /**
@@ -23757,6 +23875,254 @@ export interface operations {
                 };
             };
             /** @description SERVICE_UNAVAILABLE when the catalog or the account service cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listFollowingActivities: {
+        parameters: {
+            query?: {
+                /** @description Opaque keyset cursor from a previous page of this collection. */
+                cursor?: string;
+                /** @description Page size. 1–100, default 20. Values above 100 are rejected, not clamped. */
+                limit?: number;
+                /** @description Only these activity types, comma-separated. Absent means every type. */
+                activity_types?: components["schemas"]["ActivityType"][];
+                /** @description Which topic_creation activities to include: help is the resource and help sections (g-seeking, g-other, t-help), normal is every other section, all is both. Other kinds are not affected. */
+                topic_sections?: components["schemas"]["ActivityTopicSection"];
+                /** @description When true, NSFW activities and works are included. Default false. */
+                include_nsfw?: boolean;
+                /** @description When true, galgame_creation includes works that have no download resource yet. Default false. */
+                include_galgames_without_resources?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListFollowingActivity"];
+                };
+            };
+            /** @description INVALID_CURSOR, LIMIT_TOO_LARGE, UNKNOWN_ENUM_VALUE or INVALID_PARAMETER. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the community follow graph, the account service or catalog is unreachable. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    markFollowingActivitiesSeen: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FollowingActivityReadMarkerWrite"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FollowingActivityReadMarker"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description VALIDATION_FAILED when seen_at is present but not a real instant. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getFollowingActivitySummary: {
+        parameters: {
+            query?: {
+                /** @description Only these activity types, comma-separated. Absent means every type. */
+                activity_types?: components["schemas"]["ActivityType"][];
+                /** @description Which topic_creation activities to include: help is the resource and help sections (g-seeking, g-other, t-help), normal is every other section, all is both. Other kinds are not affected. */
+                topic_sections?: components["schemas"]["ActivityTopicSection"];
+                /** @description When true, NSFW activities and works are included. Default false. */
+                include_nsfw?: boolean;
+                /** @description When true, galgame_creation includes works that have no download resource yet. Default false. */
+                include_galgames_without_resources?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FollowingActivitySummary"];
+                };
+            };
+            /** @description UNKNOWN_ENUM_VALUE or INVALID_PARAMETER. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the community follow graph is unreachable. */
             503: {
                 headers: {
                     [name: string]: unknown;
