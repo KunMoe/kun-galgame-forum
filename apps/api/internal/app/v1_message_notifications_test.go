@@ -390,6 +390,28 @@ func TestV1NotificationsSummary(t *testing.T) {
 	if latest["notification_type"] == nil {
 		t.Errorf("latest notification_type missing: %+v", latest)
 	}
+
+	unreadDM := `SELECT COUNT(*) FROM chat_message cm
+		JOIN chat_room_participant me ON me.chat_room_id = cm.chat_room_id AND me.user_id = ?
+		WHERE cm.sender_id <> ? AND cm.chat_room_id <> ?
+		  AND NOT EXISTS (SELECT 1 FROM chat_message_read_by rb WHERE rb.chat_message_id = cm.id AND rb.user_id = ?)`
+	allDM := f.scalar(t, unreadDM, w3UserAlice, w3UserAlice, 0, w3UserAlice)
+	wantDM := f.scalar(t, unreadDM, w3UserAlice, w3UserAlice, mRoomBanned, w3UserAlice)
+	if wantDM < 1 || allDM == wantDM {
+		t.Fatalf("seed: %d unread direct messages, %d outside the banned peer's room", allDM, wantDM)
+	}
+	if asInt(body["direct_message_unread_count"]) != wantDM || body["is_direct_message_muted"] != false {
+		t.Errorf("direct messages %v muted %v, want %d unmuted", body["direct_message_unread_count"], body["is_direct_message_muted"], wantDM)
+	}
+
+	f.muteAlice(t, `["liked","chat"]`)
+	resp, raw = f.doJSON(t, http.MethodGet, notificationsPath+"/summary", "sess-alice",
+		"/me/notifications/summary", "", nil, nil)
+	body = problemMap(t, raw)
+	if resp.StatusCode != http.StatusOK || asInt(body["direct_message_unread_count"]) != wantDM ||
+		body["is_direct_message_muted"] != true || asInt(body["unread_count"]) != unmuted {
+		t.Errorf("chat muted: %d %+v", resp.StatusCode, body)
+	}
 }
 
 func TestV1NotificationsErrors(t *testing.T) {

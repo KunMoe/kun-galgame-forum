@@ -37,7 +37,9 @@ func Register(svc *Service) func(huma.API) {
 			Summary:     "Get notification unread counts",
 			Description: "Returns unread_count for the unmuted partition, muted_unread_count for the muted partition, and latest, the first renderable unmuted row in listNotifications order. " +
 				"The two counts are SQL counts and include rows whose actor is banned, which listNotifications drops, so they are not the length of that list. " +
-				"latest is null when the unmuted partition has no renderable row. Any query failure is INTERNAL_ERROR.",
+				"latest is null when the unmuted partition has no renderable row. " +
+				"direct_message_unread_count is the unread direct messages across the conversations listConversations returns, whether or not direct messages are muted; is_direct_message_muted says whether they are. " +
+				"Any query failure is INTERNAL_ERROR.",
 			Tags: []string{"messages"},
 		}), svc.getNotificationSummary)
 

@@ -22,6 +22,11 @@ type V1ConversationRow struct {
 	UnreadCount    int        `gorm:"column:unread_count"`
 }
 
+type V1PeerUnread struct {
+	PeerID      int `gorm:"column:peer_id"`
+	UnreadCount int `gorm:"column:unread_count"`
+}
+
 type V1ConversationPos struct {
 	LastMessageAt time.Time
 	RoomID        int
@@ -116,6 +121,30 @@ func (r *ChatRepository) FindConversationsKeyset(userID, limit int, pos *V1Conve
 	if rows == nil {
 		rows = []V1ConversationRow{}
 	}
+	return rows, err
+}
+
+func (r *ChatRepository) UnreadByPeer(userID int) ([]V1PeerUnread, error) {
+	var rows []V1PeerUnread
+	err := r.db.Raw(`
+SELECT peer.user_id AS peer_id, COUNT(*)::int AS unread_count
+FROM chat_room_participant me
+JOIN chat_room cr ON cr.id = me.chat_room_id
+JOIN LATERAL (
+	SELECT p.user_id
+	FROM chat_room_participant p
+	WHERE p.chat_room_id = cr.id AND p.user_id <> me.user_id
+	ORDER BY p.user_id
+	LIMIT 1
+) peer ON TRUE
+JOIN chat_message cm ON cm.chat_room_id = cr.id
+WHERE me.user_id = ?
+  AND cm.sender_id <> ?
+  AND NOT EXISTS (
+	SELECT 1 FROM chat_message_read_by rb
+	WHERE rb.chat_message_id = cm.id AND rb.user_id = ?
+  )
+GROUP BY cr.id, peer.user_id`, userID, userID, userID).Scan(&rows).Error
 	return rows, err
 }
 

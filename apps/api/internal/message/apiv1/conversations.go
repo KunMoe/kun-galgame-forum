@@ -91,6 +91,21 @@ func (s *Service) mapConversation(
 	}
 }
 
+func (s *Service) directMessageUnread(ctx context.Context, userID int) (int, *problem.Problem) {
+	rows, err := s.chats.UnreadByPeer(userID)
+	if err != nil {
+		return 0, problem.Internal(err)
+	}
+	users := s.hydrateUsers(ctx, userclient.CollectIDs(rows, func(r repository.V1PeerUnread) int { return r.PeerID }))
+	total := 0
+	for _, r := range rows {
+		if _, keep := s.userRef(users, r.PeerID); keep {
+			total += r.UnreadCount
+		}
+	}
+	return total, nil
+}
+
 func (s *Service) listConversations(ctx context.Context, in *listConversationsInput) (*listConversationsOutput, error) {
 	if p := s.ready(); p != nil {
 		return nil, p

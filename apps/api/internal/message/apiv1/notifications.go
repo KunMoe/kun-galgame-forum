@@ -81,7 +81,7 @@ func (s *Service) listNotifications(ctx context.Context, in *listNotificationsIn
 	if p != nil {
 		return nil, p
 	}
-	mutedTypes, p := s.mutedTypes(user.ID)
+	mutedTypes, _, p := s.mutedTypes(user.ID)
 	if p != nil {
 		return nil, p
 	}
@@ -175,7 +175,11 @@ func (s *Service) getNotificationSummary(ctx context.Context, _ *getNotification
 	if p != nil {
 		return nil, p
 	}
-	mutedTypes, p := s.mutedTypes(user.ID)
+	mutedTypes, chatMuted, p := s.mutedTypes(user.ID)
+	if p != nil {
+		return nil, p
+	}
+	dmUnread, p := s.directMessageUnread(ctx, user.ID)
 	if p != nil {
 		return nil, p
 	}
@@ -205,10 +209,12 @@ func (s *Service) getNotificationSummary(ctx context.Context, _ *getNotification
 		}
 	}
 	return &getNotificationSummaryOutput{Body: NotificationSummary{
-		Object:           "notification_summary",
-		UnreadCount:      unread,
-		MutedUnreadCount: mutedUnread,
-		Latest:           latest,
+		Object:                   "notification_summary",
+		UnreadCount:              unread,
+		MutedUnreadCount:         mutedUnread,
+		DirectMessageUnreadCount: dmUnread,
+		IsDirectMessageMuted:     chatMuted,
+		Latest:                   latest,
 	}}, nil
 }
 
@@ -224,7 +230,7 @@ func (s *Service) markNotificationsRead(ctx context.Context, in *markNotificatio
 	if p != nil {
 		return nil, p
 	}
-	mutedTypes, p := s.mutedTypes(user.ID)
+	mutedTypes, _, p := s.mutedTypes(user.ID)
 	if p != nil {
 		return nil, p
 	}
