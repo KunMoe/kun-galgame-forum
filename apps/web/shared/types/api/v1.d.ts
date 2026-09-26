@@ -3197,6 +3197,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/sticker-packs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the editor's sticker packs
+         * @description The official packs of sticker.kungal.com that the editor's sticker picker offers, all-ages only, in picker order. Not paged. Refreshed from the sticker site at most hourly; while it cannot be reached the last good list is served.
+         */
+        get: operations["listStickerPacks"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/tagged-works": {
         parameters: {
             query?: never;
@@ -7902,6 +7922,17 @@ export interface components {
              */
             object: "list";
         };
+        ListStickerPack: {
+            /** @description Members of this page. Empty array, never null. */
+            items: components["schemas"]["StickerPack"][];
+            /** @description Opaque keyset cursor. Omitted on the last page. */
+            next_cursor?: string;
+            /**
+             * @description Type discriminant. Always list.
+             * @constant
+             */
+            object: "list";
+        };
         ListTopicDraftSummary: {
             /** @description Members of this page. Empty array, never null. */
             items: components["schemas"]["TopicDraftSummary"][];
@@ -11073,6 +11104,32 @@ export interface components {
              * @enum {string}
              */
             object: "spoiler";
+        };
+        Sticker: {
+            /** @description The pack's display_name, " - " and the sticker's 1-based position in the pack: the alt text and title the picker inserts. Free text; never use it as a decision input. */
+            display_name: string;
+            /** @description The sticker's id on sticker.kungal.com. Stable. */
+            id: string;
+            /** @description The sticker at original size. Never null here. A sticker goes into a body as a Markdown image of its 320-pixel variant, /image/{hash}_320, with display_name as its alt text and title. */
+            image: components["schemas"]["Image"] | null;
+            /**
+             * @description Type discriminant. Always sticker.
+             * @constant
+             */
+            object: "sticker";
+        };
+        StickerPack: {
+            /** @description The pack's name, for its tab in the picker. Free text; never use it as a decision input. */
+            display_name: string;
+            /** @description The pack's id on sticker.kungal.com. Stable. */
+            id: string;
+            /**
+             * @description Type discriminant. Always sticker_pack.
+             * @constant
+             */
+            object: "sticker_pack";
+            /** @description In picker order. Never empty. */
+            stickers: components["schemas"]["Sticker"][];
         };
         StrikethroughNode: {
             /** @description Struck-through inline nodes. */
@@ -30614,6 +30671,56 @@ export interface operations {
                 };
             };
             /** @description SERVICE_UNAVAILABLE when catalog cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listStickerPacks: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The ETag of a copy already held. While it still matches, the answer is 304 with no body. */
+                "If-None-Match"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    "Cache-Control"?: string;
+                    ETag?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListStickerPack"];
+                };
+            };
+            /** @description The If-None-Match ETag still matches. No body. */
+            304: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the sticker site is not configured or cannot be reached and no list has been fetched yet. */
             503: {
                 headers: {
                     [name: string]: unknown;

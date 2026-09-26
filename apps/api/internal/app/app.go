@@ -38,6 +38,7 @@ import (
 	rankingRepo "kun-galgame-api/internal/ranking/repository"
 	searchapiv1 "kun-galgame-api/internal/search/apiv1"
 	searchRepo "kun-galgame-api/internal/search/repository"
+	stickerapiv1 "kun-galgame-api/internal/sticker/apiv1"
 	topicapiv1 "kun-galgame-api/internal/topic/apiv1"
 	topicRepo "kun-galgame-api/internal/topic/repository"
 	topicService "kun-galgame-api/internal/topic/service"
@@ -62,6 +63,7 @@ import (
 	"kun-galgame-api/pkg/newsclient"
 	"kun-galgame-api/pkg/response"
 	"kun-galgame-api/pkg/secretbox"
+	"kun-galgame-api/pkg/stickerclient"
 	"kun-galgame-api/pkg/storeclient"
 	"kun-galgame-api/pkg/trustclient"
 	"kun-galgame-api/pkg/userclient"
@@ -114,6 +116,7 @@ type App struct {
 	TrustHandler        *trustHandler.TrustHandler
 	NewsV1              *newsapiv1.Service
 	ImagesV1            *imageapiv1.Service
+	StickersV1          *stickerapiv1.Service
 	Artifact            *artifactclient.Client
 	FileStorage         *storage.S3Client
 	CronStop            func()
@@ -161,6 +164,16 @@ func New(cfg *config.Config) *App {
 		slog.Info("moyu patch face client configured", "base_url", cfg.MoyuAPI.BaseURL)
 	} else {
 		slog.Warn("moyu patch face client NOT configured; the galgame patch tab stays hidden — set KUN_NEXTMOE_API_KEY or KUN_MOYU_API_KEY")
+	}
+
+	stickerCli := stickerclient.New(stickerclient.Config{
+		BaseURL: cfg.StickerAPI.BaseURL,
+		APIKey:  cfg.StickerAPI.APIKey,
+	})
+	if stickerCli.Configured() {
+		slog.Info("sticker face client configured", "base_url", cfg.StickerAPI.BaseURL)
+	} else {
+		slog.Warn("sticker face client NOT configured; /api/v1/sticker-packs returns 503 — set KUN_NEXTMOE_API_KEY or KUN_STICKER_API_KEY")
 	}
 
 	oauthClient := oauth.NewClient(cfg.OAuth)
@@ -486,6 +499,7 @@ func New(cfg *config.Config) *App {
 		TrustHandler:       trustHandler.NewTrustHandler(trustEnforce, cfg.Trust.CallbackSecret),
 		NewsV1:             newsapiv1.New(newsCli, uc, cfg.NextMoeAPI.ImageCDNBase),
 		ImagesV1:           imageapiv1.New(imgCli, catalogCli, db, cfg.NextMoeAPI.ImageCDNBase),
+		StickersV1:         stickerapiv1.New(stickerCli, imageMetaResolve(imageMeta), cfg.NextMoeAPI.ImageCDNBase),
 		Artifact:           artCli,
 		FileStorage:        fileStorageClient,
 		CronStop: cronPkg.Start(db, rdb, imgCli, cronPkg.Jobs{

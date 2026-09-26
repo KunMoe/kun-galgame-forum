@@ -20,6 +20,7 @@ type Config struct {
 	NextMoeAPI     NextMoeAPIConfig
 	NewsAPI        NewsAPIConfig
 	MoyuAPI        MoyuAPIConfig
+	StickerAPI     StickerAPIConfig
 	ImageClient    ImageClientConfig
 	ArtifactClient ArtifactClientConfig
 	LinkChecker    LinkCheckerConfig
@@ -133,6 +134,13 @@ type NewsAPIConfig struct {
 // gateway's rate tier belongs to the OAuth client, and the forum's is internal
 // (unlimited), so sharing it costs nothing.
 type MoyuAPIConfig struct {
+	BaseURL string
+	APIKey  string
+}
+
+// StickerAPIConfig reaches the /v2/sticker face, which sits on the same gateway
+// under the same rule as MoyuAPIConfig: any valid key, no scope.
+type StickerAPIConfig struct {
 	BaseURL string
 	APIKey  string
 }
@@ -289,6 +297,10 @@ func Load() (*Config, error) {
 		MoyuAPI: MoyuAPIConfig{
 			BaseURL: envOrDefault("KUN_MOYU_API_BASE", "https://api.nextmoe.dev"),
 			APIKey:  envOrDefault("KUN_MOYU_API_KEY", nextMoeKey),
+		},
+		StickerAPI: StickerAPIConfig{
+			BaseURL: envOrDefault("KUN_STICKER_API_BASE", "https://api.nextmoe.dev"),
+			APIKey:  envOrDefault("KUN_STICKER_API_KEY", nextMoeKey),
 		},
 		ImageClient: ImageClientConfig{
 			BaseURL:      envOrDefault("KUN_IMAGE_CLIENT_BASE_URL", "http://127.0.0.1:9278"),

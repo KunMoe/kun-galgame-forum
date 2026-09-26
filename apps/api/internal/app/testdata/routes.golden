@@ -160,6 +160,7 @@ GET    /api/v1/sections                               cors.New → v1Headers →
 GET    /api/v1/series                                 cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/series/:series_id                      cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/series/:series_id/works                cors.New → v1Headers → fiberAdapter.Handle
+GET    /api/v1/sticker-packs                          cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/tagged-works                           cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/tags                                   cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/tags/:tag_id                           cors.New → v1Headers → fiberAdapter.Handle
