@@ -5,6 +5,7 @@ import (
 	"strings"
 	"time"
 
+	"kun-galgame-api/internal/apiv1/content"
 	"kun-galgame-api/internal/community/anchor"
 	"kun-galgame-api/internal/constants"
 	"kun-galgame-api/internal/infrastructure/markdown"
@@ -33,9 +34,9 @@ func MapNotification(n communityclient.NotificationView, post *communityclient.P
 	}
 
 	// Quiz walls are spoiler-gated; a preview in the inbox would bypass the gate.
-	content := ""
+	preview := ""
 	if post != nil && !strings.HasPrefix(n.AnchorID, "quiz:") {
-		content = markdown.ToPlainText(markdown.StripReferenceTokens(post.ContentRaw), constants.TextPreviewLength)
+		preview = content.PlainText(markdown.StripReferenceTokens(post.ContentRaw), constants.TextPreviewLength)
 	}
 
 	senderID := 0
@@ -51,7 +52,7 @@ func MapNotification(n communityclient.NotificationView, post *communityclient.P
 	seq := n.Seq
 	threadID := n.ThreadID
 	msg := &model.Message{
-		Content:                 content,
+		Content:                 preview,
 		Link:                    link,
 		Status:                  status,
 		Type:                    msgType,

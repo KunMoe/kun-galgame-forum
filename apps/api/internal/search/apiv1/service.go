@@ -8,9 +8,9 @@ import (
 	"unicode/utf8"
 
 	v1 "kun-galgame-api/internal/apiv1"
+	"kun-galgame-api/internal/apiv1/content"
 	"kun-galgame-api/internal/community/anchor"
 	"kun-galgame-api/internal/galgame/client"
-	"kun-galgame-api/internal/infrastructure/markdown"
 	"kun-galgame-api/internal/search/repository"
 	topicapiv1 "kun-galgame-api/internal/topic/apiv1"
 	"kun-galgame-api/pkg/communityclient"
@@ -95,7 +95,7 @@ const (
 // Plain text first, then the window: a window cut out of the Markdown source
 // showed ** and ![](/image/…) to the reader and could split a token in half.
 func excerpt(source string, keywords []string) string {
-	text := markdown.ToPlainText(source, utf8.RuneCountInString(source))
+	text := content.PlainText(source, utf8.RuneCountInString(source))
 	runes := []rune(text)
 	if len(runes) <= excerptLen {
 		return text
