@@ -104,13 +104,13 @@ func (s *Service) requirePeer(ctx context.Context, callerID int, raw string) (in
 	return id, u, nil
 }
 
-func (s *Service) mutedTypes(userID int) ([]string, *problem.Problem) {
+func (s *Service) mutedTypes(userID int) ([]string, bool, *problem.Problem) {
 	keys, err := s.messages.FindMutedTypes(userID)
 	if err != nil {
-		return nil, problem.Internal(err)
+		return nil, false, problem.Internal(err)
 	}
-	local, _ := msgService.SplitMuted(keys)
-	return local, nil
+	local, chatMuted := msgService.SplitMuted(keys)
+	return local, chatMuted, nil
 }
 
 func (s *Service) convertBodies(ctx context.Context, sources []string) ([]content.ContentDocument, *problem.Problem) {

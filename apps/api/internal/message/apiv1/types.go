@@ -21,10 +21,12 @@ type Notification struct {
 }
 
 type NotificationSummary struct {
-	Object           string        `json:"object" enum:"notification_summary" maxLength:"21" doc:"Type discriminant. Always notification_summary."`
-	UnreadCount      int           `json:"unread_count" minimum:"0" doc:"Unread rows in the unmuted partition, counted in SQL. Includes rows whose actor is banned, which listNotifications drops, so this is not the length of that list."`
-	MutedUnreadCount int           `json:"muted_unread_count" minimum:"0" doc:"Unread rows in the muted partition, counted in SQL. Includes rows whose actor is banned."`
-	Latest           *Notification `json:"latest" doc:"The first renderable row of the unmuted partition in listNotifications order. null when that partition has none."`
+	Object                   string        `json:"object" enum:"notification_summary" maxLength:"21" doc:"Type discriminant. Always notification_summary."`
+	UnreadCount              int           `json:"unread_count" minimum:"0" doc:"Unread rows in the unmuted partition, counted in SQL. Includes rows whose actor is banned, which listNotifications drops, so this is not the length of that list."`
+	MutedUnreadCount         int           `json:"muted_unread_count" minimum:"0" doc:"Unread rows in the muted partition, counted in SQL. Includes rows whose actor is banned."`
+	DirectMessageUnreadCount int           `json:"direct_message_unread_count" minimum:"0" doc:"Direct messages from others that the caller has not marked read: the sum of unread_count over the conversations listConversations returns. Conversations with a banned peer are left out, as that list leaves them out. Counted whether or not direct messages are muted."`
+	IsDirectMessageMuted     bool          `json:"is_direct_message_muted" doc:"Whether the caller muted direct messages, that is, muted_types in getNotificationPreferences contains chat. has_unread_messages on getMe ignores direct messages while this is true."`
+	Latest                   *Notification `json:"latest" doc:"The first renderable row of the unmuted partition in listNotifications order. null when that partition has none."`
 }
 
 type NotificationReadMarker struct {

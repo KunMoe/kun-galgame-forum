@@ -1869,7 +1869,7 @@ export interface paths {
         };
         /**
          * Get notification unread counts
-         * @description Returns unread_count for the unmuted partition, muted_unread_count for the muted partition, and latest, the first renderable unmuted row in listNotifications order. The two counts are SQL counts and include rows whose actor is banned, which listNotifications drops, so they are not the length of that list. latest is null when the unmuted partition has no renderable row. Any query failure is INTERNAL_ERROR.
+         * @description Returns unread_count for the unmuted partition, muted_unread_count for the muted partition, and latest, the first renderable unmuted row in listNotifications order. The two counts are SQL counts and include rows whose actor is banned, which listNotifications drops, so they are not the length of that list. latest is null when the unmuted partition has no renderable row. direct_message_unread_count is the unread direct messages across the conversations listConversations returns, whether or not direct messages are muted; is_direct_message_muted says whether they are. Any query failure is INTERNAL_ERROR.
          */
         get: operations["getNotificationSummary"];
         put?: never;
@@ -8820,6 +8820,13 @@ export interface components {
             up_to_id: string;
         };
         NotificationSummary: {
+            /**
+             * Format: int64
+             * @description Direct messages from others that the caller has not marked read: the sum of unread_count over the conversations listConversations returns. Conversations with a banned peer are left out, as that list leaves them out. Counted whether or not direct messages are muted.
+             */
+            direct_message_unread_count: number;
+            /** @description Whether the caller muted direct messages, that is, muted_types in getNotificationPreferences contains chat. has_unread_messages on getMe ignores direct messages while this is true. */
+            is_direct_message_muted: boolean;
             /** @description The first renderable row of the unmuted partition in listNotifications order. null when that partition has none. */
             latest: components["schemas"]["Notification"] | null;
             /**
