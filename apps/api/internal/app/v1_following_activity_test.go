@@ -14,6 +14,7 @@ import (
 const (
 	faTopicMin = 930001001
 	faReplyMin = 930001501
+	faWorkMin  = 930002001
 	faPath     = "/me/following-activities"
 )
 
@@ -66,6 +67,12 @@ func (f *followingFix) mark(t *testing.T, session, seenAt string) (*http.Respons
 	t.Helper()
 	return f.callJSON(t, http.MethodPut, "/api/v1"+faPath+"/read-marker", faPath+"/read-marker", session, "",
 		map[string]any{"seen_at": seenAt})
+}
+
+func (f *followingFix) markEmpty(t *testing.T, session string) (*http.Response, map[string]any) {
+	t.Helper()
+	return f.callJSON(t, http.MethodPut, "/api/v1"+faPath+"/read-marker", faPath+"/read-marker", session, "",
+		map[string]any{})
 }
 
 func (f *followingFix) walk(t *testing.T, session string, q url.Values, limit int) []map[string]any {
@@ -283,13 +290,13 @@ func TestV1FollowingActivitiesCommunityDown(t *testing.T) {
 func TestV1FollowingActivitySummaryWindow(t *testing.T) {
 	f := newFollowingFix(t)
 	now := time.Now()
-	f.topic(t, faTopicMin, w3UserOther, false, now.Add(-8*24*time.Hour))
-	f.topic(t, faTopicMin+1, w3UserOther, false, now.Add(-2*24*time.Hour))
+	f.topic(t, faTopicMin, w3UserOther, false, now.Add(-7*24*time.Hour-time.Hour))
+	f.topic(t, faTopicMin+1, w3UserOther, false, now.Add(-6*24*time.Hour-23*time.Hour))
 	f.follows(w3UserBob, w3UserOther)
 
 	resp, body := f.summary(t, "sess-bob", url.Values{})
 	if n := unseenCount(t, resp, body); n != 1 {
-		t.Fatalf("unmarked unseen %d, want 1 (only the last seven days)", n)
+		t.Fatalf("unmarked unseen %d, want 1 (inside 6d23h, outside 7d1h)", n)
 	}
 }
 
@@ -368,8 +375,104 @@ func TestV1FollowingActivityReadMarker(t *testing.T) {
 
 	resp, body = f.mark(t, "sess-other", "2026-02-30T00:00:00Z")
 	mustCode(t, resp, body, http.StatusUnprocessableEntity, "VALIDATION_FAILED")
+	fieldErr(t, body, "pointer", "/seen_at", "INVALID_FORMAT")
 	resp, body = f.mark(t, "", faTime(later))
 	mustCode(t, resp, body, http.StatusUnauthorized, "MISSING_CREDENTIAL")
+}
+
+func TestV1FollowingActivitiesFollowedCreatorWork(t *testing.T) {
+	f := newFollowingFix(t)
+	followed, other := faWorkMin, faWorkMin+1
+	t.Cleanup(func() {
+		_ = f.db.Exec(`DELETE FROM galgame WHERE id IN ?`, []int{followed, other}).Error
+	})
+	created := time.Now().Add(-time.Hour)
+	if err := f.db.Exec(`INSERT INTO galgame (id, published, creator_user_id, resource_count, like_count, favorite_count, created, updated)
+		VALUES (?, true, ?, 0, 0, 0, ?, ?), (?, true, ?, 0, 0, 0, ?, ?)`,
+		followed, w3UserOther, created, created,
+		other, w3UserAlice, created, created).Error; err != nil {
+		t.Fatal(err)
+	}
+	f.catalog.items[followed] = catalogItem(t, followed, "sfw")
+	f.catalog.items[other] = catalogItem(t, other, "sfw")
+	f.follows(w3UserBob, w3UserOther)
+
+	q := url.Values{"include_galgames_without_resources": {"true"}}
+	items := f.walk(t, "sess-bob", url.Values{"include_galgames_without_resources": {"true"}}, 20)
+	if len(items) != 1 {
+		t.Fatalf("items %d, want 1: %+v", len(items), items)
+	}
+	a := followedActivity(t, items[0])
+	if a["activity_type"] != "galgame_creation" || performerID(a) != strconv.Itoa(w3UserOther) {
+		t.Fatalf("item %v by %s, want galgame_creation by %d", a["activity_type"], performerID(a), w3UserOther)
+	}
+	resp, body := f.summary(t, "sess-bob", q)
+	if n := unseenCount(t, resp, body); n != 1 {
+		t.Fatalf("unseen %d, want 1", n)
+	}
+}
+
+func TestV1FollowingActivitiesDotClearsPastDroppedRow(t *testing.T) {
+	f := newFollowingFix(t)
+	base := time.Now().Add(-time.Hour).Truncate(time.Second)
+	f.topic(t, faTopicMin, w3UserOther, false, base)
+	f.topic(t, faTopicMin+1, w3UserBanned, false, base.Add(time.Minute))
+	f.follows(w3UserBob, w3UserOther, w3UserBanned)
+
+	before := time.Now().Add(-3 * time.Second)
+	resp, body := f.markEmpty(t, "sess-bob")
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("mark {} %d %+v", resp.StatusCode, body)
+	}
+	resp, body = f.summary(t, "sess-bob", url.Values{})
+	if n := unseenCount(t, resp, body); n != 0 {
+		t.Fatalf("unseen %d, want 0 after marking up to now", n)
+	}
+	stored, err := time.Parse(time.RFC3339, fmt.Sprint(body["last_seen_at"]))
+	if err != nil || stored.Before(before) || stored.After(time.Now().Add(time.Second)) {
+		t.Fatalf("last_seen_at %v, want within the last few seconds", body["last_seen_at"])
+	}
+}
+
+func TestV1FollowingActivitiesCursorRejectedBySiteStream(t *testing.T) {
+	f := newFollowingFix(t)
+	base := time.Now().Add(-time.Hour).Truncate(time.Second)
+	f.topic(t, faTopicMin, w3UserOther, false, base)
+	f.topic(t, faTopicMin+1, w3UserOther, false, base.Add(time.Minute))
+	f.follows(w3UserBob, w3UserOther)
+
+	resp, body := f.list(t, "sess-bob", url.Values{"limit": {"1"}})
+	own, _ := body["next_cursor"].(string)
+	if resp.StatusCode != http.StatusOK || own == "" {
+		t.Fatalf("first page %d %+v", resp.StatusCode, body)
+	}
+	q := url.Values{"cursor": {own}}
+	resp, body = f.callJSON(t, http.MethodGet, "/api/v1/activities?"+q.Encode(), "/activities", "", "", nil)
+	mustCode(t, resp, body, http.StatusBadRequest, "INVALID_CURSOR")
+}
+
+func TestV1FollowingActivitiesCursorBoundToTypes(t *testing.T) {
+	f := newFollowingFix(t)
+	base := time.Now().Add(-time.Hour).Truncate(time.Second)
+	f.topic(t, faTopicMin, w3UserOther, false, base)
+	f.topic(t, faTopicMin+1, w3UserOther, false, base.Add(time.Minute))
+	f.follows(w3UserBob, w3UserOther)
+
+	resp, body := f.list(t, "sess-bob", url.Values{"limit": {"1"}, "activity_types": {"topic_creation"}})
+	own, _ := body["next_cursor"].(string)
+	if resp.StatusCode != http.StatusOK || own == "" {
+		t.Fatalf("first page %d %+v", resp.StatusCode, body)
+	}
+	resp, body = f.list(t, "sess-bob", url.Values{
+		"limit": {"1"}, "cursor": {own}, "activity_types": {"topic_reply_creation"},
+	})
+	mustCode(t, resp, body, http.StatusBadRequest, "INVALID_CURSOR")
+}
+
+func TestV1FollowingActivitiesLimitTooLarge(t *testing.T) {
+	f := newFollowingFix(t)
+	resp, body := f.list(t, "sess-bob", url.Values{"limit": {"101"}})
+	mustCode(t, resp, body, http.StatusBadRequest, "LIMIT_TOO_LARGE")
 }
 
 func faTime(t time.Time) string {

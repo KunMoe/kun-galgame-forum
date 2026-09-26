@@ -1778,7 +1778,7 @@ export interface paths {
         get?: never;
         /**
          * Move the caller's seen mark on the followed accounts' activity
-         * @description Stores the later of the current mark and seen_at, with a future seen_at taken as now. Replaying it, or sending an earlier time, changes nothing and is still 200.
+         * @description Stores the later of the current mark and seen_at, with a future seen_at taken as now. Absent seen_at means now. Replaying it, or sending an earlier time, changes nothing and is still 200.
          */
         put: operations["markFollowingActivitiesSeen"];
         post?: never;
@@ -1797,7 +1797,7 @@ export interface paths {
         };
         /**
          * Count the followed accounts' activity the caller has not seen
-         * @description The caller's seen mark and how many activities after it listFollowingActivities would hold under the same filters, for a red dot.
+         * @description The caller's seen mark and a SQL count, capped at 100, of matching rows by followed accounts after the mark (or in the last seven days when there is no mark), which can include rows listFollowingActivities leaves out.
          */
         get: operations["getFollowingActivitySummary"];
         put?: never;
@@ -7296,9 +7296,9 @@ export interface components {
         FollowingActivityReadMarkerWrite: {
             /**
              * Format: date-time
-             * @description Everything that occurred at or before this instant counts as seen. Send the occurred_at of the newest activity shown. The mark only moves forward, and a time in the future is stored as the server's current time.
+             * @description Everything that occurred at or before this instant counts as seen. Absent means everything up to now. When present, send the occurred_at of the newest activity shown. The mark only moves forward, and a time in the future is stored as the server's current time.
              */
-            seen_at: string;
+            seen_at?: string;
         };
         FollowingActivitySummary: {
             /**
@@ -7313,7 +7313,7 @@ export interface components {
             object: "following_activity_summary";
             /**
              * Format: int64
-             * @description Activities after last_seen_at that match the filters, counted up to 100: 100 means 100 or more. With no seen mark, the last seven days are counted. Counted in SQL, so it includes rows listFollowingActivities drops for a banned author or a work catalog does not show; it is not the length of that list.
+             * @description Matching rows after last_seen_at counted in SQL up to 100: 100 means 100 or more. With no seen mark, the last seven days are counted. Can include rows the list leaves out, such as a banned author's or a work catalog does not show.
              */
             unseen_count: number;
         };
@@ -24030,7 +24030,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description VALIDATION_FAILED when seen_at is not a real instant. */
+            /** @description VALIDATION_FAILED when seen_at is present but not a real instant. */
             422: {
                 headers: {
                     [name: string]: unknown;

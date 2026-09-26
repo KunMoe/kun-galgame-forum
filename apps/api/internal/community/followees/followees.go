@@ -3,6 +3,7 @@ package followees
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"strconv"
 	"sync"
 	"time"
@@ -34,12 +35,12 @@ type Cache struct {
 	src    Source
 	mu     sync.Mutex
 	byUser map[int]entry
-	gen    map[int]uint64
+	epoch  uint64
 	flight singleflight.Group
 }
 
 func New(src Source) *Cache {
-	return &Cache{src: src, byUser: map[int]entry{}, gen: map[int]uint64{}}
+	return &Cache{src: src, byUser: map[int]entry{}}
 }
 
 func NewFromClient(c *communityclient.Client) *Cache {
@@ -62,17 +63,16 @@ func (c *Cache) IDs(ctx context.Context, userID int) ([]int, error) {
 	}
 	v, err, _ := c.flight.Do(strconv.Itoa(userID), func() (any, error) {
 		c.mu.Lock()
-		gen := c.gen[userID]
+		epoch := c.epoch
 		c.mu.Unlock()
 		ids, err := c.fetch(context.WithoutCancel(ctx), userID)
 		if err != nil {
 			return nil, err
 		}
 		c.mu.Lock()
-		if c.gen[userID] == gen {
+		if c.epoch == epoch {
 			if len(c.byUser) >= maxEntries {
 				clear(c.byUser)
-				clear(c.gen)
 			}
 			c.byUser[userID] = entry{ids: ids, expires: time.Now().Add(ttl)}
 		}
@@ -91,7 +91,7 @@ func (c *Cache) Forget(userID int) {
 	}
 	c.mu.Lock()
 	delete(c.byUser, userID)
-	c.gen[userID]++
+	c.epoch++
 	c.mu.Unlock()
 	c.flight.Forget(strconv.Itoa(userID))
 }
@@ -108,9 +108,10 @@ func (c *Cache) fetch(ctx context.Context, userID int) ([]int, error) {
 			ids = append(ids, int(u.UserID))
 		}
 		if page.NextCursor == "" {
-			break
+			return ids, nil
 		}
 		cursor = page.NextCursor
 	}
+	slog.Warn("followee list truncated", "user_id", userID, "count", len(ids))
 	return ids, nil
 }

@@ -40,7 +40,7 @@ type FollowingActivity struct {
 type FollowingActivitySummary struct {
 	Object      string         `json:"object" enum:"following_activity_summary" maxLength:"26" doc:"Type discriminant. Always following_activity_summary."`
 	LastSeenAt  *repr.DateTime `json:"last_seen_at" doc:"The caller's seen mark: activities at or before it count as seen. null until the caller first sets it."`
-	UnseenCount int            `json:"unseen_count" minimum:"0" maximum:"100" doc:"Activities after last_seen_at that match the filters, counted up to 100: 100 means 100 or more. With no seen mark, the last seven days are counted. Counted in SQL, so it includes rows listFollowingActivities drops for a banned author or a work catalog does not show; it is not the length of that list."`
+	UnseenCount int            `json:"unseen_count" minimum:"0" maximum:"100" doc:"Matching rows after last_seen_at counted in SQL up to 100: 100 means 100 or more. With no seen mark, the last seven days are counted. Can include rows the list leaves out, such as a banned author's or a work catalog does not show."`
 }
 
 type FollowingActivityReadMarker struct {
@@ -49,7 +49,7 @@ type FollowingActivityReadMarker struct {
 }
 
 type FollowingActivityReadMarkerWrite struct {
-	SeenAt repr.DateTime `json:"seen_at" doc:"Everything that occurred at or before this instant counts as seen. Send the occurred_at of the newest activity shown. The mark only moves forward, and a time in the future is stored as the server's current time."`
+	SeenAt *repr.DateTime `json:"seen_at,omitempty" required:"false" doc:"Everything that occurred at or before this instant counts as seen. Absent means everything up to now. When present, send the occurred_at of the newest activity shown. The mark only moves forward, and a time in the future is stored as the server's current time."`
 }
 
 type FollowingFilters struct {
@@ -117,7 +117,7 @@ func registerFollowing(api huma.API, s *Service) {
 		Method:      http.MethodGet,
 		Path:        followingSummary,
 		Summary:     "Count the followed accounts' activity the caller has not seen",
-		Description: "The caller's seen mark and how many activities after it listFollowingActivities would hold under the same filters, for a red dot.",
+		Description: "The caller's seen mark and a SQL count, capped at 100, of matching rows by followed accounts after the mark (or in the last seven days when there is no mark), which can include rows listFollowingActivities leaves out.",
 		Tags:        tags,
 		Responses: problemResponses(map[int]string{
 			400: "UNKNOWN_ENUM_VALUE or INVALID_PARAMETER.",
@@ -130,10 +130,10 @@ func registerFollowing(api huma.API, s *Service) {
 		Method:      http.MethodPut,
 		Path:        followingReadMark,
 		Summary:     "Move the caller's seen mark on the followed accounts' activity",
-		Description: "Stores the later of the current mark and seen_at, with a future seen_at taken as now. Replaying it, or sending an earlier time, changes nothing and is still 200.",
+		Description: "Stores the later of the current mark and seen_at, with a future seen_at taken as now. Absent seen_at means now. Replaying it, or sending an earlier time, changes nothing and is still 200.",
 		Tags:        tags,
 		Responses: problemResponses(map[int]string{
-			422: "VALIDATION_FAILED when seen_at is not a real instant.",
+			422: "VALIDATION_FAILED when seen_at is present but not a real instant.",
 		}),
 	}), s.markFollowingActivitiesSeen)
 }
@@ -196,11 +196,13 @@ func (s *Service) getFollowingActivitySummary(ctx context.Context, in *following
 	}
 	count := 0
 	if len(ids) > 0 {
-		since := time.Now().Add(-unmarkedLookback)
+		from := time.Now().Add(-unmarkedLookback)
 		if seen != nil {
-			since = *seen
+			// occurred_at goes out at second precision, so a client marking the
+			// newest item it showed passes that item's truncated time.
+			from = seen.Truncate(time.Second).Add(time.Second)
 		}
-		if count, err = s.repo.CountFeedSince(in.query(ids), since, unseenCountLimit); err != nil {
+		if count, err = s.repo.CountFeedSince(in.query(ids), from, unseenCountLimit); err != nil {
 			return nil, problem.Internal(err)
 		}
 	}
@@ -213,10 +215,14 @@ func (s *Service) markFollowingActivitiesSeen(ctx context.Context, in *following
 	if prob := s.ready(); prob != nil {
 		return nil, prob
 	}
-	at, err := time.Parse(time.RFC3339, string(in.Body.SeenAt))
-	if err != nil {
-		return nil, problem.New(problem.CodeValidationFailed, "The request is syntactically valid but semantically not.",
-			problem.AtPointer("/seen_at", problem.ReasonInvalidFormat, "must be a real instant in RFC 3339 UTC with second precision", nil))
+	at := time.Now()
+	if in.Body.SeenAt != nil {
+		parsed, err := time.Parse(time.RFC3339, string(*in.Body.SeenAt))
+		if err != nil {
+			return nil, problem.New(problem.CodeValidationFailed, "The request is syntactically valid but semantically not.",
+				problem.AtPointer("/seen_at", problem.ReasonInvalidFormat, "must be a real instant in RFC 3339 UTC with second precision", nil))
+		}
+		at = parsed
 	}
 	seen, err := s.repo.MarkFollowingSeen(v1.User(ctx).ID, at)
 	if err != nil {

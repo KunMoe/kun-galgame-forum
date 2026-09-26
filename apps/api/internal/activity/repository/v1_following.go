@@ -6,13 +6,20 @@ import (
 	"time"
 )
 
-// CountFeedSince counts rows that occurred after the second named by seen:
-// occurred_at goes out at second precision, so a client marking the newest
-// item it showed passes that item's truncated time.
-func (r *ActivityRepository) CountFeedSince(q FeedQuery, seen time.Time, limit int) (int, error) {
+func (r *ActivityRepository) CountFeedSince(q FeedQuery, from time.Time, limit int) (int, error) {
+	if q.ActorIDs != nil && len(q.ActorIDs) == 0 {
+		return 0, nil
+	}
+	created, createdArgs := []string{"fa.created >= ?"}, []any{from}
+	if q.ActorIDs != nil {
+		sql, args := feedActorUnion(q, "SELECT 1 ", created, createdArgs, false, limit)
+		var n int
+		err := r.db.Raw(sql, args...).Scan(&n).Error
+		return n, err
+	}
 	conds, args := feedConds(q)
-	conds = append(conds, "fa.created >= ?")
-	args = append(args, seen.Truncate(time.Second).Add(time.Second))
+	conds = append(conds, created...)
+	args = append(args, createdArgs...)
 	sql := "SELECT count(*) FROM (SELECT 1 FROM feed_activity fa WHERE " + strings.Join(conds, " AND ") +
 		fmt.Sprintf(" LIMIT %d) capped", limit)
 	var n int

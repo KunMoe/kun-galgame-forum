@@ -89,3 +89,88 @@ func TestUnconfigured(t *testing.T) {
 		t.Fatalf("nil cache err %v", err)
 	}
 }
+
+type gateSource struct {
+	calls   atomic.Int32
+	entered chan struct{}
+	release chan struct{}
+	ids     []int64
+}
+
+func (s *gateSource) ListFollowing(_ context.Context, _ int64, _ string, _ int) (*communityclient.FollowListResponse, error) {
+	s.calls.Add(1)
+	if s.entered != nil {
+		select {
+		case s.entered <- struct{}{}:
+		default:
+		}
+	}
+	if s.release != nil {
+		<-s.release
+	}
+	out := &communityclient.FollowListResponse{}
+	for _, id := range s.ids {
+		out.Users = append(out.Users, communityclient.FollowListUser{UserID: id})
+	}
+	return out, nil
+}
+
+func TestForgetDiscardsInFlight(t *testing.T) {
+	for _, forgetID := range []int{7, 9} {
+		t.Run(strconv.Itoa(forgetID), func(t *testing.T) {
+			src := &gateSource{
+				entered: make(chan struct{}, 1),
+				release: make(chan struct{}),
+				ids:     []int64{1, 2, 3},
+			}
+			c := New(src)
+			done := make(chan struct{})
+			var got []int
+			var gotErr error
+			go func() {
+				got, gotErr = c.IDs(context.Background(), 7)
+				close(done)
+			}()
+			<-src.entered
+			c.Forget(forgetID)
+			close(src.release)
+			<-done
+			if gotErr != nil || len(got) != 3 {
+				t.Fatalf("in-flight: ids %v err %v", got, gotErr)
+			}
+			calls := src.calls.Load()
+			if _, err := c.IDs(context.Background(), 7); err != nil {
+				t.Fatal(err)
+			}
+			if src.calls.Load() == calls {
+				t.Fatal("second IDs served from cache after Forget during fetch")
+			}
+		})
+	}
+}
+
+type endlessSource struct {
+	calls atomic.Int32
+}
+
+func (s *endlessSource) ListFollowing(_ context.Context, _ int64, _ string, limit int) (*communityclient.FollowListResponse, error) {
+	n := int(s.calls.Add(1))
+	out := &communityclient.FollowListResponse{NextCursor: "more"}
+	base := (n - 1) * limit
+	for i := range limit {
+		out.Users = append(out.Users, communityclient.FollowListUser{UserID: int64(base + i + 1)})
+	}
+	return out, nil
+}
+
+func TestIDsTruncatesAtMaxPages(t *testing.T) {
+	src := &endlessSource{}
+	ids, err := New(src).IDs(context.Background(), 7)
+	want := maxPages * pageSize
+	if err != nil || len(ids) != want {
+		t.Fatalf("ids %d err %v, want %d and no error", len(ids), err, want)
+	}
+	if n := src.calls.Load(); n != int32(maxPages) {
+		t.Fatalf("pages fetched %d, want %d", n, maxPages)
+	}
+}
