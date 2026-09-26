@@ -24,18 +24,24 @@ type UserTopicRow struct {
 }
 
 type UserReplyRow struct {
-	ID      int       `gorm:"column:id"`
-	TopicID int       `gorm:"column:topic_id"`
-	Floor   int       `gorm:"column:floor"`
-	Content string    `gorm:"column:content"`
-	Created time.Time `gorm:"column:created"`
+	ID          int       `gorm:"column:id"`
+	UserID      int       `gorm:"column:user_id"`
+	TopicID     int       `gorm:"column:topic_id"`
+	TopicTitle  string    `gorm:"column:topic_title"`
+	TopicUserID int       `gorm:"column:topic_user_id"`
+	Floor       int       `gorm:"column:floor"`
+	Content     string    `gorm:"column:content"`
+	Created     time.Time `gorm:"column:created"`
 }
 
 type UserCommentRow struct {
-	ID      int       `gorm:"column:id"`
-	TopicID int       `gorm:"column:topic_id"`
-	Content string    `gorm:"column:content"`
-	Created time.Time `gorm:"column:created"`
+	ID          int       `gorm:"column:id"`
+	UserID      int       `gorm:"column:user_id"`
+	TopicID     int       `gorm:"column:topic_id"`
+	TopicTitle  string    `gorm:"column:topic_title"`
+	TopicUserID int       `gorm:"column:topic_user_id"`
+	Content     string    `gorm:"column:content"`
+	Created     time.Time `gorm:"column:created"`
 }
 
 func (r *UserContentRepository) ListUserTopics(q UserListQuery) ([]UserTopicRow, int, error) {
@@ -45,13 +51,15 @@ func (r *UserContentRepository) ListUserTopics(q UserListQuery) ([]UserTopicRow,
 
 func (r *UserContentRepository) ListUserReplies(q UserListQuery) ([]UserReplyRow, int, error) {
 	return pageScan[UserReplyRow](r.repliesQuery(q),
-		"topic_reply.id, topic_reply.topic_id, topic_reply.floor, COALESCE(topic_reply.content, '') AS content, topic_reply.created",
+		"topic_reply.id, topic_reply.user_id, topic_reply.topic_id, topic.title AS topic_title, topic.user_id AS topic_user_id, "+
+			"topic_reply.floor, COALESCE(topic_reply.content, '') AS content, topic_reply.created",
 		"topic_reply.created DESC, topic_reply.id DESC", q.Offset, q.Limit)
 }
 
 func (r *UserContentRepository) ListUserComments(q UserListQuery) ([]UserCommentRow, int, error) {
 	return pageScan[UserCommentRow](r.commentsQuery(q),
-		"topic_comment.id, topic_comment.topic_id, topic_comment.content, topic_comment.created",
+		"topic_comment.id, topic_comment.user_id, topic_comment.topic_id, topic.title AS topic_title, topic.user_id AS topic_user_id, "+
+			"topic_comment.content, topic_comment.created",
 		"topic_comment.created DESC, topic_comment.id DESC", q.Offset, q.Limit)
 }
 

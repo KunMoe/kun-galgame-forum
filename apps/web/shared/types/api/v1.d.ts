@@ -4038,7 +4038,7 @@ export interface paths {
         };
         /**
          * List a user's comments
-         * @description Lists topic comments related to a user as a page-number collection, newest first with ties broken by descending id. relation is required and closed. Comments whose parent topic is hidden or restricted never appear. NOT_FOUND when the account does not exist or is not renderable.
+         * @description Lists topic comments related to a user as a page-number collection, newest first with ties broken by descending id. relation is required and closed. Comments whose parent topic is hidden or restricted never appear. Comments by banned authors, or under topics by banned authors, are dropped after counting, so a page may hold fewer items than limit and total may count them. NOT_FOUND when the account does not exist or is not renderable.
          */
         get: operations["listUserComments"];
         put?: never;
@@ -4118,7 +4118,7 @@ export interface paths {
         };
         /**
          * List a user's replies
-         * @description Lists replies related to a user as a page-number collection, newest first with ties broken by descending id. relation is required and closed. Replies whose parent topic is hidden or restricted never appear. NOT_FOUND when the account does not exist or is not renderable.
+         * @description Lists replies related to a user as a page-number collection, newest first with ties broken by descending id. relation is required and closed. Replies whose parent topic is hidden or restricted never appear. Replies by banned authors, or under topics by banned authors, are dropped after counting, so a page may hold fewer items than limit and total may count them. NOT_FOUND when the account does not exist or is not renderable.
          */
         get: operations["listUserReplies"];
         put?: never;
@@ -12467,6 +12467,8 @@ export interface components {
             upvoter: components["schemas"]["UserRef"];
         };
         UserCommentItem: {
+            /** @description Comment author. */
+            author: components["schemas"]["UserRef"];
             /**
              * Format: date-time
              * @description Creation time.
@@ -12483,6 +12485,8 @@ export interface components {
             object: "comment";
             /** @description Id of the topic the comment belongs to. */
             topic_id: string;
+            /** @description That topic's title. Free text; never use it as a decision input. */
+            topic_title: string;
         };
         UserContent: {
             /**
@@ -12829,6 +12833,8 @@ export interface components {
             object: "user";
         };
         UserReplyItem: {
+            /** @description Reply author. */
+            author: components["schemas"]["UserRef"];
             /**
              * Format: date-time
              * @description Creation time.
@@ -12850,6 +12856,8 @@ export interface components {
             object: "reply";
             /** @description Id of the topic the reply belongs to. */
             topic_id: string;
+            /** @description That topic's title. Free text; never use it as a decision input. */
+            topic_title: string;
         };
         /** @enum {string} */
         UserResourceRelation: "published" | "liked";

@@ -45,6 +45,7 @@ func (s *Users) registerLists(api huma.API) {
 		Summary:     "List a user's replies",
 		Description: "Lists replies related to a user as a page-number collection, newest first with ties broken by descending id. " +
 			"relation is required and closed. Replies whose parent topic is hidden or restricted never appear. " +
+			"Replies by banned authors, or under topics by banned authors, are dropped after counting, so a page may hold fewer items than limit and total may count them. " +
 			"NOT_FOUND when the account does not exist or is not renderable.",
 		Tags: []string{"users"},
 		Responses: problemResponses(map[int]string{
@@ -60,6 +61,7 @@ func (s *Users) registerLists(api huma.API) {
 		Summary:     "List a user's comments",
 		Description: "Lists topic comments related to a user as a page-number collection, newest first with ties broken by descending id. " +
 			"relation is required and closed. Comments whose parent topic is hidden or restricted never appear. " +
+			"Comments by banned authors, or under topics by banned authors, are dropped after counting, so a page may hold fewer items than limit and total may count them. " +
 			"NOT_FOUND when the account does not exist or is not renderable.",
 		Tags: []string{"users"},
 		Responses: problemResponses(map[int]string{
@@ -135,15 +137,28 @@ func (s *Users) listUserReplies(ctx context.Context, in *listUserRepliesInput) (
 	if err != nil {
 		return nil, problem.Internal(err)
 	}
+	ids := make([]int, 0, len(rows)*2)
+	for _, row := range rows {
+		ids = append(ids, row.UserID, row.TopicUserID)
+	}
+	users, err := s.accounts.Users(ctx, ids)
+	if err != nil {
+		return nil, unavailable(err)
+	}
 	items := make([]UserReplyItem, 0, len(rows))
 	for _, row := range rows {
+		if bannedAmong(users, row.UserID, row.TopicUserID) {
+			continue
+		}
 		items = append(items, UserReplyItem{
-			Object:    "reply",
-			ID:        repr.ID(row.ID),
-			TopicID:   repr.ID(row.TopicID),
-			Floor:     row.Floor,
-			Excerpt:   excerptPlain(content.PlainText(row.Content, utf8.RuneCountInString(row.Content))),
-			CreatedAt: repr.Timestamp(row.Created),
+			Object:     "reply",
+			ID:         repr.ID(row.ID),
+			TopicID:    repr.ID(row.TopicID),
+			TopicTitle: row.TopicTitle,
+			Floor:      row.Floor,
+			Excerpt:    excerptPlain(content.PlainText(row.Content, utf8.RuneCountInString(row.Content))),
+			Author:     renderableUserRef(s.cdn, users, row.UserID),
+			CreatedAt:  repr.Timestamp(row.Created),
 		})
 	}
 	total, relation := collect.ClampTotal(count)
@@ -162,14 +177,27 @@ func (s *Users) listUserComments(ctx context.Context, in *listUserCommentsInput)
 	if err != nil {
 		return nil, problem.Internal(err)
 	}
+	ids := make([]int, 0, len(rows)*2)
+	for _, row := range rows {
+		ids = append(ids, row.UserID, row.TopicUserID)
+	}
+	users, err := s.accounts.Users(ctx, ids)
+	if err != nil {
+		return nil, unavailable(err)
+	}
 	items := make([]UserCommentItem, 0, len(rows))
 	for _, row := range rows {
+		if bannedAmong(users, row.UserID, row.TopicUserID) {
+			continue
+		}
 		items = append(items, UserCommentItem{
-			Object:    "comment",
-			ID:        repr.ID(row.ID),
-			TopicID:   repr.ID(row.TopicID),
-			Excerpt:   excerptPlain(content.PlainText(row.Content, utf8.RuneCountInString(row.Content))),
-			CreatedAt: repr.Timestamp(row.Created),
+			Object:     "comment",
+			ID:         repr.ID(row.ID),
+			TopicID:    repr.ID(row.TopicID),
+			TopicTitle: row.TopicTitle,
+			Excerpt:    excerptPlain(content.PlainText(row.Content, utf8.RuneCountInString(row.Content))),
+			Author:     renderableUserRef(s.cdn, users, row.UserID),
+			CreatedAt:  repr.Timestamp(row.Created),
 		})
 	}
 	total, relation := collect.ClampTotal(count)
@@ -189,6 +217,15 @@ func (s *Users) prepareUserList(ctx context.Context, in UserListPage) (int, coll
 		return 0, collect.PageNumber{}, nil, prob
 	}
 	return ownerID, page, v1.User(ctx), nil
+}
+
+func bannedAmong(users map[int]userclient.User, ids ...int) bool {
+	for _, id := range ids {
+		if u, ok := users[id]; ok && !userclient.IsRenderable(u) {
+			return true
+		}
+	}
+	return false
 }
 
 func excerptPlain(s string) string {
