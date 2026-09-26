@@ -287,3 +287,21 @@ func TestCutTitleOnRunes(t *testing.T) {
 		t.Fatalf("title runes = %d", n)
 	}
 }
+
+func TestMapLiveStripsControlCharacters(t *testing.T) {
+	a := &activityapiv1.Activity{
+		Performer: &repr.UserRef{ID: repr.ID(7)}, Path: "/topic/1",
+		Topic:       &topicapiv1.TopicSummary{Title: "line\none\x00two"},
+		TopicDigest: &activityapiv1.TopicDigest{ExcerptMarkdown: "a\x08b\r\nc\td"},
+	}
+	item, err := MapLive("TOPIC_CREATION", 1, a, "", false, false, testOrigin, testRev, occurred)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if item.Title != "line one two" {
+		t.Fatalf("title = %q", item.Title)
+	}
+	if item.Excerpt != "ab\nc\td" {
+		t.Fatalf("excerpt = %q", item.Excerpt)
+	}
+}

@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode"
 
 	activityapiv1 "kun-galgame-api/internal/activity/apiv1"
 	"kun-galgame-api/internal/apiv1/content"
@@ -78,7 +79,7 @@ func MapLive(feedType string, sourceID int, a *activityapiv1.Activity, pageName 
 	if !ok {
 		return communityclient.ActivityWriteItem{}, ErrNotPushed
 	}
-	title := cutRunes(pageTitle(feedType, a, pageName), titleRunes)
+	title := cutRunes(singleLine(pageTitle(feedType, a, pageName)), titleRunes)
 	if title == "" {
 		title = sp.ObjectLabel
 	}
@@ -90,7 +91,7 @@ func MapLive(feedType string, sourceID int, a *activityapiv1.Activity, pageName 
 		ObjectKind:  sp.ObjectKind,
 		ObjectLabel: sp.ObjectLabel,
 		Title:       title,
-		Excerpt:     cutRunes(excerptOf(feedType, a), excerptRunes),
+		Excerpt:     cutRunes(withoutControls(excerptOf(feedType, a)), excerptRunes),
 		URL:         origin + a.Path,
 		OccurredAt:  occurred.UTC().Format(occurredFmt),
 	}
@@ -231,6 +232,26 @@ func topicNSFW(a *activityapiv1.Activity) bool {
 func mustID(id repr.DecimalID) int {
 	n, _ := strconv.Atoi(string(id))
 	return n
+}
+
+// Community rejects an item whose title holds any control character, or whose
+// excerpt holds one other than a newline or a tab: two old topic bodies did.
+func singleLine(s string) string {
+	return strings.Map(func(r rune) rune {
+		if unicode.IsControl(r) {
+			return ' '
+		}
+		return r
+	}, s)
+}
+
+func withoutControls(s string) string {
+	return strings.Map(func(r rune) rune {
+		if r == '\n' || r == '\t' || !unicode.IsControl(r) {
+			return r
+		}
+		return -1
+	}, s)
 }
 
 func cutRunes(s string, n int) string {
