@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 	"unicode"
+	"unicode/utf8"
 
 	"kun-galgame-api/internal/apiv1/collect"
 	"kun-galgame-api/internal/apiv1/content"
@@ -468,7 +469,7 @@ func validateChoices(qtype string, raw []QuizChoice, required bool) ([]string, [
 	seen := map[string]int{}
 	for i, c := range raw {
 		ptr := "/choices/" + strconv.Itoa(i)
-		if len(c) > maxChoiceLen {
+		if utf8.RuneCountInString(string(c)) > maxChoiceLen {
 			errs = append(errs, tooLong(ptr, maxChoiceLen))
 			continue
 		}

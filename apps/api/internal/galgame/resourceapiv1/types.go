@@ -76,7 +76,7 @@ func (ProviderName) Schema(huma.Registry) *huma.Schema {
 	return &huma.Schema{
 		Type:        huma.TypeString,
 		MaxLength:   &n,
-		Description: "A download-host name derived from the URLs. Free text; never use it as a decision input.",
+		Description: "A known provider's display label, or the URL's host when the provider is not known. Free text; never use it as a decision input.",
 	}
 }
 
@@ -92,7 +92,7 @@ type GalgameResource struct {
 	Title             string                  `json:"title" maxLength:"200" doc:"Optional title. Empty string when none. Free text; never use it as a decision input."`
 	VersionLabel      *string                 `json:"version_label" enum:"official_latest,stable,mirror,localized,unknown" maxLength:"15" doc:"Version token. null when none."`
 	Size              string                  `json:"size" maxLength:"64" doc:"Size as the uploader wrote it, such as 1.5 GB. Free text; never use it as a decision input."`
-	ProviderNames     []ProviderName          `json:"provider_names" doc:"Host names derived from the download URLs. Empty array, never null."`
+	ProviderNames     []ProviderName          `json:"provider_names" doc:"Where the download URLs point, one entry per distinct name: the display label of a known provider, otherwise the URL's host. Empty array, never null."`
 	Content           content.ContentDocument `json:"content" doc:"Note as a Markdown document. An empty document when there is no note."`
 	State             string                  `json:"state" enum:"valid,expired" maxLength:"7" doc:"Whether the links are currently treated as working."`
 	ViewCount         int                     `json:"view_count" minimum:"0" doc:"Lifetime view count."`

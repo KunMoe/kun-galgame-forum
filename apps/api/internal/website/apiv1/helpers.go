@@ -3,6 +3,7 @@ package apiv1
 import (
 	"encoding/json"
 	"net/url"
+	"unicode/utf8"
 
 	"kun-galgame-api/pkg/perm"
 )
@@ -14,7 +15,7 @@ const (
 )
 
 func validURL(raw string) bool {
-	if len(raw) > 100 {
+	if utf8.RuneCountInString(raw) > 100 {
 		return false
 	}
 	u, err := url.Parse(raw)

@@ -3,6 +3,7 @@ package app
 import (
 	"net/http"
 	"net/url"
+	"strings"
 	"testing"
 
 	"kun-galgame-api/pkg/problem"
@@ -54,6 +55,11 @@ func TestV1ListWorkSuggestions(t *testing.T) {
 	resp, body = f.qz(t, http.MethodGet, "/api/v1/work-suggestions", "/work-suggestions", "", "", nil)
 	if resp.StatusCode != http.StatusUnprocessableEntity && resp.StatusCode != http.StatusBadRequest {
 		t.Errorf("missing q %d %+v", resp.StatusCode, body)
+	}
+
+	resp, body = f.qz(t, http.MethodGet, "/api/v1/work-suggestions?q="+url.QueryEscape(strings.Repeat("中", 100)), "/work-suggestions", "", "", nil)
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("q at the character limit %d %+v", resp.StatusCode, body)
 	}
 
 	f.cat.fail.Store(true)

@@ -3,6 +3,7 @@ package app
 import (
 	"net/http"
 	"strconv"
+	"strings"
 	"sync"
 	"testing"
 
@@ -151,5 +152,31 @@ func TestV1DeleteToolset(t *testing.T) {
 	}
 	if !found {
 		t.Errorf("delete award %+v", aw)
+	}
+}
+
+func TestV1ToolsetLengthsCountCharacters(t *testing.T) {
+	f := newToolsetFix(t, nil)
+	resp, got := f.ts(t, http.MethodPatch, "/api/v1/toolsets/"+idStr(g1TSMain), "/toolsets/{toolset_id}", "sess-alice", "",
+		map[string]any{
+			"title":            strings.Repeat("工", 500),
+			"content_markdown": strings.Repeat("具", 2000),
+			"aliases":          []string{strings.Repeat("别", 500)},
+			"homepage_urls":    []string{"https://example.com/" + strings.Repeat("页", 480)},
+		})
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("patch at the character limits %d %+v", resp.StatusCode, got)
+	}
+	resp, got = f.ts(t, http.MethodPost, "/api/v1/toolsets/"+idStr(g1TSMain)+"/resources",
+		"/toolsets/{toolset_id}/resources", "sess-other", keyUUID(31), map[string]any{
+			"toolset_resource_type": "link",
+			"link_url":              "https://cdn.example/" + strings.Repeat("包", 987),
+			"size_label":            strings.Repeat("大", 107),
+			"extraction_code":       strings.Repeat("码", 1007),
+			"archive_password":      strings.Repeat("密", 1007),
+			"note":                  strings.Repeat("注", 1007),
+		})
+	if resp.StatusCode != http.StatusCreated {
+		t.Fatalf("link resource at the character limits %d %+v", resp.StatusCode, got)
 	}
 }

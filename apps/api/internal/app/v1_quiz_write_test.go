@@ -3,6 +3,7 @@ package app
 import (
 	"net/http"
 	"strconv"
+	"strings"
 	"sync"
 	"testing"
 
@@ -243,4 +244,22 @@ func TestV1LegacyEmptySubmissionIsNoChoice(t *testing.T) {
 		return
 	}
 	t.Error("legacy answer missing from the collection")
+}
+
+func TestV1QuizLengthsCountCharacters(t *testing.T) {
+	f := newQuizFix(t, nil)
+	resp, got := f.qz(t, http.MethodPost, "/api/v1/quizzes", "/quizzes", "sess-alice", keyUUID(30),
+		createQuizBody(map[string]any{
+			"prompt_text":          strings.Repeat("问", 200),
+			"explanation_markdown": strings.Repeat("解", 2000),
+			"choices":              []string{strings.Repeat("甲", 200), strings.Repeat("乙", 200)},
+		}))
+	if resp.StatusCode != http.StatusCreated {
+		t.Fatalf("create at the character limits %d %+v", resp.StatusCode, got)
+	}
+	resp, got = f.qz(t, http.MethodPatch, "/api/v1/quizzes/"+idStr(g2QMain), "/quizzes/{quiz_id}", "sess-alice", "",
+		map[string]any{"prompt_text": strings.Repeat("改", 200)})
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("patch at the character limit %d %+v", resp.StatusCode, got)
+	}
 }

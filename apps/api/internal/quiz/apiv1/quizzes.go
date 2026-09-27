@@ -5,6 +5,7 @@ import (
 	"errors"
 	"strconv"
 	"time"
+	"unicode/utf8"
 
 	v1 "kun-galgame-api/internal/apiv1"
 	"kun-galgame-api/internal/apiv1/collect"
@@ -130,7 +131,7 @@ func (s *Service) createQuiz(ctx context.Context, in *createQuizInput) (*createQ
 	}
 	body := in.Body
 	var errs []problem.FieldError
-	if len(body.PromptText) > maxPrompt {
+	if utf8.RuneCountInString(body.PromptText) > maxPrompt {
 		errs = append(errs, tooLong("/prompt_text", maxPrompt))
 	}
 	prompt := trimSpace(body.PromptText)
@@ -138,11 +139,11 @@ func (s *Service) createQuiz(ctx context.Context, in *createQuizInput) (*createQ
 		errs = append(errs, tooShort("/prompt_text", 1))
 	}
 	desc := markdown.NormalizeStoredContent(body.DescriptionMarkdown)
-	if len(body.DescriptionMarkdown) > maxDescription {
+	if utf8.RuneCountInString(body.DescriptionMarkdown) > maxDescription {
 		errs = append(errs, tooLong("/description_markdown", maxDescription))
 	}
 	expl := markdown.NormalizeStoredContent(body.ExplanationMarkdown)
-	if len(body.ExplanationMarkdown) > maxExplanation {
+	if utf8.RuneCountInString(body.ExplanationMarkdown) > maxExplanation {
 		errs = append(errs, tooLong("/explanation_markdown", maxExplanation))
 	}
 	spoiler := body.SpoilerLevel
@@ -250,7 +251,7 @@ func (s *Service) updateQuiz(ctx context.Context, in *patchQuizInput) (*quizOutp
 
 	prompt := row.Question
 	if patch.PromptText != nil {
-		if len(*patch.PromptText) > maxPrompt {
+		if utf8.RuneCountInString(*patch.PromptText) > maxPrompt {
 			errs = append(errs, tooLong("/prompt_text", maxPrompt))
 		} else {
 			prompt = trimSpace(*patch.PromptText)
@@ -264,7 +265,7 @@ func (s *Service) updateQuiz(ctx context.Context, in *patchQuizInput) (*quizOutp
 	}
 	desc := row.Description
 	if patch.DescriptionMarkdown != nil {
-		if len(*patch.DescriptionMarkdown) > maxDescription {
+		if utf8.RuneCountInString(*patch.DescriptionMarkdown) > maxDescription {
 			errs = append(errs, tooLong("/description_markdown", maxDescription))
 		} else {
 			desc = markdown.NormalizeStoredContent(*patch.DescriptionMarkdown)
@@ -274,7 +275,7 @@ func (s *Service) updateQuiz(ctx context.Context, in *patchQuizInput) (*quizOutp
 	}
 	expl := row.Explanation
 	if patch.ExplanationMarkdown != nil {
-		if len(*patch.ExplanationMarkdown) > maxExplanation {
+		if utf8.RuneCountInString(*patch.ExplanationMarkdown) > maxExplanation {
 			errs = append(errs, tooLong("/explanation_markdown", maxExplanation))
 		} else {
 			expl = markdown.NormalizeStoredContent(*patch.ExplanationMarkdown)

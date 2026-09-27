@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	v1 "kun-galgame-api/internal/apiv1"
 	"kun-galgame-api/internal/apiv1/repr"
@@ -219,7 +220,7 @@ func (s *Service) updateToolsetResource(ctx context.Context, in *patchResourceIn
 		url := strings.TrimSpace(*patch.URL)
 		if url == "" {
 			errs = append(errs, tooShort("/link_url", 1))
-		} else if len(url) > maxURL {
+		} else if utf8.RuneCountInString(url) > maxURL {
 			errs = append(errs, tooLong("/link_url", maxURL))
 		} else if !validDownloadLink(url) {
 			errs = append(errs, invalidFormat("/link_url", "must be a download link"))
@@ -229,28 +230,28 @@ func (s *Service) updateToolsetResource(ctx context.Context, in *patchResourceIn
 		}
 	}
 	if !file && patch.ExtractionCode != nil {
-		if len(*patch.ExtractionCode) > maxNote {
+		if utf8.RuneCountInString(*patch.ExtractionCode) > maxNote {
 			errs = append(errs, tooLong("/extraction_code", maxNote))
 		} else {
 			fields["code"] = *patch.ExtractionCode
 		}
 	}
 	if !file && patch.SizeLabel != nil {
-		if len(*patch.SizeLabel) > maxSizeLabel {
+		if utf8.RuneCountInString(*patch.SizeLabel) > maxSizeLabel {
 			errs = append(errs, tooLong("/size_label", maxSizeLabel))
 		} else {
 			fields["size"] = *patch.SizeLabel
 		}
 	}
 	if patch.ArchivePassword != nil {
-		if len(*patch.ArchivePassword) > maxNote {
+		if utf8.RuneCountInString(*patch.ArchivePassword) > maxNote {
 			errs = append(errs, tooLong("/archive_password", maxNote))
 		} else {
 			fields["password"] = *patch.ArchivePassword
 		}
 	}
 	if patch.Note != nil {
-		if len(*patch.Note) > maxNote {
+		if utf8.RuneCountInString(*patch.Note) > maxNote {
 			errs = append(errs, tooLong("/note", maxNote))
 		} else {
 			note := markdown.NormalizeStoredContent(*patch.Note)
@@ -390,24 +391,24 @@ func resourceCreateErrors(body ToolsetResourceCreate) []problem.FieldError {
 		}
 		if body.URL == nil || strings.TrimSpace(*body.URL) == "" {
 			errs = append(errs, requiredField("/link_url"))
-		} else if len(*body.URL) > maxURL {
+		} else if utf8.RuneCountInString(*body.URL) > maxURL {
 			errs = append(errs, tooLong("/link_url", maxURL))
 		} else if !validDownloadLink(strings.TrimSpace(*body.URL)) {
 			errs = append(errs, invalidFormat("/link_url", "must be a download link"))
 		}
 		if body.SizeLabel == nil {
 			errs = append(errs, requiredField("/size_label"))
-		} else if len(*body.SizeLabel) > maxSizeLabel {
+		} else if utf8.RuneCountInString(*body.SizeLabel) > maxSizeLabel {
 			errs = append(errs, tooLong("/size_label", maxSizeLabel))
 		}
 	}
-	if body.ExtractionCode != nil && len(*body.ExtractionCode) > maxNote {
+	if body.ExtractionCode != nil && utf8.RuneCountInString(*body.ExtractionCode) > maxNote {
 		errs = append(errs, tooLong("/extraction_code", maxNote))
 	}
-	if body.ArchivePassword != nil && len(*body.ArchivePassword) > maxNote {
+	if body.ArchivePassword != nil && utf8.RuneCountInString(*body.ArchivePassword) > maxNote {
 		errs = append(errs, tooLong("/archive_password", maxNote))
 	}
-	if body.Note != nil && len(*body.Note) > maxNote {
+	if body.Note != nil && utf8.RuneCountInString(*body.Note) > maxNote {
 		errs = append(errs, tooLong("/note", maxNote))
 	}
 	return errs

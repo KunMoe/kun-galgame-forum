@@ -7,6 +7,7 @@ import (
 	"slices"
 	"strconv"
 	"time"
+	"unicode/utf8"
 
 	"kun-galgame-api/internal/constants"
 	"kun-galgame-api/internal/galgame/model"
@@ -49,13 +50,13 @@ func (s *Service) createWorkResource(ctx context.Context, in *createWorkResource
 	urls, uerrs := validateURLs(body.DownloadURLs, true)
 	errs = append(errs, uerrs...)
 	note := markdown.NormalizeStoredContent(body.ContentMarkdown)
-	if len(body.ContentMarkdown) > maxNote {
+	if utf8.RuneCountInString(body.ContentMarkdown) > maxNote {
 		errs = append(errs, tooLong("/content_markdown", maxNote))
 	}
-	if len(body.ExtractionCode) > maxCode {
+	if utf8.RuneCountInString(body.ExtractionCode) > maxCode {
 		errs = append(errs, tooLong("/extraction_code", maxCode))
 	}
-	if len(body.ArchivePassword) > maxCode {
+	if utf8.RuneCountInString(body.ArchivePassword) > maxCode {
 		errs = append(errs, tooLong("/archive_password", maxCode))
 	}
 	if len(errs) > 0 {
@@ -213,7 +214,8 @@ func (s *Service) updateGalgameResource(ctx context.Context, in *patchResourceIn
 		errs = append(errs, rerrs...)
 		runs = cleaned
 	}
-	if patch.ResourcePlatforms != nil || patch.ResourceRuntimes != nil {
+	axesPatched := patch.ResourcePlatforms != nil || patch.ResourceRuntimes != nil
+	if axesPatched || patch.ResourceType != nil {
 		if len(plats) == 0 && len(runs) == 0 {
 			errs = append(errs, inconsistent("/resource_platforms", "/resource_runtimes"))
 		}
@@ -223,7 +225,7 @@ func (s *Service) updateGalgameResource(ctx context.Context, in *patchResourceIn
 		if !resourcevocab.HasRuntimeAxis(typ) && len(runs) > 0 {
 			errs = append(errs, inconsistent("/resource_runtimes", "/resource_type"))
 		}
-		if len(errs) == 0 {
+		if len(errs) == 0 && axesPatched {
 			fields["platforms"] = resourcevocab.Keys(plats)
 			fields["runtimes"] = resourcevocab.Keys(runs)
 			fields["platform"] = resourcevocab.CompatPlatform(plats, runs)
@@ -253,14 +255,14 @@ func (s *Service) updateGalgameResource(ctx context.Context, in *patchResourceIn
 		urls = cleaned
 	}
 	if patch.ExtractionCode != nil {
-		if len(*patch.ExtractionCode) > maxCode {
+		if utf8.RuneCountInString(*patch.ExtractionCode) > maxCode {
 			errs = append(errs, tooLong("/extraction_code", maxCode))
 		} else {
 			fields["code"] = *patch.ExtractionCode
 		}
 	}
 	if patch.ArchivePassword != nil {
-		if len(*patch.ArchivePassword) > maxCode {
+		if utf8.RuneCountInString(*patch.ArchivePassword) > maxCode {
 			errs = append(errs, tooLong("/archive_password", maxCode))
 		} else {
 			fields["password"] = *patch.ArchivePassword
@@ -269,7 +271,7 @@ func (s *Service) updateGalgameResource(ctx context.Context, in *patchResourceIn
 	var note string
 	var noteSet bool
 	if patch.ContentMarkdown != nil {
-		if len(*patch.ContentMarkdown) > maxNote {
+		if utf8.RuneCountInString(*patch.ContentMarkdown) > maxNote {
 			errs = append(errs, tooLong("/content_markdown", maxNote))
 		} else {
 			note = markdown.NormalizeStoredContent(*patch.ContentMarkdown)

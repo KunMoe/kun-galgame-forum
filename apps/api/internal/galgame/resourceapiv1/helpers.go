@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 	"unicode"
+	"unicode/utf8"
 
 	"kun-galgame-api/internal/apiv1/collect"
 	"kun-galgame-api/internal/apiv1/content"
@@ -315,7 +316,7 @@ func validateSize(raw string, pointer string) (string, []problem.FieldError) {
 	if !ok {
 		return "", []problem.FieldError{invalidFormat(pointer, "must be N[.NN] MB or GB")}
 	}
-	if len(size) > maxSize {
+	if utf8.RuneCountInString(size) > maxSize {
 		return "", []problem.FieldError{tooLong(pointer, maxSize)}
 	}
 	return size, nil
@@ -335,7 +336,7 @@ func validateURLs(raw []DownloadURL, required bool) ([]string, []problem.FieldEr
 	out := make([]string, 0, len(raw))
 	for i, u := range raw {
 		ptr := "/download_urls/" + strconv.Itoa(i)
-		if len(u) > maxURLLen {
+		if utf8.RuneCountInString(string(u)) > maxURLLen {
 			errs = append(errs, tooLong(ptr, maxURLLen))
 			continue
 		}

@@ -6,6 +6,7 @@ import (
 	"errors"
 	"strconv"
 	"time"
+	"unicode/utf8"
 
 	v1 "kun-galgame-api/internal/apiv1"
 	"kun-galgame-api/internal/apiv1/collect"
@@ -219,7 +220,7 @@ func (s *Service) updateToolset(ctx context.Context, in *patchToolsetInput) (*to
 	var errs []problem.FieldError
 
 	if patch.Name != nil {
-		if len(*patch.Name) > maxName {
+		if utf8.RuneCountInString(*patch.Name) > maxName {
 			errs = append(errs, tooLong("/title", maxName))
 		} else {
 			name := trimName(*patch.Name)
@@ -233,7 +234,7 @@ func (s *Service) updateToolset(ctx context.Context, in *patchToolsetInput) (*to
 	}
 	if patch.ContentMarkdown != nil {
 		src := markdown.NormalizeStoredContent(*patch.ContentMarkdown)
-		if len(*patch.ContentMarkdown) > maxMarkdown {
+		if utf8.RuneCountInString(*patch.ContentMarkdown) > maxMarkdown {
 			errs = append(errs, tooLong("/content_markdown", maxMarkdown))
 		} else {
 			fields["description"] = src
@@ -368,7 +369,7 @@ func (s *Service) deleteFileObjects(ctx context.Context, files []model.GalgameTo
 func validateToolsetWrite(name, body string, aliases, homes []string, creating bool) (string, []string, []string, string, []problem.FieldError, *problem.Problem) {
 	var errs []problem.FieldError
 	if creating {
-		if len(name) > maxName {
+		if utf8.RuneCountInString(name) > maxName {
 			errs = append(errs, tooLong("/title", maxName))
 		}
 		trimmed := trimName(name)
@@ -400,7 +401,7 @@ func validateAliases(in []string) ([]string, []problem.FieldError) {
 	seen := map[string]int{}
 	for i, raw := range in {
 		ptr := "/aliases/" + strconv.Itoa(i)
-		if len(raw) > maxName {
+		if utf8.RuneCountInString(raw) > maxName {
 			errs = append(errs, tooLong(ptr, maxName))
 			continue
 		}
@@ -431,7 +432,7 @@ func validateHomepages(in []string) ([]string, []problem.FieldError) {
 	out := make([]string, 0, len(in))
 	for i, raw := range in {
 		ptr := "/homepage_urls/" + strconv.Itoa(i)
-		if len(raw) > maxHomepage {
+		if utf8.RuneCountInString(raw) > maxHomepage {
 			errs = append(errs, tooLong(ptr, maxHomepage))
 			continue
 		}

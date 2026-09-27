@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 	"unicode"
+	"unicode/utf8"
 
 	"kun-galgame-api/internal/apiv1/collect"
 	"kun-galgame-api/internal/apiv1/repr"
@@ -140,7 +141,7 @@ func trimName(s string) string {
 }
 
 func validHomepage(raw string) bool {
-	if len(raw) > maxHomepage {
+	if utf8.RuneCountInString(raw) > maxHomepage {
 		return false
 	}
 	u, err := url.Parse(raw)

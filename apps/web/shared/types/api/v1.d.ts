@@ -7665,7 +7665,7 @@ export interface components {
              * @constant
              */
             object: "galgame_resource";
-            /** @description Host names derived from the download URLs. Empty array, never null. */
+            /** @description Where the download URLs point, one entry per distinct name: the display label of a known provider, otherwise the URL's host. Empty array, never null. */
             provider_names: string[];
             /** @description Languages of the resource. Never empty, never null. */
             resource_languages: components["schemas"]["ResourceLanguage"][];

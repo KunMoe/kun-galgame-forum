@@ -6743,9 +6743,9 @@
             "type": "string"
           },
           "provider_names": {
-            "description": "Host names derived from the download URLs. Empty array, never null.",
+            "description": "Where the download URLs point, one entry per distinct name: the display label of a known provider, otherwise the URL's host. Empty array, never null.",
             "items": {
-              "description": "A download-host name derived from the URLs. Free text; never use it as a decision input.",
+              "description": "A known provider's display label, or the URL's host when the provider is not known. Free text; never use it as a decision input.",
               "maxLength": 256,
               "type": "string"
             },

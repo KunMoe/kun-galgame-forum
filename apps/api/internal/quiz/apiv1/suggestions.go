@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/url"
 	"strconv"
+	"unicode/utf8"
 
 	"kun-galgame-api/internal/apiv1/repr"
 	galgameapiv1 "kun-galgame-api/internal/galgame/apiv1"
@@ -17,7 +18,7 @@ func (s *Service) listWorkSuggestions(ctx context.Context, in *listWorkSuggestio
 	if p := s.ready(); p != nil {
 		return nil, p
 	}
-	if len(in.Q) > 100 {
+	if utf8.RuneCountInString(in.Q) > 100 {
 		return nil, validationFailed(problem.AtParameter("q", problem.ReasonTooLong, "longer than the field allows", &problem.FieldParams{MaxLength: intPtr(100)}))
 	}
 	qtext := trimSpace(in.Q)

@@ -3,6 +3,7 @@ package app
 import (
 	"net/http"
 	"strconv"
+	"strings"
 	"sync"
 	"testing"
 
@@ -203,4 +204,60 @@ func TestV1DeleteGalgameResource(t *testing.T) {
 	resp, got = f.rs(t, http.MethodDelete, "/api/v1/galgame-resources/"+idStr(g3ResMain),
 		"/galgame-resources/{resource_id}", "sess-bob", "", nil)
 	wantCode(t, resp, got, http.StatusForbidden, problem.CodePermissionRequired)
+}
+
+func TestV1GalgameResourceLengthsCountCharacters(t *testing.T) {
+	f := newResourceFix(t, nil)
+	full := map[string]any{
+		"content_markdown": strings.Repeat("中", 10000),
+		"extraction_code":  strings.Repeat("码", 1007),
+		"archive_password": strings.Repeat("密", 1007),
+	}
+	resp, got := f.rs(t, http.MethodPost, "/api/v1/works/"+idStr(g3WorkSFW)+"/resources",
+		"/works/{work_id}/resources", "sess-alice", keyUUID(20), createResourceBody(full))
+	if resp.StatusCode != http.StatusCreated {
+		t.Fatalf("create at the character limits %d %+v", resp.StatusCode, got)
+	}
+
+	resp, got = f.rs(t, http.MethodPatch, "/api/v1/galgame-resources/"+idStr(g3ResMain),
+		"/galgame-resources/{resource_id}", "sess-alice", "", full)
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("patch at the character limits %d %+v", resp.StatusCode, got)
+	}
+
+	resp, got = f.rs(t, http.MethodPost, "/api/v1/works/"+idStr(g3WorkSFW)+"/resources",
+		"/works/{work_id}/resources", "sess-alice", keyUUID(21),
+		createResourceBody(map[string]any{"content_markdown": strings.Repeat("中", 10001)}))
+	wantCode(t, resp, got, http.StatusUnprocessableEntity, problem.CodeValidationFailed)
+	if e := errorAt(got, "/content_markdown"); e == nil || e["reason"] != problem.ReasonTooLong {
+		t.Errorf("over-long note %+v", got["errors"])
+	}
+}
+
+func TestV1UpdateGalgameResourceTypeKeepsRuntimeAxis(t *testing.T) {
+	f := newResourceFix(t, nil)
+	patch := func(body map[string]any) (*http.Response, map[string]any) {
+		return f.rs(t, http.MethodPatch, "/api/v1/galgame-resources/"+idStr(g3ResMain),
+			"/galgame-resources/{resource_id}", "sess-alice", "", body)
+	}
+
+	resp, got := patch(map[string]any{"resource_type": "cg"})
+	wantCode(t, resp, got, http.StatusUnprocessableEntity, problem.CodeValidationFailed)
+	if e := errorAt(got, "/resource_runtimes"); e == nil || e["reason"] != problem.ReasonInconsistentWith {
+		t.Errorf("runtimes kept on a type without them %+v", got["errors"])
+	}
+
+	resp, got = patch(map[string]any{"resource_type": "cg", "resource_runtimes": []string{}})
+	if resp.StatusCode != http.StatusOK || got["resource_type"] != "cg" {
+		t.Fatalf("type with runtimes cleared %d %+v", resp.StatusCode, got)
+	}
+
+	resp, got = patch(map[string]any{"resource_type": "game"})
+	wantCode(t, resp, got, http.StatusUnprocessableEntity, problem.CodeValidationFailed)
+	if e := errorAt(got, "/resource_runtimes"); e == nil || e["reason"] != problem.ReasonTooFewItems {
+		t.Errorf("type that needs runtimes %+v", got["errors"])
+	}
+	if n := f.scalar(t, `SELECT COUNT(*) FROM galgame_resource WHERE id = ? AND type = 'cg' AND runtimes = '[]'::jsonb`, g3ResMain); n != 1 {
+		t.Error("a rejected type change was written")
+	}
 }
