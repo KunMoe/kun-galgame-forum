@@ -393,3 +393,66 @@ func TestActivityPushReconcileTombstonesHiddenRow(t *testing.T) {
 		t.Fatal("hidden row was enqueued instead of tombstoned")
 	}
 }
+
+func TestActivityPushReconcileTombstoneLosesToLaterRead(t *testing.T) {
+	f := newPushFix(t)
+	created := time.Date(2026, 9, 20, 8, 0, 0, 0, time.UTC)
+	f.topic(t, apTopicA, w3UserOther, false, created, "Drifted")
+	if _, err := f.pusher.RunOnce(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	f.topic(t, apTopicB, w3UserBanned, false, created, "By a banned author")
+	f.resetQueue(t)
+	const hidden, orphan = "topic_creation:940100102", "topic_creation:940199999"
+	f.cm.mu.Lock()
+	f.cm.ordered = true
+	drifted := f.cm.stored["topic_creation:940100101"]
+	drifted.ContentLimit = "nsfw"
+	f.cm.list = []communityclient.SiteActivityView{drifted,
+		{ID: 7, Key: hidden, ActorID: int64(w3UserBanned), Verb: "publish", ObjectKind: "topic"},
+		{ID: 8, Key: orphan, ActorID: 42, Verb: "publish", ObjectKind: "topic"},
+	}
+	f.cm.mu.Unlock()
+
+	f.pusher.Reconcile(context.Background())
+
+	var enqueued time.Time
+	if err := f.db.Raw(`SELECT enqueued FROM activity_push_queue WHERE type = 'TOPIC_CREATION' AND source_id = ?`,
+		apTopicA).Row().Scan(&enqueued); err != nil {
+		t.Fatalf("drifted row was not enqueued: %v", err)
+	}
+	tombs := map[string]communityclient.ActivityWriteItem{}
+	for _, w := range f.writes() {
+		for _, it := range w.Items {
+			if it.Removed {
+				tombs[it.Key] = it
+			}
+		}
+	}
+	// The drifted row is enqueued after the reconcile read its page and before it
+	// sends tombstones: a drainer that re-read the hidden row then pushes this revision.
+	laterRead := enqueued.UnixMicro()
+	if tb, ok := tombs[hidden]; !ok || tb.Revision >= laterRead {
+		t.Fatalf("hidden-row tombstone revision %d, want before %d (the page read)", tb.Revision, laterRead)
+	}
+	if tb, ok := tombs[orphan]; !ok || tb.Revision >= f.cm.listedAt.UnixMicro() {
+		t.Fatalf("orphan tombstone revision %d, want before %d (the stored listing)", tb.Revision, f.cm.listedAt.UnixMicro())
+	}
+
+	restored := communityclient.ActivityWriteItem{
+		Key: hidden, ActorID: int64(w3UserBanned), Revision: laterRead,
+		Verb: "publish", ObjectKind: "topic", ObjectLabel: "话题", Title: "Restored",
+		URL: "https://www.kungal.com/topic/940100102", ContentLimit: "sfw",
+		OccurredAt: "2026-09-20T08:00:00.000000Z",
+	}
+	out, err := f.Community.WriteActivities(context.Background(), []communityclient.ActivityWriteItem{restored})
+	if err != nil {
+		t.Fatal(err)
+	}
+	f.cm.mu.Lock()
+	final := f.cm.stored[hidden]
+	f.cm.mu.Unlock()
+	if out.Results[0].Outcome == "stale" || final.Removed {
+		t.Fatalf("the reconcile tombstone outranked a later live push: %+v, stored %+v", out.Results, final)
+	}
+}
