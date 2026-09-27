@@ -124,6 +124,7 @@ type UserProfile struct {
 	Name        *string        `json:"name" maxLength:"64" doc:"Display name. null when the account no longer exists; show a localized label. Free text; never use it as a decision input."`
 	Avatar      *repr.Image    `json:"avatar" doc:"Avatar image. null when the account has no image-service hash."`
 	Bio         *string        `json:"bio" maxLength:"107" doc:"Profile bio as stored. Empty string when none. Free text; never use it as a decision input."`
+	AboutHTML   *string        `json:"about_html" maxLength:"65536" doc:"The owner's profile introduction as HTML the account service rendered from Markdown and sanitized when it was written; render it as is, do not parse or escape it. null unless the owner holds the profile-about perk and has written one. Free text; never use it as a decision input."`
 	Roles       []UserRole     `json:"roles" maxItems:"4" doc:"Badge roles among creator, moderator, admin and ren, including site roles. Other account roles are not listed. Display only; never a permission check. Empty array if none."`
 	CreatedAt   repr.DateTime  `json:"created_at" doc:"When the account was registered. Taken from the account service; falls back to when the user first appeared on this forum if that timestamp cannot be parsed."`
 	Moemoepoint int            `json:"moemoepoint" minimum:"-2147483648" doc:"The user's moemoepoint balance as this forum last cached it from OAuth. It can lag the live balance. It can be negative. Public on this face."`

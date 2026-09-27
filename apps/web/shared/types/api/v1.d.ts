@@ -13231,6 +13231,8 @@ export interface components {
         /** @enum {string} */
         UserPostRelation: "authored" | "received" | "liked";
         UserProfile: {
+            /** @description The owner's profile introduction as HTML the account service rendered from Markdown and sanitized when it was written; render it as is, do not parse or escape it. null unless the owner holds the profile-about perk and has written one. Free text; never use it as a decision input. */
+            about_html: string | null;
             /** @description Avatar image. null when the account has no image-service hash. */
             avatar: components["schemas"]["Image"] | null;
             /** @description Profile bio as stored. Empty string when none. Free text; never use it as a decision input. */
