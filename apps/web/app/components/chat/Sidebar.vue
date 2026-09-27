@@ -106,6 +106,7 @@ const emptyText = computed(() => {
       <KunChatConversationItem
         v-for="c in items"
         :key="c.id"
+        class="shrink-0"
         :href="`/messages/${c.id}`"
         :kind="c.kind"
         :user="peer(c)"
@@ -134,7 +135,7 @@ const emptyText = computed(() => {
         v-if="chat.folders[folder].next"
         variant="light"
         size="sm"
-        class-name="mx-auto my-2"
+        class-name="mx-auto my-2 shrink-0"
         :loading="chat.folders[folder].loading"
         @click="chat.loadFolder(folder, true)"
       >
