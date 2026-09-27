@@ -5,6 +5,7 @@ import (
 	"context"
 	"log/slog"
 	"net/url"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -196,6 +197,7 @@ func tagsOf(d *client.CatalogWorkDetail, includeNSFW bool) []WorkTag {
 }
 
 func creditsOf(d *client.CatalogWorkDetail) []WorkCreditGroup {
+	names := voicedNames(d)
 	out := []WorkCreditGroup{}
 	for _, g := range d.Credits {
 		if g.RoleKey == "" || strings.ContainsAny(g.RoleKey, " \t\n") || utf8.RuneCountInString(g.RoleKey) > 64 {
@@ -203,20 +205,35 @@ func creditsOf(d *client.CatalogWorkDetail) []WorkCreditGroup {
 			continue
 		}
 		people := []WorkCreditPerson{}
+		at := map[int64]int{}
 		for _, p := range g.Credits {
-			voiced := []VoicedCharacter{}
-			if p.Character != "" && utf8.RuneCountInString(p.Character) <= 512 {
-				voiced = append(voiced, VoicedCharacter(p.Character))
+			i, seen := at[p.ID]
+			if !seen {
+				i = len(people)
+				at[p.ID] = i
+				people = append(people, WorkCreditPerson{
+					CreditNameRef: entityapiv1.CreditNameRef{
+						Object: "credit_name", ID: repr.ID(int(p.ID)),
+						CatalogName: workrepr.Name(p.DisplayName, p.Latin, client.LocalizedValues(p.Localized)),
+					},
+					VoicedCharacters: []VoicedCharacter{},
+				})
 			}
-			people = append(people, WorkCreditPerson{
-				CreditNameRef: entityapiv1.CreditNameRef{
-					Object: "credit_name", ID: repr.ID(int(p.ID)),
-					CatalogName: workrepr.Name(p.DisplayName, p.Latin, client.LocalizedValues(p.Localized)),
-				},
-				VoicedCharacters: voiced,
-			})
+			if name, ok := names[p.CharacterID]; ok && !slices.Contains(people[i].VoicedCharacters, name) {
+				people[i].VoicedCharacters = append(people[i].VoicedCharacters, name)
+			}
 		}
 		out = append(out, WorkCreditGroup{RoleKey: g.RoleKey, DisplayName: g.RoleName, People: people})
+	}
+	return out
+}
+
+func voicedNames(d *client.CatalogWorkDetail) map[int64]VoicedCharacter {
+	out := map[int64]VoicedCharacter{}
+	for _, c := range d.Characters {
+		if c.Spoiler == 0 && c.DisplayName != "" && utf8.RuneCountInString(c.DisplayName) <= 512 {
+			out[c.ID] = VoicedCharacter(c.DisplayName)
+		}
 	}
 	return out
 }

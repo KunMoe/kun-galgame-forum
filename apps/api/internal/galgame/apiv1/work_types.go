@@ -80,19 +80,19 @@ type WorkTag struct {
 type WorkCreditGroup struct {
 	RoleKey     string             `json:"role_key" maxLength:"64" pattern:"^\\S+$" doc:"Catalog's role key, such as scenario, illustration, music or voice-actor. An open vocabulary."`
 	DisplayName string             `json:"display_name" maxLength:"512" doc:"The role's name as catalog records it. Free text; never use it as a decision input."`
-	People      []WorkCreditPerson `json:"people" doc:"People credited in this role. Empty array, never null."`
+	People      []WorkCreditPerson `json:"people" doc:"People credited in this role, one entry per credit name, in catalog's first-seen order. Empty array, never null."`
 }
 
 type WorkCreditPerson struct {
 	entityapiv1.CreditNameRef
-	VoicedCharacters []VoicedCharacter `json:"voiced_characters" doc:"Character names this credit voices, as catalog wrote them. Empty array, never null."`
+	VoicedCharacters []VoicedCharacter `json:"voiced_characters" doc:"The roster characters this credit voices in this role, by catalog display_name, first-seen order. Characters whose spoiler is not none are left out. Empty array, never null."`
 }
 
 type VoicedCharacter string
 
 func (VoicedCharacter) Schema(huma.Registry) *huma.Schema {
 	n := 512
-	return &huma.Schema{Type: huma.TypeString, MaxLength: &n, Description: "A voiced character's name as the credit wrote it. " + repr.FreeTextSentence}
+	return &huma.Schema{Type: huma.TypeString, MaxLength: &n, Description: "A voiced character's display name, as catalog records it. " + repr.FreeTextSentence}
 }
 
 type WorkCharacter struct {

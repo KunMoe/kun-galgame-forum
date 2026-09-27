@@ -2,6 +2,7 @@ package apiv1
 
 import (
 	"encoding/json"
+	"slices"
 	"testing"
 
 	"kun-galgame-api/internal/galgame/client"
@@ -39,5 +40,40 @@ func TestTagsOfMergesSourceRowsOfOneCanonicalTag(t *testing.T) {
 	sfw := tagsOf(&d, false)
 	if len(sfw) != 2 || sfw[0].ID != "947" || sfw[1].ID != "5101" {
 		t.Errorf("default read kept a tag one source marks sexual: %+v", sfw)
+	}
+}
+
+func TestCreditsOfMergesRowsOfOneCreditName(t *testing.T) {
+	var d client.CatalogWorkDetail
+	if err := json.Unmarshal([]byte(`{"id": 49,
+		"characters": [
+			{"id": 234, "display_name": "瓜生桜乃", "kind": "main", "spoiler": 0},
+			{"id": 237989, "display_name": "瓜生 桜乃", "kind": "main", "spoiler": 0},
+			{"id": 999, "display_name": "Twist", "kind": "side", "spoiler": 2}
+		],
+		"credits": [{"role_key": "voice-actor", "role_name": "声优", "credits": [
+			{"id": 8908, "display_name": "安玖深音", "character_id": 234},
+			{"id": 481, "display_name": "力丸乃りこ", "character_id": 999},
+			{"id": 8908, "display_name": "安玖深音", "character_id": 237989},
+			{"id": 8908, "display_name": "安玖深音", "character_id": null},
+			{"id": 8908, "display_name": "安玖深音", "character_id": 234}
+		]}]
+	}`), &d); err != nil {
+		t.Fatal(err)
+	}
+
+	groups := creditsOf(&d)
+	if len(groups) != 1 {
+		t.Fatalf("groups %+v", groups)
+	}
+	people := groups[0].People
+	if len(people) != 2 || people[0].ID != "8908" || people[1].ID != "481" {
+		t.Fatalf("people %+v, want 8908 then 481, once each", people)
+	}
+	if got := people[0].VoicedCharacters; !slices.Equal(got, []VoicedCharacter{"瓜生桜乃", "瓜生 桜乃"}) {
+		t.Errorf("8908 voiced %q, want both roster characters once each", got)
+	}
+	if got := people[1].VoicedCharacters; got == nil || len(got) != 0 {
+		t.Errorf("481 voiced %q, want an empty array: naming a spoiler character gives it away", got)
 	}
 }

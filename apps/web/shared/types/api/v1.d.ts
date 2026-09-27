@@ -14066,7 +14066,7 @@ export interface components {
         WorkCreditGroup: {
             /** @description The role's name as catalog records it. Free text; never use it as a decision input. */
             display_name: string;
-            /** @description People credited in this role. Empty array, never null. */
+            /** @description People credited in this role, one entry per credit name, in catalog's first-seen order. Empty array, never null. */
             people: components["schemas"]["WorkCreditPerson"][];
             /** @description Catalog's role key, such as scenario, illustration, music or voice-actor. An open vocabulary. */
             role_key: string;
@@ -14089,7 +14089,7 @@ export interface components {
              * @constant
              */
             object: "credit_name";
-            /** @description Character names this credit voices, as catalog wrote them. Empty array, never null. */
+            /** @description The roster characters this credit voices in this role, by catalog display_name, first-seen order. Characters whose spoiler is not none are left out. Empty array, never null. */
             voiced_characters: string[];
         };
         WorkDigest: {

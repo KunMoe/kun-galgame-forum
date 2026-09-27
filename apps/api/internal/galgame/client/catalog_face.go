@@ -237,7 +237,6 @@ type catCreditItem struct {
 	Localized   map[string]catLocalizedName `json:"localized"`
 	Latin       string                      `json:"latin"`
 	CharacterID int64                       `json:"character_id"`
-	Character   string                      `json:"character"`
 }
 
 func (c *catCreditItem) Name(ctx context.Context) string {
