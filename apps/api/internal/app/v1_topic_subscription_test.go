@@ -309,6 +309,12 @@ func TestV1TopicReadMarker(t *testing.T) {
 		t.Fatalf("replying left the marker at %d, want %d", got, floor)
 	}
 
+	resp, raw := f.doJSON(t, http.MethodPut, fmt.Sprintf("/api/v1/topics/%d/subscription/read-marker", w3TopicFloors), "sess-bob",
+		"/topics/{topic_id}/subscription/read-marker", "", nil, map[string]any{"floor": -1})
+	if resp.StatusCode != http.StatusUnprocessableEntity {
+		t.Fatalf("negative floor %d %s", resp.StatusCode, raw)
+	}
+
 	if got := f.markRead(t, "sess-other", w3TopicPub, 1); got["notification_level"] != "normal" {
 		t.Fatalf("normal reader %v", got)
 	}
@@ -404,7 +410,12 @@ func TestV1ListTopicSubscriptions(t *testing.T) {
 
 	resp, raw := f.doJSON(t, http.MethodGet, "/api/v1/me/topic-subscriptions?has_unread=true&cursor="+cursor, "sess-bob",
 		"/me/topic-subscriptions", "", nil, nil)
-	if resp.StatusCode != 400 {
+	if resp.StatusCode != 400 || problemMap(t, raw)["code"] != "INVALID_CURSOR" {
 		t.Fatalf("cursor reused across filters %d %s", resp.StatusCode, raw)
+	}
+	resp, raw = f.doJSON(t, http.MethodGet, "/api/v1/me/topic-subscriptions?limit=101", "sess-bob",
+		"/me/topic-subscriptions", "", nil, nil)
+	if resp.StatusCode != 400 || problemMap(t, raw)["code"] != "LIMIT_TOO_LARGE" {
+		t.Fatalf("limit 101 %d %s", resp.StatusCode, raw)
 	}
 }
