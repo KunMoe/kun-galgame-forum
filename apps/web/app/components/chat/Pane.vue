@@ -94,6 +94,7 @@ watch(
   { immediate: true }
 )
 onBeforeUnmount(() => void persistDraft(props.id))
+onMounted(() => void chat.loadReactions())
 
 const resolveMedia = (media: KunChatMedia) => imageTokenUrl(media.image_hash)
 

@@ -86,6 +86,7 @@ const started = async () => {
   const chat = useChatStore()
   await chat.start('2')
   expect(chat.status).toBe('ready')
+  await chat.loadFolder('inbox')
   return chat
 }
 
@@ -135,6 +136,12 @@ describe('chat store sync', () => {
     )
     chat.push(pushOf(readOutbox(41, 4100)))
     expect(peerRead()).toBe(4100)
+  })
+
+  it('a page outside /messages asks chat for its state only', async () => {
+    const chat = useChatStore()
+    await chat.start('2')
+    expect(calls.filter((c) => c.startsWith('chat/'))).toEqual(['chat/state'])
   })
 
   it('stops at a scope problem and does not keep asking', async () => {

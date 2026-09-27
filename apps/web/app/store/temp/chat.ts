@@ -231,10 +231,15 @@ export const useChatStore = defineStore('chat', () => {
     }
     seq = r.data.last_update_seq
     early.clear()
+    const shown = (Object.keys(folders) as ChatFolder[]).filter(
+      (f) => folders[f].loaded
+    )
     model.conversations = {}
     model.windows = {}
     resetFolders()
-    await loadFolder('inbox')
+    for (const f of shown) {
+      await loadFolder(f)
+    }
     if (openId.value) {
       await open(openId.value)
     }
@@ -371,11 +376,18 @@ export const useChatStore = defineStore('chat', () => {
     }
     seq = r.data.last_update_seq
     status.value = 'ready'
-    await loadFolder('inbox')
-    const v = await api.get<ChatReactionList>('/reactions')
-    if (v.ok) {
-      reactions.value = v.data.items
-    }
+  }
+
+  let reactionsLoad: Promise<void> | null = null
+  const loadReactions = () => {
+    reactionsLoad ??= api.get<ChatReactionList>('/reactions').then((v) => {
+      if (v.ok) {
+        reactions.value = v.data.items
+      } else {
+        reactionsLoad = null
+      }
+    })
+    return reactionsLoad
   }
 
   const stop = () => {
@@ -486,6 +498,7 @@ export const useChatStore = defineStore('chat', () => {
     sync,
     push,
     loadFolder,
+    loadReactions,
     open,
     loadOlder,
     loadNewer,
