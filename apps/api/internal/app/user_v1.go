@@ -77,6 +77,8 @@ func (a *App) newUserV1() *userapiv1.Users {
 		State:       state,
 		Purge:       a.AdminPurge,
 		CDN:         cdn,
+
+		DirectMessagesMoved: a.Config != nil && a.Config.Chat.Enabled,
 	})
 }
 

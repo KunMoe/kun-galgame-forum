@@ -91,6 +91,7 @@ const (
 	CodeCreatorApplicationCooldown   = "CREATOR_APPLICATION_COOLDOWN"
 	CodeWebsiteCategoryNotEmpty      = "WEBSITE_CATEGORY_NOT_EMPTY"
 	CodeUserProtected                = "USER_PROTECTED"
+	CodeDirectMessagesMoved          = "DIRECT_MESSAGES_MOVED"
 )
 
 const (
@@ -171,6 +172,7 @@ var Codes = []Def{
 	{CodeCreatorApplicationCooldown, DomainKungal, http.StatusConflict, "Creator application cooldown", "A declined creator application is still inside its cooldown window.", nil},
 	{CodeWebsiteCategoryNotEmpty, DomainKungal, http.StatusConflict, "Website category not empty", "Websites are still listed under the category, so it cannot be deleted. website_count is how many.", []ExtDef{{Name: "website_count", Type: "integer"}}},
 	{CodeUserProtected, DomainKungal, http.StatusForbidden, "User protected", "The target user holds a staff role, and the operation is never applied to staff: their content includes site documentation other users read.", nil},
+	{CodeDirectMessagesMoved, DomainKungal, http.StatusGone, "Direct messages moved", "Direct messages moved to NextMoe chat. The forum's own conversations are kept read-only; send, recall and read markers are refused. Use the NextMoe chat API, which /api/v1/chat/* relays.", nil},
 }
 
 var Reasons = []ReasonDef{

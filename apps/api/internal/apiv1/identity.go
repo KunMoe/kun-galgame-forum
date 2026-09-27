@@ -153,23 +153,38 @@ func newIdentityMiddleware(resolver IdentityResolver) func(ctx huma.Context, nex
 			return
 		}
 
-		id := resolver.ResolveIdentity(fc)
-		if id.Err != nil {
-			slog.Log(ctx.Context(), identityLogLevel(id.Outcome), "apiv1 identity",
-				"request_id", problem.RequestID(fc), "outcome", id.Outcome.String(), "err", id.Err)
-		}
-
-		code := mapOutcome(tier, id.Outcome)
-		if code == "" {
-			if id.OK() {
-				middleware.AttachIdentity(fc, id)
-				ctx = huma.WithValue(ctx, userCtxKey, id.User)
-			}
-			next(ctx)
+		id, p := resolveTier(fc, resolver, tier)
+		if p != nil {
+			writeProblem(ctx, p)
 			return
 		}
-		writeProblem(ctx, identityProblem(code, id.Err))
+		if id.OK() {
+			middleware.AttachIdentity(fc, id)
+			ctx = huma.WithValue(ctx, userCtxKey, id.User)
+		}
+		next(ctx)
 	}
+}
+
+// RequireIdentity applies the required tier to a Mount route, which huma's
+// middleware never sees.
+func RequireIdentity(c fiber.Ctx, resolver IdentityResolver) (middleware.Identity, *problem.Problem) {
+	if resolver == nil {
+		return middleware.Identity{}, problem.Internal(errNoResolver)
+	}
+	return resolveTier(c, resolver, TierRequired)
+}
+
+func resolveTier(fc fiber.Ctx, resolver IdentityResolver, tier Tier) (middleware.Identity, *problem.Problem) {
+	id := resolver.ResolveIdentity(fc)
+	if id.Err != nil {
+		slog.Log(fc.Context(), identityLogLevel(id.Outcome), "apiv1 identity",
+			"request_id", problem.RequestID(fc), "outcome", id.Outcome.String(), "err", id.Err)
+	}
+	if code := mapOutcome(tier, id.Outcome); code != "" {
+		return id, identityProblem(code, id.Err)
+	}
+	return id, nil
 }
 
 var errNoResolver = errors.New("apiv1: identity resolver is not configured")

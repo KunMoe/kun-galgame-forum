@@ -16,7 +16,9 @@ type MeStatus struct {
 	ToolsetUploadTodayBytes int64
 }
 
-func (s *UserService) Me(ctx context.Context, userID int) (*MeStatus, error) {
+// countDirectMessages is false once direct messages have moved to NextMoe
+// chat: the old conversations can no longer be marked read.
+func (s *UserService) Me(ctx context.Context, userID int, countDirectMessages bool) (*MeStatus, error) {
 	if err := s.stateRepo.Ensure(userID); err != nil {
 		return nil, err
 	}
@@ -31,7 +33,7 @@ func (s *UserService) Me(ctx context.Context, userID int) (*MeStatus, error) {
 		return nil, err
 	}
 	var unreadChat int64
-	if !chatMuted {
+	if countDirectMessages && !chatMuted {
 		unreadChat, err = s.userStatsRepo.CountUnreadChatMessages(userID)
 		if err != nil {
 			return nil, err

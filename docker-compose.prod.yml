@@ -73,6 +73,17 @@ x-kungal-api-env: &kungal-api-env
   # comment tables still back profile / admin / search reads and await a later
   # deploy-then-drop migration.
   KUN_COMMUNITY_API_BASE: http://community:9282/api/v1/community
+  # ── direct messages on NextMoe chat ──
+  # /api/v1/chat/* relays to chat under the user's own token (scopes chat:read
+  # chat:write, granted to this client). KUN_CHAT_ENABLED is the cutover and
+  # also feeds the web's NUXT_PUBLIC_CHAT_ENABLED below, so one panel variable
+  # flips both halves in one redeploy: the new /messages pages and entrances,
+  # the old pages redirecting, the old DM writes answering 410
+  # DIRECT_MESSAGES_MOVED, and /me no longer counting old DMs. The old tables
+  # stay (read-only for the App). Right after the flip, tell infra to run the
+  # import sweep for messages sent on the old face since 2026-09-27 22:34 CST.
+  KUN_CHAT_API_BASE: http://chat:9285
+  KUN_CHAT_ENABLED: ${KUN_CHAT_ENABLED:-false}
   # ── DLsite 联盟补票链接 (合作公告 topic/3867) ──
   # {workno} 由 catalog 的 refs.dlsite 原样替换。整段模板走 env 而非拼装:
   # DLsite 的联盟路径可能按站点段不同 (/soft/ 是 pro/VJ 路径), 换路径只改这里。
@@ -254,6 +265,8 @@ services:
       NUXT_OG_BASE_URL: https://og.nextmoe.dev
       NUXT_OG_SITE_KEY: ${NUXT_OG_SITE_KEY:-}
       NUXT_PUBLIC_OG_CARD_ENABLED: ${NUXT_PUBLIC_OG_CARD_ENABLED:-false}
+      # Same panel variable as the API's KUN_CHAT_ENABLED; see there.
+      NUXT_PUBLIC_CHAT_ENABLED: ${KUN_CHAT_ENABLED:-false}
     expose: ["7777"]
     depends_on:
       kungal-api: { condition: service_healthy }

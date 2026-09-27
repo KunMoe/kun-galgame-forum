@@ -27,5 +27,5 @@ func (a *App) newMessageV1() *messageapiv1.Service {
 			Users:    a.UserClient.Users,
 		}
 	}
-	return messageapiv1.New(messages, chats, a.UserClient, convert, cdn, a.Messages)
+	return messageapiv1.New(messages, chats, a.UserClient, convert, cdn, a.Messages, a.Config != nil && a.Config.Chat.Enabled)
 }

@@ -144,6 +144,7 @@ func Register(svc *Service) func(huma.API) {
 			Tags: []string{"messages"},
 			Responses: problemResponses(map[int]string{
 				404: "NOT_FOUND when the peer does not exist, is not renderable, or is the caller.",
+				410: "DIRECT_MESSAGES_MOVED once direct messages have moved to NextMoe chat; nothing is written.",
 				422: "VALIDATION_FAILED when content_markdown is blank after trimming or exceeds 1000 characters.",
 				503: "SERVICE_UNAVAILABLE when the account service cannot be reached. Nothing is written.",
 			}),
@@ -164,6 +165,7 @@ func Register(svc *Service) func(huma.API) {
 			Responses: problemResponses(map[int]string{
 				403: "PERMISSION_REQUIRED when the message was sent by the peer.",
 				404: "NOT_FOUND when the message is not in this conversation, or user_id is the caller.",
+				410: "DIRECT_MESSAGES_MOVED once direct messages have moved to NextMoe chat; nothing is written.",
 			}),
 		}), svc.updateDirectMessage)
 
@@ -195,6 +197,7 @@ func Register(svc *Service) func(huma.API) {
 			Tags: []string{"messages"},
 			Responses: problemResponses(map[int]string{
 				404: "NOT_FOUND when the peer does not exist, is not renderable, or is the caller.",
+				410: "DIRECT_MESSAGES_MOVED once direct messages have moved to NextMoe chat; nothing is written.",
 				503: "SERVICE_UNAVAILABLE when the account service cannot be reached.",
 			}),
 		}), svc.markDirectMessagesRead)

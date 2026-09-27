@@ -10118,7 +10118,7 @@
             "type": "boolean"
           },
           "has_unread_messages": {
-            "description": "Whether the caller has an unread notification of a type they have not muted, or an unread private message while private messages are not muted.",
+            "description": "Whether the caller has an unread notification of a type they have not muted, or, until direct messages moved to NextMoe chat, an unread private message while private messages are not muted. After the move this field no longer counts direct messages: their unread state is NextMoe chat's, at /api/v1/chat/state.",
             "type": "boolean"
           },
           "id": {
@@ -38768,6 +38768,16 @@
             },
             "description": "Conflict"
           },
+          "410": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "DIRECT_MESSAGES_MOVED once direct messages have moved to NextMoe chat; nothing is written."
+          },
           "413": {
             "content": {
               "application/problem+json": {
@@ -39038,6 +39048,16 @@
             },
             "description": "NOT_FOUND when the message is not in this conversation, or user_id is the caller."
           },
+          "410": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "DIRECT_MESSAGES_MOVED once direct messages have moved to NextMoe chat; nothing is written."
+          },
           "413": {
             "content": {
               "application/problem+json": {
@@ -39181,6 +39201,16 @@
               }
             },
             "description": "NOT_FOUND when the peer does not exist, is not renderable, or is the caller."
+          },
+          "410": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "DIRECT_MESSAGES_MOVED once direct messages have moved to NextMoe chat; nothing is written."
           },
           "413": {
             "content": {

@@ -27,6 +27,7 @@ type Config struct {
 	Trust          TrustConfig
 	Catalog        CatalogClientConfig
 	Community      CommunityConfig
+	Chat           ChatConfig
 	Dlsite         DlsiteConfig
 	Lottery        LotteryConfig
 	Bearer         BearerConfig
@@ -78,6 +79,14 @@ type CommunityConfig struct {
 	BaseURL      string
 	ClientID     string
 	ClientSecret string
+}
+
+// BaseURL reaches NextMoe chat, which /api/v1/chat/* relays to under the
+// caller's own token. Enabled is the cutover: the forum's own direct messages
+// stop taking writes and stop counting as unread.
+type ChatConfig struct {
+	BaseURL string
+	Enabled bool
 }
 
 type CatalogClientConfig struct {
@@ -335,6 +344,10 @@ func Load() (*Config, error) {
 			BaseURL:      envOrDefault("KUN_COMMUNITY_API_BASE", ""),
 			ClientID:     envOrDefault("KUN_COMMUNITY_CLIENT_ID", ""),
 			ClientSecret: envOrDefault("KUN_COMMUNITY_CLIENT_SECRET", ""),
+		},
+		Chat: ChatConfig{
+			BaseURL: envOrDefault("KUN_CHAT_API_BASE", "http://127.0.0.1:9285"),
+			Enabled: envOrDefaultBool("KUN_CHAT_ENABLED", false),
 		},
 		Dlsite: DlsiteConfig{
 			LinkTemplate: envOrDefault("KUN_DLSITE_LINK_TEMPLATE", ""),

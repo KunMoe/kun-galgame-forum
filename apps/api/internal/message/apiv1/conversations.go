@@ -249,6 +249,9 @@ func (s *Service) getConversation(ctx context.Context, in *conversationPathInput
 }
 
 func (s *Service) markDirectMessagesRead(ctx context.Context, in *markDirectMessagesReadInput) (*markDirectMessagesReadOutput, error) {
+	if p := s.refuseMoved(); p != nil {
+		return nil, p
+	}
 	if p := s.ready(); p != nil {
 		return nil, p
 	}
