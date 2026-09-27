@@ -134,6 +134,22 @@ useIntersectionObserver(
         </div>
       </div>
 
+      <div v-if="user.about_html" class="mt-4 space-y-1">
+        <KunContent :content="user.about_html" compact />
+        <KunLink
+          v-if="isSelf"
+          to="https://account.nextmoe.com/profile"
+          target="_blank"
+          rel="noopener"
+          size="sm"
+          color="default"
+          underline="hover"
+          class-name="text-default-500"
+        >
+          在账号中心编辑介绍
+        </KunLink>
+      </div>
+
       <div class="mt-5 flex flex-wrap gap-x-8 gap-y-3">
         <div v-for="m in metrics" :key="m.label" class="min-w-14">
           <KunLink

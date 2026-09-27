@@ -44,6 +44,10 @@ func (s *Users) getUser(ctx context.Context, in *getUserInput) (*getUserOutput, 
 func mapUserProfile(cdn string, p *service.PublicProfile) UserProfile {
 	name := p.Account.Name
 	bio := p.Account.Bio
+	var about *string
+	if html := p.Account.AboutHTML; html != "" {
+		about = &html
+	}
 	roles := make([]UserRole, 0, len(displayRoles))
 	for _, r := range displayRoles {
 		if !slices.Contains(p.Account.Roles, r) {
@@ -57,6 +61,7 @@ func mapUserProfile(cdn string, p *service.PublicProfile) UserProfile {
 		Name:        &name,
 		Avatar:      repr.NewImage(cdn, p.Account.AvatarImageHash, nil),
 		Bio:         &bio,
+		AboutHTML:   about,
 		Roles:       roles,
 		CreatedAt:   repr.Timestamp(p.CreatedAt),
 		Moemoepoint: p.Moemoepoint,

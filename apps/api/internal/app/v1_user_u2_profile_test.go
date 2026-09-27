@@ -25,6 +25,9 @@ func TestV1GetUserRoundTrip(t *testing.T) {
 	if body["name"] != "profiled" || body["bio"] != "profiled-bio" {
 		t.Fatalf("name/bio %+v", body)
 	}
+	if v, ok := body["about_html"]; !ok || v != nil {
+		t.Fatalf("about_html %v (present %v), want null when the account sends none", v, ok)
+	}
 	if body["created_at"] != "2026-01-15T08:00:00Z" {
 		t.Fatalf("created_at %v", body["created_at"])
 	}
@@ -34,6 +37,19 @@ func TestV1GetUserRoundTrip(t *testing.T) {
 	counts := userCounts(t, body)
 	if asInt(counts["reply_count"]) != 0 || asInt(counts["topic_count"]) != 0 {
 		t.Fatalf("counts %+v", counts)
+	}
+}
+
+func TestV1GetUserAboutHTMLPassesThrough(t *testing.T) {
+	f := newMeFix(t)
+	about := "<h3>Hi</h3><p>I <strong>like</strong> <a href=\"https://example.com\" rel=\"nofollow noopener\" target=\"_blank\">VNs</a></p>"
+	f.addOAuthUser(u2UserProfiled, "profiled", 0, map[string]any{"bio": "one line", "about_html": about})
+	resp, body := f.getUser(t, "", strconv.Itoa(u2UserProfiled))
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("get user %d %+v", resp.StatusCode, body)
+	}
+	if body["about_html"] != about || body["bio"] != "one line" {
+		t.Fatalf("about_html %v bio %v", body["about_html"], body["bio"])
 	}
 }
 

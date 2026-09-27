@@ -39,6 +39,7 @@ type User struct {
 	Avatar          string   `json:"avatar"`
 	AvatarImageHash string   `json:"avatar_image_hash"`
 	Bio             string   `json:"bio"`
+	AboutHTML       string   `json:"about_html"`
 	Status          int      `json:"status"`
 	Roles           []string `json:"roles"`
 	SiteRoles       []string `json:"site_roles"`
