@@ -154,9 +154,12 @@ const onFavoriteSaved = (payload: { favorited: boolean }) => {
 }
 
 const nsfwKey = computed(() => (props.galgame.is_nsfw ? 'nsfw' : 'sfw'))
-const coverUrl = computed(() => props.galgame.cover?.url ?? '')
-const coverThumbhash = computed(
-  () => props.galgame.cover?.thumbhash ?? undefined
+const cover = computed(
+  () => props.galgame.cover ?? props.galgame.covers[0]?.image ?? null
+)
+const failedCoverUrl = ref('')
+const coverUrl = computed(() =>
+  cover.value && cover.value.url !== failedCoverUrl.value ? cover.value.url : ''
 )
 </script>
 
@@ -170,6 +173,7 @@ const coverThumbhash = computed(
       class="relative col-start-1 row-start-1 aspect-[5/7] w-full self-start overflow-hidden rounded-lg md:row-end-3"
     >
       <KunNsfwMask
+        v-if="coverUrl"
         :active="isBlurred && galgame.is_nsfw"
         class-name="h-full"
         label="成人向封面已模糊"
@@ -186,13 +190,21 @@ const coverThumbhash = computed(
               :src="coverUrl"
               loading="eager"
               fetchpriority="high"
-              :thumbhash="coverThumbhash"
+              :thumbhash="cover?.thumbhash ?? undefined"
               :alt="names.name"
               @click="open"
+              @error="failedCoverUrl = coverUrl"
             />
           </KunLightboxGalleryItem>
         </KunLightboxGallery>
       </KunNsfwMask>
+      <KunImage
+        v-else
+        src="/galgame-no-cover.webp"
+        :alt="names.name"
+        object-fit="contain"
+        class-name="bg-default-100 size-full"
+      />
 
       <div class="absolute top-2 right-2 z-10" @click.stop>
         <KunTooltip text="收藏">
