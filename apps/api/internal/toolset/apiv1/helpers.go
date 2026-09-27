@@ -40,12 +40,6 @@ const (
 
 var archiveExts = map[string]bool{".7z": true, ".zip": true, ".rar": true}
 
-var downloadLinkSchemes = map[string]bool{
-	"http": true, "https": true,
-	"ftp": true, "ftps": true,
-	"magnet": true, "ed2k": true, "thunder": true,
-}
-
 var sortSpecs = map[string]repository.SortSpec{
 	"resource_updated_desc": {Column: "resource_update_time", Desc: true},
 	"resource_updated_asc":  {Column: "resource_update_time", Desc: false},
@@ -146,21 +140,6 @@ func validHomepage(raw string) bool {
 	}
 	u, err := url.Parse(raw)
 	return err == nil && (u.Scheme == "http" || u.Scheme == "https") && u.Host != ""
-}
-
-func validDownloadLink(raw string) bool {
-	value := strings.TrimSpace(raw)
-	if value == "" || strings.HasPrefix(value, "#") {
-		return false
-	}
-	u, err := url.Parse(value)
-	if err != nil {
-		return false
-	}
-	if !downloadLinkSchemes[strings.ToLower(u.Scheme)] {
-		return false
-	}
-	return u.Host != "" || u.Opaque != "" || u.RawQuery != "" || u.Fragment != ""
 }
 
 func archiveFilename(name string) bool {

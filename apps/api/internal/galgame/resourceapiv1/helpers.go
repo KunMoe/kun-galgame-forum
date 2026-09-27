@@ -1,7 +1,6 @@
 package apiv1
 
 import (
-	"net/url"
 	"slices"
 	"strconv"
 	"strings"
@@ -20,6 +19,7 @@ import (
 	"kun-galgame-api/pkg/perm"
 	"kun-galgame-api/pkg/problem"
 	"kun-galgame-api/pkg/userclient"
+	"kun-galgame-api/pkg/utils"
 )
 
 const (
@@ -49,12 +49,6 @@ var tokenToVersion = map[string]string{
 	"mirror":          "镜像版",
 	"localized":       "汉化版",
 	"unknown":         "未知版本",
-}
-
-var downloadLinkSchemes = map[string]bool{
-	"http": true, "https": true,
-	"ftp": true, "ftps": true,
-	"magnet": true, "ed2k": true, "thunder": true,
 }
 
 func notFound() *problem.Problem {
@@ -257,21 +251,6 @@ func strs[T ~string](in []T) []string {
 	return out
 }
 
-func validDownloadLink(raw string) bool {
-	value := strings.TrimSpace(raw)
-	if value == "" || strings.HasPrefix(value, "#") {
-		return false
-	}
-	u, err := url.Parse(value)
-	if err != nil {
-		return false
-	}
-	if !downloadLinkSchemes[strings.ToLower(u.Scheme)] {
-		return false
-	}
-	return u.Host != "" || u.Opaque != "" || u.RawQuery != "" || u.Fragment != ""
-}
-
 func uniqueVocab(pointer string, items []string, allowed []string, requiredMin int) ([]string, []problem.FieldError) {
 	var errs []problem.FieldError
 	if requiredMin > 0 && len(items) < requiredMin {
@@ -340,7 +319,7 @@ func validateURLs(raw []DownloadURL, required bool) ([]string, []problem.FieldEr
 			errs = append(errs, tooLong(ptr, maxURLLen))
 			continue
 		}
-		if !validDownloadLink(string(u)) {
+		if !utils.IsDownloadLink(string(u)) {
 			errs = append(errs, invalidFormat(ptr, "must be an http, https, ftp, ftps, magnet, ed2k or thunder URL"))
 			continue
 		}
