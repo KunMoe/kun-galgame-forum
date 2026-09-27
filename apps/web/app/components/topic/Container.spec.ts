@@ -31,6 +31,7 @@ const topic = (id: string, over: Partial<TopicSummary> = {}): TopicSummary => ({
   is_nsfw: false,
   bumped_at: '2026-09-01T00:00:00.000Z',
   created_at: '2026-08-01T00:00:00.000Z',
+  edited_at: null,
   upvoted_at: null,
   ...over
 })

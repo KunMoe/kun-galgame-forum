@@ -6344,6 +6344,17 @@
             "maxLength": 200,
             "type": "string"
           },
+          "topic_times": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FollowingTopicTimes"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The topic a kungal publish item names, as this forum stores it now. null for every other item, and when the topic no longer exists."
+          },
           "url": {
             "description": "Absolute https URL of the item.",
             "format": "uri",
@@ -6370,7 +6381,8 @@
           "cover",
           "related_work_id",
           "is_nsfw",
-          "occurred_at"
+          "occurred_at",
+          "topic_times"
         ],
         "type": "object"
       },
@@ -6441,6 +6453,34 @@
           "object",
           "last_seen_at",
           "unseen_count"
+        ],
+        "type": "object"
+      },
+      "FollowingTopicTimes": {
+        "properties": {
+          "bumped_at": {
+            "description": "The topic's bump time, as topic.bumped_at.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": "string"
+          },
+          "edited_at": {
+            "description": "Time of the latest edit. null when never edited.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "bumped_at",
+          "edited_at"
         ],
         "type": "object"
       },
@@ -19877,6 +19917,17 @@
             "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
             "type": "string"
           },
+          "edited_at": {
+            "description": "Time of the latest edit. null when never edited.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "has_best_answer": {
             "description": "Whether a best-answer reply is set.",
             "type": "boolean"
@@ -19973,6 +20024,7 @@
           "is_nsfw",
           "bumped_at",
           "created_at",
+          "edited_at",
           "upvoted_at"
         ],
         "type": "object"

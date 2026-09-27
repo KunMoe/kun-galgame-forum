@@ -72,6 +72,7 @@ type TopicSummary struct {
 	IsNSFW        bool           `json:"is_nsfw" doc:"Whether the topic is marked NSFW."`
 	BumpedAt      repr.DateTime  `json:"bumped_at" doc:"Bump time. A reply, a comment, an upvote, a new best answer, an edit of the title or body, and creating a poll or a lottery set it to now, but only for topics created within the last 3 months. Casting a vote and entering a lottery do not. It is not a last-activity time."`
 	CreatedAt     repr.DateTime  `json:"created_at" doc:"Creation time."`
+	EditedAt      *repr.DateTime `json:"edited_at" doc:"Time of the latest edit. null when never edited."`
 	UpvotedAt     *repr.DateTime `json:"upvoted_at" doc:"Time of the latest upvote. null when the topic has never been upvoted."`
 }
 
@@ -153,6 +154,7 @@ func mapSummary(cdn string, row repository.TopicKeysetRow, author repr.UserRef, 
 		IsNSFW:        row.IsNSFW,
 		BumpedAt:      repr.Timestamp(row.StatusUpdateTime),
 		CreatedAt:     repr.Timestamp(row.Created),
+		EditedAt:      repr.TimestampPtr(row.Edited),
 		UpvotedAt:     repr.TimestampPtr(row.UpvoteTime),
 	}, nil
 }

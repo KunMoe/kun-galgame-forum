@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"kun-galgame-api/internal/activity/repository"
 	v1 "kun-galgame-api/internal/apiv1"
 	"kun-galgame-api/internal/apiv1/collect"
 	"kun-galgame-api/internal/apiv1/repr"
@@ -62,21 +63,22 @@ type FollowingActivityGroup struct {
 }
 
 type FollowingActivityItem struct {
-	Object        string          `json:"object" enum:"following_activity_item" maxLength:"23" doc:"Type discriminant. Always following_activity_item."`
-	ID            repr.DecimalID  `json:"id" doc:"Community item id."`
-	Site          string          `json:"site" maxLength:"64" pattern:"^[a-z0-9][a-z0-9_-]*$" doc:"The NextMoe site the item happened on. kungal is this forum. An open vocabulary: show an unknown token as it is."`
-	Key           string          `json:"key" maxLength:"128" doc:"Community's idempotency key for the item. Free text; never use it as a decision input."`
-	Verb          ActivityVerb    `json:"verb" doc:"What the performer did."`
-	ObjectKind    string          `json:"object_kind" pattern:"^[a-z0-9_]{1,32}$" maxLength:"32" doc:"The site's type name for the object. An open vocabulary."`
-	ObjectLabel   string          `json:"object_label" maxLength:"16" doc:"Display name of object_kind. Show as it is. Free text; never use it as a decision input."`
-	Title         string          `json:"title" maxLength:"200" doc:"Plain-text title. Free text; never use it as a decision input."`
-	Excerpt       string          `json:"excerpt" maxLength:"300" doc:"Plain-text excerpt, may be empty. Free text; never use it as a decision input."`
-	URL           string          `json:"url" format:"uri" maxLength:"2048" doc:"Absolute https URL of the item."`
-	InSitePath    *string         `json:"in_site_path" pattern:"^/" maxLength:"512" doc:"Path and query of url when site is kungal. null for other sites."`
-	Cover         *repr.Image     `json:"cover" doc:"Cover from community's cover_image_hash. null when none."`
-	RelatedWorkID *repr.DecimalID `json:"related_work_id" doc:"Catalog work id when the item names one. null when none."`
-	IsNSFW        bool            `json:"is_nsfw" doc:"Whether the item is not sfw."`
-	OccurredAt    repr.DateTime   `json:"occurred_at" doc:"When it happened."`
+	Object        string               `json:"object" enum:"following_activity_item" maxLength:"23" doc:"Type discriminant. Always following_activity_item."`
+	ID            repr.DecimalID       `json:"id" doc:"Community item id."`
+	Site          string               `json:"site" maxLength:"64" pattern:"^[a-z0-9][a-z0-9_-]*$" doc:"The NextMoe site the item happened on. kungal is this forum. An open vocabulary: show an unknown token as it is."`
+	Key           string               `json:"key" maxLength:"128" doc:"Community's idempotency key for the item. Free text; never use it as a decision input."`
+	Verb          ActivityVerb         `json:"verb" doc:"What the performer did."`
+	ObjectKind    string               `json:"object_kind" pattern:"^[a-z0-9_]{1,32}$" maxLength:"32" doc:"The site's type name for the object. An open vocabulary."`
+	ObjectLabel   string               `json:"object_label" maxLength:"16" doc:"Display name of object_kind. Show as it is. Free text; never use it as a decision input."`
+	Title         string               `json:"title" maxLength:"200" doc:"Plain-text title. Free text; never use it as a decision input."`
+	Excerpt       string               `json:"excerpt" maxLength:"300" doc:"Plain-text excerpt, may be empty. Free text; never use it as a decision input."`
+	URL           string               `json:"url" format:"uri" maxLength:"2048" doc:"Absolute https URL of the item."`
+	InSitePath    *string              `json:"in_site_path" pattern:"^/" maxLength:"512" doc:"Path and query of url when site is kungal. null for other sites."`
+	Cover         *repr.Image          `json:"cover" doc:"Cover from community's cover_image_hash. null when none."`
+	RelatedWorkID *repr.DecimalID      `json:"related_work_id" doc:"Catalog work id when the item names one. null when none."`
+	IsNSFW        bool                 `json:"is_nsfw" doc:"Whether the item is not sfw."`
+	OccurredAt    repr.DateTime        `json:"occurred_at" doc:"When it happened."`
+	TopicTimes    *FollowingTopicTimes `json:"topic_times" doc:"The topic a kungal publish item names, as this forum stores it now. null for every other item, and when the topic no longer exists."`
 }
 
 type FollowingActivitySummary struct {
@@ -264,6 +266,14 @@ func (s *Service) listFollowingActivities(ctx context.Context, in *followingList
 	if prob != nil {
 		return nil, prob
 	}
+	var shown []communityclient.ActivityItemView
+	for _, g := range page.Groups {
+		shown = append(shown, g.Items[:min(len(g.Items), 3)]...)
+	}
+	times, prob := s.topicTimes(shown)
+	if prob != nil {
+		return nil, prob
+	}
 	out := make([]FollowingActivityGroup, 0, len(page.Groups))
 	for _, g := range page.Groups {
 		ref, ok := s.performer(users, int(g.ActorID))
@@ -271,11 +281,8 @@ func (s *Service) listFollowingActivities(ctx context.Context, in *followingList
 			continue
 		}
 		items := make([]FollowingActivityItem, 0, min(len(g.Items), 3))
-		for i, it := range g.Items {
-			if i == 3 {
-				break
-			}
-			items = append(items, s.followingItem(it))
+		for _, it := range g.Items[:min(len(g.Items), 3)] {
+			items = append(items, s.followingItem(it, times))
 		}
 		out = append(out, FollowingActivityGroup{
 			Object:       "following_activity_group",
@@ -329,9 +336,13 @@ func (s *Service) listActivityGroupItems(ctx context.Context, in *groupItemsInpu
 			return nil, followingNotFound()
 		}
 	}
+	times, prob := s.topicTimes(page.Items)
+	if prob != nil {
+		return nil, prob
+	}
 	out := make([]FollowingActivityItem, 0, len(page.Items))
 	for _, it := range page.Items {
-		out = append(out, s.followingItem(it))
+		out = append(out, s.followingItem(it, times))
 	}
 	return &groupItemsOutput{Body: repr.NewList(out, wrapCursor(fp, page.NextCursor))}, nil
 }
@@ -367,7 +378,7 @@ func (s *Service) markFollowingActivitiesSeen(ctx context.Context, in *following
 	}}, nil
 }
 
-func (s *Service) followingItem(it communityclient.ActivityItemView) FollowingActivityItem {
+func (s *Service) followingItem(it communityclient.ActivityItemView, times map[int]repository.TopicTimesRow) FollowingActivityItem {
 	return FollowingActivityItem{
 		Object:        "following_activity_item",
 		ID:            decimalID(it.ID),
@@ -384,6 +395,7 @@ func (s *Service) followingItem(it communityclient.ActivityItemView) FollowingAc
 		RelatedWorkID: workIDPtr(it.WorkID),
 		IsNSFW:        it.ContentLimit != "sfw",
 		OccurredAt:    parseDateTime(it.OccurredAt),
+		TopicTimes:    topicTimesOf(it, times),
 	}
 }
 

@@ -216,6 +216,69 @@ func TestV1FollowingActivitiesMapsGroupAndItems(t *testing.T) {
 	}
 }
 
+func TestV1FollowingActivitiesTopicTimes(t *testing.T) {
+	f := newFollowingFix(t)
+	if err := f.db.Exec(`UPDATE topic SET status_update_time = ?, edited = ? WHERE id = ?`,
+		"2026-09-20T08:00:00Z", "2026-09-19T08:00:00Z", w3TopicPub).Error; err != nil {
+		t.Fatal(err)
+	}
+	withKey := func(it communityclient.ActivityItemView, key string) communityclient.ActivityItemView {
+		it.Key = key
+		return it
+	}
+	pub := strconv.Itoa(w3TopicPub)
+	topic := withKey(faItem(101, int64(w3UserOther), "kungal", "publish", "t", "https://www.kungal.com/topic/"+pub, "sfw", nil, ""),
+		"topic_creation:"+pub)
+	never := withKey(faItem(102, int64(w3UserOther), "kungal", "publish", "t", "https://www.kungal.com/topic/"+strconv.Itoa(w3TopicOld), "sfw", nil, ""),
+		"topic_creation:"+strconv.Itoa(w3TopicOld))
+	gone := withKey(faItem(103, int64(w3UserOther), "kungal", "publish", "t", "https://www.kungal.com/topic/1", "sfw", nil, ""),
+		"topic_creation:930000298")
+	reply := withKey(faItem(104, int64(w3UserOther), "kungal", "reply", "t", "https://www.kungal.com/topic/"+pub, "sfw", nil, ""),
+		"topic_reply_creation:"+pub)
+	moyu := withKey(faItem(105, int64(w3UserGrant), "moyu", "publish", "t", "https://www.moyu.moe/patch/9", "sfw", nil, ""),
+		"topic_creation:"+pub)
+	f.cm.groups = []communityclient.ActivityGroupView{
+		faGroup(11, int64(w3UserOther), "kungal", "publish", "2026-09-25", topic, never, gone),
+		faGroup(12, int64(w3UserOther), "kungal", "reply", "2026-09-25", reply),
+		faGroup(13, int64(w3UserGrant), "moyu", "publish", "2026-09-25", moyu),
+	}
+	f.cm.items[11] = []communityclient.ActivityItemView{topic}
+
+	resp, body := f.list(t, "sess-bob", url.Values{})
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("list %d %+v", resp.StatusCode, body)
+	}
+	times := map[string]any{}
+	for _, g := range listItems(t, body) {
+		row, _ := g["items"].([]any)
+		for _, r := range row {
+			it, _ := r.(map[string]any)
+			times[fmt.Sprint(it["id"])] = it["topic_times"]
+		}
+	}
+	want := map[string]any{
+		"101": map[string]any{"bumped_at": "2026-09-20T08:00:00Z", "edited_at": "2026-09-19T08:00:00Z"},
+		"103": nil, "104": nil, "105": nil,
+	}
+	for id, w := range want {
+		if fmt.Sprint(times[id]) != fmt.Sprint(w) {
+			t.Errorf("item %s topic_times = %v, want %v", id, times[id], w)
+		}
+	}
+	if tt, _ := times["102"].(map[string]any); tt == nil || tt["edited_at"] != nil || tt["bumped_at"] == nil {
+		t.Errorf("never-edited topic_times = %v, want bumped_at set and edited_at null", times["102"])
+	}
+
+	resp, body = f.items(t, "", "11", url.Values{})
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("items %d %+v", resp.StatusCode, body)
+	}
+	got := listItems(t, body)
+	if len(got) != 1 || fmt.Sprint(got[0]["topic_times"]) != fmt.Sprint(want["101"]) {
+		t.Fatalf("group items topic_times %+v", got)
+	}
+}
+
 func TestV1FollowingActivitiesFiltersReachCommunity(t *testing.T) {
 	f := newFollowingFix(t)
 	resp, body := f.list(t, "sess-bob", url.Values{})

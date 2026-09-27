@@ -54,7 +54,7 @@ func (r *SearchRepository) SearchTopicRowsV1(q V1Query) ([]topicRepo.TopicKeyset
 	var rows []topicRepo.TopicKeysetRow
 	err := query.
 		Select(`t.id, t.title, t.view, t.status, t.is_nsfw, t.like_count, t.reply_count,
-			t.comment_count, t.best_answer_id, t.status_update_time, t.created, t.upvote_time,
+			t.comment_count, t.best_answer_id, t.status_update_time, t.created, t.upvote_time, t.edited,
 			t.cover_images, t.user_id, t.category, t.favorite_count, t.upvote_count`).
 		Order(orderBy(score+" DESC, t.status_update_time DESC, t.id DESC", scoreArgs)).
 		Offset(q.Offset).Limit(q.Limit).

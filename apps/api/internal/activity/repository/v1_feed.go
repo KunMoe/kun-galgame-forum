@@ -122,8 +122,7 @@ func (r *ActivityRepository) TopicFeedPage(q TopicFeedQuery) ([]FeedRow, error) 
 
 type TopicCardRow struct {
 	topicRepo.TopicKeysetRow
-	Excerpt string     `gorm:"column:excerpt"`
-	Edited  *time.Time `gorm:"column:edited"`
+	Excerpt string `gorm:"column:excerpt"`
 }
 
 func (r *ActivityRepository) TopicCards(ids []int) (map[int]TopicCardRow, error) {
@@ -137,6 +136,27 @@ func (r *ActivityRepository) TopicCards(ids []int) (map[int]TopicCardRow, error)
 			status_update_time, created, upvote_time, cover_images, user_id, category, favorite_count, upvote_count,
 			SUBSTRING(content, 1, 300) AS excerpt, edited
 		FROM topic WHERE id IN ?`, ids).Scan(&rows).Error; err != nil {
+		return nil, err
+	}
+	for _, row := range rows {
+		out[row.ID] = row
+	}
+	return out, nil
+}
+
+type TopicTimesRow struct {
+	ID               int        `gorm:"column:id"`
+	StatusUpdateTime time.Time  `gorm:"column:status_update_time"`
+	Edited           *time.Time `gorm:"column:edited"`
+}
+
+func (r *ActivityRepository) TopicTimes(ids []int) (map[int]TopicTimesRow, error) {
+	out := map[int]TopicTimesRow{}
+	if len(ids) == 0 {
+		return out, nil
+	}
+	var rows []TopicTimesRow
+	if err := r.db.Raw(`SELECT id, status_update_time, edited FROM topic WHERE id IN ?`, ids).Scan(&rows).Error; err != nil {
 		return nil, err
 	}
 	for _, row := range rows {

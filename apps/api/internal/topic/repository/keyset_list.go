@@ -23,6 +23,7 @@ type TopicKeysetRow struct {
 	StatusUpdateTime time.Time
 	Created          time.Time
 	UpvoteTime       *time.Time
+	Edited           *time.Time
 	CoverImages      model.ImageTokens
 	UserID           int
 	Category         string
@@ -80,7 +81,7 @@ func (r *TopicListRepository) FindKeyset(q KeysetQuery) ([]TopicKeysetRow, error
 	selectList := `topic.id, topic.title, topic.view, topic.status,
 			topic.is_nsfw, topic.like_count, topic.reply_count,
 			topic.comment_count, topic.best_answer_id,
-			topic.status_update_time, topic.created, topic.upvote_time,
+			topic.status_update_time, topic.created, topic.upvote_time, topic.edited,
 			topic.cover_images, topic.user_id, topic.category,
 			topic.favorite_count, topic.upvote_count, ` + alias
 

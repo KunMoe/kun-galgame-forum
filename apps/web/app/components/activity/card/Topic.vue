@@ -97,7 +97,7 @@ provide(
 <template>
   <ActivityCardShell
     :performer="activity.performer"
-    :occurred-at="activity.occurred_at"
+    :occurred-at="topic.bumped_at"
   >
     <template v-if="digest?.edited_at" #meta>
       <span class="text-default-400 ml-2 flex items-center gap-1 text-xs">

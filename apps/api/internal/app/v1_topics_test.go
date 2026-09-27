@@ -261,6 +261,7 @@ func (f *topicsFix) seed(t *testing.T) {
 			r.user, r.nsfw, r.scope, r.cover, r.like, r.fav, r.up, r.v7, r.v30, r.upvote)
 	}
 
+	runSQL(`UPDATE topic SET edited = ? WHERE id = 910000201`, base.Add(2*time.Hour))
 	runSQL(`INSERT INTO topic_section_relation (topic_id, topic_section_id, created, updated) VALUES (910000201, ?, ?, ?)`, v1SectionID, base, base)
 	runSQL(`INSERT INTO topic_poll (title, topic_id, user_id, created, updated) VALUES ('p', 910000201, ?, ?, ?)`, v1UserAlice, base, base)
 	runSQL(`INSERT INTO topic_lottery (topic_id, user_id, title, created, updated) VALUES (910000202, ?, 'l', ?, ?)`, v1UserAlice, base, base)
@@ -704,7 +705,7 @@ func TestV1TopicsItemFields(t *testing.T) {
 		t.Fatal(err)
 	}
 	itemKeys := []string{
-		"author", "bumped_at", "category", "comment_count", "cover_images", "created_at", "has_best_answer", "id",
+		"author", "bumped_at", "category", "comment_count", "cover_images", "created_at", "edited_at", "has_best_answer", "id",
 		"is_nsfw", "like_count", "mini_apps", "object", "reply_count", "sections", "state", "title", "upvoted_at", "view_count",
 	}
 	for _, it := range list.Items {
@@ -730,8 +731,9 @@ func TestV1TopicsItemFields(t *testing.T) {
 			"view_count": `10`, "like_count": `1`, "reply_count": `0`, "comment_count": `0`,
 			"has_best_answer": `false`, "is_nsfw": `false`,
 			"bumped_at": `"2026-01-15T15:00:00Z"`, "created_at": `"2026-01-15T12:00:00Z"`, "upvoted_at": `"2026-01-15T12:00:00Z"`,
+			"edited_at": `"2026-01-15T14:00:00Z"`,
 		},
-		"910000202": {"sections": `[]`, "cover_images": `[]`, "mini_apps": `["lottery"]`, "upvoted_at": `null`},
+		"910000202": {"sections": `[]`, "cover_images": `[]`, "mini_apps": `["lottery"]`, "upvoted_at": `null`, "edited_at": `null`},
 		"910000203": {
 			"has_best_answer": `true`,
 			"cover_images": `[{"url":"https://image.test.example/bb/bb/` + v1CoverHash2 + `.webp","hash":"` + v1CoverHash2 +

@@ -7436,6 +7436,8 @@ export interface components {
             site: string;
             /** @description Plain-text title. Free text; never use it as a decision input. */
             title: string;
+            /** @description The topic a kungal publish item names, as this forum stores it now. null for every other item, and when the topic no longer exists. */
+            topic_times: components["schemas"]["FollowingTopicTimes"] | null;
             /**
              * Format: uri
              * @description Absolute https URL of the item.
@@ -7479,6 +7481,18 @@ export interface components {
              * @description Followed groups whose latest_at is after the later of last_seen_at and when each follow began, counted up to 100: 100 means 100 or more. Uses the same include_nsfw, verbs and sites as listFollowingActivities.
              */
             unseen_count: number;
+        };
+        FollowingTopicTimes: {
+            /**
+             * Format: date-time
+             * @description The topic's bump time, as topic.bumped_at.
+             */
+            bumped_at: string;
+            /**
+             * Format: date-time
+             * @description Time of the latest edit. null when never edited.
+             */
+            edited_at: string | null;
         };
         FriendLink: {
             /** @description Banner image. null when the link has none. */
@@ -12488,6 +12502,11 @@ export interface components {
              * @description Creation time.
              */
             created_at: string;
+            /**
+             * Format: date-time
+             * @description Time of the latest edit. null when never edited.
+             */
+            edited_at: string | null;
             /** @description Whether a best-answer reply is set. */
             has_best_answer: boolean;
             /** @description Topic id. JSON string of a decimal integer. */

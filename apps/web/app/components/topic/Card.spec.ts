@@ -37,6 +37,7 @@ const topic = (over: Partial<TopicSummary> = {}): TopicSummary => ({
   is_nsfw: false,
   bumped_at: '2026-09-01T00:00:00.000Z',
   created_at: '2026-08-01T00:00:00.000Z',
+  edited_at: null,
   upvoted_at: null,
   ...over
 })
@@ -51,5 +52,16 @@ describe('TopicCard', () => {
     expect(wrapper.text()).toContain('已注销用户')
     expect(wrapper.text()).toContain('1.2w')
     expect(wrapper.text()).toContain('闲聊')
+  })
+
+  it('shows the bump and edit times, not the creation time', async () => {
+    const wrapper = await mountSuspended(TopicCard, {
+      props: { topic: topic({ edited_at: '2026-08-15T00:00:00.000Z' }) }
+    })
+    const times = wrapper.findAll('time').map((t) => t.attributes('datetime'))
+    expect(times).toEqual([
+      '2026-09-01T00:00:00.000Z',
+      '2026-08-15T00:00:00.000Z'
+    ])
   })
 })

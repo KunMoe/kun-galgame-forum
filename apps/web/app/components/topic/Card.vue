@@ -33,7 +33,11 @@ const actionsCount = computed(
     <div class="text-default-600 flex flex-wrap items-center gap-2 text-sm">
       <KunAvatar :user="author" size="xs" :is-navigation="false" />
       <span>{{ author.name }}</span>
-      <KunTime :time="topic.created_at" type="relative" />
+      <KunTime :time="topic.bumped_at" type="relative" />
+      <span v-if="topic.edited_at" class="flex items-center gap-1">
+        <KunIcon class="size-3.5" name="lucide:pencil" />
+        <KunTime :time="topic.edited_at" type="relative" />
+      </span>
 
       <div class="text-default-500 ml-2 flex items-center gap-3">
         <span class="flex items-center gap-1">

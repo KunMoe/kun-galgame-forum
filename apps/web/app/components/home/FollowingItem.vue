@@ -61,8 +61,18 @@ const external = computed(() => props.item.in_site_path === null)
       >
         {{ item.excerpt }}
       </p>
-      <p class="text-default-400 text-xs">
-        <KunTime :time="item.occurred_at" />
+      <p class="text-default-400 flex items-center gap-2 text-xs">
+        <template v-if="item.topic_times">
+          <KunTime :time="item.topic_times.bumped_at" />
+          <span
+            v-if="item.topic_times.edited_at"
+            class="flex items-center gap-1"
+          >
+            <KunIcon name="lucide:pencil" class="size-3" />
+            <KunTime :time="item.topic_times.edited_at" />
+          </span>
+        </template>
+        <KunTime v-else :time="item.occurred_at" />
       </p>
     </div>
   </div>
