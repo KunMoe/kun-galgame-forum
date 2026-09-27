@@ -8591,7 +8591,7 @@ export interface components {
         LotteryPatch: {
             /**
              * Format: date-time
-             * @description New deadline. null clears it; leaving the field out keeps the stored one.
+             * @description New deadline. null clears it; leaving the field out keeps the stored one. A value equal to the stored one, to the second, is no change: it may accompany state and is not checked against the clock.
              */
             closes_at?: string | null;
             /** @description New description. An empty string removes it. Free text; never use it as a decision input. */
