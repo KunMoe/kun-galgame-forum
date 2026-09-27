@@ -3,10 +3,6 @@ package push
 import (
 	"context"
 	"log/slog"
-	"maps"
-	"slices"
-	"strconv"
-	"strings"
 	"time"
 
 	activityapiv1 "kun-galgame-api/internal/activity/apiv1"
@@ -73,10 +69,6 @@ func (p *Pusher) PushClaimed(ctx context.Context, claims []Claim, rev int64) ([]
 		slog.Warn("activity push: assemble failed", "error", err)
 		return nil, err
 	}
-	names, err := p.pageNames(assembled)
-	if err != nil {
-		return nil, err
-	}
 	var (
 		items   []communityclient.ActivityWriteItem
 		handled []Claim
@@ -85,6 +77,12 @@ func (p *Pusher) PushClaimed(ctx context.Context, claims []Claim, rev int64) ([]
 	for i, c := range claims {
 		k := keys[i]
 		if !IsPushed(c.Type) {
+			if prev, had := sent[k]; had && !prev.Removed {
+				item := Tombstone(KeyOf(c.Type, c.SourceID), int64(prev.ActorID), rev)
+				pending = append(pending, prepared{claim: c, item: &item})
+				items = append(items, item)
+				continue
+			}
 			handled = append(handled, c)
 			continue
 		}
@@ -101,7 +99,7 @@ func (p *Pusher) PushClaimed(ctx context.Context, claims []Claim, rev int64) ([]
 			act = assembled[idx]
 		}
 		if act != nil && act.Performer != nil {
-			item, err := MapLive(c.Type, c.SourceID, act, names[idx], nsfw[k], c.Backfill, p.origin, rev, rows[idx].Created)
+			item, err := MapLive(c.Type, c.SourceID, act, nsfw[k], c.Backfill, p.origin, rev, rows[idx].Created)
 			if err != nil {
 				slog.Warn("activity push: live item not sendable", "key", KeyOf(c.Type, c.SourceID), "error", err)
 				handled = append(handled, c)
@@ -171,60 +169,4 @@ func problemErr(prob *problem.Problem) error {
 		return nil
 	}
 	return prob
-}
-
-func pathID(path, prefix string) (int, bool) {
-	rest, ok := strings.CutPrefix(path, prefix)
-	if !ok {
-		return 0, false
-	}
-	rest, _, _ = strings.Cut(rest, "?")
-	rest, _, _ = strings.Cut(rest, "/")
-	id, err := strconv.Atoi(rest)
-	return id, err == nil && id > 0
-}
-
-func pathTail(path, prefix string) string {
-	rest, ok := strings.CutPrefix(path, prefix)
-	if !ok {
-		return ""
-	}
-	rest, _, _ = strings.Cut(rest, "?")
-	return rest
-}
-
-func (p *Pusher) pageNames(acts []*activityapiv1.Activity) (map[int]string, error) {
-	toolIDs := map[int]int{}
-	siteURLs := map[int]string{}
-	for i, a := range acts {
-		if a == nil {
-			continue
-		}
-		switch string(a.ActivityType) {
-		case "toolset_comment_creation":
-			if id, ok := pathID(a.Path, "/toolset/"); ok {
-				toolIDs[i] = id
-			}
-		case "galgame_website_comment_creation":
-			if u := pathTail(a.Path, "/website/"); u != "" {
-				siteURLs[i] = u
-			}
-		}
-	}
-	tools, err := p.namesByToolset(slices.Collect(maps.Values(toolIDs)))
-	if err != nil {
-		return nil, err
-	}
-	sites, err := p.namesByWebsiteURL(slices.Collect(maps.Values(siteURLs)))
-	if err != nil {
-		return nil, err
-	}
-	out := make(map[int]string, len(toolIDs)+len(siteURLs))
-	for i, id := range toolIDs {
-		out[i] = tools[id]
-	}
-	for i, u := range siteURLs {
-		out[i] = sites[u]
-	}
-	return out, nil
 }
