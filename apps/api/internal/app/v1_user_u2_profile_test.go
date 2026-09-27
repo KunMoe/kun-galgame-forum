@@ -28,6 +28,9 @@ func TestV1GetUserRoundTrip(t *testing.T) {
 	if v, ok := body["about_html"]; !ok || v != nil {
 		t.Fatalf("about_html %v (present %v), want null when the account sends none", v, ok)
 	}
+	if v, ok := body["avatar_frame"]; !ok || v != nil {
+		t.Fatalf("avatar_frame %v (present %v), want null when the account wears none", v, ok)
+	}
 	if body["created_at"] != "2026-01-15T08:00:00Z" {
 		t.Fatalf("created_at %v", body["created_at"])
 	}

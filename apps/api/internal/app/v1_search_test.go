@@ -171,8 +171,10 @@ func searchUser(id int, name string, status int, roles, siteRoles []string, crea
 
 func TestV1SearchUserLane(t *testing.T) {
 	f := newSearchFix(t)
+	framed := searchUser(srUserAlice, "alice", 0, []string{"user", "admin"}, nil, "2025-01-02T03:04:05Z")
+	framed["cosmetics"] = map[string]any{"avatar_frame": map[string]any{"item_id": 3, "static_url": "https://img.example/decorations/f.png"}}
 	f.oauth.search = []map[string]any{
-		searchUser(srUserAlice, "alice", 0, []string{"user", "admin"}, nil, "2025-01-02T03:04:05Z"),
+		framed,
 		searchUser(srUserBanned, "banned", 1, []string{"user"}, nil, ""),
 		searchUser(srUserBob, "bob", 0, []string{"user"}, []string{"moderator"}, ""),
 	}
@@ -188,6 +190,12 @@ func TestV1SearchUserLane(t *testing.T) {
 	}
 	if fmt.Sprint(bob["roles"]) != "[moderator]" || bob["registered_at"] != nil {
 		t.Errorf("bob %+v", bob)
+	}
+	if frame, _ := alice["avatar_frame"].(map[string]any); frame["static_url"] != "https://img.example/decorations/f.png" {
+		t.Errorf("alice avatar_frame %+v", alice["avatar_frame"])
+	}
+	if v, ok := bob["avatar_frame"]; !ok || v != nil {
+		t.Errorf("bob avatar_frame %v (present %v), want null", v, ok)
 	}
 
 	_, body = f.get(t, srUsersPath, "/search/users?q=a", "sess-sr-alice")

@@ -72,7 +72,7 @@ func (s *Service) searchUsers(ctx context.Context, in *usersInput) (*usersOutput
 			}
 		}
 		items = append(items, UserSearchHit{
-			Object: "user", ID: ref.ID, Name: ref.Name, Avatar: ref.Avatar, Bio: &bio, Roles: roles,
+			Object: "user", ID: ref.ID, Name: ref.Name, Avatar: ref.Avatar, AvatarFrame: ref.AvatarFrame, Bio: &bio, Roles: roles,
 			RegisteredAt: registeredAt(u.CreatedAt),
 			TopicCount:   topics[u.ID], ReplyCount: replies[u.ID],
 		})

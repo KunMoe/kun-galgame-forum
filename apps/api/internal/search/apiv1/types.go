@@ -61,6 +61,7 @@ type UserSearchHit struct {
 	ID           repr.DecimalID       `json:"id" doc:"User id."`
 	Name         *string              `json:"name" maxLength:"64" doc:"Display name. Free text; never use it as a decision input."`
 	Avatar       *repr.Image          `json:"avatar" doc:"Avatar image. null when the account has no image-service hash."`
+	AvatarFrame  *repr.AvatarFrame    `json:"avatar_frame" doc:"The avatar frame the user wears on this forum; a change can take up to ten minutes to show. null when none."`
 	Bio          *string              `json:"bio" maxLength:"107" doc:"Profile bio as stored. Empty string when none. Free text; never use it as a decision input."`
 	Roles        []userapiv1.UserRole `json:"roles" maxItems:"4" doc:"Badge roles among creator, moderator, admin and ren, including site roles. Display only; never a permission check. Empty array if none."`
 	RegisteredAt *repr.DateTime       `json:"registered_at" doc:"When the account was registered, as the account service reports it. null when it does not say."`

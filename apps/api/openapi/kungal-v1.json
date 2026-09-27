@@ -1659,6 +1659,30 @@
         "type": "string",
         "x-vocabulary-closed": true
       },
+      "AvatarFrame": {
+        "properties": {
+          "animated_url": {
+            "description": "Animated WebP of the same size. Play it only while the avatar is hovered or focused, and never under a reduced-motion preference. null when the frame has no animated version.",
+            "format": "uri",
+            "maxLength": 512,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "static_url": {
+            "description": "Still PNG on a square canvas 1.2 times the avatar, the avatar circle centred in it and transparent. Draw it centred over the avatar, outside the layout and ignoring pointer events, and not below 32 px.",
+            "format": "uri",
+            "maxLength": 512,
+            "type": "string"
+          }
+        },
+        "required": [
+          "static_url",
+          "animated_url"
+        ],
+        "type": "object"
+      },
       "BatchListMyCoverVote": {
         "properties": {
           "items": {
@@ -21480,6 +21504,17 @@
             ],
             "description": "Avatar image. null when the account has no image-service hash."
           },
+          "avatar_frame": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AvatarFrame"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The avatar frame the user wears on this forum; a change can take up to ten minutes to show. null when none."
+          },
           "bio": {
             "description": "Profile bio as stored. Empty string when none. Free text; never use it as a decision input.",
             "maxLength": 107,
@@ -21542,6 +21577,7 @@
           "id",
           "name",
           "avatar",
+          "avatar_frame",
           "bio",
           "about_html",
           "roles",
@@ -21619,6 +21655,17 @@
             ],
             "description": "Avatar image. null when the account has no image-service hash."
           },
+          "avatar_frame": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AvatarFrame"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The avatar frame the user wears on this forum; a change can take up to ten minutes to show. null when none."
+          },
           "id": {
             "description": "User id. JSON string of a decimal integer.",
             "maxLength": 20,
@@ -21645,7 +21692,8 @@
           "object",
           "id",
           "name",
-          "avatar"
+          "avatar",
+          "avatar_frame"
         ],
         "type": "object"
       },
@@ -21734,6 +21782,17 @@
             ],
             "description": "Avatar image. null when the account has no image-service hash."
           },
+          "avatar_frame": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AvatarFrame"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The avatar frame the user wears on this forum; a change can take up to ten minutes to show. null when none."
+          },
           "bio": {
             "description": "Profile bio as stored. Empty string when none. Free text; never use it as a decision input.",
             "maxLength": 107,
@@ -21801,6 +21860,7 @@
           "id",
           "name",
           "avatar",
+          "avatar_frame",
           "bio",
           "roles",
           "registered_at",

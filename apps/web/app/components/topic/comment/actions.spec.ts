@@ -22,7 +22,8 @@ const user = (id: string): UserRef => ({
   object: 'user',
   id,
   name: `u${id}`,
-  avatar: null
+  avatar: null,
+  avatar_frame: null
 })
 
 const commentViewer = (over: Partial<CommentViewer> = {}): CommentViewer => ({

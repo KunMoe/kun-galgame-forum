@@ -10,6 +10,7 @@ const user = (over: Partial<UserRef> = {}): UserRef => ({
   id: '1',
   name: 'Alice',
   avatar: null,
+  avatar_frame: null,
   ...over
 })
 

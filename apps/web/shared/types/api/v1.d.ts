@@ -5779,6 +5779,18 @@ export interface components {
         };
         /** @enum {string} */
         AttributionRole: "developer" | "publisher" | "circle" | "brand";
+        AvatarFrame: {
+            /**
+             * Format: uri
+             * @description Animated WebP of the same size. Play it only while the avatar is hovered or focused, and never under a reduced-motion preference. null when the frame has no animated version.
+             */
+            animated_url: string | null;
+            /**
+             * Format: uri
+             * @description Still PNG on a square canvas 1.2 times the avatar, the avatar circle centred in it and transparent. Draw it centred over the avatar, outside the layout and ignoring pointer events, and not below 32 px.
+             */
+            static_url: string;
+        };
         BatchListMyCoverVote: {
             /** @description One member per requested id that the caller may see. Empty array, never null. */
             items: components["schemas"]["MyCoverVote"][];
@@ -13235,6 +13247,8 @@ export interface components {
             about_html: string | null;
             /** @description Avatar image. null when the account has no image-service hash. */
             avatar: components["schemas"]["Image"] | null;
+            /** @description The avatar frame the user wears on this forum; a change can take up to ten minutes to show. null when none. */
+            avatar_frame: components["schemas"]["AvatarFrame"] | null;
             /** @description Profile bio as stored. Empty string when none. Free text; never use it as a decision input. */
             bio: string | null;
             /** @description Public activity counts for this user. */
@@ -13287,6 +13301,8 @@ export interface components {
         UserRef: {
             /** @description Avatar image. null when the account has no image-service hash. */
             avatar: components["schemas"]["Image"] | null;
+            /** @description The avatar frame the user wears on this forum; a change can take up to ten minutes to show. null when none. */
+            avatar_frame: components["schemas"]["AvatarFrame"] | null;
             /** @description User id. JSON string of a decimal integer. */
             id: string;
             /** @description Display name. null when the account no longer exists; show a localized label. Free text; never use it as a decision input. */
@@ -13329,6 +13345,8 @@ export interface components {
         UserSearchHit: {
             /** @description Avatar image. null when the account has no image-service hash. */
             avatar: components["schemas"]["Image"] | null;
+            /** @description The avatar frame the user wears on this forum; a change can take up to ten minutes to show. null when none. */
+            avatar_frame: components["schemas"]["AvatarFrame"] | null;
             /** @description Profile bio as stored. Empty string when none. Free text; never use it as a decision input. */
             bio: string | null;
             /** @description User id. */

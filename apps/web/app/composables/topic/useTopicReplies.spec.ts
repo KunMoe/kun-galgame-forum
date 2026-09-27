@@ -11,7 +11,8 @@ const user = (): UserRef => ({
   object: 'user',
   id: '1',
   name: 'Alice',
-  avatar: null
+  avatar: null,
+  avatar_frame: null
 })
 
 const reply = (

@@ -32,7 +32,7 @@ const notification = (over: Partial<Notification> = {}): Notification => ({
   object: 'notification',
   id: '1',
   notification_type: 'liked',
-  actor: { object: 'user', id: '2', name: 'A', avatar: null },
+  actor: { object: 'user', id: '2', name: 'A', avatar: null, avatar_frame: null },
   actor_count: 1,
   item_count: 1,
   path: '/topic/1',

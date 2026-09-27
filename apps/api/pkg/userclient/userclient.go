@@ -33,17 +33,27 @@ type Config struct {
 }
 
 type User struct {
-	ID              int      `json:"id"`
-	UUID            string   `json:"uuid"`
-	Name            string   `json:"name"`
-	Avatar          string   `json:"avatar"`
-	AvatarImageHash string   `json:"avatar_image_hash"`
-	Bio             string   `json:"bio"`
-	AboutHTML       string   `json:"about_html"`
-	Status          int      `json:"status"`
-	Roles           []string `json:"roles"`
-	SiteRoles       []string `json:"site_roles"`
-	CreatedAt       string   `json:"created_at"`
+	ID              int       `json:"id"`
+	UUID            string    `json:"uuid"`
+	Name            string    `json:"name"`
+	Avatar          string    `json:"avatar"`
+	AvatarImageHash string    `json:"avatar_image_hash"`
+	Bio             string    `json:"bio"`
+	AboutHTML       string    `json:"about_html"`
+	Status          int       `json:"status"`
+	Roles           []string  `json:"roles"`
+	SiteRoles       []string  `json:"site_roles"`
+	CreatedAt       string    `json:"created_at"`
+	Cosmetics       Cosmetics `json:"cosmetics"`
+}
+
+type Cosmetics struct {
+	AvatarFrame *Decoration `json:"avatar_frame"`
+}
+
+type Decoration struct {
+	StaticURL   string `json:"static_url"`
+	AnimatedURL string `json:"animated_url"`
 }
 
 type Client struct {

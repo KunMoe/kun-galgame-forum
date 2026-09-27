@@ -15,6 +15,7 @@ const user = (over: Partial<UserRef> = {}): UserRef => ({
     thumbhash: null,
     sexual: null
   },
+  avatar_frame: null,
   ...over
 })
 

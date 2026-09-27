@@ -60,6 +60,7 @@ func mapUserProfile(cdn string, p *service.PublicProfile) UserProfile {
 		ID:          repr.ID(p.Account.ID),
 		Name:        &name,
 		Avatar:      repr.NewImage(cdn, p.Account.AvatarImageHash, nil),
+		AvatarFrame: repr.NewAvatarFrame(p.Account.Cosmetics.AvatarFrame),
 		Bio:         &bio,
 		AboutHTML:   about,
 		Roles:       roles,

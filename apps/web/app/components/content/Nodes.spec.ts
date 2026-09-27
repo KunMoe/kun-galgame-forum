@@ -48,6 +48,7 @@ const user = (over: Partial<UserRef> = {}): UserRef => ({
   id: '3',
   name: 'Alice',
   avatar: null,
+  avatar_frame: null,
   ...over
 })
 

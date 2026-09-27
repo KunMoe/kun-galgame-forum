@@ -9,7 +9,8 @@ const user = (): UserRef => ({
   object: 'user',
   id: '3',
   name: 'Cara',
-  avatar: null
+  avatar: null,
+  avatar_frame: null
 })
 
 const upvote = (id: string, over: Partial<TopicUpvote> = {}): TopicUpvote => ({
