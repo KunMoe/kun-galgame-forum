@@ -21,7 +21,7 @@ const links = [
     name: 'RSS',
     icon: 'lucide:rss',
     to: '/rss',
-    tooltip: '话题和 Galgame RSS 订阅'
+    tooltip: '话题, Galgame 资源与 Gal 情报 RSS 订阅'
   },
   {
     name: 'Telegram',

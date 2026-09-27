@@ -223,6 +223,11 @@ export default defineNuxtConfig({
       tsConfig: {
         ...sharedTsConfig
       }
+    },
+    storage: {
+      // Default Nitro cache storage is an unbounded in-memory map; per-work and
+      // per-user feed keys are unbounded too (RSS OOM, commit f7d0d35f8).
+      rss: { driver: 'lru-cache', max: 2000, maxSize: 64 * 1024 * 1024 }
     }
   }
 })

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 useKunSeoMeta({
-  title: 'Galgame 和话题订阅',
-  description: `${kungal.titleShort} 关于 Galgame 和话题的 RSS 订阅, 订阅 ${kungal.titleShort} 以获得最新的 Galgame 信息, Galgame 下载资源信息, Galgame 动态, Galgame 新作, 关于 Galgame 的新话题等等`
+  title: 'RSS 订阅',
+  description: `${kungal.titleShort}的 RSS 订阅: 新话题, 新发布的 Galgame 下载资源, Gal 情报与新工具, 也可以只订阅某一部 Galgame 或某一位用户, 支持 RSS 2.0, Atom 与 JSON Feed`
 })
 </script>
 

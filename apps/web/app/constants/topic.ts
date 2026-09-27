@@ -138,6 +138,15 @@ export const TOPIC_SECTIONS: Record<
   }
 }
 
+export const TOPIC_SECTION_OPTIONS = (
+  Object.keys(TOPIC_SECTIONS) as TopicCategoryKey[]
+).flatMap((category) =>
+  Object.entries(TOPIC_SECTIONS[category]).map(([value, label]) => ({
+    value,
+    label: `${TOPIC_CATEGORIES[category].label} · ${label}`
+  }))
+)
+
 export const TOPIC_POLL_VISIBILITY_OPTIONS = [
   { value: 'always', label: '任何人可见结果' },
   { value: 'after_vote', label: '投票后可见结果' },

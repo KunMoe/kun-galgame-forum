@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { showMoeMessage } from '~/widget/showMoeMessage'
+import { kunFeedUrl } from '#shared/utils/feedUrl'
 
 const {
   showKUNGalgamePageTransparency,
@@ -39,28 +40,22 @@ useHead({
   },
   link: [
     {
-      rel: 'alternative',
-      href: `https://www.kungal.com/rss/topic.xml`,
+      rel: 'alternate',
       type: 'application/rss+xml',
-      title: () => `${kungal.titleShort}话题订阅`
+      title: `${kungal.titleShort}话题订阅`,
+      href: kunFeedUrl(config.public.KUN_GALGAME_URL || '', '/rss/topic')
     },
     {
-      rel: 'feed',
-      href: `https://www.kungal.com/rss/topic.xml`,
+      rel: 'alternate',
       type: 'application/rss+xml',
-      title: `${kungal.titleShort}话题订阅`
+      title: `${kungal.titleShort} Galgame 资源订阅`,
+      href: kunFeedUrl(config.public.KUN_GALGAME_URL || '', '/rss/galgame')
     },
     {
-      rel: 'alternative',
-      href: `https://www.kungal.com/rss/galgame.xml`,
+      rel: 'alternate',
       type: 'application/rss+xml',
-      title: () => `${kungal.titleShort} Galgame 订阅`
-    },
-    {
-      rel: 'feed',
-      href: `https://www.kungal.com/rss/galgame.xml`,
-      type: 'application/rss+xml',
-      title: () => `${kungal.titleShort} Galgame 订阅`
+      title: `${kungal.titleShort} Gal 情报订阅`,
+      href: kunFeedUrl(config.public.KUN_GALGAME_URL || '', '/rss/news')
     },
     {
       rel: 'me',

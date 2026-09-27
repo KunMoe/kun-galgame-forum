@@ -6,9 +6,17 @@ import {
 } from '~/constants/galgameResource'
 import type { GalgameResource } from '#shared/utils/api/schemas'
 import { problemMessage } from '#shared/utils/api/message'
+import { kunFeedUrl } from '#shared/utils/feedUrl'
 
 const route = useRoute()
 const workId = computed(() => String((route.params as { id: string }).id))
+const config = useRuntimeConfig()
+const rssHref = computed(() =>
+  kunFeedUrl(
+    config.public.KUN_GALGAME_URL || '',
+    `/rss/galgame/${workId.value}`
+  )
+)
 
 const resourcePublishBanned = inject<Ref<boolean>>(
   'galgameResourcePublishBanned',
@@ -59,6 +67,21 @@ const { data, status, refresh, problem } = await useApi<GalgameResource[]>(
   }
 )
 watchEffect(() => emit('update:loading', status.value === 'pending'))
+
+useHead({
+  link: computed(() =>
+    data.value?.length
+      ? [
+          {
+            rel: 'alternate',
+            type: 'application/rss+xml',
+            title: 'Galgame 资源订阅',
+            href: rssHref.value
+          }
+        ]
+      : []
+  )
+})
 
 const groupedResources = computed(() => {
   const grouped: Record<GalgameResourceProviderBucketKey, GalgameResource[]> = {
@@ -132,6 +155,7 @@ const activeBucket = computed(() =>
           >
             添加资源
           </KunButton>
+          <KunCopy v-if="data?.length" :text="rssHref" name="RSS 订阅" />
         </div>
       </template>
 
