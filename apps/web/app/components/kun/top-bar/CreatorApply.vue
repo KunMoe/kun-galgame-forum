@@ -54,9 +54,17 @@ const FLOW = [
   { title: '管理员审核', icon: 'lucide:user-round-check' },
   { title: '成为创作者', icon: 'lucide:party-popper' }
 ]
+const REVIEW_STEP = 2
+const flow = computed(() =>
+  FLOW.map((step, i) =>
+    i === REVIEW_STEP && isDeclined.value
+      ? { ...step, status: 'error' as const }
+      : step
+  )
+)
 const currentStep = computed(() => {
   if (isCreator.value) return 3
-  if (isPending.value) return 2
+  if (isPending.value || isDeclined.value) return REVIEW_STEP
   if (isEligible.value) return 1
   return 0
 })
@@ -149,7 +157,7 @@ const handleApply = async () => {
 
       <template v-else-if="status">
         <KunSteps
-          :items="FLOW"
+          :items="flow"
           :current="currentStep"
           color="primary"
           size="sm"
