@@ -11,6 +11,8 @@ const props = defineProps<{
 }>()
 
 const user = computed(() => props.user)
+const { id: currentUserId } = storeToRefs(usePersistUserStore())
+const isSelf = computed(() => currentUserId.value === user.value.id)
 
 const source = inject(TOPIC_TOC_SOURCE)!
 const { headings, activeIds } = useTopicTOC(source)
@@ -127,25 +129,33 @@ onBeforeUnmount(() => {
       "
     >
       <div class="flex min-h-0 flex-col items-center gap-3 overflow-hidden">
-        <KunAvatar
-          class-name="aspect-square h-auto w-full hover:scale-100"
-          size="original"
-          image-class-name="size-full rounded-lg"
-          :user="user"
-        />
+        <div class="flex w-full flex-col items-center gap-3 px-1 pt-3">
+          <KunAvatar
+            :user="user"
+            size="original"
+            class-name="size-22 hover:scale-100"
+            image-class-name="size-22"
+          />
 
-        <KunLink
-          underline="hover"
-          :aria-label="user.name"
-          :to="`/user/${user.id}`"
-        >
-          {{ user.name }}
-        </KunLink>
+          <div class="flex min-w-0 flex-col items-center gap-1 pt-1">
+            <KunLink
+              underline="hover"
+              color="default"
+              :aria-label="user.name"
+              :to="`/user/${user.id}`"
+              class-name="max-w-full text-center text-lg font-semibold break-normal wrap-anywhere"
+            >
+              {{ user.name }}
+            </KunLink>
 
-        <p class="text-secondary flex items-center gap-1">
-          <KunIcon class="text-inherit" name="lucide:lollipop" />
-          {{ user.moemoepoint }}
-        </p>
+            <p class="text-secondary flex items-center gap-1 text-sm">
+              <KunIcon class="text-inherit" name="lucide:lollipop" />
+              {{ user.moemoepoint }}
+            </p>
+          </div>
+
+          <UserFollowButton v-if="!isSelf" :user-id="String(user.id)" block />
+        </div>
 
         <div
           v-if="headingItems.length"
@@ -167,29 +177,33 @@ onBeforeUnmount(() => {
         leave-active-class="transition-all duration-200 ease-in"
         leave-to-class="-translate-y-1 opacity-0"
       >
-        <KunLink
-          v-if="isPastPoll"
-          :to="`/user/${user.id}`"
-          :aria-label="user.name"
-          underline="none"
-          color="default"
-          class-name="hover:bg-default-100 mb-2 flex shrink-0 items-center gap-2.5 rounded-lg p-1.5 transition-colors"
-        >
-          <KunAvatar
-            :user="user"
-            :is-navigation="false"
-            size="original"
-            class-name="size-10 shrink-0"
-            image-class-name="size-10 rounded-full"
-          />
-          <div class="flex min-w-0 flex-col">
-            <span class="truncate text-base font-medium">{{ user.name }}</span>
-            <span class="text-secondary flex items-center gap-1 text-sm">
-              <KunIcon class="text-inherit" name="lucide:lollipop" />
-              {{ user.moemoepoint }}
-            </span>
-          </div>
-        </KunLink>
+        <div v-if="isPastPoll" class="mb-2 flex shrink-0 items-center gap-1">
+          <KunLink
+            :to="`/user/${user.id}`"
+            :aria-label="user.name"
+            underline="none"
+            color="default"
+            class-name="hover:bg-default-100 flex min-w-0 flex-1 items-center gap-2.5 rounded-lg p-1.5 transition-colors"
+          >
+            <KunAvatar
+              :user="user"
+              :is-navigation="false"
+              size="original"
+              class-name="size-10 shrink-0"
+              image-class-name="size-10"
+            />
+            <div class="flex min-w-0 flex-col">
+              <span class="truncate text-base font-medium">{{
+                user.name
+              }}</span>
+              <span class="text-secondary flex items-center gap-1 text-sm">
+                <KunIcon class="text-inherit" name="lucide:lollipop" />
+                {{ user.moemoepoint }}
+              </span>
+            </div>
+          </KunLink>
+          <UserFollowButton v-if="!isSelf" :user-id="String(user.id)" compact />
+        </div>
       </Transition>
 
       <Transition

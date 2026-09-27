@@ -1,10 +1,15 @@
 <script setup lang="ts">
-import type { UserFollowState, UserProfile } from '#shared/utils/api/schemas'
+import type { UserProfile } from '#shared/utils/api/schemas'
 import { settle } from '#shared/utils/api/problem'
 
-const props = defineProps<{
-  userId: UserProfile['id']
-}>()
+const props = withDefaults(
+  defineProps<{
+    userId: UserProfile['id']
+    block?: boolean
+    compact?: boolean
+  }>(),
+  { block: false, compact: false }
+)
 
 const emit = defineEmits<{
   change: [delta: number]
@@ -12,13 +17,25 @@ const emit = defineEmits<{
 
 const api = useApiClient()
 const { id: currentUserId } = storeToRefs(usePersistUserStore())
-const followState = ref<UserFollowState | null>(null)
-const followBusy = ref(false)
+const {
+  state: followState,
+  busy: followBusy,
+  set: setFollowState,
+  load: loadFollowState,
+  toggle
+} = useFollowState(() => props.userId)
 const notifyBusy = ref(false)
+const followedHere = ref(false)
 
-const isVisible = computed(
-  () => !currentUserId.value || followState.value !== null
-)
+const isVisible = computed(() => {
+  if (!currentUserId.value) {
+    return true
+  }
+  if (!followState.value) {
+    return false
+  }
+  return !props.compact || !followState.value.is_following || followedHere.value
+})
 
 const followLabel = computed(() => {
   if (!followState.value?.is_following) {
@@ -27,45 +44,17 @@ const followLabel = computed(() => {
   return followState.value.is_followed_by ? '互相关注' : '已关注'
 })
 
-const loadFollowState = async () => {
-  followState.value = null
-  if (!currentUserId.value) {
-    return
-  }
-  const result = await settle(
-    api.GET('/me/following/{user_id}', {
-      params: { path: { user_id: props.userId } }
-    })
-  )
-  if (result.ok) {
-    followState.value = result.data
-  }
-}
+const followIcon = computed(() =>
+  followState.value?.is_following
+    ? 'lucide:user-round-check'
+    : 'lucide:user-plus'
+)
 
 const toggleFollow = async () => {
-  if (!currentUserId.value) {
-    useAuthModal().open()
-    return
-  }
-  if (!followState.value || followBusy.value) {
-    return
-  }
-  followBusy.value = true
-  const wasFollowing = followState.value.is_following
-  const path = { params: { path: { user_id: props.userId } } }
-  const result = await settle(
-    wasFollowing
-      ? api.DELETE('/me/following/{user_id}', path)
-      : api.PUT('/me/following/{user_id}', path)
-  )
-  followBusy.value = false
-  if (!result.ok) {
-    reportProblem(result.problem)
-    return
-  }
-  followState.value = result.data
-  if (wasFollowing !== result.data.is_following) {
-    emit('change', result.data.is_following ? 1 : -1)
+  const delta = await toggle()
+  followedHere.value = followState.value?.is_following ?? false
+  if (delta) {
+    emit('change', delta)
   }
 }
 
@@ -88,7 +77,7 @@ const toggleNotify = async () => {
     reportProblem(result.problem)
     return
   }
-  followState.value = result.data
+  setFollowState(result.data)
   useMessage(
     notify === 'all'
       ? 'TA 发布新内容时会通知你'
@@ -106,22 +95,33 @@ watch(currentUserId, () => {
 </script>
 
 <template>
-  <div v-if="isVisible" class="flex items-center gap-1">
+  <KunTooltip v-if="isVisible && compact" :text="followLabel">
+    <KunButton
+      :is-icon-only="true"
+      variant="flat"
+      size="sm"
+      :color="followState?.is_following ? 'default' : 'primary'"
+      :loading="followBusy"
+      :aria-label="followLabel"
+      @click="toggleFollow"
+    >
+      <KunIcon :name="followIcon" />
+    </KunButton>
+  </KunTooltip>
+
+  <div
+    v-else-if="isVisible"
+    :class="cn('flex items-center gap-1', block && 'w-full')"
+  >
     <KunButton
       variant="flat"
-      size="xs"
+      :size="block ? 'sm' : 'xs'"
       :color="followState?.is_following ? 'default' : 'primary'"
-      class-name="gap-1"
+      :class-name="cn('gap-1', block && 'flex-1 justify-center')"
       :loading="followBusy"
       @click="toggleFollow"
     >
-      <KunIcon
-        :name="
-          followState?.is_following
-            ? 'lucide:user-round-check'
-            : 'lucide:user-plus'
-        "
-      />
+      <KunIcon :name="followIcon" />
       {{ followLabel }}
     </KunButton>
     <KunTooltip
@@ -131,7 +131,7 @@ watch(currentUserId, () => {
       <KunButton
         :is-icon-only="true"
         variant="flat"
-        size="xs"
+        :size="block ? 'sm' : 'xs'"
         :loading="notifyBusy"
         :aria-label="notifyAll ? '关闭发布通知' : '开启发布通知'"
         @click="toggleNotify"

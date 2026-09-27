@@ -1,5 +1,5 @@
 <script setup lang="ts">
-withDefaults(
+const props = withDefaults(
   defineProps<{
     user: KunUser & { moemoepoint: number }
     created: string | Date
@@ -8,24 +8,34 @@ withDefaults(
     floor: number
     className?: string
     showAddition?: boolean
+    showFollow?: boolean
   }>(),
-  { className: '', showAddition: true }
+  { className: '', showAddition: true, showFollow: false }
+)
+
+const { id: currentUserId } = storeToRefs(usePersistUserStore())
+const canFollow = computed(
+  () => props.showFollow && currentUserId.value !== props.user.id
 )
 </script>
 
 <template>
-  <div :class="cn('flex items-center gap-2', className)">
+  <div :class="cn('flex items-center gap-3', className)">
     <UserHoverCard :user-id="user.id">
       <KunAvatar size="lg" :user="user" />
     </UserHoverCard>
 
-    <div class="w-full">
-      <div class="flex items-center justify-between">
-        <div class="flex gap-2">
-          <KunLink underline="hover" :to="`/user/${user.id}`">
+    <div class="w-full min-w-0">
+      <div class="flex items-center justify-between gap-2">
+        <div class="flex min-w-0 gap-2">
+          <KunLink
+            underline="hover"
+            :to="`/user/${user.id}`"
+            class-name="truncate"
+          >
             {{ user.name }}
           </KunLink>
-          <p class="text-secondary flex items-center gap-1">
+          <p class="text-secondary flex shrink-0 items-center gap-1">
             <KunIcon class="text-inherit" name="lucide:lollipop" />
             {{ user.moemoepoint }}
           </p>
@@ -40,6 +50,8 @@ withDefaults(
         >
           #{{ floor }}
         </KunLink>
+
+        <UserFollowButton v-if="canFollow" :user-id="String(user.id)" />
       </div>
 
       <div v-if="showAddition" class="text-xs text-gray-500 dark:text-gray-400">

@@ -96,6 +96,7 @@ provide(
         :topic-id="Number(topic.id)"
         :floor="0"
         :show-addition="false"
+        show-follow
       />
 
       <KunDivider />

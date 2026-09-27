@@ -70,6 +70,10 @@ const handleNewComment = () => {
               <KunIcon class-name="text-lg" name="lucide:share-2" />
               分享该回复
             </KunButton>
+            <UserFollowMenuItem
+              v-if="Number(reply.author.id) !== id"
+              :user-id="reply.author.id"
+            />
             <template v-if="id">
               <TopicReplyRewrite :reply="reply" />
               <TopicReplyPin :reply="reply" />
