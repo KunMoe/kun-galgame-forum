@@ -61,6 +61,7 @@ func (p *Presenter) presentationSentByKeys(keys []presentationKey) (map[presenta
 	return out, nil
 }
 
+// As upsertSent: an older accepted write landing last must not overwrite a newer one.
 func (p *Presenter) upsertPresentationSent(k presentationKey, rev int64, removed bool) error {
 	return p.db.Exec(`
 		INSERT INTO anchor_presentation_sent (anchor_kind, anchor_id, revision, removed, sent_at)
@@ -68,7 +69,8 @@ func (p *Presenter) upsertPresentationSent(k presentationKey, rev int64, removed
 		ON CONFLICT (anchor_kind, anchor_id) DO UPDATE SET
 			revision = EXCLUDED.revision,
 			removed = EXCLUDED.removed,
-			sent_at = EXCLUDED.sent_at`,
+			sent_at = EXCLUDED.sent_at
+		WHERE anchor_presentation_sent.revision < EXCLUDED.revision`,
 		k.Kind, k.ID, rev, removed).Error
 }
 

@@ -88,6 +88,8 @@ func (p *Pusher) sentByKeys(keys []Key) (map[Key]sentRow, error) {
 	return out, nil
 }
 
+// The reconcile and the drainer record accepted writes concurrently, so the
+// older one can land last; it must not overwrite what community holds now.
 func (p *Pusher) upsertSent(k Key, actorID int, rev int64, removed bool) error {
 	return p.db.Exec(`
 		INSERT INTO activity_push_sent (type, source_id, actor_id, revision, removed, sent_at)
@@ -96,7 +98,8 @@ func (p *Pusher) upsertSent(k Key, actorID int, rev int64, removed bool) error {
 			actor_id = EXCLUDED.actor_id,
 			revision = EXCLUDED.revision,
 			removed = EXCLUDED.removed,
-			sent_at = EXCLUDED.sent_at`,
+			sent_at = EXCLUDED.sent_at
+		WHERE activity_push_sent.revision < EXCLUDED.revision`,
 		k.Type, k.SourceID, actorID, rev, removed).Error
 }
 
