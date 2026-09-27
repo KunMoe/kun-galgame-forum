@@ -17,6 +17,7 @@ import (
 	"kun-galgame-api/internal/trust/gate"
 	"kun-galgame-api/pkg/problem"
 	"kun-galgame-api/pkg/userclient"
+	"kun-galgame-api/pkg/utils"
 )
 
 func (s *Service) visibleResource(ctx context.Context, toolsetRaw, resourceRaw string) (*model.GalgameToolset, *model.GalgameToolsetResource, map[int]userclient.User, *problem.Problem) {
@@ -222,7 +223,7 @@ func (s *Service) updateToolsetResource(ctx context.Context, in *patchResourceIn
 			errs = append(errs, tooShort("/link_url", 1))
 		} else if utf8.RuneCountInString(url) > maxURL {
 			errs = append(errs, tooLong("/link_url", maxURL))
-		} else if !validDownloadLink(url) {
+		} else if !utils.IsDownloadLink(url) {
 			errs = append(errs, invalidFormat("/link_url", "must be a download link"))
 		} else {
 			fields["content"] = url
@@ -393,7 +394,7 @@ func resourceCreateErrors(body ToolsetResourceCreate) []problem.FieldError {
 			errs = append(errs, requiredField("/link_url"))
 		} else if utf8.RuneCountInString(*body.URL) > maxURL {
 			errs = append(errs, tooLong("/link_url", maxURL))
-		} else if !validDownloadLink(strings.TrimSpace(*body.URL)) {
+		} else if !utils.IsDownloadLink(strings.TrimSpace(*body.URL)) {
 			errs = append(errs, invalidFormat("/link_url", "must be a download link"))
 		}
 		if body.SizeLabel == nil {

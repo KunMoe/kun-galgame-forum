@@ -171,7 +171,7 @@ func (s *Service) updateGalgameResource(ctx context.Context, in *patchResourceIn
 	}
 	patch := in.Body
 	if patch.ResourceType == nil && patch.ResourceLanguages == nil && patch.ResourcePlatforms == nil &&
-		patch.ResourceRuntimes == nil && patch.Title == nil && patch.VersionLabel == nil &&
+		patch.ResourceRuntimes == nil && patch.Title == nil && !patch.VersionLabel.set &&
 		patch.Size == nil && patch.DownloadURLs == nil && patch.ExtractionCode == nil &&
 		patch.ArchivePassword == nil && patch.ContentMarkdown == nil && patch.State == nil {
 		out, p := s.one(ctx, row, user)
@@ -238,8 +238,8 @@ func (s *Service) updateGalgameResource(ctx context.Context, in *patchResourceIn
 			fields["title"] = t
 		}
 	}
-	if patch.VersionLabel != nil {
-		fields["version_label"] = versionStored(patch.VersionLabel)
+	if patch.VersionLabel.set {
+		fields["version_label"] = versionStored(patch.VersionLabel.value)
 	}
 	if patch.Size != nil {
 		size, serrs := validateSize(*patch.Size, "/size")

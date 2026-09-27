@@ -7803,7 +7803,7 @@ export interface components {
             state?: components["schemas"]["GalgameResourceState"];
             /** @description New title, a single line. Free text; never use it as a decision input. */
             title?: string;
-            /** @description New version token. null clears it. */
+            /** @description New version token. null clears it; leaving the field out keeps the stored one. */
             version_label?: components["schemas"]["VersionLabel"] | null;
         };
         /** @enum {string} */

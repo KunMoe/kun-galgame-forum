@@ -3,6 +3,7 @@ package utils
 import (
 	"fmt"
 	"net/url"
+	"regexp"
 	"strings"
 
 	"kun-galgame-api/pkg/errors"
@@ -11,15 +12,7 @@ import (
 	"github.com/gofiber/fiber/v3"
 )
 
-var validate = newValidator()
-
-func newValidator() *validator.Validate {
-	v := validator.New()
-	if err := v.RegisterValidation("downloadlink", isDownloadLink); err != nil {
-		panic(err)
-	}
-	return v
-}
+var validate = validator.New()
 
 // A download link is rendered straight into a KunLink `to`, so the scheme is an
 // allowlist rather than "anything net/url accepts": javascript: and data: both
@@ -31,17 +24,22 @@ var downloadLinkSchemes = map[string]bool{
 	"magnet": true, "ed2k": true, "thunder": true,
 }
 
+// net/url refuses every ed2k file link (invalid character "|" in host name),
+// so the ed2k the spec advertised was never accepted; it is matched by its
+// own format instead.
+var ed2kFileLink = regexp.MustCompile(`(?i)^ed2k://\|file\|[^|\r\n]+\|[0-9]+\|[0-9a-f]{32}\|(?:[^|\s]+\|)*/?$`)
+
 // go-playground's url tag rejects a URI whose Host, Opaque and Fragment are all
 // empty. A magnet URI is exactly that shape — everything lives in the query.
 // Uploaders substituted a full-width ？, which makes the tail Opaque and
 // validates, and produces a link no torrent client can use.
-func isDownloadLink(fl validator.FieldLevel) bool {
-	value := strings.TrimSpace(fl.Field().String())
-	if value == "" {
+func IsDownloadLink(raw string) bool {
+	value := strings.TrimSpace(raw)
+	if value == "" || strings.HasPrefix(value, "#") {
 		return false
 	}
-	if strings.HasPrefix(value, "#") {
-		return false
+	if ed2kFileLink.MatchString(value) {
+		return true
 	}
 	u, err := url.Parse(value)
 	if err != nil {
@@ -89,8 +87,6 @@ func translateFieldError(fe validator.FieldError) string {
 		return fmt.Sprintf("%s 长度不能大于 %s", field, fe.Param())
 	case "oneof":
 		return fmt.Sprintf("%s 的值必须是 %s 之一", field, fe.Param())
-	case "downloadlink":
-		return fmt.Sprintf("%s 不是有效的下载链接", field)
 	default:
 		return fmt.Sprintf("%s 验证失败", field)
 	}

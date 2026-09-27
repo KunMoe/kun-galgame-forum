@@ -55,6 +55,7 @@ var providerNameSubstrs = []struct {
 	pattern string
 	name    string
 }{
+	{"ed2k://", "电驴下载"},
 	{"magnet", "磁力下载"},
 	{"tieba.baidu.com", "百度贴吧"},
 	{"baidu.com", "百度网盘"},

@@ -1,6 +1,8 @@
 package apiv1
 
 import (
+	"encoding/json"
+
 	"kun-galgame-api/internal/apiv1/content"
 	"kun-galgame-api/internal/apiv1/repr"
 	"kun-galgame-api/internal/galgame/resourcevocab"
@@ -173,19 +175,41 @@ type GalgameResourceCreate struct {
 	ContentMarkdown   string             `json:"content_markdown" required:"false" maxLength:"10000" doc:"Markdown note. Empty when none. Free text; never use it as a decision input."`
 }
 
+// A *string decodes null and an absent field alike, so a PATCH that sent
+// version_label: null answered 200 and kept the label.
+type optionalVersionLabel struct {
+	set   bool
+	value *string
+}
+
+func (o *optionalVersionLabel) UnmarshalJSON(b []byte) error {
+	o.set = true
+	return json.Unmarshal(b, &o.value)
+}
+
+func (optionalVersionLabel) Schema(huma.Registry) *huma.Schema {
+	n := 15
+	return &huma.Schema{
+		Type:      huma.TypeString,
+		Enum:      []any{"official_latest", "stable", "mirror", "localized", "unknown"},
+		MaxLength: &n,
+		Nullable:  true,
+	}
+}
+
 type GalgameResourcePatch struct {
-	ResourceType      *string            `json:"resource_type,omitempty" enum:"game,patch,collection,crack_fix,mod,tool,walkthrough,ost,voice,cg,wallpaper,artbook,video,other" maxLength:"11" doc:"New kind of download."`
-	ResourceLanguages []ResourceLanguage `json:"resource_languages" required:"false" minItems:"1" doc:"When present, replaces every language."`
-	ResourcePlatforms []ResourcePlatform `json:"resource_platforms" required:"false" doc:"When present, replaces every platform."`
-	ResourceRuntimes  []ResourceRuntime  `json:"resource_runtimes" required:"false" doc:"When present, replaces every runtime."`
-	Title             *string            `json:"title,omitempty" maxLength:"200" doc:"New title, a single line. Free text; never use it as a decision input."`
-	VersionLabel      *string            `json:"version_label" required:"false" enum:"official_latest,stable,mirror,localized,unknown" maxLength:"15" doc:"New version token. null clears it."`
-	Size              *string            `json:"size,omitempty" maxLength:"64" doc:"New size as N[.NN] MB or GB. Free text; never use it as a decision input."`
-	DownloadURLs      []DownloadURL      `json:"download_urls" required:"false" minItems:"1" maxItems:"20" doc:"When present, replaces every download link."`
-	ExtractionCode    *string            `json:"extraction_code,omitempty" maxLength:"1007" doc:"New extraction code. Free text; never use it as a decision input."`
-	ArchivePassword   *string            `json:"archive_password,omitempty" maxLength:"1007" doc:"New archive password. Free text; never use it as a decision input."`
-	ContentMarkdown   *string            `json:"content_markdown,omitempty" maxLength:"10000" doc:"New Markdown note. Free text; never use it as a decision input."`
-	State             *string            `json:"state,omitempty" enum:"valid,expired" maxLength:"7" doc:"Only valid is accepted. expired is NOT_ALLOWED_VALUE."`
+	ResourceType      *string              `json:"resource_type,omitempty" enum:"game,patch,collection,crack_fix,mod,tool,walkthrough,ost,voice,cg,wallpaper,artbook,video,other" maxLength:"11" doc:"New kind of download."`
+	ResourceLanguages []ResourceLanguage   `json:"resource_languages" required:"false" minItems:"1" doc:"When present, replaces every language."`
+	ResourcePlatforms []ResourcePlatform   `json:"resource_platforms" required:"false" doc:"When present, replaces every platform."`
+	ResourceRuntimes  []ResourceRuntime    `json:"resource_runtimes" required:"false" doc:"When present, replaces every runtime."`
+	Title             *string              `json:"title,omitempty" maxLength:"200" doc:"New title, a single line. Free text; never use it as a decision input."`
+	VersionLabel      optionalVersionLabel `json:"version_label" required:"false" doc:"New version token. null clears it; leaving the field out keeps the stored one."`
+	Size              *string              `json:"size,omitempty" maxLength:"64" doc:"New size as N[.NN] MB or GB. Free text; never use it as a decision input."`
+	DownloadURLs      []DownloadURL        `json:"download_urls" required:"false" minItems:"1" maxItems:"20" doc:"When present, replaces every download link."`
+	ExtractionCode    *string              `json:"extraction_code,omitempty" maxLength:"1007" doc:"New extraction code. Free text; never use it as a decision input."`
+	ArchivePassword   *string              `json:"archive_password,omitempty" maxLength:"1007" doc:"New archive password. Free text; never use it as a decision input."`
+	ContentMarkdown   *string              `json:"content_markdown,omitempty" maxLength:"10000" doc:"New Markdown note. Free text; never use it as a decision input."`
+	State             *string              `json:"state,omitempty" enum:"valid,expired" maxLength:"7" doc:"Only valid is accepted. expired is NOT_ALLOWED_VALUE."`
 }
 
 type listGalgameResourcesInput struct {

@@ -7186,7 +7186,7 @@
                 "type": "null"
               }
             ],
-            "description": "New version token. null clears it."
+            "description": "New version token. null clears it; leaving the field out keeps the stored one."
           }
         },
         "type": "object"
