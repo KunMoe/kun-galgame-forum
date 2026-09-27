@@ -222,6 +222,48 @@ func TestWritePageKind10OlderRetractDoesNotDelete(t *testing.T) {
 	}
 }
 
+func TestWritePageKind10RetractDeletesReadRow(t *testing.T) {
+	db := testdb.Open(t)
+	ensureMirrorSchema(t, db)
+	repo := msgRepo.NewMessageRepository(db)
+	const nid int64 = 9_100_000_103
+	db.Exec("DELETE FROM message WHERE community_notification_id = ?", nid)
+	t.Cleanup(func() { db.Exec("DELETE FROM message WHERE community_notification_id = ?", nid) })
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		_ = json.NewEncoder(w).Encode(map[string]any{"code": 0, "data": map[string]any{"posts": []any{}}})
+	}))
+	t.Cleanup(srv.Close)
+	cli := communityclient.New(communityclient.Config{BaseURL: srv.URL, ClientID: "c", ClientSecret: "s"})
+	p := New(cli, repo, anchor.New(nil, nil), nil)
+
+	actor := int64(9)
+	note := communityclient.NotificationView{
+		ID: nid, UserID: 3, Kind: communityclient.InboxFolloweeActivity,
+		ActorID: &actor, ActorCount: 1, ItemCount: 1,
+		UpdatedAt: time.Now().UTC().Format(time.RFC3339), Seq: 10,
+		Activity: &communityclient.NotificationActivityView{
+			Title: "Read already", URL: "https://www.kungal.com/topic/1",
+		},
+	}
+	if err := p.writePage(context.Background(), []communityclient.NotificationView{note}); err != nil {
+		t.Fatalf("insert: %v", err)
+	}
+	if err := db.Exec(`UPDATE message SET status = 'read' WHERE community_notification_id = ?`, nid).Error; err != nil {
+		t.Fatal(err)
+	}
+	readAt := time.Now().UTC().Format(time.RFC3339)
+	note.Seq, note.ItemCount, note.Activity, note.ReadAt = 20, 0, nil, &readAt
+	if err := p.writePage(context.Background(), []communityclient.NotificationView{note}); err != nil {
+		t.Fatalf("retract: %v", err)
+	}
+	var n int64
+	db.Raw(`SELECT COUNT(*) FROM message WHERE community_notification_id = ?`, nid).Scan(&n)
+	if n != 0 {
+		t.Fatalf("a retraction of a read notification left %d rows", n)
+	}
+}
+
 func ensureMirrorSchema(t *testing.T, db *gorm.DB) {
 	t.Helper()
 	for _, stmt := range []string{

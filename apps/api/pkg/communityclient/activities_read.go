@@ -70,9 +70,9 @@ func (c *Client) ListFollowingActivities(ctx context.Context, userID int64, curs
 	return &out, err
 }
 
-func (c *Client) ListActivityGroupItems(ctx context.Context, groupID int64, cursor string, limit int, contentLimit string) (*ActivityItemListResponse, error) {
+func (c *Client) ListActivityGroupItems(ctx context.Context, groupID, viewerID int64, cursor string, limit int, contentLimit string) (*ActivityItemListResponse, error) {
 	var out ActivityItemListResponse
-	q := map[string]string{"cursor": cursor, "content_limit": contentLimit}
+	q := map[string]string{"viewer_id": itoa(viewerID), "cursor": cursor, "content_limit": contentLimit}
 	if limit > 0 {
 		q["limit"] = itoa(int64(limit))
 	}

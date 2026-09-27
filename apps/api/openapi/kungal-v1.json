@@ -629,6 +629,37 @@
         ],
         "type": "object"
       },
+      "ActivitySettings": {
+        "properties": {
+          "is_hidden": {
+            "description": "Whether the caller's activity is hidden from everyone else on every NextMoe site. false until the caller first sets it.",
+            "type": "boolean"
+          },
+          "object": {
+            "const": "activity_settings",
+            "description": "Type discriminant. Always activity_settings.",
+            "maxLength": 17,
+            "type": "string"
+          }
+        },
+        "required": [
+          "object",
+          "is_hidden"
+        ],
+        "type": "object"
+      },
+      "ActivitySettingsWrite": {
+        "properties": {
+          "is_hidden": {
+            "description": "true hides the caller's activity from everyone else; false shows it again.",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "is_hidden"
+        ],
+        "type": "object"
+      },
       "ActivitySort": {
         "enum": [
           "occurred_desc",
@@ -25424,7 +25455,7 @@
     },
     "/activity-groups/{group_id}/items": {
       "get": {
-        "description": "Every live item of one activity group, newest first. Unknown groups, and groups whose actor is not renderable, are NOT_FOUND. A page can be shorter than limit. The cursor is bound to include_nsfw.",
+        "description": "Every live item of one activity group, newest first. Unknown groups, groups whose actor is not renderable, and groups whose actor hides their activity (to anyone but that actor) are NOT_FOUND. A page can be shorter than limit. The cursor is bound to include_nsfw.",
         "operationId": "listActivityGroupItems",
         "parameters": [
           {
@@ -25498,6 +25529,26 @@
             },
             "description": "INVALID_CURSOR, LIMIT_TOO_LARGE or INVALID_PARAMETER."
           },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
           "404": {
             "content": {
               "application/problem+json": {
@@ -25529,6 +25580,15 @@
             "description": "SERVICE_UNAVAILABLE when the community service or the account service is unreachable."
           }
         },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          },
+          {}
+        ],
         "summary": "List every live item of an activity group",
         "tags": [
           "activities"
@@ -37207,6 +37267,194 @@
         ]
       }
     },
+    "/me/activity-settings": {
+      "get": {
+        "description": "The switch is stored by NextMoe community and shared by every NextMoe site.",
+        "operationId": "getActivitySettings",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActivitySettings"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the community service or the account service is unreachable."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get whether the caller hides their activity",
+        "tags": [
+          "activities"
+        ]
+      },
+      "put": {
+        "description": "While hidden, on every NextMoe site: the caller's groups leave every follower's following feed and unseen count, listActivityGroupItems answers NOT_FOUND for them to anyone but the caller, and publishing notifies no follower. Turning it on also withdraws every followee_activity_published notification the caller raised, read ones included. Turning it off shows the activity again at once; withdrawn notifications do not come back, and nothing published while hidden ever notifies. The caller's profile and their own view of their groups are unaffected.",
+        "operationId": "putActivitySettings",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ActivitySettingsWrite"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActivitySettings"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "413": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Request Entity Too Large"
+          },
+          "415": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unsupported Media Type"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED when is_hidden is missing or not a boolean."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the community service or the account service is unreachable."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Hide or show the caller's activity",
+        "tags": [
+          "activities"
+        ]
+      }
+    },
     "/me/answered-quizzes": {
       "get": {
         "description": "Lists quizzes the caller has an answerer row on, newest answer first. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED, and a failure of that lookup is SERVICE_UNAVAILABLE with nothing written. Quizzes whose author is not renderable are omitted from both items and total.",
@@ -39063,7 +39311,7 @@
     },
     "/me/following-activities": {
       "get": {
-        "description": "Groups of activity by accounts the caller follows, across NextMoe sites, newest group first. A group is one author's items of one verb and object_kind on one site on one Asia/Shanghai calendar day. A group whose actor is not renderable is dropped, so a page can be shorter than limit; next_cursor still comes from community, and only an absent next_cursor means the end. The cursor is bound to include_nsfw, verbs and sites.",
+        "description": "Groups of activity by accounts the caller follows, across NextMoe sites, newest group first. A group is one author's items of one verb and object_kind on one site on one Asia/Shanghai calendar day. Accounts that hide their activity are left out by community. A group whose actor is not renderable is dropped, so a page can be shorter than limit; next_cursor still comes from community, and only an absent next_cursor means the end. The cursor is bound to include_nsfw, verbs and sites.",
         "operationId": "listFollowingActivities",
         "parameters": [
           {
