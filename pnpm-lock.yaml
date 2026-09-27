@@ -130,22 +130,22 @@ importers:
         version: 0.38.2(@codemirror/commands@6.10.3)(@codemirror/language-data@6.5.2)(@codemirror/language@6.12.2)(@codemirror/state@6.6.0)(@codemirror/view@6.40.0)(@lezer/highlight@1.2.3)(@milkdown/kit@7.21.2(@codemirror/language@6.12.2)(@codemirror/state@6.6.0)(@codemirror/view@6.40.0)(typescript@5.9.3))(@milkdown/prose@7.21.2)(codemirror@6.0.2)(katex@0.16.40)
       '@kungal/editor-nuxt':
         specifier: 0.38.2
-        version: 0.38.2(f10a587e046584f139e7525193d7cd91)
+        version: 0.38.2(06131acd9e7b338c3ab0f53c0d999e8c)
       '@kungal/editor-vue':
         specifier: 0.38.2
         version: 0.38.2(@codemirror/commands@6.10.3)(@codemirror/lang-markdown@6.5.0)(@codemirror/language-data@6.5.2)(@codemirror/language@6.12.2)(@codemirror/state@6.6.0)(@codemirror/view@6.40.0)(@lezer/highlight@1.2.3)(@milkdown/kit@7.21.2(@codemirror/language@6.12.2)(@codemirror/state@6.6.0)(@codemirror/view@6.40.0)(typescript@5.9.3))(@milkdown/prose@7.21.2)(@milkdown/vue@7.21.2(@codemirror/language@6.12.2)(@codemirror/state@6.6.0)(@codemirror/view@6.40.0)(prosemirror-model@1.25.3)(prosemirror-state@1.4.4)(prosemirror-view@1.41.7)(typescript@5.9.3)(vue@3.5.35(typescript@5.9.3)))(codemirror@6.0.2)(katex@0.16.40)(vue@3.5.35(typescript@5.9.3))
       '@kungal/ui-core':
-        specifier: 2.50.1
-        version: 2.50.1
+        specifier: 2.51.0
+        version: 2.51.0
       '@kungal/ui-nuxt':
-        specifier: 2.50.1
-        version: 2.50.1(81015acf35160c0d483fda45966fa8ea)
+        specifier: 2.51.0
+        version: 2.51.0(81015acf35160c0d483fda45966fa8ea)
       '@kungal/ui-tokens':
-        specifier: 2.50.1
-        version: 2.50.1(tailwindcss@4.2.2)
+        specifier: 2.51.0
+        version: 2.51.0(tailwindcss@4.2.2)
       '@kungal/ui-vue':
-        specifier: 2.50.1
-        version: 2.50.1(change-case@5.4.4)(fuse.js@7.4.1)(sortablejs@1.15.7)(vue@3.5.35(typescript@5.9.3))
+        specifier: 2.51.0
+        version: 2.51.0(change-case@5.4.4)(fuse.js@7.4.1)(sortablejs@1.15.7)(vue@3.5.35(typescript@5.9.3))
       '@lezer/highlight':
         specifier: ^1.2.3
         version: 1.2.3
@@ -163,10 +163,10 @@ importers:
         version: 0.4.0
       '@nextmoe/edit-ui-nuxt':
         specifier: 0.4.0
-        version: 0.4.0(@kungal/ui-vue@2.50.1(change-case@5.4.4)(fuse.js@7.4.1)(sortablejs@1.15.7)(vue@3.5.35(typescript@5.9.3)))(change-case@5.4.4)(focus-trap@8.2.1)(fuse.js@7.4.1)(magicast@0.5.2)(nuxt@4.4.7(@babel/plugin-syntax-jsx@7.28.6(@babel/core@7.29.0))(@babel/plugin-syntax-typescript@7.28.6(@babel/core@7.29.0))(@electric-sql/pglite@0.3.15)(@parcel/watcher@2.5.6)(@types/node@25.5.0)(@vue/compiler-sfc@3.5.35)(cac@6.7.14)(db0@0.3.4(@electric-sql/pglite@0.3.15)(mysql2@3.15.3))(eslint@9.39.4(jiti@2.7.0))(ioredis@5.10.1)(lightningcss@1.32.0)(magicast@0.5.2)(mysql2@3.15.3)(optionator@0.9.4)(pinia@3.0.4(typescript@5.9.3)(vue@3.5.35(typescript@5.9.3)))(rollup-plugin-visualizer@7.0.1(rollup@4.61.1))(rollup@4.61.1)(sass@1.99.0)(terser@5.46.1)(tsx@4.21.0)(typescript@5.9.3)(vite@7.3.5(@types/node@25.5.0)(jiti@2.7.0)(lightningcss@1.32.0)(sass@1.99.0)(terser@5.46.1)(tsx@4.21.0)(yaml@2.8.3))(vue-tsc@3.3.1(typescript@5.9.3))(xml2js@0.6.2)(yaml@2.8.3))(vue@3.5.35(typescript@5.9.3))
+        version: 0.4.0(@kungal/ui-vue@2.51.0(change-case@5.4.4)(fuse.js@7.4.1)(sortablejs@1.15.7)(vue@3.5.35(typescript@5.9.3)))(change-case@5.4.4)(focus-trap@8.2.1)(fuse.js@7.4.1)(magicast@0.5.2)(nuxt@4.4.7(@babel/plugin-syntax-jsx@7.28.6(@babel/core@7.29.0))(@babel/plugin-syntax-typescript@7.28.6(@babel/core@7.29.0))(@electric-sql/pglite@0.3.15)(@parcel/watcher@2.5.6)(@types/node@25.5.0)(@vue/compiler-sfc@3.5.35)(cac@6.7.14)(db0@0.3.4(@electric-sql/pglite@0.3.15)(mysql2@3.15.3))(eslint@9.39.4(jiti@2.7.0))(ioredis@5.10.1)(lightningcss@1.32.0)(magicast@0.5.2)(mysql2@3.15.3)(optionator@0.9.4)(pinia@3.0.4(typescript@5.9.3)(vue@3.5.35(typescript@5.9.3)))(rollup-plugin-visualizer@7.0.1(rollup@4.61.1))(rollup@4.61.1)(sass@1.99.0)(terser@5.46.1)(tsx@4.21.0)(typescript@5.9.3)(vite@7.3.5(@types/node@25.5.0)(jiti@2.7.0)(lightningcss@1.32.0)(sass@1.99.0)(terser@5.46.1)(tsx@4.21.0)(yaml@2.8.3))(vue-tsc@3.3.1(typescript@5.9.3))(xml2js@0.6.2)(yaml@2.8.3))(vue@3.5.35(typescript@5.9.3))
       '@nextmoe/edit-ui-vue':
         specifier: 0.4.0
-        version: 0.4.0(@kungal/ui-vue@2.50.1(change-case@5.4.4)(fuse.js@7.4.1)(sortablejs@1.15.7)(vue@3.5.35(typescript@5.9.3)))(change-case@5.4.4)(focus-trap@8.2.1)(fuse.js@7.4.1)(vue@3.5.35(typescript@5.9.3))
+        version: 0.4.0(@kungal/ui-vue@2.51.0(change-case@5.4.4)(fuse.js@7.4.1)(sortablejs@1.15.7)(vue@3.5.35(typescript@5.9.3)))(change-case@5.4.4)(focus-trap@8.2.1)(fuse.js@7.4.1)(vue@3.5.35(typescript@5.9.3))
       '@prosemirror-adapter/vue':
         specifier: ^0.4.6
         version: 0.4.6(vue@3.5.35(typescript@5.9.3))
@@ -191,6 +191,9 @@ importers:
       capture-website:
         specifier: ^5.1.0
         version: 5.1.0(typescript@5.9.3)
+      centrifuge:
+        specifier: ^5.7.4
+        version: 5.7.4
       codemirror:
         specifier: ^6.0.2
         version: 6.0.2
@@ -1393,22 +1396,22 @@ packages:
       codemirror:
         optional: true
 
-  '@kungal/ui-core@2.50.1':
-    resolution: {integrity: sha512-S5GGywY/tx5H2Od8WLghBEME3p5Od5kUJcMH656l28KlTNQMX8A6uMLIsCle1nOzcBTERbB+Grbjq7GE9EwWHw==}
+  '@kungal/ui-core@2.51.0':
+    resolution: {integrity: sha512-ce+NNBfwu+UDinv4Dr9Oo5QOwF8cK5iXHfxtuC2LeT2L/SXMjiOjcb56WRmbR/VNEz58MXC6lW3fGvhmvl9pfg==}
 
-  '@kungal/ui-nuxt@2.50.1':
-    resolution: {integrity: sha512-ryorWd26Roe/g7KwKbum/cLhLAJ4NAP4VQqxmUtrbVFZrATmxKX02tscen7NRfve2P6s90Ik2onTVMp6BdgM2A==}
+  '@kungal/ui-nuxt@2.51.0':
+    resolution: {integrity: sha512-1AyQlIzs1W6v0znIWdG5FKrTkwEABrhVBAaM34rL/9r4wmHMb8HFpq+LJjodPKz4XObrO/K5Ich31Q9uCEy11g==}
     peerDependencies:
       nuxt: ^4.0.0
       vue: ^3.5.0
 
-  '@kungal/ui-tokens@2.50.1':
-    resolution: {integrity: sha512-gkOG2nHLV9VuhWP4MdQT3Zyc2UCAalZX+/FnfuQOqBVOR5VatM+aVIXwfdMzI5HI5cP0kuRbyf1TCVpDHyHluA==}
+  '@kungal/ui-tokens@2.51.0':
+    resolution: {integrity: sha512-7fk/zzHdvihn+Co7ZGK68IkO+X84gETilHIh12UZvAVAJpcwkMieGn3lXntJ2KKvCGjuSgynY3VT/rTSl7kfZQ==}
     peerDependencies:
       tailwindcss: ^4.0.0
 
-  '@kungal/ui-vue@2.50.1':
-    resolution: {integrity: sha512-rIMSCQLLiH273mhuFbEgkwEFVecnKpW+cpgDhp/Kg1OFuTrp6DWuB18uIJo/UJzLSNX+hgeBDO5eGp3WmnwQtA==}
+  '@kungal/ui-vue@2.51.0':
+    resolution: {integrity: sha512-NdKjfnbTfQraJZmjU2AdlNyloDol2n8rPc69YsKYNfhQIwTm6ZWUkzAQC7xud7QJC2JT/0Fa6Z4cPUCFOVK6Ng==}
     peerDependencies:
       vue: ^3.5.0
 
@@ -2276,6 +2279,33 @@ packages:
     peerDependenciesMeta:
       vue:
         optional: true
+
+  '@protobufjs/aspromise@1.1.2':
+    resolution: {integrity: sha512-j+gKExEuLmKwvz3OgROXtrJ2UG2x8Ch2YZUxahh+s1F2HZ+wAceUNLkvy6zKCPVRkU++ZWQrdxsUeQXmcg4uoQ==}
+
+  '@protobufjs/base64@1.1.2':
+    resolution: {integrity: sha512-AZkcAA5vnN/v4PDqKyMR5lx7hZttPDgClv83E//FMNhR2TMcLUhfRUBHCmSl0oi9zMgDDqRUJkSxO3wm85+XLg==}
+
+  '@protobufjs/codegen@2.0.5':
+    resolution: {integrity: sha512-zgXFLzW3Ap33e6d0Wlj4MGIm6Ce8O89n/apUaGNB/jx+hw+ruWEp7EwGUshdLKVRCxZW12fp9r40E1mQrf/34g==}
+
+  '@protobufjs/eventemitter@1.1.1':
+    resolution: {integrity: sha512-vW1GmwMZNnL+gMRaovlh9yZX74kc+TTU3FObkkurpMaRtBfLP3ldjS9KQWlwZgraRE0+dheEEoAxdzcJQ8eXZg==}
+
+  '@protobufjs/fetch@1.1.1':
+    resolution: {integrity: sha512-GpptLrs57adMSuHi3VNj0mAF8dwh36LMaYF6XyJ6JMWlVsc+t42tm1HSEDmOs3A8fC9yyeisgLhsTVQokOZ0zw==}
+
+  '@protobufjs/float@1.0.2':
+    resolution: {integrity: sha512-Ddb+kVXlXst9d+R9PfTIxh1EdNkgoRe5tOX6t01f1lYWOvJnSPDBlG241QLzcyPdoNTsblLUdujGSE4RzrTZGQ==}
+
+  '@protobufjs/path@1.1.2':
+    resolution: {integrity: sha512-6JOcJ5Tm08dOHAbdR3GrvP+yUUfkjG5ePsHYczMFLq3ZmMkAD98cDgcT2iA1lJ9NVwFd4tH/iSSoe44YWkltEA==}
+
+  '@protobufjs/pool@1.1.0':
+    resolution: {integrity: sha512-0kELaGSIDBKvcgS4zkjz1PeddatrjYcmMWOlAuAPwAeccUrPHdUqo/J6LiymHHEiJT5NrF1UVwxY14f+fy4WQw==}
+
+  '@protobufjs/utf8@1.1.2':
+    resolution: {integrity: sha512-b1UQwcEZ4yCnMCD8DAL1VlbvBJE9/IX4FTIp7BG1xYpf29SLazLSrqUkj4w7Y5y7cCVP6E5tcqqcI0xemPkHug==}
 
   '@puppeteer/browsers@2.13.0':
     resolution: {integrity: sha512-46BZJYJjc/WwmKjsvDFykHtXrtomsCIrwYQPOP7VfMJoZY2bsDF9oROBABR3paDjDcmkUye1Pb1BqdcdiipaWA==}
@@ -3365,6 +3395,9 @@ packages:
 
   ccount@2.0.1:
     resolution: {integrity: sha512-eyrF0jiFpY+3drT6383f1qhkbGsLSifNAjA61IUjZjmLCWjItY6LB9ft9YhoDgwfmclB2zhu51Lc7+95b8NRAg==}
+
+  centrifuge@5.7.4:
+    resolution: {integrity: sha512-PnkJSS5uDPcdIDK4kkrgVCiT7RT+4xUTVjO9FfUjrUpOdPNKXgjfY+6gdG+RQKGSRP7AxP4NxCuFk0Eb4sjrWw==}
 
   chai@6.2.2:
     resolution: {integrity: sha512-NUPRluOfOiTKBKvWPtSD4PhFvWCqOi0BGStNWs57X9js7XGTprSmFoz5F0tWhR4WPjNeR9jXqdC7/UpSJTnlRg==}
@@ -5623,6 +5656,10 @@ packages:
 
   proto-list@1.2.4:
     resolution: {integrity: sha512-vtK/94akxsTMhe0/cbfpR+syPuszcuwhqVjJq26CuNDgFGj682oRBXOP5MJpv2r7JtE8MsiepGIqvvOTBwn2vA==}
+
+  protobufjs@7.6.6:
+    resolution: {integrity: sha512-dYDWdjSl5RNb7SgPxGQcRU+GtvP7s2fpkrY0r432PcOIaZ0/rBcxEZnQN67iJhFuQiVw754JDoPruPCNdGsbjg==}
+    engines: {node: '>=12.0.0'}
 
   proxy-agent@6.5.0:
     resolution: {integrity: sha512-TmatMXdr2KlRiA2CyDu8GqR8EjahTG3aY3nXjdzFyoZbmB8hrBsTyMezhULIXKnC0jpfjlmiZ3+EaCzoInSu/A==}
@@ -7901,11 +7938,11 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@kungal/editor-nuxt@0.38.2(f10a587e046584f139e7525193d7cd91)':
+  '@kungal/editor-nuxt@0.38.2(06131acd9e7b338c3ab0f53c0d999e8c)':
     dependencies:
       '@kungal/editor-core': 0.38.2(@codemirror/commands@6.10.3)(@codemirror/language-data@6.5.2)(@codemirror/language@6.12.2)(@codemirror/state@6.6.0)(@codemirror/view@6.40.0)(@lezer/highlight@1.2.3)(@milkdown/kit@7.21.2(@codemirror/language@6.12.2)(@codemirror/state@6.6.0)(@codemirror/view@6.40.0)(typescript@5.9.3))(@milkdown/prose@7.21.2)(codemirror@6.0.2)(katex@0.16.40)
       '@kungal/editor-vue': 0.38.2(@codemirror/commands@6.10.3)(@codemirror/lang-markdown@6.5.0)(@codemirror/language-data@6.5.2)(@codemirror/language@6.12.2)(@codemirror/state@6.6.0)(@codemirror/view@6.40.0)(@lezer/highlight@1.2.3)(@milkdown/kit@7.21.2(@codemirror/language@6.12.2)(@codemirror/state@6.6.0)(@codemirror/view@6.40.0)(typescript@5.9.3))(@milkdown/prose@7.21.2)(@milkdown/vue@7.21.2(@codemirror/language@6.12.2)(@codemirror/state@6.6.0)(@codemirror/view@6.40.0)(prosemirror-model@1.25.3)(prosemirror-state@1.4.4)(prosemirror-view@1.41.7)(typescript@5.9.3)(vue@3.5.35(typescript@5.9.3)))(codemirror@6.0.2)(katex@0.16.40)(vue@3.5.35(typescript@5.9.3))
-      '@kungal/ui-vue': 2.50.1(change-case@5.4.4)(fuse.js@7.4.1)(sortablejs@1.15.7)(vue@3.5.35(typescript@5.9.3))
+      '@kungal/ui-vue': 2.51.0(change-case@5.4.4)(fuse.js@7.4.1)(sortablejs@1.15.7)(vue@3.5.35(typescript@5.9.3))
       '@milkdown/kit': 7.21.2(@codemirror/language@6.12.2)(@codemirror/state@6.6.0)(@codemirror/view@6.40.0)(typescript@5.9.3)
       nuxt: 4.4.7(@babel/plugin-syntax-jsx@7.28.6(@babel/core@7.29.0))(@babel/plugin-syntax-typescript@7.28.6(@babel/core@7.29.0))(@electric-sql/pglite@0.3.15)(@parcel/watcher@2.5.6)(@types/node@25.5.0)(@vue/compiler-sfc@3.5.35)(cac@6.7.14)(db0@0.3.4(@electric-sql/pglite@0.3.15)(mysql2@3.15.3))(eslint@9.39.4(jiti@2.7.0))(ioredis@5.10.1)(lightningcss@1.32.0)(magicast@0.5.2)(mysql2@3.15.3)(optionator@0.9.4)(pinia@3.0.4(typescript@5.9.3)(vue@3.5.35(typescript@5.9.3)))(rollup-plugin-visualizer@7.0.1(rollup@4.61.1))(rollup@4.61.1)(sass@1.99.0)(terser@5.46.1)(tsx@4.21.0)(typescript@5.9.3)(vite@7.3.5(@types/node@25.5.0)(jiti@2.7.0)(lightningcss@1.32.0)(sass@1.99.0)(terser@5.46.1)(tsx@4.21.0)(yaml@2.8.3))(vue-tsc@3.3.1(typescript@5.9.3))(xml2js@0.6.2)(yaml@2.8.3)
       vue: 3.5.35(typescript@5.9.3)
@@ -7944,15 +7981,15 @@ snapshots:
       - katex
       - supports-color
 
-  '@kungal/ui-core@2.50.1':
+  '@kungal/ui-core@2.51.0':
     dependencies:
       clsx: 2.1.1
       tailwind-merge: 3.5.0
 
-  '@kungal/ui-nuxt@2.50.1(81015acf35160c0d483fda45966fa8ea)':
+  '@kungal/ui-nuxt@2.51.0(81015acf35160c0d483fda45966fa8ea)':
     dependencies:
-      '@kungal/ui-tokens': 2.50.1(tailwindcss@4.2.2)
-      '@kungal/ui-vue': 2.50.1(change-case@5.4.4)(fuse.js@7.4.1)(sortablejs@1.15.7)(vue@3.5.35(typescript@5.9.3))
+      '@kungal/ui-tokens': 2.51.0(tailwindcss@4.2.2)
+      '@kungal/ui-vue': 2.51.0(change-case@5.4.4)(fuse.js@7.4.1)(sortablejs@1.15.7)(vue@3.5.35(typescript@5.9.3))
       '@nuxt/icon': 2.2.3(magicast@0.5.2)(vite@7.3.5(@types/node@25.5.0)(jiti@2.7.0)(lightningcss@1.32.0)(sass@1.99.0)(terser@5.46.1)(tsx@4.21.0)(yaml@2.8.3))(vue@3.5.35(typescript@5.9.3))
       '@nuxt/image': 2.0.0(db0@0.3.4(@electric-sql/pglite@0.3.15)(mysql2@3.15.3))(ioredis@5.10.1)(magicast@0.5.2)
       '@nuxt/kit': 4.4.8(magicast@0.5.2)
@@ -7993,14 +8030,14 @@ snapshots:
       - uploadthing
       - vite
 
-  '@kungal/ui-tokens@2.50.1(tailwindcss@4.2.2)':
+  '@kungal/ui-tokens@2.51.0(tailwindcss@4.2.2)':
     dependencies:
       tailwindcss: 4.2.2
 
-  '@kungal/ui-vue@2.50.1(change-case@5.4.4)(fuse.js@7.4.1)(sortablejs@1.15.7)(vue@3.5.35(typescript@5.9.3))':
+  '@kungal/ui-vue@2.51.0(change-case@5.4.4)(fuse.js@7.4.1)(sortablejs@1.15.7)(vue@3.5.35(typescript@5.9.3))':
     dependencies:
       '@floating-ui/vue': 1.1.11(vue@3.5.35(typescript@5.9.3))
-      '@kungal/ui-core': 2.50.1
+      '@kungal/ui-core': 2.51.0
       '@vueuse/core': 14.3.0(vue@3.5.35(typescript@5.9.3))
       '@vueuse/integrations': 14.3.0(change-case@5.4.4)(focus-trap@8.2.1)(fuse.js@7.4.1)(sortablejs@1.15.7)(vue@3.5.35(typescript@5.9.3))
       date-fns: 4.1.0
@@ -8454,11 +8491,11 @@ snapshots:
     dependencies:
       diff: 9.0.0
 
-  '@nextmoe/edit-ui-nuxt@0.4.0(@kungal/ui-vue@2.50.1(change-case@5.4.4)(fuse.js@7.4.1)(sortablejs@1.15.7)(vue@3.5.35(typescript@5.9.3)))(change-case@5.4.4)(focus-trap@8.2.1)(fuse.js@7.4.1)(magicast@0.5.2)(nuxt@4.4.7(@babel/plugin-syntax-jsx@7.28.6(@babel/core@7.29.0))(@babel/plugin-syntax-typescript@7.28.6(@babel/core@7.29.0))(@electric-sql/pglite@0.3.15)(@parcel/watcher@2.5.6)(@types/node@25.5.0)(@vue/compiler-sfc@3.5.35)(cac@6.7.14)(db0@0.3.4(@electric-sql/pglite@0.3.15)(mysql2@3.15.3))(eslint@9.39.4(jiti@2.7.0))(ioredis@5.10.1)(lightningcss@1.32.0)(magicast@0.5.2)(mysql2@3.15.3)(optionator@0.9.4)(pinia@3.0.4(typescript@5.9.3)(vue@3.5.35(typescript@5.9.3)))(rollup-plugin-visualizer@7.0.1(rollup@4.61.1))(rollup@4.61.1)(sass@1.99.0)(terser@5.46.1)(tsx@4.21.0)(typescript@5.9.3)(vite@7.3.5(@types/node@25.5.0)(jiti@2.7.0)(lightningcss@1.32.0)(sass@1.99.0)(terser@5.46.1)(tsx@4.21.0)(yaml@2.8.3))(vue-tsc@3.3.1(typescript@5.9.3))(xml2js@0.6.2)(yaml@2.8.3))(vue@3.5.35(typescript@5.9.3))':
+  '@nextmoe/edit-ui-nuxt@0.4.0(@kungal/ui-vue@2.51.0(change-case@5.4.4)(fuse.js@7.4.1)(sortablejs@1.15.7)(vue@3.5.35(typescript@5.9.3)))(change-case@5.4.4)(focus-trap@8.2.1)(fuse.js@7.4.1)(magicast@0.5.2)(nuxt@4.4.7(@babel/plugin-syntax-jsx@7.28.6(@babel/core@7.29.0))(@babel/plugin-syntax-typescript@7.28.6(@babel/core@7.29.0))(@electric-sql/pglite@0.3.15)(@parcel/watcher@2.5.6)(@types/node@25.5.0)(@vue/compiler-sfc@3.5.35)(cac@6.7.14)(db0@0.3.4(@electric-sql/pglite@0.3.15)(mysql2@3.15.3))(eslint@9.39.4(jiti@2.7.0))(ioredis@5.10.1)(lightningcss@1.32.0)(magicast@0.5.2)(mysql2@3.15.3)(optionator@0.9.4)(pinia@3.0.4(typescript@5.9.3)(vue@3.5.35(typescript@5.9.3)))(rollup-plugin-visualizer@7.0.1(rollup@4.61.1))(rollup@4.61.1)(sass@1.99.0)(terser@5.46.1)(tsx@4.21.0)(typescript@5.9.3)(vite@7.3.5(@types/node@25.5.0)(jiti@2.7.0)(lightningcss@1.32.0)(sass@1.99.0)(terser@5.46.1)(tsx@4.21.0)(yaml@2.8.3))(vue-tsc@3.3.1(typescript@5.9.3))(xml2js@0.6.2)(yaml@2.8.3))(vue@3.5.35(typescript@5.9.3))':
     dependencies:
-      '@kungal/ui-vue': 2.50.1(change-case@5.4.4)(fuse.js@7.4.1)(sortablejs@1.15.7)(vue@3.5.35(typescript@5.9.3))
+      '@kungal/ui-vue': 2.51.0(change-case@5.4.4)(fuse.js@7.4.1)(sortablejs@1.15.7)(vue@3.5.35(typescript@5.9.3))
       '@nextmoe/edit-ui-core': 0.4.0
-      '@nextmoe/edit-ui-vue': 0.4.0(@kungal/ui-vue@2.50.1(change-case@5.4.4)(fuse.js@7.4.1)(sortablejs@1.15.7)(vue@3.5.35(typescript@5.9.3)))(change-case@5.4.4)(focus-trap@8.2.1)(fuse.js@7.4.1)(vue@3.5.35(typescript@5.9.3))
+      '@nextmoe/edit-ui-vue': 0.4.0(@kungal/ui-vue@2.51.0(change-case@5.4.4)(fuse.js@7.4.1)(sortablejs@1.15.7)(vue@3.5.35(typescript@5.9.3)))(change-case@5.4.4)(focus-trap@8.2.1)(fuse.js@7.4.1)(vue@3.5.35(typescript@5.9.3))
       '@nuxt/kit': 4.4.8(magicast@0.5.2)
       nuxt: 4.4.7(@babel/plugin-syntax-jsx@7.28.6(@babel/core@7.29.0))(@babel/plugin-syntax-typescript@7.28.6(@babel/core@7.29.0))(@electric-sql/pglite@0.3.15)(@parcel/watcher@2.5.6)(@types/node@25.5.0)(@vue/compiler-sfc@3.5.35)(cac@6.7.14)(db0@0.3.4(@electric-sql/pglite@0.3.15)(mysql2@3.15.3))(eslint@9.39.4(jiti@2.7.0))(ioredis@5.10.1)(lightningcss@1.32.0)(magicast@0.5.2)(mysql2@3.15.3)(optionator@0.9.4)(pinia@3.0.4(typescript@5.9.3)(vue@3.5.35(typescript@5.9.3)))(rollup-plugin-visualizer@7.0.1(rollup@4.61.1))(rollup@4.61.1)(sass@1.99.0)(terser@5.46.1)(tsx@4.21.0)(typescript@5.9.3)(vite@7.3.5(@types/node@25.5.0)(jiti@2.7.0)(lightningcss@1.32.0)(sass@1.99.0)(terser@5.46.1)(tsx@4.21.0)(yaml@2.8.3))(vue-tsc@3.3.1(typescript@5.9.3))(xml2js@0.6.2)(yaml@2.8.3)
       vue: 3.5.35(typescript@5.9.3)
@@ -8476,9 +8513,9 @@ snapshots:
       - qrcode
       - universal-cookie
 
-  '@nextmoe/edit-ui-vue@0.4.0(@kungal/ui-vue@2.50.1(change-case@5.4.4)(fuse.js@7.4.1)(sortablejs@1.15.7)(vue@3.5.35(typescript@5.9.3)))(change-case@5.4.4)(focus-trap@8.2.1)(fuse.js@7.4.1)(vue@3.5.35(typescript@5.9.3))':
+  '@nextmoe/edit-ui-vue@0.4.0(@kungal/ui-vue@2.51.0(change-case@5.4.4)(fuse.js@7.4.1)(sortablejs@1.15.7)(vue@3.5.35(typescript@5.9.3)))(change-case@5.4.4)(focus-trap@8.2.1)(fuse.js@7.4.1)(vue@3.5.35(typescript@5.9.3))':
     dependencies:
-      '@kungal/ui-vue': 2.50.1(change-case@5.4.4)(fuse.js@7.4.1)(sortablejs@1.15.7)(vue@3.5.35(typescript@5.9.3))
+      '@kungal/ui-vue': 2.51.0(change-case@5.4.4)(fuse.js@7.4.1)(sortablejs@1.15.7)(vue@3.5.35(typescript@5.9.3))
       '@nextmoe/edit-ui-core': 0.4.0
       '@vueuse/core': 14.3.0(vue@3.5.35(typescript@5.9.3))
       '@vueuse/integrations': 14.3.0(change-case@5.4.4)(focus-trap@8.2.1)(fuse.js@7.4.1)(sortablejs@1.15.7)(vue@3.5.35(typescript@5.9.3))
@@ -9373,6 +9410,26 @@ snapshots:
       prosemirror-view: 1.41.7
     optionalDependencies:
       vue: 3.5.35(typescript@5.9.3)
+
+  '@protobufjs/aspromise@1.1.2': {}
+
+  '@protobufjs/base64@1.1.2': {}
+
+  '@protobufjs/codegen@2.0.5': {}
+
+  '@protobufjs/eventemitter@1.1.1': {}
+
+  '@protobufjs/fetch@1.1.1':
+    dependencies:
+      '@protobufjs/aspromise': 1.1.2
+
+  '@protobufjs/float@1.0.2': {}
+
+  '@protobufjs/path@1.1.2': {}
+
+  '@protobufjs/pool@1.1.0': {}
+
+  '@protobufjs/utf8@1.1.2': {}
 
   '@puppeteer/browsers@2.13.0':
     dependencies:
@@ -10436,6 +10493,11 @@ snapshots:
       - utf-8-validate
 
   ccount@2.0.1: {}
+
+  centrifuge@5.7.4:
+    dependencies:
+      events: 3.3.0
+      protobufjs: 7.6.6
 
   chai@6.2.2: {}
 
@@ -11829,8 +11891,7 @@ snapshots:
 
   lodash@4.17.23: {}
 
-  long@5.3.2:
-    optional: true
+  long@5.3.2: {}
 
   longest-streak@3.1.0: {}
 
@@ -13191,6 +13252,20 @@ snapshots:
       prosemirror-view: 1.41.7
 
   proto-list@1.2.4: {}
+
+  protobufjs@7.6.6:
+    dependencies:
+      '@protobufjs/aspromise': 1.1.2
+      '@protobufjs/base64': 1.1.2
+      '@protobufjs/codegen': 2.0.5
+      '@protobufjs/eventemitter': 1.1.1
+      '@protobufjs/fetch': 1.1.1
+      '@protobufjs/float': 1.0.2
+      '@protobufjs/path': 1.1.2
+      '@protobufjs/pool': 1.1.0
+      '@protobufjs/utf8': 1.1.2
+      '@types/node': 25.5.0
+      long: 5.3.2
 
   proxy-agent@6.5.0:
     dependencies:

@@ -136,7 +136,7 @@ onMounted(() => {
             size="xs"
             color="default"
             class-name="gap-1"
-            :href="`/message/user/${profile.id}`"
+            :href="directMessagePath(profile.id)"
           >
             <KunIcon name="lucide:message-circle" />
             私聊

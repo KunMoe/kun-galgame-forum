@@ -2,7 +2,17 @@
 import type { Conversation } from '#shared/utils/api/schemas'
 
 definePageMeta({
-  middleware: 'auth'
+  middleware: [
+    'auth',
+    (to) => {
+      if (useRuntimeConfig().public.chatEnabled) {
+        return navigateTo(
+          { path: '/messages', query: { to: String(to.params.id) } },
+          { replace: true }
+        )
+      }
+    }
+  ]
 })
 
 const route = useRoute()

@@ -66,6 +66,7 @@ const persist = async () => {
         await load()
         return
       }
+      useChatStore().muted = !enabled.chat
     } while (queued)
   } finally {
     isSaving.value = false

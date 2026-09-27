@@ -89,7 +89,7 @@ useIntersectionObserver(
               size="xs"
               color="primary"
               class-name="gap-1"
-              :href="`/message/user/${user.id}`"
+              :href="directMessagePath(user.id)"
             >
               <KunIcon name="lucide:message-circle" />
               私聊

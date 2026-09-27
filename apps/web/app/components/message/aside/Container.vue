@@ -1,12 +1,11 @@
 <script setup lang="ts">
-import type { Conversation, NotificationSummary } from '#shared/utils/api/schemas'
-import { useCursorList } from '~/composables/useCursorList'
+import type { NotificationSummary } from '#shared/utils/api/schemas'
 import MessageAsideNoticeItem from '~/components/message/aside/NoticeItem.vue'
 
 const routeName = computed(() => useRoute().name)
+const chatEnabled = useRuntimeConfig().public.chatEnabled
 
 const noticeEpoch = useState('message-notice-epoch', () => 0)
-const conversationEpoch = useState('message-conversation-epoch', () => 0)
 
 const { data: summary, refresh: refreshSummary } = await useApi<NotificationSummary>(
   'me-notification-summary',
@@ -15,30 +14,6 @@ const { data: summary, refresh: refreshSummary } = await useApi<NotificationSumm
 
 watch(noticeEpoch, () => {
   void refreshSummary()
-})
-
-const {
-  items: conversations,
-  hasMore,
-  loadingMore,
-  loadMore,
-  refresh: refreshConversations
-} = await useCursorList<Conversation>(
-  'me-conversations',
-  (api, cursor, { signal }) =>
-    api.GET('/me/conversations', {
-      params: {
-        query: {
-          limit: 50,
-          ...(cursor ? { cursor } : {})
-        }
-      },
-      signal
-    })
-)
-
-watch(conversationEpoch, () => {
-  void refreshConversations()
 })
 </script>
 
@@ -61,22 +36,8 @@ watch(conversationEpoch, () => {
 
     <MessageAsideMutedItem :summary="summary" />
 
-    <MessageAsideItem
-      v-for="conversation in conversations"
-      :key="conversation.id"
-      :conversation="conversation"
-    />
-
-    <div v-if="hasMore" class="flex justify-center">
-      <KunButton
-        variant="light"
-        size="sm"
-        :loading="loadingMore"
-        @click="loadMore"
-      >
-        加载更多
-      </KunButton>
-    </div>
+    <MessageAsideChatItem v-if="chatEnabled" />
+    <MessageAsideConversations v-else />
 
     <div class="block p-2 sm:hidden">
       <h2 class="text-lg">提示</h2>

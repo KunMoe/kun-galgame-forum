@@ -13,7 +13,11 @@ export default withNuxt(
       'server/**/*.{ts,vue}',
       'shared/**/*.{ts,vue}'
     ],
-    ignores: ['shared/utils/api/client.ts', 'shared/types/api/**'],
+    ignores: [
+      'shared/utils/api/client.ts',
+      'shared/utils/api/chat.ts',
+      'shared/types/api/**'
+    ],
     rules: {
       'no-restricted-syntax': [
         'error',

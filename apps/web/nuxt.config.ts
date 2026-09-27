@@ -71,6 +71,11 @@ export default defineNuxtConfig({
       // pages must not advertise a 1200x630 og:image the /og routes cannot actually produce.
       ogCardEnabled: false,
 
+      // NUXT_PUBLIC_CHAT_ENABLED: direct messages on NextMoe chat (/messages).
+      // Flips with the API's KUN_CHAT_ENABLED; the compose feeds both from one
+      // panel variable.
+      chatEnabled: false,
+
       KUN_GALGAME_URL: process.env.KUN_GALGAME_URL,
       KUN_VISUAL_NOVEL_FORUM_YANDEX_VERIFICATION:
         process.env.KUN_VISUAL_NOVEL_FORUM_YANDEX_VERIFICATION,

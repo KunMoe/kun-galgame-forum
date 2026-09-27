@@ -4,6 +4,8 @@ const { showKUNGalgamePanel, messageStatus } = storeToRefs(
   useTempSettingStore()
 )
 
+const chat = useChatStore()
+
 const { open: openAuthModal } = useAuthModal()
 
 const userMenu = ref<{ close: () => void } | null>(null)
@@ -11,7 +13,7 @@ const userMenu = ref<{ close: () => void } | null>(null)
 const statusClasses = computed(() => {
   if (messageStatus.value === 'admin') {
     return 'bg-danger'
-  } else if (messageStatus.value === 'new') {
+  } else if (messageStatus.value === 'new' || chat.hasUnread) {
     return 'bg-secondary'
   } else if (messageStatus.value === 'online') {
     return 'bg-success'

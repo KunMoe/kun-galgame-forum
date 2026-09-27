@@ -52,8 +52,10 @@ const buildAuthorizeUrl = async (
     // sessions.scope repaired 95,286 live sessions inside the 15-minute access
     // token TTL, nobody logged out — so a narrow grant is a message to send
     // infra, not a forced re-login for everyone.
+    // chat:read / chat:write are what NextMoe chat demands of every call the
+    // /api/v1/chat relay forwards; without them /messages asks to log in again.
     scope:
-      'openid profile preferences catalog:read catalog:edit playtime:read playtime:write folder:read folder:write',
+      'openid profile preferences catalog:read catalog:edit playtime:read playtime:write folder:read folder:write chat:read chat:write',
     state,
     code_challenge: codeChallenge,
     code_challenge_method: 'S256'

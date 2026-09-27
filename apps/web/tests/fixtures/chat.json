@@ -1,0 +1,747 @@
+{
+  "_source": "Captured 2026-09-27 from the local NextMoe chat service (infra origin/main) through the forum relay, viewer = user 2. Real shapes; do not hand-edit fields.",
+  "conversation": {
+    "object": "conversation",
+    "id": "3",
+    "kind": "direct",
+    "title": null,
+    "about": null,
+    "photo_image_hash": null,
+    "peer_id": "1",
+    "member_count": 2,
+    "last_seq": 8,
+    "peer_read_seq": 8,
+    "created_at": "2026-09-27T08:59:52.897325-07:00",
+    "me": {
+      "role": "member",
+      "accepted": true,
+      "last_read_seq": 8,
+      "unread_count": 0,
+      "marked_unread": false,
+      "cleared_through_seq": 0,
+      "visible_from_seq": 1,
+      "muted_until": null,
+      "archived": false,
+      "pinned_rank": null,
+      "draft": null
+    },
+    "last_message": {
+      "object": "message",
+      "id": "22",
+      "conversation_id": "3",
+      "seq": 8,
+      "sender_id": "1",
+      "kind": "message",
+      "text": "附一张图",
+      "entities": [],
+      "media": {
+        "type": "photo",
+        "image_hash": "89d93e860685d729c178a39f1d83db8103e47b71c06c70793bab51e2be04127a",
+        "width": 64,
+        "height": 48,
+        "thumbhash": "npsCBYBcX1aHiHiIeHh3dw+EiPdX"
+      },
+      "media_group_id": null,
+      "reply_to": null,
+      "reply_quote": null,
+      "service_action": null,
+      "context": null,
+      "reactions": [],
+      "client_message_id": null,
+      "silent": false,
+      "pinned_at": null,
+      "edited_at": null,
+      "created_at": "2026-09-27T09:02:47.141877-07:00"
+    }
+  },
+  "conversationPage": {
+    "object": "list",
+    "items": [
+      {
+        "object": "conversation",
+        "id": "3",
+        "kind": "direct",
+        "title": null,
+        "about": null,
+        "photo_image_hash": null,
+        "peer_id": "1",
+        "member_count": 2,
+        "last_seq": 8,
+        "peer_read_seq": 8,
+        "created_at": "2026-09-27T08:59:52.897325-07:00",
+        "me": {
+          "role": "member",
+          "accepted": true,
+          "last_read_seq": 8,
+          "unread_count": 0,
+          "marked_unread": false,
+          "cleared_through_seq": 0,
+          "visible_from_seq": 1,
+          "muted_until": null,
+          "archived": false,
+          "pinned_rank": null,
+          "draft": null
+        },
+        "last_message": {
+          "object": "message",
+          "id": "22",
+          "conversation_id": "3",
+          "seq": 8,
+          "sender_id": "1",
+          "kind": "message",
+          "text": "附一张图",
+          "entities": [],
+          "media": {
+            "type": "photo",
+            "image_hash": "89d93e860685d729c178a39f1d83db8103e47b71c06c70793bab51e2be04127a",
+            "width": 64,
+            "height": 48,
+            "thumbhash": "npsCBYBcX1aHiHiIeHh3dw+EiPdX"
+          },
+          "media_group_id": null,
+          "reply_to": null,
+          "reply_quote": null,
+          "service_action": null,
+          "context": null,
+          "reactions": [],
+          "client_message_id": null,
+          "silent": false,
+          "pinned_at": null,
+          "edited_at": null,
+          "created_at": "2026-09-27T09:02:47.141877-07:00"
+        }
+      }
+    ],
+    "users": [
+      {
+        "object": "user",
+        "id": "1",
+        "name": "kun",
+        "avatar": "https://image.kungal.com/avatar/user_1/avatar.webp",
+        "deleted": false
+      }
+    ]
+  },
+  "detail": {
+    "object": "conversation",
+    "id": "3",
+    "kind": "direct",
+    "title": null,
+    "about": null,
+    "photo_image_hash": null,
+    "peer_id": "1",
+    "member_count": 2,
+    "last_seq": 8,
+    "peer_read_seq": 8,
+    "created_at": "2026-09-27T08:59:52.897325-07:00",
+    "me": {
+      "role": "member",
+      "accepted": true,
+      "last_read_seq": 8,
+      "unread_count": 0,
+      "marked_unread": false,
+      "cleared_through_seq": 0,
+      "visible_from_seq": 1,
+      "muted_until": null,
+      "archived": false,
+      "pinned_rank": null,
+      "draft": null
+    },
+    "last_message": {
+      "object": "message",
+      "id": "22",
+      "conversation_id": "3",
+      "seq": 8,
+      "sender_id": "1",
+      "kind": "message",
+      "text": "附一张图",
+      "entities": [],
+      "media": {
+        "type": "photo",
+        "image_hash": "89d93e860685d729c178a39f1d83db8103e47b71c06c70793bab51e2be04127a",
+        "width": 64,
+        "height": 48,
+        "thumbhash": "npsCBYBcX1aHiHiIeHh3dw+EiPdX"
+      },
+      "media_group_id": null,
+      "reply_to": null,
+      "reply_quote": null,
+      "service_action": null,
+      "context": null,
+      "reactions": [],
+      "client_message_id": null,
+      "silent": false,
+      "pinned_at": null,
+      "edited_at": null,
+      "created_at": "2026-09-27T09:02:47.141877-07:00"
+    },
+    "members": [
+      {
+        "user_id": "1",
+        "role": "member",
+        "joined_at": "2026-09-27T08:59:52.897325-07:00"
+      },
+      {
+        "user_id": "2",
+        "role": "member",
+        "joined_at": "2026-09-27T08:59:52.897325-07:00"
+      }
+    ],
+    "pinned_seqs": [1],
+    "pinned_messages": [
+      {
+        "object": "message",
+        "id": "13",
+        "conversation_id": "3",
+        "seq": 1,
+        "sender_id": "1",
+        "kind": "message",
+        "text": "你好，这是第一条私信",
+        "entities": [],
+        "media": null,
+        "media_group_id": null,
+        "reply_to": null,
+        "reply_quote": null,
+        "service_action": null,
+        "context": null,
+        "reactions": [],
+        "client_message_id": null,
+        "silent": false,
+        "pinned_at": "2026-09-27T09:01:09.04544-07:00",
+        "edited_at": null,
+        "created_at": "2026-09-27T08:59:52.983262-07:00"
+      }
+    ],
+    "users": [
+      {
+        "object": "user",
+        "id": "1",
+        "name": "kun",
+        "avatar": "https://image.kungal.com/avatar/user_1/avatar.webp",
+        "deleted": false
+      },
+      {
+        "object": "user",
+        "id": "2",
+        "name": "鲲",
+        "avatar": "https://image.kungal.com/avatar/user_2/avatar.webp",
+        "deleted": false
+      }
+    ]
+  },
+  "messagePage": {
+    "object": "list",
+    "items": [
+      {
+        "object": "message",
+        "id": "17",
+        "conversation_id": "3",
+        "seq": 5,
+        "sender_id": "2",
+        "kind": "message",
+        "text": "这是一条回复",
+        "entities": [],
+        "media": null,
+        "media_group_id": null,
+        "reply_to": {
+          "seq": 2,
+          "sender_id": "1",
+          "text": "第二条（已编辑）",
+          "entities": [],
+          "media_type": null,
+          "deleted": false
+        },
+        "reply_quote": null,
+        "service_action": null,
+        "context": null,
+        "reactions": [],
+        "client_message_id": "bb532449-a24b-491d-832e-b749b8e3ebcc",
+        "silent": false,
+        "pinned_at": null,
+        "edited_at": null,
+        "created_at": "2026-09-27T09:01:10.282961-07:00"
+      },
+      {
+        "object": "message",
+        "id": "18",
+        "conversation_id": "3",
+        "seq": 6,
+        "sender_id": "1",
+        "kind": "message",
+        "text": "离线时的消息1（改）",
+        "entities": [],
+        "media": null,
+        "media_group_id": null,
+        "reply_to": null,
+        "reply_quote": null,
+        "service_action": null,
+        "context": null,
+        "reactions": [],
+        "client_message_id": null,
+        "silent": false,
+        "pinned_at": null,
+        "edited_at": "2026-09-27T09:01:14.998022-07:00",
+        "created_at": "2026-09-27T09:01:13.412882-07:00"
+      },
+      {
+        "object": "message",
+        "id": "22",
+        "conversation_id": "3",
+        "seq": 8,
+        "sender_id": "1",
+        "kind": "message",
+        "text": "附一张图",
+        "entities": [],
+        "media": {
+          "type": "photo",
+          "image_hash": "89d93e860685d729c178a39f1d83db8103e47b71c06c70793bab51e2be04127a",
+          "width": 64,
+          "height": 48,
+          "thumbhash": "npsCBYBcX1aHiHiIeHh3dw+EiPdX"
+        },
+        "media_group_id": null,
+        "reply_to": null,
+        "reply_quote": null,
+        "service_action": null,
+        "context": null,
+        "reactions": [],
+        "client_message_id": null,
+        "silent": false,
+        "pinned_at": null,
+        "edited_at": null,
+        "created_at": "2026-09-27T09:02:47.141877-07:00"
+      }
+    ],
+    "users": [
+      {
+        "object": "user",
+        "id": "1",
+        "name": "kun",
+        "avatar": "https://image.kungal.com/avatar/user_1/avatar.webp",
+        "deleted": false
+      },
+      {
+        "object": "user",
+        "id": "2",
+        "name": "鲲",
+        "avatar": "https://image.kungal.com/avatar/user_2/avatar.webp",
+        "deleted": false
+      }
+    ],
+    "has_more_before": true,
+    "has_more_after": false
+  },
+  "updatesPage": {
+    "object": "update_list",
+    "updates": [
+      {
+        "object": "update",
+        "update_seq": 1,
+        "kind": "new_message",
+        "conversation_id": "3",
+        "data": {
+          "seq": 1
+        },
+        "created_at": "2026-09-27T08:59:52.983262-07:00"
+      },
+      {
+        "object": "update",
+        "update_seq": 2,
+        "kind": "read_inbox",
+        "conversation_id": "3",
+        "data": {
+          "max_seq": 1,
+          "unread_count": 0
+        },
+        "created_at": "2026-09-27T08:59:58.576528-07:00"
+      },
+      {
+        "object": "update",
+        "update_seq": 3,
+        "kind": "dialog",
+        "conversation_id": "3",
+        "data": {
+          "accepted": true
+        },
+        "created_at": "2026-09-27T08:59:59.613503-07:00"
+      },
+      {
+        "object": "update",
+        "update_seq": 4,
+        "kind": "new_message",
+        "conversation_id": "3",
+        "data": {
+          "seq": 2
+        },
+        "created_at": "2026-09-27T09:00:01.169463-07:00"
+      },
+      {
+        "object": "update",
+        "update_seq": 5,
+        "kind": "read_inbox",
+        "conversation_id": "3",
+        "data": {
+          "max_seq": 2,
+          "unread_count": 0
+        },
+        "created_at": "2026-09-27T09:00:01.216555-07:00"
+      },
+      {
+        "object": "update",
+        "update_seq": 6,
+        "kind": "new_message",
+        "conversation_id": "3",
+        "data": {
+          "seq": 3
+        },
+        "created_at": "2026-09-27T09:00:03.791569-07:00"
+      },
+      {
+        "object": "update",
+        "update_seq": 7,
+        "kind": "read_outbox",
+        "conversation_id": "3",
+        "data": {
+          "max_seq": 3
+        },
+        "created_at": "2026-09-27T09:00:03.837175-07:00"
+      },
+      {
+        "object": "update",
+        "update_seq": 8,
+        "kind": "message_reactions",
+        "conversation_id": "3",
+        "data": {
+          "seq": 2
+        },
+        "created_at": "2026-09-27T09:01:08.949291-07:00"
+      }
+    ],
+    "messages": [
+      {
+        "object": "message",
+        "id": "13",
+        "conversation_id": "3",
+        "seq": 1,
+        "sender_id": "1",
+        "kind": "message",
+        "text": "你好，这是第一条私信",
+        "entities": [],
+        "media": null,
+        "media_group_id": null,
+        "reply_to": null,
+        "reply_quote": null,
+        "service_action": null,
+        "context": null,
+        "reactions": [],
+        "client_message_id": null,
+        "silent": false,
+        "pinned_at": "2026-09-27T09:01:09.04544-07:00",
+        "edited_at": null,
+        "created_at": "2026-09-27T08:59:52.983262-07:00"
+      },
+      {
+        "object": "message",
+        "id": "14",
+        "conversation_id": "3",
+        "seq": 2,
+        "sender_id": "1",
+        "kind": "message",
+        "text": "第二条（已编辑）",
+        "entities": [],
+        "media": null,
+        "media_group_id": null,
+        "reply_to": null,
+        "reply_quote": null,
+        "service_action": null,
+        "context": null,
+        "reactions": [
+          {
+            "reaction": "like",
+            "count": 1,
+            "reacted": true
+          }
+        ],
+        "client_message_id": null,
+        "silent": false,
+        "pinned_at": null,
+        "edited_at": "2026-09-27T09:01:10.172667-07:00",
+        "created_at": "2026-09-27T09:00:01.169463-07:00"
+      },
+      {
+        "object": "message",
+        "id": "15",
+        "conversation_id": "3",
+        "seq": 3,
+        "sender_id": "2",
+        "kind": "message",
+        "text": "收到啦",
+        "entities": [],
+        "media": null,
+        "media_group_id": null,
+        "reply_to": null,
+        "reply_quote": null,
+        "service_action": null,
+        "context": null,
+        "reactions": [],
+        "client_message_id": "343f7724-2384-42ce-8864-f5175a4923df",
+        "silent": false,
+        "pinned_at": null,
+        "edited_at": null,
+        "created_at": "2026-09-27T09:00:03.791569-07:00"
+      }
+    ],
+    "conversations": [
+      {
+        "object": "conversation",
+        "id": "3",
+        "kind": "direct",
+        "title": null,
+        "about": null,
+        "photo_image_hash": null,
+        "peer_id": "1",
+        "member_count": 2,
+        "last_seq": 8,
+        "peer_read_seq": 8,
+        "created_at": "2026-09-27T08:59:52.897325-07:00",
+        "me": {
+          "role": "member",
+          "accepted": true,
+          "last_read_seq": 8,
+          "unread_count": 0,
+          "marked_unread": false,
+          "cleared_through_seq": 0,
+          "visible_from_seq": 1,
+          "muted_until": null,
+          "archived": false,
+          "pinned_rank": null,
+          "draft": null
+        },
+        "last_message": {
+          "object": "message",
+          "id": "22",
+          "conversation_id": "3",
+          "seq": 8,
+          "sender_id": "1",
+          "kind": "message",
+          "text": "附一张图",
+          "entities": [],
+          "media": {
+            "type": "photo",
+            "image_hash": "89d93e860685d729c178a39f1d83db8103e47b71c06c70793bab51e2be04127a",
+            "width": 64,
+            "height": 48,
+            "thumbhash": "npsCBYBcX1aHiHiIeHh3dw+EiPdX"
+          },
+          "media_group_id": null,
+          "reply_to": null,
+          "reply_quote": null,
+          "service_action": null,
+          "context": null,
+          "reactions": [],
+          "client_message_id": null,
+          "silent": false,
+          "pinned_at": null,
+          "edited_at": null,
+          "created_at": "2026-09-27T09:02:47.141877-07:00"
+        }
+      }
+    ],
+    "users": [
+      {
+        "object": "user",
+        "id": "1",
+        "name": "kun",
+        "avatar": "https://image.kungal.com/avatar/user_1/avatar.webp",
+        "deleted": false
+      },
+      {
+        "object": "user",
+        "id": "2",
+        "name": "鲲",
+        "avatar": "https://image.kungal.com/avatar/user_2/avatar.webp",
+        "deleted": false
+      }
+    ],
+    "last_update_seq": 21,
+    "has_more": true,
+    "too_long": false
+  },
+  "push": {
+    "newMessage": {
+      "type": "update",
+      "update": {
+        "object": "update",
+        "update_seq": 1,
+        "kind": "new_message",
+        "conversation_id": "3",
+        "data": {
+          "seq": 1
+        },
+        "created_at": "2026-09-27T08:59:52.983262187-07:00"
+      },
+      "message": {
+        "object": "message",
+        "id": "13",
+        "conversation_id": "3",
+        "seq": 1,
+        "sender_id": "1",
+        "kind": "message",
+        "text": "你好，这是第一条私信",
+        "entities": [],
+        "media": null,
+        "media_group_id": null,
+        "reply_to": null,
+        "reply_quote": null,
+        "service_action": null,
+        "context": null,
+        "reactions": [],
+        "client_message_id": null,
+        "silent": false,
+        "pinned_at": null,
+        "edited_at": null,
+        "created_at": "2026-09-27T08:59:52.983262187-07:00"
+      }
+    },
+    "ownNewMessage": {
+      "type": "update",
+      "update": {
+        "object": "update",
+        "update_seq": 6,
+        "kind": "new_message",
+        "conversation_id": "3",
+        "data": {
+          "seq": 3
+        },
+        "created_at": "2026-09-27T09:00:03.791569186-07:00"
+      },
+      "message": {
+        "object": "message",
+        "id": "15",
+        "conversation_id": "3",
+        "seq": 3,
+        "sender_id": "2",
+        "kind": "message",
+        "text": "收到啦",
+        "entities": [],
+        "media": null,
+        "media_group_id": null,
+        "reply_to": null,
+        "reply_quote": null,
+        "service_action": null,
+        "context": null,
+        "reactions": [],
+        "client_message_id": "343f7724-2384-42ce-8864-f5175a4923df",
+        "silent": false,
+        "pinned_at": null,
+        "edited_at": null,
+        "created_at": "2026-09-27T09:00:03.791569186-07:00"
+      }
+    },
+    "readOutbox": {
+      "type": "update",
+      "update": {
+        "object": "update",
+        "update_seq": 7,
+        "kind": "read_outbox",
+        "conversation_id": "3",
+        "data": {
+          "max_seq": 3
+        },
+        "created_at": "2026-09-27T09:00:03.837175634-07:00"
+      }
+    },
+    "dialogAccepted": {
+      "type": "update",
+      "update": {
+        "object": "update",
+        "update_seq": 3,
+        "kind": "dialog",
+        "conversation_id": "3",
+        "data": {
+          "accepted": true
+        },
+        "created_at": "2026-09-27T08:59:59.613503667-07:00"
+      }
+    },
+    "typing": {
+      "conversation_id": "3",
+      "type": "typing",
+      "user_id": "1"
+    },
+    "deleteMessages": {
+      "type": "update",
+      "update": {
+        "object": "update",
+        "update_seq": 19,
+        "kind": "delete_messages",
+        "conversation_id": "3",
+        "data": {
+          "seqs": [7]
+        },
+        "created_at": "2026-09-27T09:01:17.008933458-07:00"
+      }
+    },
+    "reactions": {
+      "type": "update",
+      "update": {
+        "object": "update",
+        "update_seq": 8,
+        "kind": "message_reactions",
+        "conversation_id": "3",
+        "data": {
+          "seq": 2
+        },
+        "created_at": "2026-09-27T09:01:08.949291966-07:00"
+      },
+      "reactions": [
+        {
+          "reaction": "like",
+          "count": 1,
+          "reacted": true
+        }
+      ]
+    },
+    "editMessage": {
+      "type": "update",
+      "update": {
+        "object": "update",
+        "update_seq": 12,
+        "kind": "edit_message",
+        "conversation_id": "3",
+        "data": {
+          "seq": 2
+        },
+        "created_at": "2026-09-27T09:01:10.172667179-07:00"
+      },
+      "message": {
+        "object": "message",
+        "id": "14",
+        "conversation_id": "3",
+        "seq": 2,
+        "sender_id": "1",
+        "kind": "message",
+        "text": "第二条（已编辑）",
+        "entities": [],
+        "media": null,
+        "media_group_id": null,
+        "reply_to": null,
+        "reply_quote": null,
+        "service_action": null,
+        "context": null,
+        "reactions": [
+          {
+            "reaction": "like",
+            "count": 1,
+            "reacted": true
+          }
+        ],
+        "client_message_id": null,
+        "silent": false,
+        "pinned_at": null,
+        "edited_at": "2026-09-27T09:01:10.172667179-07:00",
+        "created_at": "2026-09-27T09:00:01.169463-07:00"
+      }
+    }
+  }
+}
