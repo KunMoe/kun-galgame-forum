@@ -328,7 +328,7 @@ func (s *Service) detail(ctx context.Context, row *model.GalgameQuiz, users map[
 		CorrectCount: item.CorrectCount, FavoriteCount: item.FavoriteCount,
 		QualityAverage: item.QualityAverage, QualityCount: item.QualityCount, CommentCount: item.CommentCount,
 		CreatedAt: item.CreatedAt, UpdatedAt: item.UpdatedAt, BumpedAt: item.BumpedAt,
-		Content: doc, Choices: typedChoices(choices), IsWorkHidden: row.HideGalgame, Works: works,
+		Content: doc, Choices: typedChoices(choices), IsWorkHidden: row.HideGalgame && len(workIDs) > 0, Works: works,
 	}
 	if okKey {
 		sol, p := s.solutionOf(ctx, row)

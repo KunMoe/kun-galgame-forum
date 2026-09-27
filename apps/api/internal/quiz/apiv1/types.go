@@ -68,7 +68,7 @@ type Quiz struct {
 	Content        content.ContentDocument `json:"content" doc:"Description as a Markdown document. An empty document when there is no description."`
 	Choices        []QuizChoice            `json:"choices" maxItems:"20" doc:"Option texts of a single or multiple choice quiz, without the answer key. Empty array for a judge quiz. Never null."`
 	Solution       *QuizSolution           `json:"solution" doc:"The answer key and explanation. null when the caller may not see them."`
-	IsWorkHidden   bool                    `json:"is_work_hidden" doc:"Whether linked works stay hidden until the caller may see the answer key."`
+	IsWorkHidden   bool                    `json:"is_work_hidden" doc:"Whether linked works stay hidden until the caller may see the answer key. false when the quiz links no works."`
 	Works          []repr.WorkRef          `json:"works" maxItems:"20" doc:"Linked works. Empty when is_work_hidden is true and the caller may not see the answer key. Never null."`
 	Viewer         *QuizViewer             `json:"viewer" doc:"The caller's own state. null for an anonymous caller."`
 }
@@ -198,7 +198,7 @@ type QualityPut struct {
 type listQuizzesInput struct {
 	Page         int    `query:"page" minimum:"1" default:"1" doc:"1-based page number. page × limit may not exceed 10000."`
 	Limit        int    `query:"limit" minimum:"1" maximum:"100" default:"50" doc:"Page size. 1–100, default 50. Values above 100 are rejected, not clamped."`
-	WorkID       string `query:"work_id" required:"false" pattern:"^[1-9][0-9]{0,18}$" maxLength:"19" doc:"When set, only quizzes linked to this work."`
+	WorkID       string `query:"work_id" required:"false" pattern:"^[1-9][0-9]{0,18}$" maxLength:"19" doc:"When set, only quizzes linked to this work. A quiz that hides its works until answered is never listed under them."`
 	AuthorID     string `query:"author_id" required:"false" pattern:"^[1-9][0-9]{0,18}$" maxLength:"19" doc:"When set, only quizzes this user authored."`
 	QuizType     string `query:"quiz_type" enum:"single,multiple,judge" required:"false" maxLength:"8" doc:"When set, only this type. Omitted means every type."`
 	QuizCategory string `query:"quiz_category" enum:"plot,character,system,music,voice,company,trivia,other" required:"false" maxLength:"9" doc:"When set, only this category. Omitted means every category."`

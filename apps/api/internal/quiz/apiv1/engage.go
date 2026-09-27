@@ -125,12 +125,16 @@ func (s *Service) putQuizQualityRating(ctx context.Context, in *putQualityInput)
 	if ans == nil || ans.Role != "answerer" {
 		return nil, quizAnswerRequired()
 	}
-	sumDelta, countDelta := in.Body.Rating, 1
-	if ans.QualityRating != nil {
-		sumDelta, countDelta = in.Body.Rating-*ans.QualityRating, 0
-	}
 	var sum, count int
 	err = s.store.InTx(func(tx *gorm.DB) error {
+		prev, err := s.store.LockAnswerQuality(tx, ans.ID)
+		if err != nil {
+			return err
+		}
+		sumDelta, countDelta := in.Body.Rating, 1
+		if prev != nil {
+			sumDelta, countDelta = in.Body.Rating-*prev, 0
+		}
 		if err := s.store.SetAnswerQuality(tx, ans.ID, in.Body.Rating); err != nil {
 			return err
 		}

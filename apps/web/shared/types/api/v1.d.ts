@@ -5275,7 +5275,7 @@ export interface components {
              * @description Correct answers submitted.
              */
             correct_count: number;
-            /** @description The first 200 characters of the explanation. May be empty. Free text; never use it as a decision input. */
+            /** @description The first 256 characters of the description's stored Markdown. May be empty. Free text; never use it as a decision input. */
             description_excerpt: string;
             /**
              * Format: int64
@@ -10210,7 +10210,7 @@ export interface components {
             favorite_count: number;
             /** @description Quiz id. */
             id: string;
-            /** @description Whether linked works stay hidden until the caller may see the answer key. */
+            /** @description Whether linked works stay hidden until the caller may see the answer key. false when the quiz links no works. */
             is_work_hidden: boolean;
             /**
              * @description Type discriminant. Always quiz.
@@ -26218,7 +26218,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description ACCOUNT_BANNED. */
+            /** @description Forbidden */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -28324,7 +28324,7 @@ export interface operations {
                 page?: number;
                 /** @description Page size. 1–100, default 50. Values above 100 are rejected, not clamped. */
                 limit?: number;
-                /** @description When set, only quizzes linked to this work. */
+                /** @description When set, only quizzes linked to this work. A quiz that hides its works until answered is never listed under them. */
                 work_id?: string;
                 /** @description When set, only quizzes this user authored. */
                 author_id?: string;
@@ -28948,7 +28948,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description VALIDATION_FAILED or CONTENT_REJECTED. */
+            /** @description VALIDATION_FAILED. */
             422: {
                 headers: {
                     [name: string]: unknown;

@@ -163,7 +163,7 @@ func registerAnswers(api huma.API, svc *Service) {
 			403: "SELF_ANSWER_FORBIDDEN or ACCOUNT_BANNED.",
 			404: "NOT_FOUND when the quiz does not exist or its author is not renderable.",
 			409: "ALREADY_EXISTS, IDEMPOTENCY_KEY_REUSED or IDEMPOTENCY_REQUEST_IN_PROGRESS.",
-			422: "VALIDATION_FAILED or CONTENT_REJECTED.",
+			422: "VALIDATION_FAILED.",
 		}),
 	})), svc.createQuizAnswer)
 }
@@ -235,7 +235,6 @@ func registerMe(api huma.API, svc *Service) {
 			"An id that does not exist, is deleted, or whose author is not renderable is missing.",
 		Tags: []string{tagMe},
 		Responses: problemResponses(map[int]string{
-			403: "ACCOUNT_BANNED.",
 			422: "VALIDATION_FAILED when quiz_ids is absent, empty, holds more than 100 ids, or holds something that is not a positive decimal integer.",
 		}),
 	}), svc.listMyQuizStates)

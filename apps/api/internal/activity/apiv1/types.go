@@ -204,7 +204,7 @@ type ActivityQuiz struct {
 	AnswerCount        int            `json:"answer_count" minimum:"0" doc:"Answers submitted."`
 	CorrectCount       int            `json:"correct_count" minimum:"0" doc:"Correct answers submitted."`
 	FavoriteCount      int            `json:"favorite_count" minimum:"0" doc:"Favorite count."`
-	DescriptionExcerpt string         `json:"description_excerpt" maxLength:"256" doc:"The first 200 characters of the explanation. May be empty. Free text; never use it as a decision input."`
+	DescriptionExcerpt string         `json:"description_excerpt" maxLength:"256" doc:"The first 256 characters of the description's stored Markdown. May be empty. Free text; never use it as a decision input."`
 }
 
 type ActivityToolset struct {

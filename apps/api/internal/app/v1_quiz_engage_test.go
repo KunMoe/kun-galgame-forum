@@ -207,3 +207,27 @@ func TestV1ListMyQuizStates(t *testing.T) {
 	resp, body = f.qz(t, http.MethodGet, "/api/v1/me/quiz-states", "/me/quiz-states", "sess-bob", "", nil)
 	wantCode(t, resp, body, http.StatusBadRequest, problem.CodeInvalidParameter)
 }
+
+func TestV1PutQuizQualityRatingConcurrentRerates(t *testing.T) {
+	f := newQuizFix(t, nil)
+	var wg sync.WaitGroup
+	for rating := 1; rating <= 8; rating++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			resp, got := f.qz(t, http.MethodPut, "/api/v1/quizzes/"+idStr(g2QMain)+"/quality-rating",
+				"/quizzes/{quiz_id}/quality-rating", "sess-bob", "", map[string]any{"rating": rating})
+			if resp.StatusCode != http.StatusOK {
+				t.Errorf("rate %d: %d %+v", rating, resp.StatusCode, got)
+			}
+		}()
+	}
+	wg.Wait()
+	if n := f.scalar(t, `SELECT quality_count FROM galgame_quiz WHERE id = ?`, g2QMain); n != 1 {
+		t.Errorf("quality_count %d after one answerer re-rated, want 1", n)
+	}
+	if n := f.scalar(t, `SELECT (q.quality_sum = a.quality_rating)::int FROM galgame_quiz q
+		JOIN galgame_quiz_answer a ON a.quiz_id = q.id AND a.id = ? WHERE q.id = ?`, g2AnsBob, g2QMain); n != 1 {
+		t.Error("quality_sum drifted from the only rating")
+	}
+}

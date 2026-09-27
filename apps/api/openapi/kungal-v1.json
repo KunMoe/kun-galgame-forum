@@ -420,7 +420,7 @@
             "type": "integer"
           },
           "description_excerpt": {
-            "description": "The first 200 characters of the explanation. May be empty. Free text; never use it as a decision input.",
+            "description": "The first 256 characters of the description's stored Markdown. May be empty. Free text; never use it as a decision input.",
             "maxLength": 256,
             "type": "string"
           },
@@ -13374,7 +13374,7 @@
             "type": "string"
           },
           "is_work_hidden": {
-            "description": "Whether linked works stay hidden until the caller may see the answer key.",
+            "description": "Whether linked works stay hidden until the caller may see the answer key. false when the quiz links no works.",
             "type": "boolean"
           },
           "object": {
@@ -41962,7 +41962,7 @@
                 }
               }
             },
-            "description": "ACCOUNT_BANNED."
+            "description": "Forbidden"
           },
           "422": {
             "content": {
@@ -45138,12 +45138,12 @@
             }
           },
           {
-            "description": "When set, only quizzes linked to this work.",
+            "description": "When set, only quizzes linked to this work. A quiz that hides its works until answered is never listed under them.",
             "explode": false,
             "in": "query",
             "name": "work_id",
             "schema": {
-              "description": "When set, only quizzes linked to this work.",
+              "description": "When set, only quizzes linked to this work. A quiz that hides its works until answered is never listed under them.",
               "maxLength": 19,
               "pattern": "^[1-9][0-9]{0,18}$",
               "type": "string"
@@ -46078,7 +46078,7 @@
                 }
               }
             },
-            "description": "VALIDATION_FAILED or CONTENT_REJECTED."
+            "description": "VALIDATION_FAILED."
           },
           "500": {
             "content": {

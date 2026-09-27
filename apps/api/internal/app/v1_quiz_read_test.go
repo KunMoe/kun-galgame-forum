@@ -297,3 +297,36 @@ func TestV1ListMyAnsweredQuizzes(t *testing.T) {
 	resp, body = f.qz(t, http.MethodGet, "/api/v1/me/answered-quizzes", "/me/answered-quizzes", "", "", nil)
 	wantCode(t, resp, body, http.StatusUnauthorized, problem.CodeMissingCredential)
 }
+
+func TestV1QuizHiddenWorksStayHidden(t *testing.T) {
+	f := newQuizFix(t, nil)
+	byWork := "/api/v1/quizzes?limit=100&work_id=" + idStr(g2WorkSFW)
+	resp, body := f.qz(t, http.MethodGet, byWork, "/quizzes", "", "", nil)
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("list by work %d %+v", resp.StatusCode, body)
+	}
+	for _, id := range adminItemIDs(body) {
+		if id == idStr(g2QMain) {
+			t.Error("a quiz that hides its works was listed under its hidden work")
+		}
+	}
+	if err := f.db.Exec(`UPDATE galgame_quiz SET hide_galgame = false WHERE id = ?`, g2QMain).Error; err != nil {
+		t.Fatal(err)
+	}
+	_, body = f.qz(t, http.MethodGet, byWork, "/quizzes", "", "", nil)
+	listed := false
+	for _, id := range adminItemIDs(body) {
+		listed = listed || id == idStr(g2QMain)
+	}
+	if !listed {
+		t.Error("a quiz that shows its works was not listed under them")
+	}
+
+	if err := f.db.Exec(`UPDATE galgame_quiz SET hide_galgame = true WHERE id = ?`, g2QJudge).Error; err != nil {
+		t.Fatal(err)
+	}
+	resp, body = f.qz(t, http.MethodGet, "/api/v1/quizzes/"+idStr(g2QJudge), "/quizzes/{quiz_id}", "", "", nil)
+	if resp.StatusCode != http.StatusOK || body["is_work_hidden"] != false {
+		t.Errorf("hidden flag on a quiz with no works %d %+v", resp.StatusCode, body["is_work_hidden"])
+	}
+}

@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"strconv"
@@ -78,7 +79,7 @@ func (f ListFilter) apply(q *gorm.DB) *gorm.DB {
 		q = q.Where("q.difficulty = ?", f.Difficulty)
 	}
 	if f.WorkID > 0 {
-		q = q.Where(`EXISTS (SELECT 1 FROM galgame_quiz_galgame gg WHERE gg.quiz_id = q.id AND gg.work_id = ?)`, f.WorkID)
+		q = q.Where(`NOT q.hide_galgame AND EXISTS (SELECT 1 FROM galgame_quiz_galgame gg WHERE gg.quiz_id = q.id AND gg.work_id = ?)`, f.WorkID)
 	}
 	if f.AuthorID > 0 {
 		q = q.Where("q.user_id = ?", f.AuthorID)
@@ -381,6 +382,16 @@ func (s *Store) RecountCorrect(tx *gorm.DB, quizID int) error {
 		SELECT COUNT(*) FROM galgame_quiz_answer
 		WHERE quiz_id = ? AND role = 'answerer' AND is_correct
 	) WHERE id = ?`, quizID, quizID).Error
+}
+
+func (s *Store) LockAnswerQuality(tx *gorm.DB, answerID int) (*int, error) {
+	var rating sql.NullInt64
+	err := tx.Raw(`SELECT quality_rating FROM galgame_quiz_answer WHERE id = ? FOR UPDATE`, answerID).Row().Scan(&rating)
+	if err != nil || !rating.Valid {
+		return nil, err
+	}
+	r := int(rating.Int64)
+	return &r, nil
 }
 
 func (s *Store) SetAnswerQuality(tx *gorm.DB, answerID, rating int) error {
