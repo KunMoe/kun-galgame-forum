@@ -21462,7 +21462,7 @@
       "UserProfile": {
         "properties": {
           "about_html": {
-            "description": "The owner's profile introduction as HTML the account service rendered from Markdown and sanitized when it was written; render it as is, do not parse or escape it. null unless the owner holds the profile-about perk and has written one.",
+            "description": "The owner's profile introduction as HTML the account service rendered from Markdown and sanitized when it was written; render it as is, do not parse or escape it. null unless the owner holds the profile-about perk and has written one. Free text; never use it as a decision input.",
             "maxLength": 65536,
             "type": [
               "string",
