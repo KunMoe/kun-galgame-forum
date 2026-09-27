@@ -11130,6 +11130,17 @@ export interface components {
         };
         /** @enum {string} */
         ReviewAction: "none" | "hide" | "remove" | "warn_user" | "restrict" | "escalate_idp";
+        ReviewAuthor: {
+            /** @description Whether the account service reports the account as usable: neither banned nor deregistered. */
+            is_account_active: boolean;
+            /**
+             * @description Type discriminant. Always review_author.
+             * @constant
+             */
+            object: "review_author";
+            /** @description The author's profile as getUser shows it, also for an account that is not active. */
+            profile: components["schemas"]["UserProfile"];
+        };
         ReviewItem: {
             /** @description The moderator who claimed the item. null before anyone has. */
             claimant: components["schemas"]["UserRef"] | null;
@@ -11190,6 +11201,10 @@ export interface components {
             severity: number | null;
             /** @description pending until a moderator claims it; actioned or dismissed once decided. */
             state: components["schemas"]["ReviewItemState"];
+            /** @description The content under review as this forum reads it now, hidden or not. null when the forum cannot read that kind of content, or could not read it for this request. */
+            subject: components["schemas"]["ReviewSubject"] | null;
+            /** @description Who wrote the content under review; for a user under review, that user. null when there is no author, the account no longer exists, or subject is null or gone. */
+            subject_author: components["schemas"]["ReviewAuthor"] | null;
             /** @description Id of the content under review within its kind. */
             subject_id: string;
             /** @description Kind of the content under review. */
@@ -11304,6 +11319,32 @@ export interface components {
              */
             weight: number;
         };
+        ReviewSubject: {
+            /**
+             * Format: date-time
+             * @description When the content was created. null when unknown.
+             */
+            authored_at: string | null;
+            /** @description The content's body. An empty document when it has none. */
+            content: components["schemas"]["ContentDocument"];
+            /**
+             * @description Type discriminant. Always review_subject.
+             * @constant
+             */
+            object: "review_subject";
+            /** @description In-site web path that opens the content. null when no page shows it. */
+            page_path: string | null;
+            /** @description In-site web path of where the content lives. null when it stands alone. */
+            parent_path: string | null;
+            /** @description Title or name of where the content lives, such as the topic of a reply or the work of a resource. null when it stands alone. Free text; never use it as a decision input. */
+            parent_title: string | null;
+            /** @description visible when readers can see it; hidden when a moderator, its author or a disposition hid it; gone when it no longer exists or this forum can no longer read it. A gone subject carries no title, body, paths or time. */
+            state: components["schemas"]["ReviewSubjectState"];
+            /** @description The content's own title or name. Empty string when it has none. Free text; never use it as a decision input. */
+            title: string;
+        };
+        /** @enum {string} */
+        ReviewSubjectState: "visible" | "hidden" | "gone";
         /** @enum {string} */
         RevisionAction: "created" | "merged" | "direct" | "reverted";
         RoleOverrides: {

@@ -39,6 +39,10 @@ type Service struct {
 	site  string
 	cdn   string
 
+	subjects Subjects
+	profiles Profiles
+	convert  Converter
+
 	mu        sync.Mutex
 	reasons   []trustclient.ReasonView
 	fetchedAt time.Time

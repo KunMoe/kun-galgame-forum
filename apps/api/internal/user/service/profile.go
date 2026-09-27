@@ -49,7 +49,24 @@ func (s *UserService) Profile(ctx context.Context, userID int) (*PublicProfile, 
 	if !ok || !userclient.IsRenderable(u) {
 		return nil, ErrNotFound
 	}
+	return s.profileOf(ctx, u)
+}
 
+// ModerationProfile is Profile for a reviewer: it keeps an account the account
+// service has banned or deleted, which the public profile answers 404 for.
+func (s *UserService) ModerationProfile(ctx context.Context, userID int) (*PublicProfile, error) {
+	u, ok, err := s.userClient.User(ctx, userID)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %w", ErrUpstream, err)
+	}
+	if !ok {
+		return nil, ErrNotFound
+	}
+	return s.profileOf(ctx, u)
+}
+
+func (s *UserService) profileOf(ctx context.Context, u userclient.User) (*PublicProfile, error) {
+	userID := u.ID
 	loc := cron.ScheduleLocation()
 	now := s.now().In(loc)
 	todayStart := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, loc).UTC()

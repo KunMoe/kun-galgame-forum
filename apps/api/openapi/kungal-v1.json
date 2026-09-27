@@ -15913,6 +15913,30 @@
         "type": "string",
         "x-vocabulary-closed": true
       },
+      "ReviewAuthor": {
+        "properties": {
+          "is_account_active": {
+            "description": "Whether the account service reports the account as usable: neither banned nor deregistered.",
+            "type": "boolean"
+          },
+          "object": {
+            "const": "review_author",
+            "description": "Type discriminant. Always review_author.",
+            "maxLength": 13,
+            "type": "string"
+          },
+          "profile": {
+            "$ref": "#/components/schemas/UserProfile",
+            "description": "The author's profile as getUser shows it, also for an account that is not active."
+          }
+        },
+        "required": [
+          "object",
+          "is_account_active",
+          "profile"
+        ],
+        "type": "object"
+      },
       "ReviewItem": {
         "properties": {
           "claimant": {
@@ -16051,6 +16075,28 @@
             "$ref": "#/components/schemas/ReviewItemState",
             "description": "pending until a moderator claims it; actioned or dismissed once decided."
           },
+          "subject": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ReviewSubject"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The content under review as this forum reads it now, hidden or not. null when the forum cannot read that kind of content, or could not read it for this request."
+          },
+          "subject_author": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ReviewAuthor"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Who wrote the content under review; for a user under review, that user. null when there is no author, the account no longer exists, or subject is null or gone."
+          },
           "subject_id": {
             "description": "Id of the content under review within its kind.",
             "maxLength": 20,
@@ -16069,6 +16115,8 @@
         },
         "required": [
           "reports",
+          "subject",
+          "subject_author",
           "object",
           "id",
           "subject_kind",
@@ -16386,6 +16434,87 @@
           "created_at"
         ],
         "type": "object"
+      },
+      "ReviewSubject": {
+        "properties": {
+          "authored_at": {
+            "description": "When the content was created. null when unknown.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "content": {
+            "$ref": "#/components/schemas/ContentDocument",
+            "description": "The content's body. An empty document when it has none."
+          },
+          "object": {
+            "const": "review_subject",
+            "description": "Type discriminant. Always review_subject.",
+            "maxLength": 14,
+            "type": "string"
+          },
+          "page_path": {
+            "description": "In-site web path that opens the content. null when no page shows it.",
+            "maxLength": 512,
+            "pattern": "^/",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "parent_path": {
+            "description": "In-site web path of where the content lives. null when it stands alone.",
+            "maxLength": 512,
+            "pattern": "^/",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "parent_title": {
+            "description": "Title or name of where the content lives, such as the topic of a reply or the work of a resource. null when it stands alone. Free text; never use it as a decision input.",
+            "maxLength": 512,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "state": {
+            "$ref": "#/components/schemas/ReviewSubjectState",
+            "description": "visible when readers can see it; hidden when a moderator, its author or a disposition hid it; gone when it no longer exists or this forum can no longer read it. A gone subject carries no title, body, paths or time."
+          },
+          "title": {
+            "description": "The content's own title or name. Empty string when it has none. Free text; never use it as a decision input.",
+            "maxLength": 512,
+            "type": "string"
+          }
+        },
+        "required": [
+          "object",
+          "state",
+          "title",
+          "content",
+          "page_path",
+          "parent_title",
+          "parent_path",
+          "authored_at"
+        ],
+        "type": "object"
+      },
+      "ReviewSubjectState": {
+        "enum": [
+          "visible",
+          "hidden",
+          "gone"
+        ],
+        "maxLength": 7,
+        "type": "string",
+        "x-vocabulary-closed": true
       },
       "RevisionAction": {
         "enum": [

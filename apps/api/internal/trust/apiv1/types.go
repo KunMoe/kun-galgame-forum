@@ -1,7 +1,9 @@
 package apiv1
 
 import (
+	"kun-galgame-api/internal/apiv1/content"
 	"kun-galgame-api/internal/apiv1/repr"
+	userapiv1 "kun-galgame-api/internal/user/apiv1"
 
 	"github.com/danielgtaylor/huma/v2"
 )
@@ -73,7 +75,26 @@ type ReviewItemSummary struct {
 
 type ReviewItem struct {
 	ReviewItemSummary
-	Reports []ReviewReport `json:"reports" maxItems:"1000" doc:"The reports linked to the item, oldest first. Empty for an item that reports did not open."`
+	Reports       []ReviewReport `json:"reports" maxItems:"1000" doc:"The reports linked to the item, oldest first. Empty for an item that reports did not open."`
+	Subject       *ReviewSubject `json:"subject" doc:"The content under review as this forum reads it now, hidden or not. null when the forum cannot read that kind of content, or could not read it for this request."`
+	SubjectAuthor *ReviewAuthor  `json:"subject_author" doc:"Who wrote the content under review; for a user under review, that user. null when there is no author, the account no longer exists, or subject is null or gone."`
+}
+
+type ReviewSubject struct {
+	Object      string                  `json:"object" enum:"review_subject" maxLength:"14" doc:"Type discriminant. Always review_subject."`
+	State       string                  `json:"state" enum:"visible,hidden,gone" maxLength:"7" doc:"visible when readers can see it; hidden when a moderator, its author or a disposition hid it; gone when it no longer exists or this forum can no longer read it. A gone subject carries no title, body, paths or time."`
+	Title       string                  `json:"title" maxLength:"512" doc:"The content's own title or name. Empty string when it has none. Free text; never use it as a decision input."`
+	Content     content.ContentDocument `json:"content" doc:"The content's body. An empty document when it has none."`
+	PagePath    *string                 `json:"page_path" pattern:"^/" maxLength:"512" doc:"In-site web path that opens the content. null when no page shows it."`
+	ParentTitle *string                 `json:"parent_title" maxLength:"512" doc:"Title or name of where the content lives, such as the topic of a reply or the work of a resource. null when it stands alone. Free text; never use it as a decision input."`
+	ParentPath  *string                 `json:"parent_path" pattern:"^/" maxLength:"512" doc:"In-site web path of where the content lives. null when it stands alone."`
+	AuthoredAt  *repr.DateTime          `json:"authored_at" doc:"When the content was created. null when unknown."`
+}
+
+type ReviewAuthor struct {
+	Object          string                `json:"object" enum:"review_author" maxLength:"13" doc:"Type discriminant. Always review_author."`
+	IsAccountActive bool                  `json:"is_account_active" doc:"Whether the account service reports the account as usable: neither banned nor deregistered."`
+	Profile         userapiv1.UserProfile `json:"profile" doc:"The author's profile as getUser shows it, also for an account that is not active."`
 }
 
 type ReviewReport struct {

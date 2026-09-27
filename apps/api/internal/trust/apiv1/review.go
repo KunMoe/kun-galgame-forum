@@ -225,7 +225,8 @@ func (s *Service) readItem(ctx context.Context, id int64) (*ReviewItem, *problem
 	for _, r := range detail.Reports {
 		reports = append(reports, s.reviewReport(r, users, reasons))
 	}
-	return &ReviewItem{ReviewItemSummary: summary, Reports: reports}, nil
+	subject, author := s.subject(ctx, detail.Item.SubjectKind, detail.Item.SubjectID)
+	return &ReviewItem{ReviewItemSummary: summary, Reports: reports, Subject: subject, SubjectAuthor: author}, nil
 }
 
 func (s *Service) reviewSummary(it trustclient.ReviewItem, users map[int]userclient.User) (ReviewItemSummary, error) {

@@ -113,8 +113,9 @@ const subjectHref = computed(() => {
     (r) => r.subject_url
   )?.subject_url
   return (
-    fromReport ||
-    trustSubjectHref(detail.value.subject_kind, detail.value.subject_id)
+    detail.value.subject?.page_path ??
+    (fromReport ||
+      trustSubjectHref(detail.value.subject_kind, detail.value.subject_id))
   )
 })
 
@@ -257,6 +258,12 @@ const actionOptions = TRUST_ACTIONS.map((a) => ({
             >#{{ detail.subject_id }}</span
           >
         </div>
+
+        <AdminModerationSubject
+          :kind="detail.subject_kind"
+          :subject="detail.subject"
+          :author="detail.subject_author"
+        />
 
         <div class="space-y-2">
           <div

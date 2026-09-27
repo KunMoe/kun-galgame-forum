@@ -129,6 +129,8 @@ export type ReportReason = components['schemas']['ReportReason']
 export type ReportCreate = components['schemas']['ReportCreate']
 export type ReviewItemSummary = components['schemas']['ReviewItemSummary']
 export type ReviewItem = components['schemas']['ReviewItem']
+export type ReviewSubject = components['schemas']['ReviewSubject']
+export type ReviewAuthor = components['schemas']['ReviewAuthor']
 export type ReviewReport = components['schemas']['ReviewReport']
 export type ReviewItemPatch = components['schemas']['ReviewItemPatch']
 

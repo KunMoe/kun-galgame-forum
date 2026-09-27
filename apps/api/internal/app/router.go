@@ -71,7 +71,7 @@ func (a *App) setupRoutes() {
 		toolsetapiv1.Register(a.newToolsetV1()),
 		quizapiv1.Register(a.newQuizV1()),
 		updateapiv1.Register(a.newUpdateV1()),
-		trustapiv1.Register(a.TrustV1),
+		trustapiv1.Register(a.newTrustV1(a.newUserV1())),
 		permissionapiv1.Register(a.newPermissionV1()),
 		docapiv1.Register(a.newDocV1()),
 		friendlinkapiv1.Register(a.newFriendLinkV1()),
@@ -117,12 +117,6 @@ func (a *App) newTopicV1() *topicapiv1.Service {
 	if a.Config != nil {
 		cdn = a.Config.NextMoeAPI.ImageCDNBase
 	}
-	convert := &content.Converter{
-		CDNBase:  cdn,
-		SiteBase: apiv1.SiteOrigin,
-		Images:   a.ImageMeta,
-		Users:    a.UserClient.Users,
-	}
 	return topicapiv1.New(
 		topicRepo.NewTopicListRepository(a.DB),
 		topicRepo.NewTopicRepository(a.DB),
@@ -130,7 +124,16 @@ func (a *App) newTopicV1() *topicapiv1.Service {
 		topicRepo.NewReplyRepository(a.DB),
 		topicRepo.NewCommentRepository(a.DB),
 		a.UserClient,
-		convert,
+		a.contentConverter(cdn),
 		cdn,
 	)
+}
+
+func (a *App) contentConverter(cdn string) *content.Converter {
+	return &content.Converter{
+		CDNBase:  cdn,
+		SiteBase: apiv1.SiteOrigin,
+		Images:   a.ImageMeta,
+		Users:    a.UserClient.Users,
+	}
 }
