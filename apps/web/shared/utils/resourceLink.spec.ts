@@ -4,6 +4,7 @@ import {
   applyResourceLinkPaste,
   detectProviderKeyFromURL,
   isCleanLinkDump,
+  isEd2kFileLink,
   parseResourceLinks,
   splitResourceLinkText
 } from './resourceLink'
@@ -84,6 +85,34 @@ describe('parseResourceLinks', () => {
   it('strips trailing punctuation copied with the URL', () => {
     const parsed = parseResourceLinks('https://pan.baidu.com/s/aaa。')
     expect(parsed.links).toEqual(['https://pan.baidu.com/s/aaa'])
+  })
+
+  it('keeps an ed2k file name in CJK and stops at the link end', () => {
+    const ed2k =
+      'ed2k://|file|纯白交响曲 Remake.rar|123456|0123456789ABCDEF0123456789ABCDEF|h=QWERTYUIOPASDFGHJKLZXCVBNM234567|/'
+    expect(parseResourceLinks(ed2k).links).toEqual([ed2k])
+    expect(parseResourceLinks(`电驴：${ed2k}提取码：ab12`)).toMatchObject({
+      links: [ed2k],
+      code: 'ab12'
+    })
+  })
+
+  it('keeps parentheses inside a URL and drops an unmatched closing one', () => {
+    expect(parseResourceLinks('https://x.com/a(1).zip').links).toEqual([
+      'https://x.com/a(1).zip'
+    ])
+    expect(
+      parseResourceLinks('https://en.wikipedia.org/wiki/Foo_(bar)').links
+    ).toEqual(['https://en.wikipedia.org/wiki/Foo_(bar)'])
+    expect(parseResourceLinks('链接(https://x.com/a)').links).toEqual([
+      'https://x.com/a'
+    ])
+    expect(parseResourceLinks('(见 https://x.com/a(1).zip).').links).toEqual([
+      'https://x.com/a(1).zip'
+    ])
+    expect(parseResourceLinks('链接（https://x.com/a）').links).toEqual([
+      'https://x.com/a'
+    ])
   })
 
   it('returns nothing when there is no URL', () => {
@@ -253,5 +282,31 @@ describe('applyResourceLinkBlur', () => {
       'https://pan.quark.cn/s/bbb'
     ])
     expect(result.code).toBe('ab12')
+  })
+})
+
+describe('isEd2kFileLink', () => {
+  it('accepts an ed2k file link the way the API does', () => {
+    expect(
+      isEd2kFileLink(
+        'ed2k://|file|纯白交响曲.rar|123456|0123456789abcdef0123456789abcdef|/'
+      )
+    ).toBe(true)
+    expect(
+      isEd2kFileLink('ed2k://|file|a.rar|1|0123456789abcdef0123456789abcdef|')
+    ).toBe(true)
+  })
+
+  it('refuses a cut or malformed ed2k link', () => {
+    expect(isEd2kFileLink('ed2k://|file|')).toBe(false)
+    expect(
+      isEd2kFileLink('ed2k://|file|a.rar|1|NOTAHASHNOTAHASHNOTAHASHNOTAHASH|/')
+    ).toBe(false)
+    expect(
+      isEd2kFileLink(
+        'ed2k://|file|a.rar|1|0123456789abcdef0123456789abcdef|/<script>'
+      )
+    ).toBe(false)
+    expect(isEd2kFileLink('ed2k://|server|1.2.3.4|4661|/')).toBe(false)
   })
 })
