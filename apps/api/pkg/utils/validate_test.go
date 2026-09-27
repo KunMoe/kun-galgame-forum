@@ -2,7 +2,7 @@ package utils
 
 import "testing"
 
-func TestDownloadLinkAcceptsMagnetURIs(t *testing.T) {
+func TestIsDownloadLink(t *testing.T) {
 	for _, tc := range []struct {
 		why  string
 		in   string
@@ -22,12 +22,21 @@ func TestDownloadLinkAcceptsMagnetURIs(t *testing.T) {
 		{"javascript scheme", "javascript:alert(1)", false},
 		{"data scheme", "data:text/html,<h1>x</h1>", false},
 		{"https typo", "ttps://pan.example.com/s/abc", false},
+		{"parentheses in a path", "https://x.example/a(1).zip", true},
+		{"ed2k file link with a CJK name", "ed2k://|file|纯白交响曲.rar|123456|0123456789ABCDEF0123456789ABCDEF|/", true},
+		{"ed2k with a space, AICH and part hashes", "ed2k://|file|Game Remake.iso|4294967296|0123456789abcdef0123456789abcdef|h=QWERTYUIOPASDFGHJKLZXCVBNM234567|p=0123456789abcdef0123456789abcdef|/", true},
+		{"ed2k without the closing slash", "ed2k://|file|a.rar|1|0123456789abcdef0123456789abcdef|", true},
+		{"ed2k in upper case", "ED2K://|FILE|a.rar|1|0123456789abcdef0123456789abcdef|/", true},
+		{"ed2k cut at CJK", "ed2k://|file|", false},
+		{"ed2k hash not hex", "ed2k://|file|a.rar|1|NOTAHASHNOTAHASHNOTAHASHNOTAHASH|/", false},
+		{"ed2k hash too short", "ed2k://|file|a.rar|1|0123456789abcdef|/", false},
+		{"ed2k size not a number", "ed2k://|file|a.rar|1GB|0123456789abcdef0123456789abcdef|/", false},
+		{"ed2k tail after the link", "ed2k://|file|a.rar|1|0123456789abcdef0123456789abcdef|/<script>", false},
+		{"ed2k name across a line break", "ed2k://|file|a\nb.rar|1|0123456789abcdef0123456789abcdef|/", false},
+		{"ed2k server link", "ed2k://|server|1.2.3.4|4661|/", false},
 	} {
-		err := validate.Var(tc.in, "downloadlink")
-		got := err == nil
-		if got != tc.want {
-			t.Errorf("%s: validate.Var(%q, \"downloadlink\") ok=%v, want %v",
-				tc.why, tc.in, got, tc.want)
+		if got := IsDownloadLink(tc.in); got != tc.want {
+			t.Errorf("%s: IsDownloadLink(%q) = %v, want %v", tc.why, tc.in, got, tc.want)
 		}
 	}
 }
