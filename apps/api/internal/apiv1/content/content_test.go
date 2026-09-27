@@ -142,7 +142,7 @@ func TestDocumentWireShape(t *testing.T) {
 	want := `{"object":"document","children":[` +
 		`{"object":"heading","depth":2,"anchor":"intro","children":[{"object":"text","value":"Intro"}]},` +
 		`{"object":"paragraph","children":[{"object":"text","value":"hi "},` +
-		`{"object":"mention","mentioned_user":{"object":"user","id":"3","name":null,"avatar":null}},` +
+		`{"object":"mention","mentioned_user":{"object":"user","id":"3","name":null,"avatar":null,"avatar_frame":null}},` +
 		`{"object":"text","value":" "},{"object":"reply_reference","reply_id":"48","floor":2},{"object":"break"},` +
 		`{"object":"link","url":"https://example.com/","children":[{"object":"strong","children":[{"object":"text","value":"x"}]}]}]},` +
 		`{"object":"list","is_ordered":true,"start":2,"is_spread":false,"children":[{"object":"list_item","is_checked":null,"children":[{"object":"paragraph","children":[{"object":"text","value":"a"}]}]}]},` +

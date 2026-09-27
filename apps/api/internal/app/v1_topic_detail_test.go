@@ -48,7 +48,7 @@ func TestV1GetTopicPublicFields(t *testing.T) {
 		"object": `"topic"`, "id": `"920000201"`, "title": `"d1-public"`, "state": `"published"`,
 		"hidden_by": "null", "access_scope": `"public"`, "category": `"galgame"`,
 		"sections": `["g-news"]`, "cover_images": cover, "is_nsfw": `false`,
-		"author":             `{"object":"user","id":"920000001","name":"alice","avatar":null}`,
+		"author":             `{"object":"user","id":"920000001","name":"alice","avatar":null,"avatar_frame":null}`,
 		"author_moemoepoint": `-16`,
 		"view_count":         `10`, "like_count": `4`, "dislike_count": `0`,
 		"favorite_count": `3`, "upvote_count": `4`, "reply_count": `5`, "comment_count": `6`,
@@ -284,13 +284,13 @@ func assertPinnedComments(t *testing.T, raw json.RawMessage) {
 	if docPlainText(t, comments[1]["content"]) != "orphan-text" || string(comments[1]["parent_comment_id"]) != `"920000403"` {
 		t.Errorf("orphan keeps parent id: %s", comments[1])
 	}
-	if string(comments[1]["in_reply_to_user"]) != `{"object":"user","id":"920000002","name":"banned","avatar":null}` {
+	if string(comments[1]["in_reply_to_user"]) != `{"object":"user","id":"920000002","name":"banned","avatar":null,"avatar_frame":null}` {
 		t.Errorf("in_reply_to banned %s", comments[1]["in_reply_to_user"])
 	}
 	if docPlainText(t, comments[2]["content"]) != "child-text" || string(comments[2]["parent_comment_id"]) != `"920000401"` {
 		t.Errorf("child %s", comments[2])
 	}
-	if string(comments[3]["in_reply_to_user"]) != `{"object":"user","id":"920000004","name":null,"avatar":null}` {
+	if string(comments[3]["in_reply_to_user"]) != `{"object":"user","id":"920000004","name":null,"avatar":null,"avatar_frame":null}` {
 		t.Errorf("gone target %s", comments[3]["in_reply_to_user"])
 	}
 	if string(comments[0]["viewer"]) != `null` {

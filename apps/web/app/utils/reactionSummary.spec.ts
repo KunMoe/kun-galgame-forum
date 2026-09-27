@@ -13,7 +13,8 @@ const user = (id: string, name: string | null = 'Ada'): UserRef => ({
     height: 64,
     thumbhash: null,
     sexual: null
-  }
+  },
+  avatar_frame: null
 })
 
 const summary = (over: Partial<ReactionSummary> = {}): ReactionSummary => ({
@@ -32,8 +33,18 @@ describe('toKunReactions', () => {
         count: 4,
         mine: true,
         reactors: [
-          { id: 2, name: 'Bea', avatar: 'https://cdn.example/2.webp' },
-          { id: 3, name: '已注销用户', avatar: 'https://cdn.example/3.webp' }
+          {
+            id: 2,
+            name: 'Bea',
+            avatar: 'https://cdn.example/2.webp',
+            avatarDecoration: null
+          },
+          {
+            id: 3,
+            name: '已注销用户',
+            avatar: 'https://cdn.example/3.webp',
+            avatarDecoration: null
+          }
         ]
       }
     ])

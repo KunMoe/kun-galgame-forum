@@ -42,7 +42,44 @@ func TestDeletedUserRefHasANullName(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if string(raw) != `{"object":"user","id":"99","name":null,"avatar":null}` {
+	if string(raw) != `{"object":"user","id":"99","name":null,"avatar":null,"avatar_frame":null}` {
 		t.Errorf("deleted user = %s", raw)
+	}
+}
+
+func TestNewUserRefAvatarFrame(t *testing.T) {
+	frame := func(d *userclient.Decoration) map[string]any {
+		t.Helper()
+		raw, err := json.Marshal(NewUserRef("https://cdn", userclient.User{ID: 5, Name: "f", Cosmetics: userclient.Cosmetics{AvatarFrame: d}}))
+		if err != nil {
+			t.Fatal(err)
+		}
+		var m map[string]any
+		if err := json.Unmarshal(raw, &m); err != nil {
+			t.Fatal(err)
+		}
+		v, ok := m["avatar_frame"]
+		if !ok {
+			t.Fatalf("avatar_frame missing from %s", raw)
+		}
+		f, _ := v.(map[string]any)
+		return f
+	}
+
+	both := frame(&userclient.Decoration{StaticURL: "https://img.example/f.png", AnimatedURL: "https://img.example/f.webp"})
+	if both["static_url"] != "https://img.example/f.png" || both["animated_url"] != "https://img.example/f.webp" {
+		t.Errorf("frame with both images = %v", both)
+	}
+
+	still := frame(&userclient.Decoration{StaticURL: "https://img.example/f.png"})
+	if v, ok := still["animated_url"]; !ok || v != nil || still["static_url"] != "https://img.example/f.png" {
+		t.Errorf("a still-only frame must carry animated_url null: %v", still)
+	}
+
+	if f := frame(&userclient.Decoration{AnimatedURL: "https://img.example/f.webp"}); f != nil {
+		t.Errorf("a frame without a still image = %v, want null", f)
+	}
+	if f := frame(nil); f != nil {
+		t.Errorf("no frame = %v, want null", f)
 	}
 }

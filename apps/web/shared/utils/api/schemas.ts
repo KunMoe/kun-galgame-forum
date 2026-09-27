@@ -1,6 +1,7 @@
 import type { components, operations } from '../../types/api/v1'
 
 export type Image = components['schemas']['Image']
+export type AvatarFrame = components['schemas']['AvatarFrame']
 export type TopicSummary = components['schemas']['TopicSummary']
 export type Topic = components['schemas']['Topic']
 export type TopicViewer = components['schemas']['TopicViewer']

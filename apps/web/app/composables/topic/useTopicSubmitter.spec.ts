@@ -24,7 +24,8 @@ const user = (): UserRef => ({
   object: 'user',
   id: '9',
   name: 'Ada',
-  avatar: null
+  avatar: null,
+  avatar_frame: null
 })
 
 const topic = (over: Partial<Topic> = {}): Topic => ({
@@ -296,8 +297,8 @@ describe('applyTopicSource', () => {
       access_grants: {
         roles: ['ren'],
         users: [
-          { object: 'user', id: '5', name: 'Eve', avatar: null },
-          { object: 'user', id: '6', name: null, avatar: null }
+          { object: 'user', id: '5', name: 'Eve', avatar: null, avatar_frame: null },
+          { object: 'user', id: '6', name: null, avatar: null, avatar_frame: null }
         ]
       }
     }
@@ -314,8 +315,8 @@ describe('applyTopicSource', () => {
     expect(temp.accessRoles).toEqual(['ren'])
     expect(temp.accessUserIds).toEqual([5, 6])
     expect(temp.accessUsers).toEqual([
-      { id: 5, name: 'Eve', avatar: '' },
-      { id: 6, name: '已注销用户', avatar: '' }
+      { id: 5, name: 'Eve', avatar: '', avatarDecoration: null },
+      { id: 6, name: '已注销用户', avatar: '', avatarDecoration: null }
     ])
     expect(temp.isTopicRewriting).toBe(true)
   })

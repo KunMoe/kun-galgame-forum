@@ -9,7 +9,8 @@ const user = (): UserRef => ({
   object: 'user',
   id: '4',
   name: 'Dan',
-  avatar: null
+  avatar: null,
+  avatar_frame: null
 })
 
 const reaction = (id: string, over: Partial<Reaction> = {}): Reaction => ({
