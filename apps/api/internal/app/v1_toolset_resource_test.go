@@ -204,3 +204,26 @@ func TestV1GetToolsetResourceSource(t *testing.T) {
 		t.Errorf("bare link source %d %+v", resp.StatusCode, got)
 	}
 }
+
+func TestV1DeleteLinkResourceLeavesTheBlobStoreAlone(t *testing.T) {
+	f := newToolsetFix(t, nil)
+	resp, got := f.ts(t, http.MethodPost, "/api/v1/toolsets/"+idStr(g1TSMain)+"/resources",
+		"/toolsets/{toolset_id}/resources", "sess-other", keyUUID(40), map[string]any{
+			"toolset_resource_type": "link",
+			"link_url":              "https://pan.example/s/1",
+			"size_label":            "1mb",
+			"extraction_code":       "ab12",
+		})
+	if resp.StatusCode != http.StatusCreated {
+		t.Fatalf("create link %d %+v", resp.StatusCode, got)
+	}
+	id := strID(got["id"])
+	resp, got = f.ts(t, http.MethodDelete, "/api/v1/toolsets/"+idStr(g1TSMain)+"/resources/"+id,
+		"/toolsets/{toolset_id}/resources/{resource_id}", "sess-other", "", nil)
+	if resp.StatusCode != http.StatusNoContent {
+		t.Fatalf("delete a link with an extraction code %d %+v", resp.StatusCode, got)
+	}
+	if n := f.scalar(t, `SELECT COUNT(*) FROM galgame_toolset_resource WHERE id = ?`, asInt(id)); n != 0 {
+		t.Error("link resource not deleted")
+	}
+}
