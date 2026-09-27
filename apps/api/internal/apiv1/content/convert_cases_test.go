@@ -217,11 +217,11 @@ func linkCases() []convertCase {
 		{name: "R16 unwrap 2049 url", src: "[x](" + long + ")", want: docJSON(paraJSON(textJSON("x")))},
 		{name: "R16 title dropped", src: `[x](https://example.com "t")`, want: docJSON(paraJSON(link("https://example.com", "x")))},
 		{name: "R16 mention valid", src: "[@n](kungal-user:3)", want: docJSON(paraJSON(
-			`{"object":"mention","mentioned_user":{"object":"user","id":"3","name":"u3","avatar":null}}`))},
+			`{"object":"mention","mentioned_user":{"object":"user","id":"3","name":"u3","avatar":null,"avatar_frame":null}}`))},
 		{name: "R16 mention id 0", src: "[@n](kungal-user:0)", want: docJSON(paraJSON(textJSON("@n")))},
 		{name: "R16 mention non-numeric", src: "[@n](kungal-user:x)", want: docJSON(paraJSON(textJSON("@n")))},
 		{name: "R16 mention missing user", src: "[@n](kungal-user:3)", want: docJSON(paraJSON(
-			`{"object":"mention","mentioned_user":{"object":"user","id":"3","name":null,"avatar":null}}`)), conv: missingUserConverter()},
+			`{"object":"mention","mentioned_user":{"object":"user","id":"3","name":null,"avatar":null,"avatar_frame":null}}`)), conv: missingUserConverter()},
 		{name: "R16 reply #2", src: "[#2](kungal-reply:48)", want: docJSON(paraJSON(
 			`{"object":"reply_reference","reply_id":"48","floor":2}`))},
 		{name: "R16 reply 2", src: "[2](kungal-reply:48)", want: docJSON(paraJSON(

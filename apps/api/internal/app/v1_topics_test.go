@@ -727,7 +727,7 @@ func TestV1TopicsItemFields(t *testing.T) {
 		"910000201": {
 			"object": `"topic"`, "title": `"v1-topic-910000201"`, "state": `"published"`, "category": `"galgame"`,
 			"sections": `["g-walkthrough"]`, "cover_images": cover, "mini_apps": `["poll"]`,
-			"author":     `{"object":"user","id":"910000001","name":"alice","avatar":null}`,
+			"author":     `{"object":"user","id":"910000001","name":"alice","avatar":null,"avatar_frame":null}`,
 			"view_count": `10`, "like_count": `1`, "reply_count": `0`, "comment_count": `0`,
 			"has_best_answer": `false`, "is_nsfw": `false`,
 			"bumped_at": `"2026-01-15T15:00:00Z"`, "created_at": `"2026-01-15T12:00:00Z"`, "upvoted_at": `"2026-01-15T12:00:00Z"`,
@@ -740,8 +740,8 @@ func TestV1TopicsItemFields(t *testing.T) {
 				`","width":null,"height":null,"thumbhash":null,"sexual":null}]`,
 		},
 		"910000204": {"category": `"others"`, "view_count": `30`},
-		"910000213": {"author": `{"object":"user","id":"910000003","name":"bob","avatar":null}`},
-		"910000217": {"author": `{"object":"user","id":"910000004","name":null,"avatar":null}`},
+		"910000213": {"author": `{"object":"user","id":"910000003","name":"bob","avatar":null,"avatar_frame":null}`},
+		"910000217": {"author": `{"object":"user","id":"910000004","name":null,"avatar":null,"avatar_frame":null}`},
 	} {
 		item, ok := byID[id]
 		if !ok {
