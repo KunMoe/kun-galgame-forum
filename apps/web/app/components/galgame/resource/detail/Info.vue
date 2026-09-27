@@ -4,7 +4,7 @@ import type {
   GalgameResource,
   GalgameResourceDownload
 } from '#shared/utils/api/schemas'
-import { contentPlainText } from '~/utils/contentPlainText'
+import { documentHasContent } from '#shared/utils/content/plainText'
 import { toKunUser } from '~/utils/userRef'
 
 const { id } = usePersistUserStore()
@@ -21,9 +21,7 @@ const emits = defineEmits<{ downloaded: [] }>()
 const isEditOpen = ref(false)
 const author = computed(() => toKunUser(props.resource.author))
 const workId = computed(() => props.resource.work?.id ?? '')
-const hasNote = computed(
-  () => contentPlainText(props.resource.content).trim().length > 0
-)
+const hasNote = computed(() => documentHasContent(props.resource.content))
 const canEdit = computed(() => props.resource.viewer?.can_edit ?? false)
 const canDelete = computed(() => props.resource.viewer?.can_delete ?? false)
 

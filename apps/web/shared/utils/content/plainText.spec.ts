@@ -7,7 +7,7 @@ import type {
   TableCellNode,
   UserRef
 } from '../api/schemas'
-import { documentPlainText } from './plainText'
+import { documentHasContent, documentPlainText } from './plainText'
 
 const deleted = '已注销用户'
 
@@ -176,5 +176,32 @@ describe('documentPlainText', () => {
   it('uses children of an unknown node, else its string value', () => {
     expect(plain([{ object: 'weird', children: [text('xy')] }])).toBe('xy')
     expect(plain([{ object: 'weird', value: 'zval' }])).toBe('zval')
+  })
+})
+
+describe('documentHasContent', () => {
+  const image = {
+    object: 'image',
+    url: 'https://cdn.example/a.webp',
+    alt: '',
+    image: null,
+    is_sticker: false
+  } as const
+
+  it('is false for a missing or blank document', () => {
+    expect(documentHasContent(null)).toBe(false)
+    expect(documentHasContent(doc())).toBe(false)
+    expect(documentHasContent(doc(p(text('  \n '))))).toBe(false)
+  })
+
+  it('is true for text', () => {
+    expect(documentHasContent(doc(p(text('hi'))))).toBe(true)
+  })
+
+  it('is true for an image-only document, even nested', () => {
+    expect(documentHasContent(doc(p(image)))).toBe(true)
+    expect(
+      documentHasContent(doc({ object: 'spoiler', children: [p(image)] }))
+    ).toBe(true)
   })
 })

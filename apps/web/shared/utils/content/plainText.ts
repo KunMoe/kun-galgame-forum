@@ -96,6 +96,20 @@ export const documentPlainText = (
   return joinBlocks(nodesOf(input), deletedMentionLabel)
 }
 
+const hasOmitted = (nodes: readonly unknown[]): boolean =>
+  nodes.some((node) => {
+    const object = objectOf(node)
+    return (
+      (object !== undefined && OMIT.has(object)) || hasOmitted(childrenOf(node))
+    )
+  })
+
+export const documentHasContent = (
+  input: ContentDocument | readonly unknown[] | null | undefined
+): boolean =>
+  input != null &&
+  (documentPlainText(input, '').trim() !== '' || hasOmitted(nodesOf(input)))
+
 export const firstImageUrl = (
   input: ContentDocument | readonly unknown[] | null | undefined
 ): string | undefined => {

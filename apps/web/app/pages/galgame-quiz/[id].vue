@@ -10,6 +10,10 @@ import { problemMessage } from '#shared/utils/api/message'
 
 const route = useRoute()
 const quizId = computed(() => String(route.params.id))
+const answered = ref(false)
+watch(quizId, () => {
+  answered.value = false
+})
 const workName = useWorkName()
 
 const { data, problem } = await useApi<Quiz>(
@@ -64,10 +68,11 @@ if (quiz) {
 <template>
   <div class="mx-auto max-w-3xl space-y-3">
     <template v-if="data">
-      <GalgameQuizPlay :quiz="data" />
+      <GalgameQuizPlay :quiz="data" @answered="answered = true" />
       <GalgameQuizCommentCommunityContainer
         :quiz-id="Number(data.id)"
         :comment-count="data.comment_count"
+        :answered="answered"
       />
     </template>
     <KunNull

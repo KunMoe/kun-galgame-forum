@@ -33,7 +33,7 @@ export const useCommunityCommentList = async (
     ...(cursor ? { cursor } : {})
   })
 
-  const { data, problem, status } = await useApi(
+  const { data, problem, status, refresh } = await useApi(
     `wall:${surface.subjectType}:${surface.subjectId}`,
     (client, { signal }) =>
       client.GET('/wall-comments', { params: { query: listQuery() }, signal }),
@@ -104,6 +104,13 @@ export const useCommunityCommentList = async (
   }
   seed()
   watch([data, problem], seed)
+
+  const reload = async () => {
+    seeded.value = false
+    locked.value = false
+    loadFailed.value = false
+    await refresh()
+  }
 
   const hasMore = computed(() => nextCursor.value !== undefined)
 
@@ -223,6 +230,7 @@ export const useCommunityCommentList = async (
     groups,
     isEmpty,
     loadMore,
+    reload,
     handleNewComment,
     handleUpdated,
     handleTombstoned,

@@ -9,7 +9,7 @@ import type {
   GalgameResource,
   GalgameResourceDownload
 } from '#shared/utils/api/schemas'
-import { contentPlainText } from '~/utils/contentPlainText'
+import { documentHasContent } from '#shared/utils/content/plainText'
 import { toKunUser } from '~/utils/userRef'
 import {
   resourceLanguageLabel,
@@ -85,9 +85,7 @@ const canEdit = computed(() => props.resource.viewer?.can_edit ?? false)
 const canDelete = computed(() => props.resource.viewer?.can_delete ?? false)
 const author = computed(() => toKunUser(props.resource.author))
 const workId = computed(() => props.resource.work?.id ?? '')
-const hasNote = computed(
-  () => contentPlainText(props.resource.content).trim().length > 0
-)
+const hasNote = computed(() => documentHasContent(props.resource.content))
 
 const providerName = computed(() => {
   const names = props.resource.provider_names

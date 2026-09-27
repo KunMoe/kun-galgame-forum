@@ -4,6 +4,7 @@ import type { WallComment } from '#shared/utils/api/schemas'
 const props = defineProps<{
   quizId: number
   commentCount: number
+  answered: boolean
 }>()
 
 const {
@@ -19,6 +20,7 @@ const {
   hasMore,
   loadingMore,
   loadMore,
+  reload,
   handleNewComment,
   handleUpdated,
   handleTombstoned,
@@ -29,6 +31,15 @@ const {
 )
 
 const target: CommunityCommentTarget = { kind: 'quiz', quizId: props.quizId }
+
+watch(
+  () => props.answered,
+  (answered) => {
+    if (answered && locked.value) {
+      reload()
+    }
+  }
+)
 
 const onPublished = (post: WallComment) => {
   handleNewComment(post)

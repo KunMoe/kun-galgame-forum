@@ -7,7 +7,7 @@ import type {
   QuizQuality,
   QuizSolution
 } from '#shared/utils/api/schemas'
-import { contentPlainText } from '~/utils/contentPlainText'
+import { documentHasContent } from '#shared/utils/content/plainText'
 
 const props = defineProps<{
   quiz: Quiz
@@ -40,8 +40,8 @@ const judge = computed(() => {
   }
 })
 
-const hasExplanation = computed(
-  () => contentPlainText(props.solution.explanation).trim().length > 0
+const hasExplanation = computed(() =>
+  documentHasContent(props.solution.explanation)
 )
 
 const rowClass = (correct: boolean, chosen: boolean) => {

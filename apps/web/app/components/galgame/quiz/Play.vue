@@ -16,11 +16,12 @@ import type {
   QuizSource,
   QuizSubmission
 } from '#shared/utils/api/schemas'
-import { contentPlainText } from '~/utils/contentPlainText'
+import { documentHasContent } from '#shared/utils/content/plainText'
 import { toKunUser } from '~/utils/userRef'
 import { useIdempotencyKey } from '~/composables/useIdempotencyKey'
 
 const props = defineProps<{ quiz: Quiz }>()
+const emit = defineEmits<{ answered: [] }>()
 
 const router = useRouter()
 const api = useApiClient()
@@ -107,6 +108,7 @@ const submitAnswer = async () => {
     reportProblem(res.problem)
     if (res.problem.code === 'ALREADY_EXISTS') {
       await reloadQuiz()
+      emit('answered')
     }
     return
   }
@@ -128,7 +130,10 @@ const submitAnswer = async () => {
         : state.value.viewer
     }
   }
-  await reloadQuiz()
+  if (state.value.is_work_hidden) {
+    await reloadQuiz()
+  }
+  emit('answered')
 }
 
 const isDeleting = ref(false)
@@ -136,9 +141,7 @@ const canEdit = computed(() => state.value.viewer?.can_edit ?? false)
 const canDelete = computed(() => state.value.viewer?.can_delete ?? false)
 const canManage = computed(() => canEdit.value || canDelete.value)
 const author = computed(() => toKunUser(state.value.author))
-const hasDescription = computed(
-  () => contentPlainText(state.value.content).trim().length > 0
-)
+const hasDescription = computed(() => documentHasContent(state.value.content))
 const showAnswerInput = computed(
   () => !state.value.viewer?.has_answered && !state.value.solution
 )
