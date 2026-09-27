@@ -12,7 +12,7 @@ type Me struct {
 	ID                      repr.DecimalID `json:"id" doc:"The caller's user id. JSON string of a decimal integer."`
 	Moemoepoint             int            `json:"moemoepoint" minimum:"-2147483648" doc:"The caller's moemoepoint balance as this forum last cached it from OAuth. It can lag the live balance. It can be negative."`
 	HasCheckedInToday       bool           `json:"has_checked_in_today" doc:"Whether the caller has already checked in on the current Asia/Shanghai calendar day."`
-	HasUnreadMessages       bool           `json:"has_unread_messages" doc:"Whether the caller has an unread notification of a type they have not muted, or an unread private message while private messages are not muted."`
+	HasUnreadMessages       bool           `json:"has_unread_messages" doc:"Whether the caller has an unread notification of a type they have not muted, or, until direct messages moved to NextMoe chat, an unread private message while private messages are not muted. After the move this field no longer counts direct messages: their unread state is NextMoe chat's, at /api/v1/chat/state."`
 	IsCreator               bool           `json:"is_creator" doc:"Whether the caller holds the creator role, including via a site role."`
 	ToolsetUploadTodayBytes int64          `json:"toolset_upload_today_bytes" minimum:"0" doc:"Bytes of toolset uploads counted against the caller today."`
 }

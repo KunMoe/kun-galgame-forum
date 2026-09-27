@@ -22,7 +22,7 @@ func (s *Users) getMe(ctx context.Context, _ *struct{}) (*getMeOutput, error) {
 	if user == nil {
 		return nil, problem.New(problem.CodeInvalidCredential, "The credential is invalid, expired, or revoked.")
 	}
-	st, err := s.users.Me(ctx, user.ID)
+	st, err := s.users.Me(ctx, user.ID, !s.directMessagesMoved)
 	if err != nil {
 		if errors.Is(err, service.ErrUpstream) {
 			return nil, unavailable(err)

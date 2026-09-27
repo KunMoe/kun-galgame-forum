@@ -227,6 +227,15 @@
     },
     {
       "object": "problem_type",
+      "code": "DIRECT_MESSAGES_MOVED",
+      "domain": "kungal",
+      "status": 410,
+      "type": "https://developer.nextmoe.dev/problems/kungal/direct-messages-moved",
+      "title": "Direct messages moved",
+      "description": "Direct messages moved to NextMoe chat. The forum's own conversations are kept read-only; send, recall and read markers are refused. Use the NextMoe chat API, which /api/v1/chat/* relays."
+    },
+    {
+      "object": "problem_type",
       "code": "DRAFT_LIMIT_REACHED",
       "domain": "kungal",
       "status": 409,

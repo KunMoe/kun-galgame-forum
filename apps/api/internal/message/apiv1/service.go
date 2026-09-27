@@ -33,6 +33,7 @@ type Service struct {
 	convert  *content.Converter
 	cdn      string
 	forward  *msgService.MessageService
+	moved    bool
 }
 
 func New(
@@ -42,6 +43,7 @@ func New(
 	convert *content.Converter,
 	cdn string,
 	forward *msgService.MessageService,
+	moved bool,
 ) *Service {
 	return &Service{
 		messages: messages,
@@ -50,7 +52,16 @@ func New(
 		convert:  convert,
 		cdn:      cdn,
 		forward:  forward,
+		moved:    moved,
 	}
+}
+
+func (s *Service) refuseMoved() *problem.Problem {
+	if !s.moved {
+		return nil
+	}
+	return problem.New(problem.CodeDirectMessagesMoved,
+		"Direct messages moved to NextMoe chat; these conversations are read-only.")
 }
 
 func (s *Service) lookupUsers(ctx context.Context, ids []int) (map[int]userclient.User, *problem.Problem) {

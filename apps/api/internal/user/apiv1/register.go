@@ -40,6 +40,8 @@ type Users struct {
 	purge       *adminService.PurgeService
 	cdn         string
 
+	directMessagesMoved bool
+
 	pricesMu    sync.Mutex
 	pricesCost  *int
 	pricesUntil time.Time
@@ -61,6 +63,8 @@ type Deps struct {
 	State       *repository.StateRepository
 	Purge       *adminService.PurgeService
 	CDN         string
+
+	DirectMessagesMoved bool
 }
 
 func New(d Deps) *Users {
@@ -80,6 +84,8 @@ func New(d Deps) *Users {
 		state:       d.State,
 		purge:       d.Purge,
 		cdn:         d.CDN,
+
+		directMessagesMoved: d.DirectMessagesMoved,
 	}
 }
 

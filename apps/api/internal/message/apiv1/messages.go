@@ -150,6 +150,9 @@ func (s *Service) listDirectMessages(ctx context.Context, in *listDirectMessages
 }
 
 func (s *Service) sendDirectMessage(ctx context.Context, in *sendDirectMessageInput) (*sendDirectMessageOutput, error) {
+	if p := s.refuseMoved(); p != nil {
+		return nil, p
+	}
 	if p := s.ready(); p != nil {
 		return nil, p
 	}
@@ -186,6 +189,9 @@ func (s *Service) sendDirectMessage(ctx context.Context, in *sendDirectMessageIn
 }
 
 func (s *Service) updateDirectMessage(ctx context.Context, in *updateDirectMessageInput) (*updateDirectMessageOutput, error) {
+	if p := s.refuseMoved(); p != nil {
+		return nil, p
+	}
 	if p := s.ready(); p != nil {
 		return nil, p
 	}

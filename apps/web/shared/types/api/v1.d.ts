@@ -8882,7 +8882,7 @@ export interface components {
         Me: {
             /** @description Whether the caller has already checked in on the current Asia/Shanghai calendar day. */
             has_checked_in_today: boolean;
-            /** @description Whether the caller has an unread notification of a type they have not muted, or an unread private message while private messages are not muted. */
+            /** @description Whether the caller has an unread notification of a type they have not muted, or, until direct messages moved to NextMoe chat, an unread private message while private messages are not muted. After the move this field no longer counts direct messages: their unread state is NextMoe chat's, at /api/v1/chat/state. */
             has_unread_messages: boolean;
             /** @description The caller's user id. JSON string of a decimal integer. */
             id: string;
@@ -23882,6 +23882,15 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
+            /** @description DIRECT_MESSAGES_MOVED once direct messages have moved to NextMoe chat; nothing is written. */
+            410: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
             /** @description Request Entity Too Large */
             413: {
                 headers: {
@@ -24071,6 +24080,15 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
+            /** @description DIRECT_MESSAGES_MOVED once direct messages have moved to NextMoe chat; nothing is written. */
+            410: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
             /** @description Request Entity Too Large */
             413: {
                 headers: {
@@ -24172,6 +24190,15 @@ export interface operations {
             };
             /** @description NOT_FOUND when the peer does not exist, is not renderable, or is the caller. */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description DIRECT_MESSAGES_MOVED once direct messages have moved to NextMoe chat; nothing is written. */
+            410: {
                 headers: {
                     [name: string]: unknown;
                 };

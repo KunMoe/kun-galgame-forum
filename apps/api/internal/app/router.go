@@ -6,6 +6,7 @@ import (
 	"kun-galgame-api/internal/apiv1/content"
 	appreleaseapiv1 "kun-galgame-api/internal/apprelease/apiv1"
 	authapiv1 "kun-galgame-api/internal/auth/apiv1"
+	"kun-galgame-api/internal/chat"
 	docapiv1 "kun-galgame-api/internal/doc/apiv1"
 	friendlinkapiv1 "kun-galgame-api/internal/friendlink/apiv1"
 	galgameapiv1 "kun-galgame-api/internal/galgame/apiv1"
@@ -50,6 +51,7 @@ func (a *App) setupRoutes() {
 	if a.Authn != nil {
 		deps.Resolver = a.Authn
 	}
+	deps.Mount = chat.NewRelay(a.Config.Chat.BaseURL, deps.Resolver).Mount
 	topicReads := a.newTopicV1()
 	a.APIv1 = apiv1.Setup(a.Fiber, deps,
 		topicapiv1.Register(topicReads),

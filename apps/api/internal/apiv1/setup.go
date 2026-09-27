@@ -36,6 +36,9 @@ const (
 type Deps struct {
 	Resolver IdentityResolver
 	Redis    *redis.Client
+	// Mount registers v1 routes that are not huma operations. They sit behind
+	// v1Headers and ahead of the unmatched handler, and are in no spec.
+	Mount func(fiber.Router)
 }
 
 var installOnce sync.Once
@@ -76,6 +79,9 @@ func Setup(app *fiber.App, deps Deps, registrars ...func(huma.API)) huma.API {
 	}
 	sealDocument(api.OpenAPI())
 	mirrorHead(app)
+	if deps.Mount != nil {
+		deps.Mount(group)
+	}
 	// Fiber matches in registration order and the legacy /api group spreads
 	// Auth over every path below it: without this, an unmatched
 	// /api/v1 request fell through into it and answered a legacy envelope.

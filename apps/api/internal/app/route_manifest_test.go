@@ -246,6 +246,17 @@ var publicWrites = map[string]string{
 		"anonymous readers have always been given; it moves only that resource's download counter",
 }
 
+// A Deps.Mount route is no huma operation and so has no tier to check here.
+var mountedWrites = map[string]string{
+	"POST /api/v1/chat/*":   chatRelayAuth,
+	"PUT /api/v1/chat/*":    chatRelayAuth,
+	"PATCH /api/v1/chat/*":  chatRelayAuth,
+	"DELETE /api/v1/chat/*": chatRelayAuth,
+}
+
+const chatRelayAuth = "the relay resolves the caller with apiv1.RequireIdentity before it forwards anything " +
+	"(TestChatRelayRefusesAnonymousBeforeUpstream)"
+
 // Checked against the RESOLVED table, not against where the line happens to sit
 // in router.go. A write registered above the auth boundary — the mirror image of
 // the 2026-07 leak, and the dangerous direction — fails here even though it
@@ -284,6 +295,9 @@ func unauthenticatedWrites(t *testing.T, a *App) []string {
 		}
 		if apiv1.IsV1Path(r.Path) {
 			if _, ok := publicWrites[r.Method+" "+r.Path]; ok {
+				continue
+			}
+			if _, ok := mountedWrites[r.Method+" "+r.Path]; ok {
 				continue
 			}
 			if apiv1.TierOf(a.APIv1, r.Method, r.Path) != apiv1.TierRequired {
