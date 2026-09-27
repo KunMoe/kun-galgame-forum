@@ -160,6 +160,7 @@ func Register(s *Service) func(huma.API) {
 			}),
 		}), s.listActivities)
 		registerFollowing(api, s)
+		registerActivitySettings(api, s)
 	}
 }
 

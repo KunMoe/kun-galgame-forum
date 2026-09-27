@@ -37,6 +37,8 @@ type followingUpstream struct {
 	seenAt     *string
 	seenReply  string
 	badCursors map[string]bool
+	hiddenBy   map[int64]int64
+	settings   map[int64]bool
 }
 
 func (u *followingUpstream) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -52,6 +54,7 @@ func (u *followingUpstream) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	items := u.items
 	unseen, seenAt, seenReply := u.unseen, u.seenAt, u.seenReply
 	bad := u.badCursors[r.URL.Query().Get("cursor")]
+	hiddenBy := u.hiddenBy
 	u.mu.Unlock()
 
 	path := r.URL.Path
@@ -74,11 +77,16 @@ func (u *followingUpstream) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		idStr := strings.TrimSuffix(strings.TrimPrefix(path, "/activity-groups/"), "/items")
 		id, _ := strconv.ParseInt(idStr, 10, 64)
 		page, ok := items[id]
+		if owner, hidden := hiddenBy[id]; hidden && r.URL.Query().Get("viewer_id") != strconv.FormatInt(owner, 10) {
+			ok = false
+		}
 		if !ok {
 			writeEnvelope(w, http.StatusNotFound, 40400, "no such group", nil)
 			return
 		}
 		writeEnvelope(w, 200, 0, "", communityclient.ActivityItemListResponse{Items: page, NextCursor: next})
+	case strings.HasPrefix(path, "/users/") && strings.HasSuffix(path, "/activity-settings"):
+		u.serveActivitySettings(w, r, path, string(body))
 	default:
 		writeEnvelope(w, http.StatusNotFound, 40400, "no route "+path, nil)
 	}
@@ -105,7 +113,12 @@ type followingFix struct {
 
 func newFollowingFix(t *testing.T) *followingFix {
 	t.Helper()
-	cm := &followingUpstream{items: map[int64][]communityclient.ActivityItemView{}, seenReply: "2026-09-26T00:00:00Z"}
+	cm := &followingUpstream{
+		items:     map[int64][]communityclient.ActivityItemView{},
+		seenReply: "2026-09-26T00:00:00Z",
+		hiddenBy:  map[int64]int64{},
+		settings:  map[int64]bool{},
+	}
 	base := newWriteFixCommunity(t, nil, cm)
 	base.alice(t)
 	return &followingFix{writeFix: base, cm: cm}
@@ -324,6 +337,33 @@ func TestV1ActivityGroupItemsBannedActor(t *testing.T) {
 	}
 	resp, body := f.items(t, "", "11", url.Values{})
 	mustCode(t, resp, body, http.StatusNotFound, "NOT_FOUND")
+}
+
+func TestV1ActivityGroupItemsPassesViewer(t *testing.T) {
+	f := newFollowingFix(t)
+	f.cm.items[11] = []communityclient.ActivityItemView{
+		faItem(101, int64(w3UserAlice), "kungal", "publish", "Mine", "https://www.kungal.com/topic/42", "sfw", nil, ""),
+	}
+	f.cm.hiddenBy[11] = int64(w3UserAlice)
+	for _, c := range []struct {
+		session, viewer string
+		status          int
+	}{
+		{"", "0", http.StatusNotFound},
+		{"sess-bob", strconv.Itoa(w3UserBob), http.StatusNotFound},
+		{"sess-alice", strconv.Itoa(w3UserAlice), http.StatusOK},
+	} {
+		resp, body := f.items(t, c.session, "11", url.Values{})
+		if got := f.cm.query().Get("viewer_id"); got != c.viewer {
+			t.Errorf("session %q sent viewer_id %q, want %q", c.session, got, c.viewer)
+		}
+		if resp.StatusCode != c.status {
+			t.Errorf("session %q: %d %+v, want %d", c.session, resp.StatusCode, body, c.status)
+		}
+		if c.status == http.StatusNotFound {
+			mustCode(t, resp, body, http.StatusNotFound, "NOT_FOUND")
+		}
+	}
 }
 
 func TestV1FollowingActivitySummary(t *testing.T) {

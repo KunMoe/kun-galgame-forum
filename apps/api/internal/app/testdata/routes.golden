@@ -97,6 +97,7 @@ GET    /api/v1/lotteries/:lottery_id/entries          cors.New → v1Headers →
 GET    /api/v1/lotteries/:lottery_id/winners/:winner_id cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/me                                     cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/me/account                             cors.New → v1Headers → fiberAdapter.Handle
+GET    /api/v1/me/activity-settings                   cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/me/answered-quizzes                    cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/me/collections                         cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/me/conversations                       cors.New → v1Headers → fiberAdapter.Handle
@@ -306,6 +307,7 @@ PUT    /api/v1/collections/:collection_id/works/:work_id cors.New → v1Headers 
 PUT    /api/v1/comments/:comment_id/like              cors.New → v1Headers → fiberAdapter.Handle
 PUT    /api/v1/galgame-resources/:resource_id/like    cors.New → v1Headers → fiberAdapter.Handle
 PUT    /api/v1/lotteries/:lottery_id/entries/me       cors.New → v1Headers → fiberAdapter.Handle
+PUT    /api/v1/me/activity-settings                   cors.New → v1Headers → fiberAdapter.Handle
 PUT    /api/v1/me/avatar                              cors.New → v1Headers → fiberAdapter.Handle
 PUT    /api/v1/me/conversations/:user_id/read-marker  cors.New → v1Headers → fiberAdapter.Handle
 PUT    /api/v1/me/following-activities/read-marker    cors.New → v1Headers → fiberAdapter.Handle

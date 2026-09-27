@@ -11,6 +11,10 @@ const props = defineProps<{
   includeNsfw: boolean
 }>()
 
+const emit = defineEmits<{
+  gone: [id: string]
+}>()
+
 const api = useApiClient()
 
 const expanded = ref<FollowingActivityItem[] | null>(null)
@@ -44,6 +48,10 @@ const loadItems = async () => {
   )
   loading.value = false
   if (!result.ok) {
+    if (result.problem.status === 404) {
+      emit('gone', props.group.id)
+      return
+    }
     reportProblem(result.problem)
     return
   }

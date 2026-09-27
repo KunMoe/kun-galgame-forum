@@ -102,7 +102,7 @@ func TestListActivityGroupItems(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	out, err := newTestClient(srv.URL).ListActivityGroupItems(context.Background(), 11, "cm_prev", 20, "all")
+	out, err := newTestClient(srv.URL).ListActivityGroupItems(context.Background(), 11, 42, "cm_prev", 20, "all")
 	if err != nil {
 		t.Fatalf("ListActivityGroupItems: %v", err)
 	}
@@ -110,7 +110,8 @@ func TestListActivityGroupItems(t *testing.T) {
 		t.Errorf("method %q path %q", gotMethod, gotPath)
 	}
 	q, _ := http.NewRequest(http.MethodGet, "http://x/?"+gotQuery, nil)
-	if q.URL.Query().Get("cursor") != "cm_prev" || q.URL.Query().Get("limit") != "20" || q.URL.Query().Get("content_limit") != "all" {
+	if q.URL.Query().Get("cursor") != "cm_prev" || q.URL.Query().Get("limit") != "20" || q.URL.Query().Get("content_limit") != "all" ||
+		q.URL.Query().Get("viewer_id") != "42" {
 		t.Errorf("query %q", gotQuery)
 	}
 	if len(out.Items) != 1 || out.Items[0].ID != 101 || out.NextCursor != "more" {
@@ -125,7 +126,7 @@ func TestListActivityGroupItemsNotFound(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	_, err := newTestClient(srv.URL).ListActivityGroupItems(context.Background(), 99, "", 0, "")
+	_, err := newTestClient(srv.URL).ListActivityGroupItems(context.Background(), 99, 0, "", 0, "")
 	var apiErr *communityclient.APIError
 	if !errors.As(err, &apiErr) || apiErr.Status != http.StatusNotFound || apiErr.Code != 40400 {
 		t.Errorf("err = %v, want *APIError 404", err)
@@ -203,5 +204,56 @@ func TestMarkFollowingActivitiesSeenSendsAt(t *testing.T) {
 	}
 	if out.SeenAt != at {
 		t.Errorf("decoded = %+v", out)
+	}
+}
+
+func TestListActivityGroupItemsAnonymousViewer(t *testing.T) {
+	var gotQuery string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotQuery = r.URL.RawQuery
+		_ = json.NewEncoder(w).Encode(map[string]any{"code": 0, "data": map[string]any{"items": []any{}}})
+	}))
+	defer srv.Close()
+
+	if _, err := newTestClient(srv.URL).ListActivityGroupItems(context.Background(), 11, 0, "", 0, ""); err != nil {
+		t.Fatalf("ListActivityGroupItems: %v", err)
+	}
+	if gotQuery != "viewer_id=0" {
+		t.Errorf("query %q, want viewer_id=0 for an anonymous reader", gotQuery)
+	}
+}
+
+func TestActivitySettings(t *testing.T) {
+	var gotMethod, gotPath, gotBody string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotMethod, gotPath = r.Method, r.URL.Path
+		b, _ := io.ReadAll(r.Body)
+		gotBody = string(b)
+		data := map[string]any{"user_id": 7, "hidden": false, "updated_at": nil}
+		if r.Method == http.MethodPut {
+			data = map[string]any{"user_id": 7, "hidden": true, "updated_at": "2026-09-27T08:00:00.123456Z"}
+		}
+		_ = json.NewEncoder(w).Encode(map[string]any{"code": 0, "data": data})
+	}))
+	defer srv.Close()
+	cli := newTestClient(srv.URL)
+
+	got, err := cli.GetActivitySettings(context.Background(), 7)
+	if err != nil {
+		t.Fatalf("GetActivitySettings: %v", err)
+	}
+	if gotMethod != http.MethodGet || gotPath != "/users/7/activity-settings" || got.UserID != 7 || got.Hidden || got.UpdatedAt != nil {
+		t.Errorf("get %s %s = %+v", gotMethod, gotPath, got)
+	}
+	got, err = cli.PutActivitySettings(context.Background(), 7, true)
+	if err != nil {
+		t.Fatalf("PutActivitySettings: %v", err)
+	}
+	if gotMethod != http.MethodPut || gotPath != "/users/7/activity-settings" || gotBody != `{"hidden":true}` ||
+		!got.Hidden || got.UpdatedAt == nil {
+		t.Errorf("put %s %s %s = %+v", gotMethod, gotPath, gotBody, got)
+	}
+	if _, err := cli.PutActivitySettings(context.Background(), 7, false); err != nil || gotBody != `{"hidden":false}` {
+		t.Errorf("put false sent %s (%v): hidden must always be written", gotBody, err)
 	}
 }

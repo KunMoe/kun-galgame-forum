@@ -53,7 +53,7 @@ export interface paths {
         };
         /**
          * List every live item of an activity group
-         * @description Every live item of one activity group, newest first. Unknown groups, and groups whose actor is not renderable, are NOT_FOUND. A page can be shorter than limit. The cursor is bound to include_nsfw.
+         * @description Every live item of one activity group, newest first. Unknown groups, groups whose actor is not renderable, and groups whose actor hides their activity (to anyone but that actor) are NOT_FOUND. A page can be shorter than limit. The cursor is bound to include_nsfw.
          */
         get: operations["listActivityGroupItems"];
         put?: never;
@@ -1520,6 +1520,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/me/activity-settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get whether the caller hides their activity
+         * @description The switch is stored by NextMoe community and shared by every NextMoe site.
+         */
+        get: operations["getActivitySettings"];
+        /**
+         * Hide or show the caller's activity
+         * @description While hidden, on every NextMoe site: the caller's groups leave every follower's following feed and unseen count, listActivityGroupItems answers NOT_FOUND for them to anyone but the caller, and publishing notifies no follower. Turning it on also withdraws every followee_activity_published notification the caller raised, read ones included. Turning it off shows the activity again at once; withdrawn notifications do not come back, and nothing published while hidden ever notifies. The caller's profile and their own view of their groups are unaffected.
+         */
+        put: operations["putActivitySettings"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/me/answered-quizzes": {
         parameters: {
             query?: never;
@@ -1797,7 +1821,7 @@ export interface paths {
         };
         /**
          * List grouped activity of the accounts the caller follows
-         * @description Groups of activity by accounts the caller follows, across NextMoe sites, newest group first. A group is one author's items of one verb and object_kind on one site on one Asia/Shanghai calendar day. A group whose actor is not renderable is dropped, so a page can be shorter than limit; next_cursor still comes from community, and only an absent next_cursor means the end. The cursor is bound to include_nsfw, verbs and sites.
+         * @description Groups of activity by accounts the caller follows, across NextMoe sites, newest group first. A group is one author's items of one verb and object_kind on one site on one Asia/Shanghai calendar day. Accounts that hide their activity are left out by community. A group whose actor is not renderable is dropped, so a page can be shorter than limit; next_cursor still comes from community, and only an absent next_cursor means the end. The cursor is bound to include_nsfw, verbs and sites.
          */
         get: operations["listFollowingActivities"];
         put?: never;
@@ -5261,6 +5285,19 @@ export interface components {
             resource_type: components["schemas"]["ResourceType"];
             /** @description Size as the publisher wrote it, such as 1.7GB. Free text; never use it as a decision input. */
             size: string;
+        };
+        ActivitySettings: {
+            /** @description Whether the caller's activity is hidden from everyone else on every NextMoe site. false until the caller first sets it. */
+            is_hidden: boolean;
+            /**
+             * @description Type discriminant. Always activity_settings.
+             * @constant
+             */
+            object: "activity_settings";
+        };
+        ActivitySettingsWrite: {
+            /** @description true hides the caller's activity from everyone else; false shows it again. */
+            is_hidden: boolean;
         };
         /** @enum {string} */
         ActivitySort: "occurred_desc" | "bumped_desc";
@@ -14621,6 +14658,24 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
             /** @description Not Found */
             404: {
                 headers: {
@@ -22847,6 +22902,158 @@ export interface operations {
                 };
             };
             /** @description SERVICE_UNAVAILABLE when the account center cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getActivitySettings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ActivitySettings"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the community service or the account service is unreachable. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    putActivitySettings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ActivitySettingsWrite"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ActivitySettings"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description VALIDATION_FAILED when is_hidden is missing or not a boolean. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the community service or the account service is unreachable. */
             503: {
                 headers: {
                     [name: string]: unknown;

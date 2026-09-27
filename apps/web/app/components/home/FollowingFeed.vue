@@ -20,6 +20,14 @@ const { items, status, problem, hasMore, loadingMore, loadMore } =
       })
   )
 
+const goneIds = ref(new Set<string>())
+const groups = computed(() =>
+  items.value.filter((group) => !goneIds.value.has(group.id))
+)
+const dropGroup = (id: string) => {
+  goneIds.value = new Set(goneIds.value).add(id)
+}
+
 watch(
   () => status.value === 'success',
   (loaded) => {
@@ -62,11 +70,11 @@ useIntersectionObserver(
     :loading="status === 'pending' && items.length > 0"
   >
     <KunNull
-      v-if="problem && !items.length"
+      v-if="problem && !groups.length"
       description="关注动态加载失败，请稍后再试"
     />
 
-    <div v-else-if="status !== 'pending' && !items.length">
+    <div v-else-if="status !== 'pending' && !groups.length">
       <KunNull description="你关注的人还没有动态" />
       <p class="text-default-500 text-center text-sm">
         在用户主页点击「关注」，TA 在鲲 Galgame 和 NextMoe
@@ -76,11 +84,15 @@ useIntersectionObserver(
 
     <div v-else class="divide-default-200/60 divide-y">
       <div
-        v-for="group in items"
+        v-for="group in groups"
         :key="group.id"
         class="py-5 first:pt-0 last:pb-0"
       >
-        <HomeFollowingGroup :group="group" :include-nsfw="allowsNsfw" />
+        <HomeFollowingGroup
+          :group="group"
+          :include-nsfw="allowsNsfw"
+          @gone="dropGroup"
+        />
       </div>
       <template v-if="loadingMore">
         <div v-for="n in 3" :key="`skeleton-${n}`" class="py-5">
@@ -89,7 +101,7 @@ useIntersectionObserver(
       </template>
     </div>
 
-    <div v-if="items.length" ref="sentinel" class="flex justify-center pt-4">
+    <div v-if="groups.length" ref="sentinel" class="flex justify-center pt-4">
       <KunButton
         v-if="hasMore && !loadingMore"
         variant="light"

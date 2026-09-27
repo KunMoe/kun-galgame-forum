@@ -177,7 +177,7 @@ func registerFollowing(api huma.API, s *Service) {
 		Summary:     "List grouped activity of the accounts the caller follows",
 		Description: "Groups of activity by accounts the caller follows, across NextMoe sites, newest group first. " +
 			"A group is one author's items of one verb and object_kind on one site on one Asia/Shanghai calendar day. " +
-			"A group whose actor is not renderable is dropped, so a page can be shorter than limit; " +
+			"Accounts that hide their activity are left out by community. A group whose actor is not renderable is dropped, so a page can be shorter than limit; " +
 			"next_cursor still comes from community, and only an absent next_cursor means the end. " +
 			"The cursor is bound to include_nsfw, verbs and sites.",
 		Tags: tags,
@@ -187,13 +187,13 @@ func registerFollowing(api huma.API, s *Service) {
 		}),
 	}), s.listFollowingActivities)
 
-	huma.Register(api, v1.Public(huma.Operation{
+	huma.Register(api, v1.Optional(huma.Operation{
 		OperationID: "listActivityGroupItems",
 		Method:      http.MethodGet,
 		Path:        activityGroupItems,
 		Summary:     "List every live item of an activity group",
 		Description: "Every live item of one activity group, newest first. " +
-			"Unknown groups, and groups whose actor is not renderable, are NOT_FOUND. " +
+			"Unknown groups, groups whose actor is not renderable, and groups whose actor hides their activity (to anyone but that actor) are NOT_FOUND. " +
 			"A page can be shorter than limit. The cursor is bound to include_nsfw.",
 		Tags: tags,
 		Responses: problemResponses(map[int]string{
@@ -308,7 +308,11 @@ func (s *Service) listActivityGroupItems(ctx context.Context, in *groupItemsInpu
 	if prob != nil {
 		return nil, prob
 	}
-	page, err := s.community.ListActivityGroupItems(ctx, gid, upstream, in.Limit, contentLimit)
+	var viewer int64
+	if u := v1.User(ctx); u != nil {
+		viewer = int64(u.ID)
+	}
+	page, err := s.community.ListActivityGroupItems(ctx, gid, viewer, upstream, in.Limit, contentLimit)
 	if err != nil {
 		return nil, communityReadProblem(err, true)
 	}
