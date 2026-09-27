@@ -30,6 +30,20 @@ const emit = defineEmits<{
   'update:loading': [boolean]
 }>()
 
+const resourceRank = useState<Record<string, number>>(
+  'galgame-resource-rank',
+  () => ({})
+)
+
+const shuffle = (items: GalgameResource[]) => {
+  for (const item of items) {
+    resourceRank.value[item.id] ??= Math.random()
+  }
+  return items.sort(
+    (a, b) => resourceRank.value[a.id]! - resourceRank.value[b.id]!
+  )
+}
+
 const { data, status, refresh, problem } = await useApi<GalgameResource[]>(
   () => `work-resources:${workId.value}`,
   async (api, { signal }) => {
@@ -63,7 +77,7 @@ const { data, status, refresh, problem } = await useApi<GalgameResource[]>(
       items.push(...next.data.items)
       page += 1
     }
-    return { data: items, response: first.response }
+    return { data: shuffle(items), response: first.response }
   }
 )
 watchEffect(() => emit('update:loading', status.value === 'pending'))
