@@ -186,6 +186,21 @@ describe('TopicDetail', () => {
     })
   })
 
+  it('drops the pending scroll to the target when unmounted before it runs', async () => {
+    stubFetch([reply('4', 4)], 4)
+    const lookup = vi.spyOn(document, 'getElementById')
+    wrapper = await mountSuspended(TopicDetail, {
+      props: { topic: topic('506') },
+      route: '/topic/506?comment=3322'
+    })
+    wrapper.unmount()
+    wrapper = undefined
+    await new Promise((resolve) => setTimeout(resolve, 400))
+    const looked = lookup.mock.calls.map((call) => call[0])
+    lookup.mockRestore()
+    expect(looked).not.toContain('comment-3322')
+  })
+
   it('sends the view beacon once on mount', async () => {
     const fetchSpy = stubFetch([])
     wrapper = await mountSuspended(TopicDetail, {

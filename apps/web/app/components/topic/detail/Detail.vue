@@ -84,12 +84,13 @@ const sendViewBeacon = () => {
     .catch(() => undefined)
 }
 
+let scrollTimer: ReturnType<typeof setTimeout> | undefined
 onMounted(() => {
   sendViewBeacon()
   if (!targetFloor && !targetCommentId) {
     return
   }
-  setTimeout(() => {
+  scrollTimer = setTimeout(() => {
     const ok =
       targetCommentId > 0
         ? scrollToComment(targetCommentId, false)
@@ -99,6 +100,7 @@ onMounted(() => {
     }
   }, 300)
 })
+onBeforeUnmount(() => clearTimeout(scrollTimer))
 
 provide('topicUserId', authorId.value)
 provide('activeReplyFloor', activeFloor)
