@@ -26,7 +26,7 @@ export const checkGalgameResourcePublish = (link: GalgameResourceStoreTemp) => {
       return false
     }
 
-    if (!isValidURL(l.trim()) && !isEd2kFileLink(l.trim())) {
+    if (!isEd2kFileLink(l.trim()) && !isValidURL(l.trim())) {
       useMessage(10559, 'warn')
       return false
     }
