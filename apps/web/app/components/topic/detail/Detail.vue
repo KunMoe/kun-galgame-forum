@@ -104,6 +104,23 @@ onMounted(() => {
 })
 onBeforeUnmount(() => clearTimeout(scrollTimer))
 
+const isLoadingEarlier = ref(false)
+const loadEarlierInPlace = async () => {
+  const anchor = document.querySelector<HTMLElement>('[data-reply-list] > *')
+  const anchorTop = anchor?.getBoundingClientRect().top
+  isLoadingEarlier.value = true
+  await loadEarlier()
+  isLoadingEarlier.value = false
+  await nextTick()
+  if (!anchor?.isConnected || anchorTop === undefined) {
+    return
+  }
+  window.scrollBy({
+    top: anchor.getBoundingClientRect().top - anchorTop,
+    behavior: 'instant'
+  })
+}
+
 provide('topicUserId', authorId.value)
 provide('activeReplyFloor', activeFloor)
 provide(
@@ -228,8 +245,14 @@ watch(
       </div>
 
       <section id="reply-section" class="space-y-4">
-        <div v-if="hasEarlier && status !== 'pending'" class="text-center">
-          <KunButton size="lg" variant="flat" @click="loadEarlier">
+        <div v-if="hasEarlier" class="text-center">
+          <KunButton
+            size="lg"
+            variant="flat"
+            :loading="isLoadingEarlier"
+            :disabled="status === 'pending'"
+            @click="loadEarlierInPlace"
+          >
             加载更早的回复
           </KunButton>
         </div>
