@@ -112,7 +112,7 @@ afterEach(() => {
   clearNuxtData()
 })
 
-const stubFetch = (replies: Reply[]) => {
+const stubFetch = (replies: Reply[], commentFloor?: number) => {
   const fetchSpy = vi.fn(async (input: Request | string | URL) => {
     if (isViews(input)) {
       return new Response(null, { status: 204 })
@@ -120,11 +120,20 @@ const stubFetch = (replies: Reply[]) => {
     if (isRepliesList(input)) {
       return jsonResponse(200, { object: 'list', items: replies })
     }
+    if (commentFloor !== undefined && pathOf(input).includes('/comments/')) {
+      return jsonResponse(200, { object: 'comment', reply_floor: commentFloor })
+    }
     return jsonResponse(200, { code: 0, data: [] })
   })
   vi.stubGlobal('fetch', fetchSpy)
   return fetchSpy
 }
+
+const requestedFromFloors = (fetchSpy: ReturnType<typeof stubFetch>) =>
+  fetchSpy.mock.calls
+    .map((call) => call[0] as Request | string | URL)
+    .filter((input) => isRepliesList(input))
+    .map((input) => requestUrl(input).searchParams.get('from_floor'))
 
 const replyIds = (root: VueWrapper) =>
   root.findAll('.kun-reply').map((node) => node.attributes('id') ?? '')
@@ -155,24 +164,26 @@ describe('TopicDetail', () => {
     ).toBe(true)
   })
 
-  it('requests from_floor=N for ?reply=N', async () => {
-    const fetchSpy = stubFetch([reply('7', 7)])
+  it('loads the whole page holding the floor for ?reply=N', async () => {
+    const fetchSpy = stubFetch([reply('45', 45)])
     wrapper = await mountSuspended(TopicDetail, {
       props: { topic: topic('502') },
-      route: '/topic/502?reply=7'
+      route: '/topic/502?reply=45'
     })
     await vi.waitFor(() => {
-      expect(
-        fetchSpy.mock.calls.some((call) => isRepliesList(call[0] as Request))
-      ).toBe(true)
+      expect(requestedFromFloors(fetchSpy)).toContain('31')
     })
-    const urls = fetchSpy.mock.calls
-      .map((call) => call[0] as Request | string | URL)
-      .filter((input) => isRepliesList(input))
-      .map((input) => requestUrl(input))
-    expect(urls.some((url) => url.searchParams.get('from_floor') === '7')).toBe(
-      true
-    )
+  })
+
+  it('loads the whole page holding the comment for ?comment=N', async () => {
+    const fetchSpy = stubFetch([reply('4', 4)], 4)
+    wrapper = await mountSuspended(TopicDetail, {
+      props: { topic: topic('505') },
+      route: '/topic/505?comment=3322'
+    })
+    await vi.waitFor(() => {
+      expect(requestedFromFloors(fetchSpy)).toContain('1')
+    })
   })
 
   it('sends the view beacon once on mount', async () => {

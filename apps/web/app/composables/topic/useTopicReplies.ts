@@ -5,6 +5,9 @@ import { useApiClient } from '~/composables/useApi'
 
 const PAGE_SIZE = 30
 
+export const replyPageStart = (floor: number) =>
+  Math.floor((floor - 1) / PAGE_SIZE) * PAGE_SIZE + 1
+
 type SortOrder = 'asc' | 'desc'
 
 type FailedLoad =

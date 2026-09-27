@@ -1,5 +1,8 @@
 <script setup lang="ts">
-import { useTopicReplies } from '~/composables/topic/useTopicReplies'
+import {
+  replyPageStart,
+  useTopicReplies
+} from '~/composables/topic/useTopicReplies'
 import { useTopicScroll } from '~/composables/topic/useTopicScroll'
 import { TOPIC_TOC_SOURCE } from '~/composables/topic/useTopicTOC'
 import { problemMessage } from '#shared/utils/api/message'
@@ -45,21 +48,18 @@ const api = useApiClient()
 const targetFloor = Number(route.query.reply) || 0
 const targetCommentId = Number(route.query.comment) || 0
 
-let fromFloor: number | undefined
-if (targetFloor > 0) {
-  fromFloor = targetFloor
-} else if (targetCommentId > 0) {
+let targetReplyFloor = targetFloor
+if (targetReplyFloor <= 0 && targetCommentId > 0) {
   const located = await settle(
     api.GET('/comments/{comment_id}', {
       params: { path: { comment_id: String(targetCommentId) } }
     })
   )
   if (located.ok) {
-    fromFloor = located.data.reply_floor
+    targetReplyFloor = located.data.reply_floor
   }
 }
 
-const targetReplyFloor = fromFloor ?? targetFloor
 const activeFloor = ref(targetReplyFloor)
 watch(
   () => route.query.reply,
@@ -72,7 +72,9 @@ watch(
   }
 )
 
-await loadInitialReplies({ fromFloor })
+await loadInitialReplies({
+  fromFloor: targetReplyFloor > 0 ? replyPageStart(targetReplyFloor) : undefined
+})
 
 const sendViewBeacon = () => {
   void api
