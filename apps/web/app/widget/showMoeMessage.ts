@@ -1,13 +1,12 @@
 import { kungal } from '~/config/kungal'
 
 export const showMoeMessage = () => {
-  const asciiArt = `
-██╗  ██╗██╗   ██╗███╗   ██╗       ██████╗  █████╗ ██╗
-██║ ██╔╝██║   ██║████╗  ██║      ██╔════╝ ██╔══██╗██║
-█████═╝ ██║   ██║██╔██╗ ██║      ██║  ███╗███████║██║
-██╔═██╗ ██║   ██║██║╚██╗██║      ██║   ██║██╔══██║██║
-██║ ╚██╗╚██████╔╝██║ ╚████║      ╚██████╔╝██║  ██║███████╗
-╚═╝  ╚═╝ ╚═════╝ ╚═╝  ╚═══╝       ╚═════╝ ╚═╝  ╚═╝╚══════╝
+  const asciiArt = String.raw`
+    __ ____  ___   __   _________    __
+   / //_/ / / / | / /  / ____/   |  / /
+  / ,< / / / /  |/ /  / / __/ /| | / /
+ / /| / /_/ / /|  /  / /_/ / ___ |/ /___
+/_/ |_\____/_/ |_/   \____/_/  |_/_____/
 `
 
   // The `ascii` entry below carries a SANCTIONED EXCEPTION to 铁律 #1 (no
@@ -15,9 +14,10 @@ export const showMoeMessage = () => {
   // CLAUDE.md; do NOT remove it in a no-gradient sweep.
   const styles = {
     ascii: `
-      font-family: monospace;
+      font-family: Consolas, Menlo, 'DejaVu Sans Mono', 'Courier New', monospace;
       font-weight: bold;
       font-size: 12px;
+      line-height: 1.2;
       color: transparent;
       background: linear-gradient(45deg, #66AAF9 0%, #FF95E1 100%);
       -webkit-background-clip: text;
