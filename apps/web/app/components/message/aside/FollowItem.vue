@@ -13,10 +13,10 @@
       <KunIcon name="lucide:bell" class="text-default-500 text-xl" />
     </div>
     <div class="flex w-full flex-col justify-center">
-      <span class="font-bold">关注的评论区</span>
+      <span class="font-bold">关注的话题与评论区</span>
       <div class="flex items-center justify-between text-sm">
         <span class="text-default-500 line-clamp-1">
-          管理你关注的游戏和资源评论区
+          管理你关注的话题和评论区
         </span>
       </div>
     </div>

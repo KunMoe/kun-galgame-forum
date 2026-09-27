@@ -3,6 +3,7 @@ import {
   replyPageStart,
   useTopicReplies
 } from '~/composables/topic/useTopicReplies'
+import { useTopicReadMarker } from '~/composables/topic/useTopicReadMarker'
 import { useTopicScroll } from '~/composables/topic/useTopicScroll'
 import { TOPIC_TOC_SOURCE } from '~/composables/topic/useTopicTOC'
 import { problemMessage } from '#shared/utils/api/message'
@@ -43,6 +44,7 @@ const {
 
 const route = useRoute()
 const { scrollToFloor, scrollToComment } = useTopicScroll()
+useTopicReadMarker(props.topic.id)
 const api = useApiClient()
 
 const targetFloor = Number(route.query.reply) || 0

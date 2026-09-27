@@ -2224,6 +2224,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/me/topic-subscriptions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the topics the caller watches
+         * @description Lists the caller's watching subscriptions, the one where a reply landed most recently first, as a cursor page. Each topic is judged again as getTopic would judge it for the caller; topics the caller can no longer read, topics by banned authors and, unless include_nsfw, NSFW topics are left out and the server reads on to fill the page, so continue while next_cursor is present.
+         */
+        get: operations["listTopicSubscriptions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/me/walls": {
         parameters: {
             query?: never;
@@ -3954,6 +3974,50 @@ export interface paths {
          */
         get: operations["getTopicSource"];
         put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/topics/{topic_id}/subscription": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the caller's subscription to a topic
+         * @description Returns how the caller hears about replies to this topic. A topic's author watches it from the moment it is posted; everyone else starts at normal. NOT_FOUND when the topic is hidden or getTopic would not return it to the caller.
+         */
+        get: operations["getTopicSubscription"];
+        /**
+         * Set the caller's subscription to a topic
+         * @description Sets the caller's notification level for this topic. Setting the current level changes nothing. Switching to watching starts the read position at the topic's last visible floor, so replies posted before it are not unread; setting watching again while watching keeps the position. normal forgets the position. NOT_FOUND when the topic is hidden or getTopic would not return it to the caller.
+         */
+        put: operations["setTopicSubscription"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/topics/{topic_id}/subscription/read-marker": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Record how far the caller has read a topic
+         * @description Moves a watching caller's read position forward to floor, capped at the topic's last visible floor; it never moves back. When it reaches that floor, the caller's unread subscribed_topic_replied notification for this topic is marked read. For normal and muted nothing is stored and the current state is returned. NOT_FOUND when the topic is hidden or getTopic would not return it to the caller.
+         */
+        put: operations["markTopicRead"];
         post?: never;
         delete?: never;
         options?: never;
@@ -8241,6 +8305,17 @@ export interface components {
              */
             object: "list";
         };
+        ListSubscribedTopic: {
+            /** @description Members of this page. Empty array, never null. */
+            items: components["schemas"]["SubscribedTopic"][];
+            /** @description Opaque keyset cursor. Omitted on the last page. */
+            next_cursor?: string;
+            /**
+             * @description Type discriminant. Always list.
+             * @constant
+             */
+            object: "list";
+        };
         ListTopicDraftSummary: {
             /** @description Members of this page. Empty array, never null. */
             items: components["schemas"]["TopicDraftSummary"][];
@@ -8928,7 +9003,7 @@ export interface components {
             web_url: string;
         };
         /** @enum {string} */
-        MutedType: "upvoted" | "liked" | "favorited" | "replied" | "commented" | "mentioned" | "followed_thread_activity" | "best_answer_chosen" | "reply_pinned" | "quiz_answered" | "resource_link_reported" | "edit_requested" | "edit_merged" | "edit_declined" | "lottery_won" | "lottery_drawn" | "lottery_code_expired" | "poll_closed" | "user_followed" | "followee_topic_created" | "followee_activity_published" | "chat";
+        MutedType: "upvoted" | "liked" | "favorited" | "replied" | "commented" | "mentioned" | "followed_thread_activity" | "best_answer_chosen" | "reply_pinned" | "quiz_answered" | "resource_link_reported" | "edit_requested" | "edit_merged" | "edit_declined" | "lottery_won" | "lottery_drawn" | "lottery_code_expired" | "poll_closed" | "user_followed" | "followee_topic_created" | "followee_activity_published" | "subscribed_topic_replied" | "chat";
         MyCoverVote: {
             /**
              * @description Type discriminant. Always my_cover_vote.
@@ -9062,7 +9137,7 @@ export interface components {
             actor: components["schemas"]["UserRef"];
             /**
              * Format: int64
-             * @description How many people are folded into this mirrored row. Values stored below 1 are emitted as 1. followed_thread_activity and user_followed can be greater than 1. followee_activity_published is always 1.
+             * @description How many people are folded into this row. Values stored below 1 are emitted as 1. followed_thread_activity, user_followed and subscribed_topic_replied can be greater than 1. followee_activity_published is always 1.
              */
             actor_count: number;
             /**
@@ -9078,7 +9153,7 @@ export interface components {
             is_read: boolean;
             /**
              * Format: int64
-             * @description How many upstream posts are folded into this mirrored row. Values stored below 1 are emitted as 1. For followee_activity_published this is the author's publications folded into the row; 100 means 100 or more.
+             * @description How many posts are folded into this row. Values stored below 1 are emitted as 1. For followee_activity_published this is the author's publications folded into the row; 100 means 100 or more. For subscribed_topic_replied it is the replies folded since the recipient last read this notification, and path opens at the first of them.
              */
             item_count: number;
             /** @description Notification type. Closed vocabulary of v1 tokens. */
@@ -9154,7 +9229,7 @@ export interface components {
             unread_count: number;
         };
         /** @enum {string} */
-        NotificationType: "upvoted" | "liked" | "favorited" | "replied" | "commented" | "mentioned" | "followed_thread_activity" | "best_answer_chosen" | "reply_pinned" | "quiz_answered" | "resource_link_reported" | "edit_requested" | "edit_merged" | "edit_declined" | "lottery_won" | "lottery_drawn" | "lottery_code_expired" | "poll_closed" | "user_followed" | "followee_topic_created" | "followee_activity_published";
+        NotificationType: "upvoted" | "liked" | "favorited" | "replied" | "commented" | "mentioned" | "followed_thread_activity" | "best_answer_chosen" | "reply_pinned" | "quiz_answered" | "resource_link_reported" | "edit_requested" | "edit_merged" | "edit_declined" | "lottery_won" | "lottery_drawn" | "lottery_code_expired" | "poll_closed" | "user_followed" | "followee_topic_created" | "followee_activity_published" | "subscribed_topic_replied";
         NsfwDisplay: {
             /** @description How adult content is shown: hide, blur, or show. */
             nsfw_display: components["schemas"]["NsfwDisplayMode"];
@@ -11482,6 +11557,37 @@ export interface components {
             /** @description The official title in this locale. Free text; never use it as a decision input. */
             title: string;
         };
+        SubscribedTopic: {
+            /**
+             * Format: int64
+             * @description The lowest of those floors, for a link that opens at the first unread reply. null when unread_reply_count is 0.
+             */
+            first_unread_floor: number | null;
+            /** @description The topic id. */
+            id: string;
+            /**
+             * Format: int64
+             * @description The highest floor recorded as read.
+             */
+            last_read_floor: number;
+            /**
+             * Format: date-time
+             * @description When a reply last landed in this topic since the caller subscribed; the subscription time when none has.
+             */
+            last_reply_at: string;
+            /**
+             * @description Type discriminant. Always subscribed_topic.
+             * @constant
+             */
+            object: "subscribed_topic";
+            /** @description The topic, shaped as listTopics shapes it. Never null in this list; the schema is nullable because every property named topic in this API shares the nullable TopicSummary. */
+            topic: components["schemas"]["TopicSummary"] | null;
+            /**
+             * Format: int64
+             * @description Visible replies by other users above last_read_floor, counted now.
+             */
+            unread_reply_count: number;
+        };
         /** @enum {string} */
         TableCellAlign: "left" | "center" | "right";
         TableCellNode: {
@@ -12395,6 +12501,8 @@ export interface components {
             /** @description The caller's own state on the topic after the write. */
             viewer: components["schemas"]["TopicViewer"];
         };
+        /** @enum {string} */
+        TopicNotificationLevel: "watching" | "normal" | "muted";
         TopicPatch: {
             /** @description New granted roles, replacing the stored ones. Only with a resulting access_scope of role. */
             access_roles?: components["schemas"]["SiteRole"][];
@@ -12440,6 +12548,13 @@ export interface components {
         };
         /** @enum {string} */
         TopicRankingSort: "views_desc" | "replies_desc" | "comments_desc" | "likes_desc" | "upvotes_desc" | "favorites_desc";
+        TopicReadMarkerWrite: {
+            /**
+             * Format: int64
+             * @description The highest floor the caller has seen. Floors above the topic's last visible floor are stored as that floor.
+             */
+            floor: number;
+        };
         /** @enum {string} */
         TopicSort: "bumped_asc" | "bumped_desc" | "created_asc" | "created_desc" | "views_asc" | "views_desc" | "views_1d_asc" | "views_1d_desc" | "views_7d_asc" | "views_7d_desc" | "views_30d_asc" | "views_30d_desc" | "likes_asc" | "likes_desc" | "favorites_asc" | "favorites_desc" | "upvotes_asc" | "upvotes_desc";
         TopicSource: {
@@ -12479,6 +12594,28 @@ export interface components {
             reaction_tokens: string[];
             /** @description Id of the topic this state is about. */
             topic_id: string;
+        };
+        TopicSubscription: {
+            /** @description The topic id, the same value as topic_id. */
+            id: string;
+            /**
+             * Format: int64
+             * @description The highest floor recorded as read. Kept only while notification_level is watching; 0 otherwise.
+             */
+            last_read_floor: number;
+            /** @description How the caller hears about replies to this topic. watching: every new reply, folded into one notification per topic. normal: only replies that mention the caller, and replied for the topic's own author only while watching. muted: no reply, mention or comment notification from this topic. */
+            notification_level: components["schemas"]["TopicNotificationLevel"];
+            /**
+             * @description Type discriminant. Always topic_subscription.
+             * @constant
+             */
+            object: "topic_subscription";
+            /** @description Topic id. */
+            topic_id: string;
+        };
+        TopicSubscriptionWrite: {
+            /** @description How the caller hears about replies to this topic. watching: every new reply, folded into one notification per topic. normal: only replies that mention the caller, and replied for the topic's own author only while watching. muted: no reply, mention or comment notification from this topic. */
+            notification_level: components["schemas"]["TopicNotificationLevel"];
         };
         TopicSummary: {
             /** @description Topic author. */
@@ -26525,6 +26662,80 @@ export interface operations {
             };
         };
     };
+    listTopicSubscriptions: {
+        parameters: {
+            query?: {
+                /** @description Opaque keyset cursor from a previous page of this collection. */
+                cursor?: string;
+                /** @description Page size. 1–100, default 20. Values above 100 are rejected, not clamped. */
+                limit?: number;
+                /** @description When true, only topics with a visible reply by another user above last_read_floor. */
+                has_unread?: boolean;
+                /** @description When true, NSFW topics are included. Default false. */
+                include_nsfw?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListSubscribedTopic"];
+                };
+            };
+            /** @description INVALID_PARAMETER, LIMIT_TOO_LARGE, or INVALID_CURSOR. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the account service cannot render the topics' authors. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     listFollowedWalls: {
         parameters: {
             query?: {
@@ -35804,6 +36015,299 @@ export interface operations {
             };
             /** @description Not Found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getTopicSubscription: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Topic id. */
+                topic_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TopicSubscription"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    setTopicSubscription: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Topic id. */
+                topic_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TopicSubscriptionWrite"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TopicSubscription"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    markTopicRead: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Topic id. */
+                topic_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TopicReadMarkerWrite"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TopicSubscription"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };

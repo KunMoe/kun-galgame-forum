@@ -43,6 +43,8 @@ const handleShare = () => {
 
     <TopicFooterFavorite :topic="topic" />
 
+    <TopicFooterSubscribe :topic-id="topic.id" />
+
     <KunTooltip text="跳到评论区">
       <KunReaction
         :toggle="false"

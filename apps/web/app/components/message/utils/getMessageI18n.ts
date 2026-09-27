@@ -21,7 +21,8 @@ const messageTemplates: Record<NotificationType, string> = {
   poll_closed: ' 的投票已经截止',
   user_followed: ' 关注了您!',
   followee_topic_created: ' 发布了新话题!',
-  followee_activity_published: ' 发布了新内容!'
+  followee_activity_published: ' 发布了新内容!',
+  subscribed_topic_replied: ' 在您关注的话题中发表了新回复'
 }
 
 export const getMessageI18n = (notification: Notification) => {
@@ -42,6 +43,9 @@ export const getMessageI18n = (notification: Notification) => {
     if (notification.notification_type === 'user_followed') {
       return ` 等 ${notification.actor_count} 人关注了您!`
     }
+    if (notification.notification_type === 'subscribed_topic_replied') {
+      return ` 等 ${notification.actor_count} 人在您关注的话题中发表了 ${notification.item_count} 条新回复`
+    }
   }
   if (
     notification.notification_type === 'followee_activity_published' &&
@@ -56,6 +60,12 @@ export const getMessageI18n = (notification: Notification) => {
     notification.item_count > 1
   ) {
     return ` 在您关注的评论区发表了 ${notification.item_count} 条新评论`
+  }
+  if (
+    notification.notification_type === 'subscribed_topic_replied' &&
+    notification.item_count > 1
+  ) {
+    return ` 在您关注的话题中发表了 ${notification.item_count} 条新回复`
   }
   return messageTemplates[notification.notification_type]
 }

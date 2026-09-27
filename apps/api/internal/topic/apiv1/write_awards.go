@@ -10,6 +10,7 @@ import (
 	"kun-galgame-api/internal/middleware"
 	"kun-galgame-api/internal/moemoepoint"
 	"kun-galgame-api/internal/topic/model"
+	"kun-galgame-api/internal/topic/repository"
 	"kun-galgame-api/internal/topic/service"
 	"kun-galgame-api/internal/trust/gate"
 	"kun-galgame-api/pkg/problem"
@@ -46,8 +47,26 @@ func (w *Writes) flushAwards(awards []pendingAward) {
 }
 
 func (w *Writes) notifyMentions(tx *gorm.DB, senderID, topicID, replyFloor int, content string) error {
+	muted, err := mutedReaders(tx, topicID, service.MentionedIDs(content, mentionCap))
+	if err != nil {
+		return err
+	}
 	var h service.InteractionHelpers
-	return h.NotifyMentionsLimited(tx, senderID, topicID, replyFloor, 0, content, mentionCap)
+	return h.NotifyMentionsLimited(tx, senderID, topicID, replyFloor, 0, content, mentionCap, muted)
+}
+
+func mutedReaders(tx *gorm.DB, topicID int, userIDs []int) (map[int]bool, error) {
+	levels, err := repository.SubscriptionLevels(tx, topicID, userIDs)
+	if err != nil {
+		return nil, err
+	}
+	muted := make(map[int]bool, len(levels))
+	for id, level := range levels {
+		if level == model.SubscriptionMuted {
+			muted[id] = true
+		}
+	}
+	return muted, nil
 }
 
 func topicCreatedAward(userID, topicID int, consume bool) pendingAward {

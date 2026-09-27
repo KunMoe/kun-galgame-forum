@@ -16,6 +16,8 @@ const { id } = usePersistUserStore()
 
       <TopicFooterFavorite :topic="topic" />
 
+      <TopicFooterSubscribe :topic-id="topic.id" />
+
       <TopicReactionTrigger />
     </div>
 

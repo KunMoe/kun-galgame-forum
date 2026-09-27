@@ -6,7 +6,7 @@ definePageMeta({
   middleware: 'auth'
 })
 
-useKunDisableSeo('关注的评论区')
+useKunDisableSeo('关注的话题与评论区')
 
 const WALL_PAGE: Record<
   FollowedWall['subject_type'],
@@ -93,10 +93,16 @@ const unfollow = async (item: FollowedWall) => {
       <KunButton size="lg" :is-icon-only="true" variant="light" href="/message">
         <KunIcon name="lucide:chevron-left" />
       </KunButton>
-      <h2 class="text-lg">关注的评论区</h2>
+      <h2 class="text-lg">关注的话题与评论区</h2>
     </header>
 
     <KunDivider />
+
+    <MessageFollowTopics />
+
+    <KunDivider />
+
+    <h3 class="text-default-600 text-sm font-medium">关注的评论区</h3>
 
     <KunLoading v-if="status === 'pending' && !items.length" />
 

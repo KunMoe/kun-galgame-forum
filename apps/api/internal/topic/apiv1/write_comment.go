@@ -128,6 +128,10 @@ func (w *Writes) createComment(ctx context.Context, in *createCommentInput) (*cr
 			return nil
 		}
 		awards = append(awards, commentedAward(inReplyTo, id))
+		muted, err := mutedReaders(tx, topic.ID, []int{inReplyTo})
+		if err != nil || muted[inReplyTo] {
+			return err
+		}
 		var h service.InteractionHelpers
 		preview := truncatePreview(strings.TrimSpace(body), constants.TextPreviewLength)
 		return h.CreateReplyMessage(tx, user.ID, inReplyTo, "commented", preview, topic.ID, 0, id)

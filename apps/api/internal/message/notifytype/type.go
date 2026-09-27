@@ -28,6 +28,7 @@ const (
 	UserFollowed              Type = "user_followed"
 	FolloweeTopicCreated      Type = "followee_topic_created"
 	FolloweeActivityPublished Type = "followee_activity_published"
+	SubscribedTopicReplied    Type = "subscribed_topic_replied"
 )
 
 const KeyChat = "chat"
@@ -54,6 +55,7 @@ var all = []Type{
 	UserFollowed,
 	FolloweeTopicCreated,
 	FolloweeActivityPublished,
+	SubscribedTopicReplied,
 }
 
 var toDB = map[Type]string{
@@ -78,6 +80,7 @@ var toDB = map[Type]string{
 	UserFollowed:              "user-followed",
 	FolloweeTopicCreated:      "followee-topic",
 	FolloweeActivityPublished: "followee-activity",
+	SubscribedTopicReplied:    "subscribed-topic",
 }
 
 var fromDB = func() map[string]Type {

@@ -67,7 +67,7 @@ const toggleKind = (kind: string) => {
     <KunInfo
       v-else-if="isFollowingFeedTab(editingTab)"
       color="info"
-      description="关注标签显示你关注的人在鲲 Galgame 和 NextMoe 各站的动态，按人、按天合并，没有可勾选的种类。"
+      description="关注标签显示你关注的人在鲲 Galgame 和 NextMoe 各站的动态，按人、按天合并，顶部列出你关注的话题里的新回复，没有可勾选的种类。"
     />
 
     <div v-else-if="editingTab" class="space-y-3">

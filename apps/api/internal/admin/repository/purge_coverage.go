@@ -82,6 +82,7 @@ var UserColumns = []UserColumn{
 	{"topic_reply_dislike", "user_id", HandlingDelete, ""},
 	{"topic_reply_like", "user_id", HandlingDelete, ""},
 	{"topic_reply_reaction", "user_id", HandlingDelete, ""},
+	{"topic_subscription", "user_id", HandlingDelete, ""},
 	{"topic_upvote", "user_id", HandlingDelete, ""},
 	{"update_log", "user_id", HandlingKeep, "staff content; staff are never purged"},
 	{"user_follow", "followed_id", HandlingDelete, ""},
