@@ -82,15 +82,23 @@ psql "${TEST_DATABASE_DSN}" -v ON_ERROR_STOP=1 -c "DROP TABLE galgame_contributo
 # nowhere until its own moment and would fail that check forever.
 excluded="$(sed -n 's/.*flag\.String("exclude", "\([^"]*\)".*/\1/p' cmd/migrate/main.go | head -1)"
 
-# 5. Remainder of the default up set, including 069 and 096, but not 141: step 7
+# 5. Remainder of the default up set before 141, including 069 and 096: step 7
 #    re-runs 018 against the post-005 shape, and 018 reads
 #    galgame_resource.galgame_id, which 141 renames to work_id. With 141 in this
 #    pass the bootstrap died at "column r.galgame_id does not exist (SQLSTATE
-#    42703)".
-#    145 names work_id in its trigger, so it waits for 141 too: in this pass it
-#    died at "column \"work_id\" of relation \"galgame_resource\" does not exist
-#    (SQLSTATE 42703)".
-run_migrate -dir up -exclude "${excluded},141,145"
+#    42703)". Everything after 141 waits for it too, which is also the order
+#    production ran them in: 145 died here at "column \"work_id\" of relation
+#    \"galgame_resource\" does not exist (SQLSTATE 42703)", and 199 at the same
+#    error on galgame_activity.
+from141=""
+for f in migrations/*.up.sql; do
+	n="$(basename "${f}")"
+	n="${n%%_*}"
+	if ((10#${n} >= 141)); then
+		from141+=",${n}"
+	fi
+done
+run_migrate -dir up -exclude "${excluded}${from141}"
 
 # 6. Excluded-by-default migrations, one at a time, after 007 exists.
 run_migrate -only 005
@@ -108,10 +116,9 @@ run_migrate -only 069
 run_migrate -only 079
 run_migrate -only 092
 
-# 8. 141 last, once nothing re-runs against the old column names, then what
-#    depends on its work_id.
-run_migrate -only 141
-run_migrate -only 145
+# 8. 141 and everything after it, once nothing re-runs against the old column
+#    names.
+run_migrate -dir up
 
 # 9. 120 put the purge-archive trigger on every table that existed when it ran;
 #    step 7 recreated galgame_contributor after that, without it.

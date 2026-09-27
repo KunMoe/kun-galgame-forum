@@ -252,9 +252,9 @@ type restoreReport struct {
 
 func TestPurgeArchiveRoundTrip(t *testing.T) {
 	w := newPurgeWorld(t)
-	// A feed row the purge's own recount recreates: feed_sync_topic upserts the
-	// topic's row on every UPDATE, so an INSERT must be archived and undone too.
-	w.seed.run(`DELETE FROM feed_activity WHERE type = 'TOPIC_CREATION' AND source_id = ?`, pwTopicO)
+	// A feed row the purge's own hand-over recreates: the website's new owner
+	// fires feed_sync_galgame_website, so an INSERT must be archived and undone too.
+	w.seed.run(`DELETE FROM feed_activity WHERE type = 'GALGAME_WEBSITE_CREATION' AND source_id = ?`, pwWebsiteT)
 	before := snapshot(t, w.db)
 
 	receipt, err := w.repo.PurgeUserContent(pwTarget, pwAdmin)
@@ -274,7 +274,7 @@ func TestPurgeArchiveRoundTrip(t *testing.T) {
 		`SELECT count(*) FROM topic_comment WHERE id = 930400402 AND parent_comment_id IS NULL`,
 		`SELECT count(*) FROM todo WHERE id = 930400702 AND status = 0 AND claimed_user_id IS NULL`,
 		`SELECT count(*) FROM galgame_website WHERE id = 930400501 AND user_id <> 930400001`,
-		`SELECT count(*) FROM feed_activity WHERE type = 'TOPIC_CREATION' AND source_id = 930400202`,
+		`SELECT count(*) FROM feed_activity WHERE type = 'GALGAME_WEBSITE_CREATION' AND source_id = 930400501 AND user_id <> 930400001`,
 	} {
 		if w.scalar(t, q) != 1 {
 			t.Errorf("the purge did not rewrite what the seed expects: %s", q)
