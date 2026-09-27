@@ -16,7 +16,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func (b LotteryPatch) firstFieldBesidesState() string {
+func (b LotteryPatch) firstFieldBesidesState(storedClosesAt *time.Time) string {
 	switch {
 	case b.Title != nil:
 		return "/title"
@@ -30,7 +30,7 @@ func (b LotteryPatch) firstFieldBesidesState() string {
 		return "/draw_mode"
 	case b.DrawThreshold != nil:
 		return "/draw_threshold"
-	case b.ClosesAt.Present:
+	case b.ClosesAt.changes(storedClosesAt):
 		return "/closes_at"
 	case b.MinAccountAgeDays != nil:
 		return "/min_account_age_days"
@@ -73,7 +73,7 @@ func (l *Lotteries) updateLottery(ctx context.Context, in *updateLotteryInput) (
 }
 
 func (l *Lotteries) moveLotteryState(ctx context.Context, lottery *model.TopicLottery, user *middleware.UserInfo, body LotteryPatch) (*lotteryOutput, error) {
-	if other := body.firstFieldBesidesState(); other != "" {
+	if other := body.firstFieldBesidesState(lottery.Deadline); other != "" {
 		return nil, validationFailed(problem.AtPointer("/state", problem.ReasonInconsistentWith, other, nil))
 	}
 	target := *body.State
@@ -155,7 +155,7 @@ func (l *Lotteries) planEdit(lottery *model.TopicLottery, body LotteryPatch) (*l
 	if body.DrawThreshold != nil {
 		shape.drawThreshold = *body.DrawThreshold
 	}
-	if body.ClosesAt.Present {
+	if body.ClosesAt.changes(lottery.Deadline) {
 		closesAt, fields := parseClosesAt(body.ClosesAt, time.Now())
 		bad = append(bad, fields...)
 		shape.closesAt = closesAt

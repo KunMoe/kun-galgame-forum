@@ -9558,7 +9558,7 @@
       "LotteryPatch": {
         "properties": {
           "closes_at": {
-            "description": "New deadline. null clears it; leaving the field out keeps the stored one.",
+            "description": "New deadline. null clears it; leaving the field out keeps the stored one. A value equal to the stored one, to the second, is no change: it may accompany state and is not checked against the clock.",
             "format": "date-time",
             "maxLength": 20,
             "minLength": 20,

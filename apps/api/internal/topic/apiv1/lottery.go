@@ -2,6 +2,7 @@ package apiv1
 
 import (
 	"encoding/json"
+	"time"
 
 	"kun-galgame-api/internal/apiv1/repr"
 
@@ -154,6 +155,17 @@ func (d *LotteryClosesAt) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+func (d LotteryClosesAt) changes(stored *time.Time) bool {
+	if !d.Present {
+		return false
+	}
+	if d.Value == nil || stored == nil {
+		return (d.Value == nil) != (stored == nil)
+	}
+	t, err := time.Parse(time.RFC3339, string(*d.Value))
+	return err != nil || t.Unix() != stored.Unix()
+}
+
 func (LotteryClosesAt) Schema(r huma.Registry) *huma.Schema {
 	s := repr.DateTime("").Schema(r)
 	s.Nullable = true
@@ -182,7 +194,7 @@ type LotteryPatch struct {
 	FloorRule         *string             `json:"floor_rule" required:"false" maxLength:"200" doc:"New floor rule. null or absent keeps the stored one. Refused as IMMUTABLE once anyone has entered. Free text; never use it as a decision input."`
 	DrawMode          *string             `json:"draw_mode,omitempty" enum:"deadline,manual,threshold" maxLength:"9" doc:"New draw mode."`
 	DrawThreshold     *int                `json:"draw_threshold" required:"false" minimum:"1" maximum:"100000" doc:"New threshold. null or absent keeps the stored one."`
-	ClosesAt          LotteryClosesAt     `json:"closes_at" required:"false" doc:"New deadline. null clears it; leaving the field out keeps the stored one."`
+	ClosesAt          LotteryClosesAt     `json:"closes_at" required:"false" doc:"New deadline. null clears it; leaving the field out keeps the stored one. A value equal to the stored one, to the second, is no change: it may accompany state and is not checked against the clock."`
 	MinAccountAgeDays *int                `json:"min_account_age_days,omitempty" minimum:"0" maximum:"3650" doc:"New account-age requirement."`
 	MinMoemoepoint    *int                `json:"min_moemoepoint,omitempty" minimum:"0" maximum:"1000000" doc:"New moemoepoint requirement."`
 	IsEntryListPublic *bool               `json:"is_entry_list_public,omitempty" doc:"New is_entry_list_public."`

@@ -453,3 +453,53 @@ func TestV1LotteryFulfillment(t *testing.T) {
 		}
 	}
 }
+
+func TestV1LotteryPatchEchoedClosesAt(t *testing.T) {
+	f := newLotteryFix(t)
+	create := lotteryBody("signup", "manual", offlinePrize(1))
+	create["closes_at"] = future(time.Hour)
+	id := f.mustCreateLottery(t, w3TopicPub, "sess-alice", create)
+	if _, got := f.enterLottery(t, id, "sess-bob"); asInt(got["entry_count"]) != 1 {
+		t.Fatalf("enter %+v", got)
+	}
+	if err := f.db.Exec(`UPDATE topic_lottery SET deadline = NOW() - interval '1 minute' WHERE id = ?`, id).Error; err != nil {
+		t.Fatal(err)
+	}
+	var stored time.Time
+	if err := f.db.Raw(`SELECT deadline FROM topic_lottery WHERE id = ?`, id).Row().Scan(&stored); err != nil {
+		t.Fatal(err)
+	}
+	echo := stored.UTC().Format("2006-01-02T15:04:05Z")
+	generated := func(fields map[string]any) map[string]any {
+		out := map[string]any{"floor_rule": nil, "draw_threshold": nil}
+		for k, v := range fields {
+			out[k] = v
+		}
+		return out
+	}
+
+	resp, got := f.patchLottery(t, id, "sess-alice", generated(map[string]any{"title": "renamed", "closes_at": echo}))
+	if resp.StatusCode != http.StatusOK || got["title"] != "renamed" || got["closes_at"] != echo {
+		t.Errorf("an edit echoing a passed closes_at %d %+v", resp.StatusCode, got)
+	}
+	resp, got = f.patchLottery(t, id, "sess-alice", map[string]any{"closes_at": future(-2 * time.Hour)})
+	if resp.StatusCode != http.StatusUnprocessableEntity || fieldPointers(got)["/closes_at"] != "OUT_OF_RANGE" {
+		t.Errorf("a changed closes_at in the past %d %+v", resp.StatusCode, got)
+	}
+	for _, other := range []any{nil, future(2 * time.Hour)} {
+		resp, got = f.patchLottery(t, id, "sess-alice", generated(map[string]any{"state": "drawn", "closes_at": other}))
+		if resp.StatusCode != http.StatusUnprocessableEntity || fieldPointers(got)["/state"] != "INCONSISTENT_WITH" {
+			t.Errorf("draw while changing closes_at to %v: %d %+v", other, resp.StatusCode, got)
+		}
+	}
+	resp, got = f.patchLottery(t, id, "sess-alice", generated(map[string]any{"state": "drawn", "closes_at": echo}))
+	if resp.StatusCode != http.StatusOK || got["state"] != "drawn" {
+		t.Fatalf("draw echoing the stored closes_at %d %+v", resp.StatusCode, got)
+	}
+
+	open := f.mustCreateLottery(t, w3TopicPub, "sess-alice", lotteryBody("signup", "manual", offlinePrize(1)))
+	resp, got = f.patchLottery(t, open, "sess-alice", generated(map[string]any{"state": "cancelled", "closes_at": nil}))
+	if resp.StatusCode != http.StatusOK || got["state"] != "cancelled" {
+		t.Errorf("cancel with closes_at null on a lottery without one %d %+v", resp.StatusCode, got)
+	}
+}
