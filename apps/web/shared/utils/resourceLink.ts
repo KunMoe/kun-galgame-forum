@@ -12,14 +12,18 @@ const PASSWORD_PATTERNS = [
   /unzip(?:\s*code|\s*password)?\s*[：:=]\s*([^\s,，]+)/gi
 ]
 
-const URL_BODY = String.raw`[^\s<>"'，。！？、；：【】（）()\u4e00-\u9fff]+`
+const URL_BODY = String.raw`[^\s<>"'，。！？、；：【】（）\u4e00-\u9fff]+`
+
+const ED2K_FILE = String.raw`ed2k:\/\/\|file\|[^|\r\n]+\|[0-9]+\|[0-9a-f]{32}\|(?:[^|\s]+\|)*\/?`
 
 const LINK_RE = new RegExp(
-  String.raw`(?:(?:https?|ftp|ftps|thunder|ed2k):\/\/${URL_BODY}|magnet:\??${URL_BODY})`,
+  String.raw`(?:${ED2K_FILE}|(?:https?|ftp|ftps|thunder|ed2k):\/\/${URL_BODY}|magnet:\??${URL_BODY})`,
   'gi'
 )
 
-const TRAILING_PUNCTUATION_RE = /[,.!?，。！？、；：」』"'`)\]】）>]+$/
+const ED2K_FILE_LINK_RE = new RegExp(`^${ED2K_FILE}$`, 'i')
+
+const TRAILING_PUNCTUATION_RE = /[,.!?，。！？、；：」』"'`\]】）>]+$/
 
 export const RESOURCE_PROVIDER_KEYS = [
   'baidu',
@@ -155,8 +159,19 @@ const collectMatches = (input: string, patterns: RegExp[]): string[] => {
   return unique(out)
 }
 
-const cleanMatchedUrl = (raw: string): string =>
-  raw.replace(TRAILING_PUNCTUATION_RE, '')
+const count = (text: string, char: string): number =>
+  text.split(char).length - 1
+
+const cleanMatchedUrl = (raw: string): string => {
+  let url = raw.replace(TRAILING_PUNCTUATION_RE, '')
+  while (url.endsWith(')') && count(url, ')') > count(url, '(')) {
+    url = url.slice(0, -1).replace(TRAILING_PUNCTUATION_RE, '')
+  }
+  return url
+}
+
+export const isEd2kFileLink = (url: string): boolean =>
+  ED2K_FILE_LINK_RE.test(url)
 
 const parseCodeFromSearchParams = (url: URL): string =>
   url.searchParams.get('pwd') ||

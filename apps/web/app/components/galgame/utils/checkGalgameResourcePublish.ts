@@ -1,5 +1,6 @@
 import type { GalgameResourceStoreTemp } from '~/store/types/galgame/resource'
 import { parseResourceSize } from '~~/shared/utils/resourceSize'
+import { isEd2kFileLink } from '~~/shared/utils/resourceLink'
 import {
   RESOURCE_TYPE_LABELS,
   LANGUAGE_LABELS,
@@ -25,7 +26,7 @@ export const checkGalgameResourcePublish = (link: GalgameResourceStoreTemp) => {
       return false
     }
 
-    if (!isValidURL(l.trim())) {
+    if (!isValidURL(l.trim()) && !isEd2kFileLink(l.trim())) {
       useMessage(10559, 'warn')
       return false
     }
