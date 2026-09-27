@@ -90,10 +90,6 @@ func (p *Pusher) reconcileLocal(ctx context.Context, recs []feedRecord, stored m
 	if err != nil {
 		return 0, err
 	}
-	names, err := p.pageNames(assembled)
-	if err != nil {
-		return 0, err
-	}
 	n := 0
 	for i, rec := range recs {
 		if !IsPushed(rec.TypeStr) {
@@ -113,7 +109,7 @@ func (p *Pusher) reconcileLocal(ctx context.Context, recs []feedRecord, stored m
 			}
 			continue
 		}
-		desired, err := MapLive(rec.TypeStr, rec.SourceID, act, names[i], rec.IsNSFW, false, p.origin, rev, rec.Created)
+		desired, err := MapLive(rec.TypeStr, rec.SourceID, act, rec.IsNSFW, false, p.origin, rev, rec.Created)
 		if err != nil {
 			slog.Warn("activity push: reconcile live item not sendable", "key", key, "error", err)
 			continue

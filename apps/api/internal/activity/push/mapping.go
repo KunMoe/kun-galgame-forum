@@ -34,31 +34,36 @@ type spec struct {
 }
 
 var pushed = map[string]spec{
-	"TOPIC_CREATION":                    {Verb: "publish", ObjectKind: "topic", ObjectLabel: "话题", Notify: true, TopicKind: true},
-	"GALGAME_RESOURCE_CREATION":         {Verb: "publish", ObjectKind: "galgame_resource", ObjectLabel: "Galgame 资源", Notify: true, WorkTied: true},
-	"TOOLSET_CREATION":                  {Verb: "publish", ObjectKind: "toolset", ObjectLabel: "工具集", Notify: true},
-	"TOOLSET_RESOURCE_CREATION":         {Verb: "publish", ObjectKind: "toolset_resource", ObjectLabel: "工具资源", Notify: true},
-	"GALGAME_QUIZ_CREATION":             {Verb: "publish", ObjectKind: "galgame_quiz", ObjectLabel: "题目", Notify: true, WorkTied: true},
-	"GALGAME_WEBSITE_CREATION":          {Verb: "publish", ObjectKind: "galgame_website", ObjectLabel: "网站", Notify: true},
-	"GALGAME_CREATION":                  {Verb: "publish", ObjectKind: "galgame", ObjectLabel: "Galgame", Notify: true, WorkTied: true},
-	"TOPIC_REPLY_CREATION":              {Verb: "reply", ObjectKind: "topic_reply", ObjectLabel: "回复", TopicKind: true},
-	"TOPIC_COMMENT_CREATION":            {Verb: "comment", ObjectKind: "topic_comment", ObjectLabel: "话题评论", TopicKind: true},
-	"GALGAME_COMMENT_CREATION":          {Verb: "comment", ObjectKind: "galgame_comment", ObjectLabel: "Galgame 评论", WorkTied: true},
-	"GALGAME_RESOURCE_COMMENT_CREATION": {Verb: "comment", ObjectKind: "galgame_resource_comment", ObjectLabel: "资源评论", WorkTied: true},
-	"GALGAME_RATING_COMMENT_CREATION":   {Verb: "comment", ObjectKind: "galgame_rating_comment", ObjectLabel: "评分评论", WorkTied: true},
-	"GALGAME_QUIZ_COMMENT_CREATION":     {Verb: "comment", ObjectKind: "galgame_quiz_comment", ObjectLabel: "题目评论", WorkTied: true},
-	"GALGAME_WEBSITE_COMMENT_CREATION":  {Verb: "comment", ObjectKind: "galgame_website_comment", ObjectLabel: "网站评论"},
-	"TOOLSET_COMMENT_CREATION":          {Verb: "comment", ObjectKind: "toolset_comment", ObjectLabel: "工具集评论"},
-	"GALGAME_RATING_CREATION":           {Verb: "rate", ObjectKind: "galgame_rating", ObjectLabel: "评分", WorkTied: true},
-	"TOPIC_UPVOTE":                      {Verb: "like", ObjectKind: "topic", ObjectLabel: "话题", TopicKind: true},
-	"GALGAME_EDIT":                      {Verb: "edit", ObjectKind: "galgame", ObjectLabel: "Galgame", WorkTied: true},
-	"GALGAME_PR_CREATION":               {Verb: "edit", ObjectKind: "galgame", ObjectLabel: "Galgame", WorkTied: true},
+	"TOPIC_CREATION":            {Verb: "publish", ObjectKind: "topic", ObjectLabel: "话题", Notify: true, TopicKind: true},
+	"GALGAME_RESOURCE_CREATION": {Verb: "publish", ObjectKind: "galgame_resource", ObjectLabel: "Galgame 资源", Notify: true, WorkTied: true},
+	"TOOLSET_CREATION":          {Verb: "publish", ObjectKind: "toolset", ObjectLabel: "工具集", Notify: true},
+	"TOOLSET_RESOURCE_CREATION": {Verb: "publish", ObjectKind: "toolset_resource", ObjectLabel: "工具资源", Notify: true},
+	"GALGAME_QUIZ_CREATION":     {Verb: "publish", ObjectKind: "galgame_quiz", ObjectLabel: "题目", Notify: true, WorkTied: true},
+	"GALGAME_WEBSITE_CREATION":  {Verb: "publish", ObjectKind: "galgame_website", ObjectLabel: "网站", Notify: true},
+	"GALGAME_CREATION":          {Verb: "publish", ObjectKind: "galgame", ObjectLabel: "Galgame", Notify: true, WorkTied: true},
+	"TOPIC_REPLY_CREATION":      {Verb: "reply", ObjectKind: "topic_reply", ObjectLabel: "回复", TopicKind: true},
+	"TOPIC_COMMENT_CREATION":    {Verb: "comment", ObjectKind: "topic_comment", ObjectLabel: "话题评论", TopicKind: true},
+	"GALGAME_RATING_CREATION":   {Verb: "rate", ObjectKind: "galgame_rating", ObjectLabel: "评分", WorkTied: true},
+	"TOPIC_UPVOTE":              {Verb: "like", ObjectKind: "topic", ObjectLabel: "话题", TopicKind: true},
+	"GALGAME_EDIT":              {Verb: "edit", ObjectKind: "galgame", ObjectLabel: "Galgame", WorkTied: true},
+	"GALGAME_PR_CREATION":       {Verb: "edit", ObjectKind: "galgame", ObjectLabel: "Galgame", WorkTied: true},
 }
 
 var neverPushed = map[string]struct{}{
 	"MESSAGE_SOLUTION":    {},
 	"TODO_CREATION":       {},
 	"UPDATE_LOG_CREATION": {},
+}
+
+// Wall comments live in community, which projects them into the feed itself
+// since wave 13 D5; the drainer tombstones what the forum pushed of them.
+var withdrawn = map[string]struct{}{
+	"GALGAME_COMMENT_CREATION":          {},
+	"GALGAME_RESOURCE_COMMENT_CREATION": {},
+	"GALGAME_RATING_COMMENT_CREATION":   {},
+	"GALGAME_QUIZ_COMMENT_CREATION":     {},
+	"GALGAME_WEBSITE_COMMENT_CREATION":  {},
+	"TOOLSET_COMMENT_CREATION":          {},
 }
 
 func IsPushed(feedType string) bool {
@@ -74,12 +79,12 @@ func KeyOf(feedType string, sourceID int) string {
 	return kind + ":" + strconv.Itoa(sourceID)
 }
 
-func MapLive(feedType string, sourceID int, a *activityapiv1.Activity, pageName string, isNSFW, backfill bool, origin string, rev int64, occurred time.Time) (communityclient.ActivityWriteItem, error) {
+func MapLive(feedType string, sourceID int, a *activityapiv1.Activity, isNSFW, backfill bool, origin string, rev int64, occurred time.Time) (communityclient.ActivityWriteItem, error) {
 	sp, ok := pushed[feedType]
 	if !ok {
 		return communityclient.ActivityWriteItem{}, ErrNotPushed
 	}
-	title := cutRunes(singleLine(pageTitle(feedType, a, pageName)), titleRunes)
+	title := cutRunes(singleLine(pageTitle(feedType, a)), titleRunes)
 	if title == "" {
 		title = sp.ObjectLabel
 	}
@@ -122,7 +127,7 @@ func Tombstone(key string, actorID int64, rev int64) communityclient.ActivityWri
 	return communityclient.ActivityWriteItem{Key: key, ActorID: actorID, Revision: rev, Removed: true}
 }
 
-func pageTitle(feedType string, a *activityapiv1.Activity, pageName string) string {
+func pageTitle(feedType string, a *activityapiv1.Activity) string {
 	switch feedType {
 	case "TOPIC_CREATION", "TOPIC_UPVOTE":
 		if a.Topic != nil {
@@ -142,8 +147,6 @@ func pageTitle(feedType string, a *activityapiv1.Activity, pageName string) stri
 		if a.Toolset != nil {
 			return a.Toolset.Title
 		}
-	case "TOOLSET_COMMENT_CREATION", "GALGAME_WEBSITE_COMMENT_CREATION":
-		return pageName
 	default:
 		if a.Work != nil {
 			return workName(a.Work.CatalogName)
@@ -171,14 +174,7 @@ func excerptOf(feedType string, a *activityapiv1.Activity) string {
 		if a.TopicDigest != nil {
 			return content.PlainText(a.TopicDigest.ExcerptMarkdown, excerptRunes)
 		}
-	case "TOPIC_REPLY_CREATION", "TOPIC_COMMENT_CREATION",
-		"GALGAME_COMMENT_CREATION", "GALGAME_RESOURCE_COMMENT_CREATION",
-		"GALGAME_RATING_COMMENT_CREATION", "TOOLSET_COMMENT_CREATION",
-		"GALGAME_WEBSITE_COMMENT_CREATION":
-		return content.PlainText(a.ExcerptMarkdown, excerptRunes)
-	case "GALGAME_QUIZ_COMMENT_CREATION":
-		return ""
-	case "TOPIC_UPVOTE":
+	case "TOPIC_REPLY_CREATION", "TOPIC_COMMENT_CREATION", "TOPIC_UPVOTE":
 		return content.PlainText(a.ExcerptMarkdown, excerptRunes)
 	case "GALGAME_RATING_CREATION":
 		if a.GalgameRating != nil {

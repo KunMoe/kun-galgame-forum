@@ -23,18 +23,25 @@ func TestFeedTypePartition(t *testing.T) {
 	if len(pairs) != 22 {
 		t.Fatalf("feedTypes = %d, want 22", len(pairs))
 	}
-	var in, out []string
+	var in, gone, out []string
 	seen := map[string]bool{}
 	for _, p := range pairs {
 		seen[p.Feed] = true
-		if IsPushed(p.Feed) {
+		_, isWithdrawn := withdrawn[p.Feed]
+		switch {
+		case IsPushed(p.Feed):
 			in = append(in, p.Feed)
-		} else {
+		case isWithdrawn:
+			gone = append(gone, p.Feed)
+		default:
 			out = append(out, p.Feed)
 		}
 	}
-	if len(in) != 19 {
-		t.Errorf("pushed from feedTypes = %d %v, want 19", len(in), in)
+	if len(in) != 13 {
+		t.Errorf("pushed from feedTypes = %d %v, want 13", len(in), in)
+	}
+	if len(gone) != 6 || len(withdrawn) != 6 {
+		t.Errorf("withdrawn from feedTypes = %d %v, want the 6 wall comment types", len(gone), gone)
 	}
 	if len(out) != 3 {
 		t.Errorf("never-pushed from feedTypes = %d %v, want 3", len(out), out)
@@ -47,8 +54,8 @@ func TestFeedTypePartition(t *testing.T) {
 	if activityapiv1.KindOfFeed("MESSAGE_UPVOTE") != "" || IsPushed("MESSAGE_UPVOTE") {
 		t.Error("MESSAGE_UPVOTE must stay outside feedTypes and the push table")
 	}
-	if got := len(pushed); got != 19 {
-		t.Errorf("pushed table = %d, want 19", got)
+	if got := len(pushed); got != 13 {
+		t.Errorf("pushed table = %d, want 13", got)
 	}
 	for feed := range pushed {
 		if !seen[feed] {
@@ -58,6 +65,14 @@ func TestFeedTypePartition(t *testing.T) {
 	for feed := range neverPushed {
 		if IsPushed(feed) {
 			t.Errorf("%s is both never-pushed and pushed", feed)
+		}
+		if _, ok := withdrawn[feed]; ok {
+			t.Errorf("%s is both never-pushed and withdrawn", feed)
+		}
+	}
+	for feed := range withdrawn {
+		if IsPushed(feed) || !seen[feed] {
+			t.Errorf("withdrawn %s must be in feedTypes and not pushed", feed)
 		}
 	}
 }
@@ -113,24 +128,6 @@ func TestMapLiveEveryPushedType(t *testing.T) {
 			Performer: performer, Path: "/topic/123", ExcerptMarkdown: "a comment",
 			Comment: &activityapiv1.ActivityComment{TopicTitle: "Topic title"},
 		}, want{"topic_comment_creation:11", "comment", "topic_comment", "话题评论", "Topic title", "excerptMarkdown", false, false, false, "sfw"}},
-		{"GALGAME_COMMENT_CREATION", 12, false, false, &activityapiv1.Activity{
-			Performer: performer, Path: "/galgame/88", Work: work, ExcerptMarkdown: "wall comment",
-		}, want{"galgame_comment_creation:12", "comment", "galgame_comment", "Galgame 评论", "Work 88", "excerptMarkdown", false, true, true, "sfw"}},
-		{"GALGAME_RESOURCE_COMMENT_CREATION", 13, false, false, &activityapiv1.Activity{
-			Performer: performer, Path: "/galgame/resource/88", Work: work, ExcerptMarkdown: "res comment",
-		}, want{"galgame_resource_comment_creation:13", "comment", "galgame_resource_comment", "资源评论", "Work 88", "excerptMarkdown", false, true, true, "sfw"}},
-		{"GALGAME_RATING_COMMENT_CREATION", 14, false, false, &activityapiv1.Activity{
-			Performer: performer, Path: "/galgame-rating/1", Work: work, ExcerptMarkdown: "rating comment",
-		}, want{"galgame_rating_comment_creation:14", "comment", "galgame_rating_comment", "评分评论", "Work 88", "excerptMarkdown", false, true, true, "sfw"}},
-		{"GALGAME_QUIZ_COMMENT_CREATION", 15, false, false, &activityapiv1.Activity{
-			Performer: performer, Path: "/galgame-quiz/9", Work: work, ExcerptMarkdown: "would spoil",
-		}, want{"galgame_quiz_comment_creation:15", "comment", "galgame_quiz_comment", "题目评论", "Work 88", "empty", false, true, true, "sfw"}},
-		{"GALGAME_WEBSITE_COMMENT_CREATION", 16, false, false, &activityapiv1.Activity{
-			Performer: performer, Path: "/website/site.example", ExcerptMarkdown: "site comment",
-		}, want{"galgame_website_comment_creation:16", "comment", "galgame_website_comment", "网站评论", "Page name", "excerptMarkdown", false, false, false, "sfw"}},
-		{"TOOLSET_COMMENT_CREATION", 17, false, false, &activityapiv1.Activity{
-			Performer: performer, Path: "/toolset/4", ExcerptMarkdown: "tool comment",
-		}, want{"toolset_comment_creation:17", "comment", "toolset_comment", "工具集评论", "Page name", "excerptMarkdown", false, false, false, "sfw"}},
 		{"GALGAME_RATING_CREATION", 18, false, false, &activityapiv1.Activity{
 			Performer: performer, Path: "/galgame-rating/18", Work: work,
 			GalgameRating: &activityapiv1.ActivityRating{ShortSummary: "worth a try"},
@@ -152,11 +149,7 @@ func TestMapLiveEveryPushedType(t *testing.T) {
 	seen := map[string]bool{}
 	for _, tc := range cases {
 		seen[tc.feed] = true
-		page := ""
-		if tc.feed == "TOOLSET_COMMENT_CREATION" || tc.feed == "GALGAME_WEBSITE_COMMENT_CREATION" {
-			page = "Page name"
-		}
-		item, err := MapLive(tc.feed, tc.source, tc.a, page, tc.nsfw, tc.backfill, testOrigin, testRev, occurred)
+		item, err := MapLive(tc.feed, tc.source, tc.a, tc.nsfw, tc.backfill, testOrigin, testRev, occurred)
 		if err != nil {
 			t.Fatalf("%s: %v", tc.feed, err)
 		}
@@ -174,9 +167,6 @@ func TestMapLiveEveryPushedType(t *testing.T) {
 		}
 		if tc.want.excerptSrc != "empty" && item.Excerpt == "" {
 			t.Errorf("%s excerpt empty (source %s)", tc.feed, tc.want.excerptSrc)
-		}
-		if tc.feed == "GALGAME_QUIZ_COMMENT_CREATION" && item.Excerpt != "" {
-			t.Errorf("quiz comment excerpt = %q", item.Excerpt)
 		}
 		if (item.WorkID != 0) != tc.want.work {
 			t.Errorf("%s work_id = %d, want present=%v", tc.feed, item.WorkID, tc.want.work)
@@ -209,7 +199,7 @@ func TestMapLiveBackfillClearsNotify(t *testing.T) {
 		Performer: &repr.UserRef{ID: repr.ID(7)}, Path: "/topic/1",
 		Topic: &topicapiv1.TopicSummary{Title: "T"}, TopicDigest: &activityapiv1.TopicDigest{},
 	}
-	item, err := MapLive("TOPIC_CREATION", 1, a, "", false, true, testOrigin, testRev, occurred)
+	item, err := MapLive("TOPIC_CREATION", 1, a, false, true, testOrigin, testRev, occurred)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -223,22 +213,22 @@ func TestMapLiveContentLimitAndEmptyTitle(t *testing.T) {
 		Performer: &repr.UserRef{ID: repr.ID(7)}, Path: "/topic/1",
 		Topic: &topicapiv1.TopicSummary{Title: "T", IsNSFW: true}, TopicDigest: &activityapiv1.TopicDigest{},
 	}
-	item, err := MapLive("TOPIC_CREATION", 1, a, "", false, false, testOrigin, testRev, occurred)
+	item, err := MapLive("TOPIC_CREATION", 1, a, false, false, testOrigin, testRev, occurred)
 	if err != nil || item.ContentLimit != "nsfw" {
 		t.Fatalf("topic nsfw: %v %s", err, item.ContentLimit)
 	}
 	work := &repr.WorkRef{ID: repr.ID(1), CatalogName: repr.NewCatalogName("W", "", nil), IsNSFW: true}
 	g := &activityapiv1.Activity{Performer: &repr.UserRef{ID: repr.ID(7)}, Path: "/galgame/1", Work: work}
-	item, err = MapLive("GALGAME_CREATION", 1, g, "", false, false, testOrigin, testRev, occurred)
+	item, err = MapLive("GALGAME_CREATION", 1, g, false, false, testOrigin, testRev, occurred)
 	if err != nil || item.ContentLimit != "nsfw" {
 		t.Fatalf("work nsfw: %v %s", err, item.ContentLimit)
 	}
-	item, err = MapLive("GALGAME_CREATION", 1, g, "", true, false, testOrigin, testRev, occurred)
+	item, err = MapLive("GALGAME_CREATION", 1, g, true, false, testOrigin, testRev, occurred)
 	if err != nil || item.ContentLimit != "nsfw" {
 		t.Fatalf("row nsfw: %v %s", err, item.ContentLimit)
 	}
 	empty := &activityapiv1.Activity{Performer: &repr.UserRef{ID: repr.ID(7)}, Path: "/galgame/1", Work: &repr.WorkRef{ID: repr.ID(1)}}
-	if item, err = MapLive("GALGAME_CREATION", 1, empty, "", false, false, testOrigin, testRev, occurred); err != nil || item.Title != "Galgame" {
+	if item, err = MapLive("GALGAME_CREATION", 1, empty, false, false, testOrigin, testRev, occurred); err != nil || item.Title != "Galgame" {
 		t.Fatalf("a nameless work falls back to the object label: %v %q", err, item.Title)
 	}
 }
@@ -259,7 +249,7 @@ func TestWorkNamePrefersChinese(t *testing.T) {
 
 func TestMapLiveNeverPushed(t *testing.T) {
 	a := &activityapiv1.Activity{Performer: &repr.UserRef{ID: repr.ID(7)}, Path: "/"}
-	if _, err := MapLive("TODO_CREATION", 1, a, "", false, false, testOrigin, testRev, occurred); err != ErrNotPushed {
+	if _, err := MapLive("TODO_CREATION", 1, a, false, false, testOrigin, testRev, occurred); err != ErrNotPushed {
 		t.Fatalf("err = %v", err)
 	}
 }
@@ -279,7 +269,7 @@ func TestCutTitleOnRunes(t *testing.T) {
 		Performer: &repr.UserRef{ID: repr.ID(7)}, Path: "/topic/1",
 		Topic: &topicapiv1.TopicSummary{Title: long}, TopicDigest: &activityapiv1.TopicDigest{},
 	}
-	item, err := MapLive("TOPIC_CREATION", 1, a, "", false, false, testOrigin, testRev, occurred)
+	item, err := MapLive("TOPIC_CREATION", 1, a, false, false, testOrigin, testRev, occurred)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -294,7 +284,7 @@ func TestMapLiveStripsControlCharacters(t *testing.T) {
 		Topic:       &topicapiv1.TopicSummary{Title: "line\none\x00two"},
 		TopicDigest: &activityapiv1.TopicDigest{ExcerptMarkdown: "a\x08b\r\nc\td"},
 	}
-	item, err := MapLive("TOPIC_CREATION", 1, a, "", false, false, testOrigin, testRev, occurred)
+	item, err := MapLive("TOPIC_CREATION", 1, a, false, false, testOrigin, testRev, occurred)
 	if err != nil {
 		t.Fatal(err)
 	}
