@@ -69,6 +69,8 @@ useIntersectionObserver(
     class="min-w-0"
     :loading="status === 'pending' && items.length > 0"
   >
+    <HomeSubscribedTopics />
+
     <KunNull
       v-if="problem && !groups.length"
       description="关注动态加载失败，请稍后再试"

@@ -343,11 +343,16 @@ func (f *writeFix) seed(t *testing.T) {
 	run(`INSERT INTO topic_reply (id, content, floor, user_id, topic_id, status, like_count, created, updated)
 		VALUES (?, 'r3', 3, ?, ?, 0, 0, ?, ?)`, w3ReplyMin+2, w3UserBob, w3TopicFloors, seeded, seeded)
 	run(`UPDATE topic SET last_reply_floor = 3, reply_count = 3 WHERE id = ?`, w3TopicFloors)
+	// Migration 202 gives every existing topic its author's watching row.
+	run(`INSERT INTO topic_subscription (user_id, topic_id, notification_level, last_read_floor)
+		SELECT user_id, id, 'watching', last_reply_floor FROM topic WHERE id BETWEEN ? AND ?`, w3TopicMin, w3TopicMax)
 }
 
 func (f *writeFix) cleanup(t *testing.T) {
 	t.Helper()
 	ours := []any{930000001, 930000999}
+	_ = f.db.Exec(`DELETE FROM topic_subscription WHERE user_id BETWEEN ? AND ? OR topic_id BETWEEN ? AND ?`,
+		ours[0], ours[1], w3TopicMin, w3TopicMax).Error
 	_ = f.db.Exec(`DELETE FROM message WHERE sender_id BETWEEN ? AND ? OR receiver_id BETWEEN ? AND ?`,
 		ours[0], ours[1], ours[0], ours[1]).Error
 	_ = f.db.Exec(`DELETE FROM topic_comment_like WHERE topic_comment_id IN (

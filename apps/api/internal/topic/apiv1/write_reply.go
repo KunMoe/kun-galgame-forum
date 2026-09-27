@@ -8,6 +8,7 @@ import (
 
 	"kun-galgame-api/internal/constants"
 	"kun-galgame-api/internal/infrastructure/markdown"
+	msgService "kun-galgame-api/internal/message/service"
 	"kun-galgame-api/internal/topic/model"
 	"kun-galgame-api/internal/topic/repository"
 	"kun-galgame-api/internal/topic/service"
@@ -55,15 +56,34 @@ func (w *Writes) createReply(ctx context.Context, in *createReplyInput) (*create
 		if err := service.RecomputeTopicCounts(tx, topic.ID); err != nil {
 			return err
 		}
+		preview := truncatePreview(strings.TrimSpace(body), constants.TextPreviewLength)
+		mentioned := service.MentionedIDs(body, mentionCap)
+		levels, err := repository.SubscriptionLevels(tx, topic.ID, []int{topic.UserID})
+		if err != nil {
+			return err
+		}
 		if topic.UserID != user.ID {
-			preview := truncatePreview(strings.TrimSpace(body), constants.TextPreviewLength)
-			var h service.InteractionHelpers
-			if err := h.CreateReplyMessage(tx, user.ID, topic.UserID, "replied", preview, topic.ID, row.Floor, 0); err != nil {
-				return err
+			if levels[topic.UserID] == model.SubscriptionWatching {
+				var h service.InteractionHelpers
+				if err := h.CreateReplyMessage(tx, user.ID, topic.UserID, "replied", preview, topic.ID, row.Floor, 0); err != nil {
+					return err
+				}
 			}
 			awards = append(awards, repliedAward(topic.UserID, row.ID))
 		}
 		if err := w.notifyMentions(tx, user.ID, topic.ID, row.Floor, body); err != nil {
+			return err
+		}
+		if err := repository.FanOutReply(tx, repository.ReplyFanOut{
+			TopicID:    topic.ID,
+			Floor:      row.Floor,
+			ReplierID:  user.ID,
+			Preview:    preview,
+			Link:       msgService.BuildTopicLink(topic.ID, row.Floor, 0),
+			NoticeType: string(msgService.NotifySubscribedTopic),
+			Exclude:    append([]int{topic.UserID}, mentioned...),
+			Notify:     fansOutReplies(topic),
+		}); err != nil {
 			return err
 		}
 		replyID = row.ID
@@ -219,4 +239,11 @@ func truncatePreview(s string, maxLen int) string {
 		return s
 	}
 	return string(runes[:maxLen])
+}
+
+// Watchers are known only by id, and a role grant needs the reader's roles,
+// so a restricted or hidden topic sends no folded notice: a wrong guess would
+// mail its reply preview to someone who cannot open it.
+func fansOutReplies(topic *model.Topic) bool {
+	return topic.Status == 0 && (topic.AccessScope == "public" || topic.AccessScope == "login")
 }

@@ -24,7 +24,8 @@ const ALL_TYPES = {
   poll_closed: true,
   user_followed: true,
   followee_topic_created: true,
-  followee_activity_published: true
+  followee_activity_published: true,
+  subscribed_topic_replied: true
 } as const satisfies Record<NotificationType, true>
 
 const notification = (over: Partial<Notification> = {}): Notification => ({
@@ -146,5 +147,31 @@ describe('getMessageI18n', () => {
         })
       )
     ).toBe(' 在您关注的评论区发表了 5 条新评论')
+  })
+
+  it('folds subscribed_topic_replied by actor_count and item_count', () => {
+    expect(
+      getMessageI18n(
+        notification({
+          notification_type: 'subscribed_topic_replied',
+          actor_count: 3,
+          item_count: 7
+        })
+      )
+    ).toBe(' 等 3 人在您关注的话题中发表了 7 条新回复')
+    expect(
+      getMessageI18n(
+        notification({
+          notification_type: 'subscribed_topic_replied',
+          actor_count: 1,
+          item_count: 2
+        })
+      )
+    ).toBe(' 在您关注的话题中发表了 2 条新回复')
+    expect(
+      getMessageI18n(
+        notification({ notification_type: 'subscribed_topic_replied' })
+      )
+    ).toBe(' 在您关注的话题中发表了新回复')
   })
 })

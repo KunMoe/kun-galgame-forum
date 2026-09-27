@@ -8575,6 +8575,34 @@
         ],
         "type": "object"
       },
+      "ListSubscribedTopic": {
+        "properties": {
+          "items": {
+            "description": "Members of this page. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/SubscribedTopic"
+            },
+            "type": "array"
+          },
+          "next_cursor": {
+            "description": "Opaque keyset cursor. Omitted on the last page.",
+            "maxLength": 512,
+            "pattern": "^cur_[A-Za-z0-9_-]+$",
+            "type": "string"
+          },
+          "object": {
+            "const": "list",
+            "description": "Type discriminant. Always list.",
+            "maxLength": 4,
+            "type": "string"
+          }
+        },
+        "required": [
+          "object",
+          "items"
+        ],
+        "type": "object"
+      },
       "ListTopicDraftSummary": {
         "properties": {
           "items": {
@@ -10429,6 +10457,7 @@
           "user_followed",
           "followee_topic_created",
           "followee_activity_published",
+          "subscribed_topic_replied",
           "chat"
         ],
         "maxLength": 27,
@@ -10805,7 +10834,7 @@
             "description": "The user who triggered this notification. name is null when the account no longer exists."
           },
           "actor_count": {
-            "description": "How many people are folded into this mirrored row. Values stored below 1 are emitted as 1. followed_thread_activity and user_followed can be greater than 1. followee_activity_published is always 1.",
+            "description": "How many people are folded into this row. Values stored below 1 are emitted as 1. followed_thread_activity, user_followed and subscribed_topic_replied can be greater than 1. followee_activity_published is always 1.",
             "format": "int64",
             "minimum": 0,
             "type": "integer"
@@ -10835,7 +10864,7 @@
             "type": "boolean"
           },
           "item_count": {
-            "description": "How many upstream posts are folded into this mirrored row. Values stored below 1 are emitted as 1. For followee_activity_published this is the author's publications folded into the row; 100 means 100 or more.",
+            "description": "How many posts are folded into this row. Values stored below 1 are emitted as 1. For followee_activity_published this is the author's publications folded into the row; 100 means 100 or more. For subscribed_topic_replied it is the replies folded since the recipient last read this notification, and path opens at the first of them.",
             "format": "int64",
             "minimum": 0,
             "type": "integer"
@@ -11031,7 +11060,8 @@
           "poll_closed",
           "user_followed",
           "followee_topic_created",
-          "followee_activity_published"
+          "followee_activity_published",
+          "subscribed_topic_replied"
         ],
         "maxLength": 27,
         "type": "string",
@@ -17110,6 +17140,73 @@
         ],
         "type": "object"
       },
+      "SubscribedTopic": {
+        "properties": {
+          "first_unread_floor": {
+            "description": "The lowest of those floors, for a link that opens at the first unread reply. null when unread_reply_count is 0.",
+            "format": "int64",
+            "minimum": 1,
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "id": {
+            "description": "The topic id.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "last_read_floor": {
+            "description": "The highest floor recorded as read.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "last_reply_at": {
+            "description": "When a reply last landed in this topic since the caller subscribed; the subscription time when none has.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": "string"
+          },
+          "object": {
+            "const": "subscribed_topic",
+            "description": "Type discriminant. Always subscribed_topic.",
+            "maxLength": 16,
+            "type": "string"
+          },
+          "topic": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TopicSummary"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The topic, shaped as listTopics shapes it. Never null in this list; the schema is nullable because every property named topic in this API shares the nullable TopicSummary."
+          },
+          "unread_reply_count": {
+            "description": "Visible replies by other users above last_read_floor, counted now.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "object",
+          "id",
+          "topic",
+          "last_read_floor",
+          "unread_reply_count",
+          "first_unread_floor",
+          "last_reply_at"
+        ],
+        "type": "object"
+      },
       "TableCellAlign": {
         "enum": [
           "left",
@@ -19594,6 +19691,16 @@
         ],
         "type": "object"
       },
+      "TopicNotificationLevel": {
+        "enum": [
+          "watching",
+          "normal",
+          "muted"
+        ],
+        "maxLength": 8,
+        "type": "string",
+        "x-vocabulary-closed": true
+      },
       "TopicPatch": {
         "properties": {
           "access_roles": {
@@ -19738,6 +19845,21 @@
         "type": "string",
         "x-vocabulary-closed": true
       },
+      "TopicReadMarkerWrite": {
+        "properties": {
+          "floor": {
+            "description": "The highest floor the caller has seen. Floors above the topic's last visible floor are stored as that floor.",
+            "format": "int64",
+            "maximum": 2147483647,
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "floor"
+        ],
+        "type": "object"
+      },
       "TopicSort": {
         "enum": [
           "bumped_asc",
@@ -19874,6 +19996,60 @@
           "topic_id",
           "has_favorited",
           "reaction_tokens"
+        ],
+        "type": "object"
+      },
+      "TopicSubscription": {
+        "properties": {
+          "id": {
+            "description": "The topic id, the same value as topic_id.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "last_read_floor": {
+            "description": "The highest floor recorded as read. Kept only while notification_level is watching; 0 otherwise.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "notification_level": {
+            "$ref": "#/components/schemas/TopicNotificationLevel",
+            "description": "How the caller hears about replies to this topic. watching: every new reply, folded into one notification per topic. normal: only replies that mention the caller, and replied for the topic's own author only while watching. muted: no reply, mention or comment notification from this topic."
+          },
+          "object": {
+            "const": "topic_subscription",
+            "description": "Type discriminant. Always topic_subscription.",
+            "maxLength": 18,
+            "type": "string"
+          },
+          "topic_id": {
+            "description": "Topic id.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "object",
+          "id",
+          "topic_id",
+          "notification_level",
+          "last_read_floor"
+        ],
+        "type": "object"
+      },
+      "TopicSubscriptionWrite": {
+        "properties": {
+          "notification_level": {
+            "$ref": "#/components/schemas/TopicNotificationLevel",
+            "description": "How the caller hears about replies to this topic. watching: every new reply, folded into one notification per topic. normal: only replies that mention the caller, and replied for the topic's own author only while watching. muted: no reply, mention or comment notification from this topic."
+          }
+        },
+        "required": [
+          "notification_level"
         ],
         "type": "object"
       },
@@ -42394,6 +42570,136 @@
         ]
       }
     },
+    "/me/topic-subscriptions": {
+      "get": {
+        "description": "Lists the caller's watching subscriptions, the one where a reply landed most recently first, as a cursor page. Each topic is judged again as getTopic would judge it for the caller; topics the caller can no longer read, topics by banned authors and, unless include_nsfw, NSFW topics are left out and the server reads on to fill the page, so continue while next_cursor is present.",
+        "operationId": "listTopicSubscriptions",
+        "parameters": [
+          {
+            "description": "Opaque keyset cursor from a previous page of this collection.",
+            "explode": false,
+            "in": "query",
+            "name": "cursor",
+            "schema": {
+              "description": "Opaque keyset cursor from a previous page of this collection.",
+              "maxLength": 512,
+              "pattern": "^cur_[A-Za-z0-9_-]+$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Page size. 1–100, default 20. Values above 100 are rejected, not clamped.",
+            "explode": false,
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 20,
+              "description": "Page size. 1–100, default 20. Values above 100 are rejected, not clamped.",
+              "format": "int64",
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "When true, only topics with a visible reply by another user above last_read_floor.",
+            "explode": false,
+            "in": "query",
+            "name": "has_unread",
+            "schema": {
+              "default": false,
+              "description": "When true, only topics with a visible reply by another user above last_read_floor.",
+              "type": "boolean"
+            }
+          },
+          {
+            "description": "When true, NSFW topics are included. Default false.",
+            "explode": false,
+            "in": "query",
+            "name": "include_nsfw",
+            "schema": {
+              "default": false,
+              "description": "When true, NSFW topics are included. Default false.",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListSubscribedTopic"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "INVALID_PARAMETER, LIMIT_TOO_LARGE, or INVALID_CURSOR."
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the account service cannot render the topics' authors."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List the topics the caller watches",
+        "tags": [
+          "me"
+        ]
+      }
+    },
     "/me/walls": {
       "get": {
         "description": "The comment walls the caller follows, in the community service's order. A page can be shorter than limit, even empty, while next_cursor is present: walls this forum no longer recognises are left out. The last page omits next_cursor.",
@@ -56252,6 +56558,396 @@
           }
         ],
         "summary": "Get a topic's editable source",
+        "tags": [
+          "topics"
+        ]
+      }
+    },
+    "/topics/{topic_id}/subscription": {
+      "get": {
+        "description": "Returns how the caller hears about replies to this topic. A topic's author watches it from the moment it is posted; everyone else starts at normal. NOT_FOUND when the topic is hidden or getTopic would not return it to the caller.",
+        "operationId": "getTopicSubscription",
+        "parameters": [
+          {
+            "description": "Topic id.",
+            "in": "path",
+            "name": "topic_id",
+            "required": true,
+            "schema": {
+              "description": "Topic id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TopicSubscription"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get the caller's subscription to a topic",
+        "tags": [
+          "topics"
+        ]
+      },
+      "put": {
+        "description": "Sets the caller's notification level for this topic. Setting the current level changes nothing. Switching to watching starts the read position at the topic's last visible floor, so replies posted before it are not unread; setting watching again while watching keeps the position. normal forgets the position. NOT_FOUND when the topic is hidden or getTopic would not return it to the caller.",
+        "operationId": "setTopicSubscription",
+        "parameters": [
+          {
+            "description": "Topic id.",
+            "in": "path",
+            "name": "topic_id",
+            "required": true,
+            "schema": {
+              "description": "Topic id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TopicSubscriptionWrite"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TopicSubscription"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "413": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Request Entity Too Large"
+          },
+          "415": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unsupported Media Type"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Set the caller's subscription to a topic",
+        "tags": [
+          "topics"
+        ]
+      }
+    },
+    "/topics/{topic_id}/subscription/read-marker": {
+      "put": {
+        "description": "Moves a watching caller's read position forward to floor, capped at the topic's last visible floor; it never moves back. When it reaches that floor, the caller's unread subscribed_topic_replied notification for this topic is marked read. For normal and muted nothing is stored and the current state is returned. NOT_FOUND when the topic is hidden or getTopic would not return it to the caller.",
+        "operationId": "markTopicRead",
+        "parameters": [
+          {
+            "description": "Topic id.",
+            "in": "path",
+            "name": "topic_id",
+            "required": true,
+            "schema": {
+              "description": "Topic id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TopicReadMarkerWrite"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TopicSubscription"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "413": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Request Entity Too Large"
+          },
+          "415": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unsupported Media Type"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Record how far the caller has read a topic",
         "tags": [
           "topics"
         ]

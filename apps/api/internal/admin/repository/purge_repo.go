@@ -194,6 +194,7 @@ func (r *PurgeRepository) PurgeUserContent(userID, operatorID int) (PurgeReceipt
 			"DELETE FROM topic_poll WHERE user_id = ?",
 			"DELETE FROM topic_lottery WHERE user_id = ?",
 			"DELETE FROM topic_draft WHERE user_id = ?",
+			"DELETE FROM topic_subscription WHERE user_id = ?",
 			"DELETE FROM galgame_collection WHERE user_id = ?",
 			"DELETE FROM galgame_quiz WHERE user_id = ?",
 			"DELETE FROM todo WHERE user_id = ?",

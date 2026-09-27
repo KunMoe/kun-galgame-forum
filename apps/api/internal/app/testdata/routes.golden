@@ -122,6 +122,7 @@ GET    /api/v1/me/quiz-states                         cors.New → v1Headers →
 GET    /api/v1/me/topic-drafts                        cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/me/topic-drafts/:draft_id              cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/me/topic-states                        cors.New → v1Headers → fiberAdapter.Handle
+GET    /api/v1/me/topic-subscriptions                 cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/me/walls                               cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/me/walls/:subject_type/:subject_id     cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/me/work-submission-reviews             cors.New → v1Headers → fiberAdapter.Handle
@@ -185,6 +186,7 @@ GET    /api/v1/topics/:topic_id/polls                 cors.New → v1Headers →
 GET    /api/v1/topics/:topic_id/reactions             cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/topics/:topic_id/replies               cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/topics/:topic_id/source                cors.New → v1Headers → fiberAdapter.Handle
+GET    /api/v1/topics/:topic_id/subscription          cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/topics/:topic_id/upvotes               cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/traits                                 cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/traits/:trait_id                       cors.New → v1Headers → fiberAdapter.Handle
@@ -328,6 +330,8 @@ PUT    /api/v1/topics/:topic_id/best-answer           cors.New → v1Headers →
 PUT    /api/v1/topics/:topic_id/favorite              cors.New → v1Headers → fiberAdapter.Handle
 PUT    /api/v1/topics/:topic_id/pinned-reply          cors.New → v1Headers → fiberAdapter.Handle
 PUT    /api/v1/topics/:topic_id/reactions/:reaction   cors.New → v1Headers → fiberAdapter.Handle
+PUT    /api/v1/topics/:topic_id/subscription          cors.New → v1Headers → fiberAdapter.Handle
+PUT    /api/v1/topics/:topic_id/subscription/read-marker cors.New → v1Headers → fiberAdapter.Handle
 PUT    /api/v1/wall-comments/:wall_comment_id/like    cors.New → v1Headers → fiberAdapter.Handle
 PUT    /api/v1/websites/:website_host/favorite        cors.New → v1Headers → fiberAdapter.Handle
 PUT    /api/v1/websites/:website_host/like            cors.New → v1Headers → fiberAdapter.Handle

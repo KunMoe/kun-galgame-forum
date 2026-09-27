@@ -9,6 +9,7 @@ import (
 	"kun-galgame-api/internal/constants"
 	"kun-galgame-api/internal/infrastructure/markdown"
 	"kun-galgame-api/internal/topic/model"
+	"kun-galgame-api/internal/topic/repository"
 	"kun-galgame-api/pkg/problem"
 
 	"gorm.io/gorm"
@@ -87,6 +88,9 @@ func (w *Writes) createTopic(ctx context.Context, in *createTopicInput) (*create
 			return err
 		}
 		if err := w.writeSections(tx, topic.ID, sections); err != nil {
+			return err
+		}
+		if err := repository.WatchOwnTopic(tx, user.ID, topic.ID); err != nil {
 			return err
 		}
 		if err := w.notifyMentions(tx, user.ID, topic.ID, 0, body); err != nil {

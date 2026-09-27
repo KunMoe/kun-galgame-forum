@@ -9,7 +9,7 @@ const props = defineProps<{
 </script>
 
 <template>
-  <div class="flex flex-col gap-4">
+  <div data-reply-list class="flex flex-col gap-4">
     <TopicReply
       v-for="reply in props.initialReplies"
       :key="reply.id"

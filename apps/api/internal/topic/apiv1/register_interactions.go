@@ -214,5 +214,7 @@ func RegisterInteractions(x *Interactions) func(huma.API) {
 				400: "INVALID_PARAMETER, LIMIT_TOO_LARGE, or INVALID_CURSOR.",
 			}),
 		}), x.listReplyReactions)
+
+		registerSubscriptions(api, x)
 	}
 }
