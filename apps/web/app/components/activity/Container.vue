@@ -132,7 +132,7 @@ useIntersectionObserver(
         </KunChip>
       </KunLink>
 
-      <div class="flex items-center space-x-2">
+      <div class="flex items-center gap-2">
         <UserHoverCard
           v-if="activity.performer"
           :user-id="activity.performer.id"

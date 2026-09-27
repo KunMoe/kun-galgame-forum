@@ -133,12 +133,12 @@ const handleSaveEdit = async (comment: Comment) => {
         :key="comment.id"
         :class="depth === 1 ? 'ml-9' : ''"
       >
-        <div class="flex items-start space-x-3">
+        <div class="flex items-start gap-3">
           <UserHoverCard :user-id="comment.author.id">
             <KunAvatar :user="toKunUser(comment.author)" />
           </UserHoverCard>
 
-          <div class="flex w-full flex-col space-y-1">
+          <div class="flex min-w-0 flex-1 flex-col space-y-1">
             <div class="text-sm">
               <span>{{ toKunUser(comment.author).name }}</span>
               <span class="text-default-500 mx-1">
