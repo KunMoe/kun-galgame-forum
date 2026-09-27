@@ -8,9 +8,8 @@ import (
 
 	"kun-galgame-api/internal/apiv1/collect"
 	"kun-galgame-api/internal/apiv1/repr"
-	galgameapiv1 "kun-galgame-api/internal/galgame/apiv1"
 	"kun-galgame-api/internal/galgame/client"
-	galgameService "kun-galgame-api/internal/galgame/service"
+	"kun-galgame-api/internal/galgame/workrepr"
 	"kun-galgame-api/pkg/problem"
 	"kun-galgame-api/pkg/utils"
 )
@@ -24,14 +23,14 @@ var worksSort = map[string]string{
 }
 
 type worksOutput struct {
-	Body repr.PageList[repr.WorkRef]
+	Body repr.PageList[workrepr.WorkSummary]
 }
 
 func (s *Service) searchWorks(ctx context.Context, in *worksInput) (*worksOutput, error) {
 	if prob := s.ready(); prob != nil {
 		return nil, prob
 	}
-	if s.galgame == nil {
+	if s.galgame == nil || s.works == nil {
 		return nil, problem.Internal(errUnconfigured)
 	}
 	q := strings.TrimSpace(in.Q)
@@ -52,7 +51,7 @@ func (s *Service) searchWorks(ctx context.Context, in *worksInput) (*worksOutput
 		"q":       {q},
 		"page":    {strconv.Itoa(in.Page)},
 		"limit":   {strconv.Itoa(in.Limit)},
-		"include": {galgameService.CatalogCardInclude},
+		"include": {workrepr.RowInclude},
 		"sort":    {worksSort[in.Sort]},
 	}
 	if in.CompanyID != "" {
@@ -77,12 +76,15 @@ func (s *Service) searchWorks(ctx context.Context, in *worksInput) (*worksOutput
 	if appErr != nil {
 		return nil, problem.Unavailable(appErr)
 	}
-	items := make([]repr.WorkRef, 0, len(res.Items))
+	rows := make([]client.CatalogWorkListItem, 0, len(res.Items))
 	for i := range res.Items {
-		if !client.CatalogItemRenderable(&res.Items[i]) {
-			continue
+		if client.CatalogItemRenderable(&res.Items[i]) {
+			rows = append(rows, res.Items[i])
 		}
-		items = append(items, galgameapiv1.WorkRefOf(ctx, &res.Items[i], s.cdn))
+	}
+	items, prob := s.works.FromRows(ctx, rows)
+	if prob != nil {
+		return nil, prob
 	}
 	total, relation := collect.ClampTotal(int(res.Total))
 	return &worksOutput{Body: repr.NewPageList(items, total, relation)}, nil

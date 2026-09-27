@@ -9726,22 +9726,6 @@ export interface components {
             /** @description eq when total is exact, gte when it stopped at the depth limit and there are at least that many. */
             total_relation: components["schemas"]["TotalRelation"];
         };
-        PageListWorkRef: {
-            /** @description Members of this page. Empty array, never null. */
-            items: components["schemas"]["WorkRef"][];
-            /**
-             * @description Type discriminant. Always list.
-             * @constant
-             */
-            object: "list";
-            /**
-             * Format: int64
-             * @description Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.
-             */
-            total: number;
-            /** @description eq when total is exact, gte when it stopped at the depth limit and there are at least that many. */
-            total_relation: components["schemas"]["TotalRelation"];
-        };
         PageListWorkSummary: {
             /** @description Members of this page. Empty array, never null. */
             items: components["schemas"]["WorkSummary"][];
@@ -31590,7 +31574,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PageListWorkRef"];
+                    "application/json": components["schemas"]["PageListWorkSummary"];
                 };
             };
             /** @description INVALID_PARAMETER when q is blank after trimming, released_from is after released_to, or the page is past the depth limit. */

@@ -15,6 +15,7 @@ const props = defineProps<{
 }>()
 
 defineSlots<{
+  name?: (props: { galgame: T }) => unknown
   meta?: (props: { galgame: T }) => unknown
 }>()
 
@@ -199,7 +200,9 @@ const cards = computed(() =>
             <h2
               class="hover:text-primary line-clamp-2 text-sm font-medium transition-colors"
             >
-              {{ card.galgame.name }}
+              <slot name="name" :galgame="card.galgame">
+                {{ card.galgame.name }}
+              </slot>
             </h2>
 
             <p

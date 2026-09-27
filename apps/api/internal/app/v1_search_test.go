@@ -234,7 +234,14 @@ func TestV1SearchWorks(t *testing.T) {
 	}
 	items := itemsOf(body)
 	if len(items) != 1 || items[0]["object"] != "work" || items[0]["id"] != "61311" || items[0]["display_name"] != "紅殻のパンドラ" || items[0]["is_nsfw"] != true {
-		t.Errorf("a hidden claim is left out; the ref is the shared WorkRef: %+v", items)
+		t.Errorf("a hidden claim is left out: %+v", items)
+	}
+	if len(items) == 1 {
+		for _, key := range []string{"view_count", "like_count", "rating_count", "resource_platforms", "is_published"} {
+			if _, ok := items[0][key]; !ok {
+				t.Errorf("a hit is the shared WorkSummary the browse grids render; %s is missing: %+v", key, items[0])
+			}
+		}
 	}
 	if asInt(body["total"]) != 10000 || body["total_relation"] != "gte" {
 		t.Errorf("the index's count is clamped: %v %v", body["total"], body["total_relation"])

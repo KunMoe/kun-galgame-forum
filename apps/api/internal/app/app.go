@@ -20,6 +20,7 @@ import (
 	galgameRepo "kun-galgame-api/internal/galgame/repository"
 	resourceapiv1 "kun-galgame-api/internal/galgame/resourceapiv1"
 	galgameService "kun-galgame-api/internal/galgame/service"
+	"kun-galgame-api/internal/galgame/workrepr"
 	imageapiv1 "kun-galgame-api/internal/image/apiv1"
 	"kun-galgame-api/internal/infrastructure/cache"
 	cronPkg "kun-galgame-api/internal/infrastructure/cron"
@@ -538,6 +539,7 @@ func New(cfg *config.Config) *App {
 	app.RankingV1 = rankingapiv1.New(rankingRepo.NewRankingRepository(db), uc, gc, app.newTopicV1(), cfg.NextMoeAPI.ImageCDNBase)
 	app.SearchV1 = searchapiv1.New(searchapiv1.Deps{
 		Repo: searchRepo.NewSearchRepository(db), Topics: app.newTopicV1(), Users: uc, Galgame: gc,
+		Works:     workrepr.NewHydrator(gc, db, cfg.NextMoeAPI.ImageCDNBase),
 		Community: communityCli, Anchors: anchorResolver, CDN: cfg.NextMoeAPI.ImageCDNBase,
 	})
 	app.setupRoutes()

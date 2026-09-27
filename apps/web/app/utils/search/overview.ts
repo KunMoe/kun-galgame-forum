@@ -6,7 +6,7 @@ import type {
   TopicSummary,
   UserSearchHit,
   WallCommentSearchHit,
-  WorkRef
+  WorkSummary
 } from '#shared/utils/api/schemas'
 import {
   ENTITY_LIMIT_ALL,
@@ -17,7 +17,7 @@ import { fetchLanePage, type LanePage } from './lanes'
 
 export interface SearchOverviewData {
   topics: TopicSummary[]
-  works: WorkRef[]
+  works: WorkSummary[]
   entities: SearchEntityGroup[]
   resources: SearchResultResource[]
   users: UserSearchHit[]
@@ -107,7 +107,7 @@ export const loadSearchOverview = async (
 
   return {
     topics: items<TopicSummary>(topics),
-    works: items<WorkRef>(works),
+    works: items<WorkSummary>(works),
     resources: items<SearchResultResource>(resources),
     users: items<UserSearchHit>(users),
     replies: items<ReplySearchHit>(replies),

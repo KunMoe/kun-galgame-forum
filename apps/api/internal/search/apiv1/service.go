@@ -11,6 +11,7 @@ import (
 	"kun-galgame-api/internal/apiv1/content"
 	"kun-galgame-api/internal/community/anchor"
 	"kun-galgame-api/internal/galgame/client"
+	"kun-galgame-api/internal/galgame/workrepr"
 	"kun-galgame-api/internal/search/repository"
 	topicapiv1 "kun-galgame-api/internal/topic/apiv1"
 	"kun-galgame-api/pkg/communityclient"
@@ -32,6 +33,7 @@ type Service struct {
 	topics    *topicapiv1.Service
 	users     Users
 	galgame   *client.GalgameClient
+	works     *workrepr.Hydrator
 	community *communityclient.Client
 	anchors   *anchor.Resolver
 	cdn       string
@@ -42,6 +44,7 @@ type Deps struct {
 	Topics    *topicapiv1.Service
 	Users     Users
 	Galgame   *client.GalgameClient
+	Works     *workrepr.Hydrator
 	Community *communityclient.Client
 	Anchors   *anchor.Resolver
 	CDN       string
@@ -49,7 +52,7 @@ type Deps struct {
 
 func New(d Deps) *Service {
 	return &Service{
-		repo: d.Repo, topics: d.Topics, users: d.Users, galgame: d.Galgame,
+		repo: d.Repo, topics: d.Topics, users: d.Users, galgame: d.Galgame, works: d.Works,
 		community: d.Community, anchors: d.Anchors, cdn: d.CDN,
 	}
 }

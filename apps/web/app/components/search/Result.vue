@@ -4,7 +4,7 @@ import type {
   ReplySearchHit,
   TopicSummary,
   UserSearchHit,
-  WorkRef
+  WorkSummary
 } from '#shared/utils/api/schemas'
 
 const props = defineProps<{
@@ -15,7 +15,7 @@ const props = defineProps<{
 
 const isTopicResults = (results: unknown[]): results is TopicSummary[] =>
   props.type === 'topic'
-const isWorkResults = (results: unknown[]): results is WorkRef[] =>
+const isWorkResults = (results: unknown[]): results is WorkSummary[] =>
   props.type === 'galgame'
 const isResourceResults = (
   results: unknown[]

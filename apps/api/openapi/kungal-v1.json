@@ -12090,40 +12090,6 @@
         ],
         "type": "object"
       },
-      "PageListWorkRef": {
-        "properties": {
-          "items": {
-            "description": "Members of this page. Empty array, never null.",
-            "items": {
-              "$ref": "#/components/schemas/WorkRef"
-            },
-            "type": "array"
-          },
-          "object": {
-            "const": "list",
-            "description": "Type discriminant. Always list.",
-            "maxLength": 4,
-            "type": "string"
-          },
-          "total": {
-            "description": "Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.",
-            "format": "int64",
-            "minimum": 0,
-            "type": "integer"
-          },
-          "total_relation": {
-            "$ref": "#/components/schemas/TotalRelation",
-            "description": "eq when total is exact, gte when it stopped at the depth limit and there are at least that many."
-          }
-        },
-        "required": [
-          "object",
-          "items",
-          "total",
-          "total_relation"
-        ],
-        "type": "object"
-      },
       "PageListWorkSummary": {
         "properties": {
           "items": {
@@ -50045,7 +50011,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/PageListWorkRef"
+                  "$ref": "#/components/schemas/PageListWorkSummary"
                 }
               }
             },

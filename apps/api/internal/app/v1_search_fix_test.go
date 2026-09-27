@@ -18,6 +18,7 @@ import (
 
 	"kun-galgame-api/internal/community/anchor"
 	"kun-galgame-api/internal/galgame/client"
+	"kun-galgame-api/internal/galgame/workrepr"
 	"kun-galgame-api/internal/middleware"
 	searchapiv1 "kun-galgame-api/internal/search/apiv1"
 	searchRepo "kun-galgame-api/internal/search/repository"
@@ -185,6 +186,7 @@ func newSearchFix(t *testing.T) *searchFix {
 	}
 	f.app.SearchV1 = searchapiv1.New(searchapiv1.Deps{
 		Repo: searchRepo.NewSearchRepository(f.db), Topics: f.app.newTopicV1(), Users: uc, Galgame: gc,
+		Works:     workrepr.NewHydrator(gc, f.db, "https://image.test.example"),
 		Community: cc, Anchors: anchor.New(f.db, gc), CDN: "https://image.test.example",
 	})
 	f.app.setupRoutes()
