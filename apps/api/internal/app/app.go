@@ -110,21 +110,22 @@ type App struct {
 	ActivityV1         *activityapiv1.Service
 	TrustV1            *trustapiv1.Service
 
-	OAuthHandler        *handler.OAuthHandler
-	LotteryService      *topicService.LotteryService
-	AdminPurge          *adminService.PurgeService
-	TrustHandler        *trustHandler.TrustHandler
-	NewsV1              *newsapiv1.Service
-	ImagesV1            *imageapiv1.Service
-	StickersV1          *stickerapiv1.Service
-	Artifact            *artifactclient.Client
-	FileStorage         *storage.S3Client
-	CronStop            func()
-	RolePermStop        func()
-	StoreLinkStop       func()
-	CommunityNotifyStop func()
-	ActivityPushStop    func()
-	APIv1               huma.API
+	OAuthHandler           *handler.OAuthHandler
+	LotteryService         *topicService.LotteryService
+	AdminPurge             *adminService.PurgeService
+	TrustHandler           *trustHandler.TrustHandler
+	NewsV1                 *newsapiv1.Service
+	ImagesV1               *imageapiv1.Service
+	StickersV1             *stickerapiv1.Service
+	Artifact               *artifactclient.Client
+	FileStorage            *storage.S3Client
+	CronStop               func()
+	RolePermStop           func()
+	StoreLinkStop          func()
+	CommunityNotifyStop    func()
+	ActivityPushStop       func()
+	AnchorPresentationStop func()
+	APIv1                  huma.API
 }
 
 func New(cfg *config.Config) *App {
@@ -525,6 +526,7 @@ func New(cfg *config.Config) *App {
 		CommunityNotifyStop: communitynotify.New(communityCli, messageRepository, anchorResolver, rdb).Start(),
 	}
 	app.ActivityPushStop = startActivityPush(db, communityCli, app.ActivityV1, cfg.OAuth.RedirectURI)
+	app.AnchorPresentationStop = startAnchorPresentations(db, communityCli, uc, gc, cfg.NextMoeAPI.ImageCDNBase, cfg.OAuth.RedirectURI)
 
 	if err := adminPermSync.Load(context.Background()); err != nil {
 		slog.Warn("加载权限覆盖失败, 暂时沿用编译期基线", "error", err)
