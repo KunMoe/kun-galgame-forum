@@ -13,6 +13,7 @@ const reconcilePage = 1000
 
 func (p *Pusher) Reconcile(ctx context.Context) {
 	start := time.Now()
+	orphanRev := start.UnixMicro()
 	stored, err := p.loadStored(ctx)
 	if err != nil {
 		slog.Warn("activity push: reconcile list failed", "error", err)
@@ -46,16 +47,16 @@ func (p *Pusher) Reconcile(ctx context.Context) {
 	}
 	for key, view := range stored {
 		if _, ok := local[key]; !ok && !view.Removed {
-			tombs = append(tombs, Tombstone(key, view.ActorID, 0))
+			tombs = append(tombs, Tombstone(key, view.ActorID, orphanRev))
 		}
 	}
-	tombstoned, err := p.sendTombstones(ctx, tombs)
+	tombstoned, stale, err := p.sendTombstones(ctx, tombs)
 	if err != nil {
 		slog.Warn("activity push: reconcile tombstones failed", "error", err)
 		return
 	}
 	slog.Info("activity push: reconcile finished",
-		"stored", len(stored), "local", len(local), "enqueued", enqueued, "tombstoned", tombstoned,
+		"stored", len(stored), "local", len(local), "enqueued", enqueued, "tombstoned", tombstoned, "stale", stale,
 		"duration", time.Since(start))
 }
 
@@ -108,7 +109,7 @@ func (p *Pusher) reconcileLocal(ctx context.Context, recs []feedRecord, stored m
 		act := assembled[i]
 		if act == nil || act.Performer == nil {
 			if isStored && !view.Removed {
-				*tombs = append(*tombs, Tombstone(key, view.ActorID, 0))
+				*tombs = append(*tombs, Tombstone(key, view.ActorID, rev))
 			}
 			continue
 		}
@@ -127,20 +128,25 @@ func (p *Pusher) reconcileLocal(ctx context.Context, recs []feedRecord, stored m
 	return n, nil
 }
 
-func (p *Pusher) sendTombstones(ctx context.Context, tombs []communityclient.ActivityWriteItem) (int, error) {
-	n := 0
+func (p *Pusher) sendTombstones(ctx context.Context, tombs []communityclient.ActivityWriteItem) (int, int, error) {
+	removed, stale := 0, 0
 	for start := 0; start < len(tombs); start += claimLimit {
-		batch := tombs[start:min(start+claimLimit, len(tombs))]
-		rev := time.Now().UnixMicro()
-		for i := range batch {
-			batch[i].Revision = rev
+		resp, err := p.community.WriteActivities(ctx, tombs[start:min(start+claimLimit, len(tombs))])
+		if err != nil {
+			return removed, stale, err
 		}
-		if _, err := p.community.WriteActivities(ctx, batch); err != nil {
-			return n, err
+		for _, r := range resp.Results {
+			switch r.Outcome {
+			case "removed":
+				removed++
+			case "stale":
+				stale++
+			case "invalid":
+				slog.Warn("activity push: community marked tombstone invalid", "key", r.Key, "reason", r.Reason)
+			}
 		}
-		n += len(batch)
 	}
-	return n, nil
+	return removed, stale, nil
 }
 
 func itemDiffers(want communityclient.ActivityWriteItem, have communityclient.SiteActivityView) bool {

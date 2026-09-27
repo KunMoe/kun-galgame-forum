@@ -23,15 +23,17 @@ const (
 
 type pushCommunity struct {
 	*fakeCommunity
-	mu      sync.Mutex
-	posts   []communityclient.ActivityWriteRequest
-	stored  map[string]communityclient.SiteActivityView
-	nextID  int64
-	bisect  bool
-	badKey  string
-	outcome map[string]string
-	list    []communityclient.SiteActivityView
-	short   bool
+	mu       sync.Mutex
+	posts    []communityclient.ActivityWriteRequest
+	stored   map[string]communityclient.SiteActivityView
+	nextID   int64
+	bisect   bool
+	badKey   string
+	outcome  map[string]string
+	list     []communityclient.SiteActivityView
+	short    bool
+	ordered  bool
+	listedAt time.Time
 }
 
 func newPushCommunity() *pushCommunity {
@@ -55,6 +57,7 @@ func (c *pushCommunity) handleActivities(w http.ResponseWriter, r *http.Request)
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	if r.Method == http.MethodGet {
+		c.listedAt = time.Now()
 		writeEnvelope(w, 200, 0, "", communityclient.SiteActivityListResponse{Activities: append([]communityclient.SiteActivityView{}, c.list...)})
 		return
 	}
@@ -80,6 +83,9 @@ func (c *pushCommunity) handleActivities(w http.ResponseWriter, r *http.Request)
 		out := "created"
 		if it.Removed {
 			out = "removed"
+		}
+		if prev, ok := c.stored[it.Key]; ok && c.ordered && it.Revision <= prev.Revision {
+			out = "stale"
 		}
 		if o, ok := c.outcome[it.Key]; ok {
 			out = o
