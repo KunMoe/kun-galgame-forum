@@ -59,6 +59,9 @@ func TestV1CreateWorkResourceEd2kLink(t *testing.T) {
 	if resp.StatusCode != http.StatusCreated {
 		t.Fatalf("create with an ed2k link %d %+v", resp.StatusCode, got)
 	}
+	if names, _ := got["provider_names"].([]any); len(names) != 2 || names[0] != "电驴下载" || names[1] != "files.example.invalid" {
+		t.Errorf("provider names %v", got["provider_names"])
+	}
 	id := strID(got["id"])
 	resp, got = f.rs(t, http.MethodGet, "/api/v1/galgame-resources/"+id+"/source",
 		"/galgame-resources/{resource_id}/source", "sess-alice", "", nil)
