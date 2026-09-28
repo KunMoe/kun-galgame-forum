@@ -125,6 +125,15 @@ const openLogout = () => {
       </span>
     </button>
 
+    <NuxtLink
+      to="/shop"
+      class="hover:bg-default-100 flex items-center gap-2 rounded-lg px-2 py-2 text-sm transition-colors"
+      @click="emit('close')"
+    >
+      <KunIcon class="text-secondary size-4" name="lucide:lollipop" />
+      萌萌点商店
+    </NuxtLink>
+
     <KunButton
       v-if="!isCheckIn"
       variant="light"
