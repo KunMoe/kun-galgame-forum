@@ -161,7 +161,7 @@ func TestV1ReleaseCalendarDefaultPopulation(t *testing.T) {
 	resp, body := f.get(t, "/api/v1/release-calendar?month=2026-09&include_doujin=true", "/release-calendar")
 	geStatus(t, resp, body, http.StatusOK, "")
 	for _, q := range f.cat.calQ {
-		if q.Get("olang") != "ja" || q.Has("exclude_company_kind") {
+		if q.Get("olang") != "ja" || q.Get("exclude_company_kind") != "none" {
 			t.Fatalf("include_doujin=true query: %v", q)
 		}
 	}

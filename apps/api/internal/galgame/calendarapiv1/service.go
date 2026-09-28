@@ -337,7 +337,11 @@ func bucketQuery(includeNSFW, includeDoujin bool) url.Values {
 		"include_total": {"true"},
 		"olang":         {calendarOLang},
 	}
-	if !includeDoujin {
+	// Since infra #343 catalog excludes doujin circles by default, so leaving
+	// the parameter out no longer brings them back; "none" does.
+	if includeDoujin {
+		q.Set("exclude_company_kind", "none")
+	} else {
 		q.Set("exclude_company_kind", doujinCompanyKind)
 	}
 	client.ApplyWorksGate(q, !includeNSFW)
