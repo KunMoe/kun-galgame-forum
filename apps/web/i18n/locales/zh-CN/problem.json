@@ -50,7 +50,11 @@
     "CREATOR_APPLICATION_COOLDOWN": "申请被拒绝后需等待一段时间才能再次申请",
     "WEBSITE_CATEGORY_NOT_EMPTY": "该分类下还有网站, 请先把它们移到别的分类",
     "USER_PROTECTED": "该用户是版主或管理员, 不能清除其内容",
-    "DIRECT_MESSAGES_MOVED": "私信已迁移到新的私信系统，请刷新页面或更新 App"
+    "DIRECT_MESSAGES_MOVED": "私信已迁移到新的私信系统，请刷新页面或更新 App",
+    "SHOP_OFFER_UNAVAILABLE": "这件商品已经下架或不在本站出售",
+    "SHOP_OFFER_SOLD_OUT": "这件商品已经卖完了",
+    "SHOP_PURCHASE_LIMIT_REACHED": "你已经买到这件商品的限购数量了",
+    "SHOP_ITEM_NOT_OWNED": "你没有这件物品，或它已经过期"
   },
   "reason": {
     "DUPLICATE_ITEM": {

@@ -2156,6 +2156,70 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/me/shop": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the caller's shop balance, items, loadout and orders
+         * @description Live from the account service. It holds the caller's redeem codes: never show it to anyone else. An offer cannot be bought again while any of its non-redeem_code rewards is in items with is_active true and no expires_at.
+         */
+        get: operations["getMyShopInventory"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/shop/loadout/{scope}/{slot}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Wear an item
+         * @description Puts an item the caller holds into the slot, for every NextMoe site or for this forum only. Wearing what is already worn is a no-op that answers the same.
+         */
+        put: operations["setShopLoadoutSlot"];
+        post?: never;
+        /**
+         * Take an item off
+         * @description Empties the slot in that scope. Emptying an empty slot is a no-op that answers the same. Taking off the this_site choice shows the everywhere one here again.
+         */
+        delete: operations["clearShopLoadoutSlot"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/shop/orders": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Buy a shop offer with moemoepoint
+         * @description Charges the offer's price and gives its rewards in one step at the account service, which does not ask the caller again. Send it only from the caller's confirmation of the offer, its price and the balance after it; for a redeem code, say that it cannot be refunded. Retrying with the same Idempotency-Key never charges twice. A redeem code is in order.redeem_codes; show it at once.
+         */
+        post: operations["createShopOrder"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/me/topic-drafts": {
         parameters: {
             query?: never;
@@ -3337,6 +3401,26 @@ export interface paths {
          * @description A page-number collection. Without a resource or game_type filter it holds every catalog work filed under the entity, including works the forum has no page for; any of those filters narrows it to works with a forum resource. Ties break on catalog's own order, or on descending id once a filter applies.
          */
         get: operations["listSeriesWorks"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/shop/offers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List what this forum's moemoepoint shop sells
+         * @description Every offer on sale in this forum's shop: the NextMoe-wide offers and this forum's own zone (is_site_exclusive), in shop order. Not paged. The same for every caller; the caller's balance, holdings and purchase counts are in getMyShopInventory. Refreshed from the account service at most once a minute; while it cannot be reached the last list is served. An offer holding an item of a type this forum does not render is left out.
+         */
+        get: operations["listShopOffers"];
         put?: never;
         post?: never;
         delete?: never;
@@ -8306,6 +8390,17 @@ export interface components {
              */
             object: "list";
         };
+        ListShopOffer: {
+            /** @description Members of this page. Empty array, never null. */
+            items: components["schemas"]["ShopOffer"][];
+            /** @description Opaque keyset cursor. Omitted on the last page. */
+            next_cursor?: string;
+            /**
+             * @description Type discriminant. Always list.
+             * @constant
+             */
+            object: "list";
+        };
         ListStickerPack: {
             /** @description Members of this page. Empty array, never null. */
             items: components["schemas"]["StickerPack"][];
@@ -11525,6 +11620,223 @@ export interface components {
         };
         /** @enum {string} */
         SexualGrade: "safe" | "suggestive" | "explicit";
+        /** @enum {string} */
+        ShopAcquiredVia: "purchase" | "grant";
+        ShopInventory: {
+            /** @description Items the caller holds, newest first, including expired ones (is_active false). Revoked and refunded items are not listed. */
+            items: components["schemas"]["ShopOwnedItem"][];
+            /** @description Purchases counted against each limited offer in its current period. An offer with a purchase_limit that is not listed has none. */
+            limit_usage: components["schemas"]["ShopLimitUsage"][];
+            /** @description Every scope and slot pair, always all four. */
+            loadout: components["schemas"]["ShopLoadoutSlot"][];
+            /**
+             * Format: int64
+             * @description The caller's live moemoepoint balance from the account service. It can be negative.
+             */
+            moemoepoint: number;
+            /**
+             * @description Type discriminant. Always shop_inventory.
+             * @constant
+             */
+            object: "shop_inventory";
+            /** @description The caller's latest 50 orders on any NextMoe site or the account center, newest first. */
+            orders: components["schemas"]["ShopOrder"][];
+        };
+        ShopItem: {
+            /** @description The artwork of an avatar_frame or profile_background. null for every other type. */
+            artwork: components["schemas"]["ShopItemArtwork"] | null;
+            /** @description A sentence about the item. Empty string when there is none. Free text; never use it as a decision input. */
+            description: string;
+            /** @description The item's name. Free text; never use it as a decision input. */
+            display_name: string;
+            /** @description Item id in the NextMoe shop. JSON string of a decimal integer. */
+            id: string;
+            /** @description What the item is: avatar_frame and profile_background are worn in the slot of the same name; profile_about unlocks writing a profile introduction in the account center; redeem_code issues one code per purchase. Closed: an item of a type this forum does not render is left out. */
+            item_type: components["schemas"]["ShopItemType"];
+            /**
+             * @description Type discriminant. Always shop_item.
+             * @constant
+             */
+            object: "shop_item";
+        };
+        ShopItemArtwork: {
+            /**
+             * Format: uri
+             * @description Animated WebP of the same size. Never play it under a reduced-motion preference. null when there is no animated version.
+             */
+            animated_url: string | null;
+            /**
+             * Format: uri
+             * @description Still image. An avatar frame is a square PNG 1.2 times the avatar, drawn centred over it; a profile background is a 2:1 to 4:1 banner, cropped to cover and centred. Content-addressed: the URL never changes content.
+             */
+            static_url: string;
+        };
+        /** @enum {string} */
+        ShopItemType: "avatar_frame" | "profile_background" | "profile_about" | "redeem_code";
+        /** @enum {string} */
+        ShopLimitPeriod: "lifetime" | "month";
+        ShopLimitUsage: {
+            /** @description A limited offer. */
+            offer_id: string;
+            /**
+             * Format: int64
+             * @description Completed purchases of it by the caller in the current period.
+             */
+            purchased_count: number;
+        };
+        ShopLoadoutSet: {
+            /** @description An item the caller holds and is active, of the slot's type. */
+            item_id: string;
+        };
+        ShopLoadoutSlot: {
+            /**
+             * @description Type discriminant. Always shop_loadout_slot.
+             * @constant
+             */
+            object: "shop_loadout_slot";
+            /** @description everywhere is the caller's default on every NextMoe site; this_site is a choice for this forum only, which wins over the default here. */
+            scope: components["schemas"]["ShopScope"];
+            /** @description The slot, named after the item type worn in it. */
+            slot: components["schemas"]["ShopSlot"];
+            /** @description The item worn in this slot and scope. null when nothing is, including when what was chosen has since expired. The forum caches profiles for up to ten minutes, so another reader can see a change that late. */
+            worn_item_id: string | null;
+        };
+        ShopOffer: {
+            /**
+             * Format: date-time
+             * @description When the offer stops selling. null when it has no end.
+             */
+            ends_at: string | null;
+            /** @description Offer id in the NextMoe shop. JSON string of a decimal integer. */
+            id: string;
+            /** @description Whether this offer is sold only in this forum's own zone. Anything bought here still shows on every NextMoe site. */
+            is_site_exclusive: boolean;
+            /**
+             * @description Type discriminant. Always shop_offer.
+             * @constant
+             */
+            object: "shop_offer";
+            /**
+             * Format: int64
+             * @description Moemoepoint charged per purchase. The shop never takes real money.
+             */
+            price: number;
+            /** @description How many times one user may buy this offer. null when unlimited. The caller's own count is in getMyShopInventory's limit_usage. */
+            purchase_limit: components["schemas"]["ShopPurchaseLimit"] | null;
+            /**
+             * Format: int64
+             * @description Copies still for sale: stock left, or sellable codes left in a redeem code offer's pool. 0 is sold out. null when unlimited.
+             */
+            remaining_count: number | null;
+            /** @description What one purchase gives, in the offer's order. The first is the one to show. */
+            rewards: components["schemas"]["ShopReward"][];
+            /**
+             * Format: int64
+             * @description Total copies the offer was stocked with. null when it is not stocked; a redeem code offer is never stocked, its supply is remaining_count.
+             */
+            stock_count: number | null;
+        };
+        ShopOrder: {
+            /**
+             * Format: date-time
+             * @description When the order was placed.
+             */
+            created_at: string;
+            /** @description Order id in the NextMoe shop. JSON string of a decimal integer. */
+            id: string;
+            /**
+             * @description Type discriminant. Always shop_order.
+             * @constant
+             */
+            object: "shop_order";
+            /** @description The offer bought. */
+            offer_id: string;
+            /**
+             * Format: int64
+             * @description Moemoepoint charged, as it was when bought.
+             */
+            price: number;
+            /** @description The redeem codes the order issued. Empty unless the offer sells a redeem_code. Only ever shown to the buyer. */
+            redeem_codes: components["schemas"]["ShopRedeemCode"][];
+            /**
+             * Format: date-time
+             * @description When it was refunded. null unless state is refunded.
+             */
+            refunded_at: string | null;
+            /** @description What the order gave, as the offer was when bought. An item of a type this forum does not render is left out. */
+            rewards: components["schemas"]["ShopReward"][];
+            /** @description completed, or refunded by staff. A redeem code order is never refunded. */
+            state: components["schemas"]["ShopOrderState"];
+        };
+        ShopOrderCreate: {
+            /** @description The offer to buy, from listShopOffers. Show the caller the offer, its price and the balance after it, and send this only from their confirmation: nothing asks them again. */
+            offer_id: string;
+        };
+        /** @enum {string} */
+        ShopOrderState: "completed" | "refunded";
+        ShopOwnedItem: {
+            /**
+             * Format: date-time
+             * @description When the caller got the item, or got it back after it lapsed.
+             */
+            acquired_at: string;
+            /** @description purchase, or grant when staff gave it. */
+            acquired_via: components["schemas"]["ShopAcquiredVia"];
+            /**
+             * Format: date-time
+             * @description When it lapses. null when it is permanent.
+             */
+            expires_at: string | null;
+            /** @description Whether it is still in effect. An expired item is kept here with false. */
+            is_active: boolean;
+            /** @description The item held. */
+            item: components["schemas"]["ShopItem"];
+        };
+        ShopPurchase: {
+            /**
+             * Format: int64
+             * @description The caller's live moemoepoint balance after the purchase.
+             */
+            moemoepoint: number;
+            /**
+             * @description Type discriminant. Always shop_purchase.
+             * @constant
+             */
+            object: "shop_purchase";
+            /** @description The order. For a redeem code its redeem_codes are here; show them at once. */
+            order: components["schemas"]["ShopOrder"];
+        };
+        ShopPurchaseLimit: {
+            /** @description lifetime counts every purchase ever; month counts the current Asia/Shanghai calendar month, reset at 00:00 on the 1st. */
+            period: components["schemas"]["ShopLimitPeriod"];
+            /**
+             * Format: int64
+             * @description Purchases allowed per user in one period. Refunded orders do not count.
+             */
+            quantity: number;
+        };
+        ShopRedeemCode: {
+            /** @description The code to redeem at the issuer. Show it only to its owner. Free text; never use it as a decision input. */
+            code: string;
+            /**
+             * Format: date
+             * @description The last day, Japan time, the issuer accepts the code. null when it does not expire.
+             */
+            expiry_date: string | null;
+        };
+        ShopReward: {
+            /**
+             * Format: int64
+             * @description How long the item lasts; buying again while it lasts extends it. null when it is permanent, and always for a redeem code.
+             */
+            duration_days: number | null;
+            /** @description The item given. */
+            item: components["schemas"]["ShopItem"];
+        };
+        /** @enum {string} */
+        ShopScope: "everywhere" | "this_site";
+        /** @enum {string} */
+        ShopSlot: "avatar_frame" | "profile_background";
         /** @enum {string} */
         SiteRole: "creator" | "moderator" | "admin" | "ren";
         /** @enum {string} */
@@ -26326,6 +26638,368 @@ export interface operations {
             };
         };
     };
+    getMyShopInventory: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShopInventory"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the account service cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    setShopLoadoutSlot: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description everywhere for every NextMoe site, this_site for this forum only. */
+                scope: components["schemas"]["ShopScope"];
+                /** @description The slot. */
+                slot: components["schemas"]["ShopSlot"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ShopLoadoutSet"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShopLoadoutSlot"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SHOP_ITEM_NOT_OWNED when the caller does not hold the item or it has expired. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description VALIDATION_FAILED at /item_id when it names no item, or an item of another slot's type. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the account service cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    clearShopLoadoutSlot: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description everywhere for every NextMoe site, this_site for this forum only. */
+                scope: components["schemas"]["ShopScope"];
+                /** @description The slot. */
+                slot: components["schemas"]["ShopSlot"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShopLoadoutSlot"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the account service cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    createShopOrder: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Caller-generated UUID (canonical 8-4-4-4-12 hex, any version) or 26-character Crockford ULID. Scoped to (user, operation, key) for 24 hours. */
+                "Idempotency-Key": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ShopOrderCreate"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShopPurchase"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description MOEMOEPOINT_INSUFFICIENT, with required when the offer is known, when the live balance is below the price. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SHOP_OFFER_UNAVAILABLE, SHOP_OFFER_SOLD_OUT, SHOP_PURCHASE_LIMIT_REACHED, or ALREADY_EXISTS when the caller already holds one of its items permanently. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description VALIDATION_FAILED when offer_id is not an offer id. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the account service cannot be reached. Retry with the same Idempotency-Key. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     listTopicDrafts: {
         parameters: {
             query?: {
@@ -31907,6 +32581,44 @@ export interface operations {
                 };
             };
             /** @description SERVICE_UNAVAILABLE when catalog cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listShopOffers: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListShopOffer"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the account service cannot be reached and no list has been fetched yet. */
             503: {
                 headers: {
                     [name: string]: unknown;

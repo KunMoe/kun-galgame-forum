@@ -17,6 +17,7 @@ DELETE /api/v1/lotteries/:lottery_id                  cors.New → v1Headers →
 DELETE /api/v1/lotteries/:lottery_id/entries/me       cors.New → v1Headers → fiberAdapter.Handle
 DELETE /api/v1/me/following/:user_id                  cors.New → v1Headers → fiberAdapter.Handle
 DELETE /api/v1/me/notifications/:notification_id      cors.New → v1Headers → fiberAdapter.Handle
+DELETE /api/v1/me/shop/loadout/:scope/:slot           cors.New → v1Headers → fiberAdapter.Handle
 DELETE /api/v1/me/topic-drafts/:draft_id              cors.New → v1Headers → fiberAdapter.Handle
 DELETE /api/v1/me/walls/:subject_type/:subject_id/follow cors.New → v1Headers → fiberAdapter.Handle
 DELETE /api/v1/polls/:poll_id                         cors.New → v1Headers → fiberAdapter.Handle
@@ -121,6 +122,7 @@ GET    /api/v1/me/permissions                         cors.New → v1Headers →
 GET    /api/v1/me/playtimes                           cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/me/preferences                         cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/me/quiz-states                         cors.New → v1Headers → fiberAdapter.Handle
+GET    /api/v1/me/shop                                cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/me/topic-drafts                        cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/me/topic-drafts/:draft_id              cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/me/topic-states                        cors.New → v1Headers → fiberAdapter.Handle
@@ -168,6 +170,7 @@ GET    /api/v1/sections                               cors.New → v1Headers →
 GET    /api/v1/series                                 cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/series/:series_id                      cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/series/:series_id/works                cors.New → v1Headers → fiberAdapter.Handle
+GET    /api/v1/shop/offers                            cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/sticker-packs                          cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/tagged-works                           cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/tags                                   cors.New → v1Headers → fiberAdapter.Handle
@@ -281,6 +284,7 @@ POST   /api/v1/lotteries/:lottery_id/code-reveals     cors.New → v1Headers →
 POST   /api/v1/me/check-ins                           cors.New → v1Headers → fiberAdapter.Handle
 POST   /api/v1/me/conversations/:user_id/messages     cors.New → v1Headers → fiberAdapter.Handle
 POST   /api/v1/me/creator-applications                cors.New → v1Headers → fiberAdapter.Handle
+POST   /api/v1/me/shop/orders                         cors.New → v1Headers → fiberAdapter.Handle
 POST   /api/v1/me/topic-drafts                        cors.New → v1Headers → fiberAdapter.Handle
 POST   /api/v1/quizzes                                cors.New → v1Headers → fiberAdapter.Handle
 POST   /api/v1/quizzes/:quiz_id/answers               cors.New → v1Headers → fiberAdapter.Handle
@@ -323,6 +327,7 @@ PUT    /api/v1/me/notification-preferences            cors.New → v1Headers →
 PUT    /api/v1/me/notifications/read-marker           cors.New → v1Headers → fiberAdapter.Handle
 PUT    /api/v1/me/nsfw-display                        cors.New → v1Headers → fiberAdapter.Handle
 PUT    /api/v1/me/preferences                         cors.New → v1Headers → fiberAdapter.Handle
+PUT    /api/v1/me/shop/loadout/:scope/:slot           cors.New → v1Headers → fiberAdapter.Handle
 PUT    /api/v1/me/walls/:subject_type/:subject_id/follow cors.New → v1Headers → fiberAdapter.Handle
 PUT    /api/v1/me/walls/:subject_type/:subject_id/read-marker cors.New → v1Headers → fiberAdapter.Handle
 PUT    /api/v1/polls/:poll_id/vote                    cors.New → v1Headers → fiberAdapter.Handle

@@ -24,6 +24,7 @@ import (
 	rankingapiv1 "kun-galgame-api/internal/ranking/apiv1"
 	searchapiv1 "kun-galgame-api/internal/search/apiv1"
 	sectionapiv1 "kun-galgame-api/internal/section/apiv1"
+	shopapiv1 "kun-galgame-api/internal/shop/apiv1"
 	stickerapiv1 "kun-galgame-api/internal/sticker/apiv1"
 	toolsetapiv1 "kun-galgame-api/internal/toolset/apiv1"
 	topicapiv1 "kun-galgame-api/internal/topic/apiv1"
@@ -87,6 +88,7 @@ func (a *App) setupRoutes() {
 		newsapiv1.Register(a.NewsV1),
 		imageapiv1.Register(a.ImagesV1),
 		stickerapiv1.Register(a.StickersV1),
+		shopapiv1.Register(a.newShopV1()),
 	)
 
 	// Deliberately touches neither DB nor Redis: the container HEALTHCHECK reads

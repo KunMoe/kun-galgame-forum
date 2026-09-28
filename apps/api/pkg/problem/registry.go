@@ -92,6 +92,10 @@ const (
 	CodeWebsiteCategoryNotEmpty      = "WEBSITE_CATEGORY_NOT_EMPTY"
 	CodeUserProtected                = "USER_PROTECTED"
 	CodeDirectMessagesMoved          = "DIRECT_MESSAGES_MOVED"
+	CodeShopOfferUnavailable         = "SHOP_OFFER_UNAVAILABLE"
+	CodeShopOfferSoldOut             = "SHOP_OFFER_SOLD_OUT"
+	CodeShopPurchaseLimitReached     = "SHOP_PURCHASE_LIMIT_REACHED"
+	CodeShopItemNotOwned             = "SHOP_ITEM_NOT_OWNED"
 )
 
 const (
@@ -148,7 +152,7 @@ var Codes = []Def{
 	{CodeImageDailyLimitReached, DomainKungal, http.StatusTooManyRequests, "Image daily limit reached", "The caller has uploaded as many images today, Asia/Shanghai, as one user may. limit is that number.", []ExtDef{{Name: "limit", Type: "integer"}}},
 	{CodeImageRejected, DomainKungal, http.StatusUnprocessableEntity, "Image rejected", "The image service's moderation refused the image. Nothing was stored.", nil},
 	{CodeDraftLimitReached, DomainKungal, http.StatusConflict, "Draft limit reached", "The caller already holds the maximum number of drafts. A draft is never overwritten, so the only way to make room is to delete one. limit is that number.", []ExtDef{{Name: "limit", Type: "integer"}}},
-	{CodeMoemoepointInsufficient, DomainKungal, http.StatusForbidden, "Moemoepoint insufficient", "The caller's moemoepoint balance, as this forum last cached it, is below what the operation costs. required is that cost.", []ExtDef{{Name: "required", Type: "integer"}}},
+	{CodeMoemoepointInsufficient, DomainKungal, http.StatusForbidden, "Moemoepoint insufficient", "The caller's moemoepoint balance is below what the operation costs. Topic operations check the balance this forum last cached; account-service operations such as a rename or a shop purchase check the live balance. required is that cost, when the forum knows it.", []ExtDef{{Name: "required", Type: "integer"}}},
 	{CodeSelfLikeForbidden, DomainKungal, http.StatusForbidden, "Self like forbidden", "Users cannot like what they wrote themselves.", nil},
 	{CodeResourcePublishBanned, DomainKungal, http.StatusForbidden, "Resource publish banned", "This work is banned from publishing download resources.", nil},
 	{CodePollClosed, DomainKungal, http.StatusConflict, "Poll closed", "The poll no longer accepts votes: it is past closes_at. Nothing about the request is wrong.", nil},
@@ -173,6 +177,10 @@ var Codes = []Def{
 	{CodeWebsiteCategoryNotEmpty, DomainKungal, http.StatusConflict, "Website category not empty", "Websites are still listed under the category, so it cannot be deleted. website_count is how many.", []ExtDef{{Name: "website_count", Type: "integer"}}},
 	{CodeUserProtected, DomainKungal, http.StatusForbidden, "User protected", "The target user holds a staff role, and the operation is never applied to staff: their content includes site documentation other users read.", nil},
 	{CodeDirectMessagesMoved, DomainKungal, http.StatusGone, "Direct messages moved", "Direct messages moved to NextMoe chat. The forum's own conversations are kept read-only; send, recall and read markers are refused. Use the NextMoe chat API, which /api/v1/chat/* relays.", nil},
+	{CodeShopOfferUnavailable, DomainKungal, http.StatusConflict, "Shop offer unavailable", "The offer is not on sale in this forum's shop: it was retired, is outside its sale window, or is another site's exclusive.", nil},
+	{CodeShopOfferSoldOut, DomainKungal, http.StatusConflict, "Shop offer sold out", "The offer has no stock left. For a redeem code offer, no sellable code is left in its pool.", nil},
+	{CodeShopPurchaseLimitReached, DomainKungal, http.StatusConflict, "Shop purchase limit reached", "The caller has already bought this offer as many times as its purchase_limit allows in the current period.", nil},
+	{CodeShopItemNotOwned, DomainKungal, http.StatusConflict, "Shop item not owned", "The caller does not currently own the item: it was never bought, has expired, or was revoked or refunded.", nil},
 }
 
 var Reasons = []ReasonDef{

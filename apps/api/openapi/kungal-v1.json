@@ -8571,6 +8571,34 @@
         ],
         "type": "object"
       },
+      "ListShopOffer": {
+        "properties": {
+          "items": {
+            "description": "Members of this page. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/ShopOffer"
+            },
+            "type": "array"
+          },
+          "next_cursor": {
+            "description": "Opaque keyset cursor. Omitted on the last page.",
+            "maxLength": 512,
+            "pattern": "^cur_[A-Za-z0-9_-]+$",
+            "type": "string"
+          },
+          "object": {
+            "const": "list",
+            "description": "Type discriminant. Always list.",
+            "maxLength": 4,
+            "type": "string"
+          }
+        },
+        "required": [
+          "object",
+          "items"
+        ],
+        "type": "object"
+      },
       "ListStickerPack": {
         "properties": {
           "items": {
@@ -17054,6 +17082,585 @@
           "explicit"
         ],
         "maxLength": 10,
+        "type": "string",
+        "x-vocabulary-closed": true
+      },
+      "ShopAcquiredVia": {
+        "enum": [
+          "purchase",
+          "grant"
+        ],
+        "maxLength": 8,
+        "type": "string",
+        "x-vocabulary-closed": true
+      },
+      "ShopInventory": {
+        "properties": {
+          "items": {
+            "description": "Items the caller holds, newest first, including expired ones (is_active false). Revoked and refunded items are not listed.",
+            "items": {
+              "$ref": "#/components/schemas/ShopOwnedItem"
+            },
+            "type": "array"
+          },
+          "limit_usage": {
+            "description": "Purchases counted against each limited offer in its current period. An offer with a purchase_limit that is not listed has none.",
+            "items": {
+              "$ref": "#/components/schemas/ShopLimitUsage"
+            },
+            "type": "array"
+          },
+          "loadout": {
+            "description": "Every scope and slot pair, always all four.",
+            "items": {
+              "$ref": "#/components/schemas/ShopLoadoutSlot"
+            },
+            "maxItems": 4,
+            "minItems": 4,
+            "type": "array"
+          },
+          "moemoepoint": {
+            "description": "The caller's live moemoepoint balance from the account service. It can be negative.",
+            "format": "int64",
+            "minimum": -2147483648,
+            "type": "integer"
+          },
+          "object": {
+            "const": "shop_inventory",
+            "description": "Type discriminant. Always shop_inventory.",
+            "maxLength": 14,
+            "type": "string"
+          },
+          "orders": {
+            "description": "The caller's latest 50 orders on any NextMoe site or the account center, newest first.",
+            "items": {
+              "$ref": "#/components/schemas/ShopOrder"
+            },
+            "maxItems": 50,
+            "type": "array"
+          }
+        },
+        "required": [
+          "object",
+          "moemoepoint",
+          "items",
+          "loadout",
+          "orders",
+          "limit_usage"
+        ],
+        "type": "object"
+      },
+      "ShopItem": {
+        "properties": {
+          "artwork": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ShopItemArtwork"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The artwork of an avatar_frame or profile_background. null for every other type."
+          },
+          "description": {
+            "description": "A sentence about the item. Empty string when there is none. Free text; never use it as a decision input.",
+            "maxLength": 255,
+            "type": "string"
+          },
+          "display_name": {
+            "description": "The item's name. Free text; never use it as a decision input.",
+            "maxLength": 64,
+            "type": "string"
+          },
+          "id": {
+            "description": "Item id in the NextMoe shop. JSON string of a decimal integer.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "item_type": {
+            "$ref": "#/components/schemas/ShopItemType",
+            "description": "What the item is: avatar_frame and profile_background are worn in the slot of the same name; profile_about unlocks writing a profile introduction in the account center; redeem_code issues one code per purchase. Closed: an item of a type this forum does not render is left out."
+          },
+          "object": {
+            "const": "shop_item",
+            "description": "Type discriminant. Always shop_item.",
+            "maxLength": 9,
+            "type": "string"
+          }
+        },
+        "required": [
+          "object",
+          "id",
+          "item_type",
+          "display_name",
+          "description",
+          "artwork"
+        ],
+        "type": "object"
+      },
+      "ShopItemArtwork": {
+        "properties": {
+          "animated_url": {
+            "description": "Animated WebP of the same size. Never play it under a reduced-motion preference. null when there is no animated version.",
+            "format": "uri",
+            "maxLength": 512,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "static_url": {
+            "description": "Still image. An avatar frame is a square PNG 1.2 times the avatar, drawn centred over it; a profile background is a 2:1 to 4:1 banner, cropped to cover and centred. Content-addressed: the URL never changes content.",
+            "format": "uri",
+            "maxLength": 512,
+            "type": "string"
+          }
+        },
+        "required": [
+          "static_url",
+          "animated_url"
+        ],
+        "type": "object"
+      },
+      "ShopItemType": {
+        "enum": [
+          "avatar_frame",
+          "profile_background",
+          "profile_about",
+          "redeem_code"
+        ],
+        "maxLength": 18,
+        "type": "string",
+        "x-vocabulary-closed": true
+      },
+      "ShopLimitPeriod": {
+        "enum": [
+          "lifetime",
+          "month"
+        ],
+        "maxLength": 8,
+        "type": "string",
+        "x-vocabulary-closed": true
+      },
+      "ShopLimitUsage": {
+        "properties": {
+          "offer_id": {
+            "description": "A limited offer.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "purchased_count": {
+            "description": "Completed purchases of it by the caller in the current period.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "offer_id",
+          "purchased_count"
+        ],
+        "type": "object"
+      },
+      "ShopLoadoutSet": {
+        "properties": {
+          "item_id": {
+            "description": "An item the caller holds and is active, of the slot's type.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "item_id"
+        ],
+        "type": "object"
+      },
+      "ShopLoadoutSlot": {
+        "properties": {
+          "object": {
+            "const": "shop_loadout_slot",
+            "description": "Type discriminant. Always shop_loadout_slot.",
+            "maxLength": 17,
+            "type": "string"
+          },
+          "scope": {
+            "$ref": "#/components/schemas/ShopScope",
+            "description": "everywhere is the caller's default on every NextMoe site; this_site is a choice for this forum only, which wins over the default here."
+          },
+          "slot": {
+            "$ref": "#/components/schemas/ShopSlot",
+            "description": "The slot, named after the item type worn in it."
+          },
+          "worn_item_id": {
+            "description": "The item worn in this slot and scope. null when nothing is, including when what was chosen has since expired. The forum caches profiles for up to ten minutes, so another reader can see a change that late.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "object",
+          "scope",
+          "slot",
+          "worn_item_id"
+        ],
+        "type": "object"
+      },
+      "ShopOffer": {
+        "properties": {
+          "ends_at": {
+            "description": "When the offer stops selling. null when it has no end.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "id": {
+            "description": "Offer id in the NextMoe shop. JSON string of a decimal integer.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "is_site_exclusive": {
+            "description": "Whether this offer is sold only in this forum's own zone. Anything bought here still shows on every NextMoe site.",
+            "type": "boolean"
+          },
+          "object": {
+            "const": "shop_offer",
+            "description": "Type discriminant. Always shop_offer.",
+            "maxLength": 10,
+            "type": "string"
+          },
+          "price": {
+            "description": "Moemoepoint charged per purchase. The shop never takes real money.",
+            "format": "int64",
+            "maximum": 1000000,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "purchase_limit": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ShopPurchaseLimit"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "How many times one user may buy this offer. null when unlimited. The caller's own count is in getMyShopInventory's limit_usage."
+          },
+          "remaining_count": {
+            "description": "Copies still for sale: stock left, or sellable codes left in a redeem code offer's pool. 0 is sold out. null when unlimited.",
+            "format": "int64",
+            "minimum": 0,
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "rewards": {
+            "description": "What one purchase gives, in the offer's order. The first is the one to show.",
+            "items": {
+              "$ref": "#/components/schemas/ShopReward"
+            },
+            "maxItems": 10,
+            "minItems": 1,
+            "type": "array"
+          },
+          "stock_count": {
+            "description": "Total copies the offer was stocked with. null when it is not stocked; a redeem code offer is never stocked, its supply is remaining_count.",
+            "format": "int64",
+            "minimum": 0,
+            "type": [
+              "integer",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "object",
+          "id",
+          "price",
+          "is_site_exclusive",
+          "rewards",
+          "purchase_limit",
+          "stock_count",
+          "remaining_count",
+          "ends_at"
+        ],
+        "type": "object"
+      },
+      "ShopOrder": {
+        "properties": {
+          "created_at": {
+            "description": "When the order was placed.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": "string"
+          },
+          "id": {
+            "description": "Order id in the NextMoe shop. JSON string of a decimal integer.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "object": {
+            "const": "shop_order",
+            "description": "Type discriminant. Always shop_order.",
+            "maxLength": 10,
+            "type": "string"
+          },
+          "offer_id": {
+            "description": "The offer bought.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "price": {
+            "description": "Moemoepoint charged, as it was when bought.",
+            "format": "int64",
+            "maximum": 1000000,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "redeem_codes": {
+            "description": "The redeem codes the order issued. Empty unless the offer sells a redeem_code. Only ever shown to the buyer.",
+            "items": {
+              "$ref": "#/components/schemas/ShopRedeemCode"
+            },
+            "type": "array"
+          },
+          "refunded_at": {
+            "description": "When it was refunded. null unless state is refunded.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "rewards": {
+            "description": "What the order gave, as the offer was when bought. An item of a type this forum does not render is left out.",
+            "items": {
+              "$ref": "#/components/schemas/ShopReward"
+            },
+            "type": "array"
+          },
+          "state": {
+            "$ref": "#/components/schemas/ShopOrderState",
+            "description": "completed, or refunded by staff. A redeem code order is never refunded."
+          }
+        },
+        "required": [
+          "object",
+          "id",
+          "offer_id",
+          "price",
+          "state",
+          "rewards",
+          "redeem_codes",
+          "created_at",
+          "refunded_at"
+        ],
+        "type": "object"
+      },
+      "ShopOrderCreate": {
+        "properties": {
+          "offer_id": {
+            "description": "The offer to buy, from listShopOffers. Show the caller the offer, its price and the balance after it, and send this only from their confirmation: nothing asks them again.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "offer_id"
+        ],
+        "type": "object"
+      },
+      "ShopOrderState": {
+        "enum": [
+          "completed",
+          "refunded"
+        ],
+        "maxLength": 9,
+        "type": "string",
+        "x-vocabulary-closed": true
+      },
+      "ShopOwnedItem": {
+        "properties": {
+          "acquired_at": {
+            "description": "When the caller got the item, or got it back after it lapsed.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": "string"
+          },
+          "acquired_via": {
+            "$ref": "#/components/schemas/ShopAcquiredVia",
+            "description": "purchase, or grant when staff gave it."
+          },
+          "expires_at": {
+            "description": "When it lapses. null when it is permanent.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "is_active": {
+            "description": "Whether it is still in effect. An expired item is kept here with false.",
+            "type": "boolean"
+          },
+          "item": {
+            "$ref": "#/components/schemas/ShopItem",
+            "description": "The item held."
+          }
+        },
+        "required": [
+          "item",
+          "acquired_via",
+          "acquired_at",
+          "expires_at",
+          "is_active"
+        ],
+        "type": "object"
+      },
+      "ShopPurchase": {
+        "properties": {
+          "moemoepoint": {
+            "description": "The caller's live moemoepoint balance after the purchase.",
+            "format": "int64",
+            "minimum": -2147483648,
+            "type": "integer"
+          },
+          "object": {
+            "const": "shop_purchase",
+            "description": "Type discriminant. Always shop_purchase.",
+            "maxLength": 13,
+            "type": "string"
+          },
+          "order": {
+            "$ref": "#/components/schemas/ShopOrder",
+            "description": "The order. For a redeem code its redeem_codes are here; show them at once."
+          }
+        },
+        "required": [
+          "object",
+          "order",
+          "moemoepoint"
+        ],
+        "type": "object"
+      },
+      "ShopPurchaseLimit": {
+        "properties": {
+          "period": {
+            "$ref": "#/components/schemas/ShopLimitPeriod",
+            "description": "lifetime counts every purchase ever; month counts the current Asia/Shanghai calendar month, reset at 00:00 on the 1st."
+          },
+          "quantity": {
+            "description": "Purchases allowed per user in one period. Refunded orders do not count.",
+            "format": "int64",
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "quantity",
+          "period"
+        ],
+        "type": "object"
+      },
+      "ShopRedeemCode": {
+        "properties": {
+          "code": {
+            "description": "The code to redeem at the issuer. Show it only to its owner. Free text; never use it as a decision input.",
+            "maxLength": 200,
+            "type": "string"
+          },
+          "expiry_date": {
+            "description": "The last day, Japan time, the issuer accepts the code. null when it does not expire.",
+            "format": "date",
+            "maxLength": 10,
+            "minLength": 10,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "code",
+          "expiry_date"
+        ],
+        "type": "object"
+      },
+      "ShopReward": {
+        "properties": {
+          "duration_days": {
+            "description": "How long the item lasts; buying again while it lasts extends it. null when it is permanent, and always for a redeem code.",
+            "format": "int64",
+            "maximum": 3650,
+            "minimum": 1,
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "item": {
+            "$ref": "#/components/schemas/ShopItem",
+            "description": "The item given."
+          }
+        },
+        "required": [
+          "item",
+          "duration_days"
+        ],
+        "type": "object"
+      },
+      "ShopScope": {
+        "enum": [
+          "everywhere",
+          "this_site"
+        ],
+        "maxLength": 10,
+        "type": "string",
+        "x-vocabulary-closed": true
+      },
+      "ShopSlot": {
+        "enum": [
+          "avatar_frame",
+          "profile_background"
+        ],
+        "maxLength": 18,
         "type": "string",
         "x-vocabulary-closed": true
       },
@@ -42194,6 +42801,493 @@
         ]
       }
     },
+    "/me/shop": {
+      "get": {
+        "description": "Live from the account service. It holds the caller's redeem codes: never show it to anyone else. An offer cannot be bought again while any of its non-redeem_code rewards is in items with is_active true and no expires_at.",
+        "operationId": "getMyShopInventory",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShopInventory"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the account service cannot be reached."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get the caller's shop balance, items, loadout and orders",
+        "tags": [
+          "shop"
+        ]
+      }
+    },
+    "/me/shop/loadout/{scope}/{slot}": {
+      "delete": {
+        "description": "Empties the slot in that scope. Emptying an empty slot is a no-op that answers the same. Taking off the this_site choice shows the everywhere one here again.",
+        "operationId": "clearShopLoadoutSlot",
+        "parameters": [
+          {
+            "description": "everywhere for every NextMoe site, this_site for this forum only.",
+            "in": "path",
+            "name": "scope",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ShopScope",
+              "description": "everywhere for every NextMoe site, this_site for this forum only."
+            }
+          },
+          {
+            "description": "The slot.",
+            "in": "path",
+            "name": "slot",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ShopSlot",
+              "description": "The slot."
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShopLoadoutSlot"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the account service cannot be reached."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Take an item off",
+        "tags": [
+          "shop"
+        ]
+      },
+      "put": {
+        "description": "Puts an item the caller holds into the slot, for every NextMoe site or for this forum only. Wearing what is already worn is a no-op that answers the same.",
+        "operationId": "setShopLoadoutSlot",
+        "parameters": [
+          {
+            "description": "everywhere for every NextMoe site, this_site for this forum only.",
+            "in": "path",
+            "name": "scope",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ShopScope",
+              "description": "everywhere for every NextMoe site, this_site for this forum only."
+            }
+          },
+          {
+            "description": "The slot.",
+            "in": "path",
+            "name": "slot",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ShopSlot",
+              "description": "The slot."
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ShopLoadoutSet"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShopLoadoutSlot"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SHOP_ITEM_NOT_OWNED when the caller does not hold the item or it has expired."
+          },
+          "413": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Request Entity Too Large"
+          },
+          "415": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unsupported Media Type"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED at /item_id when it names no item, or an item of another slot's type."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the account service cannot be reached."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Wear an item",
+        "tags": [
+          "shop"
+        ]
+      }
+    },
+    "/me/shop/orders": {
+      "post": {
+        "description": "Charges the offer's price and gives its rewards in one step at the account service, which does not ask the caller again. Send it only from the caller's confirmation of the offer, its price and the balance after it; for a redeem code, say that it cannot be refunded. Retrying with the same Idempotency-Key never charges twice. A redeem code is in order.redeem_codes; show it at once.",
+        "operationId": "createShopOrder",
+        "parameters": [
+          {
+            "description": "Caller-generated UUID (canonical 8-4-4-4-12 hex, any version) or 26-character Crockford ULID. Scoped to (user, operation, key) for 24 hours.",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "description": "Caller-generated UUID (canonical 8-4-4-4-12 hex, any version) or 26-character Crockford ULID. Scoped to (user, operation, key) for 24 hours.",
+              "maxLength": 36,
+              "minLength": 26,
+              "pattern": "^([0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}|[0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{26})$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ShopOrderCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShopPurchase"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "MOEMOEPOINT_INSUFFICIENT, with required when the offer is known, when the live balance is below the price."
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SHOP_OFFER_UNAVAILABLE, SHOP_OFFER_SOLD_OUT, SHOP_PURCHASE_LIMIT_REACHED, or ALREADY_EXISTS when the caller already holds one of its items permanently."
+          },
+          "413": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Request Entity Too Large"
+          },
+          "415": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unsupported Media Type"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED when offer_id is not an offer id."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the account service cannot be reached. Retry with the same Idempotency-Key."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Buy a shop offer with moemoepoint",
+        "tags": [
+          "shop"
+        ]
+      }
+    },
     "/me/topic-drafts": {
       "get": {
         "description": "Lists the caller's own topic drafts, most recently written first, ties broken by descending id. There is one sort and no sort parameter. A draft is private to its author. Another author's draft is NOT_FOUND, never 403: a stranger must not learn that the id exists.",
@@ -50627,6 +51721,48 @@
         "summary": "List a series' works",
         "tags": [
           "galgame-series"
+        ]
+      }
+    },
+    "/shop/offers": {
+      "get": {
+        "description": "Every offer on sale in this forum's shop: the NextMoe-wide offers and this forum's own zone (is_site_exclusive), in shop order. Not paged. The same for every caller; the caller's balance, holdings and purchase counts are in getMyShopInventory. Refreshed from the account service at most once a minute; while it cannot be reached the last list is served. An offer holding an item of a type this forum does not render is left out.",
+        "operationId": "listShopOffers",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListShopOffer"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the account service cannot be reached and no list has been fetched yet."
+          }
+        },
+        "summary": "List what this forum's moemoepoint shop sells",
+        "tags": [
+          "shop"
         ]
       }
     },

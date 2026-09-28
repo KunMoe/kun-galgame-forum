@@ -313,7 +313,7 @@
       "status": 403,
       "type": "https://developer.nextmoe.dev/problems/kungal/moemoepoint-insufficient",
       "title": "Moemoepoint insufficient",
-      "description": "The caller's moemoepoint balance, as this forum last cached it, is below what the operation costs. required is that cost."
+      "description": "The caller's moemoepoint balance is below what the operation costs. Topic operations check the balance this forum last cached; account-service operations such as a rename or a shop purchase check the live balance. required is that cost, when the forum knows it."
     },
     {
       "object": "problem_type",
@@ -377,6 +377,42 @@
       "type": "https://developer.nextmoe.dev/problems/kungal/self-upvote-forbidden",
       "title": "Self upvote forbidden",
       "description": "Users cannot upvote their own topics."
+    },
+    {
+      "object": "problem_type",
+      "code": "SHOP_ITEM_NOT_OWNED",
+      "domain": "kungal",
+      "status": 409,
+      "type": "https://developer.nextmoe.dev/problems/kungal/shop-item-not-owned",
+      "title": "Shop item not owned",
+      "description": "The caller does not currently own the item: it was never bought, has expired, or was revoked or refunded."
+    },
+    {
+      "object": "problem_type",
+      "code": "SHOP_OFFER_SOLD_OUT",
+      "domain": "kungal",
+      "status": 409,
+      "type": "https://developer.nextmoe.dev/problems/kungal/shop-offer-sold-out",
+      "title": "Shop offer sold out",
+      "description": "The offer has no stock left. For a redeem code offer, no sellable code is left in its pool."
+    },
+    {
+      "object": "problem_type",
+      "code": "SHOP_OFFER_UNAVAILABLE",
+      "domain": "kungal",
+      "status": 409,
+      "type": "https://developer.nextmoe.dev/problems/kungal/shop-offer-unavailable",
+      "title": "Shop offer unavailable",
+      "description": "The offer is not on sale in this forum's shop: it was retired, is outside its sale window, or is another site's exclusive."
+    },
+    {
+      "object": "problem_type",
+      "code": "SHOP_PURCHASE_LIMIT_REACHED",
+      "domain": "kungal",
+      "status": 409,
+      "type": "https://developer.nextmoe.dev/problems/kungal/shop-purchase-limit-reached",
+      "title": "Shop purchase limit reached",
+      "description": "The caller has already bought this offer as many times as its purchase_limit allows in the current period."
     },
     {
       "object": "problem_type",
