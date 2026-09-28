@@ -55,8 +55,9 @@ type ReleaseCalendarUpcoming struct {
 }
 
 type monthInput struct {
-	Month       string `query:"month" pattern:"^[0-9]{4}-(0[1-9]|1[0-2])$" maxLength:"7" doc:"Calendar month as YYYY-MM. Omitted means the current month in Asia/Tokyo."`
-	IncludeNSFW bool   `query:"include_nsfw" default:"false" doc:"When true, adult works are included. Default false."`
+	Month         string `query:"month" pattern:"^[0-9]{4}-(0[1-9]|1[0-2])$" maxLength:"7" doc:"Calendar month as YYYY-MM. Omitted means the current month in Asia/Tokyo."`
+	IncludeNSFW   bool   `query:"include_nsfw" default:"false" doc:"When true, adult works are included. Default false."`
+	IncludeDoujin bool   `query:"include_doujin" default:"false" doc:"When true, works credited only to doujin circles are included. Default false."`
 }
 
 type todayInput struct {
@@ -64,16 +65,19 @@ type todayInput struct {
 }
 
 type pendingInput struct {
-	Year        int  `query:"year" minimum:"0" maximum:"9999" doc:"Calendar year. 0 or omitted means the current year in Asia/Tokyo."`
-	IncludeNSFW bool `query:"include_nsfw" default:"false" doc:"When true, adult works are included. Default false."`
+	Year          int  `query:"year" minimum:"0" maximum:"9999" doc:"Calendar year. 0 or omitted means the current year in Asia/Tokyo."`
+	IncludeNSFW   bool `query:"include_nsfw" default:"false" doc:"When true, adult works are included. Default false."`
+	IncludeDoujin bool `query:"include_doujin" default:"false" doc:"When true, works credited only to doujin circles are included. Default false."`
 }
 
 type tbaInput struct {
-	IncludeNSFW bool `query:"include_nsfw" default:"false" doc:"When true, adult works are included. Default false."`
+	IncludeNSFW   bool `query:"include_nsfw" default:"false" doc:"When true, adult works are included. Default false."`
+	IncludeDoujin bool `query:"include_doujin" default:"false" doc:"When true, works credited only to doujin circles are included. Default false."`
 }
 
 type upcomingInput struct {
-	IncludeNSFW bool `query:"include_nsfw" default:"false" doc:"When true, adult works are included. Default false."`
+	IncludeNSFW   bool `query:"include_nsfw" default:"false" doc:"When true, adult works are included. Default false."`
+	IncludeDoujin bool `query:"include_doujin" default:"false" doc:"When true, works credited only to doujin circles are included. Default false."`
 }
 
 type monthOutput struct {

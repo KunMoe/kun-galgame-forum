@@ -136,3 +136,33 @@ func TestV1ReleaseCalendarTruncationWarn(t *testing.T) {
 		t.Fatalf("missing truncation WARN: %s", buf.String())
 	}
 }
+
+func TestV1ReleaseCalendarDefaultPopulation(t *testing.T) {
+	f := newG5Fix(t)
+	for _, c := range []struct{ url, spec string }{
+		{"/api/v1/release-calendar?month=2026-09", "/release-calendar"},
+		{"/api/v1/release-calendar/pending?year=2026", "/release-calendar/pending"},
+		{"/api/v1/release-calendar/tba", "/release-calendar/tba"},
+		{"/api/v1/release-calendar/today", "/release-calendar/today"},
+	} {
+		resp, body := f.get(t, c.url, c.spec)
+		geStatus(t, resp, body, http.StatusOK, "")
+	}
+	if len(f.cat.calQ) == 0 {
+		t.Fatal("no catalog calendar query recorded")
+	}
+	for i, q := range f.cat.calQ {
+		if q.Get("olang") != "ja" || q.Get("exclude_company_kind") != "doujin_circle" {
+			t.Fatalf("%s query lost the default population: %v", f.cat.calBucket[i], q)
+		}
+	}
+
+	f.cat.calQ = nil
+	resp, body := f.get(t, "/api/v1/release-calendar?month=2026-09&include_doujin=true", "/release-calendar")
+	geStatus(t, resp, body, http.StatusOK, "")
+	for _, q := range f.cat.calQ {
+		if q.Get("olang") != "ja" || q.Has("exclude_company_kind") {
+			t.Fatalf("include_doujin=true query: %v", q)
+		}
+	}
+}

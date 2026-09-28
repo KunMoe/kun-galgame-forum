@@ -31,7 +31,7 @@ func Register(svc *Service) func(huma.API) {
 			Method:      http.MethodGet,
 			Path:        "/release-calendar/today",
 			Summary:     "Whether a work releases today",
-			Description: "Computes has_release on the walked current month in Asia/Tokyo. A day-precise release_date equal to today counts; a month- or year-precise date does not.",
+			Description: "Computes has_release on the walked current month in Asia/Tokyo. A day-precise release_date equal to today counts; a month- or year-precise date does not. Counts the default calendar population: works whose original language is Japanese, without works credited only to doujin circles.",
 			Tags:        tag,
 			Responses: problemResponses(map[int]string{
 				400: "INVALID_PARAMETER when include_nsfw is not a boolean.",
@@ -44,7 +44,7 @@ func Register(svc *Service) func(huma.API) {
 			Method:      http.MethodGet,
 			Path:        "/release-calendar/pending",
 			Summary:     "List pending releases in a year",
-			Description: "Works whose release date is known only to year precision. The walk follows catalog's cursor, at most 2,000 works.",
+			Description: "Works whose release date is known only to year precision. The walk follows catalog's cursor, at most 2,000 works. Only works whose original language is Japanese are listed; works credited only to doujin circles are left out unless include_doujin=true.",
 			Tags:        tag,
 			Responses: problemResponses(map[int]string{
 				400: "INVALID_PARAMETER when year is malformed.",
@@ -57,7 +57,7 @@ func Register(svc *Service) func(huma.API) {
 			Method:      http.MethodGet,
 			Path:        "/release-calendar/tba",
 			Summary:     "List works with an unknown release date",
-			Description: "Works catalog files as status unknown. The walk follows catalog's cursor, at most 2,000 works.",
+			Description: "Works catalog files as status unknown. The walk follows catalog's cursor, at most 2,000 works. Only works whose original language is Japanese are listed; works credited only to doujin circles are left out unless include_doujin=true.",
 			Tags:        tag,
 			Responses: problemResponses(map[int]string{
 				400: "INVALID_PARAMETER when include_nsfw is not a boolean.",
@@ -70,7 +70,7 @@ func Register(svc *Service) func(huma.API) {
 			Method:      http.MethodGet,
 			Path:        "/release-calendar/upcoming",
 			Summary:     "List upcoming releases by month",
-			Description: "Walks from the current Asia/Tokyo month to catalog's max_month, at most 24 months. A failed month is SERVICE_UNAVAILABLE for the whole response. Empty months are omitted.",
+			Description: "Walks from the current Asia/Tokyo month to catalog's max_month, at most 24 months. A failed month is SERVICE_UNAVAILABLE for the whole response. Empty months are omitted. Only works whose original language is Japanese are listed; works credited only to doujin circles are left out unless include_doujin=true.",
 			Tags:        tag,
 			Responses: problemResponses(map[int]string{
 				400: "INVALID_PARAMETER when include_nsfw is not a boolean.",
@@ -83,7 +83,7 @@ func Register(svc *Service) func(huma.API) {
 			Method:      http.MethodGet,
 			Path:        "/release-calendar",
 			Summary:     "List releases in a month",
-			Description: "Walks catalog's cursor for the month, at most 2,000 works. is_truncated is true when the cap is hit. An id catalog does not render is dropped with a warning.",
+			Description: "Walks catalog's cursor for the month, at most 2,000 works. is_truncated is true when the cap is hit. An id catalog does not render is dropped with a warning. Only works whose original language is Japanese are listed; works credited only to doujin circles are left out unless include_doujin=true.",
 			Tags:        tag,
 			Responses: problemResponses(map[int]string{
 				400: "INVALID_PARAMETER when month is malformed.",

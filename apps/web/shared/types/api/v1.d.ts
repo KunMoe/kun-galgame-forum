@@ -2969,7 +2969,7 @@ export interface paths {
         };
         /**
          * List releases in a month
-         * @description Walks catalog's cursor for the month, at most 2,000 works. is_truncated is true when the cap is hit. An id catalog does not render is dropped with a warning.
+         * @description Walks catalog's cursor for the month, at most 2,000 works. is_truncated is true when the cap is hit. An id catalog does not render is dropped with a warning. Only works whose original language is Japanese are listed; works credited only to doujin circles are left out unless include_doujin=true.
          */
         get: operations["listReleaseCalendarMonth"];
         put?: never;
@@ -2989,7 +2989,7 @@ export interface paths {
         };
         /**
          * List pending releases in a year
-         * @description Works whose release date is known only to year precision. The walk follows catalog's cursor, at most 2,000 works.
+         * @description Works whose release date is known only to year precision. The walk follows catalog's cursor, at most 2,000 works. Only works whose original language is Japanese are listed; works credited only to doujin circles are left out unless include_doujin=true.
          */
         get: operations["listReleaseCalendarPending"];
         put?: never;
@@ -3009,7 +3009,7 @@ export interface paths {
         };
         /**
          * List works with an unknown release date
-         * @description Works catalog files as status unknown. The walk follows catalog's cursor, at most 2,000 works.
+         * @description Works catalog files as status unknown. The walk follows catalog's cursor, at most 2,000 works. Only works whose original language is Japanese are listed; works credited only to doujin circles are left out unless include_doujin=true.
          */
         get: operations["listReleaseCalendarTBA"];
         put?: never;
@@ -3029,7 +3029,7 @@ export interface paths {
         };
         /**
          * Whether a work releases today
-         * @description Computes has_release on the walked current month in Asia/Tokyo. A day-precise release_date equal to today counts; a month- or year-precise date does not.
+         * @description Computes has_release on the walked current month in Asia/Tokyo. A day-precise release_date equal to today counts; a month- or year-precise date does not. Counts the default calendar population: works whose original language is Japanese, without works credited only to doujin circles.
          */
         get: operations["getReleaseCalendarToday"];
         put?: never;
@@ -3049,7 +3049,7 @@ export interface paths {
         };
         /**
          * List upcoming releases by month
-         * @description Walks from the current Asia/Tokyo month to catalog's max_month, at most 24 months. A failed month is SERVICE_UNAVAILABLE for the whole response. Empty months are omitted.
+         * @description Walks from the current Asia/Tokyo month to catalog's max_month, at most 24 months. A failed month is SERVICE_UNAVAILABLE for the whole response. Empty months are omitted. Only works whose original language is Japanese are listed; works credited only to doujin circles are left out unless include_doujin=true.
          */
         get: operations["listReleaseCalendarUpcoming"];
         put?: never;
@@ -30848,6 +30848,8 @@ export interface operations {
                 month?: string;
                 /** @description When true, adult works are included. Default false. */
                 include_nsfw?: boolean;
+                /** @description When true, works credited only to doujin circles are included. Default false. */
+                include_doujin?: boolean;
             };
             header?: never;
             path?: never;
@@ -30900,6 +30902,8 @@ export interface operations {
                 year?: number;
                 /** @description When true, adult works are included. Default false. */
                 include_nsfw?: boolean;
+                /** @description When true, works credited only to doujin circles are included. Default false. */
+                include_doujin?: boolean;
             };
             header?: never;
             path?: never;
@@ -30950,6 +30954,8 @@ export interface operations {
             query?: {
                 /** @description When true, adult works are included. Default false. */
                 include_nsfw?: boolean;
+                /** @description When true, works credited only to doujin circles are included. Default false. */
+                include_doujin?: boolean;
             };
             header?: never;
             path?: never;
@@ -31050,6 +31056,8 @@ export interface operations {
             query?: {
                 /** @description When true, adult works are included. Default false. */
                 include_nsfw?: boolean;
+                /** @description When true, works credited only to doujin circles are included. Default false. */
+                include_doujin?: boolean;
             };
             header?: never;
             path?: never;

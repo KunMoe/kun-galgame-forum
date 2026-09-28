@@ -14,6 +14,13 @@ const opts = { mode: 'replace' as const }
 const view = useRouteQuery<string>('view', 'month', opts)
 const month = useRouteQuery<string>('month', '', opts)
 const year = useRouteQuery<string>('year', '', opts)
+const doujin = useRouteQuery<string>('doujin', '', opts)
+const includeDoujin = computed({
+  get: () => doujin.value === '1',
+  set: (v: boolean) => {
+    doujin.value = v ? '1' : ''
+  }
+})
 const { allowsNsfw, stanceKey } = useContentStance()
 const nameOf = useCatalogName()
 
@@ -40,13 +47,15 @@ const {
   refresh: refreshMonth,
   problem: monthProblem
 } = await useApi<ReleaseCalendarMonth>(
-  () => `release-calendar:${month.value}:${stanceKey.value}`,
+  () =>
+    `release-calendar:${month.value}:${stanceKey.value}:${includeDoujin.value}`,
   (api, { signal }) =>
     api.GET('/release-calendar', {
       params: {
         query: {
           ...(month.value ? { month: month.value } : {}),
-          include_nsfw: allowsNsfw.value
+          include_nsfw: allowsNsfw.value,
+          include_doujin: includeDoujin.value
         }
       },
       signal
@@ -60,10 +69,15 @@ const {
   refresh: refreshUpcoming,
   problem: upcomingProblem
 } = await useApi<ReleaseCalendarUpcoming>(
-  () => `release-calendar-upcoming:${stanceKey.value}`,
+  () => `release-calendar-upcoming:${stanceKey.value}:${includeDoujin.value}`,
   (api, { signal }) =>
     api.GET('/release-calendar/upcoming', {
-      params: { query: { include_nsfw: allowsNsfw.value } },
+      params: {
+        query: {
+          include_nsfw: allowsNsfw.value,
+          include_doujin: includeDoujin.value
+        }
+      },
       signal
     }),
   { immediate: view.value === 'upcoming', server: view.value === 'upcoming' }
@@ -75,13 +89,15 @@ const {
   refresh: refreshPending,
   problem: pendingProblem
 } = await useApi<ReleaseCalendarPending>(
-  () => `release-calendar-pending:${year.value}:${stanceKey.value}`,
+  () =>
+    `release-calendar-pending:${year.value}:${stanceKey.value}:${includeDoujin.value}`,
   (api, { signal }) =>
     api.GET('/release-calendar/pending', {
       params: {
         query: {
           ...(year.value ? { year: Number(year.value) } : {}),
-          include_nsfw: allowsNsfw.value
+          include_nsfw: allowsNsfw.value,
+          include_doujin: includeDoujin.value
         }
       },
       signal
@@ -95,10 +111,15 @@ const {
   refresh: refreshTba,
   problem: tbaProblem
 } = await useApi<ReleaseCalendarTBA>(
-  () => `release-calendar-tba:${stanceKey.value}`,
+  () => `release-calendar-tba:${stanceKey.value}:${includeDoujin.value}`,
   (api, { signal }) =>
     api.GET('/release-calendar/tba', {
-      params: { query: { include_nsfw: allowsNsfw.value } },
+      params: {
+        query: {
+          include_nsfw: allowsNsfw.value,
+          include_doujin: includeDoujin.value
+        }
+      },
       signal
     }),
   { immediate: view.value === 'tba', server: view.value === 'tba' }
@@ -171,6 +192,12 @@ const goNextYear = () => {
 
     <KunTab :items="tabs" v-model="view" variant="bordered" />
 
+    <KunSwitch
+      v-model="includeDoujin"
+      label="包含同人作品"
+      description="默认只显示原语言为日语的商业作品, 开启后加入同人社团的作品"
+    />
+
     <template v-if="view === 'upcoming'">
       <div
         class="border-default-200 flex items-center justify-center gap-2 rounded-xl border px-3 py-3"
@@ -200,10 +227,7 @@ const goNextYear = () => {
                   {{ grp.items.length }} 部
                 </span>
               </div>
-              <p
-                v-if="grp.is_truncated"
-                class="text-default-400 text-sm"
-              >
+              <p v-if="grp.is_truncated" class="text-default-400 text-sm">
                 本月作品过多，未全部列出
               </p>
               <GalgameCard :galgames="cardsOf(grp.items)" />
