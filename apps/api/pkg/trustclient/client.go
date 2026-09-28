@@ -57,6 +57,7 @@ type ReportRequest struct {
 	SubjectID   string `json:"subject_id"`
 	ReasonKey   string `json:"reason_key"`
 	ReporterID  int64  `json:"reporter_id"`
+	AuthorID    *int64 `json:"author_id,omitempty"`
 	Note        string `json:"note,omitempty"`
 	Snapshot    string `json:"snapshot,omitempty"`
 	SubjectURL  string `json:"subject_url,omitempty"`

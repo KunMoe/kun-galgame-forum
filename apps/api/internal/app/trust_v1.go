@@ -95,16 +95,16 @@ func (a *App) trustSubjects() trustapiv1.Subjects {
 		if a.Community == nil || !a.Community.Configured() {
 			return communityclient.AuthorPostView{}, errors.New("community is not configured")
 		}
-		res, err := a.Community.ResolvePosts(ctx, []int64{postID})
+		res, err := a.Community.ModerationResolvePosts(ctx, []int64{postID})
 		if err != nil {
 			return communityclient.AuthorPostView{}, err
 		}
 		for _, p := range res.Posts {
-			if p.Post.ID == postID {
+			// A purged author's posts come back deleted with nothing kept.
+			if p.Post.ID == postID && (p.Post.Status < 2 || p.Post.ContentRaw != "") {
 				return p, nil
 			}
 		}
-		// The community service resolves visible posts only.
 		return communityclient.AuthorPostView{}, trustapiv1.ErrSubjectGone
 	}
 	postCreated := func(p communityclient.PostView) time.Time {
@@ -264,7 +264,7 @@ func (a *App) trustSubjects() trustapiv1.Subjects {
 				return trustapiv1.Subject{}, err
 			}
 			return trustapiv1.Subject{
-				Markdown:    p.Post.ContentRaw,
+				Hidden: p.Post.Status == 1, Deleted: p.Post.Status >= 2, Markdown: p.Post.ContentRaw,
 				Path:        fmt.Sprintf("/galgame/%d?comment=%d", m.WorkID, m.PostID),
 				ParentTitle: workName(ctx, m.WorkID), ParentPath: workPath(m.WorkID),
 				AuthorID: int(p.Post.AuthorID), CreatedAt: postCreated(p.Post),
@@ -276,7 +276,7 @@ func (a *App) trustSubjects() trustapiv1.Subjects {
 				return trustapiv1.Subject{}, err
 			}
 			sub := trustapiv1.Subject{
-				Markdown: p.Post.ContentRaw, ParentTitle: p.Thread.Title,
+				Hidden: p.Post.Status == 1, Deleted: p.Post.Status >= 2, Markdown: p.Post.ContentRaw, ParentTitle: p.Thread.Title,
 				AuthorID: int(p.Post.AuthorID), CreatedAt: postCreated(p.Post),
 			}
 			ref := anchor.Ref{Kind: p.Thread.AnchorKind, ID: p.Thread.AnchorID}

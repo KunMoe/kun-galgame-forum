@@ -335,6 +335,27 @@ func TestResolvePosts(t *testing.T) {
 	}
 }
 
+func TestModerationResolvePosts(t *testing.T) {
+	var gotPath string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotPath = r.URL.Path
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"code": 0, "data": map[string]any{"posts": []any{
+				map[string]any{"post": map[string]any{"id": 11354, "author_id": 55, "content_raw": "hidden", "status": 1}},
+			}},
+		})
+	}))
+	defer srv.Close()
+
+	out, err := newTestClient(srv.URL).ModerationResolvePosts(context.Background(), []int64{11354})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if gotPath != "/moderation/posts/resolve" || len(out.Posts) != 1 || out.Posts[0].Post.Status != 1 {
+		t.Errorf("path = %q decoded = %+v", gotPath, out)
+	}
+}
+
 func TestSearchPostsQuery(t *testing.T) {
 	var gotPath, gotQuery string
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

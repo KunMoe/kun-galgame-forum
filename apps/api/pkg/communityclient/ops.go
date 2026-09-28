@@ -105,6 +105,18 @@ func (c *Client) ResolvePosts(ctx context.Context, ids []int64) (*PostsResolveRe
 	return &out, err
 }
 
+// ModerationResolvePosts also answers hidden and deleted posts. The community
+// service authorizes it by client alone, as it does /posts/resolve, so only a
+// moderator-gated path may call it.
+func (c *Client) ModerationResolvePosts(ctx context.Context, ids []int64) (*PostsResolveResponse, error) {
+	if len(ids) == 0 {
+		return &PostsResolveResponse{Posts: []AuthorPostView{}}, nil
+	}
+	var out PostsResolveResponse
+	err := c.do(ctx, http.MethodPost, "/moderation/posts/resolve", PostsResolveRequest{IDs: ids}, &out)
+	return &out, err
+}
+
 // SearchPosts matches the markdown source, not the cooked HTML, and answers a
 // keyset page: there is no total to count and no relevance to rank by.
 func (c *Client) SearchPosts(ctx context.Context, q string, kind int32, cursor string, limit int) (*PostFeedResponse, error) {

@@ -7,6 +7,10 @@ const props = defineProps<{
   author: ReviewAuthor
 }>()
 
+const emit = defineEmits<{
+  showHistory: []
+}>()
+
 const profile = computed(() => props.author.profile)
 
 const counts = computed(() => {
@@ -61,6 +65,33 @@ const counts = computed(() => {
       <span v-for="item in counts" :key="item.label">
         {{ item.label }} {{ item.value }}
       </span>
+    </div>
+
+    <div class="flex flex-wrap items-center gap-2 text-xs">
+      <span
+        class="text-default-500"
+        title="只统计 Trust 平台记录了作者的条目，不含当前条目"
+      >
+        过往审核
+      </span>
+      <KunChip
+        :color="author.past_actioned_count ? 'danger' : 'default'"
+        variant="flat"
+        size="xs"
+      >
+        处置 {{ author.past_actioned_count ?? '—' }}
+      </KunChip>
+      <KunChip variant="flat" size="xs">
+        驳回 {{ author.past_dismissed_count ?? '—' }}
+      </KunChip>
+      <KunButton
+        variant="light"
+        color="primary"
+        size="xs"
+        @click="emit('showHistory')"
+      >
+        查看该用户的全部条目
+      </KunButton>
     </div>
 
     <p

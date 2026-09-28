@@ -77,12 +77,12 @@ type ReviewItem struct {
 	ReviewItemSummary
 	Reports       []ReviewReport `json:"reports" maxItems:"1000" doc:"The reports linked to the item, oldest first. Empty for an item that reports did not open."`
 	Subject       *ReviewSubject `json:"subject" doc:"The content under review as this forum reads it now, hidden or not. null when the forum cannot read that kind of content, or could not read it for this request."`
-	SubjectAuthor *ReviewAuthor  `json:"subject_author" doc:"Who wrote the content under review; for a user under review, that user. null when there is no author, the account no longer exists, or subject is null or gone."`
+	SubjectAuthor *ReviewAuthor  `json:"subject_author" doc:"Who wrote the content under review; for a user under review, that user. Read from the content when this forum can, otherwise as the trust service recorded it. null when neither knows, or the account no longer exists."`
 }
 
 type ReviewSubject struct {
 	Object      string                  `json:"object" enum:"review_subject" maxLength:"14" doc:"Type discriminant. Always review_subject."`
-	State       string                  `json:"state" enum:"visible,hidden,gone" maxLength:"7" doc:"visible when readers can see it; hidden when a moderator, its author or a disposition hid it; gone when it no longer exists or this forum can no longer read it. A gone subject carries no title, body, paths or time."`
+	State       string                  `json:"state" enum:"visible,hidden,deleted,gone" maxLength:"7" doc:"visible when readers can see it; hidden when a moderator, its author or a disposition hid it; deleted when it was deleted but what it said is kept; gone when it no longer exists or this forum can no longer read it. A gone subject carries no title, body, paths or time."`
 	Title       string                  `json:"title" maxLength:"512" doc:"The content's own title or name. Empty string when it has none. Free text; never use it as a decision input."`
 	Content     content.ContentDocument `json:"content" doc:"The content's body. An empty document when it has none."`
 	PagePath    *string                 `json:"page_path" pattern:"^/" maxLength:"512" doc:"In-site web path that opens the content. null when no page shows it."`
@@ -92,9 +92,11 @@ type ReviewSubject struct {
 }
 
 type ReviewAuthor struct {
-	Object          string                `json:"object" enum:"review_author" maxLength:"13" doc:"Type discriminant. Always review_author."`
-	IsAccountActive bool                  `json:"is_account_active" doc:"Whether the account service reports the account as usable: neither banned nor deregistered."`
-	Profile         userapiv1.UserProfile `json:"profile" doc:"The author's profile as getUser shows it, also for an account that is not active."`
+	Object             string                `json:"object" enum:"review_author" maxLength:"13" doc:"Type discriminant. Always review_author."`
+	IsAccountActive    bool                  `json:"is_account_active" doc:"Whether the account service reports the account as usable: neither banned nor deregistered."`
+	Profile            userapiv1.UserProfile `json:"profile" doc:"The author's profile as getUser shows it, also for an account that is not active."`
+	PastActionedCount  *int                  `json:"past_actioned_count" minimum:"0" doc:"How many other review items about this author moderators actioned. Counts only items the trust service attributed to an author. null when the trust service could not be asked."`
+	PastDismissedCount *int                  `json:"past_dismissed_count" minimum:"0" doc:"How many other review items about this author moderators dismissed. Counts only items the trust service attributed to an author. null when the trust service could not be asked."`
 }
 
 type ReviewReport struct {

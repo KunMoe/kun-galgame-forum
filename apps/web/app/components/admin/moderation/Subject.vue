@@ -7,13 +7,18 @@ defineProps<{
   author: ReviewAuthor | null
 }>()
 
+const emit = defineEmits<{
+  showAuthorHistory: [author: ReviewAuthor]
+}>()
+
 const STATE: Record<
   ReviewSubject['state'],
   { label: string; color: 'success' | 'warning' | 'default' }
 > = {
   visible: { label: '正常可见', color: 'success' },
   hidden: { label: '已隐藏', color: 'warning' },
-  gone: { label: '已删除或无法读取', color: 'default' }
+  deleted: { label: '已删除（原文保留）', color: 'default' },
+  gone: { label: '已不存在或无法读取', color: 'default' }
 }
 </script>
 
@@ -67,7 +72,10 @@ const STATE: Record<
       <span class="text-default-600 text-sm font-medium">
         {{ kind === 'user' ? '被审核用户' : '作者' }}
       </span>
-      <AdminModerationAuthor :author="author" />
+      <AdminModerationAuthor
+        :author="author"
+        @show-history="emit('showAuthorHistory', author)"
+      />
     </template>
   </div>
 </template>

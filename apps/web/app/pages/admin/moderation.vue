@@ -9,7 +9,11 @@ import {
   type ReviewState
 } from '~/constants/trust'
 import { settle } from '#shared/utils/api/problem'
-import type { ReviewItem, ReviewItemPatch } from '#shared/utils/api/schemas'
+import type {
+  ReviewAuthor,
+  ReviewItem,
+  ReviewItemPatch
+} from '#shared/utils/api/schemas'
 import { toKunUser } from '~/utils/userRef'
 
 definePageMeta({
@@ -38,18 +42,21 @@ watch(activeState, (v) => {
   pageData.page = 1
 })
 
+const authorFilter = ref<{ id: string; name: string } | null>(null)
+
 const api = useApiClient()
 
 const { data, status, refresh } = await useApi(
   () =>
-    `admin-review-items:${pageData.state}:${pageData.page}:${pageData.limit}`,
+    `admin-review-items:${pageData.state}:${pageData.page}:${pageData.limit}:${authorFilter.value?.id ?? ''}`,
   (client, { signal }) =>
     client.GET('/admin/review-items', {
       params: {
         query: {
           page: pageData.page,
           limit: pageData.limit,
-          ...(pageData.state ? { state: pageData.state } : {})
+          ...(pageData.state ? { state: pageData.state } : {}),
+          ...(authorFilter.value ? { author_id: authorFilter.value.id } : {})
         }
       },
       signal
@@ -98,6 +105,21 @@ const openDetail = async (id: string) => {
     return
   }
   detail.value = result.data
+}
+
+const showAuthorHistory = (author: ReviewAuthor) => {
+  authorFilter.value = {
+    id: author.profile.id,
+    name: author.profile.name ?? `#${author.profile.id}`
+  }
+  activeState.value = 'all'
+  pageData.page = 1
+  isDetailOpen.value = false
+}
+
+const clearAuthorFilter = () => {
+  authorFilter.value = null
+  pageData.page = 1
 }
 
 const isOpen = computed(() => {
@@ -191,6 +213,18 @@ const actionOptions = TRUST_ACTIONS.map((a) => ({
       size="sm"
     />
 
+    <div v-if="authorFilter" class="flex items-center gap-2 text-sm">
+      <span class="text-default-500">只看作者</span>
+      <KunChip
+        color="primary"
+        variant="flat"
+        closable
+        @close="clearAuthorFilter"
+      >
+        {{ authorFilter.name }}
+      </KunChip>
+    </div>
+
     <KunLoading v-if="status === 'pending'" />
 
     <KunNull v-else-if="!items.length" description="暂无审核条目" />
@@ -263,6 +297,7 @@ const actionOptions = TRUST_ACTIONS.map((a) => ({
           :kind="detail.subject_kind"
           :subject="detail.subject"
           :author="detail.subject_author"
+          @show-author-history="showAuthorHistory"
         />
 
         <div class="space-y-2">

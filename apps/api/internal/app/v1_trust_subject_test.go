@@ -2,9 +2,13 @@ package app
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
+	"net/http/httptest"
+	"net/url"
+	"strings"
 	"testing"
 	"time"
 
@@ -14,6 +18,7 @@ import (
 	"kun-galgame-api/internal/testdb"
 	trustapiv1 "kun-galgame-api/internal/trust/apiv1"
 	userapiv1 "kun-galgame-api/internal/user/apiv1"
+	"kun-galgame-api/pkg/communityclient"
 )
 
 type tsProfiles struct{}
@@ -140,6 +145,129 @@ func TestTrustSubjectsReadHiddenContent(t *testing.T) {
 	for _, kind := range []string{"forum_topic", "forum_reply", "forum_comment"} {
 		if _, err := subjects[kind](ctx, 958100999); !errors.Is(err, trustapiv1.ErrSubjectGone) {
 			t.Errorf("%s: a missing row is gone, got %v", kind, err)
+		}
+	}
+}
+
+func TestV1CreateReportNamesAuthor(t *testing.T) {
+	f := newTrustFix(t)
+	f.app.TrustV1.WithSubjects(trustapiv1.Subjects{
+		"forum_topic": func(_ context.Context, id int) (trustapiv1.Subject, error) {
+			switch id {
+			case 4121:
+				return trustapiv1.Subject{Hidden: true, AuthorID: tsUserBanned}, nil
+			case 4122:
+				return trustapiv1.Subject{}, trustapiv1.ErrSubjectGone
+			}
+			return trustapiv1.Subject{}, errors.New("database down")
+		},
+	}, tsProfiles{}, nil)
+
+	for _, id := range []string{"4121", "4122", "4123"} {
+		resp, body := f.call(t, http.MethodPost, "/api/v1/reports", "/reports", "sess-plain", nil, reportBody(map[string]any{"subject_id": id}))
+		if resp.StatusCode != http.StatusNoContent {
+			t.Fatalf("%s: %d %+v", id, resp.StatusCode, body)
+		}
+	}
+	got := f.trust.submissions()
+	if got[0].AuthorID == nil || *got[0].AuthorID != tsUserBanned {
+		t.Errorf("a report names the author the forum reads: %+v", got[0])
+	}
+	if got[1].AuthorID != nil || got[2].AuthorID != nil {
+		t.Errorf("an author the forum cannot read is left out: %+v %+v", got[1], got[2])
+	}
+}
+
+func TestV1ReviewAuthorHistory(t *testing.T) {
+	f := newTrustFix(t)
+	f.app.TrustV1.WithSubjects(trustapiv1.Subjects{
+		"forum_topic": func(_ context.Context, id int) (trustapiv1.Subject, error) {
+			if id == 9001 {
+				return trustapiv1.Subject{Markdown: "x", AuthorID: tsUserBanned}, nil
+			}
+			return trustapiv1.Subject{}, trustapiv1.ErrSubjectGone
+		},
+	}, tsProfiles{}, &content.Converter{SiteBase: apiv1.SiteOrigin})
+	banned := int64(tsUserBanned)
+	f.trust.mu.Lock()
+	// 9010 is actioned, 9011 and 9012 dismissed, 9014 dismissed on another site.
+	for _, id := range []int64{9001, 9010, 9011, 9012, 9014} {
+		f.trust.find(id).SubjectAuthorID = &banned
+	}
+	f.trust.mu.Unlock()
+
+	resp, body := f.reviewItem(t, "sess-mod", "9001")
+	author, _ := body["subject_author"].(map[string]any)
+	if resp.StatusCode != http.StatusOK || asInt(author["past_actioned_count"]) != 1 || asInt(author["past_dismissed_count"]) != 2 {
+		t.Errorf("an open item counts every decided item of its author on this site: %d %+v", resp.StatusCode, author)
+	}
+	for _, c := range f.trust.callsMatching("GET /api/v1/admin/trust/review-items?") {
+		if !strings.Contains(c, "site=kungal") || !strings.Contains(c, "subject_author_id=940000003") {
+			t.Errorf("history asks for this author on this site: %s", c)
+		}
+	}
+
+	resp, body = f.reviewItem(t, "sess-mod", "9011")
+	subject, _ := body["subject"].(map[string]any)
+	author, _ = body["subject_author"].(map[string]any)
+	profile, _ := author["profile"].(map[string]any)
+	if resp.StatusCode != http.StatusOK || subject["state"] != "gone" || profile["id"] != fmt.Sprint(tsUserBanned) ||
+		asInt(author["past_actioned_count"]) != 1 || asInt(author["past_dismissed_count"]) != 1 {
+		t.Errorf("a gone subject keeps the author the trust service recorded, and a decided item is not its own past: %d %+v", resp.StatusCode, body)
+	}
+
+	resp, body = f.inbox(t, "sess-mod", url.Values{"author_id": {fmt.Sprint(tsUserBanned)}})
+	if resp.StatusCode != http.StatusOK || fmt.Sprint(adminItemIDs(body)) != "[9001 9011 9010 9012]" || asInt(body["total"]) != 4 {
+		t.Errorf("the inbox narrows to one author on this site: %d %v %+v", resp.StatusCode, adminItemIDs(body), body["total"])
+	}
+	resp, body = f.inbox(t, "sess-mod", url.Values{"author_id": {"0"}})
+	wantProblem(t, resp, body, http.StatusBadRequest, "INVALID_PARAMETER")
+}
+
+func TestTrustSubjectsReadModeratedCommunityPosts(t *testing.T) {
+	db := testdb.Open(t)
+	var paths []string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		paths = append(paths, r.URL.Path)
+		var req struct {
+			IDs []int64 `json:"ids"`
+		}
+		_ = json.NewDecoder(r.Body).Decode(&req)
+		posts := map[int64]map[string]any{
+			11: {"id": 11, "author_id": 55, "content_raw": "hidden text", "status": 1, "created_at": "2026-09-01T12:00:00Z"},
+			12: {"id": 12, "author_id": 55, "content_raw": "deleted text", "status": 2},
+			13: {"id": 13, "author_id": 55, "content_raw": "", "status": 2},
+		}
+		out := []any{}
+		for _, id := range req.IDs {
+			if p, ok := posts[id]; ok {
+				out = append(out, map[string]any{"post": p, "thread": map[string]any{"thread_id": 1, "anchor_kind": communityclient.AnchorSiteGame, "anchor_id": "42"}})
+			}
+		}
+		_ = json.NewEncoder(w).Encode(map[string]any{"code": 0, "data": map[string]any{"posts": out}})
+	}))
+	defer srv.Close()
+
+	resolve := (&App{DB: db, Community: communityclient.New(communityclient.Config{BaseURL: srv.URL, ClientID: "c", ClientSecret: "s"})}).
+		trustSubjects()["community_post"]
+	ctx := context.Background()
+	hidden, err := resolve(ctx, 11)
+	if err != nil || !hidden.Hidden || hidden.Deleted || hidden.Markdown != "hidden text" || hidden.AuthorID != 55 ||
+		hidden.Path != "/galgame/42?comment=11" || !hidden.CreatedAt.Equal(time.Date(2026, 9, 1, 12, 0, 0, 0, time.UTC)) {
+		t.Errorf("a hidden post is read for the reviewer: %+v %v", hidden, err)
+	}
+	deleted, err := resolve(ctx, 12)
+	if err != nil || !deleted.Deleted || deleted.Markdown != "deleted text" {
+		t.Errorf("a deleted post keeps what it said: %+v %v", deleted, err)
+	}
+	for _, id := range []int{13, 14} {
+		if _, err := resolve(ctx, id); !errors.Is(err, trustapiv1.ErrSubjectGone) {
+			t.Errorf("post %d: a purged or missing post is gone, got %v", id, err)
+		}
+	}
+	for _, p := range paths {
+		if p != "/moderation/posts/resolve" {
+			t.Errorf("the reviewer's read uses the moderation resolve, got %s", p)
 		}
 	}
 }

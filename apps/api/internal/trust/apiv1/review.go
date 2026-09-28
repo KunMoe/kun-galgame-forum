@@ -33,7 +33,8 @@ var dispositionActions = map[string]int16{
 
 type listReviewItemsInput struct {
 	collect.PageNumber
-	State string `query:"state" enum:"pending,claimed,actioned,dismissed" maxLength:"9" doc:"Only items in this state. Absent means every state."`
+	State    string `query:"state" enum:"pending,claimed,actioned,dismissed" maxLength:"9" doc:"Only items in this state. Absent means every state."`
+	AuthorID string `query:"author_id" required:"false" pattern:"^[1-9][0-9]{0,18}$" maxLength:"19" doc:"When set, only items about content this user wrote, or about this user. Only items the trust service attributed to an author match."`
 }
 
 type listReviewItemsOutput struct {
@@ -86,6 +87,14 @@ func (s *Service) listReviewItems(ctx context.Context, in *listReviewItemsInput)
 	if in.State != "" {
 		status := int16(slices.Index(reviewStates, in.State))
 		q.Status = &status
+	}
+	if in.AuthorID != "" {
+		authorID, ok := repr.ParseID(repr.DecimalID(in.AuthorID))
+		if !ok {
+			return nil, problem.New(problem.CodeInvalidParameter, "author_id must be a positive integer.",
+				problem.AtParameter("author_id", problem.ReasonInvalidFormat, "author_id must be a positive integer", nil))
+		}
+		q.SubjectAuthorID = int64(authorID)
 	}
 	page, err := s.trust.ListReviewItems(ctx, accessToken(ctx), q)
 	if err != nil {
@@ -225,7 +234,11 @@ func (s *Service) readItem(ctx context.Context, id int64) (*ReviewItem, *problem
 	for _, r := range detail.Reports {
 		reports = append(reports, s.reviewReport(r, users, reasons))
 	}
-	subject, author := s.subject(ctx, detail.Item.SubjectKind, detail.Item.SubjectID)
+	subject, authorID := s.subject(ctx, detail.Item.SubjectKind, detail.Item.SubjectID)
+	if authorID == 0 && detail.Item.SubjectAuthorID != nil {
+		authorID = int(*detail.Item.SubjectAuthorID)
+	}
+	author := s.author(ctx, authorID, detail.Item)
 	return &ReviewItem{ReviewItemSummary: summary, Reports: reports, Subject: subject, SubjectAuthor: author}, nil
 }
 

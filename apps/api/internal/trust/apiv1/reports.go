@@ -87,6 +87,9 @@ func (s *Service) createReport(ctx context.Context, in *createReportInput) (*str
 	if body.SubjectURL != nil {
 		req.SubjectURL = *body.SubjectURL
 	}
+	if author := int64(s.reportedAuthor(ctx, req.SubjectKind, req.SubjectID)); author > 0 {
+		req.AuthorID = &author
+	}
 	if _, err := s.trust.SubmitReport(ctx, req); err != nil {
 		if errors.Is(err, trustclient.ErrRateLimited) {
 			return nil, problem.New(problem.CodeRateLimited, "The trust service's per-reporter limit was exceeded.")

@@ -15953,6 +15953,24 @@
             "maxLength": 13,
             "type": "string"
           },
+          "past_actioned_count": {
+            "description": "How many other review items about this author moderators actioned. Counts only items the trust service attributed to an author. null when the trust service could not be asked.",
+            "format": "int64",
+            "minimum": 0,
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "past_dismissed_count": {
+            "description": "How many other review items about this author moderators dismissed. Counts only items the trust service attributed to an author. null when the trust service could not be asked.",
+            "format": "int64",
+            "minimum": 0,
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
           "profile": {
             "$ref": "#/components/schemas/UserProfile",
             "description": "The author's profile as getUser shows it, also for an account that is not active."
@@ -15961,7 +15979,9 @@
         "required": [
           "object",
           "is_account_active",
-          "profile"
+          "profile",
+          "past_actioned_count",
+          "past_dismissed_count"
         ],
         "type": "object"
       },
@@ -16123,7 +16143,7 @@
                 "type": "null"
               }
             ],
-            "description": "Who wrote the content under review; for a user under review, that user. null when there is no author, the account no longer exists, or subject is null or gone."
+            "description": "Who wrote the content under review; for a user under review, that user. Read from the content when this forum can, otherwise as the trust service recorded it. null when neither knows, or the account no longer exists."
           },
           "subject_id": {
             "description": "Id of the content under review within its kind.",
@@ -16514,7 +16534,7 @@
           },
           "state": {
             "$ref": "#/components/schemas/ReviewSubjectState",
-            "description": "visible when readers can see it; hidden when a moderator, its author or a disposition hid it; gone when it no longer exists or this forum can no longer read it. A gone subject carries no title, body, paths or time."
+            "description": "visible when readers can see it; hidden when a moderator, its author or a disposition hid it; deleted when it was deleted but what it said is kept; gone when it no longer exists or this forum can no longer read it. A gone subject carries no title, body, paths or time."
           },
           "title": {
             "description": "The content's own title or name. Empty string when it has none. Free text; never use it as a decision input.",
@@ -16538,6 +16558,7 @@
         "enum": [
           "visible",
           "hidden",
+          "deleted",
           "gone"
         ],
         "maxLength": 7,
@@ -28265,6 +28286,18 @@
             "schema": {
               "$ref": "#/components/schemas/ReviewItemState",
               "description": "Only items in this state. Absent means every state."
+            }
+          },
+          {
+            "description": "When set, only items about content this user wrote, or about this user. Only items the trust service attributed to an author match.",
+            "explode": false,
+            "in": "query",
+            "name": "author_id",
+            "schema": {
+              "description": "When set, only items about content this user wrote, or about this user. Only items the trust service attributed to an author match.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
             }
           }
         ],

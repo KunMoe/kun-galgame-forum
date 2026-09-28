@@ -34,6 +34,7 @@ type ReviewItem struct {
 	SubjectReach    *int64     `json:"subject_reach"`
 	Priority        float32    `json:"priority"`
 	ContextNote     *string    `json:"context_note"`
+	SubjectAuthorID *int64     `json:"subject_author_id"`
 	Status          int16      `json:"status"`
 	ClaimedBy       *int64     `json:"claimed_by"`
 	ClaimedAt       *time.Time `json:"claimed_at"`
@@ -64,10 +65,11 @@ type ReviewItemDetail struct {
 }
 
 type ReviewQuery struct {
-	Site   string
-	Status *int16
-	Page   int
-	Limit  int
+	Site            string
+	Status          *int16
+	SubjectAuthorID int64
+	Page            int
+	Limit           int
 }
 
 type DecideRequest struct {
@@ -143,6 +145,9 @@ func (c *Client) ListReviewItems(ctx context.Context, token string, q ReviewQuer
 	}
 	if q.Status != nil {
 		query.Set("status", strconv.Itoa(int(*q.Status)))
+	}
+	if q.SubjectAuthorID > 0 {
+		query.Set("subject_author_id", strconv.FormatInt(q.SubjectAuthorID, 10))
 	}
 	query.Set("page", strconv.Itoa(q.Page))
 	query.Set("limit", strconv.Itoa(q.Limit))

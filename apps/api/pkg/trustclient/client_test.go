@@ -114,3 +114,56 @@ func TestSubmitReportErrorMapping(t *testing.T) {
 		srv.Close()
 	}
 }
+
+// The trust service answers 422 to author_id 0 and fails the whole report.
+func TestSubmitReportAuthorOnlyWhenKnown(t *testing.T) {
+	var bodies []map[string]any
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var body map[string]any
+		_ = json.NewDecoder(r.Body).Decode(&body)
+		bodies = append(bodies, body)
+		_, _ = w.Write([]byte(`{"code":0,"data":{"report_id":1}}`))
+	}))
+	defer srv.Close()
+
+	c := New(Config{BaseURL: srv.URL, ClientID: "cid", ClientSecret: "sec"})
+	author := int64(55)
+	for _, req := range []ReportRequest{
+		{SubjectKind: "forum_reply", SubjectID: "8", ReasonKey: "spam", ReporterID: 1},
+		{SubjectKind: "forum_reply", SubjectID: "8", ReasonKey: "spam", ReporterID: 1, AuthorID: &author},
+	} {
+		if _, err := c.SubmitReport(context.Background(), req); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, sent := bodies[0]["author_id"]; sent {
+		t.Errorf("an unknown author is omitted: %v", bodies[0])
+	}
+	if bodies[1]["author_id"] != float64(55) {
+		t.Errorf("a known author is sent: %v", bodies[1])
+	}
+}
+
+func TestListReviewItemsAuthorFilter(t *testing.T) {
+	var queries []string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		queries = append(queries, r.URL.RawQuery)
+		_, _ = w.Write([]byte(`{"code":0,"data":{"items":[{"id":3,"subject_author_id":55}],"total":1}}`))
+	}))
+	defer srv.Close()
+
+	c := New(Config{BaseURL: srv.URL, ClientID: "cid", ClientSecret: "sec"})
+	page, err := c.ListReviewItems(context.Background(), "tok", ReviewQuery{Site: "kungal", SubjectAuthorID: 55, Page: 1, Limit: 1})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if page.Items[0].SubjectAuthorID == nil || *page.Items[0].SubjectAuthorID != 55 {
+		t.Errorf("subject_author_id decoded: %+v", page.Items[0])
+	}
+	if _, err := c.ListReviewItems(context.Background(), "tok", ReviewQuery{Site: "kungal", Page: 1, Limit: 1}); err != nil {
+		t.Fatal(err)
+	}
+	if queries[0] != "limit=1&page=1&site=kungal&subject_author_id=55" || queries[1] != "limit=1&page=1&site=kungal" {
+		t.Errorf("queries = %q", queries)
+	}
+}

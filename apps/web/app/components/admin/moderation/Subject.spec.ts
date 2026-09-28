@@ -26,6 +26,8 @@ const subject: ReviewSubject = {
 const author: ReviewAuthor = {
   object: 'review_author',
   is_account_active: false,
+  past_actioned_count: 2,
+  past_dismissed_count: 5,
   profile: {
     object: 'user',
     id: '42',
@@ -81,6 +83,33 @@ describe('AdminModerationSubject', () => {
       expect(text).toContain(want)
     }
     expect(text).not.toContain('社区评论')
+  })
+
+  it("shows the author's past decisions and asks for the rest of their items", async () => {
+    const wrapper = await mountSuspended(Subject, {
+      props: { kind: 'forum_reply', subject, author }
+    })
+    expect(wrapper.text()).toContain('处置 2')
+    expect(wrapper.text()).toContain('驳回 5')
+    const button = wrapper
+      .findAll('button')
+      .find((b) => b.text().includes('查看该用户的全部条目'))
+    await button!.trigger('click')
+    expect(wrapper.emitted('showAuthorHistory')).toEqual([[author]])
+  })
+
+  it('shows what a deleted post said, and a dash when history is unknown', async () => {
+    const wrapper = await mountSuspended(Subject, {
+      props: {
+        kind: 'community_post',
+        subject: { ...subject, state: 'deleted' },
+        author: { ...author, past_actioned_count: null }
+      }
+    })
+    const text = wrapper.text()
+    expect(text).toContain('已删除（原文保留）')
+    expect(text).toContain('被举报的正文')
+    expect(text).toContain('处置 —')
   })
 
   it('names a reported user as the user under review', async () => {

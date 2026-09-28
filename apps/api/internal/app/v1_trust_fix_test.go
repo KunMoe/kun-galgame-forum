@@ -192,6 +192,9 @@ func (ft *fakeTrust) list(w http.ResponseWriter, r *http.Request) {
 		if st := q.Get("status"); st != "" && st != strconv.Itoa(int(it.Status)) {
 			continue
 		}
+		if a := q.Get("subject_author_id"); a != "" && (it.SubjectAuthorID == nil || strconv.FormatInt(*it.SubjectAuthorID, 10) != a) {
+			continue
+		}
 		rows = append(rows, it)
 	}
 	sort.SliceStable(rows, func(i, j int) bool {

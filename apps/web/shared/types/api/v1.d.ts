@@ -11233,6 +11233,16 @@ export interface components {
              * @constant
              */
             object: "review_author";
+            /**
+             * Format: int64
+             * @description How many other review items about this author moderators actioned. Counts only items the trust service attributed to an author. null when the trust service could not be asked.
+             */
+            past_actioned_count: number | null;
+            /**
+             * Format: int64
+             * @description How many other review items about this author moderators dismissed. Counts only items the trust service attributed to an author. null when the trust service could not be asked.
+             */
+            past_dismissed_count: number | null;
             /** @description The author's profile as getUser shows it, also for an account that is not active. */
             profile: components["schemas"]["UserProfile"];
         };
@@ -11298,7 +11308,7 @@ export interface components {
             state: components["schemas"]["ReviewItemState"];
             /** @description The content under review as this forum reads it now, hidden or not. null when the forum cannot read that kind of content, or could not read it for this request. */
             subject: components["schemas"]["ReviewSubject"] | null;
-            /** @description Who wrote the content under review; for a user under review, that user. null when there is no author, the account no longer exists, or subject is null or gone. */
+            /** @description Who wrote the content under review; for a user under review, that user. Read from the content when this forum can, otherwise as the trust service recorded it. null when neither knows, or the account no longer exists. */
             subject_author: components["schemas"]["ReviewAuthor"] | null;
             /** @description Id of the content under review within its kind. */
             subject_id: string;
@@ -11433,13 +11443,13 @@ export interface components {
             parent_path: string | null;
             /** @description Title or name of where the content lives, such as the topic of a reply or the work of a resource. null when it stands alone. Free text; never use it as a decision input. */
             parent_title: string | null;
-            /** @description visible when readers can see it; hidden when a moderator, its author or a disposition hid it; gone when it no longer exists or this forum can no longer read it. A gone subject carries no title, body, paths or time. */
+            /** @description visible when readers can see it; hidden when a moderator, its author or a disposition hid it; deleted when it was deleted but what it said is kept; gone when it no longer exists or this forum can no longer read it. A gone subject carries no title, body, paths or time. */
             state: components["schemas"]["ReviewSubjectState"];
             /** @description The content's own title or name. Empty string when it has none. Free text; never use it as a decision input. */
             title: string;
         };
         /** @enum {string} */
-        ReviewSubjectState: "visible" | "hidden" | "gone";
+        ReviewSubjectState: "visible" | "hidden" | "deleted" | "gone";
         /** @enum {string} */
         RevisionAction: "created" | "merged" | "direct" | "reverted";
         RoleOverrides: {
@@ -16430,6 +16440,8 @@ export interface operations {
                 limit?: number;
                 /** @description Only items in this state. Absent means every state. */
                 state?: components["schemas"]["ReviewItemState"];
+                /** @description When set, only items about content this user wrote, or about this user. Only items the trust service attributed to an author match. */
+                author_id?: string;
             };
             header?: never;
             path?: never;
