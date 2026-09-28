@@ -86,6 +86,13 @@ const renameCost = useRenameCost()
           }}
           的发帖奖励，余额不足不能发。
         </li>
+        <li>
+          <b class="text-foreground">萌萌点商店</b>：在<NuxtLink
+            to="/shop"
+            class="text-primary hover:underline"
+            >萌萌点商店</NuxtLink
+          >兑换优惠券、功能和装扮，价格写在每件商品上，买之前会让你确认。
+        </li>
         <li v-if="renameCost === null">
           <b class="text-foreground">改名</b
           >：修改用户名要花萌萌点，价格以账号中心为准，余额不足改不了。

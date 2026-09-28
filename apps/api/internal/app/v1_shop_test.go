@@ -111,6 +111,13 @@ func TestV1ShopInventoryNeedsCredential(t *testing.T) {
 	}
 }
 
+func TestV1ShopInventoryUpstreamDownIs503(t *testing.T) {
+	f := newShopFix(t)
+	f.invHTTP.Store(http.StatusInternalServerError)
+	resp, body := f.call(t, http.MethodGet, myShopPath, "/me/shop", "sess-alice", "", nil)
+	mustCode(t, resp, body, http.StatusServiceUnavailable, "SERVICE_UNAVAILABLE")
+}
+
 func TestV1ShopInventoryShape(t *testing.T) {
 	f := newShopFix(t)
 	resp, body := f.call(t, http.MethodGet, myShopPath, "/me/shop", "sess-alice", "", nil)
@@ -295,6 +302,11 @@ func TestV1ShopLoadoutErrorMapping(t *testing.T) {
 	resp, body = put()
 	mustCode(t, resp, body, http.StatusUnprocessableEntity, "VALIDATION_FAILED")
 	fieldErr(t, body, "pointer", "/item_id", "INCONSISTENT_WITH")
+	f.equipCode.Store(10)
+	resp, body = put()
+	mustCode(t, resp, body, http.StatusServiceUnavailable, "SERVICE_UNAVAILABLE")
+	resp, body = f.call(t, http.MethodDelete, myShopPath+"/loadout/this_site/avatar_frame", "/me/shop/loadout/{scope}/{slot}", "sess-alice", "", nil)
+	mustCode(t, resp, body, http.StatusServiceUnavailable, "SERVICE_UNAVAILABLE")
 }
 
 func TestV1ShopLoadoutRefusesUnknownSlot(t *testing.T) {

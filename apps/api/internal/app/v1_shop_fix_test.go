@@ -41,6 +41,7 @@ type shopFix struct {
 	purchases   []shopPurchaseCall
 	equips      []shopEquipCall
 	nInventory  atomic.Int32
+	invHTTP     atomic.Int32
 	orderRecord map[string]any
 }
 
@@ -72,6 +73,10 @@ func (f *shopFix) installShop() {
 	})
 	f.mux.HandleFunc("GET /users/{id}/shop", func(w http.ResponseWriter, _ *http.Request) {
 		f.nInventory.Add(1)
+		if status := int(f.invHTTP.Load()); status != 0 {
+			w.WriteHeader(status)
+			return
+		}
 		f.mu.Lock()
 		defer f.mu.Unlock()
 		inv := map[string]any{"balance": int(f.balance.Load())}
