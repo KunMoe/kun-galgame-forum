@@ -6,7 +6,6 @@ const props = defineProps<{
   offer: ShopOffer
   viewer: KunUser
   action: OfferAction
-  owned: boolean
   used: number
 }>()
 
@@ -16,16 +15,21 @@ const lead = computed(() => props.offer.rewards[0])
 const title = computed(() =>
   props.offer.rewards.map((r) => r.item.display_name).join(' + ')
 )
-const unit = computed(() =>
-  lead.value?.item.item_type === 'redeem_code' ? '张' : '份'
-)
+const isCode = computed(() => lead.value?.item.item_type === 'redeem_code')
 
 const facts = computed(() => {
   const o = props.offer
   const out: string[] = []
+  if (!isCode.value) {
+    out.push(
+      lead.value?.duration_days
+        ? `有效期 ${lead.value.duration_days} 天`
+        : '永久'
+    )
+  }
   if (o.stock_count !== null) out.push(`限量 ${o.stock_count} 份`)
   if (o.remaining_count !== null && o.remaining_count > 0)
-    out.push(`还剩 ${o.remaining_count} ${unit.value}`)
+    out.push(`还剩 ${o.remaining_count} ${isCode.value ? '张' : '份'}`)
   const limit = o.purchase_limit
   if (limit) {
     const period = limit.period === 'month' ? '每月' : '每人'
@@ -47,20 +51,12 @@ const facts = computed(() => {
     class-name="gap-0 overflow-hidden"
     content-class="gap-0"
   >
-    <ShopStage :item="lead?.item" :viewer="viewer" class-name="h-52">
-      <KunChip
-        v-if="lead?.duration_days"
-        size="sm"
-        color="info"
-        variant="solid"
-        class-name="absolute top-3 right-3"
-      >
-        {{ lead.duration_days }} 天
-      </KunChip>
-    </ShopStage>
+    <ShopStage :item="lead?.item" :viewer="viewer" class-name="h-48" />
 
     <div class="flex flex-1 flex-col p-5">
-      <h3 class="text-foreground leading-snug font-semibold">{{ title }}</h3>
+      <h3 class="text-foreground text-base leading-snug font-semibold">
+        {{ title }}
+      </h3>
       <p
         v-if="lead?.item.description"
         class="text-default-500 mt-1.5 line-clamp-2 text-sm"
@@ -72,22 +68,11 @@ const facts = computed(() => {
       </p>
 
       <div class="mt-auto flex items-center justify-between gap-3 pt-5">
-        <ShopPrice :amount="offer.price" class-name="text-xl" />
-        <KunChip v-if="owned" color="success" size="md">
-          <span class="flex items-center gap-1">
-            <KunIcon name="lucide:check" class="size-4" />
-            已拥有
-          </span>
-        </KunChip>
-        <KunButton
-          v-else
-          :color="action.disabled ? 'default' : 'primary'"
-          :variant="action.disabled ? 'flat' : 'solid'"
-          :disabled="action.disabled"
-          @click="emit('buy')"
-        >
+        <ShopPrice :amount="offer.price" class-name="text-2xl" />
+        <span v-if="action.disabled" class="text-default-500 text-sm">
           {{ action.label }}
-        </KunButton>
+        </span>
+        <KunButton v-else @click="emit('buy')">{{ action.label }}</KunButton>
       </div>
     </div>
   </KunCard>

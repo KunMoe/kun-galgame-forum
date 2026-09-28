@@ -80,7 +80,7 @@ const expiryOf = (expiresAt: string | null) =>
 </script>
 
 <template>
-  <div class="space-y-8">
+  <div class="space-y-10">
     <div v-if="isEmpty" class="flex flex-col items-center gap-3">
       <KunNull description="你还没有任何物品" />
       <KunButton size="sm" variant="flat" @click="emit('goStore')">
@@ -103,9 +103,9 @@ const expiryOf = (expiresAt: string | null) =>
         </p>
       </div>
 
-      <section v-for="s in SHOP_SLOTS" :key="s.slot" class="space-y-3">
+      <section v-for="s in SHOP_SLOTS" :key="s.slot" class="space-y-4">
         <div class="flex items-center justify-between gap-3">
-          <h2 class="text-foreground font-semibold">{{ s.label }}</h2>
+          <h2 class="text-foreground text-lg font-semibold">{{ s.label }}</h2>
           <KunButton
             v-if="wornIn(s.slot) !== null"
             size="sm"
@@ -120,7 +120,7 @@ const expiryOf = (expiresAt: string | null) =>
         <p v-if="ownedIn(s.slot).length === 0" class="text-default-400 text-sm">
           {{ s.empty }}
         </p>
-        <div v-else class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div v-else class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           <KunCard
             v-for="owned in ownedIn(s.slot)"
             :key="owned.item.id"
@@ -128,17 +128,7 @@ const expiryOf = (expiresAt: string | null) =>
             class-name="gap-0 overflow-hidden"
             content-class="gap-0"
           >
-            <ShopStage :item="owned.item" :viewer="viewer" class-name="h-44">
-              <KunChip
-                v-if="wornIn(s.slot) === owned.item.id"
-                color="success"
-                variant="solid"
-                size="sm"
-                class-name="absolute top-3 right-3"
-              >
-                使用中
-              </KunChip>
-            </ShopStage>
+            <ShopStage :item="owned.item" :viewer="viewer" class-name="h-44" />
             <div class="flex flex-1 items-end justify-between gap-3 p-5">
               <div class="min-w-0">
                 <h3 class="text-foreground font-semibold">
@@ -150,8 +140,14 @@ const expiryOf = (expiresAt: string | null) =>
                   {{ formatDate(owned.acquired_at, { isShowYear: true }) }}
                 </p>
               </div>
+              <span
+                v-if="wornIn(s.slot) === owned.item.id"
+                class="text-primary shrink-0 text-sm font-medium"
+              >
+                使用中
+              </span>
               <KunButton
-                v-if="wornIn(s.slot) !== owned.item.id"
+                v-else
                 size="sm"
                 :loading="pending === `${s.slot}:${owned.item.id}`"
                 @click="wear(s.slot, owned.item.id)"
@@ -163,25 +159,20 @@ const expiryOf = (expiresAt: string | null) =>
         </div>
       </section>
 
-      <section v-if="perks.length" class="space-y-3">
-        <h2 class="text-foreground font-semibold">功能</h2>
-        <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <section v-if="perks.length" class="space-y-4">
+        <h2 class="text-foreground text-lg font-semibold">功能</h2>
+        <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           <KunCard
             v-for="owned in perks"
             :key="owned.item.id"
             padding="md"
-            content-class="flex-row items-center justify-start gap-4"
+            content-class="flex-row items-center justify-between gap-4"
           >
-            <div
-              class="bg-primary-50 text-primary-600 flex size-12 shrink-0 items-center justify-center rounded-xl"
-            >
-              <KunIcon name="lucide:notebook-pen" class="size-6" />
-            </div>
-            <div class="min-w-0 flex-1">
+            <div class="min-w-0">
               <h3 class="text-foreground font-semibold">
                 {{ owned.item.display_name }}
               </h3>
-              <p class="text-default-400 text-xs">
+              <p class="text-default-400 mt-1 text-xs">
                 {{ expiryOf(owned.expires_at) }}
               </p>
             </div>
@@ -190,7 +181,7 @@ const expiryOf = (expiresAt: string | null) =>
               target="_blank"
               rel="noopener"
               size="sm"
-              variant="flat"
+              variant="bordered"
             >
               去写介绍
             </KunButton>
@@ -198,26 +189,24 @@ const expiryOf = (expiresAt: string | null) =>
         </div>
       </section>
 
-      <section v-if="codes.length" class="space-y-3">
-        <h2 class="text-foreground font-semibold">我的兑换码</h2>
-        <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <section v-if="codes.length" class="space-y-4">
+        <h2 class="text-foreground text-lg font-semibold">我的兑换码</h2>
+        <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           <KunCard
             v-for="c in codes"
             :key="c.code"
             padding="md"
-            class-name="border-warning-300 border border-dashed"
+            content-class="gap-3"
           >
-            <div class="flex items-center gap-2">
-              <div
-                class="bg-warning-100 text-warning-600 flex size-8 shrink-0 items-center justify-center rounded-lg"
-              >
-                <KunIcon name="lucide:ticket-percent" class="size-4" />
-              </div>
-              <h3 class="text-foreground truncate font-semibold">
-                {{ c.name }}
-              </h3>
-            </div>
-            <KunCopy :text="c.code" variant="flat" class-name="font-mono" />
+            <h3 class="text-foreground truncate font-semibold">
+              {{ c.name }}
+            </h3>
+            <KunCopy
+              :text="c.code"
+              variant="bordered"
+              color="default"
+              class-name="justify-between font-mono"
+            />
             <p class="text-default-400 text-xs">
               {{ formatDate(c.boughtAt, { isShowYear: true }) }} 购买
               <template v-if="c.expiry_date">
@@ -228,14 +217,9 @@ const expiryOf = (expiresAt: string | null) =>
         </div>
       </section>
 
-      <div v-if="lapsed.length" class="space-y-2">
-        <h3 class="text-default-500 text-sm font-medium">已过期</h3>
-        <div class="flex flex-wrap gap-2">
-          <KunChip v-for="o in lapsed" :key="o.item.id" size="sm">
-            {{ o.item.display_name }}
-          </KunChip>
-        </div>
-      </div>
+      <p v-if="lapsed.length" class="text-default-400 text-sm">
+        已过期：{{ lapsed.map((o) => o.item.display_name).join('、') }}
+      </p>
     </template>
   </div>
 </template>

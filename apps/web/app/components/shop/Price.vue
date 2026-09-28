@@ -6,12 +6,14 @@ defineProps<{ amount: number; className?: string }>()
   <span
     :class="
       cn(
-        'text-foreground inline-flex items-center gap-1 font-semibold tabular-nums',
+        'text-foreground inline-flex items-baseline gap-1 font-semibold tracking-tight tabular-nums',
         className
       )
     "
   >
-    <KunIcon name="lucide:lollipop" class="text-secondary size-[1.05em]" />
     {{ amount }}
+    <span class="text-default-500 text-xs font-normal tracking-normal">
+      萌萌点
+    </span>
   </span>
 </template>

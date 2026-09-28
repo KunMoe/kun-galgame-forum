@@ -14,39 +14,23 @@ const face = computed(() => {
 </script>
 
 <template>
-  <div class="bg-content1 shadow-kun-sm flex w-60 rounded-xl">
-    <div class="min-w-0 flex-1 px-5 py-4">
-      <template v-if="face">
-        <p
-          v-if="face.brand"
-          class="text-default-500 truncate text-xs font-medium tracking-wide"
-        >
-          {{ face.brand }}
-        </p>
-        <p class="text-warning-600 mt-1 flex items-baseline gap-1 leading-none">
-          <span class="text-4xl font-bold tracking-tight tabular-nums">
-            {{ face.value }}
-          </span>
-          <span class="text-base font-semibold">{{ face.unit }}</span>
-        </p>
-        <p v-if="face.label" class="text-default-500 mt-2 truncate text-xs">
-          {{ face.label }}
-        </p>
-      </template>
-      <p v-else class="text-foreground line-clamp-3 text-sm font-semibold">
-        {{ name }}
+  <div class="max-w-full text-center">
+    <template v-if="face">
+      <p v-if="face.brand" class="text-default-500 truncate text-sm">
+        {{ face.brand }}
       </p>
-    </div>
-    <div
-      class="border-warning-200 relative flex w-14 shrink-0 items-center justify-center border-l-2 border-dashed"
-    >
-      <span
-        class="bg-warning-50 absolute -top-2 -left-[9px] size-4 rounded-full"
-      />
-      <span
-        class="bg-warning-50 absolute -bottom-2 -left-[9px] size-4 rounded-full"
-      />
-      <KunIcon name="lucide:ticket-percent" class="text-warning-500 size-6" />
-    </div>
+      <p
+        class="text-foreground mt-1 flex items-baseline justify-center gap-0.5 leading-none font-semibold tabular-nums"
+      >
+        <span class="text-5xl tracking-tight">{{ face.value }}</span>
+        <span class="text-lg">{{ face.unit }}</span>
+      </p>
+      <p v-if="face.label" class="text-default-500 mt-2 truncate text-sm">
+        {{ face.label }}
+      </p>
+    </template>
+    <p v-else class="text-foreground line-clamp-3 text-lg font-semibold">
+      {{ name }}
+    </p>
   </div>
 </template>

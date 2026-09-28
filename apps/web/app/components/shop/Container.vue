@@ -53,10 +53,8 @@ const balance = computed(() => inventory.value?.moemoepoint ?? null)
 
 const tab = ref('store')
 const tabs = computed<KunTabItem[]>(() => [
-  { value: 'store', textValue: '商店', icon: 'lucide:store' },
-  ...(signedIn.value
-    ? [{ value: 'wardrobe', textValue: '我的物品', icon: 'lucide:shirt' }]
-    : [])
+  { value: 'store', textValue: '商店' },
+  ...(signedIn.value ? [{ value: 'wardrobe', textValue: '我的物品' }] : [])
 ])
 
 const shelves = computed(() => {
@@ -76,15 +74,14 @@ const shelves = computed(() => {
 })
 
 const stateOf = (offer: ShopOffer) => {
-  const owned = isOfferOwned(offer, inventory.value?.items ?? [])
   const used = purchasedCount(offer, inventory.value)
   const action = offerAction(offer, {
     signedIn: signedIn.value,
-    owned,
+    owned: isOfferOwned(offer, inventory.value?.items ?? []),
     used,
     balance: balance.value ?? moemoepoint.value
   })
-  return { owned, used, action }
+  return { used, action }
 }
 
 const buying = ref<ShopOffer | null>(null)
@@ -120,8 +117,9 @@ const onWorn = (slot: ShopLoadoutSlot) => {
       <KunHeader
         name="萌萌点商店"
         description="用萌萌点换装扮、功能和福利。买到的东西属于你的 NextMoe 账号，在所有站点通用。商店只收萌萌点，不涉及任何真实货币。"
+        class="max-w-2xl"
       />
-      <ShopWallet v-if="signedIn" :balance="balance" class="w-full sm:w-auto" />
+      <ShopWallet v-if="signedIn" :balance="balance" />
     </div>
 
     <KunTab v-model="tab" :items="tabs" variant="underlined" />
@@ -129,7 +127,7 @@ const onWorn = (slot: ShopLoadoutSlot) => {
     <template v-if="tab === 'store'">
       <div
         v-if="offersStatus === 'pending' && !offers"
-        class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3"
+        class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3"
         aria-busy="true"
       >
         <KunCard
@@ -138,7 +136,7 @@ const onWorn = (slot: ShopLoadoutSlot) => {
           padding="none"
           class-name="gap-0 overflow-hidden"
         >
-          <KunSkeleton height="13rem" rounded="none" />
+          <KunSkeleton height="12rem" rounded="none" />
           <div class="space-y-3 p-5">
             <KunSkeleton variant="text" width="50%" />
             <KunSkeleton variant="text" />
@@ -163,8 +161,6 @@ const onWorn = (slot: ShopLoadoutSlot) => {
           :key="shelf.key"
           :title="shelf.title"
           :note="shelf.note"
-          :icon="shelf.icon"
-          :tint="shelf.tint"
         >
           <ShopOfferCard
             v-for="offer in shelf.offers"

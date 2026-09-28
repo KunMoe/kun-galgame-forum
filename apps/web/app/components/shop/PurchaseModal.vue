@@ -105,9 +105,14 @@ const confirm = async () => {
       <div
         v-for="c in codes"
         :key="c.code"
-        class="border-warning-300 bg-warning-50 flex flex-col items-center gap-2 rounded-xl border border-dashed p-5"
+        class="border-default-200 flex flex-col items-center gap-2 rounded-xl border p-5"
       >
-        <KunCopy :text="c.code" variant="flat" class-name="font-mono" />
+        <KunCopy
+          :text="c.code"
+          variant="light"
+          color="default"
+          class-name="font-mono text-base"
+        />
         <span v-if="c.expiry_date" class="text-default-500 text-xs">
           {{ c.expiry_date }} 前有效（日本时间）
         </span>
@@ -125,63 +130,53 @@ const confirm = async () => {
         :item="lead?.item"
         :viewer="viewer"
         decoration="always"
-        class-name="h-52 rounded-xl"
+        class-name="h-48 rounded-xl"
       />
       <div>
         <p class="text-foreground text-lg font-semibold">{{ title }}</p>
         <p class="text-default-500 mt-1 text-sm">{{ term }}</p>
       </div>
 
-      <div class="bg-default-100 space-y-2.5 rounded-xl p-4 text-sm">
-        <div class="flex items-center justify-between">
-          <span class="text-default-500">价格</span>
-          <ShopPrice :amount="offer.price" />
-        </div>
-        <div class="flex items-center justify-between">
-          <span class="text-default-500">当前余额</span>
-          <span class="text-foreground tabular-nums">{{ balance }}</span>
-        </div>
-        <div
-          class="border-default-200 flex items-center justify-between border-t pt-2.5"
-        >
-          <span class="text-default-500">购买后余额</span>
-          <span
-            :class="
-              cn(
-                'font-semibold tabular-nums',
-                after < 0 ? 'text-danger-600' : 'text-foreground'
-              )
-            "
-          >
-            {{ after }}
-          </span>
-        </div>
-      </div>
-
-      <p
-        v-if="isCode"
-        class="text-warning-600 flex items-start gap-1.5 text-xs leading-relaxed"
+      <dl
+        class="divide-default-200 border-default-200 divide-y border-y text-sm"
       >
-        <KunIcon name="lucide:info" class="mt-0.5 size-3.5 shrink-0" />
+        <div class="flex items-center justify-between py-2.5">
+          <dt class="text-default-500">价格</dt>
+          <dd><ShopPrice :amount="offer.price" /></dd>
+        </div>
+        <div class="flex items-center justify-between py-2.5">
+          <dt class="text-default-500">当前余额</dt>
+          <dd><ShopPrice :amount="balance" class-name="font-normal" /></dd>
+        </div>
+        <div class="flex items-center justify-between py-2.5">
+          <dt class="text-default-500">购买后余额</dt>
+          <dd>
+            <ShopPrice
+              :amount="after"
+              :class-name="after < 0 ? 'text-danger-600' : ''"
+            />
+          </dd>
+        </div>
+      </dl>
+
+      <p v-if="isCode" class="text-warning-600 text-xs leading-relaxed">
         兑换码发出后无法收回，所以购买后不能退款。
       </p>
       <p
         v-else-if="lead?.item.item_type === 'profile_about'"
-        class="text-default-500 flex items-start gap-1.5 text-xs leading-relaxed"
+        class="text-default-500 text-xs leading-relaxed"
       >
-        <KunIcon name="lucide:info" class="mt-0.5 size-3.5 shrink-0" />
-        <span>
-          主页介绍在
-          <a
-            :href="accountProfile"
-            target="_blank"
-            rel="noopener"
-            class="text-primary hover:underline"
-          >
-            账号中心
-          </a>
-          编辑，所有站点的个人主页都会显示。
-        </span>
+        主页介绍在
+        <KunLink
+          :href="accountProfile"
+          target="_blank"
+          rel="noopener"
+          underline="hover"
+          size="xs"
+        >
+          账号中心
+        </KunLink>
+        编辑，所有站点的个人主页都会显示。
       </p>
 
       <div class="flex justify-end gap-2">
