@@ -41,6 +41,7 @@ type galgameMerger interface {
 
 type survivorHydrator interface {
 	MirrorByCatalogIDs(ctx context.Context, ids []int64) (rendered, hidden map[int]client.CatalogMirror, appErr *errors.AppError)
+	WorkFate(ctx context.Context, workID int64) (movedTo int64, found bool, appErr *errors.AppError)
 }
 
 type GalgameMergeSync struct {
@@ -160,7 +161,24 @@ func (s *GalgameMergeSync) retryDeferred(ctx context.Context) (folded, deferred 
 		}
 		survivorWork[oldID] = work
 	}
+	s.refreshSurvivors(ctx, survivorWork)
 	return s.fold(ctx, survivorWork)
+}
+
+// Catalog repoints a redirect in place when it unmerges a work or flattens a
+// chain, and the feed pages on merged_at, so the cursor never brings the new
+// survivor down. 212729 was parked on 214652, a novel catalog had merged the
+// game into by title, and its unmerge moves only the redirect.
+func (s *GalgameMergeSync) refreshSurvivors(ctx context.Context, survivorWork map[int]int64) {
+	if s.survivors == nil {
+		return
+	}
+	for oldID := range survivorWork {
+		movedTo, _, appErr := s.survivors.WorkFate(ctx, int64(oldID))
+		if appErr == nil && movedTo > 0 {
+			survivorWork[oldID] = movedTo
+		}
+	}
 }
 
 func (s *GalgameMergeSync) fold(ctx context.Context, survivorWork map[int]int64) (folded, deferred int) {

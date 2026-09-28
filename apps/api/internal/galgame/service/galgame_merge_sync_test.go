@@ -8,6 +8,9 @@ import (
 	"kun-galgame-api/internal/galgame/client"
 	"kun-galgame-api/internal/galgame/repository"
 	"kun-galgame-api/pkg/errors"
+
+	"github.com/alicebob/miniredis/v2"
+	"github.com/redis/go-redis/v9"
 )
 
 type fakeMergeRepo struct {
@@ -45,7 +48,15 @@ func (f *fakeMergeRepo) Fold(oldWorkID, newWorkID int) (repository.MergeCounts, 
 
 type fakeSurvivors struct {
 	rendered map[int]bool
+	movedTo  map[int]int64
 	down     bool
+}
+
+func (f fakeSurvivors) WorkFate(_ context.Context, workID int64) (int64, bool, *errors.AppError) {
+	if f.down {
+		return 0, false, errors.ErrInternal("catalog down")
+	}
+	return f.movedTo[int(workID)], false, nil
 }
 
 func (f fakeSurvivors) MirrorByCatalogIDs(_ context.Context, ids []int64) (rendered, hidden map[int]client.CatalogMirror, appErr *errors.AppError) {
@@ -139,5 +150,31 @@ func TestFold_ReferenceLookupFailureParksTheBatch(t *testing.T) {
 	}
 	if len(repo.folds) != 0 {
 		t.Errorf("folds = %v, want none", repo.folds)
+	}
+}
+
+func TestRetry_FollowsARedirectCatalogRepointed(t *testing.T) {
+	mr := miniredis.RunT(t)
+	rdb := redis.NewClient(&redis.Options{Addr: mr.Addr(), MaxRetries: 0})
+	mr.HSet(mergeDeferredKey, "212729", "214652", "206987", "226964")
+
+	repo := newFakeMerge(212729, 206987)
+	s := &GalgameMergeSync{mergeRepo: repo, rdb: rdb, survivors: fakeSurvivors{
+		rendered: map[int]bool{240001: true},
+		movedTo:  map[int]int64{212729: 240001},
+	}}
+
+	folded, deferred := s.retryDeferred(t.Context())
+	if folded != 1 || deferred != 1 {
+		t.Errorf("folded=%d deferred=%d, want 1/1", folded, deferred)
+	}
+	if len(repo.folds) != 1 || repo.folds[0] != [2]int{212729, 240001} {
+		t.Errorf("folds = %v, want [212729 240001]: the unmerge repointed the redirect after it was parked", repo.folds)
+	}
+	if got, _ := mr.HKeys(mergeDeferredKey); len(got) != 1 || got[0] != "206987" {
+		t.Errorf("still parked = %v, want only 206987, whose survivor is still hidden", got)
+	}
+	if got := mr.HGet(mergeDeferredKey, "206987"); got != "226964" {
+		t.Errorf("206987 parked on %q, want 226964 when catalog names no other survivor", got)
 	}
 }
