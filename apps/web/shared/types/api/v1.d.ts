@@ -2165,7 +2165,7 @@ export interface paths {
         };
         /**
          * Get the caller's shop balance, items, loadout and orders
-         * @description Live from the account service. It holds the caller's redeem codes: never show it to anyone else. An offer is owned when every item in its rewards is in items with is_active true and no expires_at.
+         * @description Live from the account service. It holds the caller's redeem codes: never show it to anyone else. An offer cannot be bought again while any of its non-redeem_code rewards is in items with is_active true and no expires_at.
          */
         get: operations["getMyShopInventory"];
         put?: never;
@@ -26944,7 +26944,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description SHOP_OFFER_UNAVAILABLE, SHOP_OFFER_SOLD_OUT, SHOP_PURCHASE_LIMIT_REACHED, or ALREADY_EXISTS when the caller already holds every item permanently. */
+            /** @description SHOP_OFFER_UNAVAILABLE, SHOP_OFFER_SOLD_OUT, SHOP_PURCHASE_LIMIT_REACHED, or ALREADY_EXISTS when the caller already holds one of its items permanently. */
             409: {
                 headers: {
                     [name: string]: unknown;

@@ -10,8 +10,10 @@ export interface OfferAction {
 }
 
 export const isOfferOwned = (offer: ShopOffer, items: ShopOwnedItem[]) =>
-  offer.rewards.every((r) =>
-    items.some((o) => o.item.id === r.item.id && o.is_active && !o.expires_at)
+  offer.rewards.some(
+    (r) =>
+      r.item.item_type !== 'redeem_code' &&
+      items.some((o) => o.item.id === r.item.id && o.is_active && !o.expires_at)
   )
 
 export const purchasedCount = (

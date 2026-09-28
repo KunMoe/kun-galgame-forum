@@ -80,7 +80,7 @@ describe('isOfferOwned', () => {
     ...patch
   })
 
-  it('counts only a permanent, active holding of every reward', () => {
+  it('counts only a permanent, active holding', () => {
     expect(isOfferOwned(offer(), [held('9')])).toBe(true)
     expect(
       isOfferOwned(offer(), [held('9', { expires_at: '2026-10-20T00:00:00Z' })])
@@ -92,6 +92,23 @@ describe('isOfferOwned', () => {
         { item: item('10'), duration_days: null }
       ]
     })
-    expect(isOfferOwned(bundle, [held('9')])).toBe(false)
+    expect(isOfferOwned(bundle, [held('9')])).toBe(true)
+  })
+
+  it('refuses a bundle once any one of its items is held for good, as the account service does', () => {
+    const bundle = offer({
+      rewards: [
+        { item: item('9'), duration_days: null },
+        { item: item('10'), duration_days: null }
+      ]
+    })
+    expect(isOfferOwned(bundle, [held('10')])).toBe(true)
+    expect(isOfferOwned(bundle, [])).toBe(false)
+  })
+
+  it('never counts a redeem code as owned', () => {
+    const code = { ...item('7'), item_type: 'redeem_code' as const }
+    const coupon = offer({ rewards: [{ item: code, duration_days: null }] })
+    expect(isOfferOwned(coupon, [{ ...held('7'), item: code }])).toBe(false)
   })
 })

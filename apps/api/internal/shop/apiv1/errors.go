@@ -8,6 +8,9 @@ import (
 )
 
 const (
+	upstreamBadRequest       = 1
+	upstreamInvalidID        = 2
+	upstreamMissingParam     = 8
 	upstreamItemNotFound     = 19001
 	upstreamOfferUnavailable = 19002
 	upstreamAlreadyOwned     = 19003
@@ -34,7 +37,7 @@ func upstreamProblem(err error) *problem.Problem {
 	case upstreamOfferUnavailable:
 		return problem.New(problem.CodeShopOfferUnavailable, "The offer is not on sale in this forum's shop.")
 	case upstreamAlreadyOwned:
-		return problem.New(problem.CodeAlreadyExists, "The caller already holds every item of this offer permanently.")
+		return problem.New(problem.CodeAlreadyExists, "The caller already holds one of this offer's items permanently.")
 	case upstreamLimitReached:
 		return problem.New(problem.CodeShopPurchaseLimitReached, "The caller has reached this offer's purchase limit for the current period.")
 	case upstreamSoldOut:
@@ -43,7 +46,7 @@ func upstreamProblem(err error) *problem.Problem {
 		return problem.New(problem.CodeMoemoepointInsufficient, "The caller's live moemoepoint balance is below the offer's price.")
 	case upstreamIdemConflict:
 		return problem.New(problem.CodeIdempotencyKeyReused, "The same Idempotency-Key was already used to buy another offer.")
-	case upstreamNotStorefront, upstreamForbidden:
+	case upstreamNotStorefront, upstreamForbidden, upstreamBadRequest, upstreamInvalidID, upstreamMissingParam:
 		return problem.Internal(err)
 	}
 	return problem.Unavailable(err)

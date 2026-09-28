@@ -51,7 +51,7 @@ func Register(s *Service) func(huma.API) {
 			Path:        "/me/shop",
 			Summary:     "Get the caller's shop balance, items, loadout and orders",
 			Description: "Live from the account service. It holds the caller's redeem codes: never show it to anyone else. " +
-				"An offer is owned when every item in its rewards is in items with is_active true and no expires_at.",
+				"An offer cannot be bought again while any of its non-redeem_code rewards is in items with is_active true and no expires_at.",
 			Tags: []string{"shop"},
 			Responses: problemResponses(map[int]string{
 				503: "SERVICE_UNAVAILABLE when the account service cannot be reached.",
@@ -71,7 +71,7 @@ func Register(s *Service) func(huma.API) {
 			Middlewares: huma.Middlewares{withIdempotencyKey},
 			Responses: problemResponses(map[int]string{
 				403: "MOEMOEPOINT_INSUFFICIENT, with required when the offer is known, when the live balance is below the price.",
-				409: "SHOP_OFFER_UNAVAILABLE, SHOP_OFFER_SOLD_OUT, SHOP_PURCHASE_LIMIT_REACHED, or ALREADY_EXISTS when the caller already holds every item permanently.",
+				409: "SHOP_OFFER_UNAVAILABLE, SHOP_OFFER_SOLD_OUT, SHOP_PURCHASE_LIMIT_REACHED, or ALREADY_EXISTS when the caller already holds one of its items permanently.",
 				422: "VALIDATION_FAILED when offer_id is not an offer id.",
 				503: "SERVICE_UNAVAILABLE when the account service cannot be reached. Retry with the same Idempotency-Key.",
 			}),

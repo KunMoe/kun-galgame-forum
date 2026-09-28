@@ -239,6 +239,8 @@ func TestV1ShopOrderErrorMapping(t *testing.T) {
 		{16006, http.StatusForbidden, "MOEMOEPOINT_INSUFFICIENT"},
 		{19014, http.StatusConflict, "IDEMPOTENCY_KEY_REUSED"},
 		{19017, http.StatusInternalServerError, "INTERNAL_ERROR"},
+		{1, http.StatusInternalServerError, "INTERNAL_ERROR"},
+		{8, http.StatusInternalServerError, "INTERNAL_ERROR"},
 		{10, http.StatusServiceUnavailable, "SERVICE_UNAVAILABLE"},
 	}
 	f := newShopFix(t)
