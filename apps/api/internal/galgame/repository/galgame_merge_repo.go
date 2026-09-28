@@ -3,6 +3,7 @@ package repository
 import (
 	"fmt"
 	"strconv"
+	"strings"
 
 	"kun-galgame-api/internal/galgame/model"
 
@@ -38,15 +39,29 @@ type MergeCounts struct {
 	Comments int
 }
 
-// LocalIDsIn narrows a page of catalog redirect ids to the ones that are also a
-// row in the local galgame table.
-func (r *GalgameMergeRepository) LocalIDsIn(ids []int) []int {
+// ReferencedIDsIn narrows a page of catalog redirect ids to the ones the fold
+// has something to move for. Asking only the galgame table left three quiz
+// links and two feed rows on works merged on 2026-09-05 until a census found
+// them on 2026-09-28: a work nobody opened on the forum has no local row.
+func (r *GalgameMergeRepository) ReferencedIDsIn(ids []int) ([]int, error) {
 	if len(ids) == 0 {
-		return nil
+		return nil, nil
+	}
+	sources := []string{
+		"SELECT id FROM galgame WHERE id IN @ids",
+		"SELECT entity_id FROM galgame_view_daily WHERE entity_id IN @ids",
+		"SELECT work_id FROM feed_activity WHERE work_id IN @ids",
+	}
+	for _, table := range mergeMovableTables {
+		sources = append(sources, fmt.Sprintf("SELECT work_id FROM %s WHERE work_id IN @ids", table))
+	}
+	for _, t := range mergeUniqueTables {
+		sources = append(sources, fmt.Sprintf("SELECT work_id FROM %s WHERE work_id IN @ids", t.table))
 	}
 	var out []int
-	r.db.Table("galgame").Where("id IN ?", ids).Order("id").Pluck("id", &out)
-	return out
+	err := r.db.Raw("SELECT id FROM ("+strings.Join(sources, " UNION ")+") x(id) ORDER BY id",
+		map[string]any{"ids": ids}).Scan(&out).Error
+	return out, err
 }
 
 func (r *GalgameMergeRepository) Fold(oldWorkID, newWorkID int) (MergeCounts, error) {
@@ -68,22 +83,27 @@ func (r *GalgameMergeRepository) FoldTx(tx *gorm.DB, oldWorkID, newWorkID int) (
 		return counts, fmt.Errorf("拒绝合并 galgame %d -> %d", oldWorkID, newWorkID)
 	}
 	var dead model.GalgameLocal
-	if err := tx.Where("id = ?", oldWorkID).First(&dead).Error; err != nil {
-		return counts, err
+	found := tx.Where("id = ?", oldWorkID).Limit(1).Find(&dead)
+	if found.Error != nil {
+		return counts, found.Error
 	}
-	counts.Comments = dead.CommentCount
+	hasRow := found.RowsAffected > 0
 
-	// Seeded from the dead row, not from GORM's defaults. ResourceUpdateTime
-	// is autoCreateTime, so a survivor created here would be stamped now();
-	// the GREATEST below then keeps now() and a 2021 resource sorts to the
-	// top of 最新资源更新 as if it had just been posted. 11 of the first 30
-	// merges land on a work id with no local row, so this is the common path.
-	if err := tx.Clauses(clause.OnConflict{DoNothing: true}).Create(&model.GalgameLocal{
-		ID:                 newWorkID,
-		CreatedAt:          dead.CreatedAt,
-		ResourceUpdateTime: dead.ResourceUpdateTime,
-	}).Error; err != nil {
-		return counts, err
+	if hasRow {
+		counts.Comments = dead.CommentCount
+
+		// Seeded from the dead row, not from GORM's defaults. ResourceUpdateTime
+		// is autoCreateTime, so a survivor created here would be stamped now();
+		// the GREATEST below then keeps now() and a 2021 resource sorts to the
+		// top of 最新资源更新 as if it had just been posted. 11 of the first 30
+		// merges land on a work id with no local row, so this is the common path.
+		if err := tx.Clauses(clause.OnConflict{DoNothing: true}).Create(&model.GalgameLocal{
+			ID:                 newWorkID,
+			CreatedAt:          dead.CreatedAt,
+			ResourceUpdateTime: dead.ResourceUpdateTime,
+		}).Error; err != nil {
+			return counts, err
+		}
 	}
 
 	for _, table := range mergeMovableTables {
@@ -146,22 +166,24 @@ func (r *GalgameMergeRepository) FoldTx(tx *gorm.DB, oldWorkID, newWorkID int) (
 		return counts, err
 	}
 
-	// published is sticky since 078 and a ban must not be shed by merging
-	// into an unbanned duplicate, so both fold as OR.
-	if err := tx.Exec(`
-			UPDATE galgame t SET
-				view = t.view + s.view,
-				published = t.published OR s.published,
-				resource_publish_banned = t.resource_publish_banned OR s.resource_publish_banned,
-				creator_user_id = COALESCE(t.creator_user_id, s.creator_user_id),
-				created = LEAST(t.created, s.created),
-				resource_update_time = GREATEST(t.resource_update_time, s.resource_update_time)
-			FROM galgame s WHERE t.id = ? AND s.id = ?`, newWorkID, oldWorkID).Error; err != nil {
-		return counts, err
-	}
+	if hasRow {
+		// published is sticky since 078 and a ban must not be shed by merging
+		// into an unbanned duplicate, so both fold as OR.
+		if err := tx.Exec(`
+				UPDATE galgame t SET
+					view = t.view + s.view,
+					published = t.published OR s.published,
+					resource_publish_banned = t.resource_publish_banned OR s.resource_publish_banned,
+					creator_user_id = COALESCE(t.creator_user_id, s.creator_user_id),
+					created = LEAST(t.created, s.created),
+					resource_update_time = GREATEST(t.resource_update_time, s.resource_update_time)
+				FROM galgame s WHERE t.id = ? AND s.id = ?`, newWorkID, oldWorkID).Error; err != nil {
+			return counts, err
+		}
 
-	if err := tx.Exec("DELETE FROM galgame WHERE id = ?", oldWorkID).Error; err != nil {
-		return counts, err
+		if err := tx.Exec("DELETE FROM galgame WHERE id = ?", oldWorkID).Error; err != nil {
+			return counts, err
+		}
 	}
 
 	// The galgame comment has no source table in this database: the comment

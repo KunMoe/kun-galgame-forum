@@ -19,8 +19,8 @@ const (
 	mergeSyncTimeout = 15 * time.Minute
 
 	// Losing this key replays catalog's whole merge history, which is not a
-	// fault: a fold whose local row is already gone is a no-op. Deleting it is
-	// also how an operator forces the replay, which is what -replay does.
+	// fault: a fold whose rows have all moved is a no-op. Deleting it is also
+	// how an operator forces the replay, which is what -replay does.
 	MergeCursorKey = "catalog:redirects:merge:cursor"
 
 	mergeDeferredKey = "catalog:redirects:merge:deferred:v2"
@@ -35,7 +35,7 @@ const (
 // local row still holds resources, ratings and collection entries.
 // /v2/catalog/redirects is the only place the survivor is named after that.
 type galgameMerger interface {
-	LocalIDsIn(ids []int) []int
+	ReferencedIDsIn(ids []int) ([]int, error)
 	Fold(oldWorkID, newWorkID int) (repository.MergeCounts, error)
 }
 
@@ -171,7 +171,14 @@ func (s *GalgameMergeSync) fold(ctx context.Context, survivorWork map[int]int64)
 	for id := range survivorWork {
 		olds = append(olds, id)
 	}
-	candidates := s.mergeRepo.LocalIDsIn(olds)
+	candidates, err := s.mergeRepo.ReferencedIDsIn(olds)
+	if err != nil {
+		slog.Warn("galgame 合并引用查询失败, 本批全部暂存", "ids", len(olds), "error", err)
+		for oldID, work := range survivorWork {
+			s.park(ctx, oldID, work)
+		}
+		return 0, len(survivorWork)
+	}
 	if len(candidates) < len(olds) {
 		live := make(map[int]bool, len(candidates))
 		for _, id := range candidates {

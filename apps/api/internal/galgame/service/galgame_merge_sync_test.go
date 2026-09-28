@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	stderrors "errors"
 	"testing"
 
 	"kun-galgame-api/internal/galgame/client"
@@ -12,6 +13,7 @@ import (
 type fakeMergeRepo struct {
 	local map[int]bool
 	folds [][2]int
+	err   error
 }
 
 func newFakeMerge(ids ...int) *fakeMergeRepo {
@@ -22,9 +24,9 @@ func newFakeMerge(ids ...int) *fakeMergeRepo {
 	return &fakeMergeRepo{local: local}
 }
 
-func (f *fakeMergeRepo) LocalIDsIn(ids []int) []int {
-	if len(ids) == 0 {
-		return nil
+func (f *fakeMergeRepo) ReferencedIDsIn(ids []int) ([]int, error) {
+	if f.err != nil {
+		return nil, f.err
 	}
 	var out []int
 	for _, id := range ids {
@@ -32,7 +34,7 @@ func (f *fakeMergeRepo) LocalIDsIn(ids []int) []int {
 			out = append(out, id)
 		}
 	}
-	return out
+	return out, nil
 }
 
 func (f *fakeMergeRepo) Fold(oldWorkID, newWorkID int) (repository.MergeCounts, error) {
@@ -74,7 +76,7 @@ func TestFold_LocalRetiredIDMovesOntoSurvivor(t *testing.T) {
 	}
 }
 
-func TestFold_AbsentLocalRowIsANoOp(t *testing.T) {
+func TestFold_UnreferencedIDIsANoOp(t *testing.T) {
 	repo := newFakeMerge(61101)
 	s := &GalgameMergeSync{mergeRepo: repo}
 
@@ -123,5 +125,19 @@ func TestFold_SurvivorLookupFailureParks(t *testing.T) {
 	}
 	if len(repo.folds) != 0 {
 		t.Errorf("folds = %v, want none until the survivor can be looked up", repo.folds)
+	}
+}
+
+func TestFold_ReferenceLookupFailureParksTheBatch(t *testing.T) {
+	repo := newFakeMerge(5904)
+	repo.err = stderrors.New("relation does not exist")
+	s := &GalgameMergeSync{mergeRepo: repo, survivors: fakeSurvivors{rendered: map[int]bool{61101: true}}}
+
+	folded, deferred := s.fold(t.Context(), map[int]int64{5904: 61101, 7001: 61101})
+	if folded != 0 || deferred != 2 {
+		t.Errorf("folded=%d deferred=%d, want 0/2: the cursor moves on, so only the deferred hash still names them", folded, deferred)
+	}
+	if len(repo.folds) != 0 {
+		t.Errorf("folds = %v, want none", repo.folds)
 	}
 }
