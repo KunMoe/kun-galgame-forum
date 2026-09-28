@@ -23,7 +23,6 @@ const (
 	upcomingMonthCap    = 24
 	upcomingPageCap     = 5
 	upcomingConcurrency = 8
-	calendarMonthMax    = 7
 	calendarOLang       = "ja"
 	doujinCompanyKind   = "doujin_circle"
 )
@@ -373,11 +372,10 @@ func derefBool(p *bool) bool {
 }
 
 func monthPtr(s string) *string {
-	if s == "" || len(s) > calendarMonthMax {
+	if _, err := time.Parse("2006-01", s); err != nil {
 		return nil
 	}
-	v := s
-	return &v
+	return &s
 }
 
 func secondsUntilMidnight(now time.Time) int {

@@ -166,3 +166,16 @@ func TestV1ReleaseCalendarDefaultPopulation(t *testing.T) {
 		}
 	}
 }
+
+func TestV1ReleaseCalendarYearOnlyBoundIsNull(t *testing.T) {
+	f := newG5Fix(t)
+	f.cat.calMax["2026-09"] = "2028-00"
+	resp, body := f.get(t, "/api/v1/release-calendar?month=2026-09", "/release-calendar")
+	geStatus(t, resp, body, http.StatusOK, "")
+	if body["max_month"] != nil {
+		t.Fatalf("max_month %v, want null for a year-only bound", body["max_month"])
+	}
+	if body["has_next"] != true {
+		t.Fatalf("has_next %v", body["has_next"])
+	}
+}

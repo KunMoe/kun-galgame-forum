@@ -10894,9 +10894,9 @@ export interface components {
             item_count: number;
             /** @description Works released in this window, in catalog's order. Empty array, never null. A page may be shorter than catalog's total when a row cannot be rendered. */
             items: components["schemas"]["WorkSummary"][];
-            /** @description The latest month that has a release. null when catalog does not say. */
+            /** @description The latest month that has a release. null when catalog does not say, or knows only the year. */
             max_month: string | null;
-            /** @description The earliest month that has a release. null when catalog does not say. */
+            /** @description The earliest month that has a release. null when catalog does not say, or knows only the year. */
             min_month: string | null;
             /** @description The next calendar month. null when none. */
             next_month: string | null;

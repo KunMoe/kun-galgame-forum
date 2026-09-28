@@ -13,8 +13,8 @@ type ReleaseCalendarMonth struct {
 	NextMonth     *string                `json:"next_month" pattern:"^[0-9]{4}-(0[1-9]|1[0-2])$" maxLength:"7" doc:"The next calendar month. null when none."`
 	HasPrev       bool                   `json:"has_prev" doc:"Whether catalog reports a previous month of releases."`
 	HasNext       bool                   `json:"has_next" doc:"Whether catalog reports a later month of releases."`
-	MinMonth      *string                `json:"min_month" pattern:"^[0-9]{4}-(0[1-9]|1[0-2])$" maxLength:"7" doc:"The earliest month that has a release. null when catalog does not say."`
-	MaxMonth      *string                `json:"max_month" pattern:"^[0-9]{4}-(0[1-9]|1[0-2])$" maxLength:"7" doc:"The latest month that has a release. null when catalog does not say."`
+	MinMonth      *string                `json:"min_month" pattern:"^[0-9]{4}-(0[1-9]|1[0-2])$" maxLength:"7" doc:"The earliest month that has a release. null when catalog does not say, or knows only the year."`
+	MaxMonth      *string                `json:"max_month" pattern:"^[0-9]{4}-(0[1-9]|1[0-2])$" maxLength:"7" doc:"The latest month that has a release. null when catalog does not say, or knows only the year."`
 	ItemCount     int                    `json:"item_count" minimum:"0" doc:"Works returned after walking the window. When is_truncated is true this may be less than catalog's total."`
 	IsTruncated   bool                   `json:"is_truncated" doc:"Whether the walk stopped at the 2,000-work cap."`
 }

@@ -15014,7 +15014,7 @@
             "type": "array"
           },
           "max_month": {
-            "description": "The latest month that has a release. null when catalog does not say.",
+            "description": "The latest month that has a release. null when catalog does not say, or knows only the year.",
             "maxLength": 7,
             "pattern": "^[0-9]{4}-(0[1-9]|1[0-2])$",
             "type": [
@@ -15023,7 +15023,7 @@
             ]
           },
           "min_month": {
-            "description": "The earliest month that has a release. null when catalog does not say.",
+            "description": "The earliest month that has a release. null when catalog does not say, or knows only the year.",
             "maxLength": 7,
             "pattern": "^[0-9]{4}-(0[1-9]|1[0-2])$",
             "type": [
