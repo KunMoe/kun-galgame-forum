@@ -32,7 +32,7 @@ const DEFAULTS: KunCloudPreferences = {
   is_open_in_new_tab: false,
   prefer_original_name: false,
   no_resource: false,
-  phone_columns: 2,
+  phone_columns: 3,
   rounded: 'md',
   gallery_sexual_levels: [],
   gallery_violence_levels: []

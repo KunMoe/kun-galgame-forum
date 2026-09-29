@@ -45,7 +45,7 @@ export const usePersistSettingsStore = defineStore(
     const showKUNGalgameRounded =
       ref<KUNGalgameSettingsStore['showKUNGalgameRounded']>('md')
     const showKUNGalgamePhoneColumns =
-      ref<KUNGalgameSettingsStore['showKUNGalgamePhoneColumns']>(2)
+      ref<KUNGalgameSettingsStore['showKUNGalgamePhoneColumns']>(3)
     const showKUNGalgameGallerySexualLevels = ref<
       KUNGalgameSettingsStore['showKUNGalgameGallerySexualLevels']
     >([])
