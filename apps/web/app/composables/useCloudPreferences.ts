@@ -13,7 +13,7 @@ export interface KunCloudPreferences {
   is_open_in_new_tab: boolean
   prefer_original_name: boolean
   no_resource: boolean
-  phone_columns: number
+  phone_card_columns: number
   rounded: string
   gallery_sexual_levels: number[]
   gallery_violence_levels: number[]
@@ -21,6 +21,9 @@ export interface KunCloudPreferences {
 
 const WRITE_DEBOUNCE_MS = 1000
 
+// Every push writes every key, so a doc keeps the default it was written under:
+// when the phone column default went from 2 to 3, 1190 of 1255 docs still held
+// phone_columns 2. Changing a default for existing readers means a new key.
 const DEFAULTS: KunCloudPreferences = {
   show_platform: true,
   show_rating: true,
@@ -32,7 +35,7 @@ const DEFAULTS: KunCloudPreferences = {
   is_open_in_new_tab: false,
   prefer_original_name: false,
   no_resource: false,
-  phone_columns: 3,
+  phone_card_columns: 3,
   rounded: 'md',
   gallery_sexual_levels: [],
   gallery_violence_levels: []
@@ -69,7 +72,7 @@ export const useCloudPreferences = () => {
     is_open_in_new_tab: cardStore.isOpenInNewTab,
     prefer_original_name: settingsStore.showKUNGalgamePreferOriginalName,
     no_resource: settingsStore.showKUNGalgameNoResource,
-    phone_columns: settingsStore.showKUNGalgamePhoneColumns,
+    phone_card_columns: settingsStore.showKUNGalgamePhoneCardColumns,
     rounded: settingsStore.showKUNGalgameRounded,
     gallery_sexual_levels: [...settingsStore.showKUNGalgameGallerySexualLevels],
     gallery_violence_levels: [
@@ -100,12 +103,14 @@ export const useCloudPreferences = () => {
       if (typeof doc.is_open_in_new_tab === 'boolean')
         cardStore.isOpenInNewTab = doc.is_open_in_new_tab
       if (typeof doc.prefer_original_name === 'boolean')
-        settingsStore.showKUNGalgamePreferOriginalName = doc.prefer_original_name
+        settingsStore.showKUNGalgamePreferOriginalName =
+          doc.prefer_original_name
       if (typeof doc.no_resource === 'boolean')
         settingsStore.showKUNGalgameNoResource = doc.no_resource
-      if (doc.phone_columns === 2 || doc.phone_columns === 3)
-        settingsStore.showKUNGalgamePhoneColumns = doc.phone_columns
-      if (isRounded(doc.rounded)) settingsStore.setKUNGalgameRounded(doc.rounded)
+      if (doc.phone_card_columns === 2 || doc.phone_card_columns === 3)
+        settingsStore.showKUNGalgamePhoneCardColumns = doc.phone_card_columns
+      if (isRounded(doc.rounded))
+        settingsStore.setKUNGalgameRounded(doc.rounded)
       if (Array.isArray(doc.gallery_sexual_levels))
         settingsStore.showKUNGalgameGallerySexualLevels =
           doc.gallery_sexual_levels.filter(isLevel)
@@ -212,8 +217,7 @@ export const useCloudPreferences = () => {
   return { sync, flush }
 }
 
-const isLevel = (n: unknown): n is number =>
-  n === 1 || n === 2 || n === 3
+const isLevel = (n: unknown): n is number => n === 1 || n === 2 || n === 3
 
 const isRounded = (
   value: unknown

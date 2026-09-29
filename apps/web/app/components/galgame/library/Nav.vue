@@ -9,7 +9,7 @@ withDefaults(defineProps<{ total?: number | null; pending?: boolean }>(), {
 const { page, sortField, sortOrder, releasedFrom, releasedTo } =
   useLibraryFilters()
 
-const showDisplay = ref(false)
+const { open: openSettingPanel } = useSettingPanel()
 
 watch(
   () => [
@@ -55,57 +55,53 @@ const chips = computed<FilterChip[]>(() =>
 </script>
 
 <template>
-  <div class="space-y-2">
-    <FilterBar
-      :chips="chips"
-      :total="total"
-      :pending="pending"
-      @remove="setYears({ from: '', to: '' })"
-      @clear="setYears({ from: '', to: '' })"
+  <FilterBar
+    :chips="chips"
+    :total="total"
+    :pending="pending"
+    @remove="setYears({ from: '', to: '' })"
+    @clear="setYears({ from: '', to: '' })"
+  >
+    <FilterMenu
+      icon="lucide:arrow-down-up"
+      label="排序"
+      :options="sortOptions"
+      :model-value="sortField"
+      empty-value="popularity"
+      @update:model-value="sortField = $event as typeof sortField"
+    />
+
+    <KunTooltip
+      v-if="isOrderable"
+      :text="sortOrder === 'desc' ? '当前降序' : '当前升序'"
+      position="bottom"
     >
-      <FilterMenu
-        icon="lucide:arrow-down-up"
-        label="排序"
-        :options="sortOptions"
-        :model-value="sortField"
-        empty-value="popularity"
-        @update:model-value="sortField = $event as typeof sortField"
-      />
-
-      <KunTooltip
-        v-if="isOrderable"
-        :text="sortOrder === 'desc' ? '当前降序' : '当前升序'"
-        position="bottom"
+      <button
+        type="button"
+        aria-label="切换排序方向"
+        :class="filterPillSquareClass(false)"
+        @click="sortOrder = sortOrder === 'desc' ? 'asc' : 'desc'"
       >
+        <KunIcon
+          :name="sortOrder === 'desc' ? 'lucide:arrow-down' : 'lucide:arrow-up'"
+          class="size-4 text-inherit"
+        />
+      </button>
+    </KunTooltip>
+
+    <FilterYears :from="releasedFrom" :to="releasedTo" @update="setYears" />
+
+    <template #end>
+      <KunTooltip text="卡片显示设置" position="bottom">
         <button
           type="button"
-          aria-label="切换排序方向"
           :class="filterPillSquareClass(false)"
-          @click="sortOrder = sortOrder === 'desc' ? 'asc' : 'desc'"
-        >
-          <KunIcon
-            :name="
-              sortOrder === 'desc' ? 'lucide:arrow-down' : 'lucide:arrow-up'
-            "
-            class="size-4 text-inherit"
-          />
-        </button>
-      </KunTooltip>
-
-      <FilterYears :from="releasedFrom" :to="releasedTo" @update="setYears" />
-
-      <template #end>
-        <button
-          type="button"
-          :class="filterPillSquareClass(showDisplay)"
-          aria-label="显示设置"
-          @click="showDisplay = !showDisplay"
+          aria-label="卡片显示设置"
+          @click="openSettingPanel('galgame')"
         >
           <KunIcon name="lucide:layout-grid" class="size-4 text-inherit" />
         </button>
-      </template>
-    </FilterBar>
-
-    <GalgameCardDisplaySettings v-if="showDisplay" />
-  </div>
+      </KunTooltip>
+    </template>
+  </FilterBar>
 </template>

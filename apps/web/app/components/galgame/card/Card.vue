@@ -24,7 +24,9 @@ defineSlots<{
 // the page's whole width, and the calendar's copy of it — the reason the rest
 // of this cascade is container-based — has already stacked to full width by
 // then. Above sm the container rules take over untouched.
-const { showKUNGalgamePhoneColumns } = storeToRefs(usePersistSettingsStore())
+const { showKUNGalgamePhoneCardColumns } = storeToRefs(
+  usePersistSettingsStore()
+)
 
 const {
   showPlatform,
@@ -122,7 +124,7 @@ const cards = computed(() =>
       :class="
         cn(
           'grid grid-cols-2 gap-2 @lg:grid-cols-3 @lg:gap-3 @2xl:grid-cols-4 @4xl:grid-cols-5 @5xl:grid-cols-6',
-          showKUNGalgamePhoneColumns === 3 &&
+          showKUNGalgamePhoneCardColumns === 3 &&
             'max-sm:grid-cols-3 max-sm:gap-1.5'
         )
       "

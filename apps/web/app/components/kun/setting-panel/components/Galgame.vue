@@ -10,8 +10,16 @@ const {
   isOpenInNewTab
 } = storeToRefs(usePersistGalgameCardStore())
 
-const { showKUNGalgameNoResource, showKUNGalgamePreferOriginalName } =
-  storeToRefs(usePersistSettingsStore())
+const {
+  showKUNGalgameNoResource,
+  showKUNGalgamePreferOriginalName,
+  showKUNGalgamePhoneCardColumns
+} = storeToRefs(usePersistSettingsStore())
+
+const phoneColumnOptions = [
+  { value: 2, label: '2 张' },
+  { value: 3, label: '3 张' }
+] as const
 
 // Names are elected by the API, so the switch only takes effect on the next
 // request — the same reason the NSFW switch reloads.
@@ -41,6 +49,26 @@ watch(preferOriginalName, (value) => {
       以下选项控制 Galgame 列表卡片的展示内容，更改后即时生效于全站所有 Galgame
       列表。
     </p>
+
+    <div class="space-y-2.5">
+      <p class="text-default-700 text-sm font-semibold">手机上每行的卡片</p>
+      <div class="grid grid-cols-2 gap-2">
+        <KunButton
+          v-for="opt in phoneColumnOptions"
+          :key="opt.value"
+          size="sm"
+          :variant="
+            showKUNGalgamePhoneCardColumns === opt.value ? 'solid' : 'flat'
+          "
+          :color="
+            showKUNGalgamePhoneCardColumns === opt.value ? 'primary' : 'default'
+          "
+          @click="showKUNGalgamePhoneCardColumns = opt.value"
+        >
+          {{ opt.label }}
+        </KunButton>
+      </div>
+    </div>
 
     <div class="space-y-2.5">
       <p class="text-default-700 text-sm font-semibold">封面四角</p>

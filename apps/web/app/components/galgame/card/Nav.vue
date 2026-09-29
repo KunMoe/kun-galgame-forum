@@ -44,7 +44,7 @@ const {
   minRating
 } = useGalgameFilters()
 
-const showDisplay = ref(false)
+const { open: openSettingPanel } = useSettingPanel()
 
 watch(
   () => [
@@ -395,170 +395,166 @@ const clearFilters = () => {
 </script>
 
 <template>
-  <div class="space-y-2">
-    <FilterBar
-      :chips="chips"
-      :total="total"
-      :pending="pending"
-      @remove="removeChip"
-      @clear="clearFilters"
+  <FilterBar
+    :chips="chips"
+    :total="total"
+    :pending="pending"
+    @remove="removeChip"
+    @clear="clearFilters"
+  >
+    <FilterMenu
+      icon="lucide:arrow-down-up"
+      label="排序"
+      :options="sortOptions"
+      :model-value="sortField"
+      empty-value="time"
+      @update:model-value="sortField = $event as typeof sortField"
+    />
+
+    <KunTooltip
+      :text="sortOrder === 'desc' ? '当前降序' : '当前升序'"
+      position="bottom"
     >
+      <button
+        type="button"
+        aria-label="切换排序方向"
+        :class="filterPillSquareClass(false)"
+        @click="sortOrder = sortOrder === 'desc' ? 'asc' : 'desc'"
+      >
+        <KunIcon
+          :name="sortOrder === 'desc' ? 'lucide:arrow-down' : 'lucide:arrow-up'"
+          class="size-4 text-inherit"
+        />
+      </button>
+    </KunTooltip>
+
+    <span class="bg-default-200 h-6 w-px" aria-hidden="true" />
+
+    <FilterMenu
+      icon="lucide:package"
+      label="资源类型"
+      :options="typeOptions"
+      :model-value="type"
+      empty-value=""
+      @update:model-value="type = firstOf($event)"
+    />
+    <FilterMenu
+      icon="lucide:languages"
+      label="语言"
+      :options="langOptions"
+      :model-value="language"
+      empty-value=""
+      @update:model-value="language = firstOf($event)"
+    />
+    <FilterMenu
+      icon="lucide:monitor-smartphone"
+      label="平台"
+      :options="platformOptions"
+      :model-value="platform"
+      empty-value=""
+      @update:model-value="setPlatform(firstOf($event))"
+    />
+    <FilterMenu
+      v-if="platform === 'emulator'"
+      icon="lucide:joystick"
+      label="模拟器"
+      :options="emulatorOptions"
+      :model-value="runtime"
+      empty-value=""
+      @update:model-value="runtime = firstOf($event)"
+    />
+    <FilterMenu
+      icon="lucide:gamepad-2"
+      label="游戏类型"
+      :options="gameTypeOptions"
+      :model-value="gameType"
+      empty-value=""
+      @update:model-value="gameType = firstOf($event)"
+    />
+
+    <template v-if="isShowAdvanced">
+      <FilterYears :from="releasedFrom" :to="releasedTo" @update="setYears" />
       <FilterMenu
-        icon="lucide:arrow-down-up"
-        label="排序"
-        :options="sortOptions"
-        :model-value="sortField"
-        empty-value="time"
-        @update:model-value="sortField = $event as typeof sortField"
+        icon="lucide:calendar-days"
+        label="发售月份"
+        multiple
+        :columns="3"
+        :options="monthOptions"
+        :model-value="months"
+        @update:model-value="setMonths($event as string[])"
       />
 
-      <KunTooltip
-        :text="sortOrder === 'desc' ? '当前降序' : '当前升序'"
-        position="bottom"
-      >
-        <button
-          type="button"
-          aria-label="切换排序方向"
-          :class="filterPillSquareClass(false)"
-          @click="sortOrder = sortOrder === 'desc' ? 'asc' : 'desc'"
-        >
-          <KunIcon
-            :name="
-              sortOrder === 'desc' ? 'lucide:arrow-down' : 'lucide:arrow-up'
-            "
-            class="size-4 text-inherit"
-          />
-        </button>
+      <FilterMenu
+        icon="lucide:archive"
+        label="收录年份"
+        multiple
+        :columns="3"
+        :options="collectedYearOptions"
+        :model-value="collectedYearsModel"
+        @update:model-value="onPickCollectedYear($event as string[])"
+      />
+      <FilterMenu
+        icon="lucide:calendar-check-2"
+        label="收录月份"
+        multiple
+        :columns="3"
+        :options="collectedMonthOptions"
+        :model-value="collectedMonthsModel"
+        @update:model-value="onPickCollectedMonth($event as string[])"
+      />
+
+      <KunTooltip text="只保留至少有一个所选网盘的作品" position="bottom">
+        <FilterMenu
+          icon="lucide:hard-drive-download"
+          label="含网盘"
+          multiple
+          :options="providerOptions"
+          :model-value="includes"
+          @update:model-value="includeProviders = setCsv($event as string[])"
+        />
+      </KunTooltip>
+      <KunTooltip text="丢掉只有这些网盘可选的作品" position="bottom">
+        <FilterMenu
+          icon="lucide:hard-drive-upload"
+          label="排除仅含"
+          multiple
+          :options="providerOptions"
+          :model-value="excludes"
+          @update:model-value="
+            excludeOnlyProviders = setCsv($event as string[])
+          "
+        />
       </KunTooltip>
 
-      <span class="bg-default-200 h-6 w-px" aria-hidden="true" />
-
       <FilterMenu
-        icon="lucide:package"
-        label="资源类型"
-        :options="typeOptions"
-        :model-value="type"
-        empty-value=""
-        @update:model-value="type = firstOf($event)"
+        icon="lucide:star"
+        label="最低评分"
+        :options="minRatingOptions"
+        :model-value="String(minRating)"
+        empty-value="0"
+        @update:model-value="minRating = Number($event)"
       />
       <FilterMenu
-        icon="lucide:languages"
-        label="语言"
-        :options="langOptions"
-        :model-value="language"
-        empty-value=""
-        @update:model-value="language = firstOf($event)"
+        icon="lucide:users"
+        label="评分人数"
+        :options="minCountOptions"
+        :model-value="String(minRatingCount)"
+        empty-value="0"
+        @update:model-value="minRatingCount = Number($event)"
       />
-      <FilterMenu
-        icon="lucide:monitor-smartphone"
-        label="平台"
-        :options="platformOptions"
-        :model-value="platform"
-        empty-value=""
-        @update:model-value="setPlatform(firstOf($event))"
-      />
-      <FilterMenu
-        v-if="platform === 'emulator'"
-        icon="lucide:joystick"
-        label="模拟器"
-        :options="emulatorOptions"
-        :model-value="runtime"
-        empty-value=""
-        @update:model-value="runtime = firstOf($event)"
-      />
-      <FilterMenu
-        icon="lucide:gamepad-2"
-        label="游戏类型"
-        :options="gameTypeOptions"
-        :model-value="gameType"
-        empty-value=""
-        @update:model-value="gameType = firstOf($event)"
-      />
+    </template>
 
-      <template v-if="isShowAdvanced">
-        <FilterYears :from="releasedFrom" :to="releasedTo" @update="setYears" />
-        <FilterMenu
-          icon="lucide:calendar-days"
-          label="发售月份"
-          multiple
-          :columns="3"
-          :options="monthOptions"
-          :model-value="months"
-          @update:model-value="setMonths($event as string[])"
-        />
-
-        <FilterMenu
-          icon="lucide:archive"
-          label="收录年份"
-          multiple
-          :columns="3"
-          :options="collectedYearOptions"
-          :model-value="collectedYearsModel"
-          @update:model-value="onPickCollectedYear($event as string[])"
-        />
-        <FilterMenu
-          icon="lucide:calendar-check-2"
-          label="收录月份"
-          multiple
-          :columns="3"
-          :options="collectedMonthOptions"
-          :model-value="collectedMonthsModel"
-          @update:model-value="onPickCollectedMonth($event as string[])"
-        />
-
-        <KunTooltip text="只保留至少有一个所选网盘的作品" position="bottom">
-          <FilterMenu
-            icon="lucide:hard-drive-download"
-            label="含网盘"
-            multiple
-            :options="providerOptions"
-            :model-value="includes"
-            @update:model-value="includeProviders = setCsv($event as string[])"
-          />
-        </KunTooltip>
-        <KunTooltip text="丢掉只有这些网盘可选的作品" position="bottom">
-          <FilterMenu
-            icon="lucide:hard-drive-upload"
-            label="排除仅含"
-            multiple
-            :options="providerOptions"
-            :model-value="excludes"
-            @update:model-value="
-              excludeOnlyProviders = setCsv($event as string[])
-            "
-          />
-        </KunTooltip>
-
-        <FilterMenu
-          icon="lucide:star"
-          label="最低评分"
-          :options="minRatingOptions"
-          :model-value="String(minRating)"
-          empty-value="0"
-          @update:model-value="minRating = Number($event)"
-        />
-        <FilterMenu
-          icon="lucide:users"
-          label="评分人数"
-          :options="minCountOptions"
-          :model-value="String(minRatingCount)"
-          empty-value="0"
-          @update:model-value="minRatingCount = Number($event)"
-        />
-      </template>
-
-      <template v-if="isShowAdvanced" #end>
+    <template v-if="isShowAdvanced" #end>
+      <KunTooltip text="卡片显示设置" position="bottom">
         <button
           type="button"
-          :class="filterPillSquareClass(showDisplay)"
-          aria-label="显示设置"
-          @click="showDisplay = !showDisplay"
+          :class="filterPillSquareClass(false)"
+          aria-label="卡片显示设置"
+          @click="openSettingPanel('galgame')"
         >
           <KunIcon name="lucide:layout-grid" class="size-4 text-inherit" />
         </button>
-      </template>
-    </FilterBar>
-
-    <GalgameCardDisplaySettings v-if="showDisplay" />
-  </div>
+      </KunTooltip>
+    </template>
+  </FilterBar>
 </template>

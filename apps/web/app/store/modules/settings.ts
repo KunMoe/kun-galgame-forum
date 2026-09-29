@@ -44,8 +44,8 @@ export const usePersistSettingsStore = defineStore(
       ref<KUNGalgameSettingsStore['showKUNGalgameNoResource']>(false)
     const showKUNGalgameRounded =
       ref<KUNGalgameSettingsStore['showKUNGalgameRounded']>('md')
-    const showKUNGalgamePhoneColumns =
-      ref<KUNGalgameSettingsStore['showKUNGalgamePhoneColumns']>(3)
+    const showKUNGalgamePhoneCardColumns =
+      ref<KUNGalgameSettingsStore['showKUNGalgamePhoneCardColumns']>(3)
     const showKUNGalgameGallerySexualLevels = ref<
       KUNGalgameSettingsStore['showKUNGalgameGallerySexualLevels']
     >([])
@@ -170,7 +170,7 @@ export const usePersistSettingsStore = defineStore(
       showKUNGalgameBackLoli,
       showKUNGalgameNoResource,
       showKUNGalgameRounded,
-      showKUNGalgamePhoneColumns,
+      showKUNGalgamePhoneCardColumns,
       showKUNGalgameGallerySexualLevels,
       showKUNGalgameGalleryViolenceLevels,
       feedTabs,
