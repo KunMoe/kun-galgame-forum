@@ -1,5 +1,3 @@
-import { useRouteQuery } from '@vueuse/router'
-
 // The Galgame lane's filters live in the URL so a filtered search can be
 // shared. They belong to that one lane, so SearchContainer drops these keys
 // when the category changes — the list is here rather than there because the

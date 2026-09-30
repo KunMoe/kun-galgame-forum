@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import { useRouteQuery } from '@vueuse/router'
-
 const opts = { mode: 'replace' as const }
 const lane = useRouteQuery<string>('lane', 'all', opts)
 const source = useRouteQuery<string>('source', 'all', opts)

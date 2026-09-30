@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { useRouteQuery } from '@vueuse/router'
 import { SEARCH_CATEGORY_MAP } from './items'
 import { fetchLanePage, type GalgameFilterQuery } from '~/utils/search/lanes'
 

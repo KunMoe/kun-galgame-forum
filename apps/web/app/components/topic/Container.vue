@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { useRouteQuery } from '@vueuse/router'
 import type { operations } from '#shared/types/api/v1'
 import type { TopicSummary } from '#shared/utils/api/schemas'
 import { problemMessage } from '#shared/utils/api/message'

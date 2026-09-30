@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { watchDebounced } from '@vueuse/core'
-import { useRouteQuery } from '@vueuse/router'
 import type { PageListGalgameResource } from '#shared/utils/api/schemas'
 import { problemMessage } from '#shared/utils/api/message'
 

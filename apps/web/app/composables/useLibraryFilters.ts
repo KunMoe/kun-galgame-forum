@@ -1,4 +1,3 @@
-import { useRouteQuery } from '@vueuse/router'
 import type { ListLibraryWorksQuery } from '#shared/utils/api/schemas'
 
 type LibrarySortField = 'popularity' | 'release_date' | 'time' | 'relevance'

@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import { useRouteQuery } from '@vueuse/router'
-
 useKunSeoMeta({
   title: 'Galgame 角色属性',
   description:

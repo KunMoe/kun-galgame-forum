@@ -1,5 +1,3 @@
-import { useRouteQuery } from '@vueuse/router'
-
 // A paginated list's page belongs in the URL. As a component-local ref it dies
 // with the component: 「多标签搜索里点击游戏都会返回第一页」— opening a game from
 // page 3 of the multi-tag results and pressing back re-mounted the list at page

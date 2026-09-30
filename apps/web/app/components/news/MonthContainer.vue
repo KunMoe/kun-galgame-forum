@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import { useRouteQuery } from '@vueuse/router'
-
 const props = defineProps<{ year: number; month: number }>()
 
 const route = useRoute()

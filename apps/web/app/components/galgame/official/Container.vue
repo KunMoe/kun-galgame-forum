@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { watchDebounced } from '@vueuse/core'
-import { useRouteQuery } from '@vueuse/router'
 import type { CompanyPage } from '#shared/utils/api/schemas'
 import { settle } from '#shared/utils/api/problem'
 import { companyItemOf } from '~/utils/galgame/entityCards'

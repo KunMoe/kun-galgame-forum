@@ -1,4 +1,3 @@
-import { useRouteQuery } from '@vueuse/router'
 import type {
   ToolsetInterfaceLanguage,
   ToolsetPlatform,

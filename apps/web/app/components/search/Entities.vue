@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { useRouteQuery } from '@vueuse/router'
 import { storeToRefs } from 'pinia'
 import { SEARCH_ENTITY_FAMILIES } from './items'
 import {

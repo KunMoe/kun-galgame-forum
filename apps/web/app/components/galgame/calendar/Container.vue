@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { useRouteQuery } from '@vueuse/router'
 import type { KunTabItem } from '@kungal/ui-vue'
 import type {
   ReleaseCalendarMonth,

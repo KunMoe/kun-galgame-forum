@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { useRouteQuery } from '@vueuse/router'
 import type { SeriesPage } from '#shared/utils/api/schemas'
 import { seriesCardOf } from '~/utils/galgame/entityCards'
 

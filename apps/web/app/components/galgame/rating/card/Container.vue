@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { useRouteQuery } from '@vueuse/router'
 import type { RatingsQuery } from '#shared/utils/api/schemas'
 import { KUN_GALGAME_PLAY_STATE_CONST } from '~/constants/galgame-playtime'
 import {

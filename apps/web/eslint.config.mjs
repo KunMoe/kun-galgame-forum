@@ -3,6 +3,9 @@ import withNuxt from './.nuxt/eslint.config.mjs'
 const v1ClientMessage =
   'Reach the forum API only through the typed client in shared/utils/api/client.ts'
 
+const pageRouteMessage =
+  "Read the route through Nuxt's page-scoped useRoute / the auto-imported useRouteQuery (app/composables/useRouteQuery.ts). The global route moves the moment a link is clicked, and a list being left refetches page 1."
+
 export default withNuxt(
   {
     ignores: ['shared/types/api/**']
@@ -28,6 +31,25 @@ export default withNuxt(
         {
           selector: 'TemplateElement[value.raw=/^\\/(api\\/)?v1(\\/|$)/]',
           message: v1ClientMessage
+        }
+      ]
+    }
+  },
+  {
+    files: ['app/**/*.{ts,vue}'],
+    ignores: ['app/composables/useRouteQuery.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            { name: '@vueuse/router', message: pageRouteMessage },
+            {
+              name: 'vue-router',
+              importNames: ['useRoute'],
+              message: pageRouteMessage
+            }
+          ]
         }
       ]
     }

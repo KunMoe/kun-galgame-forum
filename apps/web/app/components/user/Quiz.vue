@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import type { KunTabItem } from '@kungal/ui-vue'
-import { useRouteQuery } from '@vueuse/router'
 import type { PageListQuizSummary } from '#shared/utils/api/schemas'
 import { problemMessage } from '#shared/utils/api/message'
 

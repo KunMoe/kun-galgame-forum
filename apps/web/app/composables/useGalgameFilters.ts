@@ -1,4 +1,3 @@
-import { useRouteQuery } from '@vueuse/router'
 import type { ListWorksQuery } from '#shared/utils/api/schemas'
 import {
   EMULATOR_RUNTIME_OPTIONS,

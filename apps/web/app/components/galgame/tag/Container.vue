@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { watchDebounced } from '@vueuse/core'
-import { useRouteQuery } from '@vueuse/router'
 import { TAG_FILTER_MAX } from '~/components/search/items'
 import type { TagPage, WorkSummary } from '#shared/utils/api/schemas'
 import { settle } from '#shared/utils/api/problem'

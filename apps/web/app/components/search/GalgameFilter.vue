@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { useRouteQuery } from '@vueuse/router'
 import { SEARCH_GALGAME_SORTS, TAG_FILTER_MAX } from './items'
 
 withDefaults(defineProps<{ total?: number; pending?: boolean }>(), {
