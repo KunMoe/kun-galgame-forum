@@ -1,74 +1,83 @@
 <script setup lang="ts">
-const CONFIGS = {
-  SCROLL_THRESHOLD: 100,
-  DIRECTION_THRESHOLD: 5,
-  AUTO_HIDE_TIMEOUT: 2000,
-  BOTTOM_THRESHOLD: 1
+const SCROLL_THRESHOLD = 100
+const DIRECTION_THRESHOLD = 5
+const AUTO_HIDE_TIMEOUT = 2000
+
+const MASCOT = {
+  top: '/image/scroll-top.webp',
+  bottom: '/image/scroll-bottom.webp'
 } as const
 
-const progress = ref(0)
 const isVisible = ref(false)
-const autoHideStatus = ref(true)
+const isIdle = ref(false)
+const isHovered = ref(false)
 const scrollingDown = ref(true)
-const lastScrollY = ref(0)
 const isAtBottom = ref(false)
 
-const router = useRouter()
+let lastScrollY = 0
+let idleTimer: ReturnType<typeof setTimeout> | undefined
 
-let mobileTimer: NodeJS.Timeout | null = null
-
-const buttonText = computed(() =>
-  isAtBottom.value || !scrollingDown.value ? '滚动到顶部' : '滚动到底部'
+const direction = computed(() =>
+  isAtBottom.value || !scrollingDown.value ? 'top' : 'bottom'
+)
+const label = computed(() =>
+  direction.value === 'top' ? '回到顶部' : '滚动到底部'
 )
 
-const buttonIcon = computed(() =>
-  isAtBottom.value || !scrollingDown.value
-    ? 'lucide:arrow-up'
-    : 'lucide:arrow-down'
-)
-
-const handleScroll = () => {
+const scrollToEdge = () => {
   window.scrollTo({
-    top:
-      isAtBottom.value || !scrollingDown.value
-        ? 0
-        : document.documentElement.scrollHeight,
+    top: direction.value === 'top' ? 0 : document.documentElement.scrollHeight,
     behavior: 'smooth'
   })
 }
 
-const updateProgress = () => {
-  const { scrollY } = window
-  const { scrollHeight, clientHeight } = document.documentElement
+const onScroll = () => {
+  const { scrollY, innerHeight } = window
+  const { scrollHeight } = document.documentElement
+  isVisible.value = scrollY > SCROLL_THRESHOLD
+  isAtBottom.value = scrollY + innerHeight >= scrollHeight - 2
 
-  const scrolled = (scrollY / (scrollHeight - clientHeight)) * 100
-  progress.value = scrolled
-  isVisible.value = scrollY > CONFIGS.SCROLL_THRESHOLD
-  isAtBottom.value = Math.abs(scrolled - 100) < CONFIGS.BOTTOM_THRESHOLD
-
-  if (!isAtBottom.value) {
-    const scrollDiff = scrollY - lastScrollY.value
-    if (Math.abs(scrollDiff) > CONFIGS.DIRECTION_THRESHOLD) {
-      scrollingDown.value = scrollDiff > 0
+  const delta = scrollY - lastScrollY
+  if (Math.abs(delta) > DIRECTION_THRESHOLD) {
+    if (!isAtBottom.value) {
+      scrollingDown.value = delta > 0
     }
+    lastScrollY = scrollY
   }
-  lastScrollY.value = scrollY
 
-  autoHideStatus.value = true
-  if (mobileTimer) clearTimeout(mobileTimer)
-  mobileTimer = setTimeout(() => {
-    autoHideStatus.value = false
-  }, CONFIGS.AUTO_HIDE_TIMEOUT)
+  isIdle.value = false
+  clearTimeout(idleTimer)
+  idleTimer = setTimeout(() => {
+    isIdle.value = true
+  }, AUTO_HIDE_TIMEOUT)
 }
 
+const onPointerEnter = (event: PointerEvent) => {
+  if (event.pointerType === 'mouse') {
+    isHovered.value = true
+  }
+}
+
+watch(
+  isVisible,
+  () => {
+    if (window.matchMedia('(hover: hover)').matches) {
+      for (const src of Object.values(MASCOT)) {
+        new Image().src = src
+      }
+    }
+  },
+  { once: true }
+)
+
 onMounted(() => {
-  window.addEventListener('scroll', updateProgress)
-  updateProgress()
+  window.addEventListener('scroll', onScroll, { passive: true })
+  onScroll()
 })
 
 onUnmounted(() => {
-  window.removeEventListener('scroll', updateProgress)
-  if (mobileTimer) clearTimeout(mobileTimer)
+  window.removeEventListener('scroll', onScroll)
+  clearTimeout(idleTimer)
 })
 </script>
 
@@ -76,44 +85,112 @@ onUnmounted(() => {
   <div
     v-if="isVisible"
     :class="
-      cn(
-        'bg-background fixed right-3 bottom-[60px] z-100 rounded-full px-2 py-2 backdrop-blur-sm transition-opacity duration-300',
-        !autoHideStatus && 'hidden'
-      )
+      cn('fixed right-3 bottom-[60px] z-100', isIdle && !isHovered && 'hidden')
     "
+    @pointerenter="onPointerEnter"
+    @pointerleave="isHovered = false"
   >
-    <div class="flex flex-col gap-2">
-      <KunTooltip :text="buttonText">
+    <Transition name="kun-mascot">
+      <img
+        v-if="isHovered"
+        :key="direction"
+        :src="MASCOT[direction]"
+        :class="
+          cn(
+            'pointer-events-none absolute right-0 bottom-full size-32 max-w-none origin-bottom select-none',
+            `kun-mascot-${direction}`
+          )
+        "
+        alt=""
+        aria-hidden="true"
+      />
+    </Transition>
+
+    <div class="bg-background rounded-full p-2 backdrop-blur-sm">
+      <KunTooltip :text="label" position="left">
         <KunButton
           :is-icon-only="true"
+          :aria-label="label"
           rounded="full"
           size="md"
           variant="flat"
-          @click="handleScroll"
+          @click="scrollToEdge"
         >
-          <KunIcon class="text-inherit" :name="buttonIcon" />
+          <KunIcon
+            class="text-inherit"
+            :name="
+              direction === 'top' ? 'lucide:arrow-up' : 'lucide:arrow-down'
+            "
+          />
         </KunButton>
       </KunTooltip>
-
-      <KunButton
-        :is-icon-only="true"
-        class-name="text-xs"
-        rounded="full"
-        size="md"
-        variant="flat"
-      >
-        {{ Math.round(progress) }}
-      </KunButton>
-
-      <KunButton
-        :is-icon-only="true"
-        rounded="full"
-        size="md"
-        variant="flat"
-        @click="router.back()"
-      >
-        <KunIcon class="text-inherit" name="lucide:arrow-left" />
-      </KunButton>
     </div>
   </div>
 </template>
+
+<style scoped>
+.kun-mascot-enter-active.kun-mascot-top {
+  animation: kun-mascot-jump 520ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.kun-mascot-enter-active.kun-mascot-bottom {
+  animation: kun-mascot-settle 560ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.kun-mascot-leave-active {
+  transition:
+    opacity 150ms ease-in,
+    transform 150ms ease-in;
+}
+
+.kun-mascot-leave-to {
+  opacity: 0;
+  transform: translateY(8px) scale(0.9);
+}
+
+@keyframes kun-mascot-jump {
+  0% {
+    opacity: 0;
+    transform: translateY(28px) scale(0.6);
+  }
+  55% {
+    opacity: 1;
+    transform: translateY(-12px) scale(1.04);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes kun-mascot-settle {
+  0% {
+    opacity: 0;
+    transform: translateY(-24px) scale(0.9);
+  }
+  55% {
+    opacity: 1;
+    transform: translateY(4px) scale(1.04, 0.94);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kun-mascot-enter-active.kun-mascot-top,
+  .kun-mascot-enter-active.kun-mascot-bottom {
+    animation: none;
+    transition: opacity 150ms ease-out;
+  }
+
+  .kun-mascot-enter-from {
+    opacity: 0;
+  }
+
+  .kun-mascot-leave-to {
+    transform: none;
+  }
+}
+</style>
