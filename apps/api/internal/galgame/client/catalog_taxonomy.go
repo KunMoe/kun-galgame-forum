@@ -36,17 +36,18 @@ type CatalogTaxonomyPage struct {
 }
 
 type CatalogLabelDetail struct {
-	ID          int64                       `json:"id"`
-	DisplayName string                      `json:"display_name"`
-	Latin       string                      `json:"latin"`
-	Localized   map[string]catLocalizedName `json:"localized"`
-	Kind        string                      `json:"kind"`
-	Lang        string                      `json:"lang"`
-	Aliases     catAliases                  `json:"aliases"`
-	WorkCount   int                         `json:"work_count"`
-	Intros      []CatalogIntro              `json:"intros"`
-	Links       []CatalogLink               `json:"links"`
-	LogoHash    string                      `json:"logo_hash"`
+	ID            int64                       `json:"id"`
+	DisplayName   string                      `json:"display_name"`
+	Latin         string                      `json:"latin"`
+	Localized     map[string]catLocalizedName `json:"localized"`
+	Kind          string                      `json:"kind"`
+	Lang          string                      `json:"lang"`
+	Aliases       catAliases                  `json:"aliases"`
+	WorkCount     int                         `json:"work_count"`
+	Intros        []CatalogIntro              `json:"intros"`
+	Links         []CatalogLink               `json:"links"`
+	LogoHash      string                      `json:"logo_hash"`
+	FollowerCount *int                        `json:"follower_count"`
 }
 
 type CatalogTagDetail struct {

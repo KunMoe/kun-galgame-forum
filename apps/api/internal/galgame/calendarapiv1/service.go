@@ -77,6 +77,16 @@ func (s *Service) ready() *problem.Problem {
 	return nil
 }
 
+type calendarSource func(ctx context.Context, bucket string, q url.Values) (*client.CatalogWorksPage, error)
+
+func (s *Service) publicCalendar(ctx context.Context, bucket string, q url.Values) (*client.CatalogWorksPage, error) {
+	res, appErr := s.catalog.CatalogCalendar(ctx, bucket, q)
+	if appErr != nil {
+		return nil, problem.Unavailable(appErr)
+	}
+	return res, nil
+}
+
 func (s *Service) listReleaseCalendarMonth(ctx context.Context, in *monthInput) (*monthOutput, error) {
 	if p := s.ready(); p != nil {
 		return nil, p
@@ -86,30 +96,7 @@ func (s *Service) listReleaseCalendarMonth(ctx context.Context, in *monthInput) 
 	if month == "" {
 		month = now.Format("2006-01")
 	}
-	items, page, truncated, p := s.walk(ctx, "", in.Exclusion().Apply(monthQuery(month, in.IncludeNSFW, in.IncludeDoujin)), calendarPageCap, "release-calendar: month truncated at page cap", "calendar_month", month)
-	if p != nil {
-		return nil, p
-	}
-	summaries, p := s.summaries(ctx, items, "release-calendar: catalog row not renderable, dropped")
-	if p != nil {
-		return nil, p
-	}
-	today := orElse(page.Meta.Today, now.Format("2006-01-02"))
-	calMonth := orElse(page.Month, month)
-	return &monthOutput{Body: ReleaseCalendarMonth{
-		Object:        "release_calendar_month",
-		CalendarMonth: calMonth,
-		Today:         today,
-		Items:         summaries,
-		PrevMonth:     monthPtr(shiftMonth(calMonth, -1)),
-		NextMonth:     monthPtr(shiftMonth(calMonth, +1)),
-		HasPrev:       derefBool(page.Meta.HasPrev),
-		HasNext:       derefBool(page.Meta.HasNext),
-		MinMonth:      monthPtr(page.Meta.MinMonth),
-		MaxMonth:      monthPtr(page.Meta.MaxMonth),
-		ItemCount:     len(summaries),
-		IsTruncated:   truncated,
-	}}, nil
+	return s.renderMonth(ctx, s.publicCalendar, now, month, in.Exclusion().Apply(monthQuery(month, in.IncludeNSFW, in.IncludeDoujin)))
 }
 
 func (s *Service) getReleaseCalendarToday(ctx context.Context, in *todayInput) (*todayOutput, error) {
@@ -118,9 +105,9 @@ func (s *Service) getReleaseCalendarToday(ctx context.Context, in *todayInput) (
 	}
 	now := s.clock()
 	month := now.Format("2006-01")
-	items, page, truncated, p := s.walk(ctx, "", in.Exclusion().Apply(monthQuery(month, in.IncludeNSFW, false)), calendarPageCap, "release-calendar: month truncated at page cap", "calendar_month", month)
-	if p != nil {
-		return nil, p
+	items, page, truncated, err := s.walk(ctx, s.publicCalendar, "", in.Exclusion().Apply(monthQuery(month, in.IncludeNSFW, false)), calendarPageCap, "release-calendar: month truncated at page cap", "calendar_month", month)
+	if err != nil {
+		return nil, err
 	}
 	today := orElse(page.Meta.Today, now.Format("2006-01-02"))
 	if truncated {
@@ -157,9 +144,58 @@ func (s *Service) listReleaseCalendarPending(ctx context.Context, in *pendingInp
 	q := in.Exclusion().Apply(bucketQuery(in.IncludeNSFW, in.IncludeDoujin))
 	q.Set("year", strconv.Itoa(year))
 	q.Set("precision", "year")
-	items, _, truncated, p := s.walk(ctx, "/pending", q, calendarPageCap, "release-calendar: pending truncated at page cap", "year", strconv.Itoa(year))
+	return s.renderPending(ctx, s.publicCalendar, year, q)
+}
+
+func (s *Service) listReleaseCalendarTBA(ctx context.Context, in *tbaInput) (*tbaOutput, error) {
+	if p := s.ready(); p != nil {
+		return nil, p
+	}
+	q := in.Exclusion().Apply(bucketQuery(in.IncludeNSFW, in.IncludeDoujin))
+	q.Set("status", "unknown")
+	return s.renderTBA(ctx, s.publicCalendar, q)
+}
+
+func (s *Service) listReleaseCalendarUpcoming(ctx context.Context, in *upcomingInput) (*upcomingOutput, error) {
+	if p := s.ready(); p != nil {
+		return nil, p
+	}
+	return s.renderUpcoming(ctx, s.publicCalendar, func(month string) url.Values {
+		return in.Exclusion().Apply(monthQuery(month, in.IncludeNSFW, in.IncludeDoujin))
+	})
+}
+
+func (s *Service) renderMonth(ctx context.Context, src calendarSource, now time.Time, month string, q url.Values) (*monthOutput, error) {
+	items, page, truncated, err := s.walk(ctx, src, "", q, calendarPageCap, "release-calendar: month truncated at page cap", "calendar_month", month)
+	if err != nil {
+		return nil, err
+	}
+	summaries, p := s.summaries(ctx, items, "release-calendar: catalog row not renderable, dropped")
 	if p != nil {
 		return nil, p
+	}
+	today := orElse(page.Meta.Today, now.Format("2006-01-02"))
+	calMonth := orElse(page.Month, month)
+	return &monthOutput{Body: ReleaseCalendarMonth{
+		Object:        "release_calendar_month",
+		CalendarMonth: calMonth,
+		Today:         today,
+		Items:         summaries,
+		PrevMonth:     monthPtr(shiftMonth(calMonth, -1)),
+		NextMonth:     monthPtr(shiftMonth(calMonth, +1)),
+		HasPrev:       derefBool(page.Meta.HasPrev),
+		HasNext:       derefBool(page.Meta.HasNext),
+		MinMonth:      monthPtr(page.Meta.MinMonth),
+		MaxMonth:      monthPtr(page.Meta.MaxMonth),
+		ItemCount:     len(summaries),
+		IsTruncated:   truncated,
+	}}, nil
+}
+
+func (s *Service) renderPending(ctx context.Context, src calendarSource, year int, q url.Values) (*pendingOutput, error) {
+	items, _, truncated, err := s.walk(ctx, src, "/pending", q, calendarPageCap, "release-calendar: pending truncated at page cap", "year", strconv.Itoa(year))
+	if err != nil {
+		return nil, err
 	}
 	summaries, p := s.summaries(ctx, items, "release-calendar: catalog row not renderable, dropped")
 	if p != nil {
@@ -174,15 +210,10 @@ func (s *Service) listReleaseCalendarPending(ctx context.Context, in *pendingInp
 	}}, nil
 }
 
-func (s *Service) listReleaseCalendarTBA(ctx context.Context, in *tbaInput) (*tbaOutput, error) {
-	if p := s.ready(); p != nil {
-		return nil, p
-	}
-	q := in.Exclusion().Apply(bucketQuery(in.IncludeNSFW, in.IncludeDoujin))
-	q.Set("status", "unknown")
-	items, _, truncated, p := s.walk(ctx, "/tba", q, calendarPageCap, "release-calendar: tba truncated at page cap", "status", "unknown")
-	if p != nil {
-		return nil, p
+func (s *Service) renderTBA(ctx context.Context, src calendarSource, q url.Values) (*tbaOutput, error) {
+	items, _, truncated, err := s.walk(ctx, src, "/tba", q, calendarPageCap, "release-calendar: tba truncated at page cap", "status", "unknown")
+	if err != nil {
+		return nil, err
 	}
 	summaries, p := s.summaries(ctx, items, "release-calendar: catalog row not renderable, dropped")
 	if p != nil {
@@ -196,16 +227,13 @@ func (s *Service) listReleaseCalendarTBA(ctx context.Context, in *tbaInput) (*tb
 	}}, nil
 }
 
-func (s *Service) listReleaseCalendarUpcoming(ctx context.Context, in *upcomingInput) (*upcomingOutput, error) {
-	if p := s.ready(); p != nil {
-		return nil, p
-	}
+func (s *Service) renderUpcoming(ctx context.Context, src calendarSource, query func(month string) url.Values) (*upcomingOutput, error) {
 	now := s.clock()
 	start := now.Format("2006-01")
 	today := now.Format("2006-01-02")
-	firstItems, first, truncated, p := s.walk(ctx, "", in.Exclusion().Apply(monthQuery(start, in.IncludeNSFW, in.IncludeDoujin)), upcomingPageCap, "release-calendar: upcoming month truncated at page cap", "calendar_month", start)
-	if p != nil {
-		return nil, p
+	firstItems, first, truncated, err := s.walk(ctx, src, "", query(start), upcomingPageCap, "release-calendar: upcoming month truncated at page cap", "calendar_month", start)
+	if err != nil {
+		return nil, err
 	}
 	if first.Meta.Today != "" {
 		today = first.Meta.Today
@@ -223,7 +251,7 @@ func (s *Service) listReleaseCalendarUpcoming(ctx context.Context, in *upcomingI
 	var (
 		wg       sync.WaitGroup
 		mu       sync.Mutex
-		firstErr *problem.Problem
+		firstErr error
 	)
 	sem := make(chan struct{}, upcomingConcurrency)
 	for i := 1; i < len(months); i++ {
@@ -232,11 +260,11 @@ func (s *Service) listReleaseCalendarUpcoming(ctx context.Context, in *upcomingI
 			defer wg.Done()
 			sem <- struct{}{}
 			defer func() { <-sem }()
-			raw, _, isTrunc, p := s.walk(ctx, "", in.Exclusion().Apply(monthQuery(months[i], in.IncludeNSFW, in.IncludeDoujin)), upcomingPageCap, "release-calendar: upcoming month truncated at page cap", "calendar_month", months[i])
-			if p != nil {
+			raw, _, isTrunc, err := s.walk(ctx, src, "", query(months[i]), upcomingPageCap, "release-calendar: upcoming month truncated at page cap", "calendar_month", months[i])
+			if err != nil {
 				mu.Lock()
 				if firstErr == nil {
-					firstErr = p
+					firstErr = err
 				}
 				mu.Unlock()
 				return
@@ -285,7 +313,7 @@ func (s *Service) listReleaseCalendarUpcoming(ctx context.Context, in *upcomingI
 	}}, nil
 }
 
-func (s *Service) walk(ctx context.Context, bucket string, q url.Values, pageCap int, warnMsg, warnKey, warnVal string) ([]client.CatalogWorkListItem, *client.CatalogWorksPage, bool, *problem.Problem) {
+func (s *Service) walk(ctx context.Context, src calendarSource, bucket string, q url.Values, pageCap int, warnMsg, warnKey, warnVal string) ([]client.CatalogWorkListItem, *client.CatalogWorksPage, bool, error) {
 	var items []client.CatalogWorkListItem
 	var last *client.CatalogWorksPage
 	cursor := ""
@@ -295,9 +323,9 @@ func (s *Service) walk(ctx context.Context, bucket string, q url.Values, pageCap
 		if cursor != "" {
 			qq.Set("cursor", cursor)
 		}
-		res, appErr := s.catalog.CatalogCalendar(ctx, bucket, qq)
-		if appErr != nil {
-			return nil, nil, false, problem.Unavailable(appErr)
+		res, err := src(ctx, bucket, qq)
+		if err != nil {
+			return nil, nil, false, err
 		}
 		last = res
 		items = append(items, res.Items...)

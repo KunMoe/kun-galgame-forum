@@ -3296,6 +3296,15 @@
             "maxLength": 512,
             "type": "string"
           },
+          "follower_count": {
+            "description": "Accounts following this company, as catalog reports on the company detail. null when catalog did not send a count.",
+            "format": "int64",
+            "minimum": 0,
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
           "id": {
             "description": "Company id: the catalog company id, which is also the id in the web's /galgame/official/{id}.",
             "maxLength": 20,
@@ -3369,9 +3378,45 @@
           "lang",
           "links",
           "intros",
+          "follower_count",
           "display_name",
           "latin",
           "localized"
+        ],
+        "type": "object"
+      },
+      "CompanyFollowState": {
+        "properties": {
+          "company_id": {
+            "description": "Company id: the catalog company id, which is also the id in the web's /galgame/official/{id}.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "id": {
+            "description": "Company id, the same value as company_id.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "is_following": {
+            "description": "Whether the caller follows this company.",
+            "type": "boolean"
+          },
+          "object": {
+            "const": "company_follow_state",
+            "description": "Type discriminant. Always company_follow_state.",
+            "maxLength": 20,
+            "type": "string"
+          }
+        },
+        "required": [
+          "object",
+          "id",
+          "company_id",
+          "is_following"
         ],
         "type": "object"
       },
@@ -5255,6 +5300,76 @@
         "maxLength": 4,
         "type": "string",
         "x-vocabulary-closed": true
+      },
+      "FollowedCompany": {
+        "properties": {
+          "company": {
+            "$ref": "#/components/schemas/CompanySummary",
+            "description": "The followed company."
+          },
+          "followed_at": {
+            "description": "When the caller followed this company. null when catalog did not send a time.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "object": {
+            "const": "followed_company",
+            "description": "Type discriminant. Always followed_company.",
+            "maxLength": 16,
+            "type": "string"
+          }
+        },
+        "required": [
+          "object",
+          "company",
+          "followed_at"
+        ],
+        "type": "object"
+      },
+      "FollowedCompanyList": {
+        "properties": {
+          "is_truncated": {
+            "description": "Whether the upstream sweep stopped at the 10×100 cap.",
+            "type": "boolean"
+          },
+          "items": {
+            "description": "Members of this page, newest follow first. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/FollowedCompany"
+            },
+            "type": "array"
+          },
+          "object": {
+            "const": "list",
+            "description": "Type discriminant. Always list.",
+            "maxLength": 4,
+            "type": "string"
+          },
+          "total": {
+            "description": "Follows in the swept list, minus companies on this page that catalog no longer renders.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "total_relation": {
+            "$ref": "#/components/schemas/TotalRelation",
+            "description": "eq when total is exact, gte when it stopped at the depth limit and there are at least that many."
+          }
+        },
+        "required": [
+          "object",
+          "items",
+          "total",
+          "total_relation",
+          "is_truncated"
+        ],
+        "type": "object"
       },
       "FollowedWall": {
         "properties": {
@@ -43077,6 +43192,433 @@
         ]
       }
     },
+    "/me/followed-companies": {
+      "get": {
+        "description": "A page-number collection of the companies the caller follows, newest follow first. A company catalog no longer renders is dropped from this page's items and from total.",
+        "operationId": "listMyFollowedCompanies",
+        "parameters": [
+          {
+            "description": "1-based page number. page × limit may not exceed 10000.",
+            "explode": false,
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "default": 1,
+              "description": "1-based page number. page × limit may not exceed 10000.",
+              "format": "int64",
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Page size. 1–100, default 24. Values above 100 are rejected, not clamped.",
+            "explode": false,
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 24,
+              "description": "Page size. 1–100, default 24. Values above 100 are rejected, not clamped.",
+              "format": "int64",
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FollowedCompanyList"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "LIMIT_TOO_LARGE or INVALID_PARAMETER when page × limit is too deep."
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "MISSING_CREDENTIAL when the request has no credentials; INVALID_CREDENTIAL when the session has no OAuth access token or catalog rejects it."
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SCOPE_REQUIRED; ACCOUNT_BANNED."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the catalog cannot be reached."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List the caller's followed companies",
+        "tags": [
+          "me"
+        ]
+      }
+    },
+    "/me/followed-companies/{company_id}": {
+      "delete": {
+        "description": "Withdraws the caller's follow of this company. Repeating the unfollow is 200 with is_following false.",
+        "operationId": "deleteMyCompanyFollow",
+        "parameters": [
+          {
+            "description": "Company id.",
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "description": "Company id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CompanyFollowState"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "MISSING_CREDENTIAL when the request has no credentials; INVALID_CREDENTIAL when the session has no OAuth access token or catalog rejects it."
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SCOPE_REQUIRED; ACCOUNT_BANNED."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the catalog cannot be reached."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Unfollow a company",
+        "tags": [
+          "me"
+        ]
+      },
+      "get": {
+        "description": "Reads the caller's follow of this company. A company the caller does not follow is 200 with is_following false, not 404.",
+        "operationId": "getMyCompanyFollow",
+        "parameters": [
+          {
+            "description": "Company id.",
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "description": "Company id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CompanyFollowState"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "MISSING_CREDENTIAL when the request has no credentials; INVALID_CREDENTIAL when the session has no OAuth access token or catalog rejects it."
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SCOPE_REQUIRED; ACCOUNT_BANNED."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the catalog cannot be reached."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Whether the caller follows a company",
+        "tags": [
+          "me"
+        ]
+      },
+      "put": {
+        "description": "Follows the company. Repeating the follow changes nothing. The response is is_following true.",
+        "operationId": "putMyCompanyFollow",
+        "parameters": [
+          {
+            "description": "Company id.",
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "description": "Company id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CompanyFollowState"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "MISSING_CREDENTIAL when the request has no credentials; INVALID_CREDENTIAL when the session has no OAuth access token or catalog rejects it."
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SCOPE_REQUIRED; ACCOUNT_BANNED."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when catalog does not know the company, including an id that was merged away."
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED when the account already follows as many companies as catalog allows."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the catalog cannot be reached."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Follow a company",
+        "tags": [
+          "me"
+        ]
+      }
+    },
     "/me/following-activities": {
       "get": {
         "description": "Groups of activity by accounts the caller follows, across NextMoe sites, newest group first. A group is one author's items of one verb and object_kind on one site on one Asia/Shanghai calendar day. Accounts that hide their activity are left out by community. A group whose actor is not renderable is dropped, so a page can be shorter than limit; next_cursor still comes from community, and only an absent next_cursor means the end. The cursor is bound to include_nsfw, verbs and sites.",
@@ -46851,6 +47393,539 @@
           }
         ],
         "summary": "Batch-read the caller's quiz favorite states",
+        "tags": [
+          "me"
+        ]
+      }
+    },
+    "/me/release-calendar": {
+      "get": {
+        "description": "Releases in a month from companies the caller follows. The walk follows catalog's cursor, at most 2,000 works. is_truncated is true when the cap is hit. An id catalog does not render is dropped with a warning. Every original language is included, and works credited only to doujin circles are included.",
+        "operationId": "listMyReleaseCalendarMonth",
+        "parameters": [
+          {
+            "description": "Calendar month as YYYY-MM. Omitted means the current month in Asia/Tokyo.",
+            "explode": false,
+            "in": "query",
+            "name": "month",
+            "schema": {
+              "description": "Calendar month as YYYY-MM. Omitted means the current month in Asia/Tokyo.",
+              "maxLength": 7,
+              "pattern": "^[0-9]{4}-(0[1-9]|1[0-2])$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "When true, adult works are included. Default false.",
+            "explode": false,
+            "in": "query",
+            "name": "include_nsfw",
+            "schema": {
+              "default": false,
+              "description": "When true, adult works are included. Default false.",
+              "type": "boolean"
+            }
+          },
+          {
+            "description": "Catalog tag ids. Drops every work carrying any of them, from any source and at any spoiler level. Comma-separated. Omitted means no exclusion.",
+            "explode": false,
+            "in": "query",
+            "name": "exclude_tag_ids",
+            "schema": {
+              "description": "Catalog tag ids. Drops every work carrying any of them, from any source and at any spoiler level. Comma-separated. Omitted means no exclusion.",
+              "items": {
+                "maxLength": 20,
+                "minLength": 1,
+                "pattern": "^[0-9]+$",
+                "type": "string"
+              },
+              "maxItems": 100,
+              "type": "array"
+            }
+          },
+          {
+            "description": "Catalog tag ids. Like exclude_tag_ids, and each also drops the works carrying any tag below it in the tag hierarchy. Comma-separated. Omitted means no exclusion.",
+            "explode": false,
+            "in": "query",
+            "name": "exclude_tag_trees",
+            "schema": {
+              "description": "Catalog tag ids. Like exclude_tag_ids, and each also drops the works carrying any tag below it in the tag hierarchy. Comma-separated. Omitted means no exclusion.",
+              "items": {
+                "maxLength": 20,
+                "minLength": 1,
+                "pattern": "^[0-9]+$",
+                "type": "string"
+              },
+              "maxItems": 100,
+              "type": "array"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReleaseCalendarMonth"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "INVALID_PARAMETER when month is malformed."
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "MISSING_CREDENTIAL when the request has no credentials; INVALID_CREDENTIAL when the session has no OAuth access token or catalog rejects it."
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SCOPE_REQUIRED when the token lacks a scope catalog demands; ACCOUNT_BANNED."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the catalog cannot be reached, including a failure mid-walk."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List the caller's releases in a month",
+        "tags": [
+          "me"
+        ]
+      }
+    },
+    "/me/release-calendar/pending": {
+      "get": {
+        "description": "Works of companies the caller follows whose release date is known only to year precision. The walk follows catalog's cursor, at most 2,000 works. Every original language is included, and works credited only to doujin circles are included.",
+        "operationId": "listMyReleaseCalendarPending",
+        "parameters": [
+          {
+            "description": "Calendar year. 0 or omitted means the current year in Asia/Tokyo.",
+            "explode": false,
+            "in": "query",
+            "name": "year",
+            "schema": {
+              "description": "Calendar year. 0 or omitted means the current year in Asia/Tokyo.",
+              "format": "int64",
+              "maximum": 9999,
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "When true, adult works are included. Default false.",
+            "explode": false,
+            "in": "query",
+            "name": "include_nsfw",
+            "schema": {
+              "default": false,
+              "description": "When true, adult works are included. Default false.",
+              "type": "boolean"
+            }
+          },
+          {
+            "description": "Catalog tag ids. Drops every work carrying any of them, from any source and at any spoiler level. Comma-separated. Omitted means no exclusion.",
+            "explode": false,
+            "in": "query",
+            "name": "exclude_tag_ids",
+            "schema": {
+              "description": "Catalog tag ids. Drops every work carrying any of them, from any source and at any spoiler level. Comma-separated. Omitted means no exclusion.",
+              "items": {
+                "maxLength": 20,
+                "minLength": 1,
+                "pattern": "^[0-9]+$",
+                "type": "string"
+              },
+              "maxItems": 100,
+              "type": "array"
+            }
+          },
+          {
+            "description": "Catalog tag ids. Like exclude_tag_ids, and each also drops the works carrying any tag below it in the tag hierarchy. Comma-separated. Omitted means no exclusion.",
+            "explode": false,
+            "in": "query",
+            "name": "exclude_tag_trees",
+            "schema": {
+              "description": "Catalog tag ids. Like exclude_tag_ids, and each also drops the works carrying any tag below it in the tag hierarchy. Comma-separated. Omitted means no exclusion.",
+              "items": {
+                "maxLength": 20,
+                "minLength": 1,
+                "pattern": "^[0-9]+$",
+                "type": "string"
+              },
+              "maxItems": 100,
+              "type": "array"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReleaseCalendarPending"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "INVALID_PARAMETER when year is malformed."
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "MISSING_CREDENTIAL when the request has no credentials; INVALID_CREDENTIAL when the session has no OAuth access token or catalog rejects it."
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SCOPE_REQUIRED when the token lacks a scope catalog demands; ACCOUNT_BANNED."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the catalog cannot be reached, including a failure mid-walk."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List the caller's pending releases in a year",
+        "tags": [
+          "me"
+        ]
+      }
+    },
+    "/me/release-calendar/tba": {
+      "get": {
+        "description": "Works of companies the caller follows that catalog files as status unknown. The walk follows catalog's cursor, at most 2,000 works. Every original language is included, and works credited only to doujin circles are included.",
+        "operationId": "listMyReleaseCalendarTBA",
+        "parameters": [
+          {
+            "description": "When true, adult works are included. Default false.",
+            "explode": false,
+            "in": "query",
+            "name": "include_nsfw",
+            "schema": {
+              "default": false,
+              "description": "When true, adult works are included. Default false.",
+              "type": "boolean"
+            }
+          },
+          {
+            "description": "Catalog tag ids. Drops every work carrying any of them, from any source and at any spoiler level. Comma-separated. Omitted means no exclusion.",
+            "explode": false,
+            "in": "query",
+            "name": "exclude_tag_ids",
+            "schema": {
+              "description": "Catalog tag ids. Drops every work carrying any of them, from any source and at any spoiler level. Comma-separated. Omitted means no exclusion.",
+              "items": {
+                "maxLength": 20,
+                "minLength": 1,
+                "pattern": "^[0-9]+$",
+                "type": "string"
+              },
+              "maxItems": 100,
+              "type": "array"
+            }
+          },
+          {
+            "description": "Catalog tag ids. Like exclude_tag_ids, and each also drops the works carrying any tag below it in the tag hierarchy. Comma-separated. Omitted means no exclusion.",
+            "explode": false,
+            "in": "query",
+            "name": "exclude_tag_trees",
+            "schema": {
+              "description": "Catalog tag ids. Like exclude_tag_ids, and each also drops the works carrying any tag below it in the tag hierarchy. Comma-separated. Omitted means no exclusion.",
+              "items": {
+                "maxLength": 20,
+                "minLength": 1,
+                "pattern": "^[0-9]+$",
+                "type": "string"
+              },
+              "maxItems": 100,
+              "type": "array"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReleaseCalendarTBA"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "INVALID_PARAMETER when include_nsfw is not a boolean."
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "MISSING_CREDENTIAL when the request has no credentials; INVALID_CREDENTIAL when the session has no OAuth access token or catalog rejects it."
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SCOPE_REQUIRED when the token lacks a scope catalog demands; ACCOUNT_BANNED."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the catalog cannot be reached, including a failure mid-walk."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List the caller's works with an unknown release date",
+        "tags": [
+          "me"
+        ]
+      }
+    },
+    "/me/release-calendar/upcoming": {
+      "get": {
+        "description": "Walks from the current Asia/Tokyo month to catalog's max_month, at most 24 months, limited to works of companies the caller follows. A failed month is SERVICE_UNAVAILABLE for the whole response. Empty months are omitted. Every original language is included, and works credited only to doujin circles are included.",
+        "operationId": "listMyReleaseCalendarUpcoming",
+        "parameters": [
+          {
+            "description": "When true, adult works are included. Default false.",
+            "explode": false,
+            "in": "query",
+            "name": "include_nsfw",
+            "schema": {
+              "default": false,
+              "description": "When true, adult works are included. Default false.",
+              "type": "boolean"
+            }
+          },
+          {
+            "description": "Catalog tag ids. Drops every work carrying any of them, from any source and at any spoiler level. Comma-separated. Omitted means no exclusion.",
+            "explode": false,
+            "in": "query",
+            "name": "exclude_tag_ids",
+            "schema": {
+              "description": "Catalog tag ids. Drops every work carrying any of them, from any source and at any spoiler level. Comma-separated. Omitted means no exclusion.",
+              "items": {
+                "maxLength": 20,
+                "minLength": 1,
+                "pattern": "^[0-9]+$",
+                "type": "string"
+              },
+              "maxItems": 100,
+              "type": "array"
+            }
+          },
+          {
+            "description": "Catalog tag ids. Like exclude_tag_ids, and each also drops the works carrying any tag below it in the tag hierarchy. Comma-separated. Omitted means no exclusion.",
+            "explode": false,
+            "in": "query",
+            "name": "exclude_tag_trees",
+            "schema": {
+              "description": "Catalog tag ids. Like exclude_tag_ids, and each also drops the works carrying any tag below it in the tag hierarchy. Comma-separated. Omitted means no exclusion.",
+              "items": {
+                "maxLength": 20,
+                "minLength": 1,
+                "pattern": "^[0-9]+$",
+                "type": "string"
+              },
+              "maxItems": 100,
+              "type": "array"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReleaseCalendarUpcoming"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "INVALID_PARAMETER when include_nsfw is not a boolean."
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "MISSING_CREDENTIAL when the request has no credentials; INVALID_CREDENTIAL when the session has no OAuth access token or catalog rejects it."
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SCOPE_REQUIRED when the token lacks a scope catalog demands; ACCOUNT_BANNED."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when any month's catalog walk fails."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List the caller's upcoming releases by month",
         "tags": [
           "me"
         ]

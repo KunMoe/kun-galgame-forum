@@ -208,6 +208,16 @@ func (f *fakeCatalogUser) ModeratePatchFolder(context.Context, string, int64, ca
 func (f *fakeCatalogUser) ModerateDeleteFolder(context.Context, string, int64) error {
 	return catalogclient.ErrNotFound
 }
+func (f *fakeCatalogUser) MyCompanyFollow(context.Context, string, int64) (bool, error) {
+	return false, nil
+}
+func (f *fakeCatalogUser) FollowCompany(context.Context, string, int64) error {
+	return catalogclient.ErrNotFound
+}
+func (f *fakeCatalogUser) UnfollowCompany(context.Context, string, int64) error { return nil }
+func (f *fakeCatalogUser) ListMyCompanyFollows(context.Context, string, string, int) ([]catalogclient.CompanyFollowRecord, string, error) {
+	return nil, "", nil
+}
 
 func (f *fakeCatalogUser) WorkRecords(context.Context, string, catalogclient.WorkRecordsQuery) (catalogclient.WorkRecordsPage, error) {
 	return catalogclient.WorkRecordsPage{}, nil

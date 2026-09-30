@@ -395,4 +395,6 @@ func (s *Service) registerUserPlane(api huma.API) {
 			503: "SERVICE_UNAVAILABLE when the catalog or the account service cannot be reached.",
 		}),
 	}), s.getCollectionAlias)
+
+	s.registerCompanyFollows(api)
 }

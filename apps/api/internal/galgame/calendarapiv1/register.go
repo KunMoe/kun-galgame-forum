@@ -90,5 +90,7 @@ func Register(svc *Service) func(huma.API) {
 				503: "SERVICE_UNAVAILABLE when the catalog cannot be reached, including a failure mid-walk.",
 			}),
 		}), svc.listReleaseCalendarMonth)
+
+		registerMyCalendar(api, svc)
 	}
 }

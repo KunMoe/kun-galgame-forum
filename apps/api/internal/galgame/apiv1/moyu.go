@@ -81,6 +81,10 @@ type CatalogUser interface {
 	WorkRecords(ctx context.Context, token string, q catalogclient.WorkRecordsQuery) (catalogclient.WorkRecordsPage, error)
 	MyPrivacy(ctx context.Context, token string) (catalogclient.PrivacySettings, error)
 	PatchMyPrivacy(ctx context.Context, token, playRecords string) (catalogclient.PrivacySettings, error)
+	MyCompanyFollow(ctx context.Context, token string, companyID int64) (bool, error)
+	FollowCompany(ctx context.Context, token string, companyID int64) error
+	UnfollowCompany(ctx context.Context, token string, companyID int64) error
+	ListMyCompanyFollows(ctx context.Context, token, cursor string, limit int) ([]catalogclient.CompanyFollowRecord, string, error)
 }
 
 type userLookup interface {

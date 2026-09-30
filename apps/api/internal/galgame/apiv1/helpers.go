@@ -53,6 +53,14 @@ func requireToken(ctx context.Context) (string, *problem.Problem) {
 	return tok, nil
 }
 
+func WithAccessToken(ctx huma.Context, next func(huma.Context)) {
+	withAccessToken(ctx, next)
+}
+
+func RequireToken(ctx context.Context) (string, *problem.Problem) {
+	return requireToken(ctx)
+}
+
 func notFound() *problem.Problem {
 	return problem.New(problem.CodeNotFound, "Nothing visible exists at this URL.")
 }
