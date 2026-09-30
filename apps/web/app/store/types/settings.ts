@@ -5,7 +5,6 @@ export interface KUNGalgameSettingsStore {
   feedTabs: KunFeedTab[]
   feedTabsVersion: number
   showKUNGalgamePageTransparency: number
-  showKUNGalgameFontStyle: string
   showKUNGalgameContentLimit: string
   showKUNGalgamePreferOriginalName: boolean
   showKUNGalgameBackground: number
@@ -17,7 +16,6 @@ export interface KUNGalgameSettingsStore {
   showKUNGalgameRounded: 'none' | 'sm' | 'md' | 'lg'
   showKUNGalgamePhoneCardColumns: 2 | 3
   showKUNGalgameGallerySexualLevels: number[]
-  showKUNGalgameGalleryViolenceLevels: number[]
 }
 
 export interface TempSettingStore {

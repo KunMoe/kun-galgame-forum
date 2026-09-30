@@ -330,3 +330,42 @@ export const upgradeFeedTabs = (
   })
   return out
 }
+
+const isStringArray = (value: unknown): value is string[] =>
+  Array.isArray(value) && value.every((item) => typeof item === 'string')
+
+const isFeedSource = (value: unknown): value is KunFeedSource =>
+  value === 'activity' || value === 'news' || value === 'following'
+
+export const parseFeedTabs = (value: unknown): KunFeedTab[] | null => {
+  if (!Array.isArray(value)) {
+    return null
+  }
+  const tabs: KunFeedTab[] = []
+  for (const item of value) {
+    if (typeof item !== 'object' || item === null) {
+      return null
+    }
+    const { id, name, icon, kinds, source } = item as Record<string, unknown>
+    if (
+      typeof id !== 'string' ||
+      typeof name !== 'string' ||
+      typeof icon !== 'string' ||
+      !isStringArray(kinds) ||
+      (source !== undefined && !isFeedSource(source))
+    ) {
+      return null
+    }
+    const tab: KunFeedTab = {
+      id,
+      name,
+      icon,
+      kinds: [...kinds]
+    }
+    if (isFeedSource(source)) {
+      tab.source = source
+    }
+    tabs.push(tab)
+  }
+  return tabs
+}

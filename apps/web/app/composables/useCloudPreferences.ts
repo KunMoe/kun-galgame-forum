@@ -1,5 +1,12 @@
 import { settle } from '#shared/utils/api/problem'
 import type { Preferences } from '#shared/utils/api/schemas'
+import {
+  KUN_DEFAULT_FEED_TABS,
+  KUN_FEED_TABS_VERSION,
+  parseFeedTabs,
+  upgradeFeedTabs,
+  type KunFeedTab
+} from '~/constants/activity'
 import type { KUNGalgameSettingsStore } from '~/store/types/settings'
 
 export interface KunCloudPreferences {
@@ -16,7 +23,9 @@ export interface KunCloudPreferences {
   phone_card_columns: number
   rounded: string
   gallery_sexual_levels: number[]
-  gallery_violence_levels: number[]
+  feed_tabs: KunFeedTab[]
+  feed_tabs_version: number
+  show_kohaku: boolean
 }
 
 const WRITE_DEBOUNCE_MS = 1000
@@ -38,7 +47,9 @@ const DEFAULTS: KunCloudPreferences = {
   phone_card_columns: 3,
   rounded: 'md',
   gallery_sexual_levels: [],
-  gallery_violence_levels: []
+  feed_tabs: KUN_DEFAULT_FEED_TABS,
+  feed_tabs_version: KUN_FEED_TABS_VERSION,
+  show_kohaku: false
 }
 
 // All of this is module scope on purpose. A debouncer built inside the
@@ -75,9 +86,20 @@ export const useCloudPreferences = () => {
     phone_card_columns: settingsStore.showKUNGalgamePhoneCardColumns,
     rounded: settingsStore.showKUNGalgameRounded,
     gallery_sexual_levels: [...settingsStore.showKUNGalgameGallerySexualLevels],
-    gallery_violence_levels: [
-      ...settingsStore.showKUNGalgameGalleryViolenceLevels
-    ]
+    feed_tabs: settingsStore.feedTabs.map((tab) => {
+      const next: KunFeedTab = {
+        id: tab.id,
+        name: tab.name,
+        icon: tab.icon,
+        kinds: [...tab.kinds]
+      }
+      if (tab.source !== undefined) {
+        next.source = tab.source
+      }
+      return next
+    }),
+    feed_tabs_version: settingsStore.feedTabsVersion,
+    show_kohaku: settingsStore.showKUNGalgameBackLoli
   })
 
   // The local stores stay cookie-persisted after this: the API still reads
@@ -114,9 +136,17 @@ export const useCloudPreferences = () => {
       if (Array.isArray(doc.gallery_sexual_levels))
         settingsStore.showKUNGalgameGallerySexualLevels =
           doc.gallery_sexual_levels.filter(isLevel)
-      if (Array.isArray(doc.gallery_violence_levels))
-        settingsStore.showKUNGalgameGalleryViolenceLevels =
-          doc.gallery_violence_levels.filter(isLevel)
+      if (typeof doc.show_kohaku === 'boolean')
+        settingsStore.showKUNGalgameBackLoli = doc.show_kohaku
+      const tabs = parseFeedTabs(doc.feed_tabs)
+      const version = doc.feed_tabs_version
+      if (tabs !== null && isNonNegativeInteger(version)) {
+        settingsStore.feedTabs =
+          version < KUN_FEED_TABS_VERSION
+            ? upgradeFeedTabs(tabs, version)
+            : tabs
+        settingsStore.feedTabsVersion = KUN_FEED_TABS_VERSION
+      }
     } finally {
       applyingRemote = false
     }
@@ -210,6 +240,7 @@ export const useCloudPreferences = () => {
       if (!isSameDoc(snapshot(), DEFAULTS)) await push()
     } else {
       applyDoc(resp.doc as Partial<KunCloudPreferences>)
+      if (Object.keys(DEFAULTS).some((key) => !(key in resp.doc))) await push()
     }
     startWatching()
   }
@@ -218,6 +249,9 @@ export const useCloudPreferences = () => {
 }
 
 const isLevel = (n: unknown): n is number => n === 1 || n === 2 || n === 3
+
+const isNonNegativeInteger = (value: unknown): value is number =>
+  typeof value === 'number' && Number.isInteger(value) && value >= 0
 
 const isRounded = (
   value: unknown

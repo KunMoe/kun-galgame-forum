@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   KUN_DEFAULT_FEED_TABS,
   type KunFeedTab,
+  parseFeedTabs,
   upgradeFeedTabs
 } from './activity'
 
@@ -31,5 +32,56 @@ describe('upgradeFeedTabs', () => {
   it('changes nothing when every default tab is present', () => {
     const tabs = structuredClone(KUN_DEFAULT_FEED_TABS)
     expect(upgradeFeedTabs(tabs, 8)).toEqual(tabs)
+  })
+})
+
+describe('parseFeedTabs', () => {
+  it('parses the default tabs into an equal value', () => {
+    expect(parseFeedTabs(KUN_DEFAULT_FEED_TABS)).toEqual(KUN_DEFAULT_FEED_TABS)
+  })
+
+  it('returns a copy', () => {
+    const input = structuredClone(KUN_DEFAULT_FEED_TABS)
+    const out = parseFeedTabs(input)
+    out![0]!.kinds.push('EXTRA')
+    expect(input[0]!.kinds).toEqual(KUN_DEFAULT_FEED_TABS[0]!.kinds)
+  })
+
+  it('accepts an empty array', () => {
+    expect(parseFeedTabs([])).toEqual([])
+  })
+
+  it('rejects null, an object, and a string', () => {
+    expect(parseFeedTabs(null)).toBeNull()
+    expect(parseFeedTabs({ id: 'topic' })).toBeNull()
+    expect(parseFeedTabs('topic')).toBeNull()
+  })
+
+  it('rejects a non-string kind', () => {
+    expect(
+      parseFeedTabs([
+        { id: 'topic', name: '话题', icon: 'lucide:box', kinds: [1] }
+      ])
+    ).toBeNull()
+  })
+
+  it('rejects a tab missing icon', () => {
+    expect(
+      parseFeedTabs([{ id: 'topic', name: '话题', kinds: ['TOPIC_NORMAL'] }])
+    ).toBeNull()
+  })
+
+  it('rejects a bogus source', () => {
+    expect(
+      parseFeedTabs([
+        {
+          id: 'topic',
+          name: '话题',
+          icon: 'lucide:box',
+          kinds: [],
+          source: 'bogus'
+        }
+      ])
+    ).toBeNull()
   })
 })

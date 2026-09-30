@@ -29,18 +29,11 @@ export const kungalgameStoreReset = () => {
   persistReplyStore.mode = 'preview'
   persistReplyStore.resetReplyDraft()
 
-  const persistTopicStore = usePersistKUNGalgameTopicStore()
-  persistTopicStore.layout = 'grid'
-
-  const persistCategoryStore = usePersistCategoryStore()
-  persistCategoryStore.category = 'galgame'
-
   const { resetUser } = usePersistUserStore()
   resetUser()
 
   const persistSettingsStore = usePersistSettingsStore()
   persistSettingsStore.showKUNGalgamePageTransparency = 80
-  persistSettingsStore.showKUNGalgameFontStyle = 'system-ui'
   persistSettingsStore.showKUNGalgameContentLimit = 'sfw'
   persistSettingsStore.showKUNGalgamePreferOriginalName = false
   persistSettingsStore.showKUNGalgameBackground = 0

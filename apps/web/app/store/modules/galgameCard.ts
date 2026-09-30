@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
+import { settingsCookieStorage } from '~/utils/settingsCookie'
 
 export const usePersistGalgameCardStore = defineStore(
   'KUNGalgameCardDisplay',
@@ -41,6 +42,6 @@ export const usePersistGalgameCardStore = defineStore(
     }
   },
   {
-    persist: true
+    persist: { storage: settingsCookieStorage() }
   }
 )

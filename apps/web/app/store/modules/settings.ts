@@ -10,19 +10,16 @@ import {
   upgradeFeedTabs
 } from '~/constants/activity'
 import type { KUNGalgameSettingsStore } from '../types/settings'
+import { settingsCookieStorage } from '~/utils/settingsCookie'
 
 const SETTINGS_CUSTOM_BACKGROUND_IMAGE_NAME: string = 'kun-galgame-custom-bg'
 const SETTINGS_PUBLISH_Banner_IMAGE_NAME: string = 'kun-galgame-publish-banner'
-const SETTINGS_DEFAULT_FONT_FAMILY: string = 'system-ui'
 
 export const usePersistSettingsStore = defineStore(
   'KUNGalgameSettings',
   () => {
     const showKUNGalgamePageTransparency =
       ref<KUNGalgameSettingsStore['showKUNGalgamePageTransparency']>(50)
-    const showKUNGalgameFontStyle = ref<
-      KUNGalgameSettingsStore['showKUNGalgameFontStyle']
-    >(SETTINGS_DEFAULT_FONT_FAMILY)
     const showKUNGalgameContentLimit =
       ref<KUNGalgameSettingsStore['showKUNGalgameContentLimit']>('sfw')
     // Read by the API off this store's cookie, not sent as a field: every name
@@ -49,9 +46,6 @@ export const usePersistSettingsStore = defineStore(
     const showKUNGalgameGallerySexualLevels = ref<
       KUNGalgameSettingsStore['showKUNGalgameGallerySexualLevels']
     >([])
-    const showKUNGalgameGalleryViolenceLevels = ref<
-      KUNGalgameSettingsStore['showKUNGalgameGalleryViolenceLevels']
-    >([])
     const feedTabs = ref<KUNGalgameSettingsStore['feedTabs']>(
       structuredClone(KUN_DEFAULT_FEED_TABS)
     )
@@ -60,11 +54,6 @@ export const usePersistSettingsStore = defineStore(
     const resetKUNGalgameFeedTabs = () => {
       feedTabs.value = structuredClone(KUN_DEFAULT_FEED_TABS)
       feedTabsVersion.value = KUN_FEED_TABS_VERSION
-    }
-
-    const setKUNGalgameFontStyle = (font: string) => {
-      showKUNGalgameFontStyle.value = font
-      document.documentElement.style.setProperty('--font-family', font)
     }
 
     const setKUNGalgameTransparency = (trans: number) => {
@@ -160,7 +149,6 @@ export const usePersistSettingsStore = defineStore(
 
     return {
       showKUNGalgamePageTransparency,
-      showKUNGalgameFontStyle,
       showKUNGalgameContentLimit,
       showKUNGalgamePreferOriginalName,
       showKUNGalgameBackground,
@@ -172,11 +160,9 @@ export const usePersistSettingsStore = defineStore(
       showKUNGalgameRounded,
       showKUNGalgamePhoneCardColumns,
       showKUNGalgameGallerySexualLevels,
-      showKUNGalgameGalleryViolenceLevels,
       feedTabs,
       feedTabsVersion,
       resetKUNGalgameFeedTabs,
-      setKUNGalgameFontStyle,
       setKUNGalgameTransparency,
       setKUNGalgameBackgroundBlur,
       setKUNGalgameBackgroundBrightness,
@@ -189,6 +175,7 @@ export const usePersistSettingsStore = defineStore(
   },
   {
     persist: {
+      storage: settingsCookieStorage(),
       afterHydrate: (ctx) => {
         const store = ctx.store as unknown as {
           feedTabsVersion: number
