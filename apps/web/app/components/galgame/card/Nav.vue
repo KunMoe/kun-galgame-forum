@@ -2,7 +2,6 @@
 import { KUN_GALGAME_RESOURCE_SORT_FIELD_MAP } from '~/constants/galgame'
 import {
   KUN_GALGAME_PROVIDER_LABEL_MAP,
-  PROVIDER_KEY_OPTIONS,
   type ProviderKey
 } from '~/constants/galgameResource'
 import { KUN_GALGAME_RATING_GAME_TYPE_MAP } from '~/constants/galgame-rating'
@@ -12,7 +11,6 @@ import {
   PLATFORM_FILTER_OPTIONS,
   RESOURCE_TYPE_OPTIONS
 } from '#shared/utils/galgameResourceVocab'
-import { settle } from '#shared/utils/api/problem'
 
 const props = withDefaults(
   defineProps<{
@@ -26,9 +24,9 @@ const props = withDefaults(
 const {
   page,
   type,
-  language,
-  platform,
-  runtime,
+  languages,
+  platforms,
+  runtimes,
   gameType,
   sortField,
   sortOrder,
@@ -49,9 +47,9 @@ const { open: openSettingPanel } = useSettingPanel()
 watch(
   () => [
     type.value,
-    language.value,
-    platform.value,
-    runtime.value,
+    languages.value,
+    platforms.value,
+    runtimes.value,
     gameType.value,
     sortField.value,
     sortOrder.value,
@@ -76,21 +74,30 @@ const csvToArray = (csv: string) => csv.split(',').filter(Boolean)
 const firstOf = (value: string | string[]) =>
   Array.isArray(value) ? (value[0] ?? '') : value
 
-const typeOptions = [{ value: '', label: '全部类型' }, ...RESOURCE_TYPE_OPTIONS]
-const langOptions = [{ value: '', label: '全部语言' }, ...LANGUAGE_OPTIONS]
-const platformOptions = [
-  { value: '', label: '全部平台' },
-  ...PLATFORM_FILTER_OPTIONS
-]
-const emulatorOptions = [
-  { value: '', label: '全部模拟器' },
-  ...EMULATOR_RUNTIME_OPTIONS
-]
+// The entity pages list through an API that takes one value per resource
+// axis, so only /galgame gets the multi-select.
+const toValues = (value: string | string[]) =>
+  Array.isArray(value) ? value : value ? [value] : []
+const axisModel = (values: string[]) =>
+  props.isShowAdvanced ? values : (values[0] ?? '')
+const axisOptions = (allLabel: string, options: FilterOption[]) =>
+  computed(() =>
+    props.isShowAdvanced
+      ? options
+      : [{ value: '', label: allLabel }, ...options]
+  )
 
-const setPlatform = (value: string) => {
-  platform.value = value
-  if (value !== 'emulator') {
-    runtime.value = ''
+const typeOptions = [{ value: '', label: '全部类型' }, ...RESOURCE_TYPE_OPTIONS]
+const langOptions = axisOptions('全部语言', LANGUAGE_OPTIONS)
+const platformOptions = axisOptions('全部平台', PLATFORM_FILTER_OPTIONS)
+const emulatorOptions = axisOptions('全部模拟器', EMULATOR_RUNTIME_OPTIONS)
+
+const isEmulator = computed(() => platforms.value.includes('emulator'))
+
+const setPlatforms = (values: string[]) => {
+  platforms.value = values
+  if (!values.includes('emulator')) {
+    runtimes.value = []
   }
 }
 
@@ -110,44 +117,9 @@ const sortOptions = Object.entries(KUN_GALGAME_RESOURCE_SORT_FIELD_MAP).map(
   })
 )
 
-const monthOptions = Array.from({ length: 12 }, (_, i) => ({
-  value: String(i + 1),
-  label: `${i + 1} 月`
-}))
-
-const providerOptions = PROVIDER_KEY_OPTIONS.map((key) => ({
-  value: key,
-  label: KUN_GALGAME_PROVIDER_LABEL_MAP[key as ProviderKey]
-}))
-
-// The pill's resting text is the selected option's own label, so a bare 不限
-// draws two identically-labelled pills side by side.
-const minCountOptions = [
-  { value: '0', label: '人数不限' },
-  { value: '5', label: '≥5 人', hint: '过滤小样本' },
-  { value: '10', label: '≥10 人' },
-  { value: '20', label: '≥20 人' },
-  { value: '50', label: '≥50 人' }
-]
-
-const minRatingOptions = [
-  { value: '0', label: '评分不限' },
-  { value: '7', label: '7 分+', hint: '贝叶斯平滑后' },
-  { value: '8', label: '8 分+' },
-  { value: '9', label: '9 分+' }
-]
-
 const months = computed(() => csvToArray(releasedMonths.value))
-const setMonths = (values: string[]) => {
-  releasedMonths.value = values
-    .map(Number)
-    .sort((a, b) => a - b)
-    .join(',')
-}
-
 const includes = computed(() => csvToArray(includeProviders.value))
 const excludes = computed(() => csvToArray(excludeOnlyProviders.value))
-const setCsv = (values: string[]) => [...values].sort().join(',')
 
 const yearRangeLabel = computed(() => {
   if (releasedFrom.value && releasedTo.value) {
@@ -160,99 +132,9 @@ const yearRangeLabel = computed(() => {
     : `${releasedTo.value} 年以前`
 })
 
-const setYears = (range: { from: string; to: string }) => {
-  releasedFrom.value = range.from
-  releasedTo.value = range.to
-}
-
-const collectedCalendar = ref<{ year: number; month: number }[]>([])
-const api = useApiClient()
-const { allowsNsfw } = useContentStance()
-const loadCollectedCalendar = async () => {
-  const res = await settle(
-    api.GET('/works/collected-months', {
-      params: { query: { include_nsfw: allowsNsfw.value } }
-    })
-  )
-  if (!res.ok) {
-    reportProblem(res.problem)
-    return
-  }
-  collectedCalendar.value = res.data.items
-}
-// Only /galgame renders the advanced pills; the four entity pages mount this
-// same Nav with isShowAdvanced false, and an unconditional load spent a
-// two-sequential-scan aggregate (21ms over 8.5k published rows on prod) per
-// visit to fill a dropdown none of them draw.
-onMounted(() => {
-  if (props.isShowAdvanced) loadCollectedCalendar()
-})
-watch(allowsNsfw, () => {
-  if (props.isShowAdvanced) loadCollectedCalendar()
-})
-
 const selectedCollectedYear = computed(
   () => collectedFrom.value || collectedTo.value || ''
 )
-const collectedYearOptions = computed(() => {
-  const years = new Set<number>()
-  for (const c of collectedCalendar.value) years.add(c.year)
-  return [...years]
-    .sort((a, b) => b - a)
-    .map((year) => ({ value: String(year), label: String(year) }))
-})
-const collectedMonthOptions = computed(() => {
-  const year = Number(selectedCollectedYear.value)
-  const months = new Set<number>()
-  if (year) {
-    for (const c of collectedCalendar.value) {
-      if (c.year === year) months.add(c.month)
-    }
-  }
-  return [...months]
-    .sort((a, b) => a - b)
-    .map((month) => ({ value: String(month), label: `${month} 月` }))
-})
-// Multi-select under the hood (native click-to-toggle like 发售月份), but we
-// keep at most one item so it behaves as a single choice with deselect.
-const collectedYearsModel = computed(() =>
-  collectedFrom.value ? [collectedFrom.value] : []
-)
-const collectedMonthsModel = computed(() =>
-  collectedMonths.value ? [collectedMonths.value] : []
-)
-
-const setCollectedYear = (value: string) => {
-  collectedFrom.value = value
-  collectedTo.value = value
-  collectedMonths.value = ''
-  // Browsing by collection time wants collection order, but the server used to
-  // force SortField = created whenever this filter was set: the sort pill went
-  // on reading 评分 while the list came back in another order entirely. Move the
-  // pill instead, and only off the page default, so a sort the reader actually
-  // picked survives the filter.
-  if (value && sortField.value === 'time') {
-    sortField.value = 'created'
-  }
-}
-const setCollectedMonth = (value: string) => {
-  if (value === '' || selectedCollectedYear.value) {
-    collectedMonths.value = value
-  }
-}
-
-const lastOf = (values: string[]) => values[values.length - 1] ?? ''
-
-const onPickCollectedYear = (values: string[]) => {
-  setCollectedYear(lastOf(values))
-}
-const onPickCollectedMonth = (values: string[]) => {
-  if (!selectedCollectedYear.value) {
-    return
-  }
-  setCollectedMonth(lastOf(values))
-}
-
 const collectedLabel = computed(() => {
   const parts: string[] = []
   if (selectedCollectedYear.value) {
@@ -267,38 +149,40 @@ const hasCollectedFilter = computed(
   () => !!selectedCollectedYear.value || !!collectedMonths.value
 )
 
+const moreCount = computed(
+  () =>
+    [
+      includes.value.length,
+      excludes.value.length,
+      minRating.value > 0,
+      minRatingCount.value > 0,
+      releasedFrom.value || releasedTo.value,
+      months.value.length,
+      hasCollectedFilter.value
+    ].filter(Boolean).length
+)
+const isMoreOpen = ref(moreCount.value > 0)
+
 const labelOf = (options: FilterOption[], value: string) =>
   options.find((option) => option.value === value)?.label ?? value
 
 const chips = computed<FilterChip[]>(() => {
   const list: FilterChip[] = []
-  if (type.value) {
+  for (const value of platforms.value) {
     list.push({
-      key: 'type',
-      prefix: '类型',
-      label: labelOf(typeOptions, type.value)
-    })
-  }
-  if (language.value) {
-    list.push({
-      key: 'language',
-      prefix: '语言',
-      label: labelOf(langOptions, language.value)
-    })
-  }
-  if (platform.value) {
-    list.push({
-      key: 'platform',
+      key: `platform:${value}`,
       prefix: '平台',
-      label: labelOf(platformOptions, platform.value)
+      label: labelOf(PLATFORM_FILTER_OPTIONS, value)
     })
   }
-  if (platform.value === 'emulator' && runtime.value) {
-    list.push({
-      key: 'runtime',
-      prefix: '模拟器',
-      label: labelOf(emulatorOptions, runtime.value)
-    })
+  if (isEmulator.value) {
+    for (const value of runtimes.value) {
+      list.push({
+        key: `runtime:${value}`,
+        prefix: '模拟器',
+        label: labelOf(EMULATOR_RUNTIME_OPTIONS, value)
+      })
+    }
   }
   if (gameType.value) {
     list.push({
@@ -306,14 +190,19 @@ const chips = computed<FilterChip[]>(() => {
       label: labelOf(gameTypeOptions, gameType.value)
     })
   }
-  if (releasedFrom.value || releasedTo.value) {
-    list.push({ key: 'years', label: yearRangeLabel.value })
+  if (type.value) {
+    list.push({
+      key: 'type',
+      prefix: '类型',
+      label: labelOf(typeOptions, type.value)
+    })
   }
-  for (const month of months.value) {
-    list.push({ key: `month:${month}`, label: `${month} 月` })
-  }
-  if (hasCollectedFilter.value) {
-    list.push({ key: 'collected', label: collectedLabel.value })
+  for (const value of languages.value) {
+    list.push({
+      key: `language:${value}`,
+      prefix: '语言',
+      label: labelOf(LANGUAGE_OPTIONS, value)
+    })
   }
   for (const key of includes.value) {
     list.push({
@@ -329,68 +218,75 @@ const chips = computed<FilterChip[]>(() => {
       label: KUN_GALGAME_PROVIDER_LABEL_MAP[key as ProviderKey] ?? key
     })
   }
+  if (minRating.value > 0) {
+    list.push({ key: 'minRating', label: `${minRating.value} 分+` })
+  }
   if (minRatingCount.value > 0) {
     list.push({
       key: 'minRatingCount',
       label: `≥${minRatingCount.value} 人评分`
     })
   }
-  if (minRating.value > 0) {
-    list.push({ key: 'minRating', label: `${minRating.value} 分+` })
+  if (releasedFrom.value || releasedTo.value) {
+    list.push({ key: 'years', label: yearRangeLabel.value })
+  }
+  for (const month of months.value) {
+    list.push({ key: `month:${month}`, label: `${month} 月` })
+  }
+  if (hasCollectedFilter.value) {
+    list.push({ key: 'collected', label: collectedLabel.value })
   }
   return list
 })
 
 const removeChip = (key: string) => {
   const [dimension, value] = key.split(':')
-  if (dimension === 'type') {
-    type.value = ''
-  } else if (dimension === 'language') {
-    language.value = ''
-  } else if (dimension === 'platform') {
-    setPlatform('')
+  const without = (values: string[]) => values.filter((item) => item !== value)
+  if (dimension === 'platform') {
+    setPlatforms(without(platforms.value))
   } else if (dimension === 'runtime') {
-    runtime.value = ''
+    runtimes.value = without(runtimes.value)
   } else if (dimension === 'gameType') {
     gameType.value = ''
+  } else if (dimension === 'type') {
+    type.value = ''
+  } else if (dimension === 'language') {
+    languages.value = without(languages.value)
+  } else if (dimension === 'include') {
+    includeProviders.value = without(includes.value).join(',')
+  } else if (dimension === 'exclude') {
+    excludeOnlyProviders.value = without(excludes.value).join(',')
+  } else if (dimension === 'minRating') {
+    minRating.value = 0
+  } else if (dimension === 'minRatingCount') {
+    minRatingCount.value = 0
   } else if (dimension === 'years') {
-    setYears({ from: '', to: '' })
+    releasedFrom.value = ''
+    releasedTo.value = ''
   } else if (dimension === 'month') {
-    setMonths(months.value.filter((month) => month !== value))
+    releasedMonths.value = without(months.value).join(',')
   } else if (dimension === 'collected') {
     collectedFrom.value = ''
     collectedTo.value = ''
     collectedMonths.value = ''
-  } else if (dimension === 'include') {
-    includeProviders.value = setCsv(
-      includes.value.filter((item) => item !== value)
-    )
-  } else if (dimension === 'exclude') {
-    excludeOnlyProviders.value = setCsv(
-      excludes.value.filter((item) => item !== value)
-    )
-  } else if (dimension === 'minRatingCount') {
-    minRatingCount.value = 0
-  } else if (dimension === 'minRating') {
-    minRating.value = 0
   }
 }
 
 const clearFilters = () => {
-  type.value = ''
-  language.value = ''
-  setPlatform('')
+  setPlatforms([])
   gameType.value = ''
+  type.value = ''
+  languages.value = []
+  includeProviders.value = ''
+  excludeOnlyProviders.value = ''
+  minRating.value = 0
+  minRatingCount.value = 0
   releasedFrom.value = ''
   releasedTo.value = ''
   releasedMonths.value = ''
   collectedFrom.value = ''
   collectedTo.value = ''
   collectedMonths.value = ''
-  includeProviders.value = ''
-  excludeOnlyProviders.value = ''
-  minRatingCount.value = 0
-  minRating.value = 0
 }
 </script>
 
@@ -431,6 +327,33 @@ const clearFilters = () => {
     <span class="bg-default-200 h-6 w-px" aria-hidden="true" />
 
     <FilterMenu
+      icon="lucide:monitor-smartphone"
+      label="平台"
+      :multiple="isShowAdvanced"
+      :options="platformOptions"
+      :model-value="axisModel(platforms)"
+      empty-value=""
+      @update:model-value="setPlatforms(toValues($event))"
+    />
+    <FilterMenu
+      v-if="isEmulator"
+      icon="lucide:joystick"
+      label="模拟器"
+      :multiple="isShowAdvanced"
+      :options="emulatorOptions"
+      :model-value="axisModel(runtimes)"
+      empty-value=""
+      @update:model-value="runtimes = toValues($event)"
+    />
+    <FilterMenu
+      icon="lucide:gamepad-2"
+      label="游戏类型"
+      :options="gameTypeOptions"
+      :model-value="gameType"
+      empty-value=""
+      @update:model-value="gameType = firstOf($event)"
+    />
+    <FilterMenu
       icon="lucide:package"
       label="资源类型"
       :options="typeOptions"
@@ -441,107 +364,26 @@ const clearFilters = () => {
     <FilterMenu
       icon="lucide:languages"
       label="语言"
+      :multiple="isShowAdvanced"
       :options="langOptions"
-      :model-value="language"
+      :model-value="axisModel(languages)"
       empty-value=""
-      @update:model-value="language = firstOf($event)"
-    />
-    <FilterMenu
-      icon="lucide:monitor-smartphone"
-      label="平台"
-      :options="platformOptions"
-      :model-value="platform"
-      empty-value=""
-      @update:model-value="setPlatform(firstOf($event))"
-    />
-    <FilterMenu
-      v-if="platform === 'emulator'"
-      icon="lucide:joystick"
-      label="模拟器"
-      :options="emulatorOptions"
-      :model-value="runtime"
-      empty-value=""
-      @update:model-value="runtime = firstOf($event)"
-    />
-    <FilterMenu
-      icon="lucide:gamepad-2"
-      label="游戏类型"
-      :options="gameTypeOptions"
-      :model-value="gameType"
-      empty-value=""
-      @update:model-value="gameType = firstOf($event)"
+      @update:model-value="languages = toValues($event)"
     />
 
-    <template v-if="isShowAdvanced">
-      <FilterYears :from="releasedFrom" :to="releasedTo" @update="setYears" />
-      <FilterMenu
-        icon="lucide:calendar-days"
-        label="发售月份"
-        multiple
-        :columns="3"
-        :options="monthOptions"
-        :model-value="months"
-        @update:model-value="setMonths($event as string[])"
-      />
+    <FilterTrigger
+      v-if="isShowAdvanced"
+      icon="lucide:sliders-horizontal"
+      label="更多筛选"
+      :value="moreCount ? `更多筛选 · ${moreCount}` : ''"
+      :active="moreCount > 0"
+      :open="isMoreOpen"
+      :aria-expanded="isMoreOpen"
+      @click="isMoreOpen = !isMoreOpen"
+    />
 
-      <FilterMenu
-        icon="lucide:archive"
-        label="收录年份"
-        multiple
-        :columns="3"
-        :options="collectedYearOptions"
-        :model-value="collectedYearsModel"
-        @update:model-value="onPickCollectedYear($event as string[])"
-      />
-      <FilterMenu
-        icon="lucide:calendar-check-2"
-        label="收录月份"
-        multiple
-        :columns="3"
-        :options="collectedMonthOptions"
-        :model-value="collectedMonthsModel"
-        @update:model-value="onPickCollectedMonth($event as string[])"
-      />
-
-      <KunTooltip text="只保留至少有一个所选网盘的作品" position="bottom">
-        <FilterMenu
-          icon="lucide:hard-drive-download"
-          label="含网盘"
-          multiple
-          :options="providerOptions"
-          :model-value="includes"
-          @update:model-value="includeProviders = setCsv($event as string[])"
-        />
-      </KunTooltip>
-      <KunTooltip text="丢掉只有这些网盘可选的作品" position="bottom">
-        <FilterMenu
-          icon="lucide:hard-drive-upload"
-          label="排除仅含"
-          multiple
-          :options="providerOptions"
-          :model-value="excludes"
-          @update:model-value="
-            excludeOnlyProviders = setCsv($event as string[])
-          "
-        />
-      </KunTooltip>
-
-      <FilterMenu
-        icon="lucide:star"
-        label="最低评分"
-        :options="minRatingOptions"
-        :model-value="String(minRating)"
-        empty-value="0"
-        @update:model-value="minRating = Number($event)"
-      />
-      <FilterMenu
-        icon="lucide:users"
-        label="评分人数"
-        :options="minCountOptions"
-        :model-value="String(minRatingCount)"
-        empty-value="0"
-        @update:model-value="minRatingCount = Number($event)"
-      />
+    <template v-if="isShowAdvanced && isMoreOpen" #more>
+      <GalgameCardNavMore />
     </template>
 
     <template v-if="isShowAdvanced" #end>

@@ -6,8 +6,9 @@ withDefaults(
     /** Replaces the label once the dimension has a value. */
     value?: string
     active?: boolean
+    open?: boolean
   }>(),
-  { value: '', active: false }
+  { value: '', active: false, open: false }
 )
 </script>
 
@@ -23,6 +24,9 @@ withDefaults(
   >
     <KunIcon :name="icon" class="shrink-0" />
     <span class="max-w-40 truncate">{{ value || label }}</span>
-    <KunIcon name="lucide:chevron-down" class="shrink-0" />
+    <KunIcon
+      name="lucide:chevron-down"
+      :class="cn('shrink-0 transition-transform', open && 'rotate-180')"
+    />
   </button>
 </template>

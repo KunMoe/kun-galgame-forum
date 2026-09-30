@@ -140,6 +140,7 @@ func TestV1EntityTagWorksLocalLane(t *testing.T) {
 	geWant(t, "axis, not the legacy scalar", f.geWalk(t, path, spec, url.Values{"resource_platform": {"mac"}}, 24), wid(3))
 	geWant(t, "emulator is every emulator runtime", f.geWalk(t, path, spec, url.Values{"resource_runtime": {"emulator"}}, 24), wid(5), wid(3))
 	geWant(t, "a named emulator is only itself", f.geWalk(t, path, spec, url.Values{"resource_runtime": {"tyranor"}}, 24), wid(5))
+	geWant(t, "platform or runtime", f.geWalk(t, path, spec, url.Values{"resource_platform": {"and"}, "resource_runtime": {"tyranor"}}, 24), wid(5), wid(0))
 	geWant(t, "resource type", f.geWalk(t, path, spec, url.Values{"resource_type": {"game"}}, 24), wid(5), wid(3), wid(1), wid(0))
 	geWant(t, "game type", f.geWalk(t, path, spec, url.Values{"game_type": {"plot"}}, 24), wid(0))
 	geWant(t, "uncategorized", f.geWalk(t, path, spec, url.Values{"game_type": {"uncategorized"}}, 24), wid(3), wid(1))

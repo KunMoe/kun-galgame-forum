@@ -1,10 +1,6 @@
 import type { WorksQuery, WorkSummary } from '#shared/utils/api/schemas'
 import {
-  LANGUAGE_OPTIONS,
-  LEGACY_RESOURCE_LANGUAGE,
-  LEGACY_RESOURCE_PLATFORM,
   LEGACY_RESOURCE_TYPE,
-  PLATFORM_OPTIONS,
   RESOURCE_TYPE_OPTIONS,
   axisKey,
   emulatorRuntimeFilter
@@ -17,9 +13,9 @@ export const useEntityWorksQuery = () => {
     page,
     limit,
     type,
-    language,
-    platform,
-    runtime,
+    languages,
+    platforms,
+    runtimes,
     gameType,
     sortField,
     sortOrder
@@ -40,17 +36,14 @@ export const useEntityWorksQuery = () => {
         LEGACY_RESOURCE_TYPE,
         RESOURCE_TYPE_OPTIONS
       ),
-      resource_platform: axisKey<NonNullable<WorksQuery['resource_platform']>>(
-        platform.value,
-        LEGACY_RESOURCE_PLATFORM,
-        PLATFORM_OPTIONS
-      ),
-      resource_runtime: emulatorRuntimeFilter(platform.value, runtime.value),
-      resource_language: axisKey<NonNullable<WorksQuery['resource_language']>>(
-        language.value,
-        LEGACY_RESOURCE_LANGUAGE,
-        LANGUAGE_OPTIONS
-      ),
+      resource_platform: platforms.value.find(
+        (platform) => platform !== 'emulator'
+      ) as WorksQuery['resource_platform'],
+      resource_runtime: emulatorRuntimeFilter(
+        platforms.value,
+        runtimes.value
+      )?.[0],
+      resource_language: languages.value[0] as WorksQuery['resource_language'],
       game_type:
         gameType.value && gameType.value !== 'all'
           ? (gameType.value as WorksQuery['game_type'])

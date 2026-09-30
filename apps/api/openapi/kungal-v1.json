@@ -34065,13 +34065,13 @@
             }
           },
           {
-            "description": "Only works with at least one forum resource for this platform. Omitted means no filter.",
+            "description": "Only works with at least one forum resource for this platform. With resource_runtime, a resource matching either one counts. Omitted means no filter.",
             "explode": false,
             "in": "query",
             "name": "resource_platform",
             "schema": {
               "$ref": "#/components/schemas/ResourcePlatform",
-              "description": "Only works with at least one forum resource for this platform. Omitted means no filter."
+              "description": "Only works with at least one forum resource for this platform. With resource_runtime, a resource matching either one counts. Omitted means no filter."
             }
           },
           {
@@ -34085,13 +34085,13 @@
             }
           },
           {
-            "description": "Only works with at least one forum resource that runs through this runtime. emulator matches every emulator runtime, including a resource whose uploader named none. Omitted means no filter.",
+            "description": "Only works with at least one forum resource that runs through this runtime. emulator matches every emulator runtime, including a resource whose uploader named none. With resource_platform, a resource matching either one counts. Omitted means no filter.",
             "explode": false,
             "in": "query",
             "name": "resource_runtime",
             "schema": {
               "$ref": "#/components/schemas/ResourceRuntime",
-              "description": "Only works with at least one forum resource that runs through this runtime. emulator matches every emulator runtime, including a resource whose uploader named none. Omitted means no filter."
+              "description": "Only works with at least one forum resource that runs through this runtime. emulator matches every emulator runtime, including a resource whose uploader named none. With resource_platform, a resource matching either one counts. Omitted means no filter."
             }
           },
           {
@@ -35485,13 +35485,13 @@
             }
           },
           {
-            "description": "Only works with at least one forum resource for this platform. Omitted means no filter.",
+            "description": "Only works with at least one forum resource for this platform. With resource_runtime, a resource matching either one counts. Omitted means no filter.",
             "explode": false,
             "in": "query",
             "name": "resource_platform",
             "schema": {
               "$ref": "#/components/schemas/ResourcePlatform",
-              "description": "Only works with at least one forum resource for this platform. Omitted means no filter."
+              "description": "Only works with at least one forum resource for this platform. With resource_runtime, a resource matching either one counts. Omitted means no filter."
             }
           },
           {
@@ -35505,13 +35505,13 @@
             }
           },
           {
-            "description": "Only works with at least one forum resource that runs through this runtime. emulator matches every emulator runtime, including a resource whose uploader named none. Omitted means no filter.",
+            "description": "Only works with at least one forum resource that runs through this runtime. emulator matches every emulator runtime, including a resource whose uploader named none. With resource_platform, a resource matching either one counts. Omitted means no filter.",
             "explode": false,
             "in": "query",
             "name": "resource_runtime",
             "schema": {
               "$ref": "#/components/schemas/ResourceRuntime",
-              "description": "Only works with at least one forum resource that runs through this runtime. emulator matches every emulator runtime, including a resource whose uploader named none. Omitted means no filter."
+              "description": "Only works with at least one forum resource that runs through this runtime. emulator matches every emulator runtime, including a resource whose uploader named none. With resource_platform, a resource matching either one counts. Omitted means no filter."
             }
           },
           {
@@ -51692,13 +51692,13 @@
             }
           },
           {
-            "description": "Only works with at least one forum resource for this platform. Omitted means no filter.",
+            "description": "Only works with at least one forum resource for this platform. With resource_runtime, a resource matching either one counts. Omitted means no filter.",
             "explode": false,
             "in": "query",
             "name": "resource_platform",
             "schema": {
               "$ref": "#/components/schemas/ResourcePlatform",
-              "description": "Only works with at least one forum resource for this platform. Omitted means no filter."
+              "description": "Only works with at least one forum resource for this platform. With resource_runtime, a resource matching either one counts. Omitted means no filter."
             }
           },
           {
@@ -51712,13 +51712,13 @@
             }
           },
           {
-            "description": "Only works with at least one forum resource that runs through this runtime. emulator matches every emulator runtime, including a resource whose uploader named none. Omitted means no filter.",
+            "description": "Only works with at least one forum resource that runs through this runtime. emulator matches every emulator runtime, including a resource whose uploader named none. With resource_platform, a resource matching either one counts. Omitted means no filter.",
             "explode": false,
             "in": "query",
             "name": "resource_runtime",
             "schema": {
               "$ref": "#/components/schemas/ResourceRuntime",
-              "description": "Only works with at least one forum resource that runs through this runtime. emulator matches every emulator runtime, including a resource whose uploader named none. Omitted means no filter."
+              "description": "Only works with at least one forum resource that runs through this runtime. emulator matches every emulator runtime, including a resource whose uploader named none. With resource_platform, a resource matching either one counts. Omitted means no filter."
             }
           },
           {
@@ -52301,13 +52301,13 @@
             }
           },
           {
-            "description": "Only works with at least one forum resource for this platform. Omitted means no filter.",
+            "description": "Only works with at least one forum resource for this platform. With resource_runtime, a resource matching either one counts. Omitted means no filter.",
             "explode": false,
             "in": "query",
             "name": "resource_platform",
             "schema": {
               "$ref": "#/components/schemas/ResourcePlatform",
-              "description": "Only works with at least one forum resource for this platform. Omitted means no filter."
+              "description": "Only works with at least one forum resource for this platform. With resource_runtime, a resource matching either one counts. Omitted means no filter."
             }
           },
           {
@@ -52321,13 +52321,13 @@
             }
           },
           {
-            "description": "Only works with at least one forum resource that runs through this runtime. emulator matches every emulator runtime, including a resource whose uploader named none. Omitted means no filter.",
+            "description": "Only works with at least one forum resource that runs through this runtime. emulator matches every emulator runtime, including a resource whose uploader named none. With resource_platform, a resource matching either one counts. Omitted means no filter.",
             "explode": false,
             "in": "query",
             "name": "resource_runtime",
             "schema": {
               "$ref": "#/components/schemas/ResourceRuntime",
-              "description": "Only works with at least one forum resource that runs through this runtime. emulator matches every emulator runtime, including a resource whose uploader named none. Omitted means no filter."
+              "description": "Only works with at least one forum resource that runs through this runtime. emulator matches every emulator runtime, including a resource whose uploader named none. With resource_platform, a resource matching either one counts. Omitted means no filter."
             }
           },
           {
@@ -64585,12 +64585,12 @@
             }
           },
           {
-            "description": "Only works with at least one forum resource for any of these platforms. Comma-separated. Omitted means no filter.",
+            "description": "Only works with at least one forum resource for any of these platforms. With resource_runtimes, a resource matching either one counts. Comma-separated. Omitted means no filter.",
             "explode": false,
             "in": "query",
             "name": "resource_platforms",
             "schema": {
-              "description": "Only works with at least one forum resource for any of these platforms. Comma-separated. Omitted means no filter.",
+              "description": "Only works with at least one forum resource for any of these platforms. With resource_runtimes, a resource matching either one counts. Comma-separated. Omitted means no filter.",
               "items": {
                 "$ref": "#/components/schemas/ResourcePlatform",
                 "description": "A resource platform key."
@@ -64613,12 +64613,12 @@
             }
           },
           {
-            "description": "Only works with at least one forum resource that runs through any of these runtimes. emulator matches every emulator runtime, including a resource whose uploader named none. Comma-separated. Omitted means no filter.",
+            "description": "Only works with at least one forum resource that runs through any of these runtimes. emulator matches every emulator runtime, including a resource whose uploader named none. With resource_platforms, a resource matching either one counts. Comma-separated. Omitted means no filter.",
             "explode": false,
             "in": "query",
             "name": "resource_runtimes",
             "schema": {
-              "description": "Only works with at least one forum resource that runs through any of these runtimes. emulator matches every emulator runtime, including a resource whose uploader named none. Comma-separated. Omitted means no filter.",
+              "description": "Only works with at least one forum resource that runs through any of these runtimes. emulator matches every emulator runtime, including a resource whose uploader named none. With resource_platforms, a resource matching either one counts. Comma-separated. Omitted means no filter.",
               "items": {
                 "$ref": "#/components/schemas/ResourceRuntime",
                 "description": "A resource runtime key."

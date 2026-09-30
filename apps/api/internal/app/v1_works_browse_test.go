@@ -102,6 +102,19 @@ func TestV1WorksEmulatorRuntimeMatchesEveryEmulator(t *testing.T) {
 	}
 }
 
+func TestV1WorksPlatformOrRuntime(t *testing.T) {
+	f := newG5Fix(t)
+	resp, body := f.get(t, "/api/v1/works?resource_platforms=mac&resource_runtimes=emulator", "/works")
+	geStatus(t, resp, body, http.StatusOK, "")
+	if ids := geItemIDs(body); len(ids) != 3 || !g5HasID(body, g5TieHi) || !g5HasID(body, g5SFW0) || !g5HasID(body, g5SFW0+1) {
+		t.Fatalf("a mac resource or an emulator one: %v", ids)
+	}
+	_, body = f.get(t, "/api/v1/works?resource_platforms=mac&resource_runtimes=emulator&resource_languages=zh-cn", "/works")
+	if ids := geItemIDs(body); len(ids) != 2 || g5HasID(body, g5TieHi) {
+		t.Fatalf("language must still narrow the pair: %v", ids)
+	}
+}
+
 func TestV1WorksIncludeResourceless(t *testing.T) {
 	f := newG5Fix(t)
 	_, body := f.get(t, "/api/v1/works", "/works")

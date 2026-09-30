@@ -20580,11 +20580,11 @@ export interface operations {
                 sort?: components["schemas"]["WorkSort"];
                 /** @description Only works with at least one forum resource of this type. Omitted means no filter. */
                 resource_type?: components["schemas"]["ResourceType"];
-                /** @description Only works with at least one forum resource for this platform. Omitted means no filter. */
+                /** @description Only works with at least one forum resource for this platform. With resource_runtime, a resource matching either one counts. Omitted means no filter. */
                 resource_platform?: components["schemas"]["ResourcePlatform"];
                 /** @description Only works with at least one forum resource in this language. Omitted means no filter. */
                 resource_language?: components["schemas"]["ResourceLanguage"];
-                /** @description Only works with at least one forum resource that runs through this runtime. emulator matches every emulator runtime, including a resource whose uploader named none. Omitted means no filter. */
+                /** @description Only works with at least one forum resource that runs through this runtime. emulator matches every emulator runtime, including a resource whose uploader named none. With resource_platform, a resource matching either one counts. Omitted means no filter. */
                 resource_runtime?: components["schemas"]["ResourceRuntime"];
                 /** @description Only works a forum rating labels with this game type; uncategorized is works no rating labels at all. Omitted means no filter. */
                 game_type?: components["schemas"]["GameTypeFilter"];
@@ -21471,11 +21471,11 @@ export interface operations {
                 sort?: components["schemas"]["WorkSort"];
                 /** @description Only works with at least one forum resource of this type. Omitted means no filter. */
                 resource_type?: components["schemas"]["ResourceType"];
-                /** @description Only works with at least one forum resource for this platform. Omitted means no filter. */
+                /** @description Only works with at least one forum resource for this platform. With resource_runtime, a resource matching either one counts. Omitted means no filter. */
                 resource_platform?: components["schemas"]["ResourcePlatform"];
                 /** @description Only works with at least one forum resource in this language. Omitted means no filter. */
                 resource_language?: components["schemas"]["ResourceLanguage"];
-                /** @description Only works with at least one forum resource that runs through this runtime. emulator matches every emulator runtime, including a resource whose uploader named none. Omitted means no filter. */
+                /** @description Only works with at least one forum resource that runs through this runtime. emulator matches every emulator runtime, including a resource whose uploader named none. With resource_platform, a resource matching either one counts. Omitted means no filter. */
                 resource_runtime?: components["schemas"]["ResourceRuntime"];
                 /** @description Only works a forum rating labels with this game type; uncategorized is works no rating labels at all. Omitted means no filter. */
                 game_type?: components["schemas"]["GameTypeFilter"];
@@ -32544,11 +32544,11 @@ export interface operations {
                 sort?: components["schemas"]["WorkSort"];
                 /** @description Only works with at least one forum resource of this type. Omitted means no filter. */
                 resource_type?: components["schemas"]["ResourceType"];
-                /** @description Only works with at least one forum resource for this platform. Omitted means no filter. */
+                /** @description Only works with at least one forum resource for this platform. With resource_runtime, a resource matching either one counts. Omitted means no filter. */
                 resource_platform?: components["schemas"]["ResourcePlatform"];
                 /** @description Only works with at least one forum resource in this language. Omitted means no filter. */
                 resource_language?: components["schemas"]["ResourceLanguage"];
-                /** @description Only works with at least one forum resource that runs through this runtime. emulator matches every emulator runtime, including a resource whose uploader named none. Omitted means no filter. */
+                /** @description Only works with at least one forum resource that runs through this runtime. emulator matches every emulator runtime, including a resource whose uploader named none. With resource_platform, a resource matching either one counts. Omitted means no filter. */
                 resource_runtime?: components["schemas"]["ResourceRuntime"];
                 /** @description Only works a forum rating labels with this game type; uncategorized is works no rating labels at all. Omitted means no filter. */
                 game_type?: components["schemas"]["GameTypeFilter"];
@@ -32886,11 +32886,11 @@ export interface operations {
                 sort?: components["schemas"]["WorkSort"];
                 /** @description Only works with at least one forum resource of this type. Omitted means no filter. */
                 resource_type?: components["schemas"]["ResourceType"];
-                /** @description Only works with at least one forum resource for this platform. Omitted means no filter. */
+                /** @description Only works with at least one forum resource for this platform. With resource_runtime, a resource matching either one counts. Omitted means no filter. */
                 resource_platform?: components["schemas"]["ResourcePlatform"];
                 /** @description Only works with at least one forum resource in this language. Omitted means no filter. */
                 resource_language?: components["schemas"]["ResourceLanguage"];
-                /** @description Only works with at least one forum resource that runs through this runtime. emulator matches every emulator runtime, including a resource whose uploader named none. Omitted means no filter. */
+                /** @description Only works with at least one forum resource that runs through this runtime. emulator matches every emulator runtime, including a resource whose uploader named none. With resource_platform, a resource matching either one counts. Omitted means no filter. */
                 resource_runtime?: components["schemas"]["ResourceRuntime"];
                 /** @description Only works a forum rating labels with this game type; uncategorized is works no rating labels at all. Omitted means no filter. */
                 game_type?: components["schemas"]["GameTypeFilter"];
@@ -41268,11 +41268,11 @@ export interface operations {
                 sort?: components["schemas"]["WorkSort"];
                 /** @description Only works with at least one forum resource of this type. Omitted means no filter. */
                 resource_type?: components["schemas"]["ResourceType"];
-                /** @description Only works with at least one forum resource for any of these platforms. Comma-separated. Omitted means no filter. */
+                /** @description Only works with at least one forum resource for any of these platforms. With resource_runtimes, a resource matching either one counts. Comma-separated. Omitted means no filter. */
                 resource_platforms?: components["schemas"]["ResourcePlatform"][];
                 /** @description Only works with at least one forum resource in any of these languages. Comma-separated. Omitted means no filter. */
                 resource_languages?: components["schemas"]["ResourceLanguage"][];
-                /** @description Only works with at least one forum resource that runs through any of these runtimes. emulator matches every emulator runtime, including a resource whose uploader named none. Comma-separated. Omitted means no filter. */
+                /** @description Only works with at least one forum resource that runs through any of these runtimes. emulator matches every emulator runtime, including a resource whose uploader named none. With resource_platforms, a resource matching either one counts. Comma-separated. Omitted means no filter. */
                 resource_runtimes?: components["schemas"]["ResourceRuntime"][];
                 /** @description Only works a forum rating labels with this game type; uncategorized is works no rating labels at all. Omitted means no filter. */
                 game_type?: components["schemas"]["GameTypeFilter"];

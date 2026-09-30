@@ -31,6 +31,13 @@ defineEmits<{ remove: [key: string]; clear: [] }>()
     </div>
 
     <div
+      v-if="$slots.more"
+      class="border-default-200 flex flex-wrap items-center gap-2 border-t pt-2"
+    >
+      <slot name="more" />
+    </div>
+
+    <div
       v-if="chips.length"
       class="border-default-200 flex flex-wrap items-center gap-1.5 border-t pt-2"
     >

@@ -134,9 +134,13 @@ func (r *GalgameListRepository) ListIDs(f model.GalgameListFilter) (ids []int, t
 	if f.Type != "" && f.Type != "all" {
 		inner = inner.Where("gr.type = ?", f.Type)
 	}
-	inner = applyJSONOverlap(inner, "gr.platforms", axisKeys(f.PlatformAxis, f.PlatformAxes))
-	inner = applyJSONOverlap(inner, "gr.languages", axisKeys(f.LanguageAxis, f.LanguageAxes))
-	inner = applyJSONOverlap(inner, "gr.runtimes", axisKeys("", resourcevocab.RuntimeFilter(f.RuntimeAxes)))
+	// Platform and runtime both answer "where does it run", so picking 安卓 and
+	// 模拟器 means either. ANDed on one resource row, that pair kept only the 844
+	// works whose emulator pack was also filed under Android, out of ~2,900.
+	inner = applyJSONOverlap(inner,
+		jsonAxis{"gr.platforms", axisKeys(f.PlatformAxis, f.PlatformAxes)},
+		jsonAxis{"gr.runtimes", axisKeys("", resourcevocab.RuntimeFilter(f.RuntimeAxes))})
+	inner = applyJSONOverlap(inner, jsonAxis{"gr.languages", axisKeys(f.LanguageAxis, f.LanguageAxes)})
 	if len(f.IncludeProviders) > 0 {
 		inner = inner.Where("gr.provider && ?", providerArrayLit(f.IncludeProviders))
 	}
@@ -420,18 +424,22 @@ func axisKeys(single string, many []string) []string {
 	return out
 }
 
-func applyJSONOverlap(q *gorm.DB, column string, keys []string) *gorm.DB {
-	if len(keys) == 0 {
+type jsonAxis struct {
+	column string
+	keys   []string
+}
+
+func applyJSONOverlap(q *gorm.DB, axes ...jsonAxis) *gorm.DB {
+	var conds []string
+	var args []any
+	for _, axis := range axes {
+		for _, k := range axis.keys {
+			conds = append(conds, axis.column+" @> ?::jsonb")
+			args = append(args, jsonKeyArray(k))
+		}
+	}
+	if len(conds) == 0 {
 		return q
-	}
-	if len(keys) == 1 {
-		return q.Where(column+" @> ?::jsonb", jsonKeyArray(keys[0]))
-	}
-	conds := make([]string, len(keys))
-	args := make([]any, len(keys))
-	for i, k := range keys {
-		conds[i] = column + " @> ?::jsonb"
-		args[i] = jsonKeyArray(k)
 	}
 	return q.Where("("+strings.Join(conds, " OR ")+")", args...)
 }

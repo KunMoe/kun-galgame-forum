@@ -163,13 +163,14 @@ export const EMULATOR_RUNTIME_OPTIONS = RUNTIME_OPTIONS.filter(
 )
 
 export const emulatorRuntimeFilter = (
-  platform: string,
-  runtime: string
-): ResourceRuntime | undefined =>
-  platform === 'emulator'
-    ? (axisKey<ResourceRuntime>(runtime, {}, EMULATOR_RUNTIME_OPTIONS) ??
-      'emulator')
-    : undefined
+  platforms: string[],
+  runtimes: string[]
+): ResourceRuntime[] | undefined => {
+  if (!platforms.includes('emulator')) {
+    return undefined
+  }
+  return runtimes.length ? (runtimes as ResourceRuntime[]) : ['emulator']
+}
 
 export const VERSION_LABEL_OPTIONS: VocabOption<
   NonNullable<GalgameResource['version_label']>

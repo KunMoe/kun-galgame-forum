@@ -7,7 +7,6 @@ import {
   LEGACY_RESOURCE_PLATFORM,
   LEGACY_RESOURCE_TYPE,
   PLATFORM_FILTER_OPTIONS,
-  PLATFORM_OPTIONS,
   RESOURCE_TYPE_OPTIONS,
   axisKey,
   emulatorRuntimeFilter
@@ -82,6 +81,26 @@ const mappedAxis = (
   })
 }
 
+const mappedAxes = (
+  key: string,
+  legacy: Record<string, string>,
+  options: { value: string }[]
+) => {
+  const raw = useRouteQuery<string>(key, '', { mode: 'replace' })
+  const inVocabOrder = (values: string[]) => {
+    const keys = new Set(values.map((value) => axisKey(value, legacy, options)))
+    return options
+      .map((option) => option.value)
+      .filter((value) => keys.has(value))
+  }
+  return computed({
+    get: () => inVocabOrder(raw.value.split(',')),
+    set: (values: string[]) => {
+      raw.value = inVocabOrder(values).join(',')
+    }
+  })
+}
+
 const csvInts = (csv: string, min: number, max: number) => {
   const values = csv
     .split(',')
@@ -120,17 +139,17 @@ export const useGalgameFilters = (defaultSortField: SortField = 'time') => {
   const page = useRouteQuery('page', 1, { ...opts, transform: Number })
 
   const type = mappedAxis('type', LEGACY_RESOURCE_TYPE, RESOURCE_TYPE_OPTIONS)
-  const language = mappedAxis(
+  const languages = mappedAxes(
     'language',
     LEGACY_RESOURCE_LANGUAGE,
     LANGUAGE_OPTIONS
   )
-  const platform = mappedAxis(
+  const platforms = mappedAxes(
     'platform',
     LEGACY_RESOURCE_PLATFORM,
     PLATFORM_FILTER_OPTIONS
   )
-  const runtime = mappedAxis('runtime', {}, EMULATOR_RUNTIME_OPTIONS)
+  const runtimes = mappedAxes('runtime', {}, EMULATOR_RUNTIME_OPTIONS)
   const gameTypeRaw = useRouteQuery<string>('gameType', '', opts)
   const gameType = computed({
     get: () => (gameTypeRaw.value === 'all' ? '' : gameTypeRaw.value),
@@ -175,9 +194,9 @@ export const useGalgameFilters = (defaultSortField: SortField = 'time') => {
     page,
     limit,
     type,
-    language,
-    platform,
-    runtime,
+    languages,
+    platforms,
+    runtimes,
     gameType,
     sortField,
     sortOrder,
@@ -204,16 +223,16 @@ export const useBrowseWorksQuery = () => {
       LEGACY_RESOURCE_TYPE,
       RESOURCE_TYPE_OPTIONS
     )
-    const platform = axisKey<
-      NonNullable<ListWorksQuery['resource_platforms']>[number]
-    >(filters.platform.value, LEGACY_RESOURCE_PLATFORM, PLATFORM_OPTIONS)
-    const runtime = emulatorRuntimeFilter(
-      filters.platform.value,
-      filters.runtime.value
+    const platforms = filters.platforms.value.filter(
+      (platform) => platform !== 'emulator'
+    ) as NonNullable<ListWorksQuery['resource_platforms']>
+    const runtimes = emulatorRuntimeFilter(
+      filters.platforms.value,
+      filters.runtimes.value
     )
-    const language = axisKey<
-      NonNullable<ListWorksQuery['resource_languages']>[number]
-    >(filters.language.value, LEGACY_RESOURCE_LANGUAGE, LANGUAGE_OPTIONS)
+    const languages = filters.languages.value as NonNullable<
+      ListWorksQuery['resource_languages']
+    >
     const gameType = GAME_TYPES.has(
       filters.gameType.value as NonNullable<ListWorksQuery['game_type']>
     )
@@ -230,9 +249,9 @@ export const useBrowseWorksQuery = () => {
       limit: filters.limit,
       sort: browseSortToken(filters.sortField.value, filters.sortOrder.value),
       ...(type ? { resource_type: type } : {}),
-      ...(platform ? { resource_platforms: [platform] } : {}),
-      ...(runtime ? { resource_runtimes: [runtime] } : {}),
-      ...(language ? { resource_languages: [language] } : {}),
+      ...(platforms.length ? { resource_platforms: platforms } : {}),
+      ...(runtimes ? { resource_runtimes: runtimes } : {}),
+      ...(languages.length ? { resource_languages: languages } : {}),
       ...(gameType ? { game_type: gameType } : {}),
       ...(resourceProviders ? { resource_providers: resourceProviders } : {}),
       ...(excludedSoleProviders

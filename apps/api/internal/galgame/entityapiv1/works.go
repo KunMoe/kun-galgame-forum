@@ -99,9 +99,9 @@ type WorksQuery struct {
 	Limit            int                       `query:"limit" minimum:"1" maximum:"100" default:"24" doc:"Page size. 1–100, default 24. Values above 100 are rejected, not clamped."`
 	Sort             WorkSortToken             `query:"sort" default:"resource_updated_desc"`
 	ResourceType     workrepr.ResourceType     `query:"resource_type" doc:"Only works with at least one forum resource of this type. Omitted means no filter."`
-	ResourcePlatform workrepr.ResourcePlatform `query:"resource_platform" doc:"Only works with at least one forum resource for this platform. Omitted means no filter."`
+	ResourcePlatform workrepr.ResourcePlatform `query:"resource_platform" doc:"Only works with at least one forum resource for this platform. With resource_runtime, a resource matching either one counts. Omitted means no filter."`
 	ResourceLanguage workrepr.ResourceLanguage `query:"resource_language" doc:"Only works with at least one forum resource in this language. Omitted means no filter."`
-	ResourceRuntime  workrepr.ResourceRuntime  `query:"resource_runtime" doc:"Only works with at least one forum resource that runs through this runtime. emulator matches every emulator runtime, including a resource whose uploader named none. Omitted means no filter."`
+	ResourceRuntime  workrepr.ResourceRuntime  `query:"resource_runtime" doc:"Only works with at least one forum resource that runs through this runtime. emulator matches every emulator runtime, including a resource whose uploader named none. With resource_platform, a resource matching either one counts. Omitted means no filter."`
 	GameType         GameTypeFilter            `query:"game_type"`
 	IncludeNSFW      bool                      `query:"include_nsfw" default:"false" doc:"When true, adult works are included. Default false."`
 }

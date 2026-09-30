@@ -49,9 +49,9 @@ type listWorksInput struct {
 	Limit                 int                         `query:"limit" minimum:"1" maximum:"100" default:"24" doc:"Page size. 1–100, default 24. Values above 100 are rejected, not clamped."`
 	Sort                  entityapiv1.WorkSortToken   `query:"sort" default:"resource_updated_desc"`
 	ResourceType          workrepr.ResourceType       `query:"resource_type" doc:"Only works with at least one forum resource of this type. Omitted means no filter."`
-	ResourcePlatforms     []workrepr.ResourcePlatform `query:"resource_platforms" doc:"Only works with at least one forum resource for any of these platforms. Comma-separated. Omitted means no filter."`
+	ResourcePlatforms     []workrepr.ResourcePlatform `query:"resource_platforms" doc:"Only works with at least one forum resource for any of these platforms. With resource_runtimes, a resource matching either one counts. Comma-separated. Omitted means no filter."`
 	ResourceLanguages     []workrepr.ResourceLanguage `query:"resource_languages" doc:"Only works with at least one forum resource in any of these languages. Comma-separated. Omitted means no filter."`
-	ResourceRuntimes      []workrepr.ResourceRuntime  `query:"resource_runtimes" doc:"Only works with at least one forum resource that runs through any of these runtimes. emulator matches every emulator runtime, including a resource whose uploader named none. Comma-separated. Omitted means no filter."`
+	ResourceRuntimes      []workrepr.ResourceRuntime  `query:"resource_runtimes" doc:"Only works with at least one forum resource that runs through any of these runtimes. emulator matches every emulator runtime, including a resource whose uploader named none. With resource_platforms, a resource matching either one counts. Comma-separated. Omitted means no filter."`
 	GameType              entityapiv1.GameTypeFilter  `query:"game_type"`
 	ResourceProviders     []workrepr.ResourceProvider `query:"resource_providers" doc:"Only works with a resource hosted on any of these download hosts. Comma-separated. Omitted means no filter."`
 	ExcludedSoleProviders []workrepr.ResourceProvider `query:"excluded_sole_providers" doc:"Only works whose resources are not hosted solely on these download hosts. Comma-separated. Omitted means no filter."`
