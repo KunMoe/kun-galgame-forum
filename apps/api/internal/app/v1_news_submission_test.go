@@ -489,6 +489,43 @@ func TestV1NewsSubmissionListPages(t *testing.T) {
 	}
 }
 
+func TestV1NewsSubmissionUpstreamErrors(t *testing.T) {
+	cases := []struct {
+		name         string
+		method       string
+		raw          string
+		spec         string
+		idem         string
+		payload      any
+		upStatus     int
+		upBody       string
+		status       int
+		code         string
+		wantUpstream bool
+	}{
+		{"bad cursor", http.MethodGet, "/api/v1/me/news-submissions?cursor=cur_bogus", newsSubList, "", nil, 0, "", http.StatusBadRequest, problem.CodeInvalidCursor, false},
+		{"not the caller's", http.MethodGet, "/api/v1/me/news-submissions/9999", newsSubItem, "", nil, 0, "", http.StatusNotFound, problem.CodeNotFound, true},
+		{"scope", http.MethodGet, "/api/v1/me/news-submissions", newsSubList, "", nil, http.StatusForbidden, `{"code":"SCOPE_REQUIRED"}`, http.StatusForbidden, problem.CodeScopeRequired, true},
+		{"catalog down", http.MethodGet, "/api/v1/me/news-submissions", newsSubList, "", nil, http.StatusServiceUnavailable, `{}`, http.StatusServiceUnavailable, problem.CodeServiceUnavailable, true},
+		{"key reused", http.MethodPost, "/api/v1/me/news-submissions", newsSubList, keyUUID(20), newsCreateBody(), http.StatusConflict, `{"code":"IDEMPOTENCY_KEY_REUSED"}`, http.StatusConflict, problem.CodeIdempotencyKeyReused, true},
+		{"key in flight", http.MethodPost, "/api/v1/me/news-submissions", newsSubList, keyUUID(21), newsCreateBody(), http.StatusConflict, `{"code":"IDEMPOTENCY_REQUEST_IN_PROGRESS"}`, http.StatusConflict, problem.CodeIdempotencyRequestInProgress, true},
+		{"rate limited", http.MethodPost, "/api/v1/me/news-submissions", newsSubList, keyUUID(22), newsCreateBody(), http.StatusTooManyRequests, `{"code":"RATE_LIMITED"}`, http.StatusTooManyRequests, problem.CodeRateLimited, true},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			f, up := newNewsSubmissionFix(t, nil)
+			if tc.upStatus != 0 {
+				up.fail(tc.method, tc.upStatus, tc.upBody, "")
+			}
+			resp, body := f.subCall(t, tc.method, tc.raw, tc.spec, "sess-alice", tc.idem, tc.payload)
+			wantCode(t, resp, body, tc.status, tc.code)
+			if called := len(up.calls()) > 0; called != tc.wantUpstream {
+				t.Fatalf("upstream called %v, want %v", called, tc.wantUpstream)
+			}
+		})
+	}
+}
+
 func TestV1NewsSubmissionAnonymous(t *testing.T) {
 	f, up := newNewsSubmissionFix(t, nil)
 	f.anonNews(t, http.MethodGet, "/api/v1/me/news-submissions", newsSubList, "", nil)
