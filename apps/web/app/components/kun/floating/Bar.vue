@@ -97,7 +97,7 @@ onUnmounted(() => {
         :src="MASCOT[direction]"
         :class="
           cn(
-            'pointer-events-none absolute right-0 bottom-full size-32 max-w-none origin-bottom select-none',
+            'pointer-events-none absolute right-0 bottom-full size-48 max-w-none origin-bottom select-none',
             `kun-mascot-${direction}`
           )
         "
@@ -106,25 +106,19 @@ onUnmounted(() => {
       />
     </Transition>
 
-    <div class="bg-background rounded-full p-2 backdrop-blur-sm">
-      <KunTooltip :text="label" position="left">
-        <KunButton
-          :is-icon-only="true"
-          :aria-label="label"
-          rounded="full"
-          size="md"
-          variant="flat"
-          @click="scrollToEdge"
-        >
-          <KunIcon
-            class="text-inherit"
-            :name="
-              direction === 'top' ? 'lucide:arrow-up' : 'lucide:arrow-down'
-            "
-          />
-        </KunButton>
-      </KunTooltip>
-    </div>
+    <KunTooltip :text="label" position="left">
+      <button
+        type="button"
+        :aria-label="label"
+        class="bg-primary-100 text-primary-600 hover:bg-primary-200 focus-visible:ring-primary/50 flex size-12 cursor-pointer items-center justify-center rounded-2xl shadow-md transition-colors focus-visible:ring-2 focus-visible:outline-none pointer-fine:size-16"
+        @click="scrollToEdge"
+      >
+        <KunIcon
+          class="size-6 text-inherit pointer-fine:size-7"
+          :name="direction === 'top' ? 'lucide:arrow-up' : 'lucide:arrow-down'"
+        />
+      </button>
+    </KunTooltip>
   </div>
 </template>
 
@@ -145,17 +139,17 @@ onUnmounted(() => {
 
 .kun-mascot-leave-to {
   opacity: 0;
-  transform: translateY(8px) scale(0.9);
+  transform: translateY(12px) scale(0.9);
 }
 
 @keyframes kun-mascot-jump {
   0% {
     opacity: 0;
-    transform: translateY(28px) scale(0.6);
+    transform: translateY(40px) scale(0.6);
   }
   55% {
     opacity: 1;
-    transform: translateY(-12px) scale(1.04);
+    transform: translateY(-18px) scale(1.04);
   }
   100% {
     opacity: 1;
@@ -166,11 +160,11 @@ onUnmounted(() => {
 @keyframes kun-mascot-settle {
   0% {
     opacity: 0;
-    transform: translateY(-24px) scale(0.9);
+    transform: translateY(-36px) scale(0.9);
   }
   55% {
     opacity: 1;
-    transform: translateY(4px) scale(1.04, 0.94);
+    transform: translateY(6px) scale(1.04, 0.94);
   }
   100% {
     opacity: 1;
