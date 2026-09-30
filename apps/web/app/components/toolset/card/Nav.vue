@@ -13,35 +13,27 @@ import {
   KUN_GALGAME_TOOLSET_SORT_FIELD_MAP
 } from '~/constants/toolset'
 
-const { page, type, language, platform, version, sortField, sortOrder, query } =
+const { type, platform, version, sortField, sortOrder, query } =
   useToolsetFilters()
 
-watch(
-  () => [
-    type.value,
-    language.value,
-    platform.value,
-    version.value,
-    sortField.value,
-    sortOrder.value
-  ],
-  () => {
-    page.value = 1
-  }
-)
-
+const keyword = ref(query.value)
 watchDebounced(
-  query,
-  () => {
-    page.value = 1
+  keyword,
+  (value) => {
+    query.value = value.trim()
   },
   { debounce: 250 }
 )
+watch(query, (value) => {
+  if (value !== keyword.value.trim()) {
+    keyword.value = value
+  }
+})
 </script>
 
 <template>
   <KunInput
-    v-model="query"
+    v-model="keyword"
     type="text"
     placeholder="模糊名字查询"
     class-name="col-span-2 lg:col-span-1"

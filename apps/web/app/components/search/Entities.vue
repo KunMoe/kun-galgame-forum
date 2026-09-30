@@ -14,7 +14,7 @@ const props = defineProps<{
 }>()
 
 const route = useRoute()
-const router = useRouter()
+const patchQuery = useQueryWriter()
 const api = useApiClient()
 const { allowsNsfw } = useContentStance()
 const { showKUNGalgamePreferOriginalName } = storeToRefs(
@@ -30,10 +30,7 @@ const family = computed(() => {
 // watcher afterwards is a second replace, and the load between the two asks
 // the new family for the old family's page.
 const setFamily = (value: string) => {
-  const { family: _family, page: _page, ...rest } = route.query
-  router.replace({
-    query: value === 'all' ? rest : { ...rest, family: value }
-  })
+  patchQuery({ family: value === 'all' ? undefined : value, page: undefined })
 }
 
 const familyItems = computed(() => [
@@ -43,7 +40,7 @@ const familyItems = computed(() => [
 
 const groups = ref<SearchEntityGroup[]>([])
 const pending = ref(!!props.keywords)
-const page = useRouteQuery('page', 1, { mode: 'replace', transform: Number })
+const page = usePageQuery()
 const top = useTemplateRef<HTMLElement>('top')
 
 const isAll = computed(() => family.value === 'all')

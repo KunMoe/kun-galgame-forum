@@ -53,9 +53,7 @@ const fieldOf = (token: OfferedSort): SortField =>
     ? (token.slice(0, -4) as SortField)
     : (token.slice(0, -5) as SortField)
 
-const sortQuery = useRouteQuery<string>('sort', 'bumped_desc', {
-  mode: 'replace'
-})
+const { sort: sortQuery } = useQueryState({ sort: queryString('bumped_desc') })
 
 const offeredSort = computed<OfferedSort>(() =>
   isOfferedSort(sortQuery.value) ? sortQuery.value : 'bumped_desc'

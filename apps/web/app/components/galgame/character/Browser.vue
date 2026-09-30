@@ -26,44 +26,39 @@ const route = useRoute()
 const router = useRouter()
 const { allowsNsfw, stanceKey } = useContentStance()
 
-const page = usePageQuery()
-const qQuery = useRouteQuery<string>('q', '', { mode: 'replace' })
-const traitIdsQuery = useRouteQuery<string>('trait_ids', '', {
-  mode: 'replace'
-})
-const matchQuery = useRouteQuery<string>('trait_match', 'all', {
-  mode: 'replace'
-})
-const sortQuery = useRouteQuery<string>('sort', '', { mode: 'replace' })
-const gendersQuery = useRouteQuery<string>('genders', '', { mode: 'replace' })
+const GENDERS: CharacterGender[] = ['female', 'male', 'other']
+const gendersField: QueryField<CharacterGender[]> = {
+  parse: (raw) => GENDERS.filter((g) => (raw ?? '').split(',').includes(g)),
+  format: (genders) => GENDERS.filter((g) => genders.includes(g)).join(',')
+}
+
+const { state, set, page } = useQueryState(
+  {
+    page: queryPage(),
+    q: queryString(),
+    trait_ids: queryIds(),
+    trait_match: queryEnum(['all', 'any'] as const, 'all'),
+    sort: queryString(),
+    genders: gendersField
+  },
+  { pageKey: 'page' }
+)
 
 const pinnedId = computed(() => (props.pinned ? Number(props.pinned.id) : 0))
 
-const pickedIds = computed<number[]>({
-  get: () =>
-    traitIdsQuery.value
-      .split(',')
-      .map(Number)
-      .filter((id) => Number.isInteger(id) && id > 0 && id !== pinnedId.value),
-  set: (ids) => {
-    traitIdsQuery.value = ids.join(',')
-  }
-})
+const pickedIds = computed(() =>
+  state.value.trait_ids.filter((id) => id !== pinnedId.value)
+)
 const traitIds = computed(() =>
   pinnedId.value ? [pinnedId.value, ...pickedIds.value] : pickedIds.value
 )
-const match = computed<'all' | 'any'>(() =>
-  matchQuery.value === 'any' ? 'any' : 'all'
-)
-
-const GENDERS: CharacterGender[] = ['female', 'male', 'other']
-const genders = computed<CharacterGender[]>(() =>
-  GENDERS.filter((g) => gendersQuery.value.split(',').includes(g))
-)
+const match = computed(() => state.value.trait_match)
+const genders = computed(() => state.value.genders)
+const qQuery = computed(() => state.value.q)
 
 // The API refuses relevance_desc without q.
 const sort = computed<CharacterSort>(() => {
-  const picked = sortQuery.value as CharacterSort
+  const picked = state.value.sort as CharacterSort
   if (picked === 'relevance_desc' || !picked) {
     return qQuery.value ? 'relevance_desc' : 'popularity_desc'
   }
@@ -110,8 +105,7 @@ watchDebounced(
   (value) => {
     const q = value.trim()
     if (q !== qQuery.value) {
-      qQuery.value = q
-      page.value = 1
+      set({ q })
     }
   },
   { debounce: 400 }
@@ -122,11 +116,8 @@ watch(qQuery, (q) => {
   }
 })
 
-// Both writes land in one navigation: useRouteQuery batches every set made in
-// the same tick into a single replace.
 const setPicked = (ids: number[]) => {
-  pickedIds.value = ids
-  page.value = 1
+  set({ trait_ids: ids })
 }
 
 const toggle = (t: TraitSummary) => {
@@ -143,32 +134,26 @@ const toggle = (t: TraitSummary) => {
 }
 
 const setMatch = (value: string | string[]) => {
-  matchQuery.value = value === 'any' ? 'any' : 'all'
-  page.value = 1
+  set({ trait_match: value === 'any' ? 'any' : 'all' })
 }
 
 const setSort = (value: string | string[]) => {
-  sortQuery.value = value as string
-  page.value = 1
+  set({ sort: value as string })
 }
 
 const setGenders = (value: string | string[]) => {
-  gendersQuery.value = (value as string[]).join(',')
-  page.value = 1
+  set({ genders: value as CharacterGender[] })
 }
 
 const clearAll = () => {
   keyword.value = ''
-  qQuery.value = ''
-  gendersQuery.value = ''
-  setPicked([])
+  set({ q: '', genders: [], trait_ids: [] })
 }
 
 const removeChip = (key: string) => {
   if (key === 'q') {
     keyword.value = ''
-    qQuery.value = ''
-    page.value = 1
+    set({ q: '' })
     return
   }
   if (key.startsWith('gender:')) {

@@ -18,7 +18,7 @@ const failed = ref(false)
 // was actually on. `replace`, like every other paginated page here, so paging
 // does not fill the history. SearchContainer drops it when the category or the
 // keyword changes, SearchGalgameFilter when a filter does.
-const page = useRouteQuery('page', 1, { mode: 'replace', transform: Number })
+const page = usePageQuery()
 const top = useTemplateRef<HTMLElement>('top')
 
 const meta = computed(() => SEARCH_CATEGORY_MAP[props.type])

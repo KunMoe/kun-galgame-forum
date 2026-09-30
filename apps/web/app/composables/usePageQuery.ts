@@ -8,10 +8,4 @@
 // shapes the list is in the URL too — a restored page against a filter that
 // reset to its default points at a list the reader never saw.
 export const usePageQuery = (key = 'page') =>
-  useRouteQuery(key, 1, {
-    mode: 'replace',
-    transform: (value: unknown) => {
-      const page = Number(value)
-      return Number.isInteger(page) && page > 0 ? page : 1
-    }
-  })
+  useQueryState({ [key]: queryPage() })[key]!

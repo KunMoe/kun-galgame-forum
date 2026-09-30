@@ -93,7 +93,6 @@
     "@tailwindcss/vite": "^4.1.18",
     "@vueuse/core": "^14.1.0",
     "@vueuse/integrations": "^14.3.0",
-    "@vueuse/router": "^14.1.0",
     "apexcharts": "^5.3.6",
     "capture-website": "^5.1.0",
     "centrifuge": "^5.7.4",

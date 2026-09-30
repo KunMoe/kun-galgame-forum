@@ -4,7 +4,7 @@ import type { CompanyPage } from '#shared/utils/api/schemas'
 import { settle } from '#shared/utils/api/problem'
 import { companyItemOf } from '~/utils/galgame/entityCards'
 
-const page = useRouteQuery('page', 1, { mode: 'replace', transform: Number })
+const page = usePageQuery()
 const limit = 100
 const api = useApiClient()
 const nameOf = useCatalogName()

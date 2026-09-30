@@ -2,7 +2,7 @@
 import type { SeriesPage } from '#shared/utils/api/schemas'
 import { seriesCardOf } from '~/utils/galgame/entityCards'
 
-const page = useRouteQuery('page', 1, { mode: 'replace', transform: Number })
+const page = usePageQuery()
 const limit = 12
 
 const { allowsNsfw, stanceKey } = useContentStance()

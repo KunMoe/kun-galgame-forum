@@ -27,7 +27,7 @@ const tabItems = computed(() => [
   { value: 'all', textValue: '全部' },
   ...mutedCategories.value.map((c) => ({ value: c.key, textValue: c.label }))
 ])
-const activeTab = useRouteQuery<string>('tab', 'all', { mode: 'replace' })
+const activeTab = useTabQuery('all')
 
 const notificationType = computed((): NotificationType | undefined => {
   if (activeTab.value === 'all') {

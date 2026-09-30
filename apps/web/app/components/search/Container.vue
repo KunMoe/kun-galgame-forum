@@ -5,7 +5,7 @@ import {
 } from '~/utils/search/overview'
 
 const route = useRoute()
-const router = useRouter()
+const patchQuery = useQueryWriter()
 
 const { searchHistory } = storeToRefs(usePersistKUNGalgameSearchStore())
 
@@ -23,15 +23,11 @@ const setKeywords = (value: string) => {
   if (value === keywords.value) {
     return
   }
-  const query = { ...route.query }
-  if (value) {
-    query.keywords = value
-  } else {
-    delete query.keywords
-  }
-  delete query.family
-  delete query.page
-  router.replace({ query })
+  patchQuery({
+    keywords: value || undefined,
+    family: undefined,
+    page: undefined
+  })
 }
 
 const rememberHistory = (value: string) => {
@@ -106,13 +102,10 @@ const LANE_FILTER_KEYS = new Set<string>([
 ])
 
 const setType = (value: SearchType) => {
-  const query = Object.fromEntries(
-    Object.entries(route.query).filter(([key]) => !LANE_FILTER_KEYS.has(key))
-  )
-  if (value !== 'all') {
-    query.type = value
-  }
-  router.replace({ query })
+  patchQuery({
+    ...Object.fromEntries([...LANE_FILTER_KEYS].map((key) => [key, undefined])),
+    type: value === 'all' ? undefined : value
+  })
 }
 </script>
 

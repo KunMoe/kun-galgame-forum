@@ -1,7 +1,5 @@
 import type { ListLibraryWorksQuery } from '#shared/utils/api/schemas'
 
-type LibrarySortField = 'popularity' | 'release_date' | 'time' | 'relevance'
-
 export const librarySortToken = (
   field: string,
   order: string
@@ -26,46 +24,34 @@ export const librarySortToken = (
 
 // popularity is a catalog sort and the local list cannot answer it, so only the
 // library page may ask for it as its default.
-export const useLibraryFilters = () => {
-  const opts = { mode: 'replace' as const }
-
-  const page = useRouteQuery('page', 1, { ...opts, transform: Number })
-  const sortField = useRouteQuery<LibrarySortField>(
-    'sortField',
-    'popularity',
-    opts
-  )
-  const sortOrder = useRouteQuery<KunOrder>('sortOrder', 'desc', opts)
-  const releasedFrom = useRouteQuery<string>('releasedFrom', '', opts)
-  const releasedTo = useRouteQuery<string>('releasedTo', '', opts)
-  const limit = 24
-
-  return {
-    page,
-    limit,
-    sortField,
-    sortOrder,
-    releasedFrom,
-    releasedTo
-  }
+const LIBRARY_FILTER_SCHEMA = {
+  page: queryPage(),
+  sortField: queryString('popularity'),
+  sortOrder: queryEnum(['desc', 'asc'] as const, 'desc'),
+  releasedFrom: queryString(),
+  releasedTo: queryString()
 }
+
+export const useLibraryFilters = () => ({
+  ...useQueryState(LIBRARY_FILTER_SCHEMA, { pageKey: 'page' }),
+  limit: 24
+})
 
 export const useLibraryWorksQuery = () => {
   const filters = useLibraryFilters()
   const { allowsNsfw } = useContentStance()
 
-  const query = computed<ListLibraryWorksQuery>(() => ({
-    page: filters.page.value,
-    limit: filters.limit,
-    sort: librarySortToken(filters.sortField.value, filters.sortOrder.value),
-    ...(filters.releasedFrom.value
-      ? { released_from: filters.releasedFrom.value }
-      : {}),
-    ...(filters.releasedTo.value
-      ? { released_to: filters.releasedTo.value }
-      : {}),
-    include_nsfw: allowsNsfw.value
-  }))
+  const query = computed<ListLibraryWorksQuery>(() => {
+    const f = filters.state.value
+    return {
+      page: f.page,
+      limit: filters.limit,
+      sort: librarySortToken(f.sortField, f.sortOrder),
+      ...(f.releasedFrom ? { released_from: f.releasedFrom } : {}),
+      ...(f.releasedTo ? { released_to: f.releasedTo } : {}),
+      include_nsfw: allowsNsfw.value
+    }
+  })
 
   return { ...filters, query }
 }

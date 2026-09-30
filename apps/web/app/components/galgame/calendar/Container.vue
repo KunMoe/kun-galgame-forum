@@ -9,11 +9,12 @@ import type {
 } from '#shared/utils/api/schemas'
 import { workSummaryToCard } from '~/utils/galgame/workCard'
 
-const opts = { mode: 'replace' as const }
-const view = useRouteQuery<string>('view', 'month', opts)
-const month = useRouteQuery<string>('month', '', opts)
-const year = useRouteQuery<string>('year', '', opts)
-const doujin = useRouteQuery<string>('doujin', '', opts)
+const { view, month, year, doujin } = useQueryState({
+  view: queryString('month'),
+  month: queryString(),
+  year: queryString(),
+  doujin: queryString()
+})
 const includeDoujin = computed({
   get: () => doujin.value === '1',
   set: (v: boolean) => {

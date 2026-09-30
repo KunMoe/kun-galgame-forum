@@ -8,24 +8,16 @@ import { tagItemOf } from '~/utils/galgame/entityCards'
 // One page for both lists below: they are mutually exclusive (tag grid while
 // nothing is picked, Galgame results once something is), and every selection
 // change resets it, so ?page= is never read by the list it was not set on.
-const page = usePageQuery()
+const {
+  page,
+  tag_ids: selectedIds,
+  set
+} = useQueryState(
+  { page: queryPage(), tag_ids: queryIds() },
+  { pageKey: 'page' }
+)
 const tagsLimit = 100
 const api = useApiClient()
-
-// The picked tags live in the URL: a multi-tag result is the one thing on this
-// page worth sharing, and before this it was a local ref — the link a reader
-// copied reopened on the unfiltered tag list.
-const tagIdsQuery = useRouteQuery<string>('tag_ids', '', { mode: 'replace' })
-const selectedIds = computed<number[]>({
-  get: () =>
-    tagIdsQuery.value
-      .split(',')
-      .map(Number)
-      .filter((id) => Number.isInteger(id) && id > 0),
-  set: (ids) => {
-    tagIdsQuery.value = ids.join(',')
-  }
-})
 
 // Pinned to page 1 while tags are picked, because the tag grid is not on screen
 // then: paging the Galgame results would otherwise refetch 100 tags from catalog
@@ -84,11 +76,11 @@ watchDebounced(
 
 const entityNames = useEntityNames()
 
-// Both writes land in one navigation: useRouteQuery batches every set made in
-// the same tick into a single replace.
+// The picked tags live in the URL: a multi-tag result is the one thing on this
+// page worth sharing, and before this it was a local ref — the link a reader
+// copied reopened on the unfiltered tag list.
 const setSelectedIds = (ids: number[]) => {
-  selectedIds.value = ids
-  page.value = 1
+  set({ tag_ids: ids })
 }
 
 const toggleTag = (item: SearchEntityItem) => {

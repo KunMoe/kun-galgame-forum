@@ -4,7 +4,7 @@ const v1ClientMessage =
   'Reach the forum API only through the typed client in shared/utils/api/client.ts'
 
 const pageRouteMessage =
-  "Read the route through Nuxt's page-scoped useRoute / the auto-imported useRouteQuery (app/composables/useRouteQuery.ts). The global route moves the moment a link is clicked, and a list being left refetches page 1."
+  "Keep URL state in useQueryState (app/composables/useQueryState.ts), and read the route through Nuxt's page-scoped useRoute. The global route moves the moment a link is clicked, and a list being left refetches page 1."
 
 export default withNuxt(
   {
@@ -37,7 +37,6 @@ export default withNuxt(
   },
   {
     files: ['app/**/*.{ts,vue}'],
-    ignores: ['app/composables/useRouteQuery.ts'],
     rules: {
       'no-restricted-imports': [
         'error',

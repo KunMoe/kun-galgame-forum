@@ -6,22 +6,9 @@ withDefaults(defineProps<{ total?: number | null; pending?: boolean }>(), {
   pending: false
 })
 
-const { page, sortField, sortOrder, releasedFrom, releasedTo } =
-  useLibraryFilters()
+const { state, set } = useLibraryFilters()
 
 const { open: openSettingPanel } = useSettingPanel()
-
-watch(
-  () => [
-    sortField.value,
-    sortOrder.value,
-    releasedFrom.value,
-    releasedTo.value
-  ],
-  () => {
-    page.value = 1
-  }
-)
 
 const sortOptions = Object.entries(KUN_GALGAME_LIBRARY_SORT_FIELD_MAP).map(
   ([value, label]) => ({ value, label })
@@ -29,26 +16,22 @@ const sortOptions = Object.entries(KUN_GALGAME_LIBRARY_SORT_FIELD_MAP).map(
 
 // Only the release-date sort reads the direction; the catalog's popularity and
 // updated cursors are descending and have no ascending counterpart.
-const isOrderable = computed(() => sortField.value === 'release_date')
+const isOrderable = computed(() => state.value.sortField === 'release_date')
 
 const yearRangeLabel = computed(() => {
-  if (releasedFrom.value && releasedTo.value) {
-    return releasedFrom.value === releasedTo.value
-      ? `${releasedFrom.value} 年`
-      : `${releasedFrom.value} - ${releasedTo.value}`
+  const { releasedFrom: from, releasedTo: to } = state.value
+  if (from && to) {
+    return from === to ? `${from} 年` : `${from} - ${to}`
   }
-  return releasedFrom.value
-    ? `${releasedFrom.value} 年至今`
-    : `${releasedTo.value} 年以前`
+  return from ? `${from} 年至今` : `${to} 年以前`
 })
 
 const setYears = (range: { from: string; to: string }) => {
-  releasedFrom.value = range.from
-  releasedTo.value = range.to
+  set({ releasedFrom: range.from, releasedTo: range.to })
 }
 
 const chips = computed<FilterChip[]>(() =>
-  releasedFrom.value || releasedTo.value
+  state.value.releasedFrom || state.value.releasedTo
     ? [{ key: 'years', label: yearRangeLabel.value }]
     : []
 )
@@ -66,30 +49,36 @@ const chips = computed<FilterChip[]>(() =>
       icon="lucide:arrow-down-up"
       label="排序"
       :options="sortOptions"
-      :model-value="sortField"
+      :model-value="state.sortField"
       empty-value="popularity"
-      @update:model-value="sortField = $event as typeof sortField"
+      @update:model-value="set({ sortField: $event as string })"
     />
 
     <KunTooltip
       v-if="isOrderable"
-      :text="sortOrder === 'desc' ? '当前降序' : '当前升序'"
+      :text="state.sortOrder === 'desc' ? '当前降序' : '当前升序'"
       position="bottom"
     >
       <button
         type="button"
         aria-label="切换排序方向"
         :class="filterPillSquareClass(false)"
-        @click="sortOrder = sortOrder === 'desc' ? 'asc' : 'desc'"
+        @click="set({ sortOrder: state.sortOrder === 'desc' ? 'asc' : 'desc' })"
       >
         <KunIcon
-          :name="sortOrder === 'desc' ? 'lucide:arrow-down' : 'lucide:arrow-up'"
+          :name="
+            state.sortOrder === 'desc' ? 'lucide:arrow-down' : 'lucide:arrow-up'
+          "
           class="size-4 text-inherit"
         />
       </button>
     </KunTooltip>
 
-    <FilterYears :from="releasedFrom" :to="releasedTo" @update="setYears" />
+    <FilterYears
+      :from="state.releasedFrom"
+      :to="state.releasedTo"
+      @update="setYears"
+    />
 
     <template #end>
       <KunTooltip text="卡片显示设置" position="bottom">

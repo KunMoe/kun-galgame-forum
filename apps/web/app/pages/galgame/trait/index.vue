@@ -5,7 +5,7 @@ useKunSeoMeta({
     'Galgame 角色的属性分类一览: 发色、瞳色、体型、服装、饰品、性格、身份与经历。点击属性查看拥有它的全部角色, 或在角色库里组合多个属性筛选角色。'
 })
 
-const group = useRouteQuery<string>('group', '', { mode: 'replace' })
+const group = useTabQuery('', 'group')
 </script>
 
 <template>

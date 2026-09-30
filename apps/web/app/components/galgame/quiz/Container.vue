@@ -20,36 +20,37 @@ const userStore = usePersistUserStore()
 const isLoggedIn = computed(() => !!userStore.id)
 const { allowsNsfw } = useContentStance()
 
-const opts = { mode: 'replace' as const }
-const page = useRouteQuery('page', 1, { ...opts, transform: Number })
-const tab = useRouteQuery<'all' | 'mine'>('tab', 'all', opts)
-const category = useRouteQuery<string>('category', 'all', opts)
-const type = useRouteQuery<string>('type', 'all', opts)
-const difficulty = useRouteQuery('difficulty', 0, {
-  ...opts,
-  transform: Number
-})
-const sortField = useRouteQuery<string>('sort_field', 'bumped_at', opts)
-const sortOrder = useRouteQuery<'asc' | 'desc'>('sort_order', 'desc', opts)
+const {
+  page,
+  tab,
+  category,
+  type,
+  difficulty,
+  sort_field: sortField,
+  sort_order: sortOrder,
+  set
+} = useQueryState(
+  {
+    page: queryPage(),
+    tab: queryEnum(['all', 'mine'] as const, 'all'),
+    category: queryString('all'),
+    type: queryString('all'),
+    difficulty: queryInt(0, 0),
+    sort_field: queryEnum(KUN_QUIZ_SORT_FIELD_CONST, 'bumped_at', {
+      update_time: 'bumped_at',
+      time: 'created'
+    }),
+    sort_order: queryEnum(['desc', 'asc'] as const, 'desc')
+  },
+  { pageKey: 'page' }
+)
 const limit = 50
 
 const activeTab = computed(() => (isLoggedIn.value ? tab.value : 'all'))
 
-const sort = computed<QuizSort>(() => {
-  const mapped =
-    sortField.value === 'update_time'
-      ? 'bumped_at'
-      : sortField.value === 'time'
-        ? 'created'
-        : sortField.value
-  const field = (KUN_QUIZ_SORT_FIELD_CONST as readonly string[]).includes(
-    mapped
-  )
-    ? mapped
-    : 'bumped_at'
-  const order = sortOrder.value === 'asc' ? 'asc' : 'desc'
-  return `${field}_${order}` as QuizSort
-})
+const sort = computed<QuizSort>(
+  () => `${sortField.value}_${sortOrder.value}` as QuizSort
+)
 
 const listQuery = computed(() => {
   const query: {
@@ -106,25 +107,12 @@ watch(
   }
 )
 
-watch(
-  sortField,
-  (v) => {
-    if (v === 'update_time') sortField.value = 'bumped_at'
-    else if (v === 'time') sortField.value = 'created'
-  },
-  { immediate: true }
-)
-
-watch([category, type, difficulty, sortField, sortOrder, tab], () => {
-  page.value = 1
-})
-
 const tabItems: KunTabItem[] = [
   { value: 'all', textValue: '全部题库', icon: 'lucide:library-big' },
   { value: 'mine', textValue: '我的答题', icon: 'lucide:history' }
 ]
 const onTab = (v: string) => {
-  tab.value = v as 'all' | 'mine'
+  tab.value = v === 'mine' ? 'mine' : 'all'
 }
 const setSortOrder = (order: 'asc' | 'desc') => {
   sortOrder.value = order
@@ -136,8 +124,7 @@ const openPublish = () => {
   showPublish.value = true
 }
 const onPublished = () => {
-  tab.value = 'all'
-  page.value = 1
+  set({ tab: 'all', page: 1 })
   refresh()
 }
 </script>

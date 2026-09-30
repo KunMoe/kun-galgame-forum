@@ -10,42 +10,25 @@ export const SEARCH_GALGAME_FILTER_KEYS = [
   'sort'
 ] as const
 
+const SEARCH_GALGAME_FILTER_SCHEMA = {
+  page: queryPage(),
+  company_id: queryInt(0, 0),
+  tag_ids: queryIds(),
+  released_from: queryString(),
+  released_to: queryString(),
+  sort: queryString('relevance')
+}
+
 export const useSearchGalgameFilters = () => {
-  const opts = { mode: 'replace' as const }
-
-  const companyId = useRouteQuery('company_id', 0, {
-    ...opts,
-    transform: Number
+  const filters = useQueryState(SEARCH_GALGAME_FILTER_SCHEMA, {
+    pageKey: 'page'
   })
-  const tagIds = useRouteQuery<string>('tag_ids', '', opts)
-  const releasedFrom = useRouteQuery<string>('released_from', '', opts)
-  const releasedTo = useRouteQuery<string>('released_to', '', opts)
-  const sort = useRouteQuery<string>('sort', 'relevance', opts)
-
-  const tagIdList = computed<number[]>({
-    get: () =>
-      tagIds.value
-        .split(',')
-        .map(Number)
-        .filter((id) => Number.isInteger(id) && id > 0),
-    set: (ids) => {
-      tagIds.value = ids.join(',')
-    }
-  })
-
-  const clear = () => {
-    companyId.value = 0
-    tagIds.value = ''
-    releasedFrom.value = ''
-    releasedTo.value = ''
-  }
-
-  return {
-    companyId,
-    tagIds: tagIdList,
-    releasedFrom,
-    releasedTo,
-    sort,
-    clear
-  }
+  const clear = () =>
+    filters.set({
+      company_id: 0,
+      tag_ids: [],
+      released_from: '',
+      released_to: ''
+    })
+  return { ...filters, clear }
 }

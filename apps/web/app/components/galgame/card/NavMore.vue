@@ -1,27 +1,13 @@
 <script setup lang="ts">
 import {
   KUN_GALGAME_PROVIDER_LABEL_MAP,
-  PROVIDER_KEY_OPTIONS,
-  type ProviderKey
+  PROVIDER_KEY_OPTIONS
 } from '~/constants/galgameResource'
 import { settle } from '#shared/utils/api/problem'
 
-const {
-  sortField,
-  releasedFrom,
-  releasedTo,
-  releasedMonths,
-  collectedFrom,
-  collectedTo,
-  collectedMonths,
-  includeProviders,
-  excludeOnlyProviders,
-  minRatingCount,
-  minRating
-} = useGalgameFilters()
+type Filters = QueryValues<typeof GALGAME_FILTER_SCHEMA>
 
-const csvToArray = (csv: string) => csv.split(',').filter(Boolean)
-const setCsv = (values: string[]) => [...values].sort().join(',')
+const { state, set } = useGalgameFilters()
 
 const monthOptions = Array.from({ length: 12 }, (_, i) => ({
   value: String(i + 1),
@@ -30,7 +16,7 @@ const monthOptions = Array.from({ length: 12 }, (_, i) => ({
 
 const providerOptions = PROVIDER_KEY_OPTIONS.map((key) => ({
   value: key,
-  label: KUN_GALGAME_PROVIDER_LABEL_MAP[key as ProviderKey]
+  label: KUN_GALGAME_PROVIDER_LABEL_MAP[key]
 }))
 
 // The pill's resting text is the selected option's own label, so a bare 不限
@@ -50,20 +36,10 @@ const minRatingOptions = [
   { value: '9', label: '9 分+' }
 ]
 
-const months = computed(() => csvToArray(releasedMonths.value))
-const setMonths = (values: string[]) => {
-  releasedMonths.value = values
-    .map(Number)
-    .sort((a, b) => a - b)
-    .join(',')
-}
-
-const includes = computed(() => csvToArray(includeProviders.value))
-const excludes = computed(() => csvToArray(excludeOnlyProviders.value))
+const months = computed(() => state.value.releasedMonths.map(String))
 
 const setYears = (range: { from: string; to: string }) => {
-  releasedFrom.value = range.from
-  releasedTo.value = range.to
+  set({ releasedFrom: range.from, releasedTo: range.to })
 }
 
 const collectedCalendar = ref<{ year: number; month: number }[]>([])
@@ -85,7 +61,7 @@ onMounted(loadCollectedCalendar)
 watch(allowsNsfw, loadCollectedCalendar)
 
 const selectedCollectedYear = computed(
-  () => collectedFrom.value || collectedTo.value || ''
+  () => state.value.collectedFrom || state.value.collectedTo
 )
 const collectedYearOptions = computed(() => {
   const years = new Set<number>()
@@ -109,29 +85,26 @@ const collectedMonthOptions = computed(() => {
 // Multi-select under the hood (native click-to-toggle like 发售月份), but we
 // keep at most one item so it behaves as a single choice with deselect.
 const collectedYearsModel = computed(() =>
-  collectedFrom.value ? [collectedFrom.value] : []
+  state.value.collectedFrom ? [state.value.collectedFrom] : []
 )
 const collectedMonthsModel = computed(() =>
-  collectedMonths.value ? [collectedMonths.value] : []
+  state.value.collectedMonths.map(String)
 )
 
 const setCollectedYear = (value: string) => {
-  collectedFrom.value = value
-  collectedTo.value = value
-  collectedMonths.value = ''
   // Browsing by collection time wants collection order, but the server used to
   // force SortField = created whenever this filter was set: the sort pill went
   // on reading 评分 while the list came back in another order entirely. Move the
   // pill instead, and only off the page default, so a sort the reader actually
   // picked survives the filter.
-  if (value && sortField.value === 'time') {
-    sortField.value = 'created'
-  }
-}
-const setCollectedMonth = (value: string) => {
-  if (value === '' || selectedCollectedYear.value) {
-    collectedMonths.value = value
-  }
+  set({
+    collectedFrom: value,
+    collectedTo: value,
+    collectedMonths: [],
+    ...(value && state.value.sortField === 'time'
+      ? { sortField: 'created' }
+      : {})
+  })
 }
 
 const lastOf = (values: string[]) => values[values.length - 1] ?? ''
@@ -143,7 +116,8 @@ const onPickCollectedMonth = (values: string[]) => {
   if (!selectedCollectedYear.value) {
     return
   }
-  setCollectedMonth(lastOf(values))
+  const month = Number(lastOf(values))
+  set({ collectedMonths: month ? [month] : [] })
 }
 </script>
 
@@ -154,8 +128,10 @@ const onPickCollectedMonth = (values: string[]) => {
       label="含网盘"
       multiple
       :options="providerOptions"
-      :model-value="includes"
-      @update:model-value="includeProviders = setCsv($event as string[])"
+      :model-value="state.includeProviders"
+      @update:model-value="
+        set({ includeProviders: $event as Filters['includeProviders'] })
+      "
     />
   </KunTooltip>
   <KunTooltip text="丢掉只有这些网盘可选的作品" position="bottom">
@@ -164,8 +140,10 @@ const onPickCollectedMonth = (values: string[]) => {
       label="排除仅含"
       multiple
       :options="providerOptions"
-      :model-value="excludes"
-      @update:model-value="excludeOnlyProviders = setCsv($event as string[])"
+      :model-value="state.excludeOnlyProviders"
+      @update:model-value="
+        set({ excludeOnlyProviders: $event as Filters['excludeOnlyProviders'] })
+      "
     />
   </KunTooltip>
 
@@ -173,20 +151,24 @@ const onPickCollectedMonth = (values: string[]) => {
     icon="lucide:star"
     label="最低评分"
     :options="minRatingOptions"
-    :model-value="String(minRating)"
+    :model-value="String(state.minRating)"
     empty-value="0"
-    @update:model-value="minRating = Number($event)"
+    @update:model-value="set({ minRating: Number($event) })"
   />
   <FilterMenu
     icon="lucide:users"
     label="评分人数"
     :options="minCountOptions"
-    :model-value="String(minRatingCount)"
+    :model-value="String(state.minRatingCount)"
     empty-value="0"
-    @update:model-value="minRatingCount = Number($event)"
+    @update:model-value="set({ minRatingCount: Number($event) })"
   />
 
-  <FilterYears :from="releasedFrom" :to="releasedTo" @update="setYears" />
+  <FilterYears
+    :from="state.releasedFrom"
+    :to="state.releasedTo"
+    @update="setYears"
+  />
   <FilterMenu
     icon="lucide:calendar-days"
     label="发售月份"
@@ -194,7 +176,9 @@ const onPickCollectedMonth = (values: string[]) => {
     :columns="3"
     :options="monthOptions"
     :model-value="months"
-    @update:model-value="setMonths($event as string[])"
+    @update:model-value="
+      set({ releasedMonths: ($event as string[]).map(Number) })
+    "
   />
 
   <FilterMenu

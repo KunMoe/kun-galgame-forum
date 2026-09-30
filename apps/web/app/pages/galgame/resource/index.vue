@@ -5,8 +5,10 @@ import { problemMessage } from '#shared/utils/api/message'
 
 const LIMIT = 50
 
-const page = useRouteQuery('page', 1, { mode: 'replace', transform: Number })
-const keywords = useRouteQuery<string>('keywords', '', { mode: 'replace' })
+const { page, keywords, set } = useQueryState(
+  { page: queryPage(), keywords: queryString() },
+  { pageKey: 'page' }
+)
 const input = ref(keywords.value)
 const { allowsNsfw, stanceKey } = useContentStance()
 
@@ -34,8 +36,7 @@ watchDebounced(
     if (next === keywords.value) {
       return
     }
-    page.value = 1
-    keywords.value = next
+    set({ keywords: next })
   },
   { debounce: 500, maxWait: 1000 }
 )

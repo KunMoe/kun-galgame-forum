@@ -15,17 +15,6 @@ import {
   type ProviderKey
 } from '~/constants/galgameResource'
 
-type SortField =
-  | 'popularity'
-  | 'time'
-  | 'created'
-  | 'view'
-  | 'view_1d'
-  | 'view_7d'
-  | 'view_30d'
-  | 'release_date'
-  | 'rating'
-
 const BROWSE_SORT_FIELDS = new Set([
   'resource_updated',
   'created',
@@ -37,87 +26,79 @@ const BROWSE_SORT_FIELDS = new Set([
   'rating'
 ])
 
-const GAME_TYPES = new Set<NonNullable<ListWorksQuery['game_type']>>([
+const GAME_TYPES = [
+  '',
   'ba_saku',
   'plot',
   'moe',
   'daily',
   'uncategorized'
-])
-
-export const GALGAME_FILTER_QUERY_KEYS = [
-  'page',
-  'type',
-  'language',
-  'platform',
-  'runtime',
-  'gameType',
-  'sortField',
-  'sortOrder',
-  'releasedFrom',
-  'releasedTo',
-  'releasedMonths',
-  'collectedFrom',
-  'collectedTo',
-  'collectedMonths',
-  'includeProviders',
-  'excludeOnlyProviders',
-  'minRatingCount',
-  'minRating'
 ] as const
 
-const mappedAxis = (
-  key: string,
+const inVocabOrder = (
+  values: string[],
   legacy: Record<string, string>,
   options: { value: string }[]
 ) => {
-  const raw = useRouteQuery<string>(key, '', { mode: 'replace' })
-  return computed({
-    get: () => axisKey(raw.value, legacy, options) ?? '',
-    set: (value: string) => {
-      raw.value = value
-    }
-  })
+  const keys = new Set(values.map((value) => axisKey(value, legacy, options)))
+  return options.map((option) => option.value).filter((key) => keys.has(key))
 }
 
-const mappedAxes = (
-  key: string,
+const axisField = (
   legacy: Record<string, string>,
   options: { value: string }[]
-) => {
-  const raw = useRouteQuery<string>(key, '', { mode: 'replace' })
-  const inVocabOrder = (values: string[]) => {
-    const keys = new Set(values.map((value) => axisKey(value, legacy, options)))
-    return options
-      .map((option) => option.value)
-      .filter((value) => keys.has(value))
-  }
-  return computed({
-    get: () => inVocabOrder(raw.value.split(',')),
-    set: (values: string[]) => {
-      raw.value = inVocabOrder(values).join(',')
-    }
-  })
+): QueryField<string> => ({
+  parse: (raw) => axisKey(raw ?? '', legacy, options) ?? '',
+  format: (value) => value
+})
+
+const axisListField = (
+  legacy: Record<string, string>,
+  options: { value: string }[]
+): QueryField<string[]> => ({
+  parse: (raw) => inVocabOrder((raw ?? '').split(','), legacy, options),
+  format: (values) => inVocabOrder(values, legacy, options).join(',')
+})
+
+const monthListField: QueryField<number[]> = {
+  parse: (raw) =>
+    [...new Set((raw ?? '').split(',').map(Number))]
+      .filter((month) => Number.isInteger(month) && month >= 1 && month <= 12)
+      .sort((a, b) => a - b),
+  format: (months) => [...months].sort((a, b) => a - b).join(',')
 }
 
-const csvInts = (csv: string, min: number, max: number) => {
-  const values = csv
-    .split(',')
-    .map(Number)
-    .filter((n) => Number.isInteger(n) && n >= min && n <= max)
-  return values.length ? values : undefined
+const providerListField: QueryField<ProviderKey[]> = {
+  parse: (raw) => {
+    const picked = new Set((raw ?? '').split(','))
+    return PROVIDER_KEY_OPTIONS.filter((key) => picked.has(key))
+  },
+  format: (keys) =>
+    PROVIDER_KEY_OPTIONS.filter((key) => keys.includes(key)).join(',')
 }
 
-const csvProviders = (
-  csv: string
-): NonNullable<ListWorksQuery['resource_providers']> | undefined => {
-  const values = csv
-    .split(',')
-    .filter((key): key is ProviderKey =>
-      (PROVIDER_KEY_OPTIONS as readonly string[]).includes(key)
-    )
-  return values.length ? values : undefined
+export const GALGAME_FILTER_SCHEMA = {
+  page: queryPage(),
+  type: axisField(LEGACY_RESOURCE_TYPE, RESOURCE_TYPE_OPTIONS),
+  language: axisListField(LEGACY_RESOURCE_LANGUAGE, LANGUAGE_OPTIONS),
+  platform: axisListField(LEGACY_RESOURCE_PLATFORM, PLATFORM_FILTER_OPTIONS),
+  runtime: axisListField({}, EMULATOR_RUNTIME_OPTIONS),
+  gameType: queryEnum(GAME_TYPES, ''),
+  sortField: queryString('time'),
+  sortOrder: queryEnum(['desc', 'asc'] as const, 'desc'),
+  releasedFrom: queryString(),
+  releasedTo: queryString(),
+  releasedMonths: monthListField,
+  collectedFrom: queryString(),
+  collectedTo: queryString(),
+  collectedMonths: monthListField,
+  includeProviders: providerListField,
+  excludeOnlyProviders: providerListField,
+  minRatingCount: queryInt(0, 0),
+  minRating: queryInt(0, 0)
 }
+
+export const GALGAME_FILTER_QUERY_KEYS = Object.keys(GALGAME_FILTER_SCHEMA)
 
 export const browseSortToken = (
   field: string,
@@ -132,150 +113,51 @@ export const browseSortToken = (
     : 'resource_updated_desc'
 }
 
-export const useGalgameFilters = (defaultSortField: SortField = 'time') => {
-  const opts = { mode: 'replace' as const }
-
-  const page = useRouteQuery('page', 1, { ...opts, transform: Number })
-
-  const type = mappedAxis('type', LEGACY_RESOURCE_TYPE, RESOURCE_TYPE_OPTIONS)
-  const languages = mappedAxes(
-    'language',
-    LEGACY_RESOURCE_LANGUAGE,
-    LANGUAGE_OPTIONS
-  )
-  const platforms = mappedAxes(
-    'platform',
-    LEGACY_RESOURCE_PLATFORM,
-    PLATFORM_FILTER_OPTIONS
-  )
-  const runtimes = mappedAxes('runtime', {}, EMULATOR_RUNTIME_OPTIONS)
-  const gameTypeRaw = useRouteQuery<string>('gameType', '', opts)
-  const gameType = computed({
-    get: () => (gameTypeRaw.value === 'all' ? '' : gameTypeRaw.value),
-    set: (value: string) => {
-      gameTypeRaw.value = value
-    }
-  })
-  const sortField = useRouteQuery<SortField>(
-    'sortField',
-    defaultSortField,
-    opts
-  )
-  const sortOrder = useRouteQuery<KunOrder>('sortOrder', 'desc', opts)
-
-  const releasedFrom = useRouteQuery<string>('releasedFrom', '', opts)
-  const releasedTo = useRouteQuery<string>('releasedTo', '', opts)
-  const releasedMonths = useRouteQuery<string>('releasedMonths', '', opts)
-
-  const collectedFrom = useRouteQuery<string>('collectedFrom', '', opts)
-  const collectedTo = useRouteQuery<string>('collectedTo', '', opts)
-  const collectedMonths = useRouteQuery<string>('collectedMonths', '', opts)
-
-  const includeProviders = useRouteQuery<string>('includeProviders', '', opts)
-  const excludeOnlyProviders = useRouteQuery<string>(
-    'excludeOnlyProviders',
-    '',
-    opts
-  )
-
-  const minRatingCount = useRouteQuery('minRatingCount', 0, {
-    ...opts,
-    transform: Number
-  })
-  const minRating = useRouteQuery('minRating', 0, {
-    ...opts,
-    transform: Number
-  })
-
-  const limit = 24
-
-  return {
-    page,
-    limit,
-    type,
-    languages,
-    platforms,
-    runtimes,
-    gameType,
-    sortField,
-    sortOrder,
-    releasedFrom,
-    releasedTo,
-    releasedMonths,
-    collectedFrom,
-    collectedTo,
-    collectedMonths,
-    includeProviders,
-    excludeOnlyProviders,
-    minRatingCount,
-    minRating
-  }
-}
+export const useGalgameFilters = () => ({
+  ...useQueryState(GALGAME_FILTER_SCHEMA, { pageKey: 'page' }),
+  limit: 24
+})
 
 export const useBrowseWorksQuery = () => {
   const filters = useGalgameFilters()
   const { allowsNsfw } = useContentStance()
 
   const query = computed<ListWorksQuery>(() => {
-    const type = axisKey<NonNullable<ListWorksQuery['resource_type']>>(
-      filters.type.value,
-      LEGACY_RESOURCE_TYPE,
-      RESOURCE_TYPE_OPTIONS
-    )
-    const platforms = filters.platforms.value.filter(
+    const f = filters.state.value
+    const platforms = f.platform.filter(
       (platform) => platform !== 'emulator'
     ) as NonNullable<ListWorksQuery['resource_platforms']>
-    const runtimes = emulatorRuntimeFilter(
-      filters.platforms.value,
-      filters.runtimes.value
-    )
-    const languages = filters.languages.value as NonNullable<
+    const runtimes = emulatorRuntimeFilter(f.platform, f.runtime)
+    const languages = f.language as NonNullable<
       ListWorksQuery['resource_languages']
     >
-    const gameType = GAME_TYPES.has(
-      filters.gameType.value as NonNullable<ListWorksQuery['game_type']>
-    )
-      ? (filters.gameType.value as NonNullable<ListWorksQuery['game_type']>)
-      : undefined
-    const releasedMonths = csvInts(filters.releasedMonths.value, 1, 12)
-    const collectedMonths = csvInts(filters.collectedMonths.value, 1, 12)
-    const resourceProviders = csvProviders(filters.includeProviders.value)
-    const excludedSoleProviders = csvProviders(
-      filters.excludeOnlyProviders.value
-    )
     return {
-      page: filters.page.value,
+      page: f.page,
       limit: filters.limit,
-      sort: browseSortToken(filters.sortField.value, filters.sortOrder.value),
-      ...(type ? { resource_type: type } : {}),
+      sort: browseSortToken(f.sortField, f.sortOrder),
+      ...(f.type
+        ? { resource_type: f.type as ListWorksQuery['resource_type'] }
+        : {}),
       ...(platforms.length ? { resource_platforms: platforms } : {}),
       ...(runtimes ? { resource_runtimes: runtimes } : {}),
       ...(languages.length ? { resource_languages: languages } : {}),
-      ...(gameType ? { game_type: gameType } : {}),
-      ...(resourceProviders ? { resource_providers: resourceProviders } : {}),
-      ...(excludedSoleProviders
-        ? { excluded_sole_providers: excludedSoleProviders }
+      ...(f.gameType ? { game_type: f.gameType } : {}),
+      ...(f.includeProviders.length
+        ? { resource_providers: f.includeProviders }
         : {}),
-      ...(filters.releasedFrom.value
-        ? { released_from: filters.releasedFrom.value }
+      ...(f.excludeOnlyProviders.length
+        ? { excluded_sole_providers: f.excludeOnlyProviders }
         : {}),
-      ...(filters.releasedTo.value
-        ? { released_to: filters.releasedTo.value }
+      ...(f.releasedFrom ? { released_from: f.releasedFrom } : {}),
+      ...(f.releasedTo ? { released_to: f.releasedTo } : {}),
+      ...(f.releasedMonths.length ? { released_months: f.releasedMonths } : {}),
+      ...(f.collectedFrom ? { collected_from: f.collectedFrom } : {}),
+      ...(f.collectedTo ? { collected_to: f.collectedTo } : {}),
+      ...(f.collectedMonths.length
+        ? { collected_months: f.collectedMonths }
         : {}),
-      ...(releasedMonths ? { released_months: releasedMonths } : {}),
-      ...(filters.collectedFrom.value
-        ? { collected_from: filters.collectedFrom.value }
-        : {}),
-      ...(filters.collectedTo.value
-        ? { collected_to: filters.collectedTo.value }
-        : {}),
-      ...(collectedMonths ? { collected_months: collectedMonths } : {}),
-      ...(filters.minRating.value > 0
-        ? { min_rating: filters.minRating.value }
-        : {}),
-      ...(filters.minRatingCount.value > 0
-        ? { min_rating_count: filters.minRatingCount.value }
-        : {}),
+      ...(f.minRating > 0 ? { min_rating: f.minRating } : {}),
+      ...(f.minRatingCount > 0 ? { min_rating_count: f.minRatingCount } : {}),
       include_nsfw: allowsNsfw.value
     }
   })

@@ -6,71 +6,55 @@ withDefaults(defineProps<{ total?: number; pending?: boolean }>(), {
   pending: false
 })
 
-const {
-  companyId,
-  tagIds,
-  releasedFrom,
-  releasedTo,
-  sort,
-  clear: clearFilters
-} = useSearchGalgameFilters()
+const { state, set, clear: clearFilters } = useSearchGalgameFilters()
 
 const entityNames = useEntityNames()
 
-// useRouteQuery batches every set made in the same tick into one replace, so
-// dropping the page here lands in the same navigation as the filter itself —
-// the list sees one change and fires one request.
-const page = useRouteQuery('page', 1, { mode: 'replace', transform: Number })
-
-watch([companyId, tagIds, releasedFrom, releasedTo, sort], () => {
-  page.value = 1
-})
-
 const yearRangeLabel = computed(() => {
-  if (releasedFrom.value && releasedTo.value) {
-    return releasedFrom.value === releasedTo.value
-      ? `${releasedFrom.value} 年`
-      : `${releasedFrom.value} - ${releasedTo.value}`
+  const { released_from: from, released_to: to } = state.value
+  if (from && to) {
+    return from === to ? `${from} 年` : `${from} - ${to}`
   }
-  return releasedFrom.value
-    ? `${releasedFrom.value} 年至今`
-    : `${releasedTo.value} 年以前`
+  return from ? `${from} 年至今` : `${to} 年以前`
 })
 
 const setYears = (range: { from: string; to: string }) => {
-  releasedFrom.value = range.from
-  releasedTo.value = range.to
+  set({ released_from: range.from, released_to: range.to })
 }
 
 const toggleCompany = (item: SearchEntityItem) => {
   entityNames.remember(item)
-  companyId.value = companyId.value === item.id ? 0 : item.id
+  set({ company_id: state.value.company_id === item.id ? 0 : item.id })
 }
 
 const toggleTag = (item: SearchEntityItem) => {
   entityNames.remember(item)
-  tagIds.value = tagIds.value.includes(item.id)
-    ? tagIds.value.filter((id) => id !== item.id)
-    : [...tagIds.value, item.id].slice(0, TAG_FILTER_MAX)
+  const ids = state.value.tag_ids
+  set({
+    tag_ids: ids.includes(item.id)
+      ? ids.filter((id) => id !== item.id)
+      : [...ids, item.id].slice(0, TAG_FILTER_MAX)
+  })
 }
 
 const chips = computed<FilterChip[]>(() => {
+  const f = state.value
   const list: FilterChip[] = []
-  if (companyId.value) {
+  if (f.company_id) {
     list.push({
       key: 'company',
       prefix: '会社',
-      label: entityNames.labelOf('company', companyId.value)
+      label: entityNames.labelOf('company', f.company_id)
     })
   }
-  for (const id of tagIds.value) {
+  for (const id of f.tag_ids) {
     list.push({
       key: `tag:${id}`,
       prefix: '标签',
       label: entityNames.labelOf('tag', id)
     })
   }
-  if (releasedFrom.value || releasedTo.value) {
+  if (f.released_from || f.released_to) {
     list.push({ key: 'years', label: yearRangeLabel.value })
   }
   return list
@@ -79,17 +63,17 @@ const chips = computed<FilterChip[]>(() => {
 const removeChip = (key: string) => {
   const [dimension, value] = key.split(':')
   if (dimension === 'company') {
-    companyId.value = 0
+    set({ company_id: 0 })
   } else if (dimension === 'tag') {
-    tagIds.value = tagIds.value.filter((id) => id !== Number(value))
+    set({ tag_ids: state.value.tag_ids.filter((id) => id !== Number(value)) })
   } else if (dimension === 'years') {
     setYears({ from: '', to: '' })
   }
 }
 
 watch(
-  [companyId, tagIds],
-  () => entityNames.resolve({ company: [companyId.value], tag: tagIds.value }),
+  [() => state.value.company_id, () => state.value.tag_ids],
+  ([company, tags]) => entityNames.resolve({ company: [company], tag: tags }),
   { immediate: true }
 )
 </script>
@@ -107,9 +91,9 @@ watch(
       icon="lucide:arrow-down-up"
       label="排序"
       :options="SEARCH_GALGAME_SORTS"
-      :model-value="sort"
+      :model-value="state.sort"
       empty-value="relevance"
-      @update:model-value="sort = $event as string"
+      @update:model-value="set({ sort: $event as string })"
     />
 
     <span class="bg-default-200 h-6 w-px" aria-hidden="true" />
@@ -119,8 +103,8 @@ watch(
       icon="lucide:building-2"
       label="会社"
       placeholder="搜索会社名, 例如 Key"
-      :selected-ids="companyId ? [companyId] : []"
-      :selected-items="entityNames.itemsOf('company', [companyId])"
+      :selected-ids="state.company_id ? [state.company_id] : []"
+      :selected-items="entityNames.itemsOf('company', [state.company_id])"
       @toggle="toggleCompany"
     />
     <FilterEntityMenu
@@ -128,14 +112,18 @@ watch(
       icon="lucide:tag"
       label="标签"
       placeholder="搜索标签, 例如 校园"
-      :selected-ids="tagIds"
-      :selected-items="entityNames.itemsOf('tag', tagIds)"
+      :selected-ids="state.tag_ids"
+      :selected-items="entityNames.itemsOf('tag', state.tag_ids)"
       multiple
       :max="TAG_FILTER_MAX"
       @toggle="toggleTag"
     />
 
-    <FilterYears :from="releasedFrom" :to="releasedTo" @update="setYears" />
+    <FilterYears
+      :from="state.released_from"
+      :to="state.released_to"
+      @update="setYears"
+    />
 
     <template #end>
       <KunTooltip

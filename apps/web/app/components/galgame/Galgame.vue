@@ -15,7 +15,7 @@ const resourcePublishBanned = ref(props.galgame.is_resource_publish_banned)
 provide<Ref<boolean>>('galgameResourcePublishBanned', resourcePublishBanned)
 
 const route = useRoute()
-const router = useRouter()
+const patchQuery = useQueryWriter()
 const nameOf = useCatalogName()
 const { id: currentUserId } = usePersistUserStore()
 const DEEP_LINK_TABS = ['intro', 'resource', 'comment', 'quiz']
@@ -29,17 +29,13 @@ const initialTab = () => {
 const activeTab = ref(initialTab())
 
 watch(activeTab, (tab) => {
-  const query = { ...route.query }
-  delete query.comment
-  delete query.thread
-  // Only the quiz panel paginates, so ?page= belongs to that tab alone.
-  delete query.page
-  if (tab !== 'intro' && DEEP_LINK_TABS.includes(tab)) {
-    query.tab = tab
-  } else {
-    delete query.tab
-  }
-  router.replace({ query })
+  patchQuery({
+    comment: undefined,
+    thread: undefined,
+    // Only the quiz panel paginates, so ?page= belongs to that tab alone.
+    page: undefined,
+    tab: tab !== 'intro' && DEEP_LINK_TABS.includes(tab) ? tab : undefined
+  })
 })
 const hasPatchResource = ref(false)
 

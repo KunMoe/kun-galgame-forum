@@ -1,9 +1,6 @@
 <script setup lang="ts">
 import { KUN_GALGAME_RESOURCE_SORT_FIELD_MAP } from '~/constants/galgame'
-import {
-  KUN_GALGAME_PROVIDER_LABEL_MAP,
-  type ProviderKey
-} from '~/constants/galgameResource'
+import { KUN_GALGAME_PROVIDER_LABEL_MAP } from '~/constants/galgameResource'
 import { KUN_GALGAME_RATING_GAME_TYPE_MAP } from '~/constants/galgame-rating'
 import {
   EMULATOR_RUNTIME_OPTIONS,
@@ -21,55 +18,11 @@ const props = withDefaults(
   { isShowAdvanced: false, total: null, pending: false }
 )
 
-const {
-  page,
-  type,
-  languages,
-  platforms,
-  runtimes,
-  gameType,
-  sortField,
-  sortOrder,
-  releasedFrom,
-  releasedTo,
-  releasedMonths,
-  collectedFrom,
-  collectedTo,
-  collectedMonths,
-  includeProviders,
-  excludeOnlyProviders,
-  minRatingCount,
-  minRating
-} = useGalgameFilters()
+type Filters = QueryValues<typeof GALGAME_FILTER_SCHEMA>
+
+const { state, set } = useGalgameFilters()
 
 const { open: openSettingPanel } = useSettingPanel()
-
-watch(
-  () => [
-    type.value,
-    languages.value,
-    platforms.value,
-    runtimes.value,
-    gameType.value,
-    sortField.value,
-    sortOrder.value,
-    releasedFrom.value,
-    releasedTo.value,
-    releasedMonths.value,
-    collectedFrom.value,
-    collectedTo.value,
-    collectedMonths.value,
-    includeProviders.value,
-    excludeOnlyProviders.value,
-    minRatingCount.value,
-    minRating.value
-  ],
-  () => {
-    page.value = 1
-  }
-)
-
-const csvToArray = (csv: string) => csv.split(',').filter(Boolean)
 
 const firstOf = (value: string | string[]) =>
   Array.isArray(value) ? (value[0] ?? '') : value
@@ -92,13 +45,10 @@ const langOptions = axisOptions('全部语言', LANGUAGE_OPTIONS)
 const platformOptions = axisOptions('全部平台', PLATFORM_FILTER_OPTIONS)
 const emulatorOptions = axisOptions('全部模拟器', EMULATOR_RUNTIME_OPTIONS)
 
-const isEmulator = computed(() => platforms.value.includes('emulator'))
+const isEmulator = computed(() => state.value.platform.includes('emulator'))
 
-const setPlatforms = (values: string[]) => {
-  platforms.value = values
-  if (!values.includes('emulator')) {
-    runtimes.value = []
-  }
+const setPlatforms = (platform: string[]) => {
+  set(platform.includes('emulator') ? { platform } : { platform, runtime: [] })
 }
 
 const gameTypeOptions = [
@@ -117,58 +67,51 @@ const sortOptions = Object.entries(KUN_GALGAME_RESOURCE_SORT_FIELD_MAP).map(
   })
 )
 
-const months = computed(() => csvToArray(releasedMonths.value))
-const includes = computed(() => csvToArray(includeProviders.value))
-const excludes = computed(() => csvToArray(excludeOnlyProviders.value))
-
 const yearRangeLabel = computed(() => {
-  if (releasedFrom.value && releasedTo.value) {
-    return releasedFrom.value === releasedTo.value
-      ? `${releasedFrom.value} 年`
-      : `${releasedFrom.value} - ${releasedTo.value}`
+  const { releasedFrom: from, releasedTo: to } = state.value
+  if (from && to) {
+    return from === to ? `${from} 年` : `${from} - ${to}`
   }
-  return releasedFrom.value
-    ? `${releasedFrom.value} 年至今`
-    : `${releasedTo.value} 年以前`
+  return from ? `${from} 年至今` : `${to} 年以前`
 })
 
-const selectedCollectedYear = computed(
-  () => collectedFrom.value || collectedTo.value || ''
+const collectedYear = computed(
+  () => state.value.collectedFrom || state.value.collectedTo
 )
-const collectedLabel = computed(() => {
-  const parts: string[] = []
-  if (selectedCollectedYear.value) {
-    parts.push(`收录年份 ${selectedCollectedYear.value}`)
-  }
-  if (collectedMonths.value) {
-    parts.push(`收录月份 ${Number(collectedMonths.value)}`)
-  }
-  return parts.join(' / ')
-})
+const collectedMonth = computed(() => state.value.collectedMonths[0] ?? 0)
 const hasCollectedFilter = computed(
-  () => !!selectedCollectedYear.value || !!collectedMonths.value
+  () => !!collectedYear.value || !!collectedMonth.value
+)
+const collectedLabel = computed(() =>
+  [
+    collectedYear.value && `收录年份 ${collectedYear.value}`,
+    collectedMonth.value && `收录月份 ${collectedMonth.value}`
+  ]
+    .filter(Boolean)
+    .join(' / ')
 )
 
-const moreCount = computed(
-  () =>
-    [
-      includes.value.length,
-      excludes.value.length,
-      minRating.value > 0,
-      minRatingCount.value > 0,
-      releasedFrom.value || releasedTo.value,
-      months.value.length,
-      hasCollectedFilter.value
-    ].filter(Boolean).length
-)
+const moreCount = computed(() => {
+  const f = state.value
+  return [
+    f.includeProviders.length,
+    f.excludeOnlyProviders.length,
+    f.minRating > 0,
+    f.minRatingCount > 0,
+    f.releasedFrom || f.releasedTo,
+    f.releasedMonths.length,
+    hasCollectedFilter.value
+  ].filter(Boolean).length
+})
 const isMoreOpen = ref(moreCount.value > 0)
 
 const labelOf = (options: FilterOption[], value: string) =>
   options.find((option) => option.value === value)?.label ?? value
 
 const chips = computed<FilterChip[]>(() => {
+  const f = state.value
   const list: FilterChip[] = []
-  for (const value of platforms.value) {
+  for (const value of f.platform) {
     list.push({
       key: `platform:${value}`,
       prefix: '平台',
@@ -176,7 +119,7 @@ const chips = computed<FilterChip[]>(() => {
     })
   }
   if (isEmulator.value) {
-    for (const value of runtimes.value) {
+    for (const value of f.runtime) {
       list.push({
         key: `runtime:${value}`,
         prefix: '模拟器',
@@ -184,53 +127,53 @@ const chips = computed<FilterChip[]>(() => {
       })
     }
   }
-  if (gameType.value) {
+  if (f.gameType) {
     list.push({
       key: 'gameType',
-      label: labelOf(gameTypeOptions, gameType.value)
+      label: labelOf(gameTypeOptions, f.gameType)
     })
   }
-  if (type.value) {
+  if (f.type) {
     list.push({
       key: 'type',
       prefix: '类型',
-      label: labelOf(typeOptions, type.value)
+      label: labelOf(typeOptions, f.type)
     })
   }
-  for (const value of languages.value) {
+  for (const value of f.language) {
     list.push({
       key: `language:${value}`,
       prefix: '语言',
       label: labelOf(LANGUAGE_OPTIONS, value)
     })
   }
-  for (const key of includes.value) {
+  for (const key of f.includeProviders) {
     list.push({
       key: `include:${key}`,
       prefix: '含',
-      label: KUN_GALGAME_PROVIDER_LABEL_MAP[key as ProviderKey] ?? key
+      label: KUN_GALGAME_PROVIDER_LABEL_MAP[key]
     })
   }
-  for (const key of excludes.value) {
+  for (const key of f.excludeOnlyProviders) {
     list.push({
       key: `exclude:${key}`,
       prefix: '排除仅',
-      label: KUN_GALGAME_PROVIDER_LABEL_MAP[key as ProviderKey] ?? key
+      label: KUN_GALGAME_PROVIDER_LABEL_MAP[key]
     })
   }
-  if (minRating.value > 0) {
-    list.push({ key: 'minRating', label: `${minRating.value} 分+` })
+  if (f.minRating > 0) {
+    list.push({ key: 'minRating', label: `${f.minRating} 分+` })
   }
-  if (minRatingCount.value > 0) {
+  if (f.minRatingCount > 0) {
     list.push({
       key: 'minRatingCount',
-      label: `≥${minRatingCount.value} 人评分`
+      label: `≥${f.minRatingCount} 人评分`
     })
   }
-  if (releasedFrom.value || releasedTo.value) {
+  if (f.releasedFrom || f.releasedTo) {
     list.push({ key: 'years', label: yearRangeLabel.value })
   }
-  for (const month of months.value) {
+  for (const month of f.releasedMonths) {
     list.push({ key: `month:${month}`, label: `${month} 月` })
   }
   if (hasCollectedFilter.value) {
@@ -241,52 +184,54 @@ const chips = computed<FilterChip[]>(() => {
 
 const removeChip = (key: string) => {
   const [dimension, value] = key.split(':')
-  const without = (values: string[]) => values.filter((item) => item !== value)
+  const f = state.value
+  const without = <T extends string | number>(values: T[]) =>
+    values.filter((item) => String(item) !== value)
   if (dimension === 'platform') {
-    setPlatforms(without(platforms.value))
+    setPlatforms(without(f.platform))
   } else if (dimension === 'runtime') {
-    runtimes.value = without(runtimes.value)
+    set({ runtime: without(f.runtime) })
   } else if (dimension === 'gameType') {
-    gameType.value = ''
+    set({ gameType: '' })
   } else if (dimension === 'type') {
-    type.value = ''
+    set({ type: '' })
   } else if (dimension === 'language') {
-    languages.value = without(languages.value)
+    set({ language: without(f.language) })
   } else if (dimension === 'include') {
-    includeProviders.value = without(includes.value).join(',')
+    set({ includeProviders: without(f.includeProviders) })
   } else if (dimension === 'exclude') {
-    excludeOnlyProviders.value = without(excludes.value).join(',')
+    set({ excludeOnlyProviders: without(f.excludeOnlyProviders) })
   } else if (dimension === 'minRating') {
-    minRating.value = 0
+    set({ minRating: 0 })
   } else if (dimension === 'minRatingCount') {
-    minRatingCount.value = 0
+    set({ minRatingCount: 0 })
   } else if (dimension === 'years') {
-    releasedFrom.value = ''
-    releasedTo.value = ''
+    set({ releasedFrom: '', releasedTo: '' })
   } else if (dimension === 'month') {
-    releasedMonths.value = without(months.value).join(',')
+    set({ releasedMonths: without(f.releasedMonths) })
   } else if (dimension === 'collected') {
-    collectedFrom.value = ''
-    collectedTo.value = ''
-    collectedMonths.value = ''
+    set({ collectedFrom: '', collectedTo: '', collectedMonths: [] })
   }
 }
 
 const clearFilters = () => {
-  setPlatforms([])
-  gameType.value = ''
-  type.value = ''
-  languages.value = []
-  includeProviders.value = ''
-  excludeOnlyProviders.value = ''
-  minRating.value = 0
-  minRatingCount.value = 0
-  releasedFrom.value = ''
-  releasedTo.value = ''
-  releasedMonths.value = ''
-  collectedFrom.value = ''
-  collectedTo.value = ''
-  collectedMonths.value = ''
+  set({
+    platform: [],
+    runtime: [],
+    gameType: '',
+    type: '',
+    language: [],
+    includeProviders: [],
+    excludeOnlyProviders: [],
+    minRating: 0,
+    minRatingCount: 0,
+    releasedFrom: '',
+    releasedTo: '',
+    releasedMonths: [],
+    collectedFrom: '',
+    collectedTo: '',
+    collectedMonths: []
+  })
 }
 </script>
 
@@ -302,23 +247,25 @@ const clearFilters = () => {
       icon="lucide:arrow-down-up"
       label="排序"
       :options="sortOptions"
-      :model-value="sortField"
+      :model-value="state.sortField"
       empty-value="time"
-      @update:model-value="sortField = $event as typeof sortField"
+      @update:model-value="set({ sortField: firstOf($event) })"
     />
 
     <KunTooltip
-      :text="sortOrder === 'desc' ? '当前降序' : '当前升序'"
+      :text="state.sortOrder === 'desc' ? '当前降序' : '当前升序'"
       position="bottom"
     >
       <button
         type="button"
         aria-label="切换排序方向"
         :class="filterPillSquareClass(false)"
-        @click="sortOrder = sortOrder === 'desc' ? 'asc' : 'desc'"
+        @click="set({ sortOrder: state.sortOrder === 'desc' ? 'asc' : 'desc' })"
       >
         <KunIcon
-          :name="sortOrder === 'desc' ? 'lucide:arrow-down' : 'lucide:arrow-up'"
+          :name="
+            state.sortOrder === 'desc' ? 'lucide:arrow-down' : 'lucide:arrow-up'
+          "
           class="size-4 text-inherit"
         />
       </button>
@@ -331,7 +278,7 @@ const clearFilters = () => {
       label="平台"
       :multiple="isShowAdvanced"
       :options="platformOptions"
-      :model-value="axisModel(platforms)"
+      :model-value="axisModel(state.platform)"
       empty-value=""
       @update:model-value="setPlatforms(toValues($event))"
     />
@@ -341,34 +288,36 @@ const clearFilters = () => {
       label="模拟器"
       :multiple="isShowAdvanced"
       :options="emulatorOptions"
-      :model-value="axisModel(runtimes)"
+      :model-value="axisModel(state.runtime)"
       empty-value=""
-      @update:model-value="runtimes = toValues($event)"
+      @update:model-value="set({ runtime: toValues($event) })"
     />
     <FilterMenu
       icon="lucide:gamepad-2"
       label="游戏类型"
       :options="gameTypeOptions"
-      :model-value="gameType"
+      :model-value="state.gameType"
       empty-value=""
-      @update:model-value="gameType = firstOf($event)"
+      @update:model-value="
+        set({ gameType: firstOf($event) as Filters['gameType'] })
+      "
     />
     <FilterMenu
       icon="lucide:package"
       label="资源类型"
       :options="typeOptions"
-      :model-value="type"
+      :model-value="state.type"
       empty-value=""
-      @update:model-value="type = firstOf($event)"
+      @update:model-value="set({ type: firstOf($event) })"
     />
     <FilterMenu
       icon="lucide:languages"
       label="语言"
       :multiple="isShowAdvanced"
       :options="langOptions"
-      :model-value="axisModel(languages)"
+      :model-value="axisModel(state.language)"
       empty-value=""
-      @update:model-value="languages = toValues($event)"
+      @update:model-value="set({ language: toValues($event) })"
     />
 
     <FilterTrigger

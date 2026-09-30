@@ -1,9 +1,10 @@
 <script setup lang="ts">
-const opts = { mode: 'replace' as const }
-const lane = useRouteQuery<string>('lane', 'all', opts)
-const source = useRouteQuery<string>('source', 'all', opts)
-const year = useRouteQuery('year', 0, { ...opts, transform: Number })
-const month = useRouteQuery('month', 0, { ...opts, transform: Number })
+const { lane, source, year, month, set } = useQueryState({
+  lane: queryString('all'),
+  source: queryString('all'),
+  year: queryInt(0, 0),
+  month: queryInt(0, 0)
+})
 
 const {
   filters,
@@ -53,10 +54,7 @@ const range = computed(() => {
 })
 
 const reset = () => {
-  lane.value = 'all'
-  source.value = 'all'
-  year.value = 0
-  month.value = 0
+  set({ lane: 'all', source: 'all', year: 0, month: 0 })
 }
 </script>
 

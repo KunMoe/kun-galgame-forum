@@ -11,7 +11,14 @@ const { id } = storeToRefs(usePersistUserStore())
 const isOwner = computed(() => !!id.value && id.value === props.userId)
 const { allowsNsfw, stanceKey } = useContentStance()
 
-const tabQuery = useRouteQuery<string>('tab', 'publish', { mode: 'replace' })
+const {
+  tab: tabQuery,
+  page,
+  set
+} = useQueryState(
+  { tab: queryString('publish'), page: queryPage() },
+  { pageKey: 'page' }
+)
 const tab = computed(() =>
   tabQuery.value === 'answered' && isOwner.value ? 'answered' : 'publish'
 )
@@ -25,7 +32,6 @@ const tabItems = computed<KunTabItem[]>(() => {
   return items
 })
 
-const page = usePageQuery()
 const limit = 50
 const authorId = computed(() => String(props.userId))
 
@@ -56,8 +62,7 @@ const { data, status, problem } = await useApi<PageListQuizSummary>(
 )
 
 const onTab = (v: string) => {
-  page.value = 1
-  tabQuery.value = v
+  set({ tab: v })
 }
 </script>
 

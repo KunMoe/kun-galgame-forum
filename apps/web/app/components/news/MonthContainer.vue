@@ -2,9 +2,10 @@
 const props = defineProps<{ year: number; month: number }>()
 
 const route = useRoute()
-const opts = { mode: 'replace' as const }
-const day = useRouteQuery('day', 0, { ...opts, transform: Number })
-const page = useRouteQuery('page', 1, { ...opts, transform: Number })
+const { day, page, set } = useQueryState(
+  { day: queryInt(0, 0), page: queryPage() },
+  { pageKey: 'page' }
+)
 
 // The lane and source a reader arrived with are carried, not edited: the month
 // page is one slice of the overview's list, and its counts have to keep
@@ -117,8 +118,7 @@ const overviewHref = computed(() => {
 })
 
 const selectDay = (value: number) => {
-  page.value = 1
-  day.value = day.value === value ? 0 : value
+  set({ day: day.value === value ? 0 : value })
 }
 
 // Nuxt's scroll behaviour deliberately stays put when only the query changes,

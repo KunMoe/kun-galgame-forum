@@ -12,34 +12,30 @@ import {
   typeOptions,
   sortFieldOptions
 } from './_sort'
-const opts = { mode: 'replace' as const }
 
 // The filters go in the URL with the page: a page restored on its own would
 // point into a list the reader never saw, since every filter would have reset
 // to its default on the way back.
-const page = usePageQuery()
-const params = reactive({
-  page,
-  limit: 24,
-  sort_field: useRouteQuery<string>('sort_field', 'time', opts),
-  sort_order: useRouteQuery<'asc' | 'desc'>('sort_order', 'desc', opts),
-  spoiler_level: useRouteQuery<string>('spoiler_level', 'all', opts),
-  play_status: useRouteQuery<string>('play_status', 'all', opts),
-  galgame_type: useRouteQuery<string>('galgame_type', 'all', opts)
-})
-
-watch(
-  () => [
-    params.sort_field,
-    params.sort_order,
-    params.spoiler_level,
-    params.play_status,
-    params.galgame_type
-  ],
-  () => {
-    page.value = 1
-  }
+const filters = useQueryState(
+  {
+    page: queryPage(),
+    sort_field: queryString('time'),
+    sort_order: queryEnum(['desc', 'asc'] as const, 'desc'),
+    spoiler_level: queryString('all'),
+    play_status: queryString('all'),
+    galgame_type: queryString('all')
+  },
+  { pageKey: 'page' }
 )
+const params = reactive({
+  page: filters.page,
+  limit: 24,
+  sort_field: filters.sort_field,
+  sort_order: filters.sort_order,
+  spoiler_level: filters.spoiler_level,
+  play_status: filters.play_status,
+  galgame_type: filters.galgame_type
+})
 
 const known = <T extends string>(value: string, vocab: readonly T[]) =>
   vocab.includes(value as T) ? (value as T) : undefined

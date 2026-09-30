@@ -12,37 +12,25 @@ type ToolsetPlatformFilter = 'all' | ToolsetPlatform
 type ToolsetVersionFilter = 'all' | ToolsetReleaseChannel
 type ToolsetSortField = 'resource_update_time' | 'created' | 'view'
 
+const TOOLSET_FILTER_SCHEMA = {
+  page: queryPage(),
+  type: queryString('all') as QueryField<ToolsetTypeFilter>,
+  language: queryString('all') as QueryField<ToolsetLanguageFilter>,
+  platform: queryString('all') as QueryField<ToolsetPlatformFilter>,
+  version: queryString('all') as QueryField<ToolsetVersionFilter>,
+  sortField: queryString(
+    'resource_update_time'
+  ) as QueryField<ToolsetSortField>,
+  sortOrder: queryEnum(['desc', 'asc'] as const, 'desc'),
+  query: queryString()
+}
+
 export const useToolsetFilters = () => {
-  const opts = { mode: 'replace' as const }
-
-  const page = useRouteQuery('page', 1, { ...opts, transform: Number })
-  const type = useRouteQuery<ToolsetTypeFilter>('type', 'all', opts)
-  const language = useRouteQuery<ToolsetLanguageFilter>('language', 'all', opts)
-  const platform = useRouteQuery<ToolsetPlatformFilter>('platform', 'all', opts)
-  const version = useRouteQuery<ToolsetVersionFilter>('version', 'all', opts)
-  const sortField = useRouteQuery<ToolsetSortField>(
-    'sortField',
-    'resource_update_time',
-    opts
-  )
-  const sortOrder = useRouteQuery<KunOrder>('sortOrder', 'desc', opts)
-
-  const query = useRouteQuery<string>('query', '', opts)
-
+  const filters = useQueryState(TOOLSET_FILTER_SCHEMA, { pageKey: 'page' })
   const limit = 24
 
-  const sort = computed<ToolsetSort>(() => {
-    const order = sortOrder.value === 'asc' ? 'asc' : 'desc'
-    if (sortField.value === 'created') {
-      return `created_${order}`
-    }
-    if (sortField.value === 'view') {
-      return `view_${order}`
-    }
-    return `resource_updated_${order}`
-  })
-
   const listQuery = computed(() => {
+    const f = filters.state.value
     const params: {
       page: number
       limit: number
@@ -53,39 +41,31 @@ export const useToolsetFilters = () => {
       release_channel?: ToolsetReleaseChannel
       q?: string
     } = {
-      page: page.value,
+      page: f.page,
       limit,
-      sort: sort.value
+      sort:
+        f.sortField === 'created' || f.sortField === 'view'
+          ? `${f.sortField}_${f.sortOrder}`
+          : `resource_updated_${f.sortOrder}`
     }
-    if (type.value !== 'all') {
-      params.toolset_type = type.value
+    if (f.type !== 'all') {
+      params.toolset_type = f.type
     }
-    if (language.value !== 'all') {
-      params.interface_language = language.value
+    if (f.language !== 'all') {
+      params.interface_language = f.language
     }
-    if (platform.value !== 'all') {
-      params.platform = platform.value
+    if (f.platform !== 'all') {
+      params.platform = f.platform
     }
-    if (version.value !== 'all') {
-      params.release_channel = version.value
+    if (f.version !== 'all') {
+      params.release_channel = f.version
     }
-    const q = query.value.trim()
+    const q = f.query.trim()
     if (q) {
       params.q = q
     }
     return params
   })
 
-  return {
-    page,
-    limit,
-    type,
-    language,
-    platform,
-    version,
-    sortField,
-    sortOrder,
-    query,
-    listQuery
-  }
+  return { ...filters, limit, listQuery }
 }
