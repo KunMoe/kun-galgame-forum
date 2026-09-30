@@ -126,12 +126,14 @@ func inlineMathValue(n ast.Node, source []byte) string {
 
 func (c *converter) convertLink(n *ast.Link) Inlines {
 	dest := string(n.Destination)
-	if id, ok := parseUserMention(dest); ok {
-		return Inlines{NewMention(c.userRef(id))}
-	}
-	text := c.plainText(n)
-	if rid, floor, ok := parseReplyRef(dest, text); ok {
-		return Inlines{NewReplyReference(rid, floor)}
+	if !c.untrusted {
+		if id, ok := parseUserMention(dest); ok {
+			return Inlines{NewMention(c.userRef(id))}
+		}
+		text := c.plainText(n)
+		if rid, floor, ok := parseReplyRef(dest, text); ok {
+			return Inlines{NewReplyReference(rid, floor)}
+		}
 	}
 	kids := c.inlines(n)
 	if url, _, ok := c.imageServiceURL(dest); ok {

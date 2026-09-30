@@ -10705,6 +10705,10 @@
       },
       "NewsItem": {
         "properties": {
+          "has_body": {
+            "description": "Whether the item carries its own text. Only community submissions do. When true, link to the item's page (getNewsItem) rather than to source_url.",
+            "type": "boolean"
+          },
           "id": {
             "description": "News item id. JSON string of a decimal integer.",
             "maxLength": 20,
@@ -10717,7 +10721,7 @@
             "description": "news for bulletins, column for longer pieces."
           },
           "news_source": {
-            "description": "Key of the partner that published the item. Name, homepage and attribution come from listNewsSources; an item shown on its own must still carry its partner's attribution.",
+            "description": "Key of the source that published the item: a partner, or community for NextMoe user submissions. Name, homepage and attribution come from listNewsSources; an item shown on its own must still carry its source's attribution.",
             "maxLength": 40,
             "pattern": "^[a-z0-9_]{1,40}$",
             "type": "string"
@@ -10729,12 +10733,12 @@
             "type": "string"
           },
           "preview": {
-            "description": "The partner's own excerpt. There is no body: source_url is the only way to the full text. Free text; never use it as a decision input.",
+            "description": "The lede: the partner's own excerpt, or the submitter's summary. Free text; never use it as a decision input.",
             "maxLength": 2000,
             "type": "string"
           },
           "published_at": {
-            "description": "When the partner published it.",
+            "description": "When the source published the item.",
             "format": "date-time",
             "maxLength": 20,
             "minLength": 20,
@@ -10742,14 +10746,25 @@
             "type": "string"
           },
           "source_url": {
-            "description": "The item on the partner's site.",
-            "format": "uri",
+            "description": "The item on the partner's site. Empty string for an original community submission, which has no page elsewhere.",
             "maxLength": 2048,
+            "pattern": "^(https?://.*)?$",
             "type": "string"
+          },
+          "submitter": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UserRef"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The account that submitted the item. null for items imported from a partner, and when the account cannot be shown."
           },
           "title": {
             "description": "Headline. Free text; never use it as a decision input.",
-            "maxLength": 500,
+            "maxLength": 512,
             "type": "string"
           }
         },
@@ -10761,6 +10776,92 @@
           "title",
           "preview",
           "source_url",
+          "has_body",
+          "submitter",
+          "published_at"
+        ],
+        "type": "object"
+      },
+      "NewsItemDetail": {
+        "properties": {
+          "content": {
+            "$ref": "#/components/schemas/ContentDocument",
+            "description": "The item's own text as a content document. An empty document when has_body is false. Raw HTML in the source is shown as text, never interpreted."
+          },
+          "has_body": {
+            "description": "Whether the item carries its own text. Only community submissions do. When true, link to the item's page (getNewsItem) rather than to source_url.",
+            "type": "boolean"
+          },
+          "id": {
+            "description": "News item id. JSON string of a decimal integer.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "lane": {
+            "$ref": "#/components/schemas/NewsLane",
+            "description": "news for bulletins, column for longer pieces."
+          },
+          "news_source": {
+            "description": "Key of the source that published the item: a partner, or community for NextMoe user submissions. Name, homepage and attribution come from listNewsSources; an item shown on its own must still carry its source's attribution.",
+            "maxLength": 40,
+            "pattern": "^[a-z0-9_]{1,40}$",
+            "type": "string"
+          },
+          "object": {
+            "const": "news_item",
+            "description": "Type discriminant. Always news_item.",
+            "maxLength": 9,
+            "type": "string"
+          },
+          "preview": {
+            "description": "The lede: the partner's own excerpt, or the submitter's summary. Free text; never use it as a decision input.",
+            "maxLength": 2000,
+            "type": "string"
+          },
+          "published_at": {
+            "description": "When the source published the item.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": "string"
+          },
+          "source_url": {
+            "description": "The item on the partner's site. Empty string for an original community submission, which has no page elsewhere.",
+            "maxLength": 2048,
+            "pattern": "^(https?://.*)?$",
+            "type": "string"
+          },
+          "submitter": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UserRef"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The account that submitted the item. null for items imported from a partner, and when the account cannot be shown."
+          },
+          "title": {
+            "description": "Headline. Free text; never use it as a decision input.",
+            "maxLength": 512,
+            "type": "string"
+          }
+        },
+        "required": [
+          "content",
+          "object",
+          "id",
+          "news_source",
+          "lane",
+          "title",
+          "preview",
+          "source_url",
+          "has_body",
+          "submitter",
           "published_at"
         ],
         "type": "object"
@@ -10856,7 +10957,7 @@
             "type": "string"
           },
           "key": {
-            "description": "The partner key that news items carry in news_source.",
+            "description": "The source key that news items carry in news_source.",
             "maxLength": 40,
             "pattern": "^[a-z0-9_]{1,40}$",
             "type": "string"
@@ -45096,12 +45197,12 @@
             }
           },
           {
-            "description": "Only this partner. Omitted means every partner.",
+            "description": "Only this source. Omitted means every source.",
             "explode": false,
             "in": "query",
             "name": "news_source",
             "schema": {
-              "description": "Only this partner. Omitted means every partner.",
+              "description": "Only this source. Omitted means every source.",
               "maxLength": 40,
               "pattern": "^[a-z0-9_]{1,40}$",
               "type": "string"
@@ -45211,12 +45312,12 @@
             }
           },
           {
-            "description": "Only this partner. Omitted means every partner.",
+            "description": "Only this source. Omitted means every source.",
             "explode": false,
             "in": "query",
             "name": "news_source",
             "schema": {
-              "description": "Only this partner. Omitted means every partner.",
+              "description": "Only this source. Omitted means every source.",
               "maxLength": 40,
               "pattern": "^[a-z0-9_]{1,40}$",
               "type": "string"
@@ -45350,12 +45451,12 @@
             }
           },
           {
-            "description": "Only this partner. Omitted means every partner.",
+            "description": "Only this source. Omitted means every source.",
             "explode": false,
             "in": "query",
             "name": "news_source",
             "schema": {
-              "description": "Only this partner. Omitted means every partner.",
+              "description": "Only this source. Omitted means every source.",
               "maxLength": 40,
               "pattern": "^[a-z0-9_]{1,40}$",
               "type": "string"
@@ -45435,7 +45536,7 @@
     },
     "/news-items": {
       "get": {
-        "description": "The partner news index, newest first. A cursor collection over the news service's own cursor; the cursor is bound to every filter and to limit. limit is 1–50 because that is the news service's page cap.",
+        "description": "The news index, partner items and published community submissions, newest first. A cursor collection over the news service's own cursor; the cursor is bound to every filter and to limit. limit is 1–50 because that is the news service's page cap.",
         "operationId": "listNewsItems",
         "parameters": [
           {
@@ -45486,12 +45587,12 @@
             }
           },
           {
-            "description": "Only this partner. Omitted means every partner.",
+            "description": "Only this source. Omitted means every source.",
             "explode": false,
             "in": "query",
             "name": "news_source",
             "schema": {
-              "description": "Only this partner. Omitted means every partner.",
+              "description": "Only this source. Omitted means every source.",
               "maxLength": 40,
               "pattern": "^[a-z0-9_]{1,40}$",
               "type": "string"
@@ -45572,9 +45673,85 @@
         ]
       }
     },
+    "/news-items/{news_item_id}": {
+      "get": {
+        "description": "One published news item. Pending and withdrawn items are NOT_FOUND, the same as an id that was never issued. content is the item's own text when has_body is true, and an empty document otherwise.",
+        "operationId": "getNewsItem",
+        "parameters": [
+          {
+            "description": "News item id.",
+            "in": "path",
+            "name": "news_item_id",
+            "required": true,
+            "schema": {
+              "description": "News item id.",
+              "maxLength": 20,
+              "pattern": "^[0-9]+$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NewsItemDetail"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when the item never existed, is still pending, or was withdrawn."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the news service is not configured or cannot be reached."
+          }
+        },
+        "summary": "Get a news item",
+        "tags": [
+          "news"
+        ]
+      }
+    },
     "/news-sources": {
       "get": {
-        "description": "The whole partner directory, which is where a news item's news_source key resolves to a name and attribution. Not paged.",
+        "description": "The whole source directory, partners and community, which is where a news item's news_source key resolves to a name and attribution. Not paged.",
         "operationId": "listNewsSources",
         "responses": {
           "200": {
@@ -45608,7 +45785,7 @@
             "description": "SERVICE_UNAVAILABLE when the news service is not configured or cannot be reached."
           }
         },
-        "summary": "List news partners",
+        "summary": "List news sources",
         "tags": [
           "news"
         ]

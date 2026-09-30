@@ -12,8 +12,15 @@ import (
 	"testing"
 	"time"
 
+	"kun-galgame-api/internal/apiv1/content"
 	newsapiv1 "kun-galgame-api/internal/news/apiv1"
 	"kun-galgame-api/pkg/newsclient"
+)
+
+const (
+	newsCommunityID   = 200
+	newsWithdrawnID   = "410"
+	newsCommunityBody = "**bold** and <script>alert(1)</script>"
 )
 
 type fakeNewsItem struct {
@@ -21,6 +28,28 @@ type fakeNewsItem struct {
 	source    string
 	lane      string
 	published time.Time
+	hasBody   bool
+	submitter string
+}
+
+func (it fakeNewsItem) payload(body string) map[string]any {
+	sourceURL := fmt.Sprintf("https://partner.example/%d", it.id)
+	if it.hasBody {
+		sourceURL = ""
+	}
+	var submitter any
+	if it.submitter != "" {
+		submitter = it.submitter
+	}
+	out := map[string]any{
+		"id": strconv.FormatInt(it.id, 10), "source": map[string]any{"name": it.source}, "lane": it.lane,
+		"source_url": sourceURL, "title": fmt.Sprintf("item %d", it.id), "summary": "lede",
+		"published_at": it.published.UTC().Format(time.RFC3339), "has_body": it.hasBody, "submitter_uid": submitter,
+	}
+	if body != "" {
+		out["body"] = body
+	}
+	return out
 }
 
 type fakeNews struct {
@@ -35,16 +64,17 @@ var cst = time.FixedZone("CST", 8*60*60)
 func newFakeNews() *fakeNews {
 	at := func(y, m, d, h int) time.Time { return time.Date(y, time.Month(m), d, h, 0, 0, 0, cst) }
 	items := []fakeNewsItem{
-		{112, "ymgal", "news", at(2026, 9, 20, 10)},
-		{111, "ymgal", "column", at(2026, 9, 5, 9)},
-		{110, "galgame_hihyou", "news", at(2026, 9, 5, 9)},
-		{109, "ymgal", "news", at(2026, 9, 1, 3)},
-		{108, "ymgal", "news", at(2026, 9, 1, 3)},
-		{107, "galgame_hihyou", "column", at(2026, 8, 31, 23)},
-		{106, "ymgal", "news", at(2026, 8, 12, 12)},
-		{105, "ymgal", "news", at(2026, 1, 1, 1)},
-		{104, "galgame_hihyou", "news", at(2025, 12, 31, 23)},
-		{103, "ymgal", "news", at(2025, 6, 6, 6)},
+		{112, "ymgal", "news", at(2026, 9, 20, 10), false, ""},
+		{111, "ymgal", "column", at(2026, 9, 5, 9), false, ""},
+		{110, "galgame_hihyou", "news", at(2026, 9, 5, 9), false, ""},
+		{109, "ymgal", "news", at(2026, 9, 1, 3), false, ""},
+		{108, "ymgal", "news", at(2026, 9, 1, 3), false, ""},
+		{107, "galgame_hihyou", "column", at(2026, 8, 31, 23), false, ""},
+		{106, "ymgal", "news", at(2026, 8, 12, 12), false, ""},
+		{newsCommunityID, "community", "news", at(2026, 7, 15, 12), true, strconv.Itoa(w3UserAlice)},
+		{105, "ymgal", "news", at(2026, 1, 1, 1), false, ""},
+		{104, "galgame_hihyou", "news", at(2025, 12, 31, 23), false, ""},
+		{103, "ymgal", "news", at(2025, 6, 6, 6), false, ""},
 	}
 	return &fakeNews{items: items}
 }
@@ -92,11 +122,7 @@ func (n *fakeNews) handler() http.Handler {
 		end := min(offset+limit, len(matched))
 		page := []map[string]any{}
 		for _, it := range matched[min(offset, len(matched)):end] {
-			page = append(page, map[string]any{
-				"id": strconv.FormatInt(it.id, 10), "source": map[string]any{"name": it.source}, "lane": it.lane,
-				"source_url": fmt.Sprintf("https://partner.example/%d", it.id), "title": fmt.Sprintf("item %d", it.id),
-				"summary": "lede", "published_at": it.published.UTC().Format(time.RFC3339),
-			})
+			page = append(page, it.payload(""))
 		}
 		body := map[string]any{"object": "list", "items": page, "total": len(matched)}
 		if end < len(matched) {
@@ -108,6 +134,26 @@ func (n *fakeNews) handler() http.Handler {
 		}
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(body)
+	})
+	mux.HandleFunc("/v2/news/{id}", func(w http.ResponseWriter, r *http.Request) {
+		id := r.PathValue("id")
+		if id == newsWithdrawnID {
+			w.WriteHeader(http.StatusGone)
+			return
+		}
+		for _, it := range n.items {
+			if strconv.FormatInt(it.id, 10) != id {
+				continue
+			}
+			extra := ""
+			if it.hasBody {
+				extra = newsCommunityBody
+			}
+			w.Header().Set("Content-Type", "application/json")
+			_ = json.NewEncoder(w).Encode(it.payload(extra))
+			return
+		}
+		w.WriteHeader(http.StatusNotFound)
 	})
 	return mux
 }
@@ -134,7 +180,7 @@ func newNewsFix(t *testing.T, configured bool) (*writeFix, *fakeNews) {
 		t.Cleanup(srv.Close)
 		cfg = newsclient.Config{BaseURL: srv.URL, APIKey: "k"}
 	}
-	f.NewsV1 = newsapiv1.New(newsclient.New(cfg), f.UserClient, "https://image.test.example")
+	f.NewsV1 = newsapiv1.New(newsclient.New(cfg), f.UserClient, "https://image.test.example").WithContent(&content.Converter{SiteBase: "https://www.kungal.com"})
 	f.Fiber = newFiber()
 	f.setupRoutes()
 	return f, news
@@ -224,7 +270,8 @@ func TestV1NewsItemsUpstreamFailures(t *testing.T) {
 
 	off, _ := newNewsFix(t, false)
 	for path, spec := range map[string]string{
-		"/news-items": "/news-items", "/news-sources": "/news-sources", "/news-archive": "/news-archive",
+		"/news-items": "/news-items", "/news-items/112": "/news-items/{news_item_id}",
+		"/news-sources": "/news-sources", "/news-archive": "/news-archive",
 		"/news-archive/2026/9": "/news-archive/{year}/{month}", "/news-archive/2026/9/items": "/news-archive/{year}/{month}/items",
 	} {
 		if resp, body := off.newsGet(t, path, spec); resp.StatusCode != http.StatusServiceUnavailable || body["code"] != "SERVICE_UNAVAILABLE" {
@@ -315,4 +362,131 @@ func TestV1NewsMonth(t *testing.T) {
 	if resp, _ := f.newsGet(t, "/news-archive/2026/13", "/news-archive/{year}/{month}"); resp.StatusCode != http.StatusBadRequest {
 		t.Errorf("month 13: %d", resp.StatusCode)
 	}
+}
+
+func TestV1NewsItemHasBodyAndDetail(t *testing.T) {
+	f, _ := newNewsFix(t, true)
+	resp, body := f.newsGet(t, "/news-items?news_source=community", "/news-items")
+	items, _ := body["items"].([]any)
+	if resp.StatusCode != http.StatusOK || len(items) != 1 {
+		t.Fatalf("community list %d %+v", resp.StatusCode, body)
+	}
+	community, _ := items[0].(map[string]any)
+	submitter, _ := community["submitter"].(map[string]any)
+	if community["has_body"] != true || community["source_url"] != "" || submitter["id"] != strconv.Itoa(w3UserAlice) {
+		t.Errorf("community item %+v", community)
+	}
+
+	resp, body = f.newsGet(t, "/news-items?news_source=ymgal&limit=1", "/news-items")
+	items, _ = body["items"].([]any)
+	partner, _ := items[0].(map[string]any)
+	if resp.StatusCode != http.StatusOK || partner["has_body"] != false || partner["submitter"] != nil {
+		t.Errorf("partner item %d %+v", resp.StatusCode, partner)
+	}
+
+	down, _ := newNewsFix(t, true)
+	down.failOA.Store(true)
+	resp, body = down.newsGet(t, "/news-items?news_source=community", "/news-items")
+	items, _ = body["items"].([]any)
+	if resp.StatusCode != http.StatusOK || len(items) != 1 {
+		t.Fatalf("submitter lookup down %d %+v", resp.StatusCode, body)
+	}
+	if hidden, _ := items[0].(map[string]any); hidden["submitter"] != nil || hidden["has_body"] != true {
+		t.Errorf("lookup failure leaves submitter null: %+v", hidden)
+	}
+
+	bannedFix, bannedNews := newNewsFix(t, true)
+	for i := range bannedNews.items {
+		if bannedNews.items[i].id == newsCommunityID {
+			bannedNews.items[i].submitter = strconv.Itoa(w3UserBanned)
+		}
+	}
+	resp, body = bannedFix.newsGet(t, "/news-items?news_source=community", "/news-items")
+	items, _ = body["items"].([]any)
+	if resp.StatusCode != http.StatusOK || len(items) != 1 {
+		t.Fatalf("banned submitter %d %+v", resp.StatusCode, body)
+	}
+	if hidden, _ := items[0].(map[string]any); hidden["submitter"] != nil {
+		t.Errorf("a banned submitter is not shown: %+v", hidden)
+	}
+
+	resp, body = f.newsGet(t, "/news-archive/2026/7/items", "/news-archive/{year}/{month}/items")
+	items, _ = body["items"].([]any)
+	monthItem, _ := items[0].(map[string]any)
+	monthSubmitter, _ := monthItem["submitter"].(map[string]any)
+	if resp.StatusCode != http.StatusOK || len(items) != 1 || monthItem["id"] != strconv.Itoa(newsCommunityID) || monthSubmitter["id"] != strconv.Itoa(w3UserAlice) {
+		t.Errorf("july page %d %+v", resp.StatusCode, body)
+	}
+
+	resp, body = f.newsGet(t, "/news-items/"+strconv.Itoa(newsCommunityID), "/news-items/{news_item_id}")
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("detail %d %+v", resp.StatusCode, body)
+	}
+	detailSubmitter, _ := body["submitter"].(map[string]any)
+	if body["has_body"] != true || body["source_url"] != "" || detailSubmitter["id"] != strconv.Itoa(w3UserAlice) {
+		t.Errorf("detail item %+v", body)
+	}
+	var strong, script bool
+	walkNewsContent(t, body["content"], &strong, &script)
+	if !strong || !script {
+		t.Errorf("content strong=%v script=%v %+v", strong, script, body["content"])
+	}
+
+	resp, body = f.newsGet(t, "/news-items/112", "/news-items/{news_item_id}")
+	partnerContent, _ := body["content"].(map[string]any)
+	partnerChildren, childrenOK := partnerContent["children"].([]any)
+	if resp.StatusCode != http.StatusOK || body["has_body"] != false || partnerContent["object"] != "document" || !childrenOK || len(partnerChildren) != 0 {
+		t.Errorf("partner detail %d %+v", resp.StatusCode, body)
+	}
+
+	resp, body = f.newsGet(t, "/news-items/999", "/news-items/{news_item_id}")
+	if resp.StatusCode != http.StatusNotFound || body["code"] != "NOT_FOUND" {
+		t.Errorf("unknown id %d %+v", resp.StatusCode, body)
+	}
+	resp, body = f.newsGet(t, "/news-items/"+newsWithdrawnID, "/news-items/{news_item_id}")
+	if resp.StatusCode != http.StatusNotFound || body["code"] != "NOT_FOUND" {
+		t.Errorf("withdrawn id %d %+v", resp.StatusCode, body)
+	}
+	resp, body = f.newsGet(t, "/news-items/abc", "/news-items/{news_item_id}")
+	if resp.StatusCode != http.StatusBadRequest || body["code"] != "INVALID_PARAMETER" {
+		t.Errorf("non-numeric id %d %+v", resp.StatusCode, body)
+	}
+	resp, body = f.newsGet(t, "/news-items/0", "/news-items/{news_item_id}")
+	if resp.StatusCode != http.StatusNotFound || body["code"] != "NOT_FOUND" {
+		t.Errorf("id 0 %d %+v", resp.StatusCode, body)
+	}
+}
+
+func walkNewsContent(t *testing.T, node any, strong, script *bool) {
+	t.Helper()
+	m, ok := node.(map[string]any)
+	if !ok {
+		t.Errorf("content node is not an object: %#v", node)
+		return
+	}
+	object, _ := m["object"].(string)
+	if !newsContentVocab[object] {
+		t.Errorf("node outside the markdown vocabulary: %+v", m)
+	}
+	if object == "strong" {
+		*strong = true
+	}
+	if object == "text" {
+		if value, _ := m["value"].(string); strings.Contains(value, "<script>") {
+			*script = true
+		}
+	}
+	children, _ := m["children"].([]any)
+	for _, child := range children {
+		walkNewsContent(t, child, strong, script)
+	}
+}
+
+var newsContentVocab = map[string]bool{
+	"document": true, "paragraph": true, "heading": true, "thematic_break": true,
+	"blockquote": true, "list": true, "list_item": true, "code": true, "math": true,
+	"table": true, "table_row": true, "table_cell": true, "spoiler": true, "text": true,
+	"emphasis": true, "strong": true, "strikethrough": true, "inline_code": true,
+	"inline_math": true, "break": true, "link": true, "image": true, "video": true,
+	"inline_spoiler": true, "mention": true, "reply_reference": true,
 }

@@ -94,11 +94,12 @@ func (c *Converter) Convert(ctx context.Context, sources []string) ([]ContentDoc
 }
 
 type converter struct {
-	cdn    string
-	site   string
-	src    []byte
-	images map[string]imageclient.ImageMeta
-	users  map[int]userclient.User
+	cdn       string
+	site      string
+	src       []byte
+	images    map[string]imageclient.ImageMeta
+	users     map[int]userclient.User
+	untrusted bool // raw HTML stays literal, and kungal-user/kungal-reply are not mentions
 }
 
 func (c *converter) userRef(id int) repr.UserRef {

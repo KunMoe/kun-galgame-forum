@@ -2,6 +2,7 @@ package newsclient
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"net/http"
 	"net/http/httptest"
@@ -111,5 +112,74 @@ func TestFeedPrefersTheV1NamesWhenBothArrive(t *testing.T) {
 	}
 	if it.Lane != "column" || it.BannerURL == "" || it.Source.Attribution == "" {
 		t.Errorf("the rich fields must still decode when upstream sends them: %+v", it)
+	}
+}
+
+func TestItemDecodesSubmitterAndBody(t *testing.T) {
+	var it Item
+	if err := json.Unmarshal([]byte(`{
+		"id":"4619","has_body":true,"submitter_uid":"12345","body":"hello **md**",
+		"summary":"lede","source":{"name":"community"}
+	}`), &it); err != nil {
+		t.Fatal(err)
+	}
+	if it.ID != 4619 || !it.HasBody || it.SubmitterUID != 12345 || it.Body != "hello **md**" || it.Preview != "lede" {
+		t.Fatalf("%+v", it)
+	}
+
+	var none Item
+	if err := json.Unmarshal([]byte(`{"id":1,"submitter_uid":null,"has_body":false}`), &none); err != nil {
+		t.Fatal(err)
+	}
+	if none.SubmitterUID != 0 || none.HasBody || none.Body != "" {
+		t.Fatalf("null submitter %+v", none)
+	}
+
+	var absent Item
+	if err := json.Unmarshal([]byte(`{"id":2,"has_body":false}`), &absent); err != nil {
+		t.Fatal(err)
+	}
+	if absent.SubmitterUID != 0 {
+		t.Fatalf("absent submitter %+v", absent)
+	}
+
+	var num Item
+	if err := json.Unmarshal([]byte(`{"id":3,"submitter_uid":9,"has_body":true,"body":"n"}`), &num); err != nil {
+		t.Fatal(err)
+	}
+	if num.SubmitterUID != 9 || num.Body != "n" || !num.HasBody {
+		t.Fatalf("numeric submitter %+v", num)
+	}
+}
+
+func TestItemReadsOneAndTreatsGoneAsMissing(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/v2/news/4619":
+			_, _ = w.Write([]byte(`{"object":"news_item","id":"4619","body":"**md**","has_body":true,"submitter_uid":"7","summary":"s","source":{"name":"community"}}`))
+		case "/v2/news/404":
+			w.WriteHeader(http.StatusNotFound)
+		case "/v2/news/410":
+			w.WriteHeader(http.StatusGone)
+		default:
+			t.Errorf("path %s", r.URL.Path)
+			w.WriteHeader(http.StatusNotFound)
+		}
+	}))
+	defer srv.Close()
+
+	c := New(Config{BaseURL: srv.URL, APIKey: "k"})
+	got, err := c.Item(context.Background(), 4619)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.Body != "**md**" || got.SubmitterUID != 7 || !got.HasBody || got.ID != 4619 {
+		t.Fatalf("%+v", got)
+	}
+	if _, err := c.Item(context.Background(), 404); !errors.Is(err, ErrNotFound) {
+		t.Fatalf("404: %v", err)
+	}
+	if _, err := c.Item(context.Background(), 410); !errors.Is(err, ErrNotFound) {
+		t.Fatalf("410: %v", err)
 	}
 }
