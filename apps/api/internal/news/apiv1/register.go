@@ -96,5 +96,6 @@ func Register(s *Service) func(huma.API) {
 			Tags:      []string{"news"},
 			Responses: unavailable(upstreamDown),
 		}), s.listNewsMonthItems)
+		s.registerSubmissions(api)
 	}
 }

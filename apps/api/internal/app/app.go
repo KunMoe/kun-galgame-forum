@@ -507,7 +507,7 @@ func New(cfg *config.Config) *App {
 		OverviewV1:         overviewapiv1.New(adminOverviewRepo, nil),
 		AdminPurge:         adminPurgeSvc,
 		TrustHandler:       trustHandler.NewTrustHandler(trustEnforce, cfg.Trust.CallbackSecret),
-		NewsV1:             newsapiv1.New(newsCli, uc, cfg.NextMoeAPI.ImageCDNBase).WithContent(&content.Converter{CDNBase: cfg.NextMoeAPI.ImageCDNBase, SiteBase: apiv1.SiteOrigin, Images: imageMetaResolve(imageMeta)}),
+		NewsV1:             newsapiv1.New(newsCli, uc, cfg.NextMoeAPI.ImageCDNBase).WithContent(&content.Converter{CDNBase: cfg.NextMoeAPI.ImageCDNBase, SiteBase: apiv1.SiteOrigin, Images: imageMetaResolve(imageMeta)}).WithSubmissions(catalogCli, trustCheck),
 		ImagesV1:           imageapiv1.New(imgCli, catalogCli, db, cfg.NextMoeAPI.ImageCDNBase),
 		StickersV1:         stickersV1,
 		Artifact:           artCli,

@@ -8249,6 +8249,34 @@
         ],
         "type": "object"
       },
+      "ListNewsSubmission": {
+        "properties": {
+          "items": {
+            "description": "Members of this page. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/NewsSubmission"
+            },
+            "type": "array"
+          },
+          "next_cursor": {
+            "description": "Opaque keyset cursor. Omitted on the last page.",
+            "maxLength": 512,
+            "pattern": "^cur_[A-Za-z0-9_-]+$",
+            "type": "string"
+          },
+          "object": {
+            "const": "list",
+            "description": "Type discriminant. Always list.",
+            "maxLength": 4,
+            "type": "string"
+          }
+        },
+        "required": [
+          "object",
+          "items"
+        ],
+        "type": "object"
+      },
       "ListNode": {
         "properties": {
           "children": {
@@ -10979,6 +11007,156 @@
           "forum_account"
         ],
         "type": "object"
+      },
+      "NewsSubmission": {
+        "properties": {
+          "content_markdown": {
+            "description": "The item's own text, CommonMark Markdown. Empty string when the item has none. Free text; never use it as a decision input.",
+            "maxLength": 20000,
+            "type": "string"
+          },
+          "id": {
+            "description": "News submission id. Same id space as a news item. JSON string of a decimal integer.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "lane": {
+            "$ref": "#/components/schemas/NewsLane",
+            "description": "news for bulletins, column for longer pieces."
+          },
+          "news_source": {
+            "description": "Key of the source that published the item. community for everything this face creates.",
+            "maxLength": 40,
+            "pattern": "^[a-z0-9_]{1,40}$",
+            "type": "string"
+          },
+          "object": {
+            "const": "news_submission",
+            "description": "Type discriminant. Always news_submission.",
+            "maxLength": 16,
+            "type": "string"
+          },
+          "preview": {
+            "description": "The lede the submitter wrote. Free text; never use it as a decision input.",
+            "maxLength": 2000,
+            "type": "string"
+          },
+          "published_at": {
+            "description": "The news service's timestamp for the item. A community submission is stamped when it is submitted.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": "string"
+          },
+          "source_url": {
+            "description": "The item on the partner's site. Empty string for an original community submission, which has no page elsewhere.",
+            "maxLength": 2048,
+            "pattern": "^(https?://.*)?$",
+            "type": "string"
+          },
+          "state": {
+            "$ref": "#/components/schemas/NewsSubmissionState",
+            "description": "pending waits for a NextMoe moderator. Only published appears on the news index. rejected and withdrawn are final."
+          },
+          "title": {
+            "description": "Headline. Free text; never use it as a decision input.",
+            "maxLength": 512,
+            "type": "string"
+          }
+        },
+        "required": [
+          "object",
+          "id",
+          "state",
+          "news_source",
+          "lane",
+          "title",
+          "preview",
+          "content_markdown",
+          "source_url",
+          "published_at"
+        ],
+        "type": "object"
+      },
+      "NewsSubmissionCreate": {
+        "properties": {
+          "content_markdown": {
+            "description": "The item's own text, CommonMark Markdown. Omitted is an empty string. Free text; never use it as a decision input.",
+            "maxLength": 20000,
+            "type": "string"
+          },
+          "preview": {
+            "description": "The lede. 1-200 characters after trimming. Free text; never use it as a decision input.",
+            "maxLength": 200,
+            "minLength": 1,
+            "type": "string"
+          },
+          "source_url": {
+            "description": "Canonical link to an original elsewhere. Omitted is an empty string. Absolute http or https, or empty.",
+            "maxLength": 1024,
+            "pattern": "^(https?://.+)?$",
+            "type": "string"
+          },
+          "title": {
+            "description": "Headline. 1-200 characters after trimming. Free text; never use it as a decision input.",
+            "maxLength": 200,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "title",
+          "preview"
+        ],
+        "type": "object"
+      },
+      "NewsSubmissionPatch": {
+        "properties": {
+          "content_markdown": {
+            "description": "New Markdown. An empty string clears it. Free text; never use it as a decision input.",
+            "maxLength": 20000,
+            "type": "string"
+          },
+          "preview": {
+            "description": "New lede. 1-200 characters after trimming. Free text; never use it as a decision input.",
+            "maxLength": 200,
+            "minLength": 1,
+            "type": "string"
+          },
+          "source_url": {
+            "description": "New canonical link. An empty string clears it. Absolute http or https, or empty.",
+            "maxLength": 1024,
+            "pattern": "^(https?://.+)?$",
+            "type": "string"
+          },
+          "state": {
+            "const": "withdrawn",
+            "description": "Only withdrawn, and only on its own. Withdrawing is legal only from published.",
+            "maxLength": 9,
+            "type": "string"
+          },
+          "title": {
+            "description": "New headline. 1-200 characters after trimming. Free text; never use it as a decision input.",
+            "maxLength": 200,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "NewsSubmissionState": {
+        "enum": [
+          "pending",
+          "published",
+          "rejected",
+          "withdrawn"
+        ],
+        "maxLength": 9,
+        "type": "string",
+        "x-vocabulary-closed": true
       },
       "Notification": {
         "properties": {
@@ -41447,6 +41625,563 @@
         "summary": "List the caller's moemoepoint ledger",
         "tags": [
           "users"
+        ]
+      }
+    },
+    "/me/news-submissions": {
+      "get": {
+        "description": "The caller's own submissions, pending included, newest first. A cursor collection over the catalog cursor; the cursor is bound to limit. next_cursor is omitted on the last page.",
+        "operationId": "listMyNewsSubmissions",
+        "parameters": [
+          {
+            "description": "Opaque cursor from a previous page's next_cursor. It is bound to limit.",
+            "explode": false,
+            "in": "query",
+            "name": "cursor",
+            "schema": {
+              "description": "Opaque cursor from a previous page's next_cursor. It is bound to limit.",
+              "maxLength": 512,
+              "pattern": "^cur_[A-Za-z0-9_-]+$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Page size. 1-100, default 20.",
+            "explode": false,
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 20,
+              "description": "Page size. 1-100, default 20.",
+              "format": "int64",
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListNewsSubmission"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "INVALID_CURSOR when the cursor is malformed or was issued for a different limit."
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SCOPE_REQUIRED when the catalog token lacks the scope; ACCOUNT_BANNED when the caller is banned."
+          },
+          "429": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "QUOTA_EXCEEDED when the daily submission quota is exhausted; RATE_LIMITED otherwise. Retry-After is passed through when the catalog sends it."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the catalog is not configured or cannot be reached."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List the caller's news submissions",
+        "tags": [
+          "me"
+        ]
+      },
+      "post": {
+        "description": "Submits a community news item. It stays pending until a NextMoe moderator publishes it. Send content_markdown or source_url. Idempotency-Key is required. Location is the new submission's path.",
+        "operationId": "createNewsSubmission",
+        "parameters": [
+          {
+            "description": "Caller-generated UUID (canonical 8-4-4-4-12 hex, any version) or 26-character Crockford ULID. Scoped to (user, operation, key) for 24 hours.",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "description": "Caller-generated UUID (canonical 8-4-4-4-12 hex, any version) or 26-character Crockford ULID. Scoped to (user, operation, key) for 24 hours.",
+              "maxLength": 36,
+              "minLength": 26,
+              "pattern": "^([0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}|[0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{26})$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewsSubmissionCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NewsSubmission"
+                }
+              }
+            },
+            "description": "Created",
+            "headers": {
+              "Location": {
+                "schema": {
+                  "description": "Absolute path of the new submission, /api/v1/me/news-submissions/{news_submission_id}.",
+                  "format": "uri-reference",
+                  "maxLength": 64,
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "INVALID_PARAMETER when Idempotency-Key is missing or malformed."
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SCOPE_REQUIRED when the catalog token lacks the scope; ACCOUNT_BANNED when the caller is banned."
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "IDEMPOTENCY_KEY_REUSED or IDEMPOTENCY_REQUEST_IN_PROGRESS."
+          },
+          "413": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Request Entity Too Large"
+          },
+          "415": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unsupported Media Type"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "CONTENT_REJECTED when the trust check refuses the text; VALIDATION_FAILED when title or preview is blank, or neither content_markdown nor source_url is sent."
+          },
+          "429": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "QUOTA_EXCEEDED when the daily submission quota is exhausted; RATE_LIMITED otherwise. Retry-After is passed through when the catalog sends it."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the catalog is not configured or cannot be reached."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Submit a news item",
+        "tags": [
+          "me"
+        ]
+      }
+    },
+    "/me/news-submissions/{news_submission_id}": {
+      "get": {
+        "description": "One submission belonging to the caller. Another account's item is NOT_FOUND.",
+        "operationId": "getMyNewsSubmission",
+        "parameters": [
+          {
+            "description": "News submission id.",
+            "in": "path",
+            "name": "news_submission_id",
+            "required": true,
+            "schema": {
+              "description": "News submission id.",
+              "maxLength": 20,
+              "pattern": "^[0-9]+$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NewsSubmission"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SCOPE_REQUIRED when the catalog token lacks the scope; ACCOUNT_BANNED when the caller is banned."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when the submission is not the caller's."
+          },
+          "429": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "QUOTA_EXCEEDED when the daily submission quota is exhausted; RATE_LIMITED otherwise. Retry-After is passed through when the catalog sends it."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the catalog is not configured or cannot be reached."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get one news submission",
+        "tags": [
+          "me"
+        ]
+      },
+      "patch": {
+        "description": "Partial update of the caller's submission. Editing a published item returns it to pending until a NextMoe moderator publishes it again. Only a published item can be withdrawn. Withdrawal is state withdrawn sent on its own.",
+        "operationId": "updateNewsSubmission",
+        "parameters": [
+          {
+            "description": "News submission id.",
+            "in": "path",
+            "name": "news_submission_id",
+            "required": true,
+            "schema": {
+              "description": "News submission id.",
+              "maxLength": 20,
+              "pattern": "^[0-9]+$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewsSubmissionPatch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NewsSubmission"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SCOPE_REQUIRED when the catalog token lacks the scope; ACCOUNT_BANNED when the caller is banned."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when the submission is not the caller's."
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "INVALID_STATE_TRANSITION when the withdrawal or edit is not legal from the current state."
+          },
+          "413": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Request Entity Too Large"
+          },
+          "415": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unsupported Media Type"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "CONTENT_REJECTED when the trust check refuses the text; VALIDATION_FAILED when the body is empty, state is sent with another field, a sent title or preview is blank, or the item would have neither content_markdown nor source_url."
+          },
+          "429": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "QUOTA_EXCEEDED when the daily submission quota is exhausted; RATE_LIMITED otherwise. Retry-After is passed through when the catalog sends it."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the catalog is not configured or cannot be reached."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update a news submission",
+        "tags": [
+          "me"
         ]
       }
     },

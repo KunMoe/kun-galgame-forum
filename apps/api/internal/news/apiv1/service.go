@@ -10,6 +10,7 @@ import (
 	"kun-galgame-api/internal/apiv1/content"
 	"kun-galgame-api/internal/apiv1/repr"
 	"kun-galgame-api/internal/news/service"
+	"kun-galgame-api/internal/trust/gate"
 	"kun-galgame-api/pkg/newsclient"
 	"kun-galgame-api/pkg/problem"
 	"kun-galgame-api/pkg/userclient"
@@ -28,6 +29,8 @@ type Service struct {
 	month   *service.MonthService
 	cdn     string
 	convert *content.Converter
+	catalog SubmissionCatalog
+	check   *gate.CheckService
 }
 
 func New(news *newsclient.Client, users *userclient.Client, cdn string) *Service {
@@ -45,6 +48,12 @@ func New(news *newsclient.Client, users *userclient.Client, cdn string) *Service
 
 func (s *Service) WithContent(convert *content.Converter) *Service {
 	s.convert = convert
+	return s
+}
+
+func (s *Service) WithSubmissions(catalog SubmissionCatalog, check *gate.CheckService) *Service {
+	s.catalog = catalog
+	s.check = check
 	return s
 }
 
