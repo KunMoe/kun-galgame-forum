@@ -59,6 +59,7 @@ var (
 	ErrNotConfigured = errors.New("newsclient: not configured (empty base URL or API key)")
 	ErrUnauthorized  = errors.New("newsclient: unauthorized (key missing the news:read scope?)")
 	ErrBadRequest    = errors.New("newsclient: rejected by the news face")
+	ErrNotFound      = errors.New("newsclient: news item not found")
 	ErrUpstream      = errors.New("newsclient: news service error")
 )
 
@@ -94,39 +95,45 @@ func (s *Source) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
-// Item carries preview and banner only. The article body is never served and
-// is not stored anywhere upstream — following SourceURL is the only way to the
-// full text.
+// Body is served only by a single-item read, and only when the item has text of its own.
 type Item struct {
-	ID          int64     `json:"id"`
-	Source      Source    `json:"source"`
-	Lane        string    `json:"lane"`
-	SourceURL   string    `json:"source_url"`
-	Title       string    `json:"title"`
-	Preview     string    `json:"preview"`
-	BannerURL   string    `json:"banner_url"`
-	PublishedAt time.Time `json:"published_at"`
-	WorkIDs     []int64   `json:"work_ids"`
+	ID           int64     `json:"id"`
+	Source       Source    `json:"source"`
+	Lane         string    `json:"lane"`
+	SourceURL    string    `json:"source_url"`
+	Title        string    `json:"title"`
+	Preview      string    `json:"preview"`
+	BannerURL    string    `json:"banner_url"`
+	PublishedAt  time.Time `json:"published_at"`
+	WorkIDs      []int64   `json:"work_ids"`
+	HasBody      bool      `json:"has_body"`
+	SubmitterUID int64     `json:"submitter_uid"`
+	Body         string    `json:"body"`
 }
 
 func (it *Item) UnmarshalJSON(b []byte) error {
 	var aux struct {
-		ID          json.RawMessage `json:"id"`
-		Source      Source          `json:"source"`
-		Lane        string          `json:"lane"`
-		SourceURL   string          `json:"source_url"`
-		Title       string          `json:"title"`
-		Preview     string          `json:"preview"`
-		Summary     string          `json:"summary"`
-		BannerURL   string          `json:"banner_url"`
-		PublishedAt time.Time       `json:"published_at"`
-		WorkIDs     json.RawMessage `json:"work_ids"`
+		ID           json.RawMessage `json:"id"`
+		Source       Source          `json:"source"`
+		Lane         string          `json:"lane"`
+		SourceURL    string          `json:"source_url"`
+		Title        string          `json:"title"`
+		Preview      string          `json:"preview"`
+		Summary      string          `json:"summary"`
+		BannerURL    string          `json:"banner_url"`
+		PublishedAt  time.Time       `json:"published_at"`
+		WorkIDs      json.RawMessage `json:"work_ids"`
+		HasBody      bool            `json:"has_body"`
+		SubmitterUID json.RawMessage `json:"submitter_uid"`
+		Body         string          `json:"body"`
 	}
 	if err := json.Unmarshal(b, &aux); err != nil {
 		return err
 	}
 	it.Source, it.Lane, it.SourceURL = aux.Source, aux.Lane, aux.SourceURL
 	it.Title, it.BannerURL, it.PublishedAt = aux.Title, aux.BannerURL, aux.PublishedAt
+	it.HasBody, it.Body = aux.HasBody, aux.Body
+	it.SubmitterUID = flexInt(aux.SubmitterUID)
 	// Same rename as the source key: /v2 calls the lede `summary`, /v1 called it
 	// `preview`. Every card on the 情报 tab rendered a title and nothing else.
 	it.Preview = cmp.Or(aux.Preview, aux.Summary)
@@ -250,6 +257,18 @@ func (c *Client) Sources(ctx context.Context) ([]Source, error) {
 	return out.Sources, nil
 }
 
+func (c *Client) Item(ctx context.Context, id int64) (*Item, error) {
+	data, err := c.getData(ctx, "/v2/news/"+strconv.FormatInt(id, 10), nil)
+	if err != nil {
+		return nil, err
+	}
+	var it Item
+	if err := json.Unmarshal(data, &it); err != nil {
+		return nil, fmt.Errorf("%w: malformed item payload", ErrUpstream)
+	}
+	return &it, nil
+}
+
 func (c *Client) getData(ctx context.Context, path string, query url.Values) (json.RawMessage, error) {
 	if !c.Configured() {
 		return nil, ErrNotConfigured
@@ -295,9 +314,30 @@ func (c *Client) getData(ctx context.Context, path string, query url.Values) (js
 		return nil, ErrUnauthorized
 	case http.StatusBadRequest:
 		return nil, fmt.Errorf("%w: %s", ErrBadRequest, envelopeMessage(raw))
+	case http.StatusNotFound, http.StatusGone:
+		// A withdrawn item is gone; the forum shows that the same as a missing one.
+		return nil, ErrNotFound
 	default:
 		return nil, fmt.Errorf("%w (status %d)", ErrUpstream, resp.StatusCode)
 	}
+}
+
+func flexInt(raw json.RawMessage) int64 {
+	raw = bytes.TrimSpace(raw)
+	if len(raw) == 0 || bytes.Equal(raw, []byte("null")) {
+		return 0
+	}
+	if raw[0] == '"' {
+		var s string
+		if json.Unmarshal(raw, &s) != nil {
+			return 0
+		}
+		n, _ := strconv.ParseInt(strings.TrimSpace(s), 10, 64)
+		return n
+	}
+	var n int64
+	_ = json.Unmarshal(raw, &n)
+	return n
 }
 
 func envelopeMessage(raw []byte) string {

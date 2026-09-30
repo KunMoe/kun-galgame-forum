@@ -184,7 +184,7 @@ export const loadNewsFeed = async (
       .join('\n\n')
     return [
       {
-        link: item.source_url,
+        link: item.has_body ? `${baseUrl}/news/${item.id}` : item.source_url,
         title: item.title.trim(),
         date: new Date(item.published_at),
         description,
@@ -200,7 +200,7 @@ export const loadNewsFeed = async (
   })
   return feedOk({
     title: '鲲 Galgame 论坛 - Gal 情报',
-    description: '鲲 Galgame 论坛转载的 Galgame 情报与专栏, 版权归原作者所有',
+    description: '鲲 Galgame 论坛收录的 Galgame 情报与专栏, 版权归原作者所有',
     link: `${baseUrl}/news`,
     image: siteLogo(baseUrl),
     items

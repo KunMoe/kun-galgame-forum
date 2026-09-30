@@ -1924,6 +1924,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/me/news-submissions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the caller's news submissions
+         * @description The caller's own submissions, pending included, newest first. A cursor collection over the catalog cursor; the cursor is bound to limit. next_cursor is omitted on the last page.
+         */
+        get: operations["listMyNewsSubmissions"];
+        put?: never;
+        /**
+         * Submit a news item
+         * @description Submits a community news item. It stays pending until a NextMoe moderator publishes it. Send content_markdown or source_url. Idempotency-Key is required. Location is the new submission's path.
+         */
+        post: operations["createNewsSubmission"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/news-submissions/{news_submission_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get one news submission
+         * @description One submission belonging to the caller. Another account's item is NOT_FOUND.
+         */
+        get: operations["getMyNewsSubmission"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Update a news submission
+         * @description Partial update of the caller's submission. Editing a published item returns it to pending until a NextMoe moderator publishes it again. Only a published item can be withdrawn. Withdrawal is state withdrawn sent on its own.
+         */
+        patch: operations["updateNewsSubmission"];
+        trace?: never;
+    };
     "/me/notification-preferences": {
         parameters: {
             query?: never;
@@ -2541,9 +2589,29 @@ export interface paths {
         };
         /**
          * List news items
-         * @description The partner news index, newest first. A cursor collection over the news service's own cursor; the cursor is bound to every filter and to limit. limit is 1–50 because that is the news service's page cap.
+         * @description The news index, partner items and published community submissions, newest first. A cursor collection over the news service's own cursor; the cursor is bound to every filter and to limit. limit is 1–50 because that is the news service's page cap.
          */
         get: operations["listNewsItems"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/news-items/{news_item_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a news item
+         * @description One published news item. Pending and withdrawn items are NOT_FOUND, the same as an id that was never issued. content is the item's own text when has_body is true, and an empty document otherwise.
+         */
+        get: operations["getNewsItem"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2560,8 +2628,8 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * List news partners
-         * @description The whole partner directory, which is where a news item's news_source key resolves to a name and attribution. Not paged.
+         * List news sources
+         * @description The whole source directory, partners and community, which is where a news item's news_source key resolves to a name and attribution. Not paged.
          */
         get: operations["listNewsSources"];
         put?: never;
@@ -8262,6 +8330,17 @@ export interface components {
              */
             object: "list";
         };
+        ListNewsSubmission: {
+            /** @description Members of this page. Empty array, never null. */
+            items: components["schemas"]["NewsSubmission"][];
+            /** @description Opaque keyset cursor. Omitted on the last page. */
+            next_cursor?: string;
+            /**
+             * @description Type discriminant. Always list.
+             * @constant
+             */
+            object: "list";
+        };
         ListNode: {
             /** @description Items of the list. */
             children: components["schemas"]["ListItemNode"][];
@@ -9168,29 +9247,60 @@ export interface components {
             years: components["schemas"]["YearCount"][];
         };
         NewsItem: {
+            /** @description Whether the item carries its own text. Only community submissions do. When true, link to the item's page (getNewsItem) rather than to source_url. */
+            has_body: boolean;
             /** @description News item id. JSON string of a decimal integer. */
             id: string;
             /** @description news for bulletins, column for longer pieces. */
             lane: components["schemas"]["NewsLane"];
-            /** @description Key of the partner that published the item. Name, homepage and attribution come from listNewsSources; an item shown on its own must still carry its partner's attribution. */
+            /** @description Key of the source that published the item: a partner, or community for NextMoe user submissions. Name, homepage and attribution come from listNewsSources; an item shown on its own must still carry its source's attribution. */
             news_source: string;
             /**
              * @description Type discriminant. Always news_item.
              * @constant
              */
             object: "news_item";
-            /** @description The partner's own excerpt. There is no body: source_url is the only way to the full text. Free text; never use it as a decision input. */
+            /** @description The lede: the partner's own excerpt, or the submitter's summary. Free text; never use it as a decision input. */
             preview: string;
             /**
              * Format: date-time
-             * @description When the partner published it.
+             * @description When the source published the item.
              */
             published_at: string;
-            /**
-             * Format: uri
-             * @description The item on the partner's site.
-             */
+            /** @description The item on the partner's site. Empty string for an original community submission, which has no page elsewhere. */
             source_url: string;
+            /** @description The account that submitted the item. null for items imported from a partner, and when the account cannot be shown. */
+            submitter: components["schemas"]["UserRef"] | null;
+            /** @description Headline. Free text; never use it as a decision input. */
+            title: string;
+        };
+        NewsItemDetail: {
+            /** @description The item's own text as a content document. An empty document when has_body is false. Raw HTML in the source is shown as text, never interpreted. */
+            content: components["schemas"]["ContentDocument"];
+            /** @description Whether the item carries its own text. Only community submissions do. When true, link to the item's page (getNewsItem) rather than to source_url. */
+            has_body: boolean;
+            /** @description News item id. JSON string of a decimal integer. */
+            id: string;
+            /** @description news for bulletins, column for longer pieces. */
+            lane: components["schemas"]["NewsLane"];
+            /** @description Key of the source that published the item: a partner, or community for NextMoe user submissions. Name, homepage and attribution come from listNewsSources; an item shown on its own must still carry its source's attribution. */
+            news_source: string;
+            /**
+             * @description Type discriminant. Always news_item.
+             * @constant
+             */
+            object: "news_item";
+            /** @description The lede: the partner's own excerpt, or the submitter's summary. Free text; never use it as a decision input. */
+            preview: string;
+            /**
+             * Format: date-time
+             * @description When the source published the item.
+             */
+            published_at: string;
+            /** @description The item on the partner's site. Empty string for an original community submission, which has no page elsewhere. */
+            source_url: string;
+            /** @description The account that submitted the item. null for items imported from a partner, and when the account cannot be shown. */
+            submitter: components["schemas"]["UserRef"] | null;
             /** @description Headline. Free text; never use it as a decision input. */
             title: string;
         };
@@ -9231,7 +9341,7 @@ export interface components {
             forum_account: components["schemas"]["UserRef"] | null;
             /** @description The partner's homepage. Empty string if none. */
             homepage_url: string;
-            /** @description The partner key that news items carry in news_source. */
+            /** @description The source key that news items carry in news_source. */
             key: string;
             /**
              * @description Type discriminant. Always news_source.
@@ -9239,6 +9349,61 @@ export interface components {
              */
             object: "news_source";
         };
+        NewsSubmission: {
+            /** @description The item's own text, CommonMark Markdown. Empty string when the item has none. Free text; never use it as a decision input. */
+            content_markdown: string;
+            /** @description News submission id. Same id space as a news item. JSON string of a decimal integer. */
+            id: string;
+            /** @description news for bulletins, column for longer pieces. */
+            lane: components["schemas"]["NewsLane"];
+            /** @description Key of the source that published the item. community for everything this face creates. */
+            news_source: string;
+            /**
+             * @description Type discriminant. Always news_submission.
+             * @constant
+             */
+            object: "news_submission";
+            /** @description The lede the submitter wrote. Free text; never use it as a decision input. */
+            preview: string;
+            /**
+             * Format: date-time
+             * @description The news service's timestamp for the item. A community submission is stamped when it is submitted.
+             */
+            published_at: string;
+            /** @description The item on the partner's site. Empty string for an original community submission, which has no page elsewhere. */
+            source_url: string;
+            /** @description pending waits for a NextMoe moderator. Only published appears on the news index. rejected and withdrawn are final. */
+            state: components["schemas"]["NewsSubmissionState"];
+            /** @description Headline. Free text; never use it as a decision input. */
+            title: string;
+        };
+        NewsSubmissionCreate: {
+            /** @description The item's own text, CommonMark Markdown. Omitted is an empty string. Free text; never use it as a decision input. */
+            content_markdown?: string;
+            /** @description The lede. 1-200 characters after trimming. Free text; never use it as a decision input. */
+            preview: string;
+            /** @description Canonical link to an original elsewhere. Omitted is an empty string. Absolute http or https, or empty. */
+            source_url?: string;
+            /** @description Headline. 1-200 characters after trimming. Free text; never use it as a decision input. */
+            title: string;
+        };
+        NewsSubmissionPatch: {
+            /** @description New Markdown. An empty string clears it. Free text; never use it as a decision input. */
+            content_markdown?: string;
+            /** @description New lede. 1-200 characters after trimming. Free text; never use it as a decision input. */
+            preview?: string;
+            /** @description New canonical link. An empty string clears it. Absolute http or https, or empty. */
+            source_url?: string;
+            /**
+             * @description Only withdrawn, and only on its own. Withdrawing is legal only from published.
+             * @constant
+             */
+            state?: "withdrawn";
+            /** @description New headline. 1-200 characters after trimming. Free text; never use it as a decision input. */
+            title?: string;
+        };
+        /** @enum {string} */
+        NewsSubmissionState: "pending" | "published" | "rejected" | "withdrawn";
         Notification: {
             /** @description The user who triggered this notification. name is null when the account no longer exists. */
             actor: components["schemas"]["UserRef"];
@@ -25548,6 +25713,415 @@ export interface operations {
             };
         };
     };
+    listMyNewsSubmissions: {
+        parameters: {
+            query?: {
+                /** @description Opaque cursor from a previous page's next_cursor. It is bound to limit. */
+                cursor?: string;
+                /** @description Page size. 1-100, default 20. */
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListNewsSubmission"];
+                };
+            };
+            /** @description INVALID_CURSOR when the cursor is malformed or was issued for a different limit. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SCOPE_REQUIRED when the catalog token lacks the scope; ACCOUNT_BANNED when the caller is banned. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description QUOTA_EXCEEDED when the daily submission quota is exhausted; RATE_LIMITED otherwise. Retry-After is passed through when the catalog sends it. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the catalog is not configured or cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    createNewsSubmission: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Caller-generated UUID (canonical 8-4-4-4-12 hex, any version) or 26-character Crockford ULID. Scoped to (user, operation, key) for 24 hours. */
+                "Idempotency-Key": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NewsSubmissionCreate"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    Location?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NewsSubmission"];
+                };
+            };
+            /** @description INVALID_PARAMETER when Idempotency-Key is missing or malformed. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SCOPE_REQUIRED when the catalog token lacks the scope; ACCOUNT_BANNED when the caller is banned. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description IDEMPOTENCY_KEY_REUSED or IDEMPOTENCY_REQUEST_IN_PROGRESS. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description CONTENT_REJECTED when the trust check refuses the text; VALIDATION_FAILED when title or preview is blank, or neither content_markdown nor source_url is sent. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description QUOTA_EXCEEDED when the daily submission quota is exhausted; RATE_LIMITED otherwise. Retry-After is passed through when the catalog sends it. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the catalog is not configured or cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getMyNewsSubmission: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description News submission id. */
+                news_submission_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NewsSubmission"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SCOPE_REQUIRED when the catalog token lacks the scope; ACCOUNT_BANNED when the caller is banned. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the submission is not the caller's. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description QUOTA_EXCEEDED when the daily submission quota is exhausted; RATE_LIMITED otherwise. Retry-After is passed through when the catalog sends it. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the catalog is not configured or cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    updateNewsSubmission: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description News submission id. */
+                news_submission_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NewsSubmissionPatch"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NewsSubmission"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SCOPE_REQUIRED when the catalog token lacks the scope; ACCOUNT_BANNED when the caller is banned. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the submission is not the caller's. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description INVALID_STATE_TRANSITION when the withdrawal or edit is not legal from the current state. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description CONTENT_REJECTED when the trust check refuses the text; VALIDATION_FAILED when the body is empty, state is sent with another field, a sent title or preview is blank, or the item would have neither content_markdown nor source_url. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description QUOTA_EXCEEDED when the daily submission quota is exhausted; RATE_LIMITED otherwise. Retry-After is passed through when the catalog sends it. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the catalog is not configured or cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     getNotificationPreferences: {
         parameters: {
             query?: never;
@@ -28183,7 +28757,7 @@ export interface operations {
             query?: {
                 /** @description Only this lane. Omitted means both. */
                 lane?: components["schemas"]["NewsLane"];
-                /** @description Only this partner. Omitted means every partner. */
+                /** @description Only this source. Omitted means every source. */
                 news_source?: string;
                 /** @description Also break this year down by month. */
                 year?: number;
@@ -28237,7 +28811,7 @@ export interface operations {
             query?: {
                 /** @description Only this lane. Omitted means both. */
                 lane?: components["schemas"]["NewsLane"];
-                /** @description Only this partner. Omitted means every partner. */
+                /** @description Only this source. Omitted means every source. */
                 news_source?: string;
             };
             header?: never;
@@ -28307,7 +28881,7 @@ export interface operations {
                 limit?: number;
                 /** @description Only this lane. Omitted means both. */
                 lane?: components["schemas"]["NewsLane"];
-                /** @description Only this partner. Omitted means every partner. */
+                /** @description Only this source. Omitted means every source. */
                 news_source?: string;
                 /** @description Only this day of the month. 0 or omitted means the whole month. */
                 day?: number;
@@ -28381,7 +28955,7 @@ export interface operations {
                 include_total?: boolean;
                 /** @description Only this lane. Omitted means both. */
                 lane?: components["schemas"]["NewsLane"];
-                /** @description Only this partner. Omitted means every partner. */
+                /** @description Only this source. Omitted means every source. */
                 news_source?: string;
                 /** @description Only items published in this year, Asia/Shanghai. 0 or omitted means any year. */
                 year?: number;
@@ -28405,6 +28979,65 @@ export interface operations {
             };
             /** @description Bad Request */
             400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the news service is not configured or cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getNewsItem: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description News item id. */
+                news_item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NewsItemDetail"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the item never existed, is still pending, or was withdrawn. */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

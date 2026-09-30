@@ -7,14 +7,18 @@ import (
 	"strconv"
 
 	"kun-galgame-api/internal/apiv1/collect"
+	"kun-galgame-api/internal/apiv1/content"
 	"kun-galgame-api/internal/apiv1/repr"
 	"kun-galgame-api/internal/news/service"
+	"kun-galgame-api/internal/trust/gate"
 	"kun-galgame-api/pkg/newsclient"
 	"kun-galgame-api/pkg/problem"
 	"kun-galgame-api/pkg/userclient"
 )
 
 var errUnconfigured = errors.New("apiv1 news: service is not configured")
+
+var errNoConverter = errors.New("apiv1 news: content converter is not configured")
 
 const feedSort = "published_desc"
 
@@ -24,6 +28,9 @@ type Service struct {
 	archive *service.ArchiveService
 	month   *service.MonthService
 	cdn     string
+	convert *content.Converter
+	catalog SubmissionCatalog
+	check   *gate.CheckService
 }
 
 func New(news *newsclient.Client, users *userclient.Client, cdn string) *Service {
@@ -37,6 +44,17 @@ func New(news *newsclient.Client, users *userclient.Client, cdn string) *Service
 		month:   service.NewMonthService(news),
 		cdn:     cdn,
 	}
+}
+
+func (s *Service) WithContent(convert *content.Converter) *Service {
+	s.convert = convert
+	return s
+}
+
+func (s *Service) WithSubmissions(catalog SubmissionCatalog, check *gate.CheckService) *Service {
+	s.catalog = catalog
+	s.check = check
+	return s
 }
 
 func (s *Service) ready() *problem.Problem {
@@ -62,19 +80,6 @@ func upstreamProblem(err error, withCursor bool) *problem.Problem {
 
 func (f NewsFilter) archiveFilter() service.ArchiveFilter {
 	return service.ArchiveFilter{Lane: f.Lane, Source: f.NewsSource}
-}
-
-func newsItem(it newsclient.Item) NewsItem {
-	return NewsItem{
-		Object:      "news_item",
-		ID:          repr.DecimalID(strconv.FormatInt(it.ID, 10)),
-		NewsSource:  it.Source.Key,
-		Lane:        it.Lane,
-		Title:       it.Title,
-		Preview:     it.Preview,
-		SourceURL:   it.SourceURL,
-		PublishedAt: repr.Timestamp(it.PublishedAt),
-	}
 }
 
 func (s *Service) listNewsItems(ctx context.Context, in *listNewsItemsInput) (*listNewsItemsOutput, error) {
@@ -113,6 +118,7 @@ func (s *Service) listNewsItems(ctx context.Context, in *listNewsItemsInput) (*l
 	for _, it := range feed.Items {
 		items = append(items, newsItem(it))
 	}
+	s.fillSubmitters(ctx, feed.Items, items)
 	var next *string
 	if feed.NextCursor != "" {
 		cur := collect.EncodeCursor(feedSort, fp, feed.NextCursor)
@@ -240,10 +246,12 @@ func (s *Service) listNewsMonthItems(ctx context.Context, in *listNewsMonthItems
 	}
 	start := min(in.Offset(), len(items))
 	end := min(start+in.Limit, len(items))
-	page := make([]NewsItem, 0, end-start)
-	for _, it := range items[start:end] {
+	window := items[start:end]
+	page := make([]NewsItem, 0, len(window))
+	for _, it := range window {
 		page = append(page, newsItem(it))
 	}
+	s.fillSubmitters(ctx, window, page)
 	total, relation := collect.ClampTotal(len(items))
 	return &listNewsMonthItemsOutput{Body: repr.NewPageList(page, total, relation)}, nil
 }

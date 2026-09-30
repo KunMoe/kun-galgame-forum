@@ -222,7 +222,9 @@ describe('loadTopicFeed', () => {
     })
     expect(result.ok).toBe(true)
     if (!result.ok) return
-    expect(result.channel.title).toBe('鲲 Galgame 论坛 - Galgame · 闲聊 分区新话题')
+    expect(result.channel.title).toBe(
+      '鲲 Galgame 论坛 - Galgame · 闲聊 分区新话题'
+    )
     expect(result.channel.link).toBe(`${baseUrl}/section/g-chatting`)
   })
 
@@ -423,7 +425,8 @@ describe('loadNewsFeed', () => {
     preview: '  a preview  ',
     published_at: '2026-05-01T00:00:00.000Z',
     source_url: 'https://ymgal.games/1',
-    title: '  Headline  '
+    title: '  Headline  ',
+    has_body: false
   }
 
   it('requests limit 30 and /news-sources, maps fields, and appends attribution', async () => {
@@ -446,7 +449,7 @@ describe('loadNewsFeed', () => {
     if (!result.ok) return
     expect(result.channel.title).toBe('鲲 Galgame 论坛 - Gal 情报')
     expect(result.channel.description).toBe(
-      '鲲 Galgame 论坛转载的 Galgame 情报与专栏, 版权归原作者所有'
+      '鲲 Galgame 论坛收录的 Galgame 情报与专栏, 版权归原作者所有'
     )
     expect(result.channel.link).toBe(`${baseUrl}/news`)
     expect(result.channel.items).toHaveLength(1)
@@ -459,6 +462,34 @@ describe('loadNewsFeed', () => {
       { name: '月幕', link: 'https://ymgal.games' }
     ])
     expect(mapped.category).toEqual([{ name: '情报' }])
+  })
+
+  it('links an item with its own text to the forum page, not the source', async () => {
+    const community = {
+      ...source,
+      key: 'community',
+      display_name: 'NextMoe 用户投稿',
+      homepage_url: '',
+      attribution: ''
+    }
+    const original = {
+      ...item,
+      id: '200',
+      news_source: 'community',
+      source_url: '',
+      has_body: true
+    }
+    const fetchSpy = vi.fn(async (input: Request) => {
+      const url = new URL(input.url)
+      if (segs(url)[3] === 'news-items') {
+        return jsonResponse(200, cursorList([original]))
+      }
+      return jsonResponse(200, cursorList([community]))
+    })
+    const result = await loadNewsFeed(client(fetchSpy), baseUrl, {})
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.channel.items[0]!.link).toBe(`${baseUrl}/news/200`)
   })
 
   it('passes lane and news_source', async () => {

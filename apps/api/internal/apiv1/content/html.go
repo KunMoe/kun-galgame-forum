@@ -31,6 +31,9 @@ func htmlBlockSource(n *ast.HTMLBlock, source []byte) string {
 
 func (c *converter) htmlBlock(n *ast.HTMLBlock) Blocks {
 	raw := htmlBlockSource(n, c.src)
+	if c.untrusted {
+		return literalHTMLBlock(raw)
+	}
 	if onlyBRRe.MatchString(raw) {
 		count := len(brTagRe.FindAllString(raw, -1))
 		out := make(Blocks, 0, count)
@@ -47,7 +50,11 @@ func (c *converter) htmlBlock(n *ast.HTMLBlock) Blocks {
 }
 
 func (c *converter) rawHTML(n *ast.RawHTML) Inlines {
-	return c.tokenizeHTML(string(n.Segments.Value(c.src)), false)
+	raw := string(n.Segments.Value(c.src))
+	if c.untrusted {
+		return literalRawHTML(raw)
+	}
+	return c.tokenizeHTML(raw, false)
 }
 
 func trimBreaks(in Inlines) Inlines {

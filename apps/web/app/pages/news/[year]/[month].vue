@@ -20,7 +20,7 @@ definePageMeta({
 
 useKunSeoMeta({
   title: `${year} 年 ${month} 月 Galgame 业界新闻 - 新作情报、发售消息与专栏存档`,
-  description: `${year} 年 ${month} 月 Galgame 业界新闻存档, 收录月幕 Galgame、Galgame 批评等合作站点授权转载的新作情报、发售消息与深度专栏, 可按发布日期筛选, 点击即可前往原站阅读全文。`
+  description: `${year} 年 ${month} 月 Galgame 业界新闻存档, 收录月幕 Galgame、Galgame 批评等合作站点授权转载的新作情报、发售消息与深度专栏, 以及 NextMoe 用户投稿的情报, 可按发布日期筛选。`
 })
 </script>
 

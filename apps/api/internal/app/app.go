@@ -9,6 +9,7 @@ import (
 	adminRepo "kun-galgame-api/internal/admin/repository"
 	adminService "kun-galgame-api/internal/admin/service"
 	"kun-galgame-api/internal/apiv1"
+	"kun-galgame-api/internal/apiv1/content"
 	"kun-galgame-api/internal/community/anchor"
 	communitynotify "kun-galgame-api/internal/community/notify"
 	communitytrust "kun-galgame-api/internal/community/trust"
@@ -506,7 +507,7 @@ func New(cfg *config.Config) *App {
 		OverviewV1:         overviewapiv1.New(adminOverviewRepo, nil),
 		AdminPurge:         adminPurgeSvc,
 		TrustHandler:       trustHandler.NewTrustHandler(trustEnforce, cfg.Trust.CallbackSecret),
-		NewsV1:             newsapiv1.New(newsCli, uc, cfg.NextMoeAPI.ImageCDNBase),
+		NewsV1:             newsapiv1.New(newsCli, uc, cfg.NextMoeAPI.ImageCDNBase).WithContent(&content.Converter{CDNBase: cfg.NextMoeAPI.ImageCDNBase, SiteBase: apiv1.SiteOrigin, Images: imageMetaResolve(imageMeta)}).WithSubmissions(catalogCli, trustCheck),
 		ImagesV1:           imageapiv1.New(imgCli, catalogCli, db, cfg.NextMoeAPI.ImageCDNBase),
 		StickersV1:         stickersV1,
 		Artifact:           artCli,

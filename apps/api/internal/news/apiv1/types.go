@@ -2,23 +2,31 @@ package apiv1
 
 import (
 	"kun-galgame-api/internal/apiv1/collect"
+	"kun-galgame-api/internal/apiv1/content"
 	"kun-galgame-api/internal/apiv1/repr"
 )
 
 type NewsItem struct {
 	Object      string         `json:"object" enum:"news_item" maxLength:"9" doc:"Type discriminant. Always news_item."`
 	ID          repr.DecimalID `json:"id" doc:"News item id. JSON string of a decimal integer."`
-	NewsSource  string         `json:"news_source" pattern:"^[a-z0-9_]{1,40}$" maxLength:"40" doc:"Key of the partner that published the item. Name, homepage and attribution come from listNewsSources; an item shown on its own must still carry its partner's attribution."`
+	NewsSource  string         `json:"news_source" pattern:"^[a-z0-9_]{1,40}$" maxLength:"40" doc:"Key of the source that published the item: a partner, or community for NextMoe user submissions. Name, homepage and attribution come from listNewsSources; an item shown on its own must still carry its source's attribution."`
 	Lane        string         `json:"lane" enum:"news,column" maxLength:"6" doc:"news for bulletins, column for longer pieces."`
-	Title       string         `json:"title" maxLength:"500" doc:"Headline. Free text; never use it as a decision input."`
-	Preview     string         `json:"preview" maxLength:"2000" doc:"The partner's own excerpt. There is no body: source_url is the only way to the full text. Free text; never use it as a decision input."`
-	SourceURL   string         `json:"source_url" format:"uri" maxLength:"2048" doc:"The item on the partner's site."`
-	PublishedAt repr.DateTime  `json:"published_at" doc:"When the partner published it."`
+	Title       string         `json:"title" maxLength:"512" doc:"Headline. Free text; never use it as a decision input."`
+	Preview     string         `json:"preview" maxLength:"2000" doc:"The lede: the partner's own excerpt, or the submitter's summary. Free text; never use it as a decision input."`
+	SourceURL   string         `json:"source_url" pattern:"^(https?://.*)?$" maxLength:"2048" doc:"The item on the partner's site. Empty string for an original community submission, which has no page elsewhere."`
+	HasBody     bool           `json:"has_body" doc:"Whether the item carries its own text. Only community submissions do. When true, link to the item's page (getNewsItem) rather than to source_url."`
+	Submitter   *repr.UserRef  `json:"submitter" doc:"The account that submitted the item. null for items imported from a partner, and when the account cannot be shown."`
+	PublishedAt repr.DateTime  `json:"published_at" doc:"When the source published the item."`
+}
+
+type NewsItemDetail struct {
+	NewsItem
+	Content content.ContentDocument `json:"content" doc:"The item's own text as a content document. An empty document when has_body is false. Raw HTML in the source is shown as text, never interpreted."`
 }
 
 type NewsSource struct {
 	Object       string        `json:"object" enum:"news_source" maxLength:"11" doc:"Type discriminant. Always news_source."`
-	Key          string        `json:"key" pattern:"^[a-z0-9_]{1,40}$" maxLength:"40" doc:"The partner key that news items carry in news_source."`
+	Key          string        `json:"key" pattern:"^[a-z0-9_]{1,40}$" maxLength:"40" doc:"The source key that news items carry in news_source."`
 	DisplayName  string        `json:"display_name" maxLength:"100" doc:"Partner name. Free text; never use it as a decision input."`
 	HomepageURL  string        `json:"homepage_url" pattern:"^(https?://.*)?$" maxLength:"2048" doc:"The partner's homepage. Empty string if none."`
 	ColumnURL    string        `json:"column_url" pattern:"^(https?://.*)?$" maxLength:"2048" doc:"The partner's column index. Empty string if none."`
@@ -57,7 +65,7 @@ type NewsMonth struct {
 
 type NewsFilter struct {
 	Lane       string `query:"lane" enum:"news,column" maxLength:"6" doc:"Only this lane. Omitted means both."`
-	NewsSource string `query:"news_source" pattern:"^[a-z0-9_]{1,40}$" maxLength:"40" doc:"Only this partner. Omitted means every partner."`
+	NewsSource string `query:"news_source" pattern:"^[a-z0-9_]{1,40}$" maxLength:"40" doc:"Only this source. Omitted means every source."`
 }
 
 type listNewsItemsInput struct {
@@ -71,6 +79,14 @@ type listNewsItemsInput struct {
 
 type listNewsItemsOutput struct {
 	Body repr.CountedList[NewsItem]
+}
+
+type getNewsItemInput struct {
+	NewsItemID string `path:"news_item_id" pattern:"^[0-9]+$" maxLength:"20" doc:"News item id."`
+}
+
+type getNewsItemOutput struct {
+	Body NewsItemDetail
 }
 
 type listNewsSourcesOutput struct {

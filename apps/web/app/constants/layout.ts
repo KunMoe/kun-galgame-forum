@@ -33,6 +33,12 @@ export const kunLayoutItem: KunLayoutItem[] = [
         label: '发布 Galgame'
       },
       {
+        name: 'createNews',
+        icon: 'lucide:newspaper',
+        router: '/edit/news',
+        label: '发布 Gal 情报'
+      },
+      {
         name: 'createToolset',
         icon: 'lucide:wrench',
         router: '/edit/toolset/create',
@@ -355,6 +361,11 @@ export const kunSidebarRail: KunRailGroup[] = [
             label: '发布 Galgame',
             router: '/edit/galgame/publish',
             icon: 'lucide:gamepad-2'
+          },
+          {
+            label: '发布 Gal 情报',
+            router: '/edit/news',
+            icon: 'lucide:newspaper'
           },
           {
             label: '发布 Galgame 习题',

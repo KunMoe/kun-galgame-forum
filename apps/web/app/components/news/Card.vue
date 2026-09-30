@@ -10,6 +10,17 @@ const props = withDefaults(
 
 const isWide = computed(() => props.size === 'md')
 const sourceName = computed(() => props.source?.display_name ?? '合作站点')
+const detailPath = computed(() =>
+  props.item.has_body ? `/news/${props.item.id}` : ''
+)
+const titleClass = computed(() =>
+  cn(
+    'hover:text-primary line-clamp-2 wrap-anywhere break-normal transition-colors',
+    isWide.value
+      ? 'text-base font-semibold sm:text-lg'
+      : 'text-sm font-medium sm:text-base'
+  )
+)
 </script>
 
 <template>
@@ -25,6 +36,15 @@ const sourceName = computed(() => props.source?.display_name ?? '合作站点')
         >
           专栏
         </KunChip>
+        <KunLink
+          v-if="detailPath"
+          :to="detailPath"
+          color="default"
+          underline="none"
+          :class-name="titleClass"
+        >
+          {{ item.title }}
+        </KunLink>
         <!-- rel="noopener" is load-bearing, not decoration: the default for an
              outbound link is `noopener noreferrer`, and noreferrer strips the
              Referer header, so every click reached the partner's analytics as
@@ -32,22 +52,17 @@ const sourceName = computed(() => props.source?.display_name ?? '合作站点')
              gave us. Needs @kungal/ui-vue >= 2.24.0, where rel replaces the
              default instead of adding to it. -->
         <KunLink
+          v-else-if="item.source_url"
           :href="item.source_url"
           target="_blank"
           rel="noopener"
           color="default"
           underline="none"
-          :class-name="
-            cn(
-              'hover:text-primary line-clamp-2 wrap-anywhere break-normal transition-colors',
-              isWide
-                ? 'text-base font-semibold sm:text-lg'
-                : 'text-sm font-medium sm:text-base'
-            )
-          "
+          :class-name="titleClass"
         >
           {{ item.title }}
         </KunLink>
+        <span v-else :class="titleClass">{{ item.title }}</span>
       </div>
 
       <p
@@ -67,7 +82,26 @@ const sourceName = computed(() => props.source?.display_name ?? '合作站点')
         <span>{{ formatTimeDifference(item.published_at) }}</span>
         <span aria-hidden="true">·</span>
         <span class="truncate">{{ sourceName }}</span>
+        <template v-if="item.submitter">
+          <span aria-hidden="true">·</span>
+          <KunUserChip
+            :user="toKunUser(item.submitter)"
+            size="sm"
+            is-navigation
+          />
+        </template>
         <KunLink
+          v-if="detailPath"
+          :to="detailPath"
+          color="primary"
+          size="sm"
+          underline="hover"
+          class-name="ml-auto shrink-0"
+        >
+          阅读全文
+        </KunLink>
+        <KunLink
+          v-else-if="item.source_url"
           :href="item.source_url"
           target="_blank"
           rel="noopener"
