@@ -131,7 +131,7 @@ watch(page, () => window.scrollTo({ top: 0, behavior: 'smooth' }))
   <div class="space-y-6 pb-12">
     <KunHeader
       :name="`${label} Galgame 业界新闻`"
-      :description="`${label}的 Galgame 业界新作情报、发售消息与深度专栏存档, 全部由合作站点授权转载。本站只做索引, 点击标题或“阅读原文”即可前往对方站点阅读全文。`"
+      :description="`${label}的 Galgame 业界新作情报、发售消息与深度专栏存档, 包括合作站点授权转载的情报与 NextMoe 用户投稿。转载的情报点击标题或“阅读原文”前往对方站点阅读全文, 用户投稿可以直接在本站阅读。`"
     >
       <template #endContent>
         <KunButton variant="light" size="sm" :href="overviewHref">

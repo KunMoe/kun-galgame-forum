@@ -62,8 +62,17 @@ const reset = () => {
   <div class="space-y-6 pb-12">
     <KunHeader
       name="Galgame 情报 / Gal 业界新闻与专栏"
-      description="这里聚合了 Galgame 业界的新作情报、发售消息与深度专栏, 全部由合作站点授权转载。本站只做索引, 点击标题或“阅读原文”即可前往对方站点阅读全文。可以按栏目、来源与年份月份筛选, 快速回溯往期情报。"
-    />
+      description="这里聚合了 Galgame 业界的新作情报、发售消息与深度专栏。合作站点授权转载的情报, 点击标题或“阅读原文”前往对方站点阅读全文; NextMoe 用户投稿的情报可以直接在本站阅读。可以按栏目、来源与年份月份筛选, 快速回溯往期情报。"
+    >
+      <template #endContent>
+        <div class="flex gap-2">
+          <KunButton size="sm" href="/edit/news">投稿情报</KunButton>
+          <KunButton size="sm" variant="flat" href="/news/mine">
+            我的投稿
+          </KunButton>
+        </div>
+      </template>
+    </KunHeader>
 
     <div
       class="grid grid-cols-1 items-start gap-6 lg:grid-cols-[15rem_minmax(0,1fr)]"
