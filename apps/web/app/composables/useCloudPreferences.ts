@@ -188,6 +188,7 @@ export const useCloudPreferences = () => {
       if (fresh) {
         cloudVersion = fresh.version
         applyDoc(fresh.doc as Partial<KunCloudPreferences>)
+        if (lacksKeys(fresh.doc)) scheduleWrite()
       }
       return
     }
@@ -219,12 +220,15 @@ export const useCloudPreferences = () => {
   const startWatching = () => {
     if (watching) return
     watching = true
+    // applyingRemote is only true while applyDoc runs, so the callback has to
+    // run inside it: under the default flush it ran after, and wrote every doc
+    // adopted from a 412 straight back.
     watch(
       snapshot,
       () => {
         if (!applyingRemote) scheduleWrite()
       },
-      { deep: true }
+      { deep: true, flush: 'sync' }
     )
   }
 
@@ -240,13 +244,16 @@ export const useCloudPreferences = () => {
       if (!isSameDoc(snapshot(), DEFAULTS)) await push()
     } else {
       applyDoc(resp.doc as Partial<KunCloudPreferences>)
-      if (Object.keys(DEFAULTS).some((key) => !(key in resp.doc))) await push()
+      if (lacksKeys(resp.doc)) await push()
     }
     startWatching()
   }
 
   return { sync, flush }
 }
+
+const lacksKeys = (doc: object) =>
+  Object.keys(DEFAULTS).some((key) => !(key in doc))
 
 const isLevel = (n: unknown): n is number => n === 1 || n === 2 || n === 3
 

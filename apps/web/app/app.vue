@@ -2,12 +2,6 @@
 import { showMoeMessage } from '~/widget/showMoeMessage'
 import { kunFeedUrl } from '#shared/utils/feedUrl'
 
-const {
-  showKUNGalgamePageTransparency,
-  showKUNGalgameBackgroundBlur,
-  showKUNGalgameRounded
-} = storeToRefs(usePersistSettingsStore())
-
 const { isOpen: isAuthModalOpen } = useAuthModal()
 
 const route = useRoute()
@@ -106,15 +100,7 @@ useSchemaOrg([
 ])
 
 onMounted(() => {
-  usePersistSettingsStore().setKUNGalgameTransparency(
-    showKUNGalgamePageTransparency.value
-  )
-
-  usePersistSettingsStore().setKUNGalgameBackgroundBlur(
-    showKUNGalgameBackgroundBlur.value
-  )
-
-  usePersistSettingsStore().setKUNGalgameRounded(showKUNGalgameRounded.value)
+  usePersistSettingsStore().applyKUNGalgameAppearance()
 
   if (process.env.NODE_ENV === 'development') {
     localStorage.setItem(

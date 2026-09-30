@@ -1,4 +1,5 @@
 import { usePersistEditGalgameRatingStore } from './modules/edit/rating'
+import { kunSettingsDefaults } from './modules/settings'
 
 export const createEmptyLocaleMap = () => ({
   'en-us': '',
@@ -33,13 +34,9 @@ export const kungalgameStoreReset = () => {
   resetUser()
 
   const persistSettingsStore = usePersistSettingsStore()
-  persistSettingsStore.showKUNGalgamePageTransparency = 80
-  persistSettingsStore.showKUNGalgameContentLimit = 'sfw'
-  persistSettingsStore.showKUNGalgamePreferOriginalName = false
-  persistSettingsStore.showKUNGalgameBackground = 0
-  persistSettingsStore.showKUNGalgameBackgroundBlur = 0
-  persistSettingsStore.showKUNGalgameBackgroundBrightness = 100
-  persistSettingsStore.showKUNGalgameBackLoli = false
+  persistSettingsStore.$patch(kunSettingsDefaults())
+  persistSettingsStore.resetKUNGalgameFeedTabs()
+  persistSettingsStore.applyKUNGalgameAppearance()
 
   usePersistGalgameCardStore().reset()
 

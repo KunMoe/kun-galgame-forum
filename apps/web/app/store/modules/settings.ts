@@ -15,37 +15,59 @@ import { settingsCookieStorage } from '~/utils/settingsCookie'
 const SETTINGS_CUSTOM_BACKGROUND_IMAGE_NAME: string = 'kun-galgame-custom-bg'
 const SETTINGS_PUBLISH_Banner_IMAGE_NAME: string = 'kun-galgame-publish-banner'
 
+// The reset used to keep its own copy of these and drifted: it still set
+// transparency to 80 months after the default became 50.
+export const kunSettingsDefaults = (): Omit<
+  KUNGalgameSettingsStore,
+  'feedTabs' | 'feedTabsVersion'
+> => ({
+  showKUNGalgamePageTransparency: 50,
+  showKUNGalgameContentLimit: 'sfw',
+  showKUNGalgamePreferOriginalName: false,
+  showKUNGalgameBackground: 0,
+  showKUNGalgameBackgroundBlur: 0,
+  showKUNGalgameBackgroundBrightness: 100,
+  showKUNGalgameBackgroundOpacity: 15,
+  showKUNGalgameBackLoli: false,
+  showKUNGalgameNoResource: false,
+  showKUNGalgameRounded: 'md',
+  showKUNGalgamePhoneCardColumns: 3,
+  showKUNGalgameGallerySexualLevels: []
+})
+
 export const usePersistSettingsStore = defineStore(
   'KUNGalgameSettings',
   () => {
-    const showKUNGalgamePageTransparency =
-      ref<KUNGalgameSettingsStore['showKUNGalgamePageTransparency']>(50)
-    const showKUNGalgameContentLimit =
-      ref<KUNGalgameSettingsStore['showKUNGalgameContentLimit']>('sfw')
+    const defaults = kunSettingsDefaults()
+    const showKUNGalgamePageTransparency = ref(
+      defaults.showKUNGalgamePageTransparency
+    )
+    const showKUNGalgameContentLimit = ref(defaults.showKUNGalgameContentLimit)
     // Read by the API off this store's cookie, not sent as a field: every name
     // the site shows is elected server-side, so the switch has to reach the
     // request that renders them.
-    const showKUNGalgamePreferOriginalName =
-      ref<KUNGalgameSettingsStore['showKUNGalgamePreferOriginalName']>(false)
-    const showKUNGalgameBackground =
-      ref<KUNGalgameSettingsStore['showKUNGalgameBackground']>(0)
-    const showKUNGalgameBackgroundBlur =
-      ref<KUNGalgameSettingsStore['showKUNGalgameBackgroundBlur']>(0)
-    const showKUNGalgameBackgroundBrightness =
-      ref<KUNGalgameSettingsStore['showKUNGalgameBackgroundBrightness']>(100)
-    const showKUNGalgameBackgroundOpacity =
-      ref<KUNGalgameSettingsStore['showKUNGalgameBackgroundOpacity']>(15)
-    const showKUNGalgameBackLoli =
-      ref<KUNGalgameSettingsStore['showKUNGalgameBackLoli']>(false)
-    const showKUNGalgameNoResource =
-      ref<KUNGalgameSettingsStore['showKUNGalgameNoResource']>(false)
-    const showKUNGalgameRounded =
-      ref<KUNGalgameSettingsStore['showKUNGalgameRounded']>('md')
-    const showKUNGalgamePhoneCardColumns =
-      ref<KUNGalgameSettingsStore['showKUNGalgamePhoneCardColumns']>(3)
-    const showKUNGalgameGallerySexualLevels = ref<
-      KUNGalgameSettingsStore['showKUNGalgameGallerySexualLevels']
-    >([])
+    const showKUNGalgamePreferOriginalName = ref(
+      defaults.showKUNGalgamePreferOriginalName
+    )
+    const showKUNGalgameBackground = ref(defaults.showKUNGalgameBackground)
+    const showKUNGalgameBackgroundBlur = ref(
+      defaults.showKUNGalgameBackgroundBlur
+    )
+    const showKUNGalgameBackgroundBrightness = ref(
+      defaults.showKUNGalgameBackgroundBrightness
+    )
+    const showKUNGalgameBackgroundOpacity = ref(
+      defaults.showKUNGalgameBackgroundOpacity
+    )
+    const showKUNGalgameBackLoli = ref(defaults.showKUNGalgameBackLoli)
+    const showKUNGalgameNoResource = ref(defaults.showKUNGalgameNoResource)
+    const showKUNGalgameRounded = ref(defaults.showKUNGalgameRounded)
+    const showKUNGalgamePhoneCardColumns = ref(
+      defaults.showKUNGalgamePhoneCardColumns
+    )
+    const showKUNGalgameGallerySexualLevels = ref(
+      defaults.showKUNGalgameGallerySexualLevels
+    )
     const feedTabs = ref<KUNGalgameSettingsStore['feedTabs']>(
       structuredClone(KUN_DEFAULT_FEED_TABS)
     )
@@ -114,6 +136,15 @@ export const usePersistSettingsStore = defineStore(
       )
     }
 
+    const applyKUNGalgameAppearance = () => {
+      setKUNGalgameTransparency(showKUNGalgamePageTransparency.value)
+      setKUNGalgameBackgroundBlur(showKUNGalgameBackgroundBlur.value)
+      setKUNGalgameBackgroundBrightness(
+        showKUNGalgameBackgroundBrightness.value
+      )
+      setKUNGalgameRounded(showKUNGalgameRounded.value)
+    }
+
     const setSystemBackground = async (index: number) => {
       showKUNGalgameBackground.value = index
       await deleteImage(SETTINGS_CUSTOM_BACKGROUND_IMAGE_NAME)
@@ -167,6 +198,7 @@ export const usePersistSettingsStore = defineStore(
       setKUNGalgameBackgroundBlur,
       setKUNGalgameBackgroundBrightness,
       setKUNGalgameRounded,
+      applyKUNGalgameAppearance,
       setSystemBackground,
       setCustomBackground,
       getCurrentBackground,
