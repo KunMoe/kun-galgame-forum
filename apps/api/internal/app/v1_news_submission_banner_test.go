@@ -266,3 +266,14 @@ func lastNewsBody(t *testing.T, up *fakeMeNews) map[string]any {
 	t.Fatal("no write reached upstream")
 	return nil
 }
+
+func TestV1NewsSubmissionImageOversizedBodyIs413(t *testing.T) {
+	f, up := newNewsSubmissionFix(t, nil)
+	resp, got := f.postHeadersOnly(t, newsSubImages, "multipart/form-data; boundary=x", 11*1024*1024)
+	if body := problemMap(t, got); resp.StatusCode != http.StatusRequestEntityTooLarge || body["code"] != problem.CodePayloadTooLarge {
+		t.Errorf("11 MiB body: %d %+v", resp.StatusCode, body)
+	}
+	if n := len(up.calls()); n != 0 {
+		t.Errorf("an oversized body reached upstream %d times", n)
+	}
+}
