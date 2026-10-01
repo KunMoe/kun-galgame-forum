@@ -23,9 +23,9 @@ var PlatformKeys = []string{
 }
 
 var RuntimeKeys = []string{
-	"native-win", "native-and", "native-ios", "winlator", "gamehub",
-	"kirikiroid2", "krkrsdl2", "onscripter", "joiplay", "easyrpg",
-	"renpy-android", "tyranor", "tyranor-next", "emulator", "other",
+	"native-win", "native-and", "tyranor-next", "yukihub", "native-ios",
+	"winlator", "gamehub", "kirikiroid2", "krkrsdl2", "onscripter",
+	"joiplay", "easyrpg", "renpy-android", "tyranor", "emulator", "other",
 }
 
 var RuntimeRelevantTypes = []string{
@@ -33,8 +33,8 @@ var RuntimeRelevantTypes = []string{
 }
 
 var emulatorRuntimes = []string{
-	"winlator", "gamehub", "kirikiroid2", "krkrsdl2", "onscripter",
-	"joiplay", "easyrpg", "renpy-android", "tyranor", "tyranor-next", "emulator",
+	"tyranor-next", "yukihub", "winlator", "gamehub", "kirikiroid2", "krkrsdl2",
+	"onscripter", "joiplay", "easyrpg", "renpy-android", "tyranor", "emulator",
 }
 
 func index(keys []string) map[string]int {
