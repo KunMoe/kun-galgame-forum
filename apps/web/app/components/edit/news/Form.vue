@@ -18,6 +18,42 @@ const isSubmitting = ref(false)
 
 type NewsForm = typeof form
 
+const savedBannerHash = props.initial?.banner?.hash ?? ''
+const bannerHash = ref(savedBannerHash)
+const bannerPreview = ref(props.initial?.banner?.url ?? '')
+const pendingBanner = ref<Blob | null>(null)
+const bannerPickerKey = ref(0)
+
+const handlePickBanner = (image: Blob) => {
+  pendingBanner.value = image
+}
+
+const handleRemoveBanner = () => {
+  pendingBanner.value = null
+  bannerHash.value = ''
+  bannerPreview.value = ''
+  bannerPickerKey.value += 1
+}
+
+// The picked image goes up only when the form is submitted, so cropping again
+// or leaving the page spends none of NextMoe's 30 banner uploads a day.
+const uploadPendingBanner = async () => {
+  if (!pendingBanner.value) {
+    return true
+  }
+  const image = await uploadNewsSubmissionImage(
+    pendingBanner.value,
+    'banner.webp'
+  )
+  if (!image) {
+    return false
+  }
+  bannerHash.value = image.hash
+  bannerPreview.value = image.url
+  pendingBanner.value = null
+  return true
+}
+
 const create = async (data: NewsForm) => {
   const payload: KunNewsSubmissionCreate = {
     title: data.title,
@@ -25,7 +61,8 @@ const create = async (data: NewsForm) => {
     ...(data.content_markdown.trim()
       ? { content_markdown: data.content_markdown }
       : {}),
-    ...(data.source_url ? { source_url: data.source_url } : {})
+    ...(data.source_url ? { source_url: data.source_url } : {}),
+    ...(bannerHash.value ? { banner_image_hash: bannerHash.value } : {})
   }
   const result = await settle(
     api.POST('/me/news-submissions', {
@@ -60,6 +97,9 @@ const update = async (initial: KunNewsSubmission, data: NewsForm) => {
   if (data.source_url !== initial.source_url) {
     body.source_url = data.source_url
   }
+  if (bannerHash.value !== savedBannerHash) {
+    body.banner_image_hash = bannerHash.value
+  }
   if (!Object.keys(body).length) {
     return true
   }
@@ -90,9 +130,11 @@ const handleSubmit = async () => {
     return
   }
   isSubmitting.value = true
-  const saved = props.initial
-    ? await update(props.initial, parsed.data)
-    : await create(parsed.data)
+  const saved =
+    (await uploadPendingBanner()) &&
+    (props.initial
+      ? await update(props.initial, parsed.data)
+      : await create(parsed.data))
   isSubmitting.value = false
   if (saved) {
     await navigateTo('/news/mine')
@@ -138,6 +180,31 @@ const handleSubmit = async () => {
         show-char-count
         placeholder="例如: 某某社新作《……》公开，预计 2027 年春季发售"
       />
+    </div>
+
+    <div class="space-y-2">
+      <div class="text-xl font-medium">封面（可选）</div>
+      <p class="text-default-500 text-sm">
+        显示在情报卡片和详情页顶部，会裁切为 16:9 的横图
+      </p>
+      <KunUpload
+        :key="bannerPickerKey"
+        :initial-image="bannerPreview"
+        :size="1280"
+        :aspect="16 / 9"
+        description="封面不可包含 R18 等敏感内容"
+        class-name="w-64"
+        @set-image="handlePickBanner"
+      />
+      <KunButton
+        v-if="bannerPreview || pendingBanner"
+        variant="light"
+        color="danger"
+        size="sm"
+        @click="handleRemoveBanner"
+      >
+        移除封面
+      </KunButton>
     </div>
 
     <div class="space-y-2">

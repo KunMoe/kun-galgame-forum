@@ -9,7 +9,12 @@ export type KunWorkEditImagePreset = 'cover' | 'screenshot'
 // so the absolute URL an upload returns must never be persisted.
 export const imageToken = (hash: string) => `/image/${hash}`
 
-const imageForm = (file: Blob, filename: string, field: string, value: string) => {
+const imageForm = (
+  file: Blob,
+  filename: string,
+  field: string,
+  value: string
+) => {
   const form = new FormData()
   form.append('file', file, filename)
   form.append(field, value)
@@ -48,6 +53,28 @@ export const uploadWorkEditImage = async (
         file: string
         preset: KunWorkEditImagePreset
       },
+      bodySerializer: (body) => body
+    })
+  )
+  if (!result.ok) {
+    reportProblem(result.problem)
+    return null
+  }
+  return result.data
+}
+
+// A news banner has to go up through this face, never uploadImage: NextMoe
+// keeps an image alive per uploading site, and refuses a banner hash that its
+// news site does not hold.
+export const uploadNewsSubmissionImage = async (
+  file: Blob,
+  filename = 'banner'
+): Promise<Image | null> => {
+  const form = new FormData()
+  form.append('file', file, filename)
+  const result = await settle(
+    useApiClient().POST('/me/news-submission-images', {
+      body: form as unknown as { file: string },
       bodySerializer: (body) => body
     })
   )

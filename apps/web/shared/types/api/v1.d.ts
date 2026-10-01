@@ -1924,6 +1924,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/me/news-submission-images": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Upload a banner for a news submission
+         * @description Stores a banner under the caller's own NextMoe identity, for a news submission, which refers to it by hash in banner_image_hash. A submission's banner has to come from here: a hash from any other upload is refused, because only images stored through this face are kept alive for the news feed. file is one part, image/jpeg, image/png or image/webp, at most 4,000,000 bytes. Not counted against the daily image limit; NextMoe applies its own, 30 per account per UTC day. Location is the image URL. Persist the hash, never the URL. sexual is always null.
+         */
+        post: operations["createNewsSubmissionImage"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/me/news-submissions": {
         parameters: {
             query?: never;
@@ -1967,7 +1987,7 @@ export interface paths {
         head?: never;
         /**
          * Update a news submission
-         * @description Partial update of the caller's submission. Editing a published item returns it to pending until a NextMoe moderator publishes it again. Only a published item can be withdrawn. Withdrawal is state withdrawn sent on its own.
+         * @description Partial update of the caller's submission. Editing a published item, its banner included, returns it to pending until a NextMoe moderator publishes it again. Only a published item can be withdrawn. Withdrawal is state withdrawn sent on its own.
          */
         patch: operations["updateNewsSubmission"];
         trace?: never;
@@ -9354,6 +9374,8 @@ export interface components {
             object: "news_source";
         };
         NewsSubmission: {
+            /** @description Lead image. null when the item has none. */
+            banner: components["schemas"]["Image"] | null;
             /** @description The item's own text, CommonMark Markdown. Empty string when the item has none. Free text; never use it as a decision input. */
             content_markdown: string;
             /** @description News submission id. Same id space as a news item. JSON string of a decimal integer. */
@@ -9382,6 +9404,8 @@ export interface components {
             title: string;
         };
         NewsSubmissionCreate: {
+            /** @description Banner, by the hash createNewsSubmissionImage returned. Absent or an empty string means no banner. A hash from any other upload is refused at this field with reason UNKNOWN_REFERENCE. */
+            banner_image_hash?: string;
             /** @description The item's own text, CommonMark Markdown. Omitted is an empty string. Free text; never use it as a decision input. */
             content_markdown?: string;
             /** @description The lede. 1-200 characters after trimming. Free text; never use it as a decision input. */
@@ -9392,6 +9416,8 @@ export interface components {
             title: string;
         };
         NewsSubmissionPatch: {
+            /** @description New banner, by the hash createNewsSubmissionImage returned. An empty string removes the banner. */
+            banner_image_hash?: string;
             /** @description New Markdown. An empty string clears it. Free text; never use it as a decision input. */
             content_markdown?: string;
             /** @description New lede. 1-200 characters after trimming. Free text; never use it as a decision input. */
@@ -25717,6 +25743,130 @@ export interface operations {
             };
         };
     };
+    createNewsSubmissionImage: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Caller-generated UUID (canonical 8-4-4-4-12 hex, any version) or 26-character Crockford ULID. Scoped to (user, operation, key) for 24 hours. */
+                "Idempotency-Key"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": {
+                    /**
+                     * Format: binary
+                     * @description The banner. Its part must be image/jpeg, image/png or image/webp, and at most 4,000,000 bytes.
+                     */
+                    file: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    Location?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Image"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SCOPE_REQUIRED when the catalog token lacks the scope; ACCOUNT_BANNED when the caller is banned. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description PAYLOAD_TOO_LARGE when the whole body is over the server's limit. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description UNSUPPORTED_MEDIA_TYPE when the body is not multipart/form-data, or file is not a JPEG, PNG or WebP part. */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description VALIDATION_FAILED when file is missing, over 4,000,000 bytes, or cannot be decoded as an image. IMAGE_REJECTED when image moderation refuses it. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description QUOTA_EXCEEDED when the account's or the news site's daily upload limit is exhausted; RATE_LIMITED otherwise. Retry-After is passed through when the catalog sends it, which it does not for the daily upload limit. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the catalog or its image store is not configured or cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     listMyNewsSubmissions: {
         parameters: {
             query?: {
@@ -25876,7 +26026,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description CONTENT_REJECTED when the trust check refuses the text; VALIDATION_FAILED when title or preview is blank, or neither content_markdown nor source_url is sent. */
+            /** @description CONTENT_REJECTED when the trust check refuses the text; VALIDATION_FAILED when title or preview is blank, neither content_markdown nor source_url is sent, or banner_image_hash is not a hash createNewsSubmissionImage returned. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -26088,7 +26238,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description CONTENT_REJECTED when the trust check refuses the text; VALIDATION_FAILED when the body is empty, state is sent with another field, a sent title or preview is blank, or the item would have neither content_markdown nor source_url. */
+            /** @description CONTENT_REJECTED when the trust check refuses the text; VALIDATION_FAILED when the body is empty, state is sent with another field, a sent title or preview is blank, the item would have neither content_markdown nor source_url, or banner_image_hash is not a hash createNewsSubmissionImage returned. */
             422: {
                 headers: {
                     [name: string]: unknown;
