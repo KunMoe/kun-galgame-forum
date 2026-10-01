@@ -1192,6 +1192,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/galgame-resource-relocations/{resource_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get where a galgame download resource moved to
+         * @description The forum hosts resources only for works whose original language is Japanese or Chinese; the resources of other works moved to LetMoe and are gone from this API. This answers for a resource that moved, by the id it had here. A resource the forum still hosts, or one that never existed, is NOT_FOUND.
+         */
+        get: operations["getGalgameResourceRelocation"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/galgame-resources": {
         parameters: {
             query?: never;
@@ -7977,6 +7997,22 @@ export interface components {
             title?: string;
             /** @description New version token. null clears it; leaving the field out keeps the stored one. */
             version_label?: components["schemas"]["VersionLabel"] | null;
+        };
+        GalgameResourceRelocation: {
+            /**
+             * @description Type discriminant. Always galgame_resource_relocation.
+             * @constant
+             */
+            object: "galgame_resource_relocation";
+            /** @description The id the resource had on this forum. */
+            resource_id: string;
+            /**
+             * Format: uri
+             * @description Where the resource is now: its page on LetMoe, or the work's page there when LetMoe is not showing the resource publicly.
+             */
+            url: string;
+            /** @description The work it belongs to. LetMoe uses the same work id. */
+            work_id: string;
         };
         /** @enum {string} */
         GalgameResourceSort: "created_desc" | "created_asc";
@@ -21760,6 +21796,56 @@ export interface operations {
             };
             /** @description Bad Request */
             400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getGalgameResourceRelocation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Resource id. */
+                resource_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GalgameResourceRelocation"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when no resource with this id moved. */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

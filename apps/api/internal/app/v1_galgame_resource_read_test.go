@@ -253,3 +253,35 @@ func TestV1GalgameResourceUserclientDown(t *testing.T) {
 		"/galgame-resources/{resource_id}/source", "sess-alice", "", nil)
 	wantCode(t, resp, body, http.StatusServiceUnavailable, problem.CodeServiceUnavailable)
 }
+
+func TestV1GetGalgameResourceRelocation(t *testing.T) {
+	f := newResourceFix(t, nil)
+	const movedPublic, movedHeld, snapshotOnly = 943_900_001, 943_900_002, 943_900_003
+	cleanup := func() {
+		f.db.Exec(`DELETE FROM galgame_resource_relocation WHERE resource_id BETWEEN ? AND ?`, movedPublic, snapshotOnly)
+	}
+	cleanup()
+	t.Cleanup(cleanup)
+	if err := f.db.Exec(`INSERT INTO galgame_resource_relocation
+			(resource_id, work_id, uploader_id, payload, destination_id, destination_public, pushed_at, retired_at)
+		VALUES (?, ?, 1, '{}', 7001, true, now(), now()), (?, ?, 1, '{}', 7002, false, now(), now()),
+		       (?, ?, 1, '{}', NULL, NULL, NULL, NULL)`,
+		movedPublic, g3WorkSFW, movedHeld, g3WorkSFW, snapshotOnly, g3WorkSFW).Error; err != nil {
+		t.Fatal(err)
+	}
+	path := func(id int) string { return "/api/v1/galgame-resource-relocations/" + idStr(id) }
+	spec := "/galgame-resource-relocations/{resource_id}"
+
+	resp, got := f.rs(t, http.MethodGet, path(movedPublic), spec, "", "", nil)
+	if resp.StatusCode != http.StatusOK || got["url"] != "https://www.letmoe.com/resource/7001" || got["work_id"] != idStr(g3WorkSFW) {
+		t.Fatalf("a public move: %d %+v", resp.StatusCode, got)
+	}
+	resp, got = f.rs(t, http.MethodGet, path(movedHeld), spec, "", "", nil)
+	if resp.StatusCode != http.StatusOK || got["url"] != "https://www.letmoe.com/game/"+idStr(g3WorkSFW) {
+		t.Fatalf("a move LetMoe holds back: %d %+v, want the work's page", resp.StatusCode, got)
+	}
+	resp, got = f.rs(t, http.MethodGet, path(snapshotOnly), spec, "", "", nil)
+	wantCode(t, resp, got, http.StatusNotFound, problem.CodeNotFound)
+	resp, got = f.rs(t, http.MethodGet, path(943_900_099), spec, "", "", nil)
+	wantCode(t, resp, got, http.StatusNotFound, problem.CodeNotFound)
+}

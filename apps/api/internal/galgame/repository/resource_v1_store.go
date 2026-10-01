@@ -340,6 +340,23 @@ func (s *ResourceV1Store) Delete(tx *gorm.DB, id int) error {
 	return nil
 }
 
+type ResourceRelocation struct {
+	WorkID            int   `gorm:"column:work_id"`
+	DestinationID     int64 `gorm:"column:destination_id"`
+	DestinationPublic bool  `gorm:"column:destination_public"`
+}
+
+func (s *ResourceV1Store) Relocation(resourceID int) (ResourceRelocation, bool, error) {
+	var rows []ResourceRelocation
+	err := s.db.Raw(`SELECT work_id, destination_id, COALESCE(destination_public, false) AS destination_public
+		FROM galgame_resource_relocation
+		WHERE resource_id = ? AND retired_at IS NOT NULL AND destination_id IS NOT NULL`, resourceID).Scan(&rows).Error
+	if err != nil || len(rows) == 0 {
+		return ResourceRelocation{}, false, err
+	}
+	return rows[0], true, nil
+}
+
 func (s *ResourceV1Store) AdjustResourceCount(tx *gorm.DB, workID, delta int) error {
 	if delta >= 0 {
 		return tx.Exec(`UPDATE galgame SET resource_count = resource_count + ? WHERE id = ?`, delta, workID).Error

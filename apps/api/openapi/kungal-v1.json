@@ -7191,6 +7191,43 @@
         },
         "type": "object"
       },
+      "GalgameResourceRelocation": {
+        "properties": {
+          "object": {
+            "const": "galgame_resource_relocation",
+            "description": "Type discriminant. Always galgame_resource_relocation.",
+            "maxLength": 27,
+            "type": "string"
+          },
+          "resource_id": {
+            "description": "The id the resource had on this forum.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "url": {
+            "description": "Where the resource is now: its page on LetMoe, or the work's page there when LetMoe is not showing the resource publicly.",
+            "format": "uri",
+            "maxLength": 512,
+            "type": "string"
+          },
+          "work_id": {
+            "description": "The work it belongs to. LetMoe uses the same work id.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "object",
+          "resource_id",
+          "work_id",
+          "url"
+        ],
+        "type": "object"
+      },
       "GalgameResourceSort": {
         "enum": [
           "created_desc",
@@ -35999,6 +36036,72 @@
         "summary": "List friend links",
         "tags": [
           "friend-links"
+        ]
+      }
+    },
+    "/galgame-resource-relocations/{resource_id}": {
+      "get": {
+        "description": "The forum hosts resources only for works whose original language is Japanese or Chinese; the resources of other works moved to LetMoe and are gone from this API. This answers for a resource that moved, by the id it had here. A resource the forum still hosts, or one that never existed, is NOT_FOUND.",
+        "operationId": "getGalgameResourceRelocation",
+        "parameters": [
+          {
+            "description": "Resource id.",
+            "in": "path",
+            "name": "resource_id",
+            "required": true,
+            "schema": {
+              "description": "Resource id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GalgameResourceRelocation"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when no resource with this id moved."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Get where a galgame download resource moved to",
+        "tags": [
+          "galgame-resources"
         ]
       }
     },
