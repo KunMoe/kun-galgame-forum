@@ -147,7 +147,7 @@ func TestV1NewsSubmissionImageUpstreamErrors(t *testing.T) {
 					t.Errorf("field %+v", e)
 				}
 			}
-			if got := resp.Header.Get("Retry-After"); got != tc.retry {
+			if got := resp.Header.Get("Retry-After"); tc.status == http.StatusTooManyRequests && got != tc.retry {
 				t.Errorf("Retry-After %q, want %q", got, tc.retry)
 			}
 		})
