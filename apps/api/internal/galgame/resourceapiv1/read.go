@@ -3,6 +3,7 @@ package apiv1
 import (
 	"context"
 	"errors"
+	"strconv"
 
 	v1 "kun-galgame-api/internal/apiv1"
 	"kun-galgame-api/internal/apiv1/repr"
@@ -31,6 +32,32 @@ func (s *Service) getGalgameResource(ctx context.Context, in *resourceIDInput) (
 		return nil, p
 	}
 	return &resourceOutput{Body: out}, nil
+}
+
+const letmoeOrigin = "https://www.letmoe.com"
+
+func (s *Service) getGalgameResourceRelocation(_ context.Context, in *resourceIDInput) (*relocationOutput, error) {
+	if p := s.ready(); p != nil {
+		return nil, p
+	}
+	id, ok := parseID(in.ResourceID)
+	if !ok {
+		return nil, notFound()
+	}
+	moved, found, err := s.store.Relocation(id)
+	if err != nil {
+		return nil, problem.Internal(err)
+	}
+	if !found {
+		return nil, notFound()
+	}
+	url := letmoeOrigin + "/game/" + strconv.Itoa(moved.WorkID)
+	if moved.DestinationPublic {
+		url = letmoeOrigin + "/resource/" + strconv.FormatInt(moved.DestinationID, 10)
+	}
+	return &relocationOutput{Body: GalgameResourceRelocation{
+		Object: "galgame_resource_relocation", ResourceID: repr.ID(id), WorkID: repr.ID(moved.WorkID), URL: url,
+	}}, nil
 }
 
 func (s *Service) createGalgameResourceDownload(ctx context.Context, in *resourceIDInput) (*downloadOutput, error) {
