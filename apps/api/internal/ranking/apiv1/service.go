@@ -151,6 +151,8 @@ type workRankingInput struct {
 	Limit               int    `query:"limit" minimum:"1" maximum:"100" default:"50" doc:"How many places. 1–100, default 50. Values above 100 are rejected, not clamped."`
 	IncludeNSFW         bool   `query:"include_nsfw" default:"false" doc:"When true, works this forum displays as adult content are ranked too. Default false."`
 	IncludeResourceless bool   `query:"include_resourceless" default:"false" doc:"When true, published works without any resource are ranked too. Default false."`
+
+	IncludeAllOriginalLanguages bool `query:"include_all_original_languages" default:"false" doc:"When true, works whose original language is neither Japanese nor Chinese are ranked too. Default false."`
 }
 
 type workRankingOutput struct {
@@ -161,7 +163,7 @@ func (s *Service) listWorkRanking(ctx context.Context, in *workRankingInput) (*w
 	if prob := s.ready(); prob != nil {
 		return nil, prob
 	}
-	rows, err := s.repo.TopWorks(sortKey(in.Sort), in.IncludeNSFW, in.IncludeResourceless, in.Limit)
+	rows, err := s.repo.TopWorks(sortKey(in.Sort), in.IncludeNSFW, in.IncludeResourceless, in.IncludeAllOriginalLanguages, in.Limit)
 	if err != nil {
 		return nil, problem.Internal(err)
 	}

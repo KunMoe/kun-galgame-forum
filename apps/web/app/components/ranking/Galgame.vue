@@ -13,7 +13,7 @@ const { allowsNsfw, stanceKey } = useContentStance()
 
 const { data } = await useApi(
   () =>
-    `ranking-works:${galgameRankingPageData.sort}:${stanceKey.value}:${settings.showKUNGalgameNoResource ? 'all' : 'resourced'}`,
+    `ranking-works:${galgameRankingPageData.sort}:${stanceKey.value}:${settings.showKUNGalgameNoResource ? 'all' : 'resourced'}:${settings.showKUNGalgameAllOriginalLanguages ? 'every-language' : 'ja-zh'}`,
   (client, { signal }) =>
     client.GET('/rankings/works', {
       params: {
@@ -21,7 +21,9 @@ const { data } = await useApi(
           sort: galgameRankingPageData.sort,
           limit: RANKING_LIMIT,
           include_nsfw: allowsNsfw.value,
-          include_resourceless: settings.showKUNGalgameNoResource
+          include_resourceless: settings.showKUNGalgameNoResource,
+          include_all_original_languages:
+            settings.showKUNGalgameAllOriginalLanguages
         }
       },
       signal

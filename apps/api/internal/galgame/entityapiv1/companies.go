@@ -275,8 +275,8 @@ func (s *Service) listCompanyWorks(ctx context.Context, in *listCompanyWorksInpu
 	if prob := checkDepth(in.Page, in.Limit, false); prob != nil {
 		return nil, prob
 	}
-	walk := func(ctx context.Context, catalogSort string, isSFW bool) ([]member, *legacyErrors.AppError) {
-		rollup, appErr := s.catalog.CatalogLabelRollupMembers(ctx, in.CompanyID, catalogSort, isSFW, memberPageCap)
+	walk := func(ctx context.Context, catalogSort string, isSFW, jaZhOnly bool) ([]member, *legacyErrors.AppError) {
+		rollup, appErr := s.catalog.CatalogLabelRollupMembers(ctx, in.CompanyID, catalogSort, isSFW, jaZhOnly, memberPageCap)
 		if appErr != nil {
 			return nil, appErr
 		}

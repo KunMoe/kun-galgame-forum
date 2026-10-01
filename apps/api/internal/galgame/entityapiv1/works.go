@@ -104,10 +104,13 @@ type WorksQuery struct {
 	ResourceRuntime  workrepr.ResourceRuntime  `query:"resource_runtime" doc:"Only works with at least one forum resource that runs through this runtime. emulator matches every emulator runtime, including a resource whose uploader named none. With resource_platform, a resource matching either one counts. Omitted means no filter."`
 	GameType         GameTypeFilter            `query:"game_type"`
 	IncludeNSFW      bool                      `query:"include_nsfw" default:"false" doc:"When true, adult works are included. Default false."`
+
+	IncludeAllOriginalLanguages bool `query:"include_all_original_languages" default:"false" doc:"When true, works whose original language is neither Japanese nor Chinese are included. Default false."`
 }
 
 const worksDescription = "A page-number collection. Without a resource or game_type filter it holds every catalog work filed under the entity, " +
 	"including works the forum has no page for; any of those filters narrows it to works with a forum resource. " +
+	"Works whose original language is neither Japanese nor Chinese are left out unless include_all_original_languages=true. " +
 	"Ties break on catalog's own order, or on descending id once a filter applies."
 
 func (p WorksQuery) filter() model.GalgameListFilter {
@@ -141,11 +144,11 @@ type member struct {
 	via    *client.CatalogLabelVia
 }
 
-type walkFunc func(ctx context.Context, catalogSort string, isSFW bool) ([]member, *legacyErrors.AppError)
+type walkFunc func(ctx context.Context, catalogSort string, isSFW, jaZhOnly bool) ([]member, *legacyErrors.AppError)
 
 func (s *Service) walkMembers(key, id string) walkFunc {
-	return func(ctx context.Context, catalogSort string, isSFW bool) ([]member, *legacyErrors.AppError) {
-		q := url.Values{key: {id}}
+	return func(ctx context.Context, catalogSort string, isSFW, jaZhOnly bool) ([]member, *legacyErrors.AppError) {
+		q := client.ApplyOriginalLanguageGate(url.Values{key: {id}}, jaZhOnly)
 		if catalogSort != "" {
 			q.Set("sort", catalogSort)
 		}
@@ -170,7 +173,7 @@ func (s *Service) memberPage(
 ) ([]int, map[int]*client.CatalogLabelVia, int, *problem.Problem) {
 	f := p.filter()
 	catalogSort := service.CatalogMemberSort(f)
-	members, appErr := walk(ctx, catalogSort, !p.IncludeNSFW)
+	members, appErr := walk(ctx, catalogSort, !p.IncludeNSFW, !p.IncludeAllOriginalLanguages)
 	if appErr != nil {
 		return nil, nil, 0, unavailable(appErr)
 	}
@@ -224,6 +227,8 @@ type listTaggedWorksInput struct {
 	Page        int              `query:"page" minimum:"1" default:"1" doc:"1-based page number. page × limit may not exceed 10000."`
 	Limit       int              `query:"limit" minimum:"1" maximum:"100" default:"24" doc:"Page size. 1–100, default 24. Values above 100 are rejected, not clamped."`
 	IncludeNSFW bool             `query:"include_nsfw" default:"false" doc:"When true, adult works are included. Default false."`
+
+	IncludeAllOriginalLanguages bool `query:"include_all_original_languages" default:"false" doc:"When true, works whose original language is neither Japanese nor Chinese are included. Default false."`
 }
 
 type workPageOutput struct {
@@ -259,6 +264,7 @@ func (s *Service) listTaggedWorks(ctx context.Context, in *listTaggedWorksInput)
 		"sort":    {"released_desc"},
 	}
 	client.ApplyWorksGate(q, !in.IncludeNSFW)
+	client.ApplyOriginalLanguageGate(q, !in.IncludeAllOriginalLanguages)
 	res, appErr := s.catalog.CatalogWorksSearch(ctx, q)
 	if appErr != nil {
 		return nil, unavailable(appErr)

@@ -234,3 +234,39 @@ func TestV1WorksQueryURLValues(t *testing.T) {
 		t.Fatalf("win filter missed SFW0: %v", geItemIDs(body))
 	}
 }
+
+func TestV1WorksLeaveOutOtherOriginalLanguages(t *testing.T) {
+	f := newG5Fix(t)
+	if err := f.db.Exec("UPDATE galgame SET original_language = 'en' WHERE id = ?", g5TieLo).Error; err != nil {
+		t.Fatal(err)
+	}
+	if err := f.db.Exec("UPDATE galgame SET original_language = 'zh-Hans' WHERE id = ?", g5TieHi).Error; err != nil {
+		t.Fatal(err)
+	}
+	_, narrow := f.get(t, "/api/v1/works?limit=100", "/works")
+	if g5HasID(narrow, g5TieLo) {
+		t.Fatalf("the default page holds an English-original work: %v", geItemIDs(narrow))
+	}
+	if !g5HasID(narrow, g5TieHi) {
+		t.Fatalf("the default page lost a Chinese-original work: %v", geItemIDs(narrow))
+	}
+	if int(narrow["total"].(float64)) != 13 {
+		t.Fatalf("total %v, want 13: the 14 listed rows less the English one, with unsynced rows still counted", narrow["total"])
+	}
+	_, wide := f.get(t, "/api/v1/works?limit=100&include_all_original_languages=true", "/works")
+	if !g5HasID(wide, g5TieLo) || int(wide["total"].(float64)) != 14 {
+		t.Fatalf("include_all_original_languages=true: total %v, items %v", wide["total"], geItemIDs(wide))
+	}
+}
+
+func TestV1LibraryWorksAsksCatalogForJaAndZhByDefault(t *testing.T) {
+	f := newG5Fix(t)
+	f.get(t, "/api/v1/library-works", "/library-works")
+	if got := f.cat.searched[len(f.cat.searched)-1].Get("olang"); got != "ja,zh,zh-Hans,zh-Hant" {
+		t.Fatalf("olang = %q, want the four tags catalog matches exactly", got)
+	}
+	f.get(t, "/api/v1/library-works?include_all_original_languages=true", "/library-works")
+	if last := f.cat.searched[len(f.cat.searched)-1]; last.Has("olang") {
+		t.Fatalf("include_all_original_languages=true still sent olang=%q", last.Get("olang"))
+	}
+}

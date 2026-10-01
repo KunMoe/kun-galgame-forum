@@ -466,3 +466,29 @@ func TestV1EntityUpstreamDown(t *testing.T) {
 		geStatus(t, resp, body, http.StatusServiceUnavailable, "SERVICE_UNAVAILABLE")
 	}
 }
+
+func TestV1EntityWorksLeaveOutOtherOriginalLanguages(t *testing.T) {
+	f := newGEFix(t)
+	every := url.Values{"include_all_original_languages": {"true"}}
+	for _, lane := range []struct{ name, path, spec string }{
+		{"tag", "/api/v1/tags/5101/works", "/tags/{tag_id}/works"},
+		{"company", "/api/v1/companies/6101/works", "/companies/{company_id}/works"},
+		{"tagged", "/api/v1/tagged-works?tag_ids=5101", "/tagged-works"},
+	} {
+		sep := "?"
+		if strings.Contains(lane.path, "?") {
+			sep = "&"
+		}
+		_, body := f.get(t, lane.path, lane.spec)
+		if slices.Contains(geItemIDs(body), wid(6)) {
+			t.Errorf("%s: the default page holds an English-original work: %v", lane.name, geItemIDs(body))
+		}
+		_, wide := f.get(t, lane.path+sep+every.Encode(), lane.spec)
+		if !slices.Contains(geItemIDs(wide), wid(6)) {
+			t.Errorf("%s: include_all_original_languages=true is missing %s: %v", lane.name, wid(6), geItemIDs(wide))
+		}
+		if wide["total"].(float64) != body["total"].(float64)+1 {
+			t.Errorf("%s: totals %v and %v, want the wide one to count one more work", lane.name, body["total"], wide["total"])
+		}
+	}
+}

@@ -32,6 +32,7 @@ func Register(svc *Service) func(huma.API) {
 			Description: "A page-number collection of published forum works. Default sort is resource_updated_desc, default limit 24. " +
 				"NSFW works are excluded before paging unless include_nsfw=true; a work whose content_limit has not been synced yet counts as adult until it is. " +
 				"Default pages require at least one forum resource; include_resourceless=true lists every published work. " +
+				"Works whose original language is neither Japanese nor Chinese are left out unless include_all_original_languages=true. " +
 				"An id catalog does not render is dropped with a warning, so a page may be shorter than limit; total still counts the SQL population.",
 			Tags: []string{"works"},
 			Responses: problemResponses(map[int]string{
@@ -47,6 +48,7 @@ func Register(svc *Service) func(huma.API) {
 			Summary:     "List works from the catalog library",
 			Description: "A page-number collection from catalog's work search population. Default sort is popularity_desc, default limit 24. " +
 				"q is optional. Forum resource-axis, host, collection-date and rating filters are not parameters of this collection. " +
+				"Works whose original language is neither Japanese nor Chinese are left out unless include_all_original_languages=true. " +
 				"An id catalog does not render is dropped with a warning, so a page may be shorter than limit; total still counts catalog's population.",
 			Tags: []string{"works"},
 			Responses: problemResponses(map[int]string{

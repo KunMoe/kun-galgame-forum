@@ -168,7 +168,8 @@ export const collectWorkUrls = async (
     page,
     limit: WORK_PAGE_LIMIT,
     sort: 'resource_updated_desc' as const,
-    include_resourceless: true
+    include_resourceless: true,
+    include_all_original_languages: true
   })
   const fetchPage = (page: number) =>
     limit(async () => {

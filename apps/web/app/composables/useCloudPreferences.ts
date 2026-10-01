@@ -20,6 +20,7 @@ export interface KunCloudPreferences {
   is_open_in_new_tab: boolean
   prefer_original_name: boolean
   no_resource: boolean
+  all_original_languages: boolean
   phone_card_columns: number
   rounded: string
   gallery_sexual_levels: number[]
@@ -44,6 +45,7 @@ const DEFAULTS: KunCloudPreferences = {
   is_open_in_new_tab: false,
   prefer_original_name: false,
   no_resource: false,
+  all_original_languages: false,
   phone_card_columns: 3,
   rounded: 'md',
   gallery_sexual_levels: [],
@@ -83,6 +85,7 @@ export const useCloudPreferences = () => {
     is_open_in_new_tab: cardStore.isOpenInNewTab,
     prefer_original_name: settingsStore.showKUNGalgamePreferOriginalName,
     no_resource: settingsStore.showKUNGalgameNoResource,
+    all_original_languages: settingsStore.showKUNGalgameAllOriginalLanguages,
     phone_card_columns: settingsStore.showKUNGalgamePhoneCardColumns,
     rounded: settingsStore.showKUNGalgameRounded,
     gallery_sexual_levels: [...settingsStore.showKUNGalgameGallerySexualLevels],
@@ -129,6 +132,9 @@ export const useCloudPreferences = () => {
           doc.prefer_original_name
       if (typeof doc.no_resource === 'boolean')
         settingsStore.showKUNGalgameNoResource = doc.no_resource
+      if (typeof doc.all_original_languages === 'boolean')
+        settingsStore.showKUNGalgameAllOriginalLanguages =
+          doc.all_original_languages
       if (doc.phone_card_columns === 2 || doc.phone_card_columns === 3)
         settingsStore.showKUNGalgamePhoneCardColumns = doc.phone_card_columns
       if (isRounded(doc.rounded))

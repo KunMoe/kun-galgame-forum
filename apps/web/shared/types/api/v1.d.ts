@@ -943,7 +943,7 @@ export interface paths {
         };
         /**
          * List a company's works
-         * @description A page-number collection. Without a resource or game_type filter it holds every catalog work filed under the entity, including works the forum has no page for; any of those filters narrows it to works with a forum resource. Ties break on catalog's own order, or on descending id once a filter applies. A company's works include its imprints' works; via narrows to one or the other.
+         * @description A page-number collection. Without a resource or game_type filter it holds every catalog work filed under the entity, including works the forum has no page for; any of those filters narrows it to works with a forum resource. Works whose original language is neither Japanese nor Chinese are left out unless include_all_original_languages=true. Ties break on catalog's own order, or on descending id once a filter applies. A company's works include its imprints' works; via narrows to one or the other.
          */
         get: operations["listCompanyWorks"];
         put?: never;
@@ -1161,7 +1161,7 @@ export interface paths {
         };
         /**
          * List an engine's works
-         * @description A page-number collection. Without a resource or game_type filter it holds every catalog work filed under the entity, including works the forum has no page for; any of those filters narrows it to works with a forum resource. Ties break on catalog's own order, or on descending id once a filter applies.
+         * @description A page-number collection. Without a resource or game_type filter it holds every catalog work filed under the entity, including works the forum has no page for; any of those filters narrows it to works with a forum resource. Works whose original language is neither Japanese nor Chinese are left out unless include_all_original_languages=true. Ties break on catalog's own order, or on descending id once a filter applies.
          */
         get: operations["listEngineWorks"];
         put?: never;
@@ -1373,7 +1373,7 @@ export interface paths {
         };
         /**
          * List works from the catalog library
-         * @description A page-number collection from catalog's work search population. Default sort is popularity_desc, default limit 24. q is optional. Forum resource-axis, host, collection-date and rating filters are not parameters of this collection. An id catalog does not render is dropped with a warning, so a page may be shorter than limit; total still counts catalog's population.
+         * @description A page-number collection from catalog's work search population. Default sort is popularity_desc, default limit 24. q is optional. Forum resource-axis, host, collection-date and rating filters are not parameters of this collection. Works whose original language is neither Japanese nor Chinese are left out unless include_all_original_languages=true. An id catalog does not render is dropped with a warning, so a page may be shorter than limit; total still counts catalog's population.
          */
         get: operations["listLibraryWorks"];
         put?: never;
@@ -2981,7 +2981,7 @@ export interface paths {
         };
         /**
          * Rank works
-         * @description A top-N list rather than a paged collection: it has no page, cursor or total. Only published works; without include_resourceless, only works that have a resource. Works the catalog does not return are dropped and the places renumbered.
+         * @description A top-N list rather than a paged collection: it has no page, cursor or total. Only published works; without include_resourceless, only works that have a resource; without include_all_original_languages, only works whose original language is Japanese or Chinese. Works the catalog does not return are dropped and the places renumbered.
          */
         get: operations["listWorkRanking"];
         put?: never;
@@ -3506,7 +3506,7 @@ export interface paths {
         };
         /**
          * List a series' works
-         * @description A page-number collection. Without a resource or game_type filter it holds every catalog work filed under the entity, including works the forum has no page for; any of those filters narrows it to works with a forum resource. Ties break on catalog's own order, or on descending id once a filter applies.
+         * @description A page-number collection. Without a resource or game_type filter it holds every catalog work filed under the entity, including works the forum has no page for; any of those filters narrows it to works with a forum resource. Works whose original language is neither Japanese nor Chinese are left out unless include_all_original_languages=true. Ties break on catalog's own order, or on descending id once a filter applies.
          */
         get: operations["listSeriesWorks"];
         put?: never;
@@ -3566,7 +3566,7 @@ export interface paths {
         };
         /**
          * List works carrying every given tag
-         * @description Catalog's own search population, newest release first; unlike a tag's works collection it takes no forum filter or sort. A page-number collection.
+         * @description Catalog's own search population, newest release first; unlike a tag's works collection it takes no forum filter or sort. Works whose original language is neither Japanese nor Chinese are left out unless include_all_original_languages=true. A page-number collection.
          */
         get: operations["listTaggedWorks"];
         put?: never;
@@ -3626,7 +3626,7 @@ export interface paths {
         };
         /**
          * List a tag's works
-         * @description A page-number collection. Without a resource or game_type filter it holds every catalog work filed under the entity, including works the forum has no page for; any of those filters narrows it to works with a forum resource. Ties break on catalog's own order, or on descending id once a filter applies.
+         * @description A page-number collection. Without a resource or game_type filter it holds every catalog work filed under the entity, including works the forum has no page for; any of those filters narrows it to works with a forum resource. Works whose original language is neither Japanese nor Chinese are left out unless include_all_original_languages=true. Ties break on catalog's own order, or on descending id once a filter applies.
          */
         get: operations["listTagWorks"];
         put?: never;
@@ -5038,7 +5038,7 @@ export interface paths {
         };
         /**
          * List works on the forum
-         * @description A page-number collection of published forum works. Default sort is resource_updated_desc, default limit 24. NSFW works are excluded before paging unless include_nsfw=true; a work whose content_limit has not been synced yet counts as adult until it is. Default pages require at least one forum resource; include_resourceless=true lists every published work. An id catalog does not render is dropped with a warning, so a page may be shorter than limit; total still counts the SQL population.
+         * @description A page-number collection of published forum works. Default sort is resource_updated_desc, default limit 24. NSFW works are excluded before paging unless include_nsfw=true; a work whose content_limit has not been synced yet counts as adult until it is. Default pages require at least one forum resource; include_resourceless=true lists every published work. Works whose original language is neither Japanese nor Chinese are left out unless include_all_original_languages=true. An id catalog does not render is dropped with a warning, so a page may be shorter than limit; total still counts the SQL population.
          */
         get: operations["listWorks"];
         put?: never;
@@ -20821,6 +20821,8 @@ export interface operations {
                 game_type?: components["schemas"]["GameTypeFilter"];
                 /** @description When true, adult works are included. Default false. */
                 include_nsfw?: boolean;
+                /** @description When true, works whose original language is neither Japanese nor Chinese are included. Default false. */
+                include_all_original_languages?: boolean;
             };
             header?: never;
             path: {
@@ -21712,6 +21714,8 @@ export interface operations {
                 game_type?: components["schemas"]["GameTypeFilter"];
                 /** @description When true, adult works are included. Default false. */
                 include_nsfw?: boolean;
+                /** @description When true, works whose original language is neither Japanese nor Chinese are included. Default false. */
+                include_all_original_languages?: boolean;
             };
             header?: never;
             path: {
@@ -22742,6 +22746,8 @@ export interface operations {
                 released_to?: string;
                 /** @description When true, works this forum displays as adult are included. Default false. */
                 include_nsfw?: boolean;
+                /** @description When true, works whose original language is neither Japanese nor Chinese are included. Default false. */
+                include_all_original_languages?: boolean;
             };
             header?: never;
             path?: never;
@@ -31062,6 +31068,8 @@ export interface operations {
                 include_nsfw?: boolean;
                 /** @description When true, published works without any resource are ranked too. Default false. */
                 include_resourceless?: boolean;
+                /** @description When true, works whose original language is neither Japanese nor Chinese are ranked too. Default false. */
+                include_all_original_languages?: boolean;
             };
             header?: never;
             path?: never;
@@ -33427,6 +33435,8 @@ export interface operations {
                 game_type?: components["schemas"]["GameTypeFilter"];
                 /** @description When true, adult works are included. Default false. */
                 include_nsfw?: boolean;
+                /** @description When true, works whose original language is neither Japanese nor Chinese are included. Default false. */
+                include_all_original_languages?: boolean;
             };
             header?: never;
             path: {
@@ -33583,6 +33593,8 @@ export interface operations {
                 limit?: number;
                 /** @description When true, adult works are included. Default false. */
                 include_nsfw?: boolean;
+                /** @description When true, works whose original language is neither Japanese nor Chinese are included. Default false. */
+                include_all_original_languages?: boolean;
             };
             header?: never;
             path?: never;
@@ -33769,6 +33781,8 @@ export interface operations {
                 game_type?: components["schemas"]["GameTypeFilter"];
                 /** @description When true, adult works are included. Default false. */
                 include_nsfw?: boolean;
+                /** @description When true, works whose original language is neither Japanese nor Chinese are included. Default false. */
+                include_all_original_languages?: boolean;
             };
             header?: never;
             path: {
@@ -42173,6 +42187,8 @@ export interface operations {
                 include_nsfw?: boolean;
                 /** @description When true, published works with no forum resource are included. Default false. A resource-axis or host filter still requires a resource. */
                 include_resourceless?: boolean;
+                /** @description When true, works whose original language is neither Japanese nor Chinese are included. Default false. A work whose original language has not been synced yet is included either way. */
+                include_all_original_languages?: boolean;
             };
             header?: never;
             path?: never;

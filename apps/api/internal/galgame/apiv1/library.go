@@ -72,6 +72,7 @@ func (s *Service) listLibraryWorks(ctx context.Context, in *listLibraryWorksInpu
 		params.Set("released_before", to)
 	}
 	client.ApplyWorksGate(params, !in.IncludeNSFW)
+	client.ApplyOriginalLanguageGate(params, !in.IncludeAllOriginalLanguages)
 	res, appErr := search.CatalogWorksSearch(ctx, params)
 	if appErr != nil {
 		return nil, catalogUnavailable(appErr)

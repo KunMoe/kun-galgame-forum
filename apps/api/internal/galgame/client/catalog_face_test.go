@@ -562,7 +562,7 @@ func TestCatalogLabelRollupMembers_AsksForTheHopAndKeepsTheAttribution(t *testin
 	t.Cleanup(srv.Close)
 	c := New(srv.URL, "nm_test_key", "")
 
-	members, err := c.CatalogLabelRollupMembers(context.Background(), "993", "", false, 5)
+	members, err := c.CatalogLabelRollupMembers(context.Background(), "993", "", false, true, 5)
 	if err != nil {
 		t.Fatalf("CatalogLabelRollupMembers: %v", err)
 	}
@@ -576,6 +576,9 @@ func TestCatalogLabelRollupMembers_AsksForTheHopAndKeepsTheAttribution(t *testin
 	}
 	if got := q.Get("claim_state"); got != "" {
 		t.Errorf("claim_state = %q, want it absent", got)
+	}
+	if got := q.Get("olang"); got != "ja,zh,zh-Hans,zh-Hant" {
+		t.Errorf("olang = %q, want the ja / zh gate on the walk", got)
 	}
 
 	if len(members) != 2 {

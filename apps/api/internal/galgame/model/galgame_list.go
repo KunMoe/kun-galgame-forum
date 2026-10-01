@@ -25,10 +25,13 @@ type GalgameListFilter struct {
 	ShowNoResource       bool
 	Indexed              bool
 	SFWOnly              bool
+	JaZhOriginalOnly     bool
 	RestrictIDs          []int
 	Page                 int
 	Limit                int
 }
+
+const JaZhOriginalSQL = "(g.original_language IS NULL OR lower(g.original_language) = 'ja' OR lower(g.original_language) LIKE 'zh%')"
 
 func (f GalgameListFilter) HasResourcePredicate() bool {
 	return (f.Type != "" && f.Type != "all") ||

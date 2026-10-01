@@ -30,6 +30,7 @@ export const kunSettingsDefaults = (): Omit<
   showKUNGalgameBackgroundOpacity: 15,
   showKUNGalgameBackLoli: false,
   showKUNGalgameNoResource: false,
+  showKUNGalgameAllOriginalLanguages: false,
   showKUNGalgameRounded: 'md',
   showKUNGalgamePhoneCardColumns: 3,
   showKUNGalgameGallerySexualLevels: []
@@ -61,6 +62,9 @@ export const usePersistSettingsStore = defineStore(
     )
     const showKUNGalgameBackLoli = ref(defaults.showKUNGalgameBackLoli)
     const showKUNGalgameNoResource = ref(defaults.showKUNGalgameNoResource)
+    const showKUNGalgameAllOriginalLanguages = ref(
+      defaults.showKUNGalgameAllOriginalLanguages
+    )
     const showKUNGalgameRounded = ref(defaults.showKUNGalgameRounded)
     const showKUNGalgamePhoneCardColumns = ref(
       defaults.showKUNGalgamePhoneCardColumns
@@ -188,6 +192,7 @@ export const usePersistSettingsStore = defineStore(
       showKUNGalgameBackgroundOpacity,
       showKUNGalgameBackLoli,
       showKUNGalgameNoResource,
+      showKUNGalgameAllOriginalLanguages,
       showKUNGalgameRounded,
       showKUNGalgamePhoneCardColumns,
       showKUNGalgameGallerySexualLevels,
