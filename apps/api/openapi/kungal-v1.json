@@ -11034,6 +11034,17 @@
       },
       "NewsSubmission": {
         "properties": {
+          "banner": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Image"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Lead image. null when the item has none."
+          },
           "content_markdown": {
             "description": "The item's own text, CommonMark Markdown. Empty string when the item has none. Free text; never use it as a decision input.",
             "maxLength": 20000,
@@ -11101,12 +11112,19 @@
           "preview",
           "content_markdown",
           "source_url",
+          "banner",
           "published_at"
         ],
         "type": "object"
       },
       "NewsSubmissionCreate": {
         "properties": {
+          "banner_image_hash": {
+            "description": "Banner, by the hash createNewsSubmissionImage returned. Absent or an empty string means no banner. A hash from any other upload is refused at this field with reason UNKNOWN_REFERENCE.",
+            "maxLength": 64,
+            "pattern": "^([0-9a-f]{64})?$",
+            "type": "string"
+          },
           "content_markdown": {
             "description": "The item's own text, CommonMark Markdown. Omitted is an empty string. Free text; never use it as a decision input.",
             "maxLength": 20000,
@@ -11139,6 +11157,12 @@
       },
       "NewsSubmissionPatch": {
         "properties": {
+          "banner_image_hash": {
+            "description": "New banner, by the hash createNewsSubmissionImage returned. An empty string removes the banner.",
+            "maxLength": 64,
+            "pattern": "^([0-9a-f]{64})?$",
+            "type": "string"
+          },
           "content_markdown": {
             "description": "New Markdown. An empty string clears it. Free text; never use it as a decision input.",
             "maxLength": 20000,
@@ -41653,6 +41677,187 @@
         ]
       }
     },
+    "/me/news-submission-images": {
+      "post": {
+        "description": "Stores a banner under the caller's own NextMoe identity, for a news submission, which refers to it by hash in banner_image_hash. A submission's banner has to come from here: a hash from any other upload is refused, because only images stored through this face are kept alive for the news feed. file is one part, image/jpeg, image/png or image/webp, at most 4,000,000 bytes. Not counted against the daily image limit; NextMoe applies its own, 30 per account per UTC day. Location is the image URL. Persist the hash, never the URL. sexual is always null.",
+        "operationId": "createNewsSubmissionImage",
+        "parameters": [
+          {
+            "description": "Caller-generated UUID (canonical 8-4-4-4-12 hex, any version) or 26-character Crockford ULID. Scoped to (user, operation, key) for 24 hours.",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "schema": {
+              "description": "Caller-generated UUID (canonical 8-4-4-4-12 hex, any version) or 26-character Crockford ULID. Scoped to (user, operation, key) for 24 hours.",
+              "maxLength": 36,
+              "minLength": 26,
+              "pattern": "^([0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}|[0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{26})$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "encoding": {
+                "file": {
+                  "contentType": "image/jpeg, image/png, image/webp"
+                }
+              },
+              "schema": {
+                "properties": {
+                  "file": {
+                    "contentMediaType": "application/octet-stream",
+                    "description": "The banner. Its part must be image/jpeg, image/png or image/webp, and at most 4,000,000 bytes.",
+                    "format": "binary",
+                    "maxLength": 4000000,
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "file"
+                ],
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Image"
+                }
+              }
+            },
+            "description": "Created",
+            "headers": {
+              "Location": {
+                "schema": {
+                  "description": "The image's absolute URL, the same as url in the body.",
+                  "format": "uri",
+                  "maxLength": 512,
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SCOPE_REQUIRED when the catalog token lacks the scope; ACCOUNT_BANNED when the caller is banned."
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "413": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "PAYLOAD_TOO_LARGE when the whole body is over the server's limit."
+          },
+          "415": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "UNSUPPORTED_MEDIA_TYPE when the body is not multipart/form-data, or file is not a JPEG, PNG or WebP part."
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED when file is missing, over 4,000,000 bytes, or cannot be decoded as an image. IMAGE_REJECTED when image moderation refuses it."
+          },
+          "429": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "QUOTA_EXCEEDED when the account's or the news site's daily upload limit is exhausted; RATE_LIMITED otherwise. Retry-After is passed through when the catalog sends it, which it does not for the daily upload limit."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the catalog or its image store is not configured or cannot be reached."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Upload a banner for a news submission",
+        "tags": [
+          "me"
+        ]
+      }
+    },
     "/me/news-submissions": {
       "get": {
         "description": "The caller's own submissions, pending included, newest first. A cursor collection over the catalog cursor; the cursor is bound to limit. next_cursor is omitted on the last page.",
@@ -41887,7 +42092,7 @@
                 }
               }
             },
-            "description": "CONTENT_REJECTED when the trust check refuses the text; VALIDATION_FAILED when title or preview is blank, or neither content_markdown nor source_url is sent."
+            "description": "CONTENT_REJECTED when the trust check refuses the text; VALIDATION_FAILED when title or preview is blank, neither content_markdown nor source_url is sent, or banner_image_hash is not a hash createNewsSubmissionImage returned."
           },
           "429": {
             "content": {
@@ -42048,7 +42253,7 @@
         ]
       },
       "patch": {
-        "description": "Partial update of the caller's submission. Editing a published item returns it to pending until a NextMoe moderator publishes it again. Only a published item can be withdrawn. Withdrawal is state withdrawn sent on its own.",
+        "description": "Partial update of the caller's submission. Editing a published item, its banner included, returns it to pending until a NextMoe moderator publishes it again. Only a published item can be withdrawn. Withdrawal is state withdrawn sent on its own.",
         "operationId": "updateNewsSubmission",
         "parameters": [
           {
@@ -42163,7 +42368,7 @@
                 }
               }
             },
-            "description": "CONTENT_REJECTED when the trust check refuses the text; VALIDATION_FAILED when the body is empty, state is sent with another field, a sent title or preview is blank, or the item would have neither content_markdown nor source_url."
+            "description": "CONTENT_REJECTED when the trust check refuses the text; VALIDATION_FAILED when the body is empty, state is sent with another field, a sent title or preview is blank, the item would have neither content_markdown nor source_url, or banner_image_hash is not a hash createNewsSubmissionImage returned."
           },
           "429": {
             "content": {

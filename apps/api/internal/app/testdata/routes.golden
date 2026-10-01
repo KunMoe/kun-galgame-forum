@@ -288,6 +288,7 @@ POST   /api/v1/lotteries/:lottery_id/code-reveals     cors.New → v1Headers →
 POST   /api/v1/me/check-ins                           cors.New → v1Headers → fiberAdapter.Handle
 POST   /api/v1/me/conversations/:user_id/messages     cors.New → v1Headers → fiberAdapter.Handle
 POST   /api/v1/me/creator-applications                cors.New → v1Headers → fiberAdapter.Handle
+POST   /api/v1/me/news-submission-images              cors.New → v1Headers → fiberAdapter.Handle
 POST   /api/v1/me/news-submissions                    cors.New → v1Headers → fiberAdapter.Handle
 POST   /api/v1/me/shop/orders                         cors.New → v1Headers → fiberAdapter.Handle
 POST   /api/v1/me/topic-drafts                        cors.New → v1Headers → fiberAdapter.Handle

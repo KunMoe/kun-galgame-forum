@@ -12,6 +12,7 @@ import (
 	"kun-galgame-api/internal/middleware"
 	"kun-galgame-api/internal/trust/gate"
 	"kun-galgame-api/pkg/catalogclient"
+	"kun-galgame-api/pkg/imageclient"
 	"kun-galgame-api/pkg/problem"
 	"kun-galgame-api/pkg/userclient"
 
@@ -104,8 +105,31 @@ func (s *Service) checkSubmissionText(ctx context.Context, text string, authorID
 	return nil
 }
 
-func toNewsSubmission(in catalogclient.NewsSubmission) NewsSubmission {
+func (s *Service) newsSubmissions(in []catalogclient.NewsSubmission) []NewsSubmission {
+	var hashes []string
+	for _, it := range in {
+		if it.BannerHash != "" {
+			hashes = append(hashes, it.BannerHash)
+		}
+	}
+	var metas map[string]imageclient.ImageMeta
+	if s.images != nil && len(hashes) > 0 {
+		metas = s.images(hashes)
+	}
+	out := make([]NewsSubmission, 0, len(in))
+	for _, it := range in {
+		out = append(out, toNewsSubmission(it, s.banner(it.BannerHash, metas)))
+	}
+	return out
+}
+
+func (s *Service) newsSubmission(in catalogclient.NewsSubmission) NewsSubmission {
+	return s.newsSubmissions([]catalogclient.NewsSubmission{in})[0]
+}
+
+func toNewsSubmission(in catalogclient.NewsSubmission, banner *repr.Image) NewsSubmission {
 	return NewsSubmission{
+		Banner:          banner,
 		Object:          "news_submission",
 		ID:              repr.DecimalID(strconv.FormatInt(in.ID, 10)),
 		State:           in.Status,
@@ -140,10 +164,7 @@ func (s *Service) listMyNewsSubmissions(ctx context.Context, in *listMyNewsSubmi
 	if err != nil {
 		return nil, mapSubmissionUpstream(err)
 	}
-	out := make([]NewsSubmission, 0, len(items))
-	for _, it := range items {
-		out = append(out, toNewsSubmission(it))
-	}
+	out := s.newsSubmissions(items)
 	var nextCur *string
 	if next != "" {
 		cur := collect.EncodeCursor(submissionSort, fp, next)
@@ -165,7 +186,7 @@ func (s *Service) getMyNewsSubmission(ctx context.Context, in *getMyNewsSubmissi
 	if err != nil {
 		return nil, mapSubmissionUpstream(err)
 	}
-	return &getMyNewsSubmissionOutput{Body: toNewsSubmission(*sub)}, nil
+	return &getMyNewsSubmissionOutput{Body: s.newsSubmission(*sub)}, nil
 }
 
 func (s *Service) createNewsSubmission(ctx context.Context, in *createNewsSubmissionInput) (*createNewsSubmissionOutput, error) {
@@ -192,16 +213,21 @@ func (s *Service) createNewsSubmission(ctx context.Context, in *createNewsSubmis
 	if p := s.checkSubmissionText(ctx, gate.ComposeText(title, preview, in.Body.ContentMarkdown), user.ID); p != nil {
 		return nil, p
 	}
+	banner := ""
+	if in.Body.BannerImageHash != nil {
+		banner = string(*in.Body.BannerImageHash)
+	}
 	sub, err := s.catalog.CreateMyNews(ctx, token, catalogclient.NewsSubmissionWrite{
-		Title:     title,
-		Summary:   preview,
-		Body:      in.Body.ContentMarkdown,
-		SourceURL: sourceURL,
+		Title:      title,
+		Summary:    preview,
+		Body:       in.Body.ContentMarkdown,
+		SourceURL:  sourceURL,
+		BannerHash: banner,
 	}, idempotencyKey(ctx))
 	if err != nil {
 		return nil, mapSubmissionUpstream(err)
 	}
-	out := toNewsSubmission(*sub)
+	out := s.newsSubmission(*sub)
 	return &createNewsSubmissionOutput{
 		Location: "/api/v1/me/news-submissions/" + string(out.ID),
 		Body:     out,
@@ -218,7 +244,7 @@ func (s *Service) updateNewsSubmission(ctx context.Context, in *updateNewsSubmis
 		return nil, notFound()
 	}
 	b := in.Body
-	editing := b.Title != nil || b.Preview != nil || b.ContentMarkdown != nil || b.SourceURL != nil
+	editing := b.Title != nil || b.Preview != nil || b.ContentMarkdown != nil || b.SourceURL != nil || b.BannerImageHash != nil
 	if b.State == nil && !editing {
 		return nil, validationFailed(problem.AtPointer("", problem.ReasonRequired, "send state=withdrawn or at least one field to edit", nil))
 	}
@@ -230,7 +256,7 @@ func (s *Service) updateNewsSubmission(ctx context.Context, in *updateNewsSubmis
 		if err != nil {
 			return nil, mapSubmissionUpstream(err)
 		}
-		return &getMyNewsSubmissionOutput{Body: toNewsSubmission(*sub)}, nil
+		return &getMyNewsSubmissionOutput{Body: s.newsSubmission(*sub)}, nil
 	}
 	var fields []problem.FieldError
 	if b.Title != nil && strings.TrimSpace(*b.Title) == "" {
@@ -288,9 +314,13 @@ func (s *Service) updateNewsSubmission(ctx context.Context, in *updateNewsSubmis
 		v := strings.TrimSpace(*b.SourceURL)
 		patch.SourceURL = &v
 	}
+	if b.BannerImageHash != nil {
+		v := string(*b.BannerImageHash)
+		patch.BannerHash = &v
+	}
 	sub, err := s.catalog.PatchMyNews(ctx, token, id, patch)
 	if err != nil {
 		return nil, mapSubmissionUpstream(err)
 	}
-	return &getMyNewsSubmissionOutput{Body: toNewsSubmission(*sub)}, nil
+	return &getMyNewsSubmissionOutput{Body: s.newsSubmission(*sub)}, nil
 }
