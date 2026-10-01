@@ -6,6 +6,18 @@ const props = defineProps<{
 
 const sourceName = computed(() => props.source?.display_name ?? '合作站点')
 const hasBody = computed(() => props.item.content.children.length > 0)
+
+const bannerMaxHeight = 400
+const bannerStyle = computed(() => {
+  const banner = props.item.banner
+  if (!banner?.width || !banner.height) {
+    return undefined
+  }
+  const heightCapped = Math.round(
+    (bannerMaxHeight * banner.width) / banner.height
+  )
+  return { width: `min(${banner.width}px, 100%, ${heightCapped}px)` }
+})
 </script>
 
 <template>
@@ -16,6 +28,24 @@ const hasBody = computed(() => props.item.content.children.length > 0)
     </KunLink>
 
     <KunCard :is-hoverable="false" padding="lg" content-class="gap-6">
+      <div v-if="item.banner" class="mx-auto w-full" :style="bannerStyle">
+        <KunImage
+          :src="item.banner.url"
+          :thumbhash="item.banner.thumbhash ?? undefined"
+          :width="item.banner.width ?? undefined"
+          :height="item.banner.height ?? undefined"
+          :aspect-ratio="
+            imageAspectRatio(
+              item.banner.width ?? undefined,
+              item.banner.height ?? undefined
+            )
+          "
+          :alt="item.title"
+          object-fit="cover"
+          class-name="w-full overflow-hidden rounded-lg"
+        />
+      </div>
+
       <header class="space-y-3">
         <div class="flex flex-wrap items-center gap-2">
           <KunChip

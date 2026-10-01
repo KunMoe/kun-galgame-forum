@@ -33,6 +33,7 @@ useKunSeoMeta({
   title: item.value.title,
   description: item.value.preview,
   ogType: 'article',
+  ogImage: item.value.banner?.url,
   articlePublishedTime: item.value.published_at
 })
 </script>
