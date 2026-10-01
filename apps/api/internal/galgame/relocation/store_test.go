@@ -312,3 +312,26 @@ func TestDropLikesTakesDeletedAccountsOutOfUnpushedSnapshotsOnly(t *testing.T) {
 		t.Fatalf("retire after a like was dropped elsewhere: %v", err)
 	}
 }
+
+func TestUnsyncedWorksAreTheOnesHoldingResourcesWithNoLanguageYet(t *testing.T) {
+	db, store := seed(t)
+	if err := db.Exec(`UPDATE galgame SET original_language = NULL WHERE id = ?`, workKorean).Error; err != nil {
+		t.Fatal(err)
+	}
+	if err := db.Exec(`DELETE FROM galgame_resource WHERE id = ?`, resKorean).Error; err != nil {
+		t.Fatal(err)
+	}
+	ids, err := store.UnsyncedWorks()
+	if err != nil {
+		t.Fatal(err)
+	}
+	var mine []int
+	for _, id := range ids {
+		if id >= workEnglish && id <= workKorean {
+			mine = append(mine, id)
+		}
+	}
+	if len(mine) != 1 || mine[0] != workUnsynced {
+		t.Errorf("unsynced works = %v, want only the one that holds a resource and has no language", mine)
+	}
+}

@@ -63,6 +63,13 @@ func (s *Store) Census(excludeWorks []int) (Census, error) {
 	return c, err
 }
 
+func (s *Store) UnsyncedWorks() ([]int, error) {
+	var ids []int
+	err := s.db.Raw(`SELECT DISTINCT r.work_id FROM galgame_resource r JOIN galgame g ON g.id = r.work_id
+		WHERE g.original_language IS NULL ORDER BY 1`).Scan(&ids).Error
+	return ids, err
+}
+
 type WorkLanguage struct {
 	WorkID   int    `gorm:"column:work_id"`
 	Language string `gorm:"column:original_language"`
