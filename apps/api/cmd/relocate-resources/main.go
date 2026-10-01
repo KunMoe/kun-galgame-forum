@@ -34,19 +34,20 @@ import (
 //	retire    delete the forum's row of every resource LetMoe confirmed
 //	notify    tell each uploader and liker where their resource went
 //	announce  post the announcement topic, its body read from stdin
+//	forget    empty the snapshots of retired resources (links and passwords)
 //
 // The order is the contract: retire only touches a resource whose receipt is
 // stored, and refuses one the uploader changed after the snapshot; notify only
 // speaks of a resource that was retired.
 func main() {
 	exclude := flag.String("exclude-works", "", "逗号分隔的 work id, 这些作品的资源不迁")
-	dryRun := flag.Bool("dry-run", false, "push: 只让 LetMoe 校验不写入; retire: 只报告不删除")
+	dryRun := flag.Bool("dry-run", false, "push: 只让 LetMoe 校验不写入; retire / notify / forget: 只报告不写入")
 	out := flag.String("out", "", "snapshot: 另存一份 JSONL 到此路径 (含链接与密码, 勿入库)")
 	limit := flag.Int("limit", 0, "push: 最多发送多少条, 0 为全部")
 	sender := flag.Int("sender", 0, "notify / announce: 以哪个用户 id 的名义发出")
 	title := flag.String("title", "", "announce: 话题标题")
 	flag.Usage = func() {
-		fmt.Fprintln(os.Stderr, "用法: relocate-resources [flags] census|snapshot|push|verify|retire|notify|announce")
+		fmt.Fprintln(os.Stderr, "用法: relocate-resources [flags] census|snapshot|push|verify|retire|notify|announce|forget")
 		flag.PrintDefaults()
 	}
 	flag.Parse()
@@ -97,6 +98,11 @@ func main() {
 		err = notify(ctx, store, gc, *sender, *dryRun)
 	case "announce":
 		err = announce(store, *sender, *title)
+	case "forget":
+		var n int64
+		if n, err = store.Forget(*dryRun); err == nil {
+			slog.Info("已清空快照", "snapshots", n, "dry_run", *dryRun)
+		}
 	default:
 		flag.Usage()
 		os.Exit(2)
