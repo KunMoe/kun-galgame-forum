@@ -142,12 +142,12 @@ func registerWork(api huma.API, svc *Service) {
 		Summary:       "Create a download resource",
 		DefaultStatus: http.StatusCreated,
 		Description: "Creates a download resource on the work. Idempotency-Key is required. " + activeCheck +
-			"A banned work is RESOURCE_PUBLISH_BANNED. Location is the new resource's path.",
+			"A banned work is RESOURCE_PUBLISH_BANNED. A work whose original language is neither Japanese nor Chinese is RESOURCE_HOSTED_ELSEWHERE. Location is the new resource's path.",
 		Tags:        []string{tagWorks},
 		Middlewares: huma.Middlewares{withAccessToken},
 		Responses: problemResponses(map[int]string{
 			400: "INVALID_PARAMETER when Idempotency-Key is missing or malformed.",
-			403: "RESOURCE_PUBLISH_BANNED or ACCOUNT_BANNED.",
+			403: "RESOURCE_PUBLISH_BANNED, RESOURCE_HOSTED_ELSEWHERE or ACCOUNT_BANNED.",
 			404: "NOT_FOUND when the work does not exist or is hidden.",
 			409: "IDEMPOTENCY_KEY_REUSED or IDEMPOTENCY_REQUEST_IN_PROGRESS.",
 			422: "VALIDATION_FAILED or CONTENT_REJECTED.",

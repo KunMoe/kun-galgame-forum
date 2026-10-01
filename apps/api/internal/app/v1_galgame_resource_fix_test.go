@@ -35,6 +35,7 @@ const (
 	g3WorkHidden  = 943000005
 	g3WorkNoLocal = 943000006
 	g3WorkCount0  = 943000007
+	g3WorkEnglish = 943000008
 	g3WorkMiss    = 943000099
 
 	g3SecretURL = "https://example.invalid/secret-dl-aaaa"
@@ -114,6 +115,7 @@ func newResourceCatalog(t *testing.T) *fakeCatalog {
 			{id: g3WorkBanned, name: "DeltaBanned", limit: "sfw", rating: "all_ages"},
 			{id: g3WorkNoLocal, name: "EpsilonGhost", limit: "sfw", rating: "all_ages"},
 			{id: g3WorkCount0, name: "ZetaCount", limit: "sfw", rating: "all_ages"},
+			{id: g3WorkEnglish, name: "EtaEnglish", limit: "sfw", rating: "all_ages", olang: "en"},
 		},
 	}
 	for _, w := range cat.works {

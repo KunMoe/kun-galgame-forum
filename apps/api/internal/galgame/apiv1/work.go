@@ -105,6 +105,8 @@ func (s *Service) assembleWork(
 		Playtimes:        playtimesOf(d),
 		CreatedAt:        catalogTime(d.Created),
 		UpdatedAt:        catalogTime(d.Updated),
+
+		IsResourceHostedElsewhere: !client.IsJaZhOriginal(d.OLang),
 	}
 	if s.storeLinks != nil {
 		brief := client.CatalogItemToBrief(ctx, &item)

@@ -5344,7 +5344,7 @@ export interface paths {
         put?: never;
         /**
          * Create a download resource
-         * @description Creates a download resource on the work. Idempotency-Key is required. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED, and a failure of that lookup is SERVICE_UNAVAILABLE with nothing written. A banned work is RESOURCE_PUBLISH_BANNED. Location is the new resource's path.
+         * @description Creates a download resource on the work. Idempotency-Key is required. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED, and a failure of that lookup is SERVICE_UNAVAILABLE with nothing written. A banned work is RESOURCE_PUBLISH_BANNED. A work whose original language is neither Japanese nor Chinese is RESOURCE_HOSTED_ELSEWHERE. Location is the new resource's path.
          */
         post: operations["createWorkResource"];
         delete?: never;
@@ -14455,6 +14455,8 @@ export interface components {
             is_nsfw: boolean;
             /** @description Whether the forum has a listable page for the work. A catalog work the forum has no row for is false, with every forum count 0. */
             is_published: boolean;
+            /** @description Whether this forum takes no download resources for the work because its original language is neither Japanese nor Chinese. Its resources are published on LetMoe, under the same work id. */
+            is_resource_hosted_elsewhere: boolean;
             /** @description Whether new download resources may not be published on this work. false when the forum has no row. */
             is_resource_publish_banned: boolean;
             /** @description Romanization of the name. null when none is recorded. Free text; never use it as a decision input. */
@@ -43842,7 +43844,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description RESOURCE_PUBLISH_BANNED or ACCOUNT_BANNED. */
+            /** @description RESOURCE_PUBLISH_BANNED, RESOURCE_HOSTED_ELSEWHERE or ACCOUNT_BANNED. */
             403: {
                 headers: {
                     [name: string]: unknown;

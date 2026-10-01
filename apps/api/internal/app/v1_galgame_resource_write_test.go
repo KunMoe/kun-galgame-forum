@@ -278,3 +278,16 @@ func TestV1UpdateGalgameResourceTypeKeepsRuntimeAxis(t *testing.T) {
 		t.Error("a rejected type change was written")
 	}
 }
+
+func TestV1CreateWorkResourceRefusesOtherOriginalLanguages(t *testing.T) {
+	f := newResourceFix(t, nil)
+	resp, got := f.rs(t, http.MethodPost, "/api/v1/works/"+idStr(g3WorkEnglish)+"/resources",
+		"/works/{work_id}/resources", "sess-alice", keyUUID(41), createResourceBody(nil))
+	wantCode(t, resp, got, http.StatusForbidden, problem.CodeResourceHostedElsewhere)
+	if n := f.scalar(t, `SELECT COUNT(*) FROM galgame_resource WHERE work_id = ?`, g3WorkEnglish); n != 0 {
+		t.Errorf("the refused create still wrote %d resource rows", n)
+	}
+	if n := f.scalar(t, `SELECT COUNT(*) FROM galgame WHERE id = ? AND published`, g3WorkEnglish); n != 0 {
+		t.Error("the refused create published the work")
+	}
+}

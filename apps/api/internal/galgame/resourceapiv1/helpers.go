@@ -75,6 +75,10 @@ func resourcePublishBanned() *problem.Problem {
 	return problem.New(problem.CodeResourcePublishBanned, "This work is banned from publishing download resources.")
 }
 
+func resourceHostedElsewhere() *problem.Problem {
+	return problem.New(problem.CodeResourceHostedElsewhere, "This forum hosts download resources only for works whose original language is Japanese or Chinese.")
+}
+
 func tooShort(pointer string, min int) problem.FieldError {
 	return problem.AtPointer(pointer, problem.ReasonTooShort, "too short once surrounding whitespace is removed", &problem.FieldParams{MinLength: &min})
 }

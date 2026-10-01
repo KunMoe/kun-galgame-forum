@@ -70,6 +70,7 @@ const (
 	CodeMoemoepointInsufficient      = "MOEMOEPOINT_INSUFFICIENT"
 	CodeSelfLikeForbidden            = "SELF_LIKE_FORBIDDEN"
 	CodeResourcePublishBanned        = "RESOURCE_PUBLISH_BANNED"
+	CodeResourceHostedElsewhere      = "RESOURCE_HOSTED_ELSEWHERE"
 	CodePollClosed                   = "POLL_CLOSED"
 	CodeVoteAlreadyCast              = "VOTE_ALREADY_CAST"
 	CodeSelfUpvoteForbidden          = "SELF_UPVOTE_FORBIDDEN"
@@ -155,6 +156,7 @@ var Codes = []Def{
 	{CodeMoemoepointInsufficient, DomainKungal, http.StatusForbidden, "Moemoepoint insufficient", "The caller's moemoepoint balance is below what the operation costs. Topic operations check the balance this forum last cached; account-service operations such as a rename or a shop purchase check the live balance. required is that cost, when the forum knows it.", []ExtDef{{Name: "required", Type: "integer"}}},
 	{CodeSelfLikeForbidden, DomainKungal, http.StatusForbidden, "Self like forbidden", "Users cannot like what they wrote themselves.", nil},
 	{CodeResourcePublishBanned, DomainKungal, http.StatusForbidden, "Resource publish banned", "This work is banned from publishing download resources.", nil},
+	{CodeResourceHostedElsewhere, DomainKungal, http.StatusForbidden, "Resource hosted elsewhere", "This forum hosts download resources only for works whose original language is Japanese or Chinese. Resources for this work are published on LetMoe, at https://www.letmoe.com/game/{work_id}.", nil},
 	{CodePollClosed, DomainKungal, http.StatusConflict, "Poll closed", "The poll no longer accepts votes: it is past closes_at. Nothing about the request is wrong.", nil},
 	{CodeVoteAlreadyCast, DomainKungal, http.StatusConflict, "Vote already cast", "The caller has already voted and this poll does not allow changing a vote.", nil},
 	{CodeSelfUpvoteForbidden, DomainKungal, http.StatusForbidden, "Self upvote forbidden", "Users cannot upvote their own topics.", nil},

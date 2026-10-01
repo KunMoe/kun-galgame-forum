@@ -10,6 +10,7 @@ import (
 	"unicode/utf8"
 
 	"kun-galgame-api/internal/constants"
+	"kun-galgame-api/internal/galgame/client"
 	"kun-galgame-api/internal/galgame/model"
 	"kun-galgame-api/internal/galgame/resourcevocab"
 	"kun-galgame-api/internal/infrastructure/markdown"
@@ -33,8 +34,12 @@ func (s *Service) createWorkResource(ctx context.Context, in *createWorkResource
 	if !ok {
 		return nil, notFound()
 	}
-	if _, p := s.lookupWork(ctx, workID); p != nil {
+	work, p := s.lookupWork(ctx, workID)
+	if p != nil {
 		return nil, p
+	}
+	if !client.IsJaZhOriginal(work.OLang) {
+		return nil, resourceHostedElsewhere()
 	}
 	banned, err := s.store.IsPublishBanned(workID)
 	if err != nil {
