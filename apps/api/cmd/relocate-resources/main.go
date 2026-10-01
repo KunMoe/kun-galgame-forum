@@ -15,6 +15,7 @@ import (
 
 	"kun-galgame-api/internal/galgame/client"
 	"kun-galgame-api/internal/galgame/relocation"
+	"kun-galgame-api/internal/galgame/repository"
 	"kun-galgame-api/internal/infrastructure/database"
 	"kun-galgame-api/pkg/config"
 	"kun-galgame-api/pkg/logger"
@@ -65,14 +66,20 @@ func main() {
 		os.Exit(1)
 	}
 	logger.Init(cfg.Server.Mode)
-	store := relocation.NewStore(database.NewPostgres(cfg.Database, cfg.Server.Mode))
+	db := database.NewPostgres(cfg.Database, cfg.Server.Mode)
+	store := relocation.NewStore(db)
 	ctx := context.Background()
+	gc := client.New(cfg.NextMoeAPI.BaseURL, cfg.NextMoeAPI.APIKey, cfg.NextMoeAPI.ImageCDNBase)
 
 	switch flag.Arg(0) {
 	case "census":
-		err = census(store, excluded)
+		if err = settleLanguages(ctx, store, repository.NewGalgameRepository(db), gc); err == nil {
+			err = census(store, excluded)
+		}
 	case "snapshot":
-		gc := client.New(cfg.NextMoeAPI.BaseURL, cfg.NextMoeAPI.APIKey, cfg.NextMoeAPI.ImageCDNBase)
+		if err = settleLanguages(ctx, store, repository.NewGalgameRepository(db), gc); err != nil {
+			break
+		}
 		uc := userclient.New(userclient.Config{
 			BaseURL:      cfg.OAuth.ServerURL,
 			ClientID:     cfg.OAuth.ClientID,
@@ -84,7 +91,6 @@ func main() {
 	case "retire":
 		err = retire(store, *dryRun)
 	case "notify":
-		gc := client.New(cfg.NextMoeAPI.BaseURL, cfg.NextMoeAPI.APIKey, cfg.NextMoeAPI.ImageCDNBase)
 		err = notify(ctx, store, gc, *sender, *dryRun)
 	case "announce":
 		err = announce(store, *sender, *title)
@@ -112,6 +118,40 @@ func parseIDs(raw string) ([]int, error) {
 		ids = append(ids, id)
 	}
 	return ids, nil
+}
+
+// The mirror reaches a hundred works every two minutes, and a work it has not
+// reached reads as one that stays: six hours after migration 204 a production
+// census saw 129 works while 3,994 works with resources still had no language.
+func settleLanguages(ctx context.Context, store *relocation.Store, repo *repository.GalgameRepository, gc *client.GalgameClient) error {
+	unsynced, err := store.UnsyncedWorks()
+	if err != nil || len(unsynced) == 0 {
+		return err
+	}
+	ids := make([]int64, len(unsynced))
+	for i, id := range unsynced {
+		ids[i] = int64(id)
+	}
+	rendered, hidden, appErr := gc.MirrorByCatalogIDs(ctx, ids)
+	if appErr != nil {
+		return fmt.Errorf("catalog: %s", appErr.Message)
+	}
+	langs := make(map[int]string, len(unsynced))
+	for _, id := range unsynced {
+		row, ok := rendered[id]
+		if !ok {
+			row, ok = hidden[id]
+		}
+		if ok && row.OriginalLanguage != "" {
+			langs[id] = row.OriginalLanguage
+		}
+	}
+	written, err := repo.SetOriginalLanguages(langs)
+	if err != nil {
+		return err
+	}
+	slog.Info("已补齐原语言", "unsynced", len(unsynced), "answered", len(langs), "written", written)
+	return nil
 }
 
 func census(store *relocation.Store, excluded []int) error {
