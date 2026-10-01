@@ -105,7 +105,10 @@ useKunSeoMeta({
         :galgames="galgames"
       />
 
-      <KunNull v-else :description="`${data.name} 引擎下暂无 Galgame`" />
+      <GalgameOriginalLanguageNull
+        v-else
+        :description="`${data.name} 引擎下暂无 Galgame`"
+      />
     </KunLoading>
 
     <KunPagination

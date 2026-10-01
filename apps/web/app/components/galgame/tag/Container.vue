@@ -230,7 +230,10 @@ const isBrowsing = computed(() => !selectedIds.value.length)
     <template v-else>
       <KunLoading :loading="loadingGames">
         <GalgameCard v-if="resultGames.length" :galgames="resultGames" />
-        <KunNull v-else description="没有同时含有这些标签的 Galgame" />
+        <GalgameOriginalLanguageNull
+          v-else
+          description="没有同时含有这些标签的 Galgame"
+        />
       </KunLoading>
 
       <KunPagination

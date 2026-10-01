@@ -3,6 +3,7 @@ package relocation
 import (
 	"encoding/json"
 	"errors"
+	"strconv"
 	"testing"
 
 	"kun-galgame-api/internal/testdb"
@@ -360,5 +361,95 @@ func TestReceiptsListsWhatLetMoeAnsweredInItsOwnShape(t *testing.T) {
 	if len(got) != 2 || got[resEnglishA].ResourceID != 7001 || !got[resEnglishA].Public ||
 		got[resEnglishB].ResourceID != 7002 || got[resEnglishB].Public {
 		t.Errorf("receipts = %+v, want the two pushed resources and not the Korean one still waiting", got)
+	}
+}
+
+func TestSnapshotSendsTheEditTimeWhenAResourceWasEditedAfterItWasWritten(t *testing.T) {
+	db, store := seed(t)
+	if err := db.Exec(`UPDATE galgame_resource SET update_time = '2026-07-01 00:00:00+00', edited = '2026-09-01 00:00:00+00' WHERE id = ?`, resEnglishA).Error; err != nil {
+		t.Fatal(err)
+	}
+	if err := db.Exec(`UPDATE galgame_resource SET update_time = '2026-07-01 00:00:00+00', edited = NULL WHERE id = ?`, resEnglishB).Error; err != nil {
+		t.Fatal(err)
+	}
+	if _, err := store.Snapshot(nil); err != nil {
+		t.Fatal(err)
+	}
+	sent := func(res int) string {
+		var out string
+		db.Raw(`SELECT to_char((payload->>'update_time')::timestamptz AT TIME ZONE 'UTC', 'YYYY-MM-DD')
+			FROM galgame_resource_relocation WHERE resource_id = ?`, res).Scan(&out)
+		return out
+	}
+	if got := sent(resEnglishA); got != "2026-09-01" {
+		t.Errorf("edited resource: update_time sent = %q, want the edit time", got)
+	}
+	if got := sent(resEnglishB); got != "2026-07-01" {
+		t.Errorf("never edited resource: update_time sent = %q, want the column as it is", got)
+	}
+}
+
+func TestRetireTakesTheFeedRowsOfTheResourcesCommentsAlong(t *testing.T) {
+	db, store := seed(t)
+	const commentA, commentB = 2_000_340_201, 2_000_340_202
+	clean := func() {
+		db.Exec("DELETE FROM feed_activity WHERE type = 'GALGAME_RESOURCE_COMMENT_CREATION' AND source_id IN ?", []int{commentA, commentB})
+	}
+	clean()
+	t.Cleanup(clean)
+	for id, res := range map[int]int{commentA: resEnglishA, commentB: resEnglishB} {
+		if err := db.Exec(`INSERT INTO feed_activity (type, source_id, user_id, work_id, content, link, is_nsfw, created)
+			VALUES ('GALGAME_RESOURCE_COMMENT_CREATION', ?, ?, 0, 'a comment', ?, false, now())`,
+			id, liker, "/galgame/resource/"+strconv.Itoa(res)).Error; err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, err := store.Snapshot(nil); err != nil {
+		t.Fatal(err)
+	}
+	if err := store.SaveReceipt(resEnglishA, 7001, true); err != nil {
+		t.Fatal(err)
+	}
+	if err := store.Retire(resEnglishA); err != nil {
+		t.Fatal(err)
+	}
+	if n := count(t, db, `SELECT COUNT(*) FROM feed_activity WHERE type = 'GALGAME_RESOURCE_COMMENT_CREATION' AND source_id = ?`, commentA); n != 0 {
+		t.Errorf("comment feed rows of the retired resource = %d, want 0: their link is a page that is gone", n)
+	}
+	if n := count(t, db, `SELECT COUNT(*) FROM feed_activity WHERE type = 'GALGAME_RESOURCE_COMMENT_CREATION' AND source_id = ?`, commentB); n != 1 {
+		t.Errorf("comment feed rows of a resource still here = %d, want 1", n)
+	}
+}
+
+func TestForgetEmptiesRetiredSnapshotsAndKeepsTheRedirect(t *testing.T) {
+	db, store := seed(t)
+	if _, err := store.Snapshot(nil); err != nil {
+		t.Fatal(err)
+	}
+	if err := store.SaveReceipt(resEnglishA, 7001, true); err != nil {
+		t.Fatal(err)
+	}
+	if err := store.Retire(resEnglishA); err != nil {
+		t.Fatal(err)
+	}
+	mine := `resource_id BETWEEN 2000340101 AND 2000340106`
+	if n, err := store.Forget(true); err != nil || n < 1 {
+		t.Fatalf("dry run = %d, %v; want at least the retired one", n, err)
+	}
+	if n := count(t, db, `SELECT COUNT(*) FROM galgame_resource_relocation WHERE payload = '{}'::jsonb AND `+mine); n != 0 {
+		t.Fatalf("a dry run emptied %d snapshots", n)
+	}
+	if _, err := store.Forget(false); err != nil {
+		t.Fatal(err)
+	}
+	if n := count(t, db, `SELECT COUNT(*) FROM galgame_resource_relocation WHERE payload = '{}'::jsonb AND `+mine); n != 1 {
+		t.Errorf("emptied snapshots = %d, want only the retired one: the rest are still the only copy", n)
+	}
+	if n := count(t, db, `SELECT COUNT(*) FROM galgame_resource_relocation
+		WHERE resource_id = ? AND destination_id = 7001 AND retired_at IS NOT NULL`, resEnglishA); n != 1 {
+		t.Errorf("the retired row lost its receipt")
+	}
+	if _, err := store.Recipients(); err != nil {
+		t.Errorf("recipients after forget: %v", err)
 	}
 }

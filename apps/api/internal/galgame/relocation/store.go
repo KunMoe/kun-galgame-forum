@@ -12,6 +12,8 @@ import (
 const awayPredicate = `g.original_language IS NOT NULL
 	AND lower(g.original_language) <> 'ja' AND lower(g.original_language) NOT LIKE 'zh%'`
 
+// update_time is written once, by the column DEFAULT at insert; an edit only
+// moves edited. LetMoe orders by update_time, so the later of the two is sent.
 const payloadExpr = `jsonb_build_object(
 	'forum_id', r.id, 'work_id', r.work_id, 'user_id', r.user_id,
 	'type', r.type, 'title', r.title, 'version_label', r.version_label,
@@ -19,7 +21,7 @@ const payloadExpr = `jsonb_build_object(
 	'languages', r.languages, 'platforms', r.platforms, 'runtimes', r.runtimes,
 	'code', r.code, 'password', r.password, 'status', r.status,
 	'download', r.download, 'view', r.view,
-	'created', r.created, 'update_time', r.update_time, 'edited', r.edited,
+	'created', r.created, 'update_time', GREATEST(r.update_time, r.edited), 'edited', r.edited,
 	'links', COALESCE((SELECT jsonb_agg(jsonb_build_object('url', l.url, 'created', l.created) ORDER BY l.id)
 		FROM galgame_resource_link l WHERE l.galgame_resource_id = r.id), '[]'::jsonb),
 	'likes', COALESCE((SELECT jsonb_agg(jsonb_build_object('user_id', k.user_id, 'created', k.created) ORDER BY k.id)
@@ -190,6 +192,19 @@ func (s *Store) Retire(resourceID int) error {
 		}
 		return tx.Exec(`UPDATE galgame_resource_relocation SET retired_at = now() WHERE resource_id = ?`, resourceID).Error
 	})
+}
+
+// Forget empties the snapshot of every retired resource. The row stays: it is
+// what the old resource page redirects by.
+func (s *Store) Forget(dryRun bool) (int64, error) {
+	const kept = `retired_at IS NOT NULL AND payload <> '{}'::jsonb`
+	if dryRun {
+		var n int64
+		err := s.db.Raw(`SELECT COUNT(*) FROM galgame_resource_relocation WHERE ` + kept).Scan(&n).Error
+		return n, err
+	}
+	res := s.db.Exec(`UPDATE galgame_resource_relocation SET payload = '{}'::jsonb WHERE ` + kept)
+	return res.RowsAffected, res.Error
 }
 
 func intArray(ids []int) string {

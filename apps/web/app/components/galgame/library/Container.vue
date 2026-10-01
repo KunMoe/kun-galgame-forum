@@ -53,7 +53,10 @@ const releaseLabel = (galgame: GalgameCard) => {
           </p>
         </template>
       </GalgameCard>
-      <KunNull v-else description="没有找到符合条件的 Galgame" />
+      <GalgameOriginalLanguageNull
+        v-else
+        description="没有找到符合条件的 Galgame"
+      />
     </KunLoading>
 
     <KunCard

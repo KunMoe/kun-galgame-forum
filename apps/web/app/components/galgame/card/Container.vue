@@ -43,7 +43,10 @@ const total = computed(() => data.value?.total ?? 0)
 
     <KunLoading :loading="status === 'pending'">
       <GalgameCard v-if="galgames.length" :galgames="galgames" />
-      <KunNull v-else description="没有找到符合条件的 Galgame" />
+      <GalgameOriginalLanguageNull
+        v-else
+        description="没有找到符合条件的 Galgame"
+      />
     </KunLoading>
 
     <KunCard
