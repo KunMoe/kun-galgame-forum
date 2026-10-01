@@ -47,6 +47,7 @@ var UserColumns = []UserColumn{
 	{"galgame_rating_like", "user_id", HandlingDelete, ""},
 	{"galgame_resource", "user_id", HandlingDelete, ""},
 	{"galgame_resource_like", "user_id", HandlingDelete, ""},
+	{"galgame_resource_relocation", "uploader_id", HandlingKeep, "the redirect for links to a resource that moved to LetMoe"},
 	{"galgame_toolset", "user_id", HandlingDelete, ""},
 	{"galgame_toolset_contributor", "user_id", HandlingDelete, ""},
 	{"galgame_toolset_practicality", "user_id", HandlingDelete, ""},
