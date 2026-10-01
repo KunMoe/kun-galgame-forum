@@ -60,6 +60,11 @@ func ApplyOriginalLanguageGate(q url.Values, jaZhOnly bool) url.Values {
 	return q
 }
 
+func IsJaZhOriginal(olang string) bool {
+	tag := strings.ToLower(strings.TrimSpace(olang))
+	return tag == "" || tag == "ja" || strings.HasPrefix(tag, "zh")
+}
+
 func contentLimitFor(isSFW bool) string {
 	if isSFW {
 		return "sfw"

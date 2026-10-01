@@ -35,6 +35,8 @@ type Work struct {
 	CreatedAt               repr.DateTime               `json:"created_at" doc:"When catalog created the work."`
 	UpdatedAt               repr.DateTime               `json:"updated_at" doc:"When catalog last updated the work."`
 	Viewer                  *WorkViewer                 `json:"viewer" doc:"The caller's own state. null for an anonymous caller."`
+
+	IsResourceHostedElsewhere bool `json:"is_resource_hosted_elsewhere" doc:"Whether this forum takes no download resources for the work because its original language is neither Japanese nor Chinese. Its resources are published on LetMoe, under the same work id."`
 }
 
 type WorkCover struct {

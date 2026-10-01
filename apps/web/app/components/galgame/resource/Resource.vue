@@ -4,7 +4,7 @@ import {
   bucketizeResourceProvider,
   type GalgameResourceProviderBucketKey
 } from '~/constants/galgameResource'
-import type { GalgameResource } from '#shared/utils/api/schemas'
+import type { GalgameResource, Work } from '#shared/utils/api/schemas'
 import { problemMessage } from '#shared/utils/api/message'
 import { kunFeedUrl } from '#shared/utils/feedUrl'
 
@@ -22,6 +22,12 @@ const resourcePublishBanned = inject<Ref<boolean>>(
   'galgameResourcePublishBanned',
   ref(false)
 )
+
+const galgame = inject<Work>('galgame')
+const isHostedElsewhere = computed(
+  () => galgame?.is_resource_hosted_elsewhere ?? false
+)
+const letmoeHref = computed(() => `https://www.letmoe.com/game/${workId.value}`)
 
 const isShowPublish = ref(false)
 const { id } = usePersistUserStore()
@@ -152,6 +158,16 @@ const activeBucket = computed(() =>
       title="本游戏已禁止发布下载资源"
       description="部分游戏可能因为版权方通知，或者其余第三方原因导致不可用，已禁止在本游戏下发布任何下载资源。"
     />
+    <KunInfo
+      v-if="isHostedElsewhere"
+      color="info"
+      title="这部作品的资源在一起萌 (LetMoe)"
+      description="本站只收录原语言为日语或中文的作品的下载资源。这部作品的资源请到一起萌查看和发布，那里是同一个作品编号。"
+    >
+      <KunLink :to="letmoeHref" target="_blank" size="sm">
+        前往一起萌的这部作品
+      </KunLink>
+    </KunInfo>
     <KunHeader name="Galgame 资源链接" scale="h2">
       <template #headerEndContent>
         <div class="ml-auto flex items-center gap-1">
@@ -164,7 +180,7 @@ const activeBucket = computed(() =>
             批量更改已失效资源链接
           </KunButton>
           <KunButton
-            v-if="!resourcePublishBanned"
+            v-if="!resourcePublishBanned && !isHostedElsewhere"
             @click="isShowPublish = !isShowPublish"
           >
             添加资源

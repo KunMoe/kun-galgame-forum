@@ -344,6 +344,15 @@
     },
     {
       "object": "problem_type",
+      "code": "RESOURCE_HOSTED_ELSEWHERE",
+      "domain": "kungal",
+      "status": 403,
+      "type": "https://developer.nextmoe.dev/problems/kungal/resource-hosted-elsewhere",
+      "title": "Resource hosted elsewhere",
+      "description": "This forum hosts download resources only for works whose original language is Japanese or Chinese. Resources for this work are published on LetMoe, at https://www.letmoe.com/game/{work_id}."
+    },
+    {
+      "object": "problem_type",
       "code": "RESOURCE_PUBLISH_BANNED",
       "domain": "kungal",
       "status": 403,

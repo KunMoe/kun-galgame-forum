@@ -240,3 +240,18 @@ func TestV1GetWorkKeepsCatalogsWiderVocabularies(t *testing.T) {
 		t.Errorf("sensitive work: %d content_rating=%v", resp.StatusCode, body["content_rating"])
 	}
 }
+
+func TestV1GetWorkSaysWhenItsResourcesAreHostedElsewhere(t *testing.T) {
+	f := newWorkFix(t)
+	_, body := f.wk(t, http.MethodGet, g4WorkPath(g4WorkLive), "/works/{work_id}", "", nil)
+	if body["is_resource_hosted_elsewhere"] != false {
+		t.Fatalf("a Japanese-original work reads is_resource_hosted_elsewhere = %v", body["is_resource_hosted_elsewhere"])
+	}
+	for olang, want := range map[string]bool{"en": true, "ko": true, "zh-Hans": false, "zh": false, "ZH-Hant": false} {
+		f.cat.details[g4WorkLive].OLang = olang
+		_, body = f.wk(t, http.MethodGet, g4WorkPath(g4WorkLive), "/works/{work_id}", "", nil)
+		if body["is_resource_hosted_elsewhere"] != want {
+			t.Errorf("olang %q: is_resource_hosted_elsewhere = %v, want %v", olang, body["is_resource_hosted_elsewhere"], want)
+		}
+	}
+}

@@ -24376,6 +24376,10 @@
             "description": "Whether the forum has a listable page for the work. A catalog work the forum has no row for is false, with every forum count 0.",
             "type": "boolean"
           },
+          "is_resource_hosted_elsewhere": {
+            "description": "Whether this forum takes no download resources for the work because its original language is neither Japanese nor Chinese. Its resources are published on LetMoe, under the same work id.",
+            "type": "boolean"
+          },
           "is_resource_publish_banned": {
             "description": "Whether new download resources may not be published on this work. false when the forum has no row.",
             "type": "boolean"
@@ -24592,6 +24596,7 @@
           "created_at",
           "updated_at",
           "viewer",
+          "is_resource_hosted_elsewhere",
           "banner",
           "release_date",
           "release_date_precision",
@@ -68432,7 +68437,7 @@
         ]
       },
       "post": {
-        "description": "Creates a download resource on the work. Idempotency-Key is required. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED, and a failure of that lookup is SERVICE_UNAVAILABLE with nothing written. A banned work is RESOURCE_PUBLISH_BANNED. Location is the new resource's path.",
+        "description": "Creates a download resource on the work. Idempotency-Key is required. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED, and a failure of that lookup is SERVICE_UNAVAILABLE with nothing written. A banned work is RESOURCE_PUBLISH_BANNED. A work whose original language is neither Japanese nor Chinese is RESOURCE_HOSTED_ELSEWHERE. Location is the new resource's path.",
         "operationId": "createWorkResource",
         "parameters": [
           {
@@ -68520,7 +68525,7 @@
                 }
               }
             },
-            "description": "RESOURCE_PUBLISH_BANNED or ACCOUNT_BANNED."
+            "description": "RESOURCE_PUBLISH_BANNED, RESOURCE_HOSTED_ELSEWHERE or ACCOUNT_BANNED."
           },
           "404": {
             "content": {
