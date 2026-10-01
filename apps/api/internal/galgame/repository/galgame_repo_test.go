@@ -204,3 +204,29 @@ func TestSetReleaseDatesSkipsRowsThatAlreadyAgree(t *testing.T) {
 		t.Fatalf("a corrected date wrote %d rows, %v; want 1", moved, err)
 	}
 }
+
+func TestSetOriginalLanguagesSkipsRowsThatAlreadyAgree(t *testing.T) {
+	db := testdb.Open(t)
+	repo := NewGalgameRepository(db)
+
+	const id = 2_000_300_200
+	cleanup := func() { db.Exec("DELETE FROM galgame WHERE id = ?", id) }
+	cleanup()
+	defer cleanup()
+	if err := db.Create(&model.GalgameLocal{ID: id}).Error; err != nil {
+		t.Fatalf("seed galgame: %v", err)
+	}
+
+	first, err := repo.SetOriginalLanguages(map[int]string{id: "en"})
+	if err != nil || first != 1 {
+		t.Fatalf("first write = %d, %v; want 1 row", first, err)
+	}
+	again, err := repo.SetOriginalLanguages(map[int]string{id: "en"})
+	if err != nil || again != 0 {
+		t.Fatalf("re-applying the same language wrote %d rows, %v; want 0", again, err)
+	}
+	moved, err := repo.SetOriginalLanguages(map[int]string{id: "ja"})
+	if err != nil || moved != 1 {
+		t.Fatalf("a corrected language wrote %d rows, %v; want 1", moved, err)
+	}
+}

@@ -121,17 +121,18 @@ func (c *GalgameClient) CatalogRowsByWorkIDs(ctx context.Context, ids []int, inc
 
 // CatalogMirror is the set of catalog fields the local galgame row keeps a copy
 // of, so that SQL can filter and order on them before anything is hydrated.
-// Both belong to catalog; the local columns are caches and never edited here.
+// All belong to catalog; the local columns are caches and never edited here.
 type CatalogMirror struct {
 	ContentLimit string
 	// Catalog's own string, at whatever precision it knows: "2026", "2026-08"
 	// or "2026-08-27". Empty means catalog has no date for this work, which is
 	// an answer — not the same as "not asked yet".
-	ReleaseDate string
+	ReleaseDate      string
+	OriginalLanguage string
 }
 
 func mirrorOf(row *CatalogWorkListItem) CatalogMirror {
-	m := CatalogMirror{ContentLimit: row.ContentLimit}
+	m := CatalogMirror{ContentLimit: row.ContentLimit, OriginalLanguage: strings.TrimSpace(row.OLang)}
 	if row.ReleaseDate != nil {
 		m.ReleaseDate = *row.ReleaseDate
 	}

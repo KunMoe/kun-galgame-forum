@@ -26,6 +26,7 @@ type catalogFake struct {
 	mu          sync.Mutex
 	rated       map[int]string
 	limits      map[int]string
+	olangs      map[int]string
 	hidden      map[int]bool
 	fates       map[int]string
 	listStatus  int
@@ -60,6 +61,9 @@ func (c *catalogFake) handler(w http.ResponseWriter, r *http.Request) {
 				limit := ""
 				if l, ok := c.limits[id]; ok {
 					limit = fmt.Sprintf(`,"content_limit":%q`, l)
+				}
+				if l, ok := c.olangs[id]; ok {
+					limit += fmt.Sprintf(`,"olang":%q`, l)
 				}
 				items = append(items, fmt.Sprintf(`{"id":"%d","content_rating":%q%s}`, id, c.rated[id], limit))
 			}
@@ -113,7 +117,7 @@ func newVerifyFix(t *testing.T) *verifyFix {
 	cleanup()
 	t.Cleanup(cleanup)
 
-	fake := &catalogFake{rated: map[int]string{}, limits: map[int]string{}, hidden: map[int]bool{}, fates: map[int]string{}, pages: map[string]string{}}
+	fake := &catalogFake{rated: map[int]string{}, limits: map[int]string{}, olangs: map[int]string{}, hidden: map[int]bool{}, fates: map[int]string{}, pages: map[string]string{}}
 	srv := httptest.NewServer(http.HandlerFunc(fake.handler))
 	t.Cleanup(srv.Close)
 	merges := &mergeQueueFake{got: map[int]int64{}}
@@ -304,6 +308,31 @@ func TestMirrorChannelHoldsAMassUnlisting(t *testing.T) {
 	for _, id := range ids {
 		if s := f.state(t, id); !s.Rendered {
 			t.Fatalf("30 gone rows on one page are over the breaker and row %d was unlisted", id)
+		}
+	}
+}
+
+func TestMirrorVerifyMirrorsTheOriginalLanguage(t *testing.T) {
+	f := newVerifyFix(t)
+	fresh, corrected, silent := verifyBase+300, verifyBase+301, verifyBase+302
+	ids := []int{fresh, corrected, silent}
+	f.seed(t, "sfw", true, ids...)
+	f.db.Exec("UPDATE galgame SET original_language = 'en' WHERE id IN ?", []int{corrected, silent})
+	for _, id := range ids {
+		f.fake.rated[id], f.fake.limits[id] = "all_ages", "sfw"
+	}
+	f.fake.olangs[fresh], f.fake.olangs[corrected] = "zh-Hans", "ja"
+
+	f.mirror.verify(t.Context(), ids)
+
+	want := map[int]string{fresh: "zh-Hans", corrected: "ja", silent: "en"}
+	for id, lang := range want {
+		var got *string
+		if err := f.db.Raw("SELECT original_language FROM galgame WHERE id = ?", id).Scan(&got).Error; err != nil {
+			t.Fatal(err)
+		}
+		if got == nil || *got != lang {
+			t.Errorf("work %d original_language = %v, want %q", id, got, lang)
 		}
 	}
 }

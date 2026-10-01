@@ -45,11 +45,11 @@ type mergeQueue interface {
 }
 
 // Keeps the local galgame row's copies of catalog's data in step: content_limit
-// (the editorial display verdict) and release_date.
+// (the editorial display verdict), release_date and original_language.
 //
-// Both exist for the same reason — /galgame and the entity pages page ids in SQL
+// All exist for the same reason — /galgame and the entity pages page ids in SQL
 // and only then hydrate them from catalog, so a column the WHERE and the ORDER
-// BY can reach has to live here — and both are catalog's to change, so neither
+// BY can reach has to live here — and all are catalog's to change, so none
 // survives being written once and left alone. release_date was left alone: its
 // backfill command went out with the retired wiki lanes in 157d7abb, and by
 // 2026-09-07 half the rows on /galgame had none, which is what "sorted by
@@ -121,7 +121,7 @@ func (s *GalgameCatalogMirror) RunMirror() {
 	}
 	bootstrap := cursor == ""
 
-	var changed, gone, matched, limits, dates, unlisted int64
+	var changed, gone, matched, limits, dates, langs, unlisted int64
 	pages := 0
 	for ; pages < s.maxPages; pages++ {
 		page, appErr := s.galgameClient.CatalogChanges(ctx, cursor, client.CatalogChangesLimit)
@@ -150,13 +150,14 @@ func (s *GalgameCatalogMirror) RunMirror() {
 			break
 		}
 		matched += int64(len(rows))
-		n, d, err := s.apply(rows, hidden)
+		n, d, l, err := s.apply(rows, hidden)
 		if err != nil {
 			slog.Warn("catalog 镜像入库失败, 游标保持不动", "pages", pages, "error", err)
 			break
 		}
 		limits += n
 		dates += d
+		langs += l
 		u, err := s.settle(ctx, slices.Collect(maps.Keys(hidden)), goneIDs, len(page.Items), "信道")
 		if err != nil {
 			slog.Warn("catalog 镜像入库失败, 游标保持不动", "pages", pages, "error", err)
@@ -179,7 +180,7 @@ func (s *GalgameCatalogMirror) RunMirror() {
 	}
 	slog.Info("galgame catalog 镜像信道同步完成", "bootstrap", bootstrap,
 		"pages", pages, "changed", changed, "gone", gone, "matched", matched,
-		"content_limit", limits, "release_date", dates, "unlisted", unlisted)
+		"content_limit", limits, "release_date", dates, "original_language", langs, "unlisted", unlisted)
 }
 
 // RunVerify re-asks catalog about the local rows it has gone longest without
@@ -214,7 +215,7 @@ func (s *GalgameCatalogMirror) verify(ctx context.Context, ids []int) {
 		slog.Warn("catalog 镜像核对拉取失败, 本轮不改任何行", "requested", len(ids), "error", appErr.Message)
 		return
 	}
-	limits, dates, err := s.apply(rows, hidden)
+	limits, dates, langs, err := s.apply(rows, hidden)
 	if err != nil {
 		slog.Warn("catalog 镜像核对入库失败", "error", err)
 		return
@@ -238,7 +239,7 @@ func (s *GalgameCatalogMirror) verify(ctx context.Context, ids []int) {
 		return
 	}
 	slog.Info("galgame catalog 镜像核对完成", "requested", len(ids), "rendered", len(rows),
-		"unlisted", unlisted, "content_limit", limits, "release_date", dates)
+		"unlisted", unlisted, "content_limit", limits, "release_date", dates, "original_language", langs)
 }
 
 // settle unlists the rows catalog answered for but will not render. hidden came
@@ -295,20 +296,24 @@ func (s *GalgameCatalogMirror) settle(ctx context.Context, hidden, absent []int,
 	return int64(len(unrendered)), nil
 }
 
-// apply writes one hydrated batch. The two columns are written separately
-// because they disagree about what an unusable answer is: a verdict outside
-// sfw/nsfw is dropped, while "no date" is a date the row has to record.
-func (s *GalgameCatalogMirror) apply(rendered, hidden map[int]client.CatalogMirror) (int64, int64, error) {
+// apply writes one hydrated batch. The columns are written separately because
+// they disagree about what an unusable answer is: a verdict outside sfw/nsfw and
+// an empty language are dropped, while "no date" is a date the row has to record.
+func (s *GalgameCatalogMirror) apply(rendered, hidden map[int]client.CatalogMirror) (limitCount, dateCount, langCount int64, err error) {
 	if s.galgameRepo == nil || len(rendered)+len(hidden) == 0 {
-		return 0, 0, nil
+		return 0, 0, 0, nil
 	}
 	rows := make(map[int]client.CatalogMirror, len(rendered)+len(hidden))
 	maps.Copy(rows, hidden)
 	maps.Copy(rows, rendered)
 	limits := make(map[int]string, len(rows))
 	dates := make(map[int]string, len(rows))
+	langs := make(map[int]string, len(rows))
 	for workID, row := range rows {
 		limits[workID] = row.ContentLimit
+		if row.OriginalLanguage != "" {
+			langs[workID] = row.OriginalLanguage
+		}
 		// Recorded as "no date" rather than left unconfirmed: the row cannot be
 		// ordered by a string nothing can read, and leaving it pending would
 		// re-ask and re-warn about it on every tick for as long as it exists.
@@ -319,15 +324,17 @@ func (s *GalgameCatalogMirror) apply(rendered, hidden map[int]client.CatalogMirr
 		}
 		dates[workID] = date
 	}
-	limitCount, err := s.galgameRepo.SetContentLimits(groupByContentLimit(limits))
-	if err != nil {
-		return limitCount, 0, err
+	if limitCount, err = s.galgameRepo.SetContentLimits(groupByContentLimit(limits)); err != nil {
+		return
 	}
-	dateCount, err := s.galgameRepo.SetReleaseDates(dates)
-	if err != nil {
-		return limitCount, dateCount, err
+	if dateCount, err = s.galgameRepo.SetReleaseDates(dates); err != nil {
+		return
 	}
-	return limitCount, dateCount, s.galgameRepo.MarkCatalogChecked(slices.Collect(maps.Keys(rendered)), true)
+	if langCount, err = s.galgameRepo.SetOriginalLanguages(langs); err != nil {
+		return
+	}
+	err = s.galgameRepo.MarkCatalogChecked(slices.Collect(maps.Keys(rendered)), true)
+	return
 }
 
 func groupByContentLimit(limits map[int]string) map[string][]int {

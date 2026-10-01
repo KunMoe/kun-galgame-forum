@@ -19,6 +19,7 @@ type GalgameLocal struct {
 	ResourcePublishBanned bool       `gorm:"column:resource_publish_banned;default:false" json:"resource_publish_banned"`
 	Published             bool       `gorm:"column:published;not null" json:"published"`
 	ContentLimit          *string    `gorm:"column:content_limit" json:"content_limit"`
+	OriginalLanguage      *string    `gorm:"column:original_language" json:"-"`
 	CreatorUserID         *int       `gorm:"column:creator_user_id" json:"creator_user_id"`
 }
 

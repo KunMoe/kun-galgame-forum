@@ -1,0 +1,16 @@
+-- 204: a local copy of catalog's original language (catalog_work.olang) on the
+-- galgame row.
+--
+-- The forum is moving the resources of works whose original language is neither
+-- Japanese nor Chinese to LetMoe, and its lists will show only ja / zh* works by
+-- default. /galgame, the rankings, the rating lists and a user's works page ids
+-- in SQL before anything is hydrated from catalog, so the language has to be a
+-- column the WHERE can reach. 005 dropped the wiki-era original_language column;
+-- this one holds catalog's tag as catalog writes it (ja, zh-Hans, en, ...).
+--
+-- Existing rows: NULL, meaning the mirror has not asked yet. Nothing is
+-- backfilled here because the value lives in another database. The verify lane
+-- re-asks about every row in turn (100 rows every two minutes, the whole table in
+-- about six and a half hours) and fills the column as it goes, and the changes
+-- feed carries later edits. No list reads the column yet.
+ALTER TABLE galgame ADD COLUMN IF NOT EXISTS original_language text;

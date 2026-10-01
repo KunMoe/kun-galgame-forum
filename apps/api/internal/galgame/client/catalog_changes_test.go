@@ -79,7 +79,7 @@ func TestMirrorByCatalogIDsKeysByCatalogID(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		asked = r.URL.Query()
 		_, _ = w.Write([]byte(`{"object":"list","items":[
-			{"id":"923","content_rating":"r18","content_limit":"sfw","claim":{"site":"kungal","site_work_id":"923","state":"live","content_limit":"sfw"}},
+			{"id":"923","content_rating":"r18","content_limit":"sfw","olang":"zh-Hans","claim":{"site":"kungal","site_work_id":"923","state":"live","content_limit":"sfw"}},
 			{"id":"924","content_rating":"all_ages","content_limit":"nsfw","claim":{"site":"kungal","site_work_id":"924","state":"live","content_limit":"nsfw"}},
 			{"id":"925","content_rating":"r18","content_limit":"nsfw"},
 			{"id":"926","content_rating":"r18","content_limit":"sfw","claim":{"site":"moyu","site_work_id":"77","state":"live","content_limit":"sfw"}},
@@ -110,6 +110,10 @@ func TestMirrorByCatalogIDsKeysByCatalogID(t *testing.T) {
 	}
 	if len(hidden) != 1 || hidden[927].ContentLimit != "nsfw" {
 		t.Errorf("hidden = %v, want 927 with its verdict, so a row hidden before its first verdict still gets one", hidden)
+	}
+
+	if got[923].OriginalLanguage != "zh-Hans" || got[924].OriginalLanguage != "" {
+		t.Errorf("original language = %q and %q, want zh-Hans and none", got[923].OriginalLanguage, got[924].OriginalLanguage)
 	}
 
 	if got[923].ContentLimit == "nsfw" || got[924].ContentLimit == "sfw" {

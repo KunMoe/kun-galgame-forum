@@ -162,6 +162,22 @@ func (r *GalgameRepository) SetContentLimits(idsByLimit map[string][]int) (int64
 	return affected, nil
 }
 
+func (r *GalgameRepository) SetOriginalLanguages(langs map[int]string) (int64, error) {
+	if len(langs) == 0 {
+		return 0, nil
+	}
+	rows := make([]string, 0, len(langs))
+	args := make([]any, 0, len(langs)*2)
+	for workID, lang := range langs {
+		rows = append(rows, "(?::int, ?::text)")
+		args = append(args, workID, lang)
+	}
+	res := r.db.Exec(`UPDATE galgame g SET original_language = v.lang
+		FROM (VALUES `+strings.Join(rows, ",")+`) AS v(id, lang)
+		WHERE g.id = v.id AND g.original_language IS DISTINCT FROM v.lang`, args...)
+	return res.RowsAffected, res.Error
+}
+
 func (r *GalgameRepository) UnpublishLocal(workID int) error {
 	return r.db.Model(&model.GalgameLocal{}).Where("id = ?", workID).
 		UpdateColumn("published", false).Error
