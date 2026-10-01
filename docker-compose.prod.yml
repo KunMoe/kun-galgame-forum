@@ -156,6 +156,13 @@ x-kungal-api-env: &kungal-api-env
   # var alone never reaches the container, the moyu lesson). At prod cutover the
   # infra oauth_clients row must also have artifact_enabled + site_key=kungal.
   KUN_ARTIFACT_CLIENT_BASE_URL: http://artifact:9279
+  # LetMoe's import face, read only by `tools relocate-resources push` (moving
+  # the resources of works whose original language is not ja / zh). The key is
+  # the same value as LetMoe's LETMOE_FORUM_IMPORT_KEY panel variable; unset, the
+  # push step refuses to run and nothing else is affected. Remove both after the
+  # relocation window.
+  KUN_LETMOE_IMPORT_URL: ${KUN_LETMOE_IMPORT_URL:-https://www.letmoe.com/api/v1/import/forum-resources}
+  KUN_LETMOE_IMPORT_KEY: ${KUN_LETMOE_IMPORT_KEY:-}
   # kungal-link-live-checker — the "report resource expired" gate (dead→失效 /
   # alive→驳回误报 / unknown→旧流程). Set all 4 in Dokploy to enable it; the
   # checker is behind Cloudflare Access so the CF service-token headers are
