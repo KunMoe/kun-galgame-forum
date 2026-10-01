@@ -11,6 +11,7 @@ import (
 	"kun-galgame-api/internal/apiv1/repr"
 	"kun-galgame-api/internal/news/service"
 	"kun-galgame-api/internal/trust/gate"
+	"kun-galgame-api/pkg/imageclient"
 	"kun-galgame-api/pkg/newsclient"
 	"kun-galgame-api/pkg/problem"
 	"kun-galgame-api/pkg/userclient"
@@ -25,6 +26,7 @@ const feedSort = "published_desc"
 type Service struct {
 	news    *newsclient.Client
 	users   *userclient.Client
+	images  func([]string) map[string]imageclient.ImageMeta
 	archive *service.ArchiveService
 	month   *service.MonthService
 	cdn     string
@@ -33,13 +35,14 @@ type Service struct {
 	check   *gate.CheckService
 }
 
-func New(news *newsclient.Client, users *userclient.Client, cdn string) *Service {
+func New(news *newsclient.Client, users *userclient.Client, images func([]string) map[string]imageclient.ImageMeta, cdn string) *Service {
 	if news == nil {
-		return &Service{users: users, cdn: cdn}
+		return &Service{users: users, images: images, cdn: cdn}
 	}
 	return &Service{
 		news:    news,
 		users:   users,
+		images:  images,
 		archive: service.NewArchiveService(news),
 		month:   service.NewMonthService(news),
 		cdn:     cdn,
@@ -114,11 +117,7 @@ func (s *Service) listNewsItems(ctx context.Context, in *listNewsItemsInput) (*l
 	if err != nil {
 		return nil, upstreamProblem(err, upstreamCursor != "")
 	}
-	items := make([]NewsItem, 0, len(feed.Items))
-	for _, it := range feed.Items {
-		items = append(items, newsItem(it))
-	}
-	s.fillSubmitters(ctx, feed.Items, items)
+	items := s.newsItems(ctx, feed.Items)
 	var next *string
 	if feed.NextCursor != "" {
 		cur := collect.EncodeCursor(feedSort, fp, feed.NextCursor)
@@ -246,12 +245,7 @@ func (s *Service) listNewsMonthItems(ctx context.Context, in *listNewsMonthItems
 	}
 	start := min(in.Offset(), len(items))
 	end := min(start+in.Limit, len(items))
-	window := items[start:end]
-	page := make([]NewsItem, 0, len(window))
-	for _, it := range window {
-		page = append(page, newsItem(it))
-	}
-	s.fillSubmitters(ctx, window, page)
+	page := s.newsItems(ctx, items[start:end])
 	total, relation := collect.ClampTotal(len(items))
 	return &listNewsMonthItemsOutput{Body: repr.NewPageList(page, total, relation)}, nil
 }

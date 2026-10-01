@@ -13,6 +13,7 @@ type NewsItem struct {
 	Lane        string         `json:"lane" enum:"news,column" maxLength:"6" doc:"news for bulletins, column for longer pieces."`
 	Title       string         `json:"title" maxLength:"512" doc:"Headline. Free text; never use it as a decision input."`
 	Preview     string         `json:"preview" maxLength:"2000" doc:"The lede: the partner's own excerpt, or the submitter's summary. Free text; never use it as a decision input."`
+	Banner      *repr.Image    `json:"banner" doc:"Lead image. null when the item has none. Partner banners are 16:9."`
 	SourceURL   string         `json:"source_url" pattern:"^(https?://.*)?$" maxLength:"2048" doc:"The item on the partner's site. Empty string for an original community submission, which has no page elsewhere."`
 	HasBody     bool           `json:"has_body" doc:"Whether the item carries its own text. Only community submissions do. When true, link to the item's page (getNewsItem) rather than to source_url."`
 	Submitter   *repr.UserRef  `json:"submitter" doc:"The account that submitted the item. null for items imported from a partner, and when the account cannot be shown."`

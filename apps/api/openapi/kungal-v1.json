@@ -10733,6 +10733,17 @@
       },
       "NewsItem": {
         "properties": {
+          "banner": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Image"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Lead image. null when the item has none. Partner banners are 16:9."
+          },
           "has_body": {
             "description": "Whether the item carries its own text. Only community submissions do. When true, link to the item's page (getNewsItem) rather than to source_url.",
             "type": "boolean"
@@ -10803,6 +10814,7 @@
           "lane",
           "title",
           "preview",
+          "banner",
           "source_url",
           "has_body",
           "submitter",
@@ -10812,6 +10824,17 @@
       },
       "NewsItemDetail": {
         "properties": {
+          "banner": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Image"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Lead image. null when the item has none. Partner banners are 16:9."
+          },
           "content": {
             "$ref": "#/components/schemas/ContentDocument",
             "description": "The item's own text as a content document. An empty document when has_body is false. Raw HTML in the source is shown as text, never interpreted."
@@ -10887,6 +10910,7 @@
           "lane",
           "title",
           "preview",
+          "banner",
           "source_url",
           "has_body",
           "submitter",
