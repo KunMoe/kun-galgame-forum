@@ -30,6 +30,7 @@ import (
 //	census    what would move, and how far a previous run got
 //	snapshot  record every candidate in galgame_resource_relocation
 //	push      send the snapshots to LetMoe's import face and store its receipts
+//	verify    compare the stored receipts with LetMoe's own record of the import
 //	retire    delete the forum's row of every resource LetMoe confirmed
 //	notify    tell each uploader and liker where their resource went
 //	announce  post the announcement topic, its body read from stdin
@@ -45,7 +46,7 @@ func main() {
 	sender := flag.Int("sender", 0, "notify / announce: 以哪个用户 id 的名义发出")
 	title := flag.String("title", "", "announce: 话题标题")
 	flag.Usage = func() {
-		fmt.Fprintln(os.Stderr, "用法: relocate-resources [flags] census|snapshot|push|retire|notify|announce")
+		fmt.Fprintln(os.Stderr, "用法: relocate-resources [flags] census|snapshot|push|verify|retire|notify|announce")
 		flag.PrintDefaults()
 	}
 	flag.Parse()
@@ -88,6 +89,8 @@ func main() {
 		err = snapshot(ctx, store, gc, uc, excluded, *out)
 	case "push":
 		err = push(ctx, store, *dryRun, *limit)
+	case "verify":
+		err = verify(ctx, store)
 	case "retire":
 		err = retire(store, *dryRun)
 	case "notify":
@@ -250,12 +253,60 @@ func dropDeletedLikers(ctx context.Context, store *relocation.Store, uc *usercli
 	return nil
 }
 
-func push(ctx context.Context, store *relocation.Store, dryRun bool, limit int) error {
+func letmoeFromEnv() (*relocation.LetMoe, error) {
 	url, key := os.Getenv("KUN_LETMOE_IMPORT_URL"), os.Getenv("KUN_LETMOE_IMPORT_KEY")
 	if url == "" || key == "" {
-		return fmt.Errorf("KUN_LETMOE_IMPORT_URL and KUN_LETMOE_IMPORT_KEY must both be set")
+		return nil, fmt.Errorf("KUN_LETMOE_IMPORT_URL and KUN_LETMOE_IMPORT_KEY must both be set")
 	}
-	letmoe := relocation.NewLetMoe(url, key)
+	return relocation.NewLetMoe(url, key), nil
+}
+
+func verify(ctx context.Context, store *relocation.Store) error {
+	letmoe, err := letmoeFromEnv()
+	if err != nil {
+		return err
+	}
+	theirs, err := letmoe.Receipts(ctx)
+	if err != nil {
+		return err
+	}
+	ours, err := store.Receipts()
+	if err != nil {
+		return err
+	}
+	stored := make(map[int]relocation.Receipt, len(ours))
+	for _, r := range ours {
+		stored[r.ForumID] = r
+	}
+	var differing, public int
+	for _, t := range theirs {
+		o, ok := stored[t.ForumID]
+		delete(stored, t.ForumID)
+		if t.Public {
+			public++
+		}
+		if !ok || o.ResourceID != t.ResourceID || o.Public != t.Public {
+			differing++
+			slog.Error("回执与 LetMoe 不一致", "forum_id", t.ForumID, "stored", ok,
+				"ours", o.ResourceID, "theirs", t.ResourceID, "ours_public", o.Public, "theirs_public", t.Public)
+		}
+	}
+	for id := range stored {
+		differing++
+		slog.Error("LetMoe 没有这条回执", "forum_id", id)
+	}
+	slog.Info("对照完成", "letmoe", len(theirs), "forum", len(ours), "public", public, "held_back", len(theirs)-public, "differing", differing)
+	if differing > 0 {
+		return fmt.Errorf("%d receipts differ from LetMoe's record", differing)
+	}
+	return nil
+}
+
+func push(ctx context.Context, store *relocation.Store, dryRun bool, limit int) error {
+	letmoe, err := letmoeFromEnv()
+	if err != nil {
+		return err
+	}
 	// A dry run stores nothing, so it would be handed the same first batch for ever.
 	if limit <= 0 {
 		limit = 1 << 30

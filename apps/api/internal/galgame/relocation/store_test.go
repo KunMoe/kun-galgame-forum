@@ -335,3 +335,30 @@ func TestUnsyncedWorksAreTheOnesHoldingResourcesWithNoLanguageYet(t *testing.T) 
 		t.Errorf("unsynced works = %v, want only the one that holds a resource and has no language", mine)
 	}
 }
+
+func TestReceiptsListsWhatLetMoeAnsweredInItsOwnShape(t *testing.T) {
+	_, store := seed(t)
+	if _, err := store.Snapshot(nil); err != nil {
+		t.Fatal(err)
+	}
+	if err := store.SaveReceipt(resEnglishA, 7001, true); err != nil {
+		t.Fatal(err)
+	}
+	if err := store.SaveReceipt(resEnglishB, 7002, false); err != nil {
+		t.Fatal(err)
+	}
+	all, err := store.Receipts()
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := map[int]Receipt{}
+	for _, r := range all {
+		if r.ForumID >= resEnglishA && r.ForumID <= resKorean {
+			got[r.ForumID] = r
+		}
+	}
+	if len(got) != 2 || got[resEnglishA].ResourceID != 7001 || !got[resEnglishA].Public ||
+		got[resEnglishB].ResourceID != 7002 || got[resEnglishB].Public {
+		t.Errorf("receipts = %+v, want the two pushed resources and not the Korean one still waiting", got)
+	}
+}
