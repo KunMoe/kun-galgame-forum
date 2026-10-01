@@ -262,3 +262,53 @@ func TestCensusCountsCandidatesAndTheLedgerTogether(t *testing.T) {
 		t.Errorf("ledger: before %+v, after %+v, want 3 new snapshots and 1 pushed", before, after)
 	}
 }
+
+func TestDropLikesTakesDeletedAccountsOutOfUnpushedSnapshotsOnly(t *testing.T) {
+	db, store := seed(t)
+	const stays = 940_340_004
+	if err := db.Exec(`INSERT INTO galgame_resource_like (galgame_resource_id, user_id, updated) VALUES
+		(?, ?, now()), (?, ?, now())`, resEnglishA, stays, resEnglishB, liker).Error; err != nil {
+		t.Fatal(err)
+	}
+	if _, err := store.Snapshot(nil); err != nil {
+		t.Fatal(err)
+	}
+	if err := store.SaveReceipt(resEnglishB, 7002, true); err != nil {
+		t.Fatal(err)
+	}
+
+	likers, err := store.UnpushedLikers()
+	if err != nil {
+		t.Fatal(err)
+	}
+	mine := map[int]bool{}
+	for _, id := range likers {
+		mine[id] = id == liker || id == stays
+	}
+	if !mine[liker] || !mine[stays] {
+		t.Fatalf("unpushed likers = %v, want both likers of the unpushed resource", likers)
+	}
+
+	if n, err := store.DropLikes(nil); err != nil || n != 0 {
+		t.Fatalf("DropLikes(nil) = %d, %v", n, err)
+	}
+	if _, err := store.DropLikes([]int{liker}); err != nil {
+		t.Fatal(err)
+	}
+	likes := func(res int) string {
+		var out string
+		db.Raw(`SELECT COALESCE(string_agg(k->>'user_id', ',' ORDER BY ord), '')
+			FROM galgame_resource_relocation m, jsonb_array_elements(m.payload->'likes') WITH ORDINALITY AS t(k, ord)
+			WHERE m.resource_id = ?`, res).Scan(&out)
+		return out
+	}
+	if got := likes(resEnglishA); got != "940340004" {
+		t.Errorf("unpushed snapshot likes = %q, want only the account that still exists", got)
+	}
+	if got := likes(resEnglishB); got != "940340002" {
+		t.Errorf("pushed snapshot likes = %q, want it left as LetMoe was sent it", got)
+	}
+	if err := store.Retire(resEnglishB); err != nil {
+		t.Fatalf("retire after a like was dropped elsewhere: %v", err)
+	}
+}

@@ -15,6 +15,7 @@ var LocalNotificationTypes = []string{
 	"quiz-answered",
 	string(NotifyUserFollowed), string(NotifyFolloweeTopic), string(NotifyFolloweeActivity),
 	string(NotifySubscribedTopic),
+	string(NotifyResourceRelocated),
 }
 
 func SplitMuted(muted []string) (local []string, chatMuted bool) {

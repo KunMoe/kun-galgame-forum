@@ -37,6 +37,8 @@ const (
 	NotifyFolloweeTopic    NotifyKind = "followee-topic"
 	NotifyFolloweeActivity NotifyKind = "followee-activity"
 	NotifySubscribedTopic  NotifyKind = "subscribed-topic"
+
+	NotifyResourceRelocated NotifyKind = "resource-relocated"
 )
 
 const notifyContentLimit = 233

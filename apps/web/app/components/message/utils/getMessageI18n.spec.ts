@@ -25,7 +25,8 @@ const ALL_TYPES = {
   user_followed: true,
   followee_topic_created: true,
   followee_activity_published: true,
-  subscribed_topic_replied: true
+  subscribed_topic_replied: true,
+  resource_relocated: true
 } as const satisfies Record<NotificationType, true>
 
 const notification = (over: Partial<Notification> = {}): Notification => ({

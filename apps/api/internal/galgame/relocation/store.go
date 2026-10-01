@@ -91,6 +91,33 @@ func (s *Store) Snapshot(excludeWorks []int) (int64, error) {
 	return res.RowsAffected, res.Error
 }
 
+func (s *Store) UnpushedLikers() ([]int, error) {
+	var ids []int
+	err := s.db.Raw(`SELECT DISTINCT (k->>'user_id')::int
+		FROM galgame_resource_relocation m, jsonb_array_elements(m.payload->'likes') k
+		WHERE m.pushed_at IS NULL ORDER BY 1`).Scan(&ids).Error
+	return ids, err
+}
+
+// DropLikes takes these users' likes out of every snapshot not pushed yet.
+// LetMoe turns a like into a favourite, and its clean-up of deleted accounts
+// has already passed: a favourite imported for one would never be removed.
+func (s *Store) DropLikes(userIDs []int) (int64, error) {
+	if len(userIDs) == 0 {
+		return 0, nil
+	}
+	gone := intArray(userIDs)
+	res := s.db.Exec(`UPDATE galgame_resource_relocation m
+		SET payload = jsonb_set(m.payload, '{likes}', COALESCE((
+			SELECT jsonb_agg(t.k ORDER BY t.ord)
+			FROM jsonb_array_elements(m.payload->'likes') WITH ORDINALITY AS t(k, ord)
+			WHERE (t.k->>'user_id')::int <> ALL(?::int[])), '[]'::jsonb))
+		WHERE m.pushed_at IS NULL AND EXISTS (
+			SELECT 1 FROM jsonb_array_elements(m.payload->'likes') k
+			WHERE (k->>'user_id')::int = ANY(?::int[]))`, gone, gone)
+	return res.RowsAffected, res.Error
+}
+
 type Snapshot struct {
 	ResourceID int             `gorm:"column:resource_id"`
 	Payload    json.RawMessage `gorm:"column:payload"`

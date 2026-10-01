@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"io"
 	"log/slog"
 	"os"
 	"strconv"
@@ -17,26 +18,33 @@ import (
 	"kun-galgame-api/internal/infrastructure/database"
 	"kun-galgame-api/pkg/config"
 	"kun-galgame-api/pkg/logger"
+	"kun-galgame-api/pkg/userclient"
 
 	"github.com/joho/godotenv"
 )
 
 // Moves the resources of works whose original language is neither Japanese nor
-// Chinese to LetMoe. Four steps, each safe to run again:
+// Chinese to LetMoe. Each step is safe to run again:
 //
 //	census    what would move, and how far a previous run got
 //	snapshot  record every candidate in galgame_resource_relocation
 //	push      send the snapshots to LetMoe's import face and store its receipts
 //	retire    delete the forum's row of every resource LetMoe confirmed
+//	notify    tell each uploader and liker where their resource went
+//	announce  post the announcement topic, its body read from stdin
 //
 // The order is the contract: retire only touches a resource whose receipt is
-// stored, and refuses one the uploader changed after the snapshot.
+// stored, and refuses one the uploader changed after the snapshot; notify only
+// speaks of a resource that was retired.
 func main() {
 	exclude := flag.String("exclude-works", "", "逗号分隔的 work id, 这些作品的资源不迁")
 	dryRun := flag.Bool("dry-run", false, "push: 只让 LetMoe 校验不写入; retire: 只报告不删除")
 	out := flag.String("out", "", "snapshot: 另存一份 JSONL 到此路径 (含链接与密码, 勿入库)")
+	limit := flag.Int("limit", 0, "push: 最多发送多少条, 0 为全部")
+	sender := flag.Int("sender", 0, "notify / announce: 以哪个用户 id 的名义发出")
+	title := flag.String("title", "", "announce: 话题标题")
 	flag.Usage = func() {
-		fmt.Fprintln(os.Stderr, "用法: relocate-resources [flags] census|snapshot|push|retire")
+		fmt.Fprintln(os.Stderr, "用法: relocate-resources [flags] census|snapshot|push|retire|notify|announce")
 		flag.PrintDefaults()
 	}
 	flag.Parse()
@@ -65,11 +73,21 @@ func main() {
 		err = census(store, excluded)
 	case "snapshot":
 		gc := client.New(cfg.NextMoeAPI.BaseURL, cfg.NextMoeAPI.APIKey, cfg.NextMoeAPI.ImageCDNBase)
-		err = snapshot(ctx, store, gc, excluded, *out)
+		uc := userclient.New(userclient.Config{
+			BaseURL:      cfg.OAuth.ServerURL,
+			ClientID:     cfg.OAuth.ClientID,
+			ClientSecret: cfg.OAuth.ClientSecret,
+		})
+		err = snapshot(ctx, store, gc, uc, excluded, *out)
 	case "push":
-		err = push(ctx, store, *dryRun)
+		err = push(ctx, store, *dryRun, *limit)
 	case "retire":
 		err = retire(store, *dryRun)
+	case "notify":
+		gc := client.New(cfg.NextMoeAPI.BaseURL, cfg.NextMoeAPI.APIKey, cfg.NextMoeAPI.ImageCDNBase)
+		err = notify(ctx, store, gc, *sender, *dryRun)
+	case "announce":
+		err = announce(store, *sender, *title)
 	default:
 		flag.Usage()
 		os.Exit(2)
@@ -108,7 +126,7 @@ func census(store *relocation.Store, excluded []int) error {
 
 // The local column is a cache and the snapshot decides what leaves the forum,
 // so every candidate work is asked about on catalog before one row is written.
-func snapshot(ctx context.Context, store *relocation.Store, gc *client.GalgameClient, excluded []int, out string) error {
+func snapshot(ctx context.Context, store *relocation.Store, gc *client.GalgameClient, uc *userclient.Client, excluded []int, out string) error {
 	works, err := store.CandidateWorks(excluded)
 	if err != nil {
 		return err
@@ -140,6 +158,9 @@ func snapshot(ctx context.Context, store *relocation.Store, gc *client.GalgameCl
 		return err
 	}
 	slog.Info("已记录快照", "works", len(works), "written", n)
+	if err := dropDeletedLikers(ctx, store, uc); err != nil {
+		return err
+	}
 	if out == "" {
 		return nil
 	}
@@ -166,14 +187,40 @@ func snapshot(ctx context.Context, store *relocation.Store, gc *client.GalgameCl
 	return f.Close()
 }
 
-func push(ctx context.Context, store *relocation.Store, dryRun bool) error {
+func dropDeletedLikers(ctx context.Context, store *relocation.Store, uc *userclient.Client) error {
+	likers, err := store.UnpushedLikers()
+	if err != nil {
+		return err
+	}
+	users, err := uc.Users(ctx, likers)
+	if err != nil {
+		return fmt.Errorf("oauth users: %w", err)
+	}
+	var gone []int
+	for _, id := range likers {
+		if u, ok := users[id]; !ok || u.AnonymizedAt != nil {
+			gone = append(gone, id)
+		}
+	}
+	n, err := store.DropLikes(gone)
+	if err != nil {
+		return err
+	}
+	slog.Info("已剔除已注销账号的点赞", "likers", len(likers), "deleted_accounts", len(gone), "snapshots_changed", n)
+	return nil
+}
+
+func push(ctx context.Context, store *relocation.Store, dryRun bool, limit int) error {
 	url, key := os.Getenv("KUN_LETMOE_IMPORT_URL"), os.Getenv("KUN_LETMOE_IMPORT_KEY")
 	if url == "" || key == "" {
 		return fmt.Errorf("KUN_LETMOE_IMPORT_URL and KUN_LETMOE_IMPORT_KEY must both be set")
 	}
 	letmoe := relocation.NewLetMoe(url, key)
 	// A dry run stores nothing, so it would be handed the same first batch for ever.
-	rows, err := store.Unpushed(1 << 30)
+	if limit <= 0 {
+		limit = 1 << 30
+	}
+	rows, err := store.Unpushed(limit)
 	if err != nil {
 		return err
 	}
@@ -239,5 +286,62 @@ func retire(store *relocation.Store, dryRun bool) error {
 	if changed > 0 {
 		return fmt.Errorf("%d resources changed after their snapshot; snapshot and push again", changed)
 	}
+	return nil
+}
+
+func notify(ctx context.Context, store *relocation.Store, gc *client.GalgameClient, sender int, dryRun bool) error {
+	if sender <= 0 {
+		return fmt.Errorf("-sender is required")
+	}
+	recipients, err := store.Recipients()
+	if err != nil {
+		return err
+	}
+	workIDs := make([]int, len(recipients))
+	for i, r := range recipients {
+		workIDs[i] = r.WorkID
+	}
+	works, appErr := gc.CatalogRowsByWorkIDs(ctx, workIDs, "", "all")
+	if appErr != nil {
+		return fmt.Errorf("catalog: %s", appErr.Message)
+	}
+	var sent, unnamed int
+	receivers := map[int]struct{}{}
+	for _, r := range recipients {
+		name := "作品 " + strconv.Itoa(r.WorkID)
+		if work, ok := works[r.WorkID]; ok {
+			name, _ = work.Names(ctx)
+		} else {
+			unnamed++
+		}
+		receivers[r.ReceiverID] = struct{}{}
+		if dryRun {
+			continue
+		}
+		created, err := store.Notify(sender, r, relocation.Notice(name, r))
+		if err != nil {
+			return fmt.Errorf("resource %d to user %d: %w", r.ResourceID, r.ReceiverID, err)
+		}
+		if created {
+			sent++
+		}
+	}
+	slog.Info("通知完成", "rows", len(recipients), "receivers", len(receivers), "sent", sent, "works_without_name", unnamed, "dry_run", dryRun)
+	return nil
+}
+
+func announce(store *relocation.Store, sender int, title string) error {
+	if sender <= 0 {
+		return fmt.Errorf("-sender is required")
+	}
+	body, err := io.ReadAll(os.Stdin)
+	if err != nil {
+		return err
+	}
+	id, err := store.Announce(sender, title, string(body))
+	if err != nil {
+		return err
+	}
+	slog.Info("公告已发布", "topic_id", id, "path", "/topic/"+strconv.Itoa(id))
 	return nil
 }

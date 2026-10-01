@@ -10575,6 +10575,7 @@
           "followee_topic_created",
           "followee_activity_published",
           "subscribed_topic_replied",
+          "resource_relocated",
           "chat"
         ],
         "maxLength": 27,
@@ -11300,7 +11301,7 @@
             "description": "local for rows written by this forum; community for rows mirrored from the infra community primitive."
           },
           "path": {
-            "description": "In-site web path of the target, stored as the legacy link. Always starts with a slash.",
+            "description": "In-site web path of the target, stored as the legacy link. Always starts with a slash. For resource_relocated it is the old page of a resource that moved to LetMoe, which redirects to its new address there.",
             "maxLength": 100,
             "pattern": "^/",
             "type": "string"
@@ -11338,7 +11339,7 @@
               "$ref": "#/components/schemas/MutedType",
               "description": "Notification type the caller has muted. Closed vocabulary of v1 tokens plus chat for private messages."
             },
-            "maxItems": 22,
+            "maxItems": 24,
             "type": "array",
             "uniqueItems": true
           },
@@ -11477,7 +11478,8 @@
           "user_followed",
           "followee_topic_created",
           "followee_activity_published",
-          "subscribed_topic_replied"
+          "subscribed_topic_replied",
+          "resource_relocated"
         ],
         "maxLength": 27,
         "type": "string",
@@ -13590,7 +13592,7 @@
               "$ref": "#/components/schemas/MutedType",
               "description": "Notification type the caller has muted. Closed vocabulary of v1 tokens plus chat for private messages."
             },
-            "maxItems": 22,
+            "maxItems": 24,
             "type": "array",
             "uniqueItems": true
           }
