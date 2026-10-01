@@ -155,6 +155,17 @@ type GalgameResourceExpiryReport struct {
 	State      string         `json:"state" enum:"valid,expired" maxLength:"7" doc:"The resource's state after this request."`
 }
 
+type GalgameResourceRelocation struct {
+	Object     string         `json:"object" enum:"galgame_resource_relocation" maxLength:"27" doc:"Type discriminant. Always galgame_resource_relocation."`
+	ResourceID repr.DecimalID `json:"resource_id" doc:"The id the resource had on this forum."`
+	WorkID     repr.DecimalID `json:"work_id" doc:"The work it belongs to. LetMoe uses the same work id."`
+	URL        string         `json:"url" format:"uri" maxLength:"512" doc:"Where the resource is now: its page on LetMoe, or the work's page there when LetMoe is not showing the resource publicly."`
+}
+
+type relocationOutput struct {
+	Body GalgameResourceRelocation
+}
+
 type WorkResourcePublishBan struct {
 	Object                  string         `json:"object" enum:"work_resource_publish_ban" maxLength:"25" doc:"Type discriminant. Always work_resource_publish_ban."`
 	WorkID                  repr.DecimalID `json:"work_id" doc:"Work id."`

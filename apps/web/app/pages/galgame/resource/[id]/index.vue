@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { GalgameResource } from '#shared/utils/api/schemas'
 import { problemMessage } from '#shared/utils/api/message'
+import { settle } from '#shared/utils/api/problem'
 import { contentPlainText } from '~/utils/contentPlainText'
 import {
   resourceLanguageLabel,
@@ -11,6 +12,7 @@ import {
 const route = useRoute()
 const resourceId = computed(() => String((route.params as { id: string }).id))
 const workName = useWorkName()
+const api = useApiClient()
 
 const { data, problem, refresh } = await useApi<GalgameResource>(
   () => `galgame-resource:${resourceId.value}`,
@@ -20,6 +22,17 @@ const { data, problem, refresh } = await useApi<GalgameResource>(
       signal
     })
 )
+
+if (!data.value && problem.value?.status === 404) {
+  const moved = await settle(
+    api.GET('/galgame-resource-relocations/{resource_id}', {
+      params: { path: { resource_id: resourceId.value } }
+    })
+  )
+  if (moved.ok) {
+    await navigateTo(moved.data.url, { external: true, redirectCode: 301 })
+  }
+}
 
 const resource = data.value
 const work = resource?.work

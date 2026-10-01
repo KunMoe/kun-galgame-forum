@@ -80,6 +80,19 @@ func registerBrowse(api huma.API, svc *Service) {
 		}),
 	}), svc.getGalgameResource)
 
+	huma.Register(api, v1.Public(huma.Operation{
+		OperationID: "getGalgameResourceRelocation",
+		Method:      http.MethodGet,
+		Path:        "/galgame-resource-relocations/{resource_id}",
+		Summary:     "Get where a galgame download resource moved to",
+		Description: "The forum hosts resources only for works whose original language is Japanese or Chinese; the resources of other works moved to LetMoe and are gone from this API. " +
+			"This answers for a resource that moved, by the id it had here. A resource the forum still hosts, or one that never existed, is NOT_FOUND.",
+		Tags: []string{tagResources},
+		Responses: problemResponses(map[int]string{
+			404: "NOT_FOUND when no resource with this id moved.",
+		}),
+	}), svc.getGalgameResourceRelocation)
+
 	huma.Register(api, v1.Optional(huma.Operation{
 		OperationID: "createGalgameResourceDownload",
 		Method:      http.MethodPost,
