@@ -64,6 +64,8 @@ func TestFeedReadsTheV2FieldNames(t *testing.T) {
 			 "summary":"同人游戏社团ももいろたんざく最近公开了其第三作的众筹消息。",
 			 "source":{"object":"news_source","name":"ymgal","display_name":"月幕 Galgame"},
 			 "source_url":"https://www.ymgal.games/co/article/876900909601259520",
+			 "banner":{"url":"https://image.example/1f/2e/1f2e0000000000000000000000000000000000000000000000000000000000aa.webp",
+			  "hash":"1f2e0000000000000000000000000000000000000000000000000000000000aa","width":null,"height":null},
 			 "published_at":"2026-08-16T11:11:00Z"}],"total":4439}`))
 	}))
 	defer srv.Close()
@@ -82,6 +84,9 @@ func TestFeedReadsTheV2FieldNames(t *testing.T) {
 	if it.Preview == "" {
 		t.Errorf("summary must land in Preview, or every card is a bare title: %+v", it)
 	}
+	if it.BannerHash != "1f2e0000000000000000000000000000000000000000000000000000000000aa" {
+		t.Errorf("banner.hash must land in BannerHash: %q", it.BannerHash)
+	}
 	if it.Source.Key != "ymgal" {
 		t.Errorf("source name must land in Key: %+v", it.Source)
 	}
@@ -97,7 +102,7 @@ func TestFeedPrefersTheV1NamesWhenBothArrive(t *testing.T) {
 		_, _ = w.Write([]byte(`{"items":[{"id":1,"title":"t","preview":"v1 lede","summary":"v2 lede",
 			"source":{"key":"ymgal","name":"ignored","display_name":"月幕 Galgame",
 			 "homepage_url":"https://www.ymgal.games","attribution":"转载自月幕"},
-			"lane":"column","banner_url":"https://img.example/a.webp",
+			"lane":"column","banner_hash":"1f2e0000000000000000000000000000000000000000000000000000000000aa",
 			"published_at":"2026-08-16T11:11:00Z"}]}`))
 	}))
 	defer srv.Close()
@@ -110,7 +115,7 @@ func TestFeedPrefersTheV1NamesWhenBothArrive(t *testing.T) {
 	if it.Preview != "v1 lede" || it.Source.Key != "ymgal" {
 		t.Errorf("v1 names must win: %+v %+v", it, it.Source)
 	}
-	if it.Lane != "column" || it.BannerURL == "" || it.Source.Attribution == "" {
+	if it.Lane != "column" || it.BannerHash == "" || it.Source.Attribution == "" {
 		t.Errorf("the rich fields must still decode when upstream sends them: %+v", it)
 	}
 }

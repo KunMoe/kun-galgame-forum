@@ -256,7 +256,7 @@ func newNewsSubmissionFix(t *testing.T, checker gate.Checker) (*writeFix, *fakeM
 	srv := httptest.NewServer(up.handler())
 	t.Cleanup(srv.Close)
 	cat := catalogclient.New(catalogclient.Config{BaseURL: srv.URL, HTTPClient: srv.Client()})
-	f.NewsV1 = newsapiv1.New(newsclient.New(newsclient.Config{}), f.UserClient, "https://image.test.example").
+	f.NewsV1 = newsapiv1.New(newsclient.New(newsclient.Config{}), f.UserClient, nil, "https://image.test.example").
 		WithContent(&content.Converter{SiteBase: "https://www.kungal.com"}).
 		WithSubmissions(cat, f.TrustCheck)
 	f.Fiber = newFiber()

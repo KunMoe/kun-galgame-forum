@@ -26,6 +26,22 @@ const titleClass = computed(() =>
 <template>
   <KunCard is-hoverable padding="md" content-class="gap-0">
     <div class="grid grid-cols-[auto_1fr] gap-y-1.5">
+      <KunImage
+        v-if="item.banner"
+        :src="withImageVariant(item.banner.url, 'mini')"
+        :thumbhash="item.banner.thumbhash ?? undefined"
+        :alt="item.title"
+        aspect-ratio="16/9"
+        object-fit="cover"
+        loading="lazy"
+        :class-name="
+          cn(
+            'col-start-1 row-start-1 mr-3 shrink-0 self-start overflow-hidden rounded-lg sm:row-span-3 sm:mr-4',
+            isWide ? 'w-32 sm:w-64' : 'w-28 sm:w-48'
+          )
+        "
+      />
+
       <div class="col-start-2 row-start-1 flex items-start gap-2">
         <KunChip
           v-if="item.lane === 'column'"

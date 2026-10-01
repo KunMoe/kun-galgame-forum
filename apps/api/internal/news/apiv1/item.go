@@ -7,6 +7,7 @@ import (
 	"strconv"
 
 	"kun-galgame-api/internal/apiv1/repr"
+	"kun-galgame-api/pkg/imageclient"
 	"kun-galgame-api/pkg/newsclient"
 	"kun-galgame-api/pkg/problem"
 	"kun-galgame-api/pkg/userclient"
@@ -21,7 +22,7 @@ func parseNewsItemID(s string) (int64, bool) {
 	return n, err == nil && n > 0
 }
 
-func newsItem(it newsclient.Item) NewsItem {
+func newsItem(it newsclient.Item, banner *repr.Image) NewsItem {
 	return NewsItem{
 		Object:      "news_item",
 		ID:          repr.DecimalID(strconv.FormatInt(it.ID, 10)),
@@ -29,10 +30,45 @@ func newsItem(it newsclient.Item) NewsItem {
 		Lane:        it.Lane,
 		Title:       it.Title,
 		Preview:     it.Preview,
+		Banner:      banner,
 		SourceURL:   it.SourceURL,
 		HasBody:     it.HasBody,
 		PublishedAt: repr.Timestamp(it.PublishedAt),
 	}
+}
+
+func (s *Service) newsItems(ctx context.Context, src []newsclient.Item) []NewsItem {
+	metas := s.bannerMetas(src)
+	items := make([]NewsItem, 0, len(src))
+	for _, it := range src {
+		items = append(items, newsItem(it, s.banner(it.BannerHash, metas)))
+	}
+	s.fillSubmitters(ctx, src, items)
+	return items
+}
+
+func (s *Service) bannerMetas(src []newsclient.Item) map[string]imageclient.ImageMeta {
+	if s.images == nil {
+		return nil
+	}
+	var hashes []string
+	for _, it := range src {
+		if it.BannerHash != "" {
+			hashes = append(hashes, it.BannerHash)
+		}
+	}
+	if len(hashes) == 0 {
+		return nil
+	}
+	return s.images(hashes)
+}
+
+func (s *Service) banner(hash string, metas map[string]imageclient.ImageMeta) *repr.Image {
+	var meta *imageclient.ImageMeta
+	if m, ok := metas[hash]; ok {
+		meta = &m
+	}
+	return repr.NewImage(s.cdn, hash, meta)
 }
 
 func (s *Service) fillSubmitters(ctx context.Context, src []newsclient.Item, items []NewsItem) {
@@ -78,7 +114,6 @@ func (s *Service) getNewsItem(ctx context.Context, in *getNewsItemInput) (*getNe
 	if err != nil {
 		return nil, problem.Internal(err)
 	}
-	items := []NewsItem{newsItem(*it)}
-	s.fillSubmitters(ctx, []newsclient.Item{*it}, items)
+	items := s.newsItems(ctx, []newsclient.Item{*it})
 	return &getNewsItemOutput{Body: NewsItemDetail{NewsItem: items[0], Content: doc}}, nil
 }

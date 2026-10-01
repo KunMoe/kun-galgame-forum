@@ -103,7 +103,7 @@ type Item struct {
 	SourceURL    string    `json:"source_url"`
 	Title        string    `json:"title"`
 	Preview      string    `json:"preview"`
-	BannerURL    string    `json:"banner_url"`
+	BannerHash   string    `json:"banner_hash"`
 	PublishedAt  time.Time `json:"published_at"`
 	WorkIDs      []int64   `json:"work_ids"`
 	HasBody      bool      `json:"has_body"`
@@ -113,14 +113,17 @@ type Item struct {
 
 func (it *Item) UnmarshalJSON(b []byte) error {
 	var aux struct {
-		ID           json.RawMessage `json:"id"`
-		Source       Source          `json:"source"`
-		Lane         string          `json:"lane"`
-		SourceURL    string          `json:"source_url"`
-		Title        string          `json:"title"`
-		Preview      string          `json:"preview"`
-		Summary      string          `json:"summary"`
-		BannerURL    string          `json:"banner_url"`
+		ID         json.RawMessage `json:"id"`
+		Source     Source          `json:"source"`
+		Lane       string          `json:"lane"`
+		SourceURL  string          `json:"source_url"`
+		Title      string          `json:"title"`
+		Preview    string          `json:"preview"`
+		Summary    string          `json:"summary"`
+		BannerHash string          `json:"banner_hash"`
+		Banner     *struct {
+			Hash string `json:"hash"`
+		} `json:"banner"`
 		PublishedAt  time.Time       `json:"published_at"`
 		WorkIDs      json.RawMessage `json:"work_ids"`
 		HasBody      bool            `json:"has_body"`
@@ -131,12 +134,19 @@ func (it *Item) UnmarshalJSON(b []byte) error {
 		return err
 	}
 	it.Source, it.Lane, it.SourceURL = aux.Source, aux.Lane, aux.SourceURL
-	it.Title, it.BannerURL, it.PublishedAt = aux.Title, aux.BannerURL, aux.PublishedAt
+	it.Title, it.PublishedAt = aux.Title, aux.PublishedAt
 	it.HasBody, it.Body = aux.HasBody, aux.Body
 	it.SubmitterUID = flexInt(aux.SubmitterUID)
 	// Same rename as the source key: /v2 calls the lede `summary`, /v1 called it
 	// `preview`. Every card on the 情报 tab rendered a title and nothing else.
 	it.Preview = cmp.Or(aux.Preview, aux.Summary)
+	// Third casualty of the same rename: /v2 sends banner{url,hash}, and reading
+	// v1's banner_url left every card without its image for a month. The X1c
+	// census sampled that output and dropped the field as always empty.
+	it.BannerHash = aux.BannerHash
+	if aux.Banner != nil {
+		it.BannerHash = cmp.Or(it.BannerHash, aux.Banner.Hash)
+	}
 	raw := bytes.TrimSpace(aux.ID)
 	if len(raw) > 0 && raw[0] == '"' {
 		var s string

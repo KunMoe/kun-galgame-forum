@@ -9247,6 +9247,8 @@ export interface components {
             years: components["schemas"]["YearCount"][];
         };
         NewsItem: {
+            /** @description Lead image. null when the item has none. Partner banners are 16:9. */
+            banner: components["schemas"]["Image"] | null;
             /** @description Whether the item carries its own text. Only community submissions do. When true, link to the item's page (getNewsItem) rather than to source_url. */
             has_body: boolean;
             /** @description News item id. JSON string of a decimal integer. */
@@ -9275,6 +9277,8 @@ export interface components {
             title: string;
         };
         NewsItemDetail: {
+            /** @description Lead image. null when the item has none. Partner banners are 16:9. */
+            banner: components["schemas"]["Image"] | null;
             /** @description The item's own text as a content document. An empty document when has_body is false. Raw HTML in the source is shown as text, never interpreted. */
             content: components["schemas"]["ContentDocument"];
             /** @description Whether the item carries its own text. Only community submissions do. When true, link to the item's page (getNewsItem) rather than to source_url. */
