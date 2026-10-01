@@ -14,6 +14,7 @@ import (
 
 	"kun-galgame-api/internal/apiv1/content"
 	newsapiv1 "kun-galgame-api/internal/news/apiv1"
+	"kun-galgame-api/pkg/imageclient"
 	"kun-galgame-api/pkg/newsclient"
 )
 
@@ -21,6 +22,11 @@ const (
 	newsCommunityID   = 200
 	newsWithdrawnID   = "410"
 	newsCommunityBody = "**bold** and <script>alert(1)</script>"
+
+	newsBannerWide    = "a1b2000000000000000000000000000000000000000000000000000000000001"
+	newsBannerMini    = "a1b2000000000000000000000000000000000000000000000000000000000002"
+	newsBannerOwn     = "a1b2000000000000000000000000000000000000000000000000000000000003"
+	newsBannerCorrupt = "A1B2-not-a-hash"
 )
 
 type fakeNewsItem struct {
@@ -57,6 +63,9 @@ type fakeNews struct {
 	items     []fakeNewsItem
 	queries   []url.Values
 	staleNext bool
+	banners   map[int64]string
+	metaDown  bool
+	metaCalls [][]string
 }
 
 var cst = time.FixedZone("CST", 8*60*60)
@@ -76,7 +85,41 @@ func newFakeNews() *fakeNews {
 		{104, "galgame_hihyou", "news", at(2025, 12, 31, 23), false, ""},
 		{103, "ymgal", "news", at(2025, 6, 6, 6), false, ""},
 	}
-	return &fakeNews{items: items}
+	banners := map[int64]string{112: newsBannerWide, 111: newsBannerMini, 110: newsBannerCorrupt, newsCommunityID: newsBannerOwn}
+	return &fakeNews{items: items, banners: banners}
+}
+
+func (n *fakeNews) payload(it fakeNewsItem, body string) map[string]any {
+	out := it.payload(body)
+	out["banner"] = nil
+	if h := n.banners[it.id]; h != "" {
+		out["banner"] = map[string]any{
+			"url": "https://upstream-cdn.example/" + h + ".webp", "hash": h,
+			"width": nil, "height": nil, "thumbhash": nil, "sexual": nil, "violence": nil, "source": "",
+		}
+	}
+	return out
+}
+
+func (n *fakeNews) imageMeta(hashes []string) map[string]imageclient.ImageMeta {
+	n.mu.Lock()
+	defer n.mu.Unlock()
+	n.metaCalls = append(n.metaCalls, hashes)
+	if n.metaDown {
+		return map[string]imageclient.ImageMeta{}
+	}
+	known := map[string]imageclient.ImageMeta{
+		newsBannerWide: {Width: 1280, Height: 720, Thumbhash: "AbC+"},
+		newsBannerMini: {Width: 460, Height: 259, Thumbhash: "DeF+"},
+		newsBannerOwn:  {Width: 640, Height: 360, Thumbhash: "GhI+"},
+	}
+	out := map[string]imageclient.ImageMeta{}
+	for _, h := range hashes {
+		if m, ok := known[h]; ok {
+			out[h] = m
+		}
+	}
+	return out
 }
 
 func (n *fakeNews) handler() http.Handler {
@@ -122,7 +165,7 @@ func (n *fakeNews) handler() http.Handler {
 		end := min(offset+limit, len(matched))
 		page := []map[string]any{}
 		for _, it := range matched[min(offset, len(matched)):end] {
-			page = append(page, it.payload(""))
+			page = append(page, n.payload(it, ""))
 		}
 		body := map[string]any{"object": "list", "items": page, "total": len(matched)}
 		if end < len(matched) {
@@ -150,7 +193,7 @@ func (n *fakeNews) handler() http.Handler {
 				extra = newsCommunityBody
 			}
 			w.Header().Set("Content-Type", "application/json")
-			_ = json.NewEncoder(w).Encode(it.payload(extra))
+			_ = json.NewEncoder(w).Encode(n.payload(it, extra))
 			return
 		}
 		w.WriteHeader(http.StatusNotFound)
@@ -180,7 +223,7 @@ func newNewsFix(t *testing.T, configured bool) (*writeFix, *fakeNews) {
 		t.Cleanup(srv.Close)
 		cfg = newsclient.Config{BaseURL: srv.URL, APIKey: "k"}
 	}
-	f.NewsV1 = newsapiv1.New(newsclient.New(cfg), f.UserClient, "https://image.test.example").WithContent(&content.Converter{SiteBase: "https://www.kungal.com"})
+	f.NewsV1 = newsapiv1.New(newsclient.New(cfg), f.UserClient, news.imageMeta, "https://image.test.example").WithContent(&content.Converter{SiteBase: "https://www.kungal.com"})
 	f.Fiber = newFiber()
 	f.setupRoutes()
 	return f, news
@@ -489,4 +532,63 @@ var newsContentVocab = map[string]bool{
 	"emphasis": true, "strong": true, "strikethrough": true, "inline_code": true,
 	"inline_math": true, "break": true, "link": true, "image": true, "video": true,
 	"inline_spoiler": true, "mention": true, "reply_reference": true,
+}
+
+func newsBanner(t *testing.T, item map[string]any) map[string]any {
+	t.Helper()
+	raw, present := item["banner"]
+	if !present {
+		t.Fatalf("banner must always be present, null when there is none: %+v", item)
+	}
+	banner, _ := raw.(map[string]any)
+	return banner
+}
+
+func TestV1NewsItemBanner(t *testing.T) {
+	f, news := newNewsFix(t, true)
+	resp, body := f.newsGet(t, "/news-items?news_source=ymgal&limit=3", "/news-items")
+	items, _ := body["items"].([]any)
+	if resp.StatusCode != http.StatusOK || len(items) != 3 {
+		t.Fatalf("ymgal %d %+v", resp.StatusCode, body)
+	}
+	wide := newsBanner(t, items[0].(map[string]any))
+	if wide["hash"] != newsBannerWide || wide["url"] != imageclient.MainURL("https://image.test.example", newsBannerWide, "webp") ||
+		asInt(wide["width"]) != 1280 || asInt(wide["height"]) != 720 || wide["thumbhash"] != "AbC+" {
+		t.Errorf("112 banner %+v", wide)
+	}
+	mini := newsBanner(t, items[1].(map[string]any))
+	if mini["hash"] != newsBannerMini || asInt(mini["width"]) != 460 || mini["thumbhash"] != "DeF+" {
+		t.Errorf("111 banner %+v", mini)
+	}
+	if none := newsBanner(t, items[2].(map[string]any)); none != nil {
+		t.Errorf("109 has no banner upstream: %+v", none)
+	}
+	if len(news.metaCalls) != 1 || len(news.metaCalls[0]) != 2 {
+		t.Errorf("one meta lookup per page, for the two banners: %v", news.metaCalls)
+	}
+
+	_, body = f.newsGet(t, "/news-items?news_source=galgame_hihyou&limit=1", "/news-items")
+	items, _ = body["items"].([]any)
+	if corrupt := newsBanner(t, items[0].(map[string]any)); corrupt != nil {
+		t.Errorf("a malformed upstream hash is no banner: %+v", corrupt)
+	}
+
+	_, body = f.newsGet(t, "/news-archive/2026/7/items", "/news-archive/{year}/{month}/items")
+	items, _ = body["items"].([]any)
+	if own := newsBanner(t, items[0].(map[string]any)); own["hash"] != newsBannerOwn || asInt(own["width"]) != 640 {
+		t.Errorf("month page banner %+v", own)
+	}
+
+	resp, body = f.newsGet(t, "/news-items/"+strconv.Itoa(newsCommunityID), "/news-items/{news_item_id}")
+	if own := newsBanner(t, body); resp.StatusCode != http.StatusOK || own["hash"] != newsBannerOwn || own["thumbhash"] != "GhI+" {
+		t.Errorf("detail banner %d %+v", resp.StatusCode, own)
+	}
+
+	news.metaDown = true
+	_, body = f.newsGet(t, "/news-items?news_source=ymgal&limit=1", "/news-items")
+	items, _ = body["items"].([]any)
+	bare := newsBanner(t, items[0].(map[string]any))
+	if bare["hash"] != newsBannerWide || bare["url"] == nil || bare["width"] != nil || bare["thumbhash"] != nil {
+		t.Errorf("meta lookup down still shows the banner, without dimensions: %+v", bare)
+	}
 }
