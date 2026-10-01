@@ -70,7 +70,10 @@ if (official) {
         </template>
       </GalgameCard>
 
-      <KunNull v-else :description="`${data.name} 会社下暂无 Galgame`" />
+      <GalgameOriginalLanguageNull
+        v-else
+        :description="`${data.name} 会社下暂无 Galgame`"
+      />
     </KunLoading>
 
     <KunPagination
