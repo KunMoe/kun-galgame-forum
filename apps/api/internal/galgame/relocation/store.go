@@ -149,6 +149,13 @@ func (s *Store) SaveReceipt(resourceID int, destinationID int64, public bool) er
 		WHERE resource_id = ?`, destinationID, public, resourceID).Error
 }
 
+func (s *Store) Receipts() ([]Receipt, error) {
+	var rows []Receipt
+	err := s.db.Raw(`SELECT resource_id AS forum_id, destination_id AS resource_id, destination_public AS public
+		FROM galgame_resource_relocation WHERE destination_id IS NOT NULL ORDER BY resource_id`).Scan(&rows).Error
+	return rows, err
+}
+
 func (s *Store) Retirable() ([]int, error) {
 	var ids []int
 	err := s.db.Raw(`SELECT m.resource_id FROM galgame_resource_relocation m

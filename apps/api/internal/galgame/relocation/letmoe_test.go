@@ -69,3 +69,25 @@ func TestImportRefusesAnAnswerThatDoesNotCoverTheBatch(t *testing.T) {
 		}
 	}
 }
+
+func TestReceiptsReadsLetMoesRecordWithAGet(t *testing.T) {
+	var method, auth string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		method, auth = r.Method, r.Header.Get("Authorization")
+		_, _ = w.Write([]byte(`{"code":0,"message":"OK","data":{"items":[
+			{"forum_id":11,"resource_id":901,"public":true},
+			{"forum_id":12,"resource_id":902,"public":false}]}}`))
+	}))
+	defer srv.Close()
+
+	got, err := NewLetMoe(srv.URL, "k3y").Receipts(t.Context())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if method != http.MethodGet || auth != "Bearer k3y" {
+		t.Errorf("request: %s, auth %q", method, auth)
+	}
+	if len(got) != 2 || got[0].ForumID != 11 || got[0].ResourceID != 901 || !got[0].Public || got[1].Public {
+		t.Errorf("receipts = %+v", got)
+	}
+}

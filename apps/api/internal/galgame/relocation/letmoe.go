@@ -43,40 +43,64 @@ func (c *LetMoe) Import(ctx context.Context, items []json.RawMessage, dryRun boo
 	if err != nil {
 		return nil, err
 	}
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.url, bytes.NewReader(body))
-	if err != nil {
+	var data struct {
+		Results []Receipt `json:"results"`
+	}
+	if err := c.do(ctx, http.MethodPost, bytes.NewReader(body), &data); err != nil {
 		return nil, err
 	}
-	req.Header.Set("Content-Type", "application/json")
+	if len(data.Results) != len(items) {
+		return nil, fmt.Errorf("letmoe import: %d receipts for %d items", len(data.Results), len(items))
+	}
+	return data.Results, nil
+}
+
+// Receipts is LetMoe's own record of everything it imported from the forum.
+func (c *LetMoe) Receipts(ctx context.Context) ([]Receipt, error) {
+	var data struct {
+		Items []Receipt `json:"items"`
+	}
+	if err := c.do(ctx, http.MethodGet, nil, &data); err != nil {
+		return nil, err
+	}
+	return data.Items, nil
+}
+
+func (c *LetMoe) do(ctx context.Context, method string, body io.Reader, data any) error {
+	req, err := http.NewRequestWithContext(ctx, method, c.url, body)
+	if err != nil {
+		return err
+	}
+	if body != nil {
+		req.Header.Set("Content-Type", "application/json")
+	}
 	req.Header.Set("Authorization", "Bearer "+c.key)
 	resp, err := c.http.Do(req)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	defer func() { _ = resp.Body.Close() }()
 	raw, err := io.ReadAll(io.LimitReader(resp.Body, 8<<20))
 	if err != nil {
-		return nil, err
+		return err
 	}
 	var env struct {
-		Code    int    `json:"code"`
-		Message string `json:"message"`
-		Data    struct {
-			Results []Receipt `json:"results"`
-		} `json:"data"`
+		Code    int             `json:"code"`
+		Message string          `json:"message"`
+		Data    json.RawMessage `json:"data"`
 	}
 	if resp.StatusCode != http.StatusOK {
 		_ = json.Unmarshal(raw, &env)
-		return nil, fmt.Errorf("letmoe import: HTTP %d, code %d: %s", resp.StatusCode, env.Code, env.Message)
+		return fmt.Errorf("letmoe import: HTTP %d, code %d: %s", resp.StatusCode, env.Code, env.Message)
 	}
 	if err := json.Unmarshal(raw, &env); err != nil {
-		return nil, fmt.Errorf("letmoe import: unreadable answer: %w", err)
+		return fmt.Errorf("letmoe import: unreadable answer: %w", err)
 	}
 	if env.Code != 0 {
-		return nil, fmt.Errorf("letmoe import: code %d: %s", env.Code, env.Message)
+		return fmt.Errorf("letmoe import: code %d: %s", env.Code, env.Message)
 	}
-	if len(env.Data.Results) != len(items) {
-		return nil, fmt.Errorf("letmoe import: %d receipts for %d items", len(env.Data.Results), len(items))
+	if err := json.Unmarshal(env.Data, data); err != nil {
+		return fmt.Errorf("letmoe import: unreadable data: %w", err)
 	}
-	return env.Data.Results, nil
+	return nil
 }
