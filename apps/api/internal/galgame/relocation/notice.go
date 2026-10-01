@@ -17,9 +17,9 @@ import (
 
 const (
 	letmoeOrigin = "https://www.letmoe.com"
-	// message.content is varchar(233); the longest sentence around the name is
-	// 150 runes, so a name cut here always fits.
-	noticeNameLimit = 60
+	// message.content is varchar(233), and the longest sentence around the name
+	// runs to 184 runes.
+	noticeNameLimit = 40
 
 	announcementCategory = "others"
 	announcementSection  = "o-forum"
@@ -36,8 +36,10 @@ type Recipient struct {
 	Liked             bool  `gorm:"column:liked"`
 }
 
+// LetMoe shows a held-back resource (its link was reported dead here) to its
+// uploader alone; everyone else gets a 404 there, so they are sent to the game.
 func (m Recipient) URL() string {
-	if m.DestinationPublic {
+	if m.DestinationPublic || !m.Liked {
 		return letmoeOrigin + "/resource/" + strconv.FormatInt(m.DestinationID, 10)
 	}
 	return letmoeOrigin + "/game/" + strconv.Itoa(m.WorkID)
@@ -83,9 +85,9 @@ func Notice(workName string, m Recipient) string {
 	case m.DestinationPublic:
 		where = "新地址：" + m.URL() + " 。"
 	case m.Liked:
-		where = "它的链接此前被报告失效，等发布者修复后会重新公开，游戏页：" + m.URL() + " 。"
+		where = "它的链接此前被报告失效，发布者修复并通过审核后会重新公开，游戏页：" + m.URL() + " 。"
 	default:
-		where = "它的链接此前被报告失效，请在那边修复后重新公开，游戏页：" + m.URL() + " 。"
+		where = "它的链接此前被报告失效，请登录 LetMoe 打开 " + m.URL() + " 修改链接，保存后重新送审，通过后公开。"
 	}
 	return subject + "已搬迁到 一起萌·LetMoe，" + where + noticeReason
 }

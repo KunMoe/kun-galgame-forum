@@ -18,6 +18,7 @@ import (
 	"kun-galgame-api/internal/infrastructure/database"
 	"kun-galgame-api/pkg/config"
 	"kun-galgame-api/pkg/logger"
+	"kun-galgame-api/pkg/userclient"
 
 	"github.com/joho/godotenv"
 )
@@ -72,7 +73,12 @@ func main() {
 		err = census(store, excluded)
 	case "snapshot":
 		gc := client.New(cfg.NextMoeAPI.BaseURL, cfg.NextMoeAPI.APIKey, cfg.NextMoeAPI.ImageCDNBase)
-		err = snapshot(ctx, store, gc, excluded, *out)
+		uc := userclient.New(userclient.Config{
+			BaseURL:      cfg.OAuth.ServerURL,
+			ClientID:     cfg.OAuth.ClientID,
+			ClientSecret: cfg.OAuth.ClientSecret,
+		})
+		err = snapshot(ctx, store, gc, uc, excluded, *out)
 	case "push":
 		err = push(ctx, store, *dryRun, *limit)
 	case "retire":
@@ -120,7 +126,7 @@ func census(store *relocation.Store, excluded []int) error {
 
 // The local column is a cache and the snapshot decides what leaves the forum,
 // so every candidate work is asked about on catalog before one row is written.
-func snapshot(ctx context.Context, store *relocation.Store, gc *client.GalgameClient, excluded []int, out string) error {
+func snapshot(ctx context.Context, store *relocation.Store, gc *client.GalgameClient, uc *userclient.Client, excluded []int, out string) error {
 	works, err := store.CandidateWorks(excluded)
 	if err != nil {
 		return err
@@ -152,6 +158,9 @@ func snapshot(ctx context.Context, store *relocation.Store, gc *client.GalgameCl
 		return err
 	}
 	slog.Info("已记录快照", "works", len(works), "written", n)
+	if err := dropDeletedLikers(ctx, store, uc); err != nil {
+		return err
+	}
 	if out == "" {
 		return nil
 	}
@@ -176,6 +185,29 @@ func snapshot(ctx context.Context, store *relocation.Store, gc *client.GalgameCl
 	}
 	slog.Info("已写出 JSONL", "path", out, "lines", len(rows))
 	return f.Close()
+}
+
+func dropDeletedLikers(ctx context.Context, store *relocation.Store, uc *userclient.Client) error {
+	likers, err := store.UnpushedLikers()
+	if err != nil {
+		return err
+	}
+	users, err := uc.Users(ctx, likers)
+	if err != nil {
+		return fmt.Errorf("oauth users: %w", err)
+	}
+	var gone []int
+	for _, id := range likers {
+		if u, ok := users[id]; !ok || u.AnonymizedAt != nil {
+			gone = append(gone, id)
+		}
+	}
+	n, err := store.DropLikes(gone)
+	if err != nil {
+		return err
+	}
+	slog.Info("已剔除已注销账号的点赞", "likers", len(likers), "deleted_accounts", len(gone), "snapshots_changed", n)
+	return nil
 }
 
 func push(ctx context.Context, store *relocation.Store, dryRun bool, limit int) error {

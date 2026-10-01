@@ -27,14 +27,19 @@ func TestNoticeFitsTheNotificationColumnWhateverTheWorkIsCalled(t *testing.T) {
 	}
 }
 
-func TestNoticeNamesTheResourcePageOnlyWhenLetMoeShowsIt(t *testing.T) {
-	shown := Recipient{WorkID: workEnglish, DestinationID: 7001, DestinationPublic: true}
-	if got := shown.URL(); got != "https://www.letmoe.com/resource/7001" {
-		t.Errorf("public resource URL = %q", got)
-	}
-	held := Recipient{WorkID: 148, DestinationID: 7002}
-	if got := held.URL(); got != "https://www.letmoe.com/game/148" {
-		t.Errorf("held resource URL = %q, want the game page: its resource page is not public", got)
+func TestNoticeSendsOnlyTheUploaderToAResourceLetMoeHoldsBack(t *testing.T) {
+	for _, c := range []struct {
+		m    Recipient
+		want string
+	}{
+		{Recipient{WorkID: 148, DestinationID: 7001, DestinationPublic: true}, "https://www.letmoe.com/resource/7001"},
+		{Recipient{WorkID: 148, DestinationID: 7001, DestinationPublic: true, Liked: true}, "https://www.letmoe.com/resource/7001"},
+		{Recipient{WorkID: 148, DestinationID: 7002}, "https://www.letmoe.com/resource/7002"},
+		{Recipient{WorkID: 148, DestinationID: 7002, Liked: true}, "https://www.letmoe.com/game/148"},
+	} {
+		if got := c.m.URL(); got != c.want {
+			t.Errorf("public=%v liked=%v: URL = %q, want %q", c.m.DestinationPublic, c.m.Liked, got, c.want)
+		}
 	}
 }
 

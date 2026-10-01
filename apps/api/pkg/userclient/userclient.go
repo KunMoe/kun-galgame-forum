@@ -45,6 +45,8 @@ type User struct {
 	SiteRoles       []string  `json:"site_roles"`
 	CreatedAt       string    `json:"created_at"`
 	Cosmetics       Cosmetics `json:"cosmetics"`
+
+	AnonymizedAt *string `json:"anonymized_at,omitempty"`
 }
 
 type Cosmetics struct {
