@@ -65,6 +65,34 @@ func TestEmulatorRuntimesAreTheNonNativeKeys(t *testing.T) {
 	}
 }
 
+func TestRuntimeKeysAreLetMoesInItsOrder(t *testing.T) {
+	want := "native-win,native-and,tyranor-next,yukihub,native-ios,winlator,gamehub,kirikiroid2," +
+		"krkrsdl2,onscripter,joiplay,easyrpg,renpy-android,tyranor,emulator,other"
+	if got := stringsJoin(RuntimeKeys); got != want {
+		t.Fatalf("runtime keys\n got %s\nwant %s", got, want)
+	}
+}
+
+func TestRuntimesNormalizeToVocabularyOrder(t *testing.T) {
+	got, ok := Runtimes([]string{"tyranor", "yukihub", "native-ios", "tyranor-next", "native-and"})
+	if !ok || stringsJoin(got) != "native-and,tyranor-next,yukihub,native-ios,tyranor" {
+		t.Fatalf("got %v ok=%v", got, ok)
+	}
+}
+
+func TestYukiHubIsAnEmulatorRuntime(t *testing.T) {
+	if !IsEmulatorRuntime("yukihub") {
+		t.Fatal("yukihub launches other engines; it is an emulator runtime")
+	}
+	widened := "," + stringsJoin(RuntimeFilter([]string{"emulator"})) + ","
+	if !strings.Contains(widened, ",yukihub,") {
+		t.Fatalf("the emulator filter must reach yukihub: %s", widened)
+	}
+	if got := CompatPlatform(Keys{"and"}, Keys{"yukihub"}); got != "emulator" {
+		t.Fatalf("compat platform %q", got)
+	}
+}
+
 func TestHasRuntimeAxis(t *testing.T) {
 	if !HasRuntimeAxis("collection") || HasRuntimeAxis("ost") {
 		t.Fatal("collection needs a runtime, ost does not")

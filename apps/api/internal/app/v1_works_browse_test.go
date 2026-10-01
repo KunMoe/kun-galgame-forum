@@ -89,15 +89,19 @@ func TestV1WorksEmulatorRuntimeMatchesEveryEmulator(t *testing.T) {
 	f := newG5Fix(t)
 	resp, body := f.get(t, "/api/v1/works?resource_runtimes=emulator", "/works")
 	geStatus(t, resp, body, http.StatusOK, "")
-	if ids := geItemIDs(body); len(ids) != 2 || !g5HasID(body, g5SFW0) || !g5HasID(body, g5SFW0+1) {
-		t.Fatalf("emulator should match the unnamed and the kirikiroid2 resource: %v", ids)
+	if ids := geItemIDs(body); len(ids) != 3 || !g5HasID(body, g5SFW0) || !g5HasID(body, g5SFW0+1) || !g5HasID(body, g5SFW0+2) {
+		t.Fatalf("emulator should match the unnamed, the kirikiroid2 and the yukihub resource: %v", ids)
+	}
+	_, body = f.get(t, "/api/v1/works?resource_runtimes=yukihub", "/works")
+	if ids := geItemIDs(body); len(ids) != 1 || !g5HasID(body, g5SFW0+2) {
+		t.Fatalf("yukihub: %v", ids)
 	}
 	_, body = f.get(t, "/api/v1/works?resource_runtimes=kirikiroid2", "/works")
 	if ids := geItemIDs(body); len(ids) != 1 || !g5HasID(body, g5SFW0+1) {
 		t.Fatalf("kirikiroid2: %v", ids)
 	}
 	_, body = f.get(t, "/api/v1/works?resource_runtimes=native-win,emulator", "/works")
-	if ids := geItemIDs(body); len(ids) != 2 {
+	if ids := geItemIDs(body); len(ids) != 3 {
 		t.Fatalf("any-of with no native-win rows: %v", ids)
 	}
 }
@@ -106,11 +110,11 @@ func TestV1WorksPlatformOrRuntime(t *testing.T) {
 	f := newG5Fix(t)
 	resp, body := f.get(t, "/api/v1/works?resource_platforms=mac&resource_runtimes=emulator", "/works")
 	geStatus(t, resp, body, http.StatusOK, "")
-	if ids := geItemIDs(body); len(ids) != 3 || !g5HasID(body, g5TieHi) || !g5HasID(body, g5SFW0) || !g5HasID(body, g5SFW0+1) {
+	if ids := geItemIDs(body); len(ids) != 4 || !g5HasID(body, g5TieHi) || !g5HasID(body, g5SFW0) || !g5HasID(body, g5SFW0+1) || !g5HasID(body, g5SFW0+2) {
 		t.Fatalf("a mac resource or an emulator one: %v", ids)
 	}
 	_, body = f.get(t, "/api/v1/works?resource_platforms=mac&resource_runtimes=emulator&resource_languages=zh-cn", "/works")
-	if ids := geItemIDs(body); len(ids) != 2 || g5HasID(body, g5TieHi) {
+	if ids := geItemIDs(body); len(ids) != 3 || g5HasID(body, g5TieHi) {
 		t.Fatalf("language must still narrow the pair: %v", ids)
 	}
 }

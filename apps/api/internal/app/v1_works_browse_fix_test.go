@@ -92,6 +92,7 @@ func (f *g5Fix) seedCatalog(t *testing.T) {
 	}
 	works[0].runtimes = []string{"emulator"}
 	works[1].runtimes = []string{"kirikiroid2"}
+	works[2].runtimes = []string{"yukihub"}
 	works = append(works,
 		geWork{id: g5NULL, name: "NullLimit", release: "2026-02-01", limit: "", rating: "all_ages", local: true, created: base.Add(20 * time.Hour), platforms: []string{"win"}, languages: []string{"ja-jp"}},
 		geWork{id: g5NSFW, name: "NewestNSFW", release: "2026-03-01", limit: "nsfw", rating: "r18", local: true, created: base.Add(40 * time.Hour), platforms: []string{"and"}, languages: []string{"zh-cn"}},
