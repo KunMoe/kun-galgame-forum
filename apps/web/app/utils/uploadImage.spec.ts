@@ -1,7 +1,12 @@
 // @vitest-environment nuxt
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { mockNuxtImport } from '@nuxt/test-utils/runtime'
-import { imageToken, uploadImage, uploadWorkEditImage } from './uploadImage'
+import {
+  imageToken,
+  uploadImage,
+  uploadNewsSubmissionImage,
+  uploadWorkEditImage
+} from './uploadImage'
 import { useKunEditorAdapters } from '~/composables/useKunEditorAdapters'
 
 const { api, reportProblem } = vi.hoisted(() => ({
@@ -79,6 +84,23 @@ describe('uploadWorkEditImage', () => {
     const { path, form } = lastCall()
     expect(path).toBe('/work-edit-images')
     expect(form.get('preset')).toBe('screenshot')
+  })
+})
+
+describe('uploadNewsSubmissionImage', () => {
+  it('sends only the file to /me/news-submission-images', async () => {
+    api.POST.mockResolvedValueOnce(created())
+    expect(await uploadNewsSubmissionImage(file)).toStrictEqual(image)
+    const { path, form } = lastCall()
+    expect(path).toBe('/me/news-submission-images')
+    expect([...form.keys()]).toEqual(['file'])
+    expect(form.get('file')).toBeInstanceOf(Blob)
+  })
+
+  it('reports the problem and returns null', async () => {
+    api.POST.mockResolvedValueOnce(limited())
+    expect(await uploadNewsSubmissionImage(file)).toBeNull()
+    expect(reportProblem).toHaveBeenCalledOnce()
   })
 })
 

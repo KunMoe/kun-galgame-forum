@@ -99,9 +99,21 @@ const handleWithdraw = async (item: KunNewsSubmission) => {
           </span>
         </div>
 
-        <p class="text-default-500 line-clamp-2 text-sm">
-          {{ item.preview }}
-        </p>
+        <div class="flex items-start gap-3">
+          <KunImage
+            v-if="item.banner"
+            :src="withImageVariant(item.banner.url, 'mini')"
+            :thumbhash="item.banner.thumbhash ?? undefined"
+            :alt="item.title"
+            aspect-ratio="16/9"
+            object-fit="cover"
+            loading="lazy"
+            class-name="w-28 shrink-0 overflow-hidden rounded-lg"
+          />
+          <p class="text-default-500 line-clamp-2 text-sm">
+            {{ item.preview }}
+          </p>
+        </div>
 
         <div class="flex flex-wrap items-center gap-2">
           <span class="text-default-400 text-xs">

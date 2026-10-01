@@ -1,8 +1,12 @@
 package catalogclient
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
+	"io"
+	"mime/multipart"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -10,18 +14,20 @@ import (
 )
 
 type NewsSubmissionWrite struct {
-	Title     string
-	Summary   string
-	Body      string
-	SourceURL string
+	Title      string
+	Summary    string
+	Body       string
+	SourceURL  string
+	BannerHash string
 }
 
 type NewsSubmissionPatch struct {
-	Withdraw  bool
-	Title     *string
-	Summary   *string
-	Body      *string
-	SourceURL *string
+	Withdraw   bool
+	Title      *string
+	Summary    *string
+	Body       *string
+	SourceURL  *string
+	BannerHash *string
 }
 
 type NewsSubmission struct {
@@ -33,8 +39,16 @@ type NewsSubmission struct {
 	Summary      string
 	Body         string
 	SourceURL    string
+	BannerHash   string
 	PublishedAt  time.Time
 	SubmitterUID int64
+}
+
+type NewsImage struct {
+	Hash      string
+	Width     int
+	Height    int
+	Thumbhash string
 }
 
 type v2NewsSource struct {
@@ -42,20 +56,28 @@ type v2NewsSource struct {
 }
 
 type v2NewsSubmission struct {
-	ID           json.RawMessage `json:"id"`
-	Source       v2NewsSource    `json:"source"`
-	Lane         string          `json:"lane"`
-	Status       string          `json:"status"`
-	Title        string          `json:"title"`
-	Summary      string          `json:"summary"`
-	Body         string          `json:"body"`
-	SourceURL    string          `json:"source_url"`
+	ID        json.RawMessage `json:"id"`
+	Source    v2NewsSource    `json:"source"`
+	Lane      string          `json:"lane"`
+	Status    string          `json:"status"`
+	Title     string          `json:"title"`
+	Summary   string          `json:"summary"`
+	Body      string          `json:"body"`
+	SourceURL string          `json:"source_url"`
+	Banner    *struct {
+		Hash string `json:"hash"`
+	} `json:"banner"`
 	PublishedAt  string          `json:"published_at"`
 	SubmitterUID json.RawMessage `json:"submitter_uid"`
 }
 
 func (v v2NewsSubmission) submission() NewsSubmission {
+	banner := ""
+	if v.Banner != nil {
+		banner = v.Banner.Hash
+	}
 	return NewsSubmission{
+		BannerHash:   banner,
 		ID:           parseFlexID(v.ID),
 		SourceKey:    v.Source.Name,
 		Lane:         v.Lane,
@@ -80,6 +102,9 @@ func newsWriteBody(in NewsSubmissionWrite) map[string]any {
 	if in.SourceURL != "" {
 		body["source_url"] = in.SourceURL
 	}
+	if in.BannerHash != "" {
+		body["banner_hash"] = in.BannerHash
+	}
 	return body
 }
 
@@ -99,6 +124,9 @@ func newsPatchBody(in NewsSubmissionPatch) any {
 	}
 	if in.SourceURL != nil {
 		body["source_url"] = *in.SourceURL
+	}
+	if in.BannerHash != nil {
+		body["banner_hash"] = *in.BannerHash
 	}
 	return body
 }
@@ -160,4 +188,47 @@ func (c *Client) PatchMyNews(ctx context.Context, accessToken string, id int64, 
 	}
 	sub := out.submission()
 	return &sub, nil
+}
+
+// A banner must go up through this face. The image service keeps an image
+// alive per uploading site, so one stored with the forum's own image client is
+// never pinged by the news feed and is collected about thirteen months later;
+// /v2/me/news refuses such a hash as UNKNOWN_REFERENCE.
+func (c *Client) UploadNewsImageUser(ctx context.Context, accessToken string, r io.Reader, filename string) (*NewsImage, error) {
+	body := &bytes.Buffer{}
+	mw := multipart.NewWriter(body)
+	fw, err := mw.CreateFormFile("file", filename)
+	if err != nil {
+		return nil, fmt.Errorf("build multipart: %w", err)
+	}
+	if _, err := io.Copy(fw, r); err != nil {
+		return nil, fmt.Errorf("copy file: %w", err)
+	}
+	if err := mw.Close(); err != nil {
+		return nil, err
+	}
+	raw, _, err := c.userV2Send(ctx, http.MethodPost, accessToken, "/v2/me/news-images", body, mw.FormDataContentType(), nil)
+	if err != nil {
+		return nil, err
+	}
+	var rec struct {
+		Hash      string  `json:"hash"`
+		Width     *int    `json:"width"`
+		Height    *int    `json:"height"`
+		Thumbhash *string `json:"thumbhash"`
+	}
+	if err := json.Unmarshal(raw, &rec); err != nil {
+		return nil, fmt.Errorf("%w: malformed upload result", ErrUpstream)
+	}
+	out := NewsImage{Hash: rec.Hash}
+	if rec.Width != nil {
+		out.Width = *rec.Width
+	}
+	if rec.Height != nil {
+		out.Height = *rec.Height
+	}
+	if rec.Thumbhash != nil {
+		out.Thumbhash = *rec.Thumbhash
+	}
+	return &out, nil
 }

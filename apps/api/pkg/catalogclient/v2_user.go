@@ -72,27 +72,30 @@ func idempotencyHeader(h map[string]string, key string) map[string]string {
 }
 
 func (c *Client) userV2Do(ctx context.Context, method, accessToken, path string, body any, headers map[string]string) ([]byte, string, error) {
+	if body == nil {
+		return c.userV2Send(ctx, method, accessToken, path, nil, "", headers)
+	}
+	raw, err := json.Marshal(body)
+	if err != nil {
+		return nil, "", err
+	}
+	return c.userV2Send(ctx, method, accessToken, path, bytes.NewReader(raw), "application/json", headers)
+}
+
+func (c *Client) userV2Send(ctx context.Context, method, accessToken, path string, body io.Reader, contentType string, headers map[string]string) ([]byte, string, error) {
 	if c.baseURL == "" {
 		return nil, "", ErrNotConfigured
 	}
 	if accessToken == "" {
 		return nil, "", ErrUnauthorized
 	}
-	var rdr io.Reader
-	if body != nil {
-		raw, err := json.Marshal(body)
-		if err != nil {
-			return nil, "", err
-		}
-		rdr = bytes.NewReader(raw)
-	}
-	req, err := http.NewRequestWithContext(ctx, method, c.origin()+path, rdr)
+	req, err := http.NewRequestWithContext(ctx, method, c.origin()+path, body)
 	if err != nil {
 		return nil, "", err
 	}
 	req.Header.Set("Authorization", "Bearer "+accessToken)
-	if body != nil {
-		req.Header.Set("Content-Type", "application/json")
+	if contentType != "" {
+		req.Header.Set("Content-Type", contentType)
 	}
 	for k, v := range headers {
 		req.Header.Set(k, v)

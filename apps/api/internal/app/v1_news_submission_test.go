@@ -1,8 +1,13 @@
 package app
 
 import (
+	"bytes"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"io"
+	"mime"
+	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -46,10 +51,19 @@ type meNewsItem struct {
 	sourceURL   string
 	status      string
 	publishedAt string
+	banner      string
 }
 
 func (it meNewsItem) payload() map[string]any {
+	var banner any
+	if it.banner != "" {
+		banner = map[string]any{
+			"url": "https://upstream-cdn.example/" + it.banner + ".webp", "hash": it.banner,
+			"width": nil, "height": nil, "thumbhash": nil, "sexual": nil, "violence": nil, "source": "",
+		}
+	}
 	return map[string]any{
+		"banner":        banner,
 		"object":        "news_submission",
 		"id":            it.id,
 		"source":        map[string]any{"object": "news_source", "name": "community"},
@@ -70,15 +84,17 @@ type fakeMeNews struct {
 	recorded []meNewsCall
 	faults   map[string]meNewsFault
 	nextID   int
+	images   map[string]bool
 }
 
 func newFakeMeNews() *fakeMeNews {
 	return &fakeMeNews{
 		items: []meNewsItem{
-			{"4802", "newer", "lede-new", "body-new", "", "pending", "2026-09-30T03:00:00Z"},
-			{"4801", "older", "lede-old", "body-old", "", "pending", "2026-09-30T02:00:00Z"},
+			{"4802", "newer", "lede-new", "body-new", "", "pending", "2026-09-30T03:00:00Z", ""},
+			{"4801", "older", "lede-old", "body-old", "", "pending", "2026-09-30T02:00:00Z", ""},
 		},
 		nextID: 4900,
+		images: map[string]bool{},
 	}
 }
 
@@ -96,6 +112,8 @@ func (n *fakeMeNews) handler() http.Handler {
 			return
 		}
 		switch {
+		case r.Method == http.MethodPost && r.URL.Path == "/v2/me/news-images":
+			n.upload(w, r, raw)
 		case r.Method == http.MethodPost && r.URL.Path == "/v2/me/news":
 			n.create(w, raw)
 		case r.Method == http.MethodGet && r.URL.Path == "/v2/me/news":
@@ -120,6 +138,12 @@ func (n *fakeMeNews) note(r *http.Request, raw []byte) (meNewsFault, bool) {
 		Header: r.Header.Clone(),
 		Query:  r.URL.Query(),
 	})
+	if fault, ok := n.faults[r.Method+" "+r.URL.Path]; ok {
+		return fault, true
+	}
+	if r.URL.Path == "/v2/me/news-images" {
+		return meNewsFault{}, false
+	}
 	fault, ok := n.faults[r.Method]
 	return fault, ok
 }
@@ -137,6 +161,52 @@ func (n *fakeMeNews) fail(method string, status int, body, retry string) {
 		n.faults = map[string]meNewsFault{}
 	}
 	n.faults[method] = meNewsFault{status: status, body: []byte(body), retry: retry}
+}
+
+func writeMeProblem(w http.ResponseWriter, pointer, reason string) {
+	writeMeJSON(w, http.StatusUnprocessableEntity, map[string]any{
+		"code": "VALIDATION_FAILED", "status": http.StatusUnprocessableEntity,
+		"errors": []map[string]any{{"pointer": pointer, "reason": reason, "detail": "upstream detail"}},
+	})
+}
+
+func (n *fakeMeNews) upload(w http.ResponseWriter, r *http.Request, raw []byte) {
+	_, params, err := mime.ParseMediaType(r.Header.Get("Content-Type"))
+	if err != nil {
+		writeMeProblem(w, "/file", "REQUIRED")
+		return
+	}
+	form, err := multipart.NewReader(bytes.NewReader(raw), params["boundary"]).ReadForm(8 << 20)
+	if err != nil || len(form.File["file"]) == 0 {
+		writeMeProblem(w, "/file", "REQUIRED")
+		return
+	}
+	file, err := form.File["file"][0].Open()
+	if err != nil {
+		writeMeProblem(w, "/file", "INVALID_FORMAT")
+		return
+	}
+	data, _ := io.ReadAll(file)
+	_ = file.Close()
+	sum := sha256.Sum256(data)
+	hash := hex.EncodeToString(sum[:])
+	n.mu.Lock()
+	seen := n.images[hash]
+	n.images[hash] = true
+	n.mu.Unlock()
+	url := "https://upstream-cdn.example/" + hash + ".webp"
+	w.Header().Set("Location", url)
+	writeMeJSON(w, http.StatusCreated, map[string]any{
+		"object": "news_image", "url": url, "hash": hash, "width": 1280, "height": 720,
+		"thumbhash": "AbC+", "size_bytes": len(data), "is_deduplicated": seen,
+	})
+}
+
+// As infra's newsBannerErrors: a hash the news upload face did not store is
+// refused, and a PATCH that resends the stored hash is not checked again.
+func (n *fakeMeNews) bannerRefused(in map[string]any, current string) bool {
+	hash, ok := in["banner_hash"].(string)
+	return ok && hash != "" && hash != current && !n.images[hash]
 }
 
 func (n *fakeMeNews) list(w http.ResponseWriter, r *http.Request) {
@@ -174,7 +244,13 @@ func (n *fakeMeNews) create(w http.ResponseWriter, raw []byte) {
 	var in map[string]any
 	_ = json.Unmarshal(raw, &in)
 	n.mu.Lock()
+	if n.bannerRefused(in, "") {
+		n.mu.Unlock()
+		writeMeProblem(w, "/banner_hash", "UNKNOWN_REFERENCE")
+		return
+	}
 	it := meNewsItem{
+		banner:      meString(in["banner_hash"]),
 		id:          strconv.Itoa(n.nextID),
 		title:       meString(in["title"]),
 		summary:     meString(in["summary"]),
@@ -211,9 +287,16 @@ func (n *fakeMeNews) patch(w http.ResponseWriter, id string, raw []byte) {
 		if n.items[i].id != id {
 			continue
 		}
+		if n.bannerRefused(in, n.items[i].banner) {
+			writeMeProblem(w, "/banner_hash", "UNKNOWN_REFERENCE")
+			return
+		}
 		if status, ok := in["status"].(string); ok && status == "withdrawn" {
 			n.items[i].status = "withdrawn"
 		} else {
+			if v, ok := in["banner_hash"].(string); ok {
+				n.items[i].banner = v
+			}
 			if v, ok := in["title"].(string); ok {
 				n.items[i].title = v
 			}

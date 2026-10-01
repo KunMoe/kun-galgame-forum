@@ -96,6 +96,10 @@ func submissionPointer(upstream string) (string, bool) {
 		return "/content_markdown", true
 	case "/source_url":
 		return "/source_url", true
+	case "/banner_hash":
+		return "/banner_image_hash", true
+	case "/file":
+		return "/file", true
 	default:
 		return "", false
 	}
