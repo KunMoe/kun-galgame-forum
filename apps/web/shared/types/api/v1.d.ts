@@ -11383,7 +11383,7 @@ export interface components {
         /** @enum {string} */
         ResourceProvider: "baidu" | "aliyun" | "quark" | "pan123" | "tianyiyun" | "caiyun" | "xunlei" | "uc" | "lanzou" | "other";
         /** @enum {string} */
-        ResourceRuntime: "native-win" | "native-and" | "native-ios" | "winlator" | "gamehub" | "kirikiroid2" | "krkrsdl2" | "onscripter" | "joiplay" | "easyrpg" | "renpy-android" | "tyranor" | "tyranor-next" | "emulator" | "other";
+        ResourceRuntime: "native-win" | "native-and" | "tyranor-next" | "yukihub" | "native-ios" | "winlator" | "gamehub" | "kirikiroid2" | "krkrsdl2" | "onscripter" | "joiplay" | "easyrpg" | "renpy-android" | "tyranor" | "emulator" | "other";
         /** @enum {string} */
         ResourceType: "game" | "patch" | "collection" | "crack_fix" | "mod" | "tool" | "walkthrough" | "ost" | "voice" | "cg" | "wallpaper" | "artbook" | "video" | "other";
         ResourceViewer: {

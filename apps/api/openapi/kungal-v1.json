@@ -16175,6 +16175,8 @@
         "enum": [
           "native-win",
           "native-and",
+          "tyranor-next",
+          "yukihub",
           "native-ios",
           "winlator",
           "gamehub",
@@ -16185,7 +16187,6 @@
           "easyrpg",
           "renpy-android",
           "tyranor",
-          "tyranor-next",
           "emulator",
           "other"
         ],

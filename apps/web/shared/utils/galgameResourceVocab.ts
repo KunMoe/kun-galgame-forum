@@ -126,6 +126,8 @@ export const RUNTIME_OPTIONS: VocabOption<
 >[] = [
   { value: 'native-win', label: 'Windows 原生' },
   { value: 'native-and', label: '安卓直装' },
+  { value: 'tyranor-next', label: 'Tyranor Next' },
+  { value: 'yukihub', label: 'YukiHub' },
   { value: 'native-ios', label: 'iOS 原生' },
   { value: 'winlator', label: 'Winlator' },
   { value: 'gamehub', label: '盖世游戏 GameHub' },
@@ -136,7 +138,6 @@ export const RUNTIME_OPTIONS: VocabOption<
   { value: 'easyrpg', label: 'EasyRPG' },
   { value: 'renpy-android', label: "Ren'Py 安卓版" },
   { value: 'tyranor', label: 'Tyranor' },
-  { value: 'tyranor-next', label: 'Tyranor Next' },
   { value: 'emulator', label: '模拟器' },
   { value: 'other', label: '其它运行环境' }
 ]
