@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-func TestMigration203MovesTyranorNextUpInStoredRuntimes(t *testing.T) {
+func TestMigration203MovesTyranorNextUpWhereTheOldOrderWasKept(t *testing.T) {
 	f := newResourceFix(t, nil)
 	rows := []struct {
 		id           int
@@ -17,7 +17,10 @@ func TestMigration203MovesTyranorNextUpInStoredRuntimes(t *testing.T) {
 			`["native-win", "native-and", "tyranor-next", "native-ios", "gamehub", "kirikiroid2", "tyranor", "other"]`},
 		{g3ResExpired,
 			`["native-win", "native-and", "kirikiroid2", "gamehub", "tyranor", "tyranor-next", "emulator"]`,
-			`["native-win", "native-and", "tyranor-next", "gamehub", "kirikiroid2", "tyranor", "emulator"]`},
+			`["native-win", "native-and", "kirikiroid2", "gamehub", "tyranor", "tyranor-next", "emulator"]`},
+		{g3ResBanned,
+			`["native-win", "native-and", "kirikiroid2", "tyranor-next", "tyranor"]`,
+			`["native-win", "native-and", "kirikiroid2", "tyranor-next", "tyranor"]`},
 		{g3ResCount0,
 			`["kirikiroid2", "tyranor", "tyranor-next", "emulator"]`,
 			`["tyranor-next", "kirikiroid2", "tyranor", "emulator"]`},

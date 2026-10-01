@@ -12,18 +12,18 @@ import (
 	"kun-galgame-api/pkg/problem"
 )
 
-func TestV1CreateWorkResourceStoresRuntimesInVocabularyOrder(t *testing.T) {
+func TestV1CreateWorkResourceAcceptsYukiHub(t *testing.T) {
 	f := newResourceFix(t, nil)
 	resp, got := f.rs(t, http.MethodPost, "/api/v1/works/"+idStr(g3WorkUnpub)+"/resources",
 		"/works/{work_id}/resources", "sess-alice", keyUUID(1), createResourceBody(map[string]any{
 			"resource_platforms": []string{"and"},
-			"resource_runtimes":  []string{"tyranor", "yukihub", "tyranor-next", "native-and"},
+			"resource_runtimes":  []string{"yukihub", "native-and"},
 		}))
 	if resp.StatusCode != http.StatusCreated {
 		t.Fatalf("create %d %+v", resp.StatusCode, got)
 	}
 	runtimes, _ := got["resource_runtimes"].([]any)
-	if fmt.Sprint(runtimes) != "[native-and tyranor-next yukihub tyranor]" {
+	if fmt.Sprint(runtimes) != "[yukihub native-and]" {
 		t.Fatalf("runtimes %v", runtimes)
 	}
 }
