@@ -22,7 +22,8 @@ const messageTemplates: Record<NotificationType, string> = {
   user_followed: ' 关注了您!',
   followee_topic_created: ' 发布了新话题!',
   followee_activity_published: ' 发布了新内容!',
-  subscribed_topic_replied: ' 在您关注的话题中发表了新回复'
+  subscribed_topic_replied: ' 在您关注的话题中发表了新回复',
+  resource_relocated: ' 通知您: 资源已搬迁到 一起萌·LetMoe'
 }
 
 export const getMessageI18n = (notification: Notification) => {

@@ -63,7 +63,8 @@ export const notificationCategoryGroups: NotificationCategoryGroup[] = [
       { key: 'edit_requested', label: '收到更新请求' },
       { key: 'edit_merged', label: '更新请求被合并' },
       { key: 'edit_declined', label: '更新请求被拒绝' },
-      { key: 'resource_link_reported', label: '资源链接被报告过期' }
+      { key: 'resource_link_reported', label: '资源链接被报告过期' },
+      { key: 'resource_relocated', label: '资源搬迁到 LetMoe' }
     ]
   },
   {

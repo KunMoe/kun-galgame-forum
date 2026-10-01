@@ -170,5 +170,5 @@ func (MutedType) Schema(huma.Registry) *huma.Schema {
 
 type NotificationPreferences struct {
 	Object     string      `json:"object" enum:"notification_preferences" maxLength:"24" doc:"Type discriminant. Always notification_preferences."`
-	MutedTypes []MutedType `json:"muted_types" maxItems:"22" uniqueItems:"true" doc:"Notification types the caller has muted. Empty array if none."`
+	MutedTypes []MutedType `json:"muted_types" maxItems:"24" uniqueItems:"true" doc:"Notification types the caller has muted. Empty array if none."`
 }
