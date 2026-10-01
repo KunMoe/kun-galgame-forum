@@ -68,6 +68,7 @@ func (s *Service) listWorks(ctx context.Context, in *listWorksInput) (*workSumma
 		ShowNoResource:       in.IncludeResourceless,
 		Indexed:              in.IncludeResourceless,
 		SFWOnly:              !in.IncludeNSFW,
+		JaZhOriginalOnly:     !in.IncludeAllOriginalLanguages,
 		Page:                 pg.Page,
 		Limit:                pg.Limit,
 	}

@@ -48,6 +48,18 @@ func ApplyWorksGate(q url.Values, isSFW bool) url.Values {
 	return applyWorksGate(q, contentLimitFor(isSFW))
 }
 
+// Catalog matches olang exactly. Bare zh is in its editable vocabulary though no
+// row holds it yet; without it a work an editor tags zh would show in the local
+// lists, which match zh%, and be missing from the catalog ones.
+const jaZhOriginalLanguages = "ja,zh,zh-Hans,zh-Hant"
+
+func ApplyOriginalLanguageGate(q url.Values, jaZhOnly bool) url.Values {
+	if jaZhOnly {
+		q.Set("olang", jaZhOriginalLanguages)
+	}
+	return q
+}
+
 func contentLimitFor(isSFW bool) string {
 	if isSFW {
 		return "sfw"
@@ -361,8 +373,8 @@ type CatalogRollupMember struct {
 	Via    *CatalogLabelVia
 }
 
-func (c *GalgameClient) CatalogLabelRollupMembers(ctx context.Context, labelID, sort string, isSFW bool, pageCap int) ([]CatalogRollupMember, *errors.AppError) {
-	q := url.Values{"label_id": {labelID}, "label_rollup": {"1"}}
+func (c *GalgameClient) CatalogLabelRollupMembers(ctx context.Context, labelID, sort string, isSFW, jaZhOnly bool, pageCap int) ([]CatalogRollupMember, *errors.AppError) {
+	q := ApplyOriginalLanguageGate(url.Values{"label_id": {labelID}, "label_rollup": {"1"}}, jaZhOnly)
 	if sort != "" {
 		q.Set("sort", sort)
 	}

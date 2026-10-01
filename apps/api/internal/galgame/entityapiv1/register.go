@@ -41,6 +41,7 @@ func Register(s *Service) func(huma.API) {
 			tags, map[int]string{400: "INVALID_PARAMETER when page × limit is too deep.", 404: notFoundDesc, 503: unavailableMsg}), s.listTagWorks)
 		huma.Register(api, op("listTaggedWorks", "/tagged-works", "List works carrying every given tag",
 			"Catalog's own search population, newest release first; unlike a tag's works collection it takes no forum filter or sort. "+
+				"Works whose original language is neither Japanese nor Chinese are left out unless include_all_original_languages=true. "+
 				"A page-number collection.",
 			tags, map[int]string{400: "INVALID_PARAMETER when tag_ids is empty, longer than 10, or not ids, or page × limit is too deep.", 503: unavailableMsg}), s.listTaggedWorks)
 

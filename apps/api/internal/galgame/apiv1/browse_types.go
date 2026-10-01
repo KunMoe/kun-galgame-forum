@@ -65,6 +65,8 @@ type listWorksInput struct {
 	MinRatingCount        int                         `query:"min_rating_count" minimum:"0" doc:"Minimum number of forum ratings. 0 or omitted means no filter."`
 	IncludeNSFW           bool                        `query:"include_nsfw" default:"false" doc:"When true, adult works are included. Default false. A work whose content_limit has not been synced yet counts as adult until it is."`
 	IncludeResourceless   bool                        `query:"include_resourceless" default:"false" doc:"When true, published works with no forum resource are included. Default false. A resource-axis or host filter still requires a resource."`
+
+	IncludeAllOriginalLanguages bool `query:"include_all_original_languages" default:"false" doc:"When true, works whose original language is neither Japanese nor Chinese are included. Default false. A work whose original language has not been synced yet is included either way."`
 }
 
 type listLibraryWorksInput struct {
@@ -75,6 +77,8 @@ type listLibraryWorksInput struct {
 	ReleasedFrom string               `query:"released_from" pattern:"^[0-9]{4}(-(0[1-9]|1[0-2]))?$" maxLength:"7" doc:"Released in or after this year (YYYY) or month (YYYY-MM)."`
 	ReleasedTo   string               `query:"released_to" pattern:"^[0-9]{4}(-(0[1-9]|1[0-2]))?$" maxLength:"7" doc:"Released in or before this year (YYYY) or month (YYYY-MM)."`
 	IncludeNSFW  bool                 `query:"include_nsfw" default:"false" doc:"When true, works this forum displays as adult are included. Default false."`
+
+	IncludeAllOriginalLanguages bool `query:"include_all_original_languages" default:"false" doc:"When true, works whose original language is neither Japanese nor Chinese are included. Default false."`
 }
 
 type listWorkCollectedMonthsInput struct {

@@ -375,6 +375,9 @@ func applyPublished(q *gorm.DB, f model.GalgameListFilter) *gorm.DB {
 // never-checked rows first, so a new row waits one tick.
 func applyCatalogGates(q *gorm.DB, f model.GalgameListFilter) *gorm.DB {
 	q = q.Where("g.catalog_rendered")
+	if f.JaZhOriginalOnly {
+		q = q.Where(model.JaZhOriginalSQL)
+	}
 	if !f.SFWOnly {
 		return q
 	}

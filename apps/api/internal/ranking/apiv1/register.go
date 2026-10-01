@@ -34,7 +34,8 @@ func Register(s *Service) func(huma.API) {
 			Method:      http.MethodGet,
 			Path:        "/rankings/works",
 			Summary:     "Rank works",
-			Description: topN + "Only published works; without include_resourceless, only works that have a resource. " +
+			Description: topN + "Only published works; without include_resourceless, only works that have a resource; " +
+				"without include_all_original_languages, only works whose original language is Japanese or Chinese. " +
 				"Works the catalog does not return are dropped and the places renumbered.",
 			Tags: tags,
 			Responses: problemResponses(map[int]string{

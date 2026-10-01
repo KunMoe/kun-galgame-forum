@@ -75,6 +75,7 @@ type geWork struct {
 	legacyPlat string
 	ratings    []int
 	gameTypes  []string
+	olang      string // "" means ja
 }
 
 // Ties on purpose: view 7 three times among the local rows, 2026-01-01 twice,
@@ -89,6 +90,7 @@ func geWorks() []geWork {
 		{id: geWorkMin + 3, name: "Delta", release: "2024", limit: "sfw", rating: "all_ages", tags: []int{geTagMain}, local: true, view: 3, created: t0.Add(3 * time.Hour), platforms: []string{"mac"}, languages: []string{"en-us"}, runtimes: []string{"emulator"}, legacyPlat: "windows", ratings: []int{5}},
 		{id: geWorkMin + 4, name: "Epsilon", release: "", limit: "", rating: "all_ages", tags: []int{geTagMain}},
 		{id: geWorkMin + 5, name: "Zeta", release: "2023-02-02", limit: "sfw", rating: "all_ages", tags: []int{geTagMain}, local: true, view: 1, created: t0.Add(4 * time.Hour), platforms: []string{"win"}, languages: []string{"zh-cn"}, runtimes: []string{"tyranor"}, legacyPlat: "windows", gameTypes: []string{"moe"}},
+		{id: geWorkMin + 6, name: "Qoph", release: "2022-05-05", limit: "", rating: "all_ages", tags: []int{geTagMain}, olang: "en"},
 	}
 }
 
@@ -101,7 +103,11 @@ func geRowJSON(w geWork) string {
 	if w.release != "" {
 		release = strconv.Quote(w.release)
 	}
-	return fmt.Sprintf(`{"id":%d,"display_name":%q,"latin":%q,
+	olang := w.olang
+	if olang == "" {
+		olang = "ja"
+	}
+	return fmt.Sprintf(`{"id":%d,"display_name":%q,"latin":%q,"olang":"`+olang+`",
 		"localized":{"zh-Hans":{"value":%q,"machine":true}},
 		"content_rating":%q,"content_limit":%q,"release_date":%s,"claim":%s,
 		"cover_slots":{"portrait":{"url":%q,"width":256,"height":361,"thumbhash":"pUgK"},"banner":{"url":%q,"width":800,"height":450,"thumbhash":"sigO"}},
@@ -199,6 +205,17 @@ func (f *fakeCatalog) visible(id int, contentLimit string) bool {
 		return false
 	}
 	return client.CatalogItemToBrief(context.Background(), &row).ContentLimit == "sfw"
+}
+
+func (f *fakeCatalog) speaks(id int, olang string) bool {
+	if olang == "" {
+		return true
+	}
+	lang := f.rows[id].OLang
+	if lang == "" {
+		lang = "ja"
+	}
+	return slices.Contains(strings.Split(olang, ","), lang)
 }
 
 func (f *fakeCatalog) CatalogWorkExists(ctx context.Context, workID int) (bool, *legacyErrors.AppError) {
@@ -450,16 +467,20 @@ func (f *fakeCatalog) CatalogMemberWorkIDs(_ context.Context, filter url.Values,
 	}
 	out := []int{}
 	for _, id := range f.sortMembers(f.members[key], filter.Get("sort")) {
-		if f.visible(id, limit) {
+		if f.visible(id, limit) && f.speaks(id, filter.Get("olang")) {
 			out = append(out, id)
 		}
 	}
 	return out, nil
 }
 
-func (f *fakeCatalog) CatalogLabelRollupMembers(_ context.Context, labelID, sort string, isSFW bool, _ int) ([]client.CatalogRollupMember, *legacyErrors.AppError) {
+func (f *fakeCatalog) CatalogLabelRollupMembers(_ context.Context, labelID, sort string, isSFW, jaZhOnly bool, _ int) ([]client.CatalogRollupMember, *legacyErrors.AppError) {
 	if e := f.err(); e != nil {
 		return nil, e
+	}
+	olang := ""
+	if jaZhOnly {
+		olang = "ja,zh,zh-Hans,zh-Hant"
 	}
 	limit := "all"
 	if isSFW {
@@ -473,7 +494,7 @@ func (f *fakeCatalog) CatalogLabelRollupMembers(_ context.Context, labelID, sort
 	}
 	out := []client.CatalogRollupMember{}
 	for _, id := range f.sortMembers(ids, sort) {
-		if f.visible(id, limit) {
+		if f.visible(id, limit) && f.speaks(id, olang) {
 			out = append(out, client.CatalogRollupMember{WorkID: id, Via: byID[id]})
 		}
 	}
@@ -573,7 +594,7 @@ func (f *fakeCatalog) CatalogWorksSearch(_ context.Context, q url.Values) (*clie
 	}
 	visible := []int{}
 	for _, id := range ids {
-		if f.visible(id, limit) {
+		if f.visible(id, limit) && f.speaks(id, q.Get("olang")) {
 			visible = append(visible, id)
 		}
 	}
@@ -703,7 +724,7 @@ func (f *geFix) seedCatalog(t *testing.T) {
 	c.seriesMem[geSeries] = ids[:2]
 	c.seriesMem[geSeriesNSFW] = []int{ids[2]}
 	via := &client.CatalogLabelVia{ID: geImprint, DisplayName: "Imprint Label"}
-	c.rollup[strconv.Itoa(geCompany)] = []geMember{{ids[0], nil}, {ids[1], via}, {ids[3], nil}, {ids[5], via}}
+	c.rollup[strconv.Itoa(geCompany)] = []geMember{{ids[0], nil}, {ids[1], via}, {ids[3], nil}, {ids[5], via}, {ids[6], nil}}
 
 	var tagItems []client.CatalogTaxonomyItem
 	decodeInto(t, `[

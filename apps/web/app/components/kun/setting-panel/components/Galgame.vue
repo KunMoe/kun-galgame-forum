@@ -12,6 +12,7 @@ const {
 
 const {
   showKUNGalgameNoResource,
+  showKUNGalgameAllOriginalLanguages,
   showKUNGalgamePreferOriginalName,
   showKUNGalgamePhoneCardColumns
 } = storeToRefs(usePersistSettingsStore())
@@ -96,6 +97,10 @@ watch(preferOriginalName, (value) => {
         <KunSwitch
           v-model="showKUNGalgameNoResource"
           label="排行与动态包含无资源的 Galgame"
+        />
+        <KunSwitch
+          v-model="showKUNGalgameAllOriginalLanguages"
+          label="列表显示原语言不是日语或中文的 Galgame"
         />
       </div>
     </div>

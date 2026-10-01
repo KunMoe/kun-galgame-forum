@@ -28,7 +28,7 @@ type Catalog interface {
 	CatalogNameDetail(ctx context.Context, id int64, limit, offset int) (*client.CatalogName, bool, int64, *errors.AppError)
 	CatalogCharacterDetail(ctx context.Context, id int64, limit, offset int, withWorks bool) (*client.CatalogCharacter, bool, int64, *errors.AppError)
 	CatalogMemberWorkIDs(ctx context.Context, filter url.Values, isSFW bool, pageCap int) ([]int, *errors.AppError)
-	CatalogLabelRollupMembers(ctx context.Context, labelID, sort string, isSFW bool, pageCap int) ([]client.CatalogRollupMember, *errors.AppError)
+	CatalogLabelRollupMembers(ctx context.Context, labelID, sort string, isSFW, jaZhOnly bool, pageCap int) ([]client.CatalogRollupMember, *errors.AppError)
 	CatalogRowsByCatalogIDs(ctx context.Context, ids []int64, isSFW bool) (map[int64]client.CatalogWorkListItem, *errors.AppError)
 	CatalogWorksSearch(ctx context.Context, q url.Values) (*client.CatalogWorksPage, *errors.AppError)
 	CatalogTraitVocabulary(ctx context.Context) ([]client.CatalogTrait, *errors.AppError)

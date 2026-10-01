@@ -3,6 +3,7 @@ package repository
 import (
 	"strconv"
 
+	galgameModel "kun-galgame-api/internal/galgame/model"
 	topicRepo "kun-galgame-api/internal/topic/repository"
 )
 
@@ -64,8 +65,11 @@ var workRankingColumns = map[string]string{
 	"resources": "resource_count",
 }
 
-func (r *RankingRepository) TopWorks(key string, includeNSFW, includeResourceless bool, limit int) ([]RankedRow, error) {
+func (r *RankingRepository) TopWorks(key string, includeNSFW, includeResourceless, includeAllOriginalLanguages bool, limit int) ([]RankedRow, error) {
 	q := r.db.Table("galgame g").Where("g.published AND g.catalog_rendered")
+	if !includeAllOriginalLanguages {
+		q = q.Where(galgameModel.JaZhOriginalSQL)
+	}
 	if !includeNSFW {
 		q = q.Where("g.content_limit = 'sfw'")
 	}

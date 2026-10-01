@@ -6,6 +6,9 @@ import { browseSortToken } from './useGalgameFilters'
 export const useEntityWorksQuery = () => {
   const { page, limit, state } = useGalgameFilters()
   const { allowsNsfw } = useContentStance()
+  const { showKUNGalgameAllOriginalLanguages } = storeToRefs(
+    usePersistSettingsStore()
+  )
 
   const query = computed<WorksQuery>(() => {
     const f = state.value
@@ -20,7 +23,8 @@ export const useEntityWorksQuery = () => {
       resource_runtime: emulatorRuntimeFilter(f.platform, f.runtime)?.[0],
       resource_language: f.language[0] as WorksQuery['resource_language'],
       game_type: f.gameType || undefined,
-      include_nsfw: allowsNsfw.value
+      include_nsfw: allowsNsfw.value,
+      include_all_original_languages: showKUNGalgameAllOriginalLanguages.value
     }
   })
 

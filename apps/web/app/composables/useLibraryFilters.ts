@@ -40,6 +40,9 @@ export const useLibraryFilters = () => ({
 export const useLibraryWorksQuery = () => {
   const filters = useLibraryFilters()
   const { allowsNsfw } = useContentStance()
+  const { showKUNGalgameAllOriginalLanguages } = storeToRefs(
+    usePersistSettingsStore()
+  )
 
   const query = computed<ListLibraryWorksQuery>(() => {
     const f = filters.state.value
@@ -49,7 +52,8 @@ export const useLibraryWorksQuery = () => {
       sort: librarySortToken(f.sortField, f.sortOrder),
       ...(f.releasedFrom ? { released_from: f.releasedFrom } : {}),
       ...(f.releasedTo ? { released_to: f.releasedTo } : {}),
-      include_nsfw: allowsNsfw.value
+      include_nsfw: allowsNsfw.value,
+      include_all_original_languages: showKUNGalgameAllOriginalLanguages.value
     }
   })
 

@@ -121,6 +121,9 @@ export const useGalgameFilters = () => ({
 export const useBrowseWorksQuery = () => {
   const filters = useGalgameFilters()
   const { allowsNsfw } = useContentStance()
+  const { showKUNGalgameAllOriginalLanguages } = storeToRefs(
+    usePersistSettingsStore()
+  )
 
   const query = computed<ListWorksQuery>(() => {
     const f = filters.state.value
@@ -158,7 +161,8 @@ export const useBrowseWorksQuery = () => {
         : {}),
       ...(f.minRating > 0 ? { min_rating: f.minRating } : {}),
       ...(f.minRatingCount > 0 ? { min_rating_count: f.minRatingCount } : {}),
-      include_nsfw: allowsNsfw.value
+      include_nsfw: allowsNsfw.value,
+      include_all_original_languages: showKUNGalgameAllOriginalLanguages.value
     }
   })
 

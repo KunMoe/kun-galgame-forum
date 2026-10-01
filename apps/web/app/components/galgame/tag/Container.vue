@@ -23,6 +23,9 @@ const api = useApiClient()
 // then: paging the Galgame results would otherwise refetch 100 tags from catalog
 // per click, and catalog's limiter counts the whole site as one IP.
 const { allowsNsfw, stanceKey } = useContentStance()
+const { showKUNGalgameAllOriginalLanguages } = storeToRefs(
+  usePersistSettingsStore()
+)
 const isSfwMode = computed(() => !allowsNsfw.value)
 
 const { data, status } = await useApi<TagPage>(
@@ -119,7 +122,9 @@ const fetchGames = async () => {
           tag_ids: selectedIds.value.map(String),
           page: page.value,
           limit: gamesLimit,
-          include_nsfw: allowsNsfw.value
+          include_nsfw: allowsNsfw.value,
+          include_all_original_languages:
+            showKUNGalgameAllOriginalLanguages.value
         }
       }
     })
@@ -137,7 +142,11 @@ watch(selectedIds, () => entityNames.resolve({ tag: selectedIds.value }), {
 
 // Immediate, and it must not reset the page: a reader arriving on
 // ?tag_ids=…&page=3 has to get page 3.
-watch([selectedIds, page], () => fetchGames(), { immediate: true })
+watch(
+  [selectedIds, page, showKUNGalgameAllOriginalLanguages],
+  () => fetchGames(),
+  { immediate: true }
+)
 
 const isBrowsing = computed(() => !selectedIds.value.length)
 </script>

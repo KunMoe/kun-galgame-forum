@@ -13,6 +13,7 @@ export interface KUNGalgameSettingsStore {
   showKUNGalgameBackgroundOpacity: number
   showKUNGalgameBackLoli: boolean
   showKUNGalgameNoResource: boolean
+  showKUNGalgameAllOriginalLanguages: boolean
   showKUNGalgameRounded: 'none' | 'sm' | 'md' | 'lg'
   showKUNGalgamePhoneCardColumns: 2 | 3
   showKUNGalgameGallerySexualLevels: number[]
