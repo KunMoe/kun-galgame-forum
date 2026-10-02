@@ -32,8 +32,7 @@ export const kunSettingsDefaults = (): Omit<
   showKUNGalgameNoResource: false,
   showKUNGalgameAllOriginalLanguages: false,
   showKUNGalgameRounded: 'md',
-  showKUNGalgamePhoneCardColumns: 3,
-  showKUNGalgameGallerySexualLevels: []
+  showKUNGalgamePhoneCardColumns: 3
 })
 
 export const usePersistSettingsStore = defineStore(
@@ -68,9 +67,6 @@ export const usePersistSettingsStore = defineStore(
     const showKUNGalgameRounded = ref(defaults.showKUNGalgameRounded)
     const showKUNGalgamePhoneCardColumns = ref(
       defaults.showKUNGalgamePhoneCardColumns
-    )
-    const showKUNGalgameGallerySexualLevels = ref(
-      defaults.showKUNGalgameGallerySexualLevels
     )
     const feedTabs = ref<KUNGalgameSettingsStore['feedTabs']>(
       structuredClone(KUN_DEFAULT_FEED_TABS)
@@ -195,7 +191,6 @@ export const usePersistSettingsStore = defineStore(
       showKUNGalgameAllOriginalLanguages,
       showKUNGalgameRounded,
       showKUNGalgamePhoneCardColumns,
-      showKUNGalgameGallerySexualLevels,
       feedTabs,
       feedTabsVersion,
       resetKUNGalgameFeedTabs,

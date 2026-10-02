@@ -16,7 +16,6 @@ export interface KUNGalgameSettingsStore {
   showKUNGalgameAllOriginalLanguages: boolean
   showKUNGalgameRounded: 'none' | 'sm' | 'md' | 'lg'
   showKUNGalgamePhoneCardColumns: 2 | 3
-  showKUNGalgameGallerySexualLevels: number[]
 }
 
 export interface TempSettingStore {

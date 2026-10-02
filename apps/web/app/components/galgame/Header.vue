@@ -251,6 +251,7 @@ const coverUrl = computed(() =>
         v-model="coversOpen"
         :work-id="workId"
         :covers="galgame.covers"
+        :is-nsfw="galgame.is_nsfw"
       />
     </div>
 

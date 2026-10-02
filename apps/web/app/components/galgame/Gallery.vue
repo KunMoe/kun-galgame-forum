@@ -9,11 +9,8 @@ const props = defineProps<{
   screenshots: WorkScreenshot[]
 }>()
 
-const { showKUNGalgameGallerySexualLevels: sexualLevels } = storeToRefs(
-  usePersistSettingsStore()
-)
-
 const { allowsNsfw: showNsfw, isBlurred } = useContentStance()
+const enableNsfw = useEnableNsfw()
 
 const sexualLevel = (s: WorkScreenshot): number => {
   const sexual = s.image?.sexual
@@ -22,18 +19,13 @@ const sexualLevel = (s: WorkScreenshot): number => {
   return 0
 }
 
-const sexualOk = (s: WorkScreenshot) =>
-  showNsfw.value ||
-  sexualLevel(s) === 0 ||
-  sexualLevels.value.includes(sexualLevel(s))
+// The stance is the only thing that lets a graded screenshot through. The
+// filter used to offer a 隐藏 reader a checkbox per grade, saved with their
+// settings, and a ticked grade outranked the stance: explicit screenshots
+// rendered for a reader set to hide adult content (reported 2026-10-02).
+const sexualOk = (s: WorkScreenshot) => showNsfw.value || sexualLevel(s) === 0
 
-// The two systems stack rather than replace each other: a level the reader
-// ticked in the filter is an explicit choice and stays sharp, while one that
-// is only here because the account allows NSFW at all is what 模糊 masks.
-const isMasked = (s: WorkScreenshot) =>
-  isBlurred.value &&
-  sexualLevel(s) >= 1 &&
-  !sexualLevels.value.includes(sexualLevel(s))
+const isMasked = (s: WorkScreenshot) => isBlurred.value && sexualLevel(s) >= 1
 
 const allShots = computed(() =>
   [...(props.screenshots ?? [])].filter((s) => !!s.image)
@@ -92,21 +84,19 @@ const openGroups = computed(() =>
 const shownCount = computed(() =>
   openGroups.value.reduce((n, g) => n + g.shown.length, 0)
 )
-const hiddenCount = computed(() => allShots.value.length - shownCount.value)
+const adultHiddenCount = computed(
+  () => allShots.value.filter((s) => !sexualOk(s)).length
+)
+const sourceHiddenCount = computed(
+  () => allShots.value.length - adultHiddenCount.value - shownCount.value
+)
 
 const showHeaders = computed(() => sourceKeys.value.length > 1)
 
-const sexualCounts = computed(() => {
-  const counts: Record<number, number> = { 1: 0, 2: 0, 3: 0 }
-  for (const s of allShots.value) {
-    const level = sexualLevel(s)
-    if (level >= 1 && level <= 3) counts[level] = (counts[level] ?? 0) + 1
-  }
-  return counts
-})
-
-const hasRated = computed(() => allShots.value.some((s) => sexualLevel(s) >= 1))
-const canFilter = computed(() => hasRated.value || showHeaders.value)
+const showLegend = computed(
+  () => showNsfw.value && allShots.value.some((s) => sexualLevel(s) >= 1)
+)
+const canFilter = computed(() => showLegend.value || showHeaders.value)
 
 const sourceOptions = computed(() =>
   groups.value.map((g) => ({
@@ -152,9 +142,8 @@ const ratingRing = (s: WorkScreenshot) => {
       />
       <GalgameGalleryFilter
         v-if="canFilter"
-        :show-nsfw="showNsfw"
-        :hidden-count="hiddenCount"
-        :sexual-counts="sexualCounts"
+        :show-legend="showLegend"
+        :hidden-count="sourceHiddenCount"
         :sources="sourceOptions"
         @toggle-source="toggleSource"
       />
@@ -168,8 +157,11 @@ const ratingRing = (s: WorkScreenshot) => {
               {{ g.label }}
               <span class="text-default-400">({{ g.total }})</span>
             </h3>
-            <span v-if="g.hidden" class="text-default-400 text-xs">
-              已隐藏 {{ g.hidden }} 张
+            <span
+              v-if="g.hidden && g.shown.length"
+              class="text-default-400 text-xs"
+            >
+              {{ g.hidden }} 张成人向图片已隐藏
             </span>
           </div>
 
@@ -177,7 +169,7 @@ const ratingRing = (s: WorkScreenshot) => {
             v-if="!g.shown.length"
             class="text-default-400 border-default/20 rounded-lg border border-dashed px-3 py-4 text-xs"
           >
-            {{ g.total }} 张图片已按分级隐藏,点击「筛选」调整
+            {{ g.total }} 张成人向图片已按您的内容设置隐藏
           </p>
 
           <div
@@ -237,8 +229,20 @@ const ratingRing = (s: WorkScreenshot) => {
     </KunLightboxGallery>
 
     <KunNull
-      v-else
-      :description="`${hiddenCount} 张图片已按分级 / 来源隐藏,点击「筛选」调整`"
+      v-else-if="sourceHiddenCount"
+      :description="`${sourceHiddenCount} 张图片已按来源隐藏,点击「筛选」调整`"
     />
+
+    <p v-if="adultHiddenCount" class="text-default-500 text-xs">
+      该 Galgame 有 {{ adultHiddenCount }} 张成人向图片已按您的内容设置隐藏。
+      <button
+        type="button"
+        class="text-primary cursor-pointer underline-offset-2 hover:underline"
+        @click="enableNsfw"
+      >
+        开启 NSFW 模式
+      </button>
+      后可以看到它们。
+    </p>
   </div>
 </template>

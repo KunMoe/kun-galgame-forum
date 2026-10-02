@@ -3,8 +3,15 @@ import { galgameImageSourceLabel } from '~/constants/galgameImageSource'
 import { settle } from '#shared/utils/api/problem'
 import type { WorkCover } from '#shared/utils/api/schemas'
 
-const props = defineProps<{ workId: number; covers: WorkCover[] }>()
+const props = defineProps<{
+  workId: number
+  covers: WorkCover[]
+  isNsfw: boolean
+}>()
 const open = defineModel<boolean>({ required: true })
+
+const { allowsNsfw, isBlurred } = useContentStance()
+const enableNsfw = useEnableNsfw()
 
 const KIND_LABEL: Record<string, string> = {
   main: '主封面',
@@ -111,11 +118,22 @@ const toggleVote = async (cover: WorkCover) => {
 
 const coverSrc = (cover: WorkCover) => cover.image?.url ?? ''
 
+const isExplicit = (cover: WorkCover) => cover.image?.sexual === 'explicit'
+
+// This modal listed every cover catalog has, whatever the reader's stance: 9 of
+// 37 SFW-shelved works sampled on 2026-10-02 carried an explicit one, a click
+// away for a reader who hides adult content. The threshold is catalog's own
+// cover gate, which already shows that reader a suggestive main cover.
+const withImage = computed(() => props.covers.filter((c) => !!c.image))
 const sorted = computed(() =>
-  [...props.covers]
-    .filter((c) => !!c.image)
+  withImage.value
+    .filter((c) => allowsNsfw.value || !isExplicit(c))
     .sort((a, b) => a.sort_order - b.sort_order)
 )
+const hiddenCount = computed(() => withImage.value.length - sorted.value.length)
+
+const isMasked = (cover: WorkCover) =>
+  isBlurred.value && (props.isNsfw || isExplicit(cover))
 
 const groups = computed(() => {
   const byKind = new Map<string, WorkCover[]>()
@@ -145,9 +163,12 @@ const sourceLabel = (cover: WorkCover) => galgameImageSourceLabel(cover.site)
         <h2 class="text-xl font-bold">所有封面</h2>
       </div>
 
-      <KunNull v-if="!sorted.length" description="该 Galgame 暂无封面" />
+      <KunNull
+        v-if="!sorted.length && !hiddenCount"
+        description="该 Galgame 暂无封面"
+      />
 
-      <KunLightboxGallery v-else>
+      <KunLightboxGallery v-else-if="sorted.length">
         <div class="space-y-5">
           <section v-for="g in groups" :key="g.kind" class="space-y-2">
             <h3 class="text-default-600 text-sm font-medium">
@@ -162,19 +183,21 @@ const sourceLabel = (cover: WorkCover) => galgameImageSourceLabel(cover.site)
                   as="figure"
                   class="border-default/20 bg-default-100 block overflow-hidden rounded-lg border"
                 >
-                  <KunImage
-                    :src="coverSrc(c)"
-                    :alt="g.label"
-                    loading="lazy"
-                    :aspect-ratio="
-                      imageAspectRatio(
-                        c.image?.width ?? undefined,
-                        c.image?.height ?? undefined
-                      )
-                    "
-                    :thumbhash="c.image?.thumbhash ?? undefined"
-                    class-name="bg-default-100"
-                  />
+                  <KunNsfwMask :active="isMasked(c)" label="成人向封面已模糊">
+                    <KunImage
+                      :src="coverSrc(c)"
+                      :alt="g.label"
+                      loading="lazy"
+                      :aspect-ratio="
+                        imageAspectRatio(
+                          c.image?.width ?? undefined,
+                          c.image?.height ?? undefined
+                        )
+                      "
+                      :thumbhash="c.image?.thumbhash ?? undefined"
+                      class-name="bg-default-100"
+                    />
+                  </KunNsfwMask>
                 </KunLightboxGalleryItem>
 
                 <KunChip
@@ -209,6 +232,18 @@ const sourceLabel = (cover: WorkCover) => galgameImageSourceLabel(cover.site)
           </section>
         </div>
       </KunLightboxGallery>
+
+      <p v-if="hiddenCount" class="text-default-500 text-xs">
+        有 {{ hiddenCount }} 张成人向封面已按您的内容设置隐藏。
+        <button
+          type="button"
+          class="text-primary cursor-pointer underline-offset-2 hover:underline"
+          @click="enableNsfw"
+        >
+          开启 NSFW 模式
+        </button>
+        后可以看到它们。
+      </p>
     </div>
   </KunModal>
 </template>

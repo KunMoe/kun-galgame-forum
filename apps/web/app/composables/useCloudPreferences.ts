@@ -23,7 +23,6 @@ export interface KunCloudPreferences {
   all_original_languages: boolean
   phone_card_columns: number
   rounded: string
-  gallery_sexual_levels: number[]
   feed_tabs: KunFeedTab[]
   feed_tabs_version: number
   show_kohaku: boolean
@@ -48,7 +47,6 @@ const DEFAULTS: KunCloudPreferences = {
   all_original_languages: false,
   phone_card_columns: 3,
   rounded: 'md',
-  gallery_sexual_levels: [],
   feed_tabs: KUN_DEFAULT_FEED_TABS,
   feed_tabs_version: KUN_FEED_TABS_VERSION,
   show_kohaku: false
@@ -88,7 +86,6 @@ export const useCloudPreferences = () => {
     all_original_languages: settingsStore.showKUNGalgameAllOriginalLanguages,
     phone_card_columns: settingsStore.showKUNGalgamePhoneCardColumns,
     rounded: settingsStore.showKUNGalgameRounded,
-    gallery_sexual_levels: [...settingsStore.showKUNGalgameGallerySexualLevels],
     feed_tabs: settingsStore.feedTabs.map((tab) => {
       const next: KunFeedTab = {
         id: tab.id,
@@ -139,9 +136,6 @@ export const useCloudPreferences = () => {
         settingsStore.showKUNGalgamePhoneCardColumns = doc.phone_card_columns
       if (isRounded(doc.rounded))
         settingsStore.setKUNGalgameRounded(doc.rounded)
-      if (Array.isArray(doc.gallery_sexual_levels))
-        settingsStore.showKUNGalgameGallerySexualLevels =
-          doc.gallery_sexual_levels.filter(isLevel)
       if (typeof doc.show_kohaku === 'boolean')
         settingsStore.showKUNGalgameBackLoli = doc.show_kohaku
       const tabs = parseFeedTabs(doc.feed_tabs)
@@ -260,8 +254,6 @@ export const useCloudPreferences = () => {
 
 const lacksKeys = (doc: object) =>
   Object.keys(DEFAULTS).some((key) => !(key in doc))
-
-const isLevel = (n: unknown): n is number => n === 1 || n === 2 || n === 3
 
 const isNonNegativeInteger = (value: unknown): value is number =>
   typeof value === 'number' && Number.isInteger(value) && value >= 0
