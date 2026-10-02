@@ -66,9 +66,13 @@ export const useTopicReplies = (
     `kun-topic-replies-bwd-${topicId}`,
     () => undefined
   )
-  const backwardStarted = useState(
-    `kun-topic-replies-bwd-started-${topicId}`,
-    () => false
+  const forwardFromFloor = useState<number | undefined>(
+    `kun-topic-replies-fwd-from-${topicId}`,
+    () => undefined
+  )
+  const backwardFromFloor = useState<number | undefined>(
+    `kun-topic-replies-bwd-from-${topicId}`,
+    () => undefined
   )
   const failedLoad = useState<FailedLoad | null>(
     `kun-topic-replies-failed-${topicId}`,
@@ -90,7 +94,7 @@ export const useTopicReplies = (
 
   const lowestFloor = () => {
     if (!replies.value.length) {
-      return 1
+      return forwardFromFloor.value ?? 1
     }
     return Math.min(...replies.value.map((reply) => reply.floor))
   }
@@ -134,7 +138,7 @@ export const useTopicReplies = (
     }
     status.value = 'pending'
     sortOrder.value = 'asc'
-    backwardStarted.value = false
+    backwardFromFloor.value = undefined
     backwardCursor.value = undefined
     const fromFloor = opts.fromFloor
     const result = await fetchPage({
@@ -147,6 +151,7 @@ export const useTopicReplies = (
     }
     replies.value = dedupe(result.data.items)
     forwardCursor.value = result.data.next_cursor
+    forwardFromFloor.value = fromFloor
     isComplete.value = !result.data.next_cursor
     hasEarlier.value = fromFloor !== undefined && fromFloor > 1
     succeed()
@@ -162,9 +167,12 @@ export const useTopicReplies = (
       return
     }
     status.value = 'pending'
+    // The API binds a cursor to the from_floor it was issued under: sending
+    // the cursor alone answered 400 INVALID_CURSOR on every ?reply=N page.
     const result = await fetchPage({
       sort: sortParam(sortOrder.value),
-      cursor
+      cursor,
+      from_floor: forwardFromFloor.value
     })
     if (!result.ok) {
       fail({ type: 'more' }, result.problem)
@@ -181,19 +189,17 @@ export const useTopicReplies = (
       return
     }
     status.value = 'pending'
-    const result = await fetchPage(
-      backwardStarted.value
-        ? {
-            sort: 'floor_desc',
-            ...(backwardCursor.value ? { cursor: backwardCursor.value } : {})
-          }
-        : { sort: 'floor_desc', from_floor: lowestFloor() - 1 }
-    )
+    const fromFloor = backwardFromFloor.value ?? lowestFloor() - 1
+    const result = await fetchPage({
+      sort: 'floor_desc',
+      cursor: backwardCursor.value,
+      from_floor: fromFloor
+    })
     if (!result.ok) {
       fail({ type: 'earlier' }, result.problem)
       return
     }
-    backwardStarted.value = true
+    backwardFromFloor.value = fromFloor
     backwardCursor.value = result.data.next_cursor
     hasEarlier.value = Boolean(result.data.next_cursor)
     const incoming = notLoaded(result.data.items).sort(
@@ -214,11 +220,12 @@ export const useTopicReplies = (
       return
     }
     sortOrder.value = order
-    backwardStarted.value = false
+    backwardFromFloor.value = undefined
     backwardCursor.value = undefined
     hasEarlier.value = false
     replies.value = dedupe(result.data.items)
     forwardCursor.value = result.data.next_cursor
+    forwardFromFloor.value = undefined
     isComplete.value = !result.data.next_cursor
     succeed()
   }

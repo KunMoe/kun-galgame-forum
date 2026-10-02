@@ -136,6 +136,7 @@ describe('useTopicReplies', () => {
         return ok(page([reply('1', 1), reply('2', 2)], 'c2'))
       }
       expect(call.query.cursor).toBe('c2')
+      expect(call.query).not.toHaveProperty('from_floor')
       return ok(page([reply('2', 2), reply('3', 3)]))
     })
     const { box, stop } = run('t-forward', get)
@@ -158,6 +159,7 @@ describe('useTopicReplies', () => {
           return ok(page([reply('4', 4), reply('3', 3), reply('2', 2)], 'b1'))
         }
         expect(call.query.cursor).toBe('b1')
+        expect(call.query.from_floor).toBe(4)
         return ok(page([reply('1', 1)]))
       }
       return ok(page([reply('5', 5), reply('6', 6)], 'f1'))
@@ -209,6 +211,67 @@ describe('useTopicReplies', () => {
     await box.loadInitialReplies({ fromFloor: 7 })
     expect(calls[0]!.query?.from_floor).toBe(7)
     expect(box.hasEarlier.value).toBe(true)
+    stop()
+  })
+
+  it('sends the anchor again with every forward cursor it issued', async () => {
+    const { get, calls } = captureGet((call) => {
+      if (call.query?.cursor === 'f1') {
+        return ok(page([reply('33', 33)], 'f2'))
+      }
+      if (call.query?.cursor === 'f2') {
+        return ok(page([reply('34', 34)]))
+      }
+      return ok(page([reply('31', 31), reply('32', 32)], 'f1'))
+    })
+    const { box, stop } = run('t-anchor-forward', get)
+    await box.loadInitialReplies({ fromFloor: 31 })
+    await box.loadMore()
+    await box.loadMore()
+    expect(calls.map((call) => call.query?.from_floor)).toEqual([31, 31, 31])
+    expect(calls.map((call) => call.query?.cursor)).toEqual([
+      undefined,
+      'f1',
+      'f2'
+    ])
+    expect(box.replies.value.map((row) => row.floor)).toEqual([31, 32, 33, 34])
+    expect(box.problem.value).toBeNull()
+    stop()
+  })
+
+  it('drops the anchor once the sort switches', async () => {
+    const { get, calls } = captureGet((call) => {
+      if (call.query?.sort === 'floor_desc') {
+        return call.query.cursor
+          ? ok(page([reply('7', 7)]))
+          : ok(page([reply('9', 9), reply('8', 8)], 'd1'))
+      }
+      return ok(page([reply('31', 31)], 'f1'))
+    })
+    const { box, stop } = run('t-anchor-sort', get)
+    await box.loadInitialReplies({ fromFloor: 31 })
+    await box.setSort('desc')
+    await box.loadMore()
+    expect(calls[2]!.query).toMatchObject({ sort: 'floor_desc', cursor: 'd1' })
+    expect(calls[2]!.query).not.toHaveProperty('from_floor')
+    stop()
+  })
+
+  it('reads back from the anchor when the anchored page is empty', async () => {
+    const { get, calls } = captureGet((call) => {
+      if (call.query?.sort === 'floor_desc') {
+        return ok(page([reply('63', 63), reply('62', 62)]))
+      }
+      return ok(page([]))
+    })
+    const { box, stop } = run('t-anchor-empty', get)
+    await box.loadInitialReplies({ fromFloor: 91 })
+    await box.loadEarlier()
+    expect(calls[1]!.query).toMatchObject({
+      sort: 'floor_desc',
+      from_floor: 90
+    })
+    expect(box.replies.value.map((row) => row.floor)).toEqual([62, 63])
     stop()
   })
 
