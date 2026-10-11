@@ -149,6 +149,25 @@ func Register(u *Users) func(huma.API) {
 			}),
 		}), u.putNotificationPreferences)
 
+		huma.Register(api, v1.Required(huma.Operation{
+			OperationID: "muteNotificationType",
+			Method:      http.MethodPut,
+			Path:        "/me/notification-preferences/muted-types/{muted_type}",
+			Summary:     "Mute one notification type",
+			Description: "Adds one type to the caller's muted set and returns the whole set. Muting a type that is already muted is a no-op that answers the same. " +
+				"Every other stored type is left as it is, so a client that does not know every type in the vocabulary should write with this and unmuteNotificationType rather than putNotificationPreferences, which replaces the set.",
+			Tags: []string{"users"},
+		}), u.muteNotificationType)
+
+		huma.Register(api, v1.Required(huma.Operation{
+			OperationID: "unmuteNotificationType",
+			Method:      http.MethodDelete,
+			Path:        "/me/notification-preferences/muted-types/{muted_type}",
+			Summary:     "Unmute one notification type",
+			Description: "Removes one type from the caller's muted set and returns the whole set. Unmuting a type that is not muted is a no-op that answers the same. Every other stored type is left as it is.",
+			Tags:        []string{"users"},
+		}), u.unmuteNotificationType)
+
 		huma.Register(api, v1.IdempotencyOptional(v1.Required(huma.Operation{
 			OperationID: "createCheckIn",
 			Method:      http.MethodPost,

@@ -17,7 +17,7 @@ type putNotificationPreferencesInput struct {
 }
 
 type putNotificationPreferencesBody struct {
-	MutedTypes []MutedType `json:"muted_types" maxItems:"24" uniqueItems:"true" doc:"Notification types to mute, replacing the stored set. Empty array mutes nothing."`
+	MutedTypes []MutedType `json:"muted_types" maxItems:"25" uniqueItems:"true" doc:"Notification types to mute, replacing the stored set. Empty array mutes nothing."`
 }
 
 type putNotificationPreferencesOutput struct {
@@ -52,6 +52,36 @@ func (s *Users) putNotificationPreferences(ctx context.Context, in *putNotificat
 	}
 	stored := mutedToStored(in.Body.MutedTypes)
 	if err := s.users.ReplaceMutedNotificationTypes(user.ID, stored); err != nil {
+		return nil, problem.Internal(err)
+	}
+	return &putNotificationPreferencesOutput{Body: NotificationPreferences{
+		Object:     "notification_preferences",
+		MutedTypes: mutedFromStored(stored),
+	}}, nil
+}
+
+type mutedTypeInput struct {
+	MutedType MutedType `path:"muted_type"`
+}
+
+func (s *Users) muteNotificationType(ctx context.Context, in *mutedTypeInput) (*putNotificationPreferencesOutput, error) {
+	return s.setMutedType(ctx, in.MutedType, true)
+}
+
+func (s *Users) unmuteNotificationType(ctx context.Context, in *mutedTypeInput) (*putNotificationPreferencesOutput, error) {
+	return s.setMutedType(ctx, in.MutedType, false)
+}
+
+func (s *Users) setMutedType(ctx context.Context, tok MutedType, muted bool) (*putNotificationPreferencesOutput, error) {
+	if prob := s.readyUsers(); prob != nil {
+		return nil, prob
+	}
+	user := v1.User(ctx)
+	if user == nil {
+		return nil, problem.New(problem.CodeInvalidCredential, "The credential is invalid, expired, or revoked.")
+	}
+	stored, err := s.users.SetMutedNotificationType(user.ID, mutedToStored([]MutedType{tok})[0], muted)
+	if err != nil {
 		return nil, problem.Internal(err)
 	}
 	return &putNotificationPreferencesOutput{Body: NotificationPreferences{

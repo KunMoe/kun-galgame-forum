@@ -26,3 +26,10 @@ func (s *UserService) ReplaceMutedNotificationTypes(userID int, dbKeys []string)
 	}
 	return s.stateRepo.UpdateMutedTypes(userID, dbKeys)
 }
+
+func (s *UserService) SetMutedNotificationType(userID int, dbKey string, muted bool) ([]string, error) {
+	if err := s.stateRepo.Ensure(userID); err != nil {
+		return nil, err
+	}
+	return s.stateRepo.SetMutedType(userID, dbKey, muted)
+}

@@ -11368,7 +11368,7 @@
               "$ref": "#/components/schemas/MutedType",
               "description": "Notification type the caller has muted. Closed vocabulary of v1 tokens plus chat for private messages."
             },
-            "maxItems": 24,
+            "maxItems": 25,
             "type": "array",
             "uniqueItems": true
           },
@@ -13622,7 +13622,7 @@
               "$ref": "#/components/schemas/MutedType",
               "description": "Notification type the caller has muted. Closed vocabulary of v1 tokens plus chat for private messages."
             },
-            "maxItems": 24,
+            "maxItems": 25,
             "type": "array",
             "uniqueItems": true
           }
@@ -43397,6 +43397,208 @@
           }
         ],
         "summary": "Replace the caller's muted notification types",
+        "tags": [
+          "users"
+        ]
+      }
+    },
+    "/me/notification-preferences/muted-types/{muted_type}": {
+      "delete": {
+        "description": "Removes one type from the caller's muted set and returns the whole set. Unmuting a type that is not muted is a no-op that answers the same. Every other stored type is left as it is.",
+        "operationId": "unmuteNotificationType",
+        "parameters": [
+          {
+            "description": "Notification type the caller has muted. Closed vocabulary of v1 tokens plus chat for private messages.",
+            "in": "path",
+            "name": "muted_type",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/MutedType",
+              "description": "Notification type the caller has muted. Closed vocabulary of v1 tokens plus chat for private messages."
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationPreferences"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Unmute one notification type",
+        "tags": [
+          "users"
+        ]
+      },
+      "put": {
+        "description": "Adds one type to the caller's muted set and returns the whole set. Muting a type that is already muted is a no-op that answers the same. Every other stored type is left as it is, so a client that does not know every type in the vocabulary should write with this and unmuteNotificationType rather than putNotificationPreferences, which replaces the set.",
+        "operationId": "muteNotificationType",
+        "parameters": [
+          {
+            "description": "Notification type the caller has muted. Closed vocabulary of v1 tokens plus chat for private messages.",
+            "in": "path",
+            "name": "muted_type",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/MutedType",
+              "description": "Notification type the caller has muted. Closed vocabulary of v1 tokens plus chat for private messages."
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationPreferences"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Mute one notification type",
         "tags": [
           "users"
         ]

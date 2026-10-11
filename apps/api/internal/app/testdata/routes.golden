@@ -17,6 +17,7 @@ DELETE /api/v1/lotteries/:lottery_id                  cors.New → v1Headers →
 DELETE /api/v1/lotteries/:lottery_id/entries/me       cors.New → v1Headers → fiberAdapter.Handle
 DELETE /api/v1/me/blocked-tags/:tag_id                cors.New → v1Headers → fiberAdapter.Handle
 DELETE /api/v1/me/following/:user_id                  cors.New → v1Headers → fiberAdapter.Handle
+DELETE /api/v1/me/notification-preferences/muted-types/:muted_type cors.New → v1Headers → fiberAdapter.Handle
 DELETE /api/v1/me/notifications/:notification_id      cors.New → v1Headers → fiberAdapter.Handle
 DELETE /api/v1/me/shop/loadout/:scope/:slot           cors.New → v1Headers → fiberAdapter.Handle
 DELETE /api/v1/me/topic-drafts/:draft_id              cors.New → v1Headers → fiberAdapter.Handle
@@ -337,6 +338,7 @@ PUT    /api/v1/me/conversations/:user_id/read-marker  cors.New → v1Headers →
 PUT    /api/v1/me/following-activities/read-marker    cors.New → v1Headers → fiberAdapter.Handle
 PUT    /api/v1/me/following/:user_id                  cors.New → v1Headers → fiberAdapter.Handle
 PUT    /api/v1/me/notification-preferences            cors.New → v1Headers → fiberAdapter.Handle
+PUT    /api/v1/me/notification-preferences/muted-types/:muted_type cors.New → v1Headers → fiberAdapter.Handle
 PUT    /api/v1/me/notifications/read-marker           cors.New → v1Headers → fiberAdapter.Handle
 PUT    /api/v1/me/nsfw-display                        cors.New → v1Headers → fiberAdapter.Handle
 PUT    /api/v1/me/preferences                         cors.New → v1Headers → fiberAdapter.Handle
