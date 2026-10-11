@@ -13,6 +13,8 @@ export type {
   ToolsetUploadCreate,
   ToolsetUploadPatch,
   ToolsetPracticality,
+  ToolsetEngagement,
+  UserToolsetRelation,
   PageListToolsetSummary,
   ToolsetSort,
   ToolsetType,

@@ -122,6 +122,7 @@ var vocabularies = []vocabulary{
 	{"UserPostRelation", []string{"authored", "received", "liked"}},
 	{"UserRankingSort", []string{"moemoepoint_desc", "topics_desc", "replies_desc", "comments_desc", "resources_desc"}},
 	{"UserResourceRelation", []string{"published", "liked"}},
+	{"UserToolsetRelation", []string{"authored", "favorited"}},
 	{"UserTopicRelation", []string{"authored", "liked", "upvoted", "favorited", "hidden"}},
 	{"UserWallCommentRelation", []string{"authored", "liked"}},
 	{"UserWorkRelation", []string{"published", "contributed", "liked"}},

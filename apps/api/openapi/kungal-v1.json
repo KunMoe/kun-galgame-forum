@@ -19153,6 +19153,12 @@
               "null"
             ]
           },
+          "favorite_count": {
+            "description": "Number of users who favorited the toolset.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
           "homepage_urls": {
             "description": "http or https homepage URLs. Empty array, never null.",
             "items": {
@@ -19283,6 +19289,7 @@
           "view_count",
           "download_count",
           "comment_count",
+          "favorite_count",
           "practicality_average",
           "practicality_count",
           "practicality_distribution",
@@ -19402,6 +19409,59 @@
           "expires_at",
           "extraction_code",
           "archive_password"
+        ],
+        "type": "object"
+      },
+      "ToolsetEngagement": {
+        "properties": {
+          "favorite_count": {
+            "description": "Number of users who favorited the toolset after this request.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "object": {
+            "const": "toolset_engagement",
+            "description": "Type discriminant. Always toolset_engagement.",
+            "maxLength": 18,
+            "type": "string"
+          },
+          "toolset_id": {
+            "description": "Id of the toolset.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "viewer": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ToolsetEngagementViewer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The caller's favorite state after this request."
+          }
+        },
+        "required": [
+          "object",
+          "toolset_id",
+          "favorite_count",
+          "viewer"
+        ],
+        "type": "object"
+      },
+      "ToolsetEngagementViewer": {
+        "properties": {
+          "has_favorited": {
+            "description": "Whether the caller favorited the toolset.",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "has_favorited"
         ],
         "type": "object"
       },
@@ -20235,6 +20295,10 @@
             "description": "Whether the caller may edit this toolset. Requests authenticated with a Bearer token never carry staff powers.",
             "type": "boolean"
           },
+          "has_favorited": {
+            "description": "Whether the caller favorited the toolset.",
+            "type": "boolean"
+          },
           "practicality_rating": {
             "description": "The caller's rating, 1–5. null when they have not rated.",
             "format": "int64",
@@ -20249,7 +20313,8 @@
         "required": [
           "can_edit",
           "can_delete",
-          "practicality_rating"
+          "practicality_rating",
+          "has_favorited"
         ],
         "type": "object"
       },
@@ -23110,6 +23175,15 @@
           "reply_count"
         ],
         "type": "object"
+      },
+      "UserToolsetRelation": {
+        "enum": [
+          "authored",
+          "favorited"
+        ],
+        "maxLength": 9,
+        "type": "string",
+        "x-vocabulary-closed": true
       },
       "UserTopicItem": {
         "properties": {
@@ -56222,7 +56296,7 @@
     },
     "/toolsets/{toolset_id}": {
       "delete": {
-        "description": "Deletes a toolset and its resources, aliases, contributors, ratings and uploads. Needs can_delete. Requests authenticated with a Bearer token never carry toolset permissions. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED, and a failure of that lookup is SERVICE_UNAVAILABLE with nothing written. Object-store failure is SERVICE_UNAVAILABLE and nothing is deleted.",
+        "description": "Deletes a toolset and its resources, aliases, contributors, ratings, favorites and uploads. Needs can_delete. Requests authenticated with a Bearer token never carry toolset permissions. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED, and a failure of that lookup is SERVICE_UNAVAILABLE with nothing written. Object-store failure is SERVICE_UNAVAILABLE and nothing is deleted.",
         "operationId": "deleteToolset",
         "parameters": [
           {
@@ -56567,6 +56641,212 @@
           }
         ],
         "summary": "Edit a toolset",
+        "tags": [
+          "toolsets"
+        ]
+      }
+    },
+    "/toolsets/{toolset_id}/favorite": {
+      "delete": {
+        "description": "Clears the caller's favorite. Unfavoriting when not favorited changes nothing. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED, and a failure of that lookup is SERVICE_UNAVAILABLE with nothing written. ",
+        "operationId": "deleteToolsetFavorite",
+        "parameters": [
+          {
+            "description": "Toolset id.",
+            "in": "path",
+            "name": "toolset_id",
+            "required": true,
+            "schema": {
+              "description": "Toolset id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ToolsetEngagement"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "ACCOUNT_BANNED."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when the toolset does not exist or its author is not renderable."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Unfavorite a toolset",
+        "tags": [
+          "toolsets"
+        ]
+      },
+      "put": {
+        "description": "Sets the caller's favorite. Favoriting again changes nothing. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED, and a failure of that lookup is SERVICE_UNAVAILABLE with nothing written. ",
+        "operationId": "putToolsetFavorite",
+        "parameters": [
+          {
+            "description": "Toolset id.",
+            "in": "path",
+            "name": "toolset_id",
+            "required": true,
+            "schema": {
+              "description": "Toolset id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ToolsetEngagement"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "ACCOUNT_BANNED."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when the toolset does not exist or its author is not renderable."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Favorite a toolset",
         "tags": [
           "toolsets"
         ]
@@ -63458,7 +63738,7 @@
     },
     "/users/{user_id}/toolsets": {
       "get": {
-        "description": "Lists toolsets the user authored, newest first. An unrenderable user is NOT_FOUND. An empty list is 200 with total 0.",
+        "description": "Lists toolsets related to the user. relation=authored (the default) is the toolsets they authored, newest first; relation=favorited is the toolsets they favorited, most recently favorited first, and omits toolsets whose author is not renderable from both items and total. An unrenderable user is NOT_FOUND. An empty list is 200 with total 0.",
         "operationId": "listUserToolsets",
         "parameters": [
           {
@@ -63499,6 +63779,17 @@
               "minimum": 1,
               "type": "integer"
             }
+          },
+          {
+            "description": "How the listed toolsets relate to the user: authored (default), newest first; or favorited, most recently favorited first.",
+            "explode": false,
+            "in": "query",
+            "name": "relation",
+            "schema": {
+              "$ref": "#/components/schemas/UserToolsetRelation",
+              "default": "authored",
+              "description": "How the listed toolsets relate to the user: authored (default), newest first; or favorited, most recently favorited first."
+            }
           }
         ],
         "responses": {
@@ -63520,7 +63811,7 @@
                 }
               }
             },
-            "description": "LIMIT_TOO_LARGE or INVALID_PARAMETER."
+            "description": "UNKNOWN_ENUM_VALUE when relation is not in this collection's vocabulary, LIMIT_TOO_LARGE, or INVALID_PARAMETER."
           },
           "401": {
             "content": {

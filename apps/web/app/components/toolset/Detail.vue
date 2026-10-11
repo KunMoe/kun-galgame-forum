@@ -40,6 +40,8 @@ const practicalityDistribution = ref([
   ...props.toolset.practicality_distribution
 ])
 const practicalityRating = ref(props.toolset.viewer?.practicality_rating ?? null)
+const favoriteCount = ref(props.toolset.favorite_count)
+const isFavorited = ref(props.toolset.viewer?.has_favorited ?? false)
 
 watch(
   () => props.toolset,
@@ -47,6 +49,8 @@ watch(
     practicalityAverage.value = next.practicality_average
     practicalityDistribution.value = [...next.practicality_distribution]
     practicalityRating.value = next.viewer?.practicality_rating ?? null
+    favoriteCount.value = next.favorite_count
+    isFavorited.value = next.viewer?.has_favorited ?? false
   }
 )
 
@@ -121,6 +125,22 @@ const handleSetStar = async (val: number) => {
   practicalityDistribution.value = [...result.data.practicality_distribution]
   practicalityRating.value = result.data.viewer?.practicality_rating ?? val
   useMessage(`已评分: ${val} 星`, 'success')
+}
+
+const handleFavorite = async (next: boolean) => {
+  const options = { params: { path: { toolset_id: data.value.id } } }
+  const result = await settle(
+    next
+      ? api.PUT('/toolsets/{toolset_id}/favorite', options)
+      : api.DELETE('/toolsets/{toolset_id}/favorite', options)
+  )
+  if (!result.ok) {
+    reportProblem(result.problem)
+    return false
+  }
+  favoriteCount.value = result.data.favorite_count
+  isFavorited.value = result.data.viewer?.has_favorited ?? next
+  return true
 }
 
 const handleResourceAdded = (res: ToolsetResourceSummary) => {
@@ -237,7 +257,13 @@ const handleResourceUpdated = (res: ToolsetResourceSummary) => {
           ·
           {{ `${formatNumber(data.download_count)} 下载` }}
         </div>
-        <div class="flex gap-1">
+        <div class="flex flex-wrap items-center gap-1">
+          <FavoriteToggle
+            :favorited="isFavorited"
+            :count="favoriteCount"
+            :action="handleFavorite"
+            :messages="['已收藏', '已取消收藏']"
+          />
           <KunButton @click="handlePublishResource">上传 / 添加资源</KunButton>
           <KunButton
             v-if="canEditToolset"

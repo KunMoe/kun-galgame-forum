@@ -183,6 +183,11 @@ func (w *purgeWorld) populate(t *testing.T) {
 	s.insert("galgame_toolset_contributor", map[string]any{"toolset_id": pwToolsetO, "user_id": pwTarget, "created": at, "updated": at})
 	s.insert("galgame_toolset_practicality", map[string]any{"toolset_id": pwToolsetO, "user_id": pwTarget, "rate": 3, "created": at, "updated": at})
 	s.insert("toolset_upload", map[string]any{"artifact_uuid": "pw-upload-1", "toolset_id": pwToolsetO, "user_id": pwTarget, "created": at})
+	s.insert("galgame_toolset_favorite", map[string]any{"toolset_id": pwToolsetO, "user_id": pwTarget, "created": at})
+	s.insert("galgame_toolset_favorite", map[string]any{"toolset_id": pwToolsetO, "user_id": pwThird, "created": at})
+	s.insert("galgame_toolset_favorite", map[string]any{"toolset_id": pwToolsetT, "user_id": pwOther, "created": at})
+	s.run(`UPDATE galgame_toolset SET favorite_count = 2 WHERE id = ?`, pwToolsetO)
+	s.run(`UPDATE galgame_toolset SET favorite_count = 1 WHERE id = ?`, pwToolsetT)
 
 	colT := s.insert("galgame_collection", map[string]any{"user_id": pwTarget, "name": "pw col", "visibility": "public", "item_count": 1, "created": at, "updated": at})
 	s.insert("galgame_collection_item", map[string]any{"collection_id": colT["id"], "work_id": pwGalgame, "user_id": pwTarget, "created": at})
@@ -275,6 +280,7 @@ func TestPurgeArchiveRoundTrip(t *testing.T) {
 		`SELECT count(*) FROM todo WHERE id = 930400702 AND status = 0 AND claimed_user_id IS NULL`,
 		`SELECT count(*) FROM galgame_website WHERE id = 930400501 AND user_id <> 930400001`,
 		`SELECT count(*) FROM feed_activity WHERE type = 'GALGAME_WEBSITE_CREATION' AND source_id = 930400501 AND user_id <> 930400001`,
+		`SELECT count(*) FROM galgame_toolset WHERE id = 930400602 AND favorite_count = 1`,
 	} {
 		if w.scalar(t, q) != 1 {
 			t.Errorf("the purge did not rewrite what the seed expects: %s", q)

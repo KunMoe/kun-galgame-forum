@@ -3845,7 +3845,7 @@ export interface paths {
         post?: never;
         /**
          * Delete a toolset
-         * @description Deletes a toolset and its resources, aliases, contributors, ratings and uploads. Needs can_delete. Requests authenticated with a Bearer token never carry toolset permissions. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED, and a failure of that lookup is SERVICE_UNAVAILABLE with nothing written. Object-store failure is SERVICE_UNAVAILABLE and nothing is deleted.
+         * @description Deletes a toolset and its resources, aliases, contributors, ratings, favorites and uploads. Needs can_delete. Requests authenticated with a Bearer token never carry toolset permissions. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED, and a failure of that lookup is SERVICE_UNAVAILABLE with nothing written. Object-store failure is SERVICE_UNAVAILABLE and nothing is deleted.
          */
         delete: operations["deleteToolset"];
         options?: never;
@@ -3855,6 +3855,30 @@ export interface paths {
          * @description Changes the fields that are sent and returns the toolset. Needs can_edit. Requests authenticated with a Bearer token never carry toolset permissions. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED, and a failure of that lookup is SERVICE_UNAVAILABLE with nothing written. Only name, content_markdown and aliases, when sent, go through the trust-and-safety check. aliases and homepage_urls, when present, replace the whole set.
          */
         patch: operations["updateToolset"];
+        trace?: never;
+    };
+    "/toolsets/{toolset_id}/favorite": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Favorite a toolset
+         * @description Sets the caller's favorite. Favoriting again changes nothing. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED, and a failure of that lookup is SERVICE_UNAVAILABLE with nothing written.
+         */
+        put: operations["putToolsetFavorite"];
+        post?: never;
+        /**
+         * Unfavorite a toolset
+         * @description Clears the caller's favorite. Unfavoriting when not favorited changes nothing. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED, and a failure of that lookup is SERVICE_UNAVAILABLE with nothing written.
+         */
+        delete: operations["deleteToolsetFavorite"];
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/toolsets/{toolset_id}/practicality": {
@@ -4638,7 +4662,7 @@ export interface paths {
         };
         /**
          * List a user's toolsets
-         * @description Lists toolsets the user authored, newest first. An unrenderable user is NOT_FOUND. An empty list is 200 with total 0.
+         * @description Lists toolsets related to the user. relation=authored (the default) is the toolsets they authored, newest first; relation=favorited is the toolsets they favorited, most recently favorited first, and omits toolsets whose author is not renderable from both items and total. An unrenderable user is NOT_FOUND. An empty list is 200 with total 0.
          */
         get: operations["listUserToolsets"];
         put?: never;
@@ -12616,6 +12640,11 @@ export interface components {
              * @description Time of the latest edit. null when never edited.
              */
             edited_at: string | null;
+            /**
+             * Format: int64
+             * @description Number of users who favorited the toolset.
+             */
+            favorite_count: number;
             /** @description http or https homepage URLs. Empty array, never null. */
             homepage_urls: string[];
             /** @description Toolset id. */
@@ -12702,6 +12731,26 @@ export interface components {
              * @constant
              */
             object: "toolset_download";
+        };
+        ToolsetEngagement: {
+            /**
+             * Format: int64
+             * @description Number of users who favorited the toolset after this request.
+             */
+            favorite_count: number;
+            /**
+             * @description Type discriminant. Always toolset_engagement.
+             * @constant
+             */
+            object: "toolset_engagement";
+            /** @description Id of the toolset. */
+            toolset_id: string;
+            /** @description The caller's favorite state after this request. */
+            viewer: components["schemas"]["ToolsetEngagementViewer"] | null;
+        };
+        ToolsetEngagementViewer: {
+            /** @description Whether the caller favorited the toolset. */
+            has_favorited: boolean;
         };
         /** @enum {string} */
         ToolsetLanguage: "zh-cn" | "zh-tw" | "ja-jp" | "en-us" | "others";
@@ -13006,6 +13055,8 @@ export interface components {
             can_delete: boolean;
             /** @description Whether the caller may edit this toolset. Requests authenticated with a Bearer token never carry staff powers. */
             can_edit: boolean;
+            /** @description Whether the caller favorited the toolset. */
+            has_favorited: boolean;
             /**
              * Format: int64
              * @description The caller's rating, 1–5. null when they have not rated.
@@ -14128,6 +14179,8 @@ export interface components {
              */
             topic_count: number;
         };
+        /** @enum {string} */
+        UserToolsetRelation: "authored" | "favorited";
         UserTopicItem: {
             /**
              * Format: date-time
@@ -35683,6 +35736,160 @@ export interface operations {
             };
         };
     };
+    putToolsetFavorite: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Toolset id. */
+                toolset_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ToolsetEngagement"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the toolset does not exist or its author is not renderable. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    deleteToolsetFavorite: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Toolset id. */
+                toolset_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ToolsetEngagement"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the toolset does not exist or its author is not renderable. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     putToolsetPracticality: {
         parameters: {
             query?: never;
@@ -40414,6 +40621,8 @@ export interface operations {
                 page?: number;
                 /** @description Page size. 1–100, default 24. Values above 100 are rejected, not clamped. */
                 limit?: number;
+                /** @description How the listed toolsets relate to the user: authored (default), newest first; or favorited, most recently favorited first. */
+                relation?: components["schemas"]["UserToolsetRelation"];
             };
             header?: never;
             path: {
@@ -40433,7 +40642,7 @@ export interface operations {
                     "application/json": components["schemas"]["PageListToolsetSummary"];
                 };
             };
-            /** @description LIMIT_TOO_LARGE or INVALID_PARAMETER. */
+            /** @description UNKNOWN_ENUM_VALUE when relation is not in this collection's vocabulary, LIMIT_TOO_LARGE, or INVALID_PARAMETER. */
             400: {
                 headers: {
                     [name: string]: unknown;

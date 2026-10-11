@@ -32,19 +32,9 @@ func (s *Service) listToolsets(ctx context.Context, in *listToolsetsInput) (*lis
 	filter := repository.ListFilter{
 		Type: in.Type, Language: in.Language, Platform: in.Platform, Version: in.Version, Q: in.Q,
 	}
-	authors, err := s.store.DistinctAuthors(filter)
-	if err != nil {
-		return nil, problem.Internal(err)
-	}
-	users, p := s.lookupUsers(ctx, authors)
+	keep, p := s.renderableAuthors(ctx, filter)
 	if p != nil {
 		return nil, p
-	}
-	keep := make([]int, 0, len(authors))
-	for _, id := range authors {
-		if renderable(users, id) {
-			keep = append(keep, id)
-		}
 	}
 	filter.AuthorIDs = keep
 	total, err := s.store.Count(filter)
@@ -61,6 +51,24 @@ func (s *Service) listToolsets(ctx context.Context, in *listToolsetsInput) (*lis
 		return nil, p
 	}
 	return &listToolsetsOutput{Body: repr.NewPageList(items, n, rel)}, nil
+}
+
+func (s *Service) renderableAuthors(ctx context.Context, filter repository.ListFilter) ([]int, *problem.Problem) {
+	authors, err := s.store.DistinctAuthors(filter)
+	if err != nil {
+		return nil, problem.Internal(err)
+	}
+	users, p := s.lookupUsers(ctx, authors)
+	if p != nil {
+		return nil, p
+	}
+	keep := make([]int, 0, len(authors))
+	for _, id := range authors {
+		if renderable(users, id) {
+			keep = append(keep, id)
+		}
+	}
+	return keep, nil
 }
 
 func (s *Service) listUserToolsets(ctx context.Context, in *listUserToolsetsInput) (*listToolsetsOutput, error) {
@@ -84,12 +92,23 @@ func (s *Service) listUserToolsets(ctx context.Context, in *listUserToolsetsInpu
 		return nil, notFound()
 	}
 	filter := repository.ListFilter{UserID: userID}
+	if in.Relation == "favorited" {
+		filter = repository.ListFilter{FavoritedBy: userID}
+		if filter.AuthorIDs, p = s.renderableAuthors(ctx, filter); p != nil {
+			return nil, p
+		}
+	}
 	total, err := s.store.Count(filter)
 	if err != nil {
 		return nil, problem.Internal(err)
 	}
 	n, rel := collect.ClampTotal(total)
-	rows, err := s.store.List(filter, repository.SortSpec{Column: "created", Desc: true}, pg.Offset(), pg.Limit)
+	var rows []model.GalgameToolset
+	if in.Relation == "favorited" {
+		rows, err = s.store.ListFavorited(filter, pg.Offset(), pg.Limit)
+	} else {
+		rows, err = s.store.List(filter, repository.SortSpec{Column: "created", Desc: true}, pg.Offset(), pg.Limit)
+	}
 	if err != nil {
 		return nil, problem.Internal(err)
 	}

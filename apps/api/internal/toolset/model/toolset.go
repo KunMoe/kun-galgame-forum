@@ -19,6 +19,7 @@ type GalgameToolset struct {
 	Edited             *time.Time      `gorm:"" json:"edited"`
 	Version            string          `gorm:"type:varchar(233);default:''" json:"version"`
 	CommentCount       int             `gorm:"column:comment_count;not null;default:0" json:"comment_count"`
+	FavoriteCount      int             `gorm:"column:favorite_count;not null;default:0" json:"favorite_count"`
 
 	UserID int `gorm:"column:user_id;not null" json:"user_id"`
 

@@ -2,7 +2,7 @@
 import type { UserProfile } from '#shared/utils/api/schemas'
 import {
   kunUserCollectionNavItem,
-  type KUN_USER_PAGE_COLLECTION_TYPE
+  KUN_USER_PAGE_COLLECTION_TYPE
 } from '~/constants/user'
 
 const props = defineProps<{
@@ -12,9 +12,7 @@ const props = defineProps<{
 const route = useRoute()
 const collectionType = computed(() => {
   const t = (route.params as { type: string }).type
-  return (
-    t === 'topic' ? 'topic' : 'galgame'
-  ) as (typeof KUN_USER_PAGE_COLLECTION_TYPE)[number]
+  return KUN_USER_PAGE_COLLECTION_TYPE.find((type) => type === t) ?? 'galgame'
 })
 
 useKunDisableSeo(`${props.user.name ?? ''}的收藏`)
@@ -35,6 +33,10 @@ useKunDisableSeo(`${props.user.name ?? ''}的收藏`)
       :user-id="Number(user.id)"
       :owner-name="user.name"
     />
-    <UserCollectionTopic v-else :user-id="Number(user.id)" />
+    <UserCollectionTopic
+      v-else-if="collectionType === 'topic'"
+      :user-id="Number(user.id)"
+    />
+    <UserToolset v-else :user-id="Number(user.id)" relation="favorited" />
   </div>
 </template>

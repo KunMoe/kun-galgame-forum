@@ -67,6 +67,7 @@ type Toolset struct {
 	ViewCount                int                      `json:"view_count" minimum:"0" doc:"Lifetime view count. Each read of this operation adds one."`
 	DownloadCount            int                      `json:"download_count" minimum:"0" doc:"Sum of download counts of every resource. 0 when there are none."`
 	CommentCount             int                      `json:"comment_count" minimum:"0" doc:"Comments on the toolset's wall."`
+	FavoriteCount            int                      `json:"favorite_count" minimum:"0" doc:"Number of users who favorited the toolset."`
 	PracticalityAverage      *float64                 `json:"practicality_average" minimum:"1" maximum:"5" doc:"Mean rating, two decimal places. null when nobody has rated."`
 	PracticalityCount        int                      `json:"practicality_count" minimum:"0" doc:"Number of ratings."`
 	PracticalityDistribution []StarCount              `json:"practicality_distribution" minItems:"5" maxItems:"5" doc:"Counts per star. Index 0 is 1 star. Length 5, never null."`
@@ -84,6 +85,18 @@ type ToolsetViewer struct {
 	CanEdit            bool `json:"can_edit" doc:"Whether the caller may edit this toolset. Requests authenticated with a Bearer token never carry staff powers."`
 	CanDelete          bool `json:"can_delete" doc:"Whether the caller may delete this toolset. Requests authenticated with a Bearer token never carry staff powers."`
 	PracticalityRating *int `json:"practicality_rating" minimum:"1" maximum:"5" doc:"The caller's rating, 1–5. null when they have not rated."`
+	HasFavorited       bool `json:"has_favorited" doc:"Whether the caller favorited the toolset."`
+}
+
+type ToolsetEngagement struct {
+	Object        string                   `json:"object" enum:"toolset_engagement" maxLength:"18" doc:"Type discriminant. Always toolset_engagement."`
+	ToolsetID     repr.DecimalID           `json:"toolset_id" doc:"Id of the toolset."`
+	FavoriteCount int                      `json:"favorite_count" minimum:"0" doc:"Number of users who favorited the toolset after this request."`
+	Viewer        *ToolsetEngagementViewer `json:"viewer" doc:"The caller's favorite state after this request."`
+}
+
+type ToolsetEngagementViewer struct {
+	HasFavorited bool `json:"has_favorited" doc:"Whether the caller favorited the toolset."`
 }
 
 type ToolsetSource struct {
@@ -253,9 +266,10 @@ type listToolsetsOutput struct {
 }
 
 type listUserToolsetsInput struct {
-	UserID string `path:"user_id" pattern:"^[1-9][0-9]{0,18}$" maxLength:"19" doc:"User id."`
-	Page   int    `query:"page" minimum:"1" default:"1" doc:"1-based page number. page × limit may not exceed 10000."`
-	Limit  int    `query:"limit" minimum:"1" maximum:"100" default:"24" doc:"Page size. 1–100, default 24. Values above 100 are rejected, not clamped."`
+	UserID   string `path:"user_id" pattern:"^[1-9][0-9]{0,18}$" maxLength:"19" doc:"User id."`
+	Page     int    `query:"page" minimum:"1" default:"1" doc:"1-based page number. page × limit may not exceed 10000."`
+	Limit    int    `query:"limit" minimum:"1" maximum:"100" default:"24" doc:"Page size. 1–100, default 24. Values above 100 are rejected, not clamped."`
+	Relation string `query:"relation" enum:"authored,favorited" default:"authored" maxLength:"9" doc:"How the listed toolsets relate to the user: authored (default), newest first; or favorited, most recently favorited first."`
 }
 
 type toolsetIDInput struct {
@@ -349,6 +363,10 @@ type putPracticalityInput struct {
 
 type practicalityOutput struct {
 	Body ToolsetPracticality
+}
+
+type engagementOutput struct {
+	Body ToolsetEngagement
 }
 
 type noContentOutput struct{}
