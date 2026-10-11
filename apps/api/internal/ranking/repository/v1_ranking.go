@@ -68,8 +68,9 @@ var workRankingColumns = map[string]string{
 
 func (r *RankingRepository) TopWorks(key string, includeNSFW, includeResourceless, includeAllOriginalLanguages bool, limit int, exclude []int) ([]RankedRow, error) {
 	q := r.db.Table("galgame g").Where("g.published AND g.catalog_rendered")
+	// NOT IN (SELECT unnest) on purpose; see the same filter in galgame's list_repo.go.
 	if len(exclude) > 0 {
-		q = q.Where("NOT (g.id = ANY(?::int[]))", intArrayLiteral(exclude))
+		q = q.Where("g.id NOT IN (SELECT unnest(?::int[]))", intArrayLiteral(exclude))
 	}
 	if !includeAllOriginalLanguages {
 		q = q.Where(galgameModel.JaZhOriginalSQL)

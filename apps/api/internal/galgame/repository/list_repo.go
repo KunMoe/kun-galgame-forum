@@ -86,8 +86,11 @@ func (r *GalgameListRepository) ListIDs(f model.GalgameListFilter) (ids []int, t
 			if f.RestrictIDs != nil {
 				q = q.Where("g.id = ANY(?::int[])", intArrayLit(f.RestrictIDs))
 			}
+			// Not NOT (g.id = ANY(?)): once pgx's cached statement runs on a generic
+			// plan, that compares every row against the whole array — 100k rows
+			// against 49k ids took 5.9 s; this form hashes them in 12 ms.
 			if len(f.ExcludeIDs) > 0 {
-				q = q.Where("NOT (g.id = ANY(?::int[]))", intArrayLit(f.ExcludeIDs))
+				q = q.Where("g.id NOT IN (SELECT unnest(?::int[]))", intArrayLit(f.ExcludeIDs))
 			}
 			if ratingSort || ratingFilter {
 				q = q.Joins(ratingAggJoin)
@@ -128,7 +131,7 @@ func (r *GalgameListRepository) ListIDs(f model.GalgameListFilter) (ids []int, t
 		inner = inner.Where("g.id = ANY(?::int[])", intArrayLit(f.RestrictIDs))
 	}
 	if len(f.ExcludeIDs) > 0 {
-		inner = inner.Where("NOT (g.id = ANY(?::int[]))", intArrayLit(f.ExcludeIDs))
+		inner = inner.Where("g.id NOT IN (SELECT unnest(?::int[]))", intArrayLit(f.ExcludeIDs))
 	}
 	if ratingFilter {
 		inner = inner.Joins(ratingAggJoin)
