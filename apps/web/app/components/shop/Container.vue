@@ -11,7 +11,12 @@ import {
   SHOP_SITE_SHELF,
   SHOP_TYPE_SHELF
 } from '~/constants/shop'
-import { isOfferOwned, offerAction, purchasedCount } from './_offer'
+import {
+  isOfferOwned,
+  isRestockSubscribed,
+  offerAction,
+  purchasedCount
+} from './_offer'
 
 const api = useApiClient()
 const { id, name, avatar, moemoepoint } = storeToRefs(usePersistUserStore())
@@ -73,15 +78,49 @@ const shelves = computed(() => {
   return [zone, ...byType].filter((s) => s.offers.length)
 })
 
+const restockBusy = ref<string | null>(null)
+
 const stateOf = (offer: ShopOffer) => {
   const used = purchasedCount(offer, inventory.value)
+  const subscribed = isRestockSubscribed(offer, inventory.value)
   const action = offerAction(offer, {
     signedIn: signedIn.value,
     owned: isOfferOwned(offer, inventory.value?.items ?? []),
     used,
-    balance: balance.value ?? moemoepoint.value
+    balance: balance.value ?? moemoepoint.value,
+    subscribed
   })
-  return { used, action }
+  return { used, action, subscribed, busy: restockBusy.value === offer.id }
+}
+
+const setRestockAlert = async (offer: ShopOffer, subscribe: boolean) => {
+  if (!signedIn.value) {
+    startOAuthLogin({ returnTo: '/shop' })
+    return
+  }
+  const params = { path: { offer_id: offer.id } }
+  restockBusy.value = offer.id
+  const result = await settle(
+    subscribe
+      ? api.PUT('/shop/offers/{offer_id}/restock-alert', { params })
+      : api.DELETE('/shop/offers/{offer_id}/restock-alert', { params })
+  )
+  restockBusy.value = null
+  if (!result.ok) {
+    reportProblem(result.problem)
+    return
+  }
+  const inv = inventory.value
+  if (inv) {
+    const rest = inv.restock_alert_offer_ids.filter((id) => id !== offer.id)
+    inv.restock_alert_offer_ids = result.data.is_subscribed
+      ? [...rest, offer.id]
+      : rest
+  }
+  useMessage(
+    result.data.is_subscribed ? '补货时会在站内信通知你' : '已取消到货提醒',
+    'success'
+  )
 }
 
 const buying = ref<ShopOffer | null>(null)
@@ -169,6 +208,7 @@ const onWorn = (slot: ShopLoadoutSlot) => {
             :viewer="viewer"
             v-bind="stateOf(offer)"
             @buy="openPurchase(offer)"
+            @restock="setRestockAlert(offer, $event)"
           />
         </ShopShelf>
       </div>

@@ -20,24 +20,34 @@ const offer = (patch: Partial<ShopOffer> = {}): ShopOffer => ({
   purchase_limit: null,
   stock_count: null,
   remaining_count: null,
+  sold_count: 0,
+  restocked_at: null,
   ends_at: null,
   ...patch
 })
 
-const viewer = { signedIn: true, owned: false, used: 0, balance: 500 }
+const viewer = {
+  signedIn: true,
+  owned: false,
+  used: 0,
+  balance: 500,
+  subscribed: false
+}
 
 describe('offerAction', () => {
   it('lets a signed-in user who can afford it buy', () => {
     expect(offerAction(offer(), viewer)).toEqual({
       label: '购买',
-      disabled: false
+      disabled: false,
+      intent: 'buy'
     })
   })
 
   it('names the shortfall and refuses when the balance is short', () => {
     expect(offerAction(offer(), { ...viewer, balance: 120 })).toEqual({
       label: '还差 180 点',
-      disabled: true
+      disabled: true,
+      intent: 'buy'
     })
   })
 
@@ -45,14 +55,15 @@ describe('offerAction', () => {
     const poor = { ...viewer, balance: 0 }
     expect(offerAction(offer(), { ...poor, owned: true }).label).toBe('已拥有')
     expect(offerAction(offer({ remaining_count: 0 }), poor).label).toBe(
-      '已售罄'
+      '到货提醒我'
     )
     const monthly = offer({
       purchase_limit: { quantity: 2, period: 'month' }
     })
     expect(offerAction(monthly, { ...poor, used: 2 })).toEqual({
       label: '本月已买满',
-      disabled: true
+      disabled: true,
+      intent: 'buy'
     })
     const lifetime = offer({
       purchase_limit: { quantity: 1, period: 'lifetime' }
@@ -63,7 +74,27 @@ describe('offerAction', () => {
   it('asks an anonymous visitor to sign in instead of judging a balance it does not know', () => {
     expect(
       offerAction(offer(), { ...viewer, signedIn: false, balance: 0 })
-    ).toEqual({ label: '登录后购买', disabled: false })
+    ).toEqual({ label: '登录后购买', disabled: false, intent: 'buy' })
+  })
+
+  it('offers a restock alert on a sold-out offer, even past the purchase limit', () => {
+    const soldOut = offer({
+      remaining_count: 0,
+      purchase_limit: { quantity: 1, period: 'month' }
+    })
+    expect(offerAction(soldOut, { ...viewer, used: 1 })).toEqual({
+      label: '到货提醒我',
+      disabled: false,
+      intent: 'subscribe'
+    })
+    expect(offerAction(soldOut, { ...viewer, signedIn: false }).intent).toBe(
+      'subscribe'
+    )
+    expect(offerAction(soldOut, { ...viewer, subscribed: true })).toEqual({
+      label: '已开启到货提醒',
+      disabled: false,
+      intent: 'unsubscribe'
+    })
   })
 })
 

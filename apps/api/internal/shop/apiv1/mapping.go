@@ -62,6 +62,8 @@ func mapOffers(in []userclient.ShopOffer) []ShopOffer {
 			Rewards:         rewards,
 			StockCount:      o.Stock,
 			RemainingCount:  o.Remaining,
+			SoldCount:       o.Sold,
+			RestockedAt:     repr.TimestampPtr(o.RestockedAt),
 			EndsAt:          repr.TimestampPtr(o.EndsAt),
 		}
 		if o.PerUserLimit > 0 {
@@ -106,12 +108,13 @@ func mapOrder(o userclient.ShopOrder) ShopOrder {
 
 func mapInventory(inv userclient.ShopInventory, site int64) ShopInventory {
 	out := ShopInventory{
-		Object:      "shop_inventory",
-		Moemoepoint: int(inv.Balance),
-		Items:       make([]ShopOwnedItem, 0, len(inv.Items)),
-		Loadout:     make([]ShopLoadoutSlot, 0, len(scopes)*len(slots)),
-		Orders:      make([]ShopOrder, 0, len(inv.Orders)),
-		LimitUsage:  make([]ShopLimitUsage, 0, len(inv.LimitUsed)),
+		Object:               "shop_inventory",
+		Moemoepoint:          int(inv.Balance),
+		Items:                make([]ShopOwnedItem, 0, len(inv.Items)),
+		Loadout:              make([]ShopLoadoutSlot, 0, len(scopes)*len(slots)),
+		Orders:               make([]ShopOrder, 0, len(inv.Orders)),
+		LimitUsage:           make([]ShopLimitUsage, 0, len(inv.LimitUsed)),
+		RestockAlertOfferIDs: make([]repr.DecimalID, 0, len(inv.RestockAlerts)),
 	}
 	active := map[int64]bool{}
 	for _, owned := range inv.Items {
@@ -152,6 +155,9 @@ func mapInventory(inv userclient.ShopInventory, site int64) ShopInventory {
 	}
 	for _, o := range inv.Orders {
 		out.Orders = append(out.Orders, mapOrder(o))
+	}
+	for _, offerID := range inv.RestockAlerts {
+		out.RestockAlertOfferIDs = append(out.RestockAlertOfferIDs, id64(offerID))
 	}
 	for _, offerID := range slices.Sorted(maps.Keys(inv.LimitUsed)) {
 		out.LimitUsage = append(out.LimitUsage, ShopLimitUsage{OfferID: id64(offerID), PurchasedCount: inv.LimitUsed[offerID]})

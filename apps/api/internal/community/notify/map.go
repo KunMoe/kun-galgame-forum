@@ -21,6 +21,9 @@ func MapNotification(n communityclient.NotificationView, post *communityclient.P
 	if n.Kind == communityclient.InboxFolloweeActivity {
 		return mapFolloweeActivity(n)
 	}
+	if n.Kind == communityclient.InboxNotice {
+		return mapNotice(n)
+	}
 	if target == nil {
 		return nil
 	}
@@ -93,6 +96,8 @@ func mapKind(kind int32, post *communityclient.PostView) (string, bool) {
 		return "user-followed", true
 	case communityclient.InboxFolloweeActivity:
 		return "followee-activity", true
+	case communityclient.InboxNotice:
+		return "notice", true
 	default:
 		return "", false
 	}
@@ -165,19 +170,63 @@ func mapFolloweeActivity(n communityclient.NotificationView) *model.Message {
 	}
 }
 
-func followeeActivityLink(n communityclient.NotificationView, senderID int) string {
-	fallback := "/user/" + strconv.Itoa(senderID)
-	if n.Activity == nil {
-		return fallback
+func mapNotice(n communityclient.NotificationView) *model.Message {
+	if n.Notice == nil {
+		return nil
 	}
-	u, err := url.Parse(n.Activity.URL)
+	msgType, ok := mapKind(n.Kind, nil)
+	if !ok {
+		return nil
+	}
+	link, ok := inSitePath(n.Notice.URL)
+	if !ok {
+		link = noticeFallbackPath(n.Notice.Topic)
+	}
+	status := "unread"
+	if n.ReadAt != nil && *n.ReadAt != "" {
+		status = "read"
+	}
+	id := n.ID
+	seq := n.Seq
+	return &model.Message{
+		Content:                 content.PlainText(n.Notice.Title, constants.TextPreviewLength),
+		Link:                    link,
+		Status:                  status,
+		Type:                    msgType,
+		ReceiverID:              int(n.UserID),
+		CommunityNotificationID: &id,
+		CommunitySeq:            &seq,
+		ItemCount:               int(n.ItemCount),
+		ActorCount:              int(n.ActorCount),
+		CreatedAt:               parseTime(n.UpdatedAt),
+	}
+}
+
+func noticeFallbackPath(topic string) string {
+	if topic == "shop_restock" {
+		return "/shop"
+	}
+	return "/message/notice"
+}
+
+func followeeActivityLink(n communityclient.NotificationView, senderID int) string {
+	if n.Activity != nil {
+		if link, ok := inSitePath(n.Activity.URL); ok {
+			return link
+		}
+	}
+	return "/user/" + strconv.Itoa(senderID)
+}
+
+func inSitePath(raw string) (string, bool) {
+	u, err := url.Parse(raw)
 	if err != nil {
-		return fallback
+		return "", false
 	}
 	switch strings.ToLower(u.Hostname()) {
 	case "www.kungal.com", "kungal.com":
 	default:
-		return fallback
+		return "", false
 	}
 	link := u.EscapedPath()
 	if link == "" {
@@ -187,9 +236,9 @@ func followeeActivityLink(n communityclient.NotificationView, senderID int) stri
 		link += "?" + u.RawQuery
 	}
 	if len(link) > 100 {
-		return fallback
+		return "", false
 	}
-	return link
+	return link, true
 }
 
 func parseTime(s string) time.Time {

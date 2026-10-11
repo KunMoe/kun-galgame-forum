@@ -339,3 +339,56 @@ func TestMapNotificationGalgameCommentLink(t *testing.T) {
 		t.Fatalf("link = %v", got)
 	}
 }
+
+func noticeNote(topic, rawURL string) communityclient.NotificationView {
+	return communityclient.NotificationView{
+		ID: 12, UserID: 3, Kind: communityclient.InboxNotice,
+		ItemCount: 2, UpdatedAt: "2026-10-11T00:00:00Z", Seq: 60,
+		Notice: &communityclient.NotificationNoticeView{
+			ID: 5, Topic: topic, Ref: "offer:7",
+			Title: "你订阅的「DLsite 1000 円优惠券」补货了", URL: rawURL,
+		},
+	}
+}
+
+func TestMapNotice(t *testing.T) {
+	cases := []struct {
+		name string
+		note communityclient.NotificationView
+		link string
+	}{
+		{"shop url", noticeNote("shop_restock", "https://www.kungal.com/shop"), "/shop"},
+		{"bare host keeps query", noticeNote("shop_restock", "https://kungal.com/shop?tab=store"), "/shop?tab=store"},
+		{"foreign host falls back to the shop", noticeNote("shop_restock", "https://evil.example/shop"), "/shop"},
+		{"empty url falls back to the shop", noticeNote("shop_restock", ""), "/shop"},
+		{"over-long path falls back", noticeNote("shop_restock", "https://www.kungal.com/"+strings.Repeat("a", 100)), "/shop"},
+		{"other topic falls back to the inbox", noticeNote("account", "https://example.com/x"), "/message/notice"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := MapNotification(tc.note, nil, nil)
+			if got == nil {
+				t.Fatal("skipped, want a row")
+			}
+			if got.Type != "notice" || got.Link != tc.link || got.Content != "你订阅的「DLsite 1000 円优惠券」补货了" {
+				t.Fatalf("type=%q link=%q content=%q", got.Type, got.Link, got.Content)
+			}
+			if got.SenderID != 0 || got.ItemCount != 2 || got.Status != "unread" ||
+				got.CommunityThreadID != nil || got.CommunityPostNumber != nil {
+				t.Fatalf("row %+v", got)
+			}
+		})
+	}
+
+	read := noticeNote("shop_restock", "https://www.kungal.com/shop")
+	read.ReadAt = ptrStr("2026-10-11T01:00:00Z")
+	if got := MapNotification(read, nil, nil); got == nil || got.Status != "read" {
+		t.Fatalf("read notice %+v", got)
+	}
+
+	bare := noticeNote("shop_restock", "")
+	bare.Notice = nil
+	if got := MapNotification(bare, nil, nil); got != nil {
+		t.Fatalf("a kind 11 row without notice mapped to %+v", got)
+	}
+}

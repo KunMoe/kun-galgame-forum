@@ -39,6 +39,7 @@ const (
 	NotifySubscribedTopic  NotifyKind = "subscribed-topic"
 
 	NotifyResourceRelocated NotifyKind = "resource-relocated"
+	NotifySystemNotice      NotifyKind = "notice"
 )
 
 const notifyContentLimit = 233

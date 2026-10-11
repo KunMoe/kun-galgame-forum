@@ -347,3 +347,102 @@ func TestV1ShopLoadoutInvalidatesUserCache(t *testing.T) {
 		t.Fatal("a purchase left the caller's cached profile in place")
 	}
 }
+
+func TestV1ShopOfferSoldAndRestocked(t *testing.T) {
+	f := newShopFix(t)
+	_, body := f.call(t, http.MethodGet, shopPath, "/shop/offers", "", "", nil)
+	coupon := offerByID(t, body, "7")
+	if asInt(coupon["sold_count"]) != 17 || coupon["restocked_at"] != "2026-10-10T12:00:00Z" {
+		t.Fatalf("coupon sold_count %v restocked_at %v", coupon["sold_count"], coupon["restocked_at"])
+	}
+	frame := offerByID(t, body, "9")
+	if asInt(frame["sold_count"]) != 50 || frame["restocked_at"] != nil {
+		t.Fatalf("frame sold_count %v restocked_at %v", frame["sold_count"], frame["restocked_at"])
+	}
+}
+
+func TestV1ShopInventoryListsRestockAlerts(t *testing.T) {
+	f := newShopFix(t)
+	_, body := f.call(t, http.MethodGet, myShopPath, "/me/shop", "sess-alice", "", nil)
+	ids, _ := body["restock_alert_offer_ids"].([]any)
+	if len(ids) != 2 || ids[0] != "7" || ids[1] != "9" {
+		t.Fatalf("restock_alert_offer_ids %+v", body["restock_alert_offer_ids"])
+	}
+
+	f.setInventory("restock_alerts", []int64{})
+	_, body = f.call(t, http.MethodGet, myShopPath, "/me/shop", "sess-alice", "", nil)
+	if ids, ok := body["restock_alert_offer_ids"].([]any); !ok || len(ids) != 0 {
+		t.Fatalf("no subscriptions answered %+v, want an empty array", body["restock_alert_offer_ids"])
+	}
+}
+
+func TestV1ShopRestockAlertUsesTheCaller(t *testing.T) {
+	f := newShopFix(t)
+	const spec = "/shop/offers/{offer_id}/restock-alert"
+	resp, body := f.call(t, http.MethodPut, shopPath+"/9/restock-alert", spec, "sess-alice", "", nil)
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("%d %+v", resp.StatusCode, body)
+	}
+	if got := f.lastRestock(t); got.method != http.MethodPut || got.userID != w3UserAlice || got.offerID != "9" {
+		t.Fatalf("subscribe %+v", got)
+	}
+	if body["object"] != "shop_restock_alert" || body["offer_id"] != "9" || body["is_subscribed"] != true {
+		t.Fatalf("subscribe answered %+v", body)
+	}
+
+	resp, body = f.call(t, http.MethodDelete, shopPath+"/9/restock-alert", spec, "sess-alice", "", nil)
+	if resp.StatusCode != http.StatusOK || body["is_subscribed"] != false {
+		t.Fatalf("%d %+v", resp.StatusCode, body)
+	}
+	if got := f.lastRestock(t); got.method != http.MethodDelete || got.offerID != "9" {
+		t.Fatalf("unsubscribe %+v", got)
+	}
+}
+
+func TestV1ShopRestockAlertNeedsCredential(t *testing.T) {
+	f := newShopFix(t)
+	resp, body := f.call(t, http.MethodPut, shopPath+"/9/restock-alert", "/shop/offers/{offer_id}/restock-alert", "", "", nil)
+	mustCode(t, resp, body, http.StatusUnauthorized, "MISSING_CREDENTIAL")
+	if len(f.restocks) != 0 {
+		t.Fatal("an anonymous request reached the account service")
+	}
+}
+
+func TestV1ShopRestockAlertErrorMapping(t *testing.T) {
+	cases := []struct {
+		upstream int
+		status   int
+		code     string
+	}{
+		{19002, http.StatusConflict, "SHOP_OFFER_UNAVAILABLE"},
+		{19009, http.StatusConflict, "SHOP_OFFER_UNLIMITED"},
+		{19017, http.StatusInternalServerError, "INTERNAL_ERROR"},
+		{2, http.StatusInternalServerError, "INTERNAL_ERROR"},
+		{10, http.StatusServiceUnavailable, "SERVICE_UNAVAILABLE"},
+	}
+	f := newShopFix(t)
+	for _, c := range cases {
+		f.restockCode.Store(int32(c.upstream))
+		resp, body := f.call(t, http.MethodPut, shopPath+"/6/restock-alert", "/shop/offers/{offer_id}/restock-alert", "sess-alice", "", nil)
+		mustCode(t, resp, body, c.status, c.code)
+	}
+}
+
+func TestV1ShopRestockAlertOutOfRangeID(t *testing.T) {
+	f := newShopFix(t)
+	resp, body := f.call(t, http.MethodPut, shopPath+"/9999999999999999999/restock-alert", "/shop/offers/{offer_id}/restock-alert", "sess-alice", "", nil)
+	mustCode(t, resp, body, http.StatusConflict, "SHOP_OFFER_UNAVAILABLE")
+	if len(f.restocks) != 0 {
+		t.Fatal("an id beyond int64 reached the account service")
+	}
+}
+
+func TestV1ShopGetOffer(t *testing.T) {
+	f := newShopFix(t)
+	resp, body := f.call(t, http.MethodGet, shopPath+"/7", "/shop/offers/{offer_id}", "", "", nil)
+	if resp.StatusCode != http.StatusOK || body["id"] != "7" || asInt(body["sold_count"]) != 17 {
+		t.Fatalf("%d %+v", resp.StatusCode, body)
+	}
+	resp, body = f.call(t, http.MethodGet, shopPath+"/8", "/shop/offers/{offer_id}", "", "", nil)
+	mustCode(t, resp, body, http.StatusNotFound, "NOT_FOUND")
+}

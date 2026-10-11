@@ -23,7 +23,8 @@ const messageTemplates: Record<NotificationType, string> = {
   followee_topic_created: ' 发布了新话题!',
   followee_activity_published: ' 发布了新内容!',
   subscribed_topic_replied: ' 在您关注的话题中发表了新回复',
-  resource_relocated: ' 通知您: 资源已搬迁到 一起萌·LetMoe'
+  resource_relocated: ' 通知您: 资源已搬迁到 一起萌·LetMoe',
+  system_notice: '系统通知'
 }
 
 export const getMessageI18n = (notification: Notification) => {
@@ -47,6 +48,12 @@ export const getMessageI18n = (notification: Notification) => {
     if (notification.notification_type === 'subscribed_topic_replied') {
       return ` 等 ${notification.actor_count} 人在您关注的话题中发表了 ${notification.item_count} 条新回复`
     }
+  }
+  if (
+    notification.notification_type === 'system_notice' &&
+    notification.item_count > 1
+  ) {
+    return `系统通知 (${notification.item_count} 条)`
   }
   if (
     notification.notification_type === 'followee_activity_published' &&

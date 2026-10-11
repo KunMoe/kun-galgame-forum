@@ -18,7 +18,14 @@ const api = useApiClient()
 const actorName = computed(
   () => props.notification.actor.name ?? deletedUserName
 )
-const actorUser = computed(() => toKunUser(props.notification.actor))
+const isSystemNotice = computed(
+  () => props.notification.notification_type === 'system_notice'
+)
+const actorUser = computed<KunUser>(() =>
+  isSystemNotice.value
+    ? { id: 0, name: '系统通知', avatar: '/apple-touch-icon.png' }
+    : toKunUser(props.notification.actor)
+)
 const actorPath = computed(() =>
   props.notification.actor.name
     ? `/user/${props.notification.actor.id}`
@@ -77,10 +84,12 @@ const handleDeleteMessage = async () => {
       </div>
 
       <div>
-        <KunLink v-if="actorPath" :to="actorPath">
-          {{ actorName }}
-        </KunLink>
-        <span v-else>{{ actorName }}</span>
+        <template v-if="!isSystemNotice">
+          <KunLink v-if="actorPath" :to="actorPath">
+            {{ actorName }}
+          </KunLink>
+          <span v-else>{{ actorName }}</span>
+        </template>
         <span>{{ getMessageI18n(notification) }}</span>
       </div>
     </div>
@@ -88,7 +97,7 @@ const handleDeleteMessage = async () => {
     <div class="flex gap-2">
       <KunAvatar
         :user="actorUser"
-        :is-navigation="Boolean(notification.actor.name)"
+        :is-navigation="!isSystemNotice && Boolean(notification.actor.name)"
       />
 
       <KunLink

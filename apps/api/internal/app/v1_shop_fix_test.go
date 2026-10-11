@@ -28,6 +28,12 @@ type shopEquipCall struct {
 	itemID *int64
 }
 
+type shopRestockCall struct {
+	method  string
+	userID  int
+	offerID string
+}
+
 type shopFix struct {
 	*writeFix
 	mu          sync.Mutex
@@ -43,6 +49,8 @@ type shopFix struct {
 	nInventory  atomic.Int32
 	invHTTP     atomic.Int32
 	orderRecord map[string]any
+	restockCode atomic.Int32
+	restocks    []shopRestockCall
 }
 
 func newShopFix(t *testing.T) *shopFix {
@@ -107,6 +115,20 @@ func (f *shopFix) installShop() {
 		bal := f.balance.Add(-100)
 		writeHouse(w, 200, 0, map[string]any{"order": order, "balance": int(bal), "replay": false})
 	})
+	restock := func(w http.ResponseWriter, r *http.Request) {
+		uid, _ := strconv.Atoi(r.PathValue("id"))
+		f.mu.Lock()
+		f.restocks = append(f.restocks, shopRestockCall{r.Method, uid, r.PathValue("offer")})
+		f.mu.Unlock()
+		if code := int(f.restockCode.Load()); code != 0 {
+			writeHouse(w, 400, code, nil)
+			return
+		}
+		offerID, _ := strconv.ParseInt(r.PathValue("offer"), 10, 64)
+		writeHouse(w, 200, 0, map[string]any{"offer_id": offerID, "subscribed": r.Method == http.MethodPut})
+	}
+	f.mux.HandleFunc("PUT /users/{id}/shop/restock-alerts/{offer}", restock)
+	f.mux.HandleFunc("DELETE /users/{id}/shop/restock-alerts/{offer}", restock)
 	f.mux.HandleFunc("PUT /users/{id}/shop/loadout", func(w http.ResponseWriter, r *http.Request) {
 		var body struct {
 			Slot   string `json:"slot"`
@@ -148,6 +170,16 @@ func (f *shopFix) lastPurchase(t *testing.T) shopPurchaseCall {
 	return f.purchases[len(f.purchases)-1]
 }
 
+func (f *shopFix) lastRestock(t *testing.T) shopRestockCall {
+	t.Helper()
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	if len(f.restocks) == 0 {
+		t.Fatal("no restock alert change reached the account service")
+	}
+	return f.restocks[len(f.restocks)-1]
+}
+
 func (f *shopFix) lastEquip(t *testing.T) shopEquipCall {
 	t.Helper()
 	f.mu.Lock()
@@ -184,7 +216,7 @@ func shopOffer(id int, price int, siteID any, rewards ...map[string]any) map[str
 		"id": id, "site_id": siteID, "status": "active", "price": price,
 		"costs":   []map[string]any{{"asset": "moemoepoint", "amount": price}},
 		"rewards": rewards, "starts_at": nil, "ends_at": nil,
-		"per_user_limit": 0, "limit_period": "", "stock": nil, "sold": 0, "remaining": nil,
+		"per_user_limit": 0, "limit_period": "", "stock": nil, "sold": 0, "remaining": nil, "restocked_at": nil,
 		"sort_order": 0, "created_at": "2026-09-27T14:25:15.571078Z",
 	}
 }
@@ -193,6 +225,7 @@ func fakeShopOffers() []map[string]any {
 	about := shopOffer(6, 100, nil, map[string]any{"item": shopItem(6, "profile_about", "主页介绍")})
 	coupon := shopOffer(7, 100, nil, map[string]any{"item": shopItem(7, "redeem_code", "DLsite 1000 円优惠券")})
 	coupon["per_user_limit"], coupon["limit_period"], coupon["remaining"] = 2, "month", 21
+	coupon["sold"], coupon["restocked_at"] = 17, "2026-10-10T12:00:00.123456Z"
 	frame := shopOffer(9, 300, shopSiteID, map[string]any{"item": shopItem(9, "avatar_frame", "樱花"), "duration_days": 30})
 	frame["stock"], frame["sold"], frame["remaining"] = 50, 50, 0
 	frame["ends_at"] = "2026-10-31T15:59:59.5Z"
@@ -222,7 +255,8 @@ func fakeShopInventory() map[string]any {
 			{"user_id": w3UserAlice, "slot": "profile_background", "site_id": shopSiteID, "item_id": 10, "updated_at": "2026-08-01T00:00:00Z"},
 			{"user_id": w3UserAlice, "slot": "avatar_frame", "site_id": 5, "item_id": 9, "updated_at": "2026-09-20T00:00:00Z"},
 		},
-		"orders":     []map[string]any{fakeShopOrder(88, 7, 100)},
-		"limit_used": map[string]any{"7": 1, "12": 2},
+		"orders":         []map[string]any{fakeShopOrder(88, 7, 100)},
+		"limit_used":     map[string]any{"7": 1, "12": 2},
+		"restock_alerts": []int64{7, 9},
 	}
 }

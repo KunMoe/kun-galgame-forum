@@ -181,6 +181,74 @@ func TestWritePageKind10FolloweeActivity(t *testing.T) {
 	}
 }
 
+func TestWritePageKind11NoticeFoldsByID(t *testing.T) {
+	db := testdb.Open(t)
+	ensureMirrorSchema(t, db)
+	repo := msgRepo.NewMessageRepository(db)
+	const nid int64 = 9_100_001_101
+	db.Exec("DELETE FROM message WHERE community_notification_id = ?", nid)
+	t.Cleanup(func() { db.Exec("DELETE FROM message WHERE community_notification_id = ?", nid) })
+
+	resolves := 0
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/posts/resolve" {
+			resolves++
+		}
+		_ = json.NewEncoder(w).Encode(map[string]any{"code": 0, "data": map[string]any{"posts": []any{}}})
+	}))
+	t.Cleanup(srv.Close)
+	cli := communityclient.New(communityclient.Config{BaseURL: srv.URL, ClientID: "c", ClientSecret: "s"})
+	p := New(cli, repo, anchor.New(nil, nil), nil)
+
+	note := communityclient.NotificationView{
+		ID: nid, UserID: 3, Kind: communityclient.InboxNotice, ItemCount: 1,
+		UpdatedAt: "2026-10-11T00:00:00Z", Seq: 10,
+		Notice: &communityclient.NotificationNoticeView{
+			ID: 1, Topic: "shop_restock", Ref: "offer:7",
+			Title: "你订阅的「DLsite 1000 円优惠券」补货了", URL: "https://www.kungal.com/shop",
+		},
+	}
+	if err := p.writePage(context.Background(), []communityclient.NotificationView{note}); err != nil {
+		t.Fatalf("writePage: %v", err)
+	}
+	if resolves != 0 {
+		t.Fatalf("kind 11 resolved posts: %d", resolves)
+	}
+	var typ, link, status, content string
+	var sender, itemCount int
+	var thread *int64
+	if err := db.Raw(`SELECT type, link, status, content, sender_id, item_count, community_thread_id
+		FROM message WHERE community_notification_id = ?`, nid).Row().
+		Scan(&typ, &link, &status, &content, &sender, &itemCount, &thread); err != nil {
+		t.Fatalf("row: %v", err)
+	}
+	if typ != "notice" || link != "/shop" || status != "unread" || content != note.Notice.Title ||
+		sender != 0 || itemCount != 1 || thread != nil {
+		t.Fatalf("row type=%s link=%s status=%s content=%s sender=%d item=%d thread=%v",
+			typ, link, status, content, sender, itemCount, thread)
+	}
+
+	note.Seq = 20
+	note.ItemCount = 2
+	note.UpdatedAt = "2026-10-12T00:00:00Z"
+	note.Notice = &communityclient.NotificationNoticeView{
+		ID: 2, Topic: "shop_restock", Ref: "offer:7",
+		Title: "你订阅的「DLsite 2000 円优惠券」补货了", URL: "https://www.kungal.com/shop",
+	}
+	if err := p.writePage(context.Background(), []communityclient.NotificationView{note}); err != nil {
+		t.Fatalf("fold: %v", err)
+	}
+	var n int64
+	db.Raw(`SELECT COUNT(*) FROM message WHERE community_notification_id = ?`, nid).Scan(&n)
+	if err := db.Raw(`SELECT content, item_count FROM message WHERE community_notification_id = ?`, nid).Row().
+		Scan(&content, &itemCount); err != nil {
+		t.Fatalf("reload: %v", err)
+	}
+	if n != 1 || itemCount != 2 || content != note.Notice.Title {
+		t.Fatalf("folded rows=%d item=%d content=%s", n, itemCount, content)
+	}
+}
+
 func TestWritePageKind10OlderRetractDoesNotDelete(t *testing.T) {
 	db := testdb.Open(t)
 	ensureMirrorSchema(t, db)

@@ -96,7 +96,7 @@ func (p *Poller) writePage(ctx context.Context, notes []communityclient.Notifica
 	refs := make([]anchor.Ref, 0, len(notes))
 	seenRef := make(map[anchor.Ref]bool, len(notes))
 	for _, n := range notes {
-		if n.Kind == communityclient.InboxFollowed || n.Kind == communityclient.InboxFolloweeActivity {
+		if namesNoThread(n.Kind) {
 			continue
 		}
 		if n.PostID != nil && *n.PostID > 0 && !seenPost[*n.PostID] {
@@ -117,7 +117,7 @@ func (p *Poller) writePage(ctx context.Context, notes []communityclient.Notifica
 
 	for i := range notes {
 		n := notes[i]
-		if n.Kind == communityclient.InboxFollowed || n.Kind == communityclient.InboxFolloweeActivity {
+		if namesNoThread(n.Kind) {
 			if n.Kind == communityclient.InboxFolloweeActivity && n.ItemCount == 0 {
 				if err := p.messages.DeleteCommunityMirror(n.ID, n.Seq); err != nil {
 					return err
@@ -152,6 +152,14 @@ func (p *Poller) writePage(ctx context.Context, notes []communityclient.Notifica
 		}
 	}
 	return nil
+}
+
+func namesNoThread(kind int32) bool {
+	switch kind {
+	case communityclient.InboxFollowed, communityclient.InboxFolloweeActivity, communityclient.InboxNotice:
+		return true
+	}
+	return false
 }
 
 // A transient failure holds the page: a row written now would keep an empty
