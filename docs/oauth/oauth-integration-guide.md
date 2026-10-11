@@ -53,7 +53,7 @@
 | `/oauth/userinfo` | GET | Bearer Token | 获取用户信息 |
 | `/oauth/revoke` | POST | 不需要 | 吊销令牌 |
 | `/auth/me` | GET | Bearer Token | 获取当前用户完整资料（与 userinfo 互补：字段更全，含 moemoepoint / bio；`email` 与 userinfo 受**同一个** `email` scope 门控） |
-| `/auth/me` | PATCH | Bearer Token | 修改 name / avatar / avatar_image_hash / bio |
+| `/auth/me` | PATCH | Bearer Token | 修改 name / avatar_image_hash / bio |
 | `/auth/password` | PUT | Bearer Token | 修改密码（需旧密码） |
 | `/auth/email/send-code` + `/auth/email` | POST + PUT | Bearer Token | 修改邮箱（带验证码两步） |
 
