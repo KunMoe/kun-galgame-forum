@@ -12,7 +12,11 @@ import {
   KUN_GALGAME_OFFICIAL_KIND_DEVELOPER
 } from '~/constants/galgameOfficial'
 import { galgameImageSourceLabel } from '~/constants/galgameImageSource'
-import type { WorkCover, WorkScreenshot } from '#shared/utils/api/schemas'
+import type {
+  CatalogIntro,
+  WorkCover,
+  WorkScreenshot
+} from '#shared/utils/api/schemas'
 
 const K = (name: string) => `catalog.work.${name}`
 
@@ -38,6 +42,7 @@ export interface GalgameEditNames {
   staff?: Map<number, string>
   covers?: WorkCover[]
   screenshots?: WorkScreenshot[]
+  intros?: CatalogIntro[]
 }
 
 // Only the curated lane is editable: an edge imported from VNDB / Bangumi /
@@ -81,9 +86,7 @@ const upstreamImages = (
     .filter((image) => image.site !== CURATED_IMAGE_SOURCE)
     .map((image) => ({
       label: galgameImageSourceLabel(image.site),
-      image: image.image?.url
-        ? withImageVariant(image.image.url, 'mini')
-        : ''
+      image: image.image?.url ? withImageVariant(image.image.url, 'mini') : ''
     }))
 
 // An editor tags and credits adult works too, so these pickers reach every
@@ -352,11 +355,13 @@ export const createGalgameEditConfig = (
     group: GROUP_INTRO,
     component: IntrosField,
     ...OBJECT_LIST,
+    fieldProps: { upstream: names.intros },
     formatItem: (item) => {
       const row = item as { lang?: string; intro?: string }
       return `${row.lang ?? ''}: ${(row.intro ?? '').slice(0, 40)}`
     },
-    description: '每种语言一条，支持 Markdown。图片会被后端剥离。'
+    description:
+      '每种语言一条，支持 Markdown。图片会被后端剥离。没有本站版本的语言会预填当前显示的数据源介绍，可直接修改，不修改不会提交。'
   },
 
   [K('olang')]: {

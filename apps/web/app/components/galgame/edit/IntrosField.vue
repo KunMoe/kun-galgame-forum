@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import type { CatalogIntro } from '#shared/utils/api/schemas'
+import { galgameImageSourceLabel } from '~/constants/galgameImageSource'
+
 interface IntroRow {
   lang: string
   intro: string
@@ -7,6 +10,7 @@ interface IntroRow {
 const props = defineProps<{
   modelValue: unknown
   disabled?: boolean
+  upstream?: CatalogIntro[]
 }>()
 
 const emit = defineEmits<{
@@ -25,12 +29,25 @@ const rows = computed<IntroRow[]>(() =>
   Array.isArray(props.modelValue) ? (props.modelValue as IntroRow[]) : []
 )
 
+const ownTextOf = (lang: string) =>
+  rows.value.find((row) => row.lang === lang)?.intro
+
+// The intro the work page shows for a language when it is not this forum's
+// own hand-written one. Catalog keeps it under its source; writing the
+// language here adds this forum's version, which then wins on display.
+const shownElsewhere = (lang: string) =>
+  props.upstream?.find(
+    (i) => i.locale === lang && !(i.data_source === 'curated' && !i.is_machine)
+  )
+
 const textOf = (lang: string) =>
-  rows.value.find((row) => row.lang === lang)?.intro ?? ''
+  ownTextOf(lang) ?? shownElsewhere(lang)?.value ?? ''
+
+const isPrefilled = (lang: string) =>
+  ownTextOf(lang) === undefined && Boolean(shownElsewhere(lang))
 
 const active = ref<string>(
-  LANGS.find((l) => rows.value.some((row) => row.lang === l.value))?.value ??
-    'zh-Hans'
+  LANGS.find((l) => textOf(l.value).trim())?.value ?? 'zh-Hans'
 )
 
 const activeLocale = computed<Language>(
@@ -42,13 +59,28 @@ const items = computed(() =>
   LANGS.map((lang) => ({
     value: lang.value,
     textValue: lang.textValue,
-    filled: textOf(lang.value).trim().length > 0
+    own: ownTextOf(lang.value) !== undefined,
+    prefilled: isPrefilled(lang.value)
   }))
 )
 
+const activeSource = computed(() => {
+  const intro = shownElsewhere(active.value)
+  if (!intro || !isPrefilled(active.value)) {
+    return null
+  }
+  return {
+    label: galgameImageSourceLabel(intro.data_source ?? ''),
+    isMachine: intro.is_machine
+  }
+})
+
 const setText = (lang: string, text: string) => {
   const kept = new Map(rows.value.map((row) => [row.lang, row.intro]))
-  if (text.trim()) {
+  const elsewhere = shownElsewhere(lang)?.value.trim()
+  const isUnchangedPrefill =
+    !kept.has(lang) && elsewhere !== undefined && text.trim() === elsewhere
+  if (text.trim() && !isUnchangedPrefill) {
     kept.set(lang, text)
   } else {
     kept.delete(lang)
@@ -64,7 +96,10 @@ const setText = (lang: string, text: string) => {
 
 const clearActive = () => setText(active.value, '')
 
-const filledCount = computed(() => items.value.filter((i) => i.filled).length)
+const ownCount = computed(() => items.value.filter((i) => i.own).length)
+const prefilledCount = computed(
+  () => items.value.filter((i) => i.prefilled).length
+)
 </script>
 
 <template>
@@ -81,19 +116,33 @@ const filledCount = computed(() => items.value.filter((i) => i.filled).length)
       >
         <template #tab="{ item }">
           {{ item.textValue }}
+          <KunBadge v-if="item.own" variant="dot" color="success" size="sm" />
           <KunBadge
-            v-if="item.filled"
+            v-else-if="item.prefilled"
             variant="dot"
-            color="success"
+            color="default"
             size="sm"
           />
         </template>
       </KunTab>
 
       <span class="text-default-400 text-xs">
-        已填写 {{ filledCount }} / {{ LANGS.length }} 种语言
+        本站版本 {{ ownCount }} 种
+        <template v-if="prefilledCount">
+          · 数据源 {{ prefilledCount }} 种
+        </template>
       </span>
     </div>
+
+    <p v-if="activeSource" class="text-default-500 text-xs">
+      当前显示的是 {{ activeSource.label
+      }}{{ activeSource.isMachine ? '（机器翻译）' : '' }}
+      的介绍。直接修改并提交后, 将以本站版本覆盖显示, 原文仍会保留;
+      之后清空本站版本即可恢复显示原文。不修改则不会提交。
+      <template v-if="activeSource.isMachine">
+        修改后的文本会作为人工介绍保存, 不再随每日机器翻译更新。
+      </template>
+    </p>
 
     <KunMilkdownDualEditorProvider
       v-if="!disabled"
@@ -105,13 +154,15 @@ const filledCount = computed(() => items.value.filter((i) => i.filled).length)
       @set-markdown="(text: string) => setText(active, text)"
     >
       <KunButton
-        v-if="textOf(active)"
+        v-if="ownTextOf(active) !== undefined"
         variant="light"
         color="danger"
         size="sm"
         @click="clearActive"
       >
-        清空该语言
+        {{
+          shownElsewhere(active) ? '清空本站版本, 恢复数据源介绍' : '清空该语言'
+        }}
       </KunButton>
     </KunMilkdownDualEditorProvider>
 

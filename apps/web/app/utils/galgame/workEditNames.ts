@@ -34,6 +34,7 @@ export const mapsFromWork = (
     character: toMap(work?.roster ?? [], label),
     staff,
     covers: work?.covers,
-    screenshots: work?.screenshots
+    screenshots: work?.screenshots,
+    intros: work?.intros
   }
 }
