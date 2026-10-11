@@ -46,9 +46,24 @@ const shuffle = (items: GalgameResource[]) => {
     resourceRank.value[item.id] ??= Math.random()
   }
   return items.sort(
-    (a, b) => resourceRank.value[a.id]! - resourceRank.value[b.id]!
+    (a, b) =>
+      Number(a.state === 'expired') - Number(b.state === 'expired') ||
+      resourceRank.value[a.id]! - resourceRank.value[b.id]!
   )
 }
+
+const GUIDE_AUTHOR_ID = 20668
+const { entry: guideAuthorCard, load: loadGuideAuthor } =
+  useUserCard(GUIDE_AUTHOR_ID)
+const guideAuthor = computed<KunUser>(() => {
+  const card = guideAuthorCard.value
+  return {
+    id: GUIDE_AUTHOR_ID,
+    name: '大伊兜子',
+    avatar: card?.state === 'ready' ? (card.profile.avatar?.url ?? '') : ''
+  }
+})
+onMounted(loadGuideAuthor)
 
 const { data, status, refresh, problem } = await useApi<GalgameResource[]>(
   () => `work-resources:${workId.value}`,
@@ -200,16 +215,8 @@ const activeBucket = computed(() =>
               Galgame萌新入门(待补充)
             </KunLink>
             - by
-            <UserHoverCard :user-id="19994">
-              <KunUserChip
-                size="sm"
-                :user="{
-                  id: 19994,
-                  name: '大伊兜子',
-                  avatar:
-                    'https://image.kungal.com/avatar/user_19994/avatar.webp'
-                }"
-              />
+            <UserHoverCard :user-id="GUIDE_AUTHOR_ID">
+              <KunUserChip size="sm" :user="guideAuthor" />
             </UserHoverCard>
           </div>
 
@@ -218,16 +225,8 @@ const activeBucket = computed(() =>
               如何安装镜像文件(教程)
             </KunLink>
             - by
-            <UserHoverCard :user-id="19994">
-              <KunUserChip
-                size="sm"
-                :user="{
-                  id: 19994,
-                  name: '大伊兜子',
-                  avatar:
-                    'https://image.kungal.com/avatar/user_19994/avatar.webp'
-                }"
-              />
+            <UserHoverCard :user-id="GUIDE_AUTHOR_ID">
+              <KunUserChip size="sm" :user="guideAuthor" />
             </UserHoverCard>
           </div>
         </KunInfo>

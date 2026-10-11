@@ -23,7 +23,21 @@ const { data: engines } = await useApi<Engine[]>('engines:all', async (api) => {
   return { data: all, response: new Response(null, { status: 200 }) }
 })
 
-const data = computed(() => engines.value?.map((e) => engineItemOf(e, nameOf)))
+const searchQuery = ref('')
+
+const data = computed(() => {
+  const q = searchQuery.value.trim().toLowerCase()
+  const items = engines.value ?? []
+  const matched = q
+    ? items.filter((e) => {
+        const { name, original } = nameOf(e)
+        return [name, original, ...e.aliases].some((text) =>
+          text.toLowerCase().includes(q)
+        )
+      })
+    : items
+  return matched.map((e) => engineItemOf(e, nameOf))
+})
 </script>
 
 <template>
@@ -33,9 +47,20 @@ const data = computed(() => engines.value?.map((e) => engineItemOf(e, nameOf)))
       description="Galgame 引擎资料库, 这里展示了世界上大多数常见的 Galgame 制作引擎, 例如 KRKR 引擎, YU-RIS 引擎, 椎名理绪引擎等"
     >
       <template #endContent>
-        <span>
-          {{ `总计 ${data?.length || 0} 个引擎` }}
-        </span>
+        <div>
+          <KunInput
+            v-model="searchQuery"
+            type="text"
+            placeholder="搜索引擎名称或别名..."
+          />
+          <div class="text-default-600 mt-4 text-sm">
+            {{
+              searchQuery.trim()
+                ? `搜索结果: ${data.length} 个引擎`
+                : `总计 ${data.length} 个引擎`
+            }}
+          </div>
+        </div>
       </template>
     </KunHeader>
 
@@ -49,6 +74,6 @@ const data = computed(() => engines.value?.map((e) => engineItemOf(e, nameOf)))
       />
     </div>
 
-    <KunNull v-if="data && !data.length" />
+    <KunNull v-if="!data.length" />
   </div>
 </template>

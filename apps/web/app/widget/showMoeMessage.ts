@@ -9,12 +9,14 @@ export const showMoeMessage = () => {
 /_/ |_\____/_/ |_/   \____/_/  |_/_____/
 `
 
+  const mono = `Consolas, Menlo, 'DejaVu Sans Mono', 'Courier New', monospace`
+
   // The `ascii` entry below carries a SANCTIONED EXCEPTION to 铁律 #1 (no
   // gradients): the console startup banner's text gradient. Listed in
   // CLAUDE.md; do NOT remove it in a no-gradient sweep.
   const styles = {
     ascii: `
-      font-family: Consolas, Menlo, 'DejaVu Sans Mono', 'Courier New', monospace;
+      font-family: ${mono};
       font-weight: bold;
       font-size: 12px;
       line-height: 1.2;
@@ -60,7 +62,7 @@ export const showMoeMessage = () => {
       color: #007bff;
       padding: 4px 10px;
       border-radius: 5px;
-      font-family: 'Courier New', Courier, monospace;
+      font-family: ${mono};
     `,
 
     r18: `

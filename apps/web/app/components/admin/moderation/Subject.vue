@@ -62,7 +62,7 @@ const STATE: Record<
 
       <div
         v-if="subject.content.children.length"
-        class="border-default-200 max-h-80 overflow-y-auto rounded-lg border p-3"
+        class="border-default-200 max-h-[50dvh] overflow-y-auto rounded-lg border p-3"
       >
         <ContentDocument :document="subject.content" />
       </div>

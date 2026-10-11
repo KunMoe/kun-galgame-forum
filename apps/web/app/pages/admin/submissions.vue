@@ -10,12 +10,18 @@ useKunDisableSeo('Galgame 审核')
 
 const limit = 30
 
+const queue = ref<'pending' | 'hidden'>('pending')
+const queueTabs = [
+  { value: 'pending', textValue: '待审核' },
+  { value: 'hidden', textValue: '已封禁' }
+]
+
 const { items, hasMore, loadingMore, loadMore, problem, refresh } =
   await useCursorList<WorkSubmissionSummary>(
-    'work-submissions:queue',
+    () => `work-submissions:queue:${queue.value}`,
     (api, cursor, { signal }) =>
       api.GET('/work-submissions', {
-        params: { query: { state: ['pending'], limit, cursor } },
+        params: { query: { state: [queue.value], limit, cursor } },
         signal
       })
   )
@@ -85,7 +91,7 @@ const closeReasonModal = () => {
 
 const applyVerdict = async (
   row: WorkSubmissionSummary,
-  state: 'live' | ReasonAction,
+  state: 'live' | 'unban' | ReasonAction,
   note: string
 ) => {
   isActing.value = { ...isActing.value, [row.id]: true }
@@ -108,6 +114,15 @@ const handleApprove = async (row: WorkSubmissionSummary) => {
   await applyVerdict(row, 'live', '')
 }
 
+const handleUnban = async (row: WorkSubmissionSummary) => {
+  const ok = await useComponentMessageStore().alert(
+    `解封《${displayName(row)}》?`,
+    '解封后该条目恢复到被封禁之前的状态。'
+  )
+  if (!ok) return
+  await applyVerdict(row, 'unban', '')
+}
+
 const handleConfirmReason = async () => {
   const ctx = reasonContext.value
   if (!ctx) return
@@ -128,7 +143,7 @@ const handleConfirmReason = async () => {
       description="审核用户提交的新 Galgame。通过后立即公开发布并向提交者发放 +3 萌萌点; 拒绝时需说明原因, 提交者可据此修改后重新提交。"
     />
 
-    <KunDivider />
+    <KunTab v-model="queue" :items="queueTabs" variant="underlined" />
 
     <KunInfo
       v-if="problem"
@@ -163,34 +178,46 @@ const handleConfirmReason = async () => {
             预览
           </KunButton>
           <KunButton
+            v-if="queue === 'hidden'"
             size="sm"
             color="success"
             :loading="isActing[row.id]"
             :disabled="isActing[row.id]"
-            @click="handleApprove(row)"
+            @click="handleUnban(row)"
           >
-            通过
+            解封
           </KunButton>
-          <KunButton
-            size="sm"
-            color="danger"
-            variant="flat"
-            :loading="isActing[row.id]"
-            :disabled="isActing[row.id]"
-            @click="openReasonModal('declined', row)"
-          >
-            拒绝
-          </KunButton>
-          <KunButton
-            size="sm"
-            color="default"
-            variant="light"
-            :loading="isActing[row.id]"
-            :disabled="isActing[row.id]"
-            @click="openReasonModal('hidden', row)"
-          >
-            封禁
-          </KunButton>
+          <template v-else>
+            <KunButton
+              size="sm"
+              color="success"
+              :loading="isActing[row.id]"
+              :disabled="isActing[row.id]"
+              @click="handleApprove(row)"
+            >
+              通过
+            </KunButton>
+            <KunButton
+              size="sm"
+              color="danger"
+              variant="flat"
+              :loading="isActing[row.id]"
+              :disabled="isActing[row.id]"
+              @click="openReasonModal('declined', row)"
+            >
+              拒绝
+            </KunButton>
+            <KunButton
+              size="sm"
+              color="default"
+              variant="light"
+              :loading="isActing[row.id]"
+              :disabled="isActing[row.id]"
+              @click="openReasonModal('hidden', row)"
+            >
+              封禁
+            </KunButton>
+          </template>
         </div>
       </div>
     </div>

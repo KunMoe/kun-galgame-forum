@@ -259,6 +259,12 @@ const actionOptions = TRUST_ACTIONS.map((a) => ({
           >
           <KunTime :time="item.created_at" type="datetime" show-year />
         </div>
+        <p
+          v-if="item.context_note"
+          class="text-default-600 mt-2 line-clamp-2 text-sm break-all whitespace-pre-line"
+        >
+          {{ item.context_note }}
+        </p>
       </button>
     </div>
 
@@ -362,7 +368,7 @@ const actionOptions = TRUST_ACTIONS.map((a) => ({
             <p v-if="r.note" class="text-default-700">{{ r.note }}</p>
             <pre
               v-if="r.snapshot"
-              class="text-default-500 border-default-200 max-h-32 overflow-y-auto rounded border p-2 text-xs whitespace-pre-wrap"
+              class="text-default-500 border-default-200 max-h-64 overflow-y-auto rounded border p-2 text-xs whitespace-pre-wrap"
               >{{ r.snapshot }}</pre
             >
           </div>

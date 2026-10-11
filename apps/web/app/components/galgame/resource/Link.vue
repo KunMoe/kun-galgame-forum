@@ -28,9 +28,7 @@ const isExpired = computed(() => props.resource.state === 'expired')
 const isOwner = computed(() => Number(props.resource.author.id) === id)
 const canEdit = computed(() => props.resource.viewer?.can_edit ?? false)
 const author = computed(() => toKunUser(props.resource.author))
-const noteText = computed(() =>
-  contentPlainText(props.resource.content).trim()
-)
+const noteText = computed(() => contentPlainText(props.resource.content).trim())
 
 const providerName = computed(() => {
   const names = props.resource.provider_names
@@ -230,7 +228,7 @@ const handleMarkValid = async () => {
         <span>{{ providerName }}</span>
       </div>
 
-      <div class="flex items-center gap-1">
+      <div class="flex flex-wrap items-center justify-end gap-1">
         <KunTooltip text="资源下载数">
           <div class="text-default-500 flex items-center gap-1 px-2 text-sm">
             <KunIcon name="lucide:download" />

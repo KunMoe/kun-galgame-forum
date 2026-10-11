@@ -110,7 +110,12 @@ const handleEditDone = () => {
       </span>
     </div>
 
-    <KunInfo v-if="hasNote" variant="bordered" color="info" title="下载备注信息">
+    <KunInfo
+      v-if="hasNote"
+      variant="bordered"
+      color="info"
+      title="下载备注信息"
+    >
       <ContentDocument compact :document="resource.content" />
     </KunInfo>
 
@@ -157,12 +162,13 @@ const handleEditDone = () => {
               target="_blank"
               rel="noopener noreferrer"
               :is-show-anchor-icon="true"
+              class-name="break-all"
             >
               {{ kun }}
             </KunLink>
           </template>
 
-          <div class="flex items-center gap-2">
+          <div class="flex flex-wrap items-center gap-2">
             <KunCopy
               variant="solid"
               :color="isResourceExpired ? 'warning' : 'success'"
