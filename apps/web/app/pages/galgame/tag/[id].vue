@@ -58,6 +58,19 @@ const data = computed(() => {
   }
 })
 
+const { modeOf, block, unblock } = useTagBlocks()
+const blockedMode = computed(() => modeOf(tag_id.value))
+const toggling = ref(false)
+const toggleBlock = async () => {
+  toggling.value = true
+  if (blockedMode.value) {
+    await unblock(tag_id.value)
+  } else {
+    await block(tag_id.value, 'tree')
+  }
+  toggling.value = false
+}
+
 const isIndexable = computed(
   () => data.value.category !== 'sexual' && !data.value.hidden
 )
@@ -109,11 +122,27 @@ if (isIndexable.value) {
               {{ KUN_GALGAME_TAG_CATEGORY_MAP[data.category] }}
             </KunChip>
           </div>
+
+          <KunButton
+            size="sm"
+            variant="flat"
+            :color="blockedMode ? 'default' : 'danger'"
+            :disabled="toggling"
+            @click="toggleBlock"
+          >
+            <KunIcon name="lucide:ban" />
+            {{ blockedMode ? '取消屏蔽' : '屏蔽此标签' }}
+          </KunButton>
         </div>
       </template>
     </KunHeader>
 
     <GalgameCardNav :is-show-advanced="false" />
+
+    <KunInfo v-if="blockedMode" color="warning">
+      您已屏蔽该标签{{ blockedMode === 'tree' ? '及其子标签' : '' }}, 带有它的
+      Galgame 不会出现在各处列表中, 所以这里也不会显示。
+    </KunInfo>
 
     <KunInfo
       v-if="isSfwMode"

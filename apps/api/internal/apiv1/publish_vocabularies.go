@@ -99,6 +99,7 @@ var vocabularies = []vocabulary{
 	{"SiteRole", []string{"creator", "moderator", "admin", "ren"}},
 	{"SpoilerLevel", []string{"none", "portion", "serious"}},
 	{"TableCellAlign", []string{"left", "center", "right"}},
+	{"TagBlockMode", []string{"tree", "exact"}},
 	{"TagKind", []string{"content", "meta"}},
 	{"TodoProject", []string{"forum", "patch"}},
 	{"TodoState", []string{"pending", "in_progress", "done", "discarded"}},

@@ -48,6 +48,7 @@ const overview = ref<SearchOverviewData | null>(null)
 // the skeletons the client's first paint has, and every count mismatches.
 const overviewPending = ref(!!keywords.value)
 const overviewFailed = ref(false)
+const { excludeQuery } = useTagBlocks()
 
 let latest = 0
 
@@ -66,7 +67,8 @@ const loadOverview = async (value: string) => {
     api,
     value,
     allowsNsfw.value,
-    showKUNGalgamePreferOriginalName.value
+    showKUNGalgamePreferOriginalName.value,
+    excludeQuery.value
   )
   if (current !== latest) {
     return

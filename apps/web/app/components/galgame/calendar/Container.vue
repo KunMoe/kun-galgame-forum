@@ -22,6 +22,8 @@ const includeDoujin = computed({
   }
 })
 const { allowsNsfw, stanceKey } = useContentStance()
+const { excludeQuery } = useTagBlocks()
+const blockKey = computed(() => JSON.stringify(excludeQuery.value))
 const nameOf = useCatalogName()
 
 const tabs: KunTabItem[] = [
@@ -48,14 +50,15 @@ const {
   problem: monthProblem
 } = await useApi<ReleaseCalendarMonth>(
   () =>
-    `release-calendar:${month.value}:${stanceKey.value}:${includeDoujin.value}`,
+    `release-calendar:${month.value}:${stanceKey.value}:${includeDoujin.value}:${blockKey.value}`,
   (api, { signal }) =>
     api.GET('/release-calendar', {
       params: {
         query: {
           ...(month.value ? { month: month.value } : {}),
           include_nsfw: allowsNsfw.value,
-          include_doujin: includeDoujin.value
+          include_doujin: includeDoujin.value,
+          ...excludeQuery.value
         }
       },
       signal
@@ -69,13 +72,15 @@ const {
   refresh: refreshUpcoming,
   problem: upcomingProblem
 } = await useApi<ReleaseCalendarUpcoming>(
-  () => `release-calendar-upcoming:${stanceKey.value}:${includeDoujin.value}`,
+  () =>
+    `release-calendar-upcoming:${stanceKey.value}:${includeDoujin.value}:${blockKey.value}`,
   (api, { signal }) =>
     api.GET('/release-calendar/upcoming', {
       params: {
         query: {
           include_nsfw: allowsNsfw.value,
-          include_doujin: includeDoujin.value
+          include_doujin: includeDoujin.value,
+          ...excludeQuery.value
         }
       },
       signal
@@ -90,14 +95,15 @@ const {
   problem: pendingProblem
 } = await useApi<ReleaseCalendarPending>(
   () =>
-    `release-calendar-pending:${year.value}:${stanceKey.value}:${includeDoujin.value}`,
+    `release-calendar-pending:${year.value}:${stanceKey.value}:${includeDoujin.value}:${blockKey.value}`,
   (api, { signal }) =>
     api.GET('/release-calendar/pending', {
       params: {
         query: {
           ...(year.value ? { year: Number(year.value) } : {}),
           include_nsfw: allowsNsfw.value,
-          include_doujin: includeDoujin.value
+          include_doujin: includeDoujin.value,
+          ...excludeQuery.value
         }
       },
       signal
@@ -111,13 +117,15 @@ const {
   refresh: refreshTba,
   problem: tbaProblem
 } = await useApi<ReleaseCalendarTBA>(
-  () => `release-calendar-tba:${stanceKey.value}:${includeDoujin.value}`,
+  () =>
+    `release-calendar-tba:${stanceKey.value}:${includeDoujin.value}:${blockKey.value}`,
   (api, { signal }) =>
     api.GET('/release-calendar/tba', {
       params: {
         query: {
           include_nsfw: allowsNsfw.value,
-          include_doujin: includeDoujin.value
+          include_doujin: includeDoujin.value,
+          ...excludeQuery.value
         }
       },
       signal

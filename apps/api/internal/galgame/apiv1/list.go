@@ -47,6 +47,10 @@ func (s *Service) listWorks(ctx context.Context, in *listWorksInput) (*workSumma
 	if prob != nil {
 		return nil, prob
 	}
+	excluded, prob := s.excludedWorkIDs(ctx, in.Exclusion())
+	if prob != nil {
+		return nil, prob
+	}
 	f := model.GalgameListFilter{
 		Type:                 string(in.ResourceType),
 		PlatformAxes:         strKeys(in.ResourcePlatforms),
@@ -69,6 +73,7 @@ func (s *Service) listWorks(ctx context.Context, in *listWorksInput) (*workSumma
 		Indexed:              in.IncludeResourceless,
 		SFWOnly:              !in.IncludeNSFW,
 		JaZhOriginalOnly:     !in.IncludeAllOriginalLanguages,
+		ExcludeIDs:           excluded,
 		Page:                 pg.Page,
 		Limit:                pg.Limit,
 	}

@@ -78,9 +78,11 @@ export const useGalgameOfficialDetail = async (subPath = '') => {
 
 export const useCompanyWorks = async (
   officialId: number,
-  query: () => WorksQuery
+  baseQuery: () => WorksQuery
 ) => {
   const nameOf = useCatalogName()
+  const { excludeQuery } = useTagBlocks()
+  const query = (): WorksQuery => ({ ...baseQuery(), ...excludeQuery.value })
   // Both reads start before either is awaited: a composable resumed after an
   // await has lost the Nuxt instance, so a second useApi there throws on SSR.
   const pageRead = useApi<CompanyWorkPage>(

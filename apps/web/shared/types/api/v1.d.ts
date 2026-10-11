@@ -1604,6 +1604,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/me/blocked-tags": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the caller's blocked tags
+         * @description Every tag the caller blocked, newest first, at most 100. Items carry ids only. Lists apply them when the client sends the tree ids in exclude_tag_trees and the exact ids in exclude_tag_ids; the server applies none of them by itself.
+         */
+        get: operations["listMyTagBlocks"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/blocked-tags/{tag_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the caller's block on one tag
+         * @description The caller's block on this tag.
+         */
+        get: operations["getMyTagBlock"];
+        /**
+         * Block a tag
+         * @description Blocks the tag, or changes the mode of an existing block. mode defaults to tree. At most 100 blocked tags.
+         */
+        put: operations["putMyTagBlock"];
+        post?: never;
+        /**
+         * Unblock a tag
+         * @description Removes the block. Unblocking a tag that is not blocked changes nothing.
+         */
+        delete: operations["deleteMyTagBlock"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/me/check-ins": {
         parameters: {
             query?: never;
@@ -8558,6 +8606,17 @@ export interface components {
              */
             object: "list";
         };
+        ListTagBlock: {
+            /** @description Members of this page. Empty array, never null. */
+            items: components["schemas"]["TagBlock"][];
+            /** @description Opaque keyset cursor. Omitted on the last page. */
+            next_cursor?: string;
+            /**
+             * @description Type discriminant. Always list.
+             * @constant
+             */
+            object: "list";
+        };
         ListTopicDraftSummary: {
             /** @description Members of this page. Empty array, never null. */
             items: components["schemas"]["TopicDraftSummary"][];
@@ -10465,6 +10524,10 @@ export interface components {
                 [key: string]: unknown;
             };
         };
+        PutTagBlockInputBody: {
+            /** @description tree (the default) also blocks every tag below this one; exact blocks this tag only. */
+            mode?: components["schemas"]["TagBlockMode"];
+        };
         PutWorkPlaytimeBody: {
             /**
              * Format: int64
@@ -12239,6 +12302,24 @@ export interface components {
             /** @description What the tag describes: content is the story and characters, meta is the game as a product. */
             tag_kind: components["schemas"]["TagKind"];
         };
+        TagBlock: {
+            /**
+             * Format: date-time
+             * @description When the caller blocked this tag.
+             */
+            created_at: string;
+            /** @description The blocked catalog tag's id. */
+            id: string;
+            /** @description tree: send the id in exclude_tag_trees, which also drops the works under every tag below it. exact: send it in exclude_tag_ids. */
+            mode: components["schemas"]["TagBlockMode"];
+            /**
+             * @description Type discriminant. Always tag_block.
+             * @constant
+             */
+            object: "tag_block";
+        };
+        /** @enum {string} */
+        TagBlockMode: "tree" | "exact";
         TagCreate: {
             /** @description Plain-text description. Absent means empty. Free text; never use it as a decision input. */
             description?: string;
@@ -20825,6 +20906,10 @@ export interface operations {
                 include_nsfw?: boolean;
                 /** @description When true, works whose original language is neither Japanese nor Chinese are included. Default false. */
                 include_all_original_languages?: boolean;
+                /** @description Catalog tag ids. Drops every work carrying any of them, from any source and at any spoiler level. Comma-separated. Omitted means no exclusion. */
+                exclude_tag_ids?: string[];
+                /** @description Catalog tag ids. Like exclude_tag_ids, and each also drops the works carrying any tag below it in the tag hierarchy. Comma-separated. Omitted means no exclusion. */
+                exclude_tag_trees?: string[];
             };
             header?: never;
             path: {
@@ -21718,6 +21803,10 @@ export interface operations {
                 include_nsfw?: boolean;
                 /** @description When true, works whose original language is neither Japanese nor Chinese are included. Default false. */
                 include_all_original_languages?: boolean;
+                /** @description Catalog tag ids. Drops every work carrying any of them, from any source and at any spoiler level. Comma-separated. Omitted means no exclusion. */
+                exclude_tag_ids?: string[];
+                /** @description Catalog tag ids. Like exclude_tag_ids, and each also drops the works carrying any tag below it in the tag hierarchy. Comma-separated. Omitted means no exclusion. */
+                exclude_tag_trees?: string[];
             };
             header?: never;
             path: {
@@ -22750,6 +22839,10 @@ export interface operations {
                 include_nsfw?: boolean;
                 /** @description When true, works whose original language is neither Japanese nor Chinese are included. Default false. */
                 include_all_original_languages?: boolean;
+                /** @description Catalog tag ids. Drops every work carrying any of them, from any source and at any spoiler level. Comma-separated. Omitted means no exclusion. */
+                exclude_tag_ids?: string[];
+                /** @description Catalog tag ids. Like exclude_tag_ids, and each also drops the works carrying any tag below it in the tag hierarchy. Comma-separated. Omitted means no exclusion. */
+                exclude_tag_trees?: string[];
             };
             header?: never;
             path?: never;
@@ -24040,6 +24133,322 @@ export interface operations {
                 };
             };
             /** @description SERVICE_UNAVAILABLE when the account service cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listMyTagBlocks: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListTagBlock"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the catalog cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getMyTagBlock: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Catalog tag id. */
+                tag_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TagBlock"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the caller has not blocked this tag. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the catalog cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    putMyTagBlock: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Catalog tag id. */
+                tag_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PutTagBlockInputBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TagBlock"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the tag does not exist. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description VALIDATION_FAILED when the caller already blocks 100 tags. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the catalog cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    deleteMyTagBlock: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Catalog tag id. */
+                tag_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the catalog cannot be reached. */
             503: {
                 headers: {
                     [name: string]: unknown;
@@ -31072,6 +31481,10 @@ export interface operations {
                 include_resourceless?: boolean;
                 /** @description When true, works whose original language is neither Japanese nor Chinese are ranked too. Default false. */
                 include_all_original_languages?: boolean;
+                /** @description Catalog tag ids. Drops every work carrying any of them, from any source and at any spoiler level. Comma-separated. Omitted means no exclusion. */
+                exclude_tag_ids?: string[];
+                /** @description Catalog tag ids. Like exclude_tag_ids, and each also drops the works carrying any tag below it in the tag hierarchy. Comma-separated. Omitted means no exclusion. */
+                exclude_tag_trees?: string[];
             };
             header?: never;
             path?: never;
@@ -31733,6 +32146,10 @@ export interface operations {
                 include_nsfw?: boolean;
                 /** @description When true, works credited only to doujin circles are included. Default false. */
                 include_doujin?: boolean;
+                /** @description Catalog tag ids. Drops every work carrying any of them, from any source and at any spoiler level. Comma-separated. Omitted means no exclusion. */
+                exclude_tag_ids?: string[];
+                /** @description Catalog tag ids. Like exclude_tag_ids, and each also drops the works carrying any tag below it in the tag hierarchy. Comma-separated. Omitted means no exclusion. */
+                exclude_tag_trees?: string[];
             };
             header?: never;
             path?: never;
@@ -31787,6 +32204,10 @@ export interface operations {
                 include_nsfw?: boolean;
                 /** @description When true, works credited only to doujin circles are included. Default false. */
                 include_doujin?: boolean;
+                /** @description Catalog tag ids. Drops every work carrying any of them, from any source and at any spoiler level. Comma-separated. Omitted means no exclusion. */
+                exclude_tag_ids?: string[];
+                /** @description Catalog tag ids. Like exclude_tag_ids, and each also drops the works carrying any tag below it in the tag hierarchy. Comma-separated. Omitted means no exclusion. */
+                exclude_tag_trees?: string[];
             };
             header?: never;
             path?: never;
@@ -31839,6 +32260,10 @@ export interface operations {
                 include_nsfw?: boolean;
                 /** @description When true, works credited only to doujin circles are included. Default false. */
                 include_doujin?: boolean;
+                /** @description Catalog tag ids. Drops every work carrying any of them, from any source and at any spoiler level. Comma-separated. Omitted means no exclusion. */
+                exclude_tag_ids?: string[];
+                /** @description Catalog tag ids. Like exclude_tag_ids, and each also drops the works carrying any tag below it in the tag hierarchy. Comma-separated. Omitted means no exclusion. */
+                exclude_tag_trees?: string[];
             };
             header?: never;
             path?: never;
@@ -31889,6 +32314,10 @@ export interface operations {
             query?: {
                 /** @description When true, adult works are included. Default false. */
                 include_nsfw?: boolean;
+                /** @description Catalog tag ids. Drops every work carrying any of them, from any source and at any spoiler level. Comma-separated. Omitted means no exclusion. */
+                exclude_tag_ids?: string[];
+                /** @description Catalog tag ids. Like exclude_tag_ids, and each also drops the works carrying any tag below it in the tag hierarchy. Comma-separated. Omitted means no exclusion. */
+                exclude_tag_trees?: string[];
             };
             header?: never;
             path?: never;
@@ -31941,6 +32370,10 @@ export interface operations {
                 include_nsfw?: boolean;
                 /** @description When true, works credited only to doujin circles are included. Default false. */
                 include_doujin?: boolean;
+                /** @description Catalog tag ids. Drops every work carrying any of them, from any source and at any spoiler level. Comma-separated. Omitted means no exclusion. */
+                exclude_tag_ids?: string[];
+                /** @description Catalog tag ids. Like exclude_tag_ids, and each also drops the works carrying any tag below it in the tag hierarchy. Comma-separated. Omitted means no exclusion. */
+                exclude_tag_trees?: string[];
             };
             header?: never;
             path?: never;
@@ -33206,6 +33639,10 @@ export interface operations {
                 released_to?: string;
                 /** @description Order. relevance: the search index's ranking. popularity: catalog popularity. updated: last catalog edit. released: release date. */
                 sort?: components["schemas"]["LibraryWorkSort"];
+                /** @description Catalog tag ids. Drops every work carrying any of them, from any source and at any spoiler level. Comma-separated. Omitted means no exclusion. */
+                exclude_tag_ids?: string[];
+                /** @description Catalog tag ids. Like exclude_tag_ids, and each also drops the works carrying any tag below it in the tag hierarchy. Comma-separated. Omitted means no exclusion. */
+                exclude_tag_trees?: string[];
             };
             header?: never;
             path?: never;
@@ -33439,6 +33876,10 @@ export interface operations {
                 include_nsfw?: boolean;
                 /** @description When true, works whose original language is neither Japanese nor Chinese are included. Default false. */
                 include_all_original_languages?: boolean;
+                /** @description Catalog tag ids. Drops every work carrying any of them, from any source and at any spoiler level. Comma-separated. Omitted means no exclusion. */
+                exclude_tag_ids?: string[];
+                /** @description Catalog tag ids. Like exclude_tag_ids, and each also drops the works carrying any tag below it in the tag hierarchy. Comma-separated. Omitted means no exclusion. */
+                exclude_tag_trees?: string[];
             };
             header?: never;
             path: {
@@ -33597,6 +34038,10 @@ export interface operations {
                 include_nsfw?: boolean;
                 /** @description When true, works whose original language is neither Japanese nor Chinese are included. Default false. */
                 include_all_original_languages?: boolean;
+                /** @description Catalog tag ids. Drops every work carrying any of them, from any source and at any spoiler level. Comma-separated. Omitted means no exclusion. */
+                exclude_tag_ids?: string[];
+                /** @description Catalog tag ids. Like exclude_tag_ids, and each also drops the works carrying any tag below it in the tag hierarchy. Comma-separated. Omitted means no exclusion. */
+                exclude_tag_trees?: string[];
             };
             header?: never;
             path?: never;
@@ -33785,6 +34230,10 @@ export interface operations {
                 include_nsfw?: boolean;
                 /** @description When true, works whose original language is neither Japanese nor Chinese are included. Default false. */
                 include_all_original_languages?: boolean;
+                /** @description Catalog tag ids. Drops every work carrying any of them, from any source and at any spoiler level. Comma-separated. Omitted means no exclusion. */
+                exclude_tag_ids?: string[];
+                /** @description Catalog tag ids. Like exclude_tag_ids, and each also drops the works carrying any tag below it in the tag hierarchy. Comma-separated. Omitted means no exclusion. */
+                exclude_tag_trees?: string[];
             };
             header?: never;
             path: {
@@ -42191,6 +42640,10 @@ export interface operations {
                 include_resourceless?: boolean;
                 /** @description When true, works whose original language is neither Japanese nor Chinese are included. Default false. A work whose original language has not been synced yet is included either way. */
                 include_all_original_languages?: boolean;
+                /** @description Catalog tag ids. Drops every work carrying any of them, from any source and at any spoiler level. Comma-separated. Omitted means no exclusion. */
+                exclude_tag_ids?: string[];
+                /** @description Catalog tag ids. Like exclude_tag_ids, and each also drops the works carrying any tag below it in the tag hierarchy. Comma-separated. Omitted means no exclusion. */
+                exclude_tag_trees?: string[];
             };
             header?: never;
             path?: never;

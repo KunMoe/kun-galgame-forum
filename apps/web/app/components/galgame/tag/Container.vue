@@ -23,6 +23,7 @@ const api = useApiClient()
 // then: paging the Galgame results would otherwise refetch 100 tags from catalog
 // per click, and catalog's limiter counts the whole site as one IP.
 const { allowsNsfw, stanceKey } = useContentStance()
+const { excludeQuery } = useTagBlocks()
 const { showKUNGalgameAllOriginalLanguages } = storeToRefs(
   usePersistSettingsStore()
 )
@@ -124,7 +125,8 @@ const fetchGames = async () => {
           limit: gamesLimit,
           include_nsfw: allowsNsfw.value,
           include_all_original_languages:
-            showKUNGalgameAllOriginalLanguages.value
+            showKUNGalgameAllOriginalLanguages.value,
+          ...excludeQuery.value
         }
       }
     })

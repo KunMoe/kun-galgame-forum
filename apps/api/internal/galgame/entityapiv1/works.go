@@ -106,6 +106,8 @@ type WorksQuery struct {
 	IncludeNSFW      bool                      `query:"include_nsfw" default:"false" doc:"When true, adult works are included. Default false."`
 
 	IncludeAllOriginalLanguages bool `query:"include_all_original_languages" default:"false" doc:"When true, works whose original language is neither Japanese nor Chinese are included. Default false."`
+
+	workrepr.TagExclusionInput
 }
 
 const worksDescription = "A page-number collection. Without a resource or game_type filter it holds every catalog work filed under the entity, " +
@@ -177,10 +179,18 @@ func (s *Service) memberPage(
 	if appErr != nil {
 		return nil, nil, 0, unavailable(appErr)
 	}
+	excluded, appErr := s.catalog.ExcludedWorkIDs(ctx, p.Exclusion())
+	if appErr != nil {
+		return nil, nil, 0, unavailable(appErr)
+	}
+	drop := make(map[int]bool, len(excluded))
+	for _, id := range excluded {
+		drop[id] = true
+	}
 	ids := make([]int, 0, len(members))
 	via := make(map[int]*client.CatalogLabelVia, len(members))
 	for _, m := range members {
-		if keep != nil && !keep(m) {
+		if drop[m.workID] || (keep != nil && !keep(m)) {
 			continue
 		}
 		ids = append(ids, m.workID)
@@ -229,6 +239,8 @@ type listTaggedWorksInput struct {
 	IncludeNSFW bool             `query:"include_nsfw" default:"false" doc:"When true, adult works are included. Default false."`
 
 	IncludeAllOriginalLanguages bool `query:"include_all_original_languages" default:"false" doc:"When true, works whose original language is neither Japanese nor Chinese are included. Default false."`
+
+	workrepr.TagExclusionInput
 }
 
 type workPageOutput struct {
@@ -265,6 +277,7 @@ func (s *Service) listTaggedWorks(ctx context.Context, in *listTaggedWorksInput)
 	}
 	client.ApplyWorksGate(q, !in.IncludeNSFW)
 	client.ApplyOriginalLanguageGate(q, !in.IncludeAllOriginalLanguages)
+	in.Exclusion().Apply(q)
 	res, appErr := s.catalog.CatalogWorksSearch(ctx, q)
 	if appErr != nil {
 		return nil, unavailable(appErr)

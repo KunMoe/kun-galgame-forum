@@ -86,6 +86,9 @@ func (r *GalgameListRepository) ListIDs(f model.GalgameListFilter) (ids []int, t
 			if f.RestrictIDs != nil {
 				q = q.Where("g.id = ANY(?::int[])", intArrayLit(f.RestrictIDs))
 			}
+			if len(f.ExcludeIDs) > 0 {
+				q = q.Where("NOT (g.id = ANY(?::int[]))", intArrayLit(f.ExcludeIDs))
+			}
 			if ratingSort || ratingFilter {
 				q = q.Joins(ratingAggJoin)
 			}
@@ -123,6 +126,9 @@ func (r *GalgameListRepository) ListIDs(f model.GalgameListFilter) (ids []int, t
 		Joins("JOIN galgame_resource gr ON gr.work_id = g.id"), f), f)
 	if f.RestrictIDs != nil {
 		inner = inner.Where("g.id = ANY(?::int[])", intArrayLit(f.RestrictIDs))
+	}
+	if len(f.ExcludeIDs) > 0 {
+		inner = inner.Where("NOT (g.id = ANY(?::int[]))", intArrayLit(f.ExcludeIDs))
 	}
 	if ratingFilter {
 		inner = inner.Joins(ratingAggJoin)

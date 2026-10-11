@@ -11,11 +11,12 @@ import (
 )
 
 const (
-	v2CacheKeyPrefix   = "nmcache:v2:"
-	v2CacheMaxBody     = 512 << 10
-	v2CacheDetailTTL   = 15 * time.Second
-	v2CacheListTTL     = 60 * time.Second
-	v2CacheCalendarTTL = time.Hour
+	v2CacheKeyPrefix    = "nmcache:v2:"
+	v2CacheMaxBody      = 512 << 10
+	v2CacheDetailTTL    = 15 * time.Second
+	v2CacheListTTL      = 60 * time.Second
+	v2CacheCalendarTTL  = time.Hour
+	v2CacheExclusionTTL = 10 * time.Minute
 )
 
 func v2CacheIdentity(v2Path string, q url.Values) string {
@@ -30,6 +31,9 @@ func v2CacheKey(v2Path string, q url.Values) string {
 }
 
 func v2CacheTTL(v2Path string) time.Duration {
+	if v2Path == tagExclusionPath {
+		return v2CacheExclusionTTL
+	}
 	if strings.HasPrefix(v2Path, "/v2/catalog/calendar") {
 		return v2CacheCalendarTTL
 	}

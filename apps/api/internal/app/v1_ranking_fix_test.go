@@ -58,8 +58,16 @@ const (
 )
 
 type rkWorks struct {
-	nsfw map[int]bool
-	fail atomic.Bool
+	nsfw     map[int]bool
+	fail     atomic.Bool
+	excluded []int
+}
+
+func (w *rkWorks) ExcludedWorkIDs(_ context.Context, e client.TagExclusion) ([]int, *legacyErrors.AppError) {
+	if e.Empty() {
+		return nil, nil
+	}
+	return w.excluded, nil
 }
 
 func (w *rkWorks) CatalogRowsByWorkIDs(_ context.Context, ids []int, _, contentLimit string) (map[int]client.CatalogWorkListItem, *legacyErrors.AppError) {

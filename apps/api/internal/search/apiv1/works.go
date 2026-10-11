@@ -71,6 +71,7 @@ func (s *Service) searchWorks(ctx context.Context, in *worksInput) (*worksOutput
 		params.Set("released_before", to)
 	}
 	client.ApplyWorksGate(params, !in.IncludeNSFW)
+	in.Exclusion().Apply(params)
 
 	res, appErr := s.galgame.CatalogWorksSearch(ctx, params)
 	if appErr != nil {

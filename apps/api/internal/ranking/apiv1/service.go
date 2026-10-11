@@ -3,6 +3,7 @@ package apiv1
 import (
 	"context"
 	"errors"
+	"kun-galgame-api/internal/galgame/workrepr"
 	"strings"
 
 	"kun-galgame-api/internal/apiv1/repr"
@@ -24,6 +25,7 @@ type Users interface {
 
 type Works interface {
 	CatalogRowsByWorkIDs(ctx context.Context, ids []int, include, contentLimit string) (map[int]client.CatalogWorkListItem, *legacyErrors.AppError)
+	ExcludedWorkIDs(ctx context.Context, e client.TagExclusion) ([]int, *legacyErrors.AppError)
 }
 
 type Topics interface {
@@ -153,6 +155,8 @@ type workRankingInput struct {
 	IncludeResourceless bool   `query:"include_resourceless" default:"false" doc:"When true, published works without any resource are ranked too. Default false."`
 
 	IncludeAllOriginalLanguages bool `query:"include_all_original_languages" default:"false" doc:"When true, works whose original language is neither Japanese nor Chinese are ranked too. Default false."`
+
+	workrepr.TagExclusionInput
 }
 
 type workRankingOutput struct {
@@ -163,7 +167,11 @@ func (s *Service) listWorkRanking(ctx context.Context, in *workRankingInput) (*w
 	if prob := s.ready(); prob != nil {
 		return nil, prob
 	}
-	rows, err := s.repo.TopWorks(sortKey(in.Sort), in.IncludeNSFW, in.IncludeResourceless, in.IncludeAllOriginalLanguages, in.Limit)
+	excluded, appErr := s.works.ExcludedWorkIDs(ctx, in.Exclusion())
+	if appErr != nil {
+		return nil, problem.Unavailable(appErr)
+	}
+	rows, err := s.repo.TopWorks(sortKey(in.Sort), in.IncludeNSFW, in.IncludeResourceless, in.IncludeAllOriginalLanguages, in.Limit, excluded)
 	if err != nil {
 		return nil, problem.Internal(err)
 	}

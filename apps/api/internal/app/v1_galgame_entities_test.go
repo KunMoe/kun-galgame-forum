@@ -492,3 +492,13 @@ func TestV1EntityWorksLeaveOutOtherOriginalLanguages(t *testing.T) {
 		}
 	}
 }
+
+func TestV1EntityTagWorksDropExcludedWorks(t *testing.T) {
+	f := newGEFix(t)
+	path, spec := "/api/v1/tags/5101/works", "/tags/{tag_id}/works"
+	f.cat.excluded = []int{geWorkMin + 3}
+	for _, limit := range []int{1, 2, 24} {
+		geWant(t, "entity lane", f.geWalk(t, path, spec, url.Values{"exclude_tag_trees": {"6"}}, limit), wid(5), wid(1), wid(0), wid(4))
+		geWant(t, "local lane", f.geWalk(t, path, spec, url.Values{"exclude_tag_trees": {"6"}, "resource_type": {"game"}}, limit), wid(5), wid(1), wid(0))
+	}
+}

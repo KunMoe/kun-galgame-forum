@@ -87,6 +87,62 @@ func (s *Service) registerUserPlane(api huma.API) {
 	}), s.deleteWorkPlaytime)
 
 	huma.Register(api, v1.Required(huma.Operation{
+		OperationID: "listMyTagBlocks",
+		Method:      http.MethodGet,
+		Path:        "/me/blocked-tags",
+		Summary:     "List the caller's blocked tags",
+		Description: "Every tag the caller blocked, newest first, at most 100. Items carry ids only. Lists apply them when the client sends the tree ids in exclude_tag_trees and the exact ids in exclude_tag_ids; the server applies none of them by itself.",
+		Tags:        []string{"me"},
+		Middlewares: huma.Middlewares{withAccessToken},
+		Responses: problemResponses(map[int]string{
+			503: "SERVICE_UNAVAILABLE when the catalog cannot be reached.",
+		}),
+	}), s.listMyTagBlocks)
+
+	huma.Register(api, v1.Required(huma.Operation{
+		OperationID: "getMyTagBlock",
+		Method:      http.MethodGet,
+		Path:        "/me/blocked-tags/{tag_id}",
+		Summary:     "Get the caller's block on one tag",
+		Description: "The caller's block on this tag.",
+		Tags:        []string{"me"},
+		Middlewares: huma.Middlewares{withAccessToken},
+		Responses: problemResponses(map[int]string{
+			404: "NOT_FOUND when the caller has not blocked this tag.",
+			503: "SERVICE_UNAVAILABLE when the catalog cannot be reached.",
+		}),
+	}), s.getMyTagBlock)
+
+	huma.Register(api, v1.Required(huma.Operation{
+		OperationID: "putMyTagBlock",
+		Method:      http.MethodPut,
+		Path:        "/me/blocked-tags/{tag_id}",
+		Summary:     "Block a tag",
+		Description: "Blocks the tag, or changes the mode of an existing block. mode defaults to tree. At most 100 blocked tags.",
+		Tags:        []string{"me"},
+		Middlewares: huma.Middlewares{withAccessToken},
+		Responses: problemResponses(map[int]string{
+			404: "NOT_FOUND when the tag does not exist.",
+			422: "VALIDATION_FAILED when the caller already blocks 100 tags.",
+			503: "SERVICE_UNAVAILABLE when the catalog cannot be reached.",
+		}),
+	}), s.putMyTagBlock)
+
+	huma.Register(api, v1.Required(huma.Operation{
+		OperationID:   "deleteMyTagBlock",
+		Method:        http.MethodDelete,
+		Path:          "/me/blocked-tags/{tag_id}",
+		Summary:       "Unblock a tag",
+		DefaultStatus: http.StatusNoContent,
+		Description:   "Removes the block. Unblocking a tag that is not blocked changes nothing.",
+		Tags:          []string{"me"},
+		Middlewares:   huma.Middlewares{withAccessToken},
+		Responses: problemResponses(map[int]string{
+			503: "SERVICE_UNAVAILABLE when the catalog cannot be reached.",
+		}),
+	}), s.deleteMyTagBlock)
+
+	huma.Register(api, v1.Required(huma.Operation{
 		OperationID: "listMyPlaytimes",
 		Method:      http.MethodGet,
 		Path:        "/me/playtimes",

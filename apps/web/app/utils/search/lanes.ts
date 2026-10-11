@@ -11,6 +11,11 @@ export type GalgameFilterQuery = Partial<
   Record<(typeof SEARCH_GALGAME_FILTER_KEYS)[number], string>
 >
 
+export interface TagExclusionQuery {
+  exclude_tag_trees?: string[]
+  exclude_tag_ids?: string[]
+}
+
 // The URL keeps the sort tokens it always had, so a link shared before the
 // move still opens; the v1 face spells the direction out.
 const WORKS_SORT = {
@@ -63,7 +68,8 @@ export const fetchLanePage = async (
   limit: number,
   includeNsfw: boolean,
   filter: GalgameFilterQuery = {},
-  report = true
+  report = true,
+  exclude: TagExclusionQuery = {}
 ): Promise<LanePage | null> => {
   const paged = { q, page, limit }
   const shown = { ...paged, include_nsfw: includeNsfw }
@@ -92,7 +98,7 @@ export const fetchLanePage = async (
       return unwrap(
         await settle(
           api.GET('/search/works', {
-            params: { query: { ...shown, ...worksFilter(filter) } }
+            params: { query: { ...shown, ...worksFilter(filter), ...exclude } }
           })
         ),
         report
