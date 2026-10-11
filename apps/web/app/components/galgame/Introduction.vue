@@ -3,6 +3,7 @@ import type { KunTabItem } from '@kungal/ui-vue'
 import { getGalgameIntroLanguageName } from '~/constants/galgame'
 import type { CatalogIntro } from '#shared/utils/api/schemas'
 import { orderCatalogIntros } from '#shared/utils/catalogName'
+import { galgameImageSourceLabel } from '~/constants/galgameImageSource'
 
 const props = defineProps<{
   intros: CatalogIntro[]
@@ -19,18 +20,23 @@ const tabs = computed<KunTabItem[]>(() =>
 
 const language = ref(ordered.value[0]?.locale ?? '')
 
-watch(
-  ordered,
-  (rows) => {
-    if (!rows.some((row) => row.locale === language.value)) {
-      language.value = rows[0]?.locale ?? ''
-    }
+watch(ordered, (rows) => {
+  if (!rows.some((row) => row.locale === language.value)) {
+    language.value = rows[0]?.locale ?? ''
   }
-)
+})
 
 const current = computed(() =>
   props.intros.find((intro) => intro.locale === language.value)
 )
+
+const currentSource = computed(() => {
+  const source = current.value?.data_source
+  if (!source) {
+    return ''
+  }
+  return source === 'curated' ? '本站编辑' : galgameImageSourceLabel(source)
+})
 
 const currentText = computed(() =>
   markdownToText(current.value?.value ?? '', { preserveNewlines: true })
@@ -41,7 +47,7 @@ const currentText = computed(() =>
   <div class="space-y-3">
     <KunHeader
       name="游戏介绍"
-      description="英语介绍来源于 VNDB, 日语介绍来源于游戏官网, 中文介绍来自 NextMoe 资料库"
+      description="介绍来自 VNDB、DLsite、Bangumi 等数据源或本站编辑, 都可以在「编辑资料」中修改"
       scale="h2"
     >
       <template #endContent>
@@ -60,8 +66,15 @@ const currentText = computed(() =>
     </div>
 
     <template v-else>
-      <div v-if="current.is_machine" class="text-default-500 text-sm">
-        本段简介由机器翻译生成, 与原文可能有出入
+      <div
+        v-if="current.is_machine || currentSource"
+        class="text-default-500 text-sm"
+      >
+        <span v-if="currentSource">来源: {{ currentSource }}</span>
+        <span v-if="current.is_machine">
+          {{ currentSource ? ' · ' : '' }}本段简介由机器翻译生成,
+          与原文可能有出入
+        </span>
       </div>
 
       <p class="text-default-700 pt-3 whitespace-pre-line">
