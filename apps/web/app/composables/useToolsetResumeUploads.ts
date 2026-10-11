@@ -5,6 +5,12 @@ export type ToolsetPendingUpload = {
   last_modified: number
   progress: number
   updated_at: number
+  completed: boolean
+}
+
+export type ToolsetUploadResult = {
+  id: string
+  file_size: number
 }
 
 export const useToolsetResumeUploads = (toolsetId: string) => {
@@ -41,7 +47,8 @@ export const useToolsetResumeUploads = (toolsetId: string) => {
             size: Number(record.size) || 0,
             last_modified: Number(record.last_modified) || 0,
             progress: Number(record.progress) || 0,
-            updated_at: Number(record.updated_at) || 0
+            updated_at: Number(record.updated_at) || 0,
+            completed: record.completed === true
           }
         ]
       })

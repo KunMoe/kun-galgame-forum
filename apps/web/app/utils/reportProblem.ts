@@ -18,11 +18,21 @@ const labelOf = (error: FieldError): string => {
   return KUN_FIELD_LABELS[key] ?? key
 }
 
+const SERVER_FAULT_MESSAGE_DURATION = 10_000
+
 export const reportProblem = (problem: ClientProblem) => {
   if (import.meta.server) {
     return
   }
-  useMessage(problemMessage(problem), 'error')
+  if (problem.status >= 500 && problem.requestId) {
+    useMessage(
+      `${problemMessage(problem)}（错误编号 ${problem.requestId}）`,
+      'error',
+      SERVER_FAULT_MESSAGE_DURATION
+    )
+  } else {
+    useMessage(problemMessage(problem), 'error')
+  }
   for (const error of problem.errors) {
     const label = labelOf(error)
     const text = fieldMessage(error)
