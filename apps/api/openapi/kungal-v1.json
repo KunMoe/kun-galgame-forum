@@ -13616,6 +13616,37 @@
         ],
         "type": "object"
       },
+      "ProfileSettings": {
+        "properties": {
+          "is_sign_in_required": {
+            "description": "Whether the caller's profile is shown to signed-in users only. false until the caller first sets it.",
+            "type": "boolean"
+          },
+          "object": {
+            "const": "profile_settings",
+            "description": "Type discriminant. Always profile_settings.",
+            "maxLength": 16,
+            "type": "string"
+          }
+        },
+        "required": [
+          "object",
+          "is_sign_in_required"
+        ],
+        "type": "object"
+      },
+      "ProfileSettingsWrite": {
+        "properties": {
+          "is_sign_in_required": {
+            "description": "true shows the caller's profile to signed-in users only; false shows it to everyone.",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "is_sign_in_required"
+        ],
+        "type": "object"
+      },
       "Purpose": {
         "enum": [
           "content",
@@ -44887,6 +44918,194 @@
         ]
       }
     },
+    "/me/profile-settings": {
+      "get": {
+        "description": "Returns whether the caller's profile is shown to signed-in users only. An account with no forum state reads false.",
+        "operationId": "getProfileSettings",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProfileSettings"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get who may read the caller's profile",
+        "tags": [
+          "users"
+        ]
+      },
+      "put": {
+        "description": "While is_sign_in_required is true, getUser, every /users/{user_id}/* list, and listRatings and listQuizzes filtered by the caller as author_id answer an anonymous caller PROFILE_SIGN_IN_REQUIRED. Every signed-in caller still reads them. The caller's content stays where it was published: topics, replies, comments and resources still show the caller as their author.",
+        "operationId": "putProfileSettings",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProfileSettingsWrite"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProfileSettings"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "413": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Request Entity Too Large"
+          },
+          "415": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unsupported Media Type"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED when is_sign_in_required is missing or not a boolean."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Set who may read the caller's profile",
+        "tags": [
+          "users"
+        ]
+      }
+    },
     "/me/quiz-states": {
       "get": {
         "description": "Answers, for each quiz id named in quiz_ids, whether the caller favorited it. It is a batch read and is not paginated: quiz_ids is required, holds 1 to 100 ids. An id that does not exist, is deleted, or whose author is not renderable is missing.",
@@ -48658,7 +48877,7 @@
     },
     "/quizzes": {
       "get": {
-        "description": "Lists quizzes as a page-number collection. Default sort is bumped_at_desc, default limit 50. Quizzes whose author is not renderable are omitted from both items and total. include_nsfw=false excludes quizzes linked to a local NSFW work.",
+        "description": "Lists quizzes as a page-number collection. Default sort is bumped_at_desc, default limit 50. Quizzes whose author is not renderable are omitted from both items and total. include_nsfw=false excludes quizzes linked to a local NSFW work. PROFILE_SIGN_IN_REQUIRED when the caller is anonymous and author_id names a user who shows their profile to signed-in users only.",
         "operationId": "listQuizzes",
         "parameters": [
           {
@@ -48817,7 +49036,7 @@
                 }
               }
             },
-            "description": "Forbidden"
+            "description": "ACCOUNT_BANNED when the caller's account is banned. PROFILE_SIGN_IN_REQUIRED when the caller is anonymous and author_id names a user who shows their profile to signed-in users only."
           },
           "500": {
             "content": {
@@ -50437,7 +50656,7 @@
     },
     "/ratings": {
       "get": {
-        "description": "A page-number collection: page × limit may not exceed 10000. Ratings of adult works appear only with include_nsfw=true. Ratings by banned authors and of works catalog no longer shows are left out of items but still counted in total, so a page can hold fewer than limit items before the last page.",
+        "description": "A page-number collection: page × limit may not exceed 10000. Ratings of adult works appear only with include_nsfw=true. Ratings by banned authors and of works catalog no longer shows are left out of items but still counted in total, so a page can hold fewer than limit items before the last page. PROFILE_SIGN_IN_REQUIRED when the caller is anonymous and author_id names a user who shows their profile to signed-in users only.",
         "operationId": "listRatings",
         "parameters": [
           {
@@ -50583,7 +50802,7 @@
                 }
               }
             },
-            "description": "Forbidden"
+            "description": "ACCOUNT_BANNED when the caller's account is banned. PROFILE_SIGN_IN_REQUIRED when the caller is anonymous and author_id names a user who shows their profile to signed-in users only."
           },
           "500": {
             "content": {
@@ -62843,7 +63062,7 @@
     },
     "/users/{user_id}": {
       "get": {
-        "description": "Returns one user's public profile and activity counts. NOT_FOUND when the account does not exist or is not renderable. topic_count excludes hidden topics. topic_today_count uses the Asia/Shanghai calendar day. community_comment_count, follower_count and following_count are null when the community service is unavailable.",
+        "description": "Returns one user's public profile and activity counts. NOT_FOUND when the account does not exist or is not renderable. topic_count excludes hidden topics. topic_today_count uses the Asia/Shanghai calendar day. community_comment_count, follower_count and following_count are null when the community service is unavailable. PROFILE_SIGN_IN_REQUIRED when the caller is anonymous and user_id names a user who shows their profile to signed-in users only.",
         "operationId": "getUser",
         "parameters": [
           {
@@ -62880,6 +63099,26 @@
             },
             "description": "Bad Request"
           },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "ACCOUNT_BANNED when the caller's account is banned. PROFILE_SIGN_IN_REQUIRED when the caller is anonymous and user_id names a user who shows their profile to signed-in users only."
+          },
           "404": {
             "content": {
               "application/problem+json": {
@@ -62911,6 +63150,15 @@
             "description": "SERVICE_UNAVAILABLE when the account service cannot be reached."
           }
         },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          },
+          {}
+        ],
         "summary": "Get a user's public profile",
         "tags": [
           "users"
@@ -62919,7 +63167,7 @@
     },
     "/users/{user_id}/collections": {
       "get": {
-        "description": "A page-number collection of a user's collections. Callers who are not the owner see only public collections. An unrenderable owner is NOT_FOUND.",
+        "description": "A page-number collection of a user's collections. Callers who are not the owner see only public collections. An unrenderable owner is NOT_FOUND. PROFILE_SIGN_IN_REQUIRED when the caller is anonymous and user_id names a user who shows their profile to signed-in users only.",
         "operationId": "listUserCollections",
         "parameters": [
           {
@@ -63012,7 +63260,7 @@
                 }
               }
             },
-            "description": "Forbidden"
+            "description": "ACCOUNT_BANNED when the caller's account is banned. PROFILE_SIGN_IN_REQUIRED when the caller is anonymous and user_id names a user who shows their profile to signed-in users only."
           },
           "404": {
             "content": {
@@ -63062,7 +63310,7 @@
     },
     "/users/{user_id}/comments": {
       "get": {
-        "description": "Lists topic comments related to a user as a page-number collection, newest first with ties broken by descending id. relation is required and closed. Comments whose parent topic is hidden or restricted never appear. Comments by banned authors, or under topics by banned authors, are dropped after counting, so a page may hold fewer items than limit and total may count them. NOT_FOUND when the account does not exist or is not renderable.",
+        "description": "Lists topic comments related to a user as a page-number collection, newest first with ties broken by descending id. relation is required and closed. Comments whose parent topic is hidden or restricted never appear. Comments by banned authors, or under topics by banned authors, are dropped after counting, so a page may hold fewer items than limit and total may count them. NOT_FOUND when the account does not exist or is not renderable. PROFILE_SIGN_IN_REQUIRED when the caller is anonymous and user_id names a user who shows their profile to signed-in users only.",
         "operationId": "listUserComments",
         "parameters": [
           {
@@ -63166,7 +63414,7 @@
                 }
               }
             },
-            "description": "Forbidden"
+            "description": "ACCOUNT_BANNED when the caller's account is banned. PROFILE_SIGN_IN_REQUIRED when the caller is anonymous and user_id names a user who shows their profile to signed-in users only."
           },
           "404": {
             "content": {
@@ -63216,7 +63464,7 @@
     },
     "/users/{user_id}/followers": {
       "get": {
-        "description": "Accounts that follow this user, newest first, as a cursor page. An account the forum cannot resolve is still listed, with a null name. The last page omits next_cursor. NOT_FOUND when the account does not exist or is not renderable.",
+        "description": "Accounts that follow this user, newest first, as a cursor page. An account the forum cannot resolve is still listed, with a null name. The last page omits next_cursor. NOT_FOUND when the account does not exist or is not renderable. PROFILE_SIGN_IN_REQUIRED when the caller is anonymous and user_id names a user who shows their profile to signed-in users only.",
         "operationId": "listUserFollowers",
         "parameters": [
           {
@@ -63279,6 +63527,26 @@
             },
             "description": "Bad Request"
           },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "ACCOUNT_BANNED when the caller's account is banned. PROFILE_SIGN_IN_REQUIRED when the caller is anonymous and user_id names a user who shows their profile to signed-in users only."
+          },
           "404": {
             "content": {
               "application/problem+json": {
@@ -63310,6 +63578,15 @@
             "description": "SERVICE_UNAVAILABLE when the community service is unreachable or unconfigured."
           }
         },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          },
+          {}
+        ],
         "summary": "List a user's followers",
         "tags": [
           "users"
@@ -63318,7 +63595,7 @@
     },
     "/users/{user_id}/following": {
       "get": {
-        "description": "Accounts this user follows, newest first, as a cursor page. An account the forum cannot resolve is still listed, with a null name. The last page omits next_cursor. NOT_FOUND when the account does not exist or is not renderable.",
+        "description": "Accounts this user follows, newest first, as a cursor page. An account the forum cannot resolve is still listed, with a null name. The last page omits next_cursor. NOT_FOUND when the account does not exist or is not renderable. PROFILE_SIGN_IN_REQUIRED when the caller is anonymous and user_id names a user who shows their profile to signed-in users only.",
         "operationId": "listUserFollowing",
         "parameters": [
           {
@@ -63381,6 +63658,26 @@
             },
             "description": "Bad Request"
           },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "ACCOUNT_BANNED when the caller's account is banned. PROFILE_SIGN_IN_REQUIRED when the caller is anonymous and user_id names a user who shows their profile to signed-in users only."
+          },
           "404": {
             "content": {
               "application/problem+json": {
@@ -63412,6 +63709,15 @@
             "description": "SERVICE_UNAVAILABLE when the community service is unreachable or unconfigured."
           }
         },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          },
+          {}
+        ],
         "summary": "List the accounts a user follows",
         "tags": [
           "users"
@@ -63420,7 +63726,7 @@
     },
     "/users/{user_id}/galgame-resources": {
       "get": {
-        "description": "Lists download resources related to a user as a page-number collection, newest first with ties broken by descending id. Items never include download links, extraction codes or archive passwords. NOT_FOUND when the account does not exist or is not renderable.",
+        "description": "Lists download resources related to a user as a page-number collection, newest first with ties broken by descending id. Items never include download links, extraction codes or archive passwords. NOT_FOUND when the account does not exist or is not renderable. PROFILE_SIGN_IN_REQUIRED when the caller is anonymous and user_id names a user who shows their profile to signed-in users only.",
         "operationId": "listUserGalgameResources",
         "parameters": [
           {
@@ -63534,7 +63840,7 @@
                 }
               }
             },
-            "description": "Forbidden"
+            "description": "ACCOUNT_BANNED when the caller's account is banned. PROFILE_SIGN_IN_REQUIRED when the caller is anonymous and user_id names a user who shows their profile to signed-in users only."
           },
           "404": {
             "content": {
@@ -63584,7 +63890,7 @@
     },
     "/users/{user_id}/replies": {
       "get": {
-        "description": "Lists replies related to a user as a page-number collection, newest first with ties broken by descending id. relation is required and closed. Replies whose parent topic is hidden or restricted never appear. Replies by banned authors, or under topics by banned authors, are dropped after counting, so a page may hold fewer items than limit and total may count them. NOT_FOUND when the account does not exist or is not renderable.",
+        "description": "Lists replies related to a user as a page-number collection, newest first with ties broken by descending id. relation is required and closed. Replies whose parent topic is hidden or restricted never appear. Replies by banned authors, or under topics by banned authors, are dropped after counting, so a page may hold fewer items than limit and total may count them. NOT_FOUND when the account does not exist or is not renderable. PROFILE_SIGN_IN_REQUIRED when the caller is anonymous and user_id names a user who shows their profile to signed-in users only.",
         "operationId": "listUserReplies",
         "parameters": [
           {
@@ -63688,7 +63994,7 @@
                 }
               }
             },
-            "description": "Forbidden"
+            "description": "ACCOUNT_BANNED when the caller's account is banned. PROFILE_SIGN_IN_REQUIRED when the caller is anonymous and user_id names a user who shows their profile to signed-in users only."
           },
           "404": {
             "content": {
@@ -63738,7 +64044,7 @@
     },
     "/users/{user_id}/toolsets": {
       "get": {
-        "description": "Lists toolsets related to the user. relation=authored (the default) is the toolsets they authored, newest first; relation=favorited is the toolsets they favorited, most recently favorited first, and omits toolsets whose author is not renderable from both items and total. An unrenderable user is NOT_FOUND. An empty list is 200 with total 0.",
+        "description": "Lists toolsets related to the user. relation=authored (the default) is the toolsets they authored, newest first; relation=favorited is the toolsets they favorited, most recently favorited first, and omits toolsets whose author is not renderable from both items and total. An unrenderable user is NOT_FOUND. An empty list is 200 with total 0. PROFILE_SIGN_IN_REQUIRED when the caller is anonymous and user_id names a user who shows their profile to signed-in users only.",
         "operationId": "listUserToolsets",
         "parameters": [
           {
@@ -63831,7 +64137,7 @@
                 }
               }
             },
-            "description": "Forbidden"
+            "description": "ACCOUNT_BANNED when the caller's account is banned. PROFILE_SIGN_IN_REQUIRED when the caller is anonymous and user_id names a user who shows their profile to signed-in users only."
           },
           "404": {
             "content": {
@@ -63881,7 +64187,7 @@
     },
     "/users/{user_id}/topics": {
       "get": {
-        "description": "Lists topics related to a user as a page-number collection, newest first with ties broken by descending id. relation is required and closed. Hidden topics never appear except under relation=hidden, which is only the owner or a caller holding topic.view_hidden. Restricted topics never appear, including for a caller who can view them elsewhere. NOT_FOUND when the account does not exist or is not renderable.",
+        "description": "Lists topics related to a user as a page-number collection, newest first with ties broken by descending id. relation is required and closed. Hidden topics never appear except under relation=hidden, which is only the owner or a caller holding topic.view_hidden. Restricted topics never appear, including for a caller who can view them elsewhere. NOT_FOUND when the account does not exist or is not renderable. PROFILE_SIGN_IN_REQUIRED when the caller is anonymous and user_id names a user who shows their profile to signed-in users only.",
         "operationId": "listUserTopics",
         "parameters": [
           {
@@ -63985,7 +64291,7 @@
                 }
               }
             },
-            "description": "PERMISSION_REQUIRED when relation is hidden and the caller is neither the owner nor holding topic.view_hidden."
+            "description": "PERMISSION_REQUIRED when relation is hidden and the caller is neither the owner nor holding topic.view_hidden. PROFILE_SIGN_IN_REQUIRED when the caller is anonymous and user_id names a user who shows their profile to signed-in users only."
           },
           "404": {
             "content": {
@@ -64035,7 +64341,7 @@
     },
     "/users/{user_id}/wall-comments": {
       "get": {
-        "description": "Lists wall comments related to a user as a cursor collection. relation=authored is ordered by community post id, newest first; imported historical posts may have non-monotonic times. relation=liked is ordered by when the user liked the comment, newest first. A page may be shorter than limit while next_cursor is present. NOT_FOUND when the account does not exist or is not renderable.",
+        "description": "Lists wall comments related to a user as a cursor collection. relation=authored is ordered by community post id, newest first; imported historical posts may have non-monotonic times. relation=liked is ordered by when the user liked the comment, newest first. A page may be shorter than limit while next_cursor is present. NOT_FOUND when the account does not exist or is not renderable. PROFILE_SIGN_IN_REQUIRED when the caller is anonymous and user_id names a user who shows their profile to signed-in users only.",
         "operationId": "listUserWallComments",
         "parameters": [
           {
@@ -64137,7 +64443,7 @@
                 }
               }
             },
-            "description": "Forbidden"
+            "description": "ACCOUNT_BANNED when the caller's account is banned. PROFILE_SIGN_IN_REQUIRED when the caller is anonymous and user_id names a user who shows their profile to signed-in users only."
           },
           "404": {
             "content": {
@@ -64187,7 +64493,7 @@
     },
     "/users/{user_id}/works": {
       "get": {
-        "description": "Lists works related to a user as a page-number collection. published and liked are newest first with ties broken by descending id. contributed keeps the catalog proposal order. A work catalog no longer renders is omitted from the page while total still counts it. NOT_FOUND when the account does not exist or is not renderable.",
+        "description": "Lists works related to a user as a page-number collection. published and liked are newest first with ties broken by descending id. contributed keeps the catalog proposal order. A work catalog no longer renders is omitted from the page while total still counts it. NOT_FOUND when the account does not exist or is not renderable. PROFILE_SIGN_IN_REQUIRED when the caller is anonymous and user_id names a user who shows their profile to signed-in users only.",
         "operationId": "listUserWorks",
         "parameters": [
           {
@@ -64291,7 +64597,7 @@
                 }
               }
             },
-            "description": "Forbidden"
+            "description": "ACCOUNT_BANNED when the caller's account is banned. PROFILE_SIGN_IN_REQUIRED when the caller is anonymous and user_id names a user who shows their profile to signed-in users only."
           },
           "404": {
             "content": {

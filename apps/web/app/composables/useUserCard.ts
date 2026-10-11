@@ -6,6 +6,7 @@ const FRESH_MS = 60_000
 type UserCardEntry =
   | { state: 'ready'; profile: UserProfile; at: number }
   | { state: 'missing'; at: number }
+  | { state: 'signInRequired'; at: number }
 
 export const useUserCard = (userId: MaybeRefOrGetter<number | string>) => {
   const api = useApiClient()
@@ -31,6 +32,8 @@ export const useUserCard = (userId: MaybeRefOrGetter<number | string>) => {
       entries.value[key] = { state: 'ready', profile: res.data, at: Date.now() }
     } else if (res.problem.status === 404) {
       entries.value[key] = { state: 'missing', at: Date.now() }
+    } else if (res.problem.code === 'PROFILE_SIGN_IN_REQUIRED') {
+      entries.value[key] = { state: 'signInRequired', at: Date.now() }
     } else {
       failed.value = !cached
     }

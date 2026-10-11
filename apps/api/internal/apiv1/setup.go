@@ -34,8 +34,9 @@ const (
 )
 
 type Deps struct {
-	Resolver IdentityResolver
-	Redis    *redis.Client
+	Resolver    IdentityResolver
+	Redis       *redis.Client
+	ProfileGate ProfileGateLookup
 	// Mount registers v1 routes that are not huma operations. They sit behind
 	// v1Headers and ahead of the unmatched handler, and are in no spec.
 	Mount func(fiber.Router)
@@ -69,6 +70,7 @@ func Setup(app *fiber.App, deps Deps, registrars ...func(huma.API)) huma.API {
 	group := app.Group(Prefix)
 	api := humafiber.NewWithGroup(app, group, cfg)
 	api.UseMiddleware(newIdentityMiddleware(deps.Resolver))
+	api.UseMiddleware(newProfileGateMiddleware(deps.ProfileGate))
 	api.UseMiddleware(newIdempotencyMiddleware(deps.Redis))
 	api.UseMiddleware(strictBooleans)
 

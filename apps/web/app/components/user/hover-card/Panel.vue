@@ -18,6 +18,8 @@ const profile = computed(() =>
 )
 const isSelf = computed(() => currentUserId.value === Number(props.userId))
 const profileHref = computed(() => `/user/${props.userId}/info`)
+const route = useRoute()
+const signIn = () => startOAuthLogin({ returnTo: route.fullPath })
 
 const badges = computed(() => {
   const roles = profile.value?.roles ?? []
@@ -155,6 +157,22 @@ onMounted(() => {
       <KunIcon name="lucide:user-x" />
       该用户不存在或已注销
     </p>
+
+    <div
+      v-else-if="entry?.state === 'signInRequired'"
+      class="text-default-500 flex items-center gap-2 text-sm"
+    >
+      <KunIcon name="lucide:lock" class="shrink-0" />
+      <span class="flex-1">该用户设置了仅登录用户可查看主页</span>
+      <KunButton
+        size="xs"
+        color="primary"
+        class-name="shrink-0"
+        @click="signIn"
+      >
+        登录
+      </KunButton>
+    </div>
 
     <p
       v-else-if="failed"

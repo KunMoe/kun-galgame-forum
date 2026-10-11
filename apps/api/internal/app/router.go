@@ -32,6 +32,7 @@ import (
 	trustapiv1 "kun-galgame-api/internal/trust/apiv1"
 	updateapiv1 "kun-galgame-api/internal/update/apiv1"
 	userapiv1 "kun-galgame-api/internal/user/apiv1"
+	userRepo "kun-galgame-api/internal/user/repository"
 	wallapiv1 "kun-galgame-api/internal/wall/apiv1"
 	websiteapiv1 "kun-galgame-api/internal/website/apiv1"
 
@@ -51,6 +52,9 @@ func (a *App) setupRoutes() {
 	deps := apiv1.Deps{Redis: a.Redis}
 	if a.Authn != nil {
 		deps.Resolver = a.Authn
+	}
+	if a.DB != nil {
+		deps.ProfileGate = userRepo.NewStateRepository(a.DB).ProfileSignInRequired
 	}
 	deps.Mount = chat.NewRelay(a.Config.Chat.BaseURL, deps.Resolver).Mount
 	topicReads := a.newTopicV1()

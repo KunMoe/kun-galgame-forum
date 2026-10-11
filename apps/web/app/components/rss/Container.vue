@@ -93,7 +93,7 @@ const laneOptions = [
         <p class="text-default-500">
           {{ baseUrl }}/rss/user/{用户 ID}/topic.xml 订阅某位用户发布的话题,
           {{ baseUrl }}/rss/user/{用户 ID}/galgame.xml 订阅某位用户发布的
-          Galgame 资源。
+          Galgame 资源。设置了主页仅登录用户可见的用户没有订阅源。
         </p>
       </div>
     </KunCard>
