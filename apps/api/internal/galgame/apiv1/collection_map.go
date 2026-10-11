@@ -473,16 +473,21 @@ func truncateFolderText(folder catalogclient.Folder, field, v string, max int) s
 const folderPopulationTTL = 10 * time.Minute
 
 func folderPopulationKey(folder *catalogclient.Folder, includeNSFW bool) string {
-	return "kungal:folder-population:v1:" + strconv.FormatInt(folder.ID, 10) + ":" + folder.UpdatedAt + ":" + workrepr.ContentLimit(includeNSFW)
+	return "kungal:folder-population:v2:" + strconv.FormatInt(folder.ID, 10) + ":" + folder.UpdatedAt + ":" + workrepr.ContentLimit(includeNSFW)
 }
 
 // Catalog's folder item list carries no content gate, so counting what a reader
 // may page through means reading every work in the folder.
-func (s *Service) folderPopulation(ctx context.Context, folder *catalogclient.Folder, items []catalogclient.FolderItem, includeNSFW bool) ([]int, *problem.Problem) {
+type folderMember struct {
+	WorkID   int    `json:"w"`
+	Released string `json:"r"`
+}
+
+func (s *Service) folderPopulation(ctx context.Context, folder *catalogclient.Folder, items []catalogclient.FolderItem, includeNSFW bool) ([]folderMember, *problem.Problem) {
 	key := folderPopulationKey(folder, includeNSFW)
 	if s.rdb != nil {
 		if raw, err := s.rdb.Get(ctx, key).Bytes(); err == nil {
-			var cached []int
+			var cached []folderMember
 			if json.Unmarshal(raw, &cached) == nil {
 				return cached, nil
 			}
@@ -510,10 +515,10 @@ func (s *Service) folderPopulation(ctx context.Context, folder *catalogclient.Fo
 		}
 		return nil, problem.Unavailable(err)
 	}
-	return shared.([]int), nil
+	return shared.([]folderMember), nil
 }
 
-func (s *Service) buildFolderPopulation(ctx context.Context, folder *catalogclient.Folder, items []catalogclient.FolderItem, includeNSFW bool) ([]int, *problem.Problem) {
+func (s *Service) buildFolderPopulation(ctx context.Context, folder *catalogclient.Folder, items []catalogclient.FolderItem, includeNSFW bool) ([]folderMember, *problem.Problem) {
 	ids := make([]int, 0, len(items))
 	for _, it := range items {
 		ids = append(ids, int(it.WorkID))
@@ -522,7 +527,7 @@ func (s *Service) buildFolderPopulation(ctx context.Context, folder *catalogclie
 	if appErr != nil {
 		return nil, catalogUnavailable(appErr)
 	}
-	population := make([]int, 0, len(ids))
+	population := make([]folderMember, 0, len(ids))
 	for _, id := range ids {
 		row, ok := rows[id]
 		if !ok {
@@ -538,7 +543,11 @@ func (s *Service) buildFolderPopulation(ctx context.Context, folder *catalogclie
 		if !includeNSFW && workNSFW(&row) {
 			continue
 		}
-		population = append(population, id)
+		member := folderMember{WorkID: id}
+		if row.ReleaseDate != nil {
+			member.Released = *row.ReleaseDate
+		}
+		population = append(population, member)
 	}
 	return population, nil
 }

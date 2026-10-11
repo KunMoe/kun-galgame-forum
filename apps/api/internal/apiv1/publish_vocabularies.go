@@ -17,6 +17,7 @@ var vocabularies = []vocabulary{
 	{"CharacterSort", []string{"popularity_desc", "relevance_desc", "id_desc"}},
 	{"ClaimState", []string{"live", "draft", "pending", "declined", "hidden"}},
 	{"CollectionVisibility", []string{"private", "public"}},
+	{"CollectionWorkSort", []string{"favorited_desc", "favorited_asc", "released_desc", "released_asc"}},
 	{"CompanyKind", []string{"game_brand", "bunko", "publisher", "anime_studio", "doujin_circle", "group"}},
 	{"CompanyRelation", []string{"parent", "subsidiary", "imprint", "imprint_of", "succeeded_by", "formerly", "spawned", "origin"}},
 	{"CompanyWorkVia", []string{"own", "imprint"}},

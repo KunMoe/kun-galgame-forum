@@ -302,3 +302,57 @@ func TestV1CollectionPreviewKeepsExplicitArtFromSFWReaders(t *testing.T) {
 		t.Errorf("include_nsfw preview %s, want %s", got, want)
 	}
 }
+
+func TestV1ListCollectionWorksSorts(t *testing.T) {
+	f := newG6Fix(t)
+	release := func(id int, day string) {
+		row := f.cat.rows[id]
+		if day == "" {
+			row.ReleaseDate = nil
+		} else {
+			row.ReleaseDate = &day
+		}
+		f.cat.rows[id] = row
+	}
+	release(g6WorkLive, "2010-01-01")
+	release(g6WorkOwner, "")
+	release(g6WorkExtra, "2020-05-01")
+	f.user.mu.Lock()
+	f.user.items[g6FolderAliceDef] = append(f.user.items[g6FolderAliceDef],
+		catalogclient.FolderItem{FolderID: g6FolderAliceDef, WorkID: g6WorkOwner, CreatedAt: "2026-09-04T00:00:00Z", UpdatedAt: "2026-09-04T00:00:00Z"},
+		catalogclient.FolderItem{FolderID: g6FolderAliceDef, WorkID: g6WorkExtra, CreatedAt: "2026-09-03T00:00:00Z", UpdatedAt: "2026-09-03T00:00:00Z"},
+	)
+	folder := f.user.folders[g6FolderAliceDef]
+	folder.ItemCount = 3
+	folder.UpdatedAt = "2026-09-04T00:00:00Z"
+	f.user.folders[g6FolderAliceDef] = folder
+	f.user.mu.Unlock()
+
+	for _, tc := range []struct {
+		query string
+		want  []int
+	}{
+		{"", []int{g6WorkOwner, g6WorkExtra, g6WorkLive}},
+		{"?sort=favorited_asc", []int{g6WorkLive, g6WorkExtra, g6WorkOwner}},
+		{"?sort=released_desc", []int{g6WorkExtra, g6WorkLive, g6WorkOwner}},
+		{"?sort=released_asc", []int{g6WorkLive, g6WorkExtra, g6WorkOwner}},
+	} {
+		resp, body := f.call(t, http.MethodGet, g6col(g6FolderAliceDef)+"/works"+tc.query,
+			"/collections/{collection_id}/works", "", "", nil)
+		if resp.StatusCode != http.StatusOK {
+			t.Fatalf("works%s %d %+v", tc.query, resp.StatusCode, body)
+		}
+		items, _ := body["items"].([]any)
+		got := make([]string, 0, len(items))
+		for _, it := range items {
+			got = append(got, it.(map[string]any)["id"].(string))
+		}
+		want := make([]string, 0, len(tc.want))
+		for _, id := range tc.want {
+			want = append(want, idStr(id))
+		}
+		if strings.Join(got, ",") != strings.Join(want, ",") {
+			t.Errorf("works%s order %v, want %v", tc.query, got, want)
+		}
+	}
+}

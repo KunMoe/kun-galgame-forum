@@ -11,8 +11,24 @@ const route = useRoute()
 const collectionId = computed(() => String((route.params as { id: string }).id))
 const { allowsNsfw, stanceKey } = useContentStance()
 const api = useApiClient()
-const page = usePageQuery()
 const limit = 24
+
+const SORT_OPTIONS = [
+  { value: 'favorited_desc', label: '最近收藏' },
+  { value: 'favorited_asc', label: '最早收藏' },
+  { value: 'released_desc', label: '发售日期 (新到旧)' },
+  { value: 'released_asc', label: '发售日期 (旧到新)' }
+] as const
+const { sort, page } = useQueryState(
+  {
+    sort: queryEnum(
+      SORT_OPTIONS.map((o) => o.value),
+      'favorited_desc'
+    ),
+    page: queryPage()
+  },
+  { pageKey: 'page' }
+)
 
 const {
   data: detail,
@@ -32,7 +48,7 @@ const {
 
 const { data: works, status: worksStatus } = await useApi<WorkPage>(
   () =>
-    `collection-works:${collectionId.value}:${page.value}:${limit}:${stanceKey.value}`,
+    `collection-works:${collectionId.value}:${sort.value}:${page.value}:${limit}:${stanceKey.value}`,
   (client, { signal }) =>
     client.GET('/collections/{collection_id}/works', {
       params: {
@@ -40,7 +56,8 @@ const { data: works, status: worksStatus } = await useApi<WorkPage>(
         query: {
           page: page.value,
           limit,
-          include_nsfw: allowsNsfw.value
+          include_nsfw: allowsNsfw.value,
+          sort: sort.value
         }
       },
       signal
@@ -188,6 +205,15 @@ const remove = async () => {
       >
         {{ hiddenNote }}
       </p>
+
+      <div v-if="detail.item_count > 1" class="flex justify-end">
+        <KunSelect
+          v-model="sort"
+          :options="[...SORT_OPTIONS]"
+          class-name="w-48"
+          aria-label="排序"
+        />
+      </div>
 
       <div v-if="works && works.items.length" class="flex flex-col space-y-3">
         <GalgameCard :is-transparent="false" :galgames="galgames" />

@@ -6537,6 +6537,8 @@ export interface components {
             /** @description Whether this collection holds the work. */
             has_work: boolean;
         };
+        /** @enum {string} */
+        CollectionWorkSort: "favorited_desc" | "favorited_asc" | "released_desc" | "released_asc";
         Comment: {
             /** @description Comment author. */
             author: components["schemas"]["UserRef"];
@@ -19975,6 +19977,8 @@ export interface operations {
                 limit?: number;
                 /** @description When true, adult works are included. Default false. */
                 include_nsfw?: boolean;
+                /** @description favorited: when the work was put in this collection. released: the work's release date; works without one come last either way. Ties break on favorited_desc. */
+                sort?: components["schemas"]["CollectionWorkSort"];
             };
             header?: never;
             path: {

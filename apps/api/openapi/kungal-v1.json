@@ -2944,6 +2944,17 @@
         ],
         "type": "object"
       },
+      "CollectionWorkSort": {
+        "enum": [
+          "favorited_desc",
+          "favorited_asc",
+          "released_desc",
+          "released_asc"
+        ],
+        "maxLength": 14,
+        "type": "string",
+        "x-vocabulary-closed": true
+      },
       "Comment": {
         "properties": {
           "author": {
@@ -33102,6 +33113,17 @@
               "default": false,
               "description": "When true, adult works are included. Default false.",
               "type": "boolean"
+            }
+          },
+          {
+            "description": "favorited: when the work was put in this collection. released: the work's release date; works without one come last either way. Ties break on favorited_desc.",
+            "explode": false,
+            "in": "query",
+            "name": "sort",
+            "schema": {
+              "$ref": "#/components/schemas/CollectionWorkSort",
+              "default": "favorited_desc",
+              "description": "favorited: when the work was put in this collection. released: the work's release date; works without one come last either way. Ties break on favorited_desc."
             }
           }
         ],
