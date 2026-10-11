@@ -277,6 +277,7 @@ func (s *Service) detail(ctx context.Context, row *model.GalgameToolset, users m
 		Type: item.Type, Language: item.Language, Platform: item.Platform, Version: item.Version,
 		HomepageURLs: item.HomepageURLs, Author: item.Author,
 		ViewCount: item.ViewCount, DownloadCount: item.DownloadCount, CommentCount: item.CommentCount,
+		FavoriteCount:       row.FavoriteCount,
 		PracticalityAverage: item.PracticalityAverage, PracticalityCount: item.PracticalityCount,
 		PracticalityDistribution: item.PracticalityDistribution,
 		CreatedAt:                item.CreatedAt, UpdatedAt: item.UpdatedAt, EditedAt: item.EditedAt,
@@ -284,16 +285,19 @@ func (s *Service) detail(ctx context.Context, row *model.GalgameToolset, users m
 		Content:           doc, Contributors: contributors, Resources: resOut,
 	}
 	if viewer != nil {
-		var rating *int
-		r, err := s.store.UserRating(row.ID, viewer.ID)
+		rating, err := s.store.UserRating(row.ID, viewer.ID)
 		if err != nil {
 			return nil, problem.Internal(err)
 		}
-		rating = r
+		favorited, err := s.store.HasFavorited(row.ID, viewer.ID)
+		if err != nil {
+			return nil, problem.Internal(err)
+		}
 		out.Viewer = &ToolsetViewer{
 			CanEdit:            canEditToolset(row.UserID, viewer),
 			CanDelete:          canDeleteToolset(row.UserID, viewer),
 			PracticalityRating: rating,
+			HasFavorited:       favorited,
 		}
 	}
 	return &out, nil

@@ -106,6 +106,7 @@ var interactionTables = []string{
 	"galgame_rating_like", "galgame_resource_like",
 	"galgame_website_like", "galgame_website_favorite",
 	"galgame_toolset_practicality", "galgame_toolset_contributor",
+	"galgame_toolset_favorite",
 }
 
 // PurgeUserContent runs with the kungal.purge_* settings, so migration 120's
@@ -404,6 +405,7 @@ var interactionDeletes = []interactionDelete{
 	{table: "galgame_website_favorite", recounts: []recountSpec{{"galgame_website", "favorite_count", "website_id", ""}}},
 	{table: "galgame_toolset_practicality"},
 	{table: "galgame_toolset_contributor"},
+	{table: "galgame_toolset_favorite", recounts: []recountSpec{{"galgame_toolset", "favorite_count", "toolset_id", ""}}},
 }
 
 func del(tx *gorm.DB, query string, args ...any) error {

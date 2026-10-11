@@ -1,10 +1,17 @@
 <script setup lang="ts">
-import type { PageListToolsetSummary } from '#shared/utils/api/schemas'
+import type {
+  PageListToolsetSummary,
+  UserToolsetRelation
+} from '#shared/utils/api/schemas'
 import { problemMessage } from '#shared/utils/api/message'
 
-const props = defineProps<{
-  userId: number
-}>()
+const props = withDefaults(
+  defineProps<{
+    userId: number
+    relation?: UserToolsetRelation
+  }>(),
+  { relation: 'authored' }
+)
 
 const pageData = reactive({
   page: usePageQuery(),
@@ -12,15 +19,23 @@ const pageData = reactive({
 })
 
 const { data, status, problem } = await useApi<PageListToolsetSummary>(
-  () => `user-toolsets:${props.userId}:${pageData.page}`,
+  () => `user-toolsets:${props.userId}:${props.relation}:${pageData.page}`,
   (api, { signal }) =>
     api.GET('/users/{user_id}/toolsets', {
       params: {
         path: { user_id: String(props.userId) },
-        query: { page: pageData.page, limit: pageData.limit }
+        query: {
+          relation: props.relation,
+          page: pageData.page,
+          limit: pageData.limit
+        }
       },
       signal
     })
+)
+
+const emptyDescription = computed(() =>
+  props.relation === 'favorited' ? '这只笨蛋萝莉还没有收藏任何工具' : '暂无工具'
 )
 </script>
 
@@ -38,6 +53,9 @@ const { data, status, problem } = await useApi<PageListToolsetSummary>(
       />
     </div>
 
-    <KunNull v-else-if="data && !data.items.length" description="暂无工具" />
+    <KunNull
+      v-else-if="data && !data.items.length"
+      :description="emptyDescription"
+    />
   </div>
 </template>

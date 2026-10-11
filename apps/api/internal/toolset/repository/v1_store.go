@@ -39,13 +39,14 @@ func UniqueViolation(err error) bool {
 }
 
 type ListFilter struct {
-	Type      string
-	Language  string
-	Platform  string
-	Version   string
-	Q         string
-	UserID    int
-	AuthorIDs []int
+	Type        string
+	Language    string
+	Platform    string
+	Version     string
+	Q           string
+	UserID      int
+	FavoritedBy int
+	AuthorIDs   []int
 }
 
 type SortSpec struct {
@@ -68,6 +69,9 @@ func (f ListFilter) apply(q *gorm.DB) *gorm.DB {
 	}
 	if f.UserID > 0 {
 		q = q.Where("user_id = ?", f.UserID)
+	}
+	if f.FavoritedBy > 0 {
+		q = q.Where("id IN (SELECT toolset_id FROM galgame_toolset_favorite WHERE user_id = ?)", f.FavoritedBy)
 	}
 	if kw := strings.TrimSpace(f.Q); kw != "" {
 		q = q.Where(`name ILIKE ? ESCAPE '\'`, "%"+escapeLike(kw)+"%")

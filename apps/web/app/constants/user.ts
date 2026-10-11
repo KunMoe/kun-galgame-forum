@@ -47,7 +47,8 @@ export const COLLECTION_NAV_CONFIG: Record<
   _NavItemData
 > = {
   galgame: { text: '游戏收藏夹', path: 'galgame' },
-  topic: { text: '话题收藏', path: 'topic' }
+  topic: { text: '话题收藏', path: 'topic' },
+  toolset: { text: '工具收藏', path: 'toolset' }
 }
 
 export const GALGAME_RESOURCE_NAV_CONFIG: Record<
@@ -159,7 +160,11 @@ export const KUN_USER_PAGE_GALGAME_TYPE = [
   'galgame_comment_like'
 ] as const
 
-export const KUN_USER_PAGE_COLLECTION_TYPE = ['galgame', 'topic'] as const
+export const KUN_USER_PAGE_COLLECTION_TYPE = [
+  'galgame',
+  'topic',
+  'toolset'
+] as const
 
 export const KUN_USER_PAGE_GALGAME_RESOURCE_TYPE = [
   'valid',

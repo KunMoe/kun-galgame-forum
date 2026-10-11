@@ -67,6 +67,7 @@ var counterChecks = []counterCheck{
 	{"galgame_resource", "like_count", "galgame_resource_like", "galgame_resource_id", ""},
 	{"galgame_website", "like_count", "galgame_website_like", "website_id", ""},
 	{"galgame_website", "favorite_count", "galgame_website_favorite", "website_id", ""},
+	{"galgame_toolset", "favorite_count", "galgame_toolset_favorite", "toolset_id", ""},
 }
 
 func main() {

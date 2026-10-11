@@ -37,6 +37,7 @@ func Register(svc *Service) func(huma.API) {
 		registerResources(api, svc)
 		registerUploads(api, svc)
 		registerPracticality(api, svc)
+		registerFavorite(api, svc)
 	}
 }
 
@@ -60,10 +61,12 @@ func registerToolsets(api huma.API, svc *Service) {
 		Method:      http.MethodGet,
 		Path:        "/users/{user_id}/toolsets",
 		Summary:     "List a user's toolsets",
-		Description: "Lists toolsets the user authored, newest first. An unrenderable user is NOT_FOUND. An empty list is 200 with total 0.",
-		Tags:        []string{tagUsers},
+		Description: "Lists toolsets related to the user. relation=authored (the default) is the toolsets they authored, newest first; " +
+			"relation=favorited is the toolsets they favorited, most recently favorited first, and omits toolsets whose author is not renderable from both items and total. " +
+			"An unrenderable user is NOT_FOUND. An empty list is 200 with total 0.",
+		Tags: []string{tagUsers},
 		Responses: problemResponses(map[int]string{
-			400: "LIMIT_TOO_LARGE or INVALID_PARAMETER.",
+			400: "UNKNOWN_ENUM_VALUE when relation is not in this collection's vocabulary, LIMIT_TOO_LARGE, or INVALID_PARAMETER.",
 			404: "NOT_FOUND when the user does not exist or is not renderable.",
 		}),
 	}), svc.listUserToolsets)
@@ -135,7 +138,7 @@ func registerToolsets(api huma.API, svc *Service) {
 		Path:          "/toolsets/{toolset_id}",
 		Summary:       "Delete a toolset",
 		DefaultStatus: http.StatusNoContent,
-		Description:   "Deletes a toolset and its resources, aliases, contributors, ratings and uploads. Needs can_delete. " + bearerNote + activeCheck + "Object-store failure is SERVICE_UNAVAILABLE and nothing is deleted.",
+		Description:   "Deletes a toolset and its resources, aliases, contributors, ratings, favorites and uploads. Needs can_delete. " + bearerNote + activeCheck + "Object-store failure is SERVICE_UNAVAILABLE and nothing is deleted.",
 		Tags:          []string{tagToolsets},
 		Responses: problemResponses(map[int]string{
 			403: "PERMISSION_REQUIRED without can_delete; ACCOUNT_BANNED.",
@@ -310,4 +313,32 @@ func registerPracticality(api huma.API, svc *Service) {
 			422: "VALIDATION_FAILED.",
 		}),
 	}), svc.putToolsetPracticality)
+}
+
+func registerFavorite(api huma.API, svc *Service) {
+	huma.Register(api, v1.Required(huma.Operation{
+		OperationID: "putToolsetFavorite",
+		Method:      http.MethodPut,
+		Path:        "/toolsets/{toolset_id}/favorite",
+		Summary:     "Favorite a toolset",
+		Description: "Sets the caller's favorite. Favoriting again changes nothing. " + activeCheck,
+		Tags:        []string{tagToolsets},
+		Responses: problemResponses(map[int]string{
+			403: "ACCOUNT_BANNED.",
+			404: "NOT_FOUND when the toolset does not exist or its author is not renderable.",
+		}),
+	}), svc.putToolsetFavorite)
+
+	huma.Register(api, v1.Required(huma.Operation{
+		OperationID: "deleteToolsetFavorite",
+		Method:      http.MethodDelete,
+		Path:        "/toolsets/{toolset_id}/favorite",
+		Summary:     "Unfavorite a toolset",
+		Description: "Clears the caller's favorite. Unfavoriting when not favorited changes nothing. " + activeCheck,
+		Tags:        []string{tagToolsets},
+		Responses: problemResponses(map[int]string{
+			403: "ACCOUNT_BANNED.",
+			404: "NOT_FOUND when the toolset does not exist or its author is not renderable.",
+		}),
+	}), svc.deleteToolsetFavorite)
 }

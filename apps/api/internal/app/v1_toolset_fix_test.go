@@ -182,6 +182,7 @@ func (f *writeFix) cleanupToolsets(t *testing.T) {
 		`DELETE FROM galgame_toolset_alias WHERE toolset_id IN (` + owned + `)`,
 		`DELETE FROM galgame_toolset_contributor WHERE toolset_id IN (` + owned + `)`,
 		`DELETE FROM galgame_toolset_practicality WHERE toolset_id IN (` + owned + `)`,
+		`DELETE FROM galgame_toolset_favorite WHERE toolset_id IN (` + owned + `) OR user_id BETWEEN 930000001 AND 930002199`,
 		`DELETE FROM toolset_upload WHERE toolset_id IN (` + owned + `)`,
 		`DELETE FROM galgame_toolset WHERE id IN (` + owned + `)`,
 		`DELETE FROM kungal_user_state WHERE user_id IN (930002101, 930002102)`,

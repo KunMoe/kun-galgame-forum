@@ -273,6 +273,8 @@ export type ToolsetUpload = components['schemas']['ToolsetUpload']
 export type ToolsetUploadCreate = components['schemas']['ToolsetUploadCreate']
 export type ToolsetUploadPatch = components['schemas']['ToolsetUploadPatch']
 export type ToolsetPracticality = components['schemas']['ToolsetPracticality']
+export type ToolsetEngagement = components['schemas']['ToolsetEngagement']
+export type UserToolsetRelation = components['schemas']['UserToolsetRelation']
 export type PageListToolsetSummary =
   components['schemas']['PageListToolsetSummary']
 export type ToolsetSort = NonNullable<
