@@ -2,7 +2,9 @@ package apiv1
 
 import (
 	"context"
+	"slices"
 	"sort"
+	"strings"
 
 	"kun-galgame-api/internal/apiv1/collect"
 	"kun-galgame-api/internal/apiv1/repr"
@@ -15,6 +17,7 @@ type listCollectionWorksInput struct {
 	Page         int    `query:"page" minimum:"1" default:"1" doc:"1-based page number. page × limit may not exceed 10000."`
 	Limit        int    `query:"limit" minimum:"1" maximum:"100" default:"24" doc:"Page size. 1–100, default 24. Values above 100 are rejected, not clamped."`
 	IncludeNSFW  bool   `query:"include_nsfw" default:"false" doc:"When true, adult works are included. Default false."`
+	Sort         string `query:"sort" enum:"favorited_desc,favorited_asc,released_desc,released_asc" default:"favorited_desc" maxLength:"14" doc:"favorited: when the work was put in this collection. released: the work's release date; works without one come last either way. Ties break on favorited_desc."`
 }
 
 type collectionWorkInput struct {
@@ -57,18 +60,47 @@ func (s *Service) listCollectionWorks(ctx context.Context, in *listCollectionWor
 	if p != nil {
 		return nil, p
 	}
-	n, rel := collect.ClampTotal(len(population))
+	ordered := sortFolderMembers(population, in.Sort)
+	n, rel := collect.ClampTotal(len(ordered))
 	start := pg.Offset()
 	pageIDs := []int{}
-	if start < len(population) {
-		end := min(start+pg.Limit, len(population))
-		pageIDs = population[start:end]
+	if start < len(ordered) {
+		end := min(start+pg.Limit, len(ordered))
+		for _, m := range ordered[start:end] {
+			pageIDs = append(pageIDs, m.WorkID)
+		}
 	}
 	summaries, p := s.hydrator.ByIDs(ctx, pageIDs, in.IncludeNSFW)
 	if p != nil {
 		return nil, p
 	}
 	return &workSummaryPageOutput{Body: repr.NewPageList(summaries, n, rel)}, nil
+}
+
+// members arrive newest favorite first, the order the population is built in.
+func sortFolderMembers(members []folderMember, sortBy string) []folderMember {
+	out := slices.Clone(members)
+	switch sortBy {
+	case "favorited_asc":
+		slices.Reverse(out)
+	case "released_desc", "released_asc":
+		desc := sortBy == "released_desc"
+		slices.SortStableFunc(out, func(a, b folderMember) int {
+			switch {
+			case a.Released == b.Released:
+				return 0
+			case a.Released == "":
+				return 1
+			case b.Released == "":
+				return -1
+			case desc:
+				return strings.Compare(b.Released, a.Released)
+			default:
+				return strings.Compare(a.Released, b.Released)
+			}
+		})
+	}
+	return out
 }
 
 func (s *Service) getCollectionWork(ctx context.Context, in *collectionWorkInput) (*collectionWorkOutput, error) {
