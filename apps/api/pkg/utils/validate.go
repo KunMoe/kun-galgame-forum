@@ -51,6 +51,29 @@ func IsDownloadLink(raw string) bool {
 	return u.Host != "" || u.Opaque != "" || u.RawQuery != "" || u.Fragment != ""
 }
 
+var miniProgramHosts = map[string]bool{"wxaurl.cn": true, "wxmpurl.cn": true}
+
+var imageExtensions = []string{".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp", ".avif", ".heic", ".heif", ".svg"}
+
+// Every image link among the 53k galgame resource links on 2026-10 was a
+// picture of a QR code, and every one decoded to a plain pan.baidu.com share.
+func IsQRCodeShareLink(raw string) bool {
+	u, err := url.Parse(strings.TrimSpace(raw))
+	if err != nil {
+		return false
+	}
+	if miniProgramHosts[strings.ToLower(u.Hostname())] {
+		return true
+	}
+	path := strings.ToLower(u.Path)
+	for _, ext := range imageExtensions {
+		if strings.HasSuffix(path, ext) {
+			return true
+		}
+	}
+	return false
+}
+
 func ParseAndValidate(c fiber.Ctx, dst any) *errors.AppError {
 	if err := c.Bind().Body(dst); err != nil {
 		return errors.ErrBadRequest("请求格式错误")

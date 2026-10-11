@@ -173,6 +173,21 @@ const cleanMatchedUrl = (raw: string): string => {
 export const isEd2kFileLink = (url: string): boolean =>
   ED2K_FILE_LINK_RE.test(url)
 
+const MINI_PROGRAM_HOSTS = new Set(['wxaurl.cn', 'wxmpurl.cn'])
+const IMAGE_PATH_RE = /\.(?:png|jpe?g|gif|webp|bmp|avif|heic|heif|svg)$/i
+
+export const isQRCodeShareLink = (raw: string): boolean => {
+  try {
+    const url = new URL(raw.trim())
+    return (
+      MINI_PROGRAM_HOSTS.has(url.hostname.toLowerCase()) ||
+      IMAGE_PATH_RE.test(url.pathname)
+    )
+  } catch {
+    return false
+  }
+}
+
 const parseCodeFromSearchParams = (url: URL): string =>
   url.searchParams.get('pwd') ||
   url.searchParams.get('password') ||

@@ -5,6 +5,7 @@ import {
   detectProviderKeyFromURL,
   isCleanLinkDump,
   isEd2kFileLink,
+  isQRCodeShareLink,
   parseResourceLinks,
   splitResourceLinkText
 } from './resourceLink'
@@ -308,5 +309,27 @@ describe('isEd2kFileLink', () => {
       )
     ).toBe(false)
     expect(isEd2kFileLink('ed2k://|server|1.2.3.4|4661|/')).toBe(false)
+  })
+})
+
+describe('isQRCodeShareLink', () => {
+  it('flags a picture of a QR code and a mini program link', () => {
+    expect(
+      isQRCodeShareLink('https://p.inari.site/usr/1903/66f1d2c5a1b2c.png')
+    ).toBe(true)
+    expect(isQRCodeShareLink('https://image.acg.lol/file/qr.JPG?x=1')).toBe(
+      true
+    )
+    expect(isQRCodeShareLink('https://wxaurl.cn/abcDEF123')).toBe(true)
+  })
+
+  it('keeps plain share links, including ones whose code reads qr', () => {
+    expect(
+      isQRCodeShareLink('https://pan.baidu.com/s/1Qr5qAbCdEf?pwd=qr8e')
+    ).toBe(false)
+    expect(isQRCodeShareLink('https://files.example.invalid/cg.zip')).toBe(
+      false
+    )
+    expect(isQRCodeShareLink('not a url')).toBe(false)
   })
 })

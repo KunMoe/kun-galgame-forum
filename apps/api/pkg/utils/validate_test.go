@@ -40,3 +40,22 @@ func TestIsDownloadLink(t *testing.T) {
 		}
 	}
 }
+
+func TestIsQRCodeShareLink(t *testing.T) {
+	for _, tc := range []struct {
+		in   string
+		want bool
+	}{
+		{"https://p.inari.site/usr/1903/66f1d2c5a1b2c.png", true},
+		{"https://image.acg.lol/file/2026/08/12/qr.JPG?x=1", true},
+		{"https://wxaurl.cn/abcDEF123", true},
+		{"https://pan.baidu.com/s/1Qr5qAbCdEf?pwd=qr8e", false},
+		{"https://pan.quark.cn/s/abcdef", false},
+		{"https://files.example.invalid/cg.zip", false},
+		{"magnet:?xt=urn:btih:0123456789abcdef0123456789abcdef01234567", false},
+	} {
+		if got := IsQRCodeShareLink(tc.in); got != tc.want {
+			t.Errorf("IsQRCodeShareLink(%q) = %v, want %v", tc.in, got, tc.want)
+		}
+	}
+}
