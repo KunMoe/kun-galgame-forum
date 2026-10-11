@@ -63,6 +63,27 @@ func (r *StateRepository) SetMoemoepoint(userID, balance int) error {
 	).Error
 }
 
+func (r *StateRepository) SetMutedType(userID int, key string, muted bool) ([]string, error) {
+	set := `CASE WHEN jsonb_exists(muted_notification_types, ?) THEN muted_notification_types
+		ELSE muted_notification_types || to_jsonb(?::text) END`
+	args := []any{key, key}
+	if !muted {
+		set = `muted_notification_types - ?::text`
+		args = []any{key}
+	}
+	var raw string
+	err := r.db.Raw(
+		`UPDATE kungal_user_state SET muted_notification_types = `+set+`
+		WHERE user_id = ? RETURNING muted_notification_types::text`,
+		append(args, userID)...,
+	).Row().Scan(&raw)
+	if err != nil {
+		return nil, err
+	}
+	keys := []string{}
+	return keys, json.Unmarshal([]byte(raw), &keys)
+}
+
 func (r *StateRepository) UpdateMutedTypes(userID int, keys []string) error {
 	if keys == nil {
 		keys = []string{}
