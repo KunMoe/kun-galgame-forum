@@ -1,8 +1,13 @@
 <script setup lang="ts">
 import { createToolsetResourceSchema } from '~/validations/toolset'
 import { applyResourceLinkBlur } from '~~/shared/utils/resourceLink'
-import { settle } from '#shared/utils/api/problem'
+import { settle, type ClientProblem } from '#shared/utils/api/problem'
 import { useIdempotencyKey } from '~/composables/useIdempotencyKey'
+import type { ToolsetUploadResult } from '~/composables/useToolsetResumeUploads'
+import {
+  emptyToolsetResourceDraft,
+  usePersistEditToolsetResourceStore
+} from '~/store/modules/edit/toolsetResource'
 import type {
   ToolsetResourceCreate,
   ToolsetResourceSummary
@@ -11,31 +16,46 @@ import type {
 const props = defineProps<{
   toolsetId: string
   type: 'file' | 'link'
-  uploadResult: { id: string; file_size: number }
+  uploadResult: ToolsetUploadResult | null
 }>()
 
 const emits = defineEmits<{
   onClose: []
   onSuccess: [ToolsetResourceSummary]
+  onUploadStale: []
 }>()
 
 const api = useApiClient()
 const createKey = useIdempotencyKey()
+const resumeUploads = useToolsetResumeUploads(props.toolsetId)
+const draft = usePersistEditToolsetResourceStore()
 
 const formData = reactive({
   toolset_resource_type: props.type,
-  link_url: '',
-  artifact_id: props.type === 'file' ? props.uploadResult.id : '',
-  size_label: '',
-  extraction_code: '',
-  archive_password: '',
-  note: ''
+  artifact_id: props.type === 'file' ? (props.uploadResult?.id ?? '') : '',
+  ...(draft.toolsetId === props.toolsetId
+    ? { ...draft.fields }
+    : emptyToolsetResourceDraft())
 })
 const isLoading = ref(false)
 
+watch(
+  () => ({
+    link_url: formData.link_url,
+    size_label: formData.size_label,
+    extraction_code: formData.extraction_code,
+    archive_password: formData.archive_password,
+    note: formData.note
+  }),
+  (fields) => {
+    draft.keep(props.toolsetId)
+    draft.fields = fields
+  }
+)
+
 const sizeDisplay = computed(() => {
   if (props.type === 'file') {
-    const bytes = props.uploadResult.file_size
+    const bytes = props.uploadResult?.file_size ?? 0
     return Number.isFinite(bytes) && bytes > 0 ? formatFileSize(bytes) : ''
   }
   return formData.size_label
@@ -52,7 +72,7 @@ watch(
   () => {
     formData.toolset_resource_type = props.type
     if (props.type === 'file') {
-      formData.artifact_id = props.uploadResult.id
+      formData.artifact_id = props.uploadResult?.id ?? ''
       formData.link_url = ''
       formData.size_label = ''
     } else {
@@ -67,10 +87,21 @@ watch(
   () => props.uploadResult,
   () => {
     if (props.type === 'file') {
-      formData.artifact_id = props.uploadResult.id
+      formData.artifact_id = props.uploadResult?.id ?? ''
     }
   }
 )
+
+const staleUploadMessage = (problem: ClientProblem) => {
+  const error = problem.errors.find((e) => e.pointer === '/artifact_id')
+  if (error?.reason === 'UNKNOWN_REFERENCE') {
+    return '这个已上传的文件已失效, 请重新上传'
+  }
+  if (error && problem.code === 'ALREADY_EXISTS') {
+    return '这个文件已经发布过了, 刷新页面即可看到'
+  }
+  return null
+}
 
 const commitRecognizedLink = () => {
   if (props.type !== 'link') return
@@ -135,10 +166,22 @@ const submitLink = async () => {
   isLoading.value = false
 
   if (!created.ok) {
-    reportProblem(created.problem)
+    const artifactId = payload.artifact_id
+    const stale = artifactId ? staleUploadMessage(created.problem) : null
+    if (!artifactId || !stale) {
+      reportProblem(created.problem)
+      return
+    }
+    resumeUploads.remove(artifactId)
+    useMessage(stale, 'warn')
+    emits('onUploadStale')
     return
   }
   createKey.clear()
+  if (payload.artifact_id) {
+    resumeUploads.remove(payload.artifact_id)
+  }
+  draft.reset()
   useMessage('资源发布成功', 'success')
   emits('onSuccess', created.data)
   emits('onClose')

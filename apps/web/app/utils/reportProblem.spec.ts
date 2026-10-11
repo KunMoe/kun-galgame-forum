@@ -50,4 +50,31 @@ describe('reportProblem', () => {
     expect(String(useMessage.mock.calls[2]![0])).toMatch(/^Idempotency-Key：/)
     expect(String(useMessage.mock.calls[3]![0])).toMatch(/^unknown_field：/)
   })
+
+  it('appends the request id to a server fault, so the reader can report it', () => {
+    reportProblem({
+      kind: 'problem',
+      status: 500,
+      code: 'INTERNAL_ERROR',
+      requestId: 'req_01JZ0000000000000000000000',
+      errors: []
+    })
+    expect(useMessage).toHaveBeenCalledOnce()
+    expect(String(useMessage.mock.calls[0]![0])).toMatch(
+      /（错误编号 req_01JZ0000000000000000000000）$/
+    )
+  })
+
+  it('leaves a client error and an id-less failure as they were', () => {
+    reportProblem(problem([]))
+    reportProblem({
+      kind: 'http',
+      status: 502,
+      code: null,
+      requestId: null,
+      errors: []
+    })
+    expect(String(useMessage.mock.calls[0]![0])).not.toMatch(/错误编号/)
+    expect(String(useMessage.mock.calls[1]![0])).not.toMatch(/错误编号/)
+  })
 })

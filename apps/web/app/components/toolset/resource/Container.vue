@@ -1,11 +1,8 @@
 <script setup lang="ts">
 import { USER_DAILY_UPLOAD_LIMIT } from '~/config/upload'
+import type { ToolsetUploadResult } from '~/composables/useToolsetResumeUploads'
+import { usePersistEditToolsetResourceStore } from '~/store/modules/edit/toolsetResource'
 import type { ToolsetResourceSummary } from '#shared/utils/api/schemas'
-
-type ToolsetUploadResult = {
-  id: string
-  file_size: number
-}
 
 const props = defineProps<{
   toolsetId: string
@@ -26,16 +23,16 @@ const dailyUploadBudget = computed(
   () => USER_DAILY_UPLOAD_LIMIT + moemoepoint.value * MB
 )
 
-const mode = ref<'file' | 'link'>('file')
-const uploadResult = ref<ToolsetUploadResult>({
-  id: '',
-  file_size: 0
-})
+const draft = usePersistEditToolsetResourceStore()
+const mode = ref<'file' | 'link'>(
+  draft.toolsetId === props.toolsetId ? draft.mode : 'file'
+)
+const uploadResult = ref<ToolsetUploadResult | null>(null)
 
-const handleUploadSuccess = (value: ToolsetUploadResult) => {
-  uploadResult.value = value
-  dailyToolsetUploadBytes.value += value.file_size
-}
+watch(mode, (value) => {
+  draft.keep(props.toolsetId)
+  draft.mode = value
+})
 </script>
 
 <template>
@@ -107,10 +104,9 @@ const handleUploadSuccess = (value: ToolsetUploadResult) => {
       </div>
 
       <ToolsetResourceUpload
-        v-if="mode === 'file'"
+        v-show="mode === 'file'"
+        v-model:result="uploadResult"
         :toolset-id="props.toolsetId"
-        @on-close="emits('onClose')"
-        @on-upload-success="handleUploadSuccess"
       />
 
       <ToolsetResourceLinkForm
@@ -119,6 +115,7 @@ const handleUploadSuccess = (value: ToolsetUploadResult) => {
         :upload-result="uploadResult"
         @on-close="emits('onClose')"
         @on-success="(value) => emits('onSuccess', value)"
+        @on-upload-stale="uploadResult = null"
       />
     </div>
   </div>

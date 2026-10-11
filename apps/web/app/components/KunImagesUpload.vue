@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import { MAX_IMAGE_SIZE } from '~/config/upload'
+import { isShrinkableImage } from '~/utils/shrinkImage'
+
 const props = withDefaults(
   defineProps<{
     modelValue: string[]
@@ -23,8 +26,6 @@ const emits = defineEmits<{
   'update:modelValue': [value: string[]]
   'update:nsfw': [value: string[]]
 }>()
-
-const MAX_FILE_SIZE = 10 * 1024 * 1024
 
 interface Slot {
   hash: string
@@ -114,9 +115,15 @@ const addFiles = async (files: File[]) => {
   if (!accepted.length) {
     return
   }
-  const oversized = accepted.find((file) => file.size > MAX_FILE_SIZE)
+  const oversized = accepted.find(
+    (file) =>
+      file.size > MAX_IMAGE_SIZE && !isShrinkableImage(file, MAX_IMAGE_SIZE)
+  )
   if (oversized) {
-    useMessage(`${oversized.name} 超过 10MB, 请压缩后再上传`, 'warn')
+    useMessage(
+      `${oversized.name} 超过 ${MAX_IMAGE_SIZE / 1024 / 1024}MB, 请压缩后再上传`,
+      'warn'
+    )
     return
   }
   if (accepted.length > remaining.value) {
@@ -308,7 +315,6 @@ const endReorder = () => {
           <KunFileInput
             accept="image/*"
             multiple
-            :max-size="MAX_FILE_SIZE"
             :show-file-name="false"
             class-name="absolute inset-0"
             @change="addFiles"

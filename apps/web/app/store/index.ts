@@ -1,4 +1,5 @@
 import { usePersistEditGalgameRatingStore } from './modules/edit/rating'
+import { usePersistEditToolsetResourceStore } from './modules/edit/toolsetResource'
 import { kunSettingsDefaults } from './modules/settings'
 
 export const createEmptyLocaleMap = () => ({
@@ -25,6 +26,8 @@ export const kungalgameStoreReset = () => {
 
   const persistEditGalgameRatingStore = usePersistEditGalgameRatingStore()
   persistEditGalgameRatingStore.shortSummary = ''
+
+  usePersistEditToolsetResourceStore().reset()
 
   const persistReplyStore = usePersistKUNGalgameReplyStore()
   persistReplyStore.mode = 'preview'

@@ -15,7 +15,10 @@ import {
 } from '~/constants/toolset'
 import { settle } from '#shared/utils/api/problem'
 import { useIdempotencyKey } from '~/composables/useIdempotencyKey'
-import type { ToolsetPendingUpload } from '~/composables/useToolsetResumeUploads'
+import type {
+  ToolsetPendingUpload,
+  ToolsetUploadResult
+} from '~/composables/useToolsetResumeUploads'
 import type {
   ToolsetUpload,
   ToolsetUploadCreate,
@@ -26,10 +29,9 @@ const props = defineProps<{
   toolsetId: string
 }>()
 
-const emits = defineEmits<{
-  onUploadSuccess: [{ id: string; file_size: number }]
-  onClose: []
-}>()
+const result = defineModel<ToolsetUploadResult | null>('result', {
+  required: true
+})
 
 const MB = 1024 * 1024
 const LARGE_CHUNK_SIZE = 5 * MB
@@ -58,6 +60,7 @@ const progress = ref(0)
 const isDragging = ref(false)
 const uploadStatus = ref<ToolsetUploadStatus>('idle')
 const resumeId = ref<string | null>(null)
+const reused = ref<ToolsetPendingUpload | null>(null)
 
 const isLarge = computed(() => {
   const f = selectedFile.value
@@ -104,10 +107,17 @@ const resetUploadState = () => {
 
 const setSelectedUploadFile = (file: File) => {
   selectedFile.value = file
+  reused.value = null
+  result.value = null
   resetUploadState()
   const match = resumeStore
     .list()
-    .find((p) => p.size === file.size && p.last_modified === file.lastModified)
+    .find(
+      (p) =>
+        !p.completed &&
+        p.size === file.size &&
+        p.last_modified === file.lastModified
+    )
   resumeId.value = match ? match.id : null
 }
 
@@ -217,6 +227,8 @@ const onDragLeave = () => {
 }
 const clearSelected = () => {
   selectedFile.value = null
+  reused.value = null
+  result.value = null
   if (fileInput.value) {
     fileInput.value.value = ''
   }
@@ -226,9 +238,15 @@ const clearSelected = () => {
 
 const resumeStore = useToolsetResumeUploads(props.toolsetId)
 const pending = ref<ToolsetPendingUpload[]>([])
+const finished = ref<ToolsetPendingUpload[]>([])
+const offers = computed(() =>
+  finished.value.filter((p) => p.id !== result.value?.id)
+)
 
 const refreshPending = () => {
-  pending.value = resumeStore.list()
+  const all = resumeStore.list()
+  pending.value = all.filter((p) => !p.completed)
+  finished.value = all.filter((p) => p.completed)
 }
 
 const rememberPending = (f: File, uploadId: string, prog: number) => {
@@ -238,7 +256,8 @@ const rememberPending = (f: File, uploadId: string, prog: number) => {
     size: f.size,
     last_modified: f.lastModified,
     progress: prog,
-    updated_at: Date.now()
+    updated_at: Date.now(),
+    completed: false
   })
 }
 
@@ -248,6 +267,25 @@ const forgetPending = (uploadId: string) => {
     resumeId.value = null
   }
   refreshPending()
+}
+
+const finishUpload = (upload: ToolsetUpload) => {
+  resumeStore.upsert({
+    id: upload.id,
+    name: upload.filename,
+    size: upload.file_size,
+    last_modified: 0,
+    progress: 100,
+    updated_at: Date.now(),
+    completed: true
+  })
+  if (resumeId.value === upload.id) {
+    resumeId.value = null
+  }
+  refreshPending()
+  progress.value = 100
+  uploadStatus.value = 'complete'
+  result.value = { id: upload.id, file_size: upload.file_size }
 }
 
 const putParts = async (
@@ -311,13 +349,8 @@ const completeUpload = async (
     return false
   }
   useMessage('上传成功', 'success')
-  emits('onUploadSuccess', {
-    id: done.data.id,
-    file_size: done.data.file_size
-  })
-  progress.value = 100
-  uploadStatus.value = 'complete'
-  forgetPending(uploadId)
+  dailyToolsetUploadBytes.value += done.data.file_size
+  finishUpload(done.data)
   uploadKey.clear()
   return true
 }
@@ -441,6 +474,11 @@ const resumeUploadToArtifact = async (f: File, uploadId: string) => {
     return
   }
 
+  if (resume.data.state === 'completed') {
+    finishUpload(resume.data)
+    return
+  }
+
   if (!resume.data.is_multipart) {
     try {
       uploadStatus.value = 'smallUploading'
@@ -518,12 +556,32 @@ const handleDeletePending = async (uploadId: string) => {
   forgetPending(uploadId)
 }
 
+const reuseFinished = (record: ToolsetPendingUpload) => {
+  clearSelected()
+  reused.value = record
+  result.value = { id: record.id, file_size: record.size }
+}
+
+watch(result, (value) => {
+  if (!value && (reused.value || uploadStatus.value === 'complete')) {
+    clearSelected()
+    refreshPending()
+  }
+})
+
 onMounted(refreshPending)
 </script>
 
 <template>
   <div class="space-y-4">
     <input ref="fileInput" type="file" hidden @change="onChange" />
+
+    <ToolsetResourceFinishedList
+      v-if="offers.length && !selectedFile && !reused"
+      :finished="offers"
+      @use="reuseFinished"
+      @discard="forgetPending"
+    />
 
     <div v-if="pending.length && uploadStatus === 'idle'" class="space-y-2">
       <div
@@ -545,6 +603,28 @@ onMounted(refreshPending)
 
     <KunCard :is-hoverable="false" :is-transparent="true">
       <div
+        v-if="reused"
+        class="border-success/40 flex flex-col justify-center gap-2 rounded-lg border-2 border-dashed p-6"
+      >
+        <div class="flex items-center gap-3">
+          <KunIcon name="lucide:file-check" class="text-success-600 text-xl" />
+          <div class="text-default-700 font-medium break-all">
+            {{ reused.name }}
+          </div>
+        </div>
+        <div class="text-default-500 text-xs">
+          {{ formatFileSize(reused.size) }}
+        </div>
+        <div
+          class="text-success-600 flex items-center justify-center gap-2 text-sm"
+        >
+          <KunIcon name="lucide:circle-check-big" class="text-sm" />
+          <span>文件此前已上传完成, 填写下方信息后即可发布</span>
+        </div>
+      </div>
+
+      <div
+        v-else
         class="cursor-pointer rounded-lg border-2 border-dashed p-6 text-center transition-colors"
         :class="
           cn(
@@ -624,7 +704,7 @@ onMounted(refreshPending)
 
     <div class="flex items-center justify-end gap-2">
       <KunButton
-        v-if="selectedFile"
+        v-if="selectedFile || reused"
         variant="light"
         color="danger"
         @click.stop="clearSelected"
@@ -632,6 +712,7 @@ onMounted(refreshPending)
         移除文件
       </KunButton>
       <KunButton
+        v-if="!reused"
         :loading="uploadStatus !== 'idle' && uploadStatus !== 'complete'"
         :disabled="!selectedFile || uploadStatus === 'complete'"
         @click="submit"
