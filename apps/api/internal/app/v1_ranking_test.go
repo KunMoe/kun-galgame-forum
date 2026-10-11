@@ -186,3 +186,12 @@ func TestV1RankingRejects(t *testing.T) {
 		}
 	}
 }
+
+func TestV1WorkRankingDropsExcludedWorks(t *testing.T) {
+	f := newRankingFix(t)
+	f.works.excluded = []int{rkWorkTop}
+	_, body := f.get(t, "/rankings/works", url.Values{"limit": {"10"}, "exclude_tag_trees": {"6"}})
+	if ids := rkIDs(rkEntries(body, "work")); fmt.Sprint(ids) != rkWant(rkWorkNoCreator, rkWorkBannedMaker) {
+		t.Errorf("an excluded work must leave the ranking and the next one moves up: %v", ids)
+	}
+}

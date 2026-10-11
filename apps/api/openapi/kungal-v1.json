@@ -8720,6 +8720,34 @@
         ],
         "type": "object"
       },
+      "ListTagBlock": {
+        "properties": {
+          "items": {
+            "description": "Members of this page. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/TagBlock"
+            },
+            "type": "array"
+          },
+          "next_cursor": {
+            "description": "Opaque keyset cursor. Omitted on the last page.",
+            "maxLength": 512,
+            "pattern": "^cur_[A-Za-z0-9_-]+$",
+            "type": "string"
+          },
+          "object": {
+            "const": "list",
+            "description": "Type discriminant. Always list.",
+            "maxLength": 4,
+            "type": "string"
+          }
+        },
+        "required": [
+          "object",
+          "items"
+        ],
+        "type": "object"
+      },
       "ListTopicDraftSummary": {
         "properties": {
           "items": {
@@ -13627,6 +13655,15 @@
         ],
         "type": "object"
       },
+      "PutTagBlockInputBody": {
+        "properties": {
+          "mode": {
+            "$ref": "#/components/schemas/TagBlockMode",
+            "description": "tree (the default) also blocks every tag below this one; exact blocks this tag only."
+          }
+        },
+        "type": "object"
+      },
       "PutWorkPlaytimeBody": {
         "properties": {
           "minutes": {
@@ -18483,6 +18520,51 @@
           "localized"
         ],
         "type": "object"
+      },
+      "TagBlock": {
+        "properties": {
+          "created_at": {
+            "description": "When the caller blocked this tag.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": "string"
+          },
+          "id": {
+            "description": "The blocked catalog tag's id.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "mode": {
+            "$ref": "#/components/schemas/TagBlockMode",
+            "description": "tree: send the id in exclude_tag_trees, which also drops the works under every tag below it. exact: send it in exclude_tag_ids."
+          },
+          "object": {
+            "const": "tag_block",
+            "description": "Type discriminant. Always tag_block.",
+            "maxLength": 9,
+            "type": "string"
+          }
+        },
+        "required": [
+          "object",
+          "id",
+          "mode",
+          "created_at"
+        ],
+        "type": "object"
+      },
+      "TagBlockMode": {
+        "enum": [
+          "tree",
+          "exact"
+        ],
+        "maxLength": 5,
+        "type": "string",
+        "x-vocabulary-closed": true
       },
       "TagCreate": {
         "properties": {
@@ -34497,6 +34579,40 @@
               "description": "When true, works whose original language is neither Japanese nor Chinese are included. Default false.",
               "type": "boolean"
             }
+          },
+          {
+            "description": "Catalog tag ids. Drops every work carrying any of them, from any source and at any spoiler level. Comma-separated. Omitted means no exclusion.",
+            "explode": false,
+            "in": "query",
+            "name": "exclude_tag_ids",
+            "schema": {
+              "description": "Catalog tag ids. Drops every work carrying any of them, from any source and at any spoiler level. Comma-separated. Omitted means no exclusion.",
+              "items": {
+                "maxLength": 20,
+                "minLength": 1,
+                "pattern": "^[0-9]+$",
+                "type": "string"
+              },
+              "maxItems": 100,
+              "type": "array"
+            }
+          },
+          {
+            "description": "Catalog tag ids. Like exclude_tag_ids, and each also drops the works carrying any tag below it in the tag hierarchy. Comma-separated. Omitted means no exclusion.",
+            "explode": false,
+            "in": "query",
+            "name": "exclude_tag_trees",
+            "schema": {
+              "description": "Catalog tag ids. Like exclude_tag_ids, and each also drops the works carrying any tag below it in the tag hierarchy. Comma-separated. Omitted means no exclusion.",
+              "items": {
+                "maxLength": 20,
+                "minLength": 1,
+                "pattern": "^[0-9]+$",
+                "type": "string"
+              },
+              "maxItems": 100,
+              "type": "array"
+            }
           }
         ],
         "responses": {
@@ -35927,6 +36043,40 @@
               "default": false,
               "description": "When true, works whose original language is neither Japanese nor Chinese are included. Default false.",
               "type": "boolean"
+            }
+          },
+          {
+            "description": "Catalog tag ids. Drops every work carrying any of them, from any source and at any spoiler level. Comma-separated. Omitted means no exclusion.",
+            "explode": false,
+            "in": "query",
+            "name": "exclude_tag_ids",
+            "schema": {
+              "description": "Catalog tag ids. Drops every work carrying any of them, from any source and at any spoiler level. Comma-separated. Omitted means no exclusion.",
+              "items": {
+                "maxLength": 20,
+                "minLength": 1,
+                "pattern": "^[0-9]+$",
+                "type": "string"
+              },
+              "maxItems": 100,
+              "type": "array"
+            }
+          },
+          {
+            "description": "Catalog tag ids. Like exclude_tag_ids, and each also drops the works carrying any tag below it in the tag hierarchy. Comma-separated. Omitted means no exclusion.",
+            "explode": false,
+            "in": "query",
+            "name": "exclude_tag_trees",
+            "schema": {
+              "description": "Catalog tag ids. Like exclude_tag_ids, and each also drops the works carrying any tag below it in the tag hierarchy. Comma-separated. Omitted means no exclusion.",
+              "items": {
+                "maxLength": 20,
+                "minLength": 1,
+                "pattern": "^[0-9]+$",
+                "type": "string"
+              },
+              "maxItems": 100,
+              "type": "array"
             }
           }
         ],
@@ -37454,6 +37604,40 @@
               "default": false,
               "description": "When true, works whose original language is neither Japanese nor Chinese are included. Default false.",
               "type": "boolean"
+            }
+          },
+          {
+            "description": "Catalog tag ids. Drops every work carrying any of them, from any source and at any spoiler level. Comma-separated. Omitted means no exclusion.",
+            "explode": false,
+            "in": "query",
+            "name": "exclude_tag_ids",
+            "schema": {
+              "description": "Catalog tag ids. Drops every work carrying any of them, from any source and at any spoiler level. Comma-separated. Omitted means no exclusion.",
+              "items": {
+                "maxLength": 20,
+                "minLength": 1,
+                "pattern": "^[0-9]+$",
+                "type": "string"
+              },
+              "maxItems": 100,
+              "type": "array"
+            }
+          },
+          {
+            "description": "Catalog tag ids. Like exclude_tag_ids, and each also drops the works carrying any tag below it in the tag hierarchy. Comma-separated. Omitted means no exclusion.",
+            "explode": false,
+            "in": "query",
+            "name": "exclude_tag_trees",
+            "schema": {
+              "description": "Catalog tag ids. Like exclude_tag_ids, and each also drops the works carrying any tag below it in the tag hierarchy. Comma-separated. Omitted means no exclusion.",
+              "items": {
+                "maxLength": 20,
+                "minLength": 1,
+                "pattern": "^[0-9]+$",
+                "type": "string"
+              },
+              "maxItems": 100,
+              "type": "array"
             }
           }
         ],
@@ -39198,6 +39382,419 @@
         "summary": "Replace the caller's avatar",
         "tags": [
           "users"
+        ]
+      }
+    },
+    "/me/blocked-tags": {
+      "get": {
+        "description": "Every tag the caller blocked, newest first, at most 100. Items carry ids only. Lists apply them when the client sends the tree ids in exclude_tag_trees and the exact ids in exclude_tag_ids; the server applies none of them by itself.",
+        "operationId": "listMyTagBlocks",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListTagBlock"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the catalog cannot be reached."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List the caller's blocked tags",
+        "tags": [
+          "me"
+        ]
+      }
+    },
+    "/me/blocked-tags/{tag_id}": {
+      "delete": {
+        "description": "Removes the block. Unblocking a tag that is not blocked changes nothing.",
+        "operationId": "deleteMyTagBlock",
+        "parameters": [
+          {
+            "description": "Catalog tag id.",
+            "in": "path",
+            "name": "tag_id",
+            "required": true,
+            "schema": {
+              "description": "Catalog tag id.",
+              "maxLength": 20,
+              "minLength": 1,
+              "pattern": "^[0-9]+$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the catalog cannot be reached."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Unblock a tag",
+        "tags": [
+          "me"
+        ]
+      },
+      "get": {
+        "description": "The caller's block on this tag.",
+        "operationId": "getMyTagBlock",
+        "parameters": [
+          {
+            "description": "Catalog tag id.",
+            "in": "path",
+            "name": "tag_id",
+            "required": true,
+            "schema": {
+              "description": "Catalog tag id.",
+              "maxLength": 20,
+              "minLength": 1,
+              "pattern": "^[0-9]+$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TagBlock"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when the caller has not blocked this tag."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the catalog cannot be reached."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get the caller's block on one tag",
+        "tags": [
+          "me"
+        ]
+      },
+      "put": {
+        "description": "Blocks the tag, or changes the mode of an existing block. mode defaults to tree. At most 100 blocked tags.",
+        "operationId": "putMyTagBlock",
+        "parameters": [
+          {
+            "description": "Catalog tag id.",
+            "in": "path",
+            "name": "tag_id",
+            "required": true,
+            "schema": {
+              "description": "Catalog tag id.",
+              "maxLength": 20,
+              "minLength": 1,
+              "pattern": "^[0-9]+$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PutTagBlockInputBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TagBlock"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when the tag does not exist."
+          },
+          "413": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Request Entity Too Large"
+          },
+          "415": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unsupported Media Type"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED when the caller already blocks 100 tags."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the catalog cannot be reached."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Block a tag",
+        "tags": [
+          "me"
         ]
       }
     },
@@ -49397,6 +49994,40 @@
               "description": "When true, works whose original language is neither Japanese nor Chinese are ranked too. Default false.",
               "type": "boolean"
             }
+          },
+          {
+            "description": "Catalog tag ids. Drops every work carrying any of them, from any source and at any spoiler level. Comma-separated. Omitted means no exclusion.",
+            "explode": false,
+            "in": "query",
+            "name": "exclude_tag_ids",
+            "schema": {
+              "description": "Catalog tag ids. Drops every work carrying any of them, from any source and at any spoiler level. Comma-separated. Omitted means no exclusion.",
+              "items": {
+                "maxLength": 20,
+                "minLength": 1,
+                "pattern": "^[0-9]+$",
+                "type": "string"
+              },
+              "maxItems": 100,
+              "type": "array"
+            }
+          },
+          {
+            "description": "Catalog tag ids. Like exclude_tag_ids, and each also drops the works carrying any tag below it in the tag hierarchy. Comma-separated. Omitted means no exclusion.",
+            "explode": false,
+            "in": "query",
+            "name": "exclude_tag_trees",
+            "schema": {
+              "description": "Catalog tag ids. Like exclude_tag_ids, and each also drops the works carrying any tag below it in the tag hierarchy. Comma-separated. Omitted means no exclusion.",
+              "items": {
+                "maxLength": 20,
+                "minLength": 1,
+                "pattern": "^[0-9]+$",
+                "type": "string"
+              },
+              "maxItems": 100,
+              "type": "array"
+            }
           }
         ],
         "responses": {
@@ -50372,6 +51003,40 @@
               "description": "When true, works credited only to doujin circles are included. Default false.",
               "type": "boolean"
             }
+          },
+          {
+            "description": "Catalog tag ids. Drops every work carrying any of them, from any source and at any spoiler level. Comma-separated. Omitted means no exclusion.",
+            "explode": false,
+            "in": "query",
+            "name": "exclude_tag_ids",
+            "schema": {
+              "description": "Catalog tag ids. Drops every work carrying any of them, from any source and at any spoiler level. Comma-separated. Omitted means no exclusion.",
+              "items": {
+                "maxLength": 20,
+                "minLength": 1,
+                "pattern": "^[0-9]+$",
+                "type": "string"
+              },
+              "maxItems": 100,
+              "type": "array"
+            }
+          },
+          {
+            "description": "Catalog tag ids. Like exclude_tag_ids, and each also drops the works carrying any tag below it in the tag hierarchy. Comma-separated. Omitted means no exclusion.",
+            "explode": false,
+            "in": "query",
+            "name": "exclude_tag_trees",
+            "schema": {
+              "description": "Catalog tag ids. Like exclude_tag_ids, and each also drops the works carrying any tag below it in the tag hierarchy. Comma-separated. Omitted means no exclusion.",
+              "items": {
+                "maxLength": 20,
+                "minLength": 1,
+                "pattern": "^[0-9]+$",
+                "type": "string"
+              },
+              "maxItems": 100,
+              "type": "array"
+            }
           }
         ],
         "responses": {
@@ -50461,6 +51126,40 @@
               "description": "When true, works credited only to doujin circles are included. Default false.",
               "type": "boolean"
             }
+          },
+          {
+            "description": "Catalog tag ids. Drops every work carrying any of them, from any source and at any spoiler level. Comma-separated. Omitted means no exclusion.",
+            "explode": false,
+            "in": "query",
+            "name": "exclude_tag_ids",
+            "schema": {
+              "description": "Catalog tag ids. Drops every work carrying any of them, from any source and at any spoiler level. Comma-separated. Omitted means no exclusion.",
+              "items": {
+                "maxLength": 20,
+                "minLength": 1,
+                "pattern": "^[0-9]+$",
+                "type": "string"
+              },
+              "maxItems": 100,
+              "type": "array"
+            }
+          },
+          {
+            "description": "Catalog tag ids. Like exclude_tag_ids, and each also drops the works carrying any tag below it in the tag hierarchy. Comma-separated. Omitted means no exclusion.",
+            "explode": false,
+            "in": "query",
+            "name": "exclude_tag_trees",
+            "schema": {
+              "description": "Catalog tag ids. Like exclude_tag_ids, and each also drops the works carrying any tag below it in the tag hierarchy. Comma-separated. Omitted means no exclusion.",
+              "items": {
+                "maxLength": 20,
+                "minLength": 1,
+                "pattern": "^[0-9]+$",
+                "type": "string"
+              },
+              "maxItems": 100,
+              "type": "array"
+            }
           }
         ],
         "responses": {
@@ -50537,6 +51236,40 @@
               "description": "When true, works credited only to doujin circles are included. Default false.",
               "type": "boolean"
             }
+          },
+          {
+            "description": "Catalog tag ids. Drops every work carrying any of them, from any source and at any spoiler level. Comma-separated. Omitted means no exclusion.",
+            "explode": false,
+            "in": "query",
+            "name": "exclude_tag_ids",
+            "schema": {
+              "description": "Catalog tag ids. Drops every work carrying any of them, from any source and at any spoiler level. Comma-separated. Omitted means no exclusion.",
+              "items": {
+                "maxLength": 20,
+                "minLength": 1,
+                "pattern": "^[0-9]+$",
+                "type": "string"
+              },
+              "maxItems": 100,
+              "type": "array"
+            }
+          },
+          {
+            "description": "Catalog tag ids. Like exclude_tag_ids, and each also drops the works carrying any tag below it in the tag hierarchy. Comma-separated. Omitted means no exclusion.",
+            "explode": false,
+            "in": "query",
+            "name": "exclude_tag_trees",
+            "schema": {
+              "description": "Catalog tag ids. Like exclude_tag_ids, and each also drops the works carrying any tag below it in the tag hierarchy. Comma-separated. Omitted means no exclusion.",
+              "items": {
+                "maxLength": 20,
+                "minLength": 1,
+                "pattern": "^[0-9]+$",
+                "type": "string"
+              },
+              "maxItems": 100,
+              "type": "array"
+            }
           }
         ],
         "responses": {
@@ -50601,6 +51334,40 @@
               "default": false,
               "description": "When true, adult works are included. Default false.",
               "type": "boolean"
+            }
+          },
+          {
+            "description": "Catalog tag ids. Drops every work carrying any of them, from any source and at any spoiler level. Comma-separated. Omitted means no exclusion.",
+            "explode": false,
+            "in": "query",
+            "name": "exclude_tag_ids",
+            "schema": {
+              "description": "Catalog tag ids. Drops every work carrying any of them, from any source and at any spoiler level. Comma-separated. Omitted means no exclusion.",
+              "items": {
+                "maxLength": 20,
+                "minLength": 1,
+                "pattern": "^[0-9]+$",
+                "type": "string"
+              },
+              "maxItems": 100,
+              "type": "array"
+            }
+          },
+          {
+            "description": "Catalog tag ids. Like exclude_tag_ids, and each also drops the works carrying any tag below it in the tag hierarchy. Comma-separated. Omitted means no exclusion.",
+            "explode": false,
+            "in": "query",
+            "name": "exclude_tag_trees",
+            "schema": {
+              "description": "Catalog tag ids. Like exclude_tag_ids, and each also drops the works carrying any tag below it in the tag hierarchy. Comma-separated. Omitted means no exclusion.",
+              "items": {
+                "maxLength": 20,
+                "minLength": 1,
+                "pattern": "^[0-9]+$",
+                "type": "string"
+              },
+              "maxItems": 100,
+              "type": "array"
             }
           }
         ],
@@ -50677,6 +51444,40 @@
               "default": false,
               "description": "When true, works credited only to doujin circles are included. Default false.",
               "type": "boolean"
+            }
+          },
+          {
+            "description": "Catalog tag ids. Drops every work carrying any of them, from any source and at any spoiler level. Comma-separated. Omitted means no exclusion.",
+            "explode": false,
+            "in": "query",
+            "name": "exclude_tag_ids",
+            "schema": {
+              "description": "Catalog tag ids. Drops every work carrying any of them, from any source and at any spoiler level. Comma-separated. Omitted means no exclusion.",
+              "items": {
+                "maxLength": 20,
+                "minLength": 1,
+                "pattern": "^[0-9]+$",
+                "type": "string"
+              },
+              "maxItems": 100,
+              "type": "array"
+            }
+          },
+          {
+            "description": "Catalog tag ids. Like exclude_tag_ids, and each also drops the works carrying any tag below it in the tag hierarchy. Comma-separated. Omitted means no exclusion.",
+            "explode": false,
+            "in": "query",
+            "name": "exclude_tag_trees",
+            "schema": {
+              "description": "Catalog tag ids. Like exclude_tag_ids, and each also drops the works carrying any tag below it in the tag hierarchy. Comma-separated. Omitted means no exclusion.",
+              "items": {
+                "maxLength": 20,
+                "minLength": 1,
+                "pattern": "^[0-9]+$",
+                "type": "string"
+              },
+              "maxItems": 100,
+              "type": "array"
             }
           }
         ],
@@ -52630,6 +53431,40 @@
               "default": "relevance_desc",
               "description": "Order. relevance: the search index's ranking. popularity: catalog popularity. updated: last catalog edit. released: release date."
             }
+          },
+          {
+            "description": "Catalog tag ids. Drops every work carrying any of them, from any source and at any spoiler level. Comma-separated. Omitted means no exclusion.",
+            "explode": false,
+            "in": "query",
+            "name": "exclude_tag_ids",
+            "schema": {
+              "description": "Catalog tag ids. Drops every work carrying any of them, from any source and at any spoiler level. Comma-separated. Omitted means no exclusion.",
+              "items": {
+                "maxLength": 20,
+                "minLength": 1,
+                "pattern": "^[0-9]+$",
+                "type": "string"
+              },
+              "maxItems": 100,
+              "type": "array"
+            }
+          },
+          {
+            "description": "Catalog tag ids. Like exclude_tag_ids, and each also drops the works carrying any tag below it in the tag hierarchy. Comma-separated. Omitted means no exclusion.",
+            "explode": false,
+            "in": "query",
+            "name": "exclude_tag_trees",
+            "schema": {
+              "description": "Catalog tag ids. Like exclude_tag_ids, and each also drops the works carrying any tag below it in the tag hierarchy. Comma-separated. Omitted means no exclusion.",
+              "items": {
+                "maxLength": 20,
+                "minLength": 1,
+                "pattern": "^[0-9]+$",
+                "type": "string"
+              },
+              "maxItems": 100,
+              "type": "array"
+            }
           }
         ],
         "responses": {
@@ -53048,6 +53883,40 @@
               "description": "When true, works whose original language is neither Japanese nor Chinese are included. Default false.",
               "type": "boolean"
             }
+          },
+          {
+            "description": "Catalog tag ids. Drops every work carrying any of them, from any source and at any spoiler level. Comma-separated. Omitted means no exclusion.",
+            "explode": false,
+            "in": "query",
+            "name": "exclude_tag_ids",
+            "schema": {
+              "description": "Catalog tag ids. Drops every work carrying any of them, from any source and at any spoiler level. Comma-separated. Omitted means no exclusion.",
+              "items": {
+                "maxLength": 20,
+                "minLength": 1,
+                "pattern": "^[0-9]+$",
+                "type": "string"
+              },
+              "maxItems": 100,
+              "type": "array"
+            }
+          },
+          {
+            "description": "Catalog tag ids. Like exclude_tag_ids, and each also drops the works carrying any tag below it in the tag hierarchy. Comma-separated. Omitted means no exclusion.",
+            "explode": false,
+            "in": "query",
+            "name": "exclude_tag_trees",
+            "schema": {
+              "description": "Catalog tag ids. Like exclude_tag_ids, and each also drops the works carrying any tag below it in the tag hierarchy. Comma-separated. Omitted means no exclusion.",
+              "items": {
+                "maxLength": 20,
+                "minLength": 1,
+                "pattern": "^[0-9]+$",
+                "type": "string"
+              },
+              "maxItems": 100,
+              "type": "array"
+            }
           }
         ],
         "responses": {
@@ -53295,6 +54164,40 @@
               "default": false,
               "description": "When true, works whose original language is neither Japanese nor Chinese are included. Default false.",
               "type": "boolean"
+            }
+          },
+          {
+            "description": "Catalog tag ids. Drops every work carrying any of them, from any source and at any spoiler level. Comma-separated. Omitted means no exclusion.",
+            "explode": false,
+            "in": "query",
+            "name": "exclude_tag_ids",
+            "schema": {
+              "description": "Catalog tag ids. Drops every work carrying any of them, from any source and at any spoiler level. Comma-separated. Omitted means no exclusion.",
+              "items": {
+                "maxLength": 20,
+                "minLength": 1,
+                "pattern": "^[0-9]+$",
+                "type": "string"
+              },
+              "maxItems": 100,
+              "type": "array"
+            }
+          },
+          {
+            "description": "Catalog tag ids. Like exclude_tag_ids, and each also drops the works carrying any tag below it in the tag hierarchy. Comma-separated. Omitted means no exclusion.",
+            "explode": false,
+            "in": "query",
+            "name": "exclude_tag_trees",
+            "schema": {
+              "description": "Catalog tag ids. Like exclude_tag_ids, and each also drops the works carrying any tag below it in the tag hierarchy. Comma-separated. Omitted means no exclusion.",
+              "items": {
+                "maxLength": 20,
+                "minLength": 1,
+                "pattern": "^[0-9]+$",
+                "type": "string"
+              },
+              "maxItems": 100,
+              "type": "array"
             }
           }
         ],
@@ -53678,6 +54581,40 @@
               "default": false,
               "description": "When true, works whose original language is neither Japanese nor Chinese are included. Default false.",
               "type": "boolean"
+            }
+          },
+          {
+            "description": "Catalog tag ids. Drops every work carrying any of them, from any source and at any spoiler level. Comma-separated. Omitted means no exclusion.",
+            "explode": false,
+            "in": "query",
+            "name": "exclude_tag_ids",
+            "schema": {
+              "description": "Catalog tag ids. Drops every work carrying any of them, from any source and at any spoiler level. Comma-separated. Omitted means no exclusion.",
+              "items": {
+                "maxLength": 20,
+                "minLength": 1,
+                "pattern": "^[0-9]+$",
+                "type": "string"
+              },
+              "maxItems": 100,
+              "type": "array"
+            }
+          },
+          {
+            "description": "Catalog tag ids. Like exclude_tag_ids, and each also drops the works carrying any tag below it in the tag hierarchy. Comma-separated. Omitted means no exclusion.",
+            "explode": false,
+            "in": "query",
+            "name": "exclude_tag_trees",
+            "schema": {
+              "description": "Catalog tag ids. Like exclude_tag_ids, and each also drops the works carrying any tag below it in the tag hierarchy. Comma-separated. Omitted means no exclusion.",
+              "items": {
+                "maxLength": 20,
+                "minLength": 1,
+                "pattern": "^[0-9]+$",
+                "type": "string"
+              },
+              "maxItems": 100,
+              "type": "array"
             }
           }
         ],
@@ -66131,6 +67068,40 @@
               "default": false,
               "description": "When true, works whose original language is neither Japanese nor Chinese are included. Default false. A work whose original language has not been synced yet is included either way.",
               "type": "boolean"
+            }
+          },
+          {
+            "description": "Catalog tag ids. Drops every work carrying any of them, from any source and at any spoiler level. Comma-separated. Omitted means no exclusion.",
+            "explode": false,
+            "in": "query",
+            "name": "exclude_tag_ids",
+            "schema": {
+              "description": "Catalog tag ids. Drops every work carrying any of them, from any source and at any spoiler level. Comma-separated. Omitted means no exclusion.",
+              "items": {
+                "maxLength": 20,
+                "minLength": 1,
+                "pattern": "^[0-9]+$",
+                "type": "string"
+              },
+              "maxItems": 100,
+              "type": "array"
+            }
+          },
+          {
+            "description": "Catalog tag ids. Like exclude_tag_ids, and each also drops the works carrying any tag below it in the tag hierarchy. Comma-separated. Omitted means no exclusion.",
+            "explode": false,
+            "in": "query",
+            "name": "exclude_tag_trees",
+            "schema": {
+              "description": "Catalog tag ids. Like exclude_tag_ids, and each also drops the works carrying any tag below it in the tag hierarchy. Comma-separated. Omitted means no exclusion.",
+              "items": {
+                "maxLength": 20,
+                "minLength": 1,
+                "pattern": "^[0-9]+$",
+                "type": "string"
+              },
+              "maxItems": 100,
+              "type": "array"
             }
           }
         ],

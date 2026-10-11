@@ -38,7 +38,10 @@ const galgameFilter = computed(() =>
 // route.query is a new object on every navigation, so galgameFilter is too —
 // watching it directly reloaded the lane on any query change, page included.
 // The string only changes when a filter actually does.
-const filterKey = computed(() => JSON.stringify(galgameFilter.value))
+const { excludeQuery } = useTagBlocks()
+const filterKey = computed(() =>
+  JSON.stringify([galgameFilter.value, excludeQuery.value])
+)
 
 // The rail counts with the overview, which is never filtered, so a filtered
 // lane sits under a rail that still says 2261 while the page says 0. Naming the
@@ -62,7 +65,9 @@ const fetchPage = (target: number) =>
     target,
     PAGE_SIZE,
     allowsNsfw.value,
-    galgameFilter.value as GalgameFilterQuery
+    galgameFilter.value as GalgameFilterQuery,
+    true,
+    excludeQuery.value
   )
 
 const load = async () => {

@@ -13,7 +13,7 @@ import {
   SEARCH_ENTITY_FAMILY_VALUES,
   fetchEntityFamilies
 } from './entities'
-import { fetchLanePage, type LanePage } from './lanes'
+import { fetchLanePage, type LanePage, type TagExclusionQuery } from './lanes'
 
 export interface SearchOverviewData {
   topics: TopicSummary[]
@@ -45,10 +45,11 @@ export const loadSearchOverview = async (
   api: ApiClient,
   q: string,
   includeNsfw: boolean,
-  preferOriginal: boolean
+  preferOriginal: boolean,
+  exclude: TagExclusionQuery = {}
 ): Promise<SearchOverviewData> => {
   const lane = (type: SearchPagedType) =>
-    fetchLanePage(api, type, q, 1, LIMIT[type], includeNsfw, {}, false)
+    fetchLanePage(api, type, q, 1, LIMIT[type], includeNsfw, {}, false, exclude)
   const [
     topics,
     works,

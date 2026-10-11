@@ -15,6 +15,7 @@ export const useRefreshMe = () => {
 
     const api = useApiClient()
     const nuxtApp = useNuxtApp()
+    const tagBlocks = useTagBlocks()
     const allowsNsfw = () =>
       foldContentStance(userStore.adultConfirmed, userStore.nsfwDisplay) !==
       'hide'
@@ -40,6 +41,9 @@ export const useRefreshMe = () => {
             onNuxtReady(() => nuxtApp.runWithContext(() => refreshNuxtData()))
           )
         }
+      }
+      if (me?.name && Number(me.id) === userStore.id) {
+        await tagBlocks.refresh()
       }
       lastFetchedAt = Date.now()
     })().finally(() => {

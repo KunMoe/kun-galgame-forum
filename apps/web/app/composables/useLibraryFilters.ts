@@ -40,6 +40,7 @@ export const useLibraryFilters = () => ({
 export const useLibraryWorksQuery = () => {
   const filters = useLibraryFilters()
   const { allowsNsfw } = useContentStance()
+  const { excludeQuery } = useTagBlocks()
   const { showKUNGalgameAllOriginalLanguages } = storeToRefs(
     usePersistSettingsStore()
   )
@@ -53,7 +54,8 @@ export const useLibraryWorksQuery = () => {
       ...(f.releasedFrom ? { released_from: f.releasedFrom } : {}),
       ...(f.releasedTo ? { released_to: f.releasedTo } : {}),
       include_nsfw: allowsNsfw.value,
-      include_all_original_languages: showKUNGalgameAllOriginalLanguages.value
+      include_all_original_languages: showKUNGalgameAllOriginalLanguages.value,
+      ...excludeQuery.value
     }
   })
 

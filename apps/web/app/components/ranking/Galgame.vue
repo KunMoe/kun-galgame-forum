@@ -10,10 +10,11 @@ import {
 
 const settings = usePersistSettingsStore()
 const { allowsNsfw, stanceKey } = useContentStance()
+const { excludeQuery } = useTagBlocks()
 
 const { data } = await useApi(
   () =>
-    `ranking-works:${galgameRankingPageData.sort}:${stanceKey.value}:${settings.showKUNGalgameNoResource ? 'all' : 'resourced'}:${settings.showKUNGalgameAllOriginalLanguages ? 'every-language' : 'ja-zh'}`,
+    `ranking-works:${galgameRankingPageData.sort}:${stanceKey.value}:${settings.showKUNGalgameNoResource ? 'all' : 'resourced'}:${settings.showKUNGalgameAllOriginalLanguages ? 'every-language' : 'ja-zh'}:${JSON.stringify(excludeQuery.value)}`,
   (client, { signal }) =>
     client.GET('/rankings/works', {
       params: {
@@ -23,7 +24,8 @@ const { data } = await useApi(
           include_nsfw: allowsNsfw.value,
           include_resourceless: settings.showKUNGalgameNoResource,
           include_all_original_languages:
-            settings.showKUNGalgameAllOriginalLanguages
+            settings.showKUNGalgameAllOriginalLanguages,
+          ...excludeQuery.value
         }
       },
       signal

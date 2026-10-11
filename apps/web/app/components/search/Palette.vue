@@ -28,6 +28,7 @@ const QUICK_LIMIT = 5
 const result = ref<QuickResult | null>(null)
 const api = useApiClient()
 const { allowsNsfw } = useContentStance()
+const { excludeQuery } = useTagBlocks()
 const workName = useWorkName()
 
 const { searchHistory } = storeToRefs(usePersistKUNGalgameSearchStore())
@@ -54,7 +55,13 @@ const search = async (value: string) => {
     ),
     settle(
       api.GET('/search/works', {
-        params: { query: { ...lane, include_nsfw: allowsNsfw.value } }
+        params: {
+          query: {
+            ...lane,
+            include_nsfw: allowsNsfw.value,
+            ...excludeQuery.value
+          }
+        }
       })
     ),
     settle(api.GET('/search/users', { params: { query: lane } }))

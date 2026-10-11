@@ -173,6 +173,21 @@ type fakeCatalog struct {
 	calFail    map[string]bool
 	calQ       []url.Values
 	calBucket  []string
+	excluded   []int
+	exclusions []client.TagExclusion
+}
+
+func (f *fakeCatalog) ExcludedWorkIDs(_ context.Context, e client.TagExclusion) ([]int, *legacyErrors.AppError) {
+	if e.Empty() {
+		return nil, nil
+	}
+	f.mu.Lock()
+	f.exclusions = append(f.exclusions, e)
+	f.mu.Unlock()
+	if err := f.err(); err != nil {
+		return nil, err
+	}
+	return f.excluded, nil
 }
 
 func decodeInto(t *testing.T, raw string, out any) {

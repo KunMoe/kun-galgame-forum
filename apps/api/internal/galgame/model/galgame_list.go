@@ -27,6 +27,7 @@ type GalgameListFilter struct {
 	SFWOnly              bool
 	JaZhOriginalOnly     bool
 	RestrictIDs          []int
+	ExcludeIDs           []int
 	Page                 int
 	Limit                int
 }

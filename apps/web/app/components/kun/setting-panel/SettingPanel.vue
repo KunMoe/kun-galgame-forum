@@ -75,8 +75,9 @@ const { activeTab } = useSettingPanel()
             <KunSettingPanelComponentsFeedTabs />
           </div>
 
-          <div v-show="activeTab === 'content'">
+          <div v-show="activeTab === 'content'" class="space-y-6">
             <KunSettingPanelComponentsNSFW />
+            <KunSettingPanelComponentsTagBlocks />
           </div>
 
           <div v-show="activeTab === 'general'" class="space-y-5">

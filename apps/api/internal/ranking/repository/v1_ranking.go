@@ -2,6 +2,7 @@ package repository
 
 import (
 	"strconv"
+	"strings"
 
 	galgameModel "kun-galgame-api/internal/galgame/model"
 	topicRepo "kun-galgame-api/internal/topic/repository"
@@ -65,8 +66,12 @@ var workRankingColumns = map[string]string{
 	"resources": "resource_count",
 }
 
-func (r *RankingRepository) TopWorks(key string, includeNSFW, includeResourceless, includeAllOriginalLanguages bool, limit int) ([]RankedRow, error) {
+func (r *RankingRepository) TopWorks(key string, includeNSFW, includeResourceless, includeAllOriginalLanguages bool, limit int, exclude []int) ([]RankedRow, error) {
 	q := r.db.Table("galgame g").Where("g.published AND g.catalog_rendered")
+	// NOT IN (SELECT unnest) on purpose; see the same filter in galgame's list_repo.go.
+	if len(exclude) > 0 {
+		q = q.Where("g.id NOT IN (SELECT unnest(?::int[]))", intArrayLiteral(exclude))
+	}
 	if !includeAllOriginalLanguages {
 		q = q.Where(galgameModel.JaZhOriginalSQL)
 	}
@@ -94,4 +99,12 @@ func (r *RankingRepository) TopWorks(key string, includeNSFW, includeResourceles
 	err := q.Select("g.id, COALESCE(g.creator_user_id, 0) AS owner_id, g." + col + " AS value").
 		Order("g." + col + " DESC, g.id DESC").Limit(limit).Scan(&rows).Error
 	return rows, err
+}
+
+func intArrayLiteral(ids []int) string {
+	parts := make([]string, len(ids))
+	for i, id := range ids {
+		parts[i] = strconv.Itoa(id)
+	}
+	return "{" + strings.Join(parts, ",") + "}"
 }

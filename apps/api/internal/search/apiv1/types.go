@@ -3,6 +3,7 @@ package apiv1
 import (
 	"kun-galgame-api/internal/apiv1/collect"
 	"kun-galgame-api/internal/apiv1/repr"
+	"kun-galgame-api/internal/galgame/workrepr"
 	userapiv1 "kun-galgame-api/internal/user/apiv1"
 	wallapiv1 "kun-galgame-api/internal/wall/apiv1"
 )
@@ -27,6 +28,8 @@ type worksInput struct {
 	ReleasedFrom string           `query:"released_from" pattern:"^[0-9]{4}(-(0[1-9]|1[0-2]))?$" maxLength:"7" doc:"Released in or after this year (YYYY) or month (YYYY-MM)."`
 	ReleasedTo   string           `query:"released_to" pattern:"^[0-9]{4}(-(0[1-9]|1[0-2]))?$" maxLength:"7" doc:"Released in or before this year (YYYY) or month (YYYY-MM)."`
 	Sort         string           `query:"sort" enum:"relevance_desc,popularity_desc,updated_desc,released_desc,released_asc" default:"relevance_desc" maxLength:"15" doc:"Order. relevance: the search index's ranking. popularity: catalog popularity. updated: last catalog edit. released: release date."`
+
+	workrepr.TagExclusionInput
 }
 
 type wallInput struct {

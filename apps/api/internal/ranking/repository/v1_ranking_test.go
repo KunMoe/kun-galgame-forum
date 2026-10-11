@@ -17,7 +17,7 @@ func TestTopWorksSkipsWorksCatalogWillNotRender(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	rows, err := NewRankingRepository(db).TopWorks("views", true, true, true, 2)
+	rows, err := NewRankingRepository(db).TopWorks("views", true, true, true, 2, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -42,7 +42,7 @@ func TestTopWorksSFWFailsClosedOnUnsyncedVerdict(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	rows, err := NewRankingRepository(db).TopWorks("views", false, true, true, 2)
+	rows, err := NewRankingRepository(db).TopWorks("views", false, true, true, 2, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -71,7 +71,7 @@ func TestTopWorksLeavesOutOtherOriginalLanguages(t *testing.T) {
 	}
 
 	got := func(includeAll bool) []int {
-		rows, err := NewRankingRepository(db).TopWorks("views", true, true, includeAll, 4)
+		rows, err := NewRankingRepository(db).TopWorks("views", true, true, includeAll, 4, nil)
 		if err != nil {
 			t.Fatal(err)
 		}

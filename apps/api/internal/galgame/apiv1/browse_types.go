@@ -67,6 +67,8 @@ type listWorksInput struct {
 	IncludeResourceless   bool                        `query:"include_resourceless" default:"false" doc:"When true, published works with no forum resource are included. Default false. A resource-axis or host filter still requires a resource."`
 
 	IncludeAllOriginalLanguages bool `query:"include_all_original_languages" default:"false" doc:"When true, works whose original language is neither Japanese nor Chinese are included. Default false. A work whose original language has not been synced yet is included either way."`
+
+	workrepr.TagExclusionInput
 }
 
 type listLibraryWorksInput struct {
@@ -79,6 +81,8 @@ type listLibraryWorksInput struct {
 	IncludeNSFW  bool                 `query:"include_nsfw" default:"false" doc:"When true, works this forum displays as adult are included. Default false."`
 
 	IncludeAllOriginalLanguages bool `query:"include_all_original_languages" default:"false" doc:"When true, works whose original language is neither Japanese nor Chinese are included. Default false."`
+
+	workrepr.TagExclusionInput
 }
 
 type listWorkCollectedMonthsInput struct {

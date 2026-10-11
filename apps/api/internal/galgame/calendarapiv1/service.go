@@ -86,7 +86,7 @@ func (s *Service) listReleaseCalendarMonth(ctx context.Context, in *monthInput) 
 	if month == "" {
 		month = now.Format("2006-01")
 	}
-	items, page, truncated, p := s.walk(ctx, "", monthQuery(month, in.IncludeNSFW, in.IncludeDoujin), calendarPageCap, "release-calendar: month truncated at page cap", "calendar_month", month)
+	items, page, truncated, p := s.walk(ctx, "", in.Exclusion().Apply(monthQuery(month, in.IncludeNSFW, in.IncludeDoujin)), calendarPageCap, "release-calendar: month truncated at page cap", "calendar_month", month)
 	if p != nil {
 		return nil, p
 	}
@@ -118,7 +118,7 @@ func (s *Service) getReleaseCalendarToday(ctx context.Context, in *todayInput) (
 	}
 	now := s.clock()
 	month := now.Format("2006-01")
-	items, page, truncated, p := s.walk(ctx, "", monthQuery(month, in.IncludeNSFW, false), calendarPageCap, "release-calendar: month truncated at page cap", "calendar_month", month)
+	items, page, truncated, p := s.walk(ctx, "", in.Exclusion().Apply(monthQuery(month, in.IncludeNSFW, false)), calendarPageCap, "release-calendar: month truncated at page cap", "calendar_month", month)
 	if p != nil {
 		return nil, p
 	}
@@ -154,7 +154,7 @@ func (s *Service) listReleaseCalendarPending(ctx context.Context, in *pendingInp
 	if year == 0 {
 		year = now.Year()
 	}
-	q := bucketQuery(in.IncludeNSFW, in.IncludeDoujin)
+	q := in.Exclusion().Apply(bucketQuery(in.IncludeNSFW, in.IncludeDoujin))
 	q.Set("year", strconv.Itoa(year))
 	q.Set("precision", "year")
 	items, _, truncated, p := s.walk(ctx, "/pending", q, calendarPageCap, "release-calendar: pending truncated at page cap", "year", strconv.Itoa(year))
@@ -178,7 +178,7 @@ func (s *Service) listReleaseCalendarTBA(ctx context.Context, in *tbaInput) (*tb
 	if p := s.ready(); p != nil {
 		return nil, p
 	}
-	q := bucketQuery(in.IncludeNSFW, in.IncludeDoujin)
+	q := in.Exclusion().Apply(bucketQuery(in.IncludeNSFW, in.IncludeDoujin))
 	q.Set("status", "unknown")
 	items, _, truncated, p := s.walk(ctx, "/tba", q, calendarPageCap, "release-calendar: tba truncated at page cap", "status", "unknown")
 	if p != nil {
@@ -203,7 +203,7 @@ func (s *Service) listReleaseCalendarUpcoming(ctx context.Context, in *upcomingI
 	now := s.clock()
 	start := now.Format("2006-01")
 	today := now.Format("2006-01-02")
-	firstItems, first, truncated, p := s.walk(ctx, "", monthQuery(start, in.IncludeNSFW, in.IncludeDoujin), upcomingPageCap, "release-calendar: upcoming month truncated at page cap", "calendar_month", start)
+	firstItems, first, truncated, p := s.walk(ctx, "", in.Exclusion().Apply(monthQuery(start, in.IncludeNSFW, in.IncludeDoujin)), upcomingPageCap, "release-calendar: upcoming month truncated at page cap", "calendar_month", start)
 	if p != nil {
 		return nil, p
 	}
@@ -232,7 +232,7 @@ func (s *Service) listReleaseCalendarUpcoming(ctx context.Context, in *upcomingI
 			defer wg.Done()
 			sem <- struct{}{}
 			defer func() { <-sem }()
-			raw, _, isTrunc, p := s.walk(ctx, "", monthQuery(months[i], in.IncludeNSFW, in.IncludeDoujin), upcomingPageCap, "release-calendar: upcoming month truncated at page cap", "calendar_month", months[i])
+			raw, _, isTrunc, p := s.walk(ctx, "", in.Exclusion().Apply(monthQuery(months[i], in.IncludeNSFW, in.IncludeDoujin)), upcomingPageCap, "release-calendar: upcoming month truncated at page cap", "calendar_month", months[i])
 			if p != nil {
 				mu.Lock()
 				if firstErr == nil {

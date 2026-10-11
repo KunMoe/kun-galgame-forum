@@ -33,6 +33,7 @@ type Catalog interface {
 	CatalogWorksSearch(ctx context.Context, q url.Values) (*client.CatalogWorksPage, *errors.AppError)
 	CatalogTraitVocabulary(ctx context.Context) ([]client.CatalogTrait, *errors.AppError)
 	CatalogCharacterList(ctx context.Context, in client.CatalogCharacterQuery) (*client.CatalogCharacterPage, *errors.AppError)
+	ExcludedWorkIDs(ctx context.Context, e client.TagExclusion) ([]int, *errors.AppError)
 }
 
 type Service struct {
