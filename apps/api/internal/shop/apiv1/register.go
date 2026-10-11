@@ -102,6 +102,48 @@ func Register(s *Service) func(huma.API) {
 				503: "SERVICE_UNAVAILABLE when the account service cannot be reached.",
 			}),
 		}), s.clearShopLoadoutSlot)
+
+		huma.Register(api, v1.Public(huma.Operation{
+			OperationID: "getShopOffer",
+			Method:      http.MethodGet,
+			Path:        "/shop/offers/{offer_id}",
+			Summary:     "Get one offer this forum's shop sells",
+			Description: "The offer as listShopOffers lists it, from the same list refreshed at most once a minute.",
+			Tags:        []string{"shop"},
+			Responses: problemResponses(map[int]string{
+				404: "NOT_FOUND when this forum's shop does not list an offer with this id.",
+				503: "SERVICE_UNAVAILABLE when the account service cannot be reached and no list has been fetched yet.",
+			}),
+		}), s.getShopOffer)
+
+		huma.Register(api, v1.Required(huma.Operation{
+			OperationID: "subscribeShopRestock",
+			Method:      http.MethodPut,
+			Path:        "/shop/offers/{offer_id}/restock-alert",
+			Summary:     "Ask to be told when an offer is back on sale",
+			Description: "For a limited offer this forum sells: one with a stock_count or a redeem code pool. " +
+				"Each time the offer goes from not buyable to buyable (codes added to an empty pool, stock raised on a sold-out offer, or the offer put back on sale), the caller gets a system_notice notification here, unless they have already used up the offer's purchase_limit for the period. " +
+				"It lasts until unsubscribeShopRestock; getMyShopInventory lists the caller's subscriptions in restock_alert_offer_ids. " +
+				"Subscribing again is a no-op that answers the same; subscribing to the same offer on another NextMoe site moves the notice there.",
+			Tags: []string{"shop"},
+			Responses: problemResponses(map[int]string{
+				409: "SHOP_OFFER_UNAVAILABLE when no offer on sale in this forum's shop has this id; SHOP_OFFER_UNLIMITED when the offer is not limited.",
+				503: "SERVICE_UNAVAILABLE when the account service cannot be reached.",
+			}),
+		}), s.subscribeShopRestock)
+
+		huma.Register(api, v1.Required(huma.Operation{
+			OperationID: "unsubscribeShopRestock",
+			Method:      http.MethodDelete,
+			Path:        "/shop/offers/{offer_id}/restock-alert",
+			Summary:     "Stop being told when an offer is back on sale",
+			Description: "Works for any offer id, including one no longer sold. Unsubscribing when not subscribed is a no-op that answers the same.",
+			Tags:        []string{"shop"},
+			Responses: problemResponses(map[int]string{
+				409: "SHOP_OFFER_UNAVAILABLE only when offer_id is too large to be any offer's id.",
+				503: "SERVICE_UNAVAILABLE when the account service cannot be reached.",
+			}),
+		}), s.unsubscribeShopRestock)
 	}
 }
 

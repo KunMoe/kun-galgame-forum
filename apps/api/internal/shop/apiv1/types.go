@@ -29,6 +29,8 @@ type ShopOffer struct {
 	PurchaseLimit   *ShopPurchaseLimit `json:"purchase_limit" doc:"How many times one user may buy this offer. null when unlimited. The caller's own count is in getMyShopInventory's limit_usage."`
 	StockCount      *int               `json:"stock_count" minimum:"0" doc:"Total copies the offer was stocked with. null when it is not stocked; a redeem code offer is never stocked, its supply is remaining_count."`
 	RemainingCount  *int               `json:"remaining_count" minimum:"0" doc:"Copies still for sale: stock left, or sellable codes left in a redeem code offer's pool. 0 is sold out. null when unlimited."`
+	SoldCount       int                `json:"sold_count" minimum:"0" doc:"Copies sold so far on every NextMoe site and the account center. A refund takes its copy back off."`
+	RestockedAt     *repr.DateTime     `json:"restocked_at" doc:"When codes were last added to a redeem code offer's pool. null for every other offer, and for a redeem code offer whose pool never got any."`
 	EndsAt          *repr.DateTime     `json:"ends_at" doc:"When the offer stops selling. null when it has no end."`
 }
 
@@ -57,12 +59,13 @@ type ShopPurchaseLimit struct {
 }
 
 type ShopInventory struct {
-	Object      string            `json:"object" enum:"shop_inventory" maxLength:"14" doc:"Type discriminant. Always shop_inventory."`
-	Moemoepoint int               `json:"moemoepoint" minimum:"-2147483648" doc:"The caller's live moemoepoint balance from the account service. It can be negative."`
-	Items       []ShopOwnedItem   `json:"items" doc:"Items the caller holds, newest first, including expired ones (is_active false). Revoked and refunded items are not listed."`
-	Loadout     []ShopLoadoutSlot `json:"loadout" minItems:"4" maxItems:"4" doc:"Every scope and slot pair, always all four."`
-	Orders      []ShopOrder       `json:"orders" maxItems:"50" doc:"The caller's latest 50 orders on any NextMoe site or the account center, newest first."`
-	LimitUsage  []ShopLimitUsage  `json:"limit_usage" doc:"Purchases counted against each limited offer in its current period. An offer with a purchase_limit that is not listed has none."`
+	Object               string            `json:"object" enum:"shop_inventory" maxLength:"14" doc:"Type discriminant. Always shop_inventory."`
+	Moemoepoint          int               `json:"moemoepoint" minimum:"-2147483648" doc:"The caller's live moemoepoint balance from the account service. It can be negative."`
+	Items                []ShopOwnedItem   `json:"items" doc:"Items the caller holds, newest first, including expired ones (is_active false). Revoked and refunded items are not listed."`
+	Loadout              []ShopLoadoutSlot `json:"loadout" minItems:"4" maxItems:"4" doc:"Every scope and slot pair, always all four."`
+	Orders               []ShopOrder       `json:"orders" maxItems:"50" doc:"The caller's latest 50 orders on any NextMoe site or the account center, newest first."`
+	LimitUsage           []ShopLimitUsage  `json:"limit_usage" doc:"Purchases counted against each limited offer in its current period. An offer with a purchase_limit that is not listed has none."`
+	RestockAlertOfferIDs []repr.DecimalID  `json:"restock_alert_offer_ids" doc:"Offers the caller asked to be told about when they are back on sale, ascending. An id may name an offer this forum no longer sells."`
 }
 
 type ShopOwnedItem struct {
@@ -145,4 +148,26 @@ type clearShopLoadoutSlotInput struct {
 
 type shopLoadoutSlotOutput struct {
 	Body ShopLoadoutSlot
+}
+
+type ShopRestockAlert struct {
+	Object       string         `json:"object" enum:"shop_restock_alert" maxLength:"18" doc:"Type discriminant. Always shop_restock_alert."`
+	OfferID      repr.DecimalID `json:"offer_id" doc:"The offer."`
+	IsSubscribed bool           `json:"is_subscribed" doc:"Whether the caller is now told when the offer is back on sale."`
+}
+
+type getShopOfferInput struct {
+	OfferID string `path:"offer_id" pattern:"^[1-9][0-9]{0,18}$" maxLength:"19" doc:"An offer id from listShopOffers."`
+}
+
+type getShopOfferOutput struct {
+	Body ShopOffer
+}
+
+type shopRestockAlertInput struct {
+	OfferID string `path:"offer_id" pattern:"^[1-9][0-9]{0,18}$" maxLength:"19" doc:"An offer id from listShopOffers."`
+}
+
+type shopRestockAlertOutput struct {
+	Body ShopRestockAlert
 }

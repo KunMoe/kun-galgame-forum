@@ -39,7 +39,9 @@ type ShopOffer struct {
 	PerUserLimit int          `json:"per_user_limit"`
 	LimitPeriod  string       `json:"limit_period"`
 	Stock        *int         `json:"stock"`
+	Sold         int          `json:"sold"`
 	Remaining    *int         `json:"remaining"`
+	RestockedAt  *time.Time   `json:"restocked_at"`
 }
 
 type ShopStorefront struct {
@@ -78,11 +80,17 @@ type ShopOrder struct {
 }
 
 type ShopInventory struct {
-	Balance   int64           `json:"balance"`
-	Items     []ShopOwnedItem `json:"items"`
-	Loadout   []ShopLoadout   `json:"loadout"`
-	Orders    []ShopOrder     `json:"orders"`
-	LimitUsed map[int64]int   `json:"limit_used"`
+	Balance       int64           `json:"balance"`
+	Items         []ShopOwnedItem `json:"items"`
+	Loadout       []ShopLoadout   `json:"loadout"`
+	Orders        []ShopOrder     `json:"orders"`
+	LimitUsed     map[int64]int   `json:"limit_used"`
+	RestockAlerts []int64         `json:"restock_alerts"`
+}
+
+type ShopRestockAlert struct {
+	OfferID    int64 `json:"offer_id"`
+	Subscribed bool  `json:"subscribed"`
 }
 
 type ShopPurchase struct {
@@ -118,4 +126,14 @@ func (c *Client) ShopEquip(ctx context.Context, userID int, slot string, siteID 
 		"site_id": siteID,
 		"item_id": itemID,
 	}, nil)
+}
+
+func (c *Client) ShopRestockAlert(ctx context.Context, userID int, offerID int64, subscribe bool) (ShopRestockAlert, error) {
+	method := "DELETE"
+	if subscribe {
+		method = "PUT"
+	}
+	var out ShopRestockAlert
+	err := c.do(ctx, method, fmt.Sprintf("%s/users/%d/shop/restock-alerts/%d", c.cfg.BaseURL, userID, offerID), &out)
+	return out, err
 }

@@ -204,6 +204,7 @@ const (
 	InboxFollowed         int32 = 8
 	InboxFolloweeTopic    int32 = 9
 	InboxFolloweeActivity int32 = 10
+	InboxNotice           int32 = 11
 )
 
 type PostFeedResponse struct {
@@ -286,6 +287,15 @@ type NotificationActivityView struct {
 	OccurredAt   string `json:"occurred_at"`
 }
 
+type NotificationNoticeView struct {
+	ID       int64  `json:"id"`
+	Topic    string `json:"topic"`
+	Ref      string `json:"ref"`
+	Title    string `json:"title"`
+	URL      string `json:"url"`
+	RaisedAt string `json:"raised_at"`
+}
+
 type NotificationView struct {
 	ID              int64                     `json:"id"`
 	UserID          int64                     `json:"user_id"`
@@ -305,6 +315,7 @@ type NotificationView struct {
 	UpdatedAt       string                    `json:"updated_at"`
 	Seq             int64                     `json:"seq"`
 	Activity        *NotificationActivityView `json:"activity"`
+	Notice          *NotificationNoticeView   `json:"notice"`
 }
 
 type NotificationFeedResponse struct {

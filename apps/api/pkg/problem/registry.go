@@ -97,6 +97,7 @@ const (
 	CodeShopOfferSoldOut             = "SHOP_OFFER_SOLD_OUT"
 	CodeShopPurchaseLimitReached     = "SHOP_PURCHASE_LIMIT_REACHED"
 	CodeShopItemNotOwned             = "SHOP_ITEM_NOT_OWNED"
+	CodeShopOfferUnlimited           = "SHOP_OFFER_UNLIMITED"
 )
 
 const (
@@ -183,6 +184,7 @@ var Codes = []Def{
 	{CodeShopOfferSoldOut, DomainKungal, http.StatusConflict, "Shop offer sold out", "The offer has no stock left. For a redeem code offer, no sellable code is left in its pool.", nil},
 	{CodeShopPurchaseLimitReached, DomainKungal, http.StatusConflict, "Shop purchase limit reached", "The caller has already bought this offer as many times as its purchase_limit allows in the current period.", nil},
 	{CodeShopItemNotOwned, DomainKungal, http.StatusConflict, "Shop item not owned", "The caller does not currently own the item: it was never bought, has expired, or was revoked or refunded.", nil},
+	{CodeShopOfferUnlimited, DomainKungal, http.StatusConflict, "Shop offer unlimited", "The offer has no stock limit and no code pool, so it never sells out and there is no restock to be told about.", nil},
 }
 
 var Reasons = []ReasonDef{

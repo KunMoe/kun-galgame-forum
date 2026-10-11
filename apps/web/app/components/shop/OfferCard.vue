@@ -7,9 +7,17 @@ const props = defineProps<{
   viewer: KunUser
   action: OfferAction
   used: number
+  subscribed: boolean
+  busy: boolean
 }>()
 
-const emit = defineEmits<{ buy: [] }>()
+const emit = defineEmits<{ buy: []; restock: [subscribe: boolean] }>()
+
+const restockDay = new Intl.DateTimeFormat('zh-CN', {
+  timeZone: 'Asia/Shanghai',
+  month: 'long',
+  day: 'numeric'
+})
 
 const lead = computed(() => props.offer.rewards[0])
 const title = computed(() =>
@@ -28,8 +36,12 @@ const facts = computed(() => {
     )
   }
   if (o.stock_count !== null) out.push(`限量 ${o.stock_count} 份`)
+  const unit = isCode.value ? '张' : '份'
   if (o.remaining_count !== null && o.remaining_count > 0)
-    out.push(`还剩 ${o.remaining_count} ${isCode.value ? '张' : '份'}`)
+    out.push(`还剩 ${o.remaining_count} ${unit}`)
+  if (o.sold_count > 0) out.push(`已售 ${o.sold_count} ${unit}`)
+  if (o.restocked_at)
+    out.push(`${restockDay.format(new Date(o.restocked_at))}补货`)
   const limit = o.purchase_limit
   if (limit) {
     const period = limit.period === 'month' ? '每月' : '每人'
@@ -72,8 +84,36 @@ const facts = computed(() => {
         <span v-if="action.disabled" class="text-default-500 text-sm">
           {{ action.label }}
         </span>
-        <KunButton v-else @click="emit('buy')">{{ action.label }}</KunButton>
+        <KunButton v-else-if="action.intent === 'buy'" @click="emit('buy')">
+          {{ action.label }}
+        </KunButton>
+        <KunButton
+          v-else
+          :variant="action.intent === 'unsubscribe' ? 'flat' : 'solid'"
+          :loading="busy"
+          @click="emit('restock', action.intent === 'subscribe')"
+        >
+          <KunIcon
+            :name="
+              action.intent === 'unsubscribe'
+                ? 'lucide:bell-ring'
+                : 'lucide:bell'
+            "
+          />
+          {{ action.label }}
+        </KunButton>
       </div>
+      <KunButton
+        v-if="subscribed && action.intent !== 'unsubscribe'"
+        size="sm"
+        variant="light"
+        color="default"
+        class-name="mt-2 self-end"
+        :loading="busy"
+        @click="emit('restock', false)"
+      >
+        取消到货提醒
+      </KunButton>
     </div>
   </KunCard>
 </template>

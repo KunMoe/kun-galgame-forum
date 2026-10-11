@@ -10604,6 +10604,7 @@
           "followee_activity_published",
           "subscribed_topic_replied",
           "resource_relocated",
+          "system_notice",
           "chat"
         ],
         "maxLength": 27,
@@ -11276,7 +11277,7 @@
         "properties": {
           "actor": {
             "$ref": "#/components/schemas/UserRef",
-            "description": "The user who triggered this notification. name is null when the account no longer exists."
+            "description": "The user who triggered this notification. name is null when the account no longer exists. A system_notice comes from a NextMoe service, not a person: its actor is id 0 with name null."
           },
           "actor_count": {
             "description": "How many people are folded into this row. Values stored below 1 are emitted as 1. followed_thread_activity, user_followed and subscribed_topic_replied can be greater than 1. followee_activity_published is always 1.",
@@ -11293,7 +11294,7 @@
             "type": "string"
           },
           "excerpt_markdown": {
-            "description": "Markdown snapshot stored on the row, truncated to 1000 runes. May be empty. Free text; never use it as a decision input.",
+            "description": "Markdown snapshot stored on the row, truncated to 1000 runes. May be empty. For system_notice it is the whole line to show, already written for the recipient. Free text; never use it as a decision input.",
             "maxLength": 1000,
             "type": "string"
           },
@@ -11309,7 +11310,7 @@
             "type": "boolean"
           },
           "item_count": {
-            "description": "How many posts are folded into this row. Values stored below 1 are emitted as 1. For followee_activity_published this is the author's publications folded into the row; 100 means 100 or more. For subscribed_topic_replied it is the replies folded since the recipient last read this notification, and path opens at the first of them.",
+            "description": "How many posts are folded into this row. Values stored below 1 are emitted as 1. For followee_activity_published this is the author's publications folded into the row; 100 means 100 or more. For subscribed_topic_replied it is the replies folded since the recipient last read this notification, and path opens at the first of them. For system_notice it is the notices about the same subject that arrived since the recipient last read the row.",
             "format": "int64",
             "minimum": 0,
             "type": "integer"
@@ -11329,7 +11330,7 @@
             "description": "local for rows written by this forum; community for rows mirrored from the infra community primitive."
           },
           "path": {
-            "description": "In-site web path of the target, stored as the legacy link. Always starts with a slash. For resource_relocated it is the old page of a resource that moved to LetMoe, which redirects to its new address there.",
+            "description": "In-site web path of the target, stored as the legacy link. Always starts with a slash. For resource_relocated it is the old page of a resource that moved to LetMoe, which redirects to its new address there. For system_notice it is where the notice points, /shop for an offer back on sale.",
             "maxLength": 100,
             "pattern": "^/",
             "type": "string"
@@ -11507,7 +11508,8 @@
           "followee_topic_created",
           "followee_activity_published",
           "subscribed_topic_replied",
-          "resource_relocated"
+          "resource_relocated",
+          "system_notice"
         ],
         "maxLength": 27,
         "type": "string",
@@ -17563,6 +17565,16 @@
             },
             "maxItems": 50,
             "type": "array"
+          },
+          "restock_alert_offer_ids": {
+            "description": "Offers the caller asked to be told about when they are back on sale, ascending. An id may name an offer this forum no longer sells.",
+            "items": {
+              "maxLength": 20,
+              "minLength": 1,
+              "pattern": "^[0-9]+$",
+              "type": "string"
+            },
+            "type": "array"
           }
         },
         "required": [
@@ -17571,7 +17583,8 @@
           "items",
           "loadout",
           "orders",
-          "limit_usage"
+          "limit_usage",
+          "restock_alert_offer_ids"
         ],
         "type": "object"
       },
@@ -17799,6 +17812,17 @@
               "null"
             ]
           },
+          "restocked_at": {
+            "description": "When codes were last added to a redeem code offer's pool. null for every other offer, and for a redeem code offer whose pool never got any.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "rewards": {
             "description": "What one purchase gives, in the offer's order. The first is the one to show.",
             "items": {
@@ -17807,6 +17831,12 @@
             "maxItems": 10,
             "minItems": 1,
             "type": "array"
+          },
+          "sold_count": {
+            "description": "Copies sold so far on every NextMoe site and the account center. A refund takes its copy back off.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
           },
           "stock_count": {
             "description": "Total copies the offer was stocked with. null when it is not stocked; a redeem code offer is never stocked, its supply is remaining_count.",
@@ -17827,6 +17857,8 @@
           "purchase_limit",
           "stock_count",
           "remaining_count",
+          "sold_count",
+          "restocked_at",
           "ends_at"
         ],
         "type": "object"
@@ -18045,6 +18077,33 @@
         "required": [
           "code",
           "expiry_date"
+        ],
+        "type": "object"
+      },
+      "ShopRestockAlert": {
+        "properties": {
+          "is_subscribed": {
+            "description": "Whether the caller is now told when the offer is back on sale.",
+            "type": "boolean"
+          },
+          "object": {
+            "const": "shop_restock_alert",
+            "description": "Type discriminant. Always shop_restock_alert.",
+            "maxLength": 18,
+            "type": "string"
+          },
+          "offer_id": {
+            "description": "The offer.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "object",
+          "offer_id",
+          "is_subscribed"
         ],
         "type": "object"
       },
@@ -54014,6 +54073,308 @@
           }
         },
         "summary": "List what this forum's moemoepoint shop sells",
+        "tags": [
+          "shop"
+        ]
+      }
+    },
+    "/shop/offers/{offer_id}": {
+      "get": {
+        "description": "The offer as listShopOffers lists it, from the same list refreshed at most once a minute.",
+        "operationId": "getShopOffer",
+        "parameters": [
+          {
+            "description": "An offer id from listShopOffers.",
+            "in": "path",
+            "name": "offer_id",
+            "required": true,
+            "schema": {
+              "description": "An offer id from listShopOffers.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShopOffer"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when this forum's shop does not list an offer with this id."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the account service cannot be reached and no list has been fetched yet."
+          }
+        },
+        "summary": "Get one offer this forum's shop sells",
+        "tags": [
+          "shop"
+        ]
+      }
+    },
+    "/shop/offers/{offer_id}/restock-alert": {
+      "delete": {
+        "description": "Works for any offer id, including one no longer sold. Unsubscribing when not subscribed is a no-op that answers the same.",
+        "operationId": "unsubscribeShopRestock",
+        "parameters": [
+          {
+            "description": "An offer id from listShopOffers.",
+            "in": "path",
+            "name": "offer_id",
+            "required": true,
+            "schema": {
+              "description": "An offer id from listShopOffers.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShopRestockAlert"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SHOP_OFFER_UNAVAILABLE only when offer_id is too large to be any offer's id."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the account service cannot be reached."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Stop being told when an offer is back on sale",
+        "tags": [
+          "shop"
+        ]
+      },
+      "put": {
+        "description": "For a limited offer this forum sells: one with a stock_count or a redeem code pool. Each time the offer goes from not buyable to buyable (codes added to an empty pool, stock raised on a sold-out offer, or the offer put back on sale), the caller gets a system_notice notification here, unless they have already used up the offer's purchase_limit for the period. It lasts until unsubscribeShopRestock; getMyShopInventory lists the caller's subscriptions in restock_alert_offer_ids. Subscribing again is a no-op that answers the same; subscribing to the same offer on another NextMoe site moves the notice there.",
+        "operationId": "subscribeShopRestock",
+        "parameters": [
+          {
+            "description": "An offer id from listShopOffers.",
+            "in": "path",
+            "name": "offer_id",
+            "required": true,
+            "schema": {
+              "description": "An offer id from listShopOffers.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShopRestockAlert"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SHOP_OFFER_UNAVAILABLE when no offer on sale in this forum's shop has this id; SHOP_OFFER_UNLIMITED when the offer is not limited."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the account service cannot be reached."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Ask to be told when an offer is back on sale",
         "tags": [
           "shop"
         ]

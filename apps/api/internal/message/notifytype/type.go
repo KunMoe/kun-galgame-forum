@@ -30,6 +30,7 @@ const (
 	FolloweeActivityPublished Type = "followee_activity_published"
 	SubscribedTopicReplied    Type = "subscribed_topic_replied"
 	ResourceRelocated         Type = "resource_relocated"
+	SystemNotice              Type = "system_notice"
 )
 
 const KeyChat = "chat"
@@ -58,6 +59,7 @@ var all = []Type{
 	FolloweeActivityPublished,
 	SubscribedTopicReplied,
 	ResourceRelocated,
+	SystemNotice,
 }
 
 var toDB = map[Type]string{
@@ -84,6 +86,7 @@ var toDB = map[Type]string{
 	FolloweeActivityPublished: "followee-activity",
 	SubscribedTopicReplied:    "subscribed-topic",
 	ResourceRelocated:         "resource-relocated",
+	SystemNotice:              "notice",
 }
 
 var fromDB = func() map[string]Type {

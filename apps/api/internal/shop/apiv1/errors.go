@@ -18,6 +18,7 @@ const (
 	upstreamSoldOut          = 19005
 	upstreamNotOwned         = 19006
 	upstreamInvalidItem      = 19008
+	upstreamOfferUnlimited   = 19009
 	upstreamIdemConflict     = 19014
 	upstreamNotStorefront    = 19017
 	upstreamForbidden        = 5
@@ -35,7 +36,7 @@ func upstreamCode(err error) int {
 func upstreamProblem(err error) *problem.Problem {
 	switch upstreamCode(err) {
 	case upstreamOfferUnavailable:
-		return problem.New(problem.CodeShopOfferUnavailable, "The offer is not on sale in this forum's shop.")
+		return offerUnavailable()
 	case upstreamAlreadyOwned:
 		return problem.New(problem.CodeAlreadyExists, "The caller already holds one of this offer's items permanently.")
 	case upstreamLimitReached:
@@ -60,6 +61,17 @@ func equipProblem(err error) *problem.Problem {
 		return validationFailed(problem.AtPointer("/item_id", problem.ReasonUnknownReference, "no item has this id", nil))
 	case upstreamInvalidItem:
 		return validationFailed(problem.AtPointer("/item_id", problem.ReasonInconsistentWith, "the item is not worn in /slot", nil))
+	}
+	return upstreamProblem(err)
+}
+
+func offerUnavailable() *problem.Problem {
+	return problem.New(problem.CodeShopOfferUnavailable, "The offer is not on sale in this forum's shop.")
+}
+
+func restockProblem(err error) *problem.Problem {
+	if upstreamCode(err) == upstreamOfferUnlimited {
+		return problem.New(problem.CodeShopOfferUnlimited, "The offer is not limited, so it never runs out.")
 	}
 	return upstreamProblem(err)
 }

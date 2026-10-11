@@ -80,6 +80,13 @@ export const notificationCategoryGroups: NotificationCategoryGroup[] = [
     ]
   },
   {
+    value: 'system',
+    textValue: '系统',
+    icon: 'lucide:bell',
+    stream: 'local',
+    items: [{ key: 'system_notice', label: '系统通知（如商店补货提醒）' }]
+  },
+  {
     value: 'chat',
     textValue: '私信',
     icon: 'lucide:mail',

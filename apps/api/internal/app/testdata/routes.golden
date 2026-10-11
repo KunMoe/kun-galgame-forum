@@ -29,6 +29,7 @@ DELETE /api/v1/ratings/:rating_id                     cors.New → v1Headers →
 DELETE /api/v1/ratings/:rating_id/like                cors.New → v1Headers → fiberAdapter.Handle
 DELETE /api/v1/replies/:reply_id                      cors.New → v1Headers → fiberAdapter.Handle
 DELETE /api/v1/replies/:reply_id/reactions/:reaction  cors.New → v1Headers → fiberAdapter.Handle
+DELETE /api/v1/shop/offers/:offer_id/restock-alert    cors.New → v1Headers → fiberAdapter.Handle
 DELETE /api/v1/todos/:todo_id                         cors.New → v1Headers → fiberAdapter.Handle
 DELETE /api/v1/toolsets/:toolset_id                   cors.New → v1Headers → fiberAdapter.Handle
 DELETE /api/v1/toolsets/:toolset_id/resources/:resource_id cors.New → v1Headers → fiberAdapter.Handle
@@ -178,6 +179,7 @@ GET    /api/v1/series                                 cors.New → v1Headers →
 GET    /api/v1/series/:series_id                      cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/series/:series_id/works                cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/shop/offers                            cors.New → v1Headers → fiberAdapter.Handle
+GET    /api/v1/shop/offers/:offer_id                  cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/sticker-packs                          cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/tagged-works                           cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/tags                                   cors.New → v1Headers → fiberAdapter.Handle
@@ -346,6 +348,7 @@ PUT    /api/v1/quizzes/:quiz_id/favorite              cors.New → v1Headers →
 PUT    /api/v1/quizzes/:quiz_id/quality-rating        cors.New → v1Headers → fiberAdapter.Handle
 PUT    /api/v1/ratings/:rating_id/like                cors.New → v1Headers → fiberAdapter.Handle
 PUT    /api/v1/replies/:reply_id/reactions/:reaction  cors.New → v1Headers → fiberAdapter.Handle
+PUT    /api/v1/shop/offers/:offer_id/restock-alert    cors.New → v1Headers → fiberAdapter.Handle
 PUT    /api/v1/toolsets/:toolset_id/practicality      cors.New → v1Headers → fiberAdapter.Handle
 PUT    /api/v1/topics/:topic_id/best-answer           cors.New → v1Headers → fiberAdapter.Handle
 PUT    /api/v1/topics/:topic_id/favorite              cors.New → v1Headers → fiberAdapter.Handle

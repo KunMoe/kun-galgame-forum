@@ -27,6 +27,7 @@ type upstream interface {
 	ShopInventory(ctx context.Context, userID int) (userclient.ShopInventory, error)
 	ShopPurchase(ctx context.Context, userID int, offerID int64, idempotencyKey string) (userclient.ShopPurchase, error)
 	ShopEquip(ctx context.Context, userID int, slot string, siteID int64, itemID *int64) error
+	ShopRestockAlert(ctx context.Context, userID int, offerID int64, subscribe bool) (userclient.ShopRestockAlert, error)
 	Invalidate(ids ...int)
 }
 
@@ -92,6 +93,22 @@ func (s *Service) listShopOffers(ctx context.Context, _ *struct{}) (*listShopOff
 		return nil, upstreamProblem(err)
 	}
 	return &listShopOffersOutput{Body: repr.NewList(mapOffers(front.Offers), nil)}, nil
+}
+
+func (s *Service) getShopOffer(ctx context.Context, in *getShopOfferInput) (*getShopOfferOutput, error) {
+	if p := s.ready(); p != nil {
+		return nil, p
+	}
+	front, err := s.storefront(ctx)
+	if err != nil {
+		return nil, upstreamProblem(err)
+	}
+	for _, o := range mapOffers(front.Offers) {
+		if string(o.ID) == in.OfferID {
+			return &getShopOfferOutput{Body: o}, nil
+		}
+	}
+	return nil, problem.New(problem.CodeNotFound, "Nothing visible exists at this URL.")
 }
 
 func (s *Service) getMyShopInventory(ctx context.Context, _ *struct{}) (*getMyShopInventoryOutput, error) {
@@ -196,6 +213,37 @@ func (s *Service) equip(ctx context.Context, scope, slot string, itemID *int64) 
 		out.WornItemID = &worn
 	}
 	return &shopLoadoutSlotOutput{Body: out}, nil
+}
+
+func (s *Service) subscribeShopRestock(ctx context.Context, in *shopRestockAlertInput) (*shopRestockAlertOutput, error) {
+	return s.restockAlert(ctx, in.OfferID, true)
+}
+
+func (s *Service) unsubscribeShopRestock(ctx context.Context, in *shopRestockAlertInput) (*shopRestockAlertOutput, error) {
+	return s.restockAlert(ctx, in.OfferID, false)
+}
+
+func (s *Service) restockAlert(ctx context.Context, rawID string, subscribe bool) (*shopRestockAlertOutput, error) {
+	if p := s.ready(); p != nil {
+		return nil, p
+	}
+	userID, p := caller(ctx)
+	if p != nil {
+		return nil, p
+	}
+	offerID, ok := parseID(repr.DecimalID(rawID))
+	if !ok {
+		return nil, offerUnavailable()
+	}
+	alert, err := s.shop.ShopRestockAlert(ctx, userID, offerID, subscribe)
+	if err != nil {
+		return nil, restockProblem(err)
+	}
+	return &shopRestockAlertOutput{Body: ShopRestockAlert{
+		Object:       "shop_restock_alert",
+		OfferID:      id64(alert.OfferID),
+		IsSubscribed: alert.Subscribed,
+	}}, nil
 }
 
 func parseID(id repr.DecimalID) (int64, bool) {

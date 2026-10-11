@@ -416,6 +416,15 @@
     },
     {
       "object": "problem_type",
+      "code": "SHOP_OFFER_UNLIMITED",
+      "domain": "kungal",
+      "status": 409,
+      "type": "https://developer.nextmoe.dev/problems/kungal/shop-offer-unlimited",
+      "title": "Shop offer unlimited",
+      "description": "The offer has no stock limit and no code pool, so it never sells out and there is no restock to be told about."
+    },
+    {
+      "object": "problem_type",
       "code": "SHOP_PURCHASE_LIMIT_REACHED",
       "domain": "kungal",
       "status": 409,

@@ -3585,6 +3585,50 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/shop/offers/{offer_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get one offer this forum's shop sells
+         * @description The offer as listShopOffers lists it, from the same list refreshed at most once a minute.
+         */
+        get: operations["getShopOffer"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/shop/offers/{offer_id}/restock-alert": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Ask to be told when an offer is back on sale
+         * @description For a limited offer this forum sells: one with a stock_count or a redeem code pool. Each time the offer goes from not buyable to buyable (codes added to an empty pool, stock raised on a sold-out offer, or the offer put back on sale), the caller gets a system_notice notification here, unless they have already used up the offer's purchase_limit for the period. It lasts until unsubscribeShopRestock; getMyShopInventory lists the caller's subscriptions in restock_alert_offer_ids. Subscribing again is a no-op that answers the same; subscribing to the same offer on another NextMoe site moves the notice there.
+         */
+        put: operations["subscribeShopRestock"];
+        post?: never;
+        /**
+         * Stop being told when an offer is back on sale
+         * @description Works for any offer id, including one no longer sold. Unsubscribing when not subscribed is a no-op that answers the same.
+         */
+        delete: operations["unsubscribeShopRestock"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/sticker-packs": {
         parameters: {
             query?: never;
@@ -9304,7 +9348,7 @@ export interface components {
             web_url: string;
         };
         /** @enum {string} */
-        MutedType: "upvoted" | "liked" | "favorited" | "replied" | "commented" | "mentioned" | "followed_thread_activity" | "best_answer_chosen" | "reply_pinned" | "quiz_answered" | "resource_link_reported" | "edit_requested" | "edit_merged" | "edit_declined" | "lottery_won" | "lottery_drawn" | "lottery_code_expired" | "poll_closed" | "user_followed" | "followee_topic_created" | "followee_activity_published" | "subscribed_topic_replied" | "resource_relocated" | "chat";
+        MutedType: "upvoted" | "liked" | "favorited" | "replied" | "commented" | "mentioned" | "followed_thread_activity" | "best_answer_chosen" | "reply_pinned" | "quiz_answered" | "resource_link_reported" | "edit_requested" | "edit_merged" | "edit_declined" | "lottery_won" | "lottery_drawn" | "lottery_code_expired" | "poll_closed" | "user_followed" | "followee_topic_created" | "followee_activity_published" | "subscribed_topic_replied" | "resource_relocated" | "system_notice" | "chat";
         MyCoverVote: {
             /**
              * @description Type discriminant. Always my_cover_vote.
@@ -9530,7 +9574,7 @@ export interface components {
         /** @enum {string} */
         NewsSubmissionState: "pending" | "published" | "rejected" | "withdrawn";
         Notification: {
-            /** @description The user who triggered this notification. name is null when the account no longer exists. */
+            /** @description The user who triggered this notification. name is null when the account no longer exists. A system_notice comes from a NextMoe service, not a person: its actor is id 0 with name null. */
             actor: components["schemas"]["UserRef"];
             /**
              * Format: int64
@@ -9542,7 +9586,7 @@ export interface components {
              * @description Creation time. For a mirrored row this is the upstream updated_at, and folding may move it forward.
              */
             created_at: string;
-            /** @description Markdown snapshot stored on the row, truncated to 1000 runes. May be empty. Free text; never use it as a decision input. */
+            /** @description Markdown snapshot stored on the row, truncated to 1000 runes. May be empty. For system_notice it is the whole line to show, already written for the recipient. Free text; never use it as a decision input. */
             excerpt_markdown: string;
             /** @description Notification id. JSON string of a decimal integer. */
             id: string;
@@ -9550,7 +9594,7 @@ export interface components {
             is_read: boolean;
             /**
              * Format: int64
-             * @description How many posts are folded into this row. Values stored below 1 are emitted as 1. For followee_activity_published this is the author's publications folded into the row; 100 means 100 or more. For subscribed_topic_replied it is the replies folded since the recipient last read this notification, and path opens at the first of them.
+             * @description How many posts are folded into this row. Values stored below 1 are emitted as 1. For followee_activity_published this is the author's publications folded into the row; 100 means 100 or more. For subscribed_topic_replied it is the replies folded since the recipient last read this notification, and path opens at the first of them. For system_notice it is the notices about the same subject that arrived since the recipient last read the row.
              */
             item_count: number;
             /** @description Notification type. Closed vocabulary of v1 tokens. */
@@ -9562,7 +9606,7 @@ export interface components {
             object: "notification";
             /** @description local for rows written by this forum; community for rows mirrored from the infra community primitive. */
             origin: components["schemas"]["NotificationOrigin"];
-            /** @description In-site web path of the target, stored as the legacy link. Always starts with a slash. For resource_relocated it is the old page of a resource that moved to LetMoe, which redirects to its new address there. */
+            /** @description In-site web path of the target, stored as the legacy link. Always starts with a slash. For resource_relocated it is the old page of a resource that moved to LetMoe, which redirects to its new address there. For system_notice it is where the notice points, /shop for an offer back on sale. */
             path: string;
         };
         /** @enum {string} */
@@ -9626,7 +9670,7 @@ export interface components {
             unread_count: number;
         };
         /** @enum {string} */
-        NotificationType: "upvoted" | "liked" | "favorited" | "replied" | "commented" | "mentioned" | "followed_thread_activity" | "best_answer_chosen" | "reply_pinned" | "quiz_answered" | "resource_link_reported" | "edit_requested" | "edit_merged" | "edit_declined" | "lottery_won" | "lottery_drawn" | "lottery_code_expired" | "poll_closed" | "user_followed" | "followee_topic_created" | "followee_activity_published" | "subscribed_topic_replied" | "resource_relocated";
+        NotificationType: "upvoted" | "liked" | "favorited" | "replied" | "commented" | "mentioned" | "followed_thread_activity" | "best_answer_chosen" | "reply_pinned" | "quiz_answered" | "resource_link_reported" | "edit_requested" | "edit_merged" | "edit_declined" | "lottery_won" | "lottery_drawn" | "lottery_code_expired" | "poll_closed" | "user_followed" | "followee_topic_created" | "followee_activity_published" | "subscribed_topic_replied" | "resource_relocated" | "system_notice";
         NsfwDisplay: {
             /** @description How adult content is shown: hide, blur, or show. */
             nsfw_display: components["schemas"]["NsfwDisplayMode"];
@@ -11945,6 +11989,8 @@ export interface components {
             object: "shop_inventory";
             /** @description The caller's latest 50 orders on any NextMoe site or the account center, newest first. */
             orders: components["schemas"]["ShopOrder"][];
+            /** @description Offers the caller asked to be told about when they are back on sale, ascending. An id may name an offer this forum no longer sells. */
+            restock_alert_offer_ids: string[];
         };
         ShopItem: {
             /** @description The artwork of an avatar_frame or profile_background. null for every other type. */
@@ -12032,8 +12078,18 @@ export interface components {
              * @description Copies still for sale: stock left, or sellable codes left in a redeem code offer's pool. 0 is sold out. null when unlimited.
              */
             remaining_count: number | null;
+            /**
+             * Format: date-time
+             * @description When codes were last added to a redeem code offer's pool. null for every other offer, and for a redeem code offer whose pool never got any.
+             */
+            restocked_at: string | null;
             /** @description What one purchase gives, in the offer's order. The first is the one to show. */
             rewards: components["schemas"]["ShopReward"][];
+            /**
+             * Format: int64
+             * @description Copies sold so far on every NextMoe site and the account center. A refund takes its copy back off.
+             */
+            sold_count: number;
             /**
              * Format: int64
              * @description Total copies the offer was stocked with. null when it is not stocked; a redeem code offer is never stocked, its supply is remaining_count.
@@ -12127,6 +12183,17 @@ export interface components {
              * @description The last day, Japan time, the issuer accepts the code. null when it does not expire.
              */
             expiry_date: string | null;
+        };
+        ShopRestockAlert: {
+            /** @description Whether the caller is now told when the offer is back on sale. */
+            is_subscribed: boolean;
+            /**
+             * @description Type discriminant. Always shop_restock_alert.
+             * @constant
+             */
+            object: "shop_restock_alert";
+            /** @description The offer. */
+            offer_id: string;
         };
         ShopReward: {
             /**
@@ -33965,6 +34032,237 @@ export interface operations {
                 };
             };
             /** @description SERVICE_UNAVAILABLE when the account service cannot be reached and no list has been fetched yet. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getShopOffer: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description An offer id from listShopOffers. */
+                offer_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShopOffer"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when this forum's shop does not list an offer with this id. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the account service cannot be reached and no list has been fetched yet. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    subscribeShopRestock: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description An offer id from listShopOffers. */
+                offer_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShopRestockAlert"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SHOP_OFFER_UNAVAILABLE when no offer on sale in this forum's shop has this id; SHOP_OFFER_UNLIMITED when the offer is not limited. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the account service cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    unsubscribeShopRestock: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description An offer id from listShopOffers. */
+                offer_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShopRestockAlert"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SHOP_OFFER_UNAVAILABLE only when offer_id is too large to be any offer's id. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the account service cannot be reached. */
             503: {
                 headers: {
                     [name: string]: unknown;

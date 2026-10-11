@@ -32,6 +32,10 @@ func (f *fakeShop) ShopPurchase(context.Context, int, int64, string) (userclient
 
 func (f *fakeShop) ShopEquip(context.Context, int, string, int64, *int64) error { return nil }
 
+func (f *fakeShop) ShopRestockAlert(context.Context, int, int64, bool) (userclient.ShopRestockAlert, error) {
+	return userclient.ShopRestockAlert{}, nil
+}
+
 func (f *fakeShop) Invalidate(...int) {}
 
 func TestV1ShopOffersCacheExpires(t *testing.T) {
