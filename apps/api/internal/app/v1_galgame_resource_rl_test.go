@@ -100,3 +100,17 @@ func TestV1CreateToolsetResourceEd2kLink(t *testing.T) {
 		t.Error("ed2k link not stored as sent")
 	}
 }
+
+func TestV1CreateWorkResourceRefusesQRCodeImage(t *testing.T) {
+	f := newResourceFix(t, nil)
+	urls := []string{"https://pan.baidu.com/s/1abcDEF?pwd=abcd", "https://p.inari.site/usr/1903/66f1d2c5a1b2c.png"}
+	resp, got := f.rs(t, http.MethodPost, "/api/v1/works/"+idStr(g3WorkSFW)+"/resources",
+		"/works/{work_id}/resources", "sess-alice", keyUUID(41), createResourceBody(map[string]any{"download_urls": urls}))
+	wantCode(t, resp, got, http.StatusUnprocessableEntity, problem.CodeValidationFailed)
+	if e := errorAt(got, "/download_urls/1"); e == nil || e["reason"] != problem.ReasonNotAllowedValue {
+		t.Fatalf("QR image link error %+v", got)
+	}
+	if e := errorAt(got, "/download_urls/0"); e != nil {
+		t.Fatalf("the plain share link was refused: %+v", e)
+	}
+}

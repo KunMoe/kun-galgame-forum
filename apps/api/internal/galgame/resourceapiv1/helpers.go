@@ -327,6 +327,11 @@ func validateURLs(raw []DownloadURL, required bool) ([]string, []problem.FieldEr
 			errs = append(errs, invalidFormat(ptr, "must be an http, https, ftp, ftps, magnet, ed2k or thunder URL"))
 			continue
 		}
+		if utils.IsQRCodeShareLink(string(u)) {
+			errs = append(errs, problem.AtPointer(ptr, problem.ReasonNotAllowedValue,
+				"a QR code image or a mini program link; send the plain-text share link", nil))
+			continue
+		}
 		out = append(out, strings.TrimSpace(string(u)))
 	}
 	return out, errs

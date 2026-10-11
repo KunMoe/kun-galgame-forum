@@ -67,7 +67,7 @@ func (DownloadURL) Schema(huma.Registry) *huma.Schema {
 		Type:        huma.TypeString,
 		MaxLength:   &n,
 		Pattern:     downloadURLPattern,
-		Description: "A download URL: http, https, ftp, ftps, magnet, ed2k or thunder, at most 4096 characters.",
+		Description: "A download URL: http, https, ftp, ftps, magnet, ed2k or thunder, at most 4096 characters. A link to an image file (a picture of a netdisk's QR code) or to a WeChat mini program is refused with NOT_ALLOWED_VALUE: publish the plain-text share link.",
 	}
 }
 
