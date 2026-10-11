@@ -1,5 +1,11 @@
 import type { Image } from '#shared/utils/api/schemas'
 import { settle } from '#shared/utils/api/problem'
+import { MAX_IMAGE_SIZE } from '~/config/upload'
+import {
+  isShrinkableImage,
+  renameImageForType,
+  shrinkImageToFit
+} from './shrinkImage'
 
 export type KunImagePurpose = 'content' | 'message'
 export type KunWorkEditImagePreset = 'cover' | 'screenshot'
@@ -9,14 +15,34 @@ export type KunWorkEditImagePreset = 'cover' | 'screenshot'
 // so the absolute URL an upload returns must never be persisted.
 export const imageToken = (hash: string) => `/image/${hash}`
 
-const imageForm = (
+const fitImage = async (file: Blob, filename: string) => {
+  if (!isShrinkableImage(file, MAX_IMAGE_SIZE)) {
+    return { file, filename }
+  }
+  const shrunk = await shrinkImageToFit(file, MAX_IMAGE_SIZE)
+  if (!shrunk) {
+    return { file, filename }
+  }
+  useMessage(
+    `图片超过 ${MAX_IMAGE_SIZE / 1024 / 1024}MB，已自动压缩后上传`,
+    'info'
+  )
+  const renamed = renameImageForType(filename, shrunk.type)
+  return {
+    file: new File([shrunk], renamed, { type: shrunk.type }),
+    filename: renamed
+  }
+}
+
+const imageForm = async (
   file: Blob,
   filename: string,
   field: string,
   value: string
 ) => {
+  const fitted = await fitImage(file, filename)
   const form = new FormData()
-  form.append('file', file, filename)
+  form.append('file', fitted.file, fitted.filename)
   form.append(field, value)
   return form
 }
@@ -26,9 +52,10 @@ export const uploadImage = async (
   purpose: KunImagePurpose,
   filename = 'image'
 ): Promise<Image | null> => {
+  const form = await imageForm(file, filename, 'purpose', purpose)
   const result = await settle(
     useApiClient().POST('/images', {
-      body: imageForm(file, filename, 'purpose', purpose) as unknown as {
+      body: form as unknown as {
         file: string
         purpose: KunImagePurpose
       },
@@ -47,9 +74,10 @@ export const uploadWorkEditImage = async (
   preset: KunWorkEditImagePreset,
   filename = 'image'
 ): Promise<Image | null> => {
+  const form = await imageForm(file, filename, 'preset', preset)
   const result = await settle(
     useApiClient().POST('/work-edit-images', {
-      body: imageForm(file, filename, 'preset', preset) as unknown as {
+      body: form as unknown as {
         file: string
         preset: KunWorkEditImagePreset
       },

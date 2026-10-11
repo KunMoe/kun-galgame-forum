@@ -4,3 +4,5 @@ export const MAX_LARGE_FILE_SIZE = 2 * 1024 * 1024 * 1024
 export const USER_DAILY_UPLOAD_LIMIT = 100 * 1024 * 1024
 
 export const MOEMOEPOINT_SINGLE_MB_DIVISOR = 10
+
+export const MAX_IMAGE_SIZE = 10 * 1024 * 1024

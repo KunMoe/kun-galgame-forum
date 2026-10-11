@@ -9,13 +9,21 @@ import {
 } from './uploadImage'
 import { useKunEditorAdapters } from '~/composables/useKunEditorAdapters'
 
-const { api, reportProblem } = vi.hoisted(() => ({
+const { api, reportProblem, useMessage, shrinkImageToFit } = vi.hoisted(() => ({
   api: { POST: vi.fn(), GET: vi.fn() },
-  reportProblem: vi.fn()
+  reportProblem: vi.fn(),
+  useMessage: vi.fn(),
+  shrinkImageToFit: vi.fn()
+}))
+
+vi.mock('./shrinkImage', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('./shrinkImage')>()),
+  shrinkImageToFit
 }))
 
 mockNuxtImport('useApiClient', () => () => api)
 mockNuxtImport('reportProblem', () => reportProblem)
+mockNuxtImport('useMessage', () => useMessage)
 
 const hash = 'ab'.repeat(32)
 const image = {
@@ -56,6 +64,8 @@ const lastCall = () => {
 beforeEach(() => {
   api.POST.mockReset()
   reportProblem.mockReset()
+  useMessage.mockReset()
+  shrinkImageToFit.mockReset()
 })
 
 const file = new File(['png'], 'pic.png', { type: 'image/png' })
@@ -74,6 +84,64 @@ describe('uploadImage', () => {
     api.POST.mockResolvedValueOnce(limited())
     expect(await uploadImage(file, 'content')).toBeNull()
     expect(reportProblem).toHaveBeenCalledOnce()
+  })
+})
+
+describe('an image over 10 MiB', () => {
+  const oversized = (name: string, type: string) =>
+    new File([new Uint8Array(10 * 1024 * 1024 + 1)], name, { type })
+  const sentFile = () => lastCall().form.get('file') as File
+
+  it('goes up shrunk, named for its new type, and says so', async () => {
+    const shrunk = new Blob([new Uint8Array(64)], { type: 'image/webp' })
+    shrinkImageToFit.mockResolvedValueOnce(shrunk)
+    api.POST.mockResolvedValueOnce(created())
+    await uploadImage(oversized('big.png', 'image/png'), 'content', 'big.png')
+    expect(sentFile().name).toBe('big.webp')
+    expect(sentFile().type).toBe('image/webp')
+    expect(sentFile().size).toBe(64)
+    expect(useMessage).toHaveBeenCalledWith(
+      '图片超过 10MB，已自动压缩后上传',
+      'info'
+    )
+  })
+
+  it('shrinks a work-edit screenshot too', async () => {
+    shrinkImageToFit.mockResolvedValueOnce(
+      new Blob([new Uint8Array(64)], { type: 'image/jpeg' })
+    )
+    api.POST.mockResolvedValueOnce(created())
+    await uploadWorkEditImage(
+      oversized('shot.png', 'image/png'),
+      'screenshot',
+      'shot.png'
+    )
+    expect(sentFile().name).toBe('shot.jpg')
+  })
+
+  it('goes up untouched when it is a GIF', async () => {
+    api.POST.mockResolvedValueOnce(created())
+    const gif = oversized('anim.gif', 'image/gif')
+    await uploadImage(gif, 'content', 'anim.gif')
+    expect(shrinkImageToFit).not.toHaveBeenCalled()
+    expect(sentFile().size).toBe(gif.size)
+    expect(useMessage).not.toHaveBeenCalled()
+  })
+
+  it('goes up untouched when the browser cannot shrink it', async () => {
+    shrinkImageToFit.mockResolvedValueOnce(null)
+    api.POST.mockResolvedValueOnce(created())
+    const heic = oversized('photo.heic', 'image/heic')
+    await uploadImage(heic, 'content', 'photo.heic')
+    expect(sentFile().name).toBe('photo.heic')
+    expect(sentFile().size).toBe(heic.size)
+    expect(useMessage).not.toHaveBeenCalled()
+  })
+
+  it('is never shrunk when it is under the limit', async () => {
+    api.POST.mockResolvedValueOnce(created())
+    await uploadImage(file, 'content', 'pic.png')
+    expect(shrinkImageToFit).not.toHaveBeenCalled()
   })
 })
 
