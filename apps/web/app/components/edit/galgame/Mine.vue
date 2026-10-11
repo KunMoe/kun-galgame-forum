@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { ApiResult } from '#shared/utils/api/problem'
 import type { WorkSubmissionSummary } from '#shared/utils/api/schemas'
+import { deletedUserName } from '~/utils/userRef'
 
 const { items, hasMore, loadingMore, loadMore, problem, refresh } =
   await useGalgameClaimList('mine')
@@ -105,10 +106,22 @@ const openPreview = (item: WorkSubmissionSummary) => {
       >
         <template #note>
           <div
-            v-if="item.state === CLAIM_STATE_DECLINED && item.last_event?.note"
+            v-if="item.state === CLAIM_STATE_DECLINED && item.last_event"
             class="text-danger bg-danger/10 mt-1 rounded-md px-2 py-1 text-sm"
           >
-            被拒原因: {{ item.last_event.note }}
+            <span>由 </span>
+            <KunLink
+              v-if="item.last_event.actor.name"
+              :to="`/user/${item.last_event.actor.id}`"
+              size="sm"
+            >
+              {{ item.last_event.actor.name }}
+            </KunLink>
+            <span v-else>{{ deletedUserName }}</span>
+            <span> 拒绝</span>
+            <span v-if="item.last_event.note">
+              , 原因: {{ item.last_event.note }}
+            </span>
           </div>
         </template>
 

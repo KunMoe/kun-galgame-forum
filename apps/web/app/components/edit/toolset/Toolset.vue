@@ -81,6 +81,12 @@ const handleUpdatePageLink = (value: string | number) => {
       description="提交与 Galgame 相关的工具，帮助其他用户下载与使用"
     />
 
+    <KunInfo
+      color="danger"
+      title="禁止发布游戏资源"
+      description="这里只能发布 Galgame 相关的工具。上传或发布游戏本体及其下载链接会被删除, 违规直接永久封禁账号。"
+    />
+
     <div class="space-y-2">
       <div class="text-xl font-medium">名称</div>
       <KunInput v-model="form.title" placeholder="工具名称" />

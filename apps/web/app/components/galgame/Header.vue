@@ -86,6 +86,31 @@ const toggleResourceBan = async () => {
   )
 }
 
+const canReviewClaims = useCan('galgame.claim.review')
+const { move: moveSubmission } = useWorkSubmission()
+const hiding = ref(false)
+const hideWork = async () => {
+  const ok = await useComponentMessageStore().alert(
+    `封禁《${names.value.name}》?`,
+    '封禁后该条目对所有人不可见, 之后可在 Galgame 审核页的「已封禁」中解封。'
+  )
+  if (!ok) {
+    return
+  }
+  hiding.value = true
+  const result = await moveSubmission(props.galgame.id, 'hidden')
+  hiding.value = false
+  if (!result.ok) {
+    if (result.problem.status === 404) {
+      useMessage('该条目没有本站的投稿记录, 无法在这里封禁', 'warn')
+      return
+    }
+    reportProblem(result.problem)
+    return
+  }
+  useMessage('已封禁, 可在 Galgame 审核页的「已封禁」中解封', 'success')
+}
+
 const galgameAliasArray = computed(() => {
   const extra = names.value.original
   const aliases = props.galgame.aliases
@@ -408,7 +433,7 @@ const coverUrl = computed(() =>
             </KunButton>
 
             <KunPopover
-              v-if="!isOwnWork || canBanResourcePublish"
+              v-if="!isOwnWork || canBanResourcePublish || canReviewClaims"
               position="bottom-end"
             >
               <template #trigger>
@@ -449,6 +474,18 @@ const coverUrl = computed(() =>
                   {{
                     resourcePublishBanned ? '解除资源发布禁止' : '禁止发布资源'
                   }}
+                </KunButton>
+                <KunButton
+                  v-if="canReviewClaims"
+                  variant="light"
+                  color="danger"
+                  size="sm"
+                  class-name="w-full justify-start gap-2"
+                  :loading="hiding"
+                  @click="hideWork"
+                >
+                  <KunIcon name="lucide:eye-off" />
+                  封禁条目
                 </KunButton>
               </div>
             </KunPopover>

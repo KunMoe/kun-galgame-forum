@@ -46,6 +46,12 @@ const handleUploadSuccess = (value: ToolsetUploadResult) => {
       发布 Galgame 工具下载资源规定
     </KunLink>
 
+    <KunInfo
+      color="danger"
+      title="禁止发布游戏资源"
+      description="这里只能发布 Galgame 相关的工具。上传或发布游戏本体及其下载链接会被删除, 违规直接永久封禁账号。"
+    />
+
     <div class="flex flex-col gap-1">
       <p class="text-default-700 text-sm">
         您今日已使用存储量
