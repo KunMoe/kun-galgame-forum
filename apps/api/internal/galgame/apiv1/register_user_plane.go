@@ -314,7 +314,7 @@ func (s *Service) registerUserPlane(api huma.API) {
 		}),
 	}), s.listMyCollectionsForWork)
 
-	huma.Register(api, v1.Optional(huma.Operation{
+	huma.Register(api, v1.ProfileGated(v1.Optional(huma.Operation{
 		OperationID: "listUserCollections",
 		Method:      http.MethodGet,
 		Path:        "/users/{user_id}/collections",
@@ -327,7 +327,7 @@ func (s *Service) registerUserPlane(api huma.API) {
 			404: "NOT_FOUND when the account does not exist or is not renderable.",
 			503: "SERVICE_UNAVAILABLE when the catalog or the account service cannot be reached.",
 		}),
-	}), s.listUserCollections)
+	}), "user_id"), s.listUserCollections)
 
 	huma.Register(api, v1.Optional(huma.Operation{
 		OperationID: "getCollectionAlias",

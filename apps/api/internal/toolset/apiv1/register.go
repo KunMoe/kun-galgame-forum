@@ -56,7 +56,7 @@ func registerToolsets(api huma.API, svc *Service) {
 		}),
 	}), svc.listToolsets)
 
-	huma.Register(api, v1.Optional(huma.Operation{
+	huma.Register(api, v1.ProfileGated(v1.Optional(huma.Operation{
 		OperationID: "listUserToolsets",
 		Method:      http.MethodGet,
 		Path:        "/users/{user_id}/toolsets",
@@ -69,7 +69,7 @@ func registerToolsets(api huma.API, svc *Service) {
 			400: "UNKNOWN_ENUM_VALUE when relation is not in this collection's vocabulary, LIMIT_TOO_LARGE, or INVALID_PARAMETER.",
 			404: "NOT_FOUND when the user does not exist or is not renderable.",
 		}),
-	}), svc.listUserToolsets)
+	}), "user_id"), svc.listUserToolsets)
 
 	huma.Register(api, v1.Optional(huma.Operation{
 		OperationID: "getToolset",

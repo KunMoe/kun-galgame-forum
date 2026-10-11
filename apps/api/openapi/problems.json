@@ -326,6 +326,15 @@
     },
     {
       "object": "problem_type",
+      "code": "PROFILE_SIGN_IN_REQUIRED",
+      "domain": "kungal",
+      "status": 403,
+      "type": "https://developer.nextmoe.dev/problems/kungal/profile-sign-in-required",
+      "title": "Profile sign-in required",
+      "description": "The user shows their profile to signed-in users only, and the request has no signed-in user. Signing in, as anyone, is enough."
+    },
+    {
+      "object": "problem_type",
       "code": "QUIZ_ANSWER_REQUIRED",
       "domain": "kungal",
       "status": 403,

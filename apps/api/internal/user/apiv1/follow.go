@@ -147,7 +147,7 @@ func (s *Users) registerFollows(api huma.API) {
 		}),
 	}), s.getUserFollowState)
 
-	huma.Register(api, v1.Public(huma.Operation{
+	huma.Register(api, v1.ProfileGated(v1.Optional(huma.Operation{
 		OperationID: "listUserFollowers",
 		Method:      http.MethodGet,
 		Path:        "/users/{user_id}/followers",
@@ -159,9 +159,9 @@ func (s *Users) registerFollows(api huma.API) {
 		Responses: problemResponses(map[int]string{
 			503: upstreamDown,
 		}),
-	}), s.listUserFollowers)
+	}), "user_id"), s.listUserFollowers)
 
-	huma.Register(api, v1.Public(huma.Operation{
+	huma.Register(api, v1.ProfileGated(v1.Optional(huma.Operation{
 		OperationID: "listUserFollowing",
 		Method:      http.MethodGet,
 		Path:        "/users/{user_id}/following",
@@ -173,7 +173,7 @@ func (s *Users) registerFollows(api huma.API) {
 		Responses: problemResponses(map[int]string{
 			503: upstreamDown,
 		}),
-	}), s.listUserFollowing)
+	}), "user_id"), s.listUserFollowing)
 }
 
 func (s *Users) readyFollows() *problem.Problem {

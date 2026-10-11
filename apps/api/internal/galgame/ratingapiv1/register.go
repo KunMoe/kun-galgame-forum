@@ -33,7 +33,7 @@ func Register(s *Service) func(huma.API) {
 	return func(api huma.API) {
 		tags := []string{"galgame-ratings"}
 
-		huma.Register(api, v1.Optional(huma.Operation{
+		huma.Register(api, v1.ProfileGated(v1.Optional(huma.Operation{
 			OperationID: "listRatings",
 			Method:      http.MethodGet,
 			Path:        "/ratings",
@@ -47,7 +47,7 @@ func Register(s *Service) func(huma.API) {
 				400: "INVALID_PARAMETER when page × limit is too deep or an id is malformed; UNKNOWN_SORT or UNKNOWN_ENUM_VALUE for a value outside the vocabulary.",
 				503: unavailableMsg,
 			}),
-		}), s.listRatings)
+		}), "author_id"), s.listRatings)
 
 		huma.Register(api, v1.Optional(huma.Operation{
 			OperationID: "getRating",

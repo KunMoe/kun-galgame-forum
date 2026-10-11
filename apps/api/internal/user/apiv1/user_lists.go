@@ -21,7 +21,7 @@ import (
 const excerptRunes = 200
 
 func (s *Users) registerLists(api huma.API) {
-	huma.Register(api, v1.Optional(huma.Operation{
+	huma.Register(api, v1.ProfileGated(v1.Optional(huma.Operation{
 		OperationID: "listUserTopics",
 		Method:      http.MethodGet,
 		Path:        "/users/{user_id}/topics",
@@ -36,9 +36,9 @@ func (s *Users) registerLists(api huma.API) {
 			403: "PERMISSION_REQUIRED when relation is hidden and the caller is neither the owner nor holding topic.view_hidden.",
 			503: "SERVICE_UNAVAILABLE when the account service cannot be reached.",
 		}),
-	}), s.listUserTopics)
+	}), "user_id"), s.listUserTopics)
 
-	huma.Register(api, v1.Optional(huma.Operation{
+	huma.Register(api, v1.ProfileGated(v1.Optional(huma.Operation{
 		OperationID: "listUserReplies",
 		Method:      http.MethodGet,
 		Path:        "/users/{user_id}/replies",
@@ -52,9 +52,9 @@ func (s *Users) registerLists(api huma.API) {
 			400: "UNKNOWN_ENUM_VALUE when relation is not in this collection's vocabulary. LIMIT_TOO_LARGE when limit is greater than 100. INVALID_PARAMETER when page × limit exceeds 10000.",
 			503: "SERVICE_UNAVAILABLE when the account service cannot be reached.",
 		}),
-	}), s.listUserReplies)
+	}), "user_id"), s.listUserReplies)
 
-	huma.Register(api, v1.Optional(huma.Operation{
+	huma.Register(api, v1.ProfileGated(v1.Optional(huma.Operation{
 		OperationID: "listUserComments",
 		Method:      http.MethodGet,
 		Path:        "/users/{user_id}/comments",
@@ -68,7 +68,7 @@ func (s *Users) registerLists(api huma.API) {
 			400: "UNKNOWN_ENUM_VALUE when relation is not in this collection's vocabulary. LIMIT_TOO_LARGE when limit is greater than 100. INVALID_PARAMETER when page × limit exceeds 10000.",
 			503: "SERVICE_UNAVAILABLE when the account service cannot be reached.",
 		}),
-	}), s.listUserComments)
+	}), "user_id"), s.listUserComments)
 
 	s.registerWorkLists(api)
 }

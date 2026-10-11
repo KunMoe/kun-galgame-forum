@@ -21,6 +21,7 @@ const defineKunFeedRoute = <T>(options: {
   name: string
   parse: (event: H3Event) => ParsedFeed<T> | null
   load: (api: ApiClient, baseUrl: string, params: T) => Promise<KunFeedResult>
+  swr?: boolean
 }) =>
   defineCachedEventHandler(
     async (event) => {
@@ -52,7 +53,7 @@ const defineKunFeedRoute = <T>(options: {
       name: options.name,
       base: 'rss',
       getKey: (event) => feedCacheKey(options.parse(event)),
-      swr: true,
+      swr: options.swr ?? true,
       maxAge: 60 * 5,
       staleMaxAge: 60 * 60 * 24 * 7
     }
@@ -81,8 +82,12 @@ export const workFeedHandler = defineKunFeedRoute({
   load: loadWorkResourceFeed
 })
 
+// Nitro's SWR serves the last good copy for as long as every refresh fails, and
+// with swr it never enforces staleMaxAge: a user who turned on sign-in-only
+// profiles would keep feeding anonymous readers from the cache.
 export const userFeedHandler = defineKunFeedRoute({
   name: 'rss-user',
+  swr: false,
   parse: (event) =>
     parseUserFeed(
       getRouterParam(event, 'user') ?? '',

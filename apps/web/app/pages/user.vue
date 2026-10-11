@@ -14,7 +14,7 @@ const route = useRoute()
 
 const userId = computed(() => (route.params as { id: string }).id)
 
-const { data } = await useApi<UserProfile>(
+const { data, problem } = await useApi<UserProfile>(
   () => `user:${userId.value}`,
   (api, { signal }) =>
     api.GET('/users/{user_id}', {
@@ -22,6 +22,11 @@ const { data } = await useApi<UserProfile>(
       signal
     })
 )
+
+const isSignInRequired = computed(
+  () => problem.value?.code === 'PROFILE_SIGN_IN_REQUIRED'
+)
+const signIn = () => startOAuthLogin({ returnTo: route.fullPath })
 
 const isNavLoading = ref(false)
 const nuxtApp = useNuxtApp()
@@ -69,6 +74,8 @@ if (data.value) {
     title: data.value.name ?? '',
     description: data.value.bio ?? ''
   })
+} else if (isSignInRequired.value) {
+  useKunDisableSeo('登录后查看该用户')
 } else {
   useKunDisableSeo('未找到该用户')
 }
@@ -129,6 +136,14 @@ if (data.value) {
         </div>
       </div>
     </template>
+
+    <div
+      v-else-if="isSignInRequired"
+      class="flex flex-col items-center gap-3 py-12"
+    >
+      <KunNull description="该用户设置了仅登录用户可查看主页" />
+      <KunButton color="primary" @click="signIn">登录</KunButton>
+    </div>
 
     <KunNull v-else description="未找到该用户" />
   </div>

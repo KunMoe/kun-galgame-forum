@@ -2296,6 +2296,30 @@ export interface paths {
         patch: operations["patchMyProfile"];
         trace?: never;
     };
+    "/me/profile-settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get who may read the caller's profile
+         * @description Returns whether the caller's profile is shown to signed-in users only. An account with no forum state reads false.
+         */
+        get: operations["getProfileSettings"];
+        /**
+         * Set who may read the caller's profile
+         * @description While is_sign_in_required is true, getUser, every /users/{user_id}/* list, and listRatings and listQuizzes filtered by the caller as author_id answer an anonymous caller PROFILE_SIGN_IN_REQUIRED. Every signed-in caller still reads them. The caller's content stays where it was published: topics, replies, comments and resources still show the caller as their author.
+         */
+        put: operations["putProfileSettings"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/me/quiz-states": {
         parameters: {
             query?: never;
@@ -2873,7 +2897,7 @@ export interface paths {
         };
         /**
          * List quizzes
-         * @description Lists quizzes as a page-number collection. Default sort is bumped_at_desc, default limit 50. Quizzes whose author is not renderable are omitted from both items and total. include_nsfw=false excludes quizzes linked to a local NSFW work.
+         * @description Lists quizzes as a page-number collection. Default sort is bumped_at_desc, default limit 50. Quizzes whose author is not renderable are omitted from both items and total. include_nsfw=false excludes quizzes linked to a local NSFW work. PROFILE_SIGN_IN_REQUIRED when the caller is anonymous and author_id names a user who shows their profile to signed-in users only.
          */
         get: operations["listQuizzes"];
         put?: never;
@@ -3073,7 +3097,7 @@ export interface paths {
         };
         /**
          * List galgame ratings
-         * @description A page-number collection: page × limit may not exceed 10000. Ratings of adult works appear only with include_nsfw=true. Ratings by banned authors and of works catalog no longer shows are left out of items but still counted in total, so a page can hold fewer than limit items before the last page.
+         * @description A page-number collection: page × limit may not exceed 10000. Ratings of adult works appear only with include_nsfw=true. Ratings by banned authors and of works catalog no longer shows are left out of items but still counted in total, so a page can hold fewer than limit items before the last page. PROFILE_SIGN_IN_REQUIRED when the caller is anonymous and author_id names a user who shows their profile to signed-in users only.
          */
         get: operations["listRatings"];
         put?: never;
@@ -4522,7 +4546,7 @@ export interface paths {
         };
         /**
          * Get a user's public profile
-         * @description Returns one user's public profile and activity counts. NOT_FOUND when the account does not exist or is not renderable. topic_count excludes hidden topics. topic_today_count uses the Asia/Shanghai calendar day. community_comment_count, follower_count and following_count are null when the community service is unavailable.
+         * @description Returns one user's public profile and activity counts. NOT_FOUND when the account does not exist or is not renderable. topic_count excludes hidden topics. topic_today_count uses the Asia/Shanghai calendar day. community_comment_count, follower_count and following_count are null when the community service is unavailable. PROFILE_SIGN_IN_REQUIRED when the caller is anonymous and user_id names a user who shows their profile to signed-in users only.
          */
         get: operations["getUser"];
         put?: never;
@@ -4542,7 +4566,7 @@ export interface paths {
         };
         /**
          * List a user's collections
-         * @description A page-number collection of a user's collections. Callers who are not the owner see only public collections. An unrenderable owner is NOT_FOUND.
+         * @description A page-number collection of a user's collections. Callers who are not the owner see only public collections. An unrenderable owner is NOT_FOUND. PROFILE_SIGN_IN_REQUIRED when the caller is anonymous and user_id names a user who shows their profile to signed-in users only.
          */
         get: operations["listUserCollections"];
         put?: never;
@@ -4562,7 +4586,7 @@ export interface paths {
         };
         /**
          * List a user's comments
-         * @description Lists topic comments related to a user as a page-number collection, newest first with ties broken by descending id. relation is required and closed. Comments whose parent topic is hidden or restricted never appear. Comments by banned authors, or under topics by banned authors, are dropped after counting, so a page may hold fewer items than limit and total may count them. NOT_FOUND when the account does not exist or is not renderable.
+         * @description Lists topic comments related to a user as a page-number collection, newest first with ties broken by descending id. relation is required and closed. Comments whose parent topic is hidden or restricted never appear. Comments by banned authors, or under topics by banned authors, are dropped after counting, so a page may hold fewer items than limit and total may count them. NOT_FOUND when the account does not exist or is not renderable. PROFILE_SIGN_IN_REQUIRED when the caller is anonymous and user_id names a user who shows their profile to signed-in users only.
          */
         get: operations["listUserComments"];
         put?: never;
@@ -4582,7 +4606,7 @@ export interface paths {
         };
         /**
          * List a user's followers
-         * @description Accounts that follow this user, newest first, as a cursor page. An account the forum cannot resolve is still listed, with a null name. The last page omits next_cursor. NOT_FOUND when the account does not exist or is not renderable.
+         * @description Accounts that follow this user, newest first, as a cursor page. An account the forum cannot resolve is still listed, with a null name. The last page omits next_cursor. NOT_FOUND when the account does not exist or is not renderable. PROFILE_SIGN_IN_REQUIRED when the caller is anonymous and user_id names a user who shows their profile to signed-in users only.
          */
         get: operations["listUserFollowers"];
         put?: never;
@@ -4602,7 +4626,7 @@ export interface paths {
         };
         /**
          * List the accounts a user follows
-         * @description Accounts this user follows, newest first, as a cursor page. An account the forum cannot resolve is still listed, with a null name. The last page omits next_cursor. NOT_FOUND when the account does not exist or is not renderable.
+         * @description Accounts this user follows, newest first, as a cursor page. An account the forum cannot resolve is still listed, with a null name. The last page omits next_cursor. NOT_FOUND when the account does not exist or is not renderable. PROFILE_SIGN_IN_REQUIRED when the caller is anonymous and user_id names a user who shows their profile to signed-in users only.
          */
         get: operations["listUserFollowing"];
         put?: never;
@@ -4622,7 +4646,7 @@ export interface paths {
         };
         /**
          * List a user's galgame resources
-         * @description Lists download resources related to a user as a page-number collection, newest first with ties broken by descending id. Items never include download links, extraction codes or archive passwords. NOT_FOUND when the account does not exist or is not renderable.
+         * @description Lists download resources related to a user as a page-number collection, newest first with ties broken by descending id. Items never include download links, extraction codes or archive passwords. NOT_FOUND when the account does not exist or is not renderable. PROFILE_SIGN_IN_REQUIRED when the caller is anonymous and user_id names a user who shows their profile to signed-in users only.
          */
         get: operations["listUserGalgameResources"];
         put?: never;
@@ -4642,7 +4666,7 @@ export interface paths {
         };
         /**
          * List a user's replies
-         * @description Lists replies related to a user as a page-number collection, newest first with ties broken by descending id. relation is required and closed. Replies whose parent topic is hidden or restricted never appear. Replies by banned authors, or under topics by banned authors, are dropped after counting, so a page may hold fewer items than limit and total may count them. NOT_FOUND when the account does not exist or is not renderable.
+         * @description Lists replies related to a user as a page-number collection, newest first with ties broken by descending id. relation is required and closed. Replies whose parent topic is hidden or restricted never appear. Replies by banned authors, or under topics by banned authors, are dropped after counting, so a page may hold fewer items than limit and total may count them. NOT_FOUND when the account does not exist or is not renderable. PROFILE_SIGN_IN_REQUIRED when the caller is anonymous and user_id names a user who shows their profile to signed-in users only.
          */
         get: operations["listUserReplies"];
         put?: never;
@@ -4662,7 +4686,7 @@ export interface paths {
         };
         /**
          * List a user's toolsets
-         * @description Lists toolsets related to the user. relation=authored (the default) is the toolsets they authored, newest first; relation=favorited is the toolsets they favorited, most recently favorited first, and omits toolsets whose author is not renderable from both items and total. An unrenderable user is NOT_FOUND. An empty list is 200 with total 0.
+         * @description Lists toolsets related to the user. relation=authored (the default) is the toolsets they authored, newest first; relation=favorited is the toolsets they favorited, most recently favorited first, and omits toolsets whose author is not renderable from both items and total. An unrenderable user is NOT_FOUND. An empty list is 200 with total 0. PROFILE_SIGN_IN_REQUIRED when the caller is anonymous and user_id names a user who shows their profile to signed-in users only.
          */
         get: operations["listUserToolsets"];
         put?: never;
@@ -4682,7 +4706,7 @@ export interface paths {
         };
         /**
          * List a user's topics
-         * @description Lists topics related to a user as a page-number collection, newest first with ties broken by descending id. relation is required and closed. Hidden topics never appear except under relation=hidden, which is only the owner or a caller holding topic.view_hidden. Restricted topics never appear, including for a caller who can view them elsewhere. NOT_FOUND when the account does not exist or is not renderable.
+         * @description Lists topics related to a user as a page-number collection, newest first with ties broken by descending id. relation is required and closed. Hidden topics never appear except under relation=hidden, which is only the owner or a caller holding topic.view_hidden. Restricted topics never appear, including for a caller who can view them elsewhere. NOT_FOUND when the account does not exist or is not renderable. PROFILE_SIGN_IN_REQUIRED when the caller is anonymous and user_id names a user who shows their profile to signed-in users only.
          */
         get: operations["listUserTopics"];
         put?: never;
@@ -4702,7 +4726,7 @@ export interface paths {
         };
         /**
          * List a user's wall comments
-         * @description Lists wall comments related to a user as a cursor collection. relation=authored is ordered by community post id, newest first; imported historical posts may have non-monotonic times. relation=liked is ordered by when the user liked the comment, newest first. A page may be shorter than limit while next_cursor is present. NOT_FOUND when the account does not exist or is not renderable.
+         * @description Lists wall comments related to a user as a cursor collection. relation=authored is ordered by community post id, newest first; imported historical posts may have non-monotonic times. relation=liked is ordered by when the user liked the comment, newest first. A page may be shorter than limit while next_cursor is present. NOT_FOUND when the account does not exist or is not renderable. PROFILE_SIGN_IN_REQUIRED when the caller is anonymous and user_id names a user who shows their profile to signed-in users only.
          */
         get: operations["listUserWallComments"];
         put?: never;
@@ -4722,7 +4746,7 @@ export interface paths {
         };
         /**
          * List a user's works
-         * @description Lists works related to a user as a page-number collection. published and liked are newest first with ties broken by descending id. contributed keeps the catalog proposal order. A work catalog no longer renders is omitted from the page while total still counts it. NOT_FOUND when the account does not exist or is not renderable.
+         * @description Lists works related to a user as a page-number collection. published and liked are newest first with ties broken by descending id. contributed keeps the catalog proposal order. A work catalog no longer renders is omitted from the page while total still counts it. NOT_FOUND when the account does not exist or is not renderable. PROFILE_SIGN_IN_REQUIRED when the caller is anonymous and user_id names a user who shows their profile to signed-in users only.
          */
         get: operations["listUserWorks"];
         put?: never;
@@ -10601,6 +10625,19 @@ export interface components {
              * @description Problem type URI. The last path segment is the kebab-case form of code.
              */
             type: string;
+        };
+        ProfileSettings: {
+            /** @description Whether the caller's profile is shown to signed-in users only. false until the caller first sets it. */
+            is_sign_in_required: boolean;
+            /**
+             * @description Type discriminant. Always profile_settings.
+             * @constant
+             */
+            object: "profile_settings";
+        };
+        ProfileSettingsWrite: {
+            /** @description true shows the caller's profile to signed-in users only; false shows it to everyone. */
+            is_sign_in_required: boolean;
         };
         /** @enum {string} */
         Purpose: "content" | "message";
@@ -28106,6 +28143,158 @@ export interface operations {
             };
         };
     };
+    getProfileSettings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProfileSettings"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    putProfileSettings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProfileSettingsWrite"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProfileSettings"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description VALIDATION_FAILED when is_sign_in_required is missing or not a boolean. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     listMyQuizStates: {
         parameters: {
             query: {
@@ -30722,7 +30911,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Forbidden */
+            /** @description ACCOUNT_BANNED when the caller's account is banned. PROFILE_SIGN_IN_REQUIRED when the caller is anonymous and author_id names a user who shows their profile to signed-in users only. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -31887,7 +32076,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Forbidden */
+            /** @description ACCOUNT_BANNED when the caller's account is banned. PROFILE_SIGN_IN_REQUIRED when the caller is anonymous and author_id names a user who shows their profile to signed-in users only. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -40113,6 +40302,24 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description ACCOUNT_BANNED when the caller's account is banned. PROFILE_SIGN_IN_REQUIRED when the caller is anonymous and user_id names a user who shows their profile to signed-in users only. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
             /** @description Not Found */
             404: {
                 headers: {
@@ -40188,7 +40395,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Forbidden */
+            /** @description ACCOUNT_BANNED when the caller's account is banned. PROFILE_SIGN_IN_REQUIRED when the caller is anonymous and user_id names a user who shows their profile to signed-in users only. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -40274,7 +40481,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Forbidden */
+            /** @description ACCOUNT_BANNED when the caller's account is banned. PROFILE_SIGN_IN_REQUIRED when the caller is anonymous and user_id names a user who shows their profile to signed-in users only. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -40347,6 +40554,24 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description ACCOUNT_BANNED when the caller's account is banned. PROFILE_SIGN_IN_REQUIRED when the caller is anonymous and user_id names a user who shows their profile to signed-in users only. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
             /** @description Not Found */
             404: {
                 headers: {
@@ -40404,6 +40629,24 @@ export interface operations {
             };
             /** @description Bad Request */
             400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description ACCOUNT_BANNED when the caller's account is banned. PROFILE_SIGN_IN_REQUIRED when the caller is anonymous and user_id names a user who shows their profile to signed-in users only. */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -40490,7 +40733,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Forbidden */
+            /** @description ACCOUNT_BANNED when the caller's account is banned. PROFILE_SIGN_IN_REQUIRED when the caller is anonymous and user_id names a user who shows their profile to signed-in users only. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -40576,7 +40819,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Forbidden */
+            /** @description ACCOUNT_BANNED when the caller's account is banned. PROFILE_SIGN_IN_REQUIRED when the caller is anonymous and user_id names a user who shows their profile to signed-in users only. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -40660,7 +40903,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Forbidden */
+            /** @description ACCOUNT_BANNED when the caller's account is banned. PROFILE_SIGN_IN_REQUIRED when the caller is anonymous and user_id names a user who shows their profile to signed-in users only. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -40746,7 +40989,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description PERMISSION_REQUIRED when relation is hidden and the caller is neither the owner nor holding topic.view_hidden. */
+            /** @description PERMISSION_REQUIRED when relation is hidden and the caller is neither the owner nor holding topic.view_hidden. PROFILE_SIGN_IN_REQUIRED when the caller is anonymous and user_id names a user who shows their profile to signed-in users only. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -40832,7 +41075,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Forbidden */
+            /** @description ACCOUNT_BANNED when the caller's account is banned. PROFILE_SIGN_IN_REQUIRED when the caller is anonymous and user_id names a user who shows their profile to signed-in users only. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -40918,7 +41161,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Forbidden */
+            /** @description ACCOUNT_BANNED when the caller's account is banned. PROFILE_SIGN_IN_REQUIRED when the caller is anonymous and user_id names a user who shows their profile to signed-in users only. */
             403: {
                 headers: {
                     [name: string]: unknown;

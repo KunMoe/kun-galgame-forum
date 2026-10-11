@@ -43,7 +43,7 @@ func Register(svc *Service) func(huma.API) {
 }
 
 func registerQuizzes(api huma.API, svc *Service) {
-	huma.Register(api, v1.Optional(huma.Operation{
+	huma.Register(api, v1.ProfileGated(v1.Optional(huma.Operation{
 		OperationID: "listQuizzes",
 		Method:      http.MethodGet,
 		Path:        "/quizzes",
@@ -55,7 +55,7 @@ func registerQuizzes(api huma.API, svc *Service) {
 		Responses: problemResponses(map[int]string{
 			400: "UNKNOWN_ENUM_VALUE, UNKNOWN_SORT, LIMIT_TOO_LARGE, or INVALID_PARAMETER.",
 		}),
-	}), svc.listQuizzes)
+	}), "author_id"), svc.listQuizzes)
 
 	huma.Register(api, v1.Optional(huma.Operation{
 		OperationID: "getQuiz",

@@ -130,6 +130,7 @@ GET    /api/v1/me/notifications/summary               cors.New → v1Headers →
 GET    /api/v1/me/permissions                         cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/me/playtimes                           cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/me/preferences                         cors.New → v1Headers → fiberAdapter.Handle
+GET    /api/v1/me/profile-settings                    cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/me/quiz-states                         cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/me/shop                                cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/me/topic-drafts                        cors.New → v1Headers → fiberAdapter.Handle
@@ -343,6 +344,7 @@ PUT    /api/v1/me/notification-preferences/muted-types/:muted_type cors.New → 
 PUT    /api/v1/me/notifications/read-marker           cors.New → v1Headers → fiberAdapter.Handle
 PUT    /api/v1/me/nsfw-display                        cors.New → v1Headers → fiberAdapter.Handle
 PUT    /api/v1/me/preferences                         cors.New → v1Headers → fiberAdapter.Handle
+PUT    /api/v1/me/profile-settings                    cors.New → v1Headers → fiberAdapter.Handle
 PUT    /api/v1/me/shop/loadout/:scope/:slot           cors.New → v1Headers → fiberAdapter.Handle
 PUT    /api/v1/me/walls/:subject_type/:subject_id/follow cors.New → v1Headers → fiberAdapter.Handle
 PUT    /api/v1/me/walls/:subject_type/:subject_id/read-marker cors.New → v1Headers → fiberAdapter.Handle

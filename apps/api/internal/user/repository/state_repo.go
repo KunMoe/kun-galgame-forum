@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 
@@ -95,5 +96,20 @@ func (r *StateRepository) UpdateMutedTypes(userID int, keys []string) error {
 	return r.db.Exec(
 		`UPDATE kungal_user_state SET muted_notification_types = ?::jsonb WHERE user_id = ?`,
 		string(data), userID,
+	).Error
+}
+
+func (r *StateRepository) ProfileSignInRequired(ctx context.Context, userID int) (bool, error) {
+	var required bool
+	err := r.db.WithContext(ctx).Raw(
+		`SELECT is_profile_sign_in_required FROM kungal_user_state WHERE user_id = ?`, userID,
+	).Scan(&required).Error
+	return required, err
+}
+
+func (r *StateRepository) SetProfileSignInRequired(userID int, required bool) error {
+	return r.db.Exec(
+		`UPDATE kungal_user_state SET is_profile_sign_in_required = ? WHERE user_id = ?`,
+		required, userID,
 	).Error
 }

@@ -259,7 +259,7 @@ func Register(u *Users) func(huma.API) {
 			}),
 		}), u.listUsers)
 
-		huma.Register(api, v1.Public(huma.Operation{
+		huma.Register(api, v1.ProfileGated(v1.Optional(huma.Operation{
 			OperationID: "getUser",
 			Method:      http.MethodGet,
 			Path:        "/users/{user_id}",
@@ -272,7 +272,7 @@ func Register(u *Users) func(huma.API) {
 			Responses: problemResponses(map[int]string{
 				503: "SERVICE_UNAVAILABLE when the account service cannot be reached.",
 			}),
-		}), u.getUser)
+		}), "user_id"), u.getUser)
 
 		huma.Register(api, v1.Public(huma.Operation{
 			OperationID: "getAccountPrices",
@@ -346,6 +346,7 @@ func Register(u *Users) func(huma.API) {
 			}),
 		})), u.createCreatorApplication)
 
+		u.registerProfileSettings(api)
 		u.registerFollows(api)
 		u.registerLists(api)
 		u.registerAdminPurge(api)

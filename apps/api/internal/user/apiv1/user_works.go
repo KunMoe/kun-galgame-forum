@@ -16,7 +16,7 @@ import (
 )
 
 func (s *Users) registerWorkLists(api huma.API) {
-	huma.Register(api, v1.Optional(huma.Operation{
+	huma.Register(api, v1.ProfileGated(v1.Optional(huma.Operation{
 		OperationID: "listUserWorks",
 		Method:      http.MethodGet,
 		Path:        "/users/{user_id}/works",
@@ -30,9 +30,9 @@ func (s *Users) registerWorkLists(api huma.API) {
 			400: "UNKNOWN_ENUM_VALUE when relation is not in this collection's vocabulary. LIMIT_TOO_LARGE when limit is greater than 100. INVALID_PARAMETER when page × limit exceeds 10000.",
 			503: "SERVICE_UNAVAILABLE when the account service or catalog cannot be reached.",
 		}),
-	}), s.listUserWorks)
+	}), "user_id"), s.listUserWorks)
 
-	huma.Register(api, v1.Optional(huma.Operation{
+	huma.Register(api, v1.ProfileGated(v1.Optional(huma.Operation{
 		OperationID: "listUserGalgameResources",
 		Method:      http.MethodGet,
 		Path:        "/users/{user_id}/galgame-resources",
@@ -45,9 +45,9 @@ func (s *Users) registerWorkLists(api huma.API) {
 			400: "UNKNOWN_ENUM_VALUE when relation or state is not in this collection's vocabulary. LIMIT_TOO_LARGE when limit is greater than 100. INVALID_PARAMETER when page × limit exceeds 10000.",
 			503: "SERVICE_UNAVAILABLE when the account service or catalog cannot be reached.",
 		}),
-	}), s.listUserGalgameResources)
+	}), "user_id"), s.listUserGalgameResources)
 
-	huma.Register(api, v1.Optional(huma.Operation{
+	huma.Register(api, v1.ProfileGated(v1.Optional(huma.Operation{
 		OperationID: "listUserWallComments",
 		Method:      http.MethodGet,
 		Path:        "/users/{user_id}/wall-comments",
@@ -62,7 +62,7 @@ func (s *Users) registerWorkLists(api huma.API) {
 			400: "UNKNOWN_ENUM_VALUE when relation or subject_type is not in this collection's vocabulary. LIMIT_TOO_LARGE when limit is greater than 100. INVALID_CURSOR when the cursor is malformed or was issued for different filters.",
 			503: "SERVICE_UNAVAILABLE when the account service or community service cannot be reached.",
 		}),
-	}), s.listUserWallComments)
+	}), "user_id"), s.listUserWallComments)
 }
 
 func (s *Users) listUserWorks(ctx context.Context, in *listUserWorksInput) (*listUserWorksOutput, error) {
