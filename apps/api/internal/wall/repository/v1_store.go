@@ -5,6 +5,8 @@ import (
 	"math"
 	"time"
 
+	msgModel "kun-galgame-api/internal/message/model"
+
 	"gorm.io/gorm"
 )
 
@@ -145,14 +147,17 @@ type Message struct {
 	Type       string
 	Content    string
 	Link       string
+	Ref        msgModel.Ref
 }
 
 func (s *Store) InsertMessageOnce(m Message) error {
-	return s.db.Exec(`INSERT INTO message (sender_id, receiver_id, type, content, link, status, created, updated)
-		SELECT ?, ?, ?, ?, ?, 'unread', now(), now()
-		WHERE NOT EXISTS (SELECT 1 FROM message WHERE sender_id = ? AND receiver_id = ? AND type = ? AND content = ? AND link = ?)`,
+	return s.db.Exec(`INSERT INTO message (sender_id, receiver_id, type, content, link, status,
+			subject_kind, subject_id, root_kind, root_id, created, updated)
+		SELECT ?, ?, ?, ?, ?, 'unread', ?, ?, ?, ?, now(), now()
+		WHERE NOT EXISTS (SELECT 1 FROM message WHERE sender_id = ? AND receiver_id = ? AND type = ? AND subject_kind = ? AND subject_id = ?)`,
 		m.SenderID, m.ReceiverID, m.Type, m.Content, m.Link,
-		m.SenderID, m.ReceiverID, m.Type, m.Content, m.Link).Error
+		m.Ref.SubjectKind, m.Ref.SubjectID, m.Ref.RootKind, m.Ref.RootID,
+		m.SenderID, m.ReceiverID, m.Type, m.Ref.SubjectKind, m.Ref.SubjectID).Error
 }
 
 // The feed keys rows by an int4 source id; a community post id beyond it

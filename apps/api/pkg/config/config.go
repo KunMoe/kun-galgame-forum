@@ -32,6 +32,11 @@ type Config struct {
 	Lottery        LotteryConfig
 	Bearer         BearerConfig
 	AppRelease     AppReleaseConfig
+	Notification   NotificationConfig
+}
+
+type NotificationConfig struct {
+	RetentionDays int
 }
 
 // ClientIDs is the allow-list of OAuth clients whose user access tokens may
@@ -360,8 +365,13 @@ func Load() (*Config, error) {
 			JWKSURL:   envOrDefault("KUN_OIDC_JWKS_URL", oauthOrigin+"/oauth/jwks"),
 			ClientIDs: splitCSV(os.Getenv("KUN_BEARER_CLIENT_IDS")),
 		},
-		AppRelease: appRelease,
+		AppRelease:   appRelease,
+		Notification: loadNotification(),
 	}, nil
+}
+
+func loadNotification() NotificationConfig {
+	return NotificationConfig{RetentionDays: envOrDefaultInt("KUN_NOTIFICATION_RETENTION_DAYS", 365)}
 }
 
 func oauthOriginOf(serverURL string) string {

@@ -4,6 +4,7 @@ import (
 	"kun-galgame-api/internal/constants"
 	"kun-galgame-api/internal/infrastructure/markdown"
 	msgModel "kun-galgame-api/internal/message/model"
+	msgRepo "kun-galgame-api/internal/message/repository"
 	msgService "kun-galgame-api/internal/message/service"
 
 	"gorm.io/gorm"
@@ -16,12 +17,20 @@ func (InteractionHelpers) CreateTopicMessageWithContent(
 	senderID, receiverID int,
 	msgType, content string,
 	topicID, replyFloor, commentID int,
+	ref msgModel.Ref,
 ) error {
 	if senderID == receiverID || receiverID <= 0 {
 		return nil
 	}
-	link := msgService.BuildTopicLink(topicID, replyFloor, commentID)
-	return createDedupMessage(tx, senderID, receiverID, msgType, content, link)
+	return msgRepo.InsertOnce(tx, &msgModel.Message{
+		SenderID:   senderID,
+		ReceiverID: receiverID,
+		Type:       msgType,
+		Content:    content,
+		Link:       msgService.BuildTopicLink(topicID, replyFloor, commentID),
+		Status:     "unread",
+		Ref:        ref,
+	})
 }
 
 func (InteractionHelpers) CreateReplyMessage(
@@ -29,6 +38,7 @@ func (InteractionHelpers) CreateReplyMessage(
 	senderID, receiverID int,
 	msgType, content string,
 	topicID, replyFloor, commentID int,
+	ref msgModel.Ref,
 ) error {
 	if senderID == receiverID || receiverID <= 0 {
 		return nil
@@ -41,28 +51,7 @@ func (InteractionHelpers) CreateReplyMessage(
 		Content:    content,
 		Link:       link,
 		Status:     "unread",
-	}).Error
-}
-
-func createDedupMessage(tx *gorm.DB, senderID, receiverID int, msgType, content, link string) error {
-	if senderID == receiverID || receiverID <= 0 {
-		return nil
-	}
-	var count int64
-	tx.Model(&msgModel.Message{}).
-		Where("sender_id = ? AND receiver_id = ? AND type = ? AND link = ?",
-			senderID, receiverID, msgType, link).
-		Count(&count)
-	if count > 0 {
-		return nil
-	}
-	return tx.Create(&msgModel.Message{
-		SenderID:   senderID,
-		ReceiverID: receiverID,
-		Type:       msgType,
-		Content:    content,
-		Link:       link,
-		Status:     "unread",
+		Ref:        ref,
 	}).Error
 }
 
@@ -78,13 +67,13 @@ func RecomputeTopicCounts(tx *gorm.DB, topicID int) error {
 	return recomputeTopicCounts(tx, topicID)
 }
 
-func (h InteractionHelpers) NotifyMentionsLimited(tx *gorm.DB, senderID, topicID, replyFloor, commentID int, content string, limit int, muted map[int]bool) error {
+func (h InteractionHelpers) NotifyMentionsLimited(tx *gorm.DB, senderID, topicID, replyFloor, commentID int, ref msgModel.Ref, content string, limit int, muted map[int]bool) error {
 	preview := truncate(markdown.StripReferenceTokens(content), constants.TextPreviewLength)
 	for _, uid := range MentionedIDs(content, limit) {
 		if muted[uid] {
 			continue
 		}
-		if err := h.CreateTopicMessageWithContent(tx, senderID, uid, "mentioned", preview, topicID, replyFloor, commentID); err != nil {
+		if err := h.CreateTopicMessageWithContent(tx, senderID, uid, "mentioned", preview, topicID, replyFloor, commentID, ref); err != nil {
 			return err
 		}
 	}

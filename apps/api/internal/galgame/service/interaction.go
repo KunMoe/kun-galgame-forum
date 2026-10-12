@@ -4,62 +4,44 @@ import (
 	"fmt"
 
 	msgModel "kun-galgame-api/internal/message/model"
+	msgRepo "kun-galgame-api/internal/message/repository"
 
 	"gorm.io/gorm"
 )
 
 type InteractionHelpers struct{}
 
-func (InteractionHelpers) CreateGalgameMessageWithContent(
+func (InteractionHelpers) CreateRatingLikedMessage(
 	tx *gorm.DB,
 	senderID, receiverID int,
-	msgType, content string,
-	workID int,
+	content string,
+	workID, ratingID int,
 ) error {
 	if senderID == receiverID || receiverID <= 0 {
 		return nil
 	}
-	link := fmt.Sprintf("/galgame/%d", workID)
-
-	var count int64
-	tx.Model(&msgModel.Message{}).
-		Where("sender_id = ? AND receiver_id = ? AND type = ? AND link = ?",
-			senderID, receiverID, msgType, link).
-		Count(&count)
-	if count > 0 {
-		return nil
-	}
-
-	return tx.Create(&msgModel.Message{
+	return msgRepo.InsertOnce(tx, &msgModel.Message{
 		SenderID: senderID, ReceiverID: receiverID,
-		Type: msgType, Content: content, Link: link, Status: "unread",
-	}).Error
+		Type: "liked", Content: content, Link: fmt.Sprintf("/galgame/%d", workID), Status: "unread",
+		Ref: msgModel.RatingRef(ratingID, workID),
+	})
 }
 
 func (InteractionHelpers) CreateGalgameCommentMention(
 	tx *gorm.DB,
 	senderID, receiverID int,
 	content string,
-	workID, commentID int,
+	workID int,
+	postID int64,
 ) error {
 	if senderID == receiverID || receiverID <= 0 {
 		return nil
 	}
 	// `thread` makes CommunityContainer treat `comment` as a legacy id and
 	// resolve it through /comments/locate, so a community post id never scrolls.
-	link := fmt.Sprintf("/galgame/%d?comment=%d", workID, commentID)
-
-	var count int64
-	tx.Model(&msgModel.Message{}).
-		Where("sender_id = ? AND receiver_id = ? AND type = ? AND link = ?",
-			senderID, receiverID, "mentioned", link).
-		Count(&count)
-	if count > 0 {
-		return nil
-	}
-
-	return tx.Create(&msgModel.Message{
+	return msgRepo.InsertOnce(tx, &msgModel.Message{
 		SenderID: senderID, ReceiverID: receiverID,
-		Type: "mentioned", Content: content, Link: link, Status: "unread",
-	}).Error
+		Type: "mentioned", Content: content, Link: fmt.Sprintf("/galgame/%d?comment=%d", workID, postID), Status: "unread",
+		Ref: msgModel.CommunityPostRef(postID, msgModel.WorkRef(workID)),
+	})
 }

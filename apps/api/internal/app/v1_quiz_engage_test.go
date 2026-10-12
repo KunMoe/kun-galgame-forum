@@ -99,6 +99,9 @@ func TestV1CreateQuizAnswerOK(t *testing.T) {
 		AND link = ? AND content = '选择「正确」，回答正确'`, w3UserBob, w3UserGrant, "/galgame-quiz/"+idStr(g2QJudge)); n != 1 {
 		t.Errorf("the author was not told about the answer: %d quiz-answered rows", n)
 	}
+	answerID := f.scalar(t, `SELECT id FROM galgame_quiz_answer WHERE quiz_id = ? AND user_id = ?`, g2QJudge, w3UserBob)
+	wantNotifRefs(t, f.db, []string{notifRef("quiz-answered", "quiz_answer", answerID, "quiz", g2QJudge)},
+		"sender_id = ? AND receiver_id = ? AND type = 'quiz-answered'", w3UserBob, w3UserGrant)
 }
 
 func TestV1PutDeleteQuizFavorite(t *testing.T) {

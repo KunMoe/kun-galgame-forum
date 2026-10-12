@@ -14,6 +14,7 @@ import (
 	"sync"
 	"time"
 
+	msgModel "kun-galgame-api/internal/message/model"
 	msgService "kun-galgame-api/internal/message/service"
 	"kun-galgame-api/internal/moemoepoint"
 	topicModel "kun-galgame-api/internal/topic/model"
@@ -447,6 +448,7 @@ func (s *LotteryService) afterDraw(
 			Kind:       msgService.NotifyLotteryWon,
 			Content:    content,
 			TopicID:    lottery.TopicID,
+			Ref:        msgModel.LotteryRef(lottery.ID, lottery.TopicID),
 		})
 		if prize.Delivery == topicModel.LotteryDeliveryPoint && winners[i].PointAwarded > 0 {
 			// content_approved is the only credit reason infra exposes to a
@@ -471,6 +473,7 @@ func (s *LotteryService) afterDraw(
 			Kind:       msgService.NotifyLotteryClosed,
 			Content:    fmt.Sprintf("您参与的抽奖「%s」已经开奖, 很遗憾这次没有中奖", lottery.Title),
 			TopicID:    lottery.TopicID,
+			Ref:        msgModel.LotteryRef(lottery.ID, lottery.TopicID),
 		})
 	}
 	if refund > 0 {
@@ -512,6 +515,7 @@ func (s *LotteryService) sweepClosedPolls() int {
 				Kind:       msgService.NotifyPollClosed,
 				Content:    fmt.Sprintf("您参与的投票「%s」已经截止, 可以查看结果了", poll.Title),
 				TopicID:    poll.TopicID,
+				Ref:        msgModel.PollRef(poll.ID, poll.TopicID),
 			})
 		}
 		if err := s.notifier.EmitMany(nil, specs); err != nil {
@@ -546,6 +550,7 @@ func (s *LotteryService) sweepExpiredClaims() int {
 			Content: fmt.Sprintf("您在抽奖「%s」中的兑换码超过领取期限未领取, 已作废",
 				lottery.Title),
 			TopicID: lottery.TopicID,
+			Ref:     msgModel.LotteryRef(lottery.ID, lottery.TopicID),
 		})
 	}
 	if err := s.notifier.EmitMany(nil, specs); err != nil {

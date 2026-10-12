@@ -255,6 +255,8 @@ func TestV1RatingsLike(t *testing.T) {
 	if n := f.count(t, `SELECT count(*) FROM message WHERE sender_id = ? AND receiver_id = ? AND type = 'liked'`, grBob, grAlice); n != 1 {
 		t.Errorf("%d like notifications, want 1", n)
 	}
+	wantNotifRefs(t, f.db, []string{notifRef("liked", "rating", grRatingAlice, "work", grWorkSFW)},
+		"sender_id = ? AND receiver_id = ? AND type = 'liked'", grBob, grAlice)
 	_, out := f.onRating(t, http.MethodGet, "gr-bob", grRatingAlice, "", nil)
 	if out["viewer"].(map[string]any)["has_liked"] != true || len(out["likers"].([]any)) != 1 {
 		t.Errorf("detail after like: %v", out)

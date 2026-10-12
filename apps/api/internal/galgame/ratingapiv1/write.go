@@ -341,7 +341,7 @@ func (s *Service) setLike(ctx context.Context, rawID string, want bool) (*engage
 		if utf8.RuneCountInString(preview) > constants.TextPreviewLength {
 			preview = string([]rune(preview)[:constants.TextPreviewLength])
 		}
-		return s.Notify(tx, viewer.ID, r.UserID, preview, r.WorkID)
+		return s.Notify(tx, viewer.ID, r.UserID, preview, r.WorkID, r.ID)
 	})
 	if err != nil {
 		return nil, problem.Internal(err)

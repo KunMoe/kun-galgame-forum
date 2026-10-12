@@ -93,7 +93,7 @@ func (w *Writes) createTopic(ctx context.Context, in *createTopicInput) (*create
 		if err := repository.WatchOwnTopic(tx, user.ID, topic.ID); err != nil {
 			return err
 		}
-		if err := w.notifyMentions(tx, user.ID, topic.ID, 0, body); err != nil {
+		if err := w.notifyTopicMentions(tx, user.ID, topic.ID, body); err != nil {
 			return err
 		}
 		topicID = topic.ID

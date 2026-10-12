@@ -9,6 +9,7 @@ import (
 
 	"kun-galgame-api/internal/galgame/model"
 	msgModel "kun-galgame-api/internal/message/model"
+	msgRepo "kun-galgame-api/internal/message/repository"
 
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -410,25 +411,15 @@ func (s *ResourceV1Store) SetStatus(tx *gorm.DB, resourceID, status int) error {
 	return tx.Exec(`UPDATE galgame_resource SET status = ? WHERE id = ?`, status, resourceID).Error
 }
 
-func (s *ResourceV1Store) CreateGalgameMessage(tx *gorm.DB, senderID, receiverID int, msgType, content string, workID int) error {
+func (s *ResourceV1Store) CreateResourceMessage(tx *gorm.DB, senderID, receiverID int, msgType, content string, workID, resourceID int) error {
 	if senderID == receiverID || receiverID <= 0 {
 		return nil
 	}
-	link := "/galgame/" + strconv.Itoa(workID)
-	var count int64
-	if err := tx.Model(&msgModel.Message{}).
-		Where("sender_id = ? AND receiver_id = ? AND type = ? AND link = ?",
-			senderID, receiverID, msgType, link).
-		Count(&count).Error; err != nil {
-		return err
-	}
-	if count > 0 {
-		return nil
-	}
-	return tx.Create(&msgModel.Message{
+	return msgRepo.InsertOnce(tx, &msgModel.Message{
 		SenderID: senderID, ReceiverID: receiverID,
-		Type: msgType, Content: content, Link: link, Status: "unread",
-	}).Error
+		Type: msgType, Content: content, Link: "/galgame/" + strconv.Itoa(workID), Status: "unread",
+		Ref: msgModel.ResourceRef(resourceID, workID),
+	})
 }
 
 func (s *ResourceV1Store) PutPublishBan(workID int) error {

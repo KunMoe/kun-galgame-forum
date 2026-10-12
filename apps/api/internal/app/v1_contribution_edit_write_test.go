@@ -58,6 +58,8 @@ func TestV1CreateWorkEditProposal(t *testing.T) {
 	if got := f.messages(t, "requested", w3UserBob); len(got) != 1 || got[0] != "EditLive（中）" {
 		t.Errorf("owner notification %v", got)
 	}
+	wantNotifRefs(t, f.db, []string{notifRef("requested", "edit_proposal", asInt(id), "work", g7bWork)},
+		"receiver_id = ? AND type = 'requested'", w3UserBob)
 
 	resp, body = f.call(t, http.MethodPost, path, spec, g7bSessAlice, keyUUID(7001), payload)
 	if resp.StatusCode != http.StatusCreated || strID(body["id"]) != id {
@@ -273,6 +275,8 @@ func TestV1MergeEditProposal(t *testing.T) {
 	if got := f.messages(t, "merged", w3UserAlice); len(got) != 1 || got[0] != "EditLive（中）" {
 		t.Errorf("merged notification %v", got)
 	}
+	wantNotifRefs(t, f.db, []string{notifRef("merged", "edit_proposal", int(f.pOpenAlice), "work", g7bWork)},
+		"receiver_id = ? AND type = 'merged'", w3UserAlice)
 	if n := f.scalar(t, `SELECT count(*) FROM galgame WHERE id = ? AND resource_update_time > '2026-09-01 12:00:00+00'`, g7bWork); n != 1 {
 		t.Error("resource_update_time not bumped")
 	}
@@ -353,6 +357,8 @@ func TestV1DeclineEditProposal(t *testing.T) {
 	if got := f.messages(t, "declined", w3UserAlice); len(got) != 1 || got[0] != "EditLive（中）：duplicate of #12" {
 		t.Errorf("the decline reason must reach the proposer %v", got)
 	}
+	wantNotifRefs(t, f.db, []string{notifRef("declined", "edit_proposal", int(f.pOpenAlice), "work", g7bWork)},
+		"receiver_id = ? AND type = 'declined'", w3UserAlice)
 	if n := len(f.snapshotAwards()); n != 0 {
 		t.Errorf("a decline awards nothing, %d", n)
 	}

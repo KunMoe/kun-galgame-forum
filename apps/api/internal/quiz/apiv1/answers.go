@@ -182,7 +182,7 @@ func (s *Service) createQuizAnswer(ctx context.Context, in *createAnswerInput) (
 		if err := s.store.BumpAnswerStats(tx, row.ID, correct); err != nil {
 			return err
 		}
-		return s.store.NotifyAnswered(tx, user.ID, row.UserID, row.ID, repository.AnswerNotice(row.Type, choices, toInts(in.Body.ChoiceIndexes), in.Body.JudgeChoice, correct))
+		return s.store.NotifyAnswered(tx, user.ID, row.UserID, ans, repository.AnswerNotice(row.Type, choices, toInts(in.Body.ChoiceIndexes), in.Body.JudgeChoice, correct))
 	})
 	if err != nil {
 		if errors.Is(err, repository.ErrAlreadyExists) {

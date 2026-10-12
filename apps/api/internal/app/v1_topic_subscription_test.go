@@ -169,6 +169,8 @@ func TestV1SubscriptionFanOutFolds(t *testing.T) {
 	if n := f.notices(t, w3UserAlice, "replied"); len(n) != 1 {
 		t.Fatalf("the watching author's replied: %+v", n)
 	}
+	wantNotifRefs(t, f.db, []string{notifRef("subscribed-topic", "reply", f.replyAtFloor(t, w3TopicFloors, 4), "topic", w3TopicFloors)},
+		"receiver_id = ? AND type = 'subscribed-topic'", w3UserBob)
 	first := bob[0]
 
 	f.mustReply(t, w3TopicFloors, "sess-alice", 2, "second")
@@ -188,6 +190,10 @@ func TestV1SubscriptionFanOutFolds(t *testing.T) {
 	if len(other) != 1 || other[0].Sender != w3UserAlice || other[0].ItemCount != 1 {
 		t.Fatalf("other's fold opened on alice's reply: %+v", other)
 	}
+	wantNotifRefs(t, f.db, []string{notifRef("subscribed-topic", "reply", f.replyAtFloor(t, w3TopicFloors, 6), "topic", w3TopicFloors)},
+		"receiver_id = ? AND type = 'subscribed-topic'", w3UserBob)
+	wantNotifRefs(t, f.db, []string{notifRef("subscribed-topic", "reply", f.replyAtFloor(t, w3TopicFloors, 5), "topic", w3TopicFloors)},
+		"receiver_id = ? AND type = 'subscribed-topic'", w3UserOther)
 
 	resp, raw := f.doJSON(t, http.MethodGet, "/api/v1/me/notifications?limit=5", "sess-bob",
 		"/me/notifications", "", nil, nil)
@@ -214,10 +220,12 @@ func TestV1SubscriptionMentionAndMute(t *testing.T) {
 	f.setSubscription(t, "sess-bob", w3TopicFloors, "watching")
 	f.setSubscription(t, "sess-muted", w3TopicFloors, "muted")
 
-	f.mustReply(t, w3TopicFloors, "sess-other", 1, "hey "+mention(w3UserBob)+" and "+mention(muted))
+	floor := f.mustReply(t, w3TopicFloors, "sess-other", 1, "hey "+mention(w3UserBob)+" and "+mention(muted))
 	if n := f.notices(t, w3UserBob, "mentioned"); len(n) != 1 {
 		t.Fatalf("mention %+v", n)
 	}
+	wantNotifRefs(t, f.db, []string{notifRef("mentioned", "reply", f.replyAtFloor(t, w3TopicFloors, floor), "topic", w3TopicFloors)},
+		"receiver_id = ? AND type = 'mentioned'", w3UserBob)
 	if n := f.notices(t, w3UserBob, "subscribed-topic"); len(n) != 0 {
 		t.Fatalf("a mentioned watcher also got the fold: %+v", n)
 	}
@@ -418,4 +426,13 @@ func TestV1ListTopicSubscriptions(t *testing.T) {
 	if resp.StatusCode != 400 || problemMap(t, raw)["code"] != "LIMIT_TOO_LARGE" {
 		t.Fatalf("limit 101 %d %s", resp.StatusCode, raw)
 	}
+}
+
+func (f *writeFix) replyAtFloor(t *testing.T, topicID, floor int) int {
+	t.Helper()
+	var id int
+	if err := f.db.Raw(`SELECT id FROM topic_reply WHERE topic_id = ? AND floor = ?`, topicID, floor).Row().Scan(&id); err != nil {
+		t.Fatal(err)
+	}
+	return id
 }

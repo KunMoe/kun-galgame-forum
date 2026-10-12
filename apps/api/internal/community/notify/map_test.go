@@ -1,10 +1,12 @@
 package notify
 
 import (
+	"strconv"
 	"strings"
 	"testing"
 
 	"kun-galgame-api/internal/community/anchor"
+	"kun-galgame-api/internal/message/model"
 	"kun-galgame-api/pkg/communityclient"
 )
 
@@ -391,4 +393,60 @@ func TestMapNotice(t *testing.T) {
 	if got := MapNotification(bare, nil, nil); got != nil {
 		t.Fatalf("a kind 11 row without notice mapped to %+v", got)
 	}
+}
+
+func TestMapNotificationRefs(t *testing.T) {
+	top := &communityclient.PostView{ID: 100, ContentRaw: "hi"}
+	target := &anchor.Target{Link: "/x"}
+	on := func(kind int32, anchorKind int32, anchorID string, post *int64) communityclient.NotificationView {
+		n := baseNote(kind)
+		n.AnchorKind = anchorKind
+		n.AnchorID = anchorID
+		n.PostID = post
+		return n
+	}
+	followed := baseNote(communityclient.InboxFollowed)
+	followed.PostID = nil
+	activity := baseNote(communityclient.InboxFolloweeActivity)
+	activity.Activity = &communityclient.NotificationActivityView{ID: 101, Title: "a", URL: "https://www.kungal.com/topic/1"}
+	noActivity := baseNote(communityclient.InboxFolloweeActivity)
+	notice := baseNote(communityclient.InboxNotice)
+	notice.Notice = &communityclient.NotificationNoticeView{ID: 31, Topic: "shop_restock", Title: "restock"}
+
+	cases := []struct {
+		name string
+		note communityclient.NotificationView
+		want string
+	}{
+		{"site_game post", on(communityclient.InboxReplied, communityclient.AnchorSiteGame, "4178", ptrInt64(100)), "community_post:100 work:4178"},
+		{"resource post", on(communityclient.InboxLiked, communityclient.AnchorSiteResource, "resource:42", ptrInt64(100)), "community_post:100 resource:42"},
+		{"rating post", on(communityclient.InboxMentioned, communityclient.AnchorSiteResource, "rating:11", ptrInt64(100)), "community_post:100 rating:11"},
+		{"toolset post", on(communityclient.InboxPosted, communityclient.AnchorSiteResource, "toolset:3", ptrInt64(7)), "community_post:7 toolset:3"},
+		{"website post", on(communityclient.InboxReplied, communityclient.AnchorSiteResource, "website:5", ptrInt64(100)), "community_post:100 website:5"},
+		{"quiz without a post", on(communityclient.InboxPosted, communityclient.AnchorSiteResource, "quiz:4", nil), "quiz:4 quiz:4"},
+		{"unknown source", on(communityclient.InboxPosted, communityclient.AnchorSiteResource, "board:4", ptrInt64(100)), "-:- -:-"},
+		{"kind 8", followed, "user:9 user:9"},
+		{"kind 10", activity, "activity:101 -:-"},
+		{"kind 10 without activity", noActivity, "-:- -:-"},
+		{"kind 11", notice, "notice:31 -:-"},
+	}
+	for _, c := range cases {
+		msg := MapNotification(c.note, top, target)
+		if msg == nil {
+			t.Fatalf("%s: mapped to nil", c.name)
+		}
+		if got := refText(msg.Ref); got != c.want {
+			t.Errorf("%s: refs %q, want %q", c.name, got, c.want)
+		}
+	}
+}
+
+func refText(r model.Ref) string {
+	part := func(kind string, id int64) string {
+		if kind == "" && id == 0 {
+			return "-:-"
+		}
+		return kind + ":" + strconv.FormatInt(id, 10)
+	}
+	return part(r.SubjectKind, r.SubjectID) + " " + part(r.RootKind, r.RootID)
 }

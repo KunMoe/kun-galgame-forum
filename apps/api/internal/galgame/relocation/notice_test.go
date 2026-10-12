@@ -2,6 +2,7 @@ package relocation
 
 import (
 	"errors"
+	"fmt"
 	"strings"
 	"testing"
 	"unicode/utf8"
@@ -113,6 +114,13 @@ func TestNotifyTellsTheUploaderAndTheLikersOfRetiredResourcesOnce(t *testing.T) 
 	}
 	if !strings.Contains(rows[0].Content, "您发布的《Doki Doki》") || !strings.Contains(rows[1].Content, "您点赞过的《Doki Doki》") {
 		t.Errorf("contents = %q / %q", rows[0].Content, rows[1].Content)
+	}
+	var refs []string
+	db.Raw(`SELECT subject_kind || ':' || subject_id || ' ' || root_kind || ':' || root_id FROM message
+		WHERE receiver_id IN ? ORDER BY receiver_id`, []int{uploader, liker}).Scan(&refs)
+	want := fmt.Sprintf("resource:%d work:%d", resEnglishA, workEnglish)
+	if len(refs) != 2 || refs[0] != want || refs[1] != want {
+		t.Errorf("refs = %q, want %q for both readers", refs, want)
 	}
 
 	self := mine[0]

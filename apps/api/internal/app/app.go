@@ -523,6 +523,7 @@ func New(cfg *config.Config) *App {
 			TopicMiniAppDeadlines:      lotteryDrawer.Run,
 			UserPurgeArchiveExpiry:     expirePurgeArchive(adminPurgeRepo),
 			StickerPackRefresh:         stickerPackRefresh,
+			NotificationRetention:      expireReadNotifications(messageRepository, cfg.Notification.RetentionDays),
 		}),
 		StoreLinkStop:       storeLinks.Start(),
 		CommunityNotifyStop: communitynotify.New(communityCli, messageRepository, anchorResolver, rdb).Start(),

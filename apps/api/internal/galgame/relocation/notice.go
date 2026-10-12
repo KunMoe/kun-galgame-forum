@@ -111,6 +111,7 @@ func (s *Store) Notify(senderID int, m Recipient, content string) (bool, error) 
 		Type:       kind,
 		Content:    content,
 		Link:       m.Path(),
+		Ref:        msgModel.ResourceRef(m.ResourceID, m.WorkID),
 	}).Error
 }
 

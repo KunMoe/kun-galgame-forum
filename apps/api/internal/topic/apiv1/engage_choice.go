@@ -8,6 +8,7 @@ import (
 
 	"kun-galgame-api/internal/apiv1/repr"
 	"kun-galgame-api/internal/constants"
+	msgModel "kun-galgame-api/internal/message/model"
 	"kun-galgame-api/internal/moemoepoint"
 	"kun-galgame-api/internal/topic/model"
 	"kun-galgame-api/pkg/problem"
@@ -86,7 +87,7 @@ func (x *Interactions) setBestAnswer(ctx context.Context, in *setTopicReplyInput
 				ref:    moemoepoint.Ref("topic_reply", reply.ID),
 				key:    moemoepoint.KeyNonce("best_answer_set", "topic_reply_"+strconv.Itoa(reply.ID)),
 			})
-			if err := x.emitSolution(tx, user.ID, reply.UserID, replyPlainPreview(*reply), topic.ID, reply.Floor); err != nil {
+			if err := x.emitSolution(tx, user.ID, reply.UserID, replyPlainPreview(*reply), reply); err != nil {
 				return err
 			}
 		}
@@ -168,7 +169,7 @@ func (x *Interactions) pinReply(ctx context.Context, in *setTopicReplyInput) (*t
 		if user.ID == reply.UserID {
 			return nil
 		}
-		return notifyTopicLink(tx, user.ID, reply.UserID, "pin-reply", replyPlainPreview(*reply), topic.ID, reply.Floor)
+		return notifyTopicLink(tx, user.ID, reply.UserID, "pin-reply", replyPlainPreview(*reply), topic.ID, reply.Floor, msgModel.ReplyRef(reply.ID, topic.ID))
 	})
 	if err != nil {
 		return nil, mapEngageErr(err)

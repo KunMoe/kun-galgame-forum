@@ -31,12 +31,14 @@ func TestV1WallCreateOnEachWall(t *testing.T) {
 		{"toolset", rcToolsetA, anchorRes, resAnchor("toolset", rcToolsetA), "SELECT comment_count FROM galgame_toolset WHERE id = ?"},
 		{"website", rcWebsite, anchorRes, resAnchor("website", rcWebsite), "SELECT comment_count FROM galgame_website WHERE id = ?"},
 	}
+	posts := map[string]int{}
 	for i, c := range cases {
 		resp, out := f.create(t, "rc-alice", keyUUID(100+i), createBody(c.typ, c.id, "**hi** "+c.typ))
 		if resp.StatusCode != http.StatusCreated {
 			t.Fatalf("%s: %d %v", c.typ, resp.StatusCode, out)
 		}
 		id := out["id"].(string)
+		posts[c.typ] = asInt(id)
 		if resp.Header.Get("Location") != "/api/v1/wall-comments/"+id {
 			t.Fatalf("%s location %q", c.typ, resp.Header.Get("Location"))
 		}
@@ -70,6 +72,11 @@ func TestV1WallCreateOnEachWall(t *testing.T) {
 	if n := f.count(t, `SELECT COUNT(*) FROM message WHERE receiver_id = ? AND sender_id = ? AND type = 'commented'`, rcBob, rcAlice); n != 3 {
 		t.Fatalf("owner notifications %d, want 3", n)
 	}
+	wantNotifRefs(t, f.db, []string{
+		notifRef("commented", "community_post", posts["galgame_resource"], "resource", rcResource),
+		notifRef("commented", "community_post", posts["galgame_quiz"], "quiz", rcQuizOpen),
+		notifRef("commented", "community_post", posts["toolset"], "toolset", rcToolsetA),
+	}, "receiver_id = ? AND sender_id = ? AND type = 'commented'", rcBob, rcAlice)
 }
 
 func TestV1WallCreateRatingAddressesTheRatingAuthor(t *testing.T) {
@@ -217,6 +224,8 @@ func TestV1WallUpdate(t *testing.T) {
 	if n := f.count(t, `SELECT COUNT(*) FROM message WHERE receiver_id = ? AND type = 'mentioned'`, rcOther); n != 1 {
 		t.Fatalf("newly mentioned notified %d times", n)
 	}
+	wantNotifRefs(t, f.db, []string{notifRef("mentioned", "community_post", int(own), "work", rcGalgame)},
+		"receiver_id = ? AND type = 'mentioned'", rcOther)
 	resp, out = f.onComment(t, http.MethodPatch, "rc-staff", own, "", map[string]any{"content_markdown": "moderated"})
 	if resp.StatusCode != http.StatusOK || out["is_edited_by_moderator"] != true {
 		t.Fatalf("staff edit %d %v", resp.StatusCode, out)

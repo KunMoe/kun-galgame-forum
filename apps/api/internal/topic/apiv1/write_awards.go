@@ -7,6 +7,7 @@ import (
 	"strconv"
 
 	v1 "kun-galgame-api/internal/apiv1"
+	msgModel "kun-galgame-api/internal/message/model"
 	"kun-galgame-api/internal/middleware"
 	"kun-galgame-api/internal/moemoepoint"
 	"kun-galgame-api/internal/topic/model"
@@ -46,13 +47,21 @@ func (w *Writes) flushAwards(awards []pendingAward) {
 	}
 }
 
-func (w *Writes) notifyMentions(tx *gorm.DB, senderID, topicID, replyFloor int, content string) error {
+func (w *Writes) notifyTopicMentions(tx *gorm.DB, senderID, topicID int, content string) error {
+	return w.notifyMentions(tx, senderID, topicID, 0, msgModel.TopicRef(topicID), content)
+}
+
+func (w *Writes) notifyReplyMentions(tx *gorm.DB, senderID int, reply *model.TopicReply, content string) error {
+	return w.notifyMentions(tx, senderID, reply.TopicID, reply.Floor, msgModel.ReplyRef(reply.ID, reply.TopicID), content)
+}
+
+func (w *Writes) notifyMentions(tx *gorm.DB, senderID, topicID, replyFloor int, ref msgModel.Ref, content string) error {
 	muted, err := mutedReaders(tx, topicID, service.MentionedIDs(content, mentionCap))
 	if err != nil {
 		return err
 	}
 	var h service.InteractionHelpers
-	return h.NotifyMentionsLimited(tx, senderID, topicID, replyFloor, 0, content, mentionCap, muted)
+	return h.NotifyMentionsLimited(tx, senderID, topicID, replyFloor, 0, ref, content, mentionCap, muted)
 }
 
 func mutedReaders(tx *gorm.DB, topicID int, userIDs []int) (map[int]bool, error) {

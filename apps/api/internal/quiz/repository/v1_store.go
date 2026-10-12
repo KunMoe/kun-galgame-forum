@@ -10,6 +10,7 @@ import (
 
 	"kun-galgame-api/internal/galgame/model"
 	msgModel "kun-galgame-api/internal/message/model"
+	msgRepo "kun-galgame-api/internal/message/repository"
 
 	"github.com/jackc/pgx/v5/pgconn"
 	"gorm.io/gorm"
@@ -350,21 +351,12 @@ func AnswerNotice(qtype string, choices []string, indexes []int, statementTrue *
 	return "选择「" + picked + "」，回答错误"
 }
 
-func (s *Store) NotifyAnswered(tx *gorm.DB, senderID, receiverID, quizID int, content string) error {
-	link := "/galgame-quiz/" + strconv.Itoa(quizID)
-	var count int64
-	if err := tx.Model(&msgModel.Message{}).
-		Where("sender_id = ? AND receiver_id = ? AND type = ? AND link = ?", senderID, receiverID, "quiz-answered", link).
-		Count(&count).Error; err != nil {
-		return err
-	}
-	if count > 0 {
-		return nil
-	}
-	return tx.Create(&msgModel.Message{
+func (s *Store) NotifyAnswered(tx *gorm.DB, senderID, receiverID int, answer *model.GalgameQuizAnswer, content string) error {
+	return msgRepo.InsertOnce(tx, &msgModel.Message{
 		SenderID: senderID, ReceiverID: receiverID,
-		Type: "quiz-answered", Content: content, Link: link, Status: "unread",
-	}).Error
+		Type: "quiz-answered", Content: content, Link: "/galgame-quiz/" + strconv.Itoa(answer.QuizID), Status: "unread",
+		Ref: msgModel.QuizAnswerRef(answer.ID, answer.QuizID),
+	})
 }
 
 func (s *Store) AnswerersForRegrade(tx *gorm.DB, quizID int) ([]model.GalgameQuizAnswer, error) {

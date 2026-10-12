@@ -75,6 +75,8 @@ func TestV1CreateCommentValuesAndSideEffects(t *testing.T) {
 	if receiver != w3UserBob || link != fmt.Sprintf("/topic/%d?comment=%d", w3TopicFloors, id) {
 		t.Fatalf("commented message to %d link %q", receiver, link)
 	}
+	wantNotifRefs(t, f.db, []string{notifRef("commented", "topic_comment", id, "topic", w3TopicFloors)},
+		"sender_id = ? AND type = 'commented'", w3UserAlice)
 
 	got := awardsFor(f.snapshotAwards(), "topic_comment:"+strconv.Itoa(id))
 	want := awardCall{w3UserBob, 1, "content_approved", "topic_comment:" + strconv.Itoa(id),

@@ -33,6 +33,8 @@ func TestV1PutDeleteGalgameResourceLike(t *testing.T) {
 	if afterPut != before+1 {
 		t.Errorf("liked message %d want %d", afterPut, before+1)
 	}
+	wantNotifRefs(t, f.db, []string{notifRef("liked", "resource", g3ResMain, "work", g3WorkSFW)},
+		"sender_id = ? AND receiver_id = ? AND type = 'liked'", w3UserBob, w3UserAlice)
 
 	resp, got = f.rs(t, http.MethodPut, "/api/v1/galgame-resources/"+idStr(g3ResMain)+"/like",
 		"/galgame-resources/{resource_id}/like", "sess-bob", "", nil)
@@ -92,6 +94,8 @@ func TestV1CreateGalgameResourceExpiryReport(t *testing.T) {
 	if resp.StatusCode != http.StatusOK || got["verdict"] != "unchecked" || got["state"] != "expired" {
 		t.Errorf("unchecked %d %+v", resp.StatusCode, got)
 	}
+	wantNotifRefs(t, f.db, []string{notifRef("expired", "resource", g3ResMain, "work", g3WorkSFW)},
+		"sender_id = ? AND receiver_id = ? AND type = 'expired'", w3UserBob, w3UserAlice)
 }
 
 func TestV1WorkResourcePublishBan(t *testing.T) {

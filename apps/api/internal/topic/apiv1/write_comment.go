@@ -13,6 +13,7 @@ import (
 	"kun-galgame-api/internal/apiv1/repr"
 	"kun-galgame-api/internal/constants"
 	"kun-galgame-api/internal/infrastructure/markdown"
+	msgModel "kun-galgame-api/internal/message/model"
 	"kun-galgame-api/internal/moemoepoint"
 	"kun-galgame-api/internal/topic/model"
 	"kun-galgame-api/internal/topic/service"
@@ -134,7 +135,7 @@ func (w *Writes) createComment(ctx context.Context, in *createCommentInput) (*cr
 		}
 		var h service.InteractionHelpers
 		preview := truncatePreview(strings.TrimSpace(body), constants.TextPreviewLength)
-		return h.CreateReplyMessage(tx, user.ID, inReplyTo, "commented", preview, topic.ID, 0, id)
+		return h.CreateReplyMessage(tx, user.ID, inReplyTo, "commented", preview, topic.ID, 0, id, msgModel.TopicCommentRef(id, topic.ID))
 	})
 	if err != nil {
 		return nil, problem.Internal(err)

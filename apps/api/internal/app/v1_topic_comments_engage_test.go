@@ -167,6 +167,8 @@ func TestV1CommentLikeSlot(t *testing.T) {
 		w3UserBob, w3UserAlice); n != 1 {
 		t.Fatalf("liked messages %d, want 1", n)
 	}
+	wantNotifRefs(t, f.db, []string{notifRef("liked", "topic_comment", w5CommentAlice, "topic", w3TopicFloors)},
+		"sender_id = ? AND receiver_id = ? AND type = 'liked'", w3UserBob, w3UserAlice)
 
 	resp, out = f.commentCall(t, http.MethodDelete, "/like", w5CommentAlice, "sess-bob", nil)
 	if resp.StatusCode != http.StatusOK || asInt(out["like_count"]) != 0 {

@@ -87,6 +87,8 @@ func TestV1CreateReplyValuesAndSideEffects(t *testing.T) {
 	if receiver != w3UserAlice || link != fmt.Sprintf("/topic/%d?reply=4", w3TopicFloors) {
 		t.Fatalf("replied message to %d link %q", receiver, link)
 	}
+	wantNotifRefs(t, f.db, []string{notifRef("replied", "reply", asInt(out["id"]), "topic", w3TopicFloors)},
+		"sender_id = ? AND type = 'replied'", w3UserBob)
 
 	aw := f.snapshotAwards()
 	replyID := asInt(out["id"])
