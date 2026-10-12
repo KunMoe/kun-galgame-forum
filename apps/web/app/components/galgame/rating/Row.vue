@@ -13,12 +13,12 @@ const props = defineProps<{
   rating: GalgameRatingCardOnGalgamePage
 }>()
 
-const playStatusLabel = computed(
-  () =>
-    KUN_GALGAME_PLAY_STATE_MAP[
-      props.rating.play_status as KunGalgamePlayStateRead
-    ] ||
-    props.rating.play_status
+const playStatusLabel = computed(() =>
+  props.rating.play_status
+    ? KUN_GALGAME_PLAY_STATE_MAP[
+        props.rating.play_status as KunGalgamePlayStateRead
+      ] || props.rating.play_status
+    : ''
 )
 
 const recommendLabel = computed(
@@ -65,13 +65,13 @@ const overall = computed(() => props.rating.overall.toFixed(1))
       <span class="text-default-800 font-medium">{{ rating.user.name }}</span>
       <span class="text-default-500">
         <template v-if="rating.play_status === 'wish'">
-          还未开始游玩此游戏
+          还未开始游玩此游戏，
         </template>
-        <template v-else>
+        <template v-else-if="playStatusLabel">
           <span class="text-default-700">{{ playStatusLabel }}</span>
-          了此游戏
+          了此游戏，
         </template>
-        ，表示
+        表示
         <span :class="cn('font-medium', recommendColor)">
           {{ recommendLabel }}
         </span>

@@ -409,6 +409,9 @@ func New(cfg *config.Config) *App {
 	galgameContributorSync := galgameService.NewGalgameContributorSync(catalogCli, galgameContributorRepo, rdb)
 	galgameMergeSync := galgameService.NewGalgameMergeSync(gc, galgameMergeRepo, rdb)
 	galgameCatalogMirror := galgameService.NewGalgameCatalogMirror(gc, galgameLocalRepo, rdb, galgameMergeSync)
+	ratingMirror := galgameService.NewRatingMirror(catalogCli, galgameRepo.NewRatingStore(db), rdb,
+		append([]string{cfg.OAuth.ClientID}, cfg.Bearer.ClientIDs...))
+	galgameV1 := galgameapiv1.New(gc, moyuCli, uc, rdb, cfg.NextMoeAPI.ImageCDNBase).WithWork(db, catalogCli, storeLinks, moemoepoint.Award).WithUserPlane(trustCheck, trustScan, galgameCollectionRepo).WithEditing(notifier)
 
 	adminOverviewRepo := adminRepo.NewOverviewRepository(db)
 	adminPurgeRepo := adminRepo.NewPurgeRepository(db)
@@ -482,10 +485,10 @@ func New(cfg *config.Config) *App {
 		CreatorService:    creatorSvc,
 		Authn:             authn,
 		ImageMeta:         imageMetaResolve(imageMeta),
-		GalgameV1:         galgameapiv1.New(gc, moyuCli, uc, rdb, cfg.NextMoeAPI.ImageCDNBase).WithWork(db, catalogCli, storeLinks, moemoepoint.Award).WithUserPlane(trustCheck, trustScan, galgameCollectionRepo).WithEditing(notifier),
+		GalgameV1:         galgameV1,
 		GalgameEntityV1:   galgameentityv1.New(gc, db, cfg.NextMoeAPI.ImageCDNBase),
 		GalgameCalendarV1: calendarapiv1.New(gc, db, cfg.NextMoeAPI.ImageCDNBase),
-		GalgameRatingV1:   newRatingV1(db, gc, uc, trustCheck, trustScan, galgamePlaytimeSvc, cfg.NextMoeAPI.ImageCDNBase),
+		GalgameRatingV1:   newRatingV1(db, gc, uc, trustCheck, trustScan, galgamePlaytimeSvc, catalogCli, ratingMirror, galgameV1.ForgetMyPlaytimes, cfg.NextMoeAPI.ImageCDNBase),
 		QuizCatalog:       gc,
 		ResourceCatalog:   gc,
 		ResourceClaim: func(ctx context.Context, token string, workID int64) *errors.AppError {
@@ -519,6 +522,7 @@ func New(cfg *config.Config) *App {
 			GalgameCatalogMirror:       galgameCatalogMirror.RunMirror,
 			GalgameCatalogMirrorVerify: galgameCatalogMirror.RunVerify,
 			GalgameMergeSync:           galgameMergeSync.Run,
+			RatingMirror:               ratingMirror.Run,
 			DlsiteCampaignRefresh:      storeLinks.RefreshCampaign,
 			TopicMiniAppDeadlines:      lotteryDrawer.Run,
 			UserPurgeArchiveExpiry:     expirePurgeArchive(adminPurgeRepo),

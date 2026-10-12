@@ -32,6 +32,7 @@ type Jobs struct {
 	GalgameCatalogMirror       func()
 	GalgameCatalogMirrorVerify func()
 	GalgameMergeSync           func()
+	RatingMirror               func()
 	DlsiteCampaignRefresh      func()
 	TopicMiniAppDeadlines      func()
 	UserPurgeArchiveExpiry     func()
@@ -106,6 +107,9 @@ func Start(
 
 	if jobs.GalgameMergeSync != nil {
 		schedule(c, "*/30 * * * *", "galgame 合并同步", jobs.GalgameMergeSync)
+	}
+	if jobs.RatingMirror != nil {
+		schedule(c, "*/2 * * * *", "评分镜像同步", jobs.RatingMirror)
 	}
 
 	// Every minute, not every ten: a lottery deadline is a promise to the people

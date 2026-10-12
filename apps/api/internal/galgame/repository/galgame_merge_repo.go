@@ -28,7 +28,6 @@ var mergeMovableTables = []string{
 var mergeUniqueTables = []struct{ table, peer string }{
 	{"galgame_like", "user_id"},
 	{"galgame_favorite", "user_id"},
-	{"galgame_rating", "user_id"},
 	{"galgame_contributor", "user_id"},
 	{"galgame_quiz_galgame", "quiz_id"},
 }
@@ -128,10 +127,6 @@ func (r *GalgameMergeRepository) FoldTx(tx *gorm.DB, oldWorkID, newWorkID int) (
 		return counts, err
 	}
 
-	if err := preferEngagedRating(tx, oldWorkID, newWorkID); err != nil {
-		return counts, err
-	}
-
 	for _, t := range mergeUniqueTables {
 		moved := tx.Exec(fmt.Sprintf(`
 				UPDATE %[1]s SET work_id = ? WHERE work_id = ?
@@ -209,53 +204,15 @@ func (r *GalgameMergeRepository) FoldTx(tx *gorm.DB, oldWorkID, newWorkID int) (
 
 // archiveByGalgame copies every row a drop is about to delete into
 // galgame_merge_discarded, so the fold never destroys something a user wrote.
-// galgame_rating carries its likes inline because galgame_rating_like cascades
-// off the rating and would vanish with it.
 // The rows to archive are always the dead game's, so oldWorkID is both the label
 // and the filter — an earlier revision took them as separate parameters and a
 // swapped call wrote every archive row with old and new the wrong way round,
 // which reads fine and finds nothing when someone tries to recover from it.
 func archiveByGalgame(tx *gorm.DB, table string, oldWorkID, newWorkID int) error {
-	if table == "galgame_rating" {
-		return archiveRatings(tx, "work_id = ?", oldWorkID, oldWorkID, newWorkID)
-	}
 	return tx.Exec(fmt.Sprintf(`
 		INSERT INTO galgame_merge_discarded (old_work_id, new_work_id, table_name, row)
 		SELECT ?, ?, ?, to_jsonb(t) FROM %s t WHERE t.work_id = ?`, table),
 		oldWorkID, newWorkID, table, oldWorkID).Error
-}
-
-func archiveRatings(tx *gorm.DB, where string, arg any, oldWorkID, newWorkID int) error {
-	return tx.Exec(fmt.Sprintf(`
-		INSERT INTO galgame_merge_discarded (old_work_id, new_work_id, table_name, row)
-		SELECT ?, ?, 'galgame_rating',
-		       to_jsonb(r) || jsonb_build_object('likes', COALESCE((
-		         SELECT jsonb_agg(to_jsonb(l)) FROM galgame_rating_like l
-		         WHERE l.galgame_rating_id = r.id), '[]'::jsonb))
-		FROM galgame_rating r WHERE %s`, where), oldWorkID, newWorkID, arg).Error
-}
-
-// A user who reviewed both copies keeps one review of the one game that is
-// left. Which one survives is not arbitrary: the drop below always favours the
-// survivor's row, so hand the slot to the dead game's review first when more
-// people liked and replied to it — otherwise merging silently demotes the
-// review readers actually engaged with.
-func preferEngagedRating(tx *gorm.DB, oldWorkID, newWorkID int) error {
-	var loser []int
-	if err := tx.Raw(`
-		SELECT s.id FROM galgame_rating s JOIN galgame_rating d ON d.user_id = s.user_id
-		WHERE s.work_id = ? AND d.work_id = ?
-		  AND (d.like_count + d.comment_count) > (s.like_count + s.comment_count)`,
-		newWorkID, oldWorkID).Scan(&loser).Error; err != nil {
-		return err
-	}
-	if len(loser) == 0 {
-		return nil
-	}
-	if err := archiveRatings(tx, "r.id IN ?", loser, oldWorkID, newWorkID); err != nil {
-		return err
-	}
-	return tx.Exec("DELETE FROM galgame_rating WHERE id IN ?", loser).Error
 }
 
 // favorite_count is absent for a related reason since the folder cutover:

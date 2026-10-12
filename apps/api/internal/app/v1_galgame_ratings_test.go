@@ -153,7 +153,7 @@ func TestV1RatingsViewer(t *testing.T) {
 	}
 	check("gr-alice", alice, true, true)
 	check("gr-alice", onSFW, false, false)
-	check("gr-creator", onSFW, false, true)
+	check("gr-creator", onSFW, false, false)
 	check("gr-creator", onSFW2, false, false)
 	check("gr-staff", onSFW2, false, true)
 	check("bearer:gr-staff-token", onSFW2, false, false)

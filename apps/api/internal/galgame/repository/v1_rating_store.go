@@ -33,7 +33,6 @@ type RatingRecord struct {
 	Overall      int             `gorm:"column:overall"`
 	View         int             `gorm:"column:view"`
 	GalgameType  json.RawMessage `gorm:"column:galgame_type"`
-	PlayStatus   string          `gorm:"column:play_status"`
 	ShortSummary string          `gorm:"column:short_summary"`
 	SpoilerLevel string          `gorm:"column:spoiler_level"`
 	Art          int             `gorm:"column:art"`
@@ -48,19 +47,26 @@ type RatingRecord struct {
 	CommentCount int             `gorm:"column:comment_count"`
 	Created      time.Time       `gorm:"column:created"`
 	Updated      time.Time       `gorm:"column:updated"`
+
+	AuthorState      *string `gorm:"column:author_state"`
+	AuthorCompletion *string `gorm:"column:author_completion"`
+	WrittenHere      bool    `gorm:"column:written_here"`
 }
 
 type RatingQuery struct {
 	WorkID       int
 	AuthorID     int
 	SpoilerLevel string
-	PlayStatus   string
-	GameType     string
-	SFWOnly      bool
-	SortColumn   string
-	Descending   bool
-	Offset       int
-	Limit        int
+	// AuthorState and AuthorCompletion filter on the author's current play
+	// state; an empty AuthorState filters nothing, a nil completion means none.
+	AuthorState      string
+	AuthorCompletion *string
+	GameType         string
+	SFWOnly          bool
+	SortColumn       string
+	Descending       bool
+	Offset           int
+	Limit            int
 }
 
 var ratingSortColumns = map[string]string{
@@ -69,8 +75,12 @@ var ratingSortColumns = map[string]string{
 	"overall": "r.overall",
 }
 
+// filtered reads every mirrored rating, including those on works the forum has
+// no local row for yet: such a work counts as rendered, and as adult for the
+// SFW gate, the way a missing content_limit does everywhere else.
 func (s *RatingStore) filtered(q RatingQuery) *gorm.DB {
-	tx := s.db.Table("galgame_rating r").Joins("JOIN galgame g ON g.id = r.work_id").Where("g.catalog_rendered")
+	tx := s.db.Table("galgame_rating r").Joins("LEFT JOIN galgame g ON g.id = r.work_id").
+		Where("COALESCE(g.catalog_rendered, true)")
 	if q.WorkID > 0 {
 		tx = tx.Where("r.work_id = ?", q.WorkID)
 	}
@@ -80,8 +90,8 @@ func (s *RatingStore) filtered(q RatingQuery) *gorm.DB {
 	if q.SpoilerLevel != "" {
 		tx = tx.Where("r.spoiler_level = ?", q.SpoilerLevel)
 	}
-	if q.PlayStatus != "" {
-		tx = tx.Where("r.play_status = ?", q.PlayStatus)
+	if q.AuthorState != "" {
+		tx = tx.Where("r.author_state = ? AND r.author_completion IS NOT DISTINCT FROM ?", q.AuthorState, q.AuthorCompletion)
 	}
 	if q.GameType != "" {
 		raw, _ := json.Marshal([]string{q.GameType})
@@ -152,39 +162,58 @@ func (s *RatingStore) LikedSet(userID int, ratingIDs []int) (map[int]bool, error
 	return out, err
 }
 
-// Create writes the rating and the local work row it hangs off; a second rating
-// of the same work by the same user loses to the unique (user_id, work_id) key.
-func (s *RatingStore) Create(r *model.GalgameRating) error {
+// MirrorRating writes NextMoe's copy of one rating over the local row with the
+// same id, keeping the forum's own columns. NextMoe keys ratings on (user,
+// work) too, so a local row for the same person and work under another id is a
+// rating NextMoe has replaced; it goes first, or the unique key would refuse
+// the new one.
+func (s *RatingStore) MirrorRating(r model.GalgameRating) error {
 	return s.db.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Exec(`INSERT INTO galgame (id, updated) VALUES (?, now()) ON CONFLICT (id) DO NOTHING`, r.WorkID).Error; err != nil {
+		if err := tx.Exec(`DELETE FROM galgame_rating WHERE user_id = ? AND work_id = ? AND id <> ?`,
+			r.UserID, r.WorkID, r.ID).Error; err != nil {
 			return err
 		}
-		var ids []int
-		err := tx.Raw(`INSERT INTO galgame_rating
-			(work_id, user_id, recommend, overall, galgame_type, play_status, short_summary, spoiler_level,
-			 art, story, music, character, route, system, voice, replay_value, created, updated)
-			VALUES (?, ?, ?, ?, ?::jsonb, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, now(), now())
-			ON CONFLICT (user_id, work_id) DO NOTHING RETURNING id`,
-			r.WorkID, r.UserID, r.Recommend, r.Overall, string(r.GalgameType), r.PlayStatus, r.ShortSummary, r.SpoilerLevel,
-			r.Art, r.Story, r.Music, r.Character, r.Route, r.System, r.Voice, r.ReplayValue).Scan(&ids).Error
-		if err != nil {
-			return err
-		}
-		if len(ids) == 0 {
-			return ErrRatingExists
-		}
-		r.ID = ids[0]
-		return nil
+		return tx.Exec(`INSERT INTO galgame_rating
+			(id, work_id, user_id, overall, art, story, music, character, route, system, voice, replay_value,
+			 recommend, spoiler_level, short_summary, author_state, author_completion, client_id, site, written_here,
+			 created, updated)
+			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+			ON CONFLICT (id) DO UPDATE SET
+			  work_id = EXCLUDED.work_id, user_id = EXCLUDED.user_id, overall = EXCLUDED.overall,
+			  art = EXCLUDED.art, story = EXCLUDED.story, music = EXCLUDED.music, character = EXCLUDED.character,
+			  route = EXCLUDED.route, system = EXCLUDED.system, voice = EXCLUDED.voice,
+			  replay_value = EXCLUDED.replay_value, recommend = EXCLUDED.recommend,
+			  spoiler_level = EXCLUDED.spoiler_level, short_summary = EXCLUDED.short_summary,
+			  author_state = EXCLUDED.author_state, author_completion = EXCLUDED.author_completion,
+			  client_id = EXCLUDED.client_id, site = EXCLUDED.site, written_here = EXCLUDED.written_here,
+			  created = EXCLUDED.created, updated = EXCLUDED.updated`,
+			r.ID, r.WorkID, r.UserID, r.Overall, r.Art, r.Story, r.Music, r.Character, r.Route, r.System,
+			r.Voice, r.ReplayValue, r.Recommend, r.SpoilerLevel, r.ShortSummary, r.AuthorState,
+			r.AuthorCompletion, r.ClientID, r.Site, r.WrittenHere, r.CreatedAt, r.UpdatedAt).Error
 	})
 }
 
-func (s *RatingStore) Update(id int, fields map[string]any) error {
-	fields["updated"] = gorm.Expr("now()")
-	return s.db.Table("galgame_rating").Where("id = ?", id).Updates(fields).Error
+// SetGameTypes stores the game types the author filed the work under, which
+// only the forum keeps.
+func (s *RatingStore) SetGameTypes(id int, types json.RawMessage) error {
+	return s.db.Exec(`UPDATE galgame_rating SET galgame_type = ?::jsonb WHERE id = ?`, string(types), id).Error
 }
 
-func (s *RatingStore) Delete(id int) error {
+// DropRating removes a rating NextMoe deleted; its likes cascade with it.
+func (s *RatingStore) DropRating(id int) error {
 	return s.db.Exec(`DELETE FROM galgame_rating WHERE id = ?`, id).Error
+}
+
+// DropUserRating removes the person's rating of a work after they cleared it.
+func (s *RatingStore) DropUserRating(userID, workID int) error {
+	return s.db.Exec(`DELETE FROM galgame_rating WHERE user_id = ? AND work_id = ?`, userID, workID).Error
+}
+
+// UserRatingIDs lists every rating the person has in the mirror.
+func (s *RatingStore) UserRatingIDs(userID int) ([]int, error) {
+	var ids []int
+	err := s.db.Table("galgame_rating").Where("user_id = ?", userID).Order("id").Pluck("id", &ids).Error
+	return ids, err
 }
 
 // SetLike returns the id of the like row it inserted or deleted, or 0 when the
@@ -217,21 +246,4 @@ func (s *RatingStore) CountReviewsWithMinLength(userID, minLen int) (int64, erro
 		Where("user_id = ? AND char_length(short_summary) >= ?", userID, minLen).
 		Count(&n).Error
 	return n, err
-}
-
-func (s *RatingStore) WorkCreators(workIDs []int) (map[int]int, error) {
-	out := make(map[int]int, len(workIDs))
-	if len(workIDs) == 0 {
-		return out, nil
-	}
-	var rows []struct {
-		ID            int `gorm:"column:id"`
-		CreatorUserID int `gorm:"column:creator_user_id"`
-	}
-	err := s.db.Table("galgame").Select("id, creator_user_id").
-		Where("id IN ? AND creator_user_id IS NOT NULL", workIDs).Scan(&rows).Error
-	for _, r := range rows {
-		out[r.ID] = r.CreatorUserID
-	}
-	return out, err
 }

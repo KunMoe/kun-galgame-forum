@@ -481,8 +481,15 @@
             "type": "integer"
           },
           "play_status": {
-            "$ref": "#/components/schemas/PlayStatus",
-            "description": "How far the rater had played when rating."
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PlayState"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The rater's play state on the work now, not when rating; done is finished with how much unstated. null when they have none."
           },
           "rating_id": {
             "description": "Rating id.",
@@ -497,7 +504,7 @@
           },
           "short_summary": {
             "description": "The rater's short review, plain text. Empty string if none, and also when spoiler_level is not none: the review is withheld here. Free text; never use it as a decision input.",
-            "maxLength": 1314,
+            "maxLength": 2000,
             "type": "string"
           },
           "spoiler_level": {
@@ -14861,12 +14868,11 @@
             "type": "string"
           },
           "game_types": {
-            "description": "Game types the author files the work under.",
+            "description": "Game types the author files the work under. Empty when the rating was written on another NextMoe site, which does not ask.",
             "items": {
               "$ref": "#/components/schemas/GameType",
               "description": "A game type the author files the work under."
             },
-            "minItems": 1,
             "type": "array"
           },
           "id": {
@@ -14904,8 +14910,15 @@
             "type": "integer"
           },
           "play_status": {
-            "$ref": "#/components/schemas/PlayStatus",
-            "description": "How far the author had played when rating."
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PlayState"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "null when the author has no play state on the work."
           },
           "recommend": {
             "$ref": "#/components/schemas/RatingRecommend",
@@ -14913,7 +14926,7 @@
           },
           "short_summary": {
             "description": "The author's short review, plain text. Empty string if none. Free text; never use it as a decision input.",
-            "maxLength": 1314,
+            "maxLength": 2000,
             "type": "string"
           },
           "spoiler_level": {
@@ -15010,7 +15023,7 @@
           },
           "play_status": {
             "$ref": "#/components/schemas/PlayStatus",
-            "description": "How far the author had played when rating."
+            "description": "Written as the caller's play state on the work."
           },
           "recommend": {
             "$ref": "#/components/schemas/RatingRecommend",
@@ -15018,7 +15031,7 @@
           },
           "short_summary": {
             "description": "Short review, plain text. Absent means none. Free text; never use it as a decision input.",
-            "maxLength": 1314,
+            "maxLength": 2000,
             "type": "string"
           },
           "spoiler_level": {
@@ -15115,7 +15128,7 @@
           },
           "play_status": {
             "$ref": "#/components/schemas/PlayStatus",
-            "description": "How far the author had played when rating."
+            "description": "Written as the caller's play state on the work."
           },
           "recommend": {
             "$ref": "#/components/schemas/RatingRecommend",
@@ -15123,7 +15136,7 @@
           },
           "short_summary": {
             "description": "Short review, plain text; an empty string removes it. Free text; never use it as a decision input.",
-            "maxLength": 1314,
+            "maxLength": 2000,
             "type": "string"
           },
           "spoiler_level": {
@@ -15183,12 +15196,11 @@
             "type": "string"
           },
           "game_types": {
-            "description": "Game types the author files the work under.",
+            "description": "Game types the author files the work under. Empty when the rating was written on another NextMoe site, which does not ask.",
             "items": {
               "$ref": "#/components/schemas/GameType",
               "description": "A game type the author files the work under."
             },
-            "minItems": 1,
             "type": "array"
           },
           "id": {
@@ -15218,8 +15230,15 @@
             "type": "integer"
           },
           "play_status": {
-            "$ref": "#/components/schemas/PlayStatus",
-            "description": "How far the author had played when rating."
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PlayState"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "null when the author has no play state on the work."
           },
           "recommend": {
             "$ref": "#/components/schemas/RatingRecommend",
@@ -15227,7 +15246,7 @@
           },
           "short_summary": {
             "description": "The author's short review, plain text. Empty string if none. Free text; never use it as a decision input.",
-            "maxLength": 1314,
+            "maxLength": 2000,
             "type": "string"
           },
           "spoiler_level": {
@@ -15295,7 +15314,7 @@
       "RatingViewer": {
         "properties": {
           "can_delete": {
-            "description": "Whether the caller may delete the rating: its author, the work page's creator, or staff holding rating.delete_any.",
+            "description": "Whether the caller may delete the rating: its author, or staff holding rating.delete_any with a role NextMoe lets moderate ratings (moderator, admin or ren).",
             "type": "boolean"
           },
           "can_edit": {
@@ -15452,6 +15471,52 @@
         },
         "required": [
           "has_reacted"
+        ],
+        "type": "object"
+      },
+      "RecordRating": {
+        "properties": {
+          "aspect_scores": {
+            "$ref": "#/components/schemas/AspectScores",
+            "description": "Per-aspect scores, all eight keys, null for an aspect not rated. Absent means none rated."
+          },
+          "game_types": {
+            "description": "Game types to file the work under, each once.",
+            "items": {
+              "$ref": "#/components/schemas/GameType",
+              "description": "A game type the author files the work under."
+            },
+            "maxItems": 4,
+            "minItems": 1,
+            "type": "array",
+            "uniqueItems": true
+          },
+          "overall": {
+            "description": "The overall score.",
+            "format": "int64",
+            "maximum": 10,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "recommend": {
+            "$ref": "#/components/schemas/RatingRecommend",
+            "description": "How strongly the author recommends the work."
+          },
+          "short_summary": {
+            "description": "Short review, plain text, at most 2000 characters. Absent or empty means none. Free text; never use it as a decision input.",
+            "maxLength": 2000,
+            "type": "string"
+          },
+          "spoiler_level": {
+            "$ref": "#/components/schemas/SpoilerLevel",
+            "description": "How much the short summary gives away, as its author declared."
+          }
+        },
+        "required": [
+          "recommend",
+          "overall",
+          "game_types",
+          "spoiler_level"
         ],
         "type": "object"
       },
@@ -24882,13 +24947,13 @@
             "type": "array"
           },
           "rating_count": {
-            "description": "Forum ratings of the work.",
+            "description": "NextMoe ratings of the work, written on any NextMoe site.",
             "format": "int64",
             "minimum": 0,
             "type": "integer"
           },
           "rating_score": {
-            "description": "Bayesian average of the forum's ratings, one decimal. null when rating_count is 0.",
+            "description": "Bayesian average of the work's NextMoe ratings, which every NextMoe site shares, one decimal. null when rating_count is 0.",
             "format": "double",
             "maximum": 10,
             "minimum": 0,
@@ -26090,6 +26155,80 @@
         "type": "string",
         "x-vocabulary-closed": true
       },
+      "WorkRecord": {
+        "properties": {
+          "minutes": {
+            "description": "The most minutes any NextMoe application reported for the caller on the work. 0 when none, or when the report is below 10 minutes, which no median counts.",
+            "format": "int64",
+            "maximum": 60000,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "object": {
+            "const": "work_record",
+            "description": "Type discriminant. Always work_record.",
+            "maxLength": 11,
+            "type": "string"
+          },
+          "play_state": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PlayState"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The caller's play state on the work. null when none."
+          },
+          "rating": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RatingSummary"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The caller's rating of the work, the same on every NextMoe site. null when none."
+          },
+          "work_id": {
+            "description": "The work.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "object",
+          "work_id",
+          "play_state",
+          "minutes",
+          "rating"
+        ],
+        "type": "object"
+      },
+      "WorkRecordPut": {
+        "properties": {
+          "minutes": {
+            "description": "This site's playtime report, in minutes. Absent withdraws it; reports from other applications stay. Below 10 is stored but counted by no median.",
+            "format": "int64",
+            "maximum": 60000,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "play_state": {
+            "$ref": "#/components/schemas/PlayStatus",
+            "description": "The play state. Absent deletes it."
+          },
+          "rating": {
+            "$ref": "#/components/schemas/RecordRating",
+            "description": "The rating. Absent deletes it."
+          }
+        },
+        "type": "object"
+      },
       "WorkRef": {
         "properties": {
           "cover": {
@@ -26862,13 +27001,13 @@
             "type": "string"
           },
           "rating_count": {
-            "description": "Forum ratings of the work.",
+            "description": "NextMoe ratings of the work, written on any NextMoe site.",
             "format": "int64",
             "minimum": 0,
             "type": "integer"
           },
           "rating_score": {
-            "description": "Bayesian average of the forum's ratings, one decimal. null when rating_count is 0.",
+            "description": "Bayesian average of the work's NextMoe ratings, which every NextMoe site shares, one decimal. null when rating_count is 0.",
             "format": "double",
             "maximum": 10,
             "minimum": 0,
@@ -29840,7 +29979,7 @@
     },
     "/admin/user-contents/{user_id}": {
       "delete": {
-        "description": "Deletes everything the user has on this site, with what cascades from it, hands their listed websites to the directory's default owner, then purges their catalog collections and community posts. The account itself is untouched: ban or deregister it at the account service first, or it can keep posting. Every local row the purge deletes or changes is archived for 30 days so a developer can undo it; the catalog and community parts cannot be undone. Purging again is safe and is how a purge that failed after its local part is finished. It needs the user.purge_content permission, which a Bearer request never carries.",
+        "description": "Deletes the user's ratings on NextMoe first, then everything the user has on this site, with what cascades from it, hands their listed websites to the directory's default owner, then purges their catalog collections and community posts. The account itself is untouched: ban or deregister it at the account service first, or it can keep posting. Every local row the purge deletes or changes is archived for 30 days so a developer can undo it; the catalog and community parts cannot be undone. Purging again is safe and is how a purge that failed after its local part is finished. It needs the user.purge_content permission, which a Bearer request never carries.",
         "operationId": "purgeUserContent",
         "parameters": [
           {
@@ -29888,7 +30027,7 @@
                 }
               }
             },
-            "description": "PERMISSION_REQUIRED when the caller lacks user.purge_content. USER_PROTECTED when the user holds the moderation capability."
+            "description": "PERMISSION_REQUIRED when the caller lacks user.purge_content. USER_PROTECTED when the user holds the moderation capability. CATALOG_MODERATION_REQUIRED when the caller lacks NextMoe catalog moderation standing, which deleting ratings needs; nothing was deleted."
           },
           "404": {
             "content": {
@@ -50911,13 +51050,13 @@
             }
           },
           {
-            "description": "Only ratings with this play status. Omitted means any.",
+            "description": "Only ratings whose author is at this play state on the work now. Omitted means any.",
             "explode": false,
             "in": "query",
             "name": "play_status",
             "schema": {
               "$ref": "#/components/schemas/PlayStatus",
-              "description": "Only ratings with this play status. Omitted means any."
+              "description": "Only ratings whose author is at this play state on the work now. Omitted means any."
             }
           },
           {
@@ -51019,7 +51158,7 @@
         ]
       },
       "post": {
-        "description": "Writes the caller's rating of a work and returns it as getRating would. A user rates a work once; change that rating with updateRating. work_id must name a work catalog shows (UNKNOWN_REFERENCE). The author earns moemoepoints by the short summary's length, and the play status is copied to the caller's catalog work state.",
+        "description": "Writes the caller's rating of a work to NextMoe and returns it as getRating would. A user rates a work once, on any NextMoe site; change that rating with updateRating. work_id must name a work catalog shows (UNKNOWN_REFERENCE). The author earns moemoepoints by the short summary's length, and play_status is written as the caller's play state.",
         "operationId": "createRating",
         "parameters": [
           {
@@ -51174,7 +51313,7 @@
     },
     "/ratings/{rating_id}": {
       "delete": {
-        "description": "Deletes the rating with its likes and comments; the author loses the moemoepoints it earned. The author, the work page's creator and staff holding rating.delete_any may delete it; a Bearer request never holds staff powers.",
+        "description": "Deletes the rating from every NextMoe site, with its likes on this forum; the author loses the moemoepoints it earned here. The author and staff holding rating.delete_any may delete it; staff need NextMoe catalog moderation standing as well. A Bearer request never holds staff powers.",
         "operationId": "deleteRating",
         "parameters": [
           {
@@ -51222,7 +51361,7 @@
                 }
               }
             },
-            "description": "PERMISSION_REQUIRED when the caller may not delete the rating; ACCOUNT_BANNED when the caller's account is banned."
+            "description": "PERMISSION_REQUIRED when the caller may not delete the rating; CATALOG_MODERATION_REQUIRED when staff lack NextMoe catalog moderation standing; ACCOUNT_BANNED when the caller's account is banned."
           },
           "404": {
             "content": {
@@ -51372,7 +51511,7 @@
         ]
       },
       "patch": {
-        "description": "Changes the fields sent and returns the rating as getRating would. Only the author may. A changed short summary is checked again and moves the author's moemoepoints by the difference in reward; a changed play status is copied to the caller's catalog work state.",
+        "description": "Changes the fields sent and returns the rating as getRating would. Only the author may. A changed short summary is checked again and, on a rating first written on this forum, moves the author's moemoepoints by the difference in reward; play_status is written as the caller's play state.",
         "operationId": "updateRating",
         "parameters": [
           {
@@ -70505,6 +70644,252 @@
         "summary": "Set the caller's playtime on a work",
         "tags": [
           "works"
+        ]
+      }
+    },
+    "/works/{work_id}/record": {
+      "get": {
+        "description": "The caller's play state, playtime and rating on the work, which one form edits together. All three are NextMoe's and the same on every NextMoe site.",
+        "operationId": "getWorkRecord",
+        "parameters": [
+          {
+            "description": "Work id.",
+            "in": "path",
+            "name": "work_id",
+            "required": true,
+            "schema": {
+              "description": "Work id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkRecord"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "ACCOUNT_BANNED when the caller's account is banned."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when catalog does not show the work."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the account service or catalog cannot be reached."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get the caller's record on a work",
+        "tags": [
+          "galgame-ratings"
+        ]
+      },
+      "put": {
+        "description": "Writes the play state, this site's playtime report and the rating in one NextMoe transaction: all of them or none. The record is replaced whole, so a part the body leaves out is deleted; send every part the form shows. A new rating earns the author moemoepoints by the short summary's length, a changed summary moves them by the difference, and a deleted rating takes them back, for ratings first written on this forum.",
+        "operationId": "putWorkRecord",
+        "parameters": [
+          {
+            "description": "Work id.",
+            "in": "path",
+            "name": "work_id",
+            "required": true,
+            "schema": {
+              "description": "Work id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WorkRecordPut"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkRecord"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "ACCOUNT_BANNED when the caller's account is banned."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when catalog does not show the work."
+          },
+          "413": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Request Entity Too Large"
+          },
+          "415": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unsupported Media Type"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED when a field is out of range; CONTENT_REJECTED when the trust-and-safety check refuses the short summary."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the account service or catalog cannot be reached."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Replace the caller's record on a work",
+        "tags": [
+          "galgame-ratings"
         ]
       }
     },

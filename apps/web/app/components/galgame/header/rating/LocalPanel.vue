@@ -61,7 +61,11 @@ const recommendTally = computed(() =>
   ratingTally(props.ratings.map((rating) => rating.recommend))
 )
 const playStatusTally = computed(() =>
-  ratingTally(props.ratings.map((rating) => rating.play_status))
+  ratingTally(
+    props.ratings.flatMap((rating) =>
+      rating.play_status ? [rating.play_status] : []
+    )
+  )
 )
 </script>
 

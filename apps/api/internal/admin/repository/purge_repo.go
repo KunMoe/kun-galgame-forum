@@ -208,7 +208,6 @@ func (r *PurgeRepository) PurgeUserContent(userID, operatorID int) (PurgeReceipt
 		for _, q := range []string{
 			"DELETE FROM topic_reply WHERE user_id = ?",
 			"DELETE FROM topic_comment WHERE user_id = ?",
-			"DELETE FROM galgame_rating WHERE user_id = ?",
 			"DELETE FROM galgame_resource WHERE user_id = ?",
 			"DELETE FROM galgame_toolset_resource WHERE user_id = ?",
 			"DELETE FROM toolset_upload WHERE user_id = ?",
@@ -304,7 +303,6 @@ func (r *PurgeRepository) PurgeUserContent(userID, operatorID int) (PurgeReceipt
 		}{
 			{recountSpec{"topic", "reply_count", "topic_id", ""}, "topic_reply", affTopics},
 			{recountSpec{"topic", "comment_count", "topic_id", ""}, "topic_comment", affTopics},
-			{recountSpec{"galgame", "rating_count", "work_id", ""}, "galgame_rating", affGalgames},
 			{recountSpec{"galgame", "resource_count", "work_id", ""}, "galgame_resource", affGalgames},
 		}
 		for _, rc := range recounts {
@@ -488,4 +486,12 @@ func (r *PurgeRepository) RestoreArchive(purgeID uuid.UUID, commit bool) (LocalR
 		return LocalRestore{}, err
 	}
 	return out, nil
+}
+
+// UserRatingIDs lists the user's ratings in the mirror. The purge deletes them
+// on NextMoe instead of here.
+func (r *PurgeRepository) UserRatingIDs(userID int) ([]int, error) {
+	var ids []int
+	err := r.db.Table("galgame_rating").Where("user_id = ?", userID).Order("id").Pluck("id", &ids).Error
+	return ids, err
 }

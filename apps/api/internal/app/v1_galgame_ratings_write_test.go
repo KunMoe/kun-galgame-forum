@@ -1,6 +1,7 @@
 package app
 
 import (
+	"context"
 	"net/http"
 	"slices"
 	"strconv"
@@ -10,6 +11,7 @@ import (
 	"kun-galgame-api/internal/constants"
 	"kun-galgame-api/internal/moemoepoint"
 	"kun-galgame-api/internal/trust/gate"
+	"kun-galgame-api/pkg/catalogclient"
 )
 
 const (
@@ -58,8 +60,14 @@ func TestV1RatingsCreate(t *testing.T) {
 	if s := out["aspect_scores"].(map[string]any); s["story"] != 10.0 || s["music"] != nil {
 		t.Errorf("aspect_scores %v", s)
 	}
-	if n := f.count(t, `SELECT count(*) FROM galgame WHERE id = ?`, grWorkFresh); n != 1 {
-		t.Errorf("the work's local row was not created: %d", n)
+	if out["play_status"] != "done_main" {
+		t.Errorf("play_status %v, want the state written before the rating", out["play_status"])
+	}
+	if n := f.count(t, `SELECT count(*) FROM galgame_rating WHERE id = ? AND written_here AND client_id = ?`, id, grForumClient); n != 1 {
+		t.Errorf("the rating NextMoe answered was not mirrored as written here")
+	}
+	if n := f.count(t, `SELECT count(*) FROM galgame WHERE id = ?`, grWorkFresh); n != 0 {
+		t.Errorf("rating a work created its local row: %d", n)
 	}
 	wantAward := awardCall{grAlice, constants.RatingRewardLow, moemoepoint.ReasonContentApproved, grRatingRef(id), ""}
 	if got := f.takeAwards(); len(got) != 1 || got[0].userID != wantAward.userID || got[0].delta != wantAward.delta ||
@@ -85,6 +93,22 @@ func TestV1RatingsCreate(t *testing.T) {
 		t.Errorf("%d ratings of one work by one user", n)
 	}
 
+	f.plane.clients["access-gr-bob"] = "letmoe-client"
+	elsewhere, _ := f.plane.PutMyRating(context.Background(), "access-gr-bob", grWorkSFW2, catalogclient.RatingInput{Overall: 4, Recommend: "no"})
+	delete(f.plane.clients, "access-gr-bob")
+	resp, out = f.create(t, "gr-bob", grKey3, grCreateBody(grWorkSFW2, "rated on LetMoe first"))
+	if resp.StatusCode != http.StatusCreated || out["id"] != strconv.FormatInt(elsewhere.ID, 10) || out["overall"].(float64) != 9 {
+		t.Errorf("rating a work already rated on another site: %d %v", resp.StatusCode, out)
+	}
+	if got := f.takeAwards(); len(got) != 0 {
+		t.Errorf("replacing another site's rating paid %v", got)
+	}
+	if n := f.count(t, `SELECT count(*) FROM galgame_rating WHERE id = ? AND NOT written_here`, elsewhere.ID); n != 1 {
+		t.Errorf("another site's rating became written here")
+	}
+	f.takeSyncs()
+	f.nextScan(t)
+
 	resp, out = f.create(t, "gr-bob", grKey1, grCreateBody(grWorkNone, ""))
 	if p, r := grFieldReason(out); resp.StatusCode != http.StatusUnprocessableEntity || p != "/work_id" || r != "UNKNOWN_REFERENCE" {
 		t.Errorf("unknown work: %d %v", resp.StatusCode, out)
@@ -100,7 +124,7 @@ func TestV1RatingsCreate(t *testing.T) {
 
 	bad := grCreateBody(grWorkFresh, "")
 	bad["game_types"] = []string{"plot", "plot"}
-	if resp, _ := f.create(t, "gr-bob", grKey3, bad); resp.StatusCode != http.StatusUnprocessableEntity {
+	if resp, _ := f.create(t, "gr-bob", "01J9ZQ3V8K5N2M4P6R8T0V2X52", bad); resp.StatusCode != http.StatusUnprocessableEntity {
 		t.Errorf("duplicate game type: %d", resp.StatusCode)
 	}
 	bad = grCreateBody(grWorkFresh, "")
@@ -108,8 +132,8 @@ func TestV1RatingsCreate(t *testing.T) {
 	if resp, _ := f.create(t, "gr-bob", grKey4, bad); resp.StatusCode != http.StatusUnprocessableEntity {
 		t.Errorf("aspect_scores without voice: %d", resp.StatusCode)
 	}
-	if n := f.count(t, `SELECT count(*) FROM galgame_rating WHERE user_id IN (?, ?)`, grBob, grBanned); n != 1 {
-		t.Errorf("refused creates wrote rows: %d (the banned user's seeded rating is the one)", n)
+	if n := f.count(t, `SELECT count(*) FROM galgame_rating WHERE user_id IN (?, ?)`, grBob, grBanned); n != 2 {
+		t.Errorf("refused creates wrote rows: %d (the banned user's seeded rating and bob's replaced one are the two)", n)
 	}
 
 	f.failOA.Store(true)
@@ -151,7 +175,7 @@ func TestV1RatingsUpdate(t *testing.T) {
 
 	long := strings.Repeat("a", constants.RatingLenThresholdHigh)
 	resp, out = patch("gr-alice", grRatingAlice, map[string]any{"short_summary": long, "play_status": "dropped"})
-	if resp.StatusCode != http.StatusOK || out["short_summary"] != long {
+	if resp.StatusCode != http.StatusOK || out["short_summary"] != long || out["play_status"] != "dropped" {
 		t.Fatalf("summary patch: %d %v", resp.StatusCode, out)
 	}
 	if f.checker.calls.Load() != checks+1 {
@@ -183,6 +207,21 @@ func TestV1RatingsUpdate(t *testing.T) {
 	if resp.StatusCode != http.StatusUnprocessableEntity || grCode(out) != "CONTENT_REJECTED" {
 		t.Errorf("refused summary: %d %v", resp.StatusCode, out)
 	}
+
+	resp, out = patch("gr-alice", grRatingAlice, map[string]any{"play_status": "doing"})
+	if resp.StatusCode != http.StatusOK || out["play_status"] != "doing" {
+		t.Errorf("state-only patch: %d %v", resp.StatusCode, out)
+	}
+	if n := f.count(t, `SELECT count(*) FROM galgame_rating WHERE id = ? AND author_state = 'doing'`, grRatingAlice); n != 1 {
+		t.Errorf("a state-only patch did not reach the mirror")
+	}
+
+	f.plane.mu.Lock()
+	delete(f.plane.ratings, grKey{grAlice, grWorkSFW})
+	f.plane.mu.Unlock()
+	if resp, out := patch("gr-alice", grRatingAlice, map[string]any{"overall": 5}); resp.StatusCode != http.StatusNotFound {
+		t.Errorf("patching a rating NextMoe no longer has: %d %v", resp.StatusCode, out)
+	}
 }
 
 func TestV1RatingsDelete(t *testing.T) {
@@ -195,7 +234,7 @@ func TestV1RatingsDelete(t *testing.T) {
 	for _, c := range []struct {
 		session string
 		id      int
-	}{{"gr-bob", grRatingAlice}, {"gr-creator", onSFW2}, {"bearer:gr-staff-token", alsoSFW}} {
+	}{{"gr-bob", grRatingAlice}, {"gr-creator", onSFW}, {"gr-creator", onSFW2}, {"bearer:gr-staff-token", alsoSFW}} {
 		resp, out := del(c.session, c.id)
 		if resp.StatusCode != http.StatusForbidden || grCode(out) != "PERMISSION_REQUIRED" {
 			t.Errorf("%s deleting %d: %d %v", c.session, c.id, resp.StatusCode, out)
@@ -205,11 +244,20 @@ func TestV1RatingsDelete(t *testing.T) {
 		t.Fatal("a refused delete moved points")
 	}
 
+	f.plane.moderators["access-gr-staff"] = false
+	if resp, out := del("gr-staff", alsoSFW); resp.StatusCode != http.StatusForbidden || grCode(out) != "CATALOG_MODERATION_REQUIRED" {
+		t.Errorf("staff NextMoe refuses: %d %v", resp.StatusCode, out)
+	}
+	if n := f.count(t, `SELECT count(*) FROM galgame_rating WHERE id = ?`, alsoSFW); n != 1 || len(f.takeAwards()) != 0 {
+		t.Errorf("a refused staff delete dropped the rating or moved points")
+	}
+	f.plane.moderators["access-gr-staff"] = true
+
 	for _, c := range []struct {
 		session string
 		id      int
 		author  int
-	}{{"gr-creator", onSFW, grRater}, {"gr-staff", alsoSFW, grRater + 3}, {"gr-alice", grRatingAlice, grAlice}} {
+	}{{"gr-staff", onSFW, grRater}, {"gr-staff", alsoSFW, grRater + 3}, {"gr-alice", grRatingAlice, grAlice}} {
 		resp, out := del(c.session, c.id)
 		if resp.StatusCode != http.StatusNoContent {
 			t.Fatalf("%s deleting %d: %d %v", c.session, c.id, resp.StatusCode, out)
@@ -222,6 +270,21 @@ func TestV1RatingsDelete(t *testing.T) {
 		if resp, _ := f.onRating(t, http.MethodGet, "", c.id, "", nil); resp.StatusCode != http.StatusNotFound {
 			t.Errorf("deleted rating %d still reads %d", c.id, resp.StatusCode)
 		}
+		f.plane.mu.Lock()
+		for _, r := range f.plane.ratings {
+			if r.ID == int64(c.id) {
+				t.Errorf("rating %d is still on NextMoe", c.id)
+			}
+		}
+		f.plane.mu.Unlock()
+	}
+
+	f.run(t, `UPDATE galgame_rating SET written_here = false, client_id = 'letmoe-client' WHERE id = ?`, onSFW2)
+	f.plane.mu.Lock()
+	f.plane.ratings[grKey{grRater + 1, grWorkSFW2}].ClientID = "letmoe-client"
+	f.plane.mu.Unlock()
+	if resp, out := del("gr-staff", onSFW2); resp.StatusCode != http.StatusNoContent || len(f.takeAwards()) != 0 {
+		t.Errorf("deleting another site's rating: %d %v, and it must not move points", resp.StatusCode, out)
 	}
 	if resp, _ := del("gr-alice", grRatingAlice); resp.StatusCode != http.StatusNotFound {
 		t.Errorf("deleting twice: %d", resp.StatusCode)

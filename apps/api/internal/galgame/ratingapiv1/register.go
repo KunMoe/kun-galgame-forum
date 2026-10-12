@@ -63,6 +63,41 @@ func Register(s *Service) func(huma.API) {
 			}),
 		}), s.getRating)
 
+		huma.Register(api, v1.Required(huma.Operation{
+			OperationID: "getWorkRecord",
+			Method:      http.MethodGet,
+			Path:        "/works/{work_id}/record",
+			Summary:     "Get the caller's record on a work",
+			Description: "The caller's play state, playtime and rating on the work, which one form edits together. " +
+				"All three are NextMoe's and the same on every NextMoe site.",
+			Tags:        tags,
+			Middlewares: huma.Middlewares{withAccessToken},
+			Responses: problemResponses(map[int]string{
+				403: writeGate,
+				404: "NOT_FOUND when catalog does not show the work.",
+				503: unavailableMsg,
+			}),
+		}), s.getWorkRecord)
+
+		huma.Register(api, v1.Required(huma.Operation{
+			OperationID: "putWorkRecord",
+			Method:      http.MethodPut,
+			Path:        "/works/{work_id}/record",
+			Summary:     "Replace the caller's record on a work",
+			Description: "Writes the play state, this site's playtime report and the rating in one NextMoe transaction: all of them or none. " +
+				"The record is replaced whole, so a part the body leaves out is deleted; send every part the form shows. " +
+				"A new rating earns the author moemoepoints by the short summary's length, a changed summary moves them by the difference, " +
+				"and a deleted rating takes them back, for ratings first written on this forum.",
+			Tags:        tags,
+			Middlewares: huma.Middlewares{withAccessToken},
+			Responses: problemResponses(map[int]string{
+				403: writeGate,
+				404: "NOT_FOUND when catalog does not show the work.",
+				422: "VALIDATION_FAILED when a field is out of range; CONTENT_REJECTED when the trust-and-safety check refuses the short summary.",
+				503: unavailableMsg,
+			}),
+		}), s.putWorkRecord)
+
 		huma.Register(api, v1.IdempotencyRequired(v1.Required(huma.Operation{
 			OperationID:   "createRating",
 			Method:        http.MethodPost,
@@ -70,9 +105,9 @@ func Register(s *Service) func(huma.API) {
 			Summary:       "Rate a galgame",
 			DefaultStatus: http.StatusCreated,
 			Middlewares:   huma.Middlewares{withAccessToken},
-			Description: "Writes the caller's rating of a work and returns it as getRating would. A user rates a work once; " +
-				"change that rating with updateRating. work_id must name a work catalog shows (UNKNOWN_REFERENCE). " +
-				"The author earns moemoepoints by the short summary's length, and the play status is copied to the caller's catalog work state.",
+			Description: "Writes the caller's rating of a work to NextMoe and returns it as getRating would. A user rates a work once, " +
+				"on any NextMoe site; change that rating with updateRating. work_id must name a work catalog shows (UNKNOWN_REFERENCE). " +
+				"The author earns moemoepoints by the short summary's length, and play_status is written as the caller's play state.",
 			Tags: tags,
 			Responses: problemResponses(map[int]string{
 				403: writeGate,
@@ -90,8 +125,8 @@ func Register(s *Service) func(huma.API) {
 			Summary:     "Update a galgame rating",
 			Middlewares: huma.Middlewares{withAccessToken},
 			Description: "Changes the fields sent and returns the rating as getRating would. Only the author may. " +
-				"A changed short summary is checked again and moves the author's moemoepoints by the difference in reward; " +
-				"a changed play status is copied to the caller's catalog work state.",
+				"A changed short summary is checked again and, on a rating first written on this forum, moves the author's moemoepoints by the difference in reward; " +
+				"play_status is written as the caller's play state.",
 			Tags: tags,
 			Responses: problemResponses(map[int]string{
 				403: "PERMISSION_REQUIRED when the caller is not the author; " + writeGate,
@@ -107,11 +142,13 @@ func Register(s *Service) func(huma.API) {
 			Path:          "/ratings/{rating_id}",
 			Summary:       "Delete a galgame rating",
 			DefaultStatus: http.StatusNoContent,
-			Description: "Deletes the rating with its likes and comments; the author loses the moemoepoints it earned. " +
-				"The author, the work page's creator and staff holding rating.delete_any may delete it; a Bearer request never holds staff powers.",
+			Middlewares:   huma.Middlewares{withAccessToken},
+			Description: "Deletes the rating from every NextMoe site, with its likes on this forum; " +
+				"the author loses the moemoepoints it earned here. The author and staff holding rating.delete_any may delete it; " +
+				"staff need NextMoe catalog moderation standing as well. A Bearer request never holds staff powers.",
 			Tags: tags,
 			Responses: problemResponses(map[int]string{
-				403: "PERMISSION_REQUIRED when the caller may not delete the rating; " + writeGate,
+				403: "PERMISSION_REQUIRED when the caller may not delete the rating; CATALOG_MODERATION_REQUIRED when staff lack NextMoe catalog moderation standing; " + writeGate,
 				404: "NOT_FOUND when no such rating exists.",
 				503: unavailableMsg,
 			}),

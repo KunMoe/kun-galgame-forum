@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"kun-galgame-api/internal/galgame/client"
+	"kun-galgame-api/internal/galgame/playstate"
 	"kun-galgame-api/internal/galgame/ratingapiv1"
 	galgameRepo "kun-galgame-api/internal/galgame/repository"
 	galgameService "kun-galgame-api/internal/galgame/service"
@@ -25,6 +26,7 @@ import (
 	"kun-galgame-api/internal/testdb"
 	"kun-galgame-api/internal/trust/gate"
 	"kun-galgame-api/internal/user/oauth"
+	"kun-galgame-api/pkg/catalogclient"
 	"kun-galgame-api/pkg/trustclient"
 	"kun-galgame-api/pkg/userclient"
 
@@ -135,12 +137,15 @@ type grFix struct {
 	rdb     *redis.Client
 	spec    *specConformance
 	cat     *fakeCatalog
+	plane   *grPlane
 	checker *grChecker
 	scanner *grScanner
 	failOA  atomic.Bool
 	mu      sync.Mutex
 	awards  []awardCall
 	syncs   []grSync
+
+	recordWrites atomic.Int32
 }
 
 func newGRFix(t *testing.T) *grFix {
@@ -149,7 +154,8 @@ func newGRFix(t *testing.T) *grFix {
 	mr := miniredis.RunT(t)
 	rdb := redis.NewClient(&redis.Options{Addr: mr.Addr(), MaxRetries: 0})
 	t.Cleanup(func() { _ = rdb.Close() })
-	f := &grFix{db: db, rdb: rdb, checker: &grChecker{}, scanner: &grScanner{got: make(chan trustclient.ScanRequest, 16)}, cat: &fakeCatalog{rows: map[int]client.CatalogWorkListItem{}}}
+	f := &grFix{db: db, rdb: rdb, checker: &grChecker{}, scanner: &grScanner{got: make(chan trustclient.ScanRequest, 16)},
+		cat: &fakeCatalog{rows: map[int]client.CatalogWorkListItem{}}, plane: newGRPlane()}
 
 	names := map[int]string{grAlice: "alice", grBob: "bob", grBanned: "banned", grCreator: "creator", grStaff: "staff"}
 	for i := range 12 {
@@ -204,11 +210,15 @@ func newGRFix(t *testing.T) *grFix {
 		Award:  f.recordAward,
 		Notify: helpers.CreateRatingLikedMessage,
 		Sync: func(_ context.Context, workID int, token, play string) {
+			f.plane.setState(token, workID, play)
 			f.mu.Lock()
 			defer f.mu.Unlock()
 			f.syncs = append(f.syncs, grSync{workID, token, play})
 		},
-		CDN: geCDN,
+		Catalog:       f.plane,
+		Mirror:        galgameService.NewRatingMirror(nil, nil, nil, []string{grForumClient}).Row,
+		RecordWritten: func(context.Context, int) { f.recordWrites.Add(1) },
+		CDN:           geCDN,
 	})
 	f.app = &App{
 		Fiber:           newFiber(),
@@ -297,11 +307,14 @@ func (f *grFix) seed(t *testing.T) {
 	for _, r := range grRatings() {
 		gt, _ := json.Marshal(r.gameTypes)
 		s := r.scores
-		f.run(t, `INSERT INTO galgame_rating (id, work_id, user_id, recommend, overall, view, galgame_type, play_status, short_summary, spoiler_level,
-			art, story, music, character, route, system, voice, replay_value, created, updated)
-			VALUES (?, ?, ?, 'yes', ?, ?, ?::jsonb, ?, 'short', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-			r.id, r.workID, r.userID, r.overall, r.view, string(gt), r.playStatus, r.spoiler,
-			s[0], s[1], s[2], s[3], s[4], s[5], s[6], s[7], r.created, r.created)
+		state, completion, _ := playstate.ToCatalog(r.playStatus)
+		f.run(t, `INSERT INTO galgame_rating (id, work_id, user_id, recommend, overall, view, galgame_type, author_state, author_completion,
+			short_summary, spoiler_level, art, story, music, character, route, system, voice, replay_value,
+			client_id, site, written_here, created, updated)
+			VALUES (?, ?, ?, 'yes', ?, ?, ?::jsonb, ?, ?, 'short', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'kungal', true, ?, ?)`,
+			r.id, r.workID, r.userID, r.overall, r.view, string(gt), state, completion, r.spoiler,
+			s[0], s[1], s[2], s[3], s[4], s[5], s[6], s[7], grForumClient, r.created, r.created)
+		f.plane.seed(r)
 	}
 }
 
@@ -411,4 +424,221 @@ func grExpected(includeNSFW bool, column string, desc bool, keep func(grRating) 
 		ids = append(ids, strconv.Itoa(r.id))
 	}
 	return ids, total
+}
+
+const grForumClient = "forum-client"
+
+type grKey struct{ user, work int64 }
+
+// grPlane is NextMoe's rating plane as the forum sees it: one rating per user
+// and work, its author's play state read live, ids that survive edits.
+type grPlane struct {
+	mu         sync.Mutex
+	next       int64
+	ratings    map[grKey]*catalogclient.Rating
+	states     map[grKey]catalogclient.WorkStateRecord
+	minutes    map[grKey]int
+	moderators map[string]bool
+	clients    map[string]string
+	fail       atomic.Bool
+}
+
+func newGRPlane() *grPlane {
+	return &grPlane{
+		next:       grRatingRaters + 40,
+		ratings:    map[grKey]*catalogclient.Rating{},
+		states:     map[grKey]catalogclient.WorkStateRecord{},
+		minutes:    map[grKey]int{},
+		moderators: map[string]bool{"access-gr-staff": true},
+		clients:    map[string]string{},
+	}
+}
+
+var grTokenUsers = map[string]int64{
+	"access-gr-alice": grAlice, "access-gr-bob": grBob, "access-gr-banned": grBanned,
+	"access-gr-creator": grCreator, "access-gr-staff": grStaff, "gr-staff-token": grStaff,
+	"access-gr-fresh": grBob + 900,
+}
+
+func (p *grPlane) seed(r grRating) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	k := grKey{int64(r.userID), int64(r.workID)}
+	sc := func(v int) *int {
+		if v == 0 {
+			return nil
+		}
+		return &v
+	}
+	s := r.scores
+	p.ratings[k] = &catalogclient.Rating{
+		ID: int64(r.id), WorkID: int64(r.workID), UserID: int64(r.userID), Overall: r.overall,
+		Aspects: catalogclient.RatingAspects{Art: sc(s[0]), Story: sc(s[1]), Music: sc(s[2]), Character: sc(s[3]),
+			Route: sc(s[4]), System: sc(s[5]), Voice: sc(s[6]), ReplayValue: sc(s[7])},
+		Recommend: "yes", SpoilerLevel: r.spoiler, ShortSummary: "short", ClientID: grForumClient, Site: "kungal",
+		CreatedAt: r.created, UpdatedAt: r.created,
+	}
+	state, completion, _ := playstate.ToCatalog(r.playStatus)
+	p.states[k] = catalogclient.WorkStateRecord{WorkID: int64(r.workID), State: state, Completion: completion}
+}
+
+func (p *grPlane) user(token string) (int64, error) {
+	if p.fail.Load() {
+		return 0, catalogclient.ErrUpstream
+	}
+	uid, ok := grTokenUsers[token]
+	if !ok {
+		return 0, catalogclient.ErrUnauthorized
+	}
+	return uid, nil
+}
+
+func (p *grPlane) setState(token string, workID int, flat string) {
+	uid, err := p.user(token)
+	state, completion, ok := playstate.ToCatalog(flat)
+	if err != nil || !ok {
+		return
+	}
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	p.states[grKey{uid, int64(workID)}] = catalogclient.WorkStateRecord{WorkID: int64(workID), State: state, Completion: completion}
+}
+
+// view copies a rating with its author's current state, as NextMoe answers it.
+func (p *grPlane) view(k grKey) *catalogclient.Rating {
+	r, ok := p.ratings[k]
+	if !ok {
+		return nil
+	}
+	out := *r
+	out.WorkState = nil
+	if st, ok := p.states[k]; ok {
+		out.WorkState = &st
+	}
+	return &out
+}
+
+func (p *grPlane) MyRating(_ context.Context, token string, workID int64) (*catalogclient.Rating, error) {
+	uid, err := p.user(token)
+	if err != nil {
+		return nil, err
+	}
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	return p.view(grKey{uid, workID}), nil
+}
+
+func (p *grPlane) put(token string, uid, workID int64, in catalogclient.RatingInput) *catalogclient.Rating {
+	k := grKey{uid, workID}
+	now := time.Now().UTC().Truncate(time.Millisecond)
+	r, ok := p.ratings[k]
+	if !ok {
+		client := p.clients[token]
+		if client == "" {
+			client = grForumClient
+		}
+		p.next++
+		r = &catalogclient.Rating{ID: p.next, WorkID: workID, UserID: uid, ClientID: client, Site: "kungal", CreatedAt: now}
+		p.ratings[k] = r
+	}
+	r.Overall, r.Recommend, r.ShortSummary = in.Overall, in.Recommend, in.ShortSummary
+	r.SpoilerLevel = in.SpoilerLevel
+	if r.SpoilerLevel == "" {
+		r.SpoilerLevel = "none"
+	}
+	r.Aspects = catalogclient.RatingAspects{}
+	if in.AspectScores != nil {
+		r.Aspects = *in.AspectScores
+	}
+	r.UpdatedAt = now
+	return p.view(k)
+}
+
+func (p *grPlane) PutMyRating(_ context.Context, token string, workID int64, in catalogclient.RatingInput) (*catalogclient.Rating, error) {
+	uid, err := p.user(token)
+	if err != nil {
+		return nil, err
+	}
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	return p.put(token, uid, workID, in), nil
+}
+
+func (p *grPlane) DeleteMyRating(_ context.Context, token string, workID int64) error {
+	uid, err := p.user(token)
+	if err != nil {
+		return err
+	}
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	delete(p.ratings, grKey{uid, workID})
+	return nil
+}
+
+func (p *grPlane) ModerationDeleteRating(_ context.Context, token string, ratingID int64) error {
+	if _, err := p.user(token); err != nil {
+		return err
+	}
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	if !p.moderators[token] {
+		return &catalogclient.UserAPIError{Status: http.StatusForbidden, ProblemCode: "PERMISSION_REQUIRED"}
+	}
+	for k, r := range p.ratings {
+		if r.ID == ratingID {
+			delete(p.ratings, k)
+			return nil
+		}
+	}
+	return catalogclient.ErrNotFound
+}
+
+func (p *grPlane) record(k grKey) *catalogclient.WorkRecord {
+	rec := &catalogclient.WorkRecord{Rating: p.view(k)}
+	if st, ok := p.states[k]; ok {
+		rec.WorkState = &st
+	}
+	if m, ok := p.minutes[k]; ok {
+		rec.Playtime = &catalogclient.PlaytimeSelf{WorkID: k.work, Minutes: m}
+	}
+	return rec
+}
+
+func (p *grPlane) WorkRecord(_ context.Context, token string, workID int64) (*catalogclient.WorkRecord, error) {
+	uid, err := p.user(token)
+	if err != nil {
+		return nil, err
+	}
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	return p.record(grKey{uid, workID}), nil
+}
+
+func (p *grPlane) PutWorkRecord(_ context.Context, token string, workID int64, in catalogclient.WorkRecordInput) (*catalogclient.WorkRecord, error) {
+	uid, err := p.user(token)
+	if err != nil {
+		return nil, err
+	}
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	k := grKey{uid, workID}
+	delete(p.states, k)
+	if s := in.WorkState; s != nil {
+		var completion *string
+		if s.Completion != "" {
+			c := s.Completion
+			completion = &c
+		}
+		p.states[k] = catalogclient.WorkStateRecord{WorkID: workID, State: s.State, Completion: completion}
+	}
+	delete(p.minutes, k)
+	if pt := in.Playtime; pt != nil {
+		p.minutes[k] = pt.Minutes
+	}
+	if in.Rating == nil {
+		delete(p.ratings, k)
+	} else {
+		p.put(token, uid, workID, *in.Rating)
+	}
+	return p.record(k), nil
 }

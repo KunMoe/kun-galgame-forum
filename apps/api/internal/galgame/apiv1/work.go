@@ -108,6 +108,9 @@ func (s *Service) assembleWork(
 
 		IsResourceHostedElsewhere: !client.IsJaZhOriginal(d.OLang),
 	}
+	if score, count, ok := nextmoeRating(d); ok {
+		out.RatingScore, out.RatingCount = &score, count
+	}
 	if s.storeLinks != nil {
 		brief := client.CatalogItemToBrief(ctx, &item)
 		out.Dlsite = workrepr.DlsiteOf(s.storeLinks.Resolve(workID, brief.DlsiteWorkno()))

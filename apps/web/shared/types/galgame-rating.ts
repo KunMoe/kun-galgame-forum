@@ -5,7 +5,7 @@ export interface GalgameRatingCard {
   overall: number
   view: number
   galgame_type: string[]
-  play_status: string
+  play_status: string | null
   short_summary: string
 
   art: number

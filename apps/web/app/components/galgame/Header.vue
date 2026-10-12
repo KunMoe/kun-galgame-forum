@@ -5,7 +5,7 @@ import {
 } from '~/constants/galgameResource'
 import {
   KUN_GALGAME_PLAY_STATE_MAP,
-  type KunGalgamePlayState
+  type KunGalgamePlayStateRead
 } from '~/constants/galgame-playtime'
 import {
   KUN_GALGAME_CONTENT_LIMIT_MAP,
@@ -23,7 +23,6 @@ import {
 const props = defineProps<{
   galgame: Work
   ratings: GalgameRatingCardOnGalgamePage[]
-  hasLocalRating: boolean
 }>()
 
 const { isBlurred } = useContentStance()
@@ -117,25 +116,22 @@ const galgameAliasArray = computed(() => {
   return extra && !aliases.includes(extra) ? [extra, ...aliases] : aliases
 })
 
-const isRatingOpen = ref(false)
-const ratingInvite = ref<KunGalgamePlayState | null>(null)
-
-const onWantsRating = (state: KunGalgamePlayState) => {
-  ratingInvite.value = state
+const isRecordOpen = ref(false)
+const openRecord = () => {
+  if (!id) {
+    useAuthModal().open()
+    return
+  }
+  isRecordOpen.value = true
 }
 
-const dismissRatingInvite = () => {
-  ratingInvite.value = null
-}
-
-const openRatingFromInvite = () => {
-  isRatingOpen.value = true
-}
-
-const onRatingPublished = () => {
-  ratingInvite.value = null
-  emits('onRatingCreated')
-}
+const { playtimeOf } = useMyGalgameInteractions()
+const myRecordLabel = computed(() => {
+  const state = playtimeOf(workId.value)?.play_state
+  return state
+    ? KUN_GALGAME_PLAY_STATE_MAP[state as KunGalgamePlayStateRead] || state
+    : ''
+})
 
 const isRatingDetailOpen = ref(false)
 const ratingDetailSource = ref('')
@@ -340,7 +336,7 @@ const coverUrl = computed(() =>
 
         <GalgameHeaderRatingStrip
           :galgame="galgame"
-          @open-rating="isRatingOpen = true"
+          @open-rating="openRecord"
           @open-detail="openRatingDetail"
         />
 
@@ -351,31 +347,7 @@ const coverUrl = computed(() =>
           :source="ratingDetailSource"
         />
 
-        <GalgameHeaderPlaytime
-          :galgame="galgame"
-          :has-local-rating="hasLocalRating"
-          @wants-rating="onWantsRating"
-        />
-
-        <KunInfo
-          v-if="ratingInvite"
-          color="info"
-          :title="`已标记为${KUN_GALGAME_PLAY_STATE_MAP[ratingInvite]}, 顺手给它打个分？`"
-        >
-          <div class="mt-2 flex items-center gap-2">
-            <KunButton size="sm" color="primary" @click="openRatingFromInvite">
-              去评分
-            </KunButton>
-            <KunButton
-              size="sm"
-              variant="light"
-              color="default"
-              @click="dismissRatingInvite"
-            >
-              不用了
-            </KunButton>
-          </div>
-        </KunInfo>
+        <GalgameHeaderPlaytime :galgame="galgame" />
 
         <div class="flex flex-wrap items-center gap-2">
           <div class="flex items-center gap-1">
@@ -407,10 +379,11 @@ const coverUrl = computed(() =>
               variant="shadow"
               color="primary"
               size="sm"
-              @click="isRatingOpen = true"
+              @click="openRecord"
             >
               <span class="flex items-center gap-1">
-                <KunIcon name="lucide:star" />添加评分
+                <KunIcon name="lucide:star" />
+                {{ myRecordLabel || '标记 / 评分' }}
               </span>
             </KunButton>
 
@@ -490,12 +463,12 @@ const coverUrl = computed(() =>
               </div>
             </KunPopover>
 
-            <GalgameRatingPublish
-              v-model="isRatingOpen"
+            <GalgameRecordModal
+              v-if="id"
+              v-model="isRecordOpen"
               :work-id="workId"
-              :preset-play-state="ratingInvite ?? undefined"
-              @on-published="onRatingPublished"
-              @on-updated="onRatingPublished"
+              :work-name="names.name"
+              @saved="emits('onRatingCreated')"
             />
           </div>
         </div>

@@ -57,7 +57,8 @@
     "SHOP_PURCHASE_LIMIT_REACHED": "你已经买到这件商品的限购数量了",
     "SHOP_ITEM_NOT_OWNED": "你没有这件物品，或它已经过期",
     "SHOP_OFFER_UNLIMITED": "这件商品不限量，不会缺货，不需要到货提醒",
-    "PROFILE_SIGN_IN_REQUIRED": "该用户设置了仅登录用户可查看主页，请登录后查看"
+    "PROFILE_SIGN_IN_REQUIRED": "该用户设置了仅登录用户可查看主页，请登录后查看",
+    "CATALOG_MODERATION_REQUIRED": "需要 NextMoe 资料库版主资格才能全网删除评分"
   },
   "reason": {
     "DUPLICATE_ITEM": {

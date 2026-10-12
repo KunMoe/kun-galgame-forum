@@ -17,7 +17,6 @@ provide<Ref<boolean>>('galgameResourcePublishBanned', resourcePublishBanned)
 const route = useRoute()
 const patchQuery = useQueryWriter()
 const nameOf = useCatalogName()
-const { id: currentUserId } = usePersistUserStore()
 const DEEP_LINK_TABS = ['intro', 'resource', 'comment', 'quiz']
 const initialTab = () => {
   if (route.query.comment) {
@@ -51,8 +50,7 @@ const { height: sidebarHeight } = useElementSize(sidebarRef)
 const { height: viewportHeight } = useWindowSize()
 const canStickSidebar = computed(
   () =>
-    sidebarHeight.value > 0 &&
-    sidebarHeight.value <= viewportHeight.value - 96
+    sidebarHeight.value > 0 && sidebarHeight.value <= viewportHeight.value - 96
 )
 
 const resourceLoading = ref(false)
@@ -101,10 +99,6 @@ const handleRatingsChanged = () => {
   void refreshRatings()
 }
 
-const hasLocalRating = computed(() =>
-  ratings.value.some((rating) => rating.user.id === currentUserId)
-)
-
 const creator = computed(() =>
   props.galgame.creator ? toKunUser(props.galgame.creator) : null
 )
@@ -121,7 +115,6 @@ const workId = computed(() => Number(props.galgame.id))
     <GalgameHeader
       :galgame="galgame"
       :ratings="ratings"
-      :has-local-rating="hasLocalRating"
       @on-rating-created="handleRatingsChanged"
     />
 

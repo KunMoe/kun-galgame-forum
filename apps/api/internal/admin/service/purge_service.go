@@ -29,8 +29,9 @@ func NewPurgeService(repo *repository.PurgeRepository, userClient *userclient.Cl
 }
 
 var (
-	ErrPurgeTargetProtected = errors.New("purge: the target holds the moderation capability")
-	ErrPurgeLotteryDrawing  = repository.ErrLotteryDrawing
+	ErrPurgeTargetProtected      = errors.New("purge: the target holds the moderation capability")
+	ErrPurgeLotteryDrawing       = repository.ErrLotteryDrawing
+	ErrCatalogModerationRequired = errors.New("purge: the operator lacks NextMoe catalog moderation standing")
 )
 
 type UnavailableError struct {
@@ -107,6 +108,9 @@ func (s *PurgeService) Purge(ctx context.Context, operatorID, userID int, operat
 	if t.protected {
 		return ErrPurgeTargetProtected
 	}
+	if err := s.purgeRatings(ctx, userID, operatorToken); err != nil {
+		return err
+	}
 	receipt, err := s.repo.PurgeUserContent(userID, operatorID)
 	if err != nil {
 		return err
@@ -142,6 +146,33 @@ func (s *PurgeService) Purge(ctx context.Context, operatorID, userID int, operat
 		"community_reactions_deleted", purged.ReactionsDeleted,
 		"community_anchor_subscriptions_deleted", purged.AnchorSubscriptionsDeleted,
 		"community_notifications_deleted", purged.NotificationsDeleted)
+	return nil
+}
+
+// purgeRatings deletes the user's ratings on NextMoe, where they live; the
+// mirror drops the local copies when the deletions come down the feed. A local
+// delete alone would leave them showing and counting on every site. It runs
+// before the local part so an operator NextMoe refuses is told before anything
+// is deleted.
+func (s *PurgeService) purgeRatings(ctx context.Context, userID int, operatorToken string) error {
+	ids, err := s.repo.UserRatingIDs(userID)
+	if err != nil {
+		return err
+	}
+	for _, id := range ids {
+		err := s.catalog.ModerationDeleteRating(ctx, operatorToken, int64(id))
+		var apiErr *catalogclient.UserAPIError
+		switch {
+		case err == nil, errors.Is(err, catalogclient.ErrNotFound):
+		case errors.As(err, &apiErr) && apiErr.Status == http.StatusForbidden:
+			return ErrCatalogModerationRequired
+		default:
+			return remoteError("catalog ratings", err, catalogRetryable(err))
+		}
+	}
+	if len(ids) > 0 {
+		slog.Info("purge: ratings deleted on NextMoe", "target_id", userID, "ratings", len(ids))
+	}
 	return nil
 }
 

@@ -1,6 +1,8 @@
 package app
 
 import (
+	"context"
+
 	"kun-galgame-api/internal/galgame/client"
 	ratingapiv1 "kun-galgame-api/internal/galgame/ratingapiv1"
 	galgameRepo "kun-galgame-api/internal/galgame/repository"
@@ -8,6 +10,7 @@ import (
 	"kun-galgame-api/internal/galgame/workrepr"
 	"kun-galgame-api/internal/moemoepoint"
 	"kun-galgame-api/internal/trust/gate"
+	"kun-galgame-api/pkg/catalogclient"
 	"kun-galgame-api/pkg/userclient"
 
 	"gorm.io/gorm"
@@ -20,19 +23,32 @@ func newRatingV1(
 	check *gate.CheckService,
 	scan *gate.ScanService,
 	playtime *galgameService.PlaytimeService,
+	catalog *catalogclient.Client,
+	mirror *galgameService.RatingMirror,
+	recordWritten func(ctx context.Context, userID int),
 	cdn string,
 ) *ratingapiv1.Service {
 	helpers := galgameService.InteractionHelpers{}
 	return ratingapiv1.New(ratingapiv1.Deps{
-		Store:  galgameRepo.NewRatingStore(db),
-		Rows:   galgame,
-		Works:  workrepr.NewHydrator(galgame, db, cdn),
-		Users:  users,
-		Check:  check,
-		Scan:   scan,
-		Award:  moemoepoint.Award,
-		Notify: helpers.CreateRatingLikedMessage,
-		Sync:   playtime.SyncWorkState,
-		CDN:    cdn,
+		Store:         galgameRepo.NewRatingStore(db),
+		Rows:          galgame,
+		Works:         workrepr.NewHydrator(galgame, db, cdn),
+		Users:         users,
+		Check:         check,
+		Scan:          scan,
+		Award:         moemoepoint.Award,
+		Notify:        helpers.CreateRatingLikedMessage,
+		Sync:          playtime.SyncWorkState,
+		Catalog:       ratingCatalog(catalog),
+		Mirror:        mirror.Row,
+		RecordWritten: recordWritten,
+		CDN:           cdn,
 	})
+}
+
+func ratingCatalog(c *catalogclient.Client) ratingapiv1.Catalog {
+	if c == nil {
+		return nil
+	}
+	return c
 }

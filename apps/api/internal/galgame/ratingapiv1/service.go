@@ -9,10 +9,13 @@ import (
 	v1 "kun-galgame-api/internal/apiv1"
 	"kun-galgame-api/internal/apiv1/repr"
 	"kun-galgame-api/internal/galgame/client"
+	"kun-galgame-api/internal/galgame/model"
+	"kun-galgame-api/internal/galgame/playstate"
 	"kun-galgame-api/internal/galgame/repository"
 	"kun-galgame-api/internal/galgame/workrepr"
 	"kun-galgame-api/internal/middleware"
 	"kun-galgame-api/internal/trust/gate"
+	"kun-galgame-api/pkg/catalogclient"
 	"kun-galgame-api/pkg/perm"
 	"kun-galgame-api/pkg/problem"
 	"kun-galgame-api/pkg/userclient"
@@ -33,17 +36,29 @@ type NotifyFunc func(tx *gorm.DB, senderID, receiverID int, preview string, work
 
 type SyncFunc func(ctx context.Context, workID int, accessToken, playStatus string)
 
+type Catalog interface {
+	MyRating(ctx context.Context, token string, workID int64) (*catalogclient.Rating, error)
+	PutMyRating(ctx context.Context, token string, workID int64, in catalogclient.RatingInput) (*catalogclient.Rating, error)
+	DeleteMyRating(ctx context.Context, token string, workID int64) error
+	ModerationDeleteRating(ctx context.Context, token string, ratingID int64) error
+	WorkRecord(ctx context.Context, token string, workID int64) (*catalogclient.WorkRecord, error)
+	PutWorkRecord(ctx context.Context, token string, workID int64, in catalogclient.WorkRecordInput) (*catalogclient.WorkRecord, error)
+}
+
 type Deps struct {
-	Store  *repository.RatingStore
-	Rows   workrepr.Rows
-	Works  *workrepr.Hydrator
-	Users  Users
-	Check  *gate.CheckService
-	Scan   *gate.ScanService
-	Award  AwardFunc
-	Notify NotifyFunc
-	Sync   SyncFunc
-	CDN    string
+	Store         *repository.RatingStore
+	Rows          workrepr.Rows
+	Works         *workrepr.Hydrator
+	Users         Users
+	Check         *gate.CheckService
+	Scan          *gate.ScanService
+	Award         AwardFunc
+	Notify        NotifyFunc
+	Sync          SyncFunc
+	Catalog       Catalog
+	Mirror        func(*catalogclient.Rating) model.GalgameRating
+	RecordWritten func(ctx context.Context, userID int)
+	CDN           string
 }
 
 type Service struct {
@@ -56,6 +71,10 @@ func New(d Deps) *Service {
 
 func (s *Service) ready() bool {
 	return s != nil && s.Store != nil && s.Rows != nil && s.Works != nil && s.Users != nil
+}
+
+func (s *Service) writable() bool {
+	return s.ready() && s.Catalog != nil && s.Mirror != nil
 }
 
 func notFound() *problem.Problem {
@@ -110,8 +129,31 @@ func gameTypesOf(raw json.RawMessage) []GameType {
 	return out
 }
 
-func canDelete(viewer *middleware.UserInfo, r repository.RatingRecord, workCreator int) bool {
-	return viewer.ID == r.UserID || (workCreator > 0 && viewer.ID == workCreator) || viewer.Can(perm.RatingDeleteAny)
+// catalogModerators are the roles NextMoe lets delete any rating
+// (catalog.rating.moderate, infra #398). The forum's rating.delete_any reaches
+// no further than they do: NextMoe answers anyone else 403.
+var catalogModerators = []string{"moderator", "admin", "ren"}
+
+func moderatesRatings(viewer *middleware.UserInfo) bool {
+	return viewer.Can(perm.RatingDeleteAny) && slices.ContainsFunc(viewer.Roles, func(role string) bool {
+		return slices.Contains(catalogModerators, role)
+	})
+}
+
+func canDelete(viewer *middleware.UserInfo, r repository.RatingRecord) bool {
+	return viewer.ID == r.UserID || moderatesRatings(viewer)
+}
+
+func authorStateOf(r repository.RatingRecord) *AuthorPlayStatus {
+	if r.AuthorState == nil {
+		return nil
+	}
+	flat := playstate.FromCatalog(*r.AuthorState, r.AuthorCompletion)
+	if flat == "" {
+		return nil
+	}
+	v := AuthorPlayStatus(flat)
+	return &v
 }
 
 // authorRef hides a banned author's rating and keeps a missing account's as a
@@ -135,7 +177,7 @@ func (s *Service) summary(ctx context.Context, r repository.RatingRecord, work *
 		Recommend:    Recommend(r.Recommend),
 		Overall:      r.Overall,
 		GameTypes:    gameTypesOf(r.GalgameType),
-		PlayStatus:   PlayStatus(r.PlayStatus),
+		PlayStatus:   authorStateOf(r),
 		SpoilerLevel: SpoilerLevel(r.SpoilerLevel),
 		ShortSummary: r.ShortSummary,
 		AspectScores: scoresOf(r),
@@ -152,7 +194,7 @@ func (s *Service) summary(ctx context.Context, r repository.RatingRecord, work *
 	return out
 }
 
-func (s *Service) viewerOf(ctx context.Context, r repository.RatingRecord, workCreator int, liked bool) *RatingViewer {
+func (s *Service) viewerOf(ctx context.Context, r repository.RatingRecord, liked bool) *RatingViewer {
 	viewer := v1.User(ctx)
 	if viewer == nil {
 		return nil
@@ -160,6 +202,6 @@ func (s *Service) viewerOf(ctx context.Context, r repository.RatingRecord, workC
 	return &RatingViewer{
 		HasLiked:  liked,
 		CanEdit:   viewer.ID == r.UserID,
-		CanDelete: canDelete(viewer, r, workCreator),
+		CanDelete: canDelete(viewer, r),
 	}
 }

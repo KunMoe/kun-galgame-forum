@@ -400,9 +400,13 @@ func (s *Service) build(ctx context.Context, r repository.FeedRow, b *batch) *Ac
 		if !ok {
 			return nil
 		}
+		var state *string
+		if rt.AuthorState != "" {
+			state = &rt.AuthorState
+		}
 		a.GalgameRating = &ActivityRating{
-			RatingID: repr.ID(r.SourceID), Overall: rt.Overall, PlayStatus: rt.PlayStatus, Recommend: rt.Recommend,
-			SpoilerLevel: rt.SpoilerLevel, ShortSummary: excerpt(strings.TrimSpace(rt.ShortSummary), 1314), LikeCount: rt.LikeCount,
+			RatingID: repr.ID(r.SourceID), Overall: rt.Overall, PlayStatus: state, Recommend: rt.Recommend,
+			SpoilerLevel: rt.SpoilerLevel, ShortSummary: excerpt(strings.TrimSpace(rt.ShortSummary), 2000), LikeCount: rt.LikeCount,
 		}
 	case "GALGAME_RESOURCE_CREATION":
 		rs, ok := b.resources[r.SourceID]

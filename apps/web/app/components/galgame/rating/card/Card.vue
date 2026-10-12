@@ -2,7 +2,7 @@
 import { calcGalgameRating } from '~~/algorithms/GalgameRatingAlg'
 import {
   KUN_GALGAME_PLAY_STATE_MAP,
-  type KunGalgamePlayState
+  type KunGalgamePlayStateRead
 } from '~/constants/galgame-playtime'
 import {
   KUN_GALGAME_RATING_SPOILER_COLOR_MAP,
@@ -21,7 +21,7 @@ const systemRating = (rating: GalgameRatingCard) => {
   const res = calcGalgameRating(
     { ...rating },
     rating.overall,
-    rating.play_status as KunGalgamePlayState,
+    rating.play_status as KunGalgamePlayStateRead | null,
     rating.recommend as 'no'
   )
   return res
@@ -89,10 +89,10 @@ const systemRating = (rating: GalgameRatingCard) => {
             </span>
           </div>
 
-          <KunChip variant="solid" color="success">
+          <KunChip v-if="rating.play_status" variant="solid" color="success">
             {{
               KUN_GALGAME_PLAY_STATE_MAP[
-                rating.play_status as KunGalgamePlayState
+                rating.play_status as KunGalgamePlayStateRead
               ]
             }}
           </KunChip>

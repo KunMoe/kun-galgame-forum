@@ -1,5 +1,8 @@
 <script setup lang="ts">
-import { KUN_GALGAME_PLAY_STATE_MAP } from '~/constants/galgame-playtime'
+import {
+  KUN_GALGAME_PLAY_STATE_MAP,
+  type KunGalgamePlayStateRead
+} from '~/constants/galgame-playtime'
 import {
   KUN_GALGAME_RATING_RECOMMEND_MAP,
   KUN_GALGAME_RATING_RECOMMEND_COLOR_MAP,
@@ -9,7 +12,7 @@ import {
   KUN_GALGAME_DIM_LABELS,
   KUN_GALGAME_DIM_DESCRIPTIONS
 } from '~/constants/galgame-rating'
-import type { Rating } from '#shared/utils/api/schemas'
+import type { Rating, WorkRecord } from '#shared/utils/api/schemas'
 import { settle } from '#shared/utils/api/problem'
 import { calcGalgameRating } from '~~/algorithms/GalgameRatingAlg'
 import { aspectDims } from '~/utils/galgame/ratingCard'
@@ -36,12 +39,20 @@ const rating = computed(() =>
   calcGalgameRating(
     dims.value,
     props.data.overall,
-    props.data.play_status,
+    props.data.play_status as KunGalgamePlayStateRead | null,
     props.data.recommend
   )
 )
 
 const isEditOpen = ref(false)
+
+const onRecordSaved = async (record: WorkRecord) => {
+  if (record.rating?.id === props.data.id) {
+    props.refresh()
+    return
+  }
+  await navigateTo(`/galgame/${props.data.work_summary.id}`)
+}
 
 const handleDeleteRating = async () => {
   if (!userId) {
@@ -51,7 +62,7 @@ const handleDeleteRating = async () => {
 
   const ok = await useComponentMessageStore().alert(
     '确认删除评分？',
-    '删除操作不可恢复'
+    '评分会从所有 NextMoe 站点删除, 无法恢复'
   )
   if (!ok) {
     return
@@ -128,14 +139,18 @@ const handleDeleteRating = async () => {
           </div>
 
           <div class="flex flex-wrap items-center gap-2">
-            <div class="text-default-500 text-sm">通关状态</div>
-            <KunChip color="primary">
-              {{
-                KUN_GALGAME_PLAY_STATE_MAP[data.play_status]
-              }}
-            </KunChip>
+            <template v-if="data.play_status">
+              <div class="text-default-500 text-sm">通关状态</div>
+              <KunChip color="primary">
+                {{
+                  KUN_GALGAME_PLAY_STATE_MAP[
+                    data.play_status as KunGalgamePlayStateRead
+                  ]
+                }}
+              </KunChip>
 
-            <span class="bg-default-300 h-3 w-px" />
+              <span class="bg-default-300 h-3 w-px" />
+            </template>
 
             <div class="text-default-500 text-sm">推荐程度</div>
             <KunChip
@@ -182,11 +197,7 @@ const handleDeleteRating = async () => {
           </div>
         </div>
 
-        <GalgameRatingRadar
-          :model-value="dims"
-          :readonly="true"
-          :size="300"
-        />
+        <GalgameRatingRadar :model-value="dims" :readonly="true" :size="300" />
       </div>
 
       <KunHeader
@@ -259,21 +270,11 @@ const handleDeleteRating = async () => {
 
     <GalgameRatingCommentCommunityContainer :rating-id="Number(data.id)" />
 
-    <GalgameRatingPublish
+    <GalgameRecordModal
       v-if="canEdit"
       v-model="isEditOpen"
       :work-id="Number(data.work_summary.id)"
-      :initial-data="{
-        galgameRatingId: Number(data.id),
-        recommend: data.recommend,
-        overall: data.overall,
-        play_status: data.play_status,
-        spoiler_level: data.spoiler_level,
-        short_summary: data.short_summary,
-        ...dims,
-        galgameType: [...data.game_types]
-      }"
-      @on-updated="refresh"
+      @saved="onRecordSaved"
     />
   </div>
 </template>

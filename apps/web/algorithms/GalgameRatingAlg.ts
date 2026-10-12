@@ -2,7 +2,7 @@ import type {
   KUN_GALGAME_RATING_RECOMMEND_CONST,
   KUN_GALGAME_DIMENSIONS
 } from '~/constants/galgame-rating'
-import type { KunGalgamePlayState } from '~/constants/galgame-playtime'
+import type { KunGalgamePlayStateRead } from '~/constants/galgame-playtime'
 
 interface DimsInput {
   art: number
@@ -42,12 +42,13 @@ const RECOMMEND_SCORE_MAP: Record<string, number> = {
   strong_yes: 1
 }
 
-const PLAY_STATE_ADJUST: Record<KunGalgamePlayState, number> = {
+const PLAY_STATE_ADJUST: Record<KunGalgamePlayStateRead, number> = {
   wish: -1.5,
   doing: -0.8,
   done_one_route: -0.2,
   done_main: 0,
   done_all: 0.4,
+  done: 0,
   on_hold: -0.9,
   dropped: -1.0
 }
@@ -55,24 +56,26 @@ const PLAY_STATE_ADJUST: Record<KunGalgamePlayState, number> = {
 export const calcGalgameRating = (
   dims: DimsInput,
   overall: number,
-  play_status: KunGalgamePlayState,
+  play_status: KunGalgamePlayStateRead | null,
   recommend: KunGalgameRatingRecommend
 ): number => {
   const clamp = (v: number, lo: number, hi: number) =>
     Math.max(lo, Math.min(hi, v))
   const round1 = (v: number) => Math.round(v * 10) / 10
 
-  const safeDims: Record<KunGalgameRatingDim, number> = {
-    art: clamp(dims.art ?? 0, 0, 10),
-    story: clamp(dims.story ?? 0, 0, 10),
-    music: clamp(dims.music ?? 0, 0, 10),
-    character: clamp(dims.character ?? 0, 0, 10),
-    route: clamp(dims.route ?? 0, 0, 10),
-    system: clamp(dims.system ?? 0, 0, 10),
-    voice: clamp(dims.voice ?? 0, 0, 10),
-    replay_value: clamp(dims.replay_value ?? 0, 0, 10)
-  }
   const safeOverall = clamp(overall ?? 0, 0, 10)
+  const aspect = (v: number | undefined) =>
+    v && v > 0 ? clamp(v, 0, 10) : safeOverall
+  const safeDims: Record<KunGalgameRatingDim, number> = {
+    art: aspect(dims.art),
+    story: aspect(dims.story),
+    music: aspect(dims.music),
+    character: aspect(dims.character),
+    route: aspect(dims.route),
+    system: aspect(dims.system),
+    voice: aspect(dims.voice),
+    replay_value: aspect(dims.replay_value)
+  }
 
   const DIM_KEYS = Object.keys(DEFAULT_DIM_WEIGHTS) as KunGalgameRatingDim[]
   const weightSum =
@@ -89,7 +92,7 @@ export const calcGalgameRating = (
   const recVal = RECOMMEND_SCORE_MAP[recommend] ?? 0
   const recAdjust = recVal * RECOMMEND_INFLUENCE_POINTS
 
-  const statusAdjust = PLAY_STATE_ADJUST[play_status] ?? 0
+  const statusAdjust = play_status ? PLAY_STATE_ADJUST[play_status] : 0
 
   let finalScore = baseScore + recAdjust + statusAdjust
   finalScore = clamp(finalScore, 0, 10)

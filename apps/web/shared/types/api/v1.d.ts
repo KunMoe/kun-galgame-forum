@@ -388,7 +388,7 @@ export interface paths {
         post?: never;
         /**
          * Purge a user's content
-         * @description Deletes everything the user has on this site, with what cascades from it, hands their listed websites to the directory's default owner, then purges their catalog collections and community posts. The account itself is untouched: ban or deregister it at the account service first, or it can keep posting. Every local row the purge deletes or changes is archived for 30 days so a developer can undo it; the catalog and community parts cannot be undone. Purging again is safe and is how a purge that failed after its local part is finished. It needs the user.purge_content permission, which a Bearer request never carries.
+         * @description Deletes the user's ratings on NextMoe first, then everything the user has on this site, with what cascades from it, hands their listed websites to the directory's default owner, then purges their catalog collections and community posts. The account itself is untouched: ban or deregister it at the account service first, or it can keep posting. Every local row the purge deletes or changes is archived for 30 days so a developer can undo it; the catalog and community parts cannot be undone. Purging again is safe and is how a purge that failed after its local part is finished. It needs the user.purge_content permission, which a Bearer request never carries.
          */
         delete: operations["purgeUserContent"];
         options?: never;
@@ -3103,7 +3103,7 @@ export interface paths {
         put?: never;
         /**
          * Rate a galgame
-         * @description Writes the caller's rating of a work and returns it as getRating would. A user rates a work once; change that rating with updateRating. work_id must name a work catalog shows (UNKNOWN_REFERENCE). The author earns moemoepoints by the short summary's length, and the play status is copied to the caller's catalog work state.
+         * @description Writes the caller's rating of a work to NextMoe and returns it as getRating would. A user rates a work once, on any NextMoe site; change that rating with updateRating. work_id must name a work catalog shows (UNKNOWN_REFERENCE). The author earns moemoepoints by the short summary's length, and play_status is written as the caller's play state.
          */
         post: operations["createRating"];
         delete?: never;
@@ -3128,14 +3128,14 @@ export interface paths {
         post?: never;
         /**
          * Delete a galgame rating
-         * @description Deletes the rating with its likes and comments; the author loses the moemoepoints it earned. The author, the work page's creator and staff holding rating.delete_any may delete it; a Bearer request never holds staff powers.
+         * @description Deletes the rating from every NextMoe site, with its likes on this forum; the author loses the moemoepoints it earned here. The author and staff holding rating.delete_any may delete it; staff need NextMoe catalog moderation standing as well. A Bearer request never holds staff powers.
          */
         delete: operations["deleteRating"];
         options?: never;
         head?: never;
         /**
          * Update a galgame rating
-         * @description Changes the fields sent and returns the rating as getRating would. Only the author may. A changed short summary is checked again and moves the author's moemoepoints by the difference in reward; a changed play status is copied to the caller's catalog work state.
+         * @description Changes the fields sent and returns the rating as getRating would. Only the author may. A changed short summary is checked again and, on a rating first written on this forum, moves the author's moemoepoints by the difference in reward; play_status is written as the caller's play state.
          */
         patch: operations["updateRating"];
         trace?: never;
@@ -5489,6 +5489,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/works/{work_id}/record": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the caller's record on a work
+         * @description The caller's play state, playtime and rating on the work, which one form edits together. All three are NextMoe's and the same on every NextMoe site.
+         */
+        get: operations["getWorkRecord"];
+        /**
+         * Replace the caller's record on a work
+         * @description Writes the play state, this site's playtime report and the rating in one NextMoe transaction: all of them or none. The record is replaced whole, so a part the body leaves out is deleted; send every part the form shows. A new rating earns the author moemoepoints by the short summary's length, a changed summary moves them by the difference, and a deleted rating takes them back, for ratings first written on this forum.
+         */
+        put: operations["putWorkRecord"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/works/{work_id}/resource-publish-ban": {
         parameters: {
             query?: never;
@@ -5679,8 +5703,8 @@ export interface components {
              * @description Overall score, 1 to 10.
              */
             overall: number;
-            /** @description How far the rater had played when rating. */
-            play_status: components["schemas"]["PlayStatus"];
+            /** @description The rater's play state on the work now, not when rating; done is finished with how much unstated. null when they have none. */
+            play_status: components["schemas"]["PlayState"] | null;
             /** @description Rating id. */
             rating_id: string;
             /** @description Whether the rater recommends the work. */
@@ -11122,7 +11146,7 @@ export interface components {
              * @description When the rating was written.
              */
             created_at: string;
-            /** @description Game types the author files the work under. */
+            /** @description Game types the author files the work under. Empty when the rating was written on another NextMoe site, which does not ask. */
             game_types: components["schemas"]["GameType"][];
             /** @description Rating id, which is also the id in the web's /galgame-rating/{id}. */
             id: string;
@@ -11143,8 +11167,8 @@ export interface components {
              * @description The overall score.
              */
             overall: number;
-            /** @description How far the author had played when rating. */
-            play_status: components["schemas"]["PlayStatus"];
+            /** @description null when the author has no play state on the work. */
+            play_status: components["schemas"]["PlayState"] | null;
             /** @description How strongly the author recommends the work. */
             recommend: components["schemas"]["RatingRecommend"];
             /** @description The author's short review, plain text. Empty string if none. Free text; never use it as a decision input. */
@@ -11178,7 +11202,7 @@ export interface components {
              * @description The overall score.
              */
             overall: number;
-            /** @description How far the author had played when rating. */
+            /** @description Written as the caller's play state on the work. */
             play_status: components["schemas"]["PlayStatus"];
             /** @description How strongly the author recommends the work. */
             recommend: components["schemas"]["RatingRecommend"];
@@ -11219,7 +11243,7 @@ export interface components {
              * @description The overall score.
              */
             overall?: number;
-            /** @description How far the author had played when rating. */
+            /** @description Written as the caller's play state on the work. */
             play_status?: components["schemas"]["PlayStatus"];
             /** @description How strongly the author recommends the work. */
             recommend?: components["schemas"]["RatingRecommend"];
@@ -11247,7 +11271,7 @@ export interface components {
              * @description When the rating was written.
              */
             created_at: string;
-            /** @description Game types the author files the work under. */
+            /** @description Game types the author files the work under. Empty when the rating was written on another NextMoe site, which does not ask. */
             game_types: components["schemas"]["GameType"][];
             /** @description Rating id, which is also the id in the web's /galgame-rating/{id}. */
             id: string;
@@ -11266,8 +11290,8 @@ export interface components {
              * @description The overall score.
              */
             overall: number;
-            /** @description How far the author had played when rating. */
-            play_status: components["schemas"]["PlayStatus"];
+            /** @description null when the author has no play state on the work. */
+            play_status: components["schemas"]["PlayState"] | null;
             /** @description How strongly the author recommends the work. */
             recommend: components["schemas"]["RatingRecommend"];
             /** @description The author's short review, plain text. Empty string if none. Free text; never use it as a decision input. */
@@ -11290,7 +11314,7 @@ export interface components {
             work: components["schemas"]["WorkRef"] | null;
         };
         RatingViewer: {
-            /** @description Whether the caller may delete the rating: its author, the work page's creator, or staff holding rating.delete_any. */
+            /** @description Whether the caller may delete the rating: its author, or staff holding rating.delete_any with a role NextMoe lets moderate ratings (moderator, admin or ren). */
             can_delete: boolean;
             /** @description Whether the caller may change the rating: only its author. */
             can_edit: boolean;
@@ -11333,6 +11357,23 @@ export interface components {
         ReactionViewer: {
             /** @description Whether the caller reacted with this token. */
             has_reacted: boolean;
+        };
+        RecordRating: {
+            /** @description Per-aspect scores, all eight keys, null for an aspect not rated. Absent means none rated. */
+            aspect_scores?: components["schemas"]["AspectScores"];
+            /** @description Game types to file the work under, each once. */
+            game_types: components["schemas"]["GameType"][];
+            /**
+             * Format: int64
+             * @description The overall score.
+             */
+            overall: number;
+            /** @description How strongly the author recommends the work. */
+            recommend: components["schemas"]["RatingRecommend"];
+            /** @description Short review, plain text, at most 2000 characters. Absent or empty means none. Free text; never use it as a decision input. */
+            short_summary?: string;
+            /** @description How much the short summary gives away, as its author declared. */
+            spoiler_level: components["schemas"]["SpoilerLevel"];
         };
         ReleaseCalendarMonth: {
             /** @description The month window as YYYY-MM. */
@@ -14836,12 +14877,12 @@ export interface components {
             playtimes: components["schemas"]["WorkPlaytimeAggregate"][];
             /**
              * Format: int64
-             * @description Forum ratings of the work.
+             * @description NextMoe ratings of the work, written on any NextMoe site.
              */
             rating_count: number;
             /**
              * Format: double
-             * @description Bayesian average of the forum's ratings, one decimal. null when rating_count is 0.
+             * @description Bayesian average of the work's NextMoe ratings, which every NextMoe site shares, one decimal. null when rating_count is 0.
              */
             rating_score: number | null;
             /**
@@ -15278,6 +15319,35 @@ export interface components {
         };
         /** @enum {string} */
         WorkRankingSort: "views_desc" | "likes_desc" | "favorites_desc" | "resources_desc" | "rating_desc";
+        WorkRecord: {
+            /**
+             * Format: int64
+             * @description The most minutes any NextMoe application reported for the caller on the work. 0 when none, or when the report is below 10 minutes, which no median counts.
+             */
+            minutes: number;
+            /**
+             * @description Type discriminant. Always work_record.
+             * @constant
+             */
+            object: "work_record";
+            /** @description The caller's play state on the work. null when none. */
+            play_state: components["schemas"]["PlayState"] | null;
+            /** @description The caller's rating of the work, the same on every NextMoe site. null when none. */
+            rating: components["schemas"]["RatingSummary"] | null;
+            /** @description The work. */
+            work_id: string;
+        };
+        WorkRecordPut: {
+            /**
+             * Format: int64
+             * @description This site's playtime report, in minutes. Absent withdraws it; reports from other applications stay. Below 10 is stored but counted by no median.
+             */
+            minutes?: number;
+            /** @description The play state. Absent deletes it. */
+            play_state?: components["schemas"]["PlayStatus"];
+            /** @description The rating. Absent deletes it. */
+            rating?: components["schemas"]["RecordRating"];
+        };
         WorkRef: {
             /** @description The portrait cover at its original size, never the 16:9 crop. null when the work has none. */
             cover: components["schemas"]["Image"] | null;
@@ -15543,12 +15613,12 @@ export interface components {
             object: "work";
             /**
              * Format: int64
-             * @description Forum ratings of the work.
+             * @description NextMoe ratings of the work, written on any NextMoe site.
              */
             rating_count: number;
             /**
              * Format: double
-             * @description Bayesian average of the forum's ratings, one decimal. null when rating_count is 0.
+             * @description Bayesian average of the work's NextMoe ratings, which every NextMoe site shares, one decimal. null when rating_count is 0.
              */
             rating_score: number | null;
             /**
@@ -17710,7 +17780,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description PERMISSION_REQUIRED when the caller lacks user.purge_content. USER_PROTECTED when the user holds the moderation capability. */
+            /** @description PERMISSION_REQUIRED when the caller lacks user.purge_content. USER_PROTECTED when the user holds the moderation capability. CATALOG_MODERATION_REQUIRED when the caller lacks NextMoe catalog moderation standing, which deleting ratings needs; nothing was deleted. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -32123,7 +32193,7 @@ export interface operations {
                 author_id?: string;
                 /** @description Only ratings declaring this spoiler level. Omitted means any. */
                 spoiler_level?: components["schemas"]["SpoilerLevel"];
-                /** @description Only ratings with this play status. Omitted means any. */
+                /** @description Only ratings whose author is at this play state on the work now. Omitted means any. */
                 play_status?: components["schemas"]["PlayStatus"];
                 /** @description Only ratings filing the work under this game type. Omitted means any. */
                 game_type?: components["schemas"]["GameType"];
@@ -32415,7 +32485,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description PERMISSION_REQUIRED when the caller may not delete the rating; ACCOUNT_BANNED when the caller's account is banned. */
+            /** @description PERMISSION_REQUIRED when the caller may not delete the rating; CATALOG_MODERATION_REQUIRED when staff lack NextMoe catalog moderation standing; ACCOUNT_BANNED when the caller's account is banned. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -45083,6 +45153,191 @@ export interface operations {
                 };
             };
             /** @description SERVICE_UNAVAILABLE when the catalog cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getWorkRecord: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Work id. */
+                work_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkRecord"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description ACCOUNT_BANNED when the caller's account is banned. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when catalog does not show the work. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the account service or catalog cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    putWorkRecord: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Work id. */
+                work_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WorkRecordPut"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkRecord"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description ACCOUNT_BANNED when the caller's account is banned. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when catalog does not show the work. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description VALIDATION_FAILED when a field is out of range; CONTENT_REJECTED when the trust-and-safety check refuses the short summary. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the account service or catalog cannot be reached. */
             503: {
                 headers: {
                     [name: string]: unknown;

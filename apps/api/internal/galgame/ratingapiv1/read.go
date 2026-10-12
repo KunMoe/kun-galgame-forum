@@ -9,6 +9,7 @@ import (
 	"kun-galgame-api/internal/apiv1/collect"
 	"kun-galgame-api/internal/apiv1/repr"
 	"kun-galgame-api/internal/galgame/client"
+	"kun-galgame-api/internal/galgame/playstate"
 	"kun-galgame-api/internal/galgame/repository"
 	"kun-galgame-api/pkg/problem"
 	"kun-galgame-api/pkg/userclient"
@@ -37,7 +38,7 @@ type listRatingsInput struct {
 	WorkID       string          `query:"work_id" pattern:"^[1-9][0-9]{0,18}$" maxLength:"19" doc:"Only ratings of this work. Omitted means every work."`
 	AuthorID     string          `query:"author_id" pattern:"^[1-9][0-9]{0,18}$" maxLength:"19" doc:"Only ratings by this user. Omitted means everyone."`
 	SpoilerLevel SpoilerLevel    `query:"spoiler_level" doc:"Only ratings declaring this spoiler level. Omitted means any."`
-	PlayStatus   PlayStatus      `query:"play_status" doc:"Only ratings with this play status. Omitted means any."`
+	PlayStatus   PlayStatus      `query:"play_status" doc:"Only ratings whose author is at this play state on the work now. Omitted means any."`
 	GameType     GameType        `query:"game_type" doc:"Only ratings filing the work under this game type. Omitted means any."`
 	IncludeNSFW  bool            `query:"include_nsfw" default:"false" doc:"When true, ratings of adult works are included. Default false."`
 }
@@ -62,17 +63,19 @@ func (s *Service) listRatings(ctx context.Context, in *listRatingsInput) (*listR
 	column, dir := token[:cut], token[cut+1:]
 	workID, _ := repr.ParseID(repr.DecimalID(in.WorkID))
 	authorID, _ := repr.ParseID(repr.DecimalID(in.AuthorID))
+	state, completion, _ := playstate.ToCatalog(string(in.PlayStatus))
 	rows, count, err := s.Store.List(repository.RatingQuery{
-		WorkID:       workID,
-		AuthorID:     authorID,
-		SpoilerLevel: string(in.SpoilerLevel),
-		PlayStatus:   string(in.PlayStatus),
-		GameType:     string(in.GameType),
-		SFWOnly:      !in.IncludeNSFW,
-		SortColumn:   column,
-		Descending:   dir == "desc",
-		Offset:       page.Offset(),
-		Limit:        in.Limit,
+		WorkID:           workID,
+		AuthorID:         authorID,
+		SpoilerLevel:     string(in.SpoilerLevel),
+		AuthorState:      state,
+		AuthorCompletion: completion,
+		GameType:         string(in.GameType),
+		SFWOnly:          !in.IncludeNSFW,
+		SortColumn:       column,
+		Descending:       dir == "desc",
+		Offset:           page.Offset(),
+		Limit:            in.Limit,
 	})
 	if err != nil {
 		return nil, problem.Internal(err)
@@ -109,12 +112,8 @@ func (s *Service) summaries(ctx context.Context, rows []repository.RatingRecord)
 	}
 	viewer := v1.User(ctx)
 	liked := map[int]bool{}
-	creators := map[int]int{}
 	if viewer != nil {
 		if liked, err = s.Store.LikedSet(viewer.ID, ratingIDs); err != nil {
-			return nil, problem.Internal(err)
-		}
-		if creators, err = s.Store.WorkCreators(workIDs); err != nil {
 			return nil, problem.Internal(err)
 		}
 	}
@@ -129,7 +128,7 @@ func (s *Service) summaries(ctx context.Context, rows []repository.RatingRecord)
 			continue
 		}
 		item := s.summary(ctx, r, &work, author)
-		item.Viewer = s.viewerOf(ctx, r, creators[r.WorkID], liked[r.ID])
+		item.Viewer = s.viewerOf(ctx, r, liked[r.ID])
 		out = append(out, item)
 	}
 	return out, nil
@@ -209,11 +208,7 @@ func (s *Service) detail(ctx context.Context, id int) (*Rating, *problem.Problem
 		if err != nil {
 			return nil, problem.Internal(err)
 		}
-		creators, err := s.Store.WorkCreators([]int{r.WorkID})
-		if err != nil {
-			return nil, problem.Internal(err)
-		}
-		sum.Viewer = s.viewerOf(ctx, r, creators[r.WorkID], liked[id])
+		sum.Viewer = s.viewerOf(ctx, r, liked[id])
 	}
 	return &Rating{
 		Object: sum.Object, ID: sum.ID, Work: sum.Work, Author: sum.Author,
