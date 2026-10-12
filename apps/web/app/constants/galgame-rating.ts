@@ -247,7 +247,7 @@ export const KUN_GALGAME_LOCAL_RATING_META: KunGalgameExternalRatingMeta = {
   label: '鲲 Galgame 评分',
   short: '鲲 Galgame',
   scale: '满分 10',
-  hint: '鲲 Galgame 用户评分的贝叶斯平均',
+  hint: 'NextMoe 全站用户评分的贝叶斯平均, 鲲 Galgame 与其它 NextMoe 站点共用同一份评分',
   aggregate: '贝叶斯平均',
   max: 10,
   formatScore: (score) => score.toFixed(1),

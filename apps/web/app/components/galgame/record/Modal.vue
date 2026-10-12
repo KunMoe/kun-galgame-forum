@@ -409,13 +409,15 @@ const save = async () => {
               <div v-if="showAdvanced">
                 <GalgameRatingAdvanced v-model="dims" />
               </div>
-              <KunButton variant="flat" size="sm" @click="toggleAdvanced">
-                {{ showAdvanced ? '收起高级评分' : '展开高级评分' }}
-              </KunButton>
+              <div class="flex flex-wrap items-center gap-3">
+                <KunButton variant="flat" size="sm" @click="toggleAdvanced">
+                  {{ showAdvanced ? '收起高级评分' : '展开高级评分' }}
+                </KunButton>
 
-              <KunLink to="/doc/galgame-rating-guide" size="sm">
-                鲲 Galgame 八维超评分系统介绍及使用说明
-              </KunLink>
+                <KunLink to="/doc/galgame-rating-guide" size="sm">
+                  鲲 Galgame 八维超评分系统介绍及使用说明
+                </KunLink>
+              </div>
             </template>
           </div>
         </template>
