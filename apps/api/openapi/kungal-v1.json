@@ -8759,6 +8759,34 @@
         ],
         "type": "object"
       },
+      "ListTagNode": {
+        "properties": {
+          "items": {
+            "description": "Members of this page. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/TagNode"
+            },
+            "type": "array"
+          },
+          "next_cursor": {
+            "description": "Opaque keyset cursor. Omitted on the last page.",
+            "maxLength": 512,
+            "pattern": "^cur_[A-Za-z0-9_-]+$",
+            "type": "string"
+          },
+          "object": {
+            "const": "list",
+            "description": "Type discriminant. Always list.",
+            "maxLength": 4,
+            "type": "string"
+          }
+        },
+        "required": [
+          "object",
+          "items"
+        ],
+        "type": "object"
+      },
       "ListTopicDraftSummary": {
         "properties": {
           "items": {
@@ -18549,8 +18577,21 @@
       },
       "Tag": {
         "properties": {
+          "ancestors": {
+            "description": "Every tag above this one at any depth, nearest first, adult ones included: a reader who blocked any of them with its subtags does not see this tag's works. parent_ids on each draws every path up to a root. Empty array for a root, never null.",
+            "items": {
+              "$ref": "#/components/schemas/TagNode"
+            },
+            "type": "array"
+          },
           "catalog_work_count": {
             "description": "Works catalog files under it, NSFW ones included. How many a reader can page through is the total of its works collection.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "descendant_count": {
+            "description": "Tags below this one at any depth, adult ones included. Blocking the tag with its subtags (exclude_tag_trees) blocks every one of them; /tags/{tag_id}/descendants lists them.",
             "format": "int64",
             "minimum": 0,
             "type": "integer"
@@ -18603,6 +18644,21 @@
             "maxLength": 3,
             "type": "string"
           },
+          "parent_tags": {
+            "description": "Tags directly above this one, in id order; a tag can sit under several. Adult ones only with include_nsfw=true. Empty array for a root, never null.",
+            "items": {
+              "$ref": "#/components/schemas/TagRef"
+            },
+            "maxItems": 100,
+            "type": "array"
+          },
+          "subtags": {
+            "description": "Tags directly below this one, most works first. Hidden ones never; adult ones only with include_nsfw=true. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/TagSummary"
+            },
+            "type": "array"
+          },
           "tag_kind": {
             "$ref": "#/components/schemas/TagKind",
             "description": "What the tag describes: content is the story and characters, meta is the game as a product."
@@ -18616,6 +18672,10 @@
           "catalog_work_count",
           "is_hidden",
           "intros",
+          "parent_tags",
+          "subtags",
+          "descendant_count",
+          "ancestors",
           "display_name",
           "latin",
           "localized"
@@ -18793,6 +18853,68 @@
         "type": "string",
         "x-vocabulary-closed": true
       },
+      "TagNode": {
+        "properties": {
+          "display_name": {
+            "description": "The entity's own name. Never empty. Free text; never use it as a decision input.",
+            "maxLength": 512,
+            "type": "string"
+          },
+          "id": {
+            "description": "Tag id: the catalog tag id, which is also the id in the web's /galgame/tag/{id}.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "is_sexual": {
+            "description": "Whether the tag is adult content.",
+            "type": "boolean"
+          },
+          "latin": {
+            "description": "Romanization of the name. null when none is recorded. Free text; never use it as a decision input.",
+            "maxLength": 512,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "localized": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/LocalizedName"
+            },
+            "description": "Names by BCP-47 tag, sparse. Empty object when there are none, never null.",
+            "type": "object"
+          },
+          "object": {
+            "const": "tag",
+            "description": "Type discriminant. Always tag.",
+            "maxLength": 3,
+            "type": "string"
+          },
+          "parent_ids": {
+            "description": "The tag's direct parents within the tree it came in, ascending: in a subtree, among the other items and the tag the subtree hangs from. Empty array for a root, never null.",
+            "items": {
+              "maxLength": 20,
+              "minLength": 1,
+              "pattern": "^[0-9]+$",
+              "type": "string"
+            },
+            "maxItems": 100,
+            "type": "array"
+          }
+        },
+        "required": [
+          "object",
+          "id",
+          "is_sexual",
+          "parent_ids",
+          "display_name",
+          "latin",
+          "localized"
+        ],
+        "type": "object"
+      },
       "TagPatch": {
         "properties": {
           "description": {
@@ -18833,10 +18955,66 @@
         },
         "type": "object"
       },
+      "TagRef": {
+        "properties": {
+          "display_name": {
+            "description": "The entity's own name. Never empty. Free text; never use it as a decision input.",
+            "maxLength": 512,
+            "type": "string"
+          },
+          "id": {
+            "description": "Tag id: the catalog tag id, which is also the id in the web's /galgame/tag/{id}.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "is_sexual": {
+            "description": "Whether the tag is adult content.",
+            "type": "boolean"
+          },
+          "latin": {
+            "description": "Romanization of the name. null when none is recorded. Free text; never use it as a decision input.",
+            "maxLength": 512,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "localized": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/LocalizedName"
+            },
+            "description": "Names by BCP-47 tag, sparse. Empty object when there are none, never null.",
+            "type": "object"
+          },
+          "object": {
+            "const": "tag",
+            "description": "Type discriminant. Always tag.",
+            "maxLength": 3,
+            "type": "string"
+          }
+        },
+        "required": [
+          "object",
+          "id",
+          "is_sexual",
+          "display_name",
+          "latin",
+          "localized"
+        ],
+        "type": "object"
+      },
       "TagSummary": {
         "properties": {
           "catalog_work_count": {
             "description": "Works catalog files under it, NSFW ones included. How many a reader can page through is the total of its works collection.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "descendant_count": {
+            "description": "Tags below this one at any depth, adult ones included. Blocking the tag with its subtags (exclude_tag_trees) blocks every one of them.",
             "format": "int64",
             "minimum": 0,
             "type": "integer"
@@ -18889,6 +19067,7 @@
           "tag_kind",
           "is_sexual",
           "catalog_work_count",
+          "descendant_count",
           "display_name",
           "latin",
           "localized"
@@ -26830,12 +27009,12 @@
           }
         },
         "required": [
-          "spoiler",
           "object",
           "id",
           "tag_kind",
           "is_sexual",
           "catalog_work_count",
+          "spoiler",
           "display_name",
           "latin",
           "localized"
@@ -55329,6 +55508,93 @@
           }
         },
         "summary": "Get a galgame tag",
+        "tags": [
+          "galgame-tags"
+        ]
+      }
+    },
+    "/tags/{tag_id}/descendants": {
+      "get": {
+        "description": "Every tag below the tag at any depth, nearest first (shortest path, then id): what blocking it with its subtags (exclude_tag_trees) blocks. Each item's parent_ids name its parents among the items and the tag itself, so the subtree can be drawn; a tag with several parents is drawn under each. Adult tags, and tags reached only through them, are left out unless include_nsfw=true. Not paginated: the largest subtree is about 600 tags.",
+        "operationId": "listTagDescendants",
+        "parameters": [
+          {
+            "description": "Tag id.",
+            "in": "path",
+            "name": "tag_id",
+            "required": true,
+            "schema": {
+              "description": "Tag id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "When true, an adult tag answers. Default false: it is NOT_FOUND.",
+            "explode": false,
+            "in": "query",
+            "name": "include_nsfw",
+            "schema": {
+              "default": false,
+              "description": "When true, an adult tag answers. Default false: it is NOT_FOUND.",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListTagNode"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when no such entity is visible."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when catalog cannot be reached."
+          }
+        },
+        "summary": "List the tags below a tag",
         "tags": [
           "galgame-tags"
         ]

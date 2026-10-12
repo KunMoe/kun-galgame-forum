@@ -115,6 +115,81 @@ func TestV1EntityTagDetail(t *testing.T) {
 	geStatus(t, resp, body, http.StatusNotFound, "NOT_FOUND")
 }
 
+func TestV1EntityTagHierarchy(t *testing.T) {
+	f := newGEFix(t)
+	ids := func(v any) []string {
+		var out []string
+		for _, it := range v.([]any) {
+			out = append(out, it.(map[string]any)["id"].(string))
+		}
+		return out
+	}
+	parentIDs := func(v any) [][]string {
+		var out [][]string
+		for _, it := range v.([]any) {
+			ps := []string{}
+			for _, p := range it.(map[string]any)["parent_ids"].([]any) {
+				ps = append(ps, p.(string))
+			}
+			out = append(out, ps)
+		}
+		return out
+	}
+
+	_, body := f.get(t, "/api/v1/tags?limit=1", "/tags")
+	if first := body["items"].([]any)[0].(map[string]any); first["descendant_count"] != float64(4) {
+		t.Fatalf("summary descendant_count %+v", first)
+	}
+	_, body = f.get(t, "/api/v1/tags?q=x", "/tags")
+	for _, it := range body["items"].([]any) {
+		if row := it.(map[string]any); row["id"] == "5104" && row["descendant_count"] != float64(2) {
+			t.Fatalf("a search hit outside the index takes its count from the detail: %+v", row)
+		}
+	}
+
+	resp, body := f.get(t, "/api/v1/tags/5101", "/tags/{tag_id}")
+	geStatus(t, resp, body, http.StatusOK, "")
+	geWant(t, "parent_tags", ids(body["parent_tags"]), "5105")
+	geWant(t, "sfw subtags", ids(body["subtags"]), "5106")
+	if body["descendant_count"] != float64(4) {
+		t.Fatalf("descendant_count counts adult tags too: %+v", body["descendant_count"])
+	}
+	geWant(t, "ancestors keep adult tags", ids(body["ancestors"]), "5105", "5110")
+	if got := parentIDs(body["ancestors"]); !slices.Equal(got[0], []string{"5110"}) || len(got[1]) != 0 {
+		t.Fatalf("ancestor parent_ids %v", got)
+	}
+	_, body = f.get(t, "/api/v1/tags/5101?include_nsfw=true", "/tags/{tag_id}")
+	geWant(t, "nsfw subtags", ids(body["subtags"]), "5102", "5106")
+	_, body = f.get(t, "/api/v1/tags/5104", "/tags/{tag_id}")
+	if len(body["parent_tags"].([]any)) != 0 || len(body["subtags"].([]any)) != 0 || len(body["ancestors"].([]any)) != 0 {
+		t.Fatalf("a tag without edges answers empty arrays: %+v", body)
+	}
+
+	path, spec := "/api/v1/tags/5101/descendants", "/tags/{tag_id}/descendants"
+	resp, body = f.get(t, path, spec)
+	geStatus(t, resp, body, http.StatusOK, "")
+	geWant(t, "sfw cuts adult tags and what hangs only under them", ids(body["items"]), "5106", "5109")
+	if got := parentIDs(body["items"]); !slices.Equal(got[1], []string{"5106"}) {
+		t.Fatalf("sfw parent_ids name only kept tags: %v", got)
+	}
+	if _, ok := body["next_cursor"]; ok {
+		t.Fatalf("the subtree is one page: %+v", body)
+	}
+	_, body = f.get(t, path+"?include_nsfw=true", spec)
+	geWant(t, "nsfw subtree", ids(body["items"]), "5102", "5106", "5108", "5109")
+	if got := parentIDs(body["items"]); !slices.Equal(got[3], []string{"5102", "5106"}) {
+		t.Fatalf("nsfw parent_ids %v", got)
+	}
+	resp, body = f.get(t, "/api/v1/tags/5102/descendants", spec)
+	geStatus(t, resp, body, http.StatusNotFound, "NOT_FOUND")
+	resp, body = f.get(t, "/api/v1/tags/5999/descendants", spec)
+	geStatus(t, resp, body, http.StatusNotFound, "NOT_FOUND")
+	_, body = f.get(t, "/api/v1/tags/5104/descendants", spec)
+	if items := body["items"].([]any); len(items) != 0 {
+		t.Fatalf("a leaf has an empty subtree: %+v", items)
+	}
+}
+
 func TestV1EntityTagWorksEntityLane(t *testing.T) {
 	f := newGEFix(t)
 	path, spec := "/api/v1/tags/5101/works", "/tags/{tag_id}/works"

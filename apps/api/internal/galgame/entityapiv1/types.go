@@ -31,6 +31,7 @@ type TagSummary struct {
 	TagKind          string `json:"tag_kind" enum:"content,meta" maxLength:"7" doc:"What the tag describes: content is the story and characters, meta is the game as a product."`
 	IsSexual         bool   `json:"is_sexual" doc:"Whether the tag is adult content. Such tags are left out unless include_nsfw=true."`
 	CatalogWorkCount int    `json:"catalog_work_count" minimum:"0" doc:"Works catalog files under it, NSFW ones included. How many a reader can page through is the total of its works collection."`
+	DescendantCount  int    `json:"descendant_count" minimum:"0" doc:"Tags below this one at any depth, adult ones included. Blocking the tag with its subtags (exclude_tag_trees) blocks every one of them."`
 }
 
 type Tag struct {
@@ -42,6 +43,25 @@ type Tag struct {
 	CatalogWorkCount int                     `json:"catalog_work_count" minimum:"0" doc:"Works catalog files under it, NSFW ones included. How many a reader can page through is the total of its works collection."`
 	IsHidden         bool                    `json:"is_hidden" doc:"Whether catalog keeps the tag out of sight. A hidden tag is never listed or searched, but its own page still answers."`
 	Intros           []workrepr.CatalogIntro `json:"intros" doc:"Descriptions in every language catalog has, unordered. Empty array, never null."`
+	ParentTags       []TagRef                `json:"parent_tags" maxItems:"100" doc:"Tags directly above this one, in id order; a tag can sit under several. Adult ones only with include_nsfw=true. Empty array for a root, never null."`
+	Subtags          []TagSummary            `json:"subtags" doc:"Tags directly below this one, most works first. Hidden ones never; adult ones only with include_nsfw=true. Empty array, never null."`
+	DescendantCount  int                     `json:"descendant_count" minimum:"0" doc:"Tags below this one at any depth, adult ones included. Blocking the tag with its subtags (exclude_tag_trees) blocks every one of them; /tags/{tag_id}/descendants lists them."`
+	Ancestors        []TagNode               `json:"ancestors" doc:"Every tag above this one at any depth, nearest first, adult ones included: a reader who blocked any of them with its subtags does not see this tag's works. parent_ids on each draws every path up to a root. Empty array for a root, never null."`
+}
+
+type TagRef struct {
+	Object string         `json:"object" enum:"tag" maxLength:"3" doc:"Type discriminant. Always tag."`
+	ID     repr.DecimalID `json:"id" doc:"Tag id: the catalog tag id, which is also the id in the web's /galgame/tag/{id}."`
+	repr.CatalogName
+	IsSexual bool `json:"is_sexual" doc:"Whether the tag is adult content."`
+}
+
+type TagNode struct {
+	Object string         `json:"object" enum:"tag" maxLength:"3" doc:"Type discriminant. Always tag."`
+	ID     repr.DecimalID `json:"id" doc:"Tag id: the catalog tag id, which is also the id in the web's /galgame/tag/{id}."`
+	repr.CatalogName
+	IsSexual  bool             `json:"is_sexual" doc:"Whether the tag is adult content."`
+	ParentIDs []repr.DecimalID `json:"parent_ids" maxItems:"100" doc:"The tag's direct parents within the tree it came in, ascending: in a subtree, among the other items and the tag the subtree hangs from. Empty array for a root, never null."`
 }
 
 type CompanySummary struct {

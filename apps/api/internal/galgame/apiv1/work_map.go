@@ -186,10 +186,8 @@ func tagsOf(d *client.CatalogWorkDetail, includeNSFW bool) []WorkTag {
 		}
 		name := workrepr.Name(cmp.Or(t.DisplayName, t.Name), "", client.LocalizedValues(t.Localized))
 		out = append(out, WorkTag{
-			TagSummary: entityapiv1.TagSummary{
-				Object: "tag", ID: repr.ID(int(t.CanonicalID)), CatalogName: name,
-				TagKind: kind, IsSexual: t.Sexual, CatalogWorkCount: max(t.WorkCount, 0),
-			},
+			Object: "tag", ID: repr.ID(int(t.CanonicalID)), CatalogName: name,
+			TagKind: kind, IsSexual: t.Sexual, CatalogWorkCount: max(t.WorkCount, 0),
 			Spoiler: spoilerOf(t.Spoiler),
 		})
 	}

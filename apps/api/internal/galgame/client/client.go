@@ -89,8 +89,8 @@ type GalgameClient struct {
 	imageMeta    ImageMetaResolver
 	rdb          *redis.Client
 
-	tagSexualMu    sync.RWMutex
-	tagSexualCache map[batchCacheKey]batchCacheEntry[bool]
+	tagFactsMu    sync.RWMutex
+	tagFactsCache map[batchCacheKey]batchCacheEntry[CatalogTagFacts]
 }
 
 func New(baseURL, apiKey, imageCDNBase string) *GalgameClient {
@@ -118,8 +118,8 @@ func New(baseURL, apiKey, imageCDNBase string) *GalgameClient {
 				return http.ErrUseLastResponse
 			},
 		},
-		imageCDNBase:   imageCDNBase,
-		tagSexualCache: map[batchCacheKey]batchCacheEntry[bool]{},
+		imageCDNBase:  imageCDNBase,
+		tagFactsCache: map[batchCacheKey]batchCacheEntry[CatalogTagFacts]{},
 	}
 }
 
