@@ -11,19 +11,20 @@ import (
 )
 
 type CatalogTaxonomyItem struct {
-	ID          int64                       `json:"id"`
-	Name        string                      `json:"name"`
-	DisplayName string                      `json:"display_name"`
-	Latin       string                      `json:"latin"`
-	Localized   map[string]catLocalizedName `json:"localized"`
-	Kind        string                      `json:"kind"`
-	Tier        string                      `json:"tier"`
-	WorkCount   int                         `json:"work_count"`
-	Description string                      `json:"description"`
-	Aliases     catAliases                  `json:"aliases"`
-	Sexual      bool                        `json:"sexual"`
-	HasNSFW     *bool                       `json:"has_nsfw"`
-	LogoHash    string                      `json:"logo_hash"`
+	ID              int64                       `json:"id"`
+	Name            string                      `json:"name"`
+	DisplayName     string                      `json:"display_name"`
+	Latin           string                      `json:"latin"`
+	Localized       map[string]catLocalizedName `json:"localized"`
+	Kind            string                      `json:"kind"`
+	Tier            string                      `json:"tier"`
+	WorkCount       int                         `json:"work_count"`
+	Description     string                      `json:"description"`
+	Aliases         catAliases                  `json:"aliases"`
+	Sexual          bool                        `json:"sexual"`
+	HasNSFW         *bool                       `json:"has_nsfw"`
+	LogoHash        string                      `json:"logo_hash"`
+	DescendantCount int                         `json:"descendant_count"`
 }
 
 const TagTierHidden = "hidden"
@@ -54,15 +55,31 @@ type CatalogLabelLink struct {
 }
 
 type CatalogTagDetail struct {
-	ID          int64                       `json:"id"`
-	Name        string                      `json:"name"`
-	DisplayName string                      `json:"display_name"`
-	Localized   map[string]catLocalizedName `json:"localized"`
-	Tier        string                      `json:"tier"`
-	Kind        string                      `json:"kind"`
-	WorkCount   int                         `json:"work_count"`
-	Sexual      bool                        `json:"sexual"`
-	Intros      []CatalogIntro              `json:"intros"`
+	ID              int64                       `json:"id"`
+	Name            string                      `json:"name"`
+	DisplayName     string                      `json:"display_name"`
+	Localized       map[string]catLocalizedName `json:"localized"`
+	Tier            string                      `json:"tier"`
+	Kind            string                      `json:"kind"`
+	WorkCount       int                         `json:"work_count"`
+	Sexual          bool                        `json:"sexual"`
+	Intros          []CatalogIntro              `json:"intros"`
+	Parents         []CatalogTagNode            `json:"parents"`
+	Children        []CatalogTagNode            `json:"children"`
+	DescendantCount int                         `json:"descendant_count"`
+	Ancestors       []CatalogTagNode            `json:"ancestors"`
+}
+
+type CatalogTagNode struct {
+	ID          int64    `json:"id"`
+	DisplayName string   `json:"display_name"`
+	Sexual      bool     `json:"sexual"`
+	ParentIDs   []string `json:"parent_ids"`
+}
+
+type CatalogTagFacts struct {
+	Sexual          bool
+	DescendantCount int
 }
 
 type CatalogEngineDetail struct {
@@ -181,40 +198,63 @@ func (c *GalgameClient) CatalogEntitySearch(ctx context.Context, searchType, key
 	return parsed.Items, parsed.Total, nil
 }
 
-func (c *GalgameClient) CatalogSexualTagIDs(ctx context.Context, ids []int) map[int]bool {
-	flags, appErr := cachedBatch(
-		ctx, &c.tagSexualMu, c.tagSexualCache, ids, false,
-		func(missing []int) (map[int]bool, *errors.AppError) {
-			return c.fetchSexualTagIDs(ctx, missing), nil
+func (c *GalgameClient) CatalogTagFacts(ctx context.Context, ids []int) map[int]CatalogTagFacts {
+	facts, appErr := cachedBatch(
+		ctx, &c.tagFactsMu, c.tagFactsCache, ids, false,
+		func(missing []int) (map[int]CatalogTagFacts, *errors.AppError) {
+			return c.fetchTagFacts(ctx, missing), nil
 		},
 	)
 	if appErr != nil {
-		return map[int]bool{}
+		return map[int]CatalogTagFacts{}
 	}
-	return flags
+	return facts
 }
 
-func (c *GalgameClient) fetchSexualTagIDs(ctx context.Context, ids []int) map[int]bool {
+func (c *GalgameClient) fetchTagFacts(ctx context.Context, ids []int) map[int]CatalogTagFacts {
 	var (
 		mu  sync.Mutex
 		wg  sync.WaitGroup
-		out = make(map[int]bool, len(ids))
+		out = make(map[int]CatalogTagFacts, len(ids))
 	)
 	for _, id := range ids {
 		wg.Add(1)
 		go func(id int) {
 			defer wg.Done()
 			rec, found, appErr := c.CatalogTag(ctx, strconv.Itoa(id))
-			if appErr != nil || !found || !rec.Sexual {
+			if appErr != nil || !found {
 				return
 			}
 			mu.Lock()
-			out[id] = true
+			out[id] = CatalogTagFacts{Sexual: rec.Sexual, DescendantCount: rec.DescendantCount}
 			mu.Unlock()
 		}(id)
 	}
 	wg.Wait()
 	return out
+}
+
+func (c *GalgameClient) CatalogTagDescendants(ctx context.Context, id string) ([]CatalogTagNode, *errors.AppError) {
+	var body struct {
+		Descendants []struct {
+			ID          string   `json:"id"`
+			DisplayName string   `json:"display_name"`
+			IsSexual    bool     `json:"is_sexual"`
+			ParentIDs   []string `json:"parent_ids"`
+		} `json:"descendants"`
+	}
+	if appErr := c.getV2Native(ctx, "/v2/catalog/tags/"+id, url.Values{"include": {"descendants"}}, &body); appErr != nil {
+		return nil, appErr
+	}
+	out := make([]CatalogTagNode, 0, len(body.Descendants))
+	for _, d := range body.Descendants {
+		n, err := strconv.ParseInt(d.ID, 10, 64)
+		if err != nil {
+			continue
+		}
+		out = append(out, CatalogTagNode{ID: n, DisplayName: d.DisplayName, Sexual: d.IsSexual, ParentIDs: d.ParentIDs})
+	}
+	return out, nil
 }
 
 var labelSourceKeys = []string{"curated", "galgame_wiki"}

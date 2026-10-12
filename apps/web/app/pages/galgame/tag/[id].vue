@@ -58,18 +58,14 @@ const data = computed(() => {
   }
 })
 
-const { modeOf, block, unblock } = useTagBlocks()
-const blockedMode = computed(() => modeOf(tag_id.value))
-const toggling = ref(false)
-const toggleBlock = async () => {
-  toggling.value = true
-  if (blockedMode.value) {
-    await unblock(tag_id.value)
-  } else {
-    await block(tag_id.value, 'tree')
-  }
-  toggling.value = false
-}
+const { blockOf } = useTagBlocks()
+const isHiddenByBlock = computed(
+  () =>
+    !!blockOf(
+      tag_id.value,
+      tag.value!.ancestors.map((a) => Number(a.id))
+    )
+)
 
 const isIndexable = computed(
   () => data.value.category !== 'sexual' && !data.value.hidden
@@ -108,6 +104,8 @@ if (isIndexable.value) {
             <KunLink to="/doc/contact"> 联系我们 </KunLink>。
           </p>
 
+          <GalgameTagLineage :tag="tag!" :name="data.name" />
+
           <div class="text-default-500">
             标签类别
             <KunChip
@@ -123,33 +121,23 @@ if (isIndexable.value) {
             </KunChip>
           </div>
 
-          <KunButton
-            size="sm"
-            variant="flat"
-            :color="blockedMode ? 'default' : 'danger'"
-            :disabled="toggling"
-            @click="toggleBlock"
-          >
-            <KunIcon name="lucide:ban" />
-            {{ blockedMode ? '取消屏蔽' : '屏蔽此标签' }}
-          </KunButton>
+          <GalgameTagBlockMenu
+            :tag-id="tag_id"
+            :name="data.name"
+            :descendant-count="tag!.descendant_count"
+          />
         </div>
       </template>
     </KunHeader>
 
+    <GalgameTagSubtags
+      :subtags="tag!.subtags"
+      :descendant-count="tag!.descendant_count"
+    />
+
     <GalgameCardNav :is-show-advanced="false" />
 
-    <KunInfo v-if="blockedMode" color="warning">
-      您已屏蔽该标签{{ blockedMode === 'tree' ? '及其子标签' : '' }}, 带有它的
-      Galgame 不会出现在各处列表中, 所以这里也不会显示。
-    </KunInfo>
-
-    <KunInfo
-      v-if="isSfwMode"
-      color="warning"
-      title="部分 Galgame 已隐藏"
-      description="当前为 SFW 模式，该标签含 NSFW 内容的 Galgame 不会显示。如需查看，请在设置面板开启 NSFW 开关。"
-    />
+    <GalgameTagBlockNotice :tag="tag!" :name="data.name" :sfw="isSfwMode" />
 
     <KunLoading :loading="status === 'pending'">
       <GalgameCard
@@ -159,7 +147,7 @@ if (isIndexable.value) {
       />
 
       <GalgameOriginalLanguageNull
-        v-else
+        v-else-if="!isHiddenByBlock"
         :description="`${data.name} 标签下暂无 Galgame`"
       />
     </KunLoading>

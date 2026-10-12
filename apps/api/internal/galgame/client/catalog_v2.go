@@ -58,7 +58,7 @@ var v2CatalogDetailInclude = map[string]string{
 	"characters":   "gender,birthday,height_cm,weight_kg,measurements,blood_type,instance_of_id,image,figure,traits,aliases,intros,refs",
 	"companies":    "aliases,logo,intros,links",
 	"credit-names": "aliases,photo,siblings,intros,links,refs",
-	"tags":         "intros",
+	"tags":         "intros,children,ancestors",
 	"series":       "intros,refs",
 }
 

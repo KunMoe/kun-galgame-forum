@@ -75,8 +75,13 @@ func (AttributionRole) Schema(huma.Registry) *huma.Schema {
 }
 
 type WorkTag struct {
-	entityapiv1.TagSummary
-	Spoiler string `json:"spoiler" enum:"none,minor,major" maxLength:"5" doc:"How much the tag gives away."`
+	Object string         `json:"object" enum:"tag" maxLength:"3" doc:"Type discriminant. Always tag."`
+	ID     repr.DecimalID `json:"id" doc:"Tag id: the catalog tag id, which is also the id in the web's /galgame/tag/{id}."`
+	repr.CatalogName
+	TagKind          string `json:"tag_kind" enum:"content,meta" maxLength:"7" doc:"What the tag describes: content is the story and characters, meta is the game as a product."`
+	IsSexual         bool   `json:"is_sexual" doc:"Whether the tag is adult content. Such tags are left out unless include_nsfw=true."`
+	CatalogWorkCount int    `json:"catalog_work_count" minimum:"0" doc:"Works catalog files under it, NSFW ones included. How many a reader can page through is the total of its works collection."`
+	Spoiler          string `json:"spoiler" enum:"none,minor,major" maxLength:"5" doc:"How much the tag gives away."`
 }
 
 type WorkCreditGroup struct {

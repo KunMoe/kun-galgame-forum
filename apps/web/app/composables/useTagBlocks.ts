@@ -63,6 +63,15 @@ export const useTagBlocks = () => {
     return blocks.value.exact.includes(id) ? 'exact' : null
   }
 
+  const blockOf = (tagId: number, ancestorIds: number[]) => {
+    const own = modeOf(tagId)
+    if (own) {
+      return { tagId, mode: own }
+    }
+    const ancestor = ancestorIds.find((id) => blocks.value.tree.includes(id))
+    return ancestor ? { tagId: ancestor, mode: 'tree' as const } : null
+  }
+
   const refresh = async () => {
     if (!isSignedIn.value) {
       return
@@ -139,6 +148,7 @@ export const useTagBlocks = () => {
     count,
     excludeQuery,
     modeOf,
+    blockOf,
     refresh,
     block,
     unblock

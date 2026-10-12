@@ -18,8 +18,9 @@ type Catalog interface {
 	workrepr.Rows
 	CatalogTaxonomyList(ctx context.Context, entity string, q url.Values) (*client.CatalogTaxonomyPage, *errors.AppError)
 	CatalogEntitySearch(ctx context.Context, searchType, keywords string, page, limit int) ([]client.CatalogEntityHit, int64, *errors.AppError)
-	CatalogSexualTagIDs(ctx context.Context, ids []int) map[int]bool
+	CatalogTagFacts(ctx context.Context, ids []int) map[int]client.CatalogTagFacts
 	CatalogTag(ctx context.Context, id string) (*client.CatalogTagDetail, bool, *errors.AppError)
+	CatalogTagDescendants(ctx context.Context, id string) ([]client.CatalogTagNode, *errors.AppError)
 	CatalogLabel(ctx context.Context, id string) (*client.CatalogLabelDetail, bool, int64, *errors.AppError)
 	CatalogEngine(ctx context.Context, id string) (*client.CatalogEngineDetail, bool, *errors.AppError)
 	CatalogSeries(ctx context.Context, id string) (*client.CatalogSeriesDetail, bool, *errors.AppError)

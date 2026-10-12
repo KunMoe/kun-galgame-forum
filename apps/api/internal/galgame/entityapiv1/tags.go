@@ -54,6 +54,7 @@ func (s *Service) buildTagIndex(ctx context.Context) ([]TagSummary, error) {
 				TagKind:          t.Kind,
 				IsSexual:         t.Sexual,
 				CatalogWorkCount: max(t.WorkCount, 0),
+				DescendantCount:  t.DescendantCount,
 			})
 		}
 		if res.NextCursor == nil || *res.NextCursor == "" {
@@ -167,6 +168,7 @@ func (s *Service) tagsByIDs(ctx context.Context, parts []repr.DecimalID, index [
 			TagKind:          t.Kind,
 			IsSexual:         t.Sexual,
 			CatalogWorkCount: max(t.WorkCount, 0),
+			DescendantCount:  t.DescendantCount,
 		})
 	}
 	return out, nil
@@ -189,9 +191,9 @@ func (s *Service) searchTags(ctx context.Context, q string, index []TagSummary, 
 			}
 		}
 	}
-	sexual := map[int]bool{}
+	facts := map[int]client.CatalogTagFacts{}
 	if len(missing) > 0 {
-		sexual = s.catalog.CatalogSexualTagIDs(ctx, missing)
+		facts = s.catalog.CatalogTagFacts(ctx, missing)
 	}
 	out := make([]TagSummary, 0, len(hits))
 	for i := range hits {
@@ -204,12 +206,14 @@ func (s *Service) searchTags(ctx context.Context, q string, index []TagSummary, 
 			if !tagKinds[h.Kind] {
 				continue
 			}
+			f := facts[int(h.ID)]
 			row = TagSummary{
-				Object:      "tag",
-				ID:          repr.ID(int(h.ID)),
-				CatalogName: workrepr.Name(h.DisplayName, h.Latin, client.LocalizedValues(h.Localized)),
-				TagKind:     h.Kind,
-				IsSexual:    sexual[int(h.ID)],
+				Object:          "tag",
+				ID:              repr.ID(int(h.ID)),
+				CatalogName:     workrepr.Name(h.DisplayName, h.Latin, client.LocalizedValues(h.Localized)),
+				TagKind:         h.Kind,
+				IsSexual:        f.Sexual,
+				DescendantCount: f.DescendantCount,
 			}
 		}
 		if row.IsSexual && !includeNSFW {
@@ -255,6 +259,10 @@ func (s *Service) getTag(ctx context.Context, in *tagPathInput) (*getTagOutput, 
 	if !tagKinds[kind] {
 		return nil, problem.Internal(errUnknownVocab("tag_kind", kind))
 	}
+	subtags, prob := s.subtags(ctx, t.Children, in.IncludeNSFW)
+	if prob != nil {
+		return nil, prob
+	}
 	return &getTagOutput{Body: Tag{
 		Object:           "tag",
 		ID:               repr.ID(int(t.ID)),
@@ -264,7 +272,66 @@ func (s *Service) getTag(ctx context.Context, in *tagPathInput) (*getTagOutput, 
 		CatalogWorkCount: max(t.WorkCount, 0),
 		IsHidden:         t.Tier == client.TagTierHidden,
 		Intros:           workrepr.Intros(t.Intros),
+		ParentTags:       tagRefs(t.Parents, in.IncludeNSFW),
+		Subtags:          subtags,
+		DescendantCount:  t.DescendantCount,
+		Ancestors:        tagNodes(t.Ancestors, nil),
 	}}, nil
+}
+
+func (s *Service) subtags(ctx context.Context, children []client.CatalogTagNode, includeNSFW bool) ([]TagSummary, *problem.Problem) {
+	if len(children) == 0 {
+		return []TagSummary{}, nil
+	}
+	index, err := s.tagIndex(ctx)
+	if err != nil {
+		return nil, problem.Unavailable(err)
+	}
+	ids := make([]repr.DecimalID, len(children))
+	for i, c := range children {
+		ids[i] = repr.ID(int(c.ID))
+	}
+	rows, prob := s.tagsByIDs(ctx, ids, index, includeNSFW)
+	if prob != nil {
+		return nil, prob
+	}
+	sort.SliceStable(rows, func(i, j int) bool {
+		if rows[i].CatalogWorkCount != rows[j].CatalogWorkCount {
+			return rows[i].CatalogWorkCount > rows[j].CatalogWorkCount
+		}
+		return idLess(rows[i].ID, rows[j].ID)
+	})
+	return rows, nil
+}
+
+func tagRefs(in []client.CatalogTagNode, includeNSFW bool) []TagRef {
+	out := make([]TagRef, 0, len(in))
+	for _, t := range in {
+		if t.Sexual && !includeNSFW {
+			continue
+		}
+		out = append(out, TagRef{Object: "tag", ID: repr.ID(int(t.ID)), CatalogName: workrepr.Name(t.DisplayName, "", nil), IsSexual: t.Sexual})
+	}
+	return out
+}
+
+func tagNodes(in []client.CatalogTagNode, keep map[int64]bool) []TagNode {
+	out := make([]TagNode, 0, len(in))
+	for _, t := range in {
+		if keep != nil && !keep[t.ID] {
+			continue
+		}
+		parents := make([]repr.DecimalID, 0, len(t.ParentIDs))
+		for _, p := range t.ParentIDs {
+			id, err := strconv.ParseInt(p, 10, 64)
+			if err != nil || (keep != nil && !keep[id]) {
+				continue
+			}
+			parents = append(parents, repr.DecimalID(p))
+		}
+		out = append(out, TagNode{Object: "tag", ID: repr.ID(int(t.ID)), CatalogName: workrepr.Name(t.DisplayName, "", nil), IsSexual: t.Sexual, ParentIDs: parents})
+	}
+	return out
 }
 
 type listTagWorksInput struct {
@@ -284,4 +351,51 @@ func (s *Service) listTagWorks(ctx context.Context, in *listTagWorksInput) (*wor
 		return nil, prob
 	}
 	return &workPageOutput{Body: page}, nil
+}
+
+type listTagDescendantsOutput struct {
+	Body repr.List[TagNode]
+}
+
+func (s *Service) listTagDescendants(ctx context.Context, in *tagPathInput) (*listTagDescendantsOutput, error) {
+	if s == nil {
+		return nil, problem.Internal(errUnconfigured)
+	}
+	t, prob := s.tagHead(ctx, in.TagID, in.IncludeNSFW)
+	if prob != nil {
+		return nil, prob
+	}
+	nodes, appErr := s.catalog.CatalogTagDescendants(ctx, in.TagID)
+	if appErr != nil {
+		return nil, unavailable(appErr)
+	}
+	var keep map[int64]bool
+	if !in.IncludeNSFW {
+		keep = sfwSubtree(t.ID, nodes)
+	}
+	return &listTagDescendantsOutput{Body: repr.NewList(tagNodes(nodes, keep), nil)}, nil
+}
+
+func sfwSubtree(root int64, nodes []client.CatalogTagNode) map[int64]bool {
+	children := make(map[int64][]client.CatalogTagNode, len(nodes))
+	for _, n := range nodes {
+		for _, p := range n.ParentIDs {
+			if id, err := strconv.ParseInt(p, 10, 64); err == nil {
+				children[id] = append(children[id], n)
+			}
+		}
+	}
+	keep := map[int64]bool{root: true}
+	queue := []int64{root}
+	for len(queue) > 0 {
+		cur := queue[0]
+		queue = queue[1:]
+		for _, c := range children[cur] {
+			if !c.Sexual && !keep[c.ID] {
+				keep[c.ID] = true
+				queue = append(queue, c.ID)
+			}
+		}
+	}
+	return keep
 }

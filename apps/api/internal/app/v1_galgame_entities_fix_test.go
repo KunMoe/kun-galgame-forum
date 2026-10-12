@@ -152,6 +152,7 @@ type fakeCatalog struct {
 	taxonomy   map[string][]client.CatalogTaxonomyItem
 	hits       map[string][]client.CatalogEntityHit
 	tags       map[string]*client.CatalogTagDetail
+	subtrees   map[string][]client.CatalogTagNode
 	labels     map[string]*client.CatalogLabelDetail
 	moved      map[string]int64
 	engines    map[string]*client.CatalogEngineDetail
@@ -293,14 +294,21 @@ func (f *fakeCatalog) CatalogEntitySearch(_ context.Context, searchType, _ strin
 	return hits, int64(len(hits)), nil
 }
 
-func (f *fakeCatalog) CatalogSexualTagIDs(_ context.Context, ids []int) map[int]bool {
-	out := map[int]bool{}
+func (f *fakeCatalog) CatalogTagFacts(_ context.Context, ids []int) map[int]client.CatalogTagFacts {
+	out := map[int]client.CatalogTagFacts{}
 	for _, id := range ids {
-		if t, ok := f.tags[strconv.Itoa(id)]; ok && t.Sexual {
-			out[id] = true
+		if t, ok := f.tags[strconv.Itoa(id)]; ok {
+			out[id] = client.CatalogTagFacts{Sexual: t.Sexual, DescendantCount: t.DescendantCount}
 		}
 	}
 	return out
+}
+
+func (f *fakeCatalog) CatalogTagDescendants(_ context.Context, id string) ([]client.CatalogTagNode, *legacyErrors.AppError) {
+	if e := f.err(); e != nil {
+		return nil, e
+	}
+	return f.subtrees[id], nil
 }
 
 func (f *fakeCatalog) CatalogTag(_ context.Context, id string) (*client.CatalogTagDetail, bool, *legacyErrors.AppError) {
@@ -742,8 +750,9 @@ func (f *geFix) seedCatalog(t *testing.T) {
 	c.rollup[strconv.Itoa(geCompany)] = []geMember{{ids[0], nil}, {ids[1], via}, {ids[3], nil}, {ids[5], via}, {ids[6], nil}}
 
 	var tagItems []client.CatalogTaxonomyItem
+	var nodes []client.CatalogTagNode
 	decodeInto(t, `[
-		{"id":5101,"display_name":"Plot twist","localized":{"zh-Hans":{"value":"剧情反转"}},"kind":"content","tier":"core","work_count":40,"sexual":false},
+		{"id":5101,"display_name":"Plot twist","localized":{"zh-Hans":{"value":"剧情反转"}},"kind":"content","tier":"core","work_count":40,"sexual":false,"descendant_count":4},
 		{"id":5102,"display_name":"Adult tag","kind":"content","tier":"core","work_count":40,"sexual":true},
 		{"id":5103,"display_name":"Hidden tag","kind":"meta","tier":"hidden","work_count":90,"sexual":false},
 		{"id":5105,"display_name":"Meta tag","kind":"meta","tier":"core","work_count":40,"sexual":false},
@@ -751,16 +760,26 @@ func (f *geFix) seedCatalog(t *testing.T) {
 		{"id":5104,"display_name":"Empty tag","kind":"content","tier":"core","work_count":0,"sexual":false}]`, &tagItems)
 	c.taxonomy["tags"] = tagItems
 	for _, raw := range []string{
-		`{"id":5101,"display_name":"Plot twist","localized":{"zh-Hans":{"value":"剧情反转"}},"kind":"content","tier":"core","work_count":40,"sexual":false,"intros":[{"lang":"zh-Hans","intro":"反转","source":"vndb"},{"lang":"en","intro":"  "}]}`,
+		`{"id":5101,"display_name":"Plot twist","localized":{"zh-Hans":{"value":"剧情反转"}},"kind":"content","tier":"core","work_count":40,"sexual":false,"intros":[{"lang":"zh-Hans","intro":"反转","source":"vndb"},{"lang":"en","intro":"  "}],
+			"parents":[{"id":5105,"display_name":"Meta tag","sexual":false}],
+			"children":[{"id":5102,"display_name":"Adult tag","sexual":true},{"id":5106,"display_name":"Rare tag","sexual":false}],
+			"descendant_count":4,
+			"ancestors":[{"id":5105,"display_name":"Meta tag","sexual":false,"parent_ids":["5110"]},{"id":5110,"display_name":"Adult root","sexual":true,"parent_ids":[]}]}`,
 		`{"id":5102,"display_name":"Adult tag","kind":"content","tier":"core","work_count":40,"sexual":true}`,
 		`{"id":5103,"display_name":"Hidden tag","kind":"meta","tier":"hidden","work_count":90,"sexual":false}`,
-		`{"id":5104,"display_name":"Empty tag","kind":"content","tier":"core","work_count":0,"sexual":false}`,
+		`{"id":5104,"display_name":"Empty tag","kind":"content","tier":"core","work_count":0,"sexual":false,"descendant_count":2}`,
 		`{"id":5107,"display_name":"Empty adult","kind":"content","tier":"core","work_count":0,"sexual":true}`,
 	} {
 		var d client.CatalogTagDetail
 		decodeInto(t, raw, &d)
 		c.tags[strconv.FormatInt(d.ID, 10)] = &d
 	}
+	decodeInto(t, `[
+		{"id":5102,"display_name":"Adult tag","sexual":true,"parent_ids":["5101"]},
+		{"id":5106,"display_name":"Rare tag","sexual":false,"parent_ids":["5101"]},
+		{"id":5108,"display_name":"Under adult only","sexual":false,"parent_ids":["5102"]},
+		{"id":5109,"display_name":"Under both","sexual":false,"parent_ids":["5102","5106"]}]`, &nodes)
+	c.subtrees = map[string][]client.CatalogTagNode{"5101": nodes}
 	c.hits["tags"] = decodeHits(t, `[
 		{"id":5103,"display_name":"Hidden tag","tier":"hidden","kind":"meta"},
 		{"id":5102,"display_name":"Adult tag","tier":"core","kind":"content"},

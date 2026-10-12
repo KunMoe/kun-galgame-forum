@@ -37,6 +37,11 @@ func Register(s *Service) func(huma.API) {
 		huma.Register(api, op("getTag", "/tags/{tag_id}", "Get a galgame tag",
 			"An adult tag is NOT_FOUND unless include_nsfw=true, the same answer as a tag that does not exist.",
 			tags, map[int]string{404: notFoundDesc, 503: unavailableMsg}), s.getTag)
+		huma.Register(api, op("listTagDescendants", "/tags/{tag_id}/descendants", "List the tags below a tag",
+			"Every tag below the tag at any depth, nearest first (shortest path, then id): what blocking it with its subtags (exclude_tag_trees) blocks. "+
+				"Each item's parent_ids name its parents among the items and the tag itself, so the subtree can be drawn; a tag with several parents is drawn under each. "+
+				"Adult tags, and tags reached only through them, are left out unless include_nsfw=true. Not paginated: the largest subtree is about 600 tags.",
+			tags, map[int]string{404: notFoundDesc, 503: unavailableMsg}), s.listTagDescendants)
 		huma.Register(api, op("listTagWorks", "/tags/{tag_id}/works", "List a tag's works", worksDescription,
 			tags, map[int]string{400: "INVALID_PARAMETER when page × limit is too deep.", 404: notFoundDesc, 503: unavailableMsg}), s.listTagWorks)
 		huma.Register(api, op("listTaggedWorks", "/tagged-works", "List works carrying every given tag",

@@ -3757,6 +3757,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/tags/{tag_id}/descendants": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the tags below a tag
+         * @description Every tag below the tag at any depth, nearest first (shortest path, then id): what blocking it with its subtags (exclude_tag_trees) blocks. Each item's parent_ids name its parents among the items and the tag itself, so the subtree can be drawn; a tag with several parents is drawn under each. Adult tags, and tags reached only through them, are left out unless include_nsfw=true. Not paginated: the largest subtree is about 600 tags.
+         */
+        get: operations["listTagDescendants"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/tags/{tag_id}/works": {
         parameters: {
             query?: never;
@@ -8735,6 +8755,17 @@ export interface components {
              */
             object: "list";
         };
+        ListTagNode: {
+            /** @description Members of this page. Empty array, never null. */
+            items: components["schemas"]["TagNode"][];
+            /** @description Opaque keyset cursor. Omitted on the last page. */
+            next_cursor?: string;
+            /**
+             * @description Type discriminant. Always list.
+             * @constant
+             */
+            object: "list";
+        };
         ListTopicDraftSummary: {
             /** @description Members of this page. Empty array, never null. */
             items: components["schemas"]["TopicDraftSummary"][];
@@ -12427,11 +12458,18 @@ export interface components {
             object: "table_row";
         };
         Tag: {
+            /** @description Every tag above this one at any depth, nearest first, adult ones included: a reader who blocked any of them with its subtags does not see this tag's works. parent_ids on each draws every path up to a root. Empty array for a root, never null. */
+            ancestors: components["schemas"]["TagNode"][];
             /**
              * Format: int64
              * @description Works catalog files under it, NSFW ones included. How many a reader can page through is the total of its works collection.
              */
             catalog_work_count: number;
+            /**
+             * Format: int64
+             * @description Tags below this one at any depth, adult ones included. Blocking the tag with its subtags (exclude_tag_trees) blocks every one of them; /tags/{tag_id}/descendants lists them.
+             */
+            descendant_count: number;
             /** @description The entity's own name. Never empty. Free text; never use it as a decision input. */
             display_name: string;
             /** @description Tag id: the catalog tag id, which is also the id in the web's /galgame/tag/{id}. */
@@ -12453,6 +12491,10 @@ export interface components {
              * @constant
              */
             object: "tag";
+            /** @description Tags directly above this one, in id order; a tag can sit under several. Adult ones only with include_nsfw=true. Empty array for a root, never null. */
+            parent_tags: components["schemas"]["TagRef"][];
+            /** @description Tags directly below this one, most works first. Hidden ones never; adult ones only with include_nsfw=true. Empty array, never null. */
+            subtags: components["schemas"]["TagSummary"][];
             /** @description What the tag describes: content is the story and characters, meta is the game as a product. */
             tag_kind: components["schemas"]["TagKind"];
         };
@@ -12521,6 +12563,27 @@ export interface components {
         };
         /** @enum {string} */
         TagKind: "content" | "meta";
+        TagNode: {
+            /** @description The entity's own name. Never empty. Free text; never use it as a decision input. */
+            display_name: string;
+            /** @description Tag id: the catalog tag id, which is also the id in the web's /galgame/tag/{id}. */
+            id: string;
+            /** @description Whether the tag is adult content. */
+            is_sexual: boolean;
+            /** @description Romanization of the name. null when none is recorded. Free text; never use it as a decision input. */
+            latin: string | null;
+            /** @description Names by BCP-47 tag, sparse. Empty object when there are none, never null. */
+            localized: {
+                [key: string]: components["schemas"]["LocalizedName"];
+            };
+            /**
+             * @description Type discriminant. Always tag.
+             * @constant
+             */
+            object: "tag";
+            /** @description The tag's direct parents within the tree it came in, ascending: in a subtree, among the other items and the tag the subtree hangs from. Empty array for a root, never null. */
+            parent_ids: string[];
+        };
         TagPatch: {
             /** @description New description. Free text; never use it as a decision input. */
             description?: string;
@@ -12536,12 +12599,36 @@ export interface components {
             /** @description New group id. null moves the tag out of every group; absent keeps it. */
             website_tag_group_id?: string | null;
         };
+        TagRef: {
+            /** @description The entity's own name. Never empty. Free text; never use it as a decision input. */
+            display_name: string;
+            /** @description Tag id: the catalog tag id, which is also the id in the web's /galgame/tag/{id}. */
+            id: string;
+            /** @description Whether the tag is adult content. */
+            is_sexual: boolean;
+            /** @description Romanization of the name. null when none is recorded. Free text; never use it as a decision input. */
+            latin: string | null;
+            /** @description Names by BCP-47 tag, sparse. Empty object when there are none, never null. */
+            localized: {
+                [key: string]: components["schemas"]["LocalizedName"];
+            };
+            /**
+             * @description Type discriminant. Always tag.
+             * @constant
+             */
+            object: "tag";
+        };
         TagSummary: {
             /**
              * Format: int64
              * @description Works catalog files under it, NSFW ones included. How many a reader can page through is the total of its works collection.
              */
             catalog_work_count: number;
+            /**
+             * Format: int64
+             * @description Tags below this one at any depth, adult ones included. Blocking the tag with its subtags (exclude_tag_trees) blocks every one of them.
+             */
+            descendant_count: number;
             /** @description The entity's own name. Never empty. Free text; never use it as a decision input. */
             display_name: string;
             /** @description Tag id: the catalog tag id, which is also the id in the web's /galgame/tag/{id}. */
@@ -34889,6 +34976,68 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Tag"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when no such entity is visible. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when catalog cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listTagDescendants: {
+        parameters: {
+            query?: {
+                /** @description When true, an adult tag answers. Default false: it is NOT_FOUND. */
+                include_nsfw?: boolean;
+            };
+            header?: never;
+            path: {
+                /** @description Tag id. */
+                tag_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListTagNode"];
                 };
             };
             /** @description Bad Request */
