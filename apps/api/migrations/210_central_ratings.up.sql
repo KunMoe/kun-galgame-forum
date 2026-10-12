@@ -45,6 +45,14 @@ ALTER TABLE galgame_rating DROP CONSTRAINT IF EXISTS galgame_rating_galgame_id_f
 -- here and recreated below.
 DROP TRIGGER IF EXISTS trg_feed_galgame_rating ON galgame_rating;
 
+-- NextMoe's created_at/updated_at are whole seconds (RFC 3339, fraction cut
+-- off), and 4,697 of 4,701 production rows carried milliseconds. Left as they
+-- were, the mirror's first pass would see every forum rating's created change
+-- and re-push its activity. The snapshot above keeps the milliseconds.
+UPDATE galgame_rating
+   SET created = date_trunc('second', created), updated = date_trunc('second', updated)
+ WHERE created <> date_trunc('second', created) OR updated <> date_trunc('second', updated);
+
 ALTER TABLE galgame_rating
     ADD COLUMN IF NOT EXISTS author_state      text,
     ADD COLUMN IF NOT EXISTS author_completion text,
