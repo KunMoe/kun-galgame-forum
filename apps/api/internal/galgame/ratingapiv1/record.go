@@ -21,11 +21,11 @@ import (
 const playtimeFloor = 10
 
 type WorkRecord struct {
-	Object    string            `json:"object" enum:"work_record" maxLength:"11" doc:"Type discriminant. Always work_record."`
-	WorkID    repr.DecimalID    `json:"work_id" doc:"The work."`
-	PlayState *AuthorPlayStatus `json:"play_state" doc:"The caller's play state on the work. null when none."`
-	Minutes   int               `json:"minutes" minimum:"0" maximum:"60000" doc:"The most minutes any NextMoe application reported for the caller on the work. 0 when none, or when the report is below 10 minutes, which no median counts."`
-	Rating    *RatingSummary    `json:"rating" doc:"The caller's rating of the work, the same on every NextMoe site. null when none."`
+	Object        string            `json:"object" enum:"work_record" maxLength:"11" doc:"Type discriminant. Always work_record."`
+	WorkID        repr.DecimalID    `json:"work_id" doc:"The work."`
+	PlayState     *AuthorPlayStatus `json:"play_state" doc:"The caller's play state on the work. null when none."`
+	Minutes       int               `json:"minutes" minimum:"0" maximum:"60000" doc:"The most minutes any NextMoe application reported for the caller on the work. 0 when none, or when the report is below 10 minutes, which no median counts."`
+	RatingSummary *RatingSummary    `json:"rating_summary" doc:"The caller's rating of the work, the same on every NextMoe site. null when none."`
 }
 
 type RecordRating struct {
@@ -40,9 +40,9 @@ type RecordRating struct {
 // WorkRecordPut replaces the whole record, as NextMoe does: a part left out is
 // deleted. A client sends every part its form shows.
 type WorkRecordPut struct {
-	PlayState *PlayStatus   `json:"play_state,omitempty" doc:"The play state. Absent deletes it."`
-	Minutes   *int          `json:"minutes,omitempty" minimum:"1" maximum:"60000" doc:"This site's playtime report, in minutes. Absent withdraws it; reports from other applications stay. Below 10 is stored but counted by no median."`
-	Rating    *RecordRating `json:"rating,omitempty" doc:"The rating. Absent deletes it."`
+	PlayState   *AuthorPlayStatus `json:"play_state" required:"false" doc:"The play state. Absent or null deletes it; done is refused."`
+	Minutes     *int              `json:"minutes,omitempty" minimum:"1" maximum:"60000" doc:"This site's playtime report, in minutes. Absent withdraws it; reports from other applications stay. Below 10 is stored but counted by no median."`
+	RatingInput *RecordRating     `json:"rating_input,omitempty" doc:"The rating. Absent deletes it."`
 }
 
 type workRecordInput struct {
@@ -118,8 +118,7 @@ func (s *Service) putWorkRecord(ctx context.Context, in *putWorkRecordInput) (*w
 	if b.PlayState != nil {
 		state, completion, ok := playstate.ToCatalog(string(*b.PlayState))
 		if !ok {
-			return nil, problem.New(problem.CodeValidationFailed, "play_state is not a play state.",
-				problem.AtPointer("/play_state", problem.ReasonUnknownValue, "not in this field's closed vocabulary", nil))
+			return nil, doneRefused("/play_state")
 		}
 		put.WorkState = &catalogclient.WorkRecordState{State: state}
 		if completion != nil {
@@ -130,7 +129,7 @@ func (s *Service) putWorkRecord(ctx context.Context, in *putWorkRecordInput) (*w
 		put.Playtime = &catalogclient.WorkRecordPlaytime{Minutes: *b.Minutes}
 	}
 	summary := ""
-	if r := b.Rating; r != nil {
+	if r := b.RatingInput; r != nil {
 		if r.ShortSummary != nil {
 			summary = *r.ShortSummary
 		}
@@ -160,8 +159,8 @@ func (s *Service) putWorkRecord(ctx context.Context, in *putWorkRecordInput) (*w
 
 	if after.Rating != nil {
 		var types []GameType
-		if b.Rating != nil {
-			types = b.Rating.GameTypes
+		if b.RatingInput != nil {
+			types = b.RatingInput.GameTypes
 		}
 		s.mirror(after.Rating, types)
 	} else if err := s.Store.DropUserRating(viewer.ID, workID); err != nil {
@@ -207,7 +206,7 @@ func (s *Service) recordView(ctx context.Context, workID int, rec *catalogclient
 		return nil, p
 	}
 	if len(items) == 1 {
-		out.Rating = &items[0]
+		out.RatingSummary = &items[0]
 	}
 	return out, nil
 }

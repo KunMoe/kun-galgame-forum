@@ -68,6 +68,7 @@ var requiredCodes = []struct {
 	{CodeShopItemNotOwned, DomainKungal, 409},
 	{CodeShopOfferUnlimited, DomainKungal, 409},
 	{CodeProfileSignInRequired, DomainKungal, 403},
+	{CodeCatalogModerationRequired, DomainModeration, 403},
 }
 
 func TestRegistryClosedAndExact(t *testing.T) {

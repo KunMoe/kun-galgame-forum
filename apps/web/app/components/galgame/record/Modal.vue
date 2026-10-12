@@ -76,7 +76,7 @@ const emptyDims = (): Record<KunGalgameDim, number> => ({
 const dims = ref(emptyDims())
 
 const isWish = computed(() => status.value === 'wish')
-const hadRating = computed(() => !!loaded.value?.rating)
+const hadRating = computed(() => !!loaded.value?.rating_summary)
 
 const minutes = computed(() => Math.round((Number(hours.value) || 0) * 60))
 const tooShort = computed(
@@ -128,7 +128,7 @@ const fill = (record: WorkRecord) => {
   hours.value =
     record.minutes > 0 ? Math.round((record.minutes / 60) * 10) / 10 : 0
 
-  const r = record.rating
+  const r = record.rating_summary
   ratingOn.value = !!r
   showAdvanced.value = false
   aspectsOn.value = false
@@ -210,19 +210,24 @@ const save = async () => {
     if (ratingOn.value) {
       const rating = ratingBody()
       if (!rating) return
-      body.rating = rating
+      body.rating_input = rating
     }
   }
 
-  const losing: string[] = []
-  if (hadRating.value && !body.rating) losing.push('评分')
-  if ((loaded.value?.minutes ?? 0) > 0 && body.minutes === undefined) {
-    losing.push('游玩时长')
-  }
-  if (losing.length) {
+  const losingRating = hadRating.value && !body.rating_input
+  const losingPlaytime =
+    (loaded.value?.minutes ?? 0) > 0 && body.minutes === undefined
+  if (losingRating || losingPlaytime) {
     const ok = await useComponentMessageStore().alert(
-      `保存后会删除你的${losing.join('和')}`,
-      '评分与游玩记录在所有 NextMoe 站点共用, 其它站点上的这份记录也会一起删除。'
+      losingRating ? '保存后会删除你的评分' : '保存后会撤回你的游玩时长',
+      [
+        losingRating
+          ? '评分在所有 NextMoe 站点共用, 删除后其它站点上也会一起消失。'
+          : '',
+        losingPlaytime
+          ? '本站上报的游玩时长会撤回, 其它应用上报的不受影响。'
+          : ''
+      ].join('')
     )
     if (!ok) return
   }
@@ -240,7 +245,7 @@ const save = async () => {
     return
   }
   const saved = result.data
-  if (saved.rating && !hadRating.value) {
+  if (saved.rating_summary && !hadRating.value) {
     summaryDraft.value = ''
   }
   setPlaytime(

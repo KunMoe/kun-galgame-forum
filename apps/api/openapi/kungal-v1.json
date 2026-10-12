@@ -15022,8 +15022,15 @@
             "type": "integer"
           },
           "play_status": {
-            "$ref": "#/components/schemas/PlayStatus",
-            "description": "Written as the caller's play state on the work."
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PlayState"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Written as the caller's play state on the work. done and null are refused."
           },
           "recommend": {
             "$ref": "#/components/schemas/RatingRecommend",
@@ -15127,8 +15134,15 @@
             "type": "integer"
           },
           "play_status": {
-            "$ref": "#/components/schemas/PlayStatus",
-            "description": "Written as the caller's play state on the work."
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PlayState"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Written as the caller's play state on the work. Absent or null leaves it; done is refused."
           },
           "recommend": {
             "$ref": "#/components/schemas/RatingRecommend",
@@ -26181,7 +26195,7 @@
             ],
             "description": "The caller's play state on the work. null when none."
           },
-          "rating": {
+          "rating_summary": {
             "anyOf": [
               {
                 "$ref": "#/components/schemas/RatingSummary"
@@ -26205,7 +26219,7 @@
           "work_id",
           "play_state",
           "minutes",
-          "rating"
+          "rating_summary"
         ],
         "type": "object"
       },
@@ -26219,10 +26233,17 @@
             "type": "integer"
           },
           "play_state": {
-            "$ref": "#/components/schemas/PlayStatus",
-            "description": "The play state. Absent deletes it."
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PlayState"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The play state. Absent or null deletes it; done is refused."
           },
-          "rating": {
+          "rating_input": {
             "$ref": "#/components/schemas/RecordRating",
             "description": "The rating. Absent deletes it."
           }

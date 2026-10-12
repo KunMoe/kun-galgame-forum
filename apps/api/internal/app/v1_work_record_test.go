@@ -24,14 +24,14 @@ func TestV1WorkRecord(t *testing.T) {
 	f := newGRFix(t)
 
 	resp, out := f.record(t, http.MethodGet, "gr-bob", grWorkFresh, nil)
-	if resp.StatusCode != http.StatusOK || out["play_state"] != nil || out["minutes"].(float64) != 0 || out["rating"] != nil {
+	if resp.StatusCode != http.StatusOK || out["play_state"] != nil || out["minutes"].(float64) != 0 || out["rating_summary"] != nil {
 		t.Fatalf("empty record: %d %v", resp.StatusCode, out)
 	}
 
 	full := map[string]any{
 		"play_state": "done_main",
 		"minutes":    600,
-		"rating": map[string]any{
+		"rating_input": map[string]any{
 			"recommend": "yes", "overall": 8, "game_types": []string{"plot"}, "spoiler_level": "none",
 			"short_summary": "good",
 		},
@@ -40,7 +40,7 @@ func TestV1WorkRecord(t *testing.T) {
 	if resp.StatusCode != http.StatusOK || out["play_state"] != "done_main" || out["minutes"].(float64) != 600 {
 		t.Fatalf("put record: %d %v", resp.StatusCode, out)
 	}
-	rating, _ := out["rating"].(map[string]any)
+	rating, _ := out["rating_summary"].(map[string]any)
 	if rating == nil || rating["overall"].(float64) != 8 || rating["play_status"] != "done_main" ||
 		len(rating["game_types"].([]any)) != 1 {
 		t.Fatalf("rating in the record: %v", rating)
@@ -64,7 +64,7 @@ func TestV1WorkRecord(t *testing.T) {
 		t.Errorf("an unchanged record was checked or paid: %d %v", resp.StatusCode, out)
 	}
 
-	refused := map[string]any{"rating": map[string]any{
+	refused := map[string]any{"rating_input": map[string]any{
 		"recommend": "yes", "overall": 8, "game_types": []string{"plot"}, "spoiler_level": "none", "short_summary": "forbidden",
 	}}
 	if resp, out := f.record(t, http.MethodPut, "gr-bob", grWorkFresh, refused); resp.StatusCode != http.StatusUnprocessableEntity ||
@@ -73,7 +73,7 @@ func TestV1WorkRecord(t *testing.T) {
 	}
 
 	resp, out = f.record(t, http.MethodPut, "gr-bob", grWorkFresh, map[string]any{"play_state": "dropped"})
-	if resp.StatusCode != http.StatusOK || out["play_state"] != "dropped" || out["minutes"].(float64) != 0 || out["rating"] != nil {
+	if resp.StatusCode != http.StatusOK || out["play_state"] != "dropped" || out["minutes"].(float64) != 0 || out["rating_summary"] != nil {
 		t.Fatalf("state only: %d %v", resp.StatusCode, out)
 	}
 	if n := f.count(t, `SELECT count(*) FROM galgame_rating WHERE id = ?`, id); n != 0 {

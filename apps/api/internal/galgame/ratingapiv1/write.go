@@ -12,6 +12,7 @@ import (
 	v1 "kun-galgame-api/internal/apiv1"
 	"kun-galgame-api/internal/apiv1/repr"
 	"kun-galgame-api/internal/constants"
+	"kun-galgame-api/internal/galgame/playstate"
 	"kun-galgame-api/internal/galgame/repository"
 	"kun-galgame-api/internal/middleware"
 	"kun-galgame-api/internal/moemoepoint"
@@ -79,6 +80,11 @@ func (s *Service) checkText(ctx context.Context, text string, authorID int) *pro
 		slog.Info("trust check hold", "subject_kind", gate.SubjectKindGalgameRating, "author_id", authorID, "matched", matched)
 	}
 	return nil
+}
+
+func doneRefused(pointer string) *problem.Problem {
+	return problem.New(problem.CodeValidationFailed, "done is read-only: it is what NextMoe answers for a finish without a stated completion.",
+		problem.AtPointer(pointer, problem.ReasonNotAllowedValue, "pick done_one_route, done_main or done_all", nil))
 }
 
 func unknownWork() *problem.Problem {
@@ -207,6 +213,13 @@ func (s *Service) createRating(ctx context.Context, in *createRatingInput) (*cre
 	if !ok {
 		return nil, unknownWork()
 	}
+	if b.PlayStatus == nil {
+		return nil, problem.New(problem.CodeValidationFailed, "play_status is required.",
+			problem.AtPointer("/play_status", problem.ReasonRequired, "pick a play state", nil))
+	}
+	if _, _, ok := playstate.ToCatalog(string(*b.PlayStatus)); !ok {
+		return nil, doneRefused("/play_status")
+	}
 	summary := ""
 	if b.ShortSummary != nil {
 		summary = *b.ShortSummary
@@ -234,7 +247,7 @@ func (s *Service) createRating(ctx context.Context, in *createRatingInput) (*cre
 		return nil, problem.New(problem.CodeAlreadyExists, "The caller has already rated this work; change that rating instead.")
 	}
 	if s.Sync != nil {
-		s.Sync(ctx, workID, token, string(b.PlayStatus))
+		s.Sync(ctx, workID, token, string(*b.PlayStatus))
 	}
 	rating, err := s.Catalog.PutMyRating(ctx, token, int64(workID), catalogclient.RatingInput{
 		Overall: b.Overall, AspectScores: aspectsInput(b.AspectScores), Recommend: string(b.Recommend),
@@ -334,6 +347,11 @@ func (s *Service) updateRating(ctx context.Context, in *updateRatingInput) (*rat
 		return nil, notFound()
 	}
 	b := in.Body
+	if b.PlayStatus != nil {
+		if _, _, ok := playstate.ToCatalog(string(*b.PlayStatus)); !ok {
+			return nil, doneRefused("/play_status")
+		}
+	}
 	want := inputOf(current)
 	if b.Recommend != nil {
 		want.Recommend = string(*b.Recommend)

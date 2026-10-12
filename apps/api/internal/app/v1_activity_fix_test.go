@@ -252,8 +252,8 @@ func (f *activityFix) seed(t *testing.T) {
 			VALUES (?, ?, ?, 'game', 'zh-cn', 'windows', '["ja-jp","zh-cn"]', '["and","win"]', '1.7GB', 'note', ?, ?)`,
 			acResShown+i, w, acUserBob, acTie.Add(5*time.Hour), acTie.Add(5*time.Hour))
 	}
-	f.run(t, `INSERT INTO galgame_rating (id, recommend, overall, play_status, short_summary, spoiler_level, user_id, work_id, created, updated)
-		VALUES (?, 'yes', 7, 'on_hold', 'worth a second try', 'none', ?, ?, ?, ?), (?, 'no', 4, 'done_all', 'the twist is', 'serious', ?, ?, ?, ?)`,
+	f.run(t, `INSERT INTO galgame_rating (id, recommend, overall, author_state, author_completion, short_summary, spoiler_level, user_id, work_id, created, updated)
+		VALUES (?, 'yes', 7, 'on_hold', NULL, 'worth a second try', 'none', ?, ?, ?, ?), (?, 'no', 4, 'done', 'all', 'the twist is', 'serious', ?, ?, ?, ?)`,
 		acRatingHold, acUserAlice, acWorkShown, acTie.Add(7*time.Hour), acTie.Add(7*time.Hour),
 		acRatingSpoiler, acUserBob, acWorkShown, acTie.Add(7*time.Hour), acTie.Add(7*time.Hour))
 	f.run(t, `INSERT INTO galgame_activity (id, wiki_revision_id, work_id, user_id, type, created, wiki_revision_number, edit_revision_id)

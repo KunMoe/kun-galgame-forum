@@ -47,7 +47,7 @@ const rating = computed(() =>
 const isEditOpen = ref(false)
 
 const onRecordSaved = async (record: WorkRecord) => {
-  if (record.rating?.id === props.data.id) {
+  if (record.rating_summary?.id === props.data.id) {
     props.refresh()
     return
   }

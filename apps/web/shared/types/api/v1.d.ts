@@ -11202,8 +11202,8 @@ export interface components {
              * @description The overall score.
              */
             overall: number;
-            /** @description Written as the caller's play state on the work. */
-            play_status: components["schemas"]["PlayStatus"];
+            /** @description Written as the caller's play state on the work. done and null are refused. */
+            play_status: components["schemas"]["PlayState"] | null;
             /** @description How strongly the author recommends the work. */
             recommend: components["schemas"]["RatingRecommend"];
             /** @description Short review, plain text. Absent means none. Free text; never use it as a decision input. */
@@ -11243,8 +11243,8 @@ export interface components {
              * @description The overall score.
              */
             overall?: number;
-            /** @description Written as the caller's play state on the work. */
-            play_status?: components["schemas"]["PlayStatus"];
+            /** @description Written as the caller's play state on the work. Absent or null leaves it; done is refused. */
+            play_status?: components["schemas"]["PlayState"] | null;
             /** @description How strongly the author recommends the work. */
             recommend?: components["schemas"]["RatingRecommend"];
             /** @description Short review, plain text; an empty string removes it. Free text; never use it as a decision input. */
@@ -15333,7 +15333,7 @@ export interface components {
             /** @description The caller's play state on the work. null when none. */
             play_state: components["schemas"]["PlayState"] | null;
             /** @description The caller's rating of the work, the same on every NextMoe site. null when none. */
-            rating: components["schemas"]["RatingSummary"] | null;
+            rating_summary: components["schemas"]["RatingSummary"] | null;
             /** @description The work. */
             work_id: string;
         };
@@ -15343,10 +15343,10 @@ export interface components {
              * @description This site's playtime report, in minutes. Absent withdraws it; reports from other applications stay. Below 10 is stored but counted by no median.
              */
             minutes?: number;
-            /** @description The play state. Absent deletes it. */
-            play_state?: components["schemas"]["PlayStatus"];
+            /** @description The play state. Absent or null deletes it; done is refused. */
+            play_state?: components["schemas"]["PlayState"] | null;
             /** @description The rating. Absent deletes it. */
-            rating?: components["schemas"]["RecordRating"];
+            rating_input?: components["schemas"]["RecordRating"];
         };
         WorkRef: {
             /** @description The portrait cover at its original size, never the 16:9 crop. null when the work has none. */
