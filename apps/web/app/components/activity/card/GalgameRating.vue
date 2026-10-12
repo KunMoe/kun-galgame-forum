@@ -22,11 +22,12 @@ const props = defineProps<{
 
 const nameOf = useWorkName()
 
-const playStatusLabel = computed(
-  () =>
-    KUN_GALGAME_PLAY_STATE_MAP[
-      props.rating.play_status as KunGalgamePlayStateRead
-    ] || props.rating.play_status
+const playStatusLabel = computed(() =>
+  props.rating.play_status
+    ? KUN_GALGAME_PLAY_STATE_MAP[
+        props.rating.play_status as KunGalgamePlayStateRead
+      ] || props.rating.play_status
+    : ''
 )
 const recommendLabel = computed(
   () =>
@@ -83,7 +84,9 @@ const hasSpoiler = computed(() => props.rating.spoiler_level !== 'none')
           </KunLink>
 
           <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
-            <span class="text-default-700">{{ playStatusLabel }}</span>
+            <span v-if="playStatusLabel" class="text-default-700">
+              {{ playStatusLabel }}
+            </span>
             <span :class="cn('font-medium', recommendColor)">
               {{ recommendLabel }}
             </span>

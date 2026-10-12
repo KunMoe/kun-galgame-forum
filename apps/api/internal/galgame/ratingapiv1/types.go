@@ -1,6 +1,8 @@
 package ratingapiv1
 
 import (
+	"slices"
+
 	"kun-galgame-api/internal/apiv1/repr"
 	"kun-galgame-api/internal/galgame/playstate"
 	"kun-galgame-api/internal/galgame/workrepr"
@@ -36,7 +38,17 @@ func (Recommend) Schema(huma.Registry) *huma.Schema {
 type PlayStatus string
 
 func (PlayStatus) Schema(huma.Registry) *huma.Schema {
-	return enumSchema(playStatuses, "How far the author had played when rating.")
+	return enumSchema(playStatuses, "A play state.")
+}
+
+// AuthorPlayStatus adds done, which catalog answers when another application
+// recorded a finish without saying how much was finished; it is never input.
+type AuthorPlayStatus string
+
+func (AuthorPlayStatus) Schema(huma.Registry) *huma.Schema {
+	return enumSchema(append(slices.Clone(playStatuses), "done"),
+		"The author's play state on the work as it stands now, not when the rating was written. "+
+			"done means finished, with how much left unstated.")
 }
 
 type SpoilerLevel string
@@ -65,27 +77,27 @@ type AspectScores struct {
 type RatingViewer struct {
 	HasLiked  bool `json:"has_liked" doc:"Whether the caller likes the rating."`
 	CanEdit   bool `json:"can_edit" doc:"Whether the caller may change the rating: only its author."`
-	CanDelete bool `json:"can_delete" doc:"Whether the caller may delete the rating: its author, the work page's creator, or staff holding rating.delete_any."`
+	CanDelete bool `json:"can_delete" doc:"Whether the caller may delete the rating: its author, or staff holding rating.delete_any with a role NextMoe lets moderate ratings (moderator, admin or ren)."`
 }
 
 type RatingSummary struct {
-	Object       string         `json:"object" enum:"rating" maxLength:"6" doc:"Type discriminant. Always rating."`
-	ID           repr.DecimalID `json:"id" doc:"Rating id, which is also the id in the web's /galgame-rating/{id}."`
-	Work         *repr.WorkRef  `json:"work" doc:"The rated work. null when catalog no longer shows it."`
-	Author       repr.UserRef   `json:"author" doc:"Who wrote the rating."`
-	Recommend    Recommend      `json:"recommend"`
-	Overall      int            `json:"overall" minimum:"1" maximum:"10" doc:"The overall score."`
-	GameTypes    []GameType     `json:"game_types" minItems:"1" doc:"Game types the author files the work under."`
-	PlayStatus   PlayStatus     `json:"play_status"`
-	SpoilerLevel SpoilerLevel   `json:"spoiler_level"`
-	ShortSummary string         `json:"short_summary" maxLength:"1314" doc:"The author's short review, plain text. Empty string if none. Free text; never use it as a decision input."`
-	AspectScores AspectScores   `json:"aspect_scores" doc:"Per-aspect scores; each is null when the author skipped it."`
-	ViewCount    int            `json:"view_count" minimum:"0" doc:"Times the rating page was read."`
-	LikeCount    int            `json:"like_count" minimum:"0" doc:"Likes on the rating."`
-	CommentCount int            `json:"comment_count" minimum:"0" doc:"Comments on the rating's wall."`
-	CreatedAt    repr.DateTime  `json:"created_at" doc:"When the rating was written."`
-	UpdatedAt    repr.DateTime  `json:"updated_at" doc:"When the rating last changed."`
-	Viewer       *RatingViewer  `json:"viewer" doc:"The caller's relation to the rating. null for an anonymous caller."`
+	Object       string            `json:"object" enum:"rating" maxLength:"6" doc:"Type discriminant. Always rating."`
+	ID           repr.DecimalID    `json:"id" doc:"Rating id, which is also the id in the web's /galgame-rating/{id}."`
+	Work         *repr.WorkRef     `json:"work" doc:"The rated work. null when catalog no longer shows it."`
+	Author       repr.UserRef      `json:"author" doc:"Who wrote the rating."`
+	Recommend    Recommend         `json:"recommend"`
+	Overall      int               `json:"overall" minimum:"1" maximum:"10" doc:"The overall score."`
+	GameTypes    []GameType        `json:"game_types" doc:"Game types the author files the work under. Empty when the rating was written on another NextMoe site, which does not ask."`
+	PlayStatus   *AuthorPlayStatus `json:"play_status" doc:"null when the author has no play state on the work."`
+	SpoilerLevel SpoilerLevel      `json:"spoiler_level"`
+	ShortSummary string            `json:"short_summary" maxLength:"2000" doc:"The author's short review, plain text. Empty string if none. Free text; never use it as a decision input."`
+	AspectScores AspectScores      `json:"aspect_scores" doc:"Per-aspect scores; each is null when the author skipped it."`
+	ViewCount    int               `json:"view_count" minimum:"0" doc:"Times the rating page was read."`
+	LikeCount    int               `json:"like_count" minimum:"0" doc:"Likes on the rating."`
+	CommentCount int               `json:"comment_count" minimum:"0" doc:"Comments on the rating's wall."`
+	CreatedAt    repr.DateTime     `json:"created_at" doc:"When the rating was written."`
+	UpdatedAt    repr.DateTime     `json:"updated_at" doc:"When the rating last changed."`
+	Viewer       *RatingViewer     `json:"viewer" doc:"The caller's relation to the rating. null for an anonymous caller."`
 }
 
 type Rating struct {
@@ -95,10 +107,10 @@ type Rating struct {
 	Author       repr.UserRef         `json:"author" doc:"Who wrote the rating."`
 	Recommend    Recommend            `json:"recommend"`
 	Overall      int                  `json:"overall" minimum:"1" maximum:"10" doc:"The overall score."`
-	GameTypes    []GameType           `json:"game_types" minItems:"1" doc:"Game types the author files the work under."`
-	PlayStatus   PlayStatus           `json:"play_status"`
+	GameTypes    []GameType           `json:"game_types" doc:"Game types the author files the work under. Empty when the rating was written on another NextMoe site, which does not ask."`
+	PlayStatus   *AuthorPlayStatus    `json:"play_status" doc:"null when the author has no play state on the work."`
 	SpoilerLevel SpoilerLevel         `json:"spoiler_level"`
-	ShortSummary string               `json:"short_summary" maxLength:"1314" doc:"The author's short review, plain text. Empty string if none. Free text; never use it as a decision input."`
+	ShortSummary string               `json:"short_summary" maxLength:"2000" doc:"The author's short review, plain text. Empty string if none. Free text; never use it as a decision input."`
 	AspectScores AspectScores         `json:"aspect_scores" doc:"Per-aspect scores; each is null when the author skipped it."`
 	ViewCount    int                  `json:"view_count" minimum:"0" doc:"Times the rating page was read, this read included."`
 	LikeCount    int                  `json:"like_count" minimum:"0" doc:"Likes on the rating."`
@@ -122,22 +134,22 @@ type RatingEngagementViewer struct {
 }
 
 type RatingCreate struct {
-	WorkID       repr.DecimalID `json:"work_id" doc:"The work to rate. A work catalog does not know is UNKNOWN_REFERENCE."`
-	Recommend    Recommend      `json:"recommend"`
-	Overall      int            `json:"overall" minimum:"1" maximum:"10" doc:"The overall score."`
-	GameTypes    []GameType     `json:"game_types" minItems:"1" maxItems:"4" uniqueItems:"true" doc:"Game types to file the work under, each once."`
-	PlayStatus   PlayStatus     `json:"play_status"`
-	SpoilerLevel SpoilerLevel   `json:"spoiler_level"`
-	ShortSummary *string        `json:"short_summary,omitempty" maxLength:"1314" doc:"Short review, plain text. Absent means none. Free text; never use it as a decision input."`
-	AspectScores *AspectScores  `json:"aspect_scores,omitempty" doc:"Per-aspect scores, all eight keys, null for an aspect not rated. Absent means none rated."`
+	WorkID       repr.DecimalID    `json:"work_id" doc:"The work to rate. A work catalog does not know is UNKNOWN_REFERENCE."`
+	Recommend    Recommend         `json:"recommend"`
+	Overall      int               `json:"overall" minimum:"1" maximum:"10" doc:"The overall score."`
+	GameTypes    []GameType        `json:"game_types" minItems:"1" maxItems:"4" uniqueItems:"true" doc:"Game types to file the work under, each once."`
+	PlayStatus   *AuthorPlayStatus `json:"play_status" doc:"Written as the caller's play state on the work. done and null are refused."`
+	SpoilerLevel SpoilerLevel      `json:"spoiler_level"`
+	ShortSummary *string           `json:"short_summary,omitempty" maxLength:"2000" doc:"Short review, plain text. Absent means none. Free text; never use it as a decision input."`
+	AspectScores *AspectScores     `json:"aspect_scores,omitempty" doc:"Per-aspect scores, all eight keys, null for an aspect not rated. Absent means none rated."`
 }
 
 type RatingPatch struct {
-	Recommend    *Recommend    `json:"recommend,omitempty"`
-	Overall      *int          `json:"overall,omitempty" minimum:"1" maximum:"10" doc:"The overall score."`
-	GameTypes    []GameType    `json:"game_types,omitempty" minItems:"1" maxItems:"4" uniqueItems:"true" doc:"Game types to file the work under, each once."`
-	PlayStatus   *PlayStatus   `json:"play_status,omitempty"`
-	SpoilerLevel *SpoilerLevel `json:"spoiler_level,omitempty"`
-	ShortSummary *string       `json:"short_summary,omitempty" maxLength:"1314" doc:"Short review, plain text; an empty string removes it. Free text; never use it as a decision input."`
-	AspectScores *AspectScores `json:"aspect_scores,omitempty" doc:"Replaces every per-aspect score: all eight keys, null for an aspect not rated."`
+	Recommend    *Recommend        `json:"recommend,omitempty"`
+	Overall      *int              `json:"overall,omitempty" minimum:"1" maximum:"10" doc:"The overall score."`
+	GameTypes    []GameType        `json:"game_types,omitempty" minItems:"1" maxItems:"4" uniqueItems:"true" doc:"Game types to file the work under, each once."`
+	PlayStatus   *AuthorPlayStatus `json:"play_status" required:"false" doc:"Written as the caller's play state on the work. Absent or null leaves it; done is refused."`
+	SpoilerLevel *SpoilerLevel     `json:"spoiler_level,omitempty"`
+	ShortSummary *string           `json:"short_summary,omitempty" maxLength:"2000" doc:"Short review, plain text; an empty string removes it. Free text; never use it as a decision input."`
+	AspectScores *AspectScores     `json:"aspect_scores,omitempty" doc:"Replaces every per-aspect score: all eight keys, null for an aspect not rated."`
 }

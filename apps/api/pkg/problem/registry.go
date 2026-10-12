@@ -99,6 +99,7 @@ const (
 	CodeShopItemNotOwned             = "SHOP_ITEM_NOT_OWNED"
 	CodeShopOfferUnlimited           = "SHOP_OFFER_UNLIMITED"
 	CodeProfileSignInRequired        = "PROFILE_SIGN_IN_REQUIRED"
+	CodeCatalogModerationRequired    = "CATALOG_MODERATION_REQUIRED"
 )
 
 const (
@@ -187,6 +188,7 @@ var Codes = []Def{
 	{CodeShopItemNotOwned, DomainKungal, http.StatusConflict, "Shop item not owned", "The caller does not currently own the item: it was never bought, has expired, or was revoked or refunded.", nil},
 	{CodeShopOfferUnlimited, DomainKungal, http.StatusConflict, "Shop offer unlimited", "The offer has no stock limit and no code pool, so it never sells out and there is no restock to be told about.", nil},
 	{CodeProfileSignInRequired, DomainKungal, http.StatusForbidden, "Profile sign-in required", "The user shows their profile to signed-in users only, and the request has no signed-in user. Signing in, as anyone, is enough.", nil},
+	{CodeCatalogModerationRequired, DomainModeration, http.StatusForbidden, "Catalog moderation required", "The deletion removes the rating from every NextMoe site, and NextMoe allows it only to a holder of catalog moderation standing. The forum's own staff permission is not enough.", nil},
 }
 
 var Reasons = []ReasonDef{

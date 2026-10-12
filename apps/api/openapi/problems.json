@@ -515,6 +515,15 @@
     },
     {
       "object": "problem_type",
+      "code": "CATALOG_MODERATION_REQUIRED",
+      "domain": "moderation",
+      "status": 403,
+      "type": "https://developer.nextmoe.dev/problems/moderation/catalog-moderation-required",
+      "title": "Catalog moderation required",
+      "description": "The deletion removes the rating from every NextMoe site, and NextMoe allows it only to a holder of catalog moderation standing. The forum's own staff permission is not enough."
+    },
+    {
+      "object": "problem_type",
       "code": "PERMISSION_REQUIRED",
       "domain": "moderation",
       "status": 403,

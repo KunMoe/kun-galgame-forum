@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"kun-galgame-api/internal/galgame/playstate"
 	"kun-galgame-api/internal/galgame/resourcevocab"
 	"kun-galgame-api/pkg/miniapp"
 
@@ -164,7 +165,7 @@ func (r *ActivityRepository) FetchEditRevisions(activityIDs []int) (map[int]Edit
 
 type RatingActivity struct {
 	Overall      int
-	PlayStatus   string
+	AuthorState  string
 	Recommend    string
 	ShortSummary string
 	SpoilerLevel string
@@ -178,17 +179,18 @@ func (r *ActivityRepository) FetchRatingActivityData(ratingIDs []int) (map[int]R
 		return out, nil
 	}
 	var rows []struct {
-		ID           int    `gorm:"column:id"`
-		Overall      int    `gorm:"column:overall"`
-		PlayStatus   string `gorm:"column:play_status"`
-		Recommend    string `gorm:"column:recommend"`
-		ShortSummary string `gorm:"column:short_summary"`
-		SpoilerLevel string `gorm:"column:spoiler_level"`
-		LikeCount    int    `gorm:"column:like_count"`
-		UserID       int    `gorm:"column:user_id"`
+		ID               int     `gorm:"column:id"`
+		Overall          int     `gorm:"column:overall"`
+		AuthorState      *string `gorm:"column:author_state"`
+		AuthorCompletion *string `gorm:"column:author_completion"`
+		Recommend        string  `gorm:"column:recommend"`
+		ShortSummary     string  `gorm:"column:short_summary"`
+		SpoilerLevel     string  `gorm:"column:spoiler_level"`
+		LikeCount        int     `gorm:"column:like_count"`
+		UserID           int     `gorm:"column:user_id"`
 	}
 	if err := r.db.Raw(`
-		SELECT id, overall, play_status, recommend, short_summary, spoiler_level, like_count, user_id
+		SELECT id, overall, author_state, author_completion, recommend, short_summary, spoiler_level, like_count, user_id
 		FROM galgame_rating
 		WHERE id IN ?`, ratingIDs).Scan(&rows).Error; err != nil {
 		return out, err
@@ -198,9 +200,13 @@ func (r *ActivityRepository) FetchRatingActivityData(ratingIDs []int) (map[int]R
 		if row.SpoilerLevel != "none" {
 			summary = ""
 		}
+		state := ""
+		if row.AuthorState != nil {
+			state = playstate.FromCatalog(*row.AuthorState, row.AuthorCompletion)
+		}
 		out[row.ID] = RatingActivity{
 			Overall:      row.Overall,
-			PlayStatus:   row.PlayStatus,
+			AuthorState:  state,
 			Recommend:    row.Recommend,
 			ShortSummary: summary,
 			SpoilerLevel: row.SpoilerLevel,

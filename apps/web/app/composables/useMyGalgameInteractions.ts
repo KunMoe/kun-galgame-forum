@@ -88,6 +88,19 @@ export const useMyGalgameInteractions = () => {
     ensureLoaded([key])
   }
 
+  const setPlaytime = (
+    workId: string | number,
+    playtime: WorkViewerPlaytime | null
+  ) => {
+    const key = String(workId)
+    const current = states.value[key]
+    if (!current?.library) return
+    states.value = {
+      ...states.value,
+      [key]: { ...current, library: { ...current.library, playtime } }
+    }
+  }
+
   return {
     isLiked: (workId: string | number) =>
       states.value[String(workId)]?.has_liked ?? false,
@@ -109,6 +122,7 @@ export const useMyGalgameInteractions = () => {
       return library ? library.playtime : undefined
     },
     setFavorited,
+    setPlaytime,
     ensureLoaded
   }
 }

@@ -37,6 +37,8 @@ const (
 	pwTodoO    = 930400702
 	pwLottT    = 930400801
 	pwLottO    = 930400802
+	pwRatingT  = 930400851
+	pwRatingO  = 930400852
 )
 
 type purgeWorld struct {
@@ -149,9 +151,9 @@ func (w *purgeWorld) populate(t *testing.T) {
 	s.insert("galgame_like", map[string]any{"work_id": pwGalgame, "user_id": pwTarget, "created": at, "updated": at})
 	s.insert("galgame_like", map[string]any{"work_id": pwGalgame, "user_id": pwThird, "created": at, "updated": at})
 	s.insert("galgame_favorite", map[string]any{"work_id": pwGalgame, "user_id": pwTarget, "created": at, "updated": at})
-	ratingT := s.insert("galgame_rating", map[string]any{"work_id": pwGalgame, "user_id": pwTarget, "like_count": 1, "created": at, "updated": at})
+	ratingT := s.insert("galgame_rating", map[string]any{"id": pwRatingT, "work_id": pwGalgame, "user_id": pwTarget, "like_count": 1, "created": at, "updated": at})
 	s.insert("galgame_rating_like", map[string]any{"galgame_rating_id": ratingT["id"], "user_id": pwOther, "created": at, "updated": at})
-	ratingO := s.insert("galgame_rating", map[string]any{"work_id": pwGalgame, "user_id": pwOther, "like_count": 1, "created": at, "updated": at})
+	ratingO := s.insert("galgame_rating", map[string]any{"id": pwRatingO, "work_id": pwGalgame, "user_id": pwOther, "like_count": 1, "created": at, "updated": at})
 	s.insert("galgame_rating_like", map[string]any{"galgame_rating_id": ratingO["id"], "user_id": pwTarget, "created": at, "updated": at})
 	resT := s.insert("galgame_resource", map[string]any{"work_id": pwGalgame, "user_id": pwTarget, "like_count": 1, "created": at, "updated": at})
 	s.insert("galgame_resource_link", map[string]any{"galgame_resource_id": resT["id"], "url": "https://pw.example/t", "created": at, "updated": at})

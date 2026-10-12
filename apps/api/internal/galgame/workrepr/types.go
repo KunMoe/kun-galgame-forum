@@ -33,8 +33,8 @@ type WorkSummary struct {
 	Maker                *CompanyRef        `json:"maker" doc:"The credited company a card names as the maker: developer, then circle, then brand, then publisher. null when no credited company has a name."`
 	ViewCount            int                `json:"view_count" minimum:"0" doc:"Times the work's forum page was read. 0 for a work the forum has no page for."`
 	LikeCount            int                `json:"like_count" minimum:"0" doc:"Likes on the forum page."`
-	RatingScore          *float64           `json:"rating_score" minimum:"0" maximum:"10" doc:"Bayesian average of the forum's ratings, one decimal. null when rating_count is 0."`
-	RatingCount          int                `json:"rating_count" minimum:"0" doc:"Forum ratings of the work."`
+	RatingScore          *float64           `json:"rating_score" minimum:"0" maximum:"10" doc:"Bayesian average of the work's NextMoe ratings, which every NextMoe site shares, one decimal. null when rating_count is 0."`
+	RatingCount          int                `json:"rating_count" minimum:"0" doc:"NextMoe ratings of the work, written on any NextMoe site."`
 	ResourcePlatforms    []ResourcePlatform `json:"resource_platforms" doc:"Platforms the work's forum resources run on, each once, in vocabulary order. Empty array, never null."`
 	ResourceLanguages    []ResourceLanguage `json:"resource_languages" doc:"Languages of the work's forum resources, each once, in vocabulary order. Empty array, never null."`
 	ResourceUpdatedAt    *repr.DateTime     `json:"resource_updated_at" doc:"When a resource of the work last changed. null when it has none."`

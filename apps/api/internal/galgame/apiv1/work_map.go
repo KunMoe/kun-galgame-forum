@@ -4,6 +4,7 @@ import (
 	"cmp"
 	"context"
 	"log/slog"
+	"math"
 	"net/url"
 	"slices"
 	"strconv"
@@ -306,6 +307,15 @@ func externalRatingsOf(d *client.CatalogWorkDetail) []WorkExternalRating {
 		})
 	}
 	return out
+}
+
+func nextmoeRating(d *client.CatalogWorkDetail) (float64, int, bool) {
+	for _, r := range d.Ratings {
+		if r.Source == "nextmoe" && r.VoteCount > 0 {
+			return math.Round(r.Score*10) / 10, r.VoteCount, true
+		}
+	}
+	return 0, 0, false
 }
 
 func favoriteCountOf(d *client.CatalogWorkDetail) int {

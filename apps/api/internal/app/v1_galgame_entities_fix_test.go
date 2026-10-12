@@ -903,12 +903,12 @@ func (f *geFix) seedLocal(t *testing.T) {
 		}
 		for i, overall := range w.ratings {
 			gt, _ := json.Marshal(gameTypes)
-			run(`INSERT INTO galgame_rating (work_id, user_id, recommend, overall, galgame_type, updated) VALUES (?, ?, 'yes', ?, ?::jsonb, now())`,
+			run(`INSERT INTO galgame_rating (id, work_id, user_id, recommend, overall, galgame_type, updated) VALUES (nextval('galgame_rating_id_seq'), ?, ?, 'yes', ?, ?::jsonb, now())`,
 				w.id, geUser+i, overall, string(gt))
 		}
 		if len(w.ratings) == 0 && len(w.gameTypes) > 0 {
 			gt, _ := json.Marshal(w.gameTypes)
-			run(`INSERT INTO galgame_rating (work_id, user_id, recommend, overall, galgame_type, updated) VALUES (?, ?, 'yes', 6, ?::jsonb, now())`,
+			run(`INSERT INTO galgame_rating (id, work_id, user_id, recommend, overall, galgame_type, updated) VALUES (nextval('galgame_rating_id_seq'), ?, ?, 'yes', 6, ?::jsonb, now())`,
 				w.id, geUser, string(gt))
 		}
 	}

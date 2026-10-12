@@ -56,6 +56,12 @@ func (s *Service) myPlaytimeSweep(ctx context.Context, userID int, token string)
 	return sweep, nil
 }
 
+// ForgetMyPlaytimes drops the cached sweep after a write elsewhere changed the
+// user's play states or playtimes.
+func (s *Service) ForgetMyPlaytimes(ctx context.Context, userID int) {
+	s.dropMyPlaytimeSweep(ctx, userID)
+}
+
 func (s *Service) dropMyPlaytimeSweep(ctx context.Context, userID int) {
 	if s.rdb == nil {
 		return

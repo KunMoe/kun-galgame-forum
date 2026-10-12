@@ -74,7 +74,7 @@ func (s *Users) registerAdminPurge(api huma.API) {
 		Path:          "/admin/user-contents/{user_id}",
 		Summary:       "Purge a user's content",
 		DefaultStatus: http.StatusNoContent,
-		Description: "Deletes everything the user has on this site, with what cascades from it, hands their listed websites to the directory's default owner, " +
+		Description: "Deletes the user's ratings on NextMoe first, then everything the user has on this site, with what cascades from it, hands their listed websites to the directory's default owner, " +
 			"then purges their catalog collections and community posts. The account itself is untouched: ban or deregister it at the account service first, " +
 			"or it can keep posting. Every local row the purge deletes or changes is archived for 30 days so a developer can undo it; the catalog and community parts cannot be undone. " +
 			"Purging again is safe and is how a purge that failed after its local part is finished. " +
@@ -82,7 +82,8 @@ func (s *Users) registerAdminPurge(api huma.API) {
 		Tags:        []string{"users"},
 		Middlewares: huma.Middlewares{withUpstream},
 		Responses: problemResponses(map[int]string{
-			403: "PERMISSION_REQUIRED when the caller lacks user.purge_content. USER_PROTECTED when the user holds the moderation capability.",
+			403: "PERMISSION_REQUIRED when the caller lacks user.purge_content. USER_PROTECTED when the user holds the moderation capability. " +
+				"CATALOG_MODERATION_REQUIRED when the caller lacks NextMoe catalog moderation standing, which deleting ratings needs; nothing was deleted.",
 			404: "NOT_FOUND when the id is larger than any user id can be.",
 			409: "LOTTERY_DRAWN when one of the user's lotteries is being drawn; nothing was deleted, retry once the draw ends.",
 			503: "SERVICE_UNAVAILABLE when the account service, the catalog or the community service cannot be reached. If it happens after the local part, the local rows are already purged and retrying finishes the rest.",
@@ -161,6 +162,8 @@ func mapPurgeError(err error) *problem.Problem {
 	switch {
 	case errors.Is(err, adminService.ErrPurgeTargetProtected):
 		return problem.New(problem.CodeUserProtected, "The user holds the moderation capability; their content is never purged.")
+	case errors.Is(err, adminService.ErrCatalogModerationRequired):
+		return problem.New(problem.CodeCatalogModerationRequired, "The user's ratings live on NextMoe, and deleting them there needs NextMoe catalog moderation standing; nothing was deleted.")
 	case errors.Is(err, adminService.ErrPurgeLotteryDrawing):
 		return problem.New(problem.CodeLotteryDrawn, "One of the user's lotteries is being drawn; nothing was deleted.")
 	case errors.As(err, &unavailable):

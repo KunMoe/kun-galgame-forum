@@ -23,9 +23,7 @@ const oauthUsersAdminURL = computed(
   () => `${useRuntimeConfig().public.oauthAdminUrl}/users`
 )
 
-const isConfirmed = computed(
-  () => confirmId.value.trim() === props.userId
-)
+const isConfirmed = computed(() => confirmId.value.trim() === props.userId)
 
 watch(isOpen, (open) => {
   if (open) {
@@ -47,7 +45,10 @@ const handlePurge = async () => {
 
   if (!result.ok) {
     if (result.problem.code === 'LOTTERY_DRAWN') {
-      useMessage('该用户有抽奖正在开奖, 请稍后再试, 本次没有删除任何内容', 'warn')
+      useMessage(
+        '该用户有抽奖正在开奖, 请稍后再试, 本次没有删除任何内容',
+        'warn'
+      )
       return
     }
     if (result.problem.code === 'SERVICE_UNAVAILABLE') {
@@ -72,7 +73,9 @@ const handlePurge = async () => {
         <span class="text-xl">清除用户 {{ name }} 的全部内容</span>
         <p class="text-default-500 text-sm">
           将删除该用户在本站的 {{ content.total_count }} 项内容:
-          {{ breakdown }}, 以及挂在这些内容下的他人回复、私聊会话与关联数据。收录的网站会转交给站点, 不会删除。
+          {{ breakdown }},
+          以及挂在这些内容下的他人回复、私聊会话与关联数据。收录的网站会转交给站点,
+          不会删除。
         </p>
       </div>
 
@@ -103,7 +106,9 @@ const handlePurge = async () => {
       />
 
       <p class="text-default-500 text-sm">
-        本站被删除的内容会存档 30 天, 期间可由开发者恢复; 社区评论与收藏夹的清除无法恢复。
+        本站被删除的内容会存档 30 天, 期间可由开发者恢复;
+        社区评论与收藏夹的清除无法恢复。 该用户的评分会从所有 NextMoe 站点删除,
+        撤销清除也无法恢复。
       </p>
 
       <KunInput

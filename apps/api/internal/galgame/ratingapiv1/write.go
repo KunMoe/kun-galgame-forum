@@ -5,28 +5,30 @@ import (
 	"encoding/json"
 	"errors"
 	"log/slog"
+	"net/http"
 	"strconv"
 	"unicode/utf8"
 
 	v1 "kun-galgame-api/internal/apiv1"
 	"kun-galgame-api/internal/apiv1/repr"
 	"kun-galgame-api/internal/constants"
-	"kun-galgame-api/internal/galgame/model"
+	"kun-galgame-api/internal/galgame/playstate"
 	"kun-galgame-api/internal/galgame/repository"
 	"kun-galgame-api/internal/middleware"
 	"kun-galgame-api/internal/moemoepoint"
 	"kun-galgame-api/internal/trust/gate"
+	"kun-galgame-api/pkg/catalogclient"
+	"kun-galgame-api/pkg/perm"
 	"kun-galgame-api/pkg/problem"
 
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/danielgtaylor/huma/v2/adapters/humafiber"
-	"gorm.io/gorm"
 )
 
 type accessTokenKey struct{}
 
-// withAccessToken hands the caller's OAuth token to the play-status sync, which
-// writes the work state to catalog as the user.
+// withAccessToken hands the caller's OAuth token to the rating writes, which
+// reach NextMoe as the user.
 func withAccessToken(ctx huma.Context, next func(huma.Context)) {
 	next(huma.WithValue(ctx, accessTokenKey{}, middleware.GetAccessToken(humafiber.Unwrap(ctx))))
 }
@@ -34,6 +36,14 @@ func withAccessToken(ctx huma.Context, next func(huma.Context)) {
 func accessToken(ctx context.Context) string {
 	s, _ := ctx.Value(accessTokenKey{}).(string)
 	return s
+}
+
+func requireToken(ctx context.Context) (string, *problem.Problem) {
+	tok := accessToken(ctx)
+	if tok == "" {
+		return "", problem.New(problem.CodeInvalidCredential, "The credential is invalid, expired, or revoked.")
+	}
+	return tok, nil
 }
 
 func ratingReward(summary string) int {
@@ -46,13 +56,6 @@ func ratingReward(summary string) int {
 	default:
 		return constants.RatingRewardLow
 	}
-}
-
-func scoreValue(p *int) int {
-	if p == nil {
-		return 0
-	}
-	return *p
 }
 
 func gameTypesJSON(types []GameType) json.RawMessage {
@@ -79,9 +82,109 @@ func (s *Service) checkText(ctx context.Context, text string, authorID int) *pro
 	return nil
 }
 
+func doneRefused(pointer string) *problem.Problem {
+	return problem.New(problem.CodeValidationFailed, "done is read-only: it is what NextMoe answers for a finish without a stated completion.",
+		problem.AtPointer(pointer, problem.ReasonNotAllowedValue, "pick done_one_route, done_main or done_all", nil))
+}
+
 func unknownWork() *problem.Problem {
 	return problem.New(problem.CodeValidationFailed, "No work with that id is visible.",
 		problem.AtPointer("/work_id", problem.ReasonUnknownReference, "work_id names no work catalog shows", nil))
+}
+
+func invalidSummary() *problem.Problem {
+	return problem.New(problem.CodeValidationFailed, "short_summary is not valid UTF-8.",
+		problem.AtPointer("/short_summary", problem.ReasonInvalidFormat, "short_summary must be valid UTF-8", nil))
+}
+
+// upstream maps a NextMoe answer to the rating plane. A 403 other than the
+// moderation one means the forum's own credentials are wrong, not the caller.
+func upstream(err error) *problem.Problem {
+	var api *catalogclient.UserAPIError
+	switch {
+	case errors.Is(err, catalogclient.ErrUnauthorized):
+		return problem.New(problem.CodeInvalidCredential, "The credential is invalid, expired, or revoked.")
+	case errors.Is(err, catalogclient.ErrNotFound):
+		return notFound()
+	case errors.As(err, &api) && api.Status == http.StatusUnprocessableEntity:
+		return problem.New(problem.CodeValidationFailed, "NextMoe refused the rating: "+api.Message)
+	case errors.As(err, &api) && api.Status == http.StatusForbidden:
+		return problem.Internal(err)
+	default:
+		return problem.Unavailable(err)
+	}
+}
+
+func aspectsInput(sc *AspectScores) *catalogclient.RatingAspects {
+	if sc == nil {
+		return nil
+	}
+	return &catalogclient.RatingAspects{
+		Art: sc.Art, Story: sc.Story, Music: sc.Music, Character: sc.Character,
+		Route: sc.Route, System: sc.System, Voice: sc.Voice, ReplayValue: sc.ReplayValue,
+	}
+}
+
+func inputOf(r *catalogclient.Rating) catalogclient.RatingInput {
+	a := r.Aspects
+	return catalogclient.RatingInput{
+		Overall: r.Overall, AspectScores: &a, Recommend: r.Recommend,
+		SpoilerLevel: r.SpoilerLevel, ShortSummary: r.ShortSummary,
+	}
+}
+
+func sameInput(a, b catalogclient.RatingInput) bool {
+	ja, _ := json.Marshal(a)
+	jb, _ := json.Marshal(b)
+	return string(ja) == string(jb)
+}
+
+// mirror writes NextMoe's answer into the local copy at once, so the caller
+// reads their own write; the mirror job would bring the same row within
+// minutes. A failure here leaves that to the job: the write upstream stands.
+func (s *Service) mirror(r *catalogclient.Rating, types []GameType) {
+	if err := s.Store.MirrorRating(s.Mirror(r)); err != nil {
+		slog.Error("rating write-through failed; the mirror job will bring it", "rating_id", r.ID, "error", err)
+		return
+	}
+	if types != nil {
+		if err := s.Store.SetGameTypes(int(r.ID), gameTypesJSON(types)); err != nil {
+			slog.Error("rating game types not stored", "rating_id", r.ID, "error", err)
+		}
+	}
+}
+
+// reward moves the author's moemoepoints from what the rating earned before to
+// what it earns now. The forum pays only for ratings first written here: a
+// rating written on another site was never paid for, so neither its edit nor
+// its deletion here moves anything.
+func (s *Service) reward(userID int, before, after *catalogclient.Rating) {
+	if s.Award == nil {
+		return
+	}
+	earned := func(r *catalogclient.Rating) int {
+		if r == nil {
+			return 0
+		}
+		return ratingReward(r.ShortSummary)
+	}
+	ref := before
+	if ref == nil {
+		ref = after
+	}
+	if ref == nil || !s.Mirror(ref).WrittenHere {
+		return
+	}
+	delta := earned(after) - earned(before)
+	if delta == 0 {
+		return
+	}
+	reason := moemoepoint.ReasonContentApproved
+	if after == nil {
+		reason = moemoepoint.ReasonContentRemoved
+	}
+	key := moemoepoint.Ref("galgame_rating", int(ref.ID))
+	s.Award(userID, delta, reason, key, moemoepoint.KeyNonce(reason, key))
 }
 
 type createRatingInput struct {
@@ -94,11 +197,15 @@ type createRatingOutput struct {
 }
 
 func (s *Service) createRating(ctx context.Context, in *createRatingInput) (*createRatingOutput, error) {
-	if !s.ready() {
+	if !s.writable() {
 		return nil, problem.Internal(errUnconfigured)
 	}
 	viewer := v1.User(ctx)
 	if p := s.requireActive(ctx, viewer); p != nil {
+		return nil, p
+	}
+	token, p := requireToken(ctx)
+	if p != nil {
 		return nil, p
 	}
 	b := in.Body
@@ -106,13 +213,19 @@ func (s *Service) createRating(ctx context.Context, in *createRatingInput) (*cre
 	if !ok {
 		return nil, unknownWork()
 	}
+	if b.PlayStatus == nil {
+		return nil, problem.New(problem.CodeValidationFailed, "play_status is required.",
+			problem.AtPointer("/play_status", problem.ReasonRequired, "pick a play state", nil))
+	}
+	if _, _, ok := playstate.ToCatalog(string(*b.PlayStatus)); !ok {
+		return nil, doneRefused("/play_status")
+	}
 	summary := ""
 	if b.ShortSummary != nil {
 		summary = *b.ShortSummary
 	}
 	if !utf8.ValidString(summary) {
-		return nil, problem.New(problem.CodeValidationFailed, "short_summary is not valid UTF-8.",
-			problem.AtPointer("/short_summary", problem.ReasonInvalidFormat, "short_summary must be valid UTF-8", nil))
+		return nil, invalidSummary()
 	}
 	works, p := s.visibleWorks(ctx, []int{workID})
 	if p != nil {
@@ -124,38 +237,34 @@ func (s *Service) createRating(ctx context.Context, in *createRatingInput) (*cre
 	if p := s.checkText(ctx, summary, viewer.ID); p != nil {
 		return nil, p
 	}
-	scores := b.AspectScores
-	if scores == nil {
-		scores = &AspectScores{}
+	existing, err := s.Catalog.MyRating(ctx, token, int64(workID))
+	if err != nil {
+		return nil, upstream(err)
 	}
-	row := &model.GalgameRating{
-		WorkID: workID, UserID: viewer.ID,
-		Recommend: string(b.Recommend), Overall: b.Overall, GalgameType: gameTypesJSON(b.GameTypes),
-		PlayStatus: string(b.PlayStatus), ShortSummary: summary, SpoilerLevel: string(b.SpoilerLevel),
-		Art: scoreValue(scores.Art), Story: scoreValue(scores.Story), Music: scoreValue(scores.Music),
-		Character: scoreValue(scores.Character), Route: scoreValue(scores.Route), System: scoreValue(scores.System),
-		Voice: scoreValue(scores.Voice), ReplayValue: scoreValue(scores.ReplayValue),
-	}
-	err := s.Store.Create(row)
-	if errors.Is(err, repository.ErrRatingExists) {
+	// A rating the caller wrote on another site is the same rating; this site
+	// had none of its own, so writing one replaces it rather than conflicting.
+	if existing != nil && s.Mirror(existing).WrittenHere {
 		return nil, problem.New(problem.CodeAlreadyExists, "The caller has already rated this work; change that rating instead.")
 	}
-	if err != nil {
-		return nil, problem.Internal(err)
-	}
-	if s.Award != nil {
-		ref := moemoepoint.Ref("galgame_rating", row.ID)
-		s.Award(viewer.ID, ratingReward(summary), moemoepoint.ReasonContentApproved, ref, moemoepoint.KeyNonce(moemoepoint.ReasonContentApproved, ref))
-	}
-	s.Scan.ScanBg(gate.SubjectKindGalgameRating, strconv.Itoa(row.ID), summary, int64(viewer.ID))
 	if s.Sync != nil {
-		s.Sync(ctx, workID, accessToken(ctx), row.PlayStatus)
+		s.Sync(ctx, workID, token, string(*b.PlayStatus))
 	}
-	rating, p := s.detail(ctx, row.ID)
+	rating, err := s.Catalog.PutMyRating(ctx, token, int64(workID), catalogclient.RatingInput{
+		Overall: b.Overall, AspectScores: aspectsInput(b.AspectScores), Recommend: string(b.Recommend),
+		SpoilerLevel: string(b.SpoilerLevel), ShortSummary: summary,
+	})
+	if err != nil {
+		return nil, upstream(err)
+	}
+	s.mirror(rating, b.GameTypes)
+	s.reward(viewer.ID, existing, rating)
+	id := int(rating.ID)
+	s.Scan.ScanBg(gate.SubjectKindGalgameRating, strconv.Itoa(id), summary, int64(viewer.ID))
+	out, p := s.detail(ctx, id)
 	if p != nil {
 		return nil, p
 	}
-	return &createRatingOutput{Location: "/api/v1/ratings/" + strconv.Itoa(row.ID), Body: *rating}, nil
+	return &createRatingOutput{Location: "/api/v1/ratings/" + strconv.Itoa(id), Body: *out}, nil
 }
 
 func (s *Service) owned(ctx context.Context, rawID string) (repository.RatingRecord, *problem.Problem) {
@@ -191,6 +300,11 @@ func (s *Service) readable(ctx context.Context, r repository.RatingRecord) *prob
 	return nil
 }
 
+func catalogModerationRequired() *problem.Problem {
+	return problem.New(problem.CodeCatalogModerationRequired,
+		"Deleting a rating removes it from every NextMoe site, which needs NextMoe catalog moderation standing.")
+}
+
 func permissionRequired(detail string) *problem.Problem {
 	return problem.New(problem.CodePermissionRequired, detail)
 }
@@ -200,12 +314,19 @@ type updateRatingInput struct {
 	Body     RatingPatch
 }
 
+// updateRating patches NextMoe's current copy, not the local one: an edit made
+// on another site in the last minutes has not reached the mirror yet, and a
+// PUT built from the mirror would quietly undo it.
 func (s *Service) updateRating(ctx context.Context, in *updateRatingInput) (*ratingOutput, error) {
-	if !s.ready() {
+	if !s.writable() {
 		return nil, problem.Internal(errUnconfigured)
 	}
 	viewer := v1.User(ctx)
 	if p := s.requireActive(ctx, viewer); p != nil {
+		return nil, p
+	}
+	token, p := requireToken(ctx)
+	if p != nil {
 		return nil, p
 	}
 	r, p := s.owned(ctx, in.RatingID)
@@ -218,150 +339,116 @@ func (s *Service) updateRating(ctx context.Context, in *updateRatingInput) (*rat
 	if r.UserID != viewer.ID {
 		return nil, permissionRequired("Only the author may change a rating.")
 	}
+	current, err := s.Catalog.MyRating(ctx, token, int64(r.WorkID))
+	if err != nil {
+		return nil, upstream(err)
+	}
+	if current == nil {
+		return nil, notFound()
+	}
 	b := in.Body
-	fields := map[string]any{}
+	if b.PlayStatus != nil {
+		if _, _, ok := playstate.ToCatalog(string(*b.PlayStatus)); !ok {
+			return nil, doneRefused("/play_status")
+		}
+	}
+	want := inputOf(current)
 	if b.Recommend != nil {
-		fields["recommend"] = string(*b.Recommend)
+		want.Recommend = string(*b.Recommend)
 	}
 	if b.Overall != nil {
-		fields["overall"] = *b.Overall
-	}
-	if b.GameTypes != nil {
-		fields["galgame_type"] = gorm.Expr("?::jsonb", string(gameTypesJSON(b.GameTypes)))
-	}
-	if b.PlayStatus != nil {
-		fields["play_status"] = string(*b.PlayStatus)
+		want.Overall = *b.Overall
 	}
 	if b.SpoilerLevel != nil {
-		fields["spoiler_level"] = string(*b.SpoilerLevel)
+		want.SpoilerLevel = string(*b.SpoilerLevel)
 	}
-	summaryChanged := b.ShortSummary != nil && *b.ShortSummary != r.ShortSummary
+	if b.AspectScores != nil {
+		want.AspectScores = aspectsInput(b.AspectScores)
+	}
+	summaryChanged := b.ShortSummary != nil && *b.ShortSummary != current.ShortSummary
 	if summaryChanged {
+		if !utf8.ValidString(*b.ShortSummary) {
+			return nil, invalidSummary()
+		}
 		if p := s.checkText(ctx, *b.ShortSummary, viewer.ID); p != nil {
 			return nil, p
 		}
-		fields["short_summary"] = *b.ShortSummary
+		want.ShortSummary = *b.ShortSummary
 	}
-	if sc := b.AspectScores; sc != nil {
-		fields["art"], fields["story"], fields["music"] = scoreValue(sc.Art), scoreValue(sc.Story), scoreValue(sc.Music)
-		fields["character"], fields["route"], fields["system"] = scoreValue(sc.Character), scoreValue(sc.Route), scoreValue(sc.System)
-		fields["voice"], fields["replay_value"] = scoreValue(sc.Voice), scoreValue(sc.ReplayValue)
-	}
-	if len(fields) > 0 {
-		if err := s.Store.Update(r.ID, fields); err != nil {
-			return nil, problem.Internal(err)
-		}
-	}
-	if summaryChanged {
-		if diff := ratingReward(*b.ShortSummary) - ratingReward(r.ShortSummary); diff != 0 && s.Award != nil {
-			ref := moemoepoint.Ref("galgame_rating", r.ID)
-			s.Award(r.UserID, diff, moemoepoint.ReasonContentApproved, ref, moemoepoint.KeyNonce(moemoepoint.ReasonContentApproved, ref))
-		}
-		s.Scan.ScanBg(gate.SubjectKindGalgameRating, strconv.Itoa(r.ID), *b.ShortSummary, int64(r.UserID))
-	}
+	// The rating carries its author's play state, so the state goes first and
+	// the rating NextMoe answers afterwards already shows it.
 	if b.PlayStatus != nil && s.Sync != nil {
-		s.Sync(ctx, r.WorkID, accessToken(ctx), string(*b.PlayStatus))
+		s.Sync(ctx, r.WorkID, token, string(*b.PlayStatus))
 	}
-	rating, p := s.detail(ctx, r.ID)
+	rating := current
+	switch {
+	case !sameInput(want, inputOf(current)):
+		if rating, err = s.Catalog.PutMyRating(ctx, token, int64(r.WorkID), want); err != nil {
+			return nil, upstream(err)
+		}
+	case b.PlayStatus != nil:
+		if fresh, err := s.Catalog.MyRating(ctx, token, int64(r.WorkID)); err == nil && fresh != nil {
+			rating = fresh
+		}
+	}
+	s.mirror(rating, b.GameTypes)
+	if summaryChanged {
+		s.reward(viewer.ID, current, rating)
+		s.Scan.ScanBg(gate.SubjectKindGalgameRating, strconv.FormatInt(rating.ID, 10), rating.ShortSummary, int64(viewer.ID))
+	}
+	out, p := s.detail(ctx, int(rating.ID))
 	if p != nil {
 		return nil, p
 	}
-	return &ratingOutput{Body: *rating}, nil
+	return &ratingOutput{Body: *out}, nil
 }
 
 type deleteRatingOutput struct{}
 
+// deleteRating removes the rating from every NextMoe site. Staff delete through
+// NextMoe's moderation, which judges the holder's own standing there; the
+// forum's rating.delete_any alone does not reach it.
 func (s *Service) deleteRating(ctx context.Context, in *ratingPathInput) (*deleteRatingOutput, error) {
-	if !s.ready() {
+	if !s.writable() {
 		return nil, problem.Internal(errUnconfigured)
 	}
 	viewer := v1.User(ctx)
 	if p := s.requireActive(ctx, viewer); p != nil {
+		return nil, p
+	}
+	token, p := requireToken(ctx)
+	if p != nil {
 		return nil, p
 	}
 	r, p := s.owned(ctx, in.RatingID)
 	if p != nil {
 		return nil, p
 	}
-	creators, err := s.Store.WorkCreators([]int{r.WorkID})
-	if err != nil {
-		return nil, problem.Internal(err)
+	switch {
+	case viewer.ID == r.UserID:
+		if err := s.Catalog.DeleteMyRating(ctx, token, int64(r.WorkID)); err != nil {
+			return nil, upstream(err)
+		}
+	case viewer.Can(perm.RatingDeleteAny) && !moderatesRatings(viewer):
+		return nil, catalogModerationRequired()
+	case moderatesRatings(viewer):
+		err := s.Catalog.ModerationDeleteRating(ctx, token, int64(r.ID))
+		var api *catalogclient.UserAPIError
+		if errors.As(err, &api) && api.Status == http.StatusForbidden {
+			return nil, catalogModerationRequired()
+		}
+		if err != nil && !errors.Is(err, catalogclient.ErrNotFound) {
+			return nil, upstream(err)
+		}
+	default:
+		return nil, permissionRequired("Only the author or staff holding rating.delete_any may delete a rating.")
 	}
-	if !canDelete(viewer, r, creators[r.WorkID]) {
-		return nil, permissionRequired("Only the author, the work page's creator or staff holding rating.delete_any may delete a rating.")
+	if err := s.Store.DropRating(r.ID); err != nil {
+		slog.Error("rating delete: local copy not dropped; the mirror job will drop it", "rating_id", r.ID, "error", err)
 	}
-	if err := s.Store.Delete(r.ID); err != nil {
-		return nil, problem.Internal(err)
-	}
-	if s.Award != nil {
+	if r.WrittenHere && s.Award != nil {
 		ref := moemoepoint.Ref("galgame_rating", r.ID)
 		s.Award(r.UserID, -ratingReward(r.ShortSummary), moemoepoint.ReasonContentRemoved, ref, moemoepoint.KeyNonce(moemoepoint.ReasonContentRemoved, ref))
 	}
 	return &deleteRatingOutput{}, nil
-}
-
-type engagementOutput struct {
-	Body RatingEngagement
-}
-
-func (s *Service) likeRating(ctx context.Context, in *ratingPathInput) (*engagementOutput, error) {
-	return s.setLike(ctx, in.RatingID, true)
-}
-
-func (s *Service) unlikeRating(ctx context.Context, in *ratingPathInput) (*engagementOutput, error) {
-	return s.setLike(ctx, in.RatingID, false)
-}
-
-func (s *Service) setLike(ctx context.Context, rawID string, want bool) (*engagementOutput, error) {
-	if !s.ready() {
-		return nil, problem.Internal(errUnconfigured)
-	}
-	viewer := v1.User(ctx)
-	if p := s.requireActive(ctx, viewer); p != nil {
-		return nil, p
-	}
-	r, p := s.owned(ctx, rawID)
-	if p != nil {
-		return nil, p
-	}
-	if p := s.readable(ctx, r); p != nil {
-		return nil, p
-	}
-	if r.UserID == viewer.ID {
-		return nil, problem.New(problem.CodeSelfLikeForbidden, "Users cannot like their own ratings.")
-	}
-	likeID := 0
-	err := s.Store.DB().Transaction(func(tx *gorm.DB) error {
-		var err error
-		likeID, err = s.Store.SetLike(tx, r.ID, viewer.ID, want)
-		if err != nil || likeID == 0 || !want || s.Notify == nil {
-			return err
-		}
-		preview := r.ShortSummary
-		if utf8.RuneCountInString(preview) > constants.TextPreviewLength {
-			preview = string([]rune(preview)[:constants.TextPreviewLength])
-		}
-		return s.Notify(tx, viewer.ID, r.UserID, preview, r.WorkID, r.ID)
-	})
-	if err != nil {
-		return nil, problem.Internal(err)
-	}
-	if likeID > 0 && s.Award != nil {
-		delta, event := 1, "liked"
-		if !want {
-			delta, event = -1, "unliked"
-		}
-		s.Award(r.UserID, delta, moemoepoint.ReasonLiked, moemoepoint.Ref("galgame_rating", r.ID),
-			moemoepoint.Key(event, "galgame_rating_like_"+strconv.Itoa(likeID)))
-	}
-	fresh, err := s.Store.Get(r.ID)
-	if err != nil {
-		return nil, problem.Internal(err)
-	}
-	return &engagementOutput{Body: RatingEngagement{
-		Object:    "rating_engagement",
-		RatingID:  repr.ID(r.ID),
-		LikeCount: max(fresh.LikeCount, 0),
-		Viewer:    RatingEngagementViewer{HasLiked: want},
-	}}, nil
 }

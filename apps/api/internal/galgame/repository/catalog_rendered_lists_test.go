@@ -24,8 +24,8 @@ func seedRenderedPair(t *testing.T, db *gorm.DB, base, owner int) (listed, unlis
 		if err := db.Exec(`UPDATE galgame SET creator_user_id = ? WHERE id = ?`, owner, id).Error; err != nil {
 			t.Fatal(err)
 		}
-		if err := db.Exec(`INSERT INTO galgame_rating (work_id, user_id, overall, recommend, updated)
-			VALUES (?, ?, 7, 'yes', now())`, id, owner).Error; err != nil {
+		if err := db.Exec(`INSERT INTO galgame_rating (id, work_id, user_id, overall, recommend, updated)
+			VALUES (nextval('galgame_rating_id_seq'), ?, ?, 7, 'yes', now())`, id, owner).Error; err != nil {
 			t.Fatal(err)
 		}
 	}

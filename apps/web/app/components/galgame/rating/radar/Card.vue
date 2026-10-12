@@ -83,7 +83,7 @@ defineProps<{
           >
             {{ KUN_GALGAME_RATING_RECOMMEND_MAP[rating.recommend] }}
           </KunChip>
-          <KunChip color="primary">
+          <KunChip v-if="rating.play_status" color="primary">
             {{
               KUN_GALGAME_PLAY_STATE_MAP[
                 rating.play_status as KunGalgamePlayStateRead

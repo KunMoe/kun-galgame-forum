@@ -336,6 +336,9 @@ export type RatingPatch = components['schemas']['RatingPatch']
 export type RatingEngagement = components['schemas']['RatingEngagement']
 export type AspectScores = components['schemas']['AspectScores']
 export type RatingPage = components['schemas']['PageListRatingSummary']
+export type WorkRecord = components['schemas']['WorkRecord']
+export type WorkRecordPut = components['schemas']['WorkRecordPut']
+export type RecordRating = components['schemas']['RecordRating']
 export type RatingsQuery = NonNullable<
   operations['listRatings']['parameters']['query']
 >

@@ -244,7 +244,7 @@ func (f *rkFix) seed(t *testing.T) {
 
 	// Identical ratings on two works tie on the weighted score.
 	for _, w := range []int{rkWorkTop, rkWorkNoCreator} {
-		f.sql(t, `INSERT INTO galgame_rating (recommend, overall, user_id, work_id, updated) VALUES ('yes', 10, ?, ?, ?)`, rkUserA, w, now)
+		f.sql(t, `INSERT INTO galgame_rating (id, recommend, overall, user_id, work_id, updated) VALUES (nextval('galgame_rating_id_seq'), 'yes', 10, ?, ?, ?)`, rkUserA, w, now)
 	}
 }
 

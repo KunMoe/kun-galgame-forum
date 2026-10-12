@@ -142,7 +142,7 @@ func TestV1WorkRankingRatingTie(t *testing.T) {
 	extra := []int{rkWorkBannedMaker + 3, rkWorkBannedMaker + 1, rkWorkBannedMaker + 4, rkWorkBannedMaker + 2, rkWorkBannedMaker + 5}
 	for _, id := range extra {
 		f.sql(t, `INSERT INTO galgame (id, view, updated, published, content_limit, resource_count) VALUES (?, 0, ?, true, 'sfw', 0)`, id, now)
-		f.sql(t, `INSERT INTO galgame_rating (recommend, overall, user_id, work_id, updated) VALUES ('yes', 10, ?, ?, ?)`, rkUserA, id, now)
+		f.sql(t, `INSERT INTO galgame_rating (id, recommend, overall, user_id, work_id, updated) VALUES (nextval('galgame_rating_id_seq'), 'yes', 10, ?, ?, ?)`, rkUserA, id, now)
 	}
 	_, body = f.get(t, "/rankings/works", url.Values{"sort": {"rating_desc"}, "include_resourceless": {"true"}})
 	want := rkWant(rkWorkBannedMaker+5, rkWorkBannedMaker+4, rkWorkBannedMaker+3, rkWorkBannedMaker+2, rkWorkBannedMaker+1, rkWorkNoCreator, rkWorkTop)
