@@ -267,7 +267,7 @@ func (r *PurgeRepository) PurgeUserContent(userID, operatorID int) (PurgeReceipt
 			}
 		}
 
-		if err := del(tx, "DELETE FROM message WHERE sender_id = ? OR receiver_id = ?", userID, userID); err != nil {
+		if err := del(tx, "DELETE FROM message WHERE sender_id = ? OR receiver_id = ? OR (subject_kind = 'user' AND subject_id = ?)", userID, userID, userID); err != nil {
 			return err
 		}
 		for _, q := range []string{

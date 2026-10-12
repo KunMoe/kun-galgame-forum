@@ -24,17 +24,15 @@ func newRatingV1(
 ) *ratingapiv1.Service {
 	helpers := galgameService.InteractionHelpers{}
 	return ratingapiv1.New(ratingapiv1.Deps{
-		Store: galgameRepo.NewRatingStore(db),
-		Rows:  galgame,
-		Works: workrepr.NewHydrator(galgame, db, cdn),
-		Users: users,
-		Check: check,
-		Scan:  scan,
-		Award: moemoepoint.Award,
-		Notify: func(tx *gorm.DB, senderID, receiverID int, preview string, workID int) error {
-			return helpers.CreateGalgameMessageWithContent(tx, senderID, receiverID, "liked", preview, workID)
-		},
-		Sync: playtime.SyncWorkState,
-		CDN:  cdn,
+		Store:  galgameRepo.NewRatingStore(db),
+		Rows:   galgame,
+		Works:  workrepr.NewHydrator(galgame, db, cdn),
+		Users:  users,
+		Check:  check,
+		Scan:   scan,
+		Award:  moemoepoint.Award,
+		Notify: helpers.CreateRatingLikedMessage,
+		Sync:   playtime.SyncWorkState,
+		CDN:    cdn,
 	})
 }

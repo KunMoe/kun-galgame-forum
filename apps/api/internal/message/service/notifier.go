@@ -56,6 +56,8 @@ type Spec struct {
 	WorkID     int
 	ToolsetID  int
 	WebsiteURL string
+
+	Ref msgModel.Ref
 }
 
 type Notifier interface {
@@ -86,24 +88,14 @@ func (n *notifier) Emit(tx *gorm.DB, spec Spec) error {
 		db = n.repo.DB()
 	}
 
-	var existing int64
-	if err := db.Model(&msgModel.Message{}).
-		Where(`sender_id = ? AND receiver_id = ? AND type = ? AND content = ? AND link = ?`,
-			spec.SenderID, spec.ReceiverID, string(spec.Kind), content, link,
-		).Count(&existing).Error; err != nil {
-		return err
-	}
-	if existing > 0 {
-		return nil
-	}
-
-	return db.Create(&msgModel.Message{
+	return msgRepo.InsertOnce(db, &msgModel.Message{
 		SenderID:   spec.SenderID,
 		ReceiverID: spec.ReceiverID,
 		Type:       string(spec.Kind),
 		Content:    content,
 		Link:       link,
-	}).Error
+		Ref:        spec.Ref,
+	})
 }
 
 func (n *notifier) EmitMany(tx *gorm.DB, specs []Spec) error {

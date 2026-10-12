@@ -83,6 +83,8 @@ func TestV1TopicFavoriteSetRepeatRemove(t *testing.T) {
 	if len(msgs) != 1 || msgs[0]["sender"] != e1UserBob || msgs[0]["link"] != "/topic/"+strID(e1TopicPublic) {
 		t.Fatalf("favorite message %+v", msgs)
 	}
+	wantNotifRefs(t, f.db, []string{notifRef("favorite", "topic", e1TopicPublic, "topic", e1TopicPublic)},
+		"receiver_id = ? AND type = 'favorite'", e1UserAlice)
 
 	resp, body = f.do(t, http.MethodPut, path, sess, spec, nil, nil)
 	if resp.StatusCode != 200 {
@@ -243,6 +245,8 @@ func TestV1TopicUpvoteCreatesRowAwardsAndMessage(t *testing.T) {
 	if len(msgs) != 1 || msgs[0]["sender"] != e1UserBob || msgs[0]["link"] != "/topic/"+strID(e1TopicPublic) {
 		t.Fatalf("upvoted message %+v", msgs)
 	}
+	wantNotifRefs(t, f.db, []string{notifRef("upvoted", "topic", e1TopicPublic, "topic", e1TopicPublic)},
+		"receiver_id = ? AND type = 'upvoted'", e1UserAlice)
 }
 
 func TestV1TopicUpvoteRepeatableAndNoteRules(t *testing.T) {
@@ -438,6 +442,8 @@ func TestV1BestAnswerSetRepeatReplaceClear(t *testing.T) {
 	if len(msgs) != 1 || msgs[0]["sender"] != e1UserAlice || msgs[0]["link"] != "/topic/"+strID(e1TopicPublic)+"?reply=1" {
 		t.Fatalf("solution %+v", msgs)
 	}
+	wantNotifRefs(t, f.db, []string{notifRef("solution", "reply", e1ReplyDave, "topic", e1TopicPublic)},
+		"receiver_id = ? AND type = 'solution'", e1UserDave)
 
 	resp, body = f.do(t, http.MethodPut, path, sess, spec, replyChoice(e1ReplyDave), nil)
 	if resp.StatusCode != 200 {
@@ -589,6 +595,8 @@ func TestV1PinReplyReplaceUnpinAndOwn(t *testing.T) {
 	if len(msgs) != 1 || msgs[0]["sender"] != e1UserAlice || msgs[0]["link"] != "/topic/"+strID(e1TopicPublic)+"?reply=1" {
 		t.Fatalf("pin-reply %+v", msgs)
 	}
+	wantNotifRefs(t, f.db, []string{notifRef("pin-reply", "reply", e1ReplyDave, "topic", e1TopicPublic)},
+		"receiver_id = ? AND type = 'pin-reply'", e1UserDave)
 
 	resp, body = f.do(t, http.MethodPut, path, sess, spec, replyChoice(e1ReplyDave), nil)
 	if resp.StatusCode != 200 {

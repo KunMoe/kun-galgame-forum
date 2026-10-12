@@ -185,7 +185,7 @@ func (w *Writes) updateTopic(ctx context.Context, in *updateTopicInput) (*update
 			}
 		}
 		if textChanged {
-			if err := w.notifyMentions(tx, topic.UserID, topic.ID, 0, body); err != nil {
+			if err := w.notifyTopicMentions(tx, topic.UserID, topic.ID, body); err != nil {
 				return err
 			}
 		}

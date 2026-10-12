@@ -65,6 +65,7 @@ func MapNotification(n communityclient.NotificationView, post *communityclient.P
 		Type:                    msgType,
 		SenderID:                senderID,
 		ReceiverID:              int(n.UserID),
+		Ref:                     postRef(n),
 		CommunityNotificationID: &id,
 		CommunitySeq:            &seq,
 		CommunityThreadID:       &threadID,
@@ -77,6 +78,44 @@ func MapNotification(n communityclient.NotificationView, post *communityclient.P
 		msg.CommunityPostNumber = &pn
 	}
 	return msg
+}
+
+var resourceAnchorKinds = map[string]string{
+	"rating":   model.KindRating,
+	"toolset":  model.KindToolset,
+	"resource": model.KindResource,
+	"quiz":     model.KindQuiz,
+	"website":  model.KindWebsite,
+}
+
+func postRef(n communityclient.NotificationView) model.Ref {
+	wall, ok := anchorRef(n.AnchorKind, n.AnchorID)
+	if !ok {
+		return model.Ref{}
+	}
+	if n.PostID == nil || *n.PostID <= 0 {
+		return wall
+	}
+	return model.CommunityPostRef(*n.PostID, wall)
+}
+
+func anchorRef(kind int32, anchorID string) (model.Ref, bool) {
+	var subject, raw string
+	switch kind {
+	case communityclient.AnchorSiteGame:
+		subject, raw = model.KindWork, anchorID
+	case communityclient.AnchorSiteResource:
+		source, rest, ok := strings.Cut(anchorID, ":")
+		if !ok {
+			return model.Ref{}, false
+		}
+		subject, raw = resourceAnchorKinds[source], rest
+	}
+	id, err := strconv.ParseInt(raw, 10, 64)
+	if subject == "" || err != nil || id <= 0 {
+		return model.Ref{}, false
+	}
+	return model.Of(subject, id), true
 }
 
 func mapKind(kind int32, post *communityclient.PostView) (string, bool) {
@@ -128,6 +167,7 @@ func mapFollowed(n communityclient.NotificationView) *model.Message {
 		Type:                    msgType,
 		SenderID:                senderID,
 		ReceiverID:              int(n.UserID),
+		Ref:                     model.UserRef(senderID),
 		CommunityNotificationID: &id,
 		CommunitySeq:            &seq,
 		ItemCount:               int(n.ItemCount),
@@ -149,6 +189,10 @@ func mapFolloweeActivity(n communityclient.NotificationView) *model.Message {
 	if n.Activity != nil {
 		preview = content.PlainText(n.Activity.Title, constants.TextPreviewLength)
 	}
+	var ref model.Ref
+	if n.Activity != nil {
+		ref = model.Ref{SubjectKind: model.KindActivity, SubjectID: n.Activity.ID}
+	}
 	status := "unread"
 	if n.ReadAt != nil && *n.ReadAt != "" {
 		status = "read"
@@ -156,6 +200,7 @@ func mapFolloweeActivity(n communityclient.NotificationView) *model.Message {
 	id := n.ID
 	seq := n.Seq
 	return &model.Message{
+		Ref:                     ref,
 		Content:                 preview,
 		Link:                    followeeActivityLink(n, senderID),
 		Status:                  status,
@@ -189,6 +234,7 @@ func mapNotice(n communityclient.NotificationView) *model.Message {
 	id := n.ID
 	seq := n.Seq
 	return &model.Message{
+		Ref:                     model.Ref{SubjectKind: model.KindNotice, SubjectID: n.Notice.ID},
 		Content:                 content.PlainText(n.Notice.Title, constants.TextPreviewLength),
 		Link:                    link,
 		Status:                  status,

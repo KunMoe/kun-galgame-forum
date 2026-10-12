@@ -11,8 +11,8 @@ func (r *MessageRepository) UpsertCommunityMirror(m *model.Message) error {
 		INSERT INTO message (
 			content, link, status, type, sender_id, receiver_id, created, updated,
 			community_notification_id, community_seq, community_thread_id, community_post_number,
-			item_count, actor_count
-		) VALUES (?, ?, ?, ?, ?, ?, ?, now(), ?, ?, ?, ?, ?, ?)
+			item_count, actor_count, subject_kind, subject_id, root_kind, root_id
+		) VALUES (?, ?, ?, ?, ?, ?, ?, now(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 		ON CONFLICT (community_notification_id) WHERE community_notification_id IS NOT NULL
 		DO UPDATE SET
 			content = EXCLUDED.content,
@@ -27,12 +27,17 @@ func (r *MessageRepository) UpsertCommunityMirror(m *model.Message) error {
 			community_post_number = EXCLUDED.community_post_number,
 			item_count = EXCLUDED.item_count,
 			actor_count = EXCLUDED.actor_count,
+			subject_kind = EXCLUDED.subject_kind,
+			subject_id = EXCLUDED.subject_id,
+			root_kind = EXCLUDED.root_kind,
+			root_id = EXCLUDED.root_id,
 			updated = now()
 		WHERE message.community_seq < EXCLUDED.community_seq
 	`,
 		m.Content, m.Link, m.Status, m.Type, m.SenderID, m.ReceiverID, m.CreatedAt,
 		m.CommunityNotificationID, m.CommunitySeq, m.CommunityThreadID, m.CommunityPostNumber,
 		m.ItemCount, m.ActorCount,
+		nullText(m.SubjectKind), nullID(m.SubjectID), nullText(m.RootKind), nullID(m.RootID),
 	).Error
 }
 
@@ -47,4 +52,18 @@ func (r *MessageRepository) MaxCommunitySeq() (int64, error) {
 	var max int64
 	err := r.db.Raw(`SELECT COALESCE(MAX(community_seq), 0) FROM message`).Scan(&max).Error
 	return max, err
+}
+
+func nullText(s string) *string {
+	if s == "" {
+		return nil
+	}
+	return &s
+}
+
+func nullID(id int64) *int64 {
+	if id == 0 {
+		return nil
+	}
+	return &id
 }

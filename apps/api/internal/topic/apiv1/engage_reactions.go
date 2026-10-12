@@ -4,6 +4,7 @@ import (
 	"context"
 	"strconv"
 
+	msgModel "kun-galgame-api/internal/message/model"
 	"kun-galgame-api/internal/moemoepoint"
 	"kun-galgame-api/internal/topic/model"
 
@@ -73,7 +74,7 @@ func (x *Interactions) applyTopicReactionSet(tx *gorm.DB, topic *model.Topic, us
 			ref:    moemoepoint.Ref("topic", topic.ID),
 			key:    moemoepoint.Key("liked", "topic_reaction_"+strconv.Itoa(id)),
 		})
-		return notifyTopicLink(tx, userID, topic.UserID, "liked", topicPreview(topic.Title), topic.ID, 0)
+		return notifyTopicLink(tx, userID, topic.UserID, "liked", topicPreview(topic.Title), topic.ID, 0, msgModel.TopicRef(topic.ID))
 	case "dislike":
 		return x.reads.topics.AdjustTopicCount(tx, topic.ID, "dislike_count", 1)
 	}
@@ -166,7 +167,7 @@ func (x *Interactions) applyReplyReactionSet(tx *gorm.DB, topic *model.Topic, re
 			ref:    moemoepoint.Ref("topic_reply", reply.ID),
 			key:    moemoepoint.Key("liked", "topic_reply_reaction_"+strconv.Itoa(id)),
 		})
-		return notifyTopicLink(tx, userID, reply.UserID, "liked", replyContentPreview(reply.Content), topic.ID, reply.Floor)
+		return notifyTopicLink(tx, userID, reply.UserID, "liked", replyContentPreview(reply.Content), topic.ID, reply.Floor, msgModel.ReplyRef(reply.ID, topic.ID))
 	case "dislike":
 		return x.reads.replies.AdjustReplyCount(tx, reply.ID, "dislike_count", 1)
 	}

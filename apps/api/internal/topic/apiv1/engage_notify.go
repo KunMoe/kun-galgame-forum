@@ -4,6 +4,7 @@ import (
 	"kun-galgame-api/internal/apiv1/content"
 	"kun-galgame-api/internal/constants"
 	msgModel "kun-galgame-api/internal/message/model"
+	msgRepo "kun-galgame-api/internal/message/repository"
 	msgService "kun-galgame-api/internal/message/service"
 	"kun-galgame-api/internal/topic/model"
 
@@ -30,35 +31,26 @@ func replyPlainPreview(reply model.TopicReply) string {
 	return content.PlainText(reply.Content, 500)
 }
 
-func dedupMessage(tx *gorm.DB, senderID, receiverID int, msgType, content, link string) error {
+func dedupMessage(tx *gorm.DB, senderID, receiverID int, msgType, content, link string, ref msgModel.Ref) error {
 	if senderID == receiverID || receiverID <= 0 {
 		return nil
 	}
-	var count int64
-	if err := tx.Model(&msgModel.Message{}).
-		Where("sender_id = ? AND receiver_id = ? AND type = ? AND link = ?",
-			senderID, receiverID, msgType, link).
-		Count(&count).Error; err != nil {
-		return err
-	}
-	if count > 0 {
-		return nil
-	}
-	return tx.Create(&msgModel.Message{
+	return msgRepo.InsertOnce(tx, &msgModel.Message{
 		SenderID:   senderID,
 		ReceiverID: receiverID,
 		Type:       msgType,
 		Content:    content,
 		Link:       link,
 		Status:     "unread",
-	}).Error
+		Ref:        ref,
+	})
 }
 
-func notifyTopicLink(tx *gorm.DB, senderID, receiverID int, msgType, content string, topicID, replyFloor int) error {
-	return dedupMessage(tx, senderID, receiverID, msgType, content, msgService.BuildTopicLink(topicID, replyFloor, 0))
+func notifyTopicLink(tx *gorm.DB, senderID, receiverID int, msgType, content string, topicID, replyFloor int, ref msgModel.Ref) error {
+	return dedupMessage(tx, senderID, receiverID, msgType, content, msgService.BuildTopicLink(topicID, replyFloor, 0), ref)
 }
 
-func (x *Interactions) emitSolution(tx *gorm.DB, senderID, receiverID int, content string, topicID, replyFloor int) error {
+func (x *Interactions) emitSolution(tx *gorm.DB, senderID, receiverID int, content string, reply *model.TopicReply) error {
 	if x.notify == nil {
 		return nil
 	}
@@ -67,7 +59,8 @@ func (x *Interactions) emitSolution(tx *gorm.DB, senderID, receiverID int, conte
 		ReceiverID: receiverID,
 		Kind:       msgService.NotifySolution,
 		Content:    content,
-		TopicID:    topicID,
-		ReplyFloor: replyFloor,
+		TopicID:    reply.TopicID,
+		ReplyFloor: reply.Floor,
+		Ref:        msgModel.ReplyRef(reply.ID, reply.TopicID),
 	})
 }

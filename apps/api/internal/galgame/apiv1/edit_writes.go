@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"kun-galgame-api/internal/constants"
+	msgModel "kun-galgame-api/internal/message/model"
 	msgService "kun-galgame-api/internal/message/service"
 	"kun-galgame-api/internal/moemoepoint"
 	"kun-galgame-api/pkg/catalogclient"
@@ -89,6 +90,7 @@ func (s *Service) proposalFiled(ctx context.Context, prop *catalogclient.EditPro
 		if err := s.notifier.Emit(nil, msgService.Spec{
 			SenderID: int(prop.ProposerUID), ReceiverID: owner,
 			Kind: msgService.NotifyRequested, Content: s.workName(ctx, workID), WorkID: workID,
+			Ref: msgModel.EditProposalRef(prop.ID, workID),
 		}); err != nil {
 			slog.Warn("galgame edit: requested notification failed", "proposal_id", prop.ID, "err", err)
 		}
@@ -324,6 +326,7 @@ func (s *Service) notifyDecision(_ context.Context, prop *catalogclient.EditProp
 	if err := s.notifier.Emit(nil, msgService.Spec{
 		SenderID: senderID, ReceiverID: int(prop.ProposerUID),
 		Kind: kind, Content: content, WorkID: workID,
+		Ref: msgModel.EditProposalRef(prop.ID, workID),
 	}); err != nil {
 		slog.Warn("galgame edit: decision notification failed", "proposal_id", prop.ID, "kind", kind, "err", err)
 	}

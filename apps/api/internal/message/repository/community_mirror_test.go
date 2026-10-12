@@ -195,3 +195,53 @@ func TestMarkReadUpToReturnsMirroredIDs(t *testing.T) {
 		t.Fatalf("unread = %d, want 0", unread)
 	}
 }
+
+func TestUpsertCommunityMirrorRefs(t *testing.T) {
+	db := testdb.Open(t)
+	repo := NewMessageRepository(db)
+	const nid int64 = 9_000_000_301
+	db.Exec("DELETE FROM message WHERE community_notification_id = ?", nid)
+	t.Cleanup(func() {
+		db.Exec("DELETE FROM message WHERE community_notification_id = ?", nid)
+	})
+
+	upsert := func(seq int64, ref model.Ref) {
+		t.Helper()
+		id := nid
+		if err := repo.UpsertCommunityMirror(&model.Message{
+			Link: "/galgame/4178?comment=100", Status: "unread", Type: "followed", SenderID: 9, ReceiverID: 3,
+			CreatedAt: time.Now(), CommunityNotificationID: &id, CommunitySeq: &seq, ItemCount: 1, ActorCount: 1,
+			Ref: ref,
+		}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	refs := func() string {
+		t.Helper()
+		var s string
+		if err := db.Raw(`SELECT COALESCE(subject_kind, '-') || ':' || COALESCE(subject_id::text, '-')
+			|| ' ' || COALESCE(root_kind, '-') || ':' || COALESCE(root_id::text, '-')
+			FROM message WHERE community_notification_id = ?`, nid).Row().Scan(&s); err != nil {
+			t.Fatal(err)
+		}
+		return s
+	}
+	work := model.WorkRef(4178)
+
+	upsert(10, model.CommunityPostRef(100, work))
+	if got := refs(); got != "community_post:100 work:4178" {
+		t.Fatalf("insert refs %q", got)
+	}
+	upsert(5, model.CommunityPostRef(99, work))
+	if got := refs(); got != "community_post:100 work:4178" {
+		t.Fatalf("an older seq rewrote the refs: %q", got)
+	}
+	upsert(20, model.CommunityPostRef(101, work))
+	if got := refs(); got != "community_post:101 work:4178" {
+		t.Fatalf("a newer seq kept the old refs: %q", got)
+	}
+	upsert(30, model.Ref{SubjectKind: model.KindActivity, SubjectID: 7})
+	if got := refs(); got != "activity:7 -:-" {
+		t.Fatalf("a missing root was not stored as NULL: %q", got)
+	}
+}

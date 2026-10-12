@@ -62,6 +62,8 @@ func TestV1PutWorkLikeIdempotent(t *testing.T) {
 	if f.scalar(t, `SELECT COUNT(*) FROM galgame_like WHERE work_id = ? AND user_id = ?`, g4WorkLive, w3UserBob) != rows {
 		t.Error("second PUT inserted another row")
 	}
+	wantNotifRefs(t, f.db, []string{notifRef("liked", "work", g4WorkLive, "work", g4WorkLive)},
+		"sender_id = ? AND receiver_id = ? AND type = 'liked'", w3UserBob, w3UserAlice)
 }
 
 func TestV1DeleteWorkLikeIdempotentAndNonNegative(t *testing.T) {

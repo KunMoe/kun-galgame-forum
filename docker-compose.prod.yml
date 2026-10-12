@@ -203,6 +203,10 @@ x-kungal-api-env: &kungal-api-env
   # only reaches the container because this line names it: it sat set in the
   # panel for a day on 2026-09-23 while the API kept logging "未设置".
   KUN_LOTTERY_CODE_KEY: ${KUN_LOTTERY_CODE_KEY:-}
+  # Days a READ notification is kept before the daily 03:45 job deletes it;
+  # unread ones are never deleted. Unset = 365; 0 turns the job off. Like every
+  # panel var above, it reaches the container only because this line names it.
+  KUN_NOTIFICATION_RETENTION_DAYS: ${KUN_NOTIFICATION_RETENTION_DAYS:-}
   # ── App version gate: GET /api/app/version ──
   # The App force-updates every install below MIN_VERSION, so this pair is the
   # kill switch for the direct-download channel. Versions are MAJOR.MINOR.PATCH;

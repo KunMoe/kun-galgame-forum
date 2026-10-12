@@ -168,6 +168,11 @@ func TestV1CreateTopicMentionsCap(t *testing.T) {
 			t.Fatalf("order %d got %d", i, r.Receiver)
 		}
 	}
+	want := make([]string, len(recs))
+	for i := range want {
+		want[i] = notifRef("mentioned", "topic", tid, "topic", tid)
+	}
+	wantNotifRefs(t, f.db, want, "sender_id = ? AND type = 'mentioned'", w3UserAlice)
 }
 
 func TestV1CreateTopicIdempotentReplay(t *testing.T) {

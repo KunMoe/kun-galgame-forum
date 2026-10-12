@@ -4,6 +4,7 @@ import (
 	"errors"
 	"time"
 
+	msgModel "kun-galgame-api/internal/message/model"
 	"kun-galgame-api/internal/topic/model"
 
 	"gorm.io/gorm"
@@ -118,6 +119,7 @@ func SubscriptionLevels(tx *gorm.DB, topicID int, userIDs []int) (map[int]string
 type ReplyFanOut struct {
 	TopicID    int
 	Floor      int
+	ReplyID    int
 	ReplierID  int
 	Preview    string
 	Link       string
@@ -155,6 +157,7 @@ func FanOutReply(tx *gorm.DB, in ReplyFanOut) error {
 
 	continued, err := returnedIDs(tx.Raw(`UPDATE message m SET
 			sender_id = ?, content = ?, item_count = m.item_count + 1,
+			subject_kind = ?, subject_id = ?, root_kind = ?, root_id = s.topic_id,
 			actor_count = (SELECT COUNT(DISTINCT r.user_id) FROM topic_reply r
 				WHERE r.topic_id = s.topic_id AND r.status = 0
 				  AND r.floor >= s.notice_from_floor AND r.floor <= ? AND r.user_id <> m.receiver_id),
@@ -163,7 +166,8 @@ func FanOutReply(tx *gorm.DB, in ReplyFanOut) error {
 		WHERE s.topic_id = ? AND s.user_id IN ? AND s.notice_message_id = m.id
 		  AND m.receiver_id = s.user_id AND m.type = ? AND m.status = 'unread'
 		RETURNING m.receiver_id`,
-		in.ReplierID, in.Preview, in.Floor, in.TopicID, recipients, in.NoticeType))
+		in.ReplierID, in.Preview, msgModel.KindReply, in.ReplyID, msgModel.KindTopic,
+		in.Floor, in.TopicID, recipients, in.NoticeType))
 	if err != nil {
 		return err
 	}
@@ -181,14 +185,17 @@ func FanOutReply(tx *gorm.DB, in ReplyFanOut) error {
 		return nil
 	}
 	return tx.Exec(`WITH opened AS (
-			INSERT INTO message (sender_id, receiver_id, type, content, link, status, item_count, actor_count, created, updated)
-			SELECT ?, s.user_id, ?, ?, ?, 'unread', 1, 1, now(), now()
+			INSERT INTO message (sender_id, receiver_id, type, content, link, status, item_count, actor_count,
+				subject_kind, subject_id, root_kind, root_id, created, updated)
+			SELECT ?, s.user_id, ?, ?, ?, 'unread', 1, 1, ?, ?, ?, ?, now(), now()
 			FROM topic_subscription s WHERE s.topic_id = ? AND s.user_id IN ?
 			RETURNING id, receiver_id
 		)
 		UPDATE topic_subscription s SET notice_message_id = opened.id, notice_from_floor = ?
 		FROM opened WHERE s.topic_id = ? AND s.user_id = opened.receiver_id`,
-		in.ReplierID, in.NoticeType, in.Preview, in.Link, in.TopicID, fresh,
+		in.ReplierID, in.NoticeType, in.Preview, in.Link,
+		msgModel.KindReply, in.ReplyID, msgModel.KindTopic, in.TopicID,
+		in.TopicID, fresh,
 		in.Floor, in.TopicID).Error
 }
 

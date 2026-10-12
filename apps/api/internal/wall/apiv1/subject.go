@@ -4,6 +4,7 @@ import (
 	"strconv"
 	"strings"
 
+	msgModel "kun-galgame-api/internal/message/model"
 	"kun-galgame-api/pkg/communityclient"
 	"kun-galgame-api/pkg/perm"
 
@@ -38,6 +39,7 @@ type subjectSpec struct {
 	hasOwner     bool
 	linkPrefix   string
 	legacyKey    string
+	rootKind     string
 }
 
 var subjects = map[SubjectType]subjectSpec{
@@ -45,36 +47,42 @@ var subjects = map[SubjectType]subjectSpec{
 		typ: "galgame", anchorKind: communityclient.AnchorSiteGame,
 		editPerm: perm.CommentGalgameEdit, deletePerm: perm.CommentGalgameDelete,
 		maxLength: 5000, feedType: "GALGAME_COMMENT_CREATION", linkPrefix: "/galgame/",
+		rootKind: msgModel.KindWork,
 	},
 	"galgame_rating": {
 		typ: "galgame_rating", anchorKind: communityclient.AnchorSiteResource, anchorPrefix: "rating:",
 		editPerm: perm.CommentRatingEdit, deletePerm: perm.CommentRatingDelete,
 		maxLength: 1314, feedType: "GALGAME_RATING_COMMENT_CREATION",
 		hasOwner: true, linkPrefix: "/galgame-rating/", legacyKey: "rating",
+		rootKind: msgModel.KindRating,
 	},
 	"galgame_resource": {
 		typ: "galgame_resource", anchorKind: communityclient.AnchorSiteResource, anchorPrefix: "resource:",
 		editPerm: perm.CommentResourceEdit, deletePerm: perm.CommentResourceDelete,
 		maxLength: 1007, feedType: "GALGAME_RESOURCE_COMMENT_CREATION", counterTable: "galgame_resource",
 		hasOwner: true, linkPrefix: "/galgame/resource/", legacyKey: "resource",
+		rootKind: msgModel.KindResource,
 	},
 	"galgame_quiz": {
 		typ: "galgame_quiz", anchorKind: communityclient.AnchorSiteResource, anchorPrefix: "quiz:",
 		editPerm: perm.CommentQuizEdit, deletePerm: perm.CommentQuizDelete,
 		maxLength: 1007, feedType: "GALGAME_QUIZ_COMMENT_CREATION", counterTable: "galgame_quiz",
 		hasOwner: true, linkPrefix: "/galgame-quiz/", legacyKey: "quiz",
+		rootKind: msgModel.KindQuiz,
 	},
 	"toolset": {
 		typ: "toolset", anchorKind: communityclient.AnchorSiteResource, anchorPrefix: "toolset:",
 		editPerm: perm.CommentToolsetEdit, deletePerm: perm.CommentToolsetDelete,
 		maxLength: 1007, feedType: "TOOLSET_COMMENT_CREATION", counterTable: "galgame_toolset",
 		hasOwner: true, linkPrefix: "/toolset/", legacyKey: "toolset",
+		rootKind: msgModel.KindToolset,
 	},
 	"website": {
 		typ: "website", anchorKind: communityclient.AnchorSiteResource, anchorPrefix: "website:",
 		editPerm: perm.CommentWebsiteEdit, deletePerm: perm.CommentWebsiteDelete,
 		maxLength: 1007, feedType: "GALGAME_WEBSITE_COMMENT_CREATION", counterTable: "galgame_website",
 		linkPrefix: "/website/", legacyKey: "website",
+		rootKind: msgModel.KindWebsite,
 	},
 }
 

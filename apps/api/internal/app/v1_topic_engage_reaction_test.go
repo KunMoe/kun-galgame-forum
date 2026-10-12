@@ -46,6 +46,8 @@ func TestV1TopicLikeSetRepeatRemove(t *testing.T) {
 	if len(msgs) != 1 || msgs[0]["sender"] != e1UserBob || msgs[0]["link"] != "/topic/"+strID(e1TopicPublic) {
 		t.Fatalf("liked message %+v", msgs)
 	}
+	wantNotifRefs(t, f.db, []string{notifRef("liked", "topic", e1TopicPublic, "topic", e1TopicPublic)},
+		"receiver_id = ? AND type = 'liked'", e1UserAlice)
 
 	resp, body = f.do(t, http.MethodPut, path, sess, spec, nil, nil)
 	if resp.StatusCode != 200 {

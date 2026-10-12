@@ -29,7 +29,7 @@ type Users interface {
 type AwardFunc func(userID, delta int, reason, ref, idempotencyKey string)
 
 // NotifyFunc writes the "liked" message to the rating's author.
-type NotifyFunc func(tx *gorm.DB, senderID, receiverID int, preview string, workID int) error
+type NotifyFunc func(tx *gorm.DB, senderID, receiverID int, preview string, workID, ratingID int) error
 
 type SyncFunc func(ctx context.Context, workID int, accessToken, playStatus string)
 

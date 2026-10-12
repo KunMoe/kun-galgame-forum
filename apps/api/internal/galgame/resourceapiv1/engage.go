@@ -42,7 +42,7 @@ func (s *Service) putGalgameResourceLike(ctx context.Context, in *likeInput) (*e
 		if err := s.store.AdjustLikeCount(tx, row.ID, 1); err != nil {
 			return err
 		}
-		if err := s.store.CreateGalgameMessage(tx, user.ID, row.UserID, "liked", previewOf(links), row.WorkID); err != nil {
+		if err := s.store.CreateResourceMessage(tx, user.ID, row.UserID, "liked", previewOf(links), row.WorkID, row.ID); err != nil {
 			return err
 		}
 		jobs = append(jobs, pendingAward{
@@ -156,7 +156,7 @@ func (s *Service) createGalgameResourceExpiryReport(ctx context.Context, in *exp
 		if err := s.store.SetStatus(tx, row.ID, 1); err != nil {
 			return err
 		}
-		return s.store.CreateGalgameMessage(tx, user.ID, row.UserID, "expired", previewOf(links), row.WorkID)
+		return s.store.CreateResourceMessage(tx, user.ID, row.UserID, "expired", previewOf(links), row.WorkID, row.ID)
 	})
 	if err != nil {
 		return nil, problem.Internal(err)

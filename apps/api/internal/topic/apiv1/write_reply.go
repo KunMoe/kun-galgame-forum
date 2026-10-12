@@ -8,6 +8,7 @@ import (
 
 	"kun-galgame-api/internal/constants"
 	"kun-galgame-api/internal/infrastructure/markdown"
+	msgModel "kun-galgame-api/internal/message/model"
 	msgService "kun-galgame-api/internal/message/service"
 	"kun-galgame-api/internal/topic/model"
 	"kun-galgame-api/internal/topic/repository"
@@ -65,18 +66,19 @@ func (w *Writes) createReply(ctx context.Context, in *createReplyInput) (*create
 		if topic.UserID != user.ID {
 			if levels[topic.UserID] == model.SubscriptionWatching {
 				var h service.InteractionHelpers
-				if err := h.CreateReplyMessage(tx, user.ID, topic.UserID, "replied", preview, topic.ID, row.Floor, 0); err != nil {
+				if err := h.CreateReplyMessage(tx, user.ID, topic.UserID, "replied", preview, topic.ID, row.Floor, 0, msgModel.ReplyRef(row.ID, topic.ID)); err != nil {
 					return err
 				}
 			}
 			awards = append(awards, repliedAward(topic.UserID, row.ID))
 		}
-		if err := w.notifyMentions(tx, user.ID, topic.ID, row.Floor, body); err != nil {
+		if err := w.notifyReplyMentions(tx, user.ID, row, body); err != nil {
 			return err
 		}
 		if err := repository.FanOutReply(tx, repository.ReplyFanOut{
 			TopicID:    topic.ID,
 			Floor:      row.Floor,
+			ReplyID:    row.ID,
 			ReplierID:  user.ID,
 			Preview:    preview,
 			Link:       msgService.BuildTopicLink(topic.ID, row.Floor, 0),
@@ -162,7 +164,7 @@ func (w *Writes) updateReply(ctx context.Context, in *updateReplyInput) (*update
 		}); err != nil {
 			return err
 		}
-		return w.notifyMentions(tx, row.UserID, row.TopicID, row.Floor, body)
+		return w.notifyReplyMentions(tx, row.UserID, row, body)
 	})
 	if err != nil {
 		return nil, problem.Internal(err)

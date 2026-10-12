@@ -195,16 +195,14 @@ func newGRFix(t *testing.T) *grFix {
 
 	helpers := galgameService.InteractionHelpers{}
 	svc := ratingapiv1.New(ratingapiv1.Deps{
-		Store: galgameRepo.NewRatingStore(db),
-		Rows:  f.cat,
-		Works: workrepr.NewHydrator(f.cat, db, geCDN),
-		Users: uc,
-		Check: gate.NewCheckService(f.checker),
-		Scan:  gate.NewScanService(f.scanner),
-		Award: f.recordAward,
-		Notify: func(tx *gorm.DB, senderID, receiverID int, preview string, workID int) error {
-			return helpers.CreateGalgameMessageWithContent(tx, senderID, receiverID, "liked", preview, workID)
-		},
+		Store:  galgameRepo.NewRatingStore(db),
+		Rows:   f.cat,
+		Works:  workrepr.NewHydrator(f.cat, db, geCDN),
+		Users:  uc,
+		Check:  gate.NewCheckService(f.checker),
+		Scan:   gate.NewScanService(f.scanner),
+		Award:  f.recordAward,
+		Notify: helpers.CreateRatingLikedMessage,
 		Sync: func(_ context.Context, workID int, token, play string) {
 			f.mu.Lock()
 			defer f.mu.Unlock()

@@ -270,6 +270,10 @@ func TestV1UserContentPreview(t *testing.T) {
 
 func TestV1PurgeUserContent(t *testing.T) {
 	f := newPurgeFix(t)
+	t.Cleanup(func() { f.db.Exec(`DELETE FROM message WHERE subject_kind = 'user' AND subject_id = ?`, u3cTarget) })
+	f.run(t, `INSERT INTO message (sender_id, receiver_id, type, content, link, subject_kind, subject_id, root_kind, root_id, created, updated)
+		VALUES (?, ?, 'followee-activity', 'about the target', ?, 'user', ?, 'user', ?, now(), now())`,
+		w3UserBob, w3UserAlice, "/user/"+strconv.Itoa(u3cTarget), u3cTarget, u3cTarget)
 	resp, body := f.purge(t, "sess-admin", strconv.Itoa(u3cTarget), nil)
 	if resp.StatusCode != http.StatusNoContent {
 		t.Fatalf("purge %d %+v", resp.StatusCode, body)
@@ -278,6 +282,7 @@ func TestV1PurgeUserContent(t *testing.T) {
 		`SELECT count(*) FROM topic WHERE user_id = 930450001`,
 		`SELECT count(*) FROM topic_reply WHERE user_id = 930450001`,
 		`SELECT count(*) FROM message WHERE sender_id = 930450001`,
+		`SELECT count(*) FROM message WHERE subject_kind = 'user' AND subject_id = 930450001`,
 		`SELECT count(*) FROM kungal_user_state WHERE user_id = 930450001`,
 	} {
 		if n := f.count(t, q); n != 0 {

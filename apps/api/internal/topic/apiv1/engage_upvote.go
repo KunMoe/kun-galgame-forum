@@ -8,6 +8,7 @@ import (
 
 	"kun-galgame-api/internal/apiv1/repr"
 	"kun-galgame-api/internal/constants"
+	msgModel "kun-galgame-api/internal/message/model"
 	"kun-galgame-api/internal/moemoepoint"
 	"kun-galgame-api/pkg/problem"
 
@@ -78,7 +79,7 @@ func (x *Interactions) upvoteTopic(ctx context.Context, in *upvoteTopicInput) (*
 				key:    moemoepoint.Key("upvote_received", "topic_upvote_"+strconv.Itoa(id)),
 			},
 		)
-		return notifyTopicLink(tx, user.ID, topic.UserID, "upvoted", topicPreview(topic.Title), topic.ID, 0)
+		return notifyTopicLink(tx, user.ID, topic.UserID, "upvoted", topicPreview(topic.Title), topic.ID, 0, msgModel.TopicRef(topic.ID))
 	})
 	if err := x.afterCommit(err, jobs); err != nil {
 		return nil, mapEngageErr(err)

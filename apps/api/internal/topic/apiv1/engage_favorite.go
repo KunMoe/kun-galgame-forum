@@ -4,6 +4,7 @@ import (
 	"context"
 	"strconv"
 
+	msgModel "kun-galgame-api/internal/message/model"
 	"kun-galgame-api/internal/moemoepoint"
 
 	"gorm.io/gorm"
@@ -34,7 +35,7 @@ func (x *Interactions) favoriteTopic(ctx context.Context, in *topicFavoriteInput
 			ref:    moemoepoint.Ref("topic", topic.ID),
 			key:    moemoepoint.Key("favorited", "topic_favorite_"+strconv.Itoa(id)),
 		})
-		return notifyTopicLink(tx, user.ID, topic.UserID, "favorite", topicPreview(topic.Title), topic.ID, 0)
+		return notifyTopicLink(tx, user.ID, topic.UserID, "favorite", topicPreview(topic.Title), topic.ID, 0, msgModel.TopicRef(topic.ID))
 	})
 	if err := x.afterCommit(err, jobs); err != nil {
 		return nil, mapEngageErr(err)

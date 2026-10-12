@@ -6,6 +6,7 @@ import (
 	"kun-galgame-api/internal/galgame/model"
 	"kun-galgame-api/internal/infrastructure/viewstats"
 	msgModel "kun-galgame-api/internal/message/model"
+	msgRepo "kun-galgame-api/internal/message/repository"
 
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -157,43 +158,20 @@ func (s *WorkV1Store) DecrementFavoriteCounts(tx *gorm.DB, workIDs []int) error 
 }
 
 func (s *WorkV1Store) CreateFavoriteMessage(tx *gorm.DB, senderID, receiverID int, content string, workID int) error {
-	if senderID == receiverID || receiverID <= 0 {
-		return nil
-	}
-	link := "/galgame/" + strconv.Itoa(workID)
-	var count int64
-	if err := tx.Model(&msgModel.Message{}).
-		Where("sender_id = ? AND receiver_id = ? AND type = ? AND link = ?",
-			senderID, receiverID, "favorite", link).
-		Count(&count).Error; err != nil {
-		return err
-	}
-	if count > 0 {
-		return nil
-	}
-	return tx.Create(&msgModel.Message{
-		SenderID: senderID, ReceiverID: receiverID,
-		Type: "favorite", Content: content, Link: link, Status: "unread",
-	}).Error
+	return createWorkMessage(tx, senderID, receiverID, "favorite", content, workID)
 }
 
 func (s *WorkV1Store) CreateLikedMessage(tx *gorm.DB, senderID, receiverID int, content string, workID int) error {
+	return createWorkMessage(tx, senderID, receiverID, "liked", content, workID)
+}
+
+func createWorkMessage(tx *gorm.DB, senderID, receiverID int, msgType, content string, workID int) error {
 	if senderID == receiverID || receiverID <= 0 {
 		return nil
 	}
-	link := "/galgame/" + strconv.Itoa(workID)
-	var count int64
-	if err := tx.Model(&msgModel.Message{}).
-		Where("sender_id = ? AND receiver_id = ? AND type = ? AND link = ?",
-			senderID, receiverID, "liked", link).
-		Count(&count).Error; err != nil {
-		return err
-	}
-	if count > 0 {
-		return nil
-	}
-	return tx.Create(&msgModel.Message{
+	return msgRepo.InsertOnce(tx, &msgModel.Message{
 		SenderID: senderID, ReceiverID: receiverID,
-		Type: "liked", Content: content, Link: link, Status: "unread",
-	}).Error
+		Type: msgType, Content: content, Link: "/galgame/" + strconv.Itoa(workID), Status: "unread",
+		Ref: msgModel.WorkRef(workID),
+	})
 }

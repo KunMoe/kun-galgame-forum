@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"kun-galgame-api/internal/constants"
+	msgModel "kun-galgame-api/internal/message/model"
 	msgService "kun-galgame-api/internal/message/service"
 	"kun-galgame-api/internal/moemoepoint"
 
@@ -38,7 +39,7 @@ func (x *Interactions) likeComment(ctx context.Context, in *commentInput) (*comm
 		})
 		preview := truncateRunes(comment.Content, constants.TextPreviewLength)
 		return dedupMessage(tx, user.ID, comment.UserID, "liked", preview,
-			msgService.BuildTopicLink(comment.TopicID, 0, comment.ID))
+			msgService.BuildTopicLink(comment.TopicID, 0, comment.ID), msgModel.TopicCommentRef(comment.ID, comment.TopicID))
 	})
 	if err := x.afterCommit(err, jobs); err != nil {
 		return nil, mapEngageErr(err)

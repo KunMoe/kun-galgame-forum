@@ -11,6 +11,7 @@ import (
 	"kun-galgame-api/internal/constants"
 	galgameService "kun-galgame-api/internal/galgame/service"
 	"kun-galgame-api/internal/infrastructure/markdown"
+	msgModel "kun-galgame-api/internal/message/model"
 	"kun-galgame-api/internal/wall/repository"
 	"kun-galgame-api/pkg/communityclient"
 )
@@ -50,6 +51,7 @@ func (s *Service) afterCreate(ctx context.Context, sub *subject, authorID int, b
 		msg := repository.Message{
 			SenderID: authorID, ReceiverID: sub.ownerID, Type: "commented",
 			Content: content.PlainText(body, constants.TextPreviewLength), Link: sub.pageLink(),
+			Ref: msgModel.CommunityPostRef(post.ID, msgModel.Of(sub.spec.rootKind, int64(sub.id))),
 		}
 		if err := s.store.InsertMessageOnce(msg); err != nil {
 			slog.Warn("wall owner notification failed (best-effort)", "receiver_id", sub.ownerID, "link", msg.Link, "error", err)
@@ -130,7 +132,7 @@ func (s *Service) notifyNewMentions(editorID, workID int, oldBody, newBody strin
 	preview := truncateRunes(markdown.StripReferenceTokens(newBody), 233)
 	var h galgameService.InteractionHelpers
 	for _, id := range added {
-		if err := h.CreateGalgameCommentMention(s.store.DB(), editorID, id, preview, workID, int(postID)); err != nil {
+		if err := h.CreateGalgameCommentMention(s.store.DB(), editorID, id, preview, workID, postID); err != nil {
 			slog.Warn("wall mention notification failed (best-effort)", "work_id", workID, "post_id", postID, "receiver_id", id, "error", err)
 		}
 	}
