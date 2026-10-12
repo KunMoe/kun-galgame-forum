@@ -165,4 +165,26 @@ func TestRatingMirror(t *testing.T) {
 	if err := f.db.Raw(`SELECT id, written_here FROM galgame_rating WHERE id = ?`, grRatingAlice).Scan(&row).Error; err != nil || !row.WrittenHere {
 		t.Errorf("a rating written here lost written_here: %+v %v", row, err)
 	}
+
+	queued := func() int {
+		return f.count(t, `SELECT count(*) FROM activity_push_queue WHERE type = 'GALGAME_RATING_CREATION' AND source_id IN (?, ?)`,
+			grRatingAlice, replaced)
+	}
+	f.run(t, `DELETE FROM activity_push_queue WHERE type = 'GALGAME_RATING_CREATION' AND source_id IN (?, ?)`, grRatingAlice, replaced)
+	f.run(t, `UPDATE galgame_rating SET written_here = true WHERE id = ?`, replaced)
+	f.rdb.Del(context.Background(), galgameService.RatingMirrorCursorKey)
+	mirror.Run()
+	if n := queued(); n != 0 {
+		t.Errorf("replaying unchanged ratings re-pushed %d activities", n)
+	}
+
+	feed.pages[0].Items[0].Rating.WorkState = &catalogclient.WorkStateRecord{State: "dropped"}
+	f.rdb.Del(context.Background(), galgameService.RatingMirrorCursorKey)
+	mirror.Run()
+	if n := f.count(t, `SELECT count(*) FROM galgame_rating WHERE id = ? AND author_state = 'dropped'`, grRatingAlice); n != 1 {
+		t.Errorf("the author's new play state was not mirrored")
+	}
+	if n := queued(); n != 0 {
+		t.Errorf("a play state change re-pushed %d activities", n)
+	}
 }

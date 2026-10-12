@@ -186,7 +186,19 @@ func (s *RatingStore) MirrorRating(r model.GalgameRating) error {
 			  spoiler_level = EXCLUDED.spoiler_level, short_summary = EXCLUDED.short_summary,
 			  author_state = EXCLUDED.author_state, author_completion = EXCLUDED.author_completion,
 			  client_id = EXCLUDED.client_id, site = EXCLUDED.site, written_here = EXCLUDED.written_here,
-			  created = EXCLUDED.created, updated = EXCLUDED.updated`,
+			  created = EXCLUDED.created, updated = EXCLUDED.updated
+			WHERE (galgame_rating.work_id, galgame_rating.user_id, galgame_rating.overall, galgame_rating.art,
+			       galgame_rating.story, galgame_rating.music, galgame_rating.character, galgame_rating.route,
+			       galgame_rating.system, galgame_rating.voice, galgame_rating.replay_value, galgame_rating.recommend,
+			       galgame_rating.spoiler_level, galgame_rating.short_summary, galgame_rating.author_state,
+			       galgame_rating.author_completion, galgame_rating.client_id, galgame_rating.site,
+			       galgame_rating.written_here, galgame_rating.created, galgame_rating.updated)
+			  IS DISTINCT FROM
+			      (EXCLUDED.work_id, EXCLUDED.user_id, EXCLUDED.overall, EXCLUDED.art, EXCLUDED.story, EXCLUDED.music,
+			       EXCLUDED.character, EXCLUDED.route, EXCLUDED.system, EXCLUDED.voice, EXCLUDED.replay_value,
+			       EXCLUDED.recommend, EXCLUDED.spoiler_level, EXCLUDED.short_summary, EXCLUDED.author_state,
+			       EXCLUDED.author_completion, EXCLUDED.client_id, EXCLUDED.site, EXCLUDED.written_here,
+			       EXCLUDED.created, EXCLUDED.updated)`,
 			r.ID, r.WorkID, r.UserID, r.Overall, r.Art, r.Story, r.Music, r.Character, r.Route, r.System,
 			r.Voice, r.ReplayValue, r.Recommend, r.SpoilerLevel, r.ShortSummary, r.AuthorState,
 			r.AuthorCompletion, r.ClientID, r.Site, r.WrittenHere, r.CreatedAt, r.UpdatedAt).Error

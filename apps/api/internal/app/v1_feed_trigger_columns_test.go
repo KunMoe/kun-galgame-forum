@@ -25,8 +25,8 @@ func TestFeedTriggersIgnoreColumnsNothingReads(t *testing.T) {
 	seed := []string{
 		`INSERT INTO galgame (id, published, content_limit, creator_user_id, catalog_rendered, created, updated)
 			VALUES (940100360, true, 'sfw', 930000005, true, now(), now())`,
-		`INSERT INTO galgame_rating (id, work_id, user_id, overall, recommend, short_summary, spoiler_level, created, updated)
-			VALUES (940100361, 940100360, 930000005, 8, 'yes', 'short', 'none', now(), now())`,
+		`INSERT INTO galgame_rating (id, work_id, user_id, overall, recommend, short_summary, spoiler_level, written_here, created, updated)
+			VALUES (940100361, 940100360, 930000005, 8, 'yes', 'short', 'none', true, now(), now())`,
 		`INSERT INTO topic_reply (id, content, floor, user_id, topic_id, status, like_count, created, updated)
 			VALUES (940100362, 'reply', 1, 930000005, 940100101, 0, 0, now(), now())`,
 		`INSERT INTO message (id, sender_id, receiver_id, type, content, link, status, created, updated)
@@ -59,7 +59,8 @@ func TestFeedTriggersIgnoreColumnsNothingReads(t *testing.T) {
 				updated = now() WHERE id = 940100360`,
 			`UPDATE galgame SET creator_user_id = 930000001 WHERE id = 940100360`},
 		{"rating summary", "GALGAME_RATING_CREATION", ftRating,
-			`UPDATE galgame_rating SET view = view + 1, like_count = 1, comment_count = 1, overall = 9, updated = now() WHERE id = 940100361`,
+			`UPDATE galgame_rating SET view = view + 1, like_count = 1, comment_count = 1, overall = 9, updated = now(),
+				short_summary = short_summary, spoiler_level = spoiler_level, author_state = 'doing' WHERE id = 940100361`,
 			`UPDATE galgame_rating SET short_summary = 'longer' WHERE id = 940100361`},
 		{"reply content", "TOPIC_REPLY_CREATION", ftReply,
 			`UPDATE topic_reply SET like_count = 1, dislike_count = 1, updated = now() WHERE id = 940100362`,

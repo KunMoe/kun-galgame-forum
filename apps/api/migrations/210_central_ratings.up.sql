@@ -21,7 +21,14 @@
 -- written_here marks a rating first written through this forum or the forum's
 -- apps; only those reach the home feed and, through it, the following
 -- activity feed. The mirror sets it on every row from the rating's client_id.
--- Every existing row was written here, so the column defaults to true.
+-- Every existing row was written here, so the column is added with true and
+-- its default then turns false: a later insert that forgets it must not push
+-- another site's rating out.
+--
+-- The feed function returns early on an UPDATE that leaves its columns as
+-- they were. A trigger's UPDATE OF list fires whenever the column is in the
+-- SET list, changed or not, so without it every mirror upsert, and every play
+-- state change NextMoe sends, would re-push the rating's activity.
 --
 -- play_status stops being written (the author's current state comes with the
 -- rating as author_state/author_completion), so it loses its NOT NULL and its
@@ -44,6 +51,7 @@ ALTER TABLE galgame_rating
     ADD COLUMN IF NOT EXISTS client_id         text    NOT NULL DEFAULT '',
     ADD COLUMN IF NOT EXISTS site              text    NOT NULL DEFAULT '',
     ADD COLUMN IF NOT EXISTS written_here      boolean NOT NULL DEFAULT true;
+ALTER TABLE galgame_rating ALTER COLUMN written_here SET DEFAULT false;
 
 ALTER TABLE galgame_rating ALTER COLUMN short_summary TYPE varchar(2000);
 ALTER TABLE galgame_rating ALTER COLUMN play_status DROP NOT NULL;
@@ -56,6 +64,12 @@ CREATE OR REPLACE FUNCTION feed_sync_galgame_rating()
 AS $function$
 BEGIN
     IF TG_OP = 'DELETE' THEN PERFORM feed_delete('GALGAME_RATING_CREATION', OLD.id); RETURN OLD; END IF;
+    IF TG_OP = 'UPDATE'
+       AND (OLD.user_id, OLD.work_id, OLD.short_summary, OLD.spoiler_level, OLD.created, OLD.written_here)
+           IS NOT DISTINCT FROM
+           (NEW.user_id, NEW.work_id, NEW.short_summary, NEW.spoiler_level, NEW.created, NEW.written_here) THEN
+        RETURN NEW;
+    END IF;
     IF NOT NEW.written_here THEN
         PERFORM feed_delete('GALGAME_RATING_CREATION', NEW.id);
         RETURN NEW;
