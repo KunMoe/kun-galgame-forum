@@ -1,7 +1,7 @@
 # CI test gate for the Go module under apps/api.
 #
 #   unit — build + vet + errcheck + `go test ./...`, no external services.
-#   db   — empty Postgres, testdb-bootstrap.sh, then `go test -count=1 -p 1 ./...`
+#   db   — empty Postgres, testdb-bootstrap.sh, then `go test -count=1 -p 1 -timeout 30m ./...`
 #          with TEST_DATABASE_DSN and KUN_REQUIRE_TEST_DB=1 so a skip is a failure.
 #
 # errcheck is here because `go vet` does not catch a discarded error, and a
@@ -85,4 +85,6 @@ jobs:
           go-version-file: apps/api/go.mod
           cache-dependency-path: apps/api/go.sum
       - run: bash scripts/testdb-bootstrap.sh
-      - run: go test -count=1 -p 1 ./...
+      # internal/app alone runs close to go test's 10-minute default and
+      # crossed it on #315 (600.04s, panic: test timed out).
+      - run: go test -count=1 -p 1 -timeout 30m ./...
