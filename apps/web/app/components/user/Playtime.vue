@@ -130,7 +130,7 @@ const statusColor = (value: string) => {
 
     <KunNull
       v-else-if="data"
-      description="还没有游玩记录, 在任意 Galgame 页面点「标记游玩状态」即可记录"
+      description="还没有游玩记录, 在任意 Galgame 页面点「评分」即可记录游玩状态和时长"
     />
 
     <p class="text-default-500 text-sm">
