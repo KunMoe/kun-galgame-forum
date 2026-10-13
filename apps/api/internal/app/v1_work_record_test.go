@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"strconv"
 	"testing"
@@ -87,11 +88,37 @@ func TestV1WorkRecord(t *testing.T) {
 	if resp, _ := f.record(t, http.MethodPut, "gr-bob", grWorkNone, map[string]any{}); resp.StatusCode != http.StatusNotFound {
 		t.Errorf("a work catalog does not show: %d", resp.StatusCode)
 	}
-	if resp, _ := f.record(t, http.MethodPut, "gr-bob", grWorkFresh, map[string]any{"play_state": "done"}); resp.StatusCode != http.StatusUnprocessableEntity {
-		t.Errorf("done as input: %d", resp.StatusCode)
-	}
 	if resp, out := f.record(t, http.MethodGet, "", grWorkFresh, nil); resp.StatusCode != http.StatusUnauthorized {
 		t.Errorf("anonymous: %d %v", resp.StatusCode, out)
+	}
+}
+
+func TestV1WorkRecordKeepsAnUnstatedDone(t *testing.T) {
+	f := newGRFix(t)
+	f.plane.mu.Lock()
+	f.plane.states[grKey{grBob, grWorkFresh}] = catalogclient.WorkStateRecord{WorkID: grWorkFresh, State: "done"}
+	f.plane.mu.Unlock()
+
+	resp, out := f.record(t, http.MethodGet, "gr-bob", grWorkFresh, nil)
+	if resp.StatusCode != http.StatusOK || out["play_state"] != "done" {
+		t.Fatalf("read: %d %v", resp.StatusCode, out)
+	}
+
+	rating := map[string]any{"recommend": "yes", "overall": 8, "game_types": []string{"plot"}, "spoiler_level": "none"}
+	for _, tc := range []struct{ sent, wire string }{
+		{"done", `{"state":"done"}`},
+		{"done_one_route", `{"state":"done","completion":"one_route"}`},
+	} {
+		resp, out = f.record(t, http.MethodPut, "gr-bob", grWorkFresh, map[string]any{"play_state": tc.sent, "rating_input": rating})
+		if resp.StatusCode != http.StatusOK || out["play_state"] != tc.sent {
+			t.Fatalf("put %s: %d %v", tc.sent, resp.StatusCode, out)
+		}
+		f.plane.mu.Lock()
+		wire, err := json.Marshal(f.plane.lastRecord.WorkState)
+		f.plane.mu.Unlock()
+		if err != nil || string(wire) != tc.wire {
+			t.Errorf("%s reached NextMoe as work_state %s, want %s", tc.sent, wire, tc.wire)
+		}
 	}
 }
 

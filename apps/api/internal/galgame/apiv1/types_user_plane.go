@@ -132,7 +132,7 @@ func (optionalPlayState) Schema(huma.Registry) *huma.Schema {
 		Enum:      []any{"wish", "doing", "done_one_route", "done_main", "done_all", "on_hold", "dropped", "done"},
 		MaxLength: &n,
 		Nullable:  true,
-		Description: "The caller's play state as catalog records it: a rating's play_status, or done for a finished game with no completion recorded, which no write accepts. " +
+		Description: "The caller's play state as catalog records it: a rating's play_status, or done for a finished game with no completion recorded, which a write accepts back unchanged. " +
 			"null clears the work-state. Omitted leaves it unchanged.",
 	}
 }

@@ -15,9 +15,13 @@ func TestRoundTripAllPickerValues(t *testing.T) {
 	}
 }
 
-func TestFromCatalogDisplayOnlyDone(t *testing.T) {
-	if got := FromCatalog("done", nil); got != "done" {
+func TestDoneWithoutCompletionRoundTrips(t *testing.T) {
+	if got := FromCatalog("done", nil); got != Done {
 		t.Errorf("FromCatalog(done, nil) = %q, want done", got)
+	}
+	state, completion, ok := ToCatalog(Done)
+	if !ok || state != "done" || completion != nil {
+		t.Errorf("ToCatalog(done) = %q, %v, %v; want done with no completion", state, completion, ok)
 	}
 }
 
@@ -27,12 +31,5 @@ func TestFromCatalogEmptyAndUnknown(t *testing.T) {
 	}
 	if got := FromCatalog("garbage", nil); got != "" {
 		t.Errorf("FromCatalog(garbage, nil) = %q, want empty", got)
-	}
-}
-
-func TestToCatalogRejectsDisplayOnlyDone(t *testing.T) {
-	_, _, ok := ToCatalog("done")
-	if ok {
-		t.Fatal("ToCatalog(done) ok = true, want false")
 	}
 }

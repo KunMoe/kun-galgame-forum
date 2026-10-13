@@ -441,6 +441,7 @@ type grPlane struct {
 	moderators map[string]bool
 	clients    map[string]string
 	fail       atomic.Bool
+	lastRecord catalogclient.WorkRecordInput
 }
 
 func newGRPlane() *grPlane {
@@ -621,6 +622,7 @@ func (p *grPlane) PutWorkRecord(_ context.Context, token string, workID int64, i
 	}
 	p.mu.Lock()
 	defer p.mu.Unlock()
+	p.lastRecord = in
 	k := grKey{uid, workID}
 	delete(p.states, k)
 	if s := in.WorkState; s != nil {

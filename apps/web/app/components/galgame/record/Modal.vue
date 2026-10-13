@@ -1,10 +1,11 @@
 <script setup lang="ts">
+import type { KunRadioOption } from '@kungal/ui-vue'
 import {
   KUN_GALGAME_PLAYTIME_HOURS_MAX,
   KUN_GALGAME_PLAYTIME_MINUTES_FLOOR,
-  KUN_GALGAME_PLAY_STATE_CONST,
   KUN_GALGAME_PLAY_STATE_OPTIONS,
-  type KunGalgamePlayState
+  KUN_GALGAME_PLAY_STATE_UNSTATED_DONE_OPTION,
+  type KunGalgamePlayStateRead
 } from '~/constants/galgame-playtime'
 import {
   KUN_GALGAME_RATING_RECOMMEND_CONST,
@@ -52,7 +53,7 @@ const loading = ref(false)
 const pending = ref(false)
 const loaded = ref<WorkRecord | null>(null)
 
-const status = ref<KunGalgamePlayState | ''>('')
+const status = ref<KunGalgamePlayStateRead | ''>('')
 const hours = ref(0)
 
 const ratingOn = ref(false)
@@ -76,6 +77,19 @@ const emptyDims = (): Record<KunGalgameDim, number> => ({
 const dims = ref(emptyDims())
 
 const isWish = computed(() => status.value === 'wish')
+const statusOptions = computed<
+  readonly KunRadioOption<KunGalgamePlayStateRead>[]
+>(() =>
+  loaded.value?.play_state === 'done'
+    ? KUN_GALGAME_PLAY_STATE_OPTIONS.flatMap<
+        KunRadioOption<KunGalgamePlayStateRead>
+      >((o) =>
+        o.value === 'done_one_route'
+          ? [KUN_GALGAME_PLAY_STATE_UNSTATED_DONE_OPTION, o]
+          : [o]
+      )
+    : KUN_GALGAME_PLAY_STATE_OPTIONS
+)
 const hadRating = computed(() => !!loaded.value?.rating_summary)
 
 const minutes = computed(() => Math.round((Number(hours.value) || 0) * 60))
@@ -114,17 +128,7 @@ const toggleGameType = (checked: boolean, t: GameType) => {
 
 const fill = (record: WorkRecord) => {
   loaded.value = record
-  const state = record.play_state
-  if (state === 'done') {
-    status.value = 'done_one_route'
-  } else if (
-    state &&
-    (KUN_GALGAME_PLAY_STATE_CONST as readonly string[]).includes(state)
-  ) {
-    status.value = state as KunGalgamePlayState
-  } else {
-    status.value = ''
-  }
+  status.value = record.play_state ?? ''
   hours.value =
     record.minutes > 0 ? Math.round((record.minutes / 60) * 10) / 10 : 0
 
@@ -297,7 +301,7 @@ const save = async () => {
           </div>
           <KunRadioGroup
             v-model="status"
-            :options="KUN_GALGAME_PLAY_STATE_OPTIONS"
+            :options="statusOptions"
             variant="pill"
             orientation="horizontal"
             color="primary"

@@ -13761,7 +13761,7 @@
                 "type": "null"
               }
             ],
-            "description": "Play state to write. null deletes the work-state. Omitted leaves it unchanged. done is refused."
+            "description": "Play state to write. null deletes the work-state. Omitted leaves it unchanged. done records a finish with the completion unstated; send it only to keep a done the caller read."
           }
         },
         "type": "object"
@@ -15030,7 +15030,7 @@
                 "type": "null"
               }
             ],
-            "description": "Written as the caller's play state on the work. done and null are refused."
+            "description": "Written as the caller's play state on the work. null is refused. done records a finish with the completion unstated; send it only to keep a done the caller read."
           },
           "recommend": {
             "$ref": "#/components/schemas/RatingRecommend",
@@ -15142,7 +15142,7 @@
                 "type": "null"
               }
             ],
-            "description": "Written as the caller's play state on the work. Absent or null leaves it; done is refused."
+            "description": "Written as the caller's play state on the work. Absent or null leaves it. done records a finish with the completion unstated; send it only to keep a done the caller read."
           },
           "recommend": {
             "$ref": "#/components/schemas/RatingRecommend",
@@ -26241,7 +26241,7 @@
                 "type": "null"
               }
             ],
-            "description": "The play state. Absent or null deletes it; done is refused."
+            "description": "The play state. Absent or null deletes it. done records a finish with the completion unstated; send it only to keep a done the record was read with."
           },
           "rating_input": {
             "$ref": "#/components/schemas/RecordRating",
@@ -27215,7 +27215,7 @@
                 "type": "null"
               }
             ],
-            "description": "The caller's play state as catalog records it: a rating's play_status, or done for a finished game with no completion recorded, which no write accepts. null when they have none."
+            "description": "The caller's play state as catalog records it: a rating's play_status, or done for a finished game with no completion recorded. null when they have none."
           }
         },
         "required": [
@@ -70526,7 +70526,7 @@
         ]
       },
       "put": {
-        "description": "Writes minutes and/or play_state. At least one field is required. play_state done is refused. minutes 0 withdraws the duration without deleting the row.",
+        "description": "Writes minutes and/or play_state. At least one field is required. play_state done writes a finish with the completion unstated. minutes 0 withdraws the duration without deleting the row.",
         "operationId": "putWorkPlaytime",
         "parameters": [
           {
@@ -70631,7 +70631,7 @@
                 }
               }
             },
-            "description": "VALIDATION_FAILED when both fields are omitted, minutes is outside 0–60000, or play_state is unknown or done."
+            "description": "VALIDATION_FAILED when both fields are omitted, minutes is outside 0–60000, or play_state is unknown."
           },
           "500": {
             "content": {

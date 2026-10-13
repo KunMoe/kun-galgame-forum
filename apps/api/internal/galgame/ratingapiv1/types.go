@@ -42,13 +42,13 @@ func (PlayStatus) Schema(huma.Registry) *huma.Schema {
 }
 
 // AuthorPlayStatus adds done, which catalog answers when another application
-// recorded a finish without saying how much was finished; it is never input.
+// recorded a finish without saying how much was finished.
 type AuthorPlayStatus string
 
 func (AuthorPlayStatus) Schema(huma.Registry) *huma.Schema {
 	return enumSchema(append(slices.Clone(playStatuses), "done"),
 		"The author's play state on the work as it stands now, not when the rating was written. "+
-			"done means finished, with how much left unstated.")
+			"done means finished, with how much left unstated; as input it is accepted so a client can send back the done it read.")
 }
 
 type SpoilerLevel string
@@ -138,7 +138,7 @@ type RatingCreate struct {
 	Recommend    Recommend         `json:"recommend"`
 	Overall      int               `json:"overall" minimum:"1" maximum:"10" doc:"The overall score."`
 	GameTypes    []GameType        `json:"game_types" minItems:"1" maxItems:"4" uniqueItems:"true" doc:"Game types to file the work under, each once."`
-	PlayStatus   *AuthorPlayStatus `json:"play_status" doc:"Written as the caller's play state on the work. done and null are refused."`
+	PlayStatus   *AuthorPlayStatus `json:"play_status" doc:"Written as the caller's play state on the work. null is refused. done records a finish with the completion unstated; send it only to keep a done the caller read."`
 	SpoilerLevel SpoilerLevel      `json:"spoiler_level"`
 	ShortSummary *string           `json:"short_summary,omitempty" maxLength:"2000" doc:"Short review, plain text. Absent means none. Free text; never use it as a decision input."`
 	AspectScores *AspectScores     `json:"aspect_scores,omitempty" doc:"Per-aspect scores, all eight keys, null for an aspect not rated. Absent means none rated."`
@@ -148,7 +148,7 @@ type RatingPatch struct {
 	Recommend    *Recommend        `json:"recommend,omitempty"`
 	Overall      *int              `json:"overall,omitempty" minimum:"1" maximum:"10" doc:"The overall score."`
 	GameTypes    []GameType        `json:"game_types,omitempty" minItems:"1" maxItems:"4" uniqueItems:"true" doc:"Game types to file the work under, each once."`
-	PlayStatus   *AuthorPlayStatus `json:"play_status" required:"false" doc:"Written as the caller's play state on the work. Absent or null leaves it; done is refused."`
+	PlayStatus   *AuthorPlayStatus `json:"play_status" required:"false" doc:"Written as the caller's play state on the work. Absent or null leaves it. done records a finish with the completion unstated; send it only to keep a done the caller read."`
 	SpoilerLevel *SpoilerLevel     `json:"spoiler_level,omitempty"`
 	ShortSummary *string           `json:"short_summary,omitempty" maxLength:"2000" doc:"Short review, plain text; an empty string removes it. Free text; never use it as a decision input."`
 	AspectScores *AspectScores     `json:"aspect_scores,omitempty" doc:"Replaces every per-aspect score: all eight keys, null for an aspect not rated."`

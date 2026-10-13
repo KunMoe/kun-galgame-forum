@@ -30,7 +30,7 @@ type putWorkPlaytimeInput struct {
 
 type putWorkPlaytimeBody struct {
 	Minutes   *int              `json:"minutes,omitempty" minimum:"0" maximum:"60000" doc:"Absolute cumulative minutes. 0 withdraws the duration. Omitted leaves minutes unchanged."`
-	PlayState optionalPlayState `json:"play_state" required:"false" doc:"Play state to write. null deletes the work-state. Omitted leaves it unchanged. done is refused."`
+	PlayState optionalPlayState `json:"play_state" required:"false" doc:"Play state to write. null deletes the work-state. Omitted leaves it unchanged. done records a finish with the completion unstated; send it only to keep a done the caller read."`
 }
 
 type workViewerPlaytimeOutput struct {
@@ -66,9 +66,6 @@ func (s *Service) putWorkPlaytime(ctx context.Context, in *putWorkPlaytimeInput)
 	}
 	if in.Body.Minutes == nil && !in.Body.PlayState.set {
 		return nil, validationFailed(problem.AtPointer("", problem.ReasonRequired, "send minutes, play_state or both", nil))
-	}
-	if in.Body.PlayState.set && !in.Body.PlayState.null && in.Body.PlayState.value == "done" {
-		return nil, validationFailed(problem.AtPointer("/play_state", problem.ReasonNotAllowedValue, "done is display-only", nil))
 	}
 	if s.catalog == nil {
 		return nil, problem.Unavailable(errUnconfigured)
