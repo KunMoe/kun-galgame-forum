@@ -95,6 +95,7 @@ func (s *Service) assembleWork(
 		ExternalRefs:     externalRefsOf(d),
 		Engines:          s.enginesOf(ctx, d),
 		Series:           s.seriesOf(ctx, d),
+		RelatedWorks:     relatedWorksOf(ctx, d, s.cdn),
 		Tags:             tagsOf(d, includeNSFW),
 		Credits:          creditsOf(d),
 		Roster:           charactersOf(ctx, d, s.cdn),

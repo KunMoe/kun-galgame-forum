@@ -11375,6 +11375,38 @@ export interface components {
             /** @description How much the short summary gives away, as its author declared. */
             spoiler_level: components["schemas"]["SpoilerLevel"];
         };
+        RelatedWork: {
+            /** @description The portrait cover at its original size, never the 16:9 crop. null when the work has none. */
+            cover: components["schemas"]["Image"] | null;
+            /** @description The entity's own name. Never empty. Free text; never use it as a decision input. */
+            display_name: string;
+            /** @description Work id: the catalog work id, which is also the id in the web's /galgame/{id}. */
+            id: string;
+            /** @description Whether this forum displays the work as adult content: the editorial display axis (the claim's content limit), not the age rating. */
+            is_nsfw: boolean;
+            /** @description Romanization of the name. null when none is recorded. Free text; never use it as a decision input. */
+            latin: string | null;
+            /** @description Names by BCP-47 tag, sparse. Empty object when there are none, never null. */
+            localized: {
+                [key: string]: components["schemas"]["LocalizedName"];
+            };
+            /** @description What kind of work it is. Only a galgame has a page on this forum; link nothing else. */
+            medium: components["schemas"]["WorkMedium"];
+            /**
+             * @description Type discriminant. Always work.
+             * @constant
+             */
+            object: "work";
+            /** @description How the work relates to this one, most significant first. Never empty. */
+            relations: components["schemas"]["WorkRelation"][];
+            /**
+             * Format: date
+             * @description Release date. A month- or year-precise date is the first day of that month or year. null when catalog has none.
+             */
+            release_date: string | null;
+            /** @description How much of release_date is known. null when release_date is null. */
+            release_date_precision: components["schemas"]["ReleaseDatePrecision"] | null;
+        };
         ReleaseCalendarMonth: {
             /** @description The month window as YYYY-MM. */
             calendar_month: string;
@@ -14885,6 +14917,8 @@ export interface components {
              * @description Bayesian average of the work's NextMoe ratings, which every NextMoe site shares, one decimal. null when rating_count is 0.
              */
             rating_score: number | null;
+            /** @description Works related to this one, one entry per work, ordered by their most significant relation, then release date with undated last, then id. Works whose page the forum hides are left out. Empty array, never null. */
+            related_works: components["schemas"]["RelatedWork"][];
             /**
              * Format: date
              * @description Release date. A month- or year-precise date is the first day of that month or year. null when catalog has none.
@@ -15233,6 +15267,8 @@ export interface components {
             /** @description The other site, such as vndb or bangumi. An open vocabulary. */
             site: string;
         };
+        /** @enum {string} */
+        WorkMedium: "galgame" | "manga" | "novel" | "anime" | "asmr" | "doujin_game" | "music";
         WorkPlaytime: {
             /**
              * Format: int64
@@ -15368,6 +15404,12 @@ export interface components {
              * @constant
              */
             object: "work";
+        };
+        WorkRelation: {
+            /** @description The relation in Chinese as catalog words it, from this work's side. Display it as is. Free text; never use it as a decision input. */
+            phrase: string;
+            /** @description The relation token, such as sequel_of or fandisc_of. An open vocabulary; display phrase instead. */
+            relation_type: string;
         };
         WorkResourcePublishBan: {
             /** @description Whether new download resources may not be published on this work. */

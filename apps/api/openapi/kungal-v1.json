@@ -15534,6 +15534,104 @@
         ],
         "type": "object"
       },
+      "RelatedWork": {
+        "properties": {
+          "cover": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Image"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The portrait cover at its original size, never the 16:9 crop. null when the work has none."
+          },
+          "display_name": {
+            "description": "The entity's own name. Never empty. Free text; never use it as a decision input.",
+            "maxLength": 512,
+            "type": "string"
+          },
+          "id": {
+            "description": "Work id: the catalog work id, which is also the id in the web's /galgame/{id}.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "is_nsfw": {
+            "description": "Whether this forum displays the work as adult content: the editorial display axis (the claim's content limit), not the age rating.",
+            "type": "boolean"
+          },
+          "latin": {
+            "description": "Romanization of the name. null when none is recorded. Free text; never use it as a decision input.",
+            "maxLength": 512,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "localized": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/LocalizedName"
+            },
+            "description": "Names by BCP-47 tag, sparse. Empty object when there are none, never null.",
+            "type": "object"
+          },
+          "medium": {
+            "$ref": "#/components/schemas/WorkMedium",
+            "description": "What kind of work it is. Only a galgame has a page on this forum; link nothing else."
+          },
+          "object": {
+            "const": "work",
+            "description": "Type discriminant. Always work.",
+            "maxLength": 4,
+            "type": "string"
+          },
+          "relations": {
+            "description": "How the work relates to this one, most significant first. Never empty.",
+            "items": {
+              "$ref": "#/components/schemas/WorkRelation"
+            },
+            "minItems": 1,
+            "type": "array"
+          },
+          "release_date": {
+            "description": "Release date. A month- or year-precise date is the first day of that month or year. null when catalog has none.",
+            "format": "date",
+            "maxLength": 10,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "release_date_precision": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ReleaseDatePrecision"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "How much of release_date is known. null when release_date is null."
+          }
+        },
+        "required": [
+          "medium",
+          "release_date",
+          "release_date_precision",
+          "relations",
+          "object",
+          "id",
+          "cover",
+          "is_nsfw",
+          "display_name",
+          "latin",
+          "localized"
+        ],
+        "type": "object"
+      },
       "ReleaseCalendarMonth": {
         "properties": {
           "calendar_month": {
@@ -24976,6 +25074,13 @@
               "null"
             ]
           },
+          "related_works": {
+            "description": "Works related to this one, one entry per work, ordered by their most significant relation, then release date with undated last, then id. Works whose page the forum hides are left out. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/RelatedWork"
+            },
+            "type": "array"
+          },
           "release_date": {
             "description": "Release date. A month- or year-precise date is the first day of that month or year. null when catalog has none.",
             "format": "date",
@@ -25097,6 +25202,7 @@
           "companies",
           "engines",
           "series",
+          "related_works",
           "tags",
           "credits",
           "roster",
@@ -25978,6 +26084,20 @@
         ],
         "type": "object"
       },
+      "WorkMedium": {
+        "enum": [
+          "galgame",
+          "manga",
+          "novel",
+          "anime",
+          "asmr",
+          "doujin_game",
+          "music"
+        ],
+        "maxLength": 11,
+        "type": "string",
+        "x-vocabulary-closed": true
+      },
       "WorkPlaytime": {
         "properties": {
           "client_count": {
@@ -26309,6 +26429,26 @@
           "display_name",
           "latin",
           "localized"
+        ],
+        "type": "object"
+      },
+      "WorkRelation": {
+        "properties": {
+          "phrase": {
+            "description": "The relation in Chinese as catalog words it, from this work's side. Display it as is. Free text; never use it as a decision input.",
+            "maxLength": 512,
+            "type": "string"
+          },
+          "relation_type": {
+            "description": "The relation token, such as sequel_of or fandisc_of. An open vocabulary; display phrase instead.",
+            "maxLength": 64,
+            "pattern": "^[a-z][a-z0-9_]*$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "relation_type",
+          "phrase"
         ],
         "type": "object"
       },
