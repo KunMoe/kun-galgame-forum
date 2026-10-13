@@ -8,6 +8,12 @@ const (
 	DoneAll      = "done_all"
 	OnHold       = "on_hold"
 	Dropped      = "dropped"
+
+	// Done is finished with how much left unstated, which another application
+	// can record. No picker offers it; a form that read it sends it back as it
+	// found it. Mapped to one route, a save that only added a rating would
+	// rewrite it on every NextMoe site.
+	Done = "done"
 )
 
 // All is the picker order, and the order the frontend renders.
@@ -16,9 +22,11 @@ func All() []string {
 }
 
 // ToCatalog maps a flat value onto catalog's two axes. completion is nil for
-// every state but done. ok is false for anything Valid rejects.
+// every state but a done with a stated completion.
 func ToCatalog(s string) (state string, completion *string, ok bool) {
 	switch s {
+	case Done:
+		return "done", nil, true
 	case Wish:
 		return "wish", nil, true
 	case Doing:
@@ -41,9 +49,9 @@ func ToCatalog(s string) (state string, completion *string, ok bool) {
 	}
 }
 
-// FromCatalog maps catalog's two axes back to a flat value, and returns
-// "done" — which is display-only and never valid input — when catalog reports
-// done without a completion. It returns "" for an empty or unknown state.
+// FromCatalog maps catalog's two axes back to a flat value, and returns Done
+// when catalog reports done without a completion. It returns "" for an empty
+// or unknown state.
 func FromCatalog(state string, completion *string) string {
 	switch state {
 	case "wish":
@@ -56,9 +64,7 @@ func FromCatalog(state string, completion *string) string {
 		return Dropped
 	case "done":
 		if completion == nil || *completion == "" {
-			// catalog answers state=done with no completion when another
-			// application reported a completion it does not carry.
-			return "done"
+			return Done
 		}
 		switch *completion {
 		case "one_route":
@@ -68,7 +74,7 @@ func FromCatalog(state string, completion *string) string {
 		case "all":
 			return DoneAll
 		default:
-			return "done"
+			return Done
 		}
 	default:
 		return ""

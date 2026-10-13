@@ -5475,7 +5475,7 @@ export interface paths {
         get?: never;
         /**
          * Set the caller's playtime on a work
-         * @description Writes minutes and/or play_state. At least one field is required. play_state done is refused. minutes 0 withdraws the duration without deleting the row.
+         * @description Writes minutes and/or play_state. At least one field is required. play_state done writes a finish with the completion unstated. minutes 0 withdraws the duration without deleting the row.
          */
         put: operations["putWorkPlaytime"];
         post?: never;
@@ -10720,7 +10720,7 @@ export interface components {
              * @description Absolute cumulative minutes. 0 withdraws the duration. Omitted leaves minutes unchanged.
              */
             minutes?: number;
-            /** @description Play state to write. null deletes the work-state. Omitted leaves it unchanged. done is refused. */
+            /** @description Play state to write. null deletes the work-state. Omitted leaves it unchanged. done records a finish with the completion unstated; send it only to keep a done the caller read. */
             play_state?: components["schemas"]["PlayState"] | null;
         };
         QualityPut: {
@@ -11202,7 +11202,7 @@ export interface components {
              * @description The overall score.
              */
             overall: number;
-            /** @description Written as the caller's play state on the work. done and null are refused. */
+            /** @description Written as the caller's play state on the work. null is refused. done records a finish with the completion unstated; send it only to keep a done the caller read. */
             play_status: components["schemas"]["PlayState"] | null;
             /** @description How strongly the author recommends the work. */
             recommend: components["schemas"]["RatingRecommend"];
@@ -11243,7 +11243,7 @@ export interface components {
              * @description The overall score.
              */
             overall?: number;
-            /** @description Written as the caller's play state on the work. Absent or null leaves it; done is refused. */
+            /** @description Written as the caller's play state on the work. Absent or null leaves it. done records a finish with the completion unstated; send it only to keep a done the caller read. */
             play_status?: components["schemas"]["PlayState"] | null;
             /** @description How strongly the author recommends the work. */
             recommend?: components["schemas"]["RatingRecommend"];
@@ -15343,7 +15343,7 @@ export interface components {
              * @description This site's playtime report, in minutes. Absent withdraws it; reports from other applications stay. Below 10 is stored but counted by no median.
              */
             minutes?: number;
-            /** @description The play state. Absent or null deletes it; done is refused. */
+            /** @description The play state. Absent or null deletes it. done records a finish with the completion unstated; send it only to keep a done the record was read with. */
             play_state?: components["schemas"]["PlayState"] | null;
             /** @description The rating. Absent deletes it. */
             rating_input?: components["schemas"]["RecordRating"];
@@ -15683,7 +15683,7 @@ export interface components {
              * @description Minutes the caller reported. 0 when they reported none or withdrew the report.
              */
             minutes: number;
-            /** @description The caller's play state as catalog records it: a rating's play_status, or done for a finished game with no completion recorded, which no write accepts. null when they have none. */
+            /** @description The caller's play state as catalog records it: a rating's play_status, or done for a finished game with no completion recorded. null when they have none. */
             play_state: components["schemas"]["PlayState"] | null;
         };
         YearCount: {
@@ -45057,7 +45057,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description VALIDATION_FAILED when both fields are omitted, minutes is outside 0–60000, or play_state is unknown or done. */
+            /** @description VALIDATION_FAILED when both fields are omitted, minutes is outside 0–60000, or play_state is unknown. */
             422: {
                 headers: {
                     [name: string]: unknown;

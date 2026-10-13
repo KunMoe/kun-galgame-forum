@@ -193,6 +193,14 @@ func TestV1RatingsUpdate(t *testing.T) {
 		t.Errorf("syncs %v", got)
 	}
 
+	resp, out = patch("gr-alice", grRatingAlice, map[string]any{"play_status": "done"})
+	if resp.StatusCode != http.StatusOK || out["play_status"] != "done" {
+		t.Errorf("done sent back: %d %v", resp.StatusCode, out)
+	}
+	if got := f.takeSyncs(); !slices.Equal(got, []grSync{{grWorkSFW, "access-gr-alice", "done"}}) {
+		t.Errorf("syncs %v", got)
+	}
+
 	resp, out = patch("gr-alice", grRatingAlice, map[string]any{"aspect_scores": map[string]any{
 		"art": nil, "story": nil, "music": nil, "character": nil, "route": nil, "system": nil, "voice": nil, "replay_value": 4,
 	}})

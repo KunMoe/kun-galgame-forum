@@ -36,15 +36,14 @@ func TestV1PutWorkPlaytime(t *testing.T) {
 	}
 
 	resp, body = f.call(t, http.MethodPut, path, spec, "sess-alice", "", map[string]any{"play_state": "done"})
-	wantCode(t, resp, body, http.StatusUnprocessableEntity, problem.CodeValidationFailed)
-	if e := firstError(t, body); e["reason"] != "NOT_ALLOWED_VALUE" {
-		t.Errorf("done %+v", body["errors"])
+	if resp.StatusCode != http.StatusOK || body["play_state"] != "done" {
+		t.Errorf("done sent back %d %+v", resp.StatusCode, body)
 	}
 	f.user.mu.Lock()
-	n := len(f.user.putStates)
+	st := f.user.states[g6TokAlice][g6WorkLive]
 	f.user.mu.Unlock()
-	if n != 1 {
-		t.Errorf("done must not PUT work-state, putStates=%d", n)
+	if st.State != "done" || st.Completion != nil {
+		t.Errorf("done must reach catalog with no completion: %+v", st)
 	}
 
 	resp, body = f.call(t, http.MethodPut, g6Path(g6WorkHidden)+"/playtime", spec, "sess-alice", "", map[string]any{"minutes": 10})

@@ -57,9 +57,9 @@ export const KUN_GALGAME_PLAY_STATE_CONST = [
 export type KunGalgamePlayState = (typeof KUN_GALGAME_PLAY_STATE_CONST)[number]
 
 // catalog answers state=done with no completion when another application
-// reported a completion it does not carry. The forum never writes this value and
-// never offers it in a picker; it exists so that reading such a row renders a
-// badge instead of a blank.
+// reported a completion it does not carry. A picker offers it only to someone
+// who already has it, and saves it back unchanged: mapped to 单线通关, a save
+// that only added a rating would rewrite it on every NextMoe site.
 export type KunGalgamePlayStateRead = KunGalgamePlayState | 'done'
 
 export const KUN_GALGAME_PLAY_STATE_MAP: Record<
@@ -85,6 +85,12 @@ export const KUN_GALGAME_PLAY_STATE_OPTIONS = [
   { value: 'on_hold', label: '搁置中', icon: 'lucide:pause' },
   { value: 'dropped', label: '已弃坑', icon: 'lucide:x' }
 ] as const
+
+export const KUN_GALGAME_PLAY_STATE_UNSTATED_DONE_OPTION = {
+  value: 'done',
+  label: '已通关',
+  icon: 'lucide:flag'
+} as const
 
 export const KUN_GALGAME_PLAY_STATE_DONE = [
   'done_one_route',

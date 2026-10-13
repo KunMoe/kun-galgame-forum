@@ -151,7 +151,7 @@ type WorkViewer struct {
 
 type WorkViewerPlaytime struct {
 	Minutes   int     `json:"minutes" minimum:"0" doc:"Minutes the caller reported. 0 when they reported none or withdrew the report."`
-	PlayState *string `json:"play_state" enum:"wish,doing,done_one_route,done_main,done_all,on_hold,dropped,done" maxLength:"14" doc:"The caller's play state as catalog records it: a rating's play_status, or done for a finished game with no completion recorded, which no write accepts. null when they have none."`
+	PlayState *string `json:"play_state" enum:"wish,doing,done_one_route,done_main,done_all,on_hold,dropped,done" maxLength:"14" doc:"The caller's play state as catalog records it: a rating's play_status, or done for a finished game with no completion recorded. null when they have none."`
 }
 
 type MyWork struct {

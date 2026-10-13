@@ -60,13 +60,13 @@ func (s *Service) registerUserPlane(api huma.API) {
 		Method:      http.MethodPut,
 		Path:        "/works/{work_id}/playtime",
 		Summary:     "Set the caller's playtime on a work",
-		Description: "Writes minutes and/or play_state. At least one field is required. play_state done is refused. minutes 0 withdraws the duration without deleting the row.",
+		Description: "Writes minutes and/or play_state. At least one field is required. play_state done writes a finish with the completion unstated. minutes 0 withdraws the duration without deleting the row.",
 		Tags:        []string{"works"},
 		Middlewares: huma.Middlewares{withAccessToken},
 		Responses: problemResponses(map[int]string{
 			403: "SCOPE_REQUIRED; ACCOUNT_BANNED.",
 			404: "NOT_FOUND when the work does not exist or is hidden.",
-			422: "VALIDATION_FAILED when both fields are omitted, minutes is outside 0–60000, or play_state is unknown or done.",
+			422: "VALIDATION_FAILED when both fields are omitted, minutes is outside 0–60000, or play_state is unknown.",
 			503: "SERVICE_UNAVAILABLE when the catalog cannot be reached.",
 		}),
 	}), s.putWorkPlaytime)
