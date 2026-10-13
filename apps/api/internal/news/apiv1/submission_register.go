@@ -86,7 +86,7 @@ func (s *Service) registerSubmissions(api huma.API) {
 		DefaultStatus: http.StatusCreated,
 		Description: "Stores a banner under the caller's own NextMoe identity, for a news submission, which refers to it by hash in banner_image_hash. " +
 			"A submission's banner has to come from here: a hash from any other upload is refused, because only images stored through this face are kept alive for the news feed. " +
-			"file is one part, image/jpeg, image/png or image/webp, at most 4,000,000 bytes. Not counted against the daily image limit; NextMoe applies its own, 30 per account per UTC day. " +
+			"file is one part holding a JPEG, PNG or WebP image, at most 4,000,000 bytes; the type is read from the bytes, not from the part's Content-Type. Not counted against the daily image limit; NextMoe applies its own, 30 per account per UTC day. " +
 			"Location is the image URL. Persist the hash, never the URL. sexual is always null.",
 		Tags:        []string{"me"},
 		Middlewares: huma.Middlewares{requireMultipart, withAccessToken},
@@ -94,7 +94,7 @@ func (s *Service) registerSubmissions(api huma.API) {
 		Responses: problemResponses(map[int]string{
 			http.StatusForbidden:             "SCOPE_REQUIRED when the catalog token lacks the scope; ACCOUNT_BANNED when the caller is banned.",
 			http.StatusRequestEntityTooLarge: "PAYLOAD_TOO_LARGE when the whole body is over the server's limit.",
-			http.StatusUnsupportedMediaType:  "UNSUPPORTED_MEDIA_TYPE when the body is not multipart/form-data, or file is not a JPEG, PNG or WebP part.",
+			http.StatusUnsupportedMediaType:  "UNSUPPORTED_MEDIA_TYPE when the body is not multipart/form-data, or file's bytes are not a JPEG, PNG or WebP image.",
 			http.StatusUnprocessableEntity:   "VALIDATION_FAILED when file is missing, over 4,000,000 bytes, or cannot be decoded as an image. IMAGE_REJECTED when image moderation refuses it.",
 			http.StatusTooManyRequests:       "QUOTA_EXCEEDED when the account's or the news site's daily upload limit is exhausted; RATE_LIMITED otherwise. Retry-After is passed through when the catalog sends it, which it does not for the daily upload limit.",
 			http.StatusServiceUnavailable:    "SERVICE_UNAVAILABLE when the catalog or its image store is not configured or cannot be reached.",

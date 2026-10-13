@@ -2003,7 +2003,7 @@ export interface paths {
         put?: never;
         /**
          * Upload a banner for a news submission
-         * @description Stores a banner under the caller's own NextMoe identity, for a news submission, which refers to it by hash in banner_image_hash. A submission's banner has to come from here: a hash from any other upload is refused, because only images stored through this face are kept alive for the news feed. file is one part, image/jpeg, image/png or image/webp, at most 4,000,000 bytes. Not counted against the daily image limit; NextMoe applies its own, 30 per account per UTC day. Location is the image URL. Persist the hash, never the URL. sexual is always null.
+         * @description Stores a banner under the caller's own NextMoe identity, for a news submission, which refers to it by hash in banner_image_hash. A submission's banner has to come from here: a hash from any other upload is refused, because only images stored through this face are kept alive for the news feed. file is one part holding a JPEG, PNG or WebP image, at most 4,000,000 bytes; the type is read from the bytes, not from the part's Content-Type. Not counted against the daily image limit; NextMoe applies its own, 30 per account per UTC day. Location is the image URL. Persist the hash, never the URL. sexual is always null.
          */
         post: operations["createNewsSubmissionImage"];
         delete?: never;
@@ -26603,7 +26603,7 @@ export interface operations {
                 "multipart/form-data": {
                     /**
                      * Format: binary
-                     * @description The banner. Its part must be image/jpeg, image/png or image/webp, and at most 4,000,000 bytes.
+                     * @description The banner: a JPEG, PNG or WebP image, at most 4,000,000 bytes. The type is read from the bytes; the part's declared type is not consulted.
                      */
                     file: string;
                 };
@@ -26665,7 +26665,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description UNSUPPORTED_MEDIA_TYPE when the body is not multipart/form-data, or file is not a JPEG, PNG or WebP part. */
+            /** @description UNSUPPORTED_MEDIA_TYPE when the body is not multipart/form-data, or file's bytes are not a JPEG, PNG or WebP image. */
             415: {
                 headers: {
                     [name: string]: unknown;

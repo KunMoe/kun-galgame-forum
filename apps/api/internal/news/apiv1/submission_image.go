@@ -3,6 +3,7 @@ package apiv1
 import (
 	"context"
 	"errors"
+	"io"
 	"log/slog"
 	"mime"
 	"net/http"
@@ -57,12 +58,12 @@ func newsImageRequestBody() *huma.RequestBody {
 							Type:        huma.TypeString,
 							Format:      "binary",
 							MaxLength:   &maxLen,
-							Description: "The banner. Its part must be image/jpeg, image/png or image/webp, and at most 4,000,000 bytes.",
+							Description: "The banner: a JPEG, PNG or WebP image, at most 4,000,000 bytes. The type is read from the bytes; the part's declared type is not consulted.",
 						},
 					},
 				},
 				Encoding: map[string]*huma.Encoding{
-					"file": {ContentType: "image/jpeg, image/png, image/webp"},
+					"file": {ContentType: "image/*"},
 				},
 			},
 		},
@@ -79,17 +80,22 @@ func (s *Service) createNewsSubmissionImage(ctx context.Context, in *newsImageIn
 		return nil, validationFailed(problem.AtPointer("/file", problem.ReasonRequired, "file is required", nil))
 	}
 	fh := files[0]
-	if mt, _, err := mime.ParseMediaType(fh.Header.Get("Content-Type")); err != nil || !newsImageTypes[mt] {
-		return nil, unsupportedMedia()
-	}
-	if fh.Size > maxNewsImageBytes {
-		return nil, newsImageTooLong()
-	}
 	f, err := fh.Open()
 	if err != nil {
 		return nil, problem.Internal(err)
 	}
 	defer f.Close()
+	head := make([]byte, 512)
+	n, err := f.ReadAt(head, 0)
+	if err != nil && !errors.Is(err, io.EOF) {
+		return nil, problem.Internal(err)
+	}
+	if !newsImageTypes[http.DetectContentType(head[:n])] {
+		return nil, unsupportedMedia()
+	}
+	if fh.Size > maxNewsImageBytes {
+		return nil, newsImageTooLong()
+	}
 	res, err := s.catalog.UploadNewsImageUser(ctx, token, f, fh.Filename)
 	if err != nil {
 		return nil, mapNewsImageUpstream(err)
@@ -111,7 +117,7 @@ func mapNewsImageUpstream(err error) error {
 		return newsImageTooLong()
 	case http.StatusUnprocessableEntity:
 		// Upstream answers NOT_ALLOWED_VALUE for a refused type and for a
-		// moderation refusal alike. The type was checked here before forwarding.
+		// moderation refusal alike. The bytes were sniffed here before forwarding.
 		for _, e := range api.FieldErrors {
 			if e.Pointer == "/file" && e.Reason == problem.ReasonNotAllowedValue {
 				return problem.New(problem.CodeImageRejected, "The image service's moderation refused the image. Nothing was stored.")

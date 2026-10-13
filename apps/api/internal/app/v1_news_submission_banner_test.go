@@ -9,6 +9,7 @@ import (
 	"mime"
 	"mime/multipart"
 	"net/http"
+	"strings"
 	"testing"
 
 	"kun-galgame-api/pkg/imageclient"
@@ -21,6 +22,10 @@ const (
 )
 
 var asBanned = caller{session: "sess-banned"}
+
+func newsPNG(rest string) []byte {
+	return append([]byte("\x89PNG\r\n\x1a\n"), rest...)
+}
 
 func newsImageHash(data []byte) string {
 	sum := sha256.Sum256(data)
@@ -35,8 +40,8 @@ func (f *writeFix) uploadNewsImage(t *testing.T, who caller, form imageForm) (*h
 
 func TestV1NewsSubmissionImageUpload(t *testing.T) {
 	f, up := newNewsSubmissionFix(t, nil)
-	data := []byte("banner bytes")
-	resp, body := f.uploadNewsImage(t, asAlice, imageForm{data: data, partType: "image/webp"})
+	data := []byte("RIFF\x00\x00\x00\x00WEBPVP8 banner bytes")
+	resp, body := f.uploadNewsImage(t, asAlice, imageForm{data: data, partType: "image/*"})
 	if resp.StatusCode != http.StatusCreated {
 		t.Fatalf("upload %d %+v", resp.StatusCode, body)
 	}
@@ -92,10 +97,10 @@ func TestV1NewsSubmissionImageRefusedBeforeUpstream(t *testing.T) {
 		t.Errorf("no file %+v", e)
 	}
 
-	resp, body = f.uploadNewsImage(t, asAlice, imageForm{partType: "image/gif"})
+	resp, body = f.uploadNewsImage(t, asAlice, imageForm{data: []byte("GIF89a banner"), partType: "image/png"})
 	wantCode(t, resp, body, http.StatusUnsupportedMediaType, problem.CodeUnsupportedMediaType)
 
-	resp, body = f.uploadNewsImage(t, asAlice, imageForm{data: bytes.Repeat([]byte("x"), 4_000_001)})
+	resp, body = f.uploadNewsImage(t, asAlice, imageForm{data: newsPNG(strings.Repeat("x", 4_000_001-8))})
 	wantCode(t, resp, body, http.StatusUnprocessableEntity, problem.CodeValidationFailed)
 	if e := firstError(t, body); e["pointer"] != "/file" || e["reason"] != problem.ReasonTooLong {
 		t.Errorf("too large %+v", e)
@@ -105,9 +110,24 @@ func TestV1NewsSubmissionImageRefusedBeforeUpstream(t *testing.T) {
 		t.Fatalf("upstream was called %d times", n)
 	}
 
-	resp, body = f.uploadNewsImage(t, asAlice, imageForm{data: bytes.Repeat([]byte("x"), 4_000_000)})
+	resp, body = f.uploadNewsImage(t, asAlice, imageForm{data: newsPNG(strings.Repeat("x", 4_000_000-8))})
 	if resp.StatusCode != http.StatusCreated {
 		t.Fatalf("4,000,000 bytes is allowed: %d %+v", resp.StatusCode, body)
+	}
+}
+
+func TestV1NewsSubmissionImageTypeComesFromTheBytes(t *testing.T) {
+	f, up := newNewsSubmissionFix(t, nil)
+	for _, form := range []imageForm{
+		{data: []byte("\xff\xd8\xff\xe0 jpeg banner"), partType: "application/octet-stream"},
+		{data: newsPNG("declared as gif"), partType: "image/gif"},
+	} {
+		if resp, body := f.uploadNewsImage(t, asAlice, form); resp.StatusCode != http.StatusCreated {
+			t.Errorf("%q declared %s: %d %+v", form.data, form.partType, resp.StatusCode, body)
+		}
+	}
+	if n := len(up.calls()); n != 2 {
+		t.Errorf("upstream was called %d times", n)
 	}
 }
 
@@ -140,7 +160,7 @@ func TestV1NewsSubmissionImageUpstreamErrors(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			f, up := newNewsSubmissionFix(t, nil)
 			up.fail(newsImagesPath, tc.upStatus, tc.upBody, tc.upRetry)
-			resp, body := f.uploadNewsImage(t, asAlice, imageForm{})
+			resp, body := f.uploadNewsImage(t, asAlice, imageForm{data: newsPNG("")})
 			wantCode(t, resp, body, tc.status, tc.code)
 			if tc.pointer != "" {
 				if e := firstError(t, body); e["pointer"] != tc.pointer || e["reason"] != tc.reason {
@@ -156,7 +176,7 @@ func TestV1NewsSubmissionImageUpstreamErrors(t *testing.T) {
 
 func TestV1NewsSubmissionBanner(t *testing.T) {
 	f, up := newNewsSubmissionFix(t, nil)
-	data := []byte("the banner")
+	data := newsPNG("the banner")
 	hash := newsImageHash(data)
 	if resp, body := f.uploadNewsImage(t, asAlice, imageForm{data: data}); resp.StatusCode != http.StatusCreated {
 		t.Fatalf("upload %d %+v", resp.StatusCode, body)
