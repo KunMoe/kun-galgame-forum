@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { KunTabItem } from '@kungal/ui-vue'
 import { useElementSize, useWindowSize } from '@vueuse/core'
-import type { RatingPage, Work } from '#shared/utils/api/schemas'
+import type { ListMoyuPatch, RatingPage, Work } from '#shared/utils/api/schemas'
 import { ratingSummaryToPageCard } from '~/utils/galgame/ratingCard'
 import { toKunUser } from '~/utils/userRef'
 
@@ -36,7 +36,21 @@ watch(activeTab, (tab) => {
     tab: tab !== 'intro' && DEEP_LINK_TABS.includes(tab) ? tab : undefined
   })
 })
-const hasPatchResource = ref(false)
+
+// A failed lookup is not reported: moyu is another site, and the tab is only
+// drawn when there is something in it.
+const { data: moyuPatches, status: moyuPatchStatus } = useApi<ListMoyuPatch>(
+  () => `galgame-moyu-patches:${props.galgame.id}`,
+  (api, { signal }) =>
+    api.GET('/works/{work_id}/moyu-patches', {
+      params: { path: { work_id: props.galgame.id } },
+      signal
+    }),
+  { lazy: true, server: false }
+)
+const hasPatchResource = computed(
+  () => !!moyuPatches.value?.items.some((patch) => patch.resources.length)
+)
 
 // `position: sticky; top: 5rem` on an element taller than the viewport freezes
 // it at the top and never lets its bottom into view. Measured on an 820x1180
@@ -53,10 +67,16 @@ const canStickSidebar = computed(
     sidebarHeight.value > 0 && sidebarHeight.value <= viewportHeight.value - 96
 )
 
-const resourceLoading = ref(false)
-const patchLoading = ref(false)
-const commentLoading = ref(false)
-const quizLoading = ref(false)
+const panelLoading = reactive<Record<string, boolean>>({})
+const panelReady = reactive<Record<string, boolean>>({
+  [activeTab.value]: true
+})
+const onPanelLoading = (tab: string, loading: boolean) => {
+  panelLoading[tab] = loading
+  if (!loading) {
+    panelReady[tab] = true
+  }
+}
 
 const contentTabs = computed<KunTabItem[]>(() => [
   { value: 'intro', textValue: '游戏介绍', icon: 'lucide:book-open' },
@@ -68,6 +88,8 @@ const contentTabs = computed<KunTabItem[]>(() => [
   { value: 'quiz', textValue: '题库', icon: 'lucide:brain' }
 ])
 
+const RATING_PREVIEW_LIMIT = 6
+
 const { data: ratingsPage, refresh: refreshRatings } = await useApi<RatingPage>(
   () => `work-ratings:${props.galgame.id}`,
   (api, { signal }) =>
@@ -76,7 +98,7 @@ const { data: ratingsPage, refresh: refreshRatings } = await useApi<RatingPage>(
         query: {
           work_id: props.galgame.id,
           include_nsfw: true,
-          limit: 100,
+          limit: RATING_PREVIEW_LIMIT,
           sort: 'created_desc'
         }
       },
@@ -106,8 +128,6 @@ const hasCreator = computed(() => !!creator.value)
 const hasContributorCard = computed(
   () => hasCreator.value || !!props.galgame.contributors.length
 )
-
-const workId = computed(() => Number(props.galgame.id))
 </script>
 
 <template>
@@ -189,28 +209,49 @@ const workId = computed(() => Number(props.galgame.id))
                 v-if="galgame.series.length"
                 :series="galgame.series"
               />
+
+              <GalgameRelatedPanel :works="galgame.related_works" />
             </KunTabPanel>
 
-            <KunTabPanel value="resource" :loading="resourceLoading">
-              <GalgameResource @update:loading="resourceLoading = $event" />
-            </KunTabPanel>
-
-            <KunTabPanel value="patch" :loading="patchLoading">
-              <GalgamePatchContainer
-                :work-id="workId"
-                @has-resource="hasPatchResource = $event"
-                @update:loading="patchLoading = $event"
+            <KunTabPanel
+              value="resource"
+              mount="lazy"
+              :loading="!!panelLoading.resource"
+            >
+              <GalgamePanelSkeleton v-if="!panelReady.resource" />
+              <GalgameResource
+                @update:loading="onPanelLoading('resource', $event)"
               />
             </KunTabPanel>
 
-            <KunTabPanel value="comment" :loading="commentLoading">
+            <KunTabPanel
+              value="patch"
+              mount="lazy"
+              :loading="moyuPatchStatus === 'pending'"
+            >
+              <GalgamePatchContainer :patches="moyuPatches ?? null" />
+            </KunTabPanel>
+
+            <KunTabPanel
+              value="comment"
+              mount="lazy"
+              :loading="!!panelLoading.comment"
+            >
+              <GalgamePanelSkeleton v-if="!panelReady.comment" />
               <GalgameCommentCommunityContainer
-                @update:loading="commentLoading = $event"
+                @update:loading="onPanelLoading('comment', $event)"
               />
             </KunTabPanel>
 
-            <KunTabPanel value="quiz" :loading="quizLoading">
-              <GalgameQuizGalgamePanel @update:loading="quizLoading = $event" />
+            <KunTabPanel
+              value="quiz"
+              mount="lazy"
+              :loading="!!panelLoading.quiz"
+            >
+              <GalgamePanelSkeleton v-if="!panelReady.quiz" />
+              <GalgameQuizGalgamePanel
+                @update:loading="onPanelLoading('quiz', $event)"
+              />
             </KunTabPanel>
           </KunTabPanels>
         </KunCard>

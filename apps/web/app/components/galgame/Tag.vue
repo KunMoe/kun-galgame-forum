@@ -81,6 +81,22 @@ const filteredTags = computed(() => {
   return filtered.sort((a, b) => Number(a.id) - Number(b.id))
 })
 
+// Both copies of this list rendered every tag on the server: 109 tags twice
+// were 86 KB of /galgame/4's 1.4 MB, in boxes that show about 40 at a time.
+const SSR_TAG_LIMIT = 40
+const tagsRevealed = ref(false)
+const tagsAnimated = ref(false)
+onMounted(async () => {
+  tagsRevealed.value = true
+  await nextTick()
+  tagsAnimated.value = true
+})
+const shownTags = computed(() =>
+  tagsRevealed.value
+    ? filteredTags.value
+    : filteredTags.value.slice(0, SSR_TAG_LIMIT)
+)
+
 const countColorByCategory = (category: string): string => {
   if (category === 'content') return 'text-primary'
   if (category === 'sexual') return 'text-danger'
@@ -133,9 +149,13 @@ const countColorByCategory = (category: string): string => {
         isMobile ? 'max-h-[300px]' : 'max-h-[200px] md:max-h-[400px]'
       "
     >
-      <TransitionGroup name="tag-list" tag="div" class="flex flex-wrap gap-1.5">
+      <TransitionGroup
+        :name="tagsAnimated ? 'tag-list' : 'tag-list-reveal'"
+        tag="div"
+        class="flex flex-wrap gap-1.5"
+      >
         <KunLink
-          v-for="tag in filteredTags"
+          v-for="tag in shownTags"
           :key="tag.id"
           underline="none"
           :to="`/galgame/tag/${tag.id}`"
