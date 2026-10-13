@@ -4,10 +4,6 @@ import {
   GALGAME_RESOURCE_PLATFORM_ICON_MAP
 } from '~/constants/galgameResource'
 import {
-  KUN_GALGAME_PLAY_STATE_MAP,
-  type KunGalgamePlayStateRead
-} from '~/constants/galgame-playtime'
-import {
   KUN_GALGAME_CONTENT_LIMIT_MAP,
   KUN_USER_TEXT_CHIP_CLASS
 } from '~/constants/galgame'
@@ -124,14 +120,6 @@ const openRecord = () => {
   }
   isRecordOpen.value = true
 }
-
-const { playtimeOf } = useMyGalgameInteractions()
-const myRecordLabel = computed(() => {
-  const state = playtimeOf(workId.value)?.play_state
-  return state
-    ? KUN_GALGAME_PLAY_STATE_MAP[state as KunGalgamePlayStateRead] || state
-    : ''
-})
 
 const isRatingDetailOpen = ref(false)
 const ratingDetailSource = ref('')
@@ -382,8 +370,7 @@ const coverUrl = computed(() =>
               @click="openRecord"
             >
               <span class="flex items-center gap-1">
-                <KunIcon name="lucide:star" />
-                {{ myRecordLabel || '标记 / 评分' }}
+                <KunIcon name="lucide:star" />评分
               </span>
             </KunButton>
 

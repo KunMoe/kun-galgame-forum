@@ -56,8 +56,7 @@ const loaded = ref<WorkRecord | null>(null)
 const status = ref<KunGalgamePlayStateRead | ''>('')
 const hours = ref(0)
 
-const ratingOn = ref(false)
-const overall = ref(5)
+const overall = ref(0)
 const recommend = ref<Recommend>('neutral')
 const spoilerLevel = ref<Spoiler>('none')
 const shortSummary = ref('')
@@ -91,6 +90,17 @@ const statusOptions = computed<
     : KUN_GALGAME_PLAY_STATE_OPTIONS
 )
 const hadRating = computed(() => !!loaded.value?.rating_summary)
+
+const rated = computed(() => overall.value > 0)
+const hasRatingContent = computed(
+  () =>
+    gameTypes.value.length > 0 ||
+    shortSummary.value.trim() !== '' ||
+    (aspectsOn.value && Object.values(dims.value).some((v) => v > 0))
+)
+const deletingRating = computed(
+  () => hadRating.value && !rated.value && !isWish.value
+)
 
 const minutes = computed(() => Math.round((Number(hours.value) || 0) * 60))
 const tooShort = computed(
@@ -126,33 +136,41 @@ const toggleGameType = (checked: boolean, t: GameType) => {
     : gameTypes.value.filter((x) => x !== t)
 }
 
+const clearRating = () => {
+  overall.value = 0
+  recommend.value = 'neutral'
+  spoilerLevel.value = 'none'
+  shortSummary.value = ''
+  gameTypes.value = []
+  dims.value = emptyDims()
+  aspectsOn.value = false
+  showAdvanced.value = false
+}
+
+const fillRating = (r: WorkRecord['rating_summary']) => {
+  clearRating()
+  if (!r) {
+    shortSummary.value = summaryDraft.value
+    return
+  }
+  overall.value = r.overall
+  recommend.value = r.recommend
+  spoilerLevel.value = r.spoiler_level
+  shortSummary.value = r.short_summary
+  gameTypes.value = [...r.game_types]
+  dims.value = aspectDims(r.aspect_scores)
+  aspectsOn.value = Object.values(dims.value).some((v) => v > 0)
+  showAdvanced.value = aspectsOn.value
+}
+
+const restoreRating = () => fillRating(loaded.value?.rating_summary ?? null)
+
 const fill = (record: WorkRecord) => {
   loaded.value = record
   status.value = record.play_state ?? ''
   hours.value =
     record.minutes > 0 ? Math.round((record.minutes / 60) * 10) / 10 : 0
-
-  const r = record.rating_summary
-  ratingOn.value = !!r
-  showAdvanced.value = false
-  aspectsOn.value = false
-  if (r) {
-    overall.value = r.overall
-    recommend.value = r.recommend
-    spoilerLevel.value = r.spoiler_level
-    shortSummary.value = r.short_summary
-    gameTypes.value = [...r.game_types]
-    dims.value = aspectDims(r.aspect_scores)
-    aspectsOn.value = Object.values(dims.value).some((v) => v > 0)
-    showAdvanced.value = aspectsOn.value
-  } else {
-    overall.value = 5
-    recommend.value = 'neutral'
-    spoilerLevel.value = 'none'
-    shortSummary.value = summaryDraft.value
-    gameTypes.value = []
-    dims.value = emptyDims()
-  }
+  fillRating(record.rating_summary)
 }
 
 watch(open, async (isOpen) => {
@@ -206,12 +224,19 @@ const save = async () => {
     )
     return
   }
+  if (!isWish.value && !rated.value && hasRatingContent.value) {
+    useMessage(
+      '请先打总体评分, 只想记录游玩状态和时长的话, 点「清除评分」',
+      'warn'
+    )
+    return
+  }
 
   const body: WorkRecordPut = {}
   if (status.value) body.play_state = status.value
   if (!isWish.value) {
     if (minutes.value > 0) body.minutes = minutes.value
-    if (ratingOn.value) {
+    if (rated.value) {
       const rating = ratingBody()
       if (!rating) return
       body.rating_input = rating
@@ -269,16 +294,16 @@ const save = async () => {
     v-model="open"
     inner-class-name="max-w-[780px] w-[90vw]"
     :is-dismissable="false"
-    aria-label="标记 / 评分"
+    aria-label="评分"
   >
     <div class="space-y-4">
       <div>
-        <h3 class="text-lg font-bold">标记 / 评分</h3>
+        <h3 class="text-lg font-bold">评分</h3>
         <p v-if="workName" class="text-default-500 line-clamp-1 text-sm">
           {{ workName }}
         </p>
         <p class="text-default-500 text-sm">
-          游玩状态、时长与评分在所有 NextMoe 站点共用, 在这里写的,
+          评分、游玩状态与时长在所有 NextMoe 站点共用, 在这里写的,
           在其它站点也是同一份
         </p>
       </div>
@@ -286,9 +311,138 @@ const save = async () => {
       <KunLoading v-if="loading" />
 
       <template v-else>
-        <div class="space-y-2">
-          <div class="flex items-center justify-between">
-            <span class="text-default-600 text-sm">游玩状态</span>
+        <KunInfo
+          v-if="isWish"
+          color="warning"
+          icon="lucide:info"
+          title="想玩的作品还不能评分"
+          :description="hadRating ? '保存后会删除你的评分' : ''"
+        />
+        <KunInfo
+          v-else-if="!hadRating"
+          color="secondary"
+          icon="lucide:lollipop"
+          title="萌萌点奖励"
+          description="在本站发布评分可获得 3 萌萌点, 短评超过 20 字为 5 萌萌点, 超过 100 字为 10 萌萌点"
+        />
+
+        <div class="flex flex-wrap items-end justify-between gap-3">
+          <div class="flex items-end gap-6">
+            <div class="flex flex-col gap-1">
+              <label class="text-sm">总体评分 (1-10)</label>
+              <KunRating
+                v-model="overall"
+                :max="10"
+                :disabled="isWish"
+                aria-label="overall"
+              />
+            </div>
+            <span
+              v-if="rated"
+              :class="
+                cn(
+                  'text-warning-500 text-4xl font-bold',
+                  isWish && 'opacity-50'
+                )
+              "
+            >
+              {{ overall }}
+            </span>
+            <span v-else class="text-default-500 text-sm">未打分</span>
+          </div>
+
+          <KunButton
+            v-if="deletingRating"
+            size="sm"
+            variant="flat"
+            color="primary"
+            @click="restoreRating"
+          >
+            <KunIcon name="lucide:undo-2" />恢复评分
+          </KunButton>
+          <KunButton
+            v-else-if="rated || hasRatingContent"
+            size="sm"
+            variant="light"
+            color="danger"
+            :disabled="isWish"
+            @click="clearRating"
+          >
+            <KunIcon name="lucide:trash-2" />
+            {{ hadRating ? '删除评分' : '清除评分' }}
+          </KunButton>
+        </div>
+        <p v-if="deletingRating" class="text-warning text-sm">
+          保存后会删除你的评分, 游玩状态和时长保留
+        </p>
+
+        <div>
+          <span class="text-sm">本游戏的类型 (必选, 可多选)</span>
+          <div class="mt-2 flex flex-col gap-2">
+            <div
+              v-for="t in KUN_GALGAME_RATING_GAME_TYPE_CONST"
+              :key="t"
+              class="flex gap-3"
+            >
+              <KunCheckBox
+                :model-value="gameTypes.includes(t)"
+                :label="KUN_GALGAME_RATING_GAME_TYPE_MAP[t]"
+                :disabled="isWish"
+                @update:model-value="(checked) => toggleGameType(checked, t)"
+              />
+              <p class="text-default-700 text-sm">
+                {{ KUN_GALGAME_RATING_GAME_TYPE_DESCRIPTION_MAP[t] }}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
+          <KunSelect
+            v-model="recommend"
+            :options="recommendOptions"
+            :disabled="isWish"
+            label="推荐程度"
+          />
+          <KunSelect
+            v-model="spoilerLevel"
+            :options="spoilerOptions"
+            :disabled="isWish"
+            label="剧透程度"
+          />
+        </div>
+
+        <KunTextarea
+          v-model="shortSummary"
+          label="短评 (可选, 请勿包含 R18 内容, 新评分的短评会自动保存在本地, 关掉面板不会丢失)"
+          :rows="4"
+          :maxlength="2000"
+          :show-char-count="true"
+          :disabled="isWish"
+          auto-grow
+        />
+
+        <div v-if="showAdvanced">
+          <GalgameRatingAdvanced v-model="dims" :readonly="isWish" />
+        </div>
+        <div class="flex flex-wrap items-center gap-3">
+          <KunButton
+            variant="flat"
+            size="sm"
+            :disabled="isWish"
+            @click="toggleAdvanced"
+          >
+            {{ showAdvanced ? '收起高级评分' : '展开高级评分' }}
+          </KunButton>
+
+          <KunLink to="/doc/galgame-rating-guide" size="sm">
+            鲲 Galgame 八维超评分系统介绍及使用说明
+          </KunLink>
+        </div>
+
+        <div class="border-default-200 space-y-3 rounded-lg border p-3">
+          <div class="flex items-center justify-between gap-2">
+            <span class="font-medium">游玩记录</span>
             <KunButton
               v-if="status"
               size="sm"
@@ -308,123 +462,22 @@ const save = async () => {
             size="sm"
             class-name="flex-wrap"
           />
+
+          <template v-if="!isWish">
+            <KunNumberInput
+              v-model="hours"
+              label="游玩时长 (小时, 可选)"
+              :min="0"
+              :max="KUN_GALGAME_PLAYTIME_HOURS_MAX"
+              :step="0.5"
+              :precision="1"
+              placeholder="例如 12.5"
+            />
+            <p v-if="tooShort" class="text-warning text-sm">
+              不足 10 分钟的记录不会计入统计
+            </p>
+          </template>
         </div>
-
-        <template v-if="!isWish">
-          <KunNumberInput
-            v-model="hours"
-            label="游玩时长 (小时, 可选)"
-            :min="0"
-            :max="KUN_GALGAME_PLAYTIME_HOURS_MAX"
-            :step="0.5"
-            :precision="1"
-            placeholder="例如 12.5"
-          />
-          <p v-if="tooShort" class="text-warning text-sm">
-            不足 10 分钟的记录不会计入统计
-          </p>
-
-          <div class="border-default-200 space-y-3 rounded-lg border p-3">
-            <div class="flex items-center justify-between gap-2">
-              <span class="font-medium">评分</span>
-              <KunButton
-                v-if="ratingOn"
-                size="sm"
-                variant="light"
-                color="danger"
-                @click="ratingOn = false"
-              >
-                <KunIcon name="lucide:trash-2" />移除评分
-              </KunButton>
-              <KunButton
-                v-else
-                size="sm"
-                variant="flat"
-                color="primary"
-                @click="ratingOn = true"
-              >
-                <KunIcon name="lucide:star" />添加评分
-              </KunButton>
-            </div>
-
-            <template v-if="ratingOn">
-              <KunInfo
-                v-if="!hadRating"
-                color="secondary"
-                icon="lucide:lollipop"
-                title="萌萌点奖励"
-                description="在本站发布评分可获得 3 萌萌点, 短评超过 20 字为 5 萌萌点, 超过 100 字为 10 萌萌点"
-              />
-
-              <div class="flex items-end gap-6">
-                <div class="flex flex-col gap-1">
-                  <label class="text-sm">总体评分 (1-10)</label>
-                  <KunRating v-model="overall" :max="10" aria-label="overall" />
-                </div>
-                <span class="text-warning-500 text-4xl font-bold">
-                  {{ overall }}
-                </span>
-              </div>
-
-              <div>
-                <span class="text-sm">本游戏的类型 (必选, 可多选)</span>
-                <div class="mt-2 flex flex-col gap-2">
-                  <div
-                    v-for="t in KUN_GALGAME_RATING_GAME_TYPE_CONST"
-                    :key="t"
-                    class="flex gap-3"
-                  >
-                    <KunCheckBox
-                      :model-value="gameTypes.includes(t)"
-                      :label="KUN_GALGAME_RATING_GAME_TYPE_MAP[t]"
-                      @update:model-value="
-                        (checked) => toggleGameType(checked, t)
-                      "
-                    />
-                    <p class="text-default-700 text-sm">
-                      {{ KUN_GALGAME_RATING_GAME_TYPE_DESCRIPTION_MAP[t] }}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
-                <KunSelect
-                  v-model="recommend"
-                  :options="recommendOptions"
-                  label="推荐程度"
-                />
-                <KunSelect
-                  v-model="spoilerLevel"
-                  :options="spoilerOptions"
-                  label="剧透程度"
-                />
-              </div>
-
-              <KunTextarea
-                v-model="shortSummary"
-                label="短评 (可选, 请勿包含 R18 内容, 新评分的短评会自动保存在本地, 关掉面板不会丢失)"
-                :rows="4"
-                :maxlength="2000"
-                :show-char-count="true"
-                auto-grow
-              />
-
-              <div v-if="showAdvanced">
-                <GalgameRatingAdvanced v-model="dims" />
-              </div>
-              <div class="flex flex-wrap items-center gap-3">
-                <KunButton variant="flat" size="sm" @click="toggleAdvanced">
-                  {{ showAdvanced ? '收起高级评分' : '展开高级评分' }}
-                </KunButton>
-
-                <KunLink to="/doc/galgame-rating-guide" size="sm">
-                  鲲 Galgame 八维超评分系统介绍及使用说明
-                </KunLink>
-              </div>
-            </template>
-          </div>
-        </template>
 
         <div class="flex items-center justify-end gap-2">
           <KunButton variant="light" color="default" @click="open = false">
