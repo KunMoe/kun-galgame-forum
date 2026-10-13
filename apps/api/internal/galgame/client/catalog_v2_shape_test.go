@@ -210,3 +210,37 @@ func TestRewriteV2JSON_RollupViaCompanyIsViaLabel(t *testing.T) {
 		t.Error("a directly attributed rollup row grew a via_label")
 	}
 }
+
+// Captured from api.nextmoe.dev/v2/catalog/works/198?include=relations on
+// 2026-10-13. Relation ends carried no cover then; the cover on 2679 is the
+// CoverSlot shape the work's own cover already has, which infra 2.48.0 fills in.
+func TestRewriteV2JSON_RelationWorksDecode(t *testing.T) {
+	raw := `{"object":"work","id":"198","relations":[
+		{"relation_type":"fandisc_of","phrase":"有 Fandisc","work":{"object":"work","id":"2679","medium":"galgame","display_name":"Rewrite: Cradles Tale","latin":null,"localized":{"zh-Hans":{"value":"Rewrite 特典后日谈","is_machine":false}},"olang":"ja","content_rating":"all_ages","content_limit":"sfw","release_date":"2011-12-01","release_date_precision":"month","release_status":"released","cover":{"url":"https://image.kungal.iloveren.link/64/83/6483076809b395c9688b3726b147cc0b25d432448edde674e4fb1d7f481b5507.webp","hash":"6483076809b395c9688b3726b147cc0b25d432448edde674e4fb1d7f481b5507","width":318,"height":450,"thumbhash":"6jgKDQLImYd3+Xe4iIaJl7AAlfoD","sexual":"suggestive","violence":null,"source":"dlsite","origin":"cover"},"banner":null,"claim":{"site":"kungal","site_work_id":"2679","state":"live","content_limit":"sfw"}}},
+		{"relation_type":"adaptation_of","phrase":"被改编为","work":{"object":"work","id":"213225","medium":"manga","display_name":"Rewrite: SIDE-B","latin":null,"localized":{},"olang":"ja","content_rating":"all_ages","content_limit":"sfw","release_date":null,"release_date_precision":null,"release_status":"unknown","cover":null,"banner":null,"claim":null}}
+	]}`
+	var d CatalogWorkDetail
+	if err := json.Unmarshal(rewriteV2JSON([]byte(raw), ""), &d); err != nil {
+		t.Fatal(err)
+	}
+	if len(d.Relations) != 2 {
+		t.Fatalf("relations = %d, want 2", len(d.Relations))
+	}
+	fd := d.Relations[0]
+	if fd.RelationType != "fandisc_of" || fd.Phrase != "有 Fandisc" || fd.Work.ID != 2679 || fd.Work.Medium != "galgame" {
+		t.Errorf("fandisc edge = %+v", fd)
+	}
+	if fd.Work.Claim == nil || fd.Work.Claim.State != "live" || fd.Work.Claim.SiteWorkID != 2679 {
+		t.Errorf("claim = %+v", fd.Work.Claim)
+	}
+	if fd.Work.ReleaseDatePrecision == nil || *fd.Work.ReleaseDatePrecision != "month" {
+		t.Errorf("release_date_precision = %v, want month", fd.Work.ReleaseDatePrecision)
+	}
+	slot := fd.Work.CoverSlots
+	if slot == nil || slot.Portrait == nil || slot.Portrait.Width != 318 || slot.Portrait.Thumbhash == "" || slot.Portrait.Sexual == nil || *slot.Portrait.Sexual != 1 {
+		t.Errorf("the cover object must survive as a portrait slot with its size, thumbhash and grade: %+v", slot)
+	}
+	if manga := d.Relations[1].Work; manga.ID != 213225 || manga.Medium != "manga" || manga.Claim != nil || manga.CoverSlots != nil {
+		t.Errorf("manga end = %+v", manga)
+	}
+}

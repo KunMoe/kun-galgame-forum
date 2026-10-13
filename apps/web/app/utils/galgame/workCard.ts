@@ -1,4 +1,4 @@
-import type { WorkSummary } from '#shared/utils/api/schemas'
+import type { RelatedWork, WorkSummary } from '#shared/utils/api/schemas'
 import { GALGAME_RESOURCE_PLATFORM_ICON_MAP } from '~/constants/galgameResource'
 import type { CatalogName } from '#shared/utils/catalogName'
 
@@ -41,5 +41,32 @@ export const workSummaryToCard = (
     effective_portrait_height: w.cover?.height ?? undefined,
     effective_portrait_thumbhash: w.cover?.thumbhash ?? undefined,
     company: maker
+  }
+}
+
+export const relatedWorkToCard = (
+  w: RelatedWork,
+  nameOf: NameOf
+): GalgameCard => {
+  const { name, original } = nameOf(w)
+  return {
+    id: Number(w.id),
+    name,
+    name_original: original,
+    user: { id: 0, name: '', avatar: '' },
+    content_limit: w.is_nsfw ? 'nsfw' : 'sfw',
+    view: 0,
+    like_count: 0,
+    is_on_forum: false,
+    platform: [],
+    language: [],
+    resource_update_time: '',
+    release_date: w.release_date,
+    release_precision: w.release_date_precision ?? 'unknown',
+    effective_portrait_hash: w.cover?.hash,
+    effective_portrait_url: w.cover?.url,
+    effective_portrait_width: w.cover?.width ?? undefined,
+    effective_portrait_height: w.cover?.height ?? undefined,
+    effective_portrait_thumbhash: w.cover?.thumbhash ?? undefined
   }
 }

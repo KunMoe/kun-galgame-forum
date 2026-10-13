@@ -209,6 +209,7 @@ type CatalogWorkDetail struct {
 	Engines    []catWorkEngine    `json:"engines"`
 	Links      []catWorkLink      `json:"links"`
 	Series     []catWorkSeries    `json:"series"`
+	Relations  []CatalogRelation  `json:"relations"`
 	Credits    []catCreditGroup   `json:"credits"`
 	Characters []catWorkCharacter `json:"characters"`
 	Ratings    []catRating        `json:"ratings"`
@@ -279,6 +280,17 @@ type catWorkSeries struct {
 	Name        string                      `json:"name"`
 	DisplayName string                      `json:"display_name"`
 	Localized   map[string]catLocalizedName `json:"localized"`
+}
+
+type CatalogRelation struct {
+	RelationType string             `json:"relation_type"`
+	Phrase       string             `json:"phrase"`
+	Work         CatalogRelatedWork `json:"work"`
+}
+
+type CatalogRelatedWork struct {
+	CatalogWorkListItem
+	ReleaseDatePrecision *string `json:"release_date_precision"`
 }
 
 func (c *GalgameClient) CatalogWorkExists(ctx context.Context, workID int) (bool, *errors.AppError) {

@@ -21,6 +21,7 @@ type Work struct {
 	Companies               []WorkCompany               `json:"companies" doc:"Credited companies. Empty array, never null."`
 	Engines                 []entityapiv1.Engine        `json:"engines" doc:"Engines the work runs on. Empty array, never null."`
 	Series                  []entityapiv1.SeriesSummary `json:"series" doc:"Series the work belongs to. Empty array, never null."`
+	RelatedWorks            []RelatedWork               `json:"related_works" doc:"Works related to this one, one entry per work, ordered by their most significant relation, then release date with undated last, then id. Works whose page the forum hides are left out. Empty array, never null."`
 	Tags                    []WorkTag                   `json:"tags" doc:"Tags. Adult tags are left out unless include_nsfw=true. Empty array, never null."`
 	Credits                 []WorkCreditGroup           `json:"credits" doc:"Staff grouped by role. Empty array, never null."`
 	Roster                  []WorkCharacter             `json:"roster" doc:"The work's characters, main cast first. Empty array, never null."`

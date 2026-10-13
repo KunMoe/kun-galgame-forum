@@ -8,35 +8,13 @@ import {
 import { patchNoteText } from './noteText'
 
 const props = defineProps<{
-  workId: number
+  patches: ListMoyuPatch | null
 }>()
 
-const emit = defineEmits<{
-  'has-resource': [boolean]
-  'update:loading': [boolean]
-}>()
-
-// A failed lookup is not reported: moyu is another site, and the tab is only
-// drawn when there is something in it.
-const { data, status } = useApi<ListMoyuPatch>(
-  () => `galgame-moyu-patches:${props.workId}`,
-  (api, { signal }) =>
-    api.GET('/works/{work_id}/moyu-patches', {
-      params: { path: { work_id: String(props.workId) } },
-      signal
-    }),
-  { lazy: true, server: false }
-)
-
-const pageUrl = computed(() => data.value?.items[0]?.web_url)
+const pageUrl = computed(() => props.patches?.items[0]?.web_url)
 const resources = computed(
-  () => data.value?.items.flatMap((patch) => patch.resources) ?? []
+  () => props.patches?.items.flatMap((patch) => patch.resources) ?? []
 )
-
-watchEffect(() => emit('update:loading', status.value === 'pending'))
-watch(resources, (list) => emit('has-resource', list.length > 0), {
-  immediate: true
-})
 
 const expandedNotes = ref<Set<string>>(new Set())
 const isNoteExpanded = (id: string) => expandedNotes.value.has(id)

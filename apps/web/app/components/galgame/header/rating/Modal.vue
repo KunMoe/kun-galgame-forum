@@ -6,7 +6,8 @@ import {
   KUN_GALGAME_LOCAL_RATING_META,
   KUN_GALGAME_LOCAL_RATING_SOURCE
 } from '~/constants/galgame-rating'
-import type { Work } from '#shared/utils/api/schemas'
+import type { RatingPage, Work } from '#shared/utils/api/schemas'
+import { ratingSummaryToPageCard } from '~/utils/galgame/ratingCard'
 import type { GalgameRatingCardOnGalgamePage } from '~~/shared/types/galgame-rating'
 
 const props = defineProps<{
@@ -17,6 +18,29 @@ const props = defineProps<{
 
 const open = defineModel<boolean>({ required: true })
 const workName = useWorkName()
+const nameOf = useCatalogName()
+
+const { data: allRatingsPage, refresh: refreshAllRatings } = useApi<RatingPage>(
+  () => `work-ratings-all:${props.galgame.id}`,
+  (api, { signal }) =>
+    api.GET('/ratings', {
+      params: {
+        query: {
+          work_id: props.galgame.id,
+          include_nsfw: true,
+          limit: 100,
+          sort: 'created_desc'
+        }
+      },
+      signal
+    }),
+  { server: false, immediate: false }
+)
+const allRatings = computed(() =>
+  allRatingsPage.value?.items.map((item) =>
+    ratingSummaryToPageCard(item, nameOf)
+  )
+)
 
 const externalSources = computed(() =>
   KUN_GALGAME_EXTERNAL_RATING_CONST.filter((source) =>
@@ -41,6 +65,12 @@ const tabs = computed<KunTabItem[]>(() => [
 ])
 
 const active = ref(props.source)
+
+watch(open, (isOpen) => {
+  if (isOpen) {
+    void refreshAllRatings()
+  }
+})
 
 watch([open, () => props.source], ([isOpen, next]) => {
   if (!isOpen) return
@@ -79,9 +109,11 @@ watch([open, () => props.source], ([isOpen, next]) => {
           :value="KUN_GALGAME_LOCAL_RATING_SOURCE"
         >
           <GalgameHeaderRatingLocalPanel
+            v-if="allRatings"
             :galgame="galgame"
-            :ratings="ratings"
+            :ratings="allRatings"
           />
+          <KunLoading v-else />
         </KunTabPanel>
 
         <KunTabPanel

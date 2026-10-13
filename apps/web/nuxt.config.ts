@@ -165,7 +165,10 @@ export default defineNuxtConfig({
   css: ['~/styles/index.css'],
 
   icon: {
-    mode: 'svg',
+    mode: 'css',
+    // Unlayered icon CSS beats Tailwind's @layer utilities whatever the
+    // specificity, so its 1em width and height would override every size-*.
+    cssLayer: 'base',
     localApiEndpoint: '/_nuxt_icon',
     serverBundle: {
       collections: ICON_COLLECTIONS
