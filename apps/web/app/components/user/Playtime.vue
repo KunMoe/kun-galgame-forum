@@ -57,8 +57,8 @@ const statusColor = (value: string) => {
   <div class="space-y-3">
     <KunInfo
       color="info"
-      title="只有你能看到这一页"
-      description="逐条游玩记录是私密的, 站点只会公开「至少 3 位玩家上报, 且都已通关」的中位数。"
+      title="游玩记录默认公开"
+      description="你标记的游玩状态和上报的时长对所有人公开, 和评分一样。设置页即将加入「公开我的游玩记录」开关, 关闭后只有你自己能看到。"
     />
 
     <p v-if="summary" class="text-default-600 text-sm">{{ summary }}</p>

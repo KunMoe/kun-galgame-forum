@@ -17,5 +17,5 @@ useKunDisableSeo('游玩时长')
 
 <template>
   <UserPlaytime v-if="isOwner" />
-  <KunNull v-else description="游玩时长只对本人可见" />
+  <KunNull v-else description="这一页只对本人显示" />
 </template>
