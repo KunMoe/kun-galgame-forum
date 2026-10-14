@@ -329,6 +329,55 @@ func (s *Service) registerUserPlane(api huma.API) {
 		}),
 	}), "user_id"), s.listUserCollections)
 
+	huma.Register(api, v1.ProfileGated(v1.Optional(huma.Operation{
+		OperationID: "listUserWorkRecords",
+		Method:      http.MethodGet,
+		Path:        "/users/{user_id}/work-records",
+		Summary:     "List a user's play records",
+		Description: "A cursor collection of the works a user has a play state on, newest state change first, each with the user's playtime and rating. " +
+			"A work with only a playtime or only a rating is not listed. Play records are public on every NextMoe site unless the user turns them off; " +
+			"the user always reads their own. state_counts comes with the first page and ignores the state filter, so one request fills a row of tabs.",
+		Tags:        []string{"users"},
+		Middlewares: huma.Middlewares{withAccessToken},
+		Responses: problemResponses(map[int]string{
+			400: "UNKNOWN_ENUM_VALUE for an unknown state; INVALID_CURSOR, including a cursor from another user, state or include_nsfw; LIMIT_TOO_LARGE.",
+			401: "INVALID_CREDENTIAL for a bad Bearer.",
+			403: "ACCOUNT_BANNED when the caller's account is banned. PLAY_RECORDS_PRIVATE when the user keeps their play records private and the caller is not that user.",
+			404: "NOT_FOUND when the account does not exist or is not renderable.",
+			503: "SERVICE_UNAVAILABLE when the catalog or the account service cannot be reached.",
+		}),
+	}), "user_id"), s.listUserWorkRecords)
+
+	huma.Register(api, v1.Required(huma.Operation{
+		OperationID: "getMyPrivacySettings",
+		Method:      http.MethodGet,
+		Path:        "/me/privacy-settings",
+		Summary:     "Get the caller's privacy switches",
+		Description: "The switches are stored by NextMoe and shared by every NextMoe site.",
+		Tags:        []string{"me"},
+		Middlewares: huma.Middlewares{withAccessToken},
+		Responses: problemResponses(map[int]string{
+			403: "ACCOUNT_BANNED.",
+			503: "SERVICE_UNAVAILABLE when the catalog cannot be reached.",
+		}),
+	}), s.getMyPrivacySettings)
+
+	huma.Register(api, v1.Required(huma.Operation{
+		OperationID: "updateMyPrivacySettings",
+		Method:      http.MethodPatch,
+		Path:        "/me/privacy-settings",
+		Summary:     "Change the caller's privacy switches",
+		Description: "Partial update: only the switches sent change. An empty body is VALIDATION_FAILED. " +
+			"Turning is_play_records_public off makes listUserWorkRecords answer PLAY_RECORDS_PRIVATE to everyone but the caller, here and on every other NextMoe site.",
+		Tags:        []string{"me"},
+		Middlewares: huma.Middlewares{withAccessToken},
+		Responses: problemResponses(map[int]string{
+			403: "ACCOUNT_BANNED.",
+			422: "VALIDATION_FAILED when the body sends no switch.",
+			503: "SERVICE_UNAVAILABLE when the catalog cannot be reached.",
+		}),
+	}), s.updateMyPrivacySettings)
+
 	huma.Register(api, v1.Optional(huma.Operation{
 		OperationID: "getCollectionAlias",
 		Method:      http.MethodGet,

@@ -235,6 +235,43 @@ describe('useCursorList', () => {
     second.stop()
   })
 
+  it('keeps the first page head through loadMore and a history pop', async () => {
+    type Counted = {
+      items: Item[]
+      next_cursor?: string
+      counts: { a: number }
+    }
+    const page = (items: Item[], next?: string, counts?: { a: number }) => ({
+      data: {
+        items,
+        ...(next ? { next_cursor: next } : {}),
+        ...(counts ? { counts } : {})
+      } as Counted,
+      response: new Response(null, { status: 200 })
+    })
+    const fetchPage = vi
+      .fn()
+      .mockResolvedValueOnce(page([item('1')], 'c2', { a: 7 }))
+      .mockResolvedValueOnce(page([item('2')]))
+    const scope = effectScope()
+    const first = await scope.run(() =>
+      useCursorList<Item, Counted>('head-1', fetchPage)
+    )
+    expect(first!.head.value).toEqual({ counts: { a: 7 } })
+    await first!.loadMore()
+    expect(first!.head.value).toEqual({ counts: { a: 7 } })
+    scope.stop()
+
+    isHistoryPop.mockReturnValue(true)
+    const again = effectScope()
+    const second = await again.run(() =>
+      useCursorList<Item, Counted>('head-1', fetchPage)
+    )
+    expect(fetchPage).toHaveBeenCalledTimes(2)
+    expect(second!.head.value).toEqual({ counts: { a: 7 } })
+    again.stop()
+  })
+
   it('refetches on refresh during a pop instead of serving the snapshot', async () => {
     const fetchPage = vi
       .fn()

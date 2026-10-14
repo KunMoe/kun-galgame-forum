@@ -185,6 +185,12 @@ export const kunUserMainNav = (
       icon: 'lucide:activity'
     },
     {
+      value: 'library',
+      textValue: '游戏库',
+      href: `${base}/library`,
+      icon: 'lucide:library'
+    },
+    {
       value: 'collection',
       textValue: '收藏',
       href: `${base}/collection/galgame`,
@@ -263,7 +269,8 @@ export const userSegmentHref = (userId: number, segment: string): string => {
     quiz: `${base}/quiz`,
     resource: `${base}/resource/valid`,
     toolset: `${base}/toolset`,
-    playtime: `${base}/playtime`
+    playtime: `${base}/playtime`,
+    library: `${base}/library`
   }
   return map[segment] ?? `${base}/${segment}`
 }

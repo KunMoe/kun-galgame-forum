@@ -79,6 +79,9 @@ type CatalogUser interface {
 	DeleteFolderItem(ctx context.Context, token string, folderID, workID int64) error
 	ModeratePatchFolder(ctx context.Context, token string, folderID int64, in catalogclient.FolderWrite) (*catalogclient.Folder, error)
 	ModerateDeleteFolder(ctx context.Context, token string, folderID int64) error
+	WorkRecords(ctx context.Context, token string, q catalogclient.WorkRecordsQuery) (catalogclient.WorkRecordsPage, error)
+	MyPrivacy(ctx context.Context, token string) (catalogclient.PrivacySettings, error)
+	PatchMyPrivacy(ctx context.Context, token, playRecords string) (catalogclient.PrivacySettings, error)
 }
 
 type userLookup interface {

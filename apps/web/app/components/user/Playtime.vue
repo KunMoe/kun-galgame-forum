@@ -1,18 +1,18 @@
 <script setup lang="ts">
 import {
-  KUN_GALGAME_PLAY_STATE_DONE,
   KUN_GALGAME_PLAY_STATE_MAP,
+  kunPlayStateColor,
   type KunGalgamePlayStateRead
 } from '~/constants/galgame-playtime'
 import type { WorkPlaytimeList } from '#shared/utils/api/schemas'
 
 const { allowsNsfw, stanceKey } = useContentStance()
+const { id: myId } = storeToRefs(usePersistUserStore())
 const nameOf = useCatalogName()
 const pageData = reactive({ page: usePageQuery(), limit: 24 })
 
 const { data, status, problem } = await useApi<WorkPlaytimeList>(
-  () =>
-    `me-playtimes:${pageData.page}:${pageData.limit}:${stanceKey.value}`,
+  () => `me-playtimes:${pageData.page}:${pageData.limit}:${stanceKey.value}`,
   (api, { signal }) =>
     api.GET('/me/playtimes', {
       params: {
@@ -40,26 +40,22 @@ const namesOf = (item: WorkPlaytimeList['items'][number]) =>
 
 const bannerOf = (item: WorkPlaytimeList['items'][number]) =>
   item.work_summary.banner ?? item.work_summary.cover
-
-const statusColor = (value: string) => {
-  if (
-    value === 'done' ||
-    (KUN_GALGAME_PLAY_STATE_DONE as readonly string[]).includes(value)
-  ) {
-    return 'success'
-  }
-  if (value === 'dropped') return 'danger'
-  return 'default'
-}
 </script>
 
 <template>
   <div class="space-y-3">
-    <KunInfo
-      color="info"
-      title="游玩记录默认公开"
-      description="你标记的游玩状态和上报的时长对所有人公开, 和评分一样。设置页即将加入「公开我的游玩记录」开关, 关闭后只有你自己能看到。"
-    />
+    <KunInfo color="info" title="游玩记录默认公开">
+      你标记的游玩状态和上报的时长会显示在主页的「游戏库」里, 所有人都能看到,
+      和评分一样。
+      <KunLink
+        :to="`/user/${myId}/setting#play-records`"
+        size="sm"
+        underline="always"
+      >
+        在设置里关闭
+      </KunLink>
+      后只有你自己能看到。
+    </KunInfo>
 
     <p v-if="summary" class="text-default-600 text-sm">{{ summary }}</p>
     <p v-if="data?.is_truncated" class="text-default-500 text-sm">
@@ -101,7 +97,7 @@ const statusColor = (value: string) => {
             <KunChip
               size="sm"
               variant="flat"
-              :color="statusColor(item.play_state)"
+              :color="kunPlayStateColor(item.play_state)"
             >
               {{
                 KUN_GALGAME_PLAY_STATE_MAP[
