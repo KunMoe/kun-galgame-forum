@@ -233,8 +233,7 @@ export const userGalgameGroupOptions = (isOwner: boolean) => {
     { value: 'resource', label: '资源', icon: 'lucide:package' },
     { value: 'toolset', label: '工具', icon: 'lucide:wrench' }
   ]
-  // Catalog only ever hands a user their own playtime rows, so this tab cannot
-  // exist on someone else's profile.
+  // The tab reads /me/playtimes, which only ever answers the caller.
   if (isOwner) {
     options.push({ value: 'playtime', label: '时长', icon: 'lucide:clock' })
   }
