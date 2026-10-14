@@ -98,6 +98,29 @@ export const KUN_GALGAME_PLAY_STATE_DONE = [
   'done_all'
 ] as const
 
+export const kunPlayStateColor = (value: string) => {
+  if (
+    value === 'done' ||
+    (KUN_GALGAME_PLAY_STATE_DONE as readonly string[]).includes(value)
+  ) {
+    return 'success'
+  }
+  if (value === 'dropped') return 'danger'
+  return 'default'
+}
+
+export const KUN_GALGAME_LIBRARY_TABS = [
+  { value: 'all', label: '全部', icon: 'lucide:library' },
+  { value: 'wish', label: '想玩', icon: 'lucide:bookmark' },
+  { value: 'doing', label: '在玩', icon: 'lucide:play' },
+  { value: 'done', label: '玩过', icon: 'lucide:flag' },
+  { value: 'on_hold', label: '搁置', icon: 'lucide:pause' },
+  { value: 'dropped', label: '抛弃', icon: 'lucide:x' }
+] as const
+
+export type KunGalgameLibraryTab =
+  (typeof KUN_GALGAME_LIBRARY_TABS)[number]['value']
+
 // Both floors are catalog's, not ours: it refuses anything above the ceiling,
 // and its aggregate ignores anything under the floor.
 export const KUN_GALGAME_PLAYTIME_HOURS_MAX = 1000

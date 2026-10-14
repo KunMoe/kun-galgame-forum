@@ -208,6 +208,18 @@ func (f *fakeCatalogUser) ModerateDeleteFolder(context.Context, string, int64) e
 	return catalogclient.ErrNotFound
 }
 
+func (f *fakeCatalogUser) WorkRecords(context.Context, string, catalogclient.WorkRecordsQuery) (catalogclient.WorkRecordsPage, error) {
+	return catalogclient.WorkRecordsPage{}, nil
+}
+
+func (f *fakeCatalogUser) MyPrivacy(context.Context, string) (catalogclient.PrivacySettings, error) {
+	return catalogclient.PrivacySettings{}, nil
+}
+
+func (f *fakeCatalogUser) PatchMyPrivacy(context.Context, string, string) (catalogclient.PrivacySettings, error) {
+	return catalogclient.PrivacySettings{}, nil
+}
+
 func newWorkFix(t *testing.T) *workFix {
 	t.Helper()
 	f := newWriteFix(t, nil)

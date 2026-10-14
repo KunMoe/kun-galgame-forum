@@ -317,6 +317,15 @@
     },
     {
       "object": "problem_type",
+      "code": "PLAY_RECORDS_PRIVATE",
+      "domain": "kungal",
+      "status": 403,
+      "type": "https://developer.nextmoe.dev/problems/kungal/play-records-private",
+      "title": "Play records private",
+      "description": "The account keeps its play states and playtimes private on every NextMoe site. Only the account itself can read them. Its ratings stay public."
+    },
+    {
+      "object": "problem_type",
       "code": "POLL_CLOSED",
       "domain": "kungal",
       "status": 409,

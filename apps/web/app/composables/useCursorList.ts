@@ -5,22 +5,27 @@ import { useApiClient } from './useApi'
 
 type Page<Item> = { items: Item[]; next_cursor?: string; total?: number }
 
+type Head<P> = Omit<P, 'items' | 'next_cursor' | 'total'>
+
 type Snapshot<Item> = {
   items: Item[]
   nextCursor: string | undefined
   total: number | undefined
+  head: Record<string, unknown>
 }
 
-type FetchPage<Item> = (
+type FetchPage<Item, P extends Page<Item>> = (
   api: ApiClient,
   cursor: string | undefined,
   ctx: { signal?: AbortSignal }
-) => Promise<{ data?: Page<Item>; error?: unknown; response: Response }>
+) => Promise<{ data?: P; error?: unknown; response: Response }>
 
-type UseCursorListReturn<Item> = {
+type UseCursorListReturn<Item, P extends Page<Item>> = {
   items: Ref<Item[]>
   hasMore: Ref<boolean>
   total: Ref<number | undefined>
+  // What the first page carries besides its items, such as facet counts.
+  head: Ref<Head<P> | undefined>
   problem: ComputedRef<ClientProblem | null>
   status: ReturnType<typeof useAsyncData>['status']
   loadingMore: Ref<boolean>
@@ -47,14 +52,18 @@ const rememberSnapshot = <Item>(key: string, snapshot: Snapshot<Item>) => {
   }
 }
 
-export const useCursorList = <Item extends { id: string }>(
+export const useCursorList = <
+  Item extends { id: string },
+  P extends Page<Item> = Page<Item>
+>(
   key: MaybeRefOrGetter<string>,
-  fetchPage: FetchPage<Item>
-): UseCursorListReturn<Item> & Promise<UseCursorListReturn<Item>> => {
+  fetchPage: FetchPage<Item, P>
+): UseCursorListReturn<Item, P> & Promise<UseCursorListReturn<Item, P>> => {
   const api = useApiClient()
   const items = ref<Item[]>([]) as Ref<Item[]>
   const hasMore = ref(false)
   const total = ref<number | undefined>(undefined)
+  const head = ref<Head<P> | undefined>(undefined) as Ref<Head<P> | undefined>
   const nextCursor = ref<string | undefined>(undefined)
   const loadingMore = ref(false)
   let loadMoreGeneration = 0
@@ -80,6 +89,7 @@ export const useCursorList = <Item extends { id: string }>(
         return {
           ok: true as const,
           data: {
+            ...snap.head,
             items: snap.items,
             ...(snap.nextCursor ? { next_cursor: snap.nextCursor } : {}),
             ...(snap.total === undefined ? {} : { total: snap.total })
@@ -89,15 +99,23 @@ export const useCursorList = <Item extends { id: string }>(
     }
   )
 
-  const applyPage = (page: Page<Item>, dataKey: string) => {
-    items.value = page.items
-    nextCursor.value = page.next_cursor
-    hasMore.value = Boolean(page.next_cursor)
-    total.value = page.total
+  const applyPage = (page: P, dataKey: string) => {
+    const {
+      items: pageItems,
+      next_cursor: pageCursor,
+      total: pageTotal,
+      ...rest
+    } = page
+    items.value = pageItems
+    nextCursor.value = pageCursor
+    hasMore.value = Boolean(pageCursor)
+    total.value = pageTotal
+    head.value = rest as Head<P>
     rememberSnapshot(dataKey, {
-      items: page.items,
-      nextCursor: page.next_cursor,
-      total: page.total
+      items: pageItems,
+      nextCursor: pageCursor,
+      total: pageTotal,
+      head: rest
     })
   }
 
@@ -117,6 +135,7 @@ export const useCursorList = <Item extends { id: string }>(
           hasMore.value = false
           nextCursor.value = undefined
           total.value = undefined
+          head.value = undefined
           seenKey = curr.dataKey
           return
         }
@@ -131,6 +150,7 @@ export const useCursorList = <Item extends { id: string }>(
         hasMore.value = false
         nextCursor.value = undefined
         total.value = undefined
+        head.value = undefined
       }
     },
     { immediate: true, flush: 'sync' }
@@ -172,14 +192,16 @@ export const useCursorList = <Item extends { id: string }>(
     rememberSnapshot(dataKey, {
       items: merged,
       nextCursor: result.data.next_cursor,
-      total: total.value
+      total: total.value,
+      head: { ...head.value }
     })
   }
 
-  const result: UseCursorListReturn<Item> = {
+  const result: UseCursorListReturn<Item, P> = {
     items,
     hasMore,
     total,
+    head,
     problem,
     status: asyncData.status,
     loadingMore,

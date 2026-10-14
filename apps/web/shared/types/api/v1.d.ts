@@ -2276,6 +2276,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/me/privacy-settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the caller's privacy switches
+         * @description The switches are stored by NextMoe and shared by every NextMoe site.
+         */
+        get: operations["getMyPrivacySettings"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Change the caller's privacy switches
+         * @description Partial update: only the switches sent change. An empty body is VALIDATION_FAILED. Turning is_play_records_public off makes listUserWorkRecords answer PLAY_RECORDS_PRIVATE to everyone but the caller, here and on every other NextMoe site.
+         */
+        patch: operations["updateMyPrivacySettings"];
+        trace?: never;
+    };
     "/me/profile": {
         parameters: {
             query?: never;
@@ -4749,6 +4773,26 @@ export interface paths {
          * @description Lists wall comments related to a user as a cursor collection. relation=authored is ordered by community post id, newest first; imported historical posts may have non-monotonic times. relation=liked is ordered by when the user liked the comment, newest first. A page may be shorter than limit while next_cursor is present. NOT_FOUND when the account does not exist or is not renderable. PROFILE_SIGN_IN_REQUIRED when the caller is anonymous and user_id names a user who shows their profile to signed-in users only.
          */
         get: operations["listUserWallComments"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/users/{user_id}/work-records": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List a user's play records
+         * @description A cursor collection of the works a user has a play state on, newest state change first, each with the user's playtime and rating. A work with only a playtime or only a rating is not listed. Play records are public on every NextMoe site unless the user turns them off; the user always reads their own. state_counts comes with the first page and ignores the state filter, so one request fills a row of tabs. PROFILE_SIGN_IN_REQUIRED when the caller is anonymous and user_id names a user who shows their profile to signed-in users only.
+         */
+        get: operations["listUserWorkRecords"];
         put?: never;
         post?: never;
         delete?: never;
@@ -10615,6 +10659,24 @@ export interface components {
         };
         /** @enum {string} */
         Preset: "cover" | "screenshot";
+        PrivacySettings: {
+            /**
+             * Format: date-time
+             * @description When the caller last changed a switch. null when never.
+             */
+            changed_at: string | null;
+            /** @description Whether everyone can read the caller's play states and playtimes on every NextMoe site. true until the caller first turns it off. Ratings are public either way. */
+            is_play_records_public: boolean;
+            /**
+             * @description Type discriminant. Always privacy_settings.
+             * @constant
+             */
+            object: "privacy_settings";
+        };
+        PrivacySettingsWrite: {
+            /** @description false keeps the caller's play states and playtimes to themselves on every NextMoe site; true makes them public again. Omitted leaves it unchanged. */
+            is_play_records_public?: boolean;
+        };
         Problem: {
             /** @description Top-level error code. UPPER_SNAKE. */
             code: string;
@@ -14398,6 +14460,42 @@ export interface components {
         UserTopicRelation: "authored" | "liked" | "upvoted" | "favorited" | "hidden";
         /** @enum {string} */
         UserWallCommentRelation: "authored" | "liked";
+        UserWorkRecord: {
+            /**
+             * @description Type discriminant. Always work_record.
+             * @constant
+             */
+            object: "work_record";
+            /** @description The account's play state. done is a finish whose completion another application left unstated. Never null on this list, which holds only works with a play state. */
+            play_state: components["schemas"]["PlayState"] | null;
+            /**
+             * Format: int64
+             * @description The most minutes any application reported for the account. null when none is recorded or the report was withdrawn.
+             */
+            playtime_minutes: number | null;
+            /**
+             * Format: date-time
+             * @description When the play state last changed. Items are ordered by it, newest first.
+             */
+            state_updated_at: string;
+            /** @description The account's rating of the work. null when it has none. */
+            user_rating: components["schemas"]["WorkRecordRating"] | null;
+            /** @description The work this record is about. */
+            work_summary: components["schemas"]["WorkSummary"];
+        };
+        UserWorkRecordList: {
+            /** @description Members of this page. Empty array, never null. */
+            items: components["schemas"]["UserWorkRecord"][];
+            /** @description Opaque keyset cursor. Omitted on the last page. */
+            next_cursor?: string;
+            /**
+             * @description Type discriminant. Always list.
+             * @constant
+             */
+            object: "list";
+            /** @description Works per play state, ignoring the state filter but not include_nsfw. Present on the first page only, the one requested without cursor. A work the forum cannot render is counted here but missing from items. */
+            state_counts?: components["schemas"]["WorkStateCounts"];
+        };
         /** @enum {string} */
         UserWorkRelation: "published" | "contributed" | "liked";
         /** @enum {string} */
@@ -15384,6 +15482,15 @@ export interface components {
             /** @description The rating. Absent deletes it. */
             rating_input?: components["schemas"]["RecordRating"];
         };
+        WorkRecordRating: {
+            /** @description Rating id. GET /ratings/{rating_id} reads the rating. */
+            id: string;
+            /**
+             * Format: int64
+             * @description The overall score.
+             */
+            overall: number;
+        };
         WorkRef: {
             /** @description The portrait cover at its original size, never the 16:9 crop. null when the work has none. */
             cover: components["schemas"]["Image"] | null;
@@ -15451,6 +15558,35 @@ export interface components {
         };
         /** @enum {string} */
         WorkSort: "resource_updated_desc" | "resource_updated_asc" | "created_desc" | "created_asc" | "view_desc" | "view_asc" | "view_1d_desc" | "view_1d_asc" | "view_7d_desc" | "view_7d_asc" | "view_30d_desc" | "view_30d_asc" | "release_date_desc" | "release_date_asc" | "rating_desc" | "rating_asc";
+        /** @enum {string} */
+        WorkState: "wish" | "doing" | "done" | "on_hold" | "dropped";
+        WorkStateCounts: {
+            /**
+             * Format: int64
+             * @description Works the account is playing.
+             */
+            doing: number;
+            /**
+             * Format: int64
+             * @description Works the account finished, whatever the completion.
+             */
+            done: number;
+            /**
+             * Format: int64
+             * @description Works the account dropped.
+             */
+            dropped: number;
+            /**
+             * Format: int64
+             * @description Works the account put on hold.
+             */
+            on_hold: number;
+            /**
+             * Format: int64
+             * @description Works the account wants to play.
+             */
+            wish: number;
+        };
         WorkStats: {
             /**
              * Format: int64
@@ -28227,6 +28363,158 @@ export interface operations {
                 };
             };
             /** @description SERVICE_UNAVAILABLE when the account service cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getMyPrivacySettings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PrivacySettings"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the catalog cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    updateMyPrivacySettings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PrivacySettingsWrite"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PrivacySettings"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description VALIDATION_FAILED when the body sends no switch. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the catalog cannot be reached. */
             503: {
                 headers: {
                     [name: string]: unknown;
@@ -41364,6 +41652,92 @@ export interface operations {
                 };
             };
             /** @description SERVICE_UNAVAILABLE when the account service or community service cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listUserWorkRecords: {
+        parameters: {
+            query?: {
+                /** @description Only works in these play states, comma-separated. Omitted lists every state. */
+                state?: components["schemas"]["WorkState"][];
+                /** @description Opaque keyset cursor from a previous page of this collection. */
+                cursor?: string;
+                /** @description Page size. 1–100, default 24. Values above 100 are rejected, not clamped. */
+                limit?: number;
+                /** @description When true, adult works are included, in items and in state_counts. Default false. */
+                include_nsfw?: boolean;
+            };
+            header?: never;
+            path: {
+                /** @description User id. */
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserWorkRecordList"];
+                };
+            };
+            /** @description UNKNOWN_ENUM_VALUE for an unknown state; INVALID_CURSOR, including a cursor from another user, state or include_nsfw; LIMIT_TOO_LARGE. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description INVALID_CREDENTIAL for a bad Bearer. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description ACCOUNT_BANNED when the caller's account is banned. PLAY_RECORDS_PRIVATE when the user keeps their play records private and the caller is not that user. PROFILE_SIGN_IN_REQUIRED when the caller is anonymous and user_id names a user who shows their profile to signed-in users only. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the account does not exist or is not renderable. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the catalog or the account service cannot be reached. */
             503: {
                 headers: {
                     [name: string]: unknown;

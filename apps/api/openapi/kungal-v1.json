@@ -13472,6 +13472,46 @@
         "type": "string",
         "x-vocabulary-closed": true
       },
+      "PrivacySettings": {
+        "properties": {
+          "changed_at": {
+            "description": "When the caller last changed a switch. null when never.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "is_play_records_public": {
+            "description": "Whether everyone can read the caller's play states and playtimes on every NextMoe site. true until the caller first turns it off. Ratings are public either way.",
+            "type": "boolean"
+          },
+          "object": {
+            "const": "privacy_settings",
+            "description": "Type discriminant. Always privacy_settings.",
+            "maxLength": 16,
+            "type": "string"
+          }
+        },
+        "required": [
+          "object",
+          "is_play_records_public",
+          "changed_at"
+        ],
+        "type": "object"
+      },
+      "PrivacySettingsWrite": {
+        "properties": {
+          "is_play_records_public": {
+            "description": "false keeps the caller's play states and playtimes to themselves on every NextMoe site; true makes them public again. Omitted leaves it unchanged.",
+            "type": "boolean"
+          }
+        },
+        "type": "object"
+      },
       "Problem": {
         "properties": {
           "code": {
@@ -23630,6 +23670,100 @@
         "type": "string",
         "x-vocabulary-closed": true
       },
+      "UserWorkRecord": {
+        "properties": {
+          "object": {
+            "const": "work_record",
+            "description": "Type discriminant. Always work_record.",
+            "maxLength": 11,
+            "type": "string"
+          },
+          "play_state": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PlayState"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The account's play state. done is a finish whose completion another application left unstated. Never null on this list, which holds only works with a play state."
+          },
+          "playtime_minutes": {
+            "description": "The most minutes any application reported for the account. null when none is recorded or the report was withdrawn.",
+            "format": "int64",
+            "minimum": 10,
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "state_updated_at": {
+            "description": "When the play state last changed. Items are ordered by it, newest first.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": "string"
+          },
+          "user_rating": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WorkRecordRating"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The account's rating of the work. null when it has none."
+          },
+          "work_summary": {
+            "$ref": "#/components/schemas/WorkSummary",
+            "description": "The work this record is about."
+          }
+        },
+        "required": [
+          "object",
+          "work_summary",
+          "play_state",
+          "state_updated_at",
+          "playtime_minutes",
+          "user_rating"
+        ],
+        "type": "object"
+      },
+      "UserWorkRecordList": {
+        "properties": {
+          "items": {
+            "description": "Members of this page. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/UserWorkRecord"
+            },
+            "type": "array"
+          },
+          "next_cursor": {
+            "description": "Opaque keyset cursor. Omitted on the last page.",
+            "maxLength": 512,
+            "pattern": "^cur_[A-Za-z0-9_-]+$",
+            "type": "string"
+          },
+          "object": {
+            "const": "list",
+            "description": "Type discriminant. Always list.",
+            "maxLength": 4,
+            "type": "string"
+          },
+          "state_counts": {
+            "$ref": "#/components/schemas/WorkStateCounts",
+            "description": "Works per play state, ignoring the state filter but not include_nsfw. Present on the first page only, the one requested without cursor. A work the forum cannot render is counted here but missing from items."
+          }
+        },
+        "required": [
+          "object",
+          "items"
+        ],
+        "type": "object"
+      },
       "UserWorkRelation": {
         "enum": [
           "published",
@@ -26370,6 +26504,29 @@
         },
         "type": "object"
       },
+      "WorkRecordRating": {
+        "properties": {
+          "id": {
+            "description": "Rating id. GET /ratings/{rating_id} reads the rating.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "overall": {
+            "description": "The overall score.",
+            "format": "int64",
+            "maximum": 10,
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "overall"
+        ],
+        "type": "object"
+      },
       "WorkRef": {
         "properties": {
           "cover": {
@@ -26576,6 +26733,60 @@
         "maxLength": 21,
         "type": "string",
         "x-vocabulary-closed": true
+      },
+      "WorkState": {
+        "enum": [
+          "wish",
+          "doing",
+          "done",
+          "on_hold",
+          "dropped"
+        ],
+        "maxLength": 7,
+        "type": "string",
+        "x-vocabulary-closed": true
+      },
+      "WorkStateCounts": {
+        "properties": {
+          "doing": {
+            "description": "Works the account is playing.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "done": {
+            "description": "Works the account finished, whatever the completion.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "dropped": {
+            "description": "Works the account dropped.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "on_hold": {
+            "description": "Works the account put on hold.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "wish": {
+            "description": "Works the account wants to play.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "wish",
+          "doing",
+          "done",
+          "on_hold",
+          "dropped"
+        ],
+        "type": "object"
       },
       "WorkStats": {
         "properties": {
@@ -45264,6 +45475,194 @@
         "summary": "Replace the caller's cloud preferences",
         "tags": [
           "users"
+        ]
+      }
+    },
+    "/me/privacy-settings": {
+      "get": {
+        "description": "The switches are stored by NextMoe and shared by every NextMoe site.",
+        "operationId": "getMyPrivacySettings",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PrivacySettings"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "ACCOUNT_BANNED."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the catalog cannot be reached."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get the caller's privacy switches",
+        "tags": [
+          "me"
+        ]
+      },
+      "patch": {
+        "description": "Partial update: only the switches sent change. An empty body is VALIDATION_FAILED. Turning is_play_records_public off makes listUserWorkRecords answer PLAY_RECORDS_PRIVATE to everyone but the caller, here and on every other NextMoe site.",
+        "operationId": "updateMyPrivacySettings",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PrivacySettingsWrite"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PrivacySettings"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "ACCOUNT_BANNED."
+          },
+          "413": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Request Entity Too Large"
+          },
+          "415": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unsupported Media Type"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED when the body sends no switch."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the catalog cannot be reached."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Change the caller's privacy switches",
+        "tags": [
+          "me"
         ]
       }
     },
@@ -65052,6 +65451,163 @@
           {}
         ],
         "summary": "List a user's wall comments",
+        "tags": [
+          "users"
+        ]
+      }
+    },
+    "/users/{user_id}/work-records": {
+      "get": {
+        "description": "A cursor collection of the works a user has a play state on, newest state change first, each with the user's playtime and rating. A work with only a playtime or only a rating is not listed. Play records are public on every NextMoe site unless the user turns them off; the user always reads their own. state_counts comes with the first page and ignores the state filter, so one request fills a row of tabs. PROFILE_SIGN_IN_REQUIRED when the caller is anonymous and user_id names a user who shows their profile to signed-in users only.",
+        "operationId": "listUserWorkRecords",
+        "parameters": [
+          {
+            "description": "User id.",
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "description": "User id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Only works in these play states, comma-separated. Omitted lists every state.",
+            "explode": false,
+            "in": "query",
+            "name": "state",
+            "schema": {
+              "description": "Only works in these play states, comma-separated. Omitted lists every state.",
+              "items": {
+                "$ref": "#/components/schemas/WorkState",
+                "description": "A play state on catalog's coarse axis. done covers every finish, whatever its completion."
+              },
+              "maxItems": 5,
+              "type": "array"
+            }
+          },
+          {
+            "description": "Opaque keyset cursor from a previous page of this collection.",
+            "explode": false,
+            "in": "query",
+            "name": "cursor",
+            "schema": {
+              "description": "Opaque keyset cursor from a previous page of this collection.",
+              "maxLength": 512,
+              "pattern": "^cur_[A-Za-z0-9_-]+$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Page size. 1–100, default 24. Values above 100 are rejected, not clamped.",
+            "explode": false,
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 24,
+              "description": "Page size. 1–100, default 24. Values above 100 are rejected, not clamped.",
+              "format": "int64",
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "When true, adult works are included, in items and in state_counts. Default false.",
+            "explode": false,
+            "in": "query",
+            "name": "include_nsfw",
+            "schema": {
+              "default": false,
+              "description": "When true, adult works are included, in items and in state_counts. Default false.",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserWorkRecordList"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "UNKNOWN_ENUM_VALUE for an unknown state; INVALID_CURSOR, including a cursor from another user, state or include_nsfw; LIMIT_TOO_LARGE."
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "INVALID_CREDENTIAL for a bad Bearer."
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "ACCOUNT_BANNED when the caller's account is banned. PLAY_RECORDS_PRIVATE when the user keeps their play records private and the caller is not that user. PROFILE_SIGN_IN_REQUIRED when the caller is anonymous and user_id names a user who shows their profile to signed-in users only."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when the account does not exist or is not renderable."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the catalog or the account service cannot be reached."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          },
+          {}
+        ],
+        "summary": "List a user's play records",
         "tags": [
           "users"
         ]

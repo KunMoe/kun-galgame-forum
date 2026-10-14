@@ -15,6 +15,7 @@ defineProps<{
     <UserSettingPassword />
     <UserSettingProfileVisibility />
     <UserSettingActivityVisibility />
+    <UserSettingPlayRecordsVisibility />
     <KunCard :is-hoverable="false" content-class="space-y-4">
       <MessageNotificationPreference />
     </KunCard>

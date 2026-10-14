@@ -130,6 +130,7 @@ GET    /api/v1/me/notifications/summary               cors.New → v1Headers →
 GET    /api/v1/me/permissions                         cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/me/playtimes                           cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/me/preferences                         cors.New → v1Headers → fiberAdapter.Handle
+GET    /api/v1/me/privacy-settings                    cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/me/profile-settings                    cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/me/quiz-states                         cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/me/shop                                cors.New → v1Headers → fiberAdapter.Handle
@@ -221,6 +222,7 @@ GET    /api/v1/users/:user_id/replies                 cors.New → v1Headers →
 GET    /api/v1/users/:user_id/toolsets                cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/users/:user_id/topics                  cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/users/:user_id/wall-comments           cors.New → v1Headers → fiberAdapter.Handle
+GET    /api/v1/users/:user_id/work-records            cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/users/:user_id/works                   cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/wall-comments                          cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/wall-comments/:wall_comment_id         cors.New → v1Headers → fiberAdapter.Handle
@@ -267,6 +269,7 @@ PATCH  /api/v1/lotteries/:lottery_id/winners/:winner_id cors.New → v1Headers �
 PATCH  /api/v1/me/conversations/:user_id/messages/:message_id cors.New → v1Headers → fiberAdapter.Handle
 PATCH  /api/v1/me/following/:user_id                  cors.New → v1Headers → fiberAdapter.Handle
 PATCH  /api/v1/me/news-submissions/:news_submission_id cors.New → v1Headers → fiberAdapter.Handle
+PATCH  /api/v1/me/privacy-settings                    cors.New → v1Headers → fiberAdapter.Handle
 PATCH  /api/v1/me/profile                             cors.New → v1Headers → fiberAdapter.Handle
 PATCH  /api/v1/polls/:poll_id                         cors.New → v1Headers → fiberAdapter.Handle
 PATCH  /api/v1/quizzes/:quiz_id                       cors.New → v1Headers → fiberAdapter.Handle
