@@ -13,7 +13,6 @@ import (
 )
 
 var personPage = map[string]func(string) string{
-	"vndb":    func(id string) string { return "https://vndb.org/s" + id },
 	"bangumi": func(id string) string { return "https://bgm.tv/person/" + id },
 	"erogamescape": func(id string) string {
 		return "https://erogamescape.dyndns.org/~ap2/ero/toukei_kaiseki/creater.php?creater=" + id
@@ -120,6 +119,14 @@ func (s *Service) getCreditName(ctx context.Context, in *creditNamePathInput) (*
 	for _, l := range n.Links {
 		links = workrepr.AppendLink(links, l.Source, l.URL)
 	}
+	seenURLs := make(map[string]bool, len(links))
+	links = slices.DeleteFunc(links, func(link workrepr.CatalogLink) bool {
+		if seenURLs[link.URL] {
+			return true
+		}
+		seenURLs[link.URL] = true
+		return false
+	})
 	siblings := make([]CreditNameRef, 0, len(n.Siblings))
 	for i := range n.Siblings {
 		siblings = append(siblings, creditNameRef(&n.Siblings[i]))
