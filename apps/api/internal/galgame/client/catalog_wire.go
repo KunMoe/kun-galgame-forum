@@ -171,6 +171,7 @@ type catWorkEngine struct {
 type catWorkLink struct {
 	Source string `json:"source"`
 	URL    string `json:"url"`
+	Kind   string `json:"kind"`
 }
 
 type catPlaytime struct {

@@ -77,3 +77,21 @@ func TestCreditsOfMergesRowsOfOneCreditName(t *testing.T) {
 		t.Errorf("481 voiced %q, want an empty array: naming a spoiler character gives it away", got)
 	}
 }
+
+func TestLinksOfLeavesIdentityToExternalRefs(t *testing.T) {
+	var d client.CatalogWorkDetail
+	if err := json.Unmarshal([]byte(`{"id": 1, "links": [
+		{"source": "vndb", "url": "https://vndb.org/v17", "kind": "identity"},
+		{"source": "official_site", "url": "https://maker.example", "kind": "related"},
+		{"source": "twitter", "url": "https://x.com/maker"}
+	]}`), &d); err != nil {
+		t.Fatal(err)
+	}
+	var urls []string
+	for _, l := range linksOf(&d) {
+		urls = append(urls, l.URL)
+	}
+	if want := []string{"https://maker.example", "https://x.com/maker"}; !slices.Equal(urls, want) {
+		t.Fatalf("links = %v, want %v: the work page draws identity links from external_refs", urls, want)
+	}
+}

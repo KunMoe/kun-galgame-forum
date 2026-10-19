@@ -111,6 +111,11 @@ func aliasesOf(d *client.CatalogWorkDetail, displayName string) []entityapiv1.Al
 func linksOf(d *client.CatalogWorkDetail) []workrepr.CatalogLink {
 	out := []workrepr.CatalogLink{}
 	for _, l := range d.Links {
+		// Catalog 2.52.0 adds identity links (vndb, bgm, EGS) to links. The work page
+		// still draws those from external_refs, so passing them on shows each one twice.
+		if l.Kind == "identity" {
+			continue
+		}
 		out = workrepr.AppendLink(out, l.Source, l.URL)
 	}
 	return out
