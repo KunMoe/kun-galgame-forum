@@ -169,9 +169,9 @@ type catWorkEngine struct {
 }
 
 type catWorkLink struct {
-	Source string `json:"source"`
-	URL    string `json:"url"`
-	Kind   string `json:"kind"`
+	Source     string `json:"source"`
+	URL        string `json:"url"`
+	IsIdentity bool   `json:"is_identity"`
 }
 
 type catPlaytime struct {

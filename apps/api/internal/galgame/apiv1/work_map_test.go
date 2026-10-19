@@ -81,8 +81,8 @@ func TestCreditsOfMergesRowsOfOneCreditName(t *testing.T) {
 func TestLinksOfLeavesIdentityToExternalRefs(t *testing.T) {
 	var d client.CatalogWorkDetail
 	if err := json.Unmarshal([]byte(`{"id": 1, "links": [
-		{"source": "vndb", "url": "https://vndb.org/v17", "kind": "identity"},
-		{"source": "official_site", "url": "https://maker.example", "kind": "related"},
+		{"source": "vndb", "url": "https://vndb.org/v17", "is_identity": true, "page_id": "v17"},
+		{"source": "official_site", "url": "https://maker.example", "is_identity": false},
 		{"source": "twitter", "url": "https://x.com/maker"}
 	]}`), &d); err != nil {
 		t.Fatal(err)

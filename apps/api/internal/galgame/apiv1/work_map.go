@@ -113,7 +113,7 @@ func linksOf(d *client.CatalogWorkDetail) []workrepr.CatalogLink {
 	for _, l := range d.Links {
 		// Catalog 2.52.0 adds identity links (vndb, bgm, EGS) to links. The work page
 		// still draws those from external_refs, so passing them on shows each one twice.
-		if l.Kind == "identity" {
+		if l.IsIdentity {
 			continue
 		}
 		out = workrepr.AppendLink(out, l.Source, l.URL)
