@@ -3,6 +3,7 @@ package workrepr
 import (
 	"context"
 	"regexp"
+	"slices"
 	"strings"
 
 	"kun-galgame-api/internal/apiv1/repr"
@@ -138,9 +139,14 @@ func Intros(rows []client.CatalogIntro) []CatalogIntro {
 }
 
 // AppendLink skips a link that names a site but no address: there is nothing to open.
+// It also skips an address already in out: catalog renders some twice (company 6450's
+// official_site and cien are both ci-en.dlsite.com/creator/65), and pages key links by URL.
 func AppendLink(out []CatalogLink, site, url string) []CatalogLink {
 	site = strings.ToLower(site)
 	if url == "" || len(site) > 64 || !sourceID.MatchString(site) {
+		return out
+	}
+	if slices.ContainsFunc(out, func(l CatalogLink) bool { return l.URL == url }) {
 		return out
 	}
 	return append(out, CatalogLink{Site: site, URL: url})

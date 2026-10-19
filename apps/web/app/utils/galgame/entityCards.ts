@@ -91,7 +91,6 @@ export const characterViewOf = (c: Character, nameOf: NameOf) => {
       lie: t.is_lie
     })),
     links: c.links.map((l) => ({
-      source: l.site,
       url: l.url,
       name: catalogLinkLabel(l.site, l.url)
     }))

@@ -112,7 +112,6 @@ const data = computed(() => {
     intro_machine: intro?.is_machine ?? false,
     siblings: p.siblings.map((s) => ({ id: Number(s.id), name: nameOf(s).name })),
     links: p.links.map((l) => ({
-      source: l.site,
       url: l.url,
       name: catalogLinkLabel(l.site, l.url)
     })),

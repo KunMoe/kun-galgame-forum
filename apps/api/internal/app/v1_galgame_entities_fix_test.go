@@ -831,7 +831,9 @@ func (f *geFix) seedCatalog(t *testing.T) {
 	}
 	var name client.CatalogName
 	decodeInto(t, fmt.Sprintf(`{"id":9101,"display_name":"瀬戸","latin":"Seto","lang":"ja","gender":2,"birth_m":4,"birth_d":1,
-		"refs":[{"source":"vndb","external_id":"2099"},{"source":"dlsite","external_id":"x"}],
+		"refs":[{"source":"vndb","external_id":"447"},{"source":"bangumi","external_id":"5936"},{"source":"dlsite","external_id":"x"}],
+		"links":[{"source":"vndb","url":"https://vndb.org/s267"},{"source":"bangumi","url":"https://bgm.tv/person/5936"},
+			{"source":"twitter","url":"https://x.com/a"},{"source":"twitter","url":"https://x.com/b"}],
 		"siblings":[{"id":9102,"display_name":"せと","lang":"ja"}],
 		"credits":[
 			{"work":{"id":%d},"roles":[{"role_key":"scenario","role_name":"剧本"},{"role_key":"other-staff","role_name":"其他"}]},

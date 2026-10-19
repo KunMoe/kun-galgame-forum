@@ -449,9 +449,11 @@ func TestV1EntityCreditNames(t *testing.T) {
 	if body["gender"] != "female" || body["birth_year"] != nil || body["birth_month"] != float64(4) || len(body["siblings"].([]any)) != 1 {
 		t.Fatalf("credit name %+v", body)
 	}
-	if links := body["links"].([]any); len(links) != 1 || links[0].(map[string]any)["url"] != "https://vndb.org/s2099" {
-		t.Fatalf("links %+v", links)
+	var linkURLs []string
+	for _, l := range body["links"].([]any) {
+		linkURLs = append(linkURLs, l.(map[string]any)["url"].(string))
 	}
+	geWant(t, "links", linkURLs, "https://bgm.tv/person/5936", "https://vndb.org/s267", "https://x.com/a", "https://x.com/b")
 	resp, body = f.get(t, "/api/v1/credit-names/9102", "/credit-names/{credit_name_id}")
 	geStatus(t, resp, body, http.StatusNotFound, "ENTITY_MERGED")
 	if body["object"] != "credit_name" || body["current_id"] != "9101" {

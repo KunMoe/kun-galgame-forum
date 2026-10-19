@@ -12,6 +12,9 @@ import (
 	"kun-galgame-api/pkg/problem"
 )
 
+// No vndb: a credit-name vndb ref is a staff ALIAS id, and vndb.org/s<alias> was
+// someone else on 60,925 of 60,930 names (alias 447 is 小倉結衣, s447 is 村上和也).
+// Catalog puts the real staff page in Links, minted from the person anchor.
 var personPage = map[string]func(string) string{
 	"bangumi": func(id string) string { return "https://bgm.tv/person/" + id },
 	"erogamescape": func(id string) string {
@@ -119,14 +122,6 @@ func (s *Service) getCreditName(ctx context.Context, in *creditNamePathInput) (*
 	for _, l := range n.Links {
 		links = workrepr.AppendLink(links, l.Source, l.URL)
 	}
-	seenURLs := make(map[string]bool, len(links))
-	links = slices.DeleteFunc(links, func(link workrepr.CatalogLink) bool {
-		if seenURLs[link.URL] {
-			return true
-		}
-		seenURLs[link.URL] = true
-		return false
-	})
 	siblings := make([]CreditNameRef, 0, len(n.Siblings))
 	for i := range n.Siblings {
 		siblings = append(siblings, creditNameRef(&n.Siblings[i]))

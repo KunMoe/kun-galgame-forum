@@ -231,7 +231,7 @@ if (view) {
                     <KunIcon name="lucide:user-round" />
                     查看立绘
                   </KunButton>
-                  <template v-for="link in data.links" :key="link.source">
+                  <template v-for="link in data.links" :key="link.url">
                     <KunLink
                       v-if="link.url"
                       :to="link.url"
