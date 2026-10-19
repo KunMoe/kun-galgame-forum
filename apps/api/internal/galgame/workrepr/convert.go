@@ -138,18 +138,25 @@ func Intros(rows []client.CatalogIntro) []CatalogIntro {
 	return out
 }
 
+var pageID = regexp.MustCompile(`^[a-z]?[0-9]{1,20}$`)
+
 // AppendLink skips a link that names a site but no address: there is nothing to open.
-// It also skips an address already in out: catalog renders some twice (company 6450's
-// official_site and cien are both ci-en.dlsite.com/creator/65), and pages key links by URL.
-func AppendLink(out []CatalogLink, site, url string) []CatalogLink {
-	site = strings.ToLower(site)
-	if url == "" || len(site) > 64 || !sourceID.MatchString(site) {
+// It also skips an address already in out: before 2.52.0 catalog sent some twice
+// (company 6450's official_site and cien were both ci-en.dlsite.com/creator/65), and
+// pages key links by URL.
+func AppendLink(out []CatalogLink, l client.CatalogLink) []CatalogLink {
+	site := strings.ToLower(l.Source)
+	if l.URL == "" || len(site) > 64 || !sourceID.MatchString(site) {
 		return out
 	}
-	if slices.ContainsFunc(out, func(l CatalogLink) bool { return l.URL == url }) {
+	if slices.ContainsFunc(out, func(o CatalogLink) bool { return o.URL == l.URL }) {
 		return out
 	}
-	return append(out, CatalogLink{Site: site, URL: url})
+	link := CatalogLink{Site: site, URL: l.URL, IsIdentity: l.IsIdentity}
+	if l.IsIdentity && pageID.MatchString(l.PageID) {
+		link.PageID = &l.PageID
+	}
+	return append(out, link)
 }
 
 func ImageFromURL(cdn, url string, width, height int, thumbhash string, sexual *int) *repr.Image {

@@ -831,9 +831,9 @@ func (f *geFix) seedCatalog(t *testing.T) {
 	}
 	var name client.CatalogName
 	decodeInto(t, fmt.Sprintf(`{"id":9101,"display_name":"瀬戸","latin":"Seto","lang":"ja","gender":2,"birth_m":4,"birth_d":1,
-		"refs":[{"source":"vndb","external_id":"447"},{"source":"bangumi","external_id":"5936"},{"source":"dlsite","external_id":"x"}],
-		"links":[{"source":"vndb","url":"https://vndb.org/s267"},{"source":"bangumi","url":"https://bgm.tv/person/5936"},
-			{"source":"twitter","url":"https://x.com/a"},{"source":"twitter","url":"https://x.com/b"}],
+		"links":[{"source":"vndb","url":"https://vndb.org/s267","is_identity":true,"page_id":"s267"},
+			{"source":"bangumi","url":"https://bgm.tv/person/5936","is_identity":true,"page_id":"5936"},
+			{"source":"twitter","url":"https://x.com/a","is_identity":false},{"source":"twitter","url":"https://x.com/b","is_identity":false}],
 		"siblings":[{"id":9102,"display_name":"せと","lang":"ja"}],
 		"credits":[
 			{"work":{"id":%d},"roles":[{"role_key":"scenario","role_name":"剧本"},{"role_key":"other-staff","role_name":"其他"}]},
@@ -848,7 +848,8 @@ func (f *geFix) seedCatalog(t *testing.T) {
 		"traits":[{"id":1,"display_name":"Blonde","name_zh":"金发","group":"Hair","group_zh":"毛发","spoiler":0},
 			{"id":2,"display_name":"Adult trait","group":"Body","spoiler":2,"sexual":true},
 			{"id":3,"display_name":"Liar","group":"Role","spoiler":1,"lie":true}],
-		"refs":[{"source":"vndb","external_id":"c9990"}],
+		"links":[{"source":"vndb","url":"https://vndb.org/c9990","is_identity":true,"page_id":"c9990"},
+			{"source":"erogamescape","url":"https://erogamescape.dyndns.org/~ap2/ero/toukei_kaiseki/character.php?character=77","is_identity":true,"page_id":"77"}],
 		"works":[{"work":{"id":%d},"voices":[{"id":9101,"display_name":"瀬戸","lang":"ja"}]},{"work":{"id":%d},"voices":[]},{"work":{"id":%d},"voices":[]}]}`,
 		geImageURL(9201), geWorkMin, geWorkMin+2, geWorkMin+5), &char)
 	c.chars[geCharacter] = &char

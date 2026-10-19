@@ -55,9 +55,9 @@ func catalogOrigin(raw string) string {
 // unknown one is a 400, so this list has to track catalog's collect specs.
 var v2CatalogDetailInclude = map[string]string{
 	"works":        "titles,refs,relations,credits,releases,popularity,ratings,tags,playtimes,series,platforms,intros,covers,screenshots,characters,companies,engines,links",
-	"characters":   "gender,birthday,height_cm,weight_kg,measurements,blood_type,instance_of_id,image,figure,traits,aliases,intros,refs",
+	"characters":   "gender,birthday,height_cm,weight_kg,measurements,blood_type,instance_of_id,image,figure,traits,aliases,intros,links",
 	"companies":    "aliases,logo,intros,links",
-	"credit-names": "aliases,photo,siblings,intros,links,refs",
+	"credit-names": "aliases,photo,siblings,intros,links",
 	"tags":         "intros,children,ancestors",
 	"series":       "intros,refs",
 }

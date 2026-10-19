@@ -207,7 +207,7 @@ type CatalogWorkDetail struct {
 	} `json:"screenshots"`
 	Labels     []catWorkLabel     `json:"labels"`
 	Engines    []catWorkEngine    `json:"engines"`
-	Links      []catWorkLink      `json:"links"`
+	Links      []CatalogLink      `json:"links"`
 	Series     []catWorkSeries    `json:"series"`
 	Relations  []CatalogRelation  `json:"relations"`
 	Credits    []catCreditGroup   `json:"credits"`

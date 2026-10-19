@@ -12,21 +12,6 @@ import (
 	"kun-galgame-api/pkg/problem"
 )
 
-// No vndb: a credit-name vndb ref is a staff ALIAS id, and vndb.org/s<alias> was
-// someone else on 60,925 of 60,930 names (alias 447 is 小倉結衣, s447 is 村上和也).
-// Catalog puts the real staff page in Links, minted from the person anchor.
-var personPage = map[string]func(string) string{
-	"bangumi": func(id string) string { return "https://bgm.tv/person/" + id },
-	"erogamescape": func(id string) string {
-		return "https://erogamescape.dyndns.org/~ap2/ero/toukei_kaiseki/creater.php?creater=" + id
-	},
-}
-
-var characterPage = map[string]func(string) string{
-	"vndb":    func(id string) string { return "https://vndb.org/" + id },
-	"bangumi": func(id string) string { return "https://bgm.tv/character/" + id },
-}
-
 type searchInput struct {
 	Q     string `query:"q" required:"true" minLength:"1" maxLength:"100" doc:"Name search, required: this family has no browse order. The collection is catalog's 100 best name matches in relevance order. Free text; never use it as a decision input."`
 	Page  int    `query:"page" minimum:"1" default:"1" doc:"1-based page number. page × limit may not exceed 100."`
@@ -113,14 +98,9 @@ func (s *Service) getCreditName(ctx context.Context, in *creditNamePathInput) (*
 	if prob != nil {
 		return nil, prob
 	}
-	links := make([]workrepr.CatalogLink, 0, len(n.Refs)+len(n.Links))
-	for _, ref := range n.Refs {
-		if tpl, ok := personPage[ref.Source]; ok && ref.ExternalID != "" {
-			links = workrepr.AppendLink(links, ref.Source, tpl(ref.ExternalID))
-		}
-	}
+	links := make([]workrepr.CatalogLink, 0, len(n.Links))
 	for _, l := range n.Links {
-		links = workrepr.AppendLink(links, l.Source, l.URL)
+		links = workrepr.AppendLink(links, l)
 	}
 	siblings := make([]CreditNameRef, 0, len(n.Siblings))
 	for i := range n.Siblings {

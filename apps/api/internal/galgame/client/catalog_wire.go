@@ -20,9 +20,14 @@ type catRef struct {
 	ExternalID string `json:"external_id"`
 }
 
-type catRelatedLink struct {
-	Source string `json:"source"`
-	URL    string `json:"url"`
+// CatalogLink is one entry of a catalog entity's links. Since catalog 2.52.0 this is
+// the only place an external page comes from: refs are identity anchors, and a
+// credit-name vndb ref is a staff alias id that no URL can be built from (#321).
+type CatalogLink struct {
+	Source     string `json:"source"`
+	URL        string `json:"url"`
+	IsIdentity bool   `json:"is_identity"`
+	PageID     string `json:"page_id"`
 }
 
 type CoverSlot struct {
@@ -166,12 +171,6 @@ type catWorkEngine struct {
 	DisplayName string                      `json:"display_name"`
 	Localized   map[string]catLocalizedName `json:"localized"`
 	WorkCount   int                         `json:"work_count"`
-}
-
-type catWorkLink struct {
-	Source     string `json:"source"`
-	URL        string `json:"url"`
-	IsIdentity bool   `json:"is_identity"`
 }
 
 type catPlaytime struct {

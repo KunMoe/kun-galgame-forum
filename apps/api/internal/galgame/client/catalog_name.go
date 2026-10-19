@@ -220,15 +220,14 @@ type CatalogName struct {
 	Latin       string                      `json:"latin"`
 	PersonID    int64                       `json:"person_id"`
 
-	PhotoHash string           `json:"photo_hash"`
-	Gender    *int             `json:"gender"`
-	BirthY    *int             `json:"birth_y"`
-	BirthM    *int             `json:"birth_m"`
-	BirthD    *int             `json:"birth_d"`
-	Siblings  []CatalogPerson  `json:"siblings"`
-	Intros    []CatalogIntro   `json:"intros"`
-	Refs      []catRef         `json:"refs"`
-	Links     []catRelatedLink `json:"links"`
+	PhotoHash string          `json:"photo_hash"`
+	Gender    *int            `json:"gender"`
+	BirthY    *int            `json:"birth_y"`
+	BirthM    *int            `json:"birth_m"`
+	BirthD    *int            `json:"birth_d"`
+	Siblings  []CatalogPerson `json:"siblings"`
+	Intros    []CatalogIntro  `json:"intros"`
+	Links     []CatalogLink   `json:"links"`
 	Credits   []struct {
 		Work  catWorkBrief `json:"work"`
 		Roles []struct {

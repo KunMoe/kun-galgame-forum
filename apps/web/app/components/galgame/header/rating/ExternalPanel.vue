@@ -8,7 +8,6 @@ import {
 } from '~/constants/galgame-rating'
 import { externalRatingHistogram } from './_stats'
 import type { Work, WorkExternalRatingStats } from '#shared/utils/api/schemas'
-import { workExternalId } from '#shared/utils/workExternalRef'
 
 const props = defineProps<{
   galgame: Work
@@ -105,8 +104,10 @@ const link = computed(() => {
   if (props.source === 'dlsite') {
     return ''
   }
-  const externalId = workExternalId(props.galgame.external_refs, props.source)
-  return externalId ? (meta.value.link?.(externalId) ?? '') : ''
+  const identity = props.galgame.links.find(
+    (link) => link.is_identity && link.site === props.source
+  )
+  return identity?.url ?? ''
 })
 </script>
 

@@ -78,20 +78,23 @@ func TestCreditsOfMergesRowsOfOneCreditName(t *testing.T) {
 	}
 }
 
-func TestLinksOfLeavesIdentityToExternalRefs(t *testing.T) {
+func TestLinksOfCarriesIdentityAndPageID(t *testing.T) {
 	var d client.CatalogWorkDetail
 	if err := json.Unmarshal([]byte(`{"id": 1, "links": [
 		{"source": "vndb", "url": "https://vndb.org/v17", "is_identity": true, "page_id": "v17"},
 		{"source": "official_site", "url": "https://maker.example", "is_identity": false},
-		{"source": "twitter", "url": "https://x.com/maker"}
+		{"source": "web", "url": "https://maker.example"}
 	]}`), &d); err != nil {
 		t.Fatal(err)
 	}
-	var urls []string
-	for _, l := range linksOf(&d) {
-		urls = append(urls, l.URL)
+	links := linksOf(&d)
+	if len(links) != 2 {
+		t.Fatalf("links = %+v, want the vndb entry and one maker.example", links)
 	}
-	if want := []string{"https://maker.example", "https://x.com/maker"}; !slices.Equal(urls, want) {
-		t.Fatalf("links = %v, want %v: the work page draws identity links from external_refs", urls, want)
+	if l := links[0]; !l.IsIdentity || l.PageID == nil || *l.PageID != "v17" {
+		t.Errorf("identity link = %+v, want is_identity with page_id v17", l)
+	}
+	if l := links[1]; l.IsIdentity || l.PageID != nil {
+		t.Errorf("related link = %+v, want no identity and a null page_id", l)
 	}
 }

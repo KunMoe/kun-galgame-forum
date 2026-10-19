@@ -1985,6 +1985,19 @@
       },
       "CatalogLink": {
         "properties": {
+          "is_identity": {
+            "description": "Whether url is the entity's own entry on that site, such as its VNDB or Bangumi page, rather than a page about it such as an official site or a social account. Identity links come first.",
+            "type": "boolean"
+          },
+          "page_id": {
+            "description": "The site's own id for the entry, as it appears in url: v17 or s267 on vndb, digits elsewhere. null unless is_identity.",
+            "maxLength": 21,
+            "pattern": "^[a-z]?[0-9]{1,20}$",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "site": {
             "description": "What the link points at, such as official_site, twitter, vndb, bangumi or erogamescape. An open vocabulary; clients label the tokens themselves.",
             "maxLength": 64,
@@ -2000,7 +2013,9 @@
         },
         "required": [
           "site",
-          "url"
+          "url",
+          "is_identity",
+          "page_id"
         ],
         "type": "object"
       },

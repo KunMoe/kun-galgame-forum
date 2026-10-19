@@ -193,10 +193,7 @@ const hasContributorCard = computed(
                   />
                 </div>
 
-                <GalgameLink
-                  :links="galgame.links"
-                  :external-refs="galgame.external_refs"
-                />
+                <GalgameLink :links="galgame.links" />
               </div>
 
               <GalgameStaff :credits="galgame.credits" />

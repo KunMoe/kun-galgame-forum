@@ -233,11 +233,9 @@ func (s *Service) getCharacter(ctx context.Context, in *characterPathInput) (*ge
 			IsSexual:    t.Sexual,
 		})
 	}
-	links := make([]workrepr.CatalogLink, 0, len(ch.Refs))
-	for _, ref := range ch.Refs {
-		if tpl, ok := characterPage[ref.Source]; ok && ref.ExternalID != "" {
-			links = workrepr.AppendLink(links, ref.Source, tpl(ref.ExternalID))
-		}
+	links := make([]workrepr.CatalogLink, 0, len(ch.Links))
+	for _, l := range ch.Links {
+		links = workrepr.AppendLink(links, l)
 	}
 	return &getCharacterOutput{Body: Character{
 		Object:      "character",

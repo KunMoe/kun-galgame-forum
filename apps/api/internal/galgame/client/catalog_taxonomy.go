@@ -45,13 +45,8 @@ type CatalogLabelDetail struct {
 	Aliases     catAliases                  `json:"aliases"`
 	WorkCount   int                         `json:"work_count"`
 	Intros      []CatalogIntro              `json:"intros"`
-	Links       []CatalogLabelLink          `json:"links"`
+	Links       []CatalogLink               `json:"links"`
 	LogoHash    string                      `json:"logo_hash"`
-}
-
-type CatalogLabelLink struct {
-	Source string `json:"source"`
-	URL    string `json:"url"`
 }
 
 type CatalogTagDetail struct {

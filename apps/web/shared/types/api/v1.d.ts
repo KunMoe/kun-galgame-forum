@@ -6321,6 +6321,10 @@ export interface components {
             value: string;
         };
         CatalogLink: {
+            /** @description Whether url is the entity's own entry on that site, such as its VNDB or Bangumi page, rather than a page about it such as an official site or a social account. Identity links come first. */
+            is_identity: boolean;
+            /** @description The site's own id for the entry, as it appears in url: v17 or s267 on vndb, digits elsewhere. null unless is_identity. */
+            page_id: string | null;
             /** @description What the link points at, such as official_site, twitter, vndb, bangumi or erogamescape. An open vocabulary; clients label the tokens themselves. */
             site: string;
             /**

@@ -134,7 +134,6 @@ export interface KunGalgameExternalRatingMeta {
   tier: GalgameRatingTierRule
   histogram: KunGalgameRatingHistogramAxis
   unit?: string
-  link?: (ref: string) => string
 }
 
 const kunRatingPointAxis = (max: number): KunGalgameRatingHistogramAxis => ({
@@ -190,8 +189,7 @@ export const KUN_GALGAME_EXTERNAL_RATING_MAP: Record<
     formatScore: kunRatingScoreDecimal,
     scoreSuffix: '/10',
     tier: { cutoffs: [5.5, 6.5, 7.4, 8.0], minVotes: 10 },
-    histogram: kunRatingVndbAxis,
-    link: (ref) => `https://vndb.org/${ref}`
+    histogram: kunRatingVndbAxis
   },
   bangumi: {
     label: 'Bangumi',
@@ -205,8 +203,7 @@ export const KUN_GALGAME_EXTERNAL_RATING_MAP: Record<
     // Bangumi's own vote labels sit on exactly these integers: 5 不过不失,
     // 6 还行, 7 推荐, 8 力荐.
     tier: { cutoffs: [5.0, 6.0, 7.0, 8.0], minVotes: 10 },
-    histogram: kunRatingPointAxis(10),
-    link: (ref) => `https://bgm.tv/subject/${ref}`
+    histogram: kunRatingPointAxis(10)
   },
   erogamescape: {
     label: '批评空间',
@@ -223,9 +220,7 @@ export const KUN_GALGAME_EXTERNAL_RATING_MAP: Record<
     // more concentrated — only ~8.5% of works clear 80.
     tier: { cutoffs: [60, 70, 80, 85], minVotes: 10 },
     histogram: kunRatingDecileAxis,
-    unit: '点',
-    link: (ref) =>
-      `https://erogamescape.dyndns.org/~ap2/ero/toukei_kaiseki/game.php?game=${ref}`
+    unit: '点'
   },
   dlsite: {
     label: 'DLsite',

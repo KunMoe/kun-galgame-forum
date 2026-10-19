@@ -9,7 +9,8 @@ const siteLabels: Record<string, string> = {
   erogamescape: '批评空间',
   dlsite: 'DLsite',
   dmm: 'DMM',
-  getchu: 'Getchu'
+  getchu: 'Getchu',
+  howlongtobeat: 'HowLongToBeat'
 }
 
 const hostLabels: [string, string][] = [

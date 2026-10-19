@@ -9,6 +9,20 @@ import (
 	"testing"
 )
 
+// geLinks renders an identity link as "site page_id" and a related one as "site -".
+func geLinks(body map[string]any) []string {
+	var out []string
+	for _, l := range body["links"].([]any) {
+		link := l.(map[string]any)
+		page, _ := link["page_id"].(string)
+		if link["is_identity"] != true {
+			page = "-" + page
+		}
+		out = append(out, link["site"].(string)+" "+page)
+	}
+	return out
+}
+
 func geWant(t *testing.T, label string, got []string, want ...string) {
 	t.Helper()
 	if !slices.Equal(got, want) {
@@ -449,11 +463,7 @@ func TestV1EntityCreditNames(t *testing.T) {
 	if body["gender"] != "female" || body["birth_year"] != nil || body["birth_month"] != float64(4) || len(body["siblings"].([]any)) != 1 {
 		t.Fatalf("credit name %+v", body)
 	}
-	var linkURLs []string
-	for _, l := range body["links"].([]any) {
-		linkURLs = append(linkURLs, l.(map[string]any)["url"].(string))
-	}
-	geWant(t, "links", linkURLs, "https://bgm.tv/person/5936", "https://vndb.org/s267", "https://x.com/a", "https://x.com/b")
+	geWant(t, "links", geLinks(body), "vndb s267", "bangumi 5936", "twitter -", "twitter -")
 	resp, body = f.get(t, "/api/v1/credit-names/9102", "/credit-names/{credit_name_id}")
 	geStatus(t, resp, body, http.StatusNotFound, "ENTITY_MERGED")
 	if body["object"] != "credit_name" || body["current_id"] != "9101" {
@@ -511,6 +521,7 @@ func TestV1EntityCharacters(t *testing.T) {
 	if body["image"].(map[string]any)["hash"] != geHash(9201) || body["figure"] != nil {
 		t.Fatalf("images %+v", body)
 	}
+	geWant(t, "links", geLinks(body), "vndb c9990", "erogamescape 77")
 	_, body = f.get(t, "/api/v1/characters/9201?include_nsfw=true", "/characters/{character_id}")
 	if len(body["traits"].([]any)) != 3 {
 		t.Fatalf("include_nsfw traits %+v", body["traits"])

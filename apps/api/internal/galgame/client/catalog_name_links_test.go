@@ -7,11 +7,8 @@ import (
 
 const nameLinksFixture = `{
   "id": 900,
-  "refs": [
-    {"source": "vndb", "external_id": "7611"},
-    {"source": "dlsite", "external_id": "RG12345"}
-  ],
   "links": [
+    {"source": "vndb", "url": "https://vndb.org/s2066", "is_identity": true, "page_id": "s2066"},
     {"source": "official_site", "url": "https://hk52.info"},
     {"source": "twitter", "url": "https://x.com/hozumik"},
     {"source": "pixiv", "url": "https://www.pixiv.net/users/3870762"},
@@ -27,11 +24,11 @@ func TestCatalogNameDecodesThePersonLinkLane(t *testing.T) {
 	if err := json.Unmarshal([]byte(nameLinksFixture), &n); err != nil {
 		t.Fatalf("unmarshal: %v", err)
 	}
-	if len(n.Refs) != 2 {
-		t.Fatalf("refs = %d, want 2 — the anchor lane must survive alongside links", len(n.Refs))
+	if len(n.Links) != 8 {
+		t.Fatalf("links = %d, want 8", len(n.Links))
 	}
-	if len(n.Links) != 7 {
-		t.Fatalf("links = %d, want 7", len(n.Links))
+	if l := n.Links[0]; !l.IsIdentity || l.PageID != "s2066" || n.Links[1].IsIdentity {
+		t.Fatalf("identity flag lost: %+v", n.Links[:2])
 	}
 	for i, link := range n.Links {
 		if link.URL == "" {

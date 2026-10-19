@@ -235,7 +235,7 @@ func (s *Service) getCompany(ctx context.Context, in *companyPathInput) (*getCom
 	name := workrepr.Name(o.DisplayName, o.Latin, client.LocalizedValues(o.Localized))
 	links := make([]workrepr.CatalogLink, 0, len(o.Links))
 	for _, l := range o.Links {
-		links = workrepr.AppendLink(links, l.Source, l.URL)
+		links = workrepr.AppendLink(links, l)
 	}
 	var lang *string
 	if o.Lang != "" {

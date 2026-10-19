@@ -23,7 +23,7 @@ type CatalogCharacter struct {
 	FigureMeta  ArtMeta                     `json:"-"`
 	Intros      []CatalogIntro              `json:"intros"`
 	Traits      []CatalogCharacterTrait     `json:"traits"`
-	Refs        []catRef                    `json:"refs"`
+	Links       []CatalogLink               `json:"links"`
 	Works       []struct {
 		Work   catWorkBrief    `json:"work"`
 		Voices []CatalogPerson `json:"voices"`
