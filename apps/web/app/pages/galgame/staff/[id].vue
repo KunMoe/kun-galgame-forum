@@ -215,7 +215,7 @@ if (staff) {
             v-if="data.links.length"
             class="flex flex-wrap items-center gap-3"
           >
-            <template v-for="link in data.links" :key="link.source">
+            <template v-for="link in data.links" :key="link.url">
               <KunLink
                 v-if="link.url"
                 :to="link.url"
