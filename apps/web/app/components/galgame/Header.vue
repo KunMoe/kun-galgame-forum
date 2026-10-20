@@ -16,6 +16,8 @@ import {
   resourceTypeLabel
 } from '~~/shared/utils/galgameResourceVocab'
 
+const { workEditUrl } = useNextmoeEditor()
+
 const props = defineProps<{
   galgame: Work
   ratings: GalgameRatingCardOnGalgamePage[]
@@ -385,7 +387,8 @@ const coverUrl = computed(() =>
               variant="light"
               color="default"
               size="sm"
-              @click="navigateTo(`/galgame/${galgame.id}/edit`)"
+              :href="workEditUrl(galgame.id)"
+              target="_blank"
             >
               <span class="flex items-center gap-1">
                 <KunIcon name="lucide:file-pen-line" />编辑资料

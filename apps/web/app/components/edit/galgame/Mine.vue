@@ -3,6 +3,8 @@ import type { ApiResult } from '#shared/utils/api/problem'
 import type { WorkSubmissionSummary } from '#shared/utils/api/schemas'
 import { deletedUserName } from '~/utils/userRef'
 
+const { workEditUrl } = useNextmoeEditor()
+
 const { items, hasMore, loadingMore, loadMore, problem, refresh } =
   await useGalgameClaimList('mine')
 const { move, remove } = useWorkSubmission()
@@ -129,7 +131,7 @@ const openPreview = (item: WorkSubmissionSummary) => {
           <KunButton size="sm" variant="flat" @click="openPreview(item)">
             预览
           </KunButton>
-          <KunLink :to="`/galgame/${item.id}/edit`">
+          <KunLink :href="workEditUrl(item.id)" target="_blank">
             <KunButton size="sm" variant="flat">编辑</KunButton>
           </KunLink>
           <KunButton

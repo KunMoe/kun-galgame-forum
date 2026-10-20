@@ -1,9 +1,12 @@
 <script setup lang="ts">
-definePageMeta({
-  middleware: ['auth']
+const { editorUrl } = useNextmoeEditor()
+
+await navigateTo(editorUrl('/review', '/'), {
+  external: true,
+  redirectCode: 301
 })
 </script>
 
 <template>
-  <GalgameEditReviewContainer />
+  <div />
 </template>

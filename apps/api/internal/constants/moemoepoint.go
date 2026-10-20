@@ -6,7 +6,6 @@ const (
 	RewardCreateResource = 3
 	RewardCreateToolset  = 3
 	RewardReply          = 1
-	RewardPRMerge        = 1
 
 	CostConsumeSection = 10
 	CostUpvoteSender   = 10

@@ -5,6 +5,8 @@ import type {
   WorkSubmissionSummary
 } from '#shared/utils/api/schemas'
 
+const { workEditUrl } = useNextmoeEditor()
+
 const SEARCH_LIMIT = 12
 
 const q = ref('')
@@ -196,7 +198,7 @@ onMounted(() => {
               {{ item.last_event.note }}
             </p>
           </div>
-          <KunLink :to="`/galgame/${item.id}/edit`">
+          <KunLink :href="workEditUrl(item.id)" target="_blank">
             <KunButton size="sm" variant="flat">继续编辑</KunButton>
           </KunLink>
         </div>

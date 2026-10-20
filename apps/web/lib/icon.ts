@@ -204,6 +204,7 @@ export const ICON_NAMES: string[] = [
   'lucide:shield-check',
   'lucide:shopping-cart',
   'lucide:signature',
+  'lucide:sliders-horizontal',
   'lucide:smartphone',
   'lucide:smile',
   'lucide:smile-plus',

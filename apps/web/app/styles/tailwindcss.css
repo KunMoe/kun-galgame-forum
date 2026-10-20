@@ -30,10 +30,6 @@
  */
 @source '../../node_modules/@kungal/ui-vue';
 @source '../../node_modules/@kungal/ui-core';
-/* `dist`, not the package root: the root also holds README/CHANGELOG, whose
- * code samples Tailwind would scan as real usage (47kB vs 14.7kB when the
- * package's own repo measured it). */
-@source '../../node_modules/@nextmoe/edit-ui-vue/dist';
 
 /*
  * `desktop-nav`: the desktop icon sidebar (KunLayoutSidebar rail) reveals its
