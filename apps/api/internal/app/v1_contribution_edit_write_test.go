@@ -266,11 +266,8 @@ func TestV1MergeEditProposal(t *testing.T) {
 	if len(decisions) != 1 || !strings.Contains(decisions[0].body, `"decision":"merge"`) || decisions[0].ifMatch != "*" {
 		t.Errorf("upstream decision %+v", decisions)
 	}
-	awards := f.snapshotAwards()
-	want := awardCall{userID: w3UserAlice, delta: 1, reason: "content_approved",
-		ref: "galgame_pr:" + strconv.Itoa(g7bWork), key: "kungal:galgame_edit_merged:" + g7bID(f.pOpenAlice)}
-	if len(awards) != 1 || awards[0] != want {
-		t.Errorf("awards %+v want %+v", awards, want)
+	if awards := f.snapshotAwards(); len(awards) != 0 {
+		t.Errorf("a merge awards nothing here: NextMoe's catalog-edit-rewards job pays it, %+v", awards)
 	}
 	if got := f.messages(t, "merged", w3UserAlice); len(got) != 1 || got[0] != "EditLive（中）" {
 		t.Errorf("merged notification %v", got)
@@ -291,7 +288,7 @@ func TestV1MergeEditProposal(t *testing.T) {
 	if resp.StatusCode != http.StatusOK || body["state"] != "merged" {
 		t.Fatalf("self merge %d %+v", resp.StatusCode, body)
 	}
-	if n := len(f.snapshotAwards()); n != 1 {
+	if n := len(f.snapshotAwards()); n != 0 {
 		t.Errorf("a merger's own proposal earns nothing, awards %d", n)
 	}
 

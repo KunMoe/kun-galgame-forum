@@ -21,8 +21,8 @@ func TestV1EditDecisionSurvivesAFailedReadBack(t *testing.T) {
 	if got := f.up.proposal(f.pOpenAlice).state; got != "merged" {
 		t.Errorf("upstream state %s", got)
 	}
-	if n := len(f.snapshotAwards()); n != 1 {
-		t.Errorf("the award follows the write, not the read-back: %d", n)
+	if n := len(f.snapshotAwards()); n != 0 {
+		t.Errorf("a merge awards nothing here: NextMoe's catalog-edit-rewards job pays it, %d", n)
 	}
 	if got := f.messages(t, "merged", w3UserAlice); len(got) != 1 {
 		t.Errorf("merged notification %v", got)
