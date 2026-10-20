@@ -21,7 +21,6 @@ func TestWebMirrorsTheMoemoepointRules(t *testing.T) {
 		"createResource":     RewardCreateResource,
 		"createToolset":      RewardCreateToolset,
 		"reply":              RewardReply,
-		"prMerge":            RewardPRMerge,
 		"consumeSection":     CostConsumeSection,
 		"upvoteSender":       CostUpvoteSender,
 		"upvoteOwner":        RewardUpvoteOwner,

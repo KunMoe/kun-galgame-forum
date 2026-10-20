@@ -56,8 +56,8 @@ const renameCost = useRenameCost()
           >: 有人花萌萌点把你的话题顶上热榜, 楼主收到 +{{ P.upvoteOwner }}。
         </li>
         <li>
-          <b class="text-foreground">编辑被采纳 +{{ P.prMerge }}</b
-          >: 你对游戏条目提交的修改被合并, 提案人 +{{ P.prMerge }}。
+          <b class="text-foreground">编辑被采纳</b>: 你在 NextMoe·未萌
+          编辑台提交的资料修改被合并后, 由 NextMoe 统一给提案人发放萌萌点。
         </li>
         <li>
           <b class="text-foreground">每天签到</b>: 每天签到拿随机 0~{{

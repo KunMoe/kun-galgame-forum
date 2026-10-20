@@ -1,9 +1,12 @@
 <script setup lang="ts">
-definePageMeta({
-  middleware: ['auth']
+const { editorUrl } = useNextmoeEditor()
+
+await navigateTo(editorUrl('/me/proposals', '/'), {
+  external: true,
+  redirectCode: 301
 })
 </script>
 
 <template>
-  <GalgameEditMineContainer />
+  <div />
 </template>

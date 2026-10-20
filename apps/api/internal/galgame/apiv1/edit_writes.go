@@ -8,10 +8,8 @@ import (
 	"strconv"
 	"time"
 
-	"kun-galgame-api/internal/constants"
 	msgModel "kun-galgame-api/internal/message/model"
 	msgService "kun-galgame-api/internal/message/service"
-	"kun-galgame-api/internal/moemoepoint"
 	"kun-galgame-api/pkg/catalogclient"
 	"kun-galgame-api/pkg/problem"
 )
@@ -306,11 +304,6 @@ func (s *Service) declineContent(ctx context.Context, workID int, note string) s
 }
 
 func (s *Service) proposalMerged(ctx context.Context, prop *catalogclient.EditProposal, workID, mergerID int) {
-	if int(prop.ProposerUID) != mergerID && s.award != nil {
-		s.award(int(prop.ProposerUID), constants.RewardPRMerge, moemoepoint.ReasonContentApproved,
-			moemoepoint.Ref("galgame_pr", workID),
-			moemoepoint.Key("galgame_edit_merged", strconv.FormatInt(prop.ID, 10)))
-	}
 	if s.store != nil && s.store.Ready() {
 		if err := s.store.TouchEdited(workID); err != nil {
 			slog.Warn("galgame edit: resource_update_time bump failed", "work_id", workID, "err", err)

@@ -1,9 +1,14 @@
 <script setup lang="ts">
-definePageMeta({
-  middleware: ['auth']
+const route = useRoute()
+const { workEditUrl } = useNextmoeEditor()
+const workId = String(route.params.id)
+
+await navigateTo(workEditUrl(workId, `/galgame/${workId}`), {
+  external: true,
+  redirectCode: 301
 })
 </script>
 
 <template>
-  <GalgameEditContainer />
+  <div />
 </template>

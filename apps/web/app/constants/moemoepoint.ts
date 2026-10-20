@@ -9,7 +9,6 @@ export const KUN_MOEMOEPOINT = {
   createResource: 3,
   createToolset: 3,
   reply: 1,
-  prMerge: 1,
   consumeSection: 10,
   upvoteSender: 10,
   upvoteOwner: 5,

@@ -10,6 +10,8 @@ import type {
   WorkCompany
 } from '#shared/utils/api/schemas'
 
+const { workHistoryUrl } = useNextmoeEditor()
+
 defineProps<{
   companies: WorkCompany[]
   engines: Engine[]
@@ -144,7 +146,8 @@ const releaseText = (
       color="primary"
       size="sm"
       full-width
-      @click="navigateTo(`/galgame/${galgame.id}/history`)"
+      :href="workHistoryUrl(galgame.id)"
+      target="_blank"
     >
       <KunIcon name="lucide:history" />
       修订历史
