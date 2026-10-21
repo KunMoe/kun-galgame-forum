@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"kun-galgame-api/internal/galgame/model"
+	"kun-galgame-api/internal/galgame/repository"
 	"kun-galgame-api/pkg/catalogclient"
 
 	"github.com/redis/go-redis/v9"
@@ -28,10 +29,16 @@ type ratingFeed interface {
 type ratingMirrorStore interface {
 	MirrorRating(r model.GalgameRating) error
 	DropRating(id int) error
-	HideWork(workID int) error
+	HoldRating(id int, reason string) error
+	PurgeHeldRatings(before time.Time) (int64, error)
+	RatingOwner(id int) (userID, workID int, ok bool, err error)
 }
 
-type workDeletion func(ctx context.Context, workID int64) (bool, error)
+// workFate answers repository.HeldDeleted or repository.HeldMerged when catalog
+// deleted or merged the work, and "" while it is live.
+type workFate func(ctx context.Context, workID int64) (string, error)
+
+const heldMergedFor = 31 * 24 * time.Hour
 
 // RatingMirror keeps galgame_rating equal to NextMoe's ratings off
 // /v2/ratings/changes, on every work whether or not the forum has a local row
@@ -41,17 +48,18 @@ type RatingMirror struct {
 	store   ratingMirrorStore
 	rdb     *redis.Client
 	clients map[string]bool
-	deleted workDeletion
+	fate    workFate
 
 	running sync.Mutex
 }
 
-// WithWorkDeletion lets the mirror tell a rating NextMoe deleted from one it
-// hid with its deleted work. Since infra #454 both arrive as gone: true, and
-// dropping the second takes its likes and the forum-only game types with it,
-// which the restore that sends the rating back cannot return.
-func (m *RatingMirror) WithWorkDeletion(deleted workDeletion) *RatingMirror {
-	m.deleted = deleted
+// WithWorkFate lets the mirror tell a rating its author deleted from one
+// NextMoe took off with its work: deleted with it (infra #454) or folded as the
+// older of one person's two ratings when it was merged (#455). All arrive as
+// gone: true; the last two come back when the deletion or merge is undone, so
+// they are held, not dropped.
+func (m *RatingMirror) WithWorkFate(fate workFate) *RatingMirror {
+	m.fate = fate
 	return m
 }
 
@@ -141,6 +149,11 @@ func (m *RatingMirror) Run() {
 			break
 		}
 	}
+	if n, err := m.store.PurgeHeldRatings(time.Now().Add(-heldMergedFor)); err != nil {
+		slog.Warn("评分镜像: 清理合并期满的暂存评分失败", "error", err)
+	} else if n > 0 {
+		slog.Info("评分镜像: 已清理合并期满的暂存评分", "count", n)
+	}
 	if seen == 0 {
 		return
 	}
@@ -149,18 +162,24 @@ func (m *RatingMirror) Run() {
 }
 
 func (m *RatingMirror) apply(ctx context.Context, items []catalogclient.RatingChange) (written, dropped int, err error) {
-	deletedWork := map[int64]bool{}
+	fates := map[int64]string{}
+	live := map[[2]int64]int64{}
+	for _, it := range items {
+		if !it.Gone && it.Rating != nil {
+			live[[2]int64{it.Rating.UserID, it.Rating.WorkID}] = it.ID
+		}
+	}
 	for _, it := range items {
 		if it.ID <= 0 {
 			continue
 		}
 		if it.Gone || it.Rating == nil {
-			hide, err := m.workGone(ctx, it.WorkID, deletedWork)
+			reason, err := m.heldFor(ctx, it, fates, live)
 			if err != nil {
 				return written, dropped, err
 			}
-			if hide {
-				if err := m.store.HideWork(int(it.WorkID)); err != nil {
+			if reason != "" {
+				if err := m.store.HoldRating(int(it.ID), reason); err != nil {
 					return written, dropped, err
 				}
 				continue
@@ -183,17 +202,30 @@ func (m *RatingMirror) apply(ctx context.Context, items []catalogclient.RatingCh
 	return written, dropped, nil
 }
 
-func (m *RatingMirror) workGone(ctx context.Context, workID int64, seen map[int64]bool) (bool, error) {
-	if m.deleted == nil || workID <= 0 {
-		return false, nil
+// heldFor answers why NextMoe took a gone rating away, if it may send it back.
+// The fold of a merge can land on the surviving work, which is live: the
+// merged rating arriving live for the same person and work in the same page
+// is what marks it.
+func (m *RatingMirror) heldFor(ctx context.Context, it catalogclient.RatingChange, fates map[int64]string, live map[[2]int64]int64) (string, error) {
+	if m.fate != nil && it.WorkID > 0 {
+		reason, seen := fates[it.WorkID]
+		if !seen {
+			var err error
+			if reason, err = m.fate(ctx, it.WorkID); err != nil {
+				return "", err
+			}
+			fates[it.WorkID] = reason
+		}
+		if reason != "" {
+			return reason, nil
+		}
 	}
-	if gone, ok := seen[workID]; ok {
-		return gone, nil
+	user, work, ok, err := m.store.RatingOwner(int(it.ID))
+	if err != nil || !ok {
+		return "", err
 	}
-	gone, err := m.deleted(ctx, workID)
-	if err != nil {
-		return false, err
+	if other, found := live[[2]int64{int64(user), int64(work)}]; found && other != it.ID {
+		return repository.HeldMerged, nil
 	}
-	seen[workID] = gone
-	return gone, nil
+	return "", nil
 }

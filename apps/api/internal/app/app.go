@@ -411,12 +411,17 @@ func New(cfg *config.Config) *App {
 	galgameCatalogMirror := galgameService.NewGalgameCatalogMirror(gc, galgameLocalRepo, rdb, galgameMergeSync)
 	ratingMirror := galgameService.NewRatingMirror(catalogCli, galgameRepo.NewRatingStore(db), rdb,
 		append([]string{cfg.OAuth.ClientID}, cfg.Bearer.ClientIDs...)).
-		WithWorkDeletion(func(ctx context.Context, workID int64) (bool, error) {
-			deleted, appErr := gc.WorkDeleted(ctx, workID)
-			if appErr != nil {
-				return false, appErr
+		WithWorkFate(func(ctx context.Context, workID int64) (string, error) {
+			absence, appErr := gc.WorkAbsence(ctx, workID)
+			switch {
+			case appErr != nil:
+				return "", appErr
+			case absence.Deleted != nil:
+				return galgameRepo.HeldDeleted, nil
+			case absence.MovedTo != 0:
+				return galgameRepo.HeldMerged, nil
 			}
-			return deleted, nil
+			return "", nil
 		})
 	galgameV1 := galgameapiv1.New(gc, moyuCli, uc, rdb, cfg.NextMoeAPI.ImageCDNBase).WithWork(db, catalogCli, storeLinks, moemoepoint.Award).WithUserPlane(trustCheck, trustScan, galgameCollectionRepo)
 

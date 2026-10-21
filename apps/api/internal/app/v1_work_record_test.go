@@ -219,58 +219,152 @@ func TestRatingMirror(t *testing.T) {
 	}
 }
 
-func TestRatingMirrorKeepsTheRatingsOfADeletedWork(t *testing.T) {
-	f := newGRFix(t)
-	store := galgameRepo.NewRatingStore(f.db)
-	f.run(t, `INSERT INTO galgame_rating_like (galgame_rating_id, user_id, updated) VALUES (?, ?, now())`, grRatingAlice, grBob)
-	deletedWork := func(_ context.Context, workID int64) (bool, error) { return workID == grWorkSFW, nil }
+func fatesOf(byWork map[int64]string) func(context.Context, int64) (string, error) {
+	return func(_ context.Context, workID int64) (string, error) { return byWork[workID], nil }
+}
 
-	feed := &grFeed{pages: []*catalogclient.RatingChangePage{{Items: []catalogclient.RatingChange{
-		{ID: int64(grRatingAlice), WorkID: grWorkSFW, Gone: true},
-		{ID: int64(grRatingGone), WorkID: grWorkSFW2, Gone: true},
-	}}}}
-	galgameService.NewRatingMirror(feed, store, f.rdb, []string{grForumClient}).WithWorkDeletion(deletedWork).Run()
-
-	if n := f.count(t, `SELECT count(*) FROM galgame_rating WHERE id = ? AND galgame_type::text LIKE '%plot%'`, grRatingAlice); n != 1 {
-		t.Fatalf("a rating on a deleted work was dropped, or lost its game types")
-	}
-	if n := f.count(t, `SELECT count(*) FROM galgame_rating_like WHERE galgame_rating_id = ?`, grRatingAlice); n != 1 {
-		t.Errorf("its likes went")
-	}
-	if n := f.count(t, `SELECT count(*) FROM galgame WHERE id = ? AND NOT catalog_rendered`, grWorkSFW); n != 1 {
-		t.Errorf("the deleted work is not hidden, so its ratings still show")
-	}
-	if n := f.count(t, `SELECT count(*) FROM galgame_rating WHERE id = ?`, grRatingGone); n != 0 {
-		t.Errorf("a rating NextMoe deleted on a live work is still there")
-	}
-
-	f.rdb.Del(context.Background(), galgameService.RatingMirrorCursorKey)
-	at := time.Date(2026, 10, 22, 8, 0, 0, 0, time.UTC)
-	restored := &grFeed{pages: []*catalogclient.RatingChangePage{{Items: []catalogclient.RatingChange{
-		{ID: int64(grRatingAlice), WorkID: grWorkSFW, Rating: &catalogclient.Rating{
-			ID: int64(grRatingAlice), WorkID: grWorkSFW, UserID: grAlice, Overall: 8, Recommend: "yes",
-			SpoilerLevel: "none", ClientID: grForumClient, Site: "kungal", CreatedAt: at, UpdatedAt: at,
-		}},
-	}}}}
-	galgameService.NewRatingMirror(restored, store, f.rdb, []string{grForumClient}).WithWorkDeletion(deletedWork).Run()
-	if n := f.count(t, `SELECT count(*) FROM galgame_rating WHERE id = ? AND galgame_type::text LIKE '%plot%'`, grRatingAlice); n != 1 {
-		t.Errorf("the restored rating lost its game types")
-	}
-	if n := f.count(t, `SELECT count(*) FROM galgame_rating_like WHERE galgame_rating_id = ?`, grRatingAlice); n != 1 {
-		t.Errorf("the restored rating lost its likes")
+func liveRating(id, work, user int, at time.Time) *catalogclient.Rating {
+	return &catalogclient.Rating{
+		ID: int64(id), WorkID: int64(work), UserID: int64(user), Overall: 8, Recommend: "yes",
+		SpoilerLevel: "none", ClientID: grForumClient, Site: "kungal", CreatedAt: at, UpdatedAt: at,
 	}
 }
 
-func TestRatingMirrorHoldsTheCursorWhenItCannotTellADeletedWork(t *testing.T) {
+func runMirror(t *testing.T, f *grFix, fate map[int64]string, items ...catalogclient.RatingChange) {
+	t.Helper()
+	f.rdb.Del(context.Background(), galgameService.RatingMirrorCursorKey)
+	feed := &grFeed{pages: []*catalogclient.RatingChangePage{{Items: items}}}
+	galgameService.NewRatingMirror(feed, galgameRepo.NewRatingStore(f.db), f.rdb, []string{grForumClient}).
+		WithWorkFate(fatesOf(fate)).Run()
+}
+
+func (f *grFix) assertRestored(t *testing.T, id int) {
+	t.Helper()
+	if n := f.count(t, `SELECT count(*) FROM galgame_rating WHERE id = ? AND galgame_type::text LIKE '%plot%'`, id); n != 1 {
+		t.Errorf("rating %d is not back with its game types", id)
+	}
+	if n := f.count(t, `SELECT count(*) FROM galgame_rating WHERE id = ? AND like_count = 1`, id); n != 1 {
+		t.Errorf("rating %d is not back with its like count", id)
+	}
+	if n := f.count(t, `SELECT count(*) FROM galgame_rating_like WHERE galgame_rating_id = ?`, id); n != 1 {
+		t.Errorf("rating %d is not back with its like", id)
+	}
+	if n := f.count(t, `SELECT count(*) FROM galgame_rating_held WHERE id = ?`, id); n != 0 {
+		t.Errorf("rating %d is still held", id)
+	}
+}
+
+func (f *grFix) assertHeld(t *testing.T, id int, reason string) {
+	t.Helper()
+	if n := f.count(t, `SELECT count(*) FROM galgame_rating WHERE id = ?`, id); n != 0 {
+		t.Errorf("rating %d is still readable", id)
+	}
+	if n := f.count(t, `SELECT count(*) FROM galgame_rating_held WHERE id = ? AND reason = ? AND jsonb_array_length(likes) = 1`, id, reason); n != 1 {
+		t.Errorf("rating %d is not held as %s with its like", id, reason)
+	}
+}
+
+func TestRatingMirrorHoldsTheRatingsOfADeletedWork(t *testing.T) {
 	f := newGRFix(t)
-	store := galgameRepo.NewRatingStore(f.db)
+	f.run(t, `DELETE FROM galgame_rating_held WHERE id IN (?, ?)`, grRatingAlice, grRatingGone)
+	f.run(t, `INSERT INTO galgame_rating_like (galgame_rating_id, user_id, updated) VALUES (?, ?, now())`, grRatingAlice, grBob)
+	f.run(t, `UPDATE galgame_rating SET like_count = 1 WHERE id = ?`, grRatingAlice)
+	fate := map[int64]string{grWorkSFW: "deleted"}
+
+	runMirror(t, f, fate,
+		catalogclient.RatingChange{ID: int64(grRatingAlice), WorkID: grWorkSFW, Gone: true},
+		catalogclient.RatingChange{ID: int64(grRatingGone), WorkID: grWorkSFW2, Gone: true})
+	f.assertHeld(t, grRatingAlice, "deleted")
+	if n := f.count(t, `SELECT count(*) FROM galgame_rating WHERE id = ?`, grRatingGone) +
+		f.count(t, `SELECT count(*) FROM galgame_rating_held WHERE id = ?`, grRatingGone); n != 0 {
+		t.Errorf("a rating its author deleted on a live work was kept")
+	}
+
+	runMirror(t, f, nil, catalogclient.RatingChange{ID: int64(grRatingAlice), WorkID: grWorkSFW,
+		Rating: liveRating(grRatingAlice, grWorkSFW, grAlice, time.Date(2026, 10, 22, 8, 0, 0, 0, time.UTC))})
+	f.assertRestored(t, grRatingAlice)
+}
+
+func TestRatingMirrorHoldsTheOlderRatingAMergeFolded(t *testing.T) {
+	merged := grRatingRaters + 60
+	at := time.Date(2026, 10, 22, 8, 0, 0, 0, time.UTC)
+	for name, items := range map[string][]catalogclient.RatingChange{
+		"on the merged work": {
+			{ID: int64(grRatingAlice), WorkID: grWorkSFW, Gone: true},
+			{ID: int64(merged), WorkID: grWorkFresh, Rating: liveRating(merged, grWorkFresh, grAlice, at)},
+		},
+		"on the survivor, gone first": {
+			{ID: int64(grRatingAlice), WorkID: grWorkSFW, Gone: true},
+			{ID: int64(merged), WorkID: grWorkSFW, Rating: liveRating(merged, grWorkSFW, grAlice, at)},
+		},
+		"on the survivor, merged rating first": {
+			{ID: int64(merged), WorkID: grWorkSFW, Rating: liveRating(merged, grWorkSFW, grAlice, at)},
+			{ID: int64(grRatingAlice), WorkID: grWorkSFW, Gone: true},
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			f := newGRFix(t)
+			f.run(t, `DELETE FROM galgame_rating_held WHERE id IN (?, ?)`, grRatingAlice, merged)
+			t.Cleanup(func() { f.run(t, `DELETE FROM galgame_rating WHERE id = ?`, merged) })
+			f.run(t, `INSERT INTO galgame_rating_like (galgame_rating_id, user_id, updated) VALUES (?, ?, now())`, grRatingAlice, grBob)
+			f.run(t, `UPDATE galgame_rating SET like_count = 1 WHERE id = ?`, grRatingAlice)
+			fate := map[int64]string{}
+			if name == "on the merged work" {
+				fate[grWorkSFW] = "merged"
+			}
+
+			runMirror(t, f, fate, items...)
+			f.assertHeld(t, grRatingAlice, "merged")
+
+			runMirror(t, f, nil,
+				catalogclient.RatingChange{ID: int64(merged), WorkID: grWorkFresh, Rating: liveRating(merged, grWorkFresh, grAlice, at)},
+				catalogclient.RatingChange{ID: int64(grRatingAlice), WorkID: grWorkSFW, Rating: liveRating(grRatingAlice, grWorkSFW, grAlice, at)})
+			f.assertRestored(t, grRatingAlice)
+		})
+	}
+}
+
+func TestRatingMirrorPurgesMergeHoldsOnceTheUndoWindowIsOver(t *testing.T) {
+	f := newGRFix(t)
+	ids := []int{grRatingRaters + 70, grRatingRaters + 71}
+	t.Cleanup(func() { f.run(t, `DELETE FROM galgame_rating_held WHERE id IN ?`, ids) })
+	f.run(t, `INSERT INTO galgame_rating_held (id, user_id, work_id, reason, row, held_at) VALUES
+		(?, ?, ?, 'merged', '{}', now() - interval '40 days'), (?, ?, ?, 'deleted', '{}', now() - interval '40 days')`,
+		ids[0], grAlice, grWorkSFW, ids[1], grAlice, grWorkSFW)
+
+	runMirror(t, f, nil)
+	if n := f.count(t, `SELECT count(*) FROM galgame_rating_held WHERE id = ?`, ids[0]); n != 0 {
+		t.Errorf("a merge hold outlived the 30-day undo window")
+	}
+	if n := f.count(t, `SELECT count(*) FROM galgame_rating_held WHERE id = ?`, ids[1]); n != 1 {
+		t.Errorf("a deleted work's hold went: a deletion can be undone at any time")
+	}
+}
+
+func TestRatingMirrorNeverHoldsAPurgedAuthorsRating(t *testing.T) {
+	f := newGRFix(t)
+	f.run(t, `DELETE FROM galgame_rating_held WHERE id = ?`, grRatingAlice)
+	f.run(t, `INSERT INTO user_purge_archive (purge_id, operator_id, target_user_id, table_name, operation, row_pk, row_data)
+		VALUES (gen_random_uuid(), 1, ?, 'galgame_rating', 'delete', '{}', '{}')`, grAlice)
+	t.Cleanup(func() { f.run(t, `DELETE FROM user_purge_archive WHERE target_user_id = ?`, grAlice) })
+
+	runMirror(t, f, map[int64]string{grWorkSFW: "deleted"},
+		catalogclient.RatingChange{ID: int64(grRatingAlice), WorkID: grWorkSFW, Gone: true})
+	if n := f.count(t, `SELECT count(*) FROM galgame_rating WHERE id = ?`, grRatingAlice) +
+		f.count(t, `SELECT count(*) FROM galgame_rating_held WHERE id = ?`, grRatingAlice); n != 0 {
+		t.Errorf("a purged author's rating was kept")
+	}
+}
+
+func TestRatingMirrorHoldsTheCursorWhenItCannotTellWhyARatingWent(t *testing.T) {
+	f := newGRFix(t)
 	feed := &grFeed{pages: []*catalogclient.RatingChangePage{{Items: []catalogclient.RatingChange{
 		{ID: int64(grRatingAlice), WorkID: grWorkSFW, Gone: true},
 	}}}}
-	down := func(context.Context, int64) (bool, error) { return false, fmt.Errorf("catalog down") }
-	galgameService.NewRatingMirror(feed, store, f.rdb, []string{grForumClient}).WithWorkDeletion(down).Run()
+	down := func(context.Context, int64) (string, error) { return "", fmt.Errorf("catalog down") }
+	galgameService.NewRatingMirror(feed, galgameRepo.NewRatingStore(f.db), f.rdb, []string{grForumClient}).WithWorkFate(down).Run()
 
 	if n := f.count(t, `SELECT count(*) FROM galgame_rating WHERE id = ?`, grRatingAlice); n != 1 {
-		t.Errorf("the rating was dropped while catalog could not say whether its work was deleted")
+		t.Errorf("the rating went while catalog could not say what happened to its work")
 	}
 }

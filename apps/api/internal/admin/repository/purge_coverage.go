@@ -45,6 +45,7 @@ var UserColumns = []UserColumn{
 	{"galgame_quiz_favorite", "user_id", HandlingDelete, ""},
 	{"galgame_rating", "user_id", HandlingKeep, "NextMoe's copy: the purge deletes the ratings on NextMoe and the mirror drops them"},
 	{"galgame_rating_like", "user_id", HandlingDelete, ""},
+	{"galgame_rating_held", "user_id", HandlingDelete, ""},
 	{"galgame_resource", "user_id", HandlingDelete, ""},
 	{"galgame_resource_like", "user_id", HandlingDelete, ""},
 	{"galgame_resource_relocation", "uploader_id", HandlingKeep, "the redirect for links to a resource that moved to LetMoe"},

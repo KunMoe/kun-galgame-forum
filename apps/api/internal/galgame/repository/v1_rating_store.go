@@ -167,13 +167,22 @@ func (s *RatingStore) LikedSet(userID int, ratingIDs []int) (map[int]bool, error
 // work) too, so a local row for the same person and work under another id is a
 // rating NextMoe has replaced; it goes first, or the unique key would refuse
 // the new one.
+// MirrorRating writes NextMoe's rating. Another rating of the same person on
+// the same work is what a merge folds away, so it is held rather than dropped;
+// a rating held earlier gets its forum-only columns and likes back.
 func (s *RatingStore) MirrorRating(r model.GalgameRating) error {
 	return s.db.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Exec(`DELETE FROM galgame_rating WHERE user_id = ? AND work_id = ? AND id <> ?`,
-			r.UserID, r.WorkID, r.ID).Error; err != nil {
+		var replaced []int
+		if err := tx.Raw(`SELECT id FROM galgame_rating WHERE user_id = ? AND work_id = ? AND id <> ?`,
+			r.UserID, r.WorkID, r.ID).Scan(&replaced).Error; err != nil {
 			return err
 		}
-		return tx.Exec(`INSERT INTO galgame_rating
+		for _, id := range replaced {
+			if err := holdRating(tx, id, HeldMerged); err != nil {
+				return err
+			}
+		}
+		if err := tx.Exec(`INSERT INTO galgame_rating
 			(id, work_id, user_id, overall, art, story, music, character, route, system, voice, replay_value,
 			 recommend, spoiler_level, short_summary, author_state, author_completion, client_id, site, written_here,
 			 created, updated)
@@ -201,22 +210,82 @@ func (s *RatingStore) MirrorRating(r model.GalgameRating) error {
 			       EXCLUDED.created, EXCLUDED.updated)`,
 			r.ID, r.WorkID, r.UserID, r.Overall, r.Art, r.Story, r.Music, r.Character, r.Route, r.System,
 			r.Voice, r.ReplayValue, r.Recommend, r.SpoilerLevel, r.ShortSummary, r.AuthorState,
-			r.AuthorCompletion, r.ClientID, r.Site, r.WrittenHere, r.CreatedAt, r.UpdatedAt).Error
+			r.AuthorCompletion, r.ClientID, r.Site, r.WrittenHere, r.CreatedAt, r.UpdatedAt).Error; err != nil {
+			return err
+		}
+		return unholdRating(tx, r.ID)
 	})
+}
+
+const (
+	HeldDeleted = "deleted"
+	HeldMerged  = "merged"
+)
+
+// HoldRating takes a rating out of every read with its likes, to be written
+// back if NextMoe sends it again. A purged author's rating is dropped instead.
+func (s *RatingStore) HoldRating(id int, reason string) error {
+	return s.db.Transaction(func(tx *gorm.DB) error { return holdRating(tx, id, reason) })
+}
+
+func holdRating(tx *gorm.DB, id int, reason string) error {
+	if err := tx.Exec(`
+		INSERT INTO galgame_rating_held (id, user_id, work_id, reason, row, likes)
+		SELECT r.id, r.user_id, r.work_id, ?, to_jsonb(r),
+			COALESCE((SELECT jsonb_agg(to_jsonb(l)) FROM galgame_rating_like l WHERE l.galgame_rating_id = r.id), '[]'::jsonb)
+		FROM galgame_rating r
+		WHERE r.id = ? AND NOT EXISTS (
+			SELECT 1 FROM user_purge_archive p WHERE p.target_user_id = r.user_id AND p.restored_at IS NULL)
+		ON CONFLICT (id) DO NOTHING`, reason, id).Error; err != nil {
+		return err
+	}
+	return tx.Exec(`DELETE FROM galgame_rating WHERE id = ?`, id).Error
+}
+
+func unholdRating(tx *gorm.DB, id int) error {
+	res := tx.Exec(`
+		UPDATE galgame_rating r SET
+			galgame_type = COALESCE(h.row->'galgame_type', r.galgame_type),
+			view = COALESCE((h.row->>'view')::int, r.view),
+			comment_count = COALESCE((h.row->>'comment_count')::int, r.comment_count)
+		FROM galgame_rating_held h WHERE h.id = r.id AND r.id = ?`, id)
+	if res.Error != nil || res.RowsAffected == 0 {
+		return res.Error
+	}
+	if err := tx.Exec(`
+		INSERT INTO galgame_rating_like (id, galgame_rating_id, user_id, created, updated)
+		SELECT l.id, l.galgame_rating_id, l.user_id, l.created, l.updated
+		FROM galgame_rating_held h, jsonb_populate_recordset(NULL::galgame_rating_like, h.likes) l
+		WHERE h.id = ? AND NOT EXISTS (
+			SELECT 1 FROM user_purge_archive p WHERE p.target_user_id = l.user_id AND p.restored_at IS NULL)
+		ON CONFLICT DO NOTHING`, id).Error; err != nil {
+		return err
+	}
+	if err := tx.Exec(`UPDATE galgame_rating SET like_count = (SELECT count(*) FROM galgame_rating_like WHERE galgame_rating_id = ?)
+		WHERE id = ?`, id, id).Error; err != nil {
+		return err
+	}
+	return tx.Exec(`DELETE FROM galgame_rating_held WHERE id = ?`, id).Error
+}
+
+// PurgeHeldRatings drops the ratings a merge folded once the merge can no
+// longer be undone.
+func (s *RatingStore) PurgeHeldRatings(before time.Time) (int64, error) {
+	res := s.db.Exec(`DELETE FROM galgame_rating_held WHERE reason = ? AND held_at < ?`, HeldMerged, before)
+	return res.RowsAffected, res.Error
+}
+
+// RatingOwner answers whose rating id is and of which work.
+func (s *RatingStore) RatingOwner(id int) (userID, workID int, ok bool, err error) {
+	var row struct{ UserID, WorkID int }
+	res := s.db.Raw(`SELECT user_id, work_id FROM galgame_rating WHERE id = ?`, id).Scan(&row)
+	return row.UserID, row.WorkID, res.RowsAffected > 0, res.Error
 }
 
 // SetGameTypes stores the game types the author filed the work under, which
 // only the forum keeps.
 func (s *RatingStore) SetGameTypes(id int, types json.RawMessage) error {
 	return s.db.Exec(`UPDATE galgame_rating SET galgame_type = ?::jsonb WHERE id = ?`, string(types), id).Error
-}
-
-// HideWork keeps a deleted work's ratings and hides them with the work: every
-// rating read leaves out a work whose local row is not rendered, and the
-// catalog mirror renders it again on restore.
-func (s *RatingStore) HideWork(workID int) error {
-	return s.db.Exec(`INSERT INTO galgame (id, updated, catalog_rendered) VALUES (?, now(), false)
-		ON CONFLICT (id) DO UPDATE SET catalog_rendered = false`, workID).Error
 }
 
 // DropRating removes a rating NextMoe deleted; its likes cascade with it.

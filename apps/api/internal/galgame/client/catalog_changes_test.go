@@ -150,24 +150,25 @@ func TestWorkFateReadsADeletedWorkAsAbsent(t *testing.T) {
 	}
 }
 
-func TestWorkDeletedReadsOnly410AsDeleted(t *testing.T) {
+func TestWorkAbsenceTellsDeletedFromMerged(t *testing.T) {
 	for _, tc := range []struct {
-		status int
-		body   string
-		want   bool
+		status          int
+		body            string
+		deleted, merged bool
 	}{
-		{http.StatusGone, `{"code":"ENTITY_DELETED","deleted_reason":"other"}`, true},
-		{http.StatusNotFound, `{"code":"NOT_FOUND"}`, false},
-		{http.StatusNotFound, `{"code":"ENTITY_MERGED","current_id":"9"}`, false},
+		{http.StatusGone, `{"code":"ENTITY_DELETED","deleted_reason":"other"}`, true, false},
+		{http.StatusNotFound, `{"code":"ENTITY_MERGED","current_id":"9"}`, false, true},
+		{http.StatusNotFound, `{"code":"NOT_FOUND"}`, false, false},
+		{http.StatusOK, `{"id":"4242"}`, false, false},
 	} {
 		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(tc.status)
 			_, _ = w.Write([]byte(tc.body))
 		}))
-		got, appErr := New(srv.URL, "nmk_test", "").WorkDeleted(t.Context(), 4242)
+		got, appErr := New(srv.URL, "nmk_test", "").WorkAbsence(t.Context(), 4242)
 		srv.Close()
-		if appErr != nil || got != tc.want {
-			t.Errorf("%d %s: deleted=%v err=%v, want %v", tc.status, tc.body, got, appErr, tc.want)
+		if appErr != nil || (got.Deleted != nil) != tc.deleted || (got.MovedTo != 0) != tc.merged {
+			t.Errorf("%d %s: %+v err=%v, want deleted=%v merged=%v", tc.status, tc.body, got, appErr, tc.deleted, tc.merged)
 		}
 	}
 }

@@ -213,6 +213,7 @@ func (r *PurgeRepository) PurgeUserContent(userID, operatorID int) (PurgeReceipt
 			"DELETE FROM toolset_upload WHERE user_id = ?",
 			"DELETE FROM galgame_activity WHERE user_id = ?",
 			"DELETE FROM galgame_contributor WHERE user_id = ?",
+			"DELETE FROM galgame_rating_held WHERE user_id = ?",
 			"DELETE FROM user_permission_override WHERE user_id = ?",
 		} {
 			if err := del(tx, q, userID); err != nil {
