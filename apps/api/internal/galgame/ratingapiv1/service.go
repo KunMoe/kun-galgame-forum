@@ -191,6 +191,7 @@ func (s *Service) summary(ctx context.Context, r repository.RatingRecord, work *
 	if work != nil {
 		ref := workrepr.Ref(ctx, work, s.CDN)
 		out.Work = &ref
+		out.ReleaseDate, out.ReleaseDatePrecision = workrepr.Release(work.ReleaseDate)
 		out.Maker = workrepr.Maker(work)
 		out.TopTags = workrepr.TopTags(work, includeNSFW, 5)
 	}

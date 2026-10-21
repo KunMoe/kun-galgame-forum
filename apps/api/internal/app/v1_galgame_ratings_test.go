@@ -242,8 +242,11 @@ func TestV1RatingsCarryMakerAndTopTags(t *testing.T) {
 		for _, it := range items {
 			item, _ := it.(map[string]any)
 			maker, _ := item["maker"].(map[string]any)
-			if maker == nil || maker["display_name"] != "Maker Brand" {
-				t.Errorf("maker = %+v, want the developer", item["maker"])
+			if maker == nil || maker["display_name"] != "Maker Brand" || strID(maker["id"]) == "" {
+				t.Errorf("maker = %+v, want the developer with its id", item["maker"])
+			}
+			if item["release_date"] != "2026-01-01" || item["release_date_precision"] != "day" {
+				t.Errorf("release = %v %v, want 2026-01-01 day", item["release_date"], item["release_date_precision"])
 			}
 			if got := tagIDs(item); !slices.Equal(got, tc.want) {
 				t.Errorf("nsfw=%t top_tags = %v, want %v: no spoiler tag, adult only with include_nsfw", tc.nsfw, got, tc.want)
@@ -255,7 +258,11 @@ func TestV1RatingsCarryMakerAndTopTags(t *testing.T) {
 	if resp.StatusCode != http.StatusOK || len(items) == 0 {
 		t.Fatalf("second work: %d %+v", resp.StatusCode, body)
 	}
-	if first, _ := items[0].(map[string]any); first["top_tags"] == nil || len(tagIDs(first)) != 0 {
+	first, _ := items[0].(map[string]any)
+	if first["top_tags"] == nil || len(tagIDs(first)) != 0 {
 		t.Errorf("a work without tags: top_tags = %#v, want []", first["top_tags"])
+	}
+	if first["release_date"] != "2025-06-01" || first["release_date_precision"] != "month" {
+		t.Errorf("a month-precise release = %v %v, want 2025-06-01 month", first["release_date"], first["release_date_precision"])
 	}
 }

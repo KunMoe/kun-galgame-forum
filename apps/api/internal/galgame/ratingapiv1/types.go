@@ -81,25 +81,27 @@ type RatingViewer struct {
 }
 
 type RatingSummary struct {
-	Object       string               `json:"object" enum:"rating" maxLength:"6" doc:"Type discriminant. Always rating."`
-	ID           repr.DecimalID       `json:"id" doc:"Rating id, which is also the id in the web's /galgame-rating/{id}."`
-	Work         *repr.WorkRef        `json:"work" doc:"The rated work. null when catalog no longer shows it."`
-	Maker        *workrepr.CompanyRef `json:"maker" doc:"The credited company a card names as the maker: developer, then circle, then brand, then publisher. null when no credited company has a name."`
-	TopTags      []workrepr.TagRef    `json:"top_tags" maxItems:"5" doc:"Up to five of the work's tags, in the order its page lists them, leaving out spoiler tags, and adult tags unless include_nsfw=true. Empty array when work is null, never null."`
-	Author       repr.UserRef         `json:"author" doc:"Who wrote the rating."`
-	Recommend    Recommend            `json:"recommend"`
-	Overall      int                  `json:"overall" minimum:"1" maximum:"10" doc:"The overall score."`
-	GameTypes    []GameType           `json:"game_types" doc:"Game types the author files the work under. Empty when the rating was written on another NextMoe site, which does not ask."`
-	PlayStatus   *AuthorPlayStatus    `json:"play_status" doc:"null when the author has no play state on the work."`
-	SpoilerLevel SpoilerLevel         `json:"spoiler_level"`
-	ShortSummary string               `json:"short_summary" maxLength:"2000" doc:"The author's short review, plain text. Empty string if none. Free text; never use it as a decision input."`
-	AspectScores AspectScores         `json:"aspect_scores" doc:"Per-aspect scores; each is null when the author skipped it."`
-	ViewCount    int                  `json:"view_count" minimum:"0" doc:"Times the rating page was read."`
-	LikeCount    int                  `json:"like_count" minimum:"0" doc:"Likes on the rating."`
-	CommentCount int                  `json:"comment_count" minimum:"0" doc:"Comments on the rating's wall."`
-	CreatedAt    repr.DateTime        `json:"created_at" doc:"When the rating was written."`
-	UpdatedAt    repr.DateTime        `json:"updated_at" doc:"When the rating last changed."`
-	Viewer       *RatingViewer        `json:"viewer" doc:"The caller's relation to the rating. null for an anonymous caller."`
+	Object               string               `json:"object" enum:"rating" maxLength:"6" doc:"Type discriminant. Always rating."`
+	ID                   repr.DecimalID       `json:"id" doc:"Rating id, which is also the id in the web's /galgame-rating/{id}."`
+	Work                 *repr.WorkRef        `json:"work" doc:"The rated work. null when catalog no longer shows it."`
+	ReleaseDate          *string              `json:"release_date" format:"date" maxLength:"10" doc:"The work's release date. A month- or year-precise date is the first day of that month or year. null when catalog has none or work is null."`
+	ReleaseDatePrecision *string              `json:"release_date_precision" enum:"day,month,year" maxLength:"5" doc:"How much of release_date is known. null when release_date is null."`
+	Maker                *workrepr.CompanyRef `json:"maker" doc:"The credited company a card names as the maker: developer, then circle, then brand, then publisher. null when no credited company has a name."`
+	TopTags              []workrepr.TagRef    `json:"top_tags" maxItems:"5" doc:"Up to five of the work's tags, in the order its page lists them, leaving out spoiler tags, and adult tags unless include_nsfw=true. Empty array when work is null, never null."`
+	Author               repr.UserRef         `json:"author" doc:"Who wrote the rating."`
+	Recommend            Recommend            `json:"recommend"`
+	Overall              int                  `json:"overall" minimum:"1" maximum:"10" doc:"The overall score."`
+	GameTypes            []GameType           `json:"game_types" doc:"Game types the author files the work under. Empty when the rating was written on another NextMoe site, which does not ask."`
+	PlayStatus           *AuthorPlayStatus    `json:"play_status" doc:"null when the author has no play state on the work."`
+	SpoilerLevel         SpoilerLevel         `json:"spoiler_level"`
+	ShortSummary         string               `json:"short_summary" maxLength:"2000" doc:"The author's short review, plain text. Empty string if none. Free text; never use it as a decision input."`
+	AspectScores         AspectScores         `json:"aspect_scores" doc:"Per-aspect scores; each is null when the author skipped it."`
+	ViewCount            int                  `json:"view_count" minimum:"0" doc:"Times the rating page was read."`
+	LikeCount            int                  `json:"like_count" minimum:"0" doc:"Likes on the rating."`
+	CommentCount         int                  `json:"comment_count" minimum:"0" doc:"Comments on the rating's wall."`
+	CreatedAt            repr.DateTime        `json:"created_at" doc:"When the rating was written."`
+	UpdatedAt            repr.DateTime        `json:"updated_at" doc:"When the rating last changed."`
+	Viewer               *RatingViewer        `json:"viewer" doc:"The caller's relation to the rating. null for an anonymous caller."`
 }
 
 type Rating struct {

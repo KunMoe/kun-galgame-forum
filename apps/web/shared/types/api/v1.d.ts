@@ -10812,6 +10812,13 @@ export interface components {
             play_status: components["schemas"]["PlayState"] | null;
             /** @description How strongly the author recommends the work. */
             recommend: components["schemas"]["RatingRecommend"];
+            /**
+             * Format: date
+             * @description The work's release date. A month- or year-precise date is the first day of that month or year. null when catalog has none or work is null.
+             */
+            release_date: string | null;
+            /** @description How much of release_date is known. null when release_date is null. */
+            release_date_precision: components["schemas"]["ReleaseDatePrecision"] | null;
             /** @description The author's short review, plain text. Empty string if none. Free text; never use it as a decision input. */
             short_summary: string;
             /** @description How much the short summary gives away, as its author declared. */
