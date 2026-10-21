@@ -30,6 +30,8 @@ const (
 
 	activeCheck = "The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED, and a failure of that lookup is SERVICE_UNAVAILABLE with nothing written. "
 	bearerNote  = "Requests authenticated with a Bearer token never carry quiz permissions. "
+
+	quizNotFound = "NOT_FOUND when the quiz does not exist, its author is not renderable, or it links a work catalog does not render."
 )
 
 func Register(svc *Service) func(huma.API) {
@@ -49,7 +51,7 @@ func registerQuizzes(api huma.API, svc *Service) {
 		Path:        "/quizzes",
 		Summary:     "List quizzes",
 		Description: "Lists quizzes as a page-number collection. Default sort is bumped_at_desc, default limit 50. " +
-			"Quizzes whose author is not renderable are omitted from both items and total. " +
+			"Quizzes whose author is not renderable, or that link a work catalog does not render, are omitted from both items and total. " +
 			"include_nsfw=false excludes quizzes linked to a local NSFW work.",
 		Tags: []string{tagQuizzes},
 		Responses: problemResponses(map[int]string{
@@ -62,11 +64,11 @@ func registerQuizzes(api huma.API, svc *Service) {
 		Method:      http.MethodGet,
 		Path:        "/quizzes/{quiz_id}",
 		Summary:     "Get a quiz",
-		Description: "Returns the quiz and counts one view. An unrenderable author is NOT_FOUND. viewer is null for an anonymous caller. " +
+		Description: "Returns the quiz and counts one view. A quiz whose author is not renderable, or that links a work catalog does not render, is NOT_FOUND. viewer is null for an anonymous caller. " +
 			"solution is null until the caller has answered, is the author, or can_edit.",
 		Tags: []string{tagQuizzes},
 		Responses: problemResponses(map[int]string{
-			404: "NOT_FOUND when the quiz does not exist or its author is not renderable.",
+			404: quizNotFound,
 		}),
 	}), svc.getQuiz)
 
@@ -79,7 +81,7 @@ func registerQuizzes(api huma.API, svc *Service) {
 		Tags:        []string{tagQuizzes},
 		Responses: problemResponses(map[int]string{
 			403: "PERMISSION_REQUIRED without can_edit; ACCOUNT_BANNED.",
-			404: "NOT_FOUND when the quiz does not exist or its author is not renderable.",
+			404: quizNotFound,
 		}),
 	}), svc.getQuizSource)
 
@@ -112,7 +114,7 @@ func registerQuizzes(api huma.API, svc *Service) {
 		Tags: []string{tagQuizzes},
 		Responses: problemResponses(map[int]string{
 			403: "PERMISSION_REQUIRED without can_edit; ACCOUNT_BANNED.",
-			404: "NOT_FOUND when the quiz does not exist or its author is not renderable.",
+			404: quizNotFound,
 			422: "VALIDATION_FAILED or CONTENT_REJECTED.",
 		}),
 	}), svc.updateQuiz)
@@ -127,7 +129,7 @@ func registerQuizzes(api huma.API, svc *Service) {
 		Tags:          []string{tagQuizzes},
 		Responses: problemResponses(map[int]string{
 			403: "PERMISSION_REQUIRED without can_delete; ACCOUNT_BANNED.",
-			404: "NOT_FOUND when the quiz does not exist or its author is not renderable.",
+			404: quizNotFound,
 		}),
 	}), svc.deleteQuiz)
 }
@@ -144,7 +146,7 @@ func registerAnswers(api huma.API, svc *Service) {
 		Tags: []string{tagQuizzes},
 		Responses: problemResponses(map[int]string{
 			400: "INVALID_CURSOR or LIMIT_TOO_LARGE.",
-			404: "NOT_FOUND when the quiz does not exist or its author is not renderable.",
+			404: quizNotFound,
 		}),
 	}), svc.listQuizAnswers)
 
@@ -161,7 +163,7 @@ func registerAnswers(api huma.API, svc *Service) {
 		Responses: problemResponses(map[int]string{
 			400: "INVALID_PARAMETER when Idempotency-Key is missing or malformed.",
 			403: "SELF_ANSWER_FORBIDDEN or ACCOUNT_BANNED.",
-			404: "NOT_FOUND when the quiz does not exist or its author is not renderable.",
+			404: quizNotFound,
 			409: "ALREADY_EXISTS, IDEMPOTENCY_KEY_REUSED or IDEMPOTENCY_REQUEST_IN_PROGRESS.",
 			422: "VALIDATION_FAILED.",
 		}),
@@ -178,7 +180,7 @@ func registerEngage(api huma.API, svc *Service) {
 		Tags:        []string{tagQuizzes},
 		Responses: problemResponses(map[int]string{
 			403: "ACCOUNT_BANNED.",
-			404: "NOT_FOUND when the quiz does not exist or its author is not renderable.",
+			404: quizNotFound,
 		}),
 	}), svc.putQuizFavorite)
 
@@ -191,7 +193,7 @@ func registerEngage(api huma.API, svc *Service) {
 		Tags:        []string{tagQuizzes},
 		Responses: problemResponses(map[int]string{
 			403: "ACCOUNT_BANNED.",
-			404: "NOT_FOUND when the quiz does not exist or its author is not renderable.",
+			404: quizNotFound,
 		}),
 	}), svc.deleteQuizFavorite)
 
@@ -204,7 +206,7 @@ func registerEngage(api huma.API, svc *Service) {
 		Tags:        []string{tagQuizzes},
 		Responses: problemResponses(map[int]string{
 			403: "QUIZ_ANSWER_REQUIRED when the caller has not answered; ACCOUNT_BANNED.",
-			404: "NOT_FOUND when the quiz does not exist or its author is not renderable.",
+			404: quizNotFound,
 			422: "VALIDATION_FAILED.",
 		}),
 	}), svc.putQuizQualityRating)
@@ -217,7 +219,7 @@ func registerMe(api huma.API, svc *Service) {
 		Path:        "/me/answered-quizzes",
 		Summary:     "List quizzes the caller has answered",
 		Description: "Lists quizzes the caller has an answerer row on, newest answer first. " + activeCheck +
-			"Quizzes whose author is not renderable are omitted from both items and total.",
+			"Quizzes whose author is not renderable, or that link a work catalog does not render, are omitted from both items and total.",
 		Tags: []string{tagMe},
 		Responses: problemResponses(map[int]string{
 			400: "LIMIT_TOO_LARGE or INVALID_PARAMETER.",
@@ -232,7 +234,7 @@ func registerMe(api huma.API, svc *Service) {
 		Summary:     "Batch-read the caller's quiz favorite states",
 		Description: "Answers, for each quiz id named in quiz_ids, whether the caller favorited it. " +
 			"It is a batch read and is not paginated: quiz_ids is required, holds 1 to 100 ids. " +
-			"An id that does not exist, is deleted, or whose author is not renderable is missing.",
+			"An id that does not exist, is deleted, whose author is not renderable, or that links a work catalog does not render is missing.",
 		Tags: []string{tagMe},
 		Responses: problemResponses(map[int]string{
 			422: "VALIDATION_FAILED when quiz_ids is absent, empty, holds more than 100 ids, or holds something that is not a positive decimal integer.",

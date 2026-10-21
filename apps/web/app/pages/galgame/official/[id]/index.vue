@@ -48,9 +48,9 @@ const isIntroExpanded = ref(false)
 const worksDescription = computed(() => {
   if (!total.value) return ''
   if (!imprint.value) {
-    return `资料库中有 ${total.value} 部, 下面是最近更新的几部。`
+    return `鲲 Galgame 论坛数据中有 ${total.value} 部, 下面是最近更新的几部。`
   }
-  return `资料库中自有 ${own.value} 部 · 经旗下厂牌 ${imprint.value} 部, 下面是最近更新的几部。`
+  return `鲲 Galgame 论坛数据中自有 ${own.value} 部 · 经旗下厂牌 ${imprint.value} 部, 下面是最近更新的几部。`
 })
 
 const official = data.value
@@ -172,8 +172,7 @@ if (official) {
     <GalgameOfficialRelationGraph :official-id="officialId" />
 
     <p class="text-default-400 text-xs">
-      本页展示资料库中该会社的作品, 资料来自 鲲 Galgame 论坛。<template
-        v-if="isSfwMode"
+      本页展示该会社的作品, 资料来自 鲲 Galgame 论坛。<template v-if="isSfwMode"
         >当前为 SFW 模式, 该会社含 NSFW 内容的 Galgame
         不计入上方数量。</template
       >如果有数据错误请

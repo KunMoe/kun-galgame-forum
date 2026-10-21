@@ -72,11 +72,11 @@ func (s *Service) listWorkResources(ctx context.Context, in *listWorkResourcesIn
 	if _, p := s.lookupWork(ctx, workID); p != nil {
 		return nil, p
 	}
-	published, err := s.store.WorkPublished(workID)
+	visible, err := s.store.WorkVisible(workID)
 	if err != nil {
 		return nil, problem.Internal(err)
 	}
-	if !published {
+	if !visible {
 		return nil, notFound()
 	}
 	pg := pageOf(in.Page, in.Limit)

@@ -41,7 +41,7 @@ type FollowedWall struct {
 	Object      string                       `json:"object" enum:"followed_wall" maxLength:"13" doc:"Type discriminant. Always followed_wall."`
 	SubjectType SubjectType                  `json:"subject_type"`
 	SubjectID   repr.DecimalID               `json:"subject_id" doc:"Id of the page whose wall this is."`
-	Work        *repr.WorkRef                `json:"work" doc:"The work, for a galgame wall. null for every other kind of wall, and for a galgame wall whose work catalog no longer shows."`
+	Work        *repr.WorkRef                `json:"work" doc:"The work, for a galgame wall. null for every other kind of wall."`
 	Website     *websiteapiv1.WebsiteSummary `json:"website" doc:"The site, for a website wall. null for every other kind of wall, and for a website that no longer exists."`
 }
 
@@ -250,6 +250,7 @@ func (s *Service) listFollowedWalls(ctx context.Context, in *followedWallsInput)
 	}
 	var rows []followed
 	var workIDs, websiteIDs []int
+	workTied := map[SubjectType][]int{}
 	for _, sub := range page.Subscriptions {
 		if sub.NotificationLevel != communityclient.NotificationWatching {
 			continue
@@ -264,6 +265,14 @@ func (s *Service) listFollowedWalls(ctx context.Context, in *followedWallsInput)
 			workIDs = append(workIDs, id)
 		case "website":
 			websiteIDs = append(websiteIDs, id)
+		default:
+			workTied[spec.typ] = append(workTied[spec.typ], id)
+		}
+	}
+	hidden := map[SubjectType]map[int]bool{}
+	for typ, ids := range workTied {
+		if hidden[typ], err = s.store.OnHiddenWorks(string(typ), ids); err != nil {
+			return nil, problem.Internal(err)
 		}
 	}
 	works := map[int]repr.WorkRef{}
@@ -282,8 +291,15 @@ func (s *Service) listFollowedWalls(ctx context.Context, in *followedWallsInput)
 	}
 	items := make([]FollowedWall, 0, len(rows))
 	for _, row := range rows {
+		if hidden[row.spec.typ][row.id] {
+			continue
+		}
 		item := FollowedWall{Object: "followed_wall", SubjectType: row.spec.typ, SubjectID: repr.ID(row.id)}
-		if w, ok := works[row.id]; ok && row.spec.typ == "galgame" {
+		if row.spec.typ == "galgame" {
+			w, ok := works[row.id]
+			if !ok {
+				continue
+			}
 			item.Work = &w
 		}
 		if site, ok := websites[row.id]; ok && row.spec.typ == "website" {

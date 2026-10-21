@@ -130,6 +130,13 @@ export const KUN_ADMIN_PAGE_ASIDE_NAV_ITEM: KunAdminPageAsideItem[] = [
     permissions: ['update_log.create', 'update_log.edit', 'update_log.delete']
   },
   {
+    name: 'merge-folds',
+    label: '作品合并记录',
+    icon: 'lucide:git-merge',
+    router: 'merge-folds',
+    role: 'admin'
+  },
+  {
     name: 'permission',
     label: '权限管理',
     icon: 'lucide:shield-check',

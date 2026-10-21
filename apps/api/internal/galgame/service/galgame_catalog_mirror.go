@@ -158,7 +158,7 @@ func (s *GalgameCatalogMirror) RunMirror() {
 		limits += n
 		dates += d
 		langs += l
-		u, err := s.settle(ctx, slices.Collect(maps.Keys(hidden)), goneIDs, len(page.Items), "信道")
+		u, err := s.settle(ctx, slices.Collect(maps.Keys(hidden)), goneIDs, len(page.Items), "信道", true)
 		if err != nil {
 			slog.Warn("catalog 镜像入库失败, 游标保持不动", "pages", pages, "error", err)
 			break
@@ -233,7 +233,7 @@ func (s *GalgameCatalogMirror) verify(ctx context.Context, ids []int) {
 			absent = append(absent, id)
 		}
 	}
-	unlisted, err := s.settle(ctx, slices.Collect(maps.Keys(hidden)), absent, len(ids), "核对")
+	unlisted, err := s.settle(ctx, slices.Collect(maps.Keys(hidden)), absent, len(ids), "核对", false)
 	if err != nil {
 		slog.Warn("catalog 镜像核对入库失败", "error", err)
 		return
@@ -246,9 +246,15 @@ func (s *GalgameCatalogMirror) verify(ctx context.Context, ids []int) {
 // back under a hidden claim. absent did not come back at all, and each local one
 // is asked about on the detail face: a merge with a survivor catalog renders is
 // handed to merge-fold, and anything but an answer leaves the row untouched.
-func (s *GalgameCatalogMirror) settle(ctx context.Context, hidden, absent []int, asked int, lane string) (int64, error) {
+func (s *GalgameCatalogMirror) settle(ctx context.Context, hidden, absent []int, asked int, lane string, reportedGone bool) (int64, error) {
 	if s.galgameRepo == nil {
 		return 0, nil
+	}
+	if reportedGone {
+		var err error
+		if absent, err = s.hideStrays(ctx, absent); err != nil {
+			return 0, err
+		}
 	}
 	absent, err := s.galgameRepo.LocalAmong(absent)
 	if err != nil {
@@ -262,15 +268,25 @@ func (s *GalgameCatalogMirror) settle(ctx context.Context, hidden, absent []int,
 	if err != nil {
 		return 0, err
 	}
-	if limit := max(mirrorFlipFloor, (asked*mirrorFlipPercent+99)/100); len(flips) > limit {
-		slog.Warn("catalog 镜像将一次下架过多条目, 本轮全部不下架",
-			"lane", lane, "asked", asked, "would_unlist", len(flips), "limit", limit)
-		return 0, nil
+	// The limit guards against a catalog that answers empty while broken, and
+	// trips before the per-row lookups so an outage is not asked about row by
+	// row. Rows the changes feed itself reported gone are still looked up, and a
+	// 410 ENTITY_DELETED among them is catalog deleting on purpose: those go.
+	tripped := len(flips) > max(mirrorFlipFloor, (asked*mirrorFlipPercent+99)/100)
+	if tripped {
+		slog.Warn("catalog 镜像将一次下架过多条目, 本轮只下架 catalog 明确答复已删除的条目",
+			"lane", lane, "asked", asked, "would_unlist", len(flips))
+		if !reportedGone {
+			return 0, nil
+		}
 	}
 
-	unrendered := slices.Clone(hidden)
+	var unrendered []int
+	if !tripped {
+		unrendered = slices.Clone(hidden)
+	}
 	for _, id := range absent {
-		movedTo, found, appErr := s.galgameClient.WorkFate(ctx, int64(id))
+		absence, found, appErr := s.galgameClient.WorkFate(ctx, int64(id))
 		switch {
 		case appErr != nil:
 			slog.Warn("catalog 作品去向查询失败, 本行不动", "work_id", id, "error", appErr.Message)
@@ -278,14 +294,17 @@ func (s *GalgameCatalogMirror) settle(ctx context.Context, hidden, absent []int,
 		case found:
 			slog.Warn("catalog 批量面与详情面对同一作品答法不同, 本行不动", "work_id", id)
 			continue
-		case movedTo != 0:
-			survivor, _, appErr := s.galgameClient.MirrorByCatalogIDs(ctx, []int64{movedTo})
+		case absence.Deleted != nil:
+		case tripped:
+			continue
+		case absence.MovedTo != 0:
+			survivor, _, appErr := s.galgameClient.MirrorByCatalogIDs(ctx, []int64{absence.MovedTo})
 			if appErr != nil {
-				slog.Warn("catalog 合并幸存条目查询失败, 本行不动", "work_id", id, "survivor", movedTo, "error", appErr.Message)
+				slog.Warn("catalog 合并幸存条目查询失败, 本行不动", "work_id", id, "survivor", absence.MovedTo, "error", appErr.Message)
 				continue
 			}
-			if _, ok := survivor[int(movedTo)]; ok && s.merges != nil {
-				s.merges.Enqueue(ctx, id, movedTo)
+			if _, ok := survivor[int(absence.MovedTo)]; ok && s.merges != nil {
+				s.merges.Enqueue(ctx, id, absence.MovedTo)
 			}
 		}
 		unrendered = append(unrendered, id)
@@ -348,4 +367,24 @@ func groupByContentLimit(limits map[int]string) map[string][]int {
 		}
 	}
 	return out
+}
+
+// hideStrays gives a deleted work that has no local row one, hidden, when the
+// forum still holds something that names it, and returns the rest of absent.
+func (s *GalgameCatalogMirror) hideStrays(ctx context.Context, absent []int) ([]int, error) {
+	strays, err := s.galgameRepo.ReferencedWithoutRow(absent)
+	if err != nil || len(strays) == 0 {
+		return absent, err
+	}
+	var deleted []int
+	for _, id := range strays {
+		fate, found, appErr := s.galgameClient.WorkFate(ctx, int64(id))
+		if appErr == nil && !found && fate.Deleted != nil {
+			deleted = append(deleted, id)
+		}
+	}
+	if err := s.galgameRepo.AddHidden(deleted); err != nil {
+		return absent, err
+	}
+	return slices.DeleteFunc(absent, func(id int) bool { return slices.Contains(deleted, id) }), nil
 }

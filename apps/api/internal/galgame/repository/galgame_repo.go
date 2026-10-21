@@ -75,7 +75,7 @@ func (r *GalgameRepository) PublishedIDsByCreator(userID, page, limit int) ([]in
 func (r *GalgameRepository) CountPublishedByCreatorSince(userID int, since time.Time) int {
 	var n int64
 	r.db.Table("galgame").
-		Where("published AND creator_user_id = ? AND created >= ?", userID, since).
+		Where("published AND catalog_rendered AND creator_user_id = ? AND created >= ?", userID, since).
 		Count(&n)
 	return int(n)
 }
@@ -100,6 +100,32 @@ func (r *GalgameRepository) LocalAmong(ids []int) ([]int, error) {
 		Where("id = ANY(?::int[])", intArrayLit(ids)).
 		Order("id").Pluck("id", &out).Error
 	return out, err
+}
+
+// ReferencedWithoutRow are the ids among ids that have no local row while a
+// quiz link, a rating or a feed row still names them. Every read that hides a
+// deleted work's data does it through the work's local row.
+func (r *GalgameRepository) ReferencedWithoutRow(ids []int) ([]int, error) {
+	var out []int
+	if len(ids) == 0 {
+		return out, nil
+	}
+	err := r.db.Raw(`SELECT x.id FROM unnest(?::int[]) x(id)
+		WHERE NOT EXISTS (SELECT 1 FROM galgame g WHERE g.id = x.id)
+		  AND (EXISTS (SELECT 1 FROM galgame_quiz_galgame q WHERE q.work_id = x.id)
+		    OR EXISTS (SELECT 1 FROM galgame_rating rt WHERE rt.work_id = x.id)
+		    OR EXISTS (SELECT 1 FROM feed_activity f WHERE f.work_id = x.id))
+		ORDER BY x.id`, intArrayLit(ids)).Scan(&out).Error
+	return out, err
+}
+
+func (r *GalgameRepository) AddHidden(ids []int) error {
+	if len(ids) == 0 {
+		return nil
+	}
+	return r.db.Exec(`INSERT INTO galgame (id, updated, catalog_rendered, catalog_checked_at)
+		SELECT x, now(), false, now() FROM unnest(?::int[]) x
+		ON CONFLICT (id) DO UPDATE SET catalog_rendered = false, catalog_checked_at = now()`, intArrayLit(ids)).Error
 }
 
 func (r *GalgameRepository) RenderedAmong(ids []int) ([]int, error) {

@@ -69,6 +69,7 @@ GET    /api/v1/admin/website-categories/:website_category_id cors.New → v1Head
 GET    /api/v1/admin/website-tag-groups/:website_tag_group_id cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/admin/website-tags/:website_tag_id     cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/admin/websites/:website_id             cors.New → v1Headers → fiberAdapter.Handle
+GET    /api/v1/admin/work-merge-folds                 cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/app/version                            cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/characters                             cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/characters/:character_id               cors.New → v1Headers → fiberAdapter.Handle

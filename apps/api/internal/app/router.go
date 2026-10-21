@@ -12,6 +12,7 @@ import (
 	galgameapiv1 "kun-galgame-api/internal/galgame/apiv1"
 	calendarapiv1 "kun-galgame-api/internal/galgame/calendarapiv1"
 	galgameentityv1 "kun-galgame-api/internal/galgame/entityapiv1"
+	"kun-galgame-api/internal/galgame/foldapiv1"
 	ratingapiv1 "kun-galgame-api/internal/galgame/ratingapiv1"
 	resourceapiv1 "kun-galgame-api/internal/galgame/resourceapiv1"
 	imageapiv1 "kun-galgame-api/internal/image/apiv1"
@@ -80,6 +81,7 @@ func (a *App) setupRoutes() {
 		updateapiv1.Register(a.newUpdateV1()),
 		trustapiv1.Register(a.newTrustV1(a.newUserV1())),
 		permissionapiv1.Register(a.newPermissionV1()),
+		foldapiv1.Register(a.newWorkMergeFoldV1()),
 		docapiv1.Register(a.newDocV1()),
 		friendlinkapiv1.Register(a.newFriendLinkV1()),
 		appreleaseapiv1.Register(a.newAppReleaseV1()),

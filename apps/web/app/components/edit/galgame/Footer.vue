@@ -120,7 +120,7 @@ const handleSubmitGalgame = async () => {
   let created = await submit(false)
   if (!created.ok && created.problem.code === 'DUPLICATE_SUSPECTS') {
     const confirmed = await useComponentMessageStore().alert(
-      '资料库中已有同名作品',
+      '鲲 Galgame 论坛数据中已有同名作品',
       '请先回到「发布 Galgame」搜索确认这不是同一部作品 —— 重复条目会被驳回。确实是不同作品 (例如同名重制版或同人作品) 才继续提交。'
     )
     if (!confirmed) {

@@ -66,7 +66,13 @@ type SortSpec struct {
 	Expr string
 }
 
+const worksRendered = `NOT EXISTS (
+	SELECT 1 FROM galgame_quiz_galgame gg
+	JOIN galgame g ON g.id = gg.work_id
+	WHERE gg.quiz_id = q.id AND NOT g.catalog_rendered)`
+
 func (f ListFilter) apply(q *gorm.DB) *gorm.DB {
+	q = q.Where(worksRendered)
 	if f.Type != "" {
 		q = q.Where("q.type = ?", f.Type)
 	}
@@ -126,12 +132,16 @@ func (s *Store) List(f ListFilter, sort SortSpec, offset, limit int) ([]model.Ga
 	return rows, err
 }
 
-func (s *Store) DistinctAnsweredAuthors(answererID int) ([]int, error) {
-	var ids []int
-	err := s.db.Table("galgame_quiz q").
+func (s *Store) answered(answererID int) *gorm.DB {
+	return s.db.Table("galgame_quiz q").
 		Joins("JOIN galgame_quiz_answer a ON a.quiz_id = q.id").
 		Where("a.user_id = ? AND a.role = ?", answererID, "answerer").
-		Distinct("q.user_id").Pluck("q.user_id", &ids).Error
+		Where(worksRendered)
+}
+
+func (s *Store) DistinctAnsweredAuthors(answererID int) ([]int, error) {
+	var ids []int
+	err := s.answered(answererID).Distinct("q.user_id").Pluck("q.user_id", &ids).Error
 	return ids, err
 }
 
@@ -139,9 +149,7 @@ func (s *Store) CountAnswered(answererID int, authorIDs []int) (int, error) {
 	if authorIDs != nil && len(authorIDs) == 0 {
 		return 0, nil
 	}
-	q := s.db.Table("galgame_quiz q").
-		Joins("JOIN galgame_quiz_answer a ON a.quiz_id = q.id").
-		Where("a.user_id = ? AND a.role = ?", answererID, "answerer")
+	q := s.answered(answererID)
 	if authorIDs != nil {
 		q = q.Where("q.user_id IN ?", authorIDs)
 	}
@@ -154,9 +162,7 @@ func (s *Store) ListAnswered(answererID int, authorIDs []int, offset, limit int)
 	if authorIDs != nil && len(authorIDs) == 0 {
 		return nil, nil
 	}
-	q := s.db.Table("galgame_quiz q").
-		Joins("JOIN galgame_quiz_answer a ON a.quiz_id = q.id").
-		Where("a.user_id = ? AND a.role = ?", answererID, "answerer")
+	q := s.answered(answererID)
 	if authorIDs != nil {
 		q = q.Where("q.user_id IN ?", authorIDs)
 	}
@@ -177,12 +183,21 @@ func (s *Store) Find(id int) (*model.GalgameQuiz, error) {
 	return &row, nil
 }
 
-func (s *Store) FindMany(ids []int) ([]model.GalgameQuiz, error) {
+func (s *Store) FindRendered(id int) (*model.GalgameQuiz, error) {
+	var row model.GalgameQuiz
+	err := s.db.Table("galgame_quiz q").Select("q.*").Where("q.id = ?", id).Where(worksRendered).Take(&row).Error
+	if err != nil {
+		return nil, notFound(err)
+	}
+	return &row, nil
+}
+
+func (s *Store) FindManyRendered(ids []int) ([]model.GalgameQuiz, error) {
 	if len(ids) == 0 {
 		return nil, nil
 	}
 	var rows []model.GalgameQuiz
-	err := s.db.Where("id IN ?", ids).Find(&rows).Error
+	err := s.db.Table("galgame_quiz q").Select("q.*").Where("q.id IN ?", ids).Where(worksRendered).Find(&rows).Error
 	return rows, err
 }
 

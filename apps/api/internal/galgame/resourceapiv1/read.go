@@ -20,17 +20,17 @@ func (s *Service) getGalgameResource(ctx context.Context, in *resourceIDInput) (
 	if p != nil {
 		return nil, p
 	}
+	out, p := s.one(ctx, row, v1.User(ctx))
+	if p != nil {
+		return nil, p
+	}
 	if err := s.store.IncrementView(row.ID); err != nil {
 		if errors.Is(err, repository.ErrResourceNotFound) {
 			return nil, notFound()
 		}
 		return nil, problem.Internal(err)
 	}
-	row.View++
-	out, p := s.one(ctx, row, v1.User(ctx))
-	if p != nil {
-		return nil, p
-	}
+	out.ViewCount++
 	return &resourceOutput{Body: out}, nil
 }
 

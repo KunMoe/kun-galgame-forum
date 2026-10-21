@@ -126,7 +126,7 @@ const emptyText = computed(() =>
     :no-result-text="emptyText"
     :loading="loading"
     :debounce="300"
-    loading-text="正在检索资料库…"
+    loading-text="正在检索鲲 Galgame 论坛数据…"
     popup-width="auto"
     rounded="full"
     size="sm"

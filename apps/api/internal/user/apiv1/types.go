@@ -141,9 +141,9 @@ type UserCounts struct {
 	CommunityCommentCount      *int `json:"community_comment_count" minimum:"0" doc:"Visible posts on community comment walls. null when the community service is unavailable and there is no cached value."`
 	PublishedGalgameCount      int  `json:"published_galgame_count" minimum:"0" doc:"Galgames the user has published. May be 0 when the catalog is unavailable."`
 	ContributedGalgameCount    int  `json:"contributed_galgame_count" minimum:"0" doc:"Galgames the user has contributed an edit to. May be 0 when the catalog is unavailable."`
-	PublishedGalgameTodayCount int  `json:"published_galgame_today_count" minimum:"0" doc:"Galgames the user published today by the galgame-domain clock. May be 0 when the catalog is unavailable."`
-	GalgameRatingCount         int  `json:"galgame_rating_count" minimum:"0" doc:"Galgame ratings the user authored."`
-	GalgameResourceCount       int  `json:"galgame_resource_count" minimum:"0" doc:"Galgame resources the user authored."`
+	PublishedGalgameTodayCount int  `json:"published_galgame_today_count" minimum:"0" doc:"Galgames the user published today by the galgame-domain clock, leaving out works the catalog does not show (deleted or hidden). May be 0 when the catalog is unavailable."`
+	GalgameRatingCount         int  `json:"galgame_rating_count" minimum:"0" doc:"Galgame ratings the user authored, leaving out ratings on works the catalog does not show (deleted or hidden)."`
+	GalgameResourceCount       int  `json:"galgame_resource_count" minimum:"0" doc:"Galgame resources the user authored, leaving out resources on works the catalog does not show (deleted or hidden)."`
 	ToolsetCount               int  `json:"toolset_count" minimum:"0" doc:"Toolsets the user authored."`
 	ToolsetResourceCount       int  `json:"toolset_resource_count" minimum:"0" doc:"Toolset resources the user authored."`
 	ReceivedUpvoteCount        int  `json:"received_upvote_count" minimum:"0" doc:"Upvotes on topics the user authored."`

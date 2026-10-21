@@ -56,7 +56,7 @@ func claimActionError(err error) *errors.AppError {
 	case stderrors.Is(err, catalogclient.ErrNotFound):
 		return errors.ErrNotFound("条目不存在")
 	case stderrors.Is(err, catalogclient.ErrNotConfigured):
-		return errors.New(errors.CodeBiz, "资料库服务暂不可用", http.StatusServiceUnavailable)
+		return errors.New(errors.CodeBiz, "鲲 Galgame 论坛数据服务暂不可用", http.StatusServiceUnavailable)
 	case stderrors.As(err, &apiErr):
 		switch apiErr.Status {
 		case http.StatusForbidden:
@@ -70,5 +70,5 @@ func claimActionError(err error) *errors.AppError {
 	default:
 		slog.Warn("claim action: catalog 不可达", "error", err)
 	}
-	return errors.New(errors.CodeBiz, "资料库服务暂不可用", http.StatusServiceUnavailable)
+	return errors.New(errors.CodeBiz, "鲲 Galgame 论坛数据服务暂不可用", http.StatusServiceUnavailable)
 }

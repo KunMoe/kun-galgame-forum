@@ -123,6 +123,8 @@ var vocabularies = []vocabulary{
 	{"WallSubjectType", []string{"galgame", "galgame_rating", "galgame_resource", "galgame_quiz", "toolset", "website"}},
 	{"WebsiteState", []string{"normal", "unreachable", "closed"}},
 	{"WorkMedium", []string{"galgame", "manga", "novel", "anime", "asmr", "doujin_game", "music"}},
+	{"WorkMergeFoldProblemCause", []string{"gone", "elsewhere", "conflict", "purged_user", "survivor_folded"}},
+	{"WorkMergeFoldTable", []string{"galgame", "galgame_resource", "galgame_activity", "galgame_comment_community_map", "galgame_resource_relocation", "galgame_like", "galgame_favorite", "galgame_contributor", "galgame_quiz_galgame", "galgame_view_daily", "feed_activity"}},
 	{"WorkRankingSort", []string{"views_desc", "likes_desc", "favorites_desc", "resources_desc", "rating_desc"}},
 	{"WorkSort", []string{"resource_updated_desc", "resource_updated_asc", "created_desc", "created_asc", "view_desc", "view_asc", "view_1d_desc", "view_1d_asc", "view_7d_desc", "view_7d_asc", "view_30d_desc", "view_30d_asc", "release_date_desc", "release_date_asc", "rating_desc", "rating_asc"}},
 	{"WorkState", []string{"wish", "doing", "done", "on_hold", "dropped"}},

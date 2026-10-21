@@ -242,9 +242,17 @@ func (r *GalgameListRepository) OrderRestrictIDs(ids []int, f model.GalgameListF
 	return out
 }
 
-func (r *GalgameListRepository) bayesianExpr() string {
+// RatingPriorMean is the Bayesian prior: the mean of the ratings on works
+// catalog still shows, so a deleted work's ratings stop moving every score.
+func RatingPriorMean(db *gorm.DB) (float64, error) {
 	var m float64
-	r.db.Table("galgame_rating").Select("COALESCE(AVG(overall), 0)").Scan(&m)
+	err := db.Raw(`SELECT COALESCE(AVG(r.overall), 0) FROM galgame_rating r
+		LEFT JOIN galgame g ON g.id = r.work_id WHERE COALESCE(g.catalog_rendered, true)`).Scan(&m).Error
+	return m, err
+}
+
+func (r *GalgameListRepository) bayesianExpr() string {
+	m, _ := RatingPriorMean(r.db)
 	c := strconv.FormatFloat(bayesianPriorC, 'f', -1, 64)
 	ms := strconv.FormatFloat(m, 'f', 6, 64)
 	return "(" + c + " * " + ms + " + COALESCE(rt.rsum, 0)) / (" +
@@ -285,8 +293,7 @@ func (r *GalgameListRepository) BayesianRatings(ids []int) map[int]RatingInfo {
 	if len(ids) == 0 {
 		return out
 	}
-	var m float64
-	r.db.Table("galgame_rating").Select("COALESCE(AVG(overall), 0)").Scan(&m)
+	m, _ := RatingPriorMean(r.db)
 
 	type aggRow struct {
 		WorkID int     `gorm:"column:work_id"`

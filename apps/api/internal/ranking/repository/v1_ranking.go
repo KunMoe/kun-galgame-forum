@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	galgameModel "kun-galgame-api/internal/galgame/model"
+	galgameRepo "kun-galgame-api/internal/galgame/repository"
 	topicRepo "kun-galgame-api/internal/topic/repository"
 )
 
@@ -49,7 +50,8 @@ var userRankingQueries = map[string]string{
 		WHERE r.status = 0 AND ` + listedTopic + ` GROUP BY r.user_id`,
 	"comments": `SELECT c.user_id AS id, COUNT(*) AS value FROM topic_comment c JOIN topic t ON t.id = c.topic_id
 		WHERE c.status = 0 AND ` + listedTopic + ` GROUP BY c.user_id`,
-	"resources": `SELECT user_id AS id, COUNT(*) AS value FROM galgame_resource WHERE status = 0 GROUP BY user_id`,
+	"resources": `SELECT r.user_id AS id, COUNT(*) AS value FROM galgame_resource r JOIN galgame g ON g.id = r.work_id
+		WHERE r.status = 0 AND g.catalog_rendered GROUP BY r.user_id`,
 }
 
 func (r *RankingRepository) TopUsers(key string, limit int) ([]RankedRow, error) {
@@ -83,14 +85,14 @@ func (r *RankingRepository) TopWorks(key string, includeNSFW, includeResourceles
 	}
 	var rows []RankedRow
 	if key == "rating" {
-		var mean float64
-		if err := r.db.Table("galgame_rating").Select("COALESCE(AVG(overall), 0)").Scan(&mean).Error; err != nil {
+		mean, err := galgameRepo.RatingPriorMean(r.db)
+		if err != nil {
 			return nil, err
 		}
 		c := strconv.FormatFloat(rankingBayesianPriorC, 'f', -1, 64)
 		m := strconv.FormatFloat(mean, 'f', 6, 64)
 		bayes := "(" + c + " * " + m + " + rt.rsum) / (" + c + " + rt.rcnt)"
-		err := q.Joins("JOIN (SELECT work_id, SUM(overall) AS rsum, COUNT(*) AS rcnt FROM galgame_rating GROUP BY work_id) rt ON rt.work_id = g.id").
+		err = q.Joins("JOIN (SELECT work_id, SUM(overall) AS rsum, COUNT(*) AS rcnt FROM galgame_rating GROUP BY work_id) rt ON rt.work_id = g.id").
 			Select("g.id, COALESCE(g.creator_user_id, 0) AS owner_id, ROUND((" + bayes + ")::numeric, 2) AS value").
 			Order(bayes + " DESC, g.id DESC").Limit(limit).Scan(&rows).Error
 		return rows, err

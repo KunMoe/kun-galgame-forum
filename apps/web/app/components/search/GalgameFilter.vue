@@ -127,7 +127,7 @@ watch(
 
     <template #end>
       <KunTooltip
-        text="资料库的搜索索引里没有评分这个属性, 也没有按评分排序。想按评分筛选请前往 Galgame 资源资料库, 那里的评分是本站自己的。"
+        text="鲲 Galgame 论坛数据的搜索索引里没有评分这个属性, 也没有按评分排序。想按评分筛选请前往 Galgame 资源资料库, 那里的评分是本站自己的。"
         position="bottom"
       >
         <KunIcon

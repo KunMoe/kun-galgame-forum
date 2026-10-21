@@ -19,20 +19,26 @@ func NewGalgameMergeRepository(db *gorm.DB) *GalgameMergeRepository {
 	return &GalgameMergeRepository{db: db}
 }
 
-var mergeMovableTables = []string{
-	"galgame_resource",
-	"galgame_activity",
-	"galgame_comment_community_map",
+type mergeTable struct {
+	table, key, peer string
 }
 
-var mergeUniqueTables = []struct{ table, peer string }{
-	{"galgame_like", "user_id"},
-	{"galgame_favorite", "user_id"},
-	{"galgame_contributor", "user_id"},
-	{"galgame_quiz_galgame", "quiz_id"},
+var mergeMovableTables = []mergeTable{
+	{table: "galgame_resource", key: "id"},
+	{table: "galgame_activity", key: "id"},
+	{table: "galgame_comment_community_map", key: "old_comment_id"},
+	{table: "galgame_resource_relocation", key: "resource_id"},
+}
+
+var mergeUniqueTables = []mergeTable{
+	{table: "galgame_like", key: "id", peer: "user_id"},
+	{table: "galgame_favorite", key: "id", peer: "user_id"},
+	{table: "galgame_contributor", key: "id", peer: "user_id"},
+	{table: "galgame_quiz_galgame", key: "quiz_id", peer: "quiz_id"},
 }
 
 type MergeCounts struct {
+	FoldID   int64
 	Moved    int64
 	Dropped  int64
 	Comments int
@@ -43,16 +49,31 @@ type MergeCounts struct {
 // links and two feed rows on works merged on 2026-09-05 until a census found
 // them on 2026-09-28: a work nobody opened on the forum has no local row.
 func (r *GalgameMergeRepository) ReferencedIDsIn(ids []int) ([]int, error) {
+	return r.referencedIn(ids, true)
+}
+
+func (r *GalgameMergeRepository) referencedBeyondRow(workID int) (bool, error) {
+	ids, err := r.referencedIn([]int{workID}, false)
+	return len(ids) > 0, err
+}
+
+func (r *GalgameMergeRepository) referencedIn(ids []int, withRow bool) ([]int, error) {
 	if len(ids) == 0 {
 		return nil, nil
 	}
-	sources := []string{
-		"SELECT id FROM galgame WHERE id IN @ids",
-		"SELECT entity_id FROM galgame_view_daily WHERE entity_id IN @ids",
-		"SELECT work_id FROM feed_activity WHERE work_id IN @ids",
+	feed := "SELECT work_id FROM feed_activity WHERE work_id IN @ids"
+	var sources []string
+	if withRow {
+		sources = append(sources, "SELECT id FROM galgame WHERE id IN @ids")
+	} else {
+		feed += " AND type <> 'GALGAME_CREATION'"
 	}
-	for _, table := range mergeMovableTables {
-		sources = append(sources, fmt.Sprintf("SELECT work_id FROM %s WHERE work_id IN @ids", table))
+	sources = append(sources,
+		"SELECT entity_id FROM galgame_view_daily WHERE entity_id IN @ids",
+		feed,
+	)
+	for _, t := range mergeMovableTables {
+		sources = append(sources, fmt.Sprintf("SELECT work_id FROM %s WHERE work_id IN @ids", t.table))
 	}
 	for _, t := range mergeUniqueTables {
 		sources = append(sources, fmt.Sprintf("SELECT work_id FROM %s WHERE work_id IN @ids", t.table))
@@ -88,6 +109,14 @@ func (r *GalgameMergeRepository) FoldTx(tx *gorm.DB, oldWorkID, newWorkID int) (
 	}
 	hasRow := found.RowsAffected > 0
 
+	if err := tx.Raw(`
+		INSERT INTO galgame_merge_fold (old_work_id, new_work_id, old_row, survivor_before)
+		VALUES (?, ?, (SELECT to_jsonb(g) FROM galgame g WHERE g.id = ?), (SELECT to_jsonb(g) FROM galgame g WHERE g.id = ?))
+		RETURNING id`, oldWorkID, newWorkID, oldWorkID, newWorkID).Scan(&counts.FoldID).Error; err != nil {
+		return counts, err
+	}
+	ledger := foldLedger{tx: tx, foldID: counts.FoldID, old: oldWorkID, new: newWorkID}
+
 	if hasRow {
 		counts.Comments = dead.CommentCount
 
@@ -105,17 +134,24 @@ func (r *GalgameMergeRepository) FoldTx(tx *gorm.DB, oldWorkID, newWorkID int) (
 		}
 	}
 
-	for _, table := range mergeMovableTables {
-		res := tx.Exec(fmt.Sprintf("UPDATE %s SET work_id = ? WHERE work_id = ?", table), newWorkID, oldWorkID)
-		if res.Error != nil {
-			return counts, res.Error
+	for _, t := range mergeMovableTables {
+		n, err := ledger.move(t, "")
+		if err != nil {
+			return counts, err
 		}
-		counts.Moved += res.RowsAffected
+		counts.Moved += n
 	}
 
 	// Two contributors of the same game are one contributor after the fold,
 	// and their edit counts add up: dropping the dead row instead would
 	// silently reduce someone's revision_count on the survivor.
+	if err := ledger.record(`
+			SELECT 'galgame_contributor', 'summed', jsonb_build_object('id', t.id),
+				jsonb_build_object('survivor', to_jsonb(t), 'absorbed', to_jsonb(s))
+			FROM galgame_contributor t JOIN galgame_contributor s ON s.user_id = t.user_id
+			WHERE s.work_id = @old AND t.work_id = @new`); err != nil {
+		return counts, err
+	}
 	if err := tx.Exec(`
 			UPDATE galgame_contributor t SET
 				revision_count = t.revision_count + s.revision_count,
@@ -128,16 +164,18 @@ func (r *GalgameMergeRepository) FoldTx(tx *gorm.DB, oldWorkID, newWorkID int) (
 	}
 
 	for _, t := range mergeUniqueTables {
-		moved := tx.Exec(fmt.Sprintf(`
-				UPDATE %[1]s SET work_id = ? WHERE work_id = ?
-				  AND NOT EXISTS (
-					SELECT 1 FROM %[1]s x WHERE x.work_id = ? AND x.%[2]s = %[1]s.%[2]s)`,
-			t.table, t.peer), newWorkID, oldWorkID, newWorkID)
-		if moved.Error != nil {
-			return counts, moved.Error
+		moved, err := ledger.move(t, fmt.Sprintf(
+			"AND NOT EXISTS (SELECT 1 FROM %[1]s x WHERE x.work_id = @new AND x.%[2]s = %[1]s.%[2]s)", t.table, t.peer))
+		if err != nil {
+			return counts, err
 		}
-		counts.Moved += moved.RowsAffected
+		counts.Moved += moved
 
+		if err := ledger.record(fmt.Sprintf(`
+				SELECT '%[1]s', 'dropped', jsonb_build_object('%[2]s', t.%[2]s), to_jsonb(t)
+				FROM %[1]s t WHERE t.work_id = @old`, t.table, t.key)); err != nil {
+			return counts, err
+		}
 		if err := archiveByGalgame(tx, t.table, oldWorkID, newWorkID); err != nil {
 			return counts, err
 		}
@@ -150,6 +188,11 @@ func (r *GalgameMergeRepository) FoldTx(tx *gorm.DB, oldWorkID, newWorkID int) (
 
 	// entity_id, not work_id, which is why a column sweep does not find
 	// this one. Same-day buckets add rather than collide.
+	if err := ledger.record(`
+			SELECT 'galgame_view_daily', 'summed', jsonb_build_object('day', v.day), to_jsonb(v)
+			FROM galgame_view_daily v WHERE v.entity_id = @old`); err != nil {
+		return counts, err
+	}
 	if err := tx.Exec(`
 			INSERT INTO galgame_view_daily (entity_id, day, count)
 			SELECT ?, day, count FROM galgame_view_daily WHERE entity_id = ?
@@ -188,6 +231,12 @@ func (r *GalgameMergeRepository) FoldTx(tx *gorm.DB, oldWorkID, newWorkID int) (
 	// 2026-09-05 two comments left the home feed and their authors'
 	// timelines with nothing in the logs. Everything trigger-backed is
 	// already on the survivor by now; this only catches what was missed.
+	if err := ledger.record(`
+			SELECT 'feed_activity', 'repointed', jsonb_build_object('id', f.id),
+				jsonb_build_object('work_id', f.work_id, 'link', f.link)
+			FROM feed_activity f WHERE f.work_id = @old`); err != nil {
+		return counts, err
+	}
 	if err := tx.Exec(`
 			UPDATE feed_activity SET work_id = ?,
 				link = CASE WHEN link = ? THEN ? ELSE link END
@@ -199,7 +248,37 @@ func (r *GalgameMergeRepository) FoldTx(tx *gorm.DB, oldWorkID, newWorkID int) (
 	if err := recountAfterFold(tx, newWorkID); err != nil {
 		return counts, err
 	}
+	if err := tx.Exec(`UPDATE galgame_merge_fold SET survivor_after = (SELECT to_jsonb(g) FROM galgame g WHERE g.id = ?)
+		WHERE id = ?`, newWorkID, counts.FoldID).Error; err != nil {
+		return counts, err
+	}
 	return counts, nil
+}
+
+type foldLedger struct {
+	tx       *gorm.DB
+	foldID   int64
+	old, new int
+}
+
+func (l foldLedger) args() map[string]any {
+	return map[string]any{"fold": l.foldID, "old": l.old, "new": l.new}
+}
+
+func (l foldLedger) record(query string) error {
+	return l.tx.Exec(`
+		INSERT INTO galgame_merge_fold_row (fold_id, table_name, action, row_key, before)
+		SELECT @fold, x.* FROM (`+query+`) x(table_name, action, row_key, before)`, l.args()).Error
+}
+
+func (l foldLedger) move(t mergeTable, extra string) (int64, error) {
+	res := l.tx.Exec(fmt.Sprintf(`
+		WITH moved AS (
+			UPDATE %[1]s SET work_id = @new WHERE work_id = @old %[3]s RETURNING %[2]s AS k
+		)
+		INSERT INTO galgame_merge_fold_row (fold_id, table_name, action, row_key)
+		SELECT @fold, '%[1]s', 'moved', jsonb_build_object('%[2]s', k) FROM moved`, t.table, t.key, extra), l.args())
+	return res.RowsAffected, res.Error
 }
 
 // archiveByGalgame copies every row a drop is about to delete into

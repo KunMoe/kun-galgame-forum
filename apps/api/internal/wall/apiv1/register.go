@@ -28,7 +28,8 @@ const wallNotFound = "NOT_FOUND when the comment does not exist, is on a page th
 	"or is on a wall listWallComments would refuse the caller; these are indistinguishable."
 
 const subjectNotFound = "NOT_FOUND when the page does not exist or this forum would not show it: " +
-	"a galgame the catalog does not resolve, or a rating, resource, quiz or toolset whose owner is banned."
+	"a galgame the catalog does not resolve, a rating, resource or quiz on a work the catalog no longer shows, " +
+	"or a rating, resource, quiz or toolset whose owner is banned."
 
 const quizGate = "QUIZ_ANSWER_REQUIRED when the wall belongs to a quiz that hides its game or carries spoilers " +
 	"and the caller is neither its author, nor one who answered it, nor staff holding that wall's edit or delete permission. "
@@ -183,7 +184,7 @@ func Register(svc *Service) func(huma.API) {
 
 func registerFollowing(api huma.API, svc *Service) {
 	tags := []string{"walls"}
-	wallMissing := "NOT_FOUND when the page does not exist or its author is banned."
+	wallMissing := "NOT_FOUND when the page does not exist, is on a work the catalog no longer shows, or its author is banned."
 	upstreamDown := "SERVICE_UNAVAILABLE when the community service is unreachable or unconfigured."
 
 	huma.Register(api, v1.Required(huma.Operation{
@@ -192,7 +193,8 @@ func registerFollowing(api huma.API, svc *Service) {
 		Path:        "/me/walls",
 		Summary:     "List the walls the caller follows",
 		Description: "The comment walls the caller follows, in the community service's order. " +
-			"A page can be shorter than limit, even empty, while next_cursor is present: walls this forum no longer recognises are left out. " +
+			"A page can be shorter than limit, even empty, while next_cursor is present: walls this forum no longer recognises, " +
+			"and walls of a work the catalog no longer shows or of its ratings, resources and quizzes, are left out; they stay followed. " +
 			"The last page omits next_cursor.",
 		Tags: tags,
 		Responses: problemResponses(map[int]string{

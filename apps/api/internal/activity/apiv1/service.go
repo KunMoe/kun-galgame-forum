@@ -150,7 +150,8 @@ func Register(s *Service) func(huma.API) {
 			Description: "The site's activity stream, newest first: topics, replies, comments, upvotes, best answers, works and their resources, ratings, " +
 				"edits and quizzes, toolsets, websites, todos and update logs. occurred_desc sorts by occurred_at with ties broken on kind and subject; " +
 				"bumped_desc lists topics by bump time and is allowed only when activity_types is exactly topic_creation. " +
-				"An activity whose actor is banned, or whose work catalog does not show under include_nsfw, is left out, so a page can be short; " +
+				"An activity whose actor is banned, whose work catalog does not show under include_nsfw, or that is about a work catalog does not render, " +
+				"directly or through its resource, rating or quiz, is left out, so a page can be short; " +
 				"only an absent next_cursor means the end. The cursor is bound to the sort and to every filter.",
 			Tags: []string{"activities"},
 			Responses: problemResponses(map[int]string{

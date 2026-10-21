@@ -41,6 +41,31 @@ func (s *Store) RatingAuthor(id int) (int, error)  { return s.ownerOf("galgame_r
 func (s *Store) ResourceOwner(id int) (int, error) { return s.ownerOf("galgame_resource", id) }
 func (s *Store) ToolsetOwner(id int) (int, error)  { return s.ownerOf("galgame_toolset", id) }
 
+var onHiddenWorkSQL = map[string]string{
+	"galgame_rating": `SELECT t.id FROM galgame_rating t JOIN galgame g ON g.id = t.work_id
+		WHERE t.id IN ? AND NOT g.catalog_rendered`,
+	"galgame_resource": `SELECT t.id FROM galgame_resource t JOIN galgame g ON g.id = t.work_id
+		WHERE t.id IN ? AND NOT g.catalog_rendered`,
+	"galgame_quiz": `SELECT DISTINCT t.quiz_id FROM galgame_quiz_galgame t JOIN galgame g ON g.id = t.work_id
+		WHERE t.quiz_id IN ? AND NOT g.catalog_rendered`,
+}
+
+func (s *Store) OnHiddenWorks(subjectType string, ids []int) (map[int]bool, error) {
+	q, tied := onHiddenWorkSQL[subjectType]
+	if !tied || len(ids) == 0 {
+		return map[int]bool{}, nil
+	}
+	var hidden []int
+	if err := s.db.Raw(q, ids).Scan(&hidden).Error; err != nil {
+		return nil, err
+	}
+	out := make(map[int]bool, len(hidden))
+	for _, id := range hidden {
+		out[id] = true
+	}
+	return out, nil
+}
+
 type Quiz struct {
 	UserID       int    `gorm:"column:user_id"`
 	HideGalgame  bool   `gorm:"column:hide_galgame"`

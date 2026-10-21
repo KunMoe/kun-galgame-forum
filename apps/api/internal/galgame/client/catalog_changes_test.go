@@ -135,9 +135,9 @@ func TestWorkFateReadsADeletedWorkAsAbsent(t *testing.T) {
 	t.Cleanup(srv.Close)
 	c := New(srv.URL, "nmk_test", "")
 
-	movedTo, found, appErr := c.WorkFate(t.Context(), 4242)
-	if appErr != nil || found || movedTo != 0 {
-		t.Errorf("WorkFate = %d %v %v, want absent with no error so the mirror unlists it", movedTo, found, appErr)
+	fate, found, appErr := c.WorkFate(t.Context(), 4242)
+	if appErr != nil || found || fate.MovedTo != 0 || fate.Deleted == nil {
+		t.Errorf("WorkFate = %+v %v %v, want the deletion so the mirror unlists it", fate, found, appErr)
 	}
 
 	d, found, absence, appErr := c.CatalogWorkDetail(t.Context(), 4242)

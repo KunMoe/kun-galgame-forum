@@ -4,6 +4,7 @@ import (
 	"context"
 	"log/slog"
 	"math"
+	"slices"
 	"strconv"
 	"sync"
 	"time"
@@ -37,11 +38,14 @@ const (
 type galgameMerger interface {
 	ReferencedIDsIn(ids []int) ([]int, error)
 	Fold(oldWorkID, newWorkID int) (repository.MergeCounts, error)
+	ActiveFold(oldWorkID int) (*repository.MergeFold, error)
+	FoldChain(workID int) ([]int, error)
+	Unfold(oldWorkID int) (*repository.UnfoldReport, error)
 }
 
 type survivorHydrator interface {
 	MirrorByCatalogIDs(ctx context.Context, ids []int64) (rendered, hidden map[int]client.CatalogMirror, appErr *errors.AppError)
-	WorkFate(ctx context.Context, workID int64) (movedTo int64, found bool, appErr *errors.AppError)
+	WorkFate(ctx context.Context, workID int64) (absence client.Absence, found bool, appErr *errors.AppError)
 }
 
 type GalgameMergeSync struct {
@@ -108,9 +112,13 @@ func (s *GalgameMergeSync) Run() {
 		}
 		seen += len(page.Items)
 
-		f, d := s.applyPage(ctx, page.Items)
+		f, d, err := s.applyPage(ctx, page.Items)
 		folded += f
 		deferred += d
+		if err != nil {
+			slog.Warn("galgame 合并撤销失败, 游标保持不动", "pages", pages, "error", err)
+			break
+		}
 
 		if page.NextCursor == "" {
 			break
@@ -129,21 +137,66 @@ func (s *GalgameMergeSync) Run() {
 		"pages", pages, "redirects", seen, "folded", folded, "deferred", deferred)
 }
 
-func (s *GalgameMergeSync) applyPage(ctx context.Context, items []client.CatalogRedirect) (folded, deferred int) {
+func (s *GalgameMergeSync) applyPage(ctx context.Context, items []client.CatalogRedirect) (folded, deferred int, err error) {
 	survivorWork := make(map[int]int64, len(items))
 	for _, it := range items {
 		if it.OldID > math.MaxInt32 {
 			continue
 		}
+		oldID := int(it.OldID)
 		if it.Revoked {
-			s.unpark(ctx, int(it.OldID))
+			s.unpark(ctx, oldID)
+			if err := s.unfold(oldID); err != nil {
+				return 0, 0, err
+			}
 			continue
 		}
-		if _, seen := survivorWork[int(it.OldID)]; !seen {
-			survivorWork[int(it.OldID)] = it.CurrentID
+		if err := s.followRepoint(oldID, it.CurrentID); err != nil {
+			return 0, 0, err
+		}
+		if _, seen := survivorWork[oldID]; !seen {
+			survivorWork[oldID] = it.CurrentID
 		}
 	}
-	return s.fold(ctx, survivorWork)
+	folded, deferred = s.fold(ctx, survivorWork)
+	return folded, deferred, nil
+}
+
+// A redirect that comes round again naming another survivor was flattened or
+// re-pointed. Once the first survivor's own fold has run, a flattened chain
+// already carries the old work's rows; otherwise they are folded back so the
+// fold that follows moves them to the survivor catalog names now.
+func (s *GalgameMergeSync) followRepoint(oldID int, current int64) error {
+	fold, err := s.mergeRepo.ActiveFold(oldID)
+	if err != nil || fold == nil || int64(fold.NewWorkID) == current {
+		return err
+	}
+	chain, err := s.mergeRepo.FoldChain(fold.NewWorkID)
+	if err != nil {
+		return err
+	}
+	if slices.Contains(chain, int(current)) {
+		return nil
+	}
+	return s.unfold(oldID)
+}
+
+func (s *GalgameMergeSync) unfold(oldID int) error {
+	for range 16 {
+		report, err := s.mergeRepo.Unfold(oldID)
+		if err != nil || report == nil {
+			return err
+		}
+		fields := []any{"fold_id", report.FoldID, "old_work_id", report.OldWorkID,
+			"new_work_id", report.NewWorkID, "restored", report.Restored}
+		if len(report.Problems) > 0 {
+			slog.Warn("galgame 合并已撤销, 有数据没能搬回 (见后台合并记录)",
+				append(fields, "problems", len(report.Problems), "detail", report.Problems)...)
+			continue
+		}
+		slog.Info("galgame 合并已撤销, 数据已搬回", fields...)
+	}
+	return nil
 }
 
 func (s *GalgameMergeSync) retryDeferred(ctx context.Context) (folded, deferred int) {
@@ -178,14 +231,14 @@ func (s *GalgameMergeSync) refreshSurvivors(ctx context.Context, survivorWork ma
 		return
 	}
 	for oldID := range survivorWork {
-		movedTo, found, appErr := s.survivors.WorkFate(ctx, int64(oldID))
+		absence, found, appErr := s.survivors.WorkFate(ctx, int64(oldID))
 		switch {
 		case appErr != nil:
 		case found:
 			delete(survivorWork, oldID)
 			s.unpark(ctx, oldID)
-		case movedTo > 0:
-			survivorWork[oldID] = movedTo
+		case absence.MovedTo > 0:
+			survivorWork[oldID] = absence.MovedTo
 		}
 	}
 }

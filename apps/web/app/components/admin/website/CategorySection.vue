@@ -83,7 +83,7 @@ const handleDelete = async (category: WebsiteCategory) => {
     <div class="flex flex-wrap items-center justify-between gap-3">
       <p class="text-default-500 text-sm">
         分类标识是 /website-category/:name 的一部分,
-        排序决定它在资料库页面的先后。
+        排序决定它在网站资料库页面的先后。
       </p>
       <KunButton v-if="canCreate" color="primary" @click="openCreate">
         <KunIcon name="lucide:plus" />
