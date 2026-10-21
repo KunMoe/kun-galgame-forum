@@ -66,13 +66,9 @@ func activeFold(db *gorm.DB, oldWorkID int) (*MergeFold, error) {
 // FoldChain is workID followed by every work it has since been folded into:
 // rows a fold moved onto workID travel on with each later fold.
 func (r *GalgameMergeRepository) FoldChain(workID int) ([]int, error) {
-	return foldChain(r.db, workID)
-}
-
-func foldChain(db *gorm.DB, workID int) ([]int, error) {
 	chain := []int{workID}
 	for len(chain) < 16 {
-		next, err := activeFold(db, chain[len(chain)-1])
+		next, err := activeFold(r.db, chain[len(chain)-1])
 		if err != nil {
 			return nil, err
 		}
@@ -87,6 +83,11 @@ func foldChain(db *gorm.DB, workID int) ([]int, error) {
 // Unfold reverses the newest active fold of oldWorkID and returns nil when
 // there is none. A work can have been folded more than once, so callers repeat
 // it until it returns nil. Rows the survivor gained after the fold stay there.
+//
+// Each row is followed through the folds of the survivor that came after this
+// one, by their ledgers: an undo that runs before theirs takes its rows back
+// from wherever those folds put them and corrects their ledgers, so their own
+// undo does not move the same rows a second time.
 func (r *GalgameMergeRepository) Unfold(oldWorkID int) (*UnfoldReport, error) {
 	var report *UnfoldReport
 	err := r.db.Transaction(func(tx *gorm.DB) error {
@@ -104,13 +105,9 @@ func (r *GalgameMergeRepository) Unfold(oldWorkID int) (*UnfoldReport, error) {
 		if res.Error != nil || res.RowsAffected == 0 {
 			return res.Error
 		}
-		chain, err := foldChain(tx, fold.NewWorkID)
-		if err != nil {
-			return err
-		}
-		u := &unfolder{tx: tx, old: fold.OldWorkID, survivor: fold.NewWorkID, chain: chain,
-			columns: map[string][]string{},
-			report:  &UnfoldReport{FoldID: fold.ID, OldWorkID: fold.OldWorkID, NewWorkID: fold.NewWorkID}}
+		u := &unfolder{tx: tx, foldID: fold.ID, old: fold.OldWorkID, survivor: fold.NewWorkID,
+			columns: map[string][]string{}, touched: map[int]bool{fold.OldWorkID: true, fold.NewWorkID: true},
+			report: &UnfoldReport{FoldID: fold.ID, OldWorkID: fold.OldWorkID, NewWorkID: fold.NewWorkID}}
 
 		if fold.OldRow != nil {
 			if err := u.restoreOldRow(fold.OldRow); err != nil {
@@ -124,14 +121,14 @@ func (r *GalgameMergeRepository) Unfold(oldWorkID int) (*UnfoldReport, error) {
 			return err
 		}
 		for _, row := range rows {
-			if err := u.applyIsolated(row); err != nil {
+			if err := u.apply(row); err != nil {
 				return fmt.Errorf("unfold %s %s: %w", row.Table, row.Action, err)
 			}
 		}
 		if err := u.restoreSurvivor(fold.OldRow, fold.SurvivorBefore, fold.SurvivorAfter); err != nil {
 			return err
 		}
-		for _, id := range append([]int{fold.OldWorkID}, chain...) {
+		for id := range u.touched {
 			if err := recountAfterFold(tx, id); err != nil {
 				return err
 			}
@@ -152,10 +149,11 @@ func (r *GalgameMergeRepository) Unfold(oldWorkID int) (*UnfoldReport, error) {
 
 type unfolder struct {
 	tx       *gorm.DB
+	foldID   int64
 	old      int
 	survivor int
-	chain    []int
 	columns  map[string][]string
+	touched  map[int]bool
 	report   *UnfoldReport
 }
 
@@ -163,43 +161,66 @@ func (u *unfolder) problem(table string, key int64, reason string, workID *int) 
 	u.report.Problems = append(u.report.Problems, UnfoldProblem{Table: table, Key: key, Reason: reason, WorkID: workID})
 }
 
-// applyIsolated undoes one ledger row inside a savepoint. A row the database
-// refuses (its quiz deleted since, a key taken) is recorded and skipped: a
-// refusal that repeats on every run would otherwise hold the redirect feed
-// cursor for good.
-func (u *unfolder) applyIsolated(row foldRow) error {
-	if err := u.tx.SavePoint("unfold_row").Error; err != nil {
-		return err
-	}
-	err := u.apply(row)
-	if err == nil {
-		return nil
-	}
-	var pg *pgconn.PgError
-	if !errors.As(err, &pg) || (!strings.HasPrefix(pg.Code, "23") && !strings.HasPrefix(pg.Code, "22")) {
-		return err
-	}
-	if rb := u.tx.RollbackTo("unfold_row").Error; rb != nil {
-		return rb
-	}
-	reason := UnfoldConflict
-	if pg.Code == "23503" {
-		reason = UnfoldGone
-	}
-	u.problem(row.Table, firstKey(row.RowKey), reason, nil)
-	return nil
+// laterEntry is what a later fold's ledger says about the same row.
+type laterEntry struct {
+	ID      int64
+	FoldID  int64
+	NewWork int
+	Action  string
+	Before  []byte
 }
 
-func firstKey(raw []byte) int64 {
-	var key map[string]json.Number
-	if json.Unmarshal(raw, &key) != nil {
-		return 0
+func (u *unfolder) later(table string, rowKey []byte, at int, after int64) (*laterEntry, error) {
+	var e laterEntry
+	res := u.tx.Raw(`SELECT r.id, g.id AS fold_id, g.new_work_id AS new_work, r.action, r.before
+		FROM galgame_merge_fold_row r JOIN galgame_merge_fold g ON g.id = r.fold_id
+		WHERE g.undone_at IS NULL AND g.old_work_id = ? AND g.id > ? AND r.table_name = ? AND r.row_key = ?::jsonb
+		ORDER BY g.id LIMIT 1`, at, after, table, string(rowKey)).Scan(&e)
+	if res.Error != nil || res.RowsAffected == 0 {
+		return nil, res.Error
 	}
-	for _, v := range key {
-		n, _ := v.Int64()
-		return n
+	return &e, nil
+}
+
+// trace follows a row this fold left on the survivor through the later folds
+// that moved or repointed it. It ends where the row is now, or at the later
+// ledger entry that dropped it.
+func (u *unfolder) trace(table string, rowKey []byte) (at int, carried []*laterEntry, dropped *laterEntry, err error) {
+	at, after := u.survivor, u.foldID
+	for range 16 {
+		e, err := u.later(table, rowKey, at, after)
+		if err != nil || e == nil {
+			return at, carried, nil, err
+		}
+		switch e.Action {
+		case "moved", "repointed":
+			carried = append(carried, e)
+			at, after = e.NewWork, e.FoldID
+			u.touched[at] = true
+		case "dropped":
+			return at, carried, e, nil
+		default:
+			return at, carried, nil, nil
+		}
 	}
-	return 0
+	return at, carried, nil, nil
+}
+
+func (u *unfolder) chainFrom(workID int) ([]int, error) {
+	return (&GalgameMergeRepository{db: u.tx}).FoldChain(workID)
+}
+
+func (u *unfolder) void(entries ...*laterEntry) error {
+	ids := make([]int64, 0, len(entries))
+	for _, e := range entries {
+		if e != nil {
+			ids = append(ids, e.ID)
+		}
+	}
+	if len(ids) == 0 {
+		return nil
+	}
+	return u.tx.Exec(`DELETE FROM galgame_merge_fold_row WHERE id IN ?`, ids).Error
 }
 
 func mergeTableOf(name string) (mergeTable, bool) {
@@ -224,7 +245,15 @@ func (u *unfolder) apply(row foldRow) error {
 	case row.Action == "moved":
 		return u.moveBack(row)
 	case row.Action == "dropped":
-		return u.reinsert(row)
+		t, ok := mergeTableOf(row.Table)
+		if !ok {
+			return fmt.Errorf("table %s is not folded", row.Table)
+		}
+		key, err := ledgerKey(row.RowKey, t.key)
+		if err != nil {
+			return err
+		}
+		return u.restoreSnapshot(t, key, row.Before, u.survivor)
 	case row.Table == "galgame_contributor" && row.Action == "summed":
 		return u.unsumContributor(row)
 	case row.Table == "galgame_view_daily" && row.Action == "summed":
@@ -244,24 +273,40 @@ func (u *unfolder) moveBack(row foldRow) error {
 	if err != nil {
 		return err
 	}
-	// A key that is also the peer names a row only together with its work: a
-	// quiz linked to a later survivor in its own right carries the same key.
-	from := u.chain
-	if t.key == t.peer {
-		from = []int{u.survivor}
+	at, carried, dropped, err := u.trace(t.table, row.RowKey)
+	if err != nil {
+		return err
+	}
+	if dropped != nil {
+		if err := u.restoreSnapshot(t, key, dropped.Before, dropped.NewWork); err != nil {
+			return err
+		}
+		if t.table == "galgame_contributor" {
+			if err := u.unsumAbsorbedBy(dropped.FoldID, key); err != nil {
+				return err
+			}
+		}
+		return u.void(append(carried, dropped)...)
 	}
 	guard := ""
 	if t.peer != "" {
 		guard = fmt.Sprintf("AND NOT EXISTS (SELECT 1 FROM %[1]s x WHERE x.work_id = @old AND x.%[2]s = %[1]s.%[2]s)", t.table, t.peer)
 	}
-	res := u.tx.Exec(fmt.Sprintf(`UPDATE %[1]s SET work_id = @old WHERE %[2]s = @key AND work_id IN @from %[3]s`,
-		t.table, t.key, guard), map[string]any{"old": u.old, "key": key, "from": from})
-	if res.Error != nil {
-		return res.Error
+	moved, refused, err := u.isolated(func() (int64, error) {
+		res := u.tx.Exec(fmt.Sprintf(`UPDATE %[1]s SET work_id = @old WHERE %[2]s = @key AND work_id = @at %[3]s`,
+			t.table, t.key, guard), map[string]any{"old": u.old, "key": key, "at": at})
+		return res.RowsAffected, res.Error
+	})
+	if err != nil {
+		return err
 	}
-	if res.RowsAffected > 0 {
-		u.report.Restored += res.RowsAffected
+	if refused != "" {
+		u.problem(t.table, key, refused, nil)
 		return nil
+	}
+	if moved > 0 {
+		u.report.Restored += moved
+		return u.void(carried...)
 	}
 	var now []int
 	if err := u.tx.Raw(fmt.Sprintf(`SELECT work_id FROM %s WHERE %s = ?`, t.table, t.key), key).Scan(&now).Error; err != nil {
@@ -278,64 +323,153 @@ func (u *unfolder) moveBack(row foldRow) error {
 	return nil
 }
 
-func (u *unfolder) reinsert(row foldRow) error {
-	t, ok := mergeTableOf(row.Table)
-	if !ok {
-		return fmt.Errorf("table %s is not folded", row.Table)
-	}
-	key, err := ledgerKey(row.RowKey, t.key)
-	if err != nil {
+// restoreSnapshot puts a row a fold deleted back on the old work. It was
+// deleted because into, the fold's survivor, held the same user's or quiz's
+// row; catalog's own undo splits a folded row back out only while the row it
+// was folded into still exists, so this one does the same: someone who undid
+// the survivor's copy since keeps it undone. A purged author's row stays out.
+func (u *unfolder) restoreSnapshot(t mergeTable, key int64, before []byte, into int) error {
+	table := t.table
+	var row map[string]any
+	if err := json.Unmarshal(before, &row); err != nil {
 		return err
 	}
-	var before struct {
-		UserID *int `json:"user_id"`
-	}
-	if err := json.Unmarshal(row.Before, &before); err != nil {
-		return err
-	}
-	if before.UserID != nil {
+	if uid, ok := row["user_id"].(float64); ok {
 		var purged bool
 		if err := u.tx.Raw(`SELECT EXISTS (SELECT 1 FROM user_purge_archive WHERE target_user_id = ? AND restored_at IS NULL)`,
-			*before.UserID).Scan(&purged).Error; err != nil {
+			int(uid)).Scan(&purged).Error; err != nil {
 			return err
 		}
 		if purged {
-			u.problem(t.table, key, UnfoldPurgedUser, nil)
+			u.problem(table, key, UnfoldPurgedUser, nil)
 			return nil
 		}
 	}
-	n, err := u.insertJSON(t.table, row.Before)
+	if peer, ok := row[t.peer]; ok && t.peer != "" {
+		chain, err := u.chainFrom(into)
+		if err != nil {
+			return err
+		}
+		var alive bool
+		if err := u.tx.Raw(fmt.Sprintf(`SELECT EXISTS (SELECT 1 FROM %s WHERE work_id IN ? AND %s = ?)`, table, t.peer),
+			chain, peer).Scan(&alive).Error; err != nil {
+			return err
+		}
+		if !alive {
+			u.problem(table, key, UnfoldGone, nil)
+			return nil
+		}
+	}
+	row["work_id"] = u.old
+	raw, err := json.Marshal(row)
 	if err != nil {
 		return err
 	}
-	if n == 0 {
-		u.problem(t.table, key, UnfoldConflict, &u.old)
-		return nil
+	n, refused, err := u.isolated(func() (int64, error) { return u.insertJSON(table, raw) })
+	if err != nil {
+		return err
 	}
-	u.report.Restored += n
+	switch {
+	case refused != "":
+		u.problem(table, key, refused, nil)
+	case n == 0:
+		u.problem(table, key, UnfoldConflict, &u.old)
+	default:
+		u.report.Restored += n
+	}
 	return nil
 }
 
+// isolated runs a write that the database may refuse (its quiz deleted since,
+// a key taken) inside a savepoint and reports the refusal instead of failing:
+// a refusal that repeats on every run would hold the redirect feed cursor for
+// good.
+func (u *unfolder) isolated(write func() (int64, error)) (int64, string, error) {
+	if err := u.tx.SavePoint("unfold_row").Error; err != nil {
+		return 0, "", err
+	}
+	n, err := write()
+	if err == nil {
+		return n, "", nil
+	}
+	var pg *pgconn.PgError
+	if !errors.As(err, &pg) || (!strings.HasPrefix(pg.Code, "23") && !strings.HasPrefix(pg.Code, "22")) {
+		return 0, "", err
+	}
+	if rb := u.tx.RollbackTo("unfold_row").Error; rb != nil {
+		return 0, "", rb
+	}
+	if pg.Code == "23503" {
+		return 0, UnfoldGone, nil
+	}
+	return 0, UnfoldConflict, nil
+}
+
+type contributorParts struct {
+	Survivor json.RawMessage `json:"survivor"`
+	Absorbed json.RawMessage `json:"absorbed"`
+}
+
+const unsumContributorSQL = `
+	UPDATE galgame_contributor t SET
+		revision_count = GREATEST(t.revision_count - a.revision_count, 0),
+		first_at = CASE WHEN t.first_at = LEAST(b.first_at, a.first_at) THEN b.first_at ELSE t.first_at END,
+		last_at  = CASE WHEN t.last_at = GREATEST(b.last_at, a.last_at) THEN b.last_at ELSE t.last_at END
+	FROM jsonb_populate_record(NULL::galgame_contributor, ?::jsonb) b,
+	     jsonb_populate_record(NULL::galgame_contributor, ?::jsonb) a
+	WHERE t.id = ?`
+
+// unsumContributor takes this fold's absorbed revisions back off the survivor's
+// contributor row. When a later fold dropped that row into another one, the
+// count comes off that one instead, and the later fold's snapshots stop
+// carrying it.
 func (u *unfolder) unsumContributor(row foldRow) error {
 	key, err := ledgerKey(row.RowKey, "id")
 	if err != nil {
 		return err
 	}
-	var parts struct {
-		Survivor json.RawMessage `json:"survivor"`
-		Absorbed json.RawMessage `json:"absorbed"`
-	}
+	var parts contributorParts
 	if err := json.Unmarshal(row.Before, &parts); err != nil {
 		return err
 	}
-	res := u.tx.Exec(`
-		UPDATE galgame_contributor t SET
-			revision_count = GREATEST(t.revision_count - a.revision_count, 0),
-			first_at = CASE WHEN t.first_at = LEAST(b.first_at, a.first_at) THEN b.first_at ELSE t.first_at END,
-			last_at  = CASE WHEN t.last_at = GREATEST(b.last_at, a.last_at) THEN b.last_at ELSE t.last_at END
-		FROM jsonb_populate_record(NULL::galgame_contributor, ?::jsonb) b,
-		     jsonb_populate_record(NULL::galgame_contributor, ?::jsonb) a
-		WHERE t.id = ?`, string(parts.Survivor), string(parts.Absorbed), key)
+	_, _, dropped, err := u.trace("galgame_contributor", row.RowKey)
+	if err != nil {
+		return err
+	}
+	target := key
+	if dropped != nil {
+		var into struct {
+			ID     int64
+			RowKey []byte
+		}
+		res := u.tx.Raw(`SELECT id, row_key FROM galgame_merge_fold_row WHERE fold_id = ? AND action = 'summed'
+			AND table_name = 'galgame_contributor' AND before->'absorbed'->>'id' = ?`, dropped.FoldID, strconv.FormatInt(key, 10)).Scan(&into)
+		if res.Error != nil {
+			return res.Error
+		}
+		if res.RowsAffected == 0 {
+			u.problem("galgame_contributor", key, UnfoldGone, nil)
+			return nil
+		}
+		if target, err = ledgerKey(into.RowKey, "id"); err != nil {
+			return err
+		}
+		var absorbed struct {
+			RevisionCount int `json:"revision_count"`
+		}
+		if err := json.Unmarshal(parts.Absorbed, &absorbed); err != nil {
+			return err
+		}
+		if err := u.tx.Exec(`UPDATE galgame_merge_fold_row SET before = jsonb_set(before, '{revision_count}',
+			to_jsonb(GREATEST((before->>'revision_count')::int - ?, 0))) WHERE id = ?`, absorbed.RevisionCount, dropped.ID).Error; err != nil {
+			return err
+		}
+		if err := u.tx.Exec(`UPDATE galgame_merge_fold_row SET before = jsonb_set(before, '{absorbed,revision_count}',
+			to_jsonb(GREATEST((before->'absorbed'->>'revision_count')::int - ?, 0))) WHERE id = ?`, absorbed.RevisionCount, into.ID).Error; err != nil {
+			return err
+		}
+	}
+	res := u.tx.Exec(unsumContributorSQL, string(parts.Survivor), string(parts.Absorbed), target)
 	if res.Error != nil {
 		return res.Error
 	}
@@ -345,6 +479,37 @@ func (u *unfolder) unsumContributor(row foldRow) error {
 	return nil
 }
 
+// unsumAbsorbedBy reverses what a later fold added into one of its survivor's
+// contributor rows from a row of this fold's, and drops that entry: the row
+// itself is back on the old work.
+func (u *unfolder) unsumAbsorbedBy(foldID, key int64) error {
+	var entry struct {
+		ID     int64
+		RowKey []byte
+		Before []byte
+	}
+	res := u.tx.Raw(`SELECT id, row_key, before FROM galgame_merge_fold_row WHERE fold_id = ? AND action = 'summed'
+		AND table_name = 'galgame_contributor' AND before->'absorbed'->>'id' = ?`, foldID, strconv.FormatInt(key, 10)).Scan(&entry)
+	if res.Error != nil || res.RowsAffected == 0 {
+		return res.Error
+	}
+	target, err := ledgerKey(entry.RowKey, "id")
+	if err != nil {
+		return err
+	}
+	var parts contributorParts
+	if err := json.Unmarshal(entry.Before, &parts); err != nil {
+		return err
+	}
+	if err := u.tx.Exec(unsumContributorSQL, string(parts.Survivor), string(parts.Absorbed), target).Error; err != nil {
+		return err
+	}
+	return u.tx.Exec(`DELETE FROM galgame_merge_fold_row WHERE id = ?`, entry.ID).Error
+}
+
+// unsumViews takes the old work's daily views back off wherever later folds
+// summed them, and lowers those folds' snapshots by the same amount so their
+// own undo moves only what was theirs.
 func (u *unfolder) unsumViews(row foldRow) error {
 	var bucket struct {
 		Day   string `json:"day"`
@@ -353,19 +518,28 @@ func (u *unfolder) unsumViews(row foldRow) error {
 	if err := json.Unmarshal(row.Before, &bucket); err != nil {
 		return err
 	}
-	for _, workID := range u.chain {
-		res := u.tx.Exec(`UPDATE galgame_view_daily SET count = GREATEST(count - ?, 0) WHERE entity_id = ? AND day = ?`,
-			bucket.Count, workID, bucket.Day)
-		if res.Error != nil {
-			return res.Error
+	at, after := u.survivor, u.foldID
+	for range 16 {
+		e, err := u.later("galgame_view_daily", row.RowKey, at, after)
+		if err != nil {
+			return err
 		}
-		if res.RowsAffected > 0 {
-			if err := u.tx.Exec(`DELETE FROM galgame_view_daily WHERE entity_id = ? AND day = ? AND count = 0`,
-				workID, bucket.Day).Error; err != nil {
-				return err
-			}
+		if e == nil || e.Action != "summed" {
 			break
 		}
+		if err := u.tx.Exec(`UPDATE galgame_merge_fold_row SET before = jsonb_set(before, '{count}',
+			to_jsonb(GREATEST((before->>'count')::int - ?, 0))) WHERE id = ?`, bucket.Count, e.ID).Error; err != nil {
+			return err
+		}
+		at, after = e.NewWork, e.FoldID
+		u.touched[at] = true
+	}
+	if err := u.tx.Exec(`UPDATE galgame_view_daily SET count = GREATEST(count - ?, 0) WHERE entity_id = ? AND day = ?`,
+		bucket.Count, at, bucket.Day).Error; err != nil {
+		return err
+	}
+	if err := u.tx.Exec(`DELETE FROM galgame_view_daily WHERE entity_id = ? AND day = ? AND count = 0`, at, bucket.Day).Error; err != nil {
+		return err
 	}
 	return u.tx.Exec(`
 		INSERT INTO galgame_view_daily (entity_id, day, count) VALUES (?, ?, ?)
@@ -385,8 +559,12 @@ func (u *unfolder) repointFeed(row foldRow) error {
 	if err := json.Unmarshal(row.Before, &before); err != nil {
 		return err
 	}
-	res := u.tx.Exec(`UPDATE feed_activity SET work_id = ?, link = ? WHERE id = ? AND work_id IN ?`,
-		before.WorkID, before.Link, key, u.chain)
+	at, carried, _, err := u.trace("feed_activity", row.RowKey)
+	if err != nil {
+		return err
+	}
+	res := u.tx.Exec(`UPDATE feed_activity SET work_id = ?, link = ? WHERE id = ? AND work_id = ?`,
+		before.WorkID, before.Link, key, at)
 	if res.Error != nil {
 		return res.Error
 	}
@@ -395,12 +573,13 @@ func (u *unfolder) repointFeed(row foldRow) error {
 		return nil
 	}
 	u.report.Restored += res.RowsAffected
-	return nil
+	return u.void(carried...)
 }
 
 // restoreOldRow puts the old work's galgame row back. A row can already be
 // there: a like or a wall comment on the revived work creates a stub before
-// the next sync; the snapshot then folds into it the way FoldTx folds rows.
+// the next sync; the snapshot then folds into it the way FoldTx folds rows,
+// and the counters nothing recounts are added.
 func (u *unfolder) restoreOldRow(oldRow []byte) error {
 	n, err := u.insertJSON("galgame", oldRow)
 	if err != nil || n > 0 {
@@ -409,36 +588,50 @@ func (u *unfolder) restoreOldRow(oldRow []byte) error {
 	return u.tx.Exec(`
 		UPDATE galgame g SET
 			view = g.view + COALESCE(o.view, 0),
+			favorite_count = g.favorite_count + COALESCE(o.favorite_count, 0),
+			comment_count = g.comment_count + COALESCE(o.comment_count, 0),
 			published = g.published OR COALESCE(o.published, false),
 			resource_publish_banned = g.resource_publish_banned OR COALESCE(o.resource_publish_banned, false),
 			creator_user_id = COALESCE(g.creator_user_id, o.creator_user_id),
 			created = LEAST(g.created, o.created),
-			resource_update_time = GREATEST(g.resource_update_time, o.resource_update_time)
+			resource_update_time = GREATEST(g.resource_update_time, o.resource_update_time),
+			release_date = COALESCE(g.release_date, o.release_date),
+			release_date_synced_at = COALESCE(g.release_date_synced_at, o.release_date_synced_at),
+			content_limit = COALESCE(g.content_limit, o.content_limit),
+			original_language = COALESCE(g.original_language, o.original_language),
+			catalog_checked_at = COALESCE(g.catalog_checked_at, o.catalog_checked_at)
 		FROM jsonb_populate_record(NULL::galgame, ?::jsonb) o WHERE g.id = ?`, string(oldRow), u.old).Error
 }
 
+// The columns of the survivor's row a fold writes, compared to tell whether
+// anyone has touched the row since.
+const survivorColumns = `published, resource_publish_banned, creator_user_id, view, comment_count, favorite_count, created, resource_update_time`
+
 // restoreSurvivor takes back what the fold added to the survivor's own row:
 // the old work's views, and every flag the fold changed that nothing has
-// changed since. A survivor row the fold created goes once nothing else
-// references it.
+// changed since. A survivor row the fold created goes, but only while nothing
+// references it and nobody has written to it.
 func (u *unfolder) restoreSurvivor(oldRow, before, after []byte) error {
 	var exists bool
 	if err := u.tx.Raw(`SELECT EXISTS (SELECT 1 FROM galgame WHERE id = ?)`, u.survivor).Scan(&exists).Error; err != nil {
 		return err
 	}
 	if !exists {
-		if oldRow != nil {
-			u.problem("galgame", int64(u.survivor), UnfoldSurvivorFolded, &u.chain[len(u.chain)-1])
-		}
-		return nil
+		return u.restoreFoldedSurvivor(oldRow, before, after)
 	}
-	created := before == nil && oldRow != nil
-	if created {
+	if before == nil && oldRow != nil {
+		var untouched bool
+		if err := u.tx.Raw(`SELECT (`+prefixed("g", survivorColumns)+`) IS NOT DISTINCT FROM (`+prefixed("a", survivorColumns)+`)
+			FROM galgame g, jsonb_populate_record(NULL::galgame, ?::jsonb) a WHERE g.id = ?`,
+			sqlJSON(after), u.survivor).Scan(&untouched).Error; err != nil {
+			return err
+		}
 		referenced, err := (&GalgameMergeRepository{db: u.tx}).referencedBeyondRow(u.survivor)
 		if err != nil {
 			return err
 		}
-		if !referenced {
+		if untouched && !referenced {
+			delete(u.touched, u.survivor)
 			return u.tx.Exec(`DELETE FROM galgame WHERE id = ?`, u.survivor).Error
 		}
 		before = []byte(`{"published": false, "resource_publish_banned": false, "creator_user_id": null}`)
@@ -461,6 +654,96 @@ func (u *unfolder) restoreSurvivor(oldRow, before, after []byte) error {
 		     jsonb_populate_record(NULL::galgame, ?::jsonb) b,
 		     jsonb_populate_record(NULL::galgame, ?::jsonb) o
 		WHERE g.id = ?`, sqlJSON(after), sqlJSON(before), sqlJSON(oldRow), u.survivor).Error
+}
+
+// restoreFoldedSurvivor handles a survivor a later fold has merged away: the
+// old work's views come off the row they ended up in, and the later fold's
+// snapshot of the survivor goes back to what it was before this fold where
+// nothing changed it in between. Flags the later fold ORed into its own
+// survivor cannot be taken apart, so a flag this fold had changed is reported.
+func (u *unfolder) restoreFoldedSurvivor(oldRow, before, after []byte) error {
+	if oldRow == nil {
+		return nil
+	}
+	at, after64 := u.survivor, u.foldID
+	var first *struct {
+		ID     int64
+		OldRow []byte
+	}
+	for range 16 {
+		var next struct {
+			ID        int64
+			NewWorkID int
+			OldRow    []byte
+		}
+		res := u.tx.Raw(`SELECT id, new_work_id, old_row FROM galgame_merge_fold
+			WHERE old_work_id = ? AND id > ? AND undone_at IS NULL ORDER BY id LIMIT 1`, at, after64).Scan(&next)
+		if res.Error != nil {
+			return res.Error
+		}
+		if res.RowsAffected == 0 {
+			break
+		}
+		if first == nil {
+			first = &struct {
+				ID     int64
+				OldRow []byte
+			}{next.ID, next.OldRow}
+		}
+		if err := u.tx.Exec(`UPDATE galgame_merge_fold SET old_row = jsonb_set(old_row, '{view}',
+			to_jsonb(GREATEST((old_row->>'view')::int - COALESCE((?::jsonb->>'view')::int, 0), 0)))
+			WHERE id = ? AND old_row IS NOT NULL`, string(oldRow), next.ID).Error; err != nil {
+			return err
+		}
+		at, after64 = next.NewWorkID, next.ID
+	}
+	u.touched[at] = true
+	if err := u.tx.Exec(`UPDATE galgame SET view = GREATEST(view - COALESCE((?::jsonb->>'view')::int, 0), 0) WHERE id = ?`,
+		string(oldRow), at).Error; err != nil {
+		return err
+	}
+	if first == nil || after == nil {
+		return nil
+	}
+	flags := []string{"published", "resource_publish_banned", "creator_user_id"}
+	var b, a map[string]any
+	_ = json.Unmarshal(after, &a)
+	if before != nil {
+		_ = json.Unmarshal(before, &b)
+	}
+	changed := false
+	for _, f := range flags {
+		was := any(nil)
+		if b != nil {
+			was = b[f]
+		} else if f != "creator_user_id" {
+			was = false
+		}
+		if fmt.Sprint(was) != fmt.Sprint(a[f]) {
+			changed = true
+			if err := u.tx.Exec(`UPDATE galgame_merge_fold SET old_row = jsonb_set(old_row, ?::text[], ?::jsonb)
+				WHERE id = ? AND old_row->? = ?::jsonb`, "{"+f+"}", jsonValue(was), first.ID, f, jsonValue(a[f])).Error; err != nil {
+				return err
+			}
+		}
+	}
+	if changed {
+		u.problem("galgame", int64(u.survivor), UnfoldSurvivorFolded, &at)
+	}
+	return nil
+}
+
+func jsonValue(v any) string {
+	raw, _ := json.Marshal(v)
+	return string(raw)
+}
+
+func prefixed(alias, columns string) string {
+	parts := strings.Split(columns, ", ")
+	for i, c := range parts {
+		parts[i] = alias + "." + c
+	}
+	return strings.Join(parts, ", ")
 }
 
 // sqlJSON passes a missing snapshot as SQL NULL: jsonb_populate_record refuses

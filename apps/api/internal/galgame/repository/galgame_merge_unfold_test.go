@@ -2,6 +2,8 @@ package repository
 
 import (
 	"encoding/json"
+	"strconv"
+	"strings"
 	"testing"
 
 	"gorm.io/gorm"
@@ -330,20 +332,158 @@ func TestUnfoldUndoesEveryFoldOfAWork(t *testing.T) {
 func TestUnfoldFoldsTheSnapshotIntoAStubTheRevivedWorkGot(t *testing.T) {
 	db, run := unfoldFixture(t)
 	seed(t, db, mfDead, ptr("sfw"))
-	run(`UPDATE galgame SET view = 9 WHERE id = ?`, mfDead)
+	run(`UPDATE galgame SET view = 9, favorite_count = 4, comment_count = 2, original_language = 'ja', release_date = '2020-02-02' WHERE id = ?`, mfDead)
 	repo := NewGalgameMergeRepository(db)
 	if _, err := repo.Fold(mfDead, mfSurvivor); err != nil {
 		t.Fatalf("fold: %v", err)
 	}
-	run(`INSERT INTO galgame (id, view, updated) VALUES (?, 1, now())`, mfDead)
+	run(`INSERT INTO galgame (id, view, favorite_count, updated) VALUES (?, 1, 1, now())`, mfDead)
 
 	unfoldAll(t, repo, mfDead)
 	var dead struct {
-		View      int
+		View             int
+		Published        bool
+		FavoriteCount    int
+		CommentCount     int
+		ContentLimit     *string
+		OriginalLanguage *string
+		ReleaseDate      *string
+	}
+	db.Raw(`SELECT view, published, favorite_count, comment_count, content_limit, original_language, release_date::text AS release_date
+		FROM galgame WHERE id = ?`, mfDead).Scan(&dead)
+	if dead.View != 10 || !dead.Published || dead.FavoriteCount != 5 || dead.CommentCount != 2 ||
+		dead.ContentLimit == nil || *dead.ContentLimit != "sfw" || dead.OriginalLanguage == nil || *dead.OriginalLanguage != "ja" ||
+		dead.ReleaseDate == nil || *dead.ReleaseDate != "2020-02-02" {
+		t.Errorf("old work = %+v, want the stub and the snapshot folded together, catalog columns kept", dead)
+	}
+}
+
+const (
+	ufU1 = 2_000_350_921
+	ufU2 = 2_000_350_922
+	ufU3 = 2_000_350_923
+)
+
+func seedChain(t *testing.T, db *gorm.DB, run func(string, ...any)) {
+	t.Helper()
+	b, c, d := mfDead, mfSurvivor, ufFolded
+	for _, id := range []int{b, c, d} {
+		run(`INSERT INTO galgame (id, updated) VALUES (?, now())`, id)
+	}
+	run(`INSERT INTO galgame_quiz (id, user_id, category, type, difficulty, spoiler_level, question, description, content, explanation, hide_galgame, view, answer_count, correct_count, favorite_count, quality_sum, quality_count, comment_count, status_update_time, created, updated)
+		VALUES (?, ?, 'plot', 'single', 3, 'none', 'q', '', '{"options":["a","b"],"answer":1}'::jsonb, '', false, 0, 0, 0, 0, 0, 0, 0, now(), now(), now())`,
+		mfQuiz, mfAuthor)
+	run(`INSERT INTO galgame_quiz_galgame (quiz_id, work_id) VALUES (?, ?)`, mfQuiz, b)
+	run(`INSERT INTO galgame_like (work_id, user_id, updated) VALUES (?, ?, now()), (?, ?, now()), (?, ?, now())`,
+		b, ufU1, b, ufU2, d, ufU1)
+	run(`INSERT INTO galgame_contributor (work_id, user_id, first_at, last_at, revision_count, source) VALUES
+		(?, ?, '2025-01-01', '2025-01-02', 3, 1), (?, ?, '2025-01-01', '2025-01-02', 2, 1),
+		(?, ?, '2025-01-01', '2025-01-02', 4, 1), (?, ?, '2025-01-01', '2025-01-02', 5, 1)`,
+		b, ufU1, b, ufU3, c, ufU3, d, ufU1)
+	run(`INSERT INTO galgame_view_daily (entity_id, day, count) VALUES (?, ?, 3), (?, ?, 2), (?, ?, 7)`, b, ufDay, c, ufDay, d, ufDay)
+}
+
+type chainState struct {
+	quiz         int
+	likes        string
+	contributors string
+	views        int
+}
+
+func stateOf(t *testing.T, db *gorm.DB, work int) chainState {
+	t.Helper()
+	var s chainState
+	s.quiz = scalar(t, db, `SELECT count(*) FROM galgame_quiz_galgame WHERE quiz_id = ? AND work_id = ?`, mfQuiz, work)
+	var likes, contributors []string
+	db.Raw(`SELECT user_id::text FROM galgame_like WHERE work_id = ? ORDER BY user_id`, work).Scan(&likes)
+	db.Raw(`SELECT user_id::text || ':' || revision_count FROM galgame_contributor WHERE work_id = ? ORDER BY user_id`, work).Scan(&contributors)
+	s.likes = strings.Join(likes, ",")
+	s.contributors = strings.Join(contributors, ",")
+	s.views = scalar(t, db, `SELECT COALESCE(SUM(count), 0) FROM galgame_view_daily WHERE entity_id = ? AND day = ?`, work, ufDay)
+	return s
+}
+
+func TestUnfoldAChainInEitherOrderPutsEveryRowBack(t *testing.T) {
+	u1, u2, u3 := strconv.Itoa(ufU1), strconv.Itoa(ufU2), strconv.Itoa(ufU3)
+	want := map[int]chainState{
+		mfDead:     {quiz: 1, likes: u1 + "," + u2, contributors: u1 + ":3," + u3 + ":2", views: 3},
+		mfSurvivor: {contributors: u3 + ":4", views: 2},
+		ufFolded:   {likes: u1, contributors: u1 + ":5", views: 7},
+	}
+	for name, order := range map[string][]int{
+		"newest first": {mfSurvivor, mfDead},
+		"oldest first": {mfDead, mfSurvivor},
+	} {
+		t.Run(name, func(t *testing.T) {
+			db, run := unfoldFixture(t)
+			seedChain(t, db, run)
+			repo := NewGalgameMergeRepository(db)
+			if _, err := repo.Fold(mfDead, mfSurvivor); err != nil {
+				t.Fatalf("fold B→C: %v", err)
+			}
+			if _, err := repo.Fold(mfSurvivor, ufFolded); err != nil {
+				t.Fatalf("fold C→D: %v", err)
+			}
+			if s := stateOf(t, db, ufFolded); s.quiz != 1 || s.views != 12 {
+				t.Fatalf("D after both folds = %+v", s)
+			}
+			for _, id := range order {
+				for _, r := range unfoldAll(t, repo, id) {
+					if len(r.Problems) != 0 {
+						t.Errorf("undo of %d reported %+v", id, r.Problems)
+					}
+				}
+			}
+			for work, w := range want {
+				if got := stateOf(t, db, work); got != w {
+					t.Errorf("work %d = %+v, want %+v", work, got, w)
+				}
+			}
+		})
+	}
+}
+
+func TestUnfoldKeepsASurvivorRowItCreatedOnceSomeoneChangedIt(t *testing.T) {
+	db, run := unfoldFixture(t)
+	seed(t, db, mfDead, ptr("sfw"))
+	repo := NewGalgameMergeRepository(db)
+	if _, err := repo.Fold(mfDead, mfSurvivor); err != nil {
+		t.Fatalf("fold: %v", err)
+	}
+	run(`UPDATE galgame SET resource_publish_banned = true WHERE id = ?`, mfSurvivor)
+
+	unfoldAll(t, repo, mfDead)
+	var survivor struct {
+		Banned    bool `gorm:"column:resource_publish_banned"`
 		Published bool
 	}
-	db.Raw(`SELECT view, published FROM galgame WHERE id = ?`, mfDead).Scan(&dead)
-	if dead.View != 10 || !dead.Published {
-		t.Errorf("old work = %+v, want the stub's view plus the snapshot's, and published", dead)
+	res := db.Raw(`SELECT resource_publish_banned, published FROM galgame WHERE id = ?`, mfSurvivor).Scan(&survivor)
+	if res.RowsAffected != 1 || !survivor.Banned || survivor.Published {
+		t.Errorf("survivor = %+v (found %d), want it kept with the ban set after the merge, and the old work's published cleared",
+			survivor, res.RowsAffected)
+	}
+}
+
+func TestUnfoldLeavesAFoldedRowOutOnceItsSurvivorCopyIsGone(t *testing.T) {
+	db, run := unfoldFixture(t)
+	seed(t, db, mfDead, ptr("sfw"))
+	run(`INSERT INTO galgame (id, updated) VALUES (?, now())`, mfSurvivor)
+	run(`INSERT INTO galgame_like (work_id, user_id, updated) VALUES (?, ?, now()), (?, ?, now()), (?, ?, now()), (?, ?, now())`,
+		mfDead, ufUserBoth, mfSurvivor, ufUserBoth, mfDead, ufUserDead, mfSurvivor, ufUserDead)
+	repo := NewGalgameMergeRepository(db)
+	if _, err := repo.Fold(mfDead, mfSurvivor); err != nil {
+		t.Fatalf("fold: %v", err)
+	}
+	run(`DELETE FROM galgame_like WHERE work_id = ? AND user_id = ?`, mfSurvivor, ufUserDead)
+
+	reports := unfoldAll(t, repo, mfDead)
+	if n := scalar(t, db, `SELECT count(*) FROM galgame_like WHERE work_id = ? AND user_id = ?`, mfDead, ufUserBoth); n != 1 {
+		t.Errorf("a like still folded into the survivor's did not come back")
+	}
+	if n := scalar(t, db, `SELECT count(*) FROM galgame_like WHERE work_id = ? AND user_id = ?`, mfDead, ufUserDead); n != 0 {
+		t.Errorf("a like the user withdrew from the survivor after the merge came back on the old work")
+	}
+	if len(reports) != 1 || len(reports[0].Problems) != 1 || reports[0].Problems[0].Reason != UnfoldGone {
+		t.Errorf("reports = %+v, want the withdrawn like recorded as gone", reports)
 	}
 }

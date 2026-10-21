@@ -14857,7 +14857,7 @@ export interface components {
             undone_at: string | null;
         };
         WorkMergeFoldProblem: {
-            /** @description gone: deleted since the fold. elsewhere: now on another work (current_work_id). conflict: the old work already holds that row. purged_user: its author was purged. survivor_folded: the survivor's own row was folded further, so its counters keep the old work's views. */
+            /** @description gone: deleted since the fold, or the row it had been folded into was. elsewhere: now on another work (current_work_id). conflict: the old work already holds that row. purged_user: its author was purged. survivor_folded: the survivor was folded further, and a flag the old work had brought it (published, publish ban, creator) may remain on the work it ended in. */
             cause: components["schemas"]["WorkMergeFoldProblemCause"];
             /** @description Where the row is now, for elsewhere and conflict. null otherwise. */
             current_work_id: string | null;

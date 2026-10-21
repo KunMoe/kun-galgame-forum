@@ -42,7 +42,7 @@ type WorkMergeFold struct {
 type WorkMergeFoldProblem struct {
 	TableName     string          `json:"table_name" enum:"galgame,galgame_resource,galgame_activity,galgame_comment_community_map,galgame_resource_relocation,galgame_like,galgame_favorite,galgame_contributor,galgame_quiz_galgame,galgame_view_daily,feed_activity" maxLength:"29" doc:"The table the row is in."`
 	RowID         repr.DecimalID  `json:"row_id" doc:"The row's key in that table: its id, or quiz_id, old_comment_id or resource_id."`
-	Cause         string          `json:"cause" enum:"gone,elsewhere,conflict,purged_user,survivor_folded" maxLength:"15" doc:"gone: deleted since the fold. elsewhere: now on another work (current_work_id). conflict: the old work already holds that row. purged_user: its author was purged. survivor_folded: the survivor's own row was folded further, so its counters keep the old work's views."`
+	Cause         string          `json:"cause" enum:"gone,elsewhere,conflict,purged_user,survivor_folded" maxLength:"15" doc:"gone: deleted since the fold, or the row it had been folded into was. elsewhere: now on another work (current_work_id). conflict: the old work already holds that row. purged_user: its author was purged. survivor_folded: the survivor was folded further, and a flag the old work had brought it (published, publish ban, creator) may remain on the work it ended in."`
 	CurrentWorkID *repr.DecimalID `json:"current_work_id" doc:"Where the row is now, for elsewhere and conflict. null otherwise."`
 }
 

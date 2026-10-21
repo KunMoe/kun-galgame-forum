@@ -365,3 +365,29 @@ func TestMirrorChannelUnlistsDeletionsEvenPastTheFlipLimit(t *testing.T) {
 		}
 	}
 }
+
+func TestMirrorChannelHidesADeletedWorkTheForumOnlyNamesInARating(t *testing.T) {
+	f := newVerifyFix(t)
+	named, bare := verifyBase+300, verifyBase+301
+	const rating = 2_000_480_001
+	f.db.Exec(`DELETE FROM galgame_rating WHERE id = ?`, rating)
+	t.Cleanup(func() { f.db.Exec(`DELETE FROM galgame_rating WHERE id = ?`, rating) })
+	if err := f.db.Exec(`INSERT INTO galgame_rating (id, recommend, overall, updated, user_id, work_id) VALUES (?, 'yes', 7, now(), 1, ?)`,
+		rating, named).Error; err != nil {
+		t.Fatal(err)
+	}
+	f.fake.fates[named] = "deleted"
+	f.fake.fates[bare] = "deleted"
+
+	if _, err := f.mirror.settle(t.Context(), nil, []int{named, bare}, 2, "信道", true); err != nil {
+		t.Fatal(err)
+	}
+	if s := f.state(t, named); s.Rendered || !s.Checked {
+		t.Errorf("the rated deleted work has no hidden row: %+v", s)
+	}
+	var n int64
+	f.db.Raw(`SELECT count(*) FROM galgame WHERE id = ?`, bare).Scan(&n)
+	if n != 0 {
+		t.Errorf("a deleted work nothing here names got a row")
+	}
+}

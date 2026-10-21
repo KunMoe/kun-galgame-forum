@@ -23,11 +23,12 @@ const TABLE_LABELS: Record<WorkMergeFoldProblem['table_name'], string> = {
 }
 
 const CAUSE_LABELS: Record<WorkMergeFoldProblem['cause'], string> = {
-  gone: '合并后已被删除',
+  gone: '合并后已被删除, 或它被并入的那一条已被删除',
   elsewhere: '现在挂在另一部作品上',
   conflict: '原作品上已有同一条',
   purged_user: '作者已被清除',
-  survivor_folded: '保留方又被合并了一次, 原作品的浏览量留在了那里'
+  survivor_folded:
+    '保留方又被合并了一次, 原作品带来的发布 / 禁令 / 创建者标记可能留在了最终那部作品上'
 }
 
 type FoldPage = { items: WorkMergeFold[]; total: number }

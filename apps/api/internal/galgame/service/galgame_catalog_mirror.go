@@ -250,6 +250,12 @@ func (s *GalgameCatalogMirror) settle(ctx context.Context, hidden, absent []int,
 	if s.galgameRepo == nil {
 		return 0, nil
 	}
+	if reportedGone {
+		var err error
+		if absent, err = s.hideStrays(ctx, absent); err != nil {
+			return 0, err
+		}
+	}
 	absent, err := s.galgameRepo.LocalAmong(absent)
 	if err != nil {
 		return 0, err
@@ -361,4 +367,24 @@ func groupByContentLimit(limits map[int]string) map[string][]int {
 		}
 	}
 	return out
+}
+
+// hideStrays gives a deleted work that has no local row one, hidden, when the
+// forum still holds something that names it, and returns the rest of absent.
+func (s *GalgameCatalogMirror) hideStrays(ctx context.Context, absent []int) ([]int, error) {
+	strays, err := s.galgameRepo.ReferencedWithoutRow(absent)
+	if err != nil || len(strays) == 0 {
+		return absent, err
+	}
+	var deleted []int
+	for _, id := range strays {
+		fate, found, appErr := s.galgameClient.WorkFate(ctx, int64(id))
+		if appErr == nil && !found && fate.Deleted != nil {
+			deleted = append(deleted, id)
+		}
+	}
+	if err := s.galgameRepo.AddHidden(deleted); err != nil {
+		return absent, err
+	}
+	return slices.DeleteFunc(absent, func(id int) bool { return slices.Contains(deleted, id) }), nil
 }
