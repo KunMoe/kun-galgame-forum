@@ -53,7 +53,7 @@ jobs:
         with:
           # Matches docker/nuxt.Dockerfile's NODE_VERSION — the gate has to run
           # on the runtime the image ships.
-          node-version: 24
+          node-version: 24.22.1
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm -F web gen:api && git diff --exit-code -- apps/web/shared/types/api/

@@ -15,7 +15,7 @@ locally and in production. (Same shape as moyu — no self-contained override.)
 |------------------|-----------------------|----------------------------------------|-------|
 | `kungal/api`     | `docker/go.Dockerfile`  | `distroless/static-debian12:nonroot` | `CGO_ENABLED=0`, pure Go, ~no shell |
 | `kungal/migrate` | `docker/go.Dockerfile`  | same (`--build-arg CMD=migrate`)     | one-off job, `profiles: [jobs]` |
-| `kungal/web`     | `docker/nuxt.Dockerfile`| `node:22-bookworm-slim`              | serves `.output` (Nitro node-server) |
+| `kungal/web`     | `docker/nuxt.Dockerfile`| `node:24.22.1-trixie-slim`              | serves `.output` (Nitro node-server) |
 
 Both Dockerfiles take the **repo root** as build context (it's a pnpm workspace —
 `apps/web` + `apps/api` — so the lockfile and every manifest must be in context).

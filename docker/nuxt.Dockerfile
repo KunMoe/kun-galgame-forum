@@ -10,7 +10,7 @@
 # and baked. Any public key can still be overridden at RUNTIME via the
 # canonical NUXT_PUBLIC_* env names (build once, configure per env — see
 # docker/README.md).
-ARG NODE_VERSION=24
+ARG NODE_VERSION=24.22.1
 
 FROM node:${NODE_VERSION}-trixie-slim AS base
 RUN corepack enable
