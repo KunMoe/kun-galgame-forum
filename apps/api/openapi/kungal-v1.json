@@ -5295,7 +5295,7 @@
                 "type": "null"
               }
             ],
-            "description": "The work, for a galgame wall. null for every other kind of wall, and for a galgame wall whose work catalog no longer shows."
+            "description": "The work, for a galgame wall. null for every other kind of wall."
           }
         },
         "required": [
@@ -11566,6 +11566,40 @@
             "description": "Members of this page. Empty array, never null.",
             "items": {
               "$ref": "#/components/schemas/UserTopicItem"
+            },
+            "type": "array"
+          },
+          "object": {
+            "const": "list",
+            "description": "Type discriminant. Always list.",
+            "maxLength": 4,
+            "type": "string"
+          },
+          "total": {
+            "description": "Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "total_relation": {
+            "$ref": "#/components/schemas/TotalRelation",
+            "description": "eq when total is exact, gte when it stopped at the depth limit and there are at least that many."
+          }
+        },
+        "required": [
+          "object",
+          "items",
+          "total",
+          "total_relation"
+        ],
+        "type": "object"
+      },
+      "PageListWorkMergeFold": {
+        "properties": {
+          "items": {
+            "description": "Members of this page. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/WorkMergeFold"
             },
             "type": "array"
           },
@@ -21939,13 +21973,13 @@
             ]
           },
           "galgame_rating_count": {
-            "description": "Galgame ratings the user authored.",
+            "description": "Galgame ratings the user authored, leaving out ratings on works the catalog does not show (deleted or hidden).",
             "format": "int64",
             "minimum": 0,
             "type": "integer"
           },
           "galgame_resource_count": {
-            "description": "Galgame resources the user authored.",
+            "description": "Galgame resources the user authored, leaving out resources on works the catalog does not show (deleted or hidden).",
             "format": "int64",
             "minimum": 0,
             "type": "integer"
@@ -21969,7 +22003,7 @@
             "type": "integer"
           },
           "published_galgame_today_count": {
-            "description": "Galgames the user published today by the galgame-domain clock. May be 0 when the catalog is unavailable.",
+            "description": "Galgames the user published today by the galgame-domain clock, leaving out works the catalog does not show (deleted or hidden). May be 0 when the catalog is unavailable.",
             "format": "int64",
             "minimum": 0,
             "type": "integer"
@@ -25151,6 +25185,168 @@
         "type": "string",
         "x-vocabulary-closed": true
       },
+      "WorkMergeFold": {
+        "properties": {
+          "dropped_count": {
+            "description": "Rows dropped because the survivor already held the same user's or quiz's row; kept for the reversal.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "folded_at": {
+            "description": "When the forum folded the rows.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": "string"
+          },
+          "id": {
+            "description": "Fold id.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "moved_count": {
+            "description": "Rows moved onto the survivor.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "new_work_id": {
+            "description": "The survivor the rows were folded onto.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "object": {
+            "const": "work_merge_fold",
+            "description": "Type discriminant. Always work_merge_fold.",
+            "maxLength": 15,
+            "type": "string"
+          },
+          "old_work_id": {
+            "description": "The work catalog merged away, whose forum rows were folded.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "problems": {
+            "description": "Rows the reversal could not put back. Empty array, never null, and empty while the fold stands.",
+            "items": {
+              "$ref": "#/components/schemas/WorkMergeFoldProblem"
+            },
+            "maxItems": 10000,
+            "type": "array"
+          },
+          "repointed_count": {
+            "description": "Feed entries pointed at the survivor.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "summed_count": {
+            "description": "Contributor rows and daily view buckets added into the survivor's.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "undone_at": {
+            "description": "When the fold was reversed because catalog undid or re-pointed the merge. null while it stands.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "object",
+          "id",
+          "old_work_id",
+          "new_work_id",
+          "folded_at",
+          "undone_at",
+          "moved_count",
+          "dropped_count",
+          "summed_count",
+          "repointed_count",
+          "problems"
+        ],
+        "type": "object"
+      },
+      "WorkMergeFoldProblem": {
+        "properties": {
+          "cause": {
+            "$ref": "#/components/schemas/WorkMergeFoldProblemCause",
+            "description": "gone: deleted since the fold. elsewhere: now on another work (current_work_id). conflict: the old work already holds that row. purged_user: its author was purged. survivor_folded: the survivor's own row was folded further, so its counters keep the old work's views."
+          },
+          "current_work_id": {
+            "description": "Where the row is now, for elsewhere and conflict. null otherwise.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "row_id": {
+            "description": "The row's key in that table: its id, or quiz_id, old_comment_id or resource_id.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "table_name": {
+            "$ref": "#/components/schemas/WorkMergeFoldTable",
+            "description": "The table the row is in."
+          }
+        },
+        "required": [
+          "table_name",
+          "row_id",
+          "cause",
+          "current_work_id"
+        ],
+        "type": "object"
+      },
+      "WorkMergeFoldProblemCause": {
+        "enum": [
+          "gone",
+          "elsewhere",
+          "conflict",
+          "purged_user",
+          "survivor_folded"
+        ],
+        "maxLength": 15,
+        "type": "string",
+        "x-vocabulary-closed": true
+      },
+      "WorkMergeFoldTable": {
+        "enum": [
+          "galgame",
+          "galgame_resource",
+          "galgame_activity",
+          "galgame_comment_community_map",
+          "galgame_resource_relocation",
+          "galgame_like",
+          "galgame_favorite",
+          "galgame_contributor",
+          "galgame_quiz_galgame",
+          "galgame_view_daily",
+          "feed_activity"
+        ],
+        "maxLength": 29,
+        "type": "string",
+        "x-vocabulary-closed": true
+      },
       "WorkPlaytime": {
         "properties": {
           "client_count": {
@@ -26585,7 +26781,7 @@
     },
     "/activities": {
       "get": {
-        "description": "The site's activity stream, newest first: topics, replies, comments, upvotes, best answers, works and their resources, ratings, edits and quizzes, toolsets, websites, todos and update logs. occurred_desc sorts by occurred_at with ties broken on kind and subject; bumped_desc lists topics by bump time and is allowed only when activity_types is exactly topic_creation. An activity whose actor is banned, or whose work catalog does not show under include_nsfw, is left out, so a page can be short; only an absent next_cursor means the end. The cursor is bound to the sort and to every filter.",
+        "description": "The site's activity stream, newest first: topics, replies, comments, upvotes, best answers, works and their resources, ratings, edits and quizzes, toolsets, websites, todos and update logs. occurred_desc sorts by occurred_at with ties broken on kind and subject; bumped_desc lists topics by bump time and is allowed only when activity_types is exactly topic_creation. An activity whose actor is banned, whose work catalog does not show under include_nsfw, or that is about a work catalog does not render, directly or through its resource, rating or quiz, is left out, so a page can be short; only an absent next_cursor means the end. The cursor is bound to the sort and to every filter.",
         "operationId": "listActivities",
         "parameters": [
           {
@@ -31764,6 +31960,115 @@
         ]
       }
     },
+    "/admin/work-merge-folds": {
+      "get": {
+        "description": "Every time the forum folded a merged work's rows onto its survivor, newest first, with what an undone merge could not put back. A page-number collection: page × limit may not exceed 10000. Admins only.",
+        "operationId": "listWorkMergeFolds",
+        "parameters": [
+          {
+            "description": "1-based page number. page × limit may not exceed 10000.",
+            "explode": false,
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "default": 1,
+              "description": "1-based page number. page × limit may not exceed 10000.",
+              "format": "int64",
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Page size. 1–100, default 20. Values above 100 are rejected, not clamped.",
+            "explode": false,
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 20,
+              "description": "Page size. 1–100, default 20. Values above 100 are rejected, not clamped.",
+              "format": "int64",
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageListWorkMergeFold"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "PERMISSION_REQUIRED when the caller is not an admin."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List work merge folds",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
     "/app/version": {
       "get": {
         "description": "The app's version gate: an install older than min_version must update before it runs. Read from configuration that is validated at startup, so the versions are always well formed and ordered.",
@@ -35684,7 +35989,7 @@
                 }
               }
             },
-            "description": "NOT_FOUND when the resource does not exist, its author is not renderable, or the work is unpublished."
+            "description": "NOT_FOUND when the resource does not exist, its author is not renderable, or the work is unpublished or hidden."
           },
           "500": {
             "content": {
@@ -35721,7 +36026,7 @@
         ]
       },
       "get": {
-        "description": "Returns the resource without download secrets and counts one view. An unrenderable author or unpublished work is NOT_FOUND. viewer is null for an anonymous caller.",
+        "description": "Returns the resource without download secrets and counts one view; a NOT_FOUND counts none. An unrenderable author or an unpublished or hidden work is NOT_FOUND. viewer is null for an anonymous caller.",
         "operationId": "getGalgameResource",
         "parameters": [
           {
@@ -35786,7 +36091,7 @@
                 }
               }
             },
-            "description": "NOT_FOUND when the resource does not exist, its author is not renderable, or the work is unpublished."
+            "description": "NOT_FOUND when the resource does not exist, its author is not renderable, or the work is unpublished or hidden."
           },
           "500": {
             "content": {
@@ -35899,7 +36204,7 @@
                 }
               }
             },
-            "description": "NOT_FOUND when the resource does not exist, its author is not renderable, or the work is unpublished."
+            "description": "NOT_FOUND when the resource does not exist, its author is not renderable, or the work is unpublished or hidden."
           },
           "413": {
             "content": {
@@ -36033,7 +36338,7 @@
                 }
               }
             },
-            "description": "NOT_FOUND when the resource does not exist, its author is not renderable, or the work is unpublished."
+            "description": "NOT_FOUND when the resource does not exist, its author is not renderable, or the work is unpublished or hidden."
           },
           "500": {
             "content": {
@@ -36150,7 +36455,7 @@
                 }
               }
             },
-            "description": "NOT_FOUND when the resource does not exist, its author is not renderable, or the work is unpublished."
+            "description": "NOT_FOUND when the resource does not exist, its author is not renderable, or the work is unpublished or hidden."
           },
           "409": {
             "content": {
@@ -36264,7 +36569,7 @@
                 }
               }
             },
-            "description": "NOT_FOUND when the resource does not exist, its author is not renderable, or the work is unpublished."
+            "description": "NOT_FOUND when the resource does not exist, its author is not renderable, or the work is unpublished or hidden."
           },
           "500": {
             "content": {
@@ -36366,7 +36671,7 @@
                 }
               }
             },
-            "description": "NOT_FOUND when the resource does not exist, its author is not renderable, or the work is unpublished."
+            "description": "NOT_FOUND when the resource does not exist, its author is not renderable, or the work is unpublished or hidden."
           },
           "500": {
             "content": {
@@ -36470,7 +36775,7 @@
                 }
               }
             },
-            "description": "NOT_FOUND when the resource does not exist, its author is not renderable, or the work is unpublished."
+            "description": "NOT_FOUND when the resource does not exist, its author is not renderable, or the work is unpublished or hidden."
           },
           "500": {
             "content": {
@@ -38331,7 +38636,7 @@
     },
     "/me/answered-quizzes": {
       "get": {
-        "description": "Lists quizzes the caller has an answerer row on, newest answer first. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED, and a failure of that lookup is SERVICE_UNAVAILABLE with nothing written. Quizzes whose author is not renderable are omitted from both items and total.",
+        "description": "Lists quizzes the caller has an answerer row on, newest answer first. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED, and a failure of that lookup is SERVICE_UNAVAILABLE with nothing written. Quizzes whose author is not renderable, or that link a work catalog does not render, are omitted from both items and total.",
         "operationId": "listMyAnsweredQuizzes",
         "parameters": [
           {
@@ -44167,7 +44472,7 @@
     },
     "/me/quiz-states": {
       "get": {
-        "description": "Answers, for each quiz id named in quiz_ids, whether the caller favorited it. It is a batch read and is not paginated: quiz_ids is required, holds 1 to 100 ids. An id that does not exist, is deleted, or whose author is not renderable is missing.",
+        "description": "Answers, for each quiz id named in quiz_ids, whether the caller favorited it. It is a batch read and is not paginated: quiz_ids is required, holds 1 to 100 ids. An id that does not exist, is deleted, whose author is not renderable, or that links a work catalog does not render is missing.",
         "operationId": "listMyQuizStates",
         "parameters": [
           {
@@ -45464,7 +45769,7 @@
     },
     "/me/walls": {
       "get": {
-        "description": "The comment walls the caller follows, in the community service's order. A page can be shorter than limit, even empty, while next_cursor is present: walls this forum no longer recognises are left out. The last page omits next_cursor.",
+        "description": "The comment walls the caller follows, in the community service's order. A page can be shorter than limit, even empty, while next_cursor is present: walls this forum no longer recognises, and walls of a work the catalog no longer shows or of its ratings, resources and quizzes, are left out; they stay followed. The last page omits next_cursor.",
         "operationId": "listFollowedWalls",
         "parameters": [
           {
@@ -45647,7 +45952,7 @@
                 }
               }
             },
-            "description": "NOT_FOUND when the page does not exist or its author is banned."
+            "description": "NOT_FOUND when the page does not exist, is on a work the catalog no longer shows, or its author is banned."
           },
           "500": {
             "content": {
@@ -45761,7 +46066,7 @@
                 }
               }
             },
-            "description": "NOT_FOUND when the page does not exist or its author is banned."
+            "description": "NOT_FOUND when the page does not exist, is on a work the catalog no longer shows, or its author is banned."
           },
           "500": {
             "content": {
@@ -45873,7 +46178,7 @@
                 }
               }
             },
-            "description": "NOT_FOUND when the page does not exist or its author is banned."
+            "description": "NOT_FOUND when the page does not exist, is on a work the catalog no longer shows, or its author is banned."
           },
           "500": {
             "content": {
@@ -45987,7 +46292,7 @@
                 }
               }
             },
-            "description": "NOT_FOUND when the page does not exist or its author is banned."
+            "description": "NOT_FOUND when the page does not exist, is on a work the catalog no longer shows, or its author is banned."
           },
           "500": {
             "content": {
@@ -47936,7 +48241,7 @@
     },
     "/quizzes": {
       "get": {
-        "description": "Lists quizzes as a page-number collection. Default sort is bumped_at_desc, default limit 50. Quizzes whose author is not renderable are omitted from both items and total. include_nsfw=false excludes quizzes linked to a local NSFW work. PROFILE_SIGN_IN_REQUIRED when the caller is anonymous and author_id names a user who shows their profile to signed-in users only.",
+        "description": "Lists quizzes as a page-number collection. Default sort is bumped_at_desc, default limit 50. Quizzes whose author is not renderable, or that link a work catalog does not render, are omitted from both items and total. include_nsfw=false excludes quizzes linked to a local NSFW work. PROFILE_SIGN_IN_REQUIRED when the caller is anonymous and author_id names a user who shows their profile to signed-in users only.",
         "operationId": "listQuizzes",
         "parameters": [
           {
@@ -48346,7 +48651,7 @@
                 }
               }
             },
-            "description": "NOT_FOUND when the quiz does not exist or its author is not renderable."
+            "description": "NOT_FOUND when the quiz does not exist, its author is not renderable, or it links a work catalog does not render."
           },
           "500": {
             "content": {
@@ -48383,7 +48688,7 @@
         ]
       },
       "get": {
-        "description": "Returns the quiz and counts one view. An unrenderable author is NOT_FOUND. viewer is null for an anonymous caller. solution is null until the caller has answered, is the author, or can_edit.",
+        "description": "Returns the quiz and counts one view. A quiz whose author is not renderable, or that links a work catalog does not render, is NOT_FOUND. viewer is null for an anonymous caller. solution is null until the caller has answered, is the author, or can_edit.",
         "operationId": "getQuiz",
         "parameters": [
           {
@@ -48448,7 +48753,7 @@
                 }
               }
             },
-            "description": "NOT_FOUND when the quiz does not exist or its author is not renderable."
+            "description": "NOT_FOUND when the quiz does not exist, its author is not renderable, or it links a work catalog does not render."
           },
           "500": {
             "content": {
@@ -48561,7 +48866,7 @@
                 }
               }
             },
-            "description": "NOT_FOUND when the quiz does not exist or its author is not renderable."
+            "description": "NOT_FOUND when the quiz does not exist, its author is not renderable, or it links a work catalog does not render."
           },
           "413": {
             "content": {
@@ -48731,7 +49036,7 @@
                 }
               }
             },
-            "description": "NOT_FOUND when the quiz does not exist or its author is not renderable."
+            "description": "NOT_FOUND when the quiz does not exist, its author is not renderable, or it links a work catalog does not render."
           },
           "500": {
             "content": {
@@ -48867,7 +49172,7 @@
                 }
               }
             },
-            "description": "NOT_FOUND when the quiz does not exist or its author is not renderable."
+            "description": "NOT_FOUND when the quiz does not exist, its author is not renderable, or it links a work catalog does not render."
           },
           "409": {
             "content": {
@@ -49011,7 +49316,7 @@
                 }
               }
             },
-            "description": "NOT_FOUND when the quiz does not exist or its author is not renderable."
+            "description": "NOT_FOUND when the quiz does not exist, its author is not renderable, or it links a work catalog does not render."
           },
           "500": {
             "content": {
@@ -49113,7 +49418,7 @@
                 }
               }
             },
-            "description": "NOT_FOUND when the quiz does not exist or its author is not renderable."
+            "description": "NOT_FOUND when the quiz does not exist, its author is not renderable, or it links a work catalog does not render."
           },
           "500": {
             "content": {
@@ -49227,7 +49532,7 @@
                 }
               }
             },
-            "description": "NOT_FOUND when the quiz does not exist or its author is not renderable."
+            "description": "NOT_FOUND when the quiz does not exist, its author is not renderable, or it links a work catalog does not render."
           },
           "413": {
             "content": {
@@ -49361,7 +49666,7 @@
                 }
               }
             },
-            "description": "NOT_FOUND when the quiz does not exist or its author is not renderable."
+            "description": "NOT_FOUND when the quiz does not exist, its author is not renderable, or it links a work catalog does not render."
           },
           "500": {
             "content": {
@@ -52857,7 +53162,7 @@
     },
     "/search/wall-comments": {
       "get": {
-        "description": "Posts on the comment walls this forum hosts (works, ratings, resources, quizzes, toolsets and websites) that match the keywords, newest first. A cursor collection with no total: the comment index answers a cursor and no count. Posts on walls another site opened, and posts by banned authors, are dropped after the fact, so a page may hold fewer items than limit. A cursor is bound to q.",
+        "description": "Posts on the comment walls this forum hosts (works, ratings, resources, quizzes, toolsets and websites) that match the keywords, newest first. A cursor collection with no total: the comment index answers a cursor and no count. Posts on walls another site opened, on the walls of a work the catalog no longer shows or of its ratings, resources and quizzes, and posts by banned authors, are dropped after the fact, so a page may hold fewer items than limit. A cursor is bound to q.",
         "operationId": "searchWallComments",
         "parameters": [
           {
@@ -64053,7 +64358,7 @@
                 }
               }
             },
-            "description": "NOT_FOUND when the page does not exist or this forum would not show it: a galgame the catalog does not resolve, or a rating, resource, quiz or toolset whose owner is banned."
+            "description": "NOT_FOUND when the page does not exist or this forum would not show it: a galgame the catalog does not resolve, a rating, resource or quiz on a work the catalog no longer shows, or a rating, resource, quiz or toolset whose owner is banned."
           },
           "500": {
             "content": {
@@ -64177,7 +64482,7 @@
                 }
               }
             },
-            "description": "NOT_FOUND when the page does not exist or this forum would not show it: a galgame the catalog does not resolve, or a rating, resource, quiz or toolset whose owner is banned."
+            "description": "NOT_FOUND when the page does not exist or this forum would not show it: a galgame the catalog does not resolve, a rating, resource or quiz on a work the catalog no longer shows, or a rating, resource, quiz or toolset whose owner is banned."
           },
           "409": {
             "content": {

@@ -27,7 +27,7 @@ export const SEARCH_CATEGORIES: SearchCategory[] = [
   },
   {
     value: 'entity',
-    textValue: '资料库',
+    textValue: '论坛数据',
     icon: 'lucide:library',
     countUnit: '个条目'
   },

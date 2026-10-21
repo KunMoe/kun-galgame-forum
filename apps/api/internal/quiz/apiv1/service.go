@@ -158,7 +158,7 @@ func (s *Service) visibleQuiz(ctx context.Context, rawID string) (*model.Galgame
 	if !ok {
 		return nil, nil, notFound()
 	}
-	row, err := s.store.Find(id)
+	row, err := s.store.FindRendered(id)
 	if err != nil {
 		if errors.Is(err, repository.ErrNotFound) {
 			return nil, nil, notFound()

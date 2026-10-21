@@ -120,7 +120,7 @@ onMounted(() => {
   <div class="space-y-6">
     <KunHeader
       name="发布 Galgame"
-      description="先搜索您想发布资源的游戏。资料库里已有的作品直接打开详情页发布资源；确实没有的再新建申请。"
+      description="先搜索您想发布资源的游戏。鲲 Galgame 论坛数据里已有的作品直接打开详情页发布资源；确实没有的再新建申请。"
     >
       <template #endContent>
         <div class="flex items-center gap-2">
@@ -154,7 +154,8 @@ onMounted(() => {
         </KunButton>
       </div>
       <p class="text-default-500 text-sm">
-        搜索覆盖资料库中的全部游戏。打开详情页即可发布资源；搜不到的原创 /
+        搜索覆盖鲲 Galgame
+        论坛数据中的全部游戏。打开详情页即可发布资源；搜不到的原创 /
         同人作品走下方新建申请。您自己的待审核 / 已拒绝投稿也会列在这里。
       </p>
     </div>
@@ -163,7 +164,7 @@ onMounted(() => {
       v-if="searchFailed"
       color="danger"
       title="搜索失败"
-      description="资料库暂时无法搜索, 请稍后重试。在确认没有同名作品之前, 请不要新建申请。"
+      description="鲲 Galgame 论坛数据暂时无法搜索, 请稍后重试。在确认没有同名作品之前, 请不要新建申请。"
     />
 
     <div v-if="hasSearched" class="space-y-4">

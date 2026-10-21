@@ -279,11 +279,11 @@ func (s *Service) visibleResource(ctx context.Context, rawID string) (*model.Gal
 		}
 		return nil, nil, problem.Internal(err)
 	}
-	published, err := s.store.WorkPublished(row.WorkID)
+	visible, err := s.store.WorkVisible(row.WorkID)
 	if err != nil {
 		return nil, nil, problem.Internal(err)
 	}
-	if !published {
+	if !visible {
 		return nil, nil, notFound()
 	}
 	users, p := s.lookupUsers(ctx, []int{row.UserID})

@@ -152,7 +152,10 @@ const totalPage = computed(() =>
         </div>
       </KunLoading>
 
-      <KunNull v-if="isEmpty" description="资料库里没有找到匹配的条目" />
+      <KunNull
+        v-if="isEmpty"
+        description="鲲 Galgame 论坛数据里没有找到匹配的条目"
+      />
 
       <KunPagination
         v-if="totalPage > 1"

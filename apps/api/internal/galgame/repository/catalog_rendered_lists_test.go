@@ -3,6 +3,7 @@ package repository
 import (
 	"slices"
 	"testing"
+	"time"
 
 	"kun-galgame-api/internal/testdb"
 
@@ -45,6 +46,9 @@ func TestListsSkipWorksCatalogWillNotRender(t *testing.T) {
 	}
 	if total != 1 || !slices.Equal(ids, []int{listed}) {
 		t.Errorf("creator's works = %v (total %d), want only %d", ids, total, listed)
+	}
+	if n := NewGalgameRepository(db).CountPublishedByCreatorSince(owner, time.Now().Add(-time.Hour)); n != 1 {
+		t.Errorf("published today = %d, want only the listed work", n)
 	}
 
 	for _, sfw := range []bool{false, true} {

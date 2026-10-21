@@ -14,9 +14,12 @@ import (
 )
 
 type fakeMergeRepo struct {
-	local map[int]bool
-	folds [][2]int
-	err   error
+	local     map[int]bool
+	folds     [][2]int
+	err       error
+	active    map[int]int
+	unfolds   []int
+	unfoldErr error
 }
 
 func newFakeMerge(ids ...int) *fakeMergeRepo {
@@ -43,7 +46,40 @@ func (f *fakeMergeRepo) ReferencedIDsIn(ids []int) ([]int, error) {
 func (f *fakeMergeRepo) Fold(oldWorkID, newWorkID int) (repository.MergeCounts, error) {
 	f.folds = append(f.folds, [2]int{oldWorkID, newWorkID})
 	delete(f.local, oldWorkID)
+	if f.active == nil {
+		f.active = map[int]int{}
+	}
+	f.active[oldWorkID] = newWorkID
 	return repository.MergeCounts{}, nil
+}
+
+func (f *fakeMergeRepo) ActiveFold(oldWorkID int) (*repository.MergeFold, error) {
+	if to, ok := f.active[oldWorkID]; ok {
+		return &repository.MergeFold{OldWorkID: oldWorkID, NewWorkID: to}, nil
+	}
+	return nil, nil
+}
+
+func (f *fakeMergeRepo) FoldChain(workID int) ([]int, error) {
+	chain := []int{workID}
+	for to, ok := f.active[workID]; ok; to, ok = f.active[to] {
+		chain = append(chain, to)
+	}
+	return chain, nil
+}
+
+func (f *fakeMergeRepo) Unfold(oldWorkID int) (*repository.UnfoldReport, error) {
+	if f.unfoldErr != nil {
+		return nil, f.unfoldErr
+	}
+	to, ok := f.active[oldWorkID]
+	if !ok {
+		return nil, nil
+	}
+	f.unfolds = append(f.unfolds, oldWorkID)
+	delete(f.active, oldWorkID)
+	f.local[oldWorkID] = true
+	return &repository.UnfoldReport{OldWorkID: oldWorkID, NewWorkID: to}, nil
 }
 
 type fakeSurvivors struct {
@@ -53,11 +89,11 @@ type fakeSurvivors struct {
 	down     bool
 }
 
-func (f fakeSurvivors) WorkFate(_ context.Context, workID int64) (int64, bool, *errors.AppError) {
+func (f fakeSurvivors) WorkFate(_ context.Context, workID int64) (client.Absence, bool, *errors.AppError) {
 	if f.down {
-		return 0, false, errors.ErrInternal("catalog down")
+		return client.Absence{}, false, errors.ErrInternal("catalog down")
 	}
-	return f.movedTo[int(workID)], f.alive[int(workID)], nil
+	return client.Absence{MovedTo: f.movedTo[int(workID)]}, f.alive[int(workID)], nil
 }
 
 func (f fakeSurvivors) MirrorByCatalogIDs(_ context.Context, ids []int64) (rendered, hidden map[int]client.CatalogMirror, appErr *errors.AppError) {
@@ -208,7 +244,7 @@ func TestApplyPage_RevokedRedirectUnparksAndNeverFolds(t *testing.T) {
 	repo := newFakeMerge(5904, 7001)
 	s := &GalgameMergeSync{mergeRepo: repo, rdb: rdb, survivors: fakeSurvivors{rendered: map[int]bool{61101: true, 7002: true}}}
 
-	folded, _ := s.applyPage(t.Context(), []client.CatalogRedirect{
+	folded, _, _ := s.applyPage(t.Context(), []client.CatalogRedirect{
 		{OldID: 5904, CurrentID: 61101, Revoked: true},
 		{OldID: 7001, CurrentID: 7002},
 	})
@@ -217,5 +253,55 @@ func TestApplyPage_RevokedRedirectUnparksAndNeverFolds(t *testing.T) {
 	}
 	if mr.Exists(mergeDeferredKey) {
 		t.Errorf("a revoked merge stayed parked on %q", mr.HGet(mergeDeferredKey, "5904"))
+	}
+}
+
+func TestApplyPage_RevokedRedirectUnfoldsAFoldThatRan(t *testing.T) {
+	repo := newFakeMerge()
+	repo.active = map[int]int{5904: 61101}
+	s := &GalgameMergeSync{mergeRepo: repo, survivors: fakeSurvivors{rendered: map[int]bool{61101: true}}}
+
+	if _, _, err := s.applyPage(t.Context(), []client.CatalogRedirect{{OldID: 5904, CurrentID: 5904, Revoked: true}}); err != nil {
+		t.Fatal(err)
+	}
+	if len(repo.unfolds) != 1 || repo.unfolds[0] != 5904 || len(repo.folds) != 0 {
+		t.Errorf("unfolds=%v folds=%v, want 5904 folded back and nothing folded", repo.unfolds, repo.folds)
+	}
+}
+
+func TestApplyPage_RepointedRedirectMovesTheRowsToTheNewSurvivor(t *testing.T) {
+	repo := newFakeMerge()
+	repo.active = map[int]int{5904: 61101}
+	s := &GalgameMergeSync{mergeRepo: repo, survivors: fakeSurvivors{rendered: map[int]bool{61101: true, 70000: true}}}
+
+	if _, _, err := s.applyPage(t.Context(), []client.CatalogRedirect{{OldID: 5904, CurrentID: 70000}}); err != nil {
+		t.Fatal(err)
+	}
+	if len(repo.unfolds) != 1 || len(repo.folds) != 1 || repo.folds[0] != [2]int{5904, 70000} {
+		t.Errorf("unfolds=%v folds=%v, want 5904 folded back off 61101 and onto 70000", repo.unfolds, repo.folds)
+	}
+}
+
+func TestApplyPage_FlattenedRedirectLeavesTheRowsWhereTheChainTookThem(t *testing.T) {
+	repo := newFakeMerge()
+	repo.active = map[int]int{5904: 61101, 61101: 70000}
+	s := &GalgameMergeSync{mergeRepo: repo, survivors: fakeSurvivors{rendered: map[int]bool{70000: true}}}
+
+	if _, _, err := s.applyPage(t.Context(), []client.CatalogRedirect{{OldID: 5904, CurrentID: 70000}}); err != nil {
+		t.Fatal(err)
+	}
+	if len(repo.unfolds) != 0 || len(repo.folds) != 0 {
+		t.Errorf("unfolds=%v folds=%v, want nothing: 61101 already carried them to 70000", repo.unfolds, repo.folds)
+	}
+}
+
+func TestApplyPage_AFailedUnfoldHoldsThePage(t *testing.T) {
+	repo := newFakeMerge()
+	repo.active = map[int]int{5904: 61101}
+	repo.unfoldErr = stderrors.New("db down")
+	s := &GalgameMergeSync{mergeRepo: repo}
+
+	if _, _, err := s.applyPage(t.Context(), []client.CatalogRedirect{{OldID: 5904, CurrentID: 5904, Revoked: true}}); err == nil {
+		t.Error("a failed unfold must stop the cursor so the revoke is read again")
 	}
 }

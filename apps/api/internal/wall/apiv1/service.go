@@ -125,6 +125,9 @@ func (s *Service) resolveSubject(ctx context.Context, spec subjectSpec, id int, 
 			return nil, storeProblem(qerr)
 		}
 		sub.ownerID = q.UserID
+		if p := s.onHiddenWork(spec, id); p != nil {
+			return nil, p
+		}
 		if p := s.userRenderable(ctx, sub.ownerID); p != nil {
 			return nil, p
 		}
@@ -148,10 +151,24 @@ func (s *Service) resolveSubject(ctx context.Context, spec subjectSpec, id int, 
 	if err != nil {
 		return nil, storeProblem(err)
 	}
+	if p := s.onHiddenWork(spec, id); p != nil {
+		return nil, p
+	}
 	if p := s.userRenderable(ctx, sub.ownerID); p != nil {
 		return nil, p
 	}
 	return sub, nil
+}
+
+func (s *Service) onHiddenWork(spec subjectSpec, id int) *problem.Problem {
+	hidden, err := s.store.OnHiddenWorks(string(spec.typ), []int{id})
+	if err != nil {
+		return problem.Internal(err)
+	}
+	if hidden[id] {
+		return notFound()
+	}
+	return nil
 }
 
 func (s *Service) userRenderable(ctx context.Context, userID int) *problem.Problem {

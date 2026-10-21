@@ -99,6 +99,66 @@ func (r *Resolver) Resolve(refs []Ref) map[Ref]Target {
 	return out
 }
 
+// OnHiddenWorks stays apart from Resolve: the notification poller drops, for
+// good, a notification whose anchor Resolve leaves out.
+func (r *Resolver) OnHiddenWorks(refs []Ref) (map[Ref]bool, error) {
+	type key struct {
+		source string
+		id     int
+	}
+	ids := map[string][]int{"game": nil, "resource": nil, "rating": nil, "quiz": nil}
+	byKey := map[key][]Ref{}
+	for _, ref := range refs {
+		var k key
+		switch ref.Kind {
+		case communityclient.AnchorSiteGame:
+			k.source = "game"
+			k.id, _ = strconv.Atoi(ref.ID)
+		case communityclient.AnchorSiteResource:
+			source, rawID, _ := strings.Cut(ref.ID, ":")
+			k.source = source
+			k.id, _ = strconv.Atoi(rawID)
+		}
+		if _, tied := ids[k.source]; !tied || k.id <= 0 {
+			continue
+		}
+		if _, seen := byKey[k]; !seen {
+			ids[k.source] = append(ids[k.source], k.id)
+		}
+		byKey[k] = append(byKey[k], ref)
+	}
+	out := map[Ref]bool{}
+	if len(byKey) == 0 {
+		return out, nil
+	}
+	var rows []struct {
+		Source string `gorm:"column:source"`
+		ID     int    `gorm:"column:id"`
+	}
+	err := r.db.Raw(`
+		SELECT 'game' AS source, id FROM galgame WHERE id IN @game AND NOT catalog_rendered
+		UNION ALL
+		SELECT 'resource', t.id FROM galgame_resource t JOIN galgame g ON g.id = t.work_id
+		WHERE t.id IN @resource AND NOT g.catalog_rendered
+		UNION ALL
+		SELECT 'rating', t.id FROM galgame_rating t JOIN galgame g ON g.id = t.work_id
+		WHERE t.id IN @rating AND NOT g.catalog_rendered
+		UNION ALL
+		SELECT DISTINCT 'quiz', t.quiz_id FROM galgame_quiz_galgame t JOIN galgame g ON g.id = t.work_id
+		WHERE t.quiz_id IN @quiz AND NOT g.catalog_rendered`,
+		map[string]any{"game": ids["game"], "resource": ids["resource"], "rating": ids["rating"], "quiz": ids["quiz"]},
+	).Scan(&rows).Error
+	if err != nil {
+		return nil, err
+	}
+	for _, row := range rows {
+		for _, ref := range byKey[key{row.Source, row.ID}] {
+			out[ref] = true
+		}
+	}
+	return out, nil
+}
+
 func (r *Resolver) websiteDomains(ids []int) map[int]string {
 	if len(ids) == 0 {
 		return nil

@@ -92,7 +92,7 @@ watch(
   { immediate: true }
 )
 
-// A lane filter belongs to one lane: 资料库's family and Galgame's own filters
+// A lane filter belongs to one lane: 论坛数据's family and Galgame's own filters
 // are meaningless on any other tab, and carrying them across reads as a filter
 // the reader cannot see and cannot clear. page goes with them — every lane has
 // its own total, so page 7 of 回复 is past the end of 用户.
@@ -115,13 +115,13 @@ const setType = (value: SearchType) => {
   <div class="min-h-[calc(100dvh-6rem)] space-y-6">
     <KunHeader
       name="搜索"
-      description="一次搜索整个论坛: Galgame, 话题, 资料库中的角色 / 会社 / Staff / 标签, Galgame 下载资源, 用户, 回复与评论。"
+      description="一次搜索整个论坛: Galgame, 话题, 鲲 Galgame 论坛数据中的角色 / 会社 / Staff / 标签, Galgame 下载资源, 用户, 回复与评论。"
     >
       <template #endContent>
         <div class="text-default-500 text-sm">
-          未开启 NSFW 时, NSFW 的 Galgame 与话题 (及其回复评论),
-          资料库中的成人标签, 以及 R18 游戏的下载资源都会被隐藏。按厂商 / 会社 /
-          多标签精确筛选请前往
+          未开启 NSFW 时, NSFW 的 Galgame 与话题 (及其回复评论), 鲲 Galgame
+          论坛数据中的成人标签, 以及 R18 游戏的下载资源都会被隐藏。按厂商 / 会社
+          / 多标签精确筛选请前往
           <KunLink to="/galgame/official">Galgame 会社资料库</KunLink>
           或者
           <KunLink to="/galgame/tag">Galgame 标签资料库</KunLink>。

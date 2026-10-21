@@ -7,8 +7,28 @@ import (
 	"kun-galgame-api/pkg/problem"
 )
 
+// AssembleForPush answers nil for a row tied to a work catalog will not render,
+// so the reconcile withdraws it from the central feed and sends it again once
+// the work is back.
 func (s *Service) AssembleForPush(ctx context.Context, rows []repository.FeedRow) ([]*Activity, *problem.Problem) {
-	return s.assemble(ctx, rows, true)
+	acts, prob := s.assemble(ctx, rows, true)
+	if prob != nil {
+		return nil, prob
+	}
+	ids := make([]int64, len(rows))
+	for i, row := range rows {
+		ids[i] = row.RowID
+	}
+	hidden, err := s.repo.UnrenderedRowIDs(ids)
+	if err != nil {
+		return nil, problem.Internal(err)
+	}
+	for i, row := range rows {
+		if hidden[row.RowID] {
+			acts[i] = nil
+		}
+	}
+	return acts, nil
 }
 
 type FeedTypePair struct {

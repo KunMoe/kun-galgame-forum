@@ -340,3 +340,28 @@ func TestMirrorVerifyMirrorsTheOriginalLanguage(t *testing.T) {
 		}
 	}
 }
+
+func TestMirrorChannelUnlistsDeletionsEvenPastTheFlipLimit(t *testing.T) {
+	f := newVerifyFix(t)
+	ids := span(verifyBase+200, mirrorFlipFloor+5)
+	f.seed(t, "sfw", true, ids...)
+	deleted := ids[:3]
+	for _, id := range deleted {
+		f.fake.fates[id] = "deleted"
+	}
+
+	if _, err := f.mirror.settle(t.Context(), nil, ids, len(ids), "信道", true); err != nil {
+		t.Fatal(err)
+	}
+
+	for _, id := range deleted {
+		if s := f.state(t, id); s.Rendered || !s.Checked {
+			t.Errorf("deleted %d: want unlisted though the batch tripped the limit, got %+v", id, s)
+		}
+	}
+	for _, id := range ids[3:] {
+		if s := f.state(t, id); !s.Rendered {
+			t.Errorf("%d answered only by absence was unlisted past the limit", id)
+		}
+	}
+}

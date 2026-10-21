@@ -73,10 +73,10 @@ func registerBrowse(api huma.API, svc *Service) {
 		Method:      http.MethodGet,
 		Path:        "/galgame-resources/{resource_id}",
 		Summary:     "Get a galgame download resource",
-		Description: "Returns the resource without download secrets and counts one view. An unrenderable author or unpublished work is NOT_FOUND. viewer is null for an anonymous caller.",
+		Description: "Returns the resource without download secrets and counts one view; a NOT_FOUND counts none. An unrenderable author or an unpublished or hidden work is NOT_FOUND. viewer is null for an anonymous caller.",
 		Tags:        []string{tagResources},
 		Responses: problemResponses(map[int]string{
-			404: "NOT_FOUND when the resource does not exist, its author is not renderable, or the work is unpublished.",
+			404: "NOT_FOUND when the resource does not exist, its author is not renderable, or the work is unpublished or hidden.",
 		}),
 	}), svc.getGalgameResource)
 
@@ -101,7 +101,7 @@ func registerBrowse(api huma.API, svc *Service) {
 		Description: "Returns the stored download URLs and codes, and counts one download. Anonymous callers may use it. Secrets never appear on GET.",
 		Tags:        []string{tagResources},
 		Responses: problemResponses(map[int]string{
-			404: "NOT_FOUND when the resource does not exist, its author is not renderable, or the work is unpublished.",
+			404: "NOT_FOUND when the resource does not exist, its author is not renderable, or the work is unpublished or hidden.",
 		}),
 	}), svc.createGalgameResourceDownload)
 
@@ -115,7 +115,7 @@ func registerBrowse(api huma.API, svc *Service) {
 		Tags: []string{tagResources},
 		Responses: problemResponses(map[int]string{
 			403: "PERMISSION_REQUIRED without can_edit; ACCOUNT_BANNED.",
-			404: "NOT_FOUND when the resource does not exist, its author is not renderable, or the work is unpublished.",
+			404: "NOT_FOUND when the resource does not exist, its author is not renderable, or the work is unpublished or hidden.",
 		}),
 	}), svc.getGalgameResourceSource)
 }
@@ -167,7 +167,7 @@ func registerWrite(api huma.API, svc *Service) {
 		Tags: []string{tagResources},
 		Responses: problemResponses(map[int]string{
 			403: "PERMISSION_REQUIRED without can_edit; RESOURCE_PUBLISH_BANNED; ACCOUNT_BANNED.",
-			404: "NOT_FOUND when the resource does not exist, its author is not renderable, or the work is unpublished.",
+			404: "NOT_FOUND when the resource does not exist, its author is not renderable, or the work is unpublished or hidden.",
 			422: "VALIDATION_FAILED or CONTENT_REJECTED.",
 		}),
 	}), svc.updateGalgameResource)
@@ -182,7 +182,7 @@ func registerWrite(api huma.API, svc *Service) {
 		Tags:          []string{tagResources},
 		Responses: problemResponses(map[int]string{
 			403: "PERMISSION_REQUIRED without can_delete; ACCOUNT_BANNED.",
-			404: "NOT_FOUND when the resource does not exist, its author is not renderable, or the work is unpublished.",
+			404: "NOT_FOUND when the resource does not exist, its author is not renderable, or the work is unpublished or hidden.",
 		}),
 	}), svc.deleteGalgameResource)
 }
@@ -197,7 +197,7 @@ func registerEngage(api huma.API, svc *Service) {
 		Tags:        []string{tagResources},
 		Responses: problemResponses(map[int]string{
 			403: "SELF_LIKE_FORBIDDEN or ACCOUNT_BANNED.",
-			404: "NOT_FOUND when the resource does not exist, its author is not renderable, or the work is unpublished.",
+			404: "NOT_FOUND when the resource does not exist, its author is not renderable, or the work is unpublished or hidden.",
 		}),
 	}), svc.putGalgameResourceLike)
 
@@ -210,7 +210,7 @@ func registerEngage(api huma.API, svc *Service) {
 		Tags:        []string{tagResources},
 		Responses: problemResponses(map[int]string{
 			403: "ACCOUNT_BANNED.",
-			404: "NOT_FOUND when the resource does not exist, its author is not renderable, or the work is unpublished.",
+			404: "NOT_FOUND when the resource does not exist, its author is not renderable, or the work is unpublished or hidden.",
 		}),
 	}), svc.deleteGalgameResourceLike)
 
@@ -222,7 +222,7 @@ func registerEngage(api huma.API, svc *Service) {
 		Description: "Checks the stored links and may mark the resource expired. Already expired is 200 with no side effects. " + activeCheck,
 		Tags:        []string{tagResources},
 		Responses: problemResponses(map[int]string{
-			404: "NOT_FOUND when the resource does not exist, its author is not renderable, or the work is unpublished.",
+			404: "NOT_FOUND when the resource does not exist, its author is not renderable, or the work is unpublished or hidden.",
 			409: "IDEMPOTENCY_KEY_REUSED or IDEMPOTENCY_REQUEST_IN_PROGRESS.",
 		}),
 	})), svc.createGalgameResourceExpiryReport)

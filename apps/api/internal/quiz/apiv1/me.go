@@ -116,7 +116,7 @@ func (s *Service) readableQuizzes(ctx context.Context, ids []int) (map[int]bool,
 	if len(ids) == 0 {
 		return out, nil
 	}
-	rows, err := s.store.FindMany(ids)
+	rows, err := s.store.FindManyRendered(ids)
 	if err != nil {
 		return nil, problem.Internal(err)
 	}

@@ -49,7 +49,8 @@ var userRankingQueries = map[string]string{
 		WHERE r.status = 0 AND ` + listedTopic + ` GROUP BY r.user_id`,
 	"comments": `SELECT c.user_id AS id, COUNT(*) AS value FROM topic_comment c JOIN topic t ON t.id = c.topic_id
 		WHERE c.status = 0 AND ` + listedTopic + ` GROUP BY c.user_id`,
-	"resources": `SELECT user_id AS id, COUNT(*) AS value FROM galgame_resource WHERE status = 0 GROUP BY user_id`,
+	"resources": `SELECT r.user_id AS id, COUNT(*) AS value FROM galgame_resource r JOIN galgame g ON g.id = r.work_id
+		WHERE r.status = 0 AND g.catalog_rendered GROUP BY r.user_id`,
 }
 
 func (r *RankingRepository) TopUsers(key string, limit int) ([]RankedRow, error) {

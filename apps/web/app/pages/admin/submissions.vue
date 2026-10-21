@@ -108,7 +108,7 @@ const applyVerdict = async (
 const handleApprove = async (row: WorkSubmissionSummary) => {
   const ok = await useComponentMessageStore().alert(
     `通过《${displayName(row)}》?`,
-    '通过后该 Galgame 立即公开发布, 提交者会收到通知并自动获得 +3 萌萌点 (由资料库事件同步发放)。'
+    '通过后该 Galgame 立即公开发布, 提交者会收到通知并自动获得 +3 萌萌点 (由鲲 Galgame 论坛数据的事件同步发放)。'
   )
   if (!ok) return
   await applyVerdict(row, 'live', '')

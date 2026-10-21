@@ -105,7 +105,7 @@ const metaRows = computed(() => {
         v-else-if="!detail"
         color="danger"
         title="无法加载预览"
-        description="这个条目可能已被撤回或删除, 也可能是 Galgame 资料库暂时不可用。"
+        description="这个条目可能已被撤回或删除, 也可能是鲲 Galgame 论坛数据暂时不可用。"
       />
 
       <div v-else class="space-y-4">

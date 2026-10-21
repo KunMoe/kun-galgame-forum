@@ -253,7 +253,7 @@ func TestLiveV2DetailFaces(t *testing.T) {
 	}
 }
 
-// The 资料库 tab paginates every family through this one face. A second page
+// The 论坛数据 tab paginates every family through this one face. A second page
 // that repeats the first would look like it worked and quietly show the same
 // rows forever, so identity of the two pages is the assertion.
 func TestLiveV2EntitySearchPages(t *testing.T) {

@@ -67,18 +67,25 @@ func (s *Service) searchWallComments(ctx context.Context, in *wallInput) (*wallO
 		uids = append(uids, int(row.Post.AuthorID))
 	}
 	targets := s.anchors.Resolve(refs)
+	hidden, err := s.anchors.OnHiddenWorks(refs)
+	if err != nil {
+		return nil, problem.Internal(err)
+	}
 	users, prob := s.lookupUsers(ctx, uids)
 	if prob != nil {
 		return nil, prob
 	}
-	works := s.wallWorks(ctx, targets)
+	works, catalogAnswered := s.wallWorks(ctx, targets)
 
 	keywords := strings.Fields(q)
 	items := make([]WallCommentSearchHit, 0, len(page.Posts))
 	for _, row := range page.Posts {
 		ref := anchor.Ref{Kind: row.Thread.AnchorKind, ID: row.Thread.AnchorID}
 		target, ok := targets[ref]
-		if !ok {
+		if !ok || hidden[ref] {
+			continue
+		}
+		if _, shown := works[target.WorkID]; target.WorkID > 0 && catalogAnswered && !shown {
 			continue
 		}
 		subjectType, subjectID, ok := wallSubject(ref)
@@ -123,10 +130,10 @@ func wallSubject(ref anchor.Ref) (wallapiv1.SubjectType, string, bool) {
 	return "", "", false
 }
 
-func (s *Service) wallWorks(ctx context.Context, targets map[anchor.Ref]anchor.Target) map[int]repr.WorkRef {
+func (s *Service) wallWorks(ctx context.Context, targets map[anchor.Ref]anchor.Target) (map[int]repr.WorkRef, bool) {
 	out := map[int]repr.WorkRef{}
 	if s.galgame == nil {
-		return out
+		return out, false
 	}
 	ids := make([]int, 0, len(targets))
 	for _, t := range targets {
@@ -135,15 +142,15 @@ func (s *Service) wallWorks(ctx context.Context, targets map[anchor.Ref]anchor.T
 		}
 	}
 	if len(ids) == 0 {
-		return out
+		return out, true
 	}
 	rows, appErr := s.galgame.CatalogRowsByWorkIDs(ctx, ids, galgameService.CatalogCardInclude, "all")
 	if appErr != nil {
-		return out
+		return out, false
 	}
 	for id := range rows {
 		row := rows[id]
 		out[id] = galgameapiv1.WorkRefOf(ctx, &row, s.cdn)
 	}
-	return out
+	return out, true
 }

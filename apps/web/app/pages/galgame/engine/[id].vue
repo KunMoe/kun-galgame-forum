@@ -66,8 +66,8 @@ useKunSeoMeta({
       <template #endContent>
         <div class="space-y-3">
           <p class="text-default-500">
-            本页展示资料库中使用该引擎制作的 Galgame, 可按类型 / 语言 / 平台 /
-            排序筛选。默认仅显示 SFW 的 Galgame, 查看 NSFW Galgame
+            本页展示鲲 Galgame 论坛数据中使用该引擎制作的 Galgame, 可按类型 /
+            语言 / 平台 / 排序筛选。默认仅显示 SFW 的 Galgame, 查看 NSFW Galgame
             请在设置面板打开 NSFW 开关。如果有数据错误请
             <KunLink to="/doc/contact"> 联系我们 </KunLink>。
           </p>

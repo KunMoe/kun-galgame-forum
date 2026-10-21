@@ -88,3 +88,45 @@ func TestTopWorksLeavesOutOtherOriginalLanguages(t *testing.T) {
 		t.Errorf("every-language ranking = %v, want %d first", rows, english)
 	}
 }
+
+func TestTopUsersByResourcesSkipsWorksCatalogWillNotRender(t *testing.T) {
+	db := testdb.Open(t)
+	const uploader, listed, unlisted = 2_000_333_999, 2_000_333_000, 2_000_333_001
+	cleanup := func() {
+		db.Exec("DELETE FROM galgame_resource WHERE user_id = ?", uploader)
+		db.Exec("DELETE FROM galgame WHERE id IN (?, ?)", listed, unlisted)
+	}
+	cleanup()
+	t.Cleanup(cleanup)
+	if err := db.Exec(`INSERT INTO galgame (id, published, catalog_rendered, created, updated)
+		VALUES (?, true, true, now(), now()), (?, true, false, now(), now())`, listed, unlisted).Error; err != nil {
+		t.Fatal(err)
+	}
+	if err := db.Exec(`INSERT INTO galgame_resource (work_id, user_id, status, updated)
+		SELECT CASE WHEN n = 1 THEN ?::int ELSE ?::int END, ?, 0, now() FROM generate_series(1, 3) n`, listed, unlisted, uploader).Error; err != nil {
+		t.Fatal(err)
+	}
+
+	value := func() float64 {
+		t.Helper()
+		rows, err := NewRankingRepository(db).TopUsers("resources", 1_000_000)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, r := range rows {
+			if r.ID == uploader {
+				return r.Value
+			}
+		}
+		return 0
+	}
+	if v := value(); v != 1 {
+		t.Errorf("resources = %v, want 1: the two on an unlisted work do not count", v)
+	}
+	if err := db.Exec("UPDATE galgame SET catalog_rendered = true WHERE id = ?", unlisted).Error; err != nil {
+		t.Fatal(err)
+	}
+	if v := value(); v != 3 {
+		t.Errorf("restored resources = %v, want 3", v)
+	}
+}

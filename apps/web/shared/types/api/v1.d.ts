@@ -33,7 +33,7 @@ export interface paths {
         };
         /**
          * List activities
-         * @description The site's activity stream, newest first: topics, replies, comments, upvotes, best answers, works and their resources, ratings, edits and quizzes, toolsets, websites, todos and update logs. occurred_desc sorts by occurred_at with ties broken on kind and subject; bumped_desc lists topics by bump time and is allowed only when activity_types is exactly topic_creation. An activity whose actor is banned, or whose work catalog does not show under include_nsfw, is left out, so a page can be short; only an absent next_cursor means the end. The cursor is bound to the sort and to every filter.
+         * @description The site's activity stream, newest first: topics, replies, comments, upvotes, best answers, works and their resources, ratings, edits and quizzes, toolsets, websites, todos and update logs. occurred_desc sorts by occurred_at with ties broken on kind and subject; bumped_desc lists topics by bump time and is allowed only when activity_types is exactly topic_creation. An activity whose actor is banned, whose work catalog does not show under include_nsfw, or that is about a work catalog does not render, directly or through its resource, rating or quiz, is left out, so a page can be short; only an absent next_cursor means the end. The cursor is bound to the sort and to every filter.
          */
         get: operations["listActivities"];
         put?: never;
@@ -612,6 +612,26 @@ export interface paths {
         patch: operations["updateAdminWebsite"];
         trace?: never;
     };
+    "/admin/work-merge-folds": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List work merge folds
+         * @description Every time the forum folded a merged work's rows onto its survivor, newest first, with what an undone merge could not put back. A page-number collection: page × limit may not exceed 10000. Admins only.
+         */
+        get: operations["listWorkMergeFolds"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/app/version": {
         parameters: {
             query?: never;
@@ -1177,7 +1197,7 @@ export interface paths {
         };
         /**
          * Get a galgame download resource
-         * @description Returns the resource without download secrets and counts one view. An unrenderable author or unpublished work is NOT_FOUND. viewer is null for an anonymous caller.
+         * @description Returns the resource without download secrets and counts one view; a NOT_FOUND counts none. An unrenderable author or an unpublished or hidden work is NOT_FOUND. viewer is null for an anonymous caller.
          */
         get: operations["getGalgameResource"];
         put?: never;
@@ -1509,7 +1529,7 @@ export interface paths {
         };
         /**
          * List quizzes the caller has answered
-         * @description Lists quizzes the caller has an answerer row on, newest answer first. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED, and a failure of that lookup is SERVICE_UNAVAILABLE with nothing written. Quizzes whose author is not renderable are omitted from both items and total.
+         * @description Lists quizzes the caller has an answerer row on, newest answer first. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED, and a failure of that lookup is SERVICE_UNAVAILABLE with nothing written. Quizzes whose author is not renderable, or that link a work catalog does not render, are omitted from both items and total.
          */
         get: operations["listMyAnsweredQuizzes"];
         put?: never;
@@ -2269,7 +2289,7 @@ export interface paths {
         };
         /**
          * Batch-read the caller's quiz favorite states
-         * @description Answers, for each quiz id named in quiz_ids, whether the caller favorited it. It is a batch read and is not paginated: quiz_ids is required, holds 1 to 100 ids. An id that does not exist, is deleted, or whose author is not renderable is missing.
+         * @description Answers, for each quiz id named in quiz_ids, whether the caller favorited it. It is a batch read and is not paginated: quiz_ids is required, holds 1 to 100 ids. An id that does not exist, is deleted, whose author is not renderable, or that links a work catalog does not render is missing.
          */
         get: operations["listMyQuizStates"];
         put?: never;
@@ -2441,7 +2461,7 @@ export interface paths {
         };
         /**
          * List the walls the caller follows
-         * @description The comment walls the caller follows, in the community service's order. A page can be shorter than limit, even empty, while next_cursor is present: walls this forum no longer recognises are left out. The last page omits next_cursor.
+         * @description The comment walls the caller follows, in the community service's order. A page can be shorter than limit, even empty, while next_cursor is present: walls this forum no longer recognises, and walls of a work the catalog no longer shows or of its ratings, resources and quizzes, are left out; they stay followed. The last page omits next_cursor.
          */
         get: operations["listFollowedWalls"];
         put?: never;
@@ -2837,7 +2857,7 @@ export interface paths {
         };
         /**
          * List quizzes
-         * @description Lists quizzes as a page-number collection. Default sort is bumped_at_desc, default limit 50. Quizzes whose author is not renderable are omitted from both items and total. include_nsfw=false excludes quizzes linked to a local NSFW work. PROFILE_SIGN_IN_REQUIRED when the caller is anonymous and author_id names a user who shows their profile to signed-in users only.
+         * @description Lists quizzes as a page-number collection. Default sort is bumped_at_desc, default limit 50. Quizzes whose author is not renderable, or that link a work catalog does not render, are omitted from both items and total. include_nsfw=false excludes quizzes linked to a local NSFW work. PROFILE_SIGN_IN_REQUIRED when the caller is anonymous and author_id names a user who shows their profile to signed-in users only.
          */
         get: operations["listQuizzes"];
         put?: never;
@@ -2861,7 +2881,7 @@ export interface paths {
         };
         /**
          * Get a quiz
-         * @description Returns the quiz and counts one view. An unrenderable author is NOT_FOUND. viewer is null for an anonymous caller. solution is null until the caller has answered, is the author, or can_edit.
+         * @description Returns the quiz and counts one view. A quiz whose author is not renderable, or that links a work catalog does not render, is NOT_FOUND. viewer is null for an anonymous caller. solution is null until the caller has answered, is the author, or can_edit.
          */
         get: operations["getQuiz"];
         put?: never;
@@ -3445,7 +3465,7 @@ export interface paths {
         };
         /**
          * Search comment walls
-         * @description Posts on the comment walls this forum hosts (works, ratings, resources, quizzes, toolsets and websites) that match the keywords, newest first. A cursor collection with no total: the comment index answers a cursor and no count. Posts on walls another site opened, and posts by banned authors, are dropped after the fact, so a page may hold fewer items than limit. A cursor is bound to q.
+         * @description Posts on the comment walls this forum hosts (works, ratings, resources, quizzes, toolsets and websites) that match the keywords, newest first. A cursor collection with no total: the comment index answers a cursor and no count. Posts on walls another site opened, on the walls of a work the catalog no longer shows or of its ratings, resources and quizzes, and posts by banned authors, are dropped after the fact, so a page may hold fewer items than limit. A cursor is bound to q.
          */
         get: operations["searchWallComments"];
         put?: never;
@@ -7367,7 +7387,7 @@ export interface components {
             subject_type: components["schemas"]["WallSubjectType"];
             /** @description The site, for a website wall. null for every other kind of wall, and for a website that no longer exists. */
             website: components["schemas"]["WebsiteSummary"] | null;
-            /** @description The work, for a galgame wall. null for every other kind of wall, and for a galgame wall whose work catalog no longer shows. */
+            /** @description The work, for a galgame wall. null for every other kind of wall. */
             work: components["schemas"]["WorkRef"] | null;
         };
         FollowingActivityGroup: {
@@ -9769,6 +9789,22 @@ export interface components {
         PageListUserTopicItem: {
             /** @description Members of this page. Empty array, never null. */
             items: components["schemas"]["UserTopicItem"][];
+            /**
+             * @description Type discriminant. Always list.
+             * @constant
+             */
+            object: "list";
+            /**
+             * Format: int64
+             * @description Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.
+             */
+            total: number;
+            /** @description eq when total is exact, gte when it stopped at the depth limit and there are at least that many. */
+            total_relation: components["schemas"]["TotalRelation"];
+        };
+        PageListWorkMergeFold: {
+            /** @description Members of this page. Empty array, never null. */
+            items: components["schemas"]["WorkMergeFold"][];
             /**
              * @description Type discriminant. Always list.
              * @constant
@@ -13617,12 +13653,12 @@ export interface components {
             following_count: number | null;
             /**
              * Format: int64
-             * @description Galgame ratings the user authored.
+             * @description Galgame ratings the user authored, leaving out ratings on works the catalog does not show (deleted or hidden).
              */
             galgame_rating_count: number;
             /**
              * Format: int64
-             * @description Galgame resources the user authored.
+             * @description Galgame resources the user authored, leaving out resources on works the catalog does not show (deleted or hidden).
              */
             galgame_resource_count: number;
             /**
@@ -13642,7 +13678,7 @@ export interface components {
             published_galgame_count: number;
             /**
              * Format: int64
-             * @description Galgames the user published today by the galgame-domain clock. May be 0 when the catalog is unavailable.
+             * @description Galgames the user published today by the galgame-domain clock, leaving out works the catalog does not show (deleted or hidden). May be 0 when the catalog is unavailable.
              */
             published_galgame_today_count: number;
             /**
@@ -14775,6 +14811,65 @@ export interface components {
         };
         /** @enum {string} */
         WorkMedium: "galgame" | "manga" | "novel" | "anime" | "asmr" | "doujin_game" | "music";
+        WorkMergeFold: {
+            /**
+             * Format: int64
+             * @description Rows dropped because the survivor already held the same user's or quiz's row; kept for the reversal.
+             */
+            dropped_count: number;
+            /**
+             * Format: date-time
+             * @description When the forum folded the rows.
+             */
+            folded_at: string;
+            /** @description Fold id. */
+            id: string;
+            /**
+             * Format: int64
+             * @description Rows moved onto the survivor.
+             */
+            moved_count: number;
+            /** @description The survivor the rows were folded onto. */
+            new_work_id: string;
+            /**
+             * @description Type discriminant. Always work_merge_fold.
+             * @constant
+             */
+            object: "work_merge_fold";
+            /** @description The work catalog merged away, whose forum rows were folded. */
+            old_work_id: string;
+            /** @description Rows the reversal could not put back. Empty array, never null, and empty while the fold stands. */
+            problems: components["schemas"]["WorkMergeFoldProblem"][];
+            /**
+             * Format: int64
+             * @description Feed entries pointed at the survivor.
+             */
+            repointed_count: number;
+            /**
+             * Format: int64
+             * @description Contributor rows and daily view buckets added into the survivor's.
+             */
+            summed_count: number;
+            /**
+             * Format: date-time
+             * @description When the fold was reversed because catalog undid or re-pointed the merge. null while it stands.
+             */
+            undone_at: string | null;
+        };
+        WorkMergeFoldProblem: {
+            /** @description gone: deleted since the fold. elsewhere: now on another work (current_work_id). conflict: the old work already holds that row. purged_user: its author was purged. survivor_folded: the survivor's own row was folded further, so its counters keep the old work's views. */
+            cause: components["schemas"]["WorkMergeFoldProblemCause"];
+            /** @description Where the row is now, for elsewhere and conflict. null otherwise. */
+            current_work_id: string | null;
+            /** @description The row's key in that table: its id, or quiz_id, old_comment_id or resource_id. */
+            row_id: string;
+            /** @description The table the row is in. */
+            table_name: components["schemas"]["WorkMergeFoldTable"];
+        };
+        /** @enum {string} */
+        WorkMergeFoldProblemCause: "gone" | "elsewhere" | "conflict" | "purged_user" | "survivor_folded";
+        /** @enum {string} */
+        WorkMergeFoldTable: "galgame" | "galgame_resource" | "galgame_activity" | "galgame_comment_community_map" | "galgame_resource_relocation" | "galgame_like" | "galgame_favorite" | "galgame_contributor" | "galgame_quiz_galgame" | "galgame_view_daily" | "feed_activity";
         WorkPlaytime: {
             /**
              * Format: int64
@@ -19121,6 +19216,76 @@ export interface operations {
             };
         };
     };
+    listWorkMergeFolds: {
+        parameters: {
+            query?: {
+                /** @description 1-based page number. page × limit may not exceed 10000. */
+                page?: number;
+                /** @description Page size. 1–100, default 20. Values above 100 are rejected, not clamped. */
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PageListWorkMergeFold"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description PERMISSION_REQUIRED when the caller is not an admin. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     getAppVersion: {
         parameters: {
             query?: never;
@@ -21602,7 +21767,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description NOT_FOUND when the resource does not exist, its author is not renderable, or the work is unpublished. */
+            /** @description NOT_FOUND when the resource does not exist, its author is not renderable, or the work is unpublished or hidden. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -21677,7 +21842,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description NOT_FOUND when the resource does not exist, its author is not renderable, or the work is unpublished. */
+            /** @description NOT_FOUND when the resource does not exist, its author is not renderable, or the work is unpublished or hidden. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -21758,7 +21923,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description NOT_FOUND when the resource does not exist, its author is not renderable, or the work is unpublished. */
+            /** @description NOT_FOUND when the resource does not exist, its author is not renderable, or the work is unpublished or hidden. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -21862,7 +22027,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description NOT_FOUND when the resource does not exist, its author is not renderable, or the work is unpublished. */
+            /** @description NOT_FOUND when the resource does not exist, its author is not renderable, or the work is unpublished or hidden. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -21942,7 +22107,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description NOT_FOUND when the resource does not exist, its author is not renderable, or the work is unpublished. */
+            /** @description NOT_FOUND when the resource does not exist, its author is not renderable, or the work is unpublished or hidden. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -22028,7 +22193,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description NOT_FOUND when the resource does not exist, its author is not renderable, or the work is unpublished. */
+            /** @description NOT_FOUND when the resource does not exist, its author is not renderable, or the work is unpublished or hidden. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -22105,7 +22270,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description NOT_FOUND when the resource does not exist, its author is not renderable, or the work is unpublished. */
+            /** @description NOT_FOUND when the resource does not exist, its author is not renderable, or the work is unpublished or hidden. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -22182,7 +22347,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description NOT_FOUND when the resource does not exist, its author is not renderable, or the work is unpublished. */
+            /** @description NOT_FOUND when the resource does not exist, its author is not renderable, or the work is unpublished or hidden. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -28746,7 +28911,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description NOT_FOUND when the page does not exist or its author is banned. */
+            /** @description NOT_FOUND when the page does not exist, is on a work the catalog no longer shows, or its author is banned. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -28825,7 +28990,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description NOT_FOUND when the page does not exist or its author is banned. */
+            /** @description NOT_FOUND when the page does not exist, is on a work the catalog no longer shows, or its author is banned. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -28904,7 +29069,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description NOT_FOUND when the page does not exist or its author is banned. */
+            /** @description NOT_FOUND when the page does not exist, is on a work the catalog no longer shows, or its author is banned. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -28983,7 +29148,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description NOT_FOUND when the page does not exist or its author is banned. */
+            /** @description NOT_FOUND when the page does not exist, is on a work the catalog no longer shows, or its author is banned. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -30507,7 +30672,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description NOT_FOUND when the quiz does not exist or its author is not renderable. */
+            /** @description NOT_FOUND when the quiz does not exist, its author is not renderable, or it links a work catalog does not render. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -30582,7 +30747,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description NOT_FOUND when the quiz does not exist or its author is not renderable. */
+            /** @description NOT_FOUND when the quiz does not exist, its author is not renderable, or it links a work catalog does not render. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -30663,7 +30828,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description NOT_FOUND when the quiz does not exist or its author is not renderable. */
+            /** @description NOT_FOUND when the quiz does not exist, its author is not renderable, or it links a work catalog does not render. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -30774,7 +30939,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description NOT_FOUND when the quiz does not exist or its author is not renderable. */
+            /** @description NOT_FOUND when the quiz does not exist, its author is not renderable, or it links a work catalog does not render. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -30859,7 +31024,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description NOT_FOUND when the quiz does not exist or its author is not renderable. */
+            /** @description NOT_FOUND when the quiz does not exist, its author is not renderable, or it links a work catalog does not render. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -30972,7 +31137,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description NOT_FOUND when the quiz does not exist or its author is not renderable. */
+            /** @description NOT_FOUND when the quiz does not exist, its author is not renderable, or it links a work catalog does not render. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -31049,7 +31214,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description NOT_FOUND when the quiz does not exist or its author is not renderable. */
+            /** @description NOT_FOUND when the quiz does not exist, its author is not renderable, or it links a work catalog does not render. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -31130,7 +31295,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description NOT_FOUND when the quiz does not exist or its author is not renderable. */
+            /** @description NOT_FOUND when the quiz does not exist, its author is not renderable, or it links a work catalog does not render. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -31234,7 +31399,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description NOT_FOUND when the quiz does not exist or its author is not renderable. */
+            /** @description NOT_FOUND when the quiz does not exist, its author is not renderable, or it links a work catalog does not render. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -40811,7 +40976,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description NOT_FOUND when the page does not exist or this forum would not show it: a galgame the catalog does not resolve, or a rating, resource, quiz or toolset whose owner is banned. */
+            /** @description NOT_FOUND when the page does not exist or this forum would not show it: a galgame the catalog does not resolve, a rating, resource or quiz on a work the catalog no longer shows, or a rating, resource, quiz or toolset whose owner is banned. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -40893,7 +41058,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description NOT_FOUND when the page does not exist or this forum would not show it: a galgame the catalog does not resolve, or a rating, resource, quiz or toolset whose owner is banned. */
+            /** @description NOT_FOUND when the page does not exist or this forum would not show it: a galgame the catalog does not resolve, a rating, resource or quiz on a work the catalog no longer shows, or a rating, resource, quiz or toolset whose owner is banned. */
             404: {
                 headers: {
                     [name: string]: unknown;

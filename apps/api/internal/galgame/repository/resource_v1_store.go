@@ -149,13 +149,10 @@ func (s *ResourceV1Store) Find(id int) (*model.GalgameResource, error) {
 	return &row, nil
 }
 
-func (s *ResourceV1Store) WorkPublished(workID int) (bool, error) {
-	var row model.GalgameLocal
-	err := s.db.Select("id", "published").Where("id = ?", workID).Take(&row).Error
-	if errors.Is(err, gorm.ErrRecordNotFound) {
-		return false, nil
-	}
-	return row.Published, err
+func (s *ResourceV1Store) WorkVisible(workID int) (bool, error) {
+	var n int64
+	err := s.db.Table("galgame").Where("id = ? AND published AND catalog_rendered", workID).Count(&n).Error
+	return n > 0, err
 }
 
 func (s *ResourceV1Store) IsPublishBanned(workID int) (bool, error) {

@@ -156,17 +156,17 @@ export const KUN_PROXY_PERMISSIONS: KunProxyPermission[] = [
   },
   {
     key: 'taxonomy.edit',
-    label: '资料库条目编辑',
+    label: '鲲 Galgame 论坛数据条目编辑',
     note: '莲裁定的更严门槛（仅 admin / ren，NextMoe 为版主+）'
   },
   {
     key: 'taxonomy.delete',
-    label: '资料库条目删除',
+    label: '鲲 Galgame 论坛数据条目删除',
     note: '莲裁定的更严门槛（仅 admin / ren，NextMoe 为版主+）'
   },
   {
     key: 'taxonomy.revert',
-    label: '资料库条目回滚',
+    label: '鲲 Galgame 论坛数据条目回滚',
     note: '莲裁定的更严门槛（仅 admin / ren，NextMoe 为版主+）'
   },
   {

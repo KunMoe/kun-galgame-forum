@@ -94,7 +94,7 @@ func Register(s *Service) func(huma.API) {
 			Path:        "/search/wall-comments",
 			Summary:     "Search comment walls",
 			Description: "Posts on the comment walls this forum hosts (works, ratings, resources, quizzes, toolsets and websites) that match the keywords, newest first. " +
-				"A cursor collection with no total: the comment index answers a cursor and no count. Posts on walls another site opened, and posts by banned authors, are dropped after the fact, so a page may hold fewer items than limit. " +
+				"A cursor collection with no total: the comment index answers a cursor and no count. Posts on walls another site opened, on the walls of a work the catalog no longer shows or of its ratings, resources and quizzes, and posts by banned authors, are dropped after the fact, so a page may hold fewer items than limit. " +
 				"A cursor is bound to q.",
 			Tags: tags,
 			Responses: problemResponses(map[int]string{

@@ -68,8 +68,32 @@ func sectionCond(mode, topicCol string, onlyTopicCreation bool) string {
 	return cond
 }
 
+// Quiz creations and the comments on a resource, rating or quiz are written
+// with work_id = 0, so their work is reached through the subject. No '?' may
+// appear here: gorm binds every one as a placeholder, so migration 209's
+// (?:[?&#/]|$), first copied in, would have eaten the cursor arguments.
+const workRendered = `NOT EXISTS (
+	SELECT 1 FROM galgame g JOIN (
+		SELECT fa.work_id
+		UNION ALL
+		SELECT r.work_id FROM galgame_resource r
+		WHERE fa.type = 'GALGAME_RESOURCE_COMMENT_CREATION'
+			AND r.id = substring(fa.link FROM '^/galgame/resource/([0-9]{1,18})([^0-9]|$)')::bigint
+		UNION ALL
+		SELECT rt.work_id FROM galgame_rating rt
+		WHERE fa.type = 'GALGAME_RATING_COMMENT_CREATION'
+			AND rt.id = substring(fa.link FROM '^/galgame-rating/([0-9]{1,18})([^0-9]|$)')::bigint
+		UNION ALL
+		SELECT gg.work_id FROM galgame_quiz_galgame gg
+		WHERE gg.quiz_id = CASE fa.type
+			WHEN 'GALGAME_QUIZ_CREATION' THEN fa.source_id
+			WHEN 'GALGAME_QUIZ_COMMENT_CREATION' THEN substring(fa.link FROM '^/galgame-quiz/([0-9]{1,18})([^0-9]|$)')::bigint
+		END
+	) subject (work_id) ON g.id = subject.work_id
+	WHERE NOT g.catalog_rendered)`
+
 func feedConds(q FeedQuery) ([]string, []any) {
-	conds := []string{"fa.type IN ?"}
+	conds := []string{"fa.type IN ?", workRendered}
 	args := []any{q.Types}
 	if !q.IncludeNSFW {
 		conds = append(conds, "NOT fa.is_nsfw")
@@ -434,6 +458,22 @@ func (r *ActivityRepository) ToolsetParents(resourceIDs []int) (map[int]ToolsetP
 	}
 	for _, row := range rows {
 		out[row.ID] = row
+	}
+	return out, nil
+}
+
+func (r *ActivityRepository) UnrenderedRowIDs(ids []int64) (map[int64]bool, error) {
+	out := make(map[int64]bool)
+	if len(ids) == 0 {
+		return out, nil
+	}
+	var hidden []int64
+	if err := r.db.Raw(`SELECT fa.id FROM feed_activity fa WHERE fa.id IN ? AND NOT `+workRendered, ids).
+		Scan(&hidden).Error; err != nil {
+		return nil, err
+	}
+	for _, id := range hidden {
+		out[id] = true
 	}
 	return out, nil
 }

@@ -75,7 +75,7 @@ func (r *GalgameRepository) PublishedIDsByCreator(userID, page, limit int) ([]in
 func (r *GalgameRepository) CountPublishedByCreatorSince(userID int, since time.Time) int {
 	var n int64
 	r.db.Table("galgame").
-		Where("published AND creator_user_id = ? AND created >= ?", userID, since).
+		Where("published AND catalog_rendered AND creator_user_id = ? AND created >= ?", userID, since).
 		Count(&n)
 	return int(n)
 }

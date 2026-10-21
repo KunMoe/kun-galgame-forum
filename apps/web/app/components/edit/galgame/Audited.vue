@@ -39,7 +39,7 @@ const openPreview = (item: WorkSubmissionSummary) => {
       v-if="problem"
       color="danger"
       title="加载失败"
-      description="无法获取您的审核列表, 可能是后端 / Galgame 资料库暂时不可用, 请稍后重试。"
+      description="无法获取您的审核列表, 可能是后端 / 鲲 Galgame 论坛数据暂时不可用, 请稍后重试。"
     />
 
     <div v-else-if="items.length" class="flex flex-col gap-3">

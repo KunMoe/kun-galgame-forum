@@ -41,8 +41,10 @@ func (r *UserStatsRepository) ProfileCounts(userID int, todayStart time.Time) (L
 			(SELECT COUNT(*) FROM topic_lottery WHERE user_id = @userID) AS lottery_count,
 			(SELECT COUNT(*) FROM topic_reply WHERE user_id = @userID AND status = 0) AS reply_count,
 			(SELECT COUNT(*) FROM topic_comment WHERE user_id = @userID AND status = 0) AS topic_comment_count,
-			(SELECT COUNT(*) FROM galgame_rating WHERE user_id = @userID) AS galgame_rating_count,
-			(SELECT COUNT(*) FROM galgame_resource WHERE user_id = @userID) AS galgame_resource_count,
+			(SELECT COUNT(*) FROM galgame_rating t WHERE t.user_id = @userID
+				AND NOT EXISTS (SELECT 1 FROM galgame g WHERE g.id = t.work_id AND NOT g.catalog_rendered)) AS galgame_rating_count,
+			(SELECT COUNT(*) FROM galgame_resource t JOIN galgame g ON g.id = t.work_id
+				WHERE t.user_id = @userID AND g.catalog_rendered) AS galgame_resource_count,
 			(SELECT COUNT(*) FROM galgame_toolset WHERE user_id = @userID) AS toolset_count,
 			(SELECT COUNT(*) FROM galgame_toolset_resource WHERE user_id = @userID) AS toolset_resource_count,
 			(SELECT COUNT(*) FROM topic_upvote WHERE topic_id IN (SELECT id FROM topic WHERE user_id = @userID)) AS received_upvote_count,
