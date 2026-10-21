@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"log/slog"
+	"strconv"
 	"sync"
 	"time"
 
@@ -38,7 +39,22 @@ type ratingMirrorStore interface {
 // deleted or merged the work, and "" while it is live.
 type workFate func(ctx context.Context, workID int64) (string, error)
 
-const heldMergedFor = 31 * 24 * time.Hour
+// currentRating answers the person's rating of the work as NextMoe holds it now.
+type currentRating func(ctx context.Context, userID, workID int64) (id int64, found bool, err error)
+
+const (
+	heldMergedFor = 31 * 24 * time.Hour
+
+	// A gone rating whose fate catalog could not answer waits here, keyed by
+	// rating id with its work id as the value, instead of holding the cursor:
+	// one work that keeps failing would otherwise stop every rating behind it.
+	ratingGoneRetryKey = "catalog:ratings:gone:retry"
+
+	// ratingLive: NextMoe still holds the rating as the person's own, so the
+	// gone is stale and a later change brings it back. Dropping it then would
+	// lose the forum's own columns and likes.
+	ratingLive = "live"
+)
 
 // RatingMirror keeps galgame_rating equal to NextMoe's ratings off
 // /v2/ratings/changes, on every work whether or not the forum has a local row
@@ -49,8 +65,16 @@ type RatingMirror struct {
 	rdb     *redis.Client
 	clients map[string]bool
 	fate    workFate
+	current currentRating
 
 	running sync.Mutex
+}
+
+// WithCurrentRating lets the mirror recognise a rating a merge folded on the
+// surviving work when the merged rating is not in the same page.
+func (m *RatingMirror) WithCurrentRating(current currentRating) *RatingMirror {
+	m.current = current
+	return m
 }
 
 // WithWorkFate lets the mirror tell a rating its author deleted from one
@@ -124,6 +148,7 @@ func (m *RatingMirror) Run() {
 		return
 	}
 	bootstrap := cursor == ""
+	m.retryGone(ctx)
 
 	var seen, written, dropped, pages int
 	for ; pages < ratingMirrorPages; pages++ {
@@ -174,20 +199,13 @@ func (m *RatingMirror) apply(ctx context.Context, items []catalogclient.RatingCh
 			continue
 		}
 		if it.Gone || it.Rating == nil {
-			reason, err := m.heldFor(ctx, it, fates, live)
+			gone, err := m.settleGone(ctx, int(it.ID), it.WorkID, fates, live)
 			if err != nil {
 				return written, dropped, err
 			}
-			if reason != "" {
-				if err := m.store.HoldRating(int(it.ID), reason); err != nil {
-					return written, dropped, err
-				}
-				continue
+			if gone {
+				dropped++
 			}
-			if err := m.store.DropRating(int(it.ID)); err != nil {
-				return written, dropped, err
-			}
-			dropped++
 			continue
 		}
 		if it.Rating.WorkID <= 0 || it.Rating.UserID <= 0 {
@@ -202,30 +220,96 @@ func (m *RatingMirror) apply(ctx context.Context, items []catalogclient.RatingCh
 	return written, dropped, nil
 }
 
-// heldFor answers why NextMoe took a gone rating away, if it may send it back.
-// The fold of a merge can land on the surviving work, which is live: the
-// merged rating arriving live for the same person and work in the same page
-// is what marks it.
-func (m *RatingMirror) heldFor(ctx context.Context, it catalogclient.RatingChange, fates map[int64]string, live map[[2]int64]int64) (string, error) {
-	if m.fate != nil && it.WorkID > 0 {
-		reason, seen := fates[it.WorkID]
+// settleGone holds a gone rating NextMoe may send back and drops the rest. It
+// answers whether it dropped one. A rating catalog could not answer about is
+// parked for the next tick; only a database error stops the page.
+func (m *RatingMirror) settleGone(ctx context.Context, id int, goneWork int64, fates map[int64]string, live map[[2]int64]int64) (bool, error) {
+	user, work, ok, err := m.store.RatingOwner(id)
+	if err != nil {
+		return false, err
+	}
+	if !ok {
+		return false, m.unpark(ctx, id)
+	}
+	if goneWork <= 0 {
+		goneWork = int64(work)
+	}
+	reason, err := m.heldFor(ctx, id, int64(user), int64(work), goneWork, fates, live)
+	if err != nil {
+		slog.Warn("评分镜像: 无法确认评分为何被移除, 暂存待重试", "rating_id", id, "work_id", goneWork, "error", err)
+		return false, m.rdb.HSet(ctx, ratingGoneRetryKey, strconv.Itoa(id), strconv.FormatInt(goneWork, 10)).Err()
+	}
+	if reason == ratingLive {
+		return false, m.unpark(ctx, id)
+	}
+	if reason != "" {
+		if err := m.store.HoldRating(id, reason); err != nil {
+			return false, err
+		}
+		return false, m.unpark(ctx, id)
+	}
+	if err := m.store.DropRating(id); err != nil {
+		return false, err
+	}
+	return true, m.unpark(ctx, id)
+}
+
+func (m *RatingMirror) unpark(ctx context.Context, id int) error {
+	return m.rdb.HDel(ctx, ratingGoneRetryKey, strconv.Itoa(id)).Err()
+}
+
+func (m *RatingMirror) retryGone(ctx context.Context) {
+	parked, err := m.rdb.HGetAll(ctx, ratingGoneRetryKey).Result()
+	if err != nil || len(parked) == 0 {
+		return
+	}
+	fates := map[int64]string{}
+	for rawID, rawWork := range parked {
+		id, err1 := strconv.Atoi(rawID)
+		work, err2 := strconv.ParseInt(rawWork, 10, 64)
+		if err1 != nil || err2 != nil {
+			_ = m.rdb.HDel(ctx, ratingGoneRetryKey, rawID).Err()
+			continue
+		}
+		if _, err := m.settleGone(ctx, id, work, fates, nil); err != nil {
+			slog.Warn("评分镜像: 重试被移除的评分失败", "rating_id", id, "error", err)
+		}
+	}
+}
+
+// heldFor answers why NextMoe took a gone rating away, if it may send it back:
+// its work was deleted or merged, or a merge folded it as the older of the
+// person's two ratings onto the surviving work, which is live. The merged
+// rating then arrives live in the same page, or NextMoe already holds it as
+// the person's rating of that work.
+func (m *RatingMirror) heldFor(ctx context.Context, id int, user, work, goneWork int64, fates map[int64]string, live map[[2]int64]int64) (string, error) {
+	if m.fate != nil {
+		reason, seen := fates[goneWork]
 		if !seen {
 			var err error
-			if reason, err = m.fate(ctx, it.WorkID); err != nil {
+			if reason, err = m.fate(ctx, goneWork); err != nil {
 				return "", err
 			}
-			fates[it.WorkID] = reason
+			fates[goneWork] = reason
 		}
 		if reason != "" {
 			return reason, nil
 		}
 	}
-	user, work, ok, err := m.store.RatingOwner(int(it.ID))
-	if err != nil || !ok {
-		return "", err
-	}
-	if other, found := live[[2]int64{int64(user), int64(work)}]; found && other != it.ID {
+	if other, found := live[[2]int64{user, work}]; found && other != int64(id) {
 		return repository.HeldMerged, nil
+	}
+	if m.current != nil {
+		current, found, err := m.current(ctx, user, work)
+		if err != nil {
+			return "", err
+		}
+		if found && current == int64(id) {
+			return ratingLive, nil
+		}
+		if found {
+			return repository.HeldMerged, nil
+		}
 	}
 	return "", nil
 }

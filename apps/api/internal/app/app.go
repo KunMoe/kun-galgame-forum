@@ -422,7 +422,8 @@ func New(cfg *config.Config) *App {
 				return galgameRepo.HeldMerged, nil
 			}
 			return "", nil
-		})
+		}).
+		WithCurrentRating(catalogCli.CurrentRating)
 	galgameV1 := galgameapiv1.New(gc, moyuCli, uc, rdb, cfg.NextMoeAPI.ImageCDNBase).WithWork(db, catalogCli, storeLinks, moemoepoint.Award).WithUserPlane(trustCheck, trustScan, galgameCollectionRepo)
 
 	adminOverviewRepo := adminRepo.NewOverviewRepository(db)
@@ -535,6 +536,7 @@ func New(cfg *config.Config) *App {
 			GalgameCatalogMirrorVerify: galgameCatalogMirror.RunVerify,
 			GalgameMergeSync:           galgameMergeSync.Run,
 			RatingMirror:               ratingMirror.Run,
+			HeldRatingSweep:            galgameService.NewHeldRatingSweep(uc, galgameRepo.NewRatingStore(db)).Run,
 			DlsiteCampaignRefresh:      storeLinks.RefreshCampaign,
 			TopicMiniAppDeadlines:      lotteryDrawer.Run,
 			UserPurgeArchiveExpiry:     expirePurgeArchive(adminPurgeRepo),

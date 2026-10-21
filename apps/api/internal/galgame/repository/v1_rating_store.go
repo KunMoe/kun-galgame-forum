@@ -275,6 +275,20 @@ func (s *RatingStore) PurgeHeldRatings(before time.Time) (int64, error) {
 	return res.RowsAffected, res.Error
 }
 
+func (s *RatingStore) HeldRatingUsers() ([]int, error) {
+	var ids []int
+	err := s.db.Raw(`SELECT DISTINCT user_id FROM galgame_rating_held ORDER BY user_id`).Scan(&ids).Error
+	return ids, err
+}
+
+func (s *RatingStore) DropHeldRatingsOf(userIDs []int) (int64, error) {
+	if len(userIDs) == 0 {
+		return 0, nil
+	}
+	res := s.db.Exec(`DELETE FROM galgame_rating_held WHERE user_id IN ?`, userIDs)
+	return res.RowsAffected, res.Error
+}
+
 // RatingOwner answers whose rating id is and of which work.
 func (s *RatingStore) RatingOwner(id int) (userID, workID int, ok bool, err error) {
 	var row struct{ UserID, WorkID int }

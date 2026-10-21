@@ -33,6 +33,7 @@ type Jobs struct {
 	GalgameCatalogMirrorVerify func()
 	GalgameMergeSync           func()
 	RatingMirror               func()
+	HeldRatingSweep            func()
 	DlsiteCampaignRefresh      func()
 	TopicMiniAppDeadlines      func()
 	UserPurgeArchiveExpiry     func()
@@ -107,6 +108,9 @@ func Start(
 
 	if jobs.GalgameMergeSync != nil {
 		schedule(c, "*/30 * * * *", "galgame 合并同步", jobs.GalgameMergeSync)
+	}
+	if jobs.HeldRatingSweep != nil {
+		schedule(c, "17 * * * *", "暂存评分清扫", jobs.HeldRatingSweep)
 	}
 	if jobs.RatingMirror != nil {
 		schedule(c, "*/2 * * * *", "评分镜像同步", jobs.RatingMirror)

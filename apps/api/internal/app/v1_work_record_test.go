@@ -15,6 +15,7 @@ import (
 	galgameService "kun-galgame-api/internal/galgame/service"
 	"kun-galgame-api/internal/moemoepoint"
 	"kun-galgame-api/pkg/catalogclient"
+	"kun-galgame-api/pkg/userclient"
 )
 
 func (f *grFix) record(t *testing.T, method, session string, workID int, body any) (*http.Response, map[string]any) {
@@ -238,6 +239,25 @@ func runMirror(t *testing.T, f *grFix, fate map[int64]string, items ...catalogcl
 		WithWorkFate(fatesOf(fate)).Run()
 }
 
+type currentOf = func(context.Context, int64, int64) (int64, bool, error)
+
+func runMirrorAsking(t *testing.T, f *grFix, current currentOf, items ...catalogclient.RatingChange) {
+	t.Helper()
+	f.rdb.Del(context.Background(), galgameService.RatingMirrorCursorKey)
+	feed := &grFeed{pages: []*catalogclient.RatingChangePage{{Items: items}}}
+	galgameService.NewRatingMirror(feed, galgameRepo.NewRatingStore(f.db), f.rdb, []string{grForumClient}).
+		WithWorkFate(fatesOf(nil)).WithCurrentRating(current).Run()
+}
+
+func (f *grFix) parked(t *testing.T) map[string]string {
+	t.Helper()
+	got, err := f.rdb.HGetAll(context.Background(), "catalog:ratings:gone:retry").Result()
+	if err != nil {
+		t.Fatal(err)
+	}
+	return got
+}
+
 func (f *grFix) assertRestored(t *testing.T, id int) {
 	t.Helper()
 	if n := f.count(t, `SELECT count(*) FROM galgame_rating WHERE id = ? AND galgame_type::text LIKE '%plot%'`, id); n != 1 {
@@ -356,15 +376,172 @@ func TestRatingMirrorNeverHoldsAPurgedAuthorsRating(t *testing.T) {
 	}
 }
 
-func TestRatingMirrorHoldsTheCursorWhenItCannotTellWhyARatingWent(t *testing.T) {
+func TestRatingMirrorParksARatingItCannotSettleAndMovesOn(t *testing.T) {
 	f := newGRFix(t)
-	feed := &grFeed{pages: []*catalogclient.RatingChangePage{{Items: []catalogclient.RatingChange{
+	f.run(t, `DELETE FROM galgame_rating_held WHERE id IN (?, ?)`, grRatingAlice, grRatingGone)
+	f.run(t, `INSERT INTO galgame_rating_like (galgame_rating_id, user_id, updated) VALUES (?, ?, now())`, grRatingAlice, grBob)
+	feed := &grFeed{pages: []*catalogclient.RatingChangePage{{NextCursor: "1", Items: []catalogclient.RatingChange{
 		{ID: int64(grRatingAlice), WorkID: grWorkSFW, Gone: true},
+		{ID: int64(grRatingGone), WorkID: grWorkSFW2, Gone: true},
 	}}}}
-	down := func(context.Context, int64) (string, error) { return "", fmt.Errorf("catalog down") }
-	galgameService.NewRatingMirror(feed, galgameRepo.NewRatingStore(f.db), f.rdb, []string{grForumClient}).WithWorkFate(down).Run()
+	down := true
+	fate := func(_ context.Context, work int64) (string, error) {
+		if work == grWorkSFW && down {
+			return "", fmt.Errorf("catalog down")
+		}
+		if work == grWorkSFW {
+			return galgameRepo.HeldDeleted, nil
+		}
+		return "", nil
+	}
+	mirror := galgameService.NewRatingMirror(feed, galgameRepo.NewRatingStore(f.db), f.rdb, []string{grForumClient}).WithWorkFate(fate)
+	mirror.Run()
 
 	if n := f.count(t, `SELECT count(*) FROM galgame_rating WHERE id = ?`, grRatingAlice); n != 1 {
 		t.Errorf("the rating went while catalog could not say what happened to its work")
+	}
+	if got := f.parked(t); len(got) != 1 || got[strconv.Itoa(grRatingAlice)] != strconv.Itoa(grWorkSFW) {
+		t.Errorf("parked %v, want the one rating catalog could not answer about", got)
+	}
+	if n := f.count(t, `SELECT count(*) FROM galgame_rating WHERE id = ?`, grRatingGone); n != 0 {
+		t.Errorf("one work catalog could not answer about stopped the ratings behind it")
+	}
+	if cursor, _ := f.rdb.Get(context.Background(), galgameService.RatingMirrorCursorKey).Result(); cursor != "1" {
+		t.Errorf("cursor %q, want it past the page", cursor)
+	}
+
+	mirror.Run()
+	if len(f.parked(t)) != 1 {
+		t.Errorf("a rating left the retry set while catalog was still down")
+	}
+	down = false
+	mirror.Run()
+	f.assertHeld(t, grRatingAlice, galgameRepo.HeldDeleted)
+	if got := f.parked(t); len(got) != 0 {
+		t.Errorf("the settled rating is still parked: %v", got)
+	}
+}
+
+func TestRatingMirrorAsksNothingAboutARatingItNeverHad(t *testing.T) {
+	f := newGRFix(t)
+	never := grRatingRaters + 90
+	f.rdb.HSet(context.Background(), "catalog:ratings:gone:retry", strconv.Itoa(never), strconv.Itoa(grWorkSFW))
+	feed := &grFeed{pages: []*catalogclient.RatingChangePage{{Items: []catalogclient.RatingChange{
+		{ID: int64(never), WorkID: grWorkSFW, Gone: true},
+	}}}}
+	asked := 0
+	fate := func(context.Context, int64) (string, error) { asked++; return "", fmt.Errorf("catalog down") }
+	current := func(context.Context, int64, int64) (int64, bool, error) { asked++; return 0, false, fmt.Errorf("down") }
+	galgameService.NewRatingMirror(feed, galgameRepo.NewRatingStore(f.db), f.rdb, []string{grForumClient}).
+		WithWorkFate(fate).WithCurrentRating(current).Run()
+
+	if asked != 0 {
+		t.Errorf("asked NextMoe %d times about a rating the forum never had", asked)
+	}
+	if got := f.parked(t); len(got) != 0 {
+		t.Errorf("a rating the forum never had is parked: %v", got)
+	}
+}
+
+func TestRatingMirrorAsksNextMoeForTheRatingAMergeKept(t *testing.T) {
+	merged := int64(grRatingRaters + 61)
+	for name, tc := range map[string]struct {
+		current currentOf
+		want    string
+	}{
+		"another rating of the person's": {
+			current: func(context.Context, int64, int64) (int64, bool, error) { return merged, true, nil },
+			want:    "held",
+		},
+		"none": {
+			current: func(context.Context, int64, int64) (int64, bool, error) { return 0, false, nil },
+			want:    "dropped",
+		},
+		"this very rating": {
+			current: func(context.Context, int64, int64) (int64, bool, error) { return int64(grRatingAlice), true, nil },
+			want:    "kept",
+		},
+		"NextMoe down": {
+			current: func(context.Context, int64, int64) (int64, bool, error) { return 0, false, fmt.Errorf("down") },
+			want:    "parked",
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			f := newGRFix(t)
+			f.run(t, `DELETE FROM galgame_rating_held WHERE id = ?`, grRatingAlice)
+			f.run(t, `INSERT INTO galgame_rating_like (galgame_rating_id, user_id, updated) VALUES (?, ?, now())`, grRatingAlice, grBob)
+			f.run(t, `UPDATE galgame_rating SET like_count = 1 WHERE id = ?`, grRatingAlice)
+			var asked [2]int64
+			current := func(ctx context.Context, user, work int64) (int64, bool, error) {
+				asked = [2]int64{user, work}
+				return tc.current(ctx, user, work)
+			}
+
+			runMirrorAsking(t, f, current, catalogclient.RatingChange{ID: int64(grRatingAlice), WorkID: grWorkSFW, Gone: true})
+			if asked != [2]int64{grAlice, grWorkSFW} {
+				t.Errorf("asked about %v, want the author's rating of the work", asked)
+			}
+			live := f.count(t, `SELECT count(*) FROM galgame_rating WHERE id = ?`, grRatingAlice)
+			held := f.count(t, `SELECT count(*) FROM galgame_rating_held WHERE id = ?`, grRatingAlice)
+			parked := len(f.parked(t))
+			switch tc.want {
+			case "held":
+				f.assertHeld(t, grRatingAlice, galgameRepo.HeldMerged)
+			case "dropped":
+				if live+held+parked != 0 {
+					t.Errorf("a rating its author deleted was kept: live %d held %d parked %d", live, held, parked)
+				}
+			case "kept", "parked":
+				if live != 1 || held != 0 || parked != map[string]int{"kept": 0, "parked": 1}[tc.want] {
+					t.Errorf("live %d held %d parked %d", live, held, parked)
+				}
+			}
+		})
+	}
+}
+
+type sweepAuthors struct {
+	users map[int]userclient.User
+	err   error
+}
+
+func (s sweepAuthors) Users(_ context.Context, ids []int) (map[int]userclient.User, error) {
+	out := map[int]userclient.User{}
+	for _, id := range ids {
+		if u, ok := s.users[id]; ok {
+			out[id] = u
+		}
+	}
+	return out, s.err
+}
+
+func TestHeldRatingSweepDropsTheHeldRatingsOfDeletedAccounts(t *testing.T) {
+	f := newGRFix(t)
+	anonymized, erased, alive := grRatingRaters+80, grRatingRaters+81, grRatingRaters+82
+	ids := []int{anonymized, erased, alive}
+	t.Cleanup(func() { f.run(t, `DELETE FROM galgame_rating_held WHERE id IN ?`, ids) })
+	f.run(t, `INSERT INTO galgame_rating_held (id, user_id, work_id, reason, row) VALUES
+		(?, ?, ?, 'deleted', '{}'), (?, ?, ?, 'merged', '{}'), (?, ?, ?, 'deleted', '{}')`,
+		anonymized, grAlice, grWorkSFW, erased, grGone, grWorkSFW, alive, grBob, grWorkSFW)
+	when := "2026-10-20T00:00:00Z"
+	authors := sweepAuthors{users: map[int]userclient.User{
+		grAlice: {ID: grAlice, AnonymizedAt: &when},
+		grBob:   {ID: grBob},
+	}}
+	store := galgameRepo.NewRatingStore(f.db)
+
+	galgameService.NewHeldRatingSweep(sweepAuthors{users: authors.users, err: fmt.Errorf("oauth down")}, store).Run()
+	if n := f.count(t, `SELECT count(*) FROM galgame_rating_held WHERE id IN ?`, ids); n != 3 {
+		t.Errorf("the sweep dropped %d held ratings while the account service was down", 3-n)
+	}
+
+	galgameService.NewHeldRatingSweep(authors, store).Run()
+	for _, id := range []int{anonymized, erased} {
+		if n := f.count(t, `SELECT count(*) FROM galgame_rating_held WHERE id = ?`, id); n != 0 {
+			t.Errorf("held rating %d outlived its author's account", id)
+		}
+	}
+	if n := f.count(t, `SELECT count(*) FROM galgame_rating_held WHERE id = ?`, alive); n != 1 {
+		t.Errorf("the held rating of a live account went")
 	}
 }
