@@ -1,6 +1,7 @@
 package workrepr
 
 import (
+	"cmp"
 	"context"
 	"regexp"
 	"slices"
@@ -82,6 +83,47 @@ func Maker(it *client.CatalogWorkListItem) *CompanyRef {
 	}
 	ref := CompanyRefOf(l.ID, l.DisplayName, "", client.LocalizedValues(l.Localized))
 	return &ref
+}
+
+// TopTags are the first n of a work's tags in the order its page lists them,
+// folded per canonical tag the way the page folds them, without spoilers, and
+// without adult tags unless includeNSFW.
+func TopTags(it *client.CatalogWorkListItem, includeNSFW bool, n int) []TagRef {
+	type folded struct {
+		spoiler int
+		sexual  bool
+		at      int
+	}
+	seen := map[int64]*folded{}
+	order := make([]int, 0, len(it.Tags))
+	for i, t := range it.Tags {
+		if t.CanonicalID == 0 || t.Tier == client.TagTierHidden {
+			continue
+		}
+		if f, ok := seen[t.CanonicalID]; ok {
+			f.spoiler = max(f.spoiler, t.Spoiler)
+			f.sexual = f.sexual || t.Sexual
+			continue
+		}
+		seen[t.CanonicalID] = &folded{spoiler: t.Spoiler, sexual: t.Sexual, at: i}
+		order = append(order, i)
+	}
+	out := make([]TagRef, 0, n)
+	for _, i := range order {
+		t := it.Tags[i]
+		f := seen[t.CanonicalID]
+		if f.spoiler > 0 || (f.sexual && !includeNSFW) {
+			continue
+		}
+		if len(out) == n {
+			break
+		}
+		out = append(out, TagRef{
+			Object: "tag", ID: repr.ID(int(t.CanonicalID)), IsSexual: f.sexual,
+			CatalogName: Name(cmp.Or(t.DisplayName, t.Name), "", client.LocalizedValues(t.Localized)),
+		})
+	}
+	return out
 }
 
 func CompanyRefOf(id int64, displayName, latin string, localized map[string]client.LocalizedValue) CompanyRef {

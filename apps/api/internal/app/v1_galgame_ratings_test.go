@@ -215,3 +215,47 @@ func TestV1RatingsDetail(t *testing.T) {
 		t.Errorf("likers %v, want the 50 newest, newest first", likers)
 	}
 }
+
+func TestV1RatingsCarryMakerAndTopTags(t *testing.T) {
+	f := newGRFix(t)
+	tagIDs := func(item map[string]any) []string {
+		var out []string
+		tags, _ := item["top_tags"].([]any)
+		for _, tag := range tags {
+			m, _ := tag.(map[string]any)
+			out = append(out, strID(m["id"]))
+		}
+		return out
+	}
+	for _, tc := range []struct {
+		nsfw bool
+		want []string
+	}{{false, []string{"21"}}, {true, []string{"21", "23"}}} {
+		resp, body := f.list(t, "", fmt.Sprintf("work_id=%d&include_nsfw=%t", grWorkSFW, tc.nsfw))
+		if resp.StatusCode != http.StatusOK {
+			t.Fatalf("nsfw=%t: %d %+v", tc.nsfw, resp.StatusCode, body)
+		}
+		items, _ := body["items"].([]any)
+		if len(items) == 0 {
+			t.Fatalf("nsfw=%t: no ratings for the work", tc.nsfw)
+		}
+		for _, it := range items {
+			item, _ := it.(map[string]any)
+			maker, _ := item["maker"].(map[string]any)
+			if maker == nil || maker["display_name"] != "Maker Brand" {
+				t.Errorf("maker = %+v, want the developer", item["maker"])
+			}
+			if got := tagIDs(item); !slices.Equal(got, tc.want) {
+				t.Errorf("nsfw=%t top_tags = %v, want %v: no spoiler tag, adult only with include_nsfw", tc.nsfw, got, tc.want)
+			}
+		}
+	}
+	resp, body := f.list(t, "", fmt.Sprintf("work_id=%d&include_nsfw=false", grWorkSFW2))
+	items, _ := body["items"].([]any)
+	if resp.StatusCode != http.StatusOK || len(items) == 0 {
+		t.Fatalf("second work: %d %+v", resp.StatusCode, body)
+	}
+	if first, _ := items[0].(map[string]any); first["top_tags"] == nil || len(tagIDs(first)) != 0 {
+		t.Errorf("a work without tags: top_tags = %#v, want []", first["top_tags"])
+	}
+}

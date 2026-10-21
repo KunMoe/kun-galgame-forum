@@ -95,7 +95,7 @@ func (s *Service) requireActive(ctx context.Context, viewer *middleware.UserInfo
 // visibleWorks returns the catalog rows of the works catalog still shows; a work
 // whose claim was hidden is absent, and its ratings with it.
 func (s *Service) visibleWorks(ctx context.Context, ids []int) (map[int]client.CatalogWorkListItem, *problem.Problem) {
-	rows, appErr := s.Rows.CatalogRowsByWorkIDs(ctx, ids, workrepr.RowInclude, "all")
+	rows, appErr := s.Rows.CatalogRowsByWorkIDs(ctx, ids, workrepr.RowInclude+",tags", "all")
 	if appErr != nil {
 		return nil, problem.Unavailable(appErr)
 	}
@@ -169,7 +169,7 @@ func (s *Service) authorRef(users map[int]userclient.User, id int) (repr.UserRef
 	return repr.NewUserRef(s.CDN, u), true
 }
 
-func (s *Service) summary(ctx context.Context, r repository.RatingRecord, work *client.CatalogWorkListItem, author repr.UserRef) RatingSummary {
+func (s *Service) summary(ctx context.Context, r repository.RatingRecord, work *client.CatalogWorkListItem, author repr.UserRef, includeNSFW bool) RatingSummary {
 	out := RatingSummary{
 		Object:       "rating",
 		ID:           repr.ID(r.ID),
@@ -186,10 +186,13 @@ func (s *Service) summary(ctx context.Context, r repository.RatingRecord, work *
 		CommentCount: max(r.CommentCount, 0),
 		CreatedAt:    repr.Timestamp(r.Created),
 		UpdatedAt:    repr.Timestamp(r.Updated),
+		TopTags:      []workrepr.TagRef{},
 	}
 	if work != nil {
 		ref := workrepr.Ref(ctx, work, s.CDN)
 		out.Work = &ref
+		out.Maker = workrepr.Maker(work)
+		out.TopTags = workrepr.TopTags(work, includeNSFW, 5)
 	}
 	return out
 }

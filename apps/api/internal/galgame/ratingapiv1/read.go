@@ -80,7 +80,7 @@ func (s *Service) listRatings(ctx context.Context, in *listRatingsInput) (*listR
 	if err != nil {
 		return nil, problem.Internal(err)
 	}
-	items, p := s.summaries(ctx, rows)
+	items, p := s.summaries(ctx, rows, in.IncludeNSFW)
 	if p != nil {
 		return nil, p
 	}
@@ -90,7 +90,7 @@ func (s *Service) listRatings(ctx context.Context, in *listRatingsInput) (*listR
 
 // summaries drops the ratings of banned authors and of works catalog no longer
 // shows. Both are only known upstream, so the page's total still counts them.
-func (s *Service) summaries(ctx context.Context, rows []repository.RatingRecord) ([]RatingSummary, *problem.Problem) {
+func (s *Service) summaries(ctx context.Context, rows []repository.RatingRecord, includeNSFW bool) ([]RatingSummary, *problem.Problem) {
 	if len(rows) == 0 {
 		return []RatingSummary{}, nil
 	}
@@ -127,7 +127,7 @@ func (s *Service) summaries(ctx context.Context, rows []repository.RatingRecord)
 		if !ok {
 			continue
 		}
-		item := s.summary(ctx, r, &work, author)
+		item := s.summary(ctx, r, &work, author, includeNSFW)
 		item.Viewer = s.viewerOf(ctx, r, liked[r.ID])
 		out = append(out, item)
 	}
@@ -201,7 +201,7 @@ func (s *Service) detail(ctx context.Context, id int) (*Rating, *problem.Problem
 			likers = append(likers, ref)
 		}
 	}
-	sum := s.summary(ctx, r, &work, author)
+	sum := s.summary(ctx, r, &work, author, false)
 	viewer := v1.User(ctx)
 	if viewer != nil {
 		liked, err := s.Store.LikedSet(viewer.ID, []int{id})

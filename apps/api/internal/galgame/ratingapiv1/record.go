@@ -198,7 +198,7 @@ func (s *Service) recordView(ctx context.Context, workID int, rec *catalogclient
 	if err != nil {
 		return nil, problem.Internal(err)
 	}
-	items, p := s.summaries(ctx, []repository.RatingRecord{row})
+	items, p := s.summaries(ctx, []repository.RatingRecord{row}, false)
 	if p != nil {
 		return nil, p
 	}
