@@ -19,7 +19,7 @@ const group = useTabQuery('', 'group')
           <p class="text-default-500">
             想同时满足多个属性? 去
             <KunLink to="/galgame/character">Galgame 角色库</KunLink>
-            组合筛选, 例如「银发 + 双马尾 + 傲娇」。属性数据来自 NextMoe 目录,
+            组合筛选, 例如「银发 + 双马尾 + 傲娇」。属性数据来自 鲲 Galgame 论坛,
             如果有数据错误请
             <KunLink to="/doc/contact"> 联系我们 </KunLink>。
           </p>

@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"encoding/json"
 	"kun-galgame-api/internal/galgame/playstate"
 	"kun-galgame-api/internal/galgame/resourcevocab"
 	"kun-galgame-api/pkg/miniapp"
@@ -135,6 +136,7 @@ func (r *ActivityRepository) FetchTopicMiniApps(ids []int) map[int][]string {
 type EditRevision struct {
 	RevisionID     int
 	RevisionNumber int
+	ChangedFields  []string
 }
 
 func (r *ActivityRepository) FetchEditRevisions(activityIDs []int) (map[int]EditRevision, error) {
@@ -143,22 +145,29 @@ func (r *ActivityRepository) FetchEditRevisions(activityIDs []int) (map[int]Edit
 		return out, nil
 	}
 	var rows []struct {
-		ID         int  `gorm:"column:id"`
-		RevisionID int  `gorm:"column:wiki_revision_id"`
-		RevisionNo *int `gorm:"column:wiki_revision_number"`
+		ID            int     `gorm:"column:id"`
+		RevisionID    int     `gorm:"column:wiki_revision_id"`
+		RevisionNo    *int    `gorm:"column:wiki_revision_number"`
+		ChangedFields *string `gorm:"column:edit_changed_fields"`
 	}
 	if err := r.db.Raw(`
-		SELECT id, COALESCE(wiki_revision_id, 0) AS wiki_revision_id, wiki_revision_number
+		SELECT id, COALESCE(wiki_revision_id, 0) AS wiki_revision_id, wiki_revision_number,
+		       edit_changed_fields::text AS edit_changed_fields
 		FROM galgame_activity
 		WHERE id IN ?`, activityIDs).Scan(&rows).Error; err != nil {
 		return out, err
 	}
 	for _, row := range rows {
-		num := 0
+		rev := EditRevision{RevisionID: row.RevisionID}
 		if row.RevisionNo != nil {
-			num = *row.RevisionNo
+			rev.RevisionNumber = *row.RevisionNo
 		}
-		out[row.ID] = EditRevision{RevisionID: row.RevisionID, RevisionNumber: num}
+		if row.ChangedFields != nil {
+			if err := json.Unmarshal([]byte(*row.ChangedFields), &rev.ChangedFields); err != nil {
+				return out, err
+			}
+		}
+		out[row.ID] = rev
 	}
 	return out, nil
 }

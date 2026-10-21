@@ -14,7 +14,7 @@ var allPerms = []Permission{
 	CommentQuizEdit, CommentQuizDelete,
 	PollCreateAny, PollEditAny, PollDeleteAny, PollViewRestricted,
 	LotteryCreateAny, LotteryManageAny, LotteryViewRestricted,
-	GalgameBanResourcePublish, GalgameClaimReview, GalgameEditProposalReview,
+	GalgameBanResourcePublish, GalgameClaimReview,
 	CollectionEditAny, CollectionDeleteAny,
 	QuizEditAny, QuizDeleteAny,
 	ResourceEditAny, ResourceDeleteAny,
@@ -37,8 +37,8 @@ var adminOnly = map[Permission]bool{
 }
 
 const (
-	totalPerms = 61
-	modPerms   = 57
+	totalPerms = 60
+	modPerms   = 56
 )
 
 func isAdminOnly(p Permission) bool { return adminOnly[p] }

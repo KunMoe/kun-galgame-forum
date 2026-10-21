@@ -298,9 +298,9 @@ func (c *GalgameClient) CatalogWorkExists(ctx context.Context, workID int) (bool
 	return found, err
 }
 
-func (c *GalgameClient) CatalogWorkDetail(ctx context.Context, workID int) (*CatalogWorkDetail, bool, int64, *errors.AppError) {
+func (c *GalgameClient) CatalogWorkDetail(ctx context.Context, workID int) (*CatalogWorkDetail, bool, Absence, *errors.AppError) {
 	if workID <= 0 {
-		return nil, false, 0, nil
+		return nil, false, Absence{}, nil
 	}
 	// The tag panel's 剧透等级 filter defaults to level 0 and reveals the rest on
 	// demand, so it needs the rows to filter: asking for spoilers=0 here made
@@ -311,25 +311,19 @@ func (c *GalgameClient) CatalogWorkDetail(ctx context.Context, workID int) (*Cat
 		"include":  {"credits"},
 	}
 	openPopulation(q)
-	data, found, movedTo, appErr := c.catalogGetRecord(ctx, "/catalog/works/"+strconv.Itoa(workID), q)
-	if appErr != nil {
-		return nil, false, 0, appErr
-	}
-	if movedTo != 0 {
-		return nil, false, movedTo, nil
-	}
-	if !found {
-		return nil, false, 0, nil
+	data, found, absence, appErr := c.catalogGetRecordFate(ctx, "/catalog/works/"+strconv.Itoa(workID), q)
+	if appErr != nil || !found {
+		return nil, false, absence, appErr
 	}
 	var d CatalogWorkDetail
 	if err := json.Unmarshal(data, &d); err != nil {
-		return nil, false, 0, errors.ErrInternal("解析 Catalog 作品详情响应失败")
+		return nil, false, Absence{}, errors.ErrInternal("解析 Catalog 作品详情响应失败")
 	}
 	if d.Claim != nil && d.Claim.State == claimStateHidden {
-		return nil, false, 0, nil
+		return nil, false, Absence{}, nil
 	}
 	c.hydrateRosterArt(d.Characters)
-	return &d, true, 0, nil
+	return &d, true, Absence{}, nil
 }
 
 func (c *GalgameClient) hydrateRosterArt(chars []catWorkCharacter) {

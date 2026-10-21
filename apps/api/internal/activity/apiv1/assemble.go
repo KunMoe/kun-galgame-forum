@@ -384,7 +384,10 @@ func (s *Service) build(ctx context.Context, r repository.FeedRow, b *batch) *Ac
 			}
 		case "GALGAME_EDIT":
 			if rv, ok := b.revisions[r.SourceID]; ok && (rv.RevisionID > 0 || rv.RevisionNumber > 0) {
-				wr := &WorkRevision{}
+				wr := &WorkRevision{ChangedFields: rv.ChangedFields}
+				if wr.ChangedFields == nil {
+					wr.ChangedFields = []string{}
+				}
 				if rv.RevisionNumber > 0 {
 					wr.RevisionNumber = &rv.RevisionNumber
 				}

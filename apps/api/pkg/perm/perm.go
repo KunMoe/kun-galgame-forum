@@ -40,7 +40,6 @@ const (
 
 	GalgameBanResourcePublish Permission = "galgame.ban_resource_publish"
 	GalgameClaimReview        Permission = "galgame.claim.review"
-	GalgameEditProposalReview Permission = "galgame.edit_proposal.review"
 
 	CollectionEditAny   Permission = "collection.edit_any"
 	CollectionDeleteAny Permission = "collection.delete_any"
@@ -114,7 +113,6 @@ var moderatorPerms = []Permission{
 	LotteryViewRestricted,
 	GalgameBanResourcePublish,
 	GalgameClaimReview,
-	GalgameEditProposalReview,
 	CollectionEditAny,
 	CollectionDeleteAny,
 	QuizEditAny,

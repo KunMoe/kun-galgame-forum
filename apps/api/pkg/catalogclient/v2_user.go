@@ -259,31 +259,12 @@ type v2Revision struct {
 	AmenderUID    json.RawMessage `json:"amender_uid"`
 	ProposalID    json.RawMessage `json:"proposal_id"`
 	Site          string          `json:"site"`
+	OriginSite    string          `json:"origin_site"`
 	CreatedAt     string          `json:"created_at"`
-	Diff          []EditFieldDiff `json:"diff"`
 }
 
 func (r v2Revision) time() time.Time {
 	return parseRFC3339(r.CreatedAt)
-}
-
-func (r v2Revision) revision() EditRevision {
-	out := EditRevision{
-		ID:            parseFlexID(r.ID),
-		Seq:           r.Seq,
-		Action:        r.Action,
-		ChangedFields: r.ChangedFields,
-		ActorUID:      parseFlexID(r.ActorUID),
-		Site:          r.Site,
-		CreatedAt:     r.time(),
-	}
-	if n := parseFlexID(r.AmenderUID); n != 0 {
-		out.AmenderUID = &n
-	}
-	if n := parseFlexID(r.ProposalID); n != 0 {
-		out.ProposalID = &n
-	}
-	return out
 }
 
 type v2ClaimEventRef struct {
@@ -377,26 +358,6 @@ func (p v2List[T]) cursor() string {
 		return *p.NextCursor
 	}
 	return p.Cursor
-}
-
-type v2Schema struct {
-	EntityType string `json:"entity_type"`
-	Fields     []struct {
-		Key           string             `json:"key"`
-		FieldType     string             `json:"field_type"`
-		Kind          string             `json:"kind"`
-		DiffHint      string             `json:"diff_hint"`
-		Deprecated    bool               `json:"deprecated"`
-		CanPropose    *bool              `json:"can_propose"`
-		CanReview     *bool              `json:"can_review"`
-		MaxElements   int                `json:"max_elements"`
-		MaxSuppressed int                `json:"max_suppressed"`
-		Vocabulary    string             `json:"vocabulary"`
-		Encoding      string             `json:"encoding"`
-		Base          int                `json:"base"`
-		Nullable      bool               `json:"nullable"`
-		Element       *EditSchemaElement `json:"element"`
-	} `json:"fields"`
 }
 
 type v2Snapshot struct {

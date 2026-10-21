@@ -244,11 +244,14 @@ func TestV1ActivitiesShape(t *testing.T) {
 		}
 		return it["work_revision"]
 	}
-	if rv, _ := revisionOf(acEditEngine).(map[string]any); asInt(rv["revision_number"]) != 3 || rv["legacy_revision_id"] != nil {
+	if rv, _ := revisionOf(acEditEngine).(map[string]any); asInt(rv["revision_number"]) != 3 || rv["legacy_revision_id"] != nil ||
+		fmt.Sprint(rv["changed_fields"]) != "[catalog.work.titles catalog.work.covers.suppressed]" {
 		t.Errorf("engine edit revision %+v", rv)
 	}
 	if rv, _ := revisionOf(acEditWiki).(map[string]any); rv["revision_number"] != nil || rv["legacy_revision_id"] != "950000877" {
 		t.Errorf("wiki edit revision %+v", rv)
+	} else if fields, ok := rv["changed_fields"].([]any); !ok || len(fields) != 0 {
+		t.Errorf("an edit recorded before changed_fields must carry [], got %#v", rv["changed_fields"])
 	}
 	if rv := revisionOf(acEditBare); rv != nil {
 		t.Errorf("an edit with no revision recorded got %+v", rv)

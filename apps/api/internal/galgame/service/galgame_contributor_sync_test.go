@@ -99,3 +99,19 @@ func TestMaxRevisionIDNeverRewinds(t *testing.T) {
 		t.Errorf("maxRevisionID(empty) = %d, want 7", got)
 	}
 }
+
+func TestUncountedSkipsOnlyWhatSiteKungalAlreadyCounted(t *testing.T) {
+	now := time.Now().UTC()
+	workID := ptr(int64(1))
+	editor := revision(18, workID, 8, nil, now)
+	editor.Site = "editor"
+	items := []catalogclient.WorkRevisionFeedItem{revision(15, workID, 7, nil, now), editor, revision(25, workID, 9, nil, now)}
+
+	got := uncounted(items, 20)
+	if len(got) != 2 || got[0].ID != 18 || got[1].ID != 25 {
+		t.Errorf("uncounted = %+v, want 18 (made on the editor) and 25 (past the old watermark)", got)
+	}
+	if len(items) != 3 || items[0].ID != 15 {
+		t.Errorf("uncounted rewrote its input: %+v", items)
+	}
+}

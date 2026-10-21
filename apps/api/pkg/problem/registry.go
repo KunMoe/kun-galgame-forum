@@ -53,6 +53,7 @@ const (
 	CodeAccountBanned                = "ACCOUNT_BANNED"
 	CodeNotFound                     = "NOT_FOUND"
 	CodeEntityMerged                 = "ENTITY_MERGED"
+	CodeEntityDeleted                = "ENTITY_DELETED"
 	CodeMethodNotAllowed             = "METHOD_NOT_ALLOWED"
 	CodeIdempotencyKeyReused         = "IDEMPOTENCY_KEY_REUSED"
 	CodeIdempotencyRequestInProgress = "IDEMPOTENCY_REQUEST_IN_PROGRESS"
@@ -143,6 +144,7 @@ var Codes = []Def{
 	{CodeAccountBanned, DomainKungal, http.StatusForbidden, "Account banned", "The signed-in user's account is banned.", nil},
 	{CodeNotFound, DomainPlatform, http.StatusNotFound, "Not found", "Nothing visible exists at this URL.", nil},
 	{CodeEntityMerged, DomainPlatform, http.StatusNotFound, "Entity merged", "The catalog entity at this URL was merged into another. object names its family and current_id the entity it became; read that one instead.", []ExtDef{{Name: "object", Type: "string"}, {Name: "current_id", Type: "string"}}},
+	{CodeEntityDeleted, DomainPlatform, http.StatusGone, "Entity deleted", "The catalog entity at this URL was deleted. object names its family, deleted_reason says why (not_a_work, out_of_scope, spam_or_test or other) and deleted_at when. A deletion can be undone, and the entity then returns under the same id.", []ExtDef{{Name: "object", Type: "string"}, {Name: "deleted_reason", Type: "string"}, {Name: "deleted_at", Type: "string"}}},
 	{CodeMethodNotAllowed, DomainPlatform, http.StatusMethodNotAllowed, "Method not allowed", "The path exists but this method does not.", nil},
 	{CodeIdempotencyKeyReused, DomainPlatform, http.StatusConflict, "Idempotency key reused", "The same Idempotency-Key was sent with a different request body.", nil},
 	{CodeIdempotencyRequestInProgress, DomainKungal, http.StatusConflict, "Idempotency request in progress", "A request with the same Idempotency-Key is still being processed. Retry after it completes.", nil},

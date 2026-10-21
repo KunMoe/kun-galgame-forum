@@ -13,16 +13,32 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"time"
 
 	"kun-galgame-api/pkg/errors"
 )
 
 type v2Problem struct {
-	Code      string `json:"code"`
-	Title     string `json:"title"`
-	Detail    string `json:"detail"`
-	Status    int    `json:"status"`
-	CurrentID string `json:"current_id"`
+	Code          string `json:"code"`
+	Title         string `json:"title"`
+	Detail        string `json:"detail"`
+	Status        int    `json:"status"`
+	CurrentID     string `json:"current_id"`
+	DeletedReason string `json:"deleted_reason"`
+	DeletedAt     string `json:"deleted_at"`
+}
+
+// Both zero means the entity does not exist.
+type Absence struct {
+	MovedTo int64
+	Deleted *Deletion
+}
+
+// Deletion is catalog's 410 ENTITY_DELETED. A deleted work can be restored, and
+// comes back under the same id.
+type Deletion struct {
+	Reason string
+	At     time.Time
 }
 
 func catalogOrigin(raw string) string {
@@ -387,6 +403,21 @@ func v2MergedInto(status int, raw []byte) (int64, bool) {
 		}
 	}
 	return 0, false
+}
+
+func v2Deleted(status int, raw []byte) (Deletion, bool) {
+	if status != http.StatusGone {
+		return Deletion{}, false
+	}
+	var p v2Problem
+	if json.Unmarshal(raw, &p) != nil || p.Code != "ENTITY_DELETED" {
+		return Deletion{}, false
+	}
+	d := Deletion{Reason: p.DeletedReason}
+	if at, err := time.Parse(time.RFC3339Nano, p.DeletedAt); err == nil {
+		d.At = at.UTC()
+	}
+	return d, true
 }
 
 func (c *GalgameClient) v2Error(status int, raw []byte) *errors.AppError {

@@ -68,3 +68,18 @@ func TestCatalogRedirectsAsksForWorksOnly(t *testing.T) {
 		t.Error("an empty cursor must be omitted, not sent as cursor=")
 	}
 }
+
+func TestCatalogRedirectsCarriesRevoked(t *testing.T) {
+	c, _ := redirectsServer(t, `{"object":"list","items":[
+		{"object":"redirect","target_object":"work","old_id":"5904","current_id":"5904","revoked":true,"merged_at":"2026-10-21T09:00:00Z"},
+		{"object":"redirect","target_object":"work","old_id":"7001","current_id":"7002","merged_at":"2026-10-21T09:00:01Z"}
+	]}`)
+
+	page, appErr := c.CatalogRedirects(t.Context(), "", 100)
+	if appErr != nil {
+		t.Fatalf("CatalogRedirects: %v", appErr.Message)
+	}
+	if len(page.Items) != 2 || !page.Items[0].Revoked || page.Items[1].Revoked {
+		t.Errorf("rows = %+v, want only 5904 revoked", page.Items)
+	}
+}

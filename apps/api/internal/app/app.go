@@ -411,7 +411,7 @@ func New(cfg *config.Config) *App {
 	galgameCatalogMirror := galgameService.NewGalgameCatalogMirror(gc, galgameLocalRepo, rdb, galgameMergeSync)
 	ratingMirror := galgameService.NewRatingMirror(catalogCli, galgameRepo.NewRatingStore(db), rdb,
 		append([]string{cfg.OAuth.ClientID}, cfg.Bearer.ClientIDs...))
-	galgameV1 := galgameapiv1.New(gc, moyuCli, uc, rdb, cfg.NextMoeAPI.ImageCDNBase).WithWork(db, catalogCli, storeLinks, moemoepoint.Award).WithUserPlane(trustCheck, trustScan, galgameCollectionRepo).WithEditing(notifier)
+	galgameV1 := galgameapiv1.New(gc, moyuCli, uc, rdb, cfg.NextMoeAPI.ImageCDNBase).WithWork(db, catalogCli, storeLinks, moemoepoint.Award).WithUserPlane(trustCheck, trustScan, galgameCollectionRepo)
 
 	adminOverviewRepo := adminRepo.NewOverviewRepository(db)
 	adminPurgeRepo := adminRepo.NewPurgeRepository(db)

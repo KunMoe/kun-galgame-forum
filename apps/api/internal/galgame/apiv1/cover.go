@@ -108,15 +108,12 @@ func (s *Service) coverOnWork(ctx context.Context, rawWork, rawCover string) (in
 	if detail == nil {
 		return 0, 0, nil, problem.Internal(errUnconfigured)
 	}
-	d, found, movedTo, appErr := detail.CatalogWorkDetail(ctx, workID)
+	d, found, absence, appErr := detail.CatalogWorkDetail(ctx, workID)
 	if appErr != nil {
 		return 0, 0, nil, catalogUnavailable(appErr)
 	}
-	if movedTo != 0 {
-		return 0, 0, nil, mergedWork(movedTo)
-	}
 	if !found || d == nil {
-		return 0, 0, nil, notFound()
+		return 0, 0, nil, absentWork(absence)
 	}
 	for _, c := range d.Covers {
 		if int(c.ID) == coverID {

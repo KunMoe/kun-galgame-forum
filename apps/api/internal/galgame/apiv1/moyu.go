@@ -13,7 +13,6 @@ import (
 	"kun-galgame-api/internal/galgame/repository"
 	"kun-galgame-api/internal/galgame/workrepr"
 	"kun-galgame-api/internal/infrastructure/storelink"
-	msgService "kun-galgame-api/internal/message/service"
 	"kun-galgame-api/internal/moemoepoint"
 	"kun-galgame-api/internal/trust/gate"
 	"kun-galgame-api/pkg/catalogclient"
@@ -42,7 +41,7 @@ type workCatalog interface {
 }
 
 type workDetailCatalog interface {
-	CatalogWorkDetail(ctx context.Context, workID int) (*client.CatalogWorkDetail, bool, int64, *legacyErrors.AppError)
+	CatalogWorkDetail(ctx context.Context, workID int) (*client.CatalogWorkDetail, bool, client.Absence, *legacyErrors.AppError)
 	CatalogLabel(ctx context.Context, id string) (*client.CatalogLabelDetail, bool, int64, *legacyErrors.AppError)
 	CatalogEngine(ctx context.Context, id string) (*client.CatalogEngineDetail, bool, *legacyErrors.AppError)
 	CatalogSeries(ctx context.Context, id string) (*client.CatalogSeriesDetail, bool, *legacyErrors.AppError)
@@ -114,7 +113,6 @@ type Service struct {
 	check           *gate.CheckService
 	scan            *gate.ScanService
 	aliases         *repository.GalgameCollectionRepository
-	notifier        msgService.Notifier
 	popFlight       singleflight.Group
 }
 
@@ -143,6 +141,8 @@ func (s *Service) WithUserPlane(check *gate.CheckService, scan *gate.ScanService
 	s.aliases = aliases
 	return s
 }
+
+var _ workDetailCatalog = (*client.GalgameClient)(nil)
 
 func (s *Service) detailCatalog() workDetailCatalog {
 	d, _ := s.works.(workDetailCatalog)

@@ -125,7 +125,7 @@ if (!t.is_sexual) {
             例如「靴子」包括穿「过膝靴」的角色。剧透性质的属性不参与匹配。想组合更多属性?
             在下面继续添加, 或去
             <KunLink to="/galgame/character">角色库</KunLink>
-            。数据来自 NextMoe 目录, 如果有错误请
+            。数据来自 鲲 Galgame 论坛, 如果有错误请
             <KunLink to="/doc/contact"> 联系我们 </KunLink>。
           </p>
         </div>

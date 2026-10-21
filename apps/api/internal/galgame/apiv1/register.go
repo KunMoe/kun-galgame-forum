@@ -62,7 +62,7 @@ func Register(svc *Service) func(huma.API) {
 			Method:      http.MethodGet,
 			Path:        "/works/{work_id}",
 			Summary:     "Get a work",
-			Description: "Returns the work. Hidden or unknown works are NOT_FOUND; a merged work is ENTITY_MERGED with current_id. " +
+			Description: "Returns the work. Hidden or unknown works are NOT_FOUND; a merged work is ENTITY_MERGED with current_id; a deleted work is ENTITY_DELETED. " +
 				"Local published is not required. include_nsfw=false strips adult tags. Each read adds one view without touching updated_at. " +
 				"viewer is null for an anonymous caller.",
 			Tags:        []string{"works"},
@@ -70,6 +70,7 @@ func Register(svc *Service) func(huma.API) {
 			Responses: problemResponses(map[int]string{
 				400: "INVALID_PARAMETER when include_nsfw is not a boolean.",
 				404: "NOT_FOUND when the work does not exist or is hidden; ENTITY_MERGED when it was merged, with current_id.",
+				410: "ENTITY_DELETED when the work was deleted, with deleted_reason and deleted_at. A restored work answers 200 again under the same id.",
 				503: "SERVICE_UNAVAILABLE when the catalog or the account service cannot be reached.",
 			}),
 		}), svc.getWork)
@@ -139,7 +140,6 @@ func Register(svc *Service) func(huma.API) {
 		}), svc.listMyCoverVotes)
 
 		svc.registerUserPlane(api)
-		svc.registerEdit(api)
 		svc.registerSubmissions(api)
 
 		huma.Register(api, v1.Public(huma.Operation{

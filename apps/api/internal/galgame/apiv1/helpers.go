@@ -1,14 +1,17 @@
 package apiv1
 
 import (
+	"cmp"
 	"context"
 	"errors"
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 
 	v1 "kun-galgame-api/internal/apiv1"
 	"kun-galgame-api/internal/apiv1/repr"
+	"kun-galgame-api/internal/galgame/client"
 	"kun-galgame-api/internal/middleware"
 	"kun-galgame-api/pkg/catalogclient"
 	legacyErrors "kun-galgame-api/pkg/errors"
@@ -59,6 +62,26 @@ func mergedWork(currentID int64) *problem.Problem {
 	p.SetExtension("object", "work")
 	p.SetExtension("current_id", strconv.FormatInt(currentID, 10))
 	return p
+}
+
+func deletedWork(d *client.Deletion) *problem.Problem {
+	p := problem.New(problem.CodeEntityDeleted, "This work was deleted.")
+	p.SetExtension("object", "work")
+	p.SetExtension("deleted_reason", cmp.Or(d.Reason, "other"))
+	if !d.At.IsZero() {
+		p.SetExtension("deleted_at", d.At.UTC().Format(time.RFC3339))
+	}
+	return p
+}
+
+func absentWork(a client.Absence) *problem.Problem {
+	switch {
+	case a.MovedTo != 0:
+		return mergedWork(a.MovedTo)
+	case a.Deleted != nil:
+		return deletedWork(a.Deleted)
+	}
+	return notFound()
 }
 
 func selfLikeForbidden() *problem.Problem {

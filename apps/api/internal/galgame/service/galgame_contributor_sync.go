@@ -29,9 +29,15 @@ func NewGalgameContributorSync(
 	}
 }
 
+// The tally used to read site=kungal: the kungal tenant, which counted moyu's
+// edits and none made on editor.nextmoe.com. It reads origin_site=kungal now,
+// which catalog records from 2026-10-21 on, so its watermark starts at 0 and
+// rows at or below the old watermark that site=kungal already counted are
+// skipped. Neither key may be reset: a replay counts every edit again.
 const (
-	contributorCursorKey = "catalog:contrib:cron:since"
-	contributorSite      = client.ClaimSiteKungal
+	contributorCursorKey       = "catalog:contrib:cron:origin_since"
+	legacyContributorCursorKey = "catalog:contrib:cron:since"
+	contributorOrigin          = client.ClaimSiteKungal
 
 	contributorFeedBatch    = 100
 	contributorMaxPagesRun  = 50
@@ -45,7 +51,12 @@ func (s *GalgameContributorSync) Run() {
 	ctx, cancel := context.WithTimeout(context.Background(), contributorFeedPageWait)
 	defer cancel()
 
-	since, err := s.readCursor(ctx)
+	since, err := s.readCursor(ctx, contributorCursorKey)
+	if err != nil {
+		slog.Warn("读取贡献者游标失败 (本轮跳过)", "error", err)
+		return
+	}
+	counted, err := s.readCursor(ctx, legacyContributorCursorKey)
 	if err != nil {
 		slog.Warn("读取贡献者游标失败 (本轮跳过)", "error", err)
 		return
@@ -53,7 +64,7 @@ func (s *GalgameContributorSync) Run() {
 
 	startedFrom, maxSeen := since, since
 	for pages := 1; pages <= contributorMaxPagesRun; pages++ {
-		page, err := s.catalog.WorkRevisionsAfter(ctx, maxSeen, s.batch, contributorSite)
+		page, err := s.catalog.WorkRevisionsAfter(ctx, maxSeen, s.batch, contributorOrigin)
 		if err != nil {
 			slog.Warn("catalog 修订 feed 拉取失败 (贡献者)", "error", err, "after", maxSeen)
 			break
@@ -61,7 +72,7 @@ func (s *GalgameContributorSync) Run() {
 		if len(page.Items) == 0 {
 			break
 		}
-		touches, workIDs := contributorTouches(page.Items)
+		touches, workIDs := contributorTouches(uncounted(page.Items, counted))
 		if err := s.repo.UpsertRevisionTouches(touches); err != nil {
 			slog.Warn("贡献者入库失败, 持有游标重试", "after", maxSeen, "error", err)
 			break
@@ -132,6 +143,17 @@ func contributorUIDs(it *catalogclient.WorkRevisionFeedItem) []int64 {
 	return uids
 }
 
+func uncounted(items []catalogclient.WorkRevisionFeedItem, counted int64) []catalogclient.WorkRevisionFeedItem {
+	out := items[:0:0]
+	for _, it := range items {
+		if it.ID <= counted && it.Site == client.ClaimSiteKungal {
+			continue
+		}
+		out = append(out, it)
+	}
+	return out
+}
+
 func maxRevisionID(items []catalogclient.WorkRevisionFeedItem, current int64) int64 {
 	for i := range items {
 		if items[i].ID > current {
@@ -141,8 +163,8 @@ func maxRevisionID(items []catalogclient.WorkRevisionFeedItem, current int64) in
 	return current
 }
 
-func (s *GalgameContributorSync) readCursor(ctx context.Context) (int64, error) {
-	v, err := s.rdb.Get(ctx, contributorCursorKey).Int64()
+func (s *GalgameContributorSync) readCursor(ctx context.Context, key string) (int64, error) {
+	v, err := s.rdb.Get(ctx, key).Int64()
 	if err == redis.Nil {
 		return 0, nil
 	}

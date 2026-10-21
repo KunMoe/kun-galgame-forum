@@ -89,8 +89,6 @@ GET    /api/v1/credit-names/:credit_name_id           cors.New → v1Headers →
 GET    /api/v1/credit-names/:credit_name_id/credits   cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/docs                                   cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/docs/:doc_slug                         cors.New → v1Headers → fiberAdapter.Handle
-GET    /api/v1/edit-proposals                         cors.New → v1Headers → fiberAdapter.Handle
-GET    /api/v1/edit-proposals/:proposal_id            cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/engines                                cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/engines/:engine_id                     cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/engines/:engine_id/works               cors.New → v1Headers → fiberAdapter.Handle
@@ -116,7 +114,6 @@ GET    /api/v1/me/conversations/:user_id/messages     cors.New → v1Headers →
 GET    /api/v1/me/conversations/:user_id/messages/:message_id cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/me/cover-votes                         cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/me/creator-status                      cors.New → v1Headers → fiberAdapter.Handle
-GET    /api/v1/me/edit-proposals                      cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/me/following-activities                cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/me/following-activities/summary        cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/me/following/:user_id                  cors.New → v1Headers → fiberAdapter.Handle
@@ -242,10 +239,6 @@ GET    /api/v1/work-suggestions                       cors.New → v1Headers →
 GET    /api/v1/works                                  cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/works/:work_id                         cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/works/:work_id/covers/:cover_id        cors.New → v1Headers → fiberAdapter.Handle
-GET    /api/v1/works/:work_id/edit-form               cors.New → v1Headers → fiberAdapter.Handle
-GET    /api/v1/works/:work_id/edit-proposals          cors.New → v1Headers → fiberAdapter.Handle
-GET    /api/v1/works/:work_id/edit-revisions          cors.New → v1Headers → fiberAdapter.Handle
-GET    /api/v1/works/:work_id/edit-revisions/diff     cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/works/:work_id/moyu-patches            cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/works/:work_id/record                  cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/works/:work_id/resources               cors.New → v1Headers → fiberAdapter.Handle
@@ -262,7 +255,6 @@ PATCH  /api/v1/admin/websites/:website_id             cors.New → v1Headers →
 PATCH  /api/v1/chat/*                                 cors.New → v1Headers → Relay.Forward
 PATCH  /api/v1/collections/:collection_id             cors.New → v1Headers → fiberAdapter.Handle
 PATCH  /api/v1/comments/:comment_id                   cors.New → v1Headers → fiberAdapter.Handle
-PATCH  /api/v1/edit-proposals/:proposal_id            cors.New → v1Headers → fiberAdapter.Handle
 PATCH  /api/v1/galgame-resources/:resource_id         cors.New → v1Headers → fiberAdapter.Handle
 PATCH  /api/v1/lotteries/:lottery_id                  cors.New → v1Headers → fiberAdapter.Handle
 PATCH  /api/v1/lotteries/:lottery_id/winners/:winner_id cors.New → v1Headers → fiberAdapter.Handle
@@ -294,7 +286,6 @@ POST   /api/v1/admin/website-tags                     cors.New → v1Headers →
 POST   /api/v1/admin/websites                         cors.New → v1Headers → fiberAdapter.Handle
 POST   /api/v1/chat/*                                 cors.New → v1Headers → Relay.Forward
 POST   /api/v1/collections                            cors.New → v1Headers → fiberAdapter.Handle
-POST   /api/v1/edit-proposals/:proposal_id/amendments cors.New → v1Headers → fiberAdapter.Handle
 POST   /api/v1/galgame-resources/:resource_id/downloads cors.New → v1Headers → fiberAdapter.Handle
 POST   /api/v1/galgame-resources/:resource_id/expiry-reports cors.New → v1Headers → fiberAdapter.Handle
 POST   /api/v1/images                                 cors.New → v1Headers → fiberAdapter.Handle
@@ -327,8 +318,6 @@ POST   /api/v1/wall-comments                          cors.New → v1Headers →
 POST   /api/v1/wall-comments/:wall_comment_id/flags   cors.New → v1Headers → fiberAdapter.Handle
 POST   /api/v1/work-edit-images                       cors.New → v1Headers → fiberAdapter.Handle
 POST   /api/v1/work-submissions                       cors.New → v1Headers → fiberAdapter.Handle
-POST   /api/v1/works/:work_id/edit-proposals          cors.New → v1Headers → fiberAdapter.Handle
-POST   /api/v1/works/:work_id/edit-reverts            cors.New → v1Headers → fiberAdapter.Handle
 POST   /api/v1/works/:work_id/resources               cors.New → v1Headers → fiberAdapter.Handle
 PUT    /api/v1/admin/doc-order                        cors.New → v1Headers → fiberAdapter.Handle
 PUT    /api/v1/admin/friend-link-order                cors.New → v1Headers → fiberAdapter.Handle
