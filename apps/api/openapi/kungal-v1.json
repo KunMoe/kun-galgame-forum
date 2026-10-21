@@ -14343,6 +14343,26 @@
             "$ref": "#/components/schemas/RatingRecommend",
             "description": "How strongly the author recommends the work."
           },
+          "release_date": {
+            "description": "The work's release date. A month- or year-precise date is the first day of that month or year. null when catalog has none or work is null.",
+            "format": "date",
+            "maxLength": 10,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "release_date_precision": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ReleaseDatePrecision"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "How much of release_date is known. null when release_date is null."
+          },
           "short_summary": {
             "description": "The author's short review, plain text. Empty string if none. Free text; never use it as a decision input.",
             "maxLength": 2000,
@@ -14401,6 +14421,8 @@
           "object",
           "id",
           "work",
+          "release_date",
+          "release_date_precision",
           "maker",
           "top_tags",
           "author",
