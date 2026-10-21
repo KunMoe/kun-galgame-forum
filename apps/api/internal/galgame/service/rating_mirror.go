@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"log/slog"
-	"strconv"
 	"sync"
 	"time"
 
@@ -33,6 +32,9 @@ type ratingMirrorStore interface {
 	HoldRating(id int, reason string) error
 	PurgeHeldRatings(before time.Time) (int64, error)
 	RatingOwner(id int) (userID, workID int, ok bool, err error)
+	ParkGoneRating(id int, workID int64) error
+	UnparkGoneRating(id int) error
+	ParkedGoneRatings() (map[int]int64, error)
 }
 
 // workFate answers repository.HeldDeleted or repository.HeldMerged when catalog
@@ -44,11 +46,6 @@ type currentRating func(ctx context.Context, userID, workID int64) (id int64, fo
 
 const (
 	heldMergedFor = 31 * 24 * time.Hour
-
-	// A gone rating whose fate catalog could not answer waits here, keyed by
-	// rating id with its work id as the value, instead of holding the cursor:
-	// one work that keeps failing would otherwise stop every rating behind it.
-	ratingGoneRetryKey = "catalog:ratings:gone:retry"
 
 	// ratingLive: NextMoe still holds the rating as the person's own, so the
 	// gone is stale and a later change brings it back. Dropping it then would
@@ -222,14 +219,16 @@ func (m *RatingMirror) apply(ctx context.Context, items []catalogclient.RatingCh
 
 // settleGone holds a gone rating NextMoe may send back and drops the rest. It
 // answers whether it dropped one. A rating catalog could not answer about is
-// parked for the next tick; only a database error stops the page.
+// parked in galgame_rating_gone_retry and retried on later ticks instead of
+// holding the cursor: one work that keeps failing would otherwise stop every
+// rating behind it. Only a database error stops the page.
 func (m *RatingMirror) settleGone(ctx context.Context, id int, goneWork int64, fates map[int64]string, live map[[2]int64]int64) (bool, error) {
 	user, work, ok, err := m.store.RatingOwner(id)
 	if err != nil {
 		return false, err
 	}
 	if !ok {
-		return false, m.unpark(ctx, id)
+		return false, m.store.UnparkGoneRating(id)
 	}
 	if goneWork <= 0 {
 		goneWork = int64(work)
@@ -237,40 +236,31 @@ func (m *RatingMirror) settleGone(ctx context.Context, id int, goneWork int64, f
 	reason, err := m.heldFor(ctx, id, int64(user), int64(work), goneWork, fates, live)
 	if err != nil {
 		slog.Warn("评分镜像: 无法确认评分为何被移除, 暂存待重试", "rating_id", id, "work_id", goneWork, "error", err)
-		return false, m.rdb.HSet(ctx, ratingGoneRetryKey, strconv.Itoa(id), strconv.FormatInt(goneWork, 10)).Err()
+		return false, m.store.ParkGoneRating(id, goneWork)
 	}
 	if reason == ratingLive {
-		return false, m.unpark(ctx, id)
+		return false, m.store.UnparkGoneRating(id)
 	}
 	if reason != "" {
 		if err := m.store.HoldRating(id, reason); err != nil {
 			return false, err
 		}
-		return false, m.unpark(ctx, id)
+		return false, m.store.UnparkGoneRating(id)
 	}
 	if err := m.store.DropRating(id); err != nil {
 		return false, err
 	}
-	return true, m.unpark(ctx, id)
-}
-
-func (m *RatingMirror) unpark(ctx context.Context, id int) error {
-	return m.rdb.HDel(ctx, ratingGoneRetryKey, strconv.Itoa(id)).Err()
+	return true, m.store.UnparkGoneRating(id)
 }
 
 func (m *RatingMirror) retryGone(ctx context.Context) {
-	parked, err := m.rdb.HGetAll(ctx, ratingGoneRetryKey).Result()
-	if err != nil || len(parked) == 0 {
+	parked, err := m.store.ParkedGoneRatings()
+	if err != nil {
+		slog.Warn("评分镜像: 读取待重试的移除评分失败", "error", err)
 		return
 	}
 	fates := map[int64]string{}
-	for rawID, rawWork := range parked {
-		id, err1 := strconv.Atoi(rawID)
-		work, err2 := strconv.ParseInt(rawWork, 10, 64)
-		if err1 != nil || err2 != nil {
-			_ = m.rdb.HDel(ctx, ratingGoneRetryKey, rawID).Err()
-			continue
-		}
+	for id, work := range parked {
 		if _, err := m.settleGone(ctx, id, work, fates, nil); err != nil {
 			slog.Warn("评分镜像: 重试被移除的评分失败", "rating_id", id, "error", err)
 		}

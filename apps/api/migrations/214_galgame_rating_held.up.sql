@@ -15,6 +15,11 @@
 -- merged (folded by a merge; undoable for 30 days, so purged after 31).
 -- A purged author's ratings are never held.
 --
+-- galgame_rating_gone_retry holds the gone ratings catalog could not say
+-- anything about yet, so the mirror's cursor can move past them. It is a table
+-- and not a Redis key because the cursor has already passed them: a lost key
+-- would leave each of them readable for good.
+--
 -- Additive: migrate before or with the deploy.
 
 CREATE TABLE IF NOT EXISTS galgame_rating_held (
@@ -28,5 +33,11 @@ CREATE TABLE IF NOT EXISTS galgame_rating_held (
 );
 
 CREATE INDEX IF NOT EXISTS idx_galgame_rating_held_merged ON galgame_rating_held (held_at) WHERE reason = 'merged';
+
+CREATE TABLE IF NOT EXISTS galgame_rating_gone_retry (
+  rating_id integer     PRIMARY KEY,
+  work_id   integer     NOT NULL,
+  parked_at timestamptz NOT NULL DEFAULT now()
+);
 
 SELECT user_purge_archive_attach();

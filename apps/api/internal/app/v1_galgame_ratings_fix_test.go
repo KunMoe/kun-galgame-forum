@@ -328,6 +328,8 @@ func (f *grFix) cleanup(t *testing.T) {
 	t.Helper()
 	f.run(t, `DELETE FROM message WHERE sender_id BETWEEN ? AND ? OR receiver_id BETWEEN ? AND ?`, grAlice, grUserMax, grAlice, grUserMax)
 	f.run(t, `DELETE FROM galgame_rating WHERE work_id BETWEEN ? AND ? OR id BETWEEN ? AND ?`, grWorkSFW, grWorkMax, grRatingAlice, grRatingMax)
+	f.run(t, `DELETE FROM galgame_rating_held WHERE id BETWEEN ? AND ?`, grRatingAlice, grRatingMax)
+	f.run(t, `DELETE FROM galgame_rating_gone_retry WHERE rating_id BETWEEN ? AND ?`, grRatingAlice, grRatingMax)
 	f.run(t, `DELETE FROM galgame WHERE id BETWEEN ? AND ?`, grWorkSFW, grWorkMax)
 }
 

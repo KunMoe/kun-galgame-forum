@@ -249,9 +249,9 @@ func runMirrorAsking(t *testing.T, f *grFix, current currentOf, items ...catalog
 		WithWorkFate(fatesOf(nil)).WithCurrentRating(current).Run()
 }
 
-func (f *grFix) parked(t *testing.T) map[string]string {
+func (f *grFix) parked(t *testing.T) map[int]int64 {
 	t.Helper()
-	got, err := f.rdb.HGetAll(context.Background(), "catalog:ratings:gone:retry").Result()
+	got, err := galgameRepo.NewRatingStore(f.db).ParkedGoneRatings()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -400,7 +400,7 @@ func TestRatingMirrorParksARatingItCannotSettleAndMovesOn(t *testing.T) {
 	if n := f.count(t, `SELECT count(*) FROM galgame_rating WHERE id = ?`, grRatingAlice); n != 1 {
 		t.Errorf("the rating went while catalog could not say what happened to its work")
 	}
-	if got := f.parked(t); len(got) != 1 || got[strconv.Itoa(grRatingAlice)] != strconv.Itoa(grWorkSFW) {
+	if got := f.parked(t); len(got) != 1 || got[grRatingAlice] != grWorkSFW {
 		t.Errorf("parked %v, want the one rating catalog could not answer about", got)
 	}
 	if n := f.count(t, `SELECT count(*) FROM galgame_rating WHERE id = ?`, grRatingGone); n != 0 {
@@ -422,10 +422,39 @@ func TestRatingMirrorParksARatingItCannotSettleAndMovesOn(t *testing.T) {
 	}
 }
 
+func TestRatingMirrorRetriesAParkedRatingAfterRedisIsLost(t *testing.T) {
+	f := newGRFix(t)
+	store := galgameRepo.NewRatingStore(f.db)
+	feed := &grFeed{pages: []*catalogclient.RatingChangePage{{NextCursor: "1", Items: []catalogclient.RatingChange{
+		{ID: int64(grRatingAlice), WorkID: grWorkSFW, Gone: true},
+	}}}}
+	down := func(context.Context, int64) (string, error) { return "", fmt.Errorf("catalog down") }
+	galgameService.NewRatingMirror(feed, store, f.rdb, []string{grForumClient}).WithWorkFate(down).Run()
+	if len(f.parked(t)) != 1 {
+		t.Fatalf("the rating catalog could not answer about was not parked")
+	}
+
+	if err := f.rdb.FlushAll(context.Background()).Err(); err != nil {
+		t.Fatal(err)
+	}
+	none := func(context.Context, int64, int64) (int64, bool, error) { return 0, false, nil }
+	galgameService.NewRatingMirror(&grFeed{}, store, f.rdb, []string{grForumClient}).
+		WithWorkFate(fatesOf(nil)).WithCurrentRating(none).Run()
+	if n := f.count(t, `SELECT count(*) FROM galgame_rating WHERE id = ?`, grRatingAlice) +
+		f.count(t, `SELECT count(*) FROM galgame_rating_held WHERE id = ?`, grRatingAlice); n != 0 {
+		t.Errorf("a rating its author deleted is still kept after Redis was lost")
+	}
+	if got := f.parked(t); len(got) != 0 {
+		t.Errorf("the settled rating is still parked: %v", got)
+	}
+}
+
 func TestRatingMirrorAsksNothingAboutARatingItNeverHad(t *testing.T) {
 	f := newGRFix(t)
 	never := grRatingRaters + 90
-	f.rdb.HSet(context.Background(), "catalog:ratings:gone:retry", strconv.Itoa(never), strconv.Itoa(grWorkSFW))
+	if err := galgameRepo.NewRatingStore(f.db).ParkGoneRating(never, grWorkSFW); err != nil {
+		t.Fatal(err)
+	}
 	feed := &grFeed{pages: []*catalogclient.RatingChangePage{{Items: []catalogclient.RatingChange{
 		{ID: int64(never), WorkID: grWorkSFW, Gone: true},
 	}}}}
@@ -544,4 +573,68 @@ func TestHeldRatingSweepDropsTheHeldRatingsOfDeletedAccounts(t *testing.T) {
 	if n := f.count(t, `SELECT count(*) FROM galgame_rating_held WHERE id = ?`, alive); n != 1 {
 		t.Errorf("the held rating of a live account went")
 	}
+}
+
+func TestHeldRatingSweepDropsWhatAnAuthorDeletedWhileTheWorkWasGone(t *testing.T) {
+	f := newGRFix(t)
+	kept := grRatingRaters
+	f.run(t, `DELETE FROM galgame_rating_held WHERE id IN (?, ?)`, grRatingAlice, kept)
+	f.run(t, `INSERT INTO galgame_rating_like (galgame_rating_id, user_id, updated) VALUES (?, ?, now()), (?, ?, now())`,
+		grRatingAlice, grBob, kept, grBob)
+	f.run(t, `UPDATE galgame_rating SET like_count = 1 WHERE id IN (?, ?)`, grRatingAlice, kept)
+	runMirror(t, f, map[int64]string{grWorkSFW: galgameRepo.HeldDeleted},
+		catalogclient.RatingChange{ID: int64(grRatingAlice), WorkID: grWorkSFW, Gone: true},
+		catalogclient.RatingChange{ID: int64(kept), WorkID: grWorkSFW, Gone: true})
+	f.assertHeld(t, grRatingAlice, galgameRepo.HeldDeleted)
+	f.assertHeld(t, kept, galgameRepo.HeldDeleted)
+
+	var fateAsked, currentAsked int
+	fate := galgameRepo.HeldDeleted
+	var fateErr error
+	sweep := galgameService.NewHeldRatingSweep(nil, galgameRepo.NewRatingStore(f.db)).WithRestoredWorks(
+		func(context.Context, int64) (string, error) { fateAsked++; return fate, fateErr },
+		func(_ context.Context, user, work int64) (int64, bool, error) {
+			currentAsked++
+			if work != grWorkSFW {
+				t.Errorf("asked about work %d", work)
+			}
+			if user == grRater {
+				return int64(kept), true, nil
+			}
+			return 0, false, nil
+		})
+	held := func() int {
+		return f.count(t, `SELECT count(*) FROM galgame_rating_held WHERE id IN (?, ?)`, grRatingAlice, kept)
+	}
+
+	f.run(t, `UPDATE galgame SET catalog_rendered = false WHERE id = ?`, grWorkSFW)
+	sweep.Run()
+	if fateAsked+currentAsked != 0 || held() != 2 {
+		t.Errorf("an unlisted work was asked about (fate %d, current %d) or lost holds (%d left)", fateAsked, currentAsked, held())
+	}
+
+	f.run(t, `UPDATE galgame SET catalog_rendered = true WHERE id = ?`, grWorkSFW)
+	sweep.Run()
+	if fateAsked != 1 || currentAsked != 0 || held() != 2 {
+		t.Errorf("a work catalog still calls deleted lost holds (%d left) or its authors were asked (%d)", held(), currentAsked)
+	}
+
+	fateAsked, fateErr = 0, fmt.Errorf("catalog down")
+	sweep.Run()
+	if fateAsked != 1 || currentAsked != 0 || held() != 2 {
+		t.Errorf("a work catalog could not answer about lost holds (%d left)", held())
+	}
+
+	fate, fateErr = "", nil
+	sweep.Run()
+	if n := f.count(t, `SELECT count(*) FROM galgame_rating_held WHERE id = ?`, grRatingAlice); n != 0 {
+		t.Errorf("a rating its author deleted while the work was deleted is still held")
+	}
+	if n := f.count(t, `SELECT count(*) FROM galgame_rating_held WHERE id = ?`, kept); n != 1 {
+		t.Errorf("a rating NextMoe still holds was dropped on restore")
+	}
+
+	runMirror(t, f, nil, catalogclient.RatingChange{ID: int64(kept), WorkID: grWorkSFW,
+		Rating: liveRating(kept, grWorkSFW, grRater, time.Date(2026, 10, 22, 8, 0, 0, 0, time.UTC))})
+	f.assertRestored(t, kept)
 }

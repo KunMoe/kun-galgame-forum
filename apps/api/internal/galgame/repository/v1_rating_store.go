@@ -289,6 +289,48 @@ func (s *RatingStore) DropHeldRatingsOf(userIDs []int) (int64, error) {
 	return res.RowsAffected, res.Error
 }
 
+func (s *RatingStore) ParkGoneRating(id int, workID int64) error {
+	return s.db.Exec(`INSERT INTO galgame_rating_gone_retry (rating_id, work_id) VALUES (?, ?)
+		ON CONFLICT (rating_id) DO UPDATE SET work_id = EXCLUDED.work_id`, id, workID).Error
+}
+
+func (s *RatingStore) UnparkGoneRating(id int) error {
+	return s.db.Exec(`DELETE FROM galgame_rating_gone_retry WHERE rating_id = ?`, id).Error
+}
+
+// ParkedGoneRatings maps each parked rating id to the work it went with.
+func (s *RatingStore) ParkedGoneRatings() (map[int]int64, error) {
+	var rows []struct {
+		RatingID int
+		WorkID   int64
+	}
+	err := s.db.Raw(`SELECT rating_id, work_id FROM galgame_rating_gone_retry ORDER BY parked_at, rating_id`).Scan(&rows).Error
+	out := make(map[int]int64, len(rows))
+	for _, r := range rows {
+		out[r.RatingID] = r.WorkID
+	}
+	return out, err
+}
+
+type HeldRatingRef struct {
+	ID, UserID, WorkID int
+}
+
+// DeletedHoldsOnListedWorks lists the ratings held for a deleted work that the
+// forum lists again, or has no row for.
+func (s *RatingStore) DeletedHoldsOnListedWorks() ([]HeldRatingRef, error) {
+	var out []HeldRatingRef
+	err := s.db.Raw(`SELECT h.id, h.user_id, h.work_id FROM galgame_rating_held h
+		LEFT JOIN galgame g ON g.id = h.work_id
+		WHERE h.reason = ? AND COALESCE(g.catalog_rendered, true)
+		ORDER BY h.work_id, h.id`, HeldDeleted).Scan(&out).Error
+	return out, err
+}
+
+func (s *RatingStore) DropDeletedHold(id int) error {
+	return s.db.Exec(`DELETE FROM galgame_rating_held WHERE id = ? AND reason = ?`, id, HeldDeleted).Error
+}
+
 // RatingOwner answers whose rating id is and of which work.
 func (s *RatingStore) RatingOwner(id int) (userID, workID int, ok bool, err error) {
 	var row struct{ UserID, WorkID int }

@@ -409,21 +409,24 @@ func New(cfg *config.Config) *App {
 	galgameContributorSync := galgameService.NewGalgameContributorSync(catalogCli, galgameContributorRepo, rdb)
 	galgameMergeSync := galgameService.NewGalgameMergeSync(gc, galgameMergeRepo, rdb)
 	galgameCatalogMirror := galgameService.NewGalgameCatalogMirror(gc, galgameLocalRepo, rdb, galgameMergeSync)
+	workFate := func(ctx context.Context, workID int64) (string, error) {
+		absence, appErr := gc.WorkAbsence(ctx, workID)
+		switch {
+		case appErr != nil:
+			return "", appErr
+		case absence.Deleted != nil:
+			return galgameRepo.HeldDeleted, nil
+		case absence.MovedTo != 0:
+			return galgameRepo.HeldMerged, nil
+		}
+		return "", nil
+	}
 	ratingMirror := galgameService.NewRatingMirror(catalogCli, galgameRepo.NewRatingStore(db), rdb,
 		append([]string{cfg.OAuth.ClientID}, cfg.Bearer.ClientIDs...)).
-		WithWorkFate(func(ctx context.Context, workID int64) (string, error) {
-			absence, appErr := gc.WorkAbsence(ctx, workID)
-			switch {
-			case appErr != nil:
-				return "", appErr
-			case absence.Deleted != nil:
-				return galgameRepo.HeldDeleted, nil
-			case absence.MovedTo != 0:
-				return galgameRepo.HeldMerged, nil
-			}
-			return "", nil
-		}).
+		WithWorkFate(workFate).
 		WithCurrentRating(catalogCli.CurrentRating)
+	heldRatingSweep := galgameService.NewHeldRatingSweep(uc, galgameRepo.NewRatingStore(db)).
+		WithRestoredWorks(workFate, catalogCli.CurrentRating)
 	galgameV1 := galgameapiv1.New(gc, moyuCli, uc, rdb, cfg.NextMoeAPI.ImageCDNBase).WithWork(db, catalogCli, storeLinks, moemoepoint.Award).WithUserPlane(trustCheck, trustScan, galgameCollectionRepo)
 
 	adminOverviewRepo := adminRepo.NewOverviewRepository(db)
@@ -536,7 +539,7 @@ func New(cfg *config.Config) *App {
 			GalgameCatalogMirrorVerify: galgameCatalogMirror.RunVerify,
 			GalgameMergeSync:           galgameMergeSync.Run,
 			RatingMirror:               ratingMirror.Run,
-			HeldRatingSweep:            galgameService.NewHeldRatingSweep(uc, galgameRepo.NewRatingStore(db)).Run,
+			HeldRatingSweep:            heldRatingSweep.Run,
 			DlsiteCampaignRefresh:      storeLinks.RefreshCampaign,
 			TopicMiniAppDeadlines:      lotteryDrawer.Run,
 			UserPurgeArchiveExpiry:     expirePurgeArchive(adminPurgeRepo),
