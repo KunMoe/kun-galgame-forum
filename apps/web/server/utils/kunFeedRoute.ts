@@ -75,8 +75,12 @@ export const siteFeedHandler = defineKunFeedRoute({
   load: loadSiteFeed
 })
 
+// Not swr, for the reason userFeedHandler gives: a work catalog deletes answers
+// 410 upstream, and with swr its last good feed would be served for good. The
+// web process holds this cache, so the API cannot evict it when the work goes.
 export const workFeedHandler = defineKunFeedRoute({
   name: 'rss-work',
+  swr: false,
   parse: (event) =>
     parseWorkFeed(getRouterParam(event, 'work') ?? '', getQuery(event)),
   load: loadWorkResourceFeed
