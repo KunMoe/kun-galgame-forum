@@ -293,6 +293,11 @@ type CatalogRelatedWork struct {
 	ReleaseDatePrecision *string `json:"release_date_precision"`
 }
 
+func (c *GalgameClient) WorkDeleted(ctx context.Context, workID int64) (bool, *errors.AppError) {
+	_, _, absence, appErr := c.catalogGetRecordFate(ctx, "/catalog/works/"+strconv.FormatInt(workID, 10), openPopulation(url.Values{}))
+	return absence.Deleted != nil, appErr
+}
+
 func (c *GalgameClient) CatalogWorkExists(ctx context.Context, workID int) (bool, *errors.AppError) {
 	_, found, _, err := c.CatalogWorkDetail(ctx, workID)
 	return found, err

@@ -211,6 +211,14 @@ func (s *RatingStore) SetGameTypes(id int, types json.RawMessage) error {
 	return s.db.Exec(`UPDATE galgame_rating SET galgame_type = ?::jsonb WHERE id = ?`, string(types), id).Error
 }
 
+// HideWork keeps a deleted work's ratings and hides them with the work: every
+// rating read leaves out a work whose local row is not rendered, and the
+// catalog mirror renders it again on restore.
+func (s *RatingStore) HideWork(workID int) error {
+	return s.db.Exec(`INSERT INTO galgame (id, updated, catalog_rendered) VALUES (?, now(), false)
+		ON CONFLICT (id) DO UPDATE SET catalog_rendered = false`, workID).Error
+}
+
 // DropRating removes a rating NextMoe deleted; its likes cascade with it.
 func (s *RatingStore) DropRating(id int) error {
 	return s.db.Exec(`DELETE FROM galgame_rating WHERE id = ?`, id).Error

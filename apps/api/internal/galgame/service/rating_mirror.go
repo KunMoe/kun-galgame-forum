@@ -28,7 +28,10 @@ type ratingFeed interface {
 type ratingMirrorStore interface {
 	MirrorRating(r model.GalgameRating) error
 	DropRating(id int) error
+	HideWork(workID int) error
 }
+
+type workDeletion func(ctx context.Context, workID int64) (bool, error)
 
 // RatingMirror keeps galgame_rating equal to NextMoe's ratings off
 // /v2/ratings/changes, on every work whether or not the forum has a local row
@@ -38,8 +41,18 @@ type RatingMirror struct {
 	store   ratingMirrorStore
 	rdb     *redis.Client
 	clients map[string]bool
+	deleted workDeletion
 
 	running sync.Mutex
+}
+
+// WithWorkDeletion lets the mirror tell a rating NextMoe deleted from one it
+// hid with its deleted work. Since infra #454 both arrive as gone: true, and
+// dropping the second takes its likes and the forum-only game types with it,
+// which the restore that sends the rating back cannot return.
+func (m *RatingMirror) WithWorkDeletion(deleted workDeletion) *RatingMirror {
+	m.deleted = deleted
+	return m
 }
 
 // NewRatingMirror takes the OAuth clients whose ratings were written through
@@ -112,7 +125,7 @@ func (m *RatingMirror) Run() {
 			break
 		}
 		seen += len(page.Items)
-		w, d, err := m.apply(page.Items)
+		w, d, err := m.apply(ctx, page.Items)
 		written += w
 		dropped += d
 		if err != nil {
@@ -135,12 +148,23 @@ func (m *RatingMirror) Run() {
 		"written", written, "dropped", dropped)
 }
 
-func (m *RatingMirror) apply(items []catalogclient.RatingChange) (written, dropped int, err error) {
+func (m *RatingMirror) apply(ctx context.Context, items []catalogclient.RatingChange) (written, dropped int, err error) {
+	deletedWork := map[int64]bool{}
 	for _, it := range items {
 		if it.ID <= 0 {
 			continue
 		}
 		if it.Gone || it.Rating == nil {
+			hide, err := m.workGone(ctx, it.WorkID, deletedWork)
+			if err != nil {
+				return written, dropped, err
+			}
+			if hide {
+				if err := m.store.HideWork(int(it.WorkID)); err != nil {
+					return written, dropped, err
+				}
+				continue
+			}
 			if err := m.store.DropRating(int(it.ID)); err != nil {
 				return written, dropped, err
 			}
@@ -157,4 +181,19 @@ func (m *RatingMirror) apply(items []catalogclient.RatingChange) (written, dropp
 		written++
 	}
 	return written, dropped, nil
+}
+
+func (m *RatingMirror) workGone(ctx context.Context, workID int64, seen map[int64]bool) (bool, error) {
+	if m.deleted == nil || workID <= 0 {
+		return false, nil
+	}
+	if gone, ok := seen[workID]; ok {
+		return gone, nil
+	}
+	gone, err := m.deleted(ctx, workID)
+	if err != nil {
+		return false, err
+	}
+	seen[workID] = gone
+	return gone, nil
 }

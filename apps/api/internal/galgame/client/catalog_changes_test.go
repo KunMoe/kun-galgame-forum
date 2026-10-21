@@ -149,3 +149,25 @@ func TestWorkFateReadsADeletedWorkAsAbsent(t *testing.T) {
 		t.Errorf("absence = %+v, want the deletion with its reason and time", absence)
 	}
 }
+
+func TestWorkDeletedReadsOnly410AsDeleted(t *testing.T) {
+	for _, tc := range []struct {
+		status int
+		body   string
+		want   bool
+	}{
+		{http.StatusGone, `{"code":"ENTITY_DELETED","deleted_reason":"other"}`, true},
+		{http.StatusNotFound, `{"code":"NOT_FOUND"}`, false},
+		{http.StatusNotFound, `{"code":"ENTITY_MERGED","current_id":"9"}`, false},
+	} {
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(tc.status)
+			_, _ = w.Write([]byte(tc.body))
+		}))
+		got, appErr := New(srv.URL, "nmk_test", "").WorkDeleted(t.Context(), 4242)
+		srv.Close()
+		if appErr != nil || got != tc.want {
+			t.Errorf("%d %s: deleted=%v err=%v, want %v", tc.status, tc.body, got, appErr, tc.want)
+		}
+	}
+}
