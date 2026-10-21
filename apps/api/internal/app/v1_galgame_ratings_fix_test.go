@@ -196,6 +196,12 @@ func newGRFix(t *testing.T) *grFix {
 	} {
 		var row client.CatalogWorkListItem
 		decodeInto(t, geRowJSON(w), &row)
+		if w.id == grWorkSFW {
+			decodeInto(t, `{"tags":[
+				{"canonical_id":21,"display_name":"Island","kind":"content","spoiler":0,"sexual":false},
+				{"canonical_id":22,"display_name":"Twist","kind":"content","spoiler":2,"sexual":false},
+				{"canonical_id":23,"display_name":"Adult","kind":"content","spoiler":0,"sexual":true}]}`, &row)
+		}
 		f.cat.rows[w.id] = row
 	}
 

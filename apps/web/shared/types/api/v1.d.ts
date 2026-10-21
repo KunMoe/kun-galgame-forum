@@ -10796,6 +10796,8 @@ export interface components {
              * @description Likes on the rating.
              */
             like_count: number;
+            /** @description The credited company a card names as the maker: developer, then circle, then brand, then publisher. null when no credited company has a name. */
+            maker: components["schemas"]["CompanyRef"] | null;
             /**
              * @description Type discriminant. Always rating.
              * @constant
@@ -10814,6 +10816,8 @@ export interface components {
             short_summary: string;
             /** @description How much the short summary gives away, as its author declared. */
             spoiler_level: components["schemas"]["SpoilerLevel"];
+            /** @description Up to five of the work's tags, in the order its page lists them, leaving out spoiler tags, and adult tags unless include_nsfw=true. Empty array when work is null, never null. */
+            top_tags: components["schemas"]["TagRef"][];
             /**
              * Format: date-time
              * @description When the rating last changed.

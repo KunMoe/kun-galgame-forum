@@ -226,6 +226,7 @@ type CatalogWorkListItem struct {
 	Covers     *catCoverSlots              `json:"covers"`
 	CoverSlots *catCoverSlots              `json:"cover_slots"`
 	Refs       []catRef                    `json:"refs"`
+	Tags       []catWorkTag                `json:"tags"`
 
 	ViaLabel *CatalogLabelVia `json:"via_label"`
 }

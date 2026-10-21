@@ -49,12 +49,7 @@ type Tag struct {
 	Ancestors        []TagNode               `json:"ancestors" doc:"Every tag above this one at any depth, nearest first, adult ones included: a reader who blocked any of them with its subtags does not see this tag's works. parent_ids on each draws every path up to a root. Empty array for a root, never null."`
 }
 
-type TagRef struct {
-	Object string         `json:"object" enum:"tag" maxLength:"3" doc:"Type discriminant. Always tag."`
-	ID     repr.DecimalID `json:"id" doc:"Tag id: the catalog tag id, which is also the id in the web's /galgame/tag/{id}."`
-	repr.CatalogName
-	IsSexual bool `json:"is_sexual" doc:"Whether the tag is adult content."`
-}
+type TagRef = workrepr.TagRef
 
 type TagNode struct {
 	Object string         `json:"object" enum:"tag" maxLength:"3" doc:"Type discriminant. Always tag."`

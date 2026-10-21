@@ -84,3 +84,10 @@ func vocabSchema(keys []string, desc string) *huma.Schema {
 	}
 	return &huma.Schema{Type: huma.TypeString, Enum: enum, MaxLength: &maxLen, Description: desc}
 }
+
+type TagRef struct {
+	Object string         `json:"object" enum:"tag" maxLength:"3" doc:"Type discriminant. Always tag."`
+	ID     repr.DecimalID `json:"id" doc:"Tag id: the catalog tag id, which is also the id in the web's /galgame/tag/{id}."`
+	repr.CatalogName
+	IsSexual bool `json:"is_sexual" doc:"Whether the tag is adult content."`
+}

@@ -35,7 +35,7 @@ export const dimsToAspectScores = (
 // The rating card on the user pages and the work page still renders the legacy
 // shape; the rating faces read v1, so they translate at the edge.
 export const ratingToCard = (
-  r: RatingSummary,
+  r: Rating | RatingSummary,
   nameOf: NameOf
 ): GalgameRatingCard => ({
   id: Number(r.id),

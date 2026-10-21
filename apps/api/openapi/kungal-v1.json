@@ -14304,6 +14304,17 @@
             "minimum": 0,
             "type": "integer"
           },
+          "maker": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CompanyRef"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The credited company a card names as the maker: developer, then circle, then brand, then publisher. null when no credited company has a name."
+          },
           "object": {
             "const": "rating",
             "description": "Type discriminant. Always rating.",
@@ -14340,6 +14351,14 @@
           "spoiler_level": {
             "$ref": "#/components/schemas/SpoilerLevel",
             "description": "How much the short summary gives away, as its author declared."
+          },
+          "top_tags": {
+            "description": "Up to five of the work's tags, in the order its page lists them, leaving out spoiler tags, and adult tags unless include_nsfw=true. Empty array when work is null, never null.",
+            "items": {
+              "$ref": "#/components/schemas/TagRef"
+            },
+            "maxItems": 5,
+            "type": "array"
           },
           "updated_at": {
             "description": "When the rating last changed.",
@@ -14382,6 +14401,8 @@
           "object",
           "id",
           "work",
+          "maker",
+          "top_tags",
           "author",
           "recommend",
           "overall",
