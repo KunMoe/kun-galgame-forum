@@ -65,7 +65,7 @@ const open = (id: number) => {
   <div v-if="hasContent && graph && layout" class="space-y-4">
     <KunHeader
       name="会社关系"
-      description="该会社所属的企业家族: 母公司、旗下品牌、更名沿革与拆分出的公司。资料来自 NextMoe 目录。"
+      description="该会社所属的企业家族: 母公司、旗下品牌、更名沿革与拆分出的公司。资料来自 鲲 Galgame 论坛。"
       scale="h3"
     >
       <template #headerEndContent>

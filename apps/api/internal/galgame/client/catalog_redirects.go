@@ -16,6 +16,7 @@ const CatalogRedirectsLimit = 100
 type CatalogRedirect struct {
 	OldID     int64
 	CurrentID int64
+	Revoked   bool
 }
 
 type CatalogRedirectPage struct {
@@ -24,10 +25,12 @@ type CatalogRedirectPage struct {
 }
 
 // CatalogRedirects reads catalog's merge feed: every id that was merged away,
-// oldest merge first, with the id that replaced it. An empty cursor starts at
-// the beginning of the whole history, so the first drain replays every merge
-// catalog has ever executed and clearing the stored cursor is how the forum's
-// redirect ledger is rebuilt.
+// with the id that replaced it, in the order the redirects last changed. A
+// redirect that is flattened, re-pointed or revoked comes round again at the
+// tail; a revoked one has its merge undone and the old id live again. An empty
+// cursor starts at the beginning of the whole history, so the first drain
+// replays every merge catalog has ever executed and clearing the stored cursor
+// is how the forum's redirect ledger is rebuilt.
 //
 // No nsfw parameter, unlike the changes feed: this reads catalog_redirect, which
 // is pure id history with no population or visibility notion attached.
@@ -57,6 +60,7 @@ func (c *GalgameClient) CatalogRedirects(ctx context.Context, cursor string, lim
 			TargetObject string `json:"target_object"`
 			OldID        string `json:"old_id"`
 			CurrentID    string `json:"current_id"`
+			Revoked      bool   `json:"revoked"`
 		} `json:"items"`
 		NextCursor string `json:"next_cursor"`
 	}
@@ -73,7 +77,7 @@ func (c *GalgameClient) CatalogRedirects(ctx context.Context, cursor string, lim
 		if it.TargetObject != "work" || errOld != nil || errCurrent != nil || oldID <= 0 || currentID <= 0 {
 			continue
 		}
-		page.Items = append(page.Items, CatalogRedirect{OldID: oldID, CurrentID: currentID})
+		page.Items = append(page.Items, CatalogRedirect{OldID: oldID, CurrentID: currentID, Revoked: it.Revoked})
 	}
 	return page, nil
 }

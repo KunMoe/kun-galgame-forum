@@ -157,7 +157,7 @@ func TestNotificationDedupKeysOnTheSubject(t *testing.T) {
 	for _, proposal := range []int64{701, 702, 701} {
 		if err := notifier.Emit(nil, msgService.Spec{
 			SenderID: sender, ReceiverID: receiver, Kind: msgService.NotifyRequested,
-			Content: "same work name", WorkID: work, Ref: msgModel.EditProposalRef(proposal, work),
+			Content: "same work name", WorkID: work, Ref: msgModel.Of(msgModel.KindEditProposal, proposal).Under(msgModel.KindWork, int64(work)),
 		}); err != nil {
 			t.Fatal(err)
 		}

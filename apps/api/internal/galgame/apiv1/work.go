@@ -35,15 +35,12 @@ func (s *Service) getWork(ctx context.Context, in *getWorkInput) (*getWorkOutput
 	if detail == nil {
 		return nil, problem.Internal(errUnconfigured)
 	}
-	d, found, movedTo, appErr := detail.CatalogWorkDetail(ctx, workID)
+	d, found, absence, appErr := detail.CatalogWorkDetail(ctx, workID)
 	if appErr != nil {
 		return nil, catalogUnavailable(appErr)
 	}
-	if movedTo != 0 {
-		return nil, mergedWork(movedTo)
-	}
 	if !found {
-		return nil, notFound()
+		return nil, absentWork(absence)
 	}
 	if s.store != nil && s.store.Ready() {
 		if err := s.store.IncrementView(workID); err != nil {

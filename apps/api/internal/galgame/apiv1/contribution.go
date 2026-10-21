@@ -13,9 +13,6 @@ import (
 	"kun-galgame-api/pkg/userclient"
 )
 
-// Must equal the forum OAuth client's oauth_clients.catalog_site binding.
-const catalogSiteKungal = "kungal"
-
 func permissionRequired() *problem.Problem {
 	return problem.New(problem.CodePermissionRequired, "The caller cannot perform this operation.")
 }

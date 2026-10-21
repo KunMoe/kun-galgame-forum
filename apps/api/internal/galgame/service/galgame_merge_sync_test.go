@@ -49,6 +49,7 @@ func (f *fakeMergeRepo) Fold(oldWorkID, newWorkID int) (repository.MergeCounts, 
 type fakeSurvivors struct {
 	rendered map[int]bool
 	movedTo  map[int]int64
+	alive    map[int]bool
 	down     bool
 }
 
@@ -56,7 +57,7 @@ func (f fakeSurvivors) WorkFate(_ context.Context, workID int64) (int64, bool, *
 	if f.down {
 		return 0, false, errors.ErrInternal("catalog down")
 	}
-	return f.movedTo[int(workID)], false, nil
+	return f.movedTo[int(workID)], f.alive[int(workID)], nil
 }
 
 func (f fakeSurvivors) MirrorByCatalogIDs(_ context.Context, ids []int64) (rendered, hidden map[int]client.CatalogMirror, appErr *errors.AppError) {
@@ -176,5 +177,45 @@ func TestRetry_FollowsARedirectCatalogRepointed(t *testing.T) {
 	}
 	if got := mr.HGet(mergeDeferredKey, "206987"); got != "226964" {
 		t.Errorf("206987 parked on %q, want 226964 when catalog names no other survivor", got)
+	}
+}
+
+func TestRetry_DropsAFoldWhoseMergeWasUndone(t *testing.T) {
+	mr := miniredis.RunT(t)
+	rdb := redis.NewClient(&redis.Options{Addr: mr.Addr(), MaxRetries: 0})
+	mr.HSet(mergeDeferredKey, "5904", "61101")
+
+	repo := newFakeMerge(5904)
+	s := &GalgameMergeSync{mergeRepo: repo, rdb: rdb, survivors: fakeSurvivors{
+		rendered: map[int]bool{61101: true},
+		alive:    map[int]bool{5904: true},
+	}}
+
+	folded, deferred := s.retryDeferred(t.Context())
+	if folded != 0 || deferred != 0 || len(repo.folds) != 0 {
+		t.Errorf("folded=%d deferred=%d folds=%v: an undone merge must not fold the revived work", folded, deferred, repo.folds)
+	}
+	if mr.Exists(mergeDeferredKey) {
+		t.Errorf("still parked: %v", mr.HGet(mergeDeferredKey, "5904"))
+	}
+}
+
+func TestApplyPage_RevokedRedirectUnparksAndNeverFolds(t *testing.T) {
+	mr := miniredis.RunT(t)
+	rdb := redis.NewClient(&redis.Options{Addr: mr.Addr(), MaxRetries: 0})
+	mr.HSet(mergeDeferredKey, "5904", "61101")
+
+	repo := newFakeMerge(5904, 7001)
+	s := &GalgameMergeSync{mergeRepo: repo, rdb: rdb, survivors: fakeSurvivors{rendered: map[int]bool{61101: true, 7002: true}}}
+
+	folded, _ := s.applyPage(t.Context(), []client.CatalogRedirect{
+		{OldID: 5904, CurrentID: 61101, Revoked: true},
+		{OldID: 7001, CurrentID: 7002},
+	})
+	if folded != 1 || len(repo.folds) != 1 || repo.folds[0] != [2]int{7001, 7002} {
+		t.Errorf("folded=%d folds=%v, want only 7001 → 7002", folded, repo.folds)
+	}
+	if mr.Exists(mergeDeferredKey) {
+		t.Errorf("a revoked merge stayed parked on %q", mr.HGet(mergeDeferredKey, "5904"))
 	}
 }

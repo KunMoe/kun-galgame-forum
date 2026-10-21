@@ -23,7 +23,7 @@ const hiddenCount = computed(() => props.credits.length - COLLAPSED_GROUPS)
   <div v-if="credits.length" class="space-y-3">
     <KunHeader
       name="制作人员"
-      description="该 Galgame 的剧本, 原画, 音乐, 声优等制作人员名单, 数据来自 NextMoe 目录的署名图谱"
+      description="该 Galgame 的剧本, 原画, 音乐, 声优等制作人员名单, 数据来自 鲲 Galgame 论坛的署名图谱"
       scale="h2"
     />
 

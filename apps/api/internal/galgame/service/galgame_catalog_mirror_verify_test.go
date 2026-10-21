@@ -78,6 +78,9 @@ func (c *catalogFake) handler(w http.ResponseWriter, r *http.Request) {
 		case strings.HasPrefix(fate, "merged:"):
 			w.WriteHeader(http.StatusNotFound)
 			_, _ = fmt.Fprintf(w, `{"code":"ENTITY_MERGED","current_id":%q}`, strings.TrimPrefix(fate, "merged:"))
+		case fate == "deleted":
+			w.WriteHeader(http.StatusGone)
+			_, _ = w.Write([]byte(`{"code":"ENTITY_DELETED","object":"work","deleted_reason":"spam_or_test","deleted_at":"2026-10-21T08:00:00Z"}`))
 		case fate == "down":
 			w.WriteHeader(http.StatusServiceUnavailable)
 			_, _ = w.Write([]byte(`{"code":"SERVICE_UNAVAILABLE"}`))
@@ -170,8 +173,8 @@ func TestMirrorVerifySettlesEveryKindOfAnswer(t *testing.T) {
 	f := newVerifyFix(t)
 	stale, hidden, gone, merged, survivor, mergedHidden, hiddenSurvivor, disagree :=
 		verifyBase+1, verifyBase+2, verifyBase+3, verifyBase+4, verifyBase+5, verifyBase+6, verifyBase+7, verifyBase+8
-	allExplicit, unanswered := verifyBase+9, verifyBase+10
-	f.seed(t, "sfw", true, stale, hidden, gone, merged, mergedHidden, disagree, allExplicit, unanswered)
+	allExplicit, unanswered, deleted := verifyBase+9, verifyBase+10, verifyBase+11
+	f.seed(t, "sfw", true, stale, hidden, gone, merged, mergedHidden, disagree, allExplicit, unanswered, deleted)
 	f.fake.rated[stale], f.fake.limits[stale] = "r18", "nsfw"
 	f.fake.rated[allExplicit], f.fake.limits[allExplicit] = "all_ages", "nsfw"
 	f.fake.rated[unanswered] = "all_ages"
@@ -181,8 +184,9 @@ func TestMirrorVerifySettlesEveryKindOfAnswer(t *testing.T) {
 	f.fake.fates[mergedHidden] = fmt.Sprintf("merged:%d", hiddenSurvivor)
 	f.fake.hidden[hiddenSurvivor] = true
 	f.fake.fates[disagree] = "down"
+	f.fake.fates[deleted] = "deleted"
 
-	f.mirror.verify(t.Context(), []int{stale, hidden, gone, merged, mergedHidden, disagree, allExplicit, unanswered})
+	f.mirror.verify(t.Context(), []int{stale, hidden, gone, merged, mergedHidden, disagree, allExplicit, unanswered, deleted})
 
 	if s := f.state(t, stale); !s.Rendered || !s.Checked || s.Limit == nil || *s.Limit != "nsfw" {
 		t.Errorf("an unclaimed r18 row the mirror wrote sfw must now read nsfw: %+v", s)
@@ -196,7 +200,7 @@ func TestMirrorVerifySettlesEveryKindOfAnswer(t *testing.T) {
 	if s := f.state(t, hidden); s.Limit == nil || *s.Limit != "nsfw" {
 		t.Errorf("a hidden row still takes catalog's verdict: %+v", s)
 	}
-	for name, id := range map[string]int{"hidden claim": hidden, "not found": gone, "merged": merged, "merged into a hidden survivor": mergedHidden} {
+	for name, id := range map[string]int{"hidden claim": hidden, "not found": gone, "merged": merged, "merged into a hidden survivor": mergedHidden, "deleted": deleted} {
 		if s := f.state(t, id); s.Rendered || !s.Checked {
 			t.Errorf("%s: want unlisted and checked, got %+v", name, s)
 		}

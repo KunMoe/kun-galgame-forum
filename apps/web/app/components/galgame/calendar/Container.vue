@@ -195,7 +195,7 @@ const goNextYear = () => {
   <div class="flex flex-col gap-4">
     <KunHeader
       name="Galgame 发售月历"
-      description="按发售月份浏览即将与已发售的 Galgame。数据来自 Galgame 资料库, 月份边界按日本时间 (JST) 计。打开任意作品即可发布资源。"
+      description="按发售月份浏览即将与已发售的 Galgame。数据来自 鲲 Galgame 论坛, 月份边界按日本时间 (JST) 计。打开任意作品即可发布资源。"
     />
 
     <KunTab :items="tabs" v-model="view" variant="bordered" />

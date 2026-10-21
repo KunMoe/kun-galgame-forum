@@ -166,12 +166,17 @@ func TestV1GetWorkCoverSexual(t *testing.T) {
 	}
 }
 
-func TestV1GetWorkMergedAndMissing(t *testing.T) {
+func TestV1GetWorkMergedDeletedAndMissing(t *testing.T) {
 	f := newWorkFix(t)
 	resp, body := f.wk(t, http.MethodGet, g4WorkPath(g4WorkMerged), "/works/{work_id}", "", nil)
 	wantCode(t, resp, body, http.StatusNotFound, problem.CodeEntityMerged)
 	if body["object"] != "work" || strID(body["current_id"]) != idStr(g4WorkLive) {
 		t.Errorf("merged %+v", body)
+	}
+	resp, body = f.wk(t, http.MethodGet, g4WorkPath(g4WorkDeleted), "/works/{work_id}", "", nil)
+	wantCode(t, resp, body, http.StatusGone, problem.CodeEntityDeleted)
+	if body["object"] != "work" || body["deleted_reason"] != "spam_or_test" || body["deleted_at"] != "2026-10-21T08:30:00Z" {
+		t.Errorf("deleted %+v", body)
 	}
 	resp, body = f.wk(t, http.MethodGet, g4WorkPath(g4WorkUnknown), "/works/{work_id}", "", nil)
 	wantCode(t, resp, body, http.StatusNotFound, problem.CodeNotFound)

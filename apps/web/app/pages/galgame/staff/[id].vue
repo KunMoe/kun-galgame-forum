@@ -234,7 +234,7 @@ if (staff) {
           </div>
 
           <p class="text-default-500 text-sm">
-            资料来自 NextMoe 目录的署名图谱。本页是一个「署名名义」而非人物档案,
+            资料来自 鲲 Galgame 论坛的署名图谱。本页是一个「署名名义」而非人物档案,
             同一位创作者可能以多个名义署名。默认仅显示 SFW 的 Galgame, 查看 NSFW
             Galgame 请在设置面板打开 NSFW 开关。如果有数据错误请
             <KunLink to="/doc/contact"> 联系我们 </KunLink>。

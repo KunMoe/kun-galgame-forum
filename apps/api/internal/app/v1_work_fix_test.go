@@ -21,6 +21,7 @@ const (
 	g4WorkNoLocal  = 944000004
 	g4WorkNoOwner  = 944000005
 	g4WorkOwner    = 944000006
+	g4WorkDeleted  = 944000007
 	g4WorkUnknown  = 944000099
 	g4UserGoneA    = 930005101
 	g4UserGoneB    = 930005102
@@ -248,6 +249,9 @@ func newWorkCatalog(t *testing.T) *fakeCatalog {
 		rows:       map[int]client.CatalogWorkListItem{},
 		details:    map[int]*client.CatalogWorkDetail{},
 		movedWorks: map[int]int64{g4WorkMerged: g4WorkLive},
+		deletedWorks: map[int]client.Deletion{
+			g4WorkDeleted: {Reason: "spam_or_test", At: time.Date(2026, 10, 21, 8, 30, 0, 0, time.UTC)},
+		},
 		works: []geWork{
 			{id: g4WorkLive, name: "LiveWork", limit: "sfw", rating: "all_ages"},
 			{id: g4WorkNoLocal, name: "GhostWork", limit: "sfw", rating: "all_ages"},

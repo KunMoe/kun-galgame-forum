@@ -2,6 +2,11 @@
 import type { VideoGame, WithContext, Person, BreadcrumbList } from 'schema-dts'
 import type { Work } from '#shared/utils/api/schemas'
 import { mergedInto } from '#shared/utils/api/merged'
+import {
+  deletionReasonLabel,
+  entityDeletion,
+  type EntityDeletion
+} from '#shared/utils/api/deleted'
 import { problemMessage } from '#shared/utils/api/message'
 import {
   catalogVocabularyName,
@@ -21,6 +26,18 @@ const namesOf = useCatalogName()
 const workId = computed(() => String((route.params as { id: string }).id))
 
 let movedTo: number | null = null
+const deletion = useState<EntityDeletion | null>(
+  `work-deletion:${workId.value}`,
+  () => null
+)
+const deletionText = computed(() => {
+  const d = deletion.value
+  if (!d) {
+    return ''
+  }
+  const when = d.at ? ` (${d.at.slice(0, 10)})` : ''
+  return `这部作品已被删除: ${deletionReasonLabel(d.reason)}${when}`
+})
 const { data, problem } = await useApi<Work>(
   () => `work:${workId.value}:${stanceKey.value}`,
   async (api, { signal }) => {
@@ -32,6 +49,7 @@ const { data, problem } = await useApi<Work>(
       signal
     })
     movedTo = mergedInto(res.error)
+    deletion.value = entityDeletion(res.error)
     return res
   }
 )
@@ -41,6 +59,10 @@ if (movedTo) {
     redirectCode: 301,
     replace: true
   })
+} else if (deletion.value) {
+  if (import.meta.server) {
+    setResponseStatus(useRequestEvent()!, 410)
+  }
 } else if (problem.value?.status === 404) {
   throw createError({
     statusCode: 404,
@@ -231,6 +253,8 @@ if (galgame) {
 
       <KunNsfwGate v-else noun="Galgame" @reveal="revealed = true" />
     </div>
+
+    <KunNull v-else-if="deletion" :description="deletionText" />
 
     <KunNull v-else-if="problem" :description="problemMessage(problem)" />
 

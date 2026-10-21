@@ -9,19 +9,9 @@ import (
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
-	"net/url"
 	"strings"
 	"testing"
 )
-
-func parseQuery(t *testing.T, raw string) url.Values {
-	t.Helper()
-	q, err := url.ParseQuery(raw)
-	if err != nil {
-		t.Fatalf("query %q: %v", raw, err)
-	}
-	return q
-}
 
 func TestEditSnapshotUser_TravelsAsTheUser(t *testing.T) {
 	srv, got := recordingServer(t, 0,
@@ -42,95 +32,6 @@ func TestEditSnapshotUser_TravelsAsTheUser(t *testing.T) {
 	}
 	if values["catalog.work.name_zh_cn"] != "现值" {
 		t.Fatalf("values decoded wrong: %v", values)
-	}
-}
-
-func TestListEditProposalsUserPage_MineIsTheToken(t *testing.T) {
-	srv, got := recordingServer(t, 0, `{"code":0,"message":"ok","data":{"items":[`+
-		`{"id":7,"entity_type":"catalog.work","entity_id":1000,"site":"kungal","status":"open","proposer_uid":9,"patch":{}}`+
-		`],"total":1}}`)
-
-	page, err := userClient(srv.URL).ListEditProposalsUserPage(context.Background(), "user-jwt",
-		UserEditProposalFilter{EntityType: "catalog.work", EntityID: 1000, Status: "open", Limit: 20, Mine: true})
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	items := page.Items
-	if got.method != http.MethodGet || got.path != "/v2/me/proposals" {
-		t.Fatalf("list hit %s %s", got.method, got.path)
-	}
-	if got.auth != "Bearer user-jwt" {
-		t.Fatalf("auth = %q, want the user's bearer", got.auth)
-	}
-	q := parseQuery(t, got.query)
-	if q.Has("mine") {
-		t.Fatalf("mine is the path, not a query flag: %q", got.query)
-	}
-	if q.Has("proposer_uid") || q.Has("site") {
-		t.Fatalf("the user plane names neither a proposer nor a site: %q", got.query)
-	}
-	if q.Get("entity_id") != "1000" || q.Get("state") != "open" || q.Get("limit") != "20" {
-		t.Fatalf("filter lost on the wire: %q", got.query)
-	}
-	if len(items) != 1 || items[0].ID != 7 {
-		t.Fatalf("items decoded wrong: %+v", items)
-	}
-}
-
-func TestListEditProposalsUserPage_V2OmitsPatchAndCarriesTimes(t *testing.T) {
-	srv, _ := recordingServer(t, 0, `{"object":"list","items":[{`+
-		`"id":"1064","state":"merged","target_object":"work","entity_id":"17",`+
-		`"proposer_uid":"2","site":"kungal","created_at":"2026-08-15T11:35:34Z"`+
-		`}]}`)
-
-	page, err := userClient(srv.URL).ListEditProposalsUserPage(context.Background(), "user-jwt",
-		UserEditProposalFilter{Mine: true})
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	items := page.Items
-	if len(items) != 1 {
-		t.Fatalf("items decoded wrong: %+v", items)
-	}
-	it := items[0]
-	if it.Patch == nil {
-		t.Fatal("omitted patch must decode to an empty map")
-	}
-	if it.Amendments == nil {
-		t.Fatal("omitted amendments must decode to an empty slice")
-	}
-	if it.CreatedAt.UTC().Format("2006-01-02") != "2026-08-15" {
-		t.Fatalf("created_at = %v, want 2026-08-15", it.CreatedAt)
-	}
-	if it.Status != "merged" || it.ID != 1064 || it.EntityType != "catalog.work" {
-		t.Fatalf("decoded wrong: %+v", it)
-	}
-}
-
-func TestListEditProposalsUserPage_QueueOmitsMine(t *testing.T) {
-	srv, got := recordingServer(t, 0, `{"code":0,"message":"ok","data":{"items":[],"total":0}}`)
-
-	if _, err := userClient(srv.URL).ListEditProposalsUserPage(context.Background(), "mod-jwt",
-		UserEditProposalFilter{EntityType: "catalog.work", Status: "open"}); err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if parseQuery(t, got.query).Has("mine") {
-		t.Fatalf("the queue read must not carry mine at all: %q", got.query)
-	}
-}
-
-func TestListEditProposalsUserPage_QueueDenialStaysADenial(t *testing.T) {
-	srv, _ := recordingServer(t, http.StatusForbidden,
-		`{"code":233,"message":"permission denied: catalog.edit.review"}`)
-
-	_, err := userClient(srv.URL).ListEditProposalsUserPage(context.Background(), "user-jwt",
-		UserEditProposalFilter{EntityType: "catalog.work"})
-	if errors.Is(err, ErrInsufficientScope) {
-		t.Fatal("a permission denial must not be reported as a scope denial")
-	}
-	var apiErr *UserAPIError
-	if !errors.As(err, &apiErr) || apiErr.Status != http.StatusForbidden {
-		t.Fatalf("queue denial = %v, want a 403 UserAPIError", err)
 	}
 }
 

@@ -87,7 +87,7 @@ const LEGEND = [
         <div class="min-w-0">
           <p class="truncate font-medium">{{ selected.name }}</p>
           <p v-if="selected.work_count > 0" class="text-default-400 text-xs">
-            {{ `目录收录 ${selected.work_count} 部` }}
+            {{ `收录 ${selected.work_count} 部` }}
           </p>
         </div>
       </div>

@@ -13,6 +13,7 @@ type WorkRevisionFeedItem struct {
 	ActorUID      int64     `json:"actor_uid"`
 	AmenderUID    *int64    `json:"amender_uid"`
 	Site          string    `json:"site"`
+	OriginSite    string    `json:"origin_site"`
 	ProductWorkID *int64    `json:"product_work_id"`
 	CreatedAt     time.Time `json:"created_at"`
 }
@@ -25,15 +26,15 @@ func (c *Client) WorkRevisionsAfter(
 	ctx context.Context,
 	after int64,
 	limit int,
-	site string,
+	originSite string,
 ) (*WorkRevisionFeedPage, error) {
 	q := url.Values{
 		"sort":   {"recorded_asc"},
 		"object": {"work"},
 		"limit":  {strconv.Itoa(clampV2Limit(limit))},
 	}
-	if site != "" {
-		q.Set("site", site)
+	if originSite != "" {
+		q.Set("origin_site", originSite)
 	}
 	if cur := encodeWatermark(after); cur != "" {
 		q.Set("cursor", cur)
@@ -48,7 +49,7 @@ func (c *Client) WorkRevisionsAfter(
 		item := WorkRevisionFeedItem{
 			ID: parseFlexID(it.ID), WorkID: parseFlexID(it.EntityID),
 			ActorUID: parseFlexID(it.ActorUID),
-			Site:     it.Site, CreatedAt: it.time(),
+			Site:     it.Site, OriginSite: it.OriginSite, CreatedAt: it.time(),
 		}
 		if n := parseFlexID(it.AmenderUID); n != 0 {
 			item.AmenderUID = &n

@@ -144,28 +144,41 @@ func (c *GalgameClient) CatalogGet(ctx context.Context, path string, query url.V
 // catalogGetRecord is CatalogGet for the detail faces, which have two outcomes
 // beyond a body: the entity is absent, or it was merged away and the caller has
 // to redirect the BROWSER to the survivor rather than serve the same record
-// under two URLs.
+// under two URLs. A deleted entity reads as absent here; catalogGetRecordFate
+// tells the two apart.
 func (c *GalgameClient) catalogGetRecord(
 	ctx context.Context, path string, query url.Values,
 ) (data json.RawMessage, found bool, movedTo int64, appErr *errors.AppError) {
+	data, found, absence, appErr := c.catalogGetRecordFate(ctx, path, query)
+	return data, found, absence.MovedTo, appErr
+}
+
+func (c *GalgameClient) catalogGetRecordFate(
+	ctx context.Context, path string, query url.Values,
+) (data json.RawMessage, found bool, absence Absence, appErr *errors.AppError) {
 	status, raw, appErr := c.doV2(ctx, http.MethodGet, path, query, nil)
 	if appErr != nil {
-		return nil, false, 0, appErr
+		return nil, false, absence, appErr
 	}
 	if status >= 200 && status < 300 {
-		return rewriteBanners(raw, c.imageCDNBase), true, 0, nil
+		return rewriteBanners(raw, c.imageCDNBase), true, absence, nil
 	}
 	// Merged BEFORE absent, and the order is load-bearing: v1 announced a merge
 	// with 301 + Location, v2 announces it with a 404 whose code is ENTITY_MERGED.
 	// Checking absence first swallows every merge into "no such entity" and the
 	// browser stops being redirected to the survivor.
 	if id, ok := v2MergedInto(status, raw); ok {
-		return nil, false, id, nil
+		absence.MovedTo = id
+		return nil, false, absence, nil
+	}
+	if d, ok := v2Deleted(status, raw); ok {
+		absence.Deleted = &d
+		return nil, false, absence, nil
 	}
 	if status == http.StatusNotFound {
-		return nil, false, 0, nil
+		return nil, false, absence, nil
 	}
-	return nil, false, 0, c.v2Error(status, raw)
+	return nil, false, absence, c.v2Error(status, raw)
 }
 
 func BriefName(b *GalgameBrief) string {

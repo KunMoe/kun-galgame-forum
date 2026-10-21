@@ -95,8 +95,8 @@ func (c *GalgameClient) MirrorByCatalogIDs(ctx context.Context, ids []int64) (re
 }
 
 // WorkFate asks the detail face about a work the batch face did not return.
-// movedTo is the survivor of a merge. found means the detail face still serves
-// the work, which is the two faces disagreeing, not an answer about the work.
+// movedTo is the survivor of a merge; a deleted work answers like an absent one.
+// found means the detail face still serves the work.
 func (c *GalgameClient) WorkFate(ctx context.Context, workID int64) (movedTo int64, found bool, appErr *errors.AppError) {
 	_, found, movedTo, appErr = c.catalogGetRecord(ctx, "/catalog/works/"+strconv.FormatInt(workID, 10), openPopulation(url.Values{}))
 	return movedTo, found, appErr

@@ -70,7 +70,7 @@ const voiceName = (voice: WorkCharacter['voices'][number]) => nameOf(voice).name
     <div class="flex flex-wrap items-end justify-between gap-2">
       <KunHeader
         name="登场角色"
-        description="该 Galgame 的登场角色与配音演员, 数据来自 NextMoe 目录的角色图谱"
+        description="该 Galgame 的登场角色与配音演员, 数据来自 鲲 Galgame 论坛的角色图谱"
         scale="h2"
       />
 

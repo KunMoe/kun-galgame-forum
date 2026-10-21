@@ -135,6 +135,10 @@ func (s *GalgameMergeSync) applyPage(ctx context.Context, items []client.Catalog
 		if it.OldID > math.MaxInt32 {
 			continue
 		}
+		if it.Revoked {
+			s.unpark(ctx, int(it.OldID))
+			continue
+		}
 		if _, seen := survivorWork[int(it.OldID)]; !seen {
 			survivorWork[int(it.OldID)] = it.CurrentID
 		}
@@ -165,17 +169,22 @@ func (s *GalgameMergeSync) retryDeferred(ctx context.Context) (folded, deferred 
 	return s.fold(ctx, survivorWork)
 }
 
-// Catalog repoints a redirect in place when it unmerges a work or flattens a
-// chain, and the feed pages on merged_at, so the cursor never brings the new
-// survivor down. 212729 was parked on 214652, a novel catalog had merged the
-// game into by title, and its unmerge moves only the redirect.
+// A parked fold names the survivor as it stood when it was parked. Catalog can
+// re-point the redirect since (212729 was parked on 214652, a novel catalog had
+// merged the game into by title, and its unmerge moved only the redirect), or
+// undo the merge, which brings the old work back under its own id.
 func (s *GalgameMergeSync) refreshSurvivors(ctx context.Context, survivorWork map[int]int64) {
 	if s.survivors == nil {
 		return
 	}
 	for oldID := range survivorWork {
-		movedTo, _, appErr := s.survivors.WorkFate(ctx, int64(oldID))
-		if appErr == nil && movedTo > 0 {
+		movedTo, found, appErr := s.survivors.WorkFate(ctx, int64(oldID))
+		switch {
+		case appErr != nil:
+		case found:
+			delete(survivorWork, oldID)
+			s.unpark(ctx, oldID)
+		case movedTo > 0:
 			survivorWork[oldID] = movedTo
 		}
 	}

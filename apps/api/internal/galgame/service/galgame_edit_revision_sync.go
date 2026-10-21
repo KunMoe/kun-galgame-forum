@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"encoding/json"
 	"log/slog"
 	"time"
 
@@ -129,11 +130,19 @@ func (s *GalgameEditRevisionSync) upsert(rev *catalogclient.EditRevisionFeedItem
 	if workID == 0 {
 		return nil
 	}
+	fields := rev.ChangedFields
+	if fields == nil {
+		fields = []string{}
+	}
+	changed, err := json.Marshal(fields)
+	if err != nil {
+		return err
+	}
 	return s.db.Exec(`
-		INSERT INTO galgame_activity (edit_revision_id, wiki_revision_number, work_id, user_id, type, created)
-		VALUES (?, ?, ?, ?, 'GALGAME_EDIT', ?)
+		INSERT INTO galgame_activity (edit_revision_id, wiki_revision_number, work_id, user_id, type, created, edit_changed_fields)
+		VALUES (?, ?, ?, ?, 'GALGAME_EDIT', ?, ?::jsonb)
 		ON CONFLICT (edit_revision_id) DO NOTHING
-	`, rev.ID, rev.Seq, workID, rev.ActorUID, rev.CreatedAt).Error
+	`, rev.ID, rev.Seq, workID, rev.ActorUID, rev.CreatedAt, string(changed)).Error
 }
 
 func (s *GalgameEditRevisionSync) readCursor(ctx context.Context) (int64, bool, error) {

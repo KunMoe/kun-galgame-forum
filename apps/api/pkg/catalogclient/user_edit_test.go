@@ -81,30 +81,6 @@ func TestCreateMyProposal_TravelsAsTheUser(t *testing.T) {
 	}
 }
 
-func TestGetEditSchemaUser(t *testing.T) {
-	srv, got := recordingServer(t, 0, `{"code":0,"message":"ok","data":{"entity_type":"catalog.work",`+
-		`"fields":[{"key":"catalog.work.name_zh_cn","kind":"text","diff_hint":"inline",`+
-		`"locked":false,"can_propose":true,"can_review":false,"would_automerge":false}]}}`)
-
-	schema, err := userClient(srv.URL).GetEditSchemaUser(context.Background(), "user-jwt", "catalog.work", 1000)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if got.method != http.MethodGet || got.path != "/v2/catalog/schemas/work" {
-		t.Fatalf("schema hit %s %s", got.method, got.path)
-	}
-	if got.query != "" && got.query != "entity_id=1000" {
-		t.Fatalf("schema query = %q", got.query)
-	}
-	if got.auth != "Bearer user-jwt" {
-		t.Fatalf("auth = %q, want the user's bearer", got.auth)
-	}
-	if len(schema.Fields) != 1 || schema.Fields[0].Key != "catalog.work.name_zh_cn" ||
-		!schema.Fields[0].CanPropose {
-		t.Fatalf("projection decoded wrong: %+v", schema)
-	}
-}
-
 func TestUserEditErrorMapping(t *testing.T) {
 	cases := []struct {
 		name   string
@@ -165,10 +141,11 @@ func TestUserEditWithoutTokenNeverCalls(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) { called = true }))
 	defer srv.Close()
 	c := userClient(srv.URL)
-	if _, _, err := c.WithdrawMyProposal(context.Background(), "", 7, ""); !errors.Is(err, ErrUnauthorized) {
+	if _, _, err := c.CreateMyProposal(context.Background(), "",
+		UserEditCreateRequest{EntityType: "catalog.work", EntityID: 1000}, ""); !errors.Is(err, ErrUnauthorized) {
 		t.Fatalf("err = %v, want ErrUnauthorized", err)
 	}
-	if _, err := c.GetEditSchemaUser(context.Background(), "", "catalog.work", 1000); !errors.Is(err, ErrUnauthorized) {
+	if _, err := c.EditSnapshotUser(context.Background(), "", "catalog.work", 1000); !errors.Is(err, ErrUnauthorized) {
 		t.Fatalf("err = %v, want ErrUnauthorized", err)
 	}
 	if called {
@@ -182,32 +159,19 @@ func TestUserEditUnconfigured(t *testing.T) {
 		UserEditCreateRequest{EntityType: "catalog.work", EntityID: 1}, ""); !errors.Is(err, ErrNotConfigured) {
 		t.Fatalf("err = %v, want ErrNotConfigured", err)
 	}
-	if _, err := c.GetEditSchemaUser(context.Background(), "user-jwt", "catalog.work", 1); !errors.Is(err, ErrNotConfigured) {
+	if _, err := c.EditSnapshotUser(context.Background(), "user-jwt", "catalog.work", 1); !errors.Is(err, ErrNotConfigured) {
 		t.Fatalf("err = %v, want ErrNotConfigured", err)
 	}
 }
 
 func TestUserEditAdjudicationErrorMapping(t *testing.T) {
 	lanes := map[string]func(c *Client) error{
-		"amend": func(c *Client) error {
-			_, _, err := c.AmendMyProposal(context.Background(), "user-jwt", 7,
-				map[string]any{"catalog.work.name_zh_cn": "x"}, nil, "", "", "")
-			return err
-		},
 		"merge": func(c *Client) error {
 			_, err := c.DecideProposal(context.Background(), "user-jwt", 7, "merge", "", "")
 			return err
 		},
 		"decline": func(c *Client) error {
 			_, err := c.DecideProposal(context.Background(), "user-jwt", 7, "decline", "no", "")
-			return err
-		},
-		"revert": func(c *Client) error {
-			_, _, err := c.RevertToRevision(context.Background(), "user-jwt", 101, "", "")
-			return err
-		},
-		"detail": func(c *Client) error {
-			_, _, err := c.GetModerationProposal(context.Background(), "user-jwt", 7)
 			return err
 		},
 	}
@@ -257,14 +221,9 @@ func TestUserEditAdjudicationWithoutTokenNeverCalls(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) { called = true }))
 	defer srv.Close()
 	c := userClient(srv.URL)
-	_, _, amend := c.AmendMyProposal(context.Background(), "", 7, map[string]any{"k": "v"}, nil, "", "", "")
 	_, merge := c.DecideProposal(context.Background(), "", 7, "merge", "", "")
 	_, decline := c.DecideProposal(context.Background(), "", 7, "decline", "x", "")
-	_, _, revert := c.RevertToRevision(context.Background(), "", 2, "", "")
-	_, _, detail := c.GetModerationProposal(context.Background(), "", 7)
-	for name, err := range map[string]error{
-		"amend": amend, "merge": merge, "decline": decline, "revert": revert, "detail": detail,
-	} {
+	for name, err := range map[string]error{"merge": merge, "decline": decline} {
 		if !errors.Is(err, ErrUnauthorized) {
 			t.Fatalf("%s: err = %v, want ErrUnauthorized", name, err)
 		}
@@ -278,42 +237,6 @@ func TestUserEditAdjudicationUnconfigured(t *testing.T) {
 	c := New(Config{})
 	if _, err := c.DecideProposal(context.Background(), "user-jwt", 7, "merge", "", ""); !errors.Is(err, ErrNotConfigured) {
 		t.Fatalf("err = %v, want ErrNotConfigured", err)
-	}
-	if _, _, err := c.RevertToRevision(context.Background(), "user-jwt", 2, "", ""); !errors.Is(err, ErrNotConfigured) {
-		t.Fatalf("err = %v, want ErrNotConfigured", err)
-	}
-}
-
-// The schema face carries the value half — how big a list may be, which
-// vocabulary an enum draws from, how that vocabulary is encoded on the wire.
-// Dropping it is invisible from the API and fatal in the browser: an enum with
-// no options renders read-only, which is how the edit page lost whole tabs.
-func TestGetEditSchemaUserKeepsTheValueFace(t *testing.T) {
-	srv, _ := recordingServer(t, 0, `{"object":"object_schema","entity_type":"catalog.work","fields":[`+
-		`{"key":"catalog.work.olang","field_type":"enum","diff_hint":"inline",`+
-		`"vocabulary":"olang","encoding":"token","base":0,"nullable":false},`+
-		`{"key":"catalog.work.titles","field_type":"list","diff_hint":"items",`+
-		`"max_elements":100,"max_suppressed":200,"element":{"type":"object","members":[`+
-		`{"key":"title","type":"text"},{"key":"kind","type":"int","vocabulary":"title_kind"}]}}]}`)
-
-	schema, err := userClient(srv.URL).GetEditSchemaUser(context.Background(), "user-jwt", "catalog.work", 1000)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if len(schema.Fields) != 2 {
-		t.Fatalf("fields = %d, want 2", len(schema.Fields))
-	}
-	olang := schema.Fields[0]
-	if olang.Vocabulary != "olang" || olang.Encoding != "token" {
-		t.Fatalf("olang lost its vocabulary: %+v", olang)
-	}
-	titles := schema.Fields[1]
-	if titles.MaxElements != 100 || titles.MaxSuppressed != 200 {
-		t.Fatalf("titles lost its caps: %+v", titles)
-	}
-	if titles.Element == nil || len(titles.Element.Members) != 2 ||
-		titles.Element.Members[1].Vocabulary != "title_kind" {
-		t.Fatalf("titles lost its element shape: %+v", titles.Element)
 	}
 }
 

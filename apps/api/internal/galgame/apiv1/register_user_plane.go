@@ -21,6 +21,7 @@ func (s *Service) registerUserPlane(api huma.API) {
 		Responses: problemResponses(map[int]string{
 			401: "INVALID_CREDENTIAL for a bad Bearer.",
 			404: "NOT_FOUND when the work or cover does not exist or is hidden, or the cover does not belong to the work; ENTITY_MERGED when the work was merged.",
+			410: "ENTITY_DELETED when the work was deleted.",
 			503: "SERVICE_UNAVAILABLE when the catalog cannot be reached.",
 		}),
 	}), s.getWorkCover)
@@ -36,6 +37,7 @@ func (s *Service) registerUserPlane(api huma.API) {
 		Responses: problemResponses(map[int]string{
 			403: "SCOPE_REQUIRED without catalog:edit; ACCOUNT_BANNED.",
 			404: "NOT_FOUND when the work or cover does not exist or is hidden, or the cover does not belong to the work.",
+			410: "ENTITY_DELETED when the work was deleted.",
 			503: "SERVICE_UNAVAILABLE when the catalog or the vote store cannot be reached.",
 		}),
 	}), s.putWorkCoverVote)
@@ -51,6 +53,7 @@ func (s *Service) registerUserPlane(api huma.API) {
 		Responses: problemResponses(map[int]string{
 			403: "SCOPE_REQUIRED without catalog:edit; ACCOUNT_BANNED.",
 			404: "NOT_FOUND when the work or cover does not exist or is hidden, or the cover does not belong to the work.",
+			410: "ENTITY_DELETED when the work was deleted.",
 			503: "SERVICE_UNAVAILABLE when the catalog or the vote store cannot be reached.",
 		}),
 	}), s.deleteWorkCoverVote)

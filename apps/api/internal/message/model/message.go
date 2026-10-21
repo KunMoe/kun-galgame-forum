@@ -96,10 +96,6 @@ func PollRef(pollID, topicID int) Ref {
 	return Of(KindPoll, int64(pollID)).Under(KindTopic, int64(topicID))
 }
 
-func EditProposalRef(proposalID int64, workID int) Ref {
-	return Of(KindEditProposal, proposalID).Under(KindWork, int64(workID))
-}
-
 func CommunityPostRef(postID int64, wall Ref) Ref {
 	return Of(KindCommunityPost, postID).Under(wall.SubjectKind, wall.SubjectID)
 }

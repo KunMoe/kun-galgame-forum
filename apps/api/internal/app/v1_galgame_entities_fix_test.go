@@ -136,46 +136,47 @@ type geMember struct {
 // fakeCatalog answers entityapiv1.Catalog from in-memory fixtures decoded from
 // JSON, because the client's wire types carry unexported fields.
 type fakeCatalog struct {
-	sfwHidden  map[int]bool
-	rowsGate   chan struct{}
-	rowsIn     chan struct{}
-	mu         sync.Mutex
-	fail       atomic.Bool
-	throttle   atomic.Bool
-	calls      atomic.Int32
-	rows       map[int]client.CatalogWorkListItem
-	details    map[int]*client.CatalogWorkDetail
-	movedWorks map[int]int64
-	traits     []client.CatalogTrait
-	charRows   []client.CatalogCharacterRow
-	works      []geWork
-	taxonomy   map[string][]client.CatalogTaxonomyItem
-	hits       map[string][]client.CatalogEntityHit
-	tags       map[string]*client.CatalogTagDetail
-	subtrees   map[string][]client.CatalogTagNode
-	labels     map[string]*client.CatalogLabelDetail
-	moved      map[string]int64
-	engines    map[string]*client.CatalogEngineDetail
-	series     map[string]*client.CatalogSeriesDetail
-	graphs     map[string]*client.CatalogLabelRelationGraph
-	wiki       map[int]int64
-	names      map[int64]*client.CatalogName
-	chars      map[int64]*client.CatalogCharacter
-	members    map[string][]int
-	rollup     map[string][]geMember
-	seriesMem  map[int][]int
-	gotLimits  []string
-	searched   []url.Values
-	omitIDs    map[int]bool
-	calItems   map[string][]client.CatalogWorkListItem
-	calToday   map[string]string
-	calMin     map[string]string
-	calMax     map[string]string
-	calFail    map[string]bool
-	calQ       []url.Values
-	calBucket  []string
-	excluded   []int
-	exclusions []client.TagExclusion
+	sfwHidden    map[int]bool
+	rowsGate     chan struct{}
+	rowsIn       chan struct{}
+	mu           sync.Mutex
+	fail         atomic.Bool
+	throttle     atomic.Bool
+	calls        atomic.Int32
+	rows         map[int]client.CatalogWorkListItem
+	details      map[int]*client.CatalogWorkDetail
+	movedWorks   map[int]int64
+	deletedWorks map[int]client.Deletion
+	traits       []client.CatalogTrait
+	charRows     []client.CatalogCharacterRow
+	works        []geWork
+	taxonomy     map[string][]client.CatalogTaxonomyItem
+	hits         map[string][]client.CatalogEntityHit
+	tags         map[string]*client.CatalogTagDetail
+	subtrees     map[string][]client.CatalogTagNode
+	labels       map[string]*client.CatalogLabelDetail
+	moved        map[string]int64
+	engines      map[string]*client.CatalogEngineDetail
+	series       map[string]*client.CatalogSeriesDetail
+	graphs       map[string]*client.CatalogLabelRelationGraph
+	wiki         map[int]int64
+	names        map[int64]*client.CatalogName
+	chars        map[int64]*client.CatalogCharacter
+	members      map[string][]int
+	rollup       map[string][]geMember
+	seriesMem    map[int][]int
+	gotLimits    []string
+	searched     []url.Values
+	omitIDs      map[int]bool
+	calItems     map[string][]client.CatalogWorkListItem
+	calToday     map[string]string
+	calMin       map[string]string
+	calMax       map[string]string
+	calFail      map[string]bool
+	calQ         []url.Values
+	calBucket    []string
+	excluded     []int
+	exclusions   []client.TagExclusion
 }
 
 func (f *fakeCatalog) ExcludedWorkIDs(_ context.Context, e client.TagExclusion) ([]int, *legacyErrors.AppError) {
@@ -330,29 +331,32 @@ func (f *fakeCatalog) CatalogLabel(_ context.Context, id string) (*client.Catalo
 	return o, ok, 0, nil
 }
 
-func (f *fakeCatalog) CatalogWorkDetail(_ context.Context, workID int) (*client.CatalogWorkDetail, bool, int64, *legacyErrors.AppError) {
+func (f *fakeCatalog) CatalogWorkDetail(_ context.Context, workID int) (*client.CatalogWorkDetail, bool, client.Absence, *legacyErrors.AppError) {
 	if e := f.err(); e != nil {
-		return nil, false, 0, e
+		return nil, false, client.Absence{}, e
 	}
 	if to, ok := f.movedWorks[workID]; ok {
-		return nil, false, to, nil
+		return nil, false, client.Absence{MovedTo: to}, nil
+	}
+	if d, ok := f.deletedWorks[workID]; ok {
+		return nil, false, client.Absence{Deleted: &d}, nil
 	}
 	if d, ok := f.details[workID]; ok {
-		return d, true, 0, nil
+		return d, true, client.Absence{}, nil
 	}
 	row, ok := f.rows[workID]
 	if !ok || !client.CatalogItemRenderable(&row) {
-		return nil, false, 0, nil
+		return nil, false, client.Absence{}, nil
 	}
 	raw, err := json.Marshal(row)
 	if err != nil {
-		return nil, false, 0, legacyErrors.New(233, err.Error(), http.StatusInternalServerError)
+		return nil, false, client.Absence{}, legacyErrors.New(233, err.Error(), http.StatusInternalServerError)
 	}
 	var d client.CatalogWorkDetail
 	if err := json.Unmarshal(raw, &d); err != nil {
-		return nil, false, 0, legacyErrors.New(233, err.Error(), http.StatusInternalServerError)
+		return nil, false, client.Absence{}, legacyErrors.New(233, err.Error(), http.StatusInternalServerError)
 	}
-	return &d, true, 0, nil
+	return &d, true, client.Absence{}, nil
 }
 
 func (f *fakeCatalog) CatalogTraitVocabulary(context.Context) ([]client.CatalogTrait, *legacyErrors.AppError) {
@@ -963,3 +967,7 @@ func geItemIDs(body map[string]any) []string {
 func wid(offset int) string {
 	return strconv.Itoa(geWorkMin + offset)
 }
+
+var _ interface {
+	CatalogWorkDetail(context.Context, int) (*client.CatalogWorkDetail, bool, client.Absence, *legacyErrors.AppError)
+} = (*fakeCatalog)(nil)

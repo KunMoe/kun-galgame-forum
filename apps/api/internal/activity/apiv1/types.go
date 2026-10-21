@@ -172,8 +172,9 @@ type WorkStats struct {
 }
 
 type WorkRevision struct {
-	RevisionNumber   *int            `json:"revision_number" minimum:"1" doc:"Sequence number of the revision on the work: what the diff between revisions takes. null for some edits from the retired wiki, which carry only legacy_revision_id."`
+	RevisionNumber   *int            `json:"revision_number" minimum:"1" doc:"Sequence number of the revision on the work, as the NextMoe editor's history numbers it. null for some edits from the retired wiki, which carry only legacy_revision_id."`
 	LegacyRevisionID *repr.DecimalID `json:"legacy_revision_id" doc:"The retired wiki's id for the revision, which the editing engine's revision history lists as legacy_id. null for edits made in the editing engine."`
+	ChangedFields    []string        `json:"changed_fields" maxItems:"100" maxLength:"128" pattern:"^[a-z0-9_]+(\\.[a-z0-9_]+)*$" doc:"Field keys the revision touched, such as catalog.work.titles; a key ending in .suppressed is that field's hidden rows. Empty array when the activity was recorded before 2026-10-21 or the revision named none, never null."`
 }
 
 type ActivityRating struct {

@@ -256,8 +256,9 @@ func (f *activityFix) seed(t *testing.T) {
 		VALUES (?, 'yes', 7, 'on_hold', NULL, 'worth a second try', 'none', ?, ?, true, ?, ?), (?, 'no', 4, 'done', 'all', 'the twist is', 'serious', ?, ?, true, ?, ?)`,
 		acRatingHold, acUserAlice, acWorkShown, acTie.Add(7*time.Hour), acTie.Add(7*time.Hour),
 		acRatingSpoiler, acUserBob, acWorkShown, acTie.Add(7*time.Hour), acTie.Add(7*time.Hour))
-	f.run(t, `INSERT INTO galgame_activity (id, wiki_revision_id, work_id, user_id, type, created, wiki_revision_number, edit_revision_id)
-		VALUES (?, NULL, ?, ?, 'GALGAME_EDIT', ?, 3, ?), (?, 950000877, ?, ?, 'GALGAME_EDIT', ?, NULL, NULL), (?, NULL, ?, ?, 'GALGAME_EDIT', ?, NULL, NULL)`,
+	f.run(t, `INSERT INTO galgame_activity (id, wiki_revision_id, work_id, user_id, type, created, wiki_revision_number, edit_revision_id, edit_changed_fields)
+		VALUES (?, NULL, ?, ?, 'GALGAME_EDIT', ?, 3, ?, '["catalog.work.titles","catalog.work.covers.suppressed"]'),
+		       (?, 950000877, ?, ?, 'GALGAME_EDIT', ?, NULL, NULL, NULL), (?, NULL, ?, ?, 'GALGAME_EDIT', ?, NULL, NULL, NULL)`,
 		acEditEngine, acWorkShown, acUserBob, acTie.Add(6*time.Hour), acEditEngine,
 		acEditWiki, acWorkShown, acUserBob, acTie.Add(6*time.Hour),
 		acEditBare, acWorkShown, acUserBob, acTie.Add(6*time.Hour))

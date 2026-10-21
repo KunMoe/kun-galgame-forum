@@ -172,7 +172,7 @@ if (official) {
     <GalgameOfficialRelationGraph :official-id="officialId" />
 
     <p class="text-default-400 text-xs">
-      本页展示资料库中该会社的作品, 资料来自 NextMoe 目录。<template
+      本页展示资料库中该会社的作品, 资料来自 鲲 Galgame 论坛。<template
         v-if="isSfwMode"
         >当前为 SFW 模式, 该会社含 NSFW 内容的 Galgame
         不计入上方数量。</template

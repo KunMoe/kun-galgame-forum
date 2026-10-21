@@ -5,6 +5,7 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"testing"
+	"time"
 )
 
 func changesServer(t *testing.T, body string) (*GalgameClient, *url.Values) {
@@ -122,5 +123,29 @@ func TestMirrorByCatalogIDsKeysByCatalogID(t *testing.T) {
 
 	if asked.Get("nsfw") != "true" || asked.Has("content_limit") {
 		t.Errorf("hydration gates = %v, want both open (nsfw=true, no content_limit)", asked)
+	}
+}
+
+func TestWorkFateReadsADeletedWorkAsAbsent(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/problem+json")
+		w.WriteHeader(http.StatusGone)
+		_, _ = w.Write([]byte(`{"code":"ENTITY_DELETED","status":410,"object":"work","deleted_reason":"not_a_work","deleted_at":"2026-10-21T08:30:00Z"}`))
+	}))
+	t.Cleanup(srv.Close)
+	c := New(srv.URL, "nmk_test", "")
+
+	movedTo, found, appErr := c.WorkFate(t.Context(), 4242)
+	if appErr != nil || found || movedTo != 0 {
+		t.Errorf("WorkFate = %d %v %v, want absent with no error so the mirror unlists it", movedTo, found, appErr)
+	}
+
+	d, found, absence, appErr := c.CatalogWorkDetail(t.Context(), 4242)
+	if appErr != nil || found || d != nil {
+		t.Fatalf("CatalogWorkDetail = %v %v %v", d, found, appErr)
+	}
+	if absence.Deleted == nil || absence.Deleted.Reason != "not_a_work" ||
+		!absence.Deleted.At.Equal(time.Date(2026, 10, 21, 8, 30, 0, 0, time.UTC)) {
+		t.Errorf("absence = %+v, want the deletion with its reason and time", absence)
 	}
 }
