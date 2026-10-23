@@ -71,7 +71,8 @@ func (s *Service) createWorkSubmission(ctx context.Context, in *createWorkSubmis
 		return nil, p
 	}
 	text := gate.ComposeText(mint.text...)
-	if p := s.checkContributionText(ctx, text, c.user.ID); p != nil {
+	verdict, p := s.checkContributionText(ctx, text, c.user.ID)
+	if p != nil {
 		return nil, p
 	}
 	res, err := c.cat.SubmitWorkUser(ctx, c.token, catalogclient.UserWorkSubmitRequest{
@@ -92,7 +93,7 @@ func (s *Service) createWorkSubmission(ctx context.Context, in *createWorkSubmis
 	}
 	attached := in.Body.BannerHash == "" || s.attachBanner(ctx, c, res.WorkID, in.Body.BannerHash)
 	if s.scan != nil {
-		s.scan.ScanBg(gate.SubjectKindGalgame, string(repr.ID(workID)), text, int64(c.user.ID))
+		s.scan.ScanBg(gate.SubjectKindGalgame, string(repr.ID(workID)), text, int64(c.user.ID), verdict.Skipped)
 	}
 	// Catalog's mint answers only {id, state}, and its ETag is hashed over that
 	// partial record, so it never matches what a PATCH checks. The claim is

@@ -127,27 +127,27 @@ func replyDeletedAward(authorID, replyID, penalty int) pendingAward {
 	}
 }
 
-func (w *Writes) rejectContent(ctx context.Context, text string, authorID int) (decision string, matched []string, p *problem.Problem) {
+func (w *Writes) rejectContent(ctx context.Context, text string, authorID int) (gate.Verdict, *problem.Problem) {
 	id := int64(authorID)
-	decision, matched = w.check.Decision(ctx, text, &id)
-	if decision == gate.DecisionDeny {
-		return decision, matched, contentRejected()
+	verdict := w.check.Verdict(ctx, text, &id)
+	if verdict.Decision == gate.DecisionDeny {
+		return verdict, contentRejected()
 	}
-	return decision, matched, nil
+	return verdict, nil
 }
 
-func (w *Writes) scanTopic(decision string, matched []string, topicID, authorID int, text string) {
-	if decision == gate.DecisionHold {
-		slog.Info("trust check hold", "subject_kind", gate.SubjectKindTopic, "subject_id", topicID, "author_id", authorID, "matched", matched)
+func (w *Writes) scanTopic(verdict gate.Verdict, topicID, authorID int, text string) {
+	if verdict.Decision == gate.DecisionHold {
+		slog.Info("trust check hold", "subject_kind", gate.SubjectKindTopic, "subject_id", topicID, "author_id", authorID, "matched", verdict.Matched)
 	}
-	w.scan.ScanBg(gate.SubjectKindTopic, strconv.Itoa(topicID), text, int64(authorID))
+	w.scan.ScanBg(gate.SubjectKindTopic, strconv.Itoa(topicID), text, int64(authorID), verdict.Skipped)
 }
 
-func (w *Writes) scanReply(decision string, matched []string, replyID, authorID int, text string) {
-	if decision == gate.DecisionHold {
-		slog.Info("trust check hold", "subject_kind", gate.SubjectKindReply, "subject_id", replyID, "author_id", authorID, "matched", matched)
+func (w *Writes) scanReply(verdict gate.Verdict, replyID, authorID int, text string) {
+	if verdict.Decision == gate.DecisionHold {
+		slog.Info("trust check hold", "subject_kind", gate.SubjectKindReply, "subject_id", replyID, "author_id", authorID, "matched", verdict.Matched)
 	}
-	w.scan.ScanBg(gate.SubjectKindReply, strconv.Itoa(replyID), text, int64(authorID))
+	w.scan.ScanBg(gate.SubjectKindReply, strconv.Itoa(replyID), text, int64(authorID), verdict.Skipped)
 }
 
 func (w *Writes) loadTopic(id int) (*model.Topic, *problem.Problem) {

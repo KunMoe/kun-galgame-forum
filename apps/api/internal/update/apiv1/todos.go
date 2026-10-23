@@ -106,21 +106,21 @@ func (s *Service) getTodo(ctx context.Context, in *todoIDInput) (*todoOutput, er
 
 // screenText runs the trust gate on text the caller is submitting now; a hold
 // is logged and still written.
-func (s *Service) screenText(ctx context.Context, text string, authorID int) (string, []string, *problem.Problem) {
+func (s *Service) screenText(ctx context.Context, text string, authorID int) (gate.Verdict, *problem.Problem) {
 	id := int64(authorID)
-	decision, matched := s.check.Decision(ctx, text, &id)
-	if decision == gate.DecisionDeny {
-		return decision, matched, contentRejected()
+	verdict := s.check.Verdict(ctx, text, &id)
+	if verdict.Decision == gate.DecisionDeny {
+		return verdict, contentRejected()
 	}
-	return decision, matched, nil
+	return verdict, nil
 }
 
-func (s *Service) afterWrite(decision string, matched []string, todoID, authorID int, text string) {
-	if decision == gate.DecisionHold {
+func (s *Service) afterWrite(verdict gate.Verdict, todoID, authorID int, text string) {
+	if verdict.Decision == gate.DecisionHold {
 		slog.Info("trust check hold", "subject_kind", gate.SubjectKindTodo,
-			"subject_id", todoID, "author_id", authorID, "matched", matched)
+			"subject_id", todoID, "author_id", authorID, "matched", verdict.Matched)
 	}
-	s.scan.ScanBg(gate.SubjectKindTodo, strconv.Itoa(todoID), text, int64(authorID))
+	s.scan.ScanBg(gate.SubjectKindTodo, strconv.Itoa(todoID), text, int64(authorID), verdict.Skipped)
 }
 
 func (s *Service) createTodo(ctx context.Context, in *createTodoInput) (*createTodoOutput, error) {
@@ -135,7 +135,7 @@ func (s *Service) createTodo(ctx context.Context, in *createTodoInput) (*createT
 	if blank(text) {
 		return nil, tooShort("/text")
 	}
-	decision, matched, p := s.screenText(ctx, text, user.ID)
+	verdict, p := s.screenText(ctx, text, user.ID)
 	if p != nil {
 		return nil, p
 	}
@@ -148,7 +148,7 @@ func (s *Service) createTodo(ctx context.Context, in *createTodoInput) (*createT
 	if err := s.store.CreateTodo(&row); err != nil {
 		return nil, problem.Internal(err)
 	}
-	s.afterWrite(decision, matched, row.ID, user.ID, text)
+	s.afterWrite(verdict, row.ID, user.ID, text)
 	item, p := s.renderTodo(ctx, &row, user)
 	if p != nil {
 		return nil, p
@@ -234,8 +234,7 @@ func (s *Service) editTodo(ctx context.Context, row *adminModel.Todo, user *midd
 	if body.Project != nil {
 		fields["type"] = *body.Project
 	}
-	var decision string
-	var matched []string
+	var verdict gate.Verdict
 	screened := ""
 	if body.Text != nil {
 		text := markdown.NormalizeStoredContent(*body.Text)
@@ -243,11 +242,11 @@ func (s *Service) editTodo(ctx context.Context, row *adminModel.Todo, user *midd
 			return nil, tooShort("/text")
 		}
 		if text != row.Content {
-			d, m, p := s.screenText(ctx, text, user.ID)
+			v, p := s.screenText(ctx, text, user.ID)
 			if p != nil {
 				return nil, p
 			}
-			decision, matched, screened = d, m, text
+			verdict, screened = v, text
 		}
 		fields["content"] = text
 	}
@@ -264,7 +263,7 @@ func (s *Service) editTodo(ctx context.Context, row *adminModel.Todo, user *midd
 			return nil, notEditable(fresh.Status)
 		}
 		if screened != "" {
-			s.afterWrite(decision, matched, row.ID, user.ID, screened)
+			s.afterWrite(verdict, row.ID, user.ID, screened)
 		}
 	}
 	return s.respondTodo(ctx, row.ID, user)

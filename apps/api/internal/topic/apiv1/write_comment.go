@@ -65,11 +65,11 @@ func commentDeletedAward(authorID, commentID, penalty int) pendingAward {
 	}
 }
 
-func (w *Writes) scanComment(decision string, matched []string, commentID, authorID int, text string) {
-	if decision == gate.DecisionHold {
-		slog.Info("trust check hold", "subject_kind", gate.SubjectKindTopicComment, "subject_id", commentID, "author_id", authorID, "matched", matched)
+func (w *Writes) scanComment(verdict gate.Verdict, commentID, authorID int, text string) {
+	if verdict.Decision == gate.DecisionHold {
+		slog.Info("trust check hold", "subject_kind", gate.SubjectKindTopicComment, "subject_id", commentID, "author_id", authorID, "matched", verdict.Matched)
 	}
-	w.scan.ScanBg(gate.SubjectKindTopicComment, strconv.Itoa(commentID), text, int64(authorID))
+	w.scan.ScanBg(gate.SubjectKindTopicComment, strconv.Itoa(commentID), text, int64(authorID), verdict.Skipped)
 }
 
 func storeCommentText(text string) (string, *problem.Problem) {
@@ -105,7 +105,7 @@ func (w *Writes) createComment(ctx context.Context, in *createCommentInput) (*cr
 		inReplyTo = parent.UserID
 		parentID = &parent.ID
 	}
-	decision, matched, p := w.rejectContent(ctx, body, user.ID)
+	verdict, p := w.rejectContent(ctx, body, user.ID)
 	if p != nil {
 		return nil, p
 	}
@@ -141,7 +141,7 @@ func (w *Writes) createComment(ctx context.Context, in *createCommentInput) (*cr
 		return nil, problem.Internal(err)
 	}
 	w.flushAwards(awards)
-	w.scanComment(decision, matched, commentID, user.ID, body)
+	w.scanComment(verdict, commentID, user.ID, body)
 
 	mapped, p := w.reads.buildOneComment(ctx, topic, commentID, user)
 	if p != nil {
@@ -196,7 +196,7 @@ func (w *Writes) updateComment(ctx context.Context, in *updateCommentInput) (*co
 	if body == comment.Content {
 		return w.reads.commentOut(ctx, topic, comment.ID, user)
 	}
-	decision, matched, p := w.rejectContent(ctx, body, comment.UserID)
+	verdict, p := w.rejectContent(ctx, body, comment.UserID)
 	if p != nil {
 		return nil, p
 	}
@@ -204,7 +204,7 @@ func (w *Writes) updateComment(ctx context.Context, in *updateCommentInput) (*co
 	if err := w.reads.comments.UpdateCommentBody(w.db(), comment.ID, body, now); err != nil {
 		return nil, problem.Internal(err)
 	}
-	w.scanComment(decision, matched, comment.ID, comment.UserID, body)
+	w.scanComment(verdict, comment.ID, comment.UserID, body)
 	return w.reads.commentOut(ctx, topic, comment.ID, user)
 }
 

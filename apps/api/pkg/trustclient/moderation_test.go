@@ -96,3 +96,25 @@ func TestModerationEnvelopeError(t *testing.T) {
 		t.Fatal("expected error on non-2xx status")
 	}
 }
+
+func TestScanCheckSkippedWire(t *testing.T) {
+	for _, skipped := range []bool{false, true} {
+		var raw map[string]any
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			_ = json.NewDecoder(r.Body).Decode(&raw)
+			_, _ = w.Write([]byte(`{"code":0,"message":"成功","data":{"scan_id":1}}`))
+		}))
+		c := New(Config{BaseURL: srv.URL, ClientID: "cid", ClientSecret: "sec"})
+		if _, err := c.Scan(context.Background(), ScanRequest{SubjectKind: "forum_reply", SubjectID: "1", Text: "正文", CheckSkipped: skipped}); err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		srv.Close()
+		got, present := raw["check_skipped"]
+		if skipped && got != true {
+			t.Fatalf("check_skipped = %v, want true", got)
+		}
+		if !skipped && present {
+			t.Fatalf("an answered check sent check_skipped=%v; trust would queue it twice", got)
+		}
+	}
+}

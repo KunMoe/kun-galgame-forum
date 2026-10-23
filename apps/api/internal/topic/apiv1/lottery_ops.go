@@ -97,20 +97,20 @@ func (l *Lotteries) visibleLottery(ctx context.Context, idStr string) (*model.To
 	return lottery, topic, user, nil
 }
 
-func (l *Lotteries) rejectContent(ctx context.Context, text string, authorID int) (string, []string, *problem.Problem) {
+func (l *Lotteries) rejectContent(ctx context.Context, text string, authorID int) (gate.Verdict, *problem.Problem) {
 	id := int64(authorID)
-	decision, matched := l.check.Decision(ctx, text, &id)
-	if decision == gate.DecisionDeny {
-		return decision, matched, contentRejected()
+	verdict := l.check.Verdict(ctx, text, &id)
+	if verdict.Decision == gate.DecisionDeny {
+		return verdict, contentRejected()
 	}
-	return decision, matched, nil
+	return verdict, nil
 }
 
-func (l *Lotteries) scanLottery(decision string, matched []string, lotteryID, authorID int, text string) {
-	if decision == gate.DecisionHold {
-		slog.Info("trust check hold", "subject_kind", gate.SubjectKindTopicLottery, "subject_id", lotteryID, "author_id", authorID, "matched", matched)
+func (l *Lotteries) scanLottery(verdict gate.Verdict, lotteryID, authorID int, text string) {
+	if verdict.Decision == gate.DecisionHold {
+		slog.Info("trust check hold", "subject_kind", gate.SubjectKindTopicLottery, "subject_id", lotteryID, "author_id", authorID, "matched", verdict.Matched)
 	}
-	l.scan.ScanBg(gate.SubjectKindTopicLottery, strconv.Itoa(lotteryID), text, int64(authorID))
+	l.scan.ScanBg(gate.SubjectKindTopicLottery, strconv.Itoa(lotteryID), text, int64(authorID), verdict.Skipped)
 }
 
 func lotteryClosed() *problem.Problem {

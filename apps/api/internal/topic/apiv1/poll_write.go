@@ -151,7 +151,7 @@ func (p *Polls) createPoll(ctx context.Context, in *createPollInput) (*createPol
 	}
 
 	moderation := pollModerationText(title, description, texts)
-	decision, matched, prob := p.rejectContent(ctx, moderation, user.ID)
+	verdict, prob := p.rejectContent(ctx, moderation, user.ID)
 	if prob != nil {
 		return nil, prob
 	}
@@ -184,7 +184,7 @@ func (p *Polls) createPoll(ctx context.Context, in *createPollInput) (*createPol
 	if err != nil {
 		return nil, problem.Internal(err)
 	}
-	p.scanPoll(decision, matched, pollID, user.ID, moderation)
+	p.scanPoll(verdict, pollID, user.ID, moderation)
 
 	out, herr := p.reloadOut(ctx, topic, pollID, user)
 	if herr != nil {
@@ -350,11 +350,11 @@ func (p *Polls) updatePoll(ctx context.Context, in *updatePollInput) (*pollOutpu
 	for _, text := range plan.rename {
 		submitted = append(submitted, text)
 	}
-	decision, matched := gate.DecisionAllow, []string(nil)
+	verdict := gate.Allowed
 	moderation := ""
 	if len(submitted) > 0 {
 		moderation = gate.ComposeText(submitted...)
-		decision, matched, prob = p.rejectContent(ctx, moderation, poll.UserID)
+		verdict, prob = p.rejectContent(ctx, moderation, poll.UserID)
 		if prob != nil {
 			return nil, prob
 		}
@@ -378,7 +378,7 @@ func (p *Polls) updatePoll(ctx context.Context, in *updatePollInput) (*pollOutpu
 		return nil, problem.Internal(err)
 	}
 	if moderation != "" {
-		p.scanPoll(decision, matched, poll.ID, poll.UserID, moderation)
+		p.scanPoll(verdict, poll.ID, poll.UserID, moderation)
 	}
 	return p.reloadOut(ctx, topic, poll.ID, user)
 }

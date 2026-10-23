@@ -385,7 +385,7 @@ func (l *Lotteries) createLottery(ctx context.Context, in *createLotteryInput) (
 	}
 
 	moderation := lotteryModerationText(title, description, prizes)
-	decision, matched, prob := l.rejectContent(ctx, moderation, user.ID)
+	verdict, prob := l.rejectContent(ctx, moderation, user.ID)
 	if prob != nil {
 		return nil, prob
 	}
@@ -439,7 +439,7 @@ func (l *Lotteries) createLottery(ctx context.Context, in *createLotteryInput) (
 		l.award(user.ID, -row.PointEscrow, moemoepoint.ReasonContentRemoved, escrowRef(row.ID),
 			moemoepoint.Key("lottery_escrow", "topic_lottery_"+strconv.Itoa(row.ID)))
 	}
-	l.scanLottery(decision, matched, row.ID, user.ID, moderation)
+	l.scanLottery(verdict, row.ID, user.ID, moderation)
 
 	out, herr := l.lotteryOut(ctx, row.ID, user, false)
 	if herr != nil {

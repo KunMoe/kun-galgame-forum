@@ -69,7 +69,7 @@ func (s *Service) createWorkResource(ctx context.Context, in *createWorkResource
 	}
 	ax.VersionLabel = versionStored(body.VersionLabel)
 	moderation := gate.ComposeText(append([]string{note}, urls...)...)
-	decision, matched, p := s.rejectContent(ctx, moderation, user.ID)
+	verdict, p := s.rejectContent(ctx, moderation, user.ID)
 	if p != nil {
 		return nil, p
 	}
@@ -113,10 +113,10 @@ func (s *Service) createWorkResource(ctx context.Context, in *createWorkResource
 	s.award(user.ID, constants.RewardCreateResource, moemoepoint.ReasonContentApproved,
 		moemoepoint.Ref("galgame_resource", row.ID),
 		moemoepoint.Key("galgame_resource_create", strconv.Itoa(row.ID)))
-	if decision == gate.DecisionHold {
-		slog.Info("trust check hold", "subject_kind", gate.SubjectKindGalgameResource, "subject_id", row.ID, "author_id", user.ID, "matched", matched)
+	if verdict.Decision == gate.DecisionHold {
+		slog.Info("trust check hold", "subject_kind", gate.SubjectKindGalgameResource, "subject_id", row.ID, "author_id", user.ID, "matched", verdict.Matched)
 	}
-	s.scan.ScanBg(gate.SubjectKindGalgameResource, strconv.Itoa(row.ID), moderation, int64(user.ID))
+	s.scan.ScanBg(gate.SubjectKindGalgameResource, strconv.Itoa(row.ID), moderation, int64(user.ID), verdict.Skipped)
 	if flipped {
 		s.claimAfterCreate(ctx, workID)
 	}
@@ -305,9 +305,9 @@ func (s *Service) updateGalgameResource(ctx context.Context, in *patchResourceIn
 		modParts = append(modParts, urls...)
 	}
 	moderation := gate.ComposeText(modParts...)
-	decision, matched, p := gate.DecisionAllow, []string(nil), (*problem.Problem)(nil)
+	verdict, p := gate.Allowed, (*problem.Problem)(nil)
 	if len(modParts) > 0 {
-		decision, matched, p = s.rejectContent(ctx, moderation, row.UserID)
+		verdict, p = s.rejectContent(ctx, moderation, row.UserID)
 		if p != nil {
 			return nil, p
 		}
@@ -338,10 +338,10 @@ func (s *Service) updateGalgameResource(ctx context.Context, in *patchResourceIn
 		return nil, problem.Internal(err)
 	}
 	if len(modParts) > 0 {
-		if decision == gate.DecisionHold {
-			slog.Info("trust check hold", "subject_kind", gate.SubjectKindGalgameResource, "subject_id", row.ID, "author_id", row.UserID, "matched", matched)
+		if verdict.Decision == gate.DecisionHold {
+			slog.Info("trust check hold", "subject_kind", gate.SubjectKindGalgameResource, "subject_id", row.ID, "author_id", row.UserID, "matched", verdict.Matched)
 		}
-		s.scan.ScanBg(gate.SubjectKindGalgameResource, strconv.Itoa(row.ID), moderation, int64(row.UserID))
+		s.scan.ScanBg(gate.SubjectKindGalgameResource, strconv.Itoa(row.ID), moderation, int64(row.UserID), verdict.Skipped)
 	}
 	fresh, err := s.store.Find(row.ID)
 	if err != nil {

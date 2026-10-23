@@ -40,14 +40,14 @@ func NewScanService(sc Scanner) *ScanService {
 
 func (s *ScanService) Enabled() bool { return s != nil && s.sc != nil }
 
-func (s *ScanService) ScanBg(subjectKind, subjectID, text string, authorID int64) {
+func (s *ScanService) ScanBg(subjectKind, subjectID, text string, authorID int64, checkSkipped bool) {
 	if !s.Enabled() {
 		return
 	}
 	go func() {
 		ctx, cancel := context.WithTimeout(context.Background(), scanTimeout)
 		defer cancel()
-		req := trustclient.ScanRequest{SubjectKind: subjectKind, SubjectID: subjectID, Text: text}
+		req := trustclient.ScanRequest{SubjectKind: subjectKind, SubjectID: subjectID, Text: text, CheckSkipped: checkSkipped}
 		if authorID > 0 {
 			req.AuthorID = &authorID
 		}

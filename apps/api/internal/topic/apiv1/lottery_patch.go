@@ -11,6 +11,7 @@ import (
 	"kun-galgame-api/internal/moemoepoint"
 	"kun-galgame-api/internal/topic/model"
 	"kun-galgame-api/internal/topic/service"
+	"kun-galgame-api/internal/trust/gate"
 	"kun-galgame-api/pkg/problem"
 
 	"gorm.io/gorm"
@@ -235,13 +236,13 @@ func (l *Lotteries) editLottery(ctx context.Context, lottery *model.TopicLottery
 	if prob != nil {
 		return nil, prob
 	}
-	decision, matched := "", []string(nil)
+	var verdict gate.Verdict
 	if edit.textChanged {
-		d, m, prob := l.rejectContent(ctx, edit.moderation, lottery.UserID)
+		v, prob := l.rejectContent(ctx, edit.moderation, lottery.UserID)
 		if prob != nil {
 			return nil, prob
 		}
-		decision, matched = d, m
+		verdict = v
 	}
 
 	delta := 0
@@ -293,7 +294,7 @@ func (l *Lotteries) editLottery(ctx context.Context, lottery *model.TopicLottery
 			moemoepoint.KeyNonce("lottery_escrow_change", "topic_lottery_"+strconv.Itoa(lottery.ID)))
 	}
 	if edit.textChanged {
-		l.scanLottery(decision, matched, lottery.ID, lottery.UserID, edit.moderation)
+		l.scanLottery(verdict, lottery.ID, lottery.UserID, edit.moderation)
 	}
 	return l.lotteryOut(ctx, lottery.ID, user, false)
 }

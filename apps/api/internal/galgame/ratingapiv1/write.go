@@ -66,19 +66,19 @@ func gameTypesJSON(types []GameType) json.RawMessage {
 	return raw
 }
 
-func (s *Service) checkText(ctx context.Context, text string, authorID int) *problem.Problem {
+func (s *Service) checkText(ctx context.Context, text string, authorID int) (gate.Verdict, *problem.Problem) {
 	if text == "" {
-		return nil
+		return gate.Allowed, nil
 	}
 	id := int64(authorID)
-	decision, matched := s.Check.Decision(ctx, text, &id)
-	if decision == gate.DecisionDeny {
-		return problem.New(problem.CodeContentRejected, "The trust-and-safety check refused the submitted text. Nothing was written.")
+	verdict := s.Check.Verdict(ctx, text, &id)
+	if verdict.Decision == gate.DecisionDeny {
+		return verdict, problem.New(problem.CodeContentRejected, "The trust-and-safety check refused the submitted text. Nothing was written.")
 	}
-	if decision == gate.DecisionHold {
-		slog.Info("trust check hold", "subject_kind", gate.SubjectKindGalgameRating, "author_id", authorID, "matched", matched)
+	if verdict.Decision == gate.DecisionHold {
+		slog.Info("trust check hold", "subject_kind", gate.SubjectKindGalgameRating, "author_id", authorID, "matched", verdict.Matched)
 	}
-	return nil
+	return verdict, nil
 }
 
 func unknownWork() *problem.Problem {
@@ -225,7 +225,8 @@ func (s *Service) createRating(ctx context.Context, in *createRatingInput) (*cre
 	if _, ok := works[workID]; !ok {
 		return nil, unknownWork()
 	}
-	if p := s.checkText(ctx, summary, viewer.ID); p != nil {
+	verdict, p := s.checkText(ctx, summary, viewer.ID)
+	if p != nil {
 		return nil, p
 	}
 	existing, err := s.Catalog.MyRating(ctx, token, int64(workID))
@@ -250,7 +251,7 @@ func (s *Service) createRating(ctx context.Context, in *createRatingInput) (*cre
 	s.mirror(rating, b.GameTypes)
 	s.reward(viewer.ID, existing, rating)
 	id := int(rating.ID)
-	s.Scan.ScanBg(gate.SubjectKindGalgameRating, strconv.Itoa(id), summary, int64(viewer.ID))
+	s.Scan.ScanBg(gate.SubjectKindGalgameRating, strconv.Itoa(id), summary, int64(viewer.ID), verdict.Skipped)
 	out, p := s.detail(ctx, id)
 	if p != nil {
 		return nil, p
@@ -352,13 +353,16 @@ func (s *Service) updateRating(ctx context.Context, in *updateRatingInput) (*rat
 		want.AspectScores = aspectsInput(b.AspectScores)
 	}
 	summaryChanged := b.ShortSummary != nil && *b.ShortSummary != current.ShortSummary
+	var verdict gate.Verdict
 	if summaryChanged {
 		if !utf8.ValidString(*b.ShortSummary) {
 			return nil, invalidSummary()
 		}
-		if p := s.checkText(ctx, *b.ShortSummary, viewer.ID); p != nil {
+		v, p := s.checkText(ctx, *b.ShortSummary, viewer.ID)
+		if p != nil {
 			return nil, p
 		}
+		verdict = v
 		want.ShortSummary = *b.ShortSummary
 	}
 	// The rating carries its author's play state, so the state goes first and
@@ -380,7 +384,7 @@ func (s *Service) updateRating(ctx context.Context, in *updateRatingInput) (*rat
 	s.mirror(rating, b.GameTypes)
 	if summaryChanged {
 		s.reward(viewer.ID, current, rating)
-		s.Scan.ScanBg(gate.SubjectKindGalgameRating, strconv.FormatInt(rating.ID, 10), rating.ShortSummary, int64(viewer.ID))
+		s.Scan.ScanBg(gate.SubjectKindGalgameRating, strconv.FormatInt(rating.ID, 10), rating.ShortSummary, int64(viewer.ID), verdict.Skipped)
 	}
 	out, p := s.detail(ctx, int(rating.ID))
 	if p != nil {
