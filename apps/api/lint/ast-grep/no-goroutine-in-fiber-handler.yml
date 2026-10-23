@@ -1,0 +1,25 @@
+id: no-goroutine-in-fiber-handler
+language: go
+severity: error
+message: A goroutine started inside a fiber.Ctx function outlives the request; anything it captures from the request must be copied first.
+note: |
+  fiber.Ctx and the strings it hands out are recycled for the next request once the handler returns.
+  moyu's `go refreshInBackground(..., sessionID, ...)` wrote one reader's session over another's (2026-10-22).
+  If the goroutine is necessary, pass only copied values (strings.Clone, ints, DB rows) and mark it with
+  `// ast-grep-ignore: no-goroutine-in-fiber-handler` plus the reason.
+rule:
+  kind: go_statement
+  inside:
+    stopBy: end
+    all:
+      - any:
+          - kind: function_declaration
+          - kind: method_declaration
+          - kind: func_literal
+      - has:
+          field: parameters
+          has:
+            kind: parameter_declaration
+            has:
+              field: type
+              pattern: fiber.Ctx

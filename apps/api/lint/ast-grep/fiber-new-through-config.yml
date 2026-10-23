@@ -1,0 +1,13 @@
+id: fiber-new-through-config
+language: go
+severity: error
+message: Build the fiber app with newFiber so Immutable and the error handler always apply.
+rule:
+  kind: call_expression
+  has:
+    field: function
+    regex: ^fiber\.New$
+ignores:
+  - internal/app/app.go
+  - internal/app/openapi.go
+  - "**/*_test.go"

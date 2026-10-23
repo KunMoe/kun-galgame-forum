@@ -1,0 +1,6 @@
+id: no-bind-body
+language: go
+severity: error
+message: Use c.Bind().JSON — Bind().Body lets the client pick the form decoder, whose strings alias the request buffer even with Immutable.
+rule:
+  pattern: $C.Bind().Body($$$)

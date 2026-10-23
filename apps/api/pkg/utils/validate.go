@@ -75,7 +75,7 @@ func IsQRCodeShareLink(raw string) bool {
 }
 
 func ParseAndValidate(c fiber.Ctx, dst any) *errors.AppError {
-	if err := c.Bind().Body(dst); err != nil {
+	if err := c.Bind().JSON(dst); err != nil {
 		return errors.ErrBadRequest("请求格式错误")
 	}
 	if err := validate.Struct(dst); err != nil {

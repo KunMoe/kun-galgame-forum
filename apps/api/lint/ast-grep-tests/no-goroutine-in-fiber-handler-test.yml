@@ -1,0 +1,23 @@
+id: no-goroutine-in-fiber-handler
+valid:
+  - |
+    func handle(c fiber.Ctx) error {
+      sid := strings.Clone(c.Cookies("sid"))
+      refresh(sid)
+      return nil
+    }
+  - |
+    func worker(ctx context.Context) {
+      go run(ctx)
+    }
+invalid:
+  - |
+    func liveSession(c fiber.Ctx, sessionID string) {
+      go refreshInBackground(sessionID)
+    }
+  - |
+    func (h *H) Handle(c fiber.Ctx) error {
+      return h.do(func() {
+        go notify(c.Params("id"))
+      })
+    }
