@@ -149,7 +149,8 @@ func (s *Service) createToolsetResource(ctx context.Context, in *createResourceI
 		modParts = append(modParts, row.Note)
 	}
 	moderation := gate.ComposeText(modParts...)
-	if _, _, p := s.rejectContent(ctx, moderation, user.ID); p != nil {
+	verdict, p := s.rejectContent(ctx, moderation, user.ID)
+	if p != nil {
 		return nil, p
 	}
 	if err := s.store.CreateResource(&row); err != nil {
@@ -162,7 +163,7 @@ func (s *Service) createToolsetResource(ctx context.Context, in *createResourceI
 		return nil, problem.Internal(err)
 	}
 	s.pushPoints(user.ID, row.ID, 3, moemoepoint.ReasonContentApproved, "resource_create", "toolset_resource")
-	s.scan.ScanBg(gate.SubjectKindToolsetResource, strconv.Itoa(row.ID), moderation, int64(user.ID))
+	s.scan.ScanBg(gate.SubjectKindToolsetResource, strconv.Itoa(row.ID), moderation, int64(user.ID), verdict.Skipped)
 	fresh, err := s.store.FindResource(row.ID)
 	if err != nil {
 		return nil, problem.Internal(err)
@@ -264,10 +265,13 @@ func (s *Service) updateToolsetResource(ctx context.Context, in *patchResourceIn
 		return nil, validationFailed(errs...)
 	}
 	moderation := gate.ComposeText(modParts...)
+	var verdict gate.Verdict
 	if len(modParts) > 0 {
-		if _, _, p := s.rejectContent(ctx, moderation, res.UserID); p != nil {
+		v, p := s.rejectContent(ctx, moderation, res.UserID)
+		if p != nil {
 			return nil, p
 		}
+		verdict = v
 	}
 	now := time.Now()
 	fields["edited"] = now
@@ -279,7 +283,7 @@ func (s *Service) updateToolsetResource(ctx context.Context, in *patchResourceIn
 		return nil, problem.Internal(err)
 	}
 	if len(modParts) > 0 {
-		s.scan.ScanBg(gate.SubjectKindToolsetResource, strconv.Itoa(res.ID), moderation, int64(res.UserID))
+		s.scan.ScanBg(gate.SubjectKindToolsetResource, strconv.Itoa(res.ID), moderation, int64(res.UserID), verdict.Skipped)
 	}
 	fresh, err := s.store.FindResource(res.ID)
 	if err != nil {

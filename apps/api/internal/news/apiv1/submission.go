@@ -94,13 +94,13 @@ func (s *Service) checkSubmissionText(ctx context.Context, text string, authorID
 		return nil
 	}
 	id := int64(authorID)
-	decision, matched := s.check.Decision(ctx, text, &id)
-	if decision == gate.DecisionDeny {
+	verdict := s.check.Verdict(ctx, text, &id)
+	if verdict.Decision == gate.DecisionDeny {
 		return problem.New(problem.CodeContentRejected, "The trust-and-safety check refused the submitted text. Nothing was written.")
 	}
-	if decision == gate.DecisionHold {
+	if verdict.Decision == gate.DecisionHold {
 		// Trust has no subject kind for a news submission, so a hold is logged and nothing is scanned in the background.
-		slog.Info("trust check hold", "author_id", authorID, "matched", matched)
+		slog.Info("trust check hold", "author_id", authorID, "matched", verdict.Matched)
 	}
 	return nil
 }

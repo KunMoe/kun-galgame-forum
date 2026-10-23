@@ -144,10 +144,13 @@ func (s *Service) putWorkRecord(ctx context.Context, in *putWorkRecordInput) (*w
 		return nil, upstream(err)
 	}
 	summaryChanged := put.Rating != nil && (before.Rating == nil || before.Rating.ShortSummary != summary)
+	var verdict gate.Verdict
 	if summaryChanged {
-		if p := s.checkText(ctx, summary, viewer.ID); p != nil {
+		v, p := s.checkText(ctx, summary, viewer.ID)
+		if p != nil {
 			return nil, p
 		}
+		verdict = v
 	}
 	after, err := s.Catalog.PutWorkRecord(ctx, token, int64(workID), put)
 	if err != nil {
@@ -165,7 +168,7 @@ func (s *Service) putWorkRecord(ctx context.Context, in *putWorkRecordInput) (*w
 	}
 	s.reward(viewer.ID, before.Rating, after.Rating)
 	if summaryChanged && after.Rating != nil {
-		s.Scan.ScanBg(gate.SubjectKindGalgameRating, strconv.FormatInt(after.Rating.ID, 10), summary, int64(viewer.ID))
+		s.Scan.ScanBg(gate.SubjectKindGalgameRating, strconv.FormatInt(after.Rating.ID, 10), summary, int64(viewer.ID), verdict.Skipped)
 	}
 	if s.RecordWritten != nil {
 		s.RecordWritten(ctx, viewer.ID)

@@ -172,7 +172,8 @@ func (s *Service) createQuiz(ctx context.Context, in *createQuizInput) (*createQ
 		return nil, problem.Internal(err)
 	}
 	moderation := gate.ComposeText(append([]string{prompt, desc, expl}, choices...)...)
-	if _, _, p := s.rejectContent(ctx, moderation, user.ID); p != nil {
+	verdict, p := s.rejectContent(ctx, moderation, user.ID)
+	if p != nil {
 		return nil, p
 	}
 	row := model.GalgameQuiz{
@@ -196,7 +197,7 @@ func (s *Service) createQuiz(ctx context.Context, in *createQuizInput) (*createQ
 	s.award(user.ID, constants.QuizCreateReward, moemoepoint.ReasonContentApproved,
 		moemoepoint.Ref("galgame_quiz", row.ID),
 		moemoepoint.Key("quiz_create", strconv.Itoa(row.ID)))
-	s.scan.ScanBg(gate.SubjectKindGalgameQuiz, strconv.Itoa(row.ID), moderation, int64(user.ID))
+	s.scan.ScanBg(gate.SubjectKindGalgameQuiz, strconv.Itoa(row.ID), moderation, int64(user.ID), verdict.Skipped)
 	created, err := s.store.Find(row.ID)
 	if err != nil {
 		return nil, problem.Internal(err)
@@ -362,11 +363,13 @@ func (s *Service) updateQuiz(ctx context.Context, in *patchQuizInput) (*quizOutp
 		fields["content"] = newRaw
 	}
 
+	var verdict gate.Verdict
 	if len(modParts) > 0 {
-		moderation := gate.ComposeText(modParts...)
-		if _, _, p := s.rejectContent(ctx, moderation, row.UserID); p != nil {
+		v, p := s.rejectContent(ctx, gate.ComposeText(modParts...), row.UserID)
+		if p != nil {
 			return nil, p
 		}
+		verdict = v
 	}
 
 	keyChanged := !bytesEqual(row.Content, newRaw)
@@ -413,7 +416,7 @@ func (s *Service) updateQuiz(ctx context.Context, in *patchQuizInput) (*quizOutp
 		return nil, problem.Internal(err)
 	}
 	if len(modParts) > 0 {
-		s.scan.ScanBg(gate.SubjectKindGalgameQuiz, strconv.Itoa(row.ID), gate.ComposeText(modParts...), int64(row.UserID))
+		s.scan.ScanBg(gate.SubjectKindGalgameQuiz, strconv.Itoa(row.ID), gate.ComposeText(modParts...), int64(row.UserID), verdict.Skipped)
 	}
 	fresh, err := s.store.Find(row.ID)
 	if err != nil {

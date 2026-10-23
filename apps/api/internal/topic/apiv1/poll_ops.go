@@ -48,20 +48,20 @@ func (p *Polls) db() *gorm.DB {
 	return p.polls.DB()
 }
 
-func (p *Polls) rejectContent(ctx context.Context, text string, authorID int) (string, []string, *problem.Problem) {
+func (p *Polls) rejectContent(ctx context.Context, text string, authorID int) (gate.Verdict, *problem.Problem) {
 	id := int64(authorID)
-	decision, matched := p.check.Decision(ctx, text, &id)
-	if decision == gate.DecisionDeny {
-		return decision, matched, contentRejected()
+	verdict := p.check.Verdict(ctx, text, &id)
+	if verdict.Decision == gate.DecisionDeny {
+		return verdict, contentRejected()
 	}
-	return decision, matched, nil
+	return verdict, nil
 }
 
-func (p *Polls) scanPoll(decision string, matched []string, pollID, authorID int, text string) {
-	if decision == gate.DecisionHold {
-		slog.Info("trust check hold", "subject_kind", gate.SubjectKindTopicPoll, "subject_id", pollID, "author_id", authorID, "matched", matched)
+func (p *Polls) scanPoll(verdict gate.Verdict, pollID, authorID int, text string) {
+	if verdict.Decision == gate.DecisionHold {
+		slog.Info("trust check hold", "subject_kind", gate.SubjectKindTopicPoll, "subject_id", pollID, "author_id", authorID, "matched", verdict.Matched)
 	}
-	p.scan.ScanBg(gate.SubjectKindTopicPoll, strconv.Itoa(pollID), text, int64(authorID))
+	p.scan.ScanBg(gate.SubjectKindTopicPoll, strconv.Itoa(pollID), text, int64(authorID), verdict.Skipped)
 }
 
 func (p *Polls) visiblePoll(ctx context.Context, idStr string) (*model.TopicPoll, *model.Topic, *middleware.UserInfo, *problem.Problem) {

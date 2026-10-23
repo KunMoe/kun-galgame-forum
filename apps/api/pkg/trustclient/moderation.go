@@ -35,6 +35,9 @@ type ScanRequest struct {
 	SubjectID   string `json:"subject_id"`
 	Text        string `json:"text"`
 	AuthorID    *int64 `json:"author_id,omitempty"`
+	// CheckSkipped is accepted only from infra #460 on; trust rejects unknown
+	// fields with 422, so sending it to an older trust fails every scan.
+	CheckSkipped bool `json:"check_skipped,omitempty"`
 }
 
 type ScanResult struct {

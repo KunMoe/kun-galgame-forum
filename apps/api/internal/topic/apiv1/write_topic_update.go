@@ -6,6 +6,7 @@ import (
 
 	"kun-galgame-api/internal/infrastructure/markdown"
 	"kun-galgame-api/internal/topic/model"
+	"kun-galgame-api/internal/trust/gate"
 	"kun-galgame-api/pkg/problem"
 
 	"gorm.io/gorm"
@@ -116,12 +117,11 @@ func (w *Writes) updateTopic(ctx context.Context, in *updateTopicInput) (*update
 		return &updateTopicOutput{Body: *out}, nil
 	}
 
-	var decision string
-	var matched []string
+	var verdict gate.Verdict
 	moderation := topicModerationText(title, body)
 	if textChanged {
 		var rp *problem.Problem
-		decision, matched, rp = w.rejectContent(ctx, moderation, topic.UserID)
+		verdict, rp = w.rejectContent(ctx, moderation, topic.UserID)
 		if rp != nil {
 			return nil, rp
 		}
@@ -202,7 +202,7 @@ func (w *Writes) updateTopic(ctx context.Context, in *updateTopicInput) (*update
 	}
 	w.flushAwards(awards)
 	if textChanged {
-		w.scanTopic(decision, matched, topic.ID, topic.UserID, moderation)
+		w.scanTopic(verdict, topic.ID, topic.UserID, moderation)
 	}
 
 	fresh, p := w.loadTopic(topic.ID)

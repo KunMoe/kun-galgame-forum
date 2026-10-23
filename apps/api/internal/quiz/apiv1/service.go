@@ -135,16 +135,16 @@ func (s *Service) convertBody(ctx context.Context, source string) (content.Conte
 	return docs[0], nil
 }
 
-func (s *Service) rejectContent(ctx context.Context, text string, authorID int) (decision string, matched []string, p *problem.Problem) {
+func (s *Service) rejectContent(ctx context.Context, text string, authorID int) (gate.Verdict, *problem.Problem) {
 	if trimSpace(text) == "" {
-		return gate.DecisionAllow, nil, nil
+		return gate.Allowed, nil
 	}
 	aid := int64(authorID)
-	decision, matched = s.check.Decision(ctx, text, &aid)
-	if decision == gate.DecisionDeny {
-		return decision, matched, contentRejected()
+	verdict := s.check.Verdict(ctx, text, &aid)
+	if verdict.Decision == gate.DecisionDeny {
+		return verdict, contentRejected()
 	}
-	return decision, matched, nil
+	return verdict, nil
 }
 
 func (s *Service) flushAwards(jobs []pendingAward) {

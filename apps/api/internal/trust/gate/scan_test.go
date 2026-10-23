@@ -42,15 +42,15 @@ func TestScanDisabledZeroDial(t *testing.T) {
 	if s.Enabled() {
 		t.Fatal("nil scanner must be disabled")
 	}
-	s.ScanBg(SubjectKindTopic, "1", "x", 7)
+	s.ScanBg(SubjectKindTopic, "1", "x", 7, false)
 	var nilSvc *ScanService
-	nilSvc.ScanBg(SubjectKindReply, "1", "x", 7)
+	nilSvc.ScanBg(SubjectKindReply, "1", "x", 7, false)
 }
 
 func TestScanBgPayload(t *testing.T) {
 	fs := newFakeScanner(nil)
 	s := NewScanService(fs)
-	s.ScanBg(SubjectKindTopic, "8841", "标题\n\n正文", 99)
+	s.ScanBg(SubjectKindTopic, "8841", "标题\n\n正文", 99, false)
 	fs.wait(t)
 	if fs.got.SubjectKind != "forum_topic" || fs.got.SubjectID != "8841" {
 		t.Fatalf("bad subject: %+v", fs.got)
@@ -65,7 +65,7 @@ func TestScanBgPayload(t *testing.T) {
 
 func TestScanBgOmitsZeroAuthor(t *testing.T) {
 	fs := newFakeScanner(nil)
-	NewScanService(fs).ScanBg(SubjectKindReply, "5", "正文", 0)
+	NewScanService(fs).ScanBg(SubjectKindReply, "5", "正文", 0, false)
 	fs.wait(t)
 	if fs.got.AuthorID != nil {
 		t.Fatalf("author 0 should be omitted, got %v", *fs.got.AuthorID)
@@ -74,6 +74,30 @@ func TestScanBgOmitsZeroAuthor(t *testing.T) {
 
 func TestScanBgFailureNoPanic(t *testing.T) {
 	fs := newFakeScanner(errors.New("trust down"))
-	NewScanService(fs).ScanBg(SubjectKindTopic, "1", "x", 1)
+	NewScanService(fs).ScanBg(SubjectKindTopic, "1", "x", 1, false)
 	fs.wait(t)
+}
+
+func TestScanCarriesCheckSkipped(t *testing.T) {
+	cases := []struct {
+		name    string
+		checker *fakeChecker
+		want    bool
+	}{
+		{"check errored", &fakeChecker{err: errors.New("trust 503")}, true},
+		{"check timed out", &fakeChecker{block: true}, true},
+		{"check allowed", &fakeChecker{result: &trustclient.CheckResult{Decision: DecisionAllow}}, false},
+		{"check held", &fakeChecker{result: &trustclient.CheckResult{Decision: DecisionHold}}, false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			v := NewCheckService(tc.checker).Verdict(context.Background(), "正文", nil)
+			fs := newFakeScanner(nil)
+			NewScanService(fs).ScanBg(SubjectKindReply, "5", "正文", 1, v.Skipped)
+			fs.wait(t)
+			if fs.got.CheckSkipped != tc.want {
+				t.Fatalf("CheckSkipped = %v, want %v", fs.got.CheckSkipped, tc.want)
+			}
+		})
+	}
 }

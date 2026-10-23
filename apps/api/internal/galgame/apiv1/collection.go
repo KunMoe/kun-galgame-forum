@@ -73,7 +73,8 @@ func (s *Service) createCollection(ctx context.Context, in *createCollectionInpu
 	// Only what the request actually changes is scanned. The unchanged half
 	// was scanned when it was set, and reading it back to recompose the pair
 	// would need a folder read this path does not otherwise make.
-	if p := s.checkCollectionText(ctx, gate.ComposeText(title, desc), user.ID); p != nil {
+	verdict, p := s.checkCollectionText(ctx, gate.ComposeText(title, desc), user.ID)
+	if p != nil {
 		return nil, p
 	}
 	write := catalogclient.FolderWrite{Name: &title, Description: &desc, Visibility: &in.Body.Visibility, IsDefault: in.Body.IsDefault}
@@ -82,7 +83,7 @@ func (s *Service) createCollection(ctx context.Context, in *createCollectionInpu
 		return nil, mapUserPlane(err, true)
 	}
 	if s.scan != nil {
-		s.scan.ScanBg(gate.SubjectKindGalgameCollection, string(repr.ID(int(folder.ID))), gate.ComposeText(title, desc), int64(user.ID))
+		s.scan.ScanBg(gate.SubjectKindGalgameCollection, string(repr.ID(int(folder.ID))), gate.ComposeText(title, desc), int64(user.ID), verdict.Skipped)
 	}
 	col, ok, p := s.toCollection(ctx, *folder, user, token, false, false)
 	if p != nil {
@@ -142,7 +143,8 @@ func (s *Service) updateCollection(ctx context.Context, in *updateCollectionInpu
 		return nil, problem.Unavailable(errUnconfigured)
 	}
 	moderationText := gate.ComposeText(derefOr(in.Body.Title, ""), derefOr(in.Body.Description, ""))
-	if p := s.checkCollectionText(ctx, moderationText, user.ID); p != nil {
+	verdict, p := s.checkCollectionText(ctx, moderationText, user.ID)
+	if p != nil {
 		return nil, p
 	}
 	write := catalogclient.FolderWrite{
@@ -156,7 +158,7 @@ func (s *Service) updateCollection(ctx context.Context, in *updateCollectionInpu
 			return nil, mapUserPlane(pErr, true)
 		}
 		if s.scan != nil && moderationText != "" {
-			s.scan.ScanBg(gate.SubjectKindGalgameCollection, in.CollectionID, moderationText, int64(mine.OwnerUID))
+			s.scan.ScanBg(gate.SubjectKindGalgameCollection, in.CollectionID, moderationText, int64(mine.OwnerUID), verdict.Skipped)
 		}
 		col, ok, p := s.toCollection(ctx, *updated, user, token, false, false)
 		if p != nil {
@@ -186,7 +188,7 @@ func (s *Service) updateCollection(ctx context.Context, in *updateCollectionInpu
 		return nil, mapUserPlane(pErr, false)
 	}
 	if s.scan != nil && moderationText != "" {
-		s.scan.ScanBg(gate.SubjectKindGalgameCollection, in.CollectionID, moderationText, int64(updated.OwnerUID))
+		s.scan.ScanBg(gate.SubjectKindGalgameCollection, in.CollectionID, moderationText, int64(updated.OwnerUID), verdict.Skipped)
 	}
 	col, ok, p := s.toCollection(ctx, *updated, user, token, false, false)
 	if p != nil {
@@ -276,19 +278,19 @@ func (s *Service) visibleFolder(ctx context.Context, rawID string) (*catalogclie
 	return folder, token, user, nil
 }
 
-func (s *Service) checkCollectionText(ctx context.Context, text string, authorID int) *problem.Problem {
+func (s *Service) checkCollectionText(ctx context.Context, text string, authorID int) (gate.Verdict, *problem.Problem) {
 	if text == "" || s.check == nil {
-		return nil
+		return gate.Allowed, nil
 	}
 	id := int64(authorID)
-	decision, matched := s.check.Decision(ctx, text, &id)
-	if decision == gate.DecisionDeny {
-		return problem.New(problem.CodeContentRejected, "The trust-and-safety check refused the submitted text. Nothing was written.")
+	verdict := s.check.Verdict(ctx, text, &id)
+	if verdict.Decision == gate.DecisionDeny {
+		return verdict, problem.New(problem.CodeContentRejected, "The trust-and-safety check refused the submitted text. Nothing was written.")
 	}
-	if decision == gate.DecisionHold {
-		slog.Info("trust check hold", "subject_kind", gate.SubjectKindGalgameCollection, "author_id", authorID, "matched", matched)
+	if verdict.Decision == gate.DecisionHold {
+		slog.Info("trust check hold", "subject_kind", gate.SubjectKindGalgameCollection, "author_id", authorID, "matched", verdict.Matched)
 	}
-	return nil
+	return verdict, nil
 }
 
 func derefOr(p *string, fallback string) string {

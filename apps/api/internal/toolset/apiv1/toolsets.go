@@ -174,7 +174,8 @@ func (s *Service) createToolset(ctx context.Context, in *createToolsetInput) (*c
 		return nil, validationFailed(fields...)
 	}
 	moderation := gate.ComposeText(append([]string{name, markdownSrc}, aliases...)...)
-	if _, _, p := s.rejectContent(ctx, moderation, user.ID); p != nil {
+	verdict, p := s.rejectContent(ctx, moderation, user.ID)
+	if p != nil {
 		return nil, p
 	}
 	raw, err := json.Marshal(homes)
@@ -192,7 +193,7 @@ func (s *Service) createToolset(ctx context.Context, in *createToolsetInput) (*c
 		return nil, problem.Internal(err)
 	}
 	s.pushPoints(user.ID, row.ID, constants.RewardCreateToolset, moemoepoint.ReasonContentApproved, "toolset_create", "toolset")
-	s.scan.ScanBg(gate.SubjectKindToolset, strconv.Itoa(row.ID), moderation, int64(user.ID))
+	s.scan.ScanBg(gate.SubjectKindToolset, strconv.Itoa(row.ID), moderation, int64(user.ID), verdict.Skipped)
 	created, err := s.store.Find(row.ID)
 	if err != nil {
 		return nil, problem.Internal(err)
@@ -294,10 +295,13 @@ func (s *Service) updateToolset(ctx context.Context, in *patchToolsetInput) (*to
 	}
 
 	moderation := gate.ComposeText(modParts...)
+	var verdict gate.Verdict
 	if len(modParts) > 0 {
-		if _, _, p := s.rejectContent(ctx, moderation, row.UserID); p != nil {
+		v, p := s.rejectContent(ctx, moderation, row.UserID)
+		if p != nil {
 			return nil, p
 		}
+		verdict = v
 	}
 
 	now := time.Now()
@@ -313,7 +317,7 @@ func (s *Service) updateToolset(ctx context.Context, in *patchToolsetInput) (*to
 		return nil, problem.Internal(err)
 	}
 	if len(modParts) > 0 {
-		s.scan.ScanBg(gate.SubjectKindToolset, strconv.Itoa(row.ID), moderation, int64(row.UserID))
+		s.scan.ScanBg(gate.SubjectKindToolset, strconv.Itoa(row.ID), moderation, int64(row.UserID), verdict.Skipped)
 	}
 	fresh, err := s.store.Find(row.ID)
 	if err != nil {

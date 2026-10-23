@@ -31,13 +31,12 @@ func TestCheckDisabledZeroDial(t *testing.T) {
 	if s.Enabled() {
 		t.Fatal("nil checker must be disabled")
 	}
-	decision, matched := s.Decision(context.Background(), "任何内容", nil)
-	if decision != DecisionAllow || matched != nil {
-		t.Fatalf("disabled gate = (%q,%v), want allow/nil", decision, matched)
+	if v := s.Verdict(context.Background(), "任何内容", nil); v.Decision != DecisionAllow || v.Matched != nil || v.Skipped {
+		t.Fatalf("disabled gate = %+v, want unskipped allow", v)
 	}
 	var nilSvc *CheckService
-	if d, _ := nilSvc.Decision(context.Background(), "x", nil); d != DecisionAllow {
-		t.Fatalf("nil service = %q, want allow", d)
+	if v := nilSvc.Verdict(context.Background(), "x", nil); v.Decision != DecisionAllow || v.Skipped {
+		t.Fatalf("nil service = %+v, want unskipped allow", v)
 	}
 }
 
@@ -55,12 +54,15 @@ func TestCheckDecisionMapping(t *testing.T) {
 		fc := &fakeChecker{result: &trustclient.CheckResult{Decision: tc.wire, Matched: []string{"m"}}}
 		s := NewCheckService(fc)
 		author := int64(42)
-		decision, matched := s.Decision(context.Background(), "内容", &author)
-		if decision != tc.want {
-			t.Fatalf("wire %q → %q, want %q", tc.wire, decision, tc.want)
+		v := s.Verdict(context.Background(), "内容", &author)
+		if v.Decision != tc.want {
+			t.Fatalf("wire %q → %q, want %q", tc.wire, v.Decision, tc.want)
 		}
-		if len(matched) != 1 || matched[0] != "m" {
-			t.Fatalf("matched not propagated: %v", matched)
+		if len(v.Matched) != 1 || v.Matched[0] != "m" {
+			t.Fatalf("matched not propagated: %v", v.Matched)
+		}
+		if v.Skipped {
+			t.Fatalf("wire %q: an answered check must not be skipped", tc.wire)
 		}
 		if fc.calls != 1 {
 			t.Fatalf("expected exactly one dial, got %d", fc.calls)
@@ -70,19 +72,18 @@ func TestCheckDecisionMapping(t *testing.T) {
 
 func TestCheckFailOpenOnError(t *testing.T) {
 	s := NewCheckService(&fakeChecker{err: errors.New("trust 503")})
-	decision, matched := s.Decision(context.Background(), "内容", nil)
-	if decision != DecisionAllow || matched != nil {
-		t.Fatalf("error → (%q,%v), want allow/nil", decision, matched)
+	if v := s.Verdict(context.Background(), "内容", nil); v.Decision != DecisionAllow || v.Matched != nil || !v.Skipped {
+		t.Fatalf("error → %+v, want skipped allow", v)
 	}
 }
 
 func TestCheckFailOpenOnTimeout(t *testing.T) {
 	s := NewCheckService(&fakeChecker{block: true})
 	start := time.Now()
-	decision, _ := s.Decision(context.Background(), "内容", nil)
+	v := s.Verdict(context.Background(), "内容", nil)
 	elapsed := time.Since(start)
-	if decision != DecisionAllow {
-		t.Fatalf("timeout → %q, want allow", decision)
+	if v.Decision != DecisionAllow || !v.Skipped {
+		t.Fatalf("timeout → %+v, want skipped allow", v)
 	}
 	if elapsed > time.Second {
 		t.Fatalf("Decision stalled %v; the 500ms bound did not fire", elapsed)

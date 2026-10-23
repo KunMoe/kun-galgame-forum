@@ -49,7 +49,7 @@ func (w *Writes) createTopic(ctx context.Context, in *createTopicInput) (*create
 	grants := grantsFromAccess(access, user.ID)
 	consume := anyConsumeSection(sections)
 	moderation := topicModerationText(title, body)
-	decision, matched, p := w.rejectContent(ctx, moderation, user.ID)
+	verdict, p := w.rejectContent(ctx, moderation, user.ID)
 	if p != nil {
 		return nil, p
 	}
@@ -107,7 +107,7 @@ func (w *Writes) createTopic(ctx context.Context, in *createTopicInput) (*create
 		return nil, problem.Internal(err)
 	}
 	w.flushAwards(awards)
-	w.scanTopic(decision, matched, topicID, user.ID, moderation)
+	w.scanTopic(verdict, topicID, user.ID, moderation)
 
 	topic, p := w.loadTopic(topicID)
 	if p != nil {

@@ -149,17 +149,17 @@ func emptyWorkSummary(workID int, displayName string) workrepr.WorkSummary {
 	}
 }
 
-func (s *Service) checkContributionText(ctx context.Context, text string, authorID int) *problem.Problem {
+func (s *Service) checkContributionText(ctx context.Context, text string, authorID int) (gate.Verdict, *problem.Problem) {
 	if strings.TrimSpace(text) == "" || s.check == nil {
-		return nil
+		return gate.Allowed, nil
 	}
 	id := int64(authorID)
-	decision, matched := s.check.Decision(ctx, text, &id)
-	switch decision {
+	verdict := s.check.Verdict(ctx, text, &id)
+	switch verdict.Decision {
 	case gate.DecisionDeny:
-		return problem.New(problem.CodeContentRejected, "The trust-and-safety check refused the submitted text. Nothing was written.")
+		return verdict, problem.New(problem.CodeContentRejected, "The trust-and-safety check refused the submitted text. Nothing was written.")
 	case gate.DecisionHold:
-		slog.Info("trust check hold", "subject_kind", gate.SubjectKindGalgame, "author_id", authorID, "matched", matched)
+		slog.Info("trust check hold", "subject_kind", gate.SubjectKindGalgame, "author_id", authorID, "matched", verdict.Matched)
 	}
-	return nil
+	return verdict, nil
 }

@@ -30,7 +30,7 @@ func (w *Writes) createReply(ctx context.Context, in *createReplyInput) (*create
 		return nil, validationFailed(tooShort("/content_markdown"))
 	}
 	body := markdown.NormalizeStoredContent(in.Body.ContentMarkdown)
-	decision, matched, p := w.rejectContent(ctx, body, user.ID)
+	verdict, p := w.rejectContent(ctx, body, user.ID)
 	if p != nil {
 		return nil, p
 	}
@@ -98,7 +98,7 @@ func (w *Writes) createReply(ctx context.Context, in *createReplyInput) (*create
 		return nil, problem.Internal(err)
 	}
 	w.flushAwards(awards)
-	w.scanReply(decision, matched, replyID, user.ID, body)
+	w.scanReply(verdict, replyID, user.ID, body)
 
 	fresh, p := w.loadReply(replyID)
 	if p != nil {
@@ -152,7 +152,7 @@ func (w *Writes) updateReply(ctx context.Context, in *updateReplyInput) (*update
 		}
 		return &updateReplyOutput{Body: *mapped}, nil
 	}
-	decision, matched, p := w.rejectContent(ctx, body, row.UserID)
+	verdict, p := w.rejectContent(ctx, body, row.UserID)
 	if p != nil {
 		return nil, p
 	}
@@ -169,7 +169,7 @@ func (w *Writes) updateReply(ctx context.Context, in *updateReplyInput) (*update
 	if err != nil {
 		return nil, problem.Internal(err)
 	}
-	w.scanReply(decision, matched, row.ID, row.UserID, body)
+	w.scanReply(verdict, row.ID, row.UserID, body)
 
 	fresh, p := w.loadReply(row.ID)
 	if p != nil {

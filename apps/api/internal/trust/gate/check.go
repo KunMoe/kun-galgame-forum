@@ -30,23 +30,32 @@ func NewCheckService(ck Checker) *CheckService {
 
 func (s *CheckService) Enabled() bool { return s != nil && s.ck != nil }
 
-func (s *CheckService) Decision(ctx context.Context, text string, authorID *int64) (decision string, matched []string) {
+// Verdict is the synchronous check's answer. Skipped means the check failed
+// and the content was let through unchecked; the follow-up scan must say so,
+// or trust never runs the word list over it again.
+type Verdict struct {
+	Decision string
+	Matched  []string
+	Skipped  bool
+}
+
+var Allowed = Verdict{Decision: DecisionAllow}
+
+func (s *CheckService) Verdict(ctx context.Context, text string, authorID *int64) Verdict {
 	if !s.Enabled() {
-		return DecisionAllow, nil
+		return Allowed
 	}
 	cctx, cancel := context.WithTimeout(ctx, checkTimeout)
 	defer cancel()
 	res, err := s.ck.Check(cctx, trustclient.CheckRequest{Text: text, AuthorID: authorID})
 	if err != nil {
 		slog.Warn("trust check fail-open", "err", err)
-		return DecisionAllow, nil
+		return Verdict{Decision: DecisionAllow, Skipped: true}
 	}
 	switch res.Decision {
-	case DecisionDeny:
-		return DecisionDeny, res.Matched
-	case DecisionHold:
-		return DecisionHold, res.Matched
+	case DecisionDeny, DecisionHold:
+		return Verdict{Decision: res.Decision, Matched: res.Matched}
 	default:
-		return DecisionAllow, res.Matched
+		return Verdict{Decision: DecisionAllow, Matched: res.Matched}
 	}
 }
