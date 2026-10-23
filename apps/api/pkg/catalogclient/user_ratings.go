@@ -232,3 +232,24 @@ func (c *Client) RatingChanges(ctx context.Context, cursor string) (*RatingChang
 	}
 	return page, nil
 }
+
+// CurrentRating reads the person's rating of the work off the public ratings
+// list with the application key, adult works included.
+func (c *Client) CurrentRating(ctx context.Context, userID, workID int64) (int64, bool, error) {
+	q := url.Values{
+		"user_id": {strconv.FormatInt(userID, 10)},
+		"work_id": {strconv.FormatInt(workID, 10)},
+		"nsfw":    {"true"},
+		"limit":   {"1"},
+	}
+	var out v2List[v2Rating]
+	if err := c.appV2JSON(ctx, "/v2/ratings", q, &out); err != nil {
+		return 0, false, err
+	}
+	if rows := out.rows(); len(rows) > 0 {
+		if id := parseFlexID(rows[0].ID); id > 0 {
+			return id, true, nil
+		}
+	}
+	return 0, false, nil
+}
