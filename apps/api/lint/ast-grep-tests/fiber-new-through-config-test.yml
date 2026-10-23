@@ -1,0 +1,7 @@
+id: fiber-new-through-config
+valid:
+  - |
+    func setup(app *fiber.App) { api := humafiber.New(app, cfg) }
+invalid:
+  - |
+    func main() { app := fiber.New(fiber.Config{}) }

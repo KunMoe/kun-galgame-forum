@@ -1,0 +1,7 @@
+id: no-bind-body
+valid:
+  - |
+    func h(c fiber.Ctx) error { return c.Bind().JSON(&body) }
+invalid:
+  - |
+    func h(c fiber.Ctx) error { return c.Bind().Body(&body) }

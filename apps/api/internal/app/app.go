@@ -561,6 +561,13 @@ func newFiber() *fiber.App {
 		ErrorHandler:   globalErrorHandler,
 		BodyLimit:      bodyLimit,
 		ReadBufferSize: 16 * 1024,
+		// Without Immutable, c.Params/c.Query/c.Get/c.Cookies/c.Body alias
+		// fasthttp's request buffer, which the next request reuses. moyu kept a
+		// c.Cookies session ID in a background refresh and wrote one reader's
+		// session over another's (2026-10-22); here a huma path param went into
+		// the async trust scan. c.Bind() Query/Form/Header/Cookie binders ignore
+		// this flag: clone those fields before they outlive the handler.
+		Immutable: true,
 	})
 	f.Use(recover.New())
 	return f

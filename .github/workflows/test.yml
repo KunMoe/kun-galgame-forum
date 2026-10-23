@@ -53,6 +53,10 @@ jobs:
         with:
           go-version-file: apps/api/go.mod
           cache-dependency-path: apps/api/go.sum
+      - name: ast-grep request-lifetime rules
+        run: |
+          npx --yes --package @ast-grep/cli@0.44.1 ast-grep test --skip-snapshot-tests
+          npx --yes --package @ast-grep/cli@0.44.1 ast-grep scan
       - run: go build ./...
       - run: go vet ./...
       - run: go run github.com/kisielk/errcheck@v1.9.0 -exclude .errcheck-exclude ./...
