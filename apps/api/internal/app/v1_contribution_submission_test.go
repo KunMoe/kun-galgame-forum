@@ -479,7 +479,14 @@ func TestV1WorkSubmissionIfMatch(t *testing.T) {
 		t.Fatalf("current validator %d %+v %+v", resp.StatusCode, got, f.user.patches)
 	}
 
-	resp, got = f.callWith(t, http.MethodPatch, g7aSub(g7aBobPending), g7aSpecOne, "sess-staff", http.Header{"If-Match": {`"stale"`}}, map[string]any{"state": "live"})
+	resp, _ = f.call(t, http.MethodGet, g7aSub(g7aBobPending), g7aSpecOne, "sess-staff", "", nil)
+	weak := http.Header{"If-Match": {"W/" + resp.Header.Get("ETag")}}
+	resp, got = f.callWith(t, http.MethodPatch, g7aSub(g7aBobPending), g7aSpecOne, "sess-staff", weak, map[string]any{"state": "live"})
+	if resp.StatusCode != http.StatusOK || g7aState(t, f, g7aBobPending) != "live" {
+		t.Fatalf("a validator weakened by a compressing proxy %d %+v", resp.StatusCode, got)
+	}
+
+	resp, got = f.callWith(t, http.MethodPatch, g7aSub(g7aBobPending), g7aSpecOne, "sess-staff", http.Header{"If-Match": {`"stale"`}}, map[string]any{"state": "hidden"})
 	wantCode(t, resp, got, http.StatusPreconditionFailed, problem.CodePreconditionFailed)
 	resp, got = f.callWith(t, http.MethodDelete, g7aSub(g7aDraftRes), g7aSpecOne, "sess-alice", http.Header{"If-Match": {`"stale"`}}, nil)
 	wantCode(t, resp, got, http.StatusPreconditionFailed, problem.CodePreconditionFailed)

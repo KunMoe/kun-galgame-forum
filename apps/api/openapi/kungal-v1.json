@@ -69951,13 +69951,13 @@
             }
           },
           {
-            "description": "The ETag of the claim this write is based on, from GET /work-submissions/{work_id} or the previous write. Absent means *: no version check.",
+            "description": "The ETag of the claim this write is based on, from GET /work-submissions/{work_id} or the previous write, sent back as received: a W/ prefix added by a compressing proxy is accepted. Absent means *: no version check.",
             "in": "header",
             "name": "If-Match",
             "schema": {
-              "description": "The ETag of the claim this write is based on, from GET /work-submissions/{work_id} or the previous write. Absent means *: no version check.",
-              "maxLength": 128,
-              "pattern": "^(\\*|\"[!#-~]{1,126}\")$",
+              "description": "The ETag of the claim this write is based on, from GET /work-submissions/{work_id} or the previous write, sent back as received: a W/ prefix added by a compressing proxy is accepted. Absent means *: no version check.",
+              "maxLength": 130,
+              "pattern": "^(\\*|(W/)?\"[!#-~]{1,126}\")$",
               "type": "string"
             }
           }
@@ -70188,13 +70188,13 @@
             }
           },
           {
-            "description": "The ETag of the claim this write is based on, from GET /work-submissions/{work_id} or the previous write. Absent means *: no version check.",
+            "description": "The ETag of the claim this write is based on, from GET /work-submissions/{work_id} or the previous write, sent back as received: a W/ prefix added by a compressing proxy is accepted. Absent means *: no version check.",
             "in": "header",
             "name": "If-Match",
             "schema": {
-              "description": "The ETag of the claim this write is based on, from GET /work-submissions/{work_id} or the previous write. Absent means *: no version check.",
-              "maxLength": 128,
-              "pattern": "^(\\*|\"[!#-~]{1,126}\")$",
+              "description": "The ETag of the claim this write is based on, from GET /work-submissions/{work_id} or the previous write, sent back as received: a W/ prefix added by a compressing proxy is accepted. Absent means *: no version check.",
+              "maxLength": 130,
+              "pattern": "^(\\*|(W/)?\"[!#-~]{1,126}\")$",
               "type": "string"
             }
           }

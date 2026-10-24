@@ -105,12 +105,12 @@ type workSubmissionIDInput struct {
 
 type workSubmissionWriteInput struct {
 	WorkID  string `path:"work_id" pattern:"^[1-9][0-9]{0,18}$" maxLength:"19" doc:"Catalog work id."`
-	IfMatch string `header:"If-Match" maxLength:"128" pattern:"^(\\*|\"[!#-~]{1,126}\")$" doc:"The ETag of the claim this write is based on, from GET /work-submissions/{work_id} or the previous write. Absent means *: no version check."`
+	IfMatch string `header:"If-Match" maxLength:"130" pattern:"^(\\*|(W/)?\"[!#-~]{1,126}\")$" doc:"The ETag of the claim this write is based on, from GET /work-submissions/{work_id} or the previous write, sent back as received: a W/ prefix added by a compressing proxy is accepted. Absent means *: no version check."`
 }
 
 type updateWorkSubmissionInput struct {
 	WorkID  string `path:"work_id" pattern:"^[1-9][0-9]{0,18}$" maxLength:"19" doc:"Catalog work id."`
-	IfMatch string `header:"If-Match" maxLength:"128" pattern:"^(\\*|\"[!#-~]{1,126}\")$" doc:"The ETag of the claim this write is based on, from GET /work-submissions/{work_id} or the previous write. Absent means *: no version check."`
+	IfMatch string `header:"If-Match" maxLength:"130" pattern:"^(\\*|(W/)?\"[!#-~]{1,126}\")$" doc:"The ETag of the claim this write is based on, from GET /work-submissions/{work_id} or the previous write, sent back as received: a W/ prefix added by a compressing proxy is accepted. Absent means *: no version check."`
 	Body    workSubmissionPatch
 }
 

@@ -44677,7 +44677,7 @@ export interface operations {
         parameters: {
             query?: never;
             header?: {
-                /** @description The ETag of the claim this write is based on, from GET /work-submissions/{work_id} or the previous write. Absent means *: no version check. */
+                /** @description The ETag of the claim this write is based on, from GET /work-submissions/{work_id} or the previous write, sent back as received: a W/ prefix added by a compressing proxy is accepted. Absent means *: no version check. */
                 "If-Match"?: string;
             };
             path: {
@@ -44773,7 +44773,7 @@ export interface operations {
         parameters: {
             query?: never;
             header?: {
-                /** @description The ETag of the claim this write is based on, from GET /work-submissions/{work_id} or the previous write. Absent means *: no version check. */
+                /** @description The ETag of the claim this write is based on, from GET /work-submissions/{work_id} or the previous write, sent back as received: a W/ prefix added by a compressing proxy is accepted. Absent means *: no version check. */
                 "If-Match"?: string;
             };
             path: {

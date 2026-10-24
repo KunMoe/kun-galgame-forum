@@ -104,12 +104,14 @@ func noteRequired() *problem.Problem {
 }
 
 // ifMatchOrAny forwards the client's validator, or * when it sent none: catalog
-// answers 428 to a write without If-Match.
+// answers 428 to a write without If-Match. Cloudflare gzips the GET and turns
+// the strong ETag into W/"...", which the web echoed back and the pattern
+// refused as INVALID_FORMAT; catalog skips weak tags, so the prefix comes off.
 func ifMatchOrAny(v string) string {
 	if v == "" {
 		return "*"
 	}
-	return v
+	return strings.TrimPrefix(v, "W/")
 }
 
 func invalidTransition(object, current string, allowed []string) *problem.Problem {
