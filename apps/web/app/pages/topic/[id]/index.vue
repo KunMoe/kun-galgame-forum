@@ -81,8 +81,10 @@ if (data.value) {
     `${kungal.domain.main}/kungalgame.webp`
   const created = new Date(topic.created_at).toString()
   const updated = topic.edited_at ? new Date(topic.edited_at).toString() : ''
-  const description = computed(() =>
-    truncateRunes(contentPlainText(topic.content).trim(), 233)
+  const description = computed(
+    () =>
+      topic.ai_summary ||
+      truncateRunes(contentPlainText(topic.content).trim(), 233)
   )
 
   const jsonLd = computed<WithContext<DiscussionForumPosting>>(() => {

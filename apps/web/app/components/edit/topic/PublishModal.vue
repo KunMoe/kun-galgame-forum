@@ -1,45 +1,28 @@
 <script setup lang="ts">
 import { useTopicEditorStore } from '~/composables/topic/useTopicEditorStore'
 import { useTopicSubmitter } from '~/composables/topic/useTopicSubmitter'
-import type { KunRadioOption } from '@kungal/ui-vue'
 
 const open = defineModel<boolean>({ required: true })
 
-const { section, isNSFW } = useTopicEditorStore()
-const { rules, submit, isSubmitting, isRewriteMode } = useTopicSubmitter()
+const { isNSFW } = useTopicEditorStore()
+const {
+  rules,
+  submit,
+  isSubmitting,
+  isRewriteMode,
+  classification,
+  isClassifying,
+  classify
+} = useTopicSubmitter()
 const { moemoepoint } = usePersistUserStore()
 
 const needRules = computed(() => moemoepoint < 50)
 
-const { groups, sectionOf } = useTopicSections()
-
-const chosenKey = computed({
-  get: () => section.value[0] ?? '',
-  set: (value: string) => {
-    section.value = [value]
+watch(open, (isOpen) => {
+  if (isOpen && !isRewriteMode.value) {
+    classify()
   }
 })
-const chosen = computed(() => sectionOf(chosenKey.value))
-
-const groupOptions = computed(() =>
-  groups.value
-    .map((group) => ({
-      key: group.key,
-      label: group.label,
-      options: group.sections
-        .filter((s) => !s.is_archived || s.section === chosenKey.value)
-        .map<KunRadioOption<string>>((s) => ({
-          value: s.section,
-          label: s.label,
-          icon: s.icon_name,
-          description:
-            s.moemoepoint_on_create < 0
-              ? `消耗 ${-s.moemoepoint_on_create} 萌萌点`
-              : undefined
-        }))
-    }))
-    .filter((group) => group.options.length)
-)
 
 const confirmText = computed(() => {
   if (isSubmitting.value) return '处理中...'
@@ -58,33 +41,17 @@ const confirmText = computed(() => {
           </h2>
         </div>
         <p v-if="!isRewriteMode" class="text-default-500 text-sm">
-          选好分区就可以发布,
+          分区会根据话题内容自动判断,
           封面图、投票与抽奖都是可选的。点击下方「确认发布」之前话题不会发出
         </p>
       </header>
 
       <div class="flex-1 space-y-8 overflow-y-auto px-1 py-1">
-        <section class="space-y-3">
-          <h3 class="flex items-center gap-2 font-semibold">
-            <KunIcon name="lucide:layout-grid" class="h-5 w-5" />
-            选择分区 <span class="text-danger-500">*</span>
-          </h3>
-          <div v-for="group in groupOptions" :key="group.key" class="space-y-2">
-            <p class="text-default-500 text-sm">{{ group.label }}</p>
-            <KunRadioGroup
-              v-model="chosenKey"
-              :options="group.options"
-              :aria-label="group.label"
-              variant="card"
-              orientation="horizontal"
-              size="sm"
-              hide-indicator
-            />
-          </div>
-          <p v-if="chosen" class="text-default-500 text-sm leading-relaxed">
-            {{ chosen.description }}
-          </p>
-        </section>
+        <EditTopicSectionField
+          :classification="classification"
+          :is-classifying="isClassifying"
+          :is-rewrite-mode="isRewriteMode"
+        />
 
         <EditTopicSpecialNotice />
 
@@ -160,7 +127,7 @@ const confirmText = computed(() => {
         <KunButton
           @click="submit"
           size="lg"
-          :disabled="isSubmitting"
+          :disabled="isSubmitting || isClassifying"
           class="min-w-[120px]"
         >
           <KunIcon

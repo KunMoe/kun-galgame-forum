@@ -13,7 +13,11 @@ import {
 } from './pendingMiniApps'
 import type { HeldMiniApp } from '~/store/temp/topic/miniAppHandoff'
 import { settle } from '#shared/utils/api/problem'
-import type { TopicCreate, TopicPatch } from '#shared/utils/api/schemas'
+import type {
+  TopicClassification,
+  TopicCreate,
+  TopicPatch
+} from '#shared/utils/api/schemas'
 
 export const useTopicSubmitter = () => {
   const {
@@ -48,6 +52,27 @@ export const useTopicSubmitter = () => {
   const isSubmitting = ref(false)
   const isRewriteMode = computed(() => tempStore.isTopicRewriting)
 
+  const classification = ref<TopicClassification | null>(null)
+  const isClassifying = ref(false)
+
+  const classify = async () => {
+    classification.value = null
+    if (!title.value.trim() || !content.value.trim()) {
+      return
+    }
+    isClassifying.value = true
+    const result = await settle(
+      api.POST('/topics/classify', {
+        body: { title: title.value, content_markdown: content.value }
+      })
+    )
+    isClassifying.value = false
+    if (result.ok) {
+      classification.value = result.data
+      section.value = [result.data.section]
+    }
+  }
+
   const writePayload = (mode: 'create' | 'rewrite') => {
     const hashes = coverImages.value.map(coverHashFromToken)
     const body: TopicCreate = {
@@ -61,6 +86,10 @@ export const useTopicSubmitter = () => {
       body.cover_image_hashes = hashes
     } else if (hashes.length > 0) {
       body.cover_image_hashes = hashes
+    }
+    if (mode === 'create' && classification.value) {
+      body.sections = [classification.value.section]
+      body.classification_token = classification.value.classification_token
     }
     if (accessScope.value === 'role') {
       body.access_roles = accessRoles.value
@@ -208,6 +237,9 @@ export const useTopicSubmitter = () => {
     rules,
     submit,
     isSubmitting,
-    isRewriteMode
+    isRewriteMode,
+    classification,
+    isClassifying,
+    classify
   }
 }

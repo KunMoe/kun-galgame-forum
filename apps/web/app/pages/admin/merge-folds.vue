@@ -78,8 +78,8 @@ const counts = (fold: WorkMergeFold) =>
         鲲 Galgame 论坛数据合并两部作品后,
         本站把被合并作品上的资源、动态、点赞、收藏、贡献者、题目和浏览量迁到保留方,
         每一条都记在这里。合并被撤销或改指向时按记录原样搬回,
-        合并后才在保留方产生的数据留在保留方; 搬不回的条目列在下面。
-        本记录从 2026-10-21 开始, 之前的合并没有记录, 维持现状。
+        合并后才在保留方产生的数据留在保留方; 搬不回的条目列在下面。 本记录从
+        2026-10-21 开始, 之前的合并没有记录, 维持现状。
       </p>
     </div>
 
@@ -131,10 +131,7 @@ const counts = (fold: WorkMergeFold) =>
             {{ `有 ${fold.problems.length} 条没能搬回` }}
           </p>
           <ul class="text-default-600 space-y-0.5 text-xs">
-            <li
-              v-for="p in fold.problems"
-              :key="`${p.table_name}:${p.row_id}`"
-            >
+            <li v-for="p in fold.problems" :key="`${p.table_name}:${p.row_id}`">
               {{ TABLE_LABELS[p.table_name] }} #{{ p.row_id }}:
               {{ CAUSE_LABELS[p.cause] }}
               <template v-if="p.current_work_id">

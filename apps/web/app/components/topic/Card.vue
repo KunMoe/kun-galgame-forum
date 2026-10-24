@@ -23,6 +23,18 @@ const actionsCount = computed(
       {{ topic.title }}
     </h3>
 
+    <p
+      v-if="topic.ai_summary"
+      class="text-default-600 line-clamp-3 text-sm leading-relaxed"
+    >
+      <span
+        class="bg-default-100 text-default-500 mr-1.5 rounded px-1.5 py-0.5 text-xs"
+      >
+        AI 摘要
+      </span>
+      {{ topic.ai_summary }}
+    </p>
+
     <TopicBadgeGroup
       :section="topic.section"
       :has-best-answer="topic.has_best_answer"

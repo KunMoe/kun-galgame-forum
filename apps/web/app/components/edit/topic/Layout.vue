@@ -111,7 +111,7 @@ onBeforeRouteLeave(async () => {
     >
       <KunIcon name="lucide:info" class="mt-0.5 h-4 w-4 shrink-0" />
       <span>
-        写完正文后点击「发布话题」, 会先弹出设置窗口: 在那里选择分区,
+        写完正文后点击「发布话题」, 会先弹出设置窗口: 在那里确认分区,
         设置封面图, 添加投票与抽奖。确认之前话题不会发出
         <span v-if="attachedText" class="text-primary-500">
           · 已添加 {{ attachedText }}, 发布时一并创建

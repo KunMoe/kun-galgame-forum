@@ -105,6 +105,13 @@ export const KUN_ADMIN_PAGE_ASIDE_NAV_ITEM: KunAdminPageAsideItem[] = [
     permissions: ['topic.manage_sections']
   },
   {
+    name: 'section-request',
+    label: '分区调整申请',
+    icon: 'lucide:arrow-right-left',
+    router: 'section-request',
+    permissions: ['topic.edit_any']
+  },
+  {
     name: 'friend-link',
     label: '友链管理',
     icon: 'lucide:link',

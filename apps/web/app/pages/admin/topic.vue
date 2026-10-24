@@ -290,7 +290,8 @@ const handlePurge = async () => {
           class="text-default-500 text-sm"
         >
           进行中的抽奖托管着
-          {{ purgeTarget.open_lottery_escrow }} 萌萌点, 删除时会退回给抽奖发起人。
+          {{ purgeTarget.open_lottery_escrow }} 萌萌点,
+          删除时会退回给抽奖发起人。
         </p>
 
         <div class="flex justify-end gap-2">

@@ -55,14 +55,17 @@ provide(
           {{ topic.title }}
         </h1>
 
-        <TopicBadgeGroup
-          :section="topic.section"
-          :upvote-time="topic.upvoted_at"
-          :has-best-answer="false"
-          :mini-apps="topic.mini_apps"
-          :is-n-s-f-w-topic="topic.is_nsfw"
-          :is-nav-to-section="true"
-        />
+        <div class="flex flex-wrap items-center gap-2">
+          <TopicBadgeGroup
+            :section="topic.section"
+            :upvote-time="topic.upvoted_at"
+            :has-best-answer="false"
+            :mini-apps="topic.mini_apps"
+            :is-n-s-f-w-topic="topic.is_nsfw"
+            :is-nav-to-section="true"
+          />
+          <TopicDetailSectionRequest :topic="topic" />
+        </div>
 
         <div
           class="text-default-500 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm"
