@@ -4,7 +4,7 @@ import type { KunEditorExpose, KunHeading } from '@kungal/editor-vue'
 import { useTopicEditorStore } from '~/composables/topic/useTopicEditorStore'
 import { KUN_EDITOR_TOOLBAR_ITEMS } from '~/constants/editor'
 const tempStore = useTempEditStore()
-const { content } = useTopicEditorStore()
+const { content, polls, lotteries } = useTopicEditorStore()
 const adapters = useKunEditorAdapters()
 
 const headings = ref<KunHeading[]>([])
@@ -16,6 +16,15 @@ const openPublish = () => {
 }
 
 const isDraftOpen = ref(false)
+
+const attachedText = computed(() =>
+  [
+    polls.value.length && `${polls.value.length} 个投票`,
+    lotteries.value.length && `${lotteries.value.length} 个抽奖`
+  ]
+    .filter(Boolean)
+    .join('、')
+)
 
 type EditorViewMode = 'wysiwyg' | 'source' | 'split'
 const editorMode = ref<EditorViewMode>('wysiwyg')
@@ -72,6 +81,7 @@ onBeforeRouteLeave(async () => {
         shadow-size="1.5rem"
         shadow-color="var(--color-default-100)"
         draggable
+        scroll-buttons
         class="bg-default-100 order-last w-full rounded-lg px-1 py-1 sm:order-none sm:w-auto sm:min-w-0 sm:flex-1 sm:rounded-none sm:bg-transparent sm:p-0"
       >
         <div id="et-toolbar" class="flex w-max items-center" />
@@ -94,6 +104,20 @@ onBeforeRouteLeave(async () => {
         </KunButton>
       </div>
     </div>
+
+    <p
+      v-if="!tempStore.isTopicRewriting"
+      class="text-default-500 mb-4 flex items-start gap-1.5 px-1 text-sm"
+    >
+      <KunIcon name="lucide:info" class="mt-0.5 h-4 w-4 shrink-0" />
+      <span>
+        写完正文后点击「发布话题」, 会先弹出设置窗口: 在那里选择分类,
+        设置封面图, 添加投票与抽奖。确认之前话题不会发出
+        <span v-if="attachedText" class="text-primary-500">
+          · 已添加 {{ attachedText }}, 发布时一并创建
+        </span>
+      </span>
+    </p>
 
     <div class="flex justify-center gap-6">
       <aside v-if="headings.length" class="hidden w-48 shrink-0 lg:block">

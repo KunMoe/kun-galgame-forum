@@ -4,24 +4,36 @@ import { usePoll } from '~/composables/topic/usePoll'
 import { createPollSchema, updatePollSchema } from '~/validations/topic-poll'
 import { TOPIC_POLL_VISIBILITY_OPTIONS } from '~/constants/topic'
 import { closesAtFromPicker, deadlineToPicker } from '../miniapp/deadline'
+import {
+  clonePlain,
+  pendingPollIssue
+} from '~/composables/topic/pendingMiniApps'
 import type { PollFormData } from './types'
 
 const props = defineProps<{
-  topicId: string
+  topicId?: string
   initialData?: Poll
+  initialForm?: PollFormData
+  saveOnly?: boolean
 }>()
 
 const emits = defineEmits<{
   refresh: []
+  save: [form: PollFormData]
 }>()
 
 const isModalOpen = defineModel<boolean>({ required: true })
 
-const isEditing = computed(() => !!props.initialData)
-const { createPoll, updatePoll } = usePoll(() => props.topicId)
+const isEditing = computed(
+  () => !!props.initialData || (props.saveOnly && !!props.initialForm)
+)
+const { createPoll, updatePoll } = usePoll(() => props.topicId ?? '')
 const isLoading = ref(false)
 
 const getInitialFormData = (): PollFormData => {
+  if (props.initialForm) {
+    return clonePlain(props.initialForm)
+  }
   const initial = props.initialData
   if (initial) {
     return {
@@ -73,8 +85,6 @@ watch(
     if (choiceType === 'single') {
       formData.min_choice = 1
       formData.max_choice = 1
-    } else {
-      formData.min_choice = 1
     }
   }
 )
@@ -145,11 +155,28 @@ const plannedOptionChanges = (initial: Poll) => {
   }
 }
 
-const submitCreate = async (closesAt: string | undefined) => {
-  const body = {
-    ...commonFields(closesAt),
-    options: liveOptions.value.map((option) => ({ text: option.text }))
+const createBody = (closesAt: string | undefined) => ({
+  ...commonFields(closesAt),
+  options: liveOptions.value.map((option) => ({ text: option.text }))
+})
+
+const submitSaveOnly = (closesAt: string | undefined) => {
+  const parsed = createPollSchema.safeParse(createBody(closesAt))
+  if (!parsed.success) {
+    warnFirstIssue(parsed.error.message)
+    return false
   }
+  const issue = pendingPollIssue(formData)
+  if (issue) {
+    useMessage(issue, 'warn')
+    return false
+  }
+  emits('save', clonePlain(formData))
+  return true
+}
+
+const submitCreate = async (closesAt: string | undefined) => {
+  const body = createBody(closesAt)
   const parsed = createPollSchema.safeParse(body)
   if (!parsed.success) {
     warnFirstIssue(parsed.error.message)
@@ -196,11 +223,24 @@ const submitPatch = async (initial: Poll, closesAt: string | undefined) => {
   return true
 }
 
+const submitText = computed(() => {
+  if (props.saveOnly) {
+    return isEditing.value ? '保存' : '添加到话题'
+  }
+  return isEditing.value ? '保存更改' : '发布投票'
+})
+
 const handleSubmit = async () => {
   if (isLoading.value) {
     return
   }
   const closesAt = closesAtFromPicker(formData.closes_at)
+  if (props.saveOnly) {
+    if (submitSaveOnly(closesAt)) {
+      isModalOpen.value = false
+    }
+    return
+  }
   isLoading.value = true
   const initial = props.initialData
   const ok = initial
@@ -331,7 +371,7 @@ const handleSubmit = async () => {
       <div class="mt-8 flex justify-end gap-3">
         <KunButton variant="light" @click="isModalOpen = false">取消</KunButton>
         <KunButton type="submit" color="primary" :loading="isLoading">
-          {{ isEditing ? '保存更改' : '发布投票' }}
+          {{ submitText }}
         </KunButton>
       </div>
     </form>

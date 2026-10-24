@@ -1,6 +1,13 @@
 import { useTopicEditorStore } from './useTopicEditorStore'
 import { coverHashFromToken, coverTokenFromHash } from './applyTopicSource'
 import { useIdempotencyKey } from '~/composables/useIdempotencyKey'
+import {
+  lotteryFormFromDraft,
+  lotteryFormToDraft,
+  lotteryHasCodes,
+  pollFormFromDraft,
+  pollFormToDraft
+} from './pendingMiniApps'
 import { settle } from '#shared/utils/api/problem'
 import type {
   TopicDraftCreate,
@@ -8,8 +15,16 @@ import type {
 } from '#shared/utils/api/schemas'
 
 export const useTopicDraft = () => {
-  const { title, content, category, section, isNSFW, coverImages } =
-    useTopicEditorStore()
+  const {
+    title,
+    content,
+    category,
+    section,
+    isNSFW,
+    coverImages,
+    polls,
+    lotteries
+  } = useTopicEditorStore()
   const api = useApiClient()
   const createKey = useIdempotencyKey()
 
@@ -38,7 +53,9 @@ export const useTopicDraft = () => {
       content_markdown: content.value,
       sections: section.value as TopicDraftCreate['sections'],
       is_nsfw: isNSFW.value,
-      cover_image_hashes: coverImages.value.map(coverHashFromToken)
+      cover_image_hashes: coverImages.value.map(coverHashFromToken),
+      polls: polls.value.map(pollFormToDraft),
+      lotteries: lotteries.value.map(lotteryFormToDraft)
     }
     if (category.value) {
       body.category = category.value as TopicDraftCreate['category']
@@ -78,6 +95,8 @@ export const useTopicDraft = () => {
     section.value = [...d.sections]
     isNSFW.value = d.is_nsfw
     coverImages.value = d.cover_image_hashes.map(coverTokenFromHash)
+    polls.value = d.polls.map(pollFormFromDraft)
+    lotteries.value = d.lotteries.map(lotteryFormFromDraft)
     return true
   }
 
@@ -97,11 +116,21 @@ export const useTopicDraft = () => {
     () => !!(title.value.trim() || content.value.trim())
   )
 
+  const hasMiniApps = computed(
+    () => polls.value.length + lotteries.value.length > 0
+  )
+
+  const hasUnsavableCodes = computed(() =>
+    lotteries.value.some(lotteryHasCodes)
+  )
+
   return {
     listDrafts,
     saveCurrentAsDraft,
     loadDraft,
     deleteDraft,
-    hasCurrentContent
+    hasCurrentContent,
+    hasMiniApps,
+    hasUnsavableCodes
   }
 }

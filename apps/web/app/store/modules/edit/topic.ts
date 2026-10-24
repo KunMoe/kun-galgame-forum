@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import type { EditStorePersist } from '~/store/types/edit/topic'
+import { lotteryWithoutCodes } from '~/composables/topic/pendingMiniApps'
 
 export const usePersistEditTopicStore = defineStore(
   'KUNGalgameEditTopic',
@@ -15,6 +16,8 @@ export const usePersistEditTopicStore = defineStore(
     const accessScope = ref<EditStorePersist['accessScope']>('public')
     const accessRoles = ref<EditStorePersist['accessRoles']>([])
     const accessUserIds = ref<EditStorePersist['accessUserIds']>([])
+    const polls = ref<EditStorePersist['polls']>([])
+    const lotteries = ref<EditStorePersist['lotteries']>([])
 
     const resetTopicData = () => {
       title.value = ''
@@ -26,6 +29,8 @@ export const usePersistEditTopicStore = defineStore(
       accessScope.value = 'public'
       accessRoles.value = []
       accessUserIds.value = []
+      polls.value = []
+      lotteries.value = []
     }
 
     return {
@@ -39,12 +44,24 @@ export const usePersistEditTopicStore = defineStore(
       accessScope,
       accessRoles,
       accessUserIds,
+      polls,
+      lotteries,
       resetTopicData
     }
   },
   {
     persist: {
-      storage: piniaPluginPersistedstate.localStorage()
+      storage: piniaPluginPersistedstate.localStorage(),
+      // Redemption codes stay in memory only: once submitted they are sealed
+      // and never shown again, so they must not sit in localStorage in clear.
+      serializer: {
+        serialize: (state) =>
+          JSON.stringify({
+            ...state,
+            lotteries: state.lotteries.map(lotteryWithoutCodes)
+          }),
+        deserialize: JSON.parse
+      }
     }
   }
 )

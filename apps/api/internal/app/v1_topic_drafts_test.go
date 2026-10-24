@@ -161,6 +161,90 @@ func TestV1CreateTopicDraftOptionalFields(t *testing.T) {
 	if body["title"] != "" {
 		t.Errorf("an unwritten title is the empty string, got %v", body["title"])
 	}
+	for _, field := range []string{"polls", "lotteries"} {
+		if fmt.Sprint(body[field]) != "[]" {
+			t.Errorf("%s must be [], got %v", field, body[field])
+		}
+	}
+}
+
+func TestV1TopicDraftKeepsMiniAppsWithoutCodes(t *testing.T) {
+	f := newDraftFix(t)
+
+	image := strings.Repeat("cd", 32)
+	poll := map[string]any{
+		"title": "which route", "description": "", "choice_type": "multiple",
+		"min_choice": 1, "max_choice": 2, "closes_at": "2026-12-31T15:59:59Z",
+		"result_visibility": "after_vote", "is_anonymous": true, "can_change_vote": false,
+		"options": []map[string]any{{"text": "a"}, {"text": "b"}, {"text": "c"}},
+	}
+	lottery := map[string]any{
+		"title": "keys", "description": "two keys", "entry_mode": "signup",
+		"floor_rule": nil, "draw_mode": "deadline", "draw_threshold": nil,
+		"closes_at": "2026-12-31T15:59:59Z", "min_account_age_days": 3,
+		"min_moemoepoint": 20, "is_entry_list_public": true,
+		"prizes": []map[string]any{{
+			"title": "steam key", "description": "", "image_hashes": []string{image},
+			"adult_image_hashes": []string{}, "delivery": "code",
+			"point_mode": nil, "point_amount": nil, "slot_count": 2,
+			"codes": []string{"AAAA-BBBB", "CCCC-DDDD"},
+		}},
+	}
+	resp, body := f.postDraft(t, "sess-alice", keyUUID(704), map[string]any{
+		"content_markdown": "lottery soon",
+		"polls":            []any{poll},
+		"lotteries":        []any{lottery},
+	})
+	if resp.StatusCode != http.StatusCreated {
+		t.Fatalf("create %d %+v", resp.StatusCode, body)
+	}
+	id := strID(body["id"])
+
+	resp, got := f.doJSONMap(t, http.MethodGet, draftsPath+"/"+id, "sess-alice", "/me/topic-drafts/{draft_id}")
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("read back %d %+v", resp.StatusCode, got)
+	}
+	polls, _ := got["polls"].([]any)
+	if len(polls) != 1 {
+		t.Fatalf("polls %v", got["polls"])
+	}
+	readPoll, _ := polls[0].(map[string]any)
+	for _, field := range []string{"title", "choice_type", "max_choice", "closes_at", "result_visibility", "is_anonymous", "can_change_vote"} {
+		if fmt.Sprint(readPoll[field]) != fmt.Sprint(poll[field]) {
+			t.Errorf("poll %s: sent %v, read back %v", field, poll[field], readPoll[field])
+		}
+	}
+	if options, _ := readPoll["options"].([]any); len(options) != 3 {
+		t.Errorf("poll options %v", readPoll["options"])
+	}
+
+	lotteries, _ := got["lotteries"].([]any)
+	if len(lotteries) != 1 {
+		t.Fatalf("lotteries %v", got["lotteries"])
+	}
+	readLottery, _ := lotteries[0].(map[string]any)
+	if readLottery["floor_rule"] != nil || readLottery["closes_at"] != lottery["closes_at"] {
+		t.Errorf("lottery read back %+v", readLottery)
+	}
+	prizes, _ := readLottery["prizes"].([]any)
+	if len(prizes) != 1 {
+		t.Fatalf("prizes %v", readLottery["prizes"])
+	}
+	prize, _ := prizes[0].(map[string]any)
+	if _, ok := prize["codes"]; ok {
+		t.Errorf("a draft must never hand codes back, got %v", prize["codes"])
+	}
+	if fmt.Sprint(prize["slot_count"]) != "2" || fmt.Sprint(prize["image_hashes"]) != "["+image+"]" {
+		t.Errorf("prize read back %+v", prize)
+	}
+
+	if n := f.scalar(t, `SELECT COUNT(*) FROM topic_draft WHERE id = ? AND lotteries::text LIKE '%AAAA-BBBB%'`, id); n != 0 {
+		t.Fatal("a redemption code was stored in the draft")
+	}
+	// The reference ping reads prize_image_hashes, not the nested lotteries.
+	if n := f.scalar(t, `SELECT COUNT(*) FROM topic_draft WHERE id = ? AND prize_image_hashes = ?::jsonb`, id, `["`+image+`"]`); n != 1 {
+		t.Fatal("prize_image_hashes does not hold the drafted prize image")
+	}
 }
 
 func TestV1CreateTopicDraftNeedsSomething(t *testing.T) {

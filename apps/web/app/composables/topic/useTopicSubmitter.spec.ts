@@ -254,6 +254,108 @@ describe('useTopicSubmitter', () => {
     expect(captured[2]!.key).not.toBe(captured[1]!.key)
   })
 
+  it('creates attached polls and lotteries on the new topic and holds the ones that fail', async () => {
+    const captured: Captured[] = []
+    api.POST.mockImplementation(async (path: string, init: CallInit) => {
+      captured.push(captureInit('POST', path, init))
+      if (path === '/topics/{topic_id}/lotteries') {
+        return jsonResult(403, {
+          type: 'about:blank',
+          title: 'Error',
+          status: 403,
+          code: 'LOTTERY_CREATOR_INELIGIBLE',
+          request_id: 'req_1',
+          errors: []
+        })
+      }
+      return jsonResult(201, path === '/topics' ? topic() : {})
+    })
+    fillCreate()
+    const persist = usePersistEditTopicStore()
+    persist.polls = [
+      {
+        title: 'Route',
+        description: '',
+        options: [{ text: 'a' }, { text: 'b' }],
+        choice_type: 'single',
+        min_choice: 1,
+        max_choice: 1,
+        closes_at: undefined,
+        result_visibility: 'always',
+        is_anonymous: false,
+        can_change_vote: true
+      }
+    ]
+    persist.lotteries = [
+      {
+        title: 'Keys',
+        description: '',
+        entry_mode: 'signup',
+        floor_rule: '',
+        draw_mode: 'manual',
+        draw_threshold: 0,
+        deadline: undefined,
+        min_account_age_days: 0,
+        min_moemoepoint: 0,
+        show_entrants: true,
+        prizes: [
+          {
+            name: 'Key',
+            description: '',
+            image_hashes: [],
+            image_urls: [],
+            nsfw_hashes: [],
+            machine_nsfw_hashes: [],
+            delivery: 'code',
+            point_mode: 'fixed',
+            point_amount: 0,
+            slots: 1,
+            codes: 'SECRET'
+          }
+        ]
+      }
+    ]
+    await useTopicSubmitter().submit()
+    expect(captured.map((c) => c.path)).toEqual([
+      '/topics',
+      '/topics/{topic_id}/polls',
+      '/topics/{topic_id}/lotteries'
+    ])
+    expect(captured[1]!.topicId).toBe('77')
+    expect(captured[1]!.key).not.toBe(captured[0]!.key)
+    expect(captured[2]!.body).toMatchObject({
+      prizes: [{ codes: ['SECRET'] }]
+    })
+    expect(persist.polls).toEqual([])
+    expect(persist.lotteries).toEqual([])
+    const held = useTempTopicMiniAppHandoffStore().heldFor('77')
+    expect(held).toHaveLength(1)
+    expect(held[0]!.key).toBe('lottery')
+    expect(reportProblem).toHaveBeenCalledTimes(1)
+    expect(navigateTo).toHaveBeenCalledWith('/topic/77')
+  })
+
+  it('does not create the topic when an attached lottery would be refused', async () => {
+    fillCreate()
+    usePersistEditTopicStore().lotteries = [
+      {
+        title: 'Late',
+        description: '',
+        entry_mode: 'signup',
+        floor_rule: '',
+        draw_mode: 'deadline',
+        draw_threshold: 0,
+        deadline: '2001-01-01',
+        min_account_age_days: 0,
+        min_moemoepoint: 0,
+        show_entrants: true,
+        prizes: []
+      }
+    ]
+    await useTopicSubmitter().submit()
+    expect(api.POST).not.toHaveBeenCalled()
+  })
+
   it('reports a problem and does not navigate', async () => {
     api.POST.mockResolvedValue(
       jsonResult(429, {

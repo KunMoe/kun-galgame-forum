@@ -9,7 +9,9 @@ const {
   saveCurrentAsDraft,
   loadDraft,
   deleteDraft,
-  hasCurrentContent
+  hasCurrentContent,
+  hasMiniApps,
+  hasUnsavableCodes
 } = useTopicDraft()
 
 const drafts = ref<TopicDraftSummary[]>([])
@@ -40,15 +42,23 @@ const onSave = async () => {
   const saved = await saveCurrentAsDraft()
   isSaving.value = false
   if (saved) {
-    useMessage('已保存为草稿', 'success')
+    if (hasUnsavableCodes.value) {
+      useMessage(
+        '已保存为草稿。抽奖的兑换码不会存进草稿, 载入草稿后需要重新填写',
+        'info',
+        6000
+      )
+    } else {
+      useMessage('已保存为草稿', 'success')
+    }
     refresh()
   }
 }
 
 const onLoad = async (draft: TopicDraftSummary) => {
-  if (hasCurrentContent.value) {
+  if (hasCurrentContent.value || hasMiniApps.value) {
     const ok = await useComponentMessageStore().alert(
-      '载入草稿会覆盖当前正在编写的内容，确定吗？'
+      '载入草稿会覆盖当前正在编写的内容 (包括已添加的投票与抽奖)，确定吗？'
     )
     if (!ok) {
       return
@@ -102,7 +112,8 @@ const displayTitle = (draft: TopicDraftSummary) =>
       </KunButton>
 
       <div class="text-default-500 mb-2 text-sm">
-        已保存的草稿（仅自己可见，最多 30 份）
+        已保存的草稿（仅自己可见，最多 30 份）。草稿会一并保存投票与抽奖,
+        但不保存兑换码
       </div>
 
       <div class="min-h-0 flex-1 space-y-2 overflow-y-auto">

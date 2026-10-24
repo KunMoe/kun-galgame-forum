@@ -75,6 +75,9 @@ export const useTopicEditorStore = () => {
     }
   })
 
+  // A topic being edited manages its polls and lotteries on its own page.
+  const { polls, lotteries } = storeToRefs(persistStore)
+
   return {
     category,
     section,
@@ -84,6 +87,8 @@ export const useTopicEditorStore = () => {
     coverImages,
     accessScope,
     accessRoles,
-    accessUserIds
+    accessUserIds,
+    polls,
+    lotteries
   }
 }

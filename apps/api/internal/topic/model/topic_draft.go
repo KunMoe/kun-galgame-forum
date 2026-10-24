@@ -56,6 +56,10 @@ type TopicDraft struct {
 	CoverImages ImageTokens `gorm:"column:cover_images;type:text;not null;default:''" json:"cover_images"`
 	IsNSFW      bool        `gorm:"column:is_nsfw;default:false" json:"is_nsfw"`
 
+	Polls            json.RawMessage `gorm:"column:polls;serializer:json;type:jsonb;not null;default:'[]'" json:"polls"`
+	Lotteries        json.RawMessage `gorm:"column:lotteries;serializer:json;type:jsonb;not null;default:'[]'" json:"lotteries"`
+	PrizeImageHashes []string        `gorm:"column:prize_image_hashes;serializer:json;type:jsonb;not null;default:'[]'" json:"prize_image_hashes"`
+
 	CreatedAt time.Time `gorm:"column:created" json:"created"`
 	UpdatedAt time.Time `gorm:"column:updated" json:"updated"`
 }
